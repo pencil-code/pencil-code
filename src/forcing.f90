@@ -48,13 +48,13 @@ module Forcing
   real :: dtforce=0., dtforce_ampl=.5, dtforce_duration=-1.0, force_strength=0.
   double precision :: tforce_ramp_down=1.1, tauforce_ramp_down=1.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
-  real, dimension(3) :: location_fixed=(/0.,0.,0./)
+  real, dimension(3,2) :: location_fixed=0.
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1.,qdouble_profile=1.
   integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   integer :: kzlarge=1
-  integer :: iforcing_zsym=0
+  integer :: iforcing_zsym=0, nlocation=1
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lhydro_forcing=.true., lneutral_forcing=.false., lmagnetic_forcing=.false.
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
@@ -99,7 +99,7 @@ module Forcing
   logical :: laniso_forcing_old=.true.
 ! Persistent stuff
   real :: tsforce=-10.
-  real, dimension (3) :: location
+  real, dimension (3) :: location, location2
 !
 !  continuous forcing variables
 !
@@ -137,7 +137,7 @@ module Forcing
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain, fountain, tforce_stop, tforce_stop2, &
        radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
-       omega_ff, n_equator_ff, location_fixed, lrandom_location, &
+       omega_ff, n_equator_ff, location_fixed, lrandom_location, nlocation, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl, xff_ampl, yff_ampl, zff_ampl, zff_hel, &
        wff2_ampl, xff2_ampl,yff2_ampl, zff2_ampl, &
@@ -288,7 +288,8 @@ module Forcing
 !
 !  initialize location to location_fixed
 !
-      location=location_fixed
+      location=location_fixed(:,1)
+      location2=location_fixed(:,2)
 !
 !  vertical profiles for amplitude and helicity of the forcing
 !  default is constant profiles for rms velocity and helicity.
@@ -3464,7 +3465,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
       real, dimension (3) :: fran
       real, dimension (nx) :: radius2, gaussian, gaussian_fact, ruf, rho
       real, dimension (nx,3) :: variable_rhs,force_all,delta
-      integer :: j,jf
+      integer :: j, jf, ilocation
       real :: irufm,fact,width_ff21,fsum_tmp,fsum
 !
 !  check length of time step
@@ -3478,7 +3479,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
           call random_number_wrapper(fran,CHANNEL=channel_force)
           location=fran*Lxyz+xyz0
         else
-          location=location_fixed
+          location=location_fixed(:,1)
         endif
 !
 !  It turns out that in the presence of shear, and even for weak shear,
@@ -3488,13 +3489,14 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
         if (lforce_cuty) location(2)=location(2)*.5
 !
-!  reset location(i) to x, y, or z
+!  reset location(i) to x, y, or z, so forcing does still occur,
+!  but it is restricted to the plane or line that is being solved.
 !
         if (.not.lactive_dimension(1)) location(1)=x(1)
         if (.not.lactive_dimension(2)) location(2)=y(1)
         if (.not.lactive_dimension(3)) location(3)=z(1)
 !
-!  write location to file
+!  write location to file; this is off by default.
 !
         if (lroot .and. lwrite_gausspot_to_file) then
           open(1,file=trim(datadir)//'/gaussian_pot_forcing.dat', &
@@ -3509,7 +3511,9 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
         if (ip<=6) print*,'forcing_gaussianpot: location=',location
       endif
 !
-!  Set forcing amplitude (same value for each location by default)
+!  Set forcing amplitude (same value for each location by default).
+!  For iforce_tprofile=='sin^2', we have a temporal sine profile.
+!  By default, iforce_tprofile='nothing'.
 !
       if (iforce_tprofile=='nothing') then
         force_tmp=force_ampl
@@ -3519,7 +3523,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
         call  fatal_error('forcing_gaussianpot','iforce_tprofile not good')
       endif
 !
-!  Possibility of outputting data at each time step (for testing)
+!  Possibility of outputting data at each time step (for testing).
 !
       if (lroot .and. lwrite_gausspot_to_file_always) then
         open(1,file=trim(datadir)//'/gaussian_pot_forcing_always.dat', &
@@ -3529,6 +3533,8 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
       endif
 !
 !  Let explosion last dtforce_duration or, by default, until next explosion.
+!  By default, dtforce_duration=1 (this is a special value, different from zero),
+!  but when t>dtforce, forcing is off again, regardless of dtforce_duration.
 !
       if ( (dtforce_duration<0.0) .or. &
            (t-(tsforce-dtforce))<=dtforce_duration ) then
@@ -3559,72 +3565,83 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
         do n=n1,n2
           do m=m1,m2
 !
-!  Obtain distance to center of blob
+!  loop over multiple locations
 !
-            delta(:,1)=x(l1:l2)-location(1)
-            delta(:,2)=y(m)-location(2)
-            delta(:,3)=z(n)-location(3)
-            do j=1,3
-              if (lperi(j)) then
-                if (lforce_peri) then
-                  if (j==2) then
-                    delta(:,2)=2*atan(tan(.5*(delta(:,2) &
-                        +2.*deltay*atan(1000.*tan(.25* &
-                        (pi+x(l1:l2)-location(1)))))))
+            do ilocation=1,nlocation
+!
+!  Obtain distance (=delta) to center of blob
+!
+              if (ilocation==1) then
+                delta(:,1)=x(l1:l2)-location(1)
+                delta(:,2)=y(m)-location(2)
+                delta(:,3)=z(n)-location(3)
+              else
+                delta(:,1)=x(l1:l2)-location2(1)
+                delta(:,2)=y(m)-location2(2)
+                delta(:,3)=z(n)-location2(3)
+              endif
+              do j=1,3
+                if (lperi(j)) then
+                  if (lforce_peri) then
+                    if (j==2) then
+                      delta(:,2)=2*atan(tan(.5*(delta(:,2) &
+                          +2.*deltay*atan(1000.*tan(.25* &
+                          (pi+x(l1:l2)-location(1)))))))
+                    else
+                      delta(:,j)=2*atan(tan(.5*delta(:,j)))
+                    endif
                   else
-                    delta(:,j)=2*atan(tan(.5*delta(:,j)))
+                    where (delta(:,j) >  Lxyz(j)/2.) delta(:,j)=delta(:,j)-Lxyz(j)
+                    where (delta(:,j) < -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
                   endif
-                else
-                  where (delta(:,j) >  Lxyz(j)/2.) delta(:,j)=delta(:,j)-Lxyz(j)
-                  where (delta(:,j) < -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
-                endif
               endif
               if (.not.lactive_dimension(j)) delta(:,j)=0.
-            enddo
+              enddo
 !
 !  compute gaussian blob and set to forcing function
 !
-            radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
-            gaussian=exp(-radius2*width_ff21)
-            gaussian_fact=gaussian*fact
-            variable_rhs=f(l1:l2,m,n,iffx:iffz)
-            if (iphiuu==0) then
-              do j=1,3
-                if (lactive_dimension(j)) then
-                  jf=j+ifff-1
-                  if (iforce_profile=='nothing') then
-                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j)
-                  else
-                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j) &
-                      *profx_ampl*profy_ampl(m)*profz_ampl(n)
+              radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
+              gaussian=exp(-radius2*width_ff21)
+              gaussian_fact=gaussian*fact
+              variable_rhs=f(l1:l2,m,n,iffx:iffz)
+              if (iphiuu==0) then
+                do j=1,3
+                  if (lactive_dimension(j)) then
+                    jf=j+ifff-1
+                    if (iforce_profile=='nothing') then
+                      f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j)
+                    else
+                      f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j) &
+                        *profx_ampl*profy_ampl(m)*profz_ampl(n)
+                    endif
                   endif
-                endif
-              enddo
-            else
-!
-!  add possibility of modulation
-!
-              if (iforce_profile=='nothing') then
-                f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian
+                enddo
               else
-                f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian*profx_ampl*profy_ampl(m)*profz_ampl(n)
+!
+!  add possibility of modulation (but only if iphiuu/=0)
+!
+                if (iforce_profile=='nothing') then
+                  f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian
+                else
+                  f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian*profx_ampl*profy_ampl(m)*profz_ampl(n)
+                endif
               endif
-            endif
 !
 !  test
 !
-!--         if (icc/=0) f(l1:l2,m,n,icc)=f(l1:l2,m,n,icc)+gaussian
+!--           if (icc/=0) f(l1:l2,m,n,icc)=f(l1:l2,m,n,icc)+gaussian
 !
-!  diagnostics
+!  diagnostics (currently without this possibility of a modulation applied above)
 !
-            if (lout) then
-              if (idiag_rufm/=0) then
-                call getrho(f(:,m,n,ilnrho),rho)
-                call multsv_mn(rho/dt,spread(gaussian,2,3)*delta,force_all)
-                call dot_mn(variable_rhs,force_all,ruf)
-                irufm=irufm+sum(ruf)
+              if (lout) then
+                if (idiag_rufm/=0) then
+                  call getrho(f(:,m,n,ilnrho),rho)
+                  call multsv_mn(rho/dt,spread(gaussian,2,3)*delta,force_all)
+                  call dot_mn(variable_rhs,force_all,ruf)
+                  irufm=irufm+sum(ruf)
+                endif
               endif
-            endif
+            enddo
           enddo
         enddo
       endif
@@ -3685,7 +3702,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
           call random_number_wrapper(fran,CHANNEL=channel_force)
           location=fran*Lxyz+xyz0
         else
-          location=location_fixed
+          location=location_fixed(:,1)
         endif
 !
 !  It turns out that in the presence of shear, and even for weak shear,
@@ -4578,7 +4595,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
           call random_number_wrapper(fran,CHANNEL=channel_force)
           location=fran*Lxyz+xyz0
         else
-          location=location_fixed
+          location=location_fixed(:,1)
         endif
         open (111,file=trim(datadir)//'/tblobs.dat',position="append")
         write (111,'(f12.3,3f8.4)') t_next_blob, location
@@ -5821,12 +5838,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         case('blob')
           fact=ampl_ff(i)/radius_ff**2
-          tmp=fact*exp(-.5*((x(l1:l2)-location_fixed(1))**2 &
-                           +(y(m)    -location_fixed(2))**2 &
-                           +(z(n)    -location_fixed(3))**2)/radius_ff**2)
-          force(:,1)=tmp*(x(l1:l2)-location_fixed(1))
-          force(:,2)=tmp*(y(m)    -location_fixed(2))
-          force(:,3)=tmp*(z(n)    -location_fixed(3))
+          tmp=fact*exp(-.5*((x(l1:l2)-location_fixed(1,1))**2 &
+                           +(y(m)    -location_fixed(2,1))**2 &
+                           +(z(n)    -location_fixed(3,1))**2)/radius_ff**2)
+          force(:,1)=tmp*(x(l1:l2)-location_fixed(1,1))
+          force(:,2)=tmp*(y(m)    -location_fixed(2,1))
+          force(:,3)=tmp*(z(n)    -location_fixed(3,1))
 !
 !  blob-like disturbance (gradient of gaussian)
 !
