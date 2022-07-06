@@ -121,6 +121,7 @@ module Special
   real :: horndeski_alpM=0., horndeski_alpT=0.
   real :: scale_factor0=1., horndeski_alpT_exp=0.
   real :: scale_factor, slope_linphase_in_stress
+  real :: t_ini=7700
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
@@ -138,7 +139,7 @@ module Special
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
-    lonly_mag, lread_scl_factor_file, &
+    lonly_mag, lread_scl_factor_file, t_ini, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW
 !
 ! run parameters
@@ -160,7 +161,7 @@ module Special
     ihorndeski_time, scale_factor0, horndeski_alpT_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
-    lread_scl_factor_file, &
+    lread_scl_factor_file, t_ini, &
     lconstmod_in_stress, k_in_stress, itorder_GW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -334,6 +335,7 @@ module Special
       real :: lgt0, dlgt, dummy
       real :: lgt1, lgt2, lgf1, lgf2, lgf
       real :: scl_factor_target, lgt_current
+      real :: lgt_ini, a_ini
 !
 !  set index table
 !
@@ -465,23 +467,52 @@ print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file)
           lgt_file=alog10(t_file)
           lgff=alog10(scl_factor)
 !
-!  Go through each mesh point and interpolate logarithmically to the
-!  correct scaling factor for the power (energy) spectrum.
+!  The values of scl_factor in the file are given divided by a_0 (present time).
+!  First, we need to find a_ini from t_ini (given as initial parameter)
+!  Go through each time and interpolate logarithmically the value of a_ini from t_ini.
 !
-          lgt_current=alog10(real(t))
-          it_file=int((lgt_current-lgt0)/dlgt)+1
-!AB: error in the following
+          lgt_ini=alog10(t_ini)
+          it_file=int((lgt_ini-lgt0)/dlgt)+1
           if (it_file<1.or.it_file>nt_file) then
-            print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1
-            call fatal_error('initialize_special','it<1.or.it>nt')
+            print*,'=',it_file, t_file(it_file), t_ini, t_file(it_file)+1
+            call fatal_error('initialize_special','it_ini<1.or.it_ini>nt')
           endif
           lgt1=lgt_file(it_file)
           lgt2=lgt_file(it_file+1)
           lgf1=lgff(it_file)
           lgf2=lgff(it_file+1)
+          lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          a_ini=10**lgf
+          print*,'ALBERTO, print a_*: ',a_ini
+!
+!  Divide by a_ini to have a/a_ini and recompute log(a) and log(t) after dividing, respectively
+!  by a_ini and t_ini.
+!
+          !scl_factor=scl_factor/a_ini
+          !lgff=lgff-lgf
+          !lgt_file=lgt_file-lgt_ini
+          !lgt0=lgt0-lgt_ini           
+!
+!  t is given as t/t_ini by default, so to compare it with the stored values in the file, we
+!  need to use t*t_ini.
+!
+          lgt_current=alog10(real(t))+lgt_ini
+          it_file=int((lgt_current-lgt0)/dlgt)+1
+!AB: error in the following
+          if (it_file<1.or.it_file>nt_file) then
+            print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+            call fatal_error('initialize_special','it<1.or.it>nt')
+          endif
+          print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+          lgt1=lgt_file(it_file)
+          lgt2=lgt_file(it_file+1)
+          lgf1=lgff(it_file)
+          lgf2=lgff(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          scl_factor_target=10**lgf
+          scl_factor_target=10**lgf/a_ini
+          print*,'ALBERTO: ',scl_factor_target
           if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
+          if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
         endif
       endif
 !
