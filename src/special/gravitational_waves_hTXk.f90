@@ -108,7 +108,7 @@ module Special
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
   logical :: lreal_space_hTX_boost_as_aux=.false., lreal_space_gTX_boost_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false., lmatter_GW=.false., ldark_energy_GW=.false.
-  logical :: lonly_mag=.false.
+  logical :: lonly_mag=.false., lread_scl_factor_file=.false.
   logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
@@ -124,6 +124,7 @@ module Special
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
+  real, dimension(:), allocatable :: t_file, scl_factor, lgt_file, lgff
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
@@ -136,7 +137,8 @@ module Special
     lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
-    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, lonly_mag, &
+    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
+    lonly_mag, lread_scl_factor_file, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW
 !
 ! run parameters
@@ -158,6 +160,7 @@ module Special
     ihorndeski_time, scale_factor0, horndeski_alpT_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
+    lread_scl_factor_file, &
     lconstmod_in_stress, k_in_stress, itorder_GW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -326,7 +329,11 @@ module Special
       use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: stat, i
+      logical :: lread_scl_factor_file_exists
+      integer :: stat, i, nt_file, it_file
+      real :: lgt0, dlgt, dummy
+      real :: lgt1, lgt2, lgf1, lgf2, lgf
+      real :: scl_factor_target, lgt_current
 !
 !  set index table
 !
@@ -437,6 +444,46 @@ module Special
 !  calculate kscale_factor (for later binning)
 !
       kscale_factor=2*pi/Lx
+!
+!  Possibility of reading scale factor file
+!
+      if (lread_scl_factor_file) then
+        inquire(FILE="a_vs_eta.dat", EXIST=lread_scl_factor_file_exists)
+        if (lread_scl_factor_file_exists) then
+          if (lroot.and.ip<14) print*,'initialize_forcing: opening a_vs_eta.dat'
+          open(9,file='a_vs_eta.dat',status='old')
+          read(9,*) nt_file, lgt0, dlgt
+          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt=',nt_file,lgt0,dlgt
+          if (allocated(t_file)) deallocate(t_file, scl_factor, lgt_file, lgff)
+          allocate(t_file(nt_file), scl_factor(nt_file), lgt_file(nt_file), lgff(nt_file))
+          do it_file=1,nt_file
+            read(9,*) dummy, t_file(it_file), scl_factor(it_file)
+print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file)
+!XX
+          enddo
+          close(9)
+          lgt_file=alog10(t_file)
+          lgff=alog10(scl_factor)
+!
+!  Go through each mesh point and interpolate logarithmically to the
+!  correct scaling factor for the power (energy) spectrum.
+!
+          lgt_current=alog10(real(t))
+          it_file=int((lgt_current-lgt0)/dlgt)+1
+!AB: error in the following
+          if (it_file<1.or.it_file>nt_file) then
+            print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1
+            call fatal_error('initialize_special','it<1.or.it>nt')
+          endif
+          lgt1=lgt_file(it_file)
+          lgt2=lgt_file(it_file+1)
+          lgf1=lgff(it_file)
+          lgf2=lgff(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          scl_factor_target=10**lgf
+          if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
+        endif
+      endif
 !
 !  Reinitialize GW field using a small selection of perturbations
 !  that were mostly also available as initial conditions.
