@@ -70,7 +70,7 @@ module Sub
   public :: multmm_sc, multsm_mn
   public :: multm2, multm2_mn, multm2_sym, multm2_sym_mn
   public :: multmv, multmv_mn, multmv_transp
-  public :: mult_matrix
+  public :: mult_matrix, mult_mat_vv
 !
   public :: read_line_from_file, control_file_exists
   public :: noform
@@ -182,6 +182,10 @@ module Sub
 !
   interface multvs
     module procedure multvs_mn
+  endinterface
+!
+  interface mult_mat_vv
+    module procedure mult_mat_vv_mn
   endinterface
 !
   interface multvv_mat
@@ -1027,6 +1031,24 @@ module Sub
       b=a(:,1,1)+a(:,2,2)+a(:,3,3)
 !
     endsubroutine trace_mn
+!***********************************************************************
+    subroutine mult_mat_vv_mn(a,b,c,d)
+!
+!  Matrix multiplied with two vectors, gives scalar.
+!
+!    7-jul-22/axel: adapted from multvv_mat_mn
+!
+      real, dimension (nx,3,3) :: a
+      real, dimension (nx,3) :: b,c
+      real, dimension (nx) :: d
+      integer :: i,j
+!
+      d=0.
+      do i=1,3; do j=1,3
+        d=d+a(:,i,j)*b(:,i)*c(:,j)
+      enddo; enddo
+!
+    endsubroutine mult_mat_vv_mn
 !***********************************************************************
     subroutine multvv_mat_mn(a,b,c)
 !

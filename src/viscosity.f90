@@ -157,6 +157,7 @@ module Viscosity
   integer :: idiag_epsK=0       ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsKint=0    ! DIAG_DOC: $\int(2\nu\varrho\Strain^2)\,dV$
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
+  integer :: idiag_sijoiojm=0   ! DIAG_DOC: $\left<S_{i,j} \omega_i \omega_j\right>$
   integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\nu_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to
@@ -849,7 +850,7 @@ module Viscosity
 !
       if (lreset) then
         idiag_dtnu=0; idiag_dtnu3=0; idiag_nu_LES=0; idiag_Sij2m=0
-        idiag_epsK=0; idiag_epsKint=0; idiag_epsK_LES=0
+        idiag_epsK=0; idiag_epsKint=0; idiag_epsK_LES=0; idiag_sijoiojm=0
         idiag_visc_heatm=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
@@ -880,6 +881,7 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
         call parse_name(iname,cname(iname),cform(iname),'visc_heatm',idiag_visc_heatm)
         call parse_name(iname,cname(iname),cform(iname),'Sij2m',idiag_Sij2m)
+        call parse_name(iname,cname(iname),cform(iname),'sijoiojm',idiag_sijoiojm)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
         call parse_name(iname,cname(iname),cform(iname),'epsKint',idiag_epsKint)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
@@ -1104,6 +1106,10 @@ module Viscosity
 ! JW: There are also viscosities, which do not need sij
 ! PJK: But what if you don't use one of those?
 ! JW: then they are anyway requested.
+      endif
+      if (idiag_sijoiojm/=0) then
+        lpenc_diagnos(i_oo)=.true.
+        lpenc_diagnos(i_sij)=.true.
       endif
       if (idiag_Sij2m/=0.) lpenc_diagnos(i_sij2)=.true.
       if (idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsKmz/=0 .or. idiag_epsK_LES/=0) then
@@ -2545,7 +2551,7 @@ module Viscosity
       use Diagnostics, only: sum_mn_name, max_mn_name, xysum_mn_name_z, &
           yzsum_mn_name_x, zsum_mn_name_xy, max_mn_name, phisum_mn_name_rz, &
           integrate_mn_name
-      use Sub, only: cross, dot2
+      use Sub, only: cross, dot2, mult_mat_vv
 !
       real, dimension (mx,my,mz,mvar) :: df
 
@@ -2554,9 +2560,9 @@ module Viscosity
       intent (in) :: p
       intent (inout) :: df
 !
-      real, dimension (nx)  :: Reshock,fvisc2,uus
-      real, dimension (nx,3):: nuD2uxb,fluxv
-      real, dimension (nx)  :: diffus_nu,diffus_nu2,diffus_nu3
+      real, dimension (nx)  :: Reshock, fvisc2, uus, tmp
+      real, dimension (nx,3):: nuD2uxb, fluxv
+      real, dimension (nx)  :: diffus_nu, diffus_nu2, diffus_nu3
       integer :: i
 !
 !  Add viscosity to equation of motion
@@ -2618,6 +2624,13 @@ module Viscosity
             call sum_mn_name(2*p%nu_smag*p%rho*p%sij2,idiag_epsK_LES)
           endif
         endif
+!
+!  Calculate sijoiojm = S_{ij} o_i o_j.
+!
+      if (idiag_sijoiojm/=0) then
+        call mult_mat_vv(p%sij,p%oo,p%oo,tmp)
+        call sum_mn_name(tmp,idiag_sijoiojm)
+      endif
 !
 !  correlation of viscous term with b-field; relevant for MTA
 !  (MTA: minimal tau approximation)

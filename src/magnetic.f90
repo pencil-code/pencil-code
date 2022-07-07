@@ -699,6 +699,7 @@ module Magnetic
   integer :: idiag_WL3D=0       ! DIAG_DOC: $-\left<J_i u_j A_{j,i} \right>$
   integer :: idiag_WL3D2=0      ! DIAG_DOC: $\left<J_i A_j u_{j,i} \right>$
   integer :: idiag_bij2m=0      ! DIAG_DOC: $\left<|\hat{B}_{i,j}|^2\right>$
+  integer :: idiag_sijbibjm=0   ! DIAG_DOC: $\left<S_{i,j} B_i B_j\right>$
   integer :: idiag_ubgbpm=0     ! DIAG_DOC: $\left<\uv\cdot(\Bv\cdot\nabla\Bv)\right>$
   integer :: idiag_ugb22m=0     ! DIAG_DOC: $\left<\uv\cdot\nabla\Bv^2/2)\right>$
   integer :: idiag_jxbrxm=0     ! DIAG_DOC:
@@ -2877,6 +2878,10 @@ module Magnetic
         lpenc_diagnos(i_b2)=.true.
         lpenc_diagnos(i_bij)=.true.
         lpenc_diagnos(i_gb22)=.true.
+      endif
+      if (idiag_sijbibjm/=0) then
+        lpenc_diagnos(i_bb)=.true.
+        lpenc_diagnos(i_sij)=.true.
       endif
       if (idiag_ubgbpm/=0) lpenc_diagnos(i_ubgbp)=.true.
       if (idiag_ugb22m/=0) lpenc_diagnos(i_ugb22)=.true.
@@ -5609,7 +5614,7 @@ module Magnetic
       use Diagnostics
       use Sub, only: dot, dot2, multvs, cross_mn, multmv_transp, dot2_mn, &
         cross_mn, dot2_mn, dot_mn_sv, dot_mn_vm_trans, grad, &
-        multsm_mn, multvv_smat_add, multm2_mn
+        multsm_mn, multvv_smat_add, multm2_mn, mult_mat_vv
 
       real, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
@@ -6110,6 +6115,13 @@ module Magnetic
         call multvv_smat_add(-quench**3,p%bb,p%gb22,bhatij)
         call multm2_mn(bhatij,tmp)
         call sum_mn_name(tmp,idiag_bij2m)
+      endif
+!
+!  Calculate sijbibjm = S_{ij} B_i B_j.
+!
+      if (idiag_sijbibjm/=0) then
+        call mult_mat_vv(p%sij,p%bb,p%bb,tmp)
+        call sum_mn_name(tmp,idiag_sijbibjm)
       endif
 !
 !  Calculate <u.(jxb)>.
@@ -9545,7 +9557,7 @@ module Magnetic
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
         idiag_phibmz=0; idiag_uxjm=0; idiag_jdel2am=0
         idiag_ujxbm=0; idiag_ugb22m=0; idiag_ubgbpm=0; idiag_b2divum=0
-        idiag_WL2D=0; idiag_WL3D=0; idiag_WL3D2=0; idiag_bij2m=0
+        idiag_WL2D=0; idiag_WL3D=0; idiag_WL3D2=0; idiag_bij2m=0; idiag_sijbibjm=0
         idiag_b3b21m=0; idiag_b3b12m=0; idiag_b1b32m=0; idiag_b1b23m=0
         idiag_b2b13m=0 ; idiag_b2b31m=0
         idiag_udotxbm=0; idiag_uxbdotm=0; idiag_brmphi=0; idiag_bpmphi=0
@@ -9765,6 +9777,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'WL3D',idiag_WL3D)
         call parse_name(iname,cname(iname),cform(iname),'WL3D2',idiag_WL3D2)
         call parse_name(iname,cname(iname),cform(iname),'bij2m',idiag_bij2m)
+        call parse_name(iname,cname(iname),cform(iname),'sijbibjm',idiag_sijbibjm)
         call parse_name(iname,cname(iname),cform(iname),'ubgbpm',idiag_ubgbpm)
         call parse_name(iname,cname(iname),cform(iname),'ugb22m',idiag_ugb22m)
         call parse_name(iname,cname(iname),cform(iname),'b2divum',idiag_b2divum)
