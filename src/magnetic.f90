@@ -644,6 +644,9 @@ module Magnetic
   integer :: idiag_bx2m=0       ! DIAG_DOC: $\left< B_x^2 \right>$
   integer :: idiag_by2m=0       ! DIAG_DOC: $\left< B_y^2 \right>$
   integer :: idiag_bz2m=0       ! DIAG_DOC: $\left< B_z^2 \right>$
+  integer :: idiag_bx3m=0       ! DIAG_DOC: $\left< B_x^3 \right>$
+  integer :: idiag_by3m=0       ! DIAG_DOC: $\left< B_y^3 \right>$
+  integer :: idiag_bz3m=0       ! DIAG_DOC: $\left< B_z^3 \right>$
   integer :: idiag_bx4m=0       ! DIAG_DOC: $\left< B_x^4 \right>$
   integer :: idiag_by4m=0       ! DIAG_DOC: $\left< B_y^4 \right>$
   integer :: idiag_bz4m=0       ! DIAG_DOC: $\left< B_z^4 \right>$
@@ -5859,6 +5862,9 @@ module Magnetic
       if (idiag_bx2m/=0) call sum_mn_name(p%bbb(:,1)**2,idiag_bx2m)
       if (idiag_by2m/=0) call sum_mn_name(p%bbb(:,2)**2,idiag_by2m)
       if (idiag_bz2m/=0) call sum_mn_name(p%bbb(:,3)**2,idiag_bz2m)
+      if (idiag_bx3m/=0) call sum_mn_name(p%bbb(:,1)**3,idiag_bx3m)
+      if (idiag_by3m/=0) call sum_mn_name(p%bbb(:,2)**3,idiag_by3m)
+      if (idiag_bz3m/=0) call sum_mn_name(p%bbb(:,3)**3,idiag_bz3m)
       if (idiag_bx4m/=0) call sum_mn_name(p%bbb(:,1)**4,idiag_bx4m)
       if (idiag_by4m/=0) call sum_mn_name(p%bbb(:,2)**4,idiag_by4m)
       if (idiag_bz4m/=0) call sum_mn_name(p%bbb(:,3)**4,idiag_bz4m)
@@ -9499,6 +9505,7 @@ module Magnetic
         idiag_betamx = 0; idiag_beta2mx = 0
         idiag_aym=0; idiag_azm=0
         idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
+        idiag_bx3m=0; idiag_by3m=0; idiag_bz3m=0
         idiag_bx4m=0; idiag_by4m=0; idiag_bz4m=0
         idiag_jx2m=0; idiag_jy2m=0; idiag_jz2m=0
         idiag_jx4m=0; idiag_jy4m=0; idiag_jz4m=0
@@ -9723,6 +9730,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bx2m',idiag_bx2m)
         call parse_name(iname,cname(iname),cform(iname),'by2m',idiag_by2m)
         call parse_name(iname,cname(iname),cform(iname),'bz2m',idiag_bz2m)
+        call parse_name(iname,cname(iname),cform(iname),'bx3m',idiag_bx3m)
+        call parse_name(iname,cname(iname),cform(iname),'by3m',idiag_by3m)
+        call parse_name(iname,cname(iname),cform(iname),'bz3m',idiag_bz3m)
         call parse_name(iname,cname(iname),cform(iname),'bx4m',idiag_bx4m)
         call parse_name(iname,cname(iname),cform(iname),'by4m',idiag_by4m)
         call parse_name(iname,cname(iname),cform(iname),'bz4m',idiag_bz4m)

@@ -319,6 +319,9 @@ module Hydro
   integer :: idiag_ux2m=0       ! DIAG_DOC: $\left<u_x^2\right>$
   integer :: idiag_uy2m=0       ! DIAG_DOC: $\left<u_y^2\right>$
   integer :: idiag_uz2m=0       ! DIAG_DOC: $\left<u_z^2\right>$
+  integer :: idiag_ux3m=0       ! DIAG_DOC: $\left<u_x^3\right>$
+  integer :: idiag_uy3m=0       ! DIAG_DOC: $\left<u_y^3\right>$
+  integer :: idiag_uz3m=0       ! DIAG_DOC: $\left<u_z^3\right>$
   integer :: idiag_ux4m=0       ! DIAG_DOC: $\left<u_x^4\right>$
   integer :: idiag_uy4m=0       ! DIAG_DOC: $\left<u_y^4\right>$
   integer :: idiag_uz4m=0       ! DIAG_DOC: $\left<u_z^4\right>$
@@ -450,6 +453,12 @@ module Hydro
   integer :: idiag_ox2m=0       ! DIAG_DOC: $\left<\omega_x^2\right>$
   integer :: idiag_oy2m=0       ! DIAG_DOC: $\left<\omega_y^2\right>$
   integer :: idiag_oz2m=0       ! DIAG_DOC: $\left<\omega_z^2\right>$
+  integer :: idiag_ox3m=0       ! DIAG_DOC: $\left<\omega_x^3\right>$
+  integer :: idiag_oy3m=0       ! DIAG_DOC: $\left<\omega_y^3\right>$
+  integer :: idiag_oz3m=0       ! DIAG_DOC: $\left<\omega_z^3\right>$
+  integer :: idiag_ox4m=0       ! DIAG_DOC: $\left<\omega_x^4\right>$
+  integer :: idiag_oy4m=0       ! DIAG_DOC: $\left<\omega_y^4\right>$
+  integer :: idiag_oz4m=0       ! DIAG_DOC: $\left<\omega_z^4\right>$
   integer :: idiag_oxm=0        ! DIAG_DOC:
   integer :: idiag_oym=0        ! DIAG_DOC:
   integer :: idiag_ozm=0        ! DIAG_DOC:
@@ -2529,6 +2538,8 @@ module Hydro
       if (idiag_ozmphi/=0) lpenc_diagnos2d(i_oo)=.true.
       if (idiag_u2mphi/=0) lpenc_diagnos2d(i_u2)=.true.
       if (idiag_ox2m/=0 .or. idiag_oy2m/=0 .or. idiag_oz2m/=0 .or. &
+          idiag_ox3m/=0 .or. idiag_oy3m/=0 .or. idiag_oz3m/=0 .or. &
+          idiag_ox4m/=0 .or. idiag_oy4m/=0 .or. idiag_oz4m/=0 .or. &
           idiag_oxm /=0 .or. idiag_oym /=0 .or. idiag_ozm /=0 .or. &
           idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0 .or. &
           idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. &
@@ -3703,6 +3714,9 @@ module Hydro
         if (idiag_ux2m/=0)    call sum_mn_name(p%uu(:,1)**2,idiag_ux2m)
         if (idiag_uy2m/=0)    call sum_mn_name(p%uu(:,2)**2,idiag_uy2m)
         if (idiag_uz2m/=0)    call sum_mn_name(p%uu(:,3)**2,idiag_uz2m)
+        if (idiag_ux3m/=0)    call sum_mn_name(p%uu(:,1)**3,idiag_ux3m)
+        if (idiag_uy3m/=0)    call sum_mn_name(p%uu(:,2)**3,idiag_uy3m)
+        if (idiag_uz3m/=0)    call sum_mn_name(p%uu(:,3)**3,idiag_uz3m)
         if (idiag_ux4m/=0)    call sum_mn_name(p%uu(:,1)**4,idiag_ux4m)
         if (idiag_uy4m/=0)    call sum_mn_name(p%uu(:,2)**4,idiag_uy4m)
         if (idiag_uz4m/=0)    call sum_mn_name(p%uu(:,3)**4,idiag_uz4m)
@@ -3860,6 +3874,12 @@ module Hydro
         if (idiag_ox2m/=0) call sum_mn_name(p%oo(:,1)**2,idiag_ox2m)
         if (idiag_oy2m/=0) call sum_mn_name(p%oo(:,2)**2,idiag_oy2m)
         if (idiag_oz2m/=0) call sum_mn_name(p%oo(:,3)**2,idiag_oz2m)
+        if (idiag_ox3m/=0) call sum_mn_name(p%oo(:,1)**3,idiag_ox3m)
+        if (idiag_oy3m/=0) call sum_mn_name(p%oo(:,2)**3,idiag_oy3m)
+        if (idiag_oz3m/=0) call sum_mn_name(p%oo(:,3)**3,idiag_oz3m)
+        if (idiag_ox4m/=0) call sum_mn_name(p%oo(:,1)**4,idiag_ox4m)
+        if (idiag_oy4m/=0) call sum_mn_name(p%oo(:,2)**4,idiag_oy4m)
+        if (idiag_oz4m/=0) call sum_mn_name(p%oo(:,3)**4,idiag_oz4m)
         call sum_mn_name(p%oo(:,1),idiag_oxm)
         call sum_mn_name(p%oo(:,2),idiag_oym)
         call sum_mn_name(p%oo(:,3),idiag_ozm)
@@ -5537,6 +5557,9 @@ module Hydro
         idiag_ux2m=0
         idiag_uy2m=0
         idiag_uz2m=0
+        idiag_ux3m=0
+        idiag_uy3m=0
+        idiag_uz3m=0
         idiag_ux4m=0
         idiag_uy4m=0
         idiag_uz4m=0
@@ -5774,6 +5797,12 @@ module Hydro
         idiag_ox2m=0
         idiag_oy2m=0
         idiag_oz2m=0
+        idiag_ox3m=0
+        idiag_oy3m=0
+        idiag_oz3m=0
+        idiag_ox4m=0
+        idiag_oy4m=0
+        idiag_oz4m=0
         idiag_oxm=0
         idiag_oym=0
         idiag_ozm=0
@@ -5932,6 +5961,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ux2m',idiag_ux2m)
         call parse_name(iname,cname(iname),cform(iname),'uy2m',idiag_uy2m)
         call parse_name(iname,cname(iname),cform(iname),'uz2m',idiag_uz2m)
+        call parse_name(iname,cname(iname),cform(iname),'ux3m',idiag_ux3m)
+        call parse_name(iname,cname(iname),cform(iname),'uy3m',idiag_uy3m)
+        call parse_name(iname,cname(iname),cform(iname),'uz3m',idiag_uz3m)
         call parse_name(iname,cname(iname),cform(iname),'ux4m',idiag_ux4m)
         call parse_name(iname,cname(iname),cform(iname),'uy4m',idiag_uy4m)
         call parse_name(iname,cname(iname),cform(iname),'uz4m',idiag_uz4m)
@@ -5955,6 +5987,12 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ox2m',idiag_ox2m)
         call parse_name(iname,cname(iname),cform(iname),'oy2m',idiag_oy2m)
         call parse_name(iname,cname(iname),cform(iname),'oz2m',idiag_oz2m)
+        call parse_name(iname,cname(iname),cform(iname),'ox3m',idiag_ox3m)
+        call parse_name(iname,cname(iname),cform(iname),'oy3m',idiag_oy3m)
+        call parse_name(iname,cname(iname),cform(iname),'oz3m',idiag_oz3m)
+        call parse_name(iname,cname(iname),cform(iname),'ox4m',idiag_ox4m)
+        call parse_name(iname,cname(iname),cform(iname),'oy4m',idiag_oy4m)
+        call parse_name(iname,cname(iname),cform(iname),'oz4m',idiag_oz4m)
         call parse_name(iname,cname(iname),cform(iname),'oxm',idiag_oxm)
         call parse_name(iname,cname(iname),cform(iname),'oym',idiag_oym)
         call parse_name(iname,cname(iname),cform(iname),'ozm',idiag_ozm)
