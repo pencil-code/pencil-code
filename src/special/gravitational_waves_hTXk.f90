@@ -121,11 +121,13 @@ module Special
   real :: horndeski_alpM=0., horndeski_alpT=0.
   real :: scale_factor0=1., horndeski_alpT_exp=0.
   real :: scale_factor, slope_linphase_in_stress
-  real :: t_ini=7700
+! AR: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
+! AR: eps_t_ini is the small correction used to compute HH_* = 1/t_ini (1 + eps_t_ini)
+  real :: t_ini=60549, eps_t_ini=0.003398949616666
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
-  real, dimension(:), allocatable :: t_file, scl_factor, lgt_file, lgff
+  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file, lgt_file, lgff, lgff2
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
@@ -334,8 +336,8 @@ module Special
       integer :: stat, i, nt_file, it_file
       real :: lgt0, dlgt, dummy
       real :: lgt1, lgt2, lgf1, lgf2, lgf
-      real :: scl_factor_target, lgt_current
-      real :: lgt_ini, a_ini
+      real :: scl_factor_target, Hp_target, lgt_current
+      real :: lgt_ini, a_ini, Hp_ini
 !
 !  set index table
 !
@@ -456,16 +458,16 @@ module Special
           open(9,file='a_vs_eta.dat',status='old')
           read(9,*) nt_file, lgt0, dlgt
           if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt=',nt_file,lgt0,dlgt
-          if (allocated(t_file)) deallocate(t_file, scl_factor, lgt_file, lgff)
-          allocate(t_file(nt_file), scl_factor(nt_file), lgt_file(nt_file), lgff(nt_file))
+          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, lgt_file, lgff, lgff2)
+          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), lgt_file(nt_file), lgff(nt_file), lgff2(nt_file))
           do it_file=1,nt_file
-            read(9,*) dummy, t_file(it_file), scl_factor(it_file)
-print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file)
-!XX
+            read(9,*) dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file)
+          if (ip<14) print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file)
           enddo
           close(9)
           lgt_file=alog10(t_file)
           lgff=alog10(scl_factor)
+          lgff2=alog10(Hp_file)
 !
 !  The values of scl_factor in the file are given divided by a_0 (present time).
 !  First, we need to find a_ini from t_ini (given as initial parameter)
@@ -483,7 +485,11 @@ print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file)
           lgf2=lgff(it_file+1)
           lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           a_ini=10**lgf
-          print*,'ALBERTO, print a_*: ',a_ini
+          lgf1=lgff2(it_file)
+          lgf2=lgff2(it_file+1)
+          lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          Hp_ini=10**lgf
+          if (ip<14) print*,'ALBERTO, print a_*, H_*: ',a_ini,Hp_ini
 !
 !  Divide by a_ini to have a/a_ini and recompute log(a) and log(t) after dividing, respectively
 !  by a_ini and t_ini.
@@ -499,18 +505,25 @@ print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file)
           lgt_current=alog10(real(t))+lgt_ini
           it_file=int((lgt_current-lgt0)/dlgt)+1
 !AB: error in the following
+!AR: error should now be fixed
           if (it_file<1.or.it_file>nt_file) then
             print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
             call fatal_error('initialize_special','it<1.or.it>nt')
           endif
-          print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+          if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
           lgt1=lgt_file(it_file)
           lgt2=lgt_file(it_file+1)
           lgf1=lgff(it_file)
           lgf2=lgff(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           scl_factor_target=10**lgf/a_ini
-          print*,'ALBERTO: ',scl_factor_target
+          if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
+          if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+          lgf1=lgff2(it_file)
+          lgf2=lgff2(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          Hp_target=10**lgf/Hp_ini
+          if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
           if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
           if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
         endif
