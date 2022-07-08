@@ -122,8 +122,7 @@ module Special
   real :: scale_factor0=1., horndeski_alpT_exp=0.
   real :: scale_factor, slope_linphase_in_stress
 ! AR: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
-! AR: eps_t_ini is the small correction used to compute HH_* = 1/t_ini (1 + eps_t_ini)
-  real :: t_ini=60549, eps_t_ini=0.003398949616666
+  real :: t_ini=60549
 !
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
