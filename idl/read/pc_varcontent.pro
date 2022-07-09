@@ -168,6 +168,7 @@ indices = [ $
   { name:'ispec_3vec', label:'Special vector', dims:3 }, $
   { name:'iphi', label:'Electric potential', dims:1 }, $
   { name:'iLam', label:'Gauge potential', dims:1 }, $
+  { name:'idiva', label:'divA', dims:1 }, $
   { name:'iecr', label:'Cosmic ray energy density', dims:1 }, $
   { name:'ifcr', label:'Cosmic ray energy flux', dims:3 }, $
   { name:'igtheta5', label:'Chemical potential gradient', dims:3 }, $
