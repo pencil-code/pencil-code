@@ -93,7 +93,7 @@ module Special
   character (len=labellen) :: aux_stress='stress', idelkt='jump', ihorndeski_time='const'
   real :: amplGW=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
-  real :: nscale_factor_conformal=1., tshift=0. 
+  real :: nscale_factor_conformal=1., tshift=0.
   real :: t_equality=3.789E11, t_acceleration=1.9215E13, t_0=1.3725E13
   real :: k1hel=0., k2hel=1., kgaussian_GW=0., ncutoff_GW=2., relhel_GW=0.
   logical :: lno_transverse_part=.false., lgamma_factor=.false.
@@ -124,9 +124,17 @@ module Special
 ! AR: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
 !
+  logical :: lread_scl_factor_file_exists
+  integer :: nt_file, it_file
+  real :: lgt0, dlgt, dummy
+  real :: lgt1, lgt2, lgf1, lgf2, lgf
+  real :: scl_factor_target, Hp_target, app_target, lgt_current
+  real :: lgt_ini, a_ini, Hp_ini, app_om=0
+! added variables XXX
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
-  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file, lgt_file, lgff, lgff2
+  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file
+  real, dimension(:), allocatable :: app_file, lgt_file, lgff, lgff2, lgff3
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
@@ -331,12 +339,9 @@ module Special
       use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lread_scl_factor_file_exists
-      integer :: stat, i, nt_file, it_file
-      real :: lgt0, dlgt, dummy
-      real :: lgt1, lgt2, lgf1, lgf2, lgf
-      real :: scl_factor_target, Hp_target, lgt_current
-      real :: lgt_ini, a_ini, Hp_ini
+      !logical :: lread_scl_factor_file_exists
+      !integer :: stat, i, nt_file, it_file
+      integer :: stat, i
 !
 !  set index table
 !
@@ -457,16 +462,19 @@ module Special
           open(9,file='a_vs_eta.dat',status='old')
           read(9,*) nt_file, lgt0, dlgt
           if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt=',nt_file,lgt0,dlgt
-          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, lgt_file, lgff, lgff2)
-          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), lgt_file(nt_file), lgff(nt_file), lgff2(nt_file))
+          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, app_file, &
+                                            lgt_file, lgff, lgff2, lgff3)
+          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), app_file(nt_file), &
+                   lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file))
           do it_file=1,nt_file
-            read(9,*) dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file)
-          if (ip<14) print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file)
+            read(9,*) dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file)
+          !if (ip<14) print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file)
           enddo
           close(9)
           lgt_file=alog10(t_file)
           lgff=alog10(scl_factor)
           lgff2=alog10(Hp_file)
+          lgff3=alog10(app_file)
 !
 !  The values of scl_factor in the file are given divided by a_0 (present time).
 !  First, we need to find a_ini from t_ini (given as initial parameter)
@@ -488,7 +496,7 @@ module Special
           lgf2=lgff2(it_file+1)
           lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           Hp_ini=10**lgf
-          if (ip<14) print*,'ALBERTO, print a_*, H_*: ',a_ini,Hp_ini
+          !if (ip<14) print*,'ALBERTO, print a_*, H_*: ',a_ini,Hp_ini
 !
 !  Divide by a_ini to have a/a_ini and recompute log(a) and log(t) after dividing, respectively
 !  by a_ini and t_ini.
@@ -496,7 +504,7 @@ module Special
           !scl_factor=scl_factor/a_ini
           !lgff=lgff-lgf
           !lgt_file=lgt_file-lgt_ini
-          !lgt0=lgt0-lgt_ini           
+          !lgt0=lgt0-lgt_ini
 !
 !  t is given as t/t_ini by default, so to compare it with the stored values in the file, we
 !  need to use t*t_ini.
@@ -509,22 +517,27 @@ module Special
             print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
             call fatal_error('initialize_special','it<1.or.it>nt')
           endif
-          if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+          !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
           lgt1=lgt_file(it_file)
           lgt2=lgt_file(it_file+1)
           lgf1=lgff(it_file)
           lgf2=lgff(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           scl_factor_target=10**lgf/a_ini
-          if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
-          if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+          !if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
+          !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
           lgf1=lgff2(it_file)
           lgf2=lgff2(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           Hp_target=10**lgf/Hp_ini
-          if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
-          if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
-          if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+          !if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
+          !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
+          !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+          lgf1=lgff3(it_file)
+          lgf2=lgff3(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          app_target=10**lgf/Hp_ini**2
+          !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',app_target
         endif
       endif
 !
@@ -800,6 +813,48 @@ module Special
         endif
       endif
       stress_prefactor2=stress_prefactor/scale_factor
+!
+!  Possibility of reading scale factor file
+!
+      if (lread_scl_factor_file) then
+        inquire(FILE="a_vs_eta.dat", EXIST=lread_scl_factor_file_exists)
+        if (lread_scl_factor_file_exists) then
+      !
+!  t is given as t/t_ini by default, so to compare it with the stored values in the file, we
+!  need to use t*t_ini.
+!
+          lgt_current=alog10(real(t))+lgt_ini
+          it_file=int((lgt_current-lgt0)/dlgt)+1
+  !AB: error in the following
+  !AR: error should now be fixed
+          if (it_file<1.or.it_file>nt_file) then
+            print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+            call fatal_error('initialize_special','it<1.or.it>nt')
+          endif
+          !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+          lgt1=lgt_file(it_file)
+          lgt2=lgt_file(it_file+1)
+          lgf1=lgff(it_file)
+          lgf2=lgff(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          scl_factor_target=10**lgf/a_ini
+          scale_factor=10**lgf/a_ini
+          !if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
+          !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+          lgf1=lgff2(it_file)
+          lgf2=lgff2(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          Hp_target=10**lgf/Hp_ini
+          !if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
+          !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
+          !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+          lgf1=lgff3(it_file)
+          lgf2=lgff3(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          app_target=10**lgf/Hp_ini**2
+          !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',app_target
+        endif
+      endif
 !
 !  Possibilty to compensate against the decaying stress in decaying turbulence.
 !
@@ -1631,6 +1686,12 @@ module Special
       if (lhorndeski) then
         horndeski_alpM_eff=horndeski_alpM/scale_factor
         horndeski_alpM_eff2=horndeski_alpM/scale_factor**2
+        if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
+            !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp^2: ',Hp_target**2
+            !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp: ',Hp_target 
+            horndeski_alpM_eff=horndeski_alpM*Hp_target
+            horndeski_alpM_eff2=horndeski_alpM*Hp_target**2
+        endif
         select case (ihorndeski_time)
           case ('const')
             horndeski_alpT_eff=horndeski_alpT
@@ -1642,6 +1703,10 @@ module Special
             call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
                 ,trim(idelkt))
         endselect
+      endif
+      if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
+        app_om=app_target
+        !if (ip<14.and..not.lroot) print*,'ALBERTO, app: ',app_target
       endif
 !
 !  Set ST=SX=0 and reset all spectra.
@@ -1705,15 +1770,15 @@ module Special
               else
                 if (delkt/=0. .or. lhorndeski) then
                   if (lhorndeski) then
-                    om2=(1.+horndeski_alpT_eff)*ksqr+delkt**2-horndeski_alpM_eff2
+                    om2=(1.+horndeski_alpT_eff)*ksqr+delkt**2-horndeski_alpM_eff2-app_om
                     om_cmplx=sqrt(cmplx(om2,0.))
                     om=impossible
                   else
-                    om2=ksqr+delkt**2
+                    om2=ksqr+delkt**2-app_om
                     om=sqrt(om2)
                   endif
                 else
-                  om2=ksqr
+                  om2=ksqr-app_om
                   om=sqrt(om2)
                 endif
                 lsign_om2=.true.
