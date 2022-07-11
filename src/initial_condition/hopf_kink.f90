@@ -1,9 +1,17 @@
 ! $Id$
 !
+<<<<<<< HEAD
 ! Create an initial magnetic field of the Hopf kink type
 ! as describe in Finkelstein, Weil (1978) (DOI: https://doi.org/10.1007/BF00680372),
 ! section 2.2 C.
 ! Only works in Cartesian coordinates.
+=======
+! Initial condition for the hopf kink magnetic field as
+! discribed by Finkelstein and Weil (1978), eqs. in 2.2 C,
+! DOI: 10.1007/BF00680372.
+
+! Set the single magnetic field or array of fields.
+>>>>>>> Added hopf kink initial magnetic field.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -53,8 +61,6 @@ module InitialCondition
 !
 !  Initialize any module variables which are parameter dependent.
 !
-!  07-may-09/wlad: coded
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -66,8 +72,6 @@ module InitialCondition
 !  Initialize the velocity field.
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-!  SAMPLE IMPLEMENTATION
 !
       call keep_compiler_quiet(f)
 !
