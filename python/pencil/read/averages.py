@@ -119,7 +119,7 @@ class Averages(object):
 
         simdir : string
             Simulation directory containing the .in files.
-            By default, parent directory of datadir.
+            By default, current directory.
 
         proc : int
             Processor to be read. If -1 read all and assemble to one array.
