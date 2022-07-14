@@ -5053,7 +5053,7 @@ module Initcond
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
-      lno_noise)
+      lno_noise,nfact0,l_factors0)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2, 
@@ -5080,11 +5080,12 @@ module Initcond
       use General, only: loptest
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
-      logical, intent(in), optional :: lpower_profile_file, lno_noise
+      logical, intent(in), optional :: lpower_profile_file, lno_noise,l_factors0
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection
+      logical :: l_factors=.false.
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
-      real, intent(in), optional :: k1hel, k2hel, qexp
+      real, intent(in), optional :: k1hel, k2hel, qexp, nfact0
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r, r2
       real, dimension (:), allocatable :: kx, ky, kz
@@ -5092,7 +5093,7 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
       real :: nfact=4., kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
-      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1
+      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1=0., D2=1.
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5117,6 +5118,15 @@ module Initcond
       else
         lno_noise1 = .false.
       endif
+!
+!
+!
+     if (present(nfact0)) then
+       nfact = nfact0     
+     endif 
+     if (present(l_factors0)) then
+       l_factors = l_factors0
+     endif
 !
 !  Allocate memory for arrays.
 !
@@ -5269,18 +5279,28 @@ module Initcond
         kpeak1=1./kpeak
         kpeak21=1./kpeak**2
 !
+!
+!
+        if (l_factors) then
+          if ((initpower /= 0).and.(initpower2 /= 0)) then
+            D1 = -initpower/initpower2
+            D2 = D1
+          endif
+        endif
+!
 !  Multiply by kpeak1**1.5 to eliminate scaling with kpeak,
 !  which comes from a kpeak^3 factor in the k^2 dk integration.
 !  The 1/2 factor comes from setting uk (as opposed to uk^2).
 !
         fact=(kpeak1*scale_factor)**1.5
+        fact=fact*(1 + D1)**nexp2
         if (lvectorpotential) then
           fact=fact*kpeak1
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))
         else
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
         endif
-        r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
+        r=fact*((k2*kpeak21)**mhalf)/(1.+D2*(k2*kpeak21)**nexp1)**nexp2
 !
 !  cutoff (changed to hyperviscous cutoff filter).
 !  The 1/2 factor is needed to account for the fact that the

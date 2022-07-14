@@ -171,6 +171,7 @@ module Magnetic
   real :: eta_power_x=0., eta_power_z=0.
   real :: z1_aa=0., z2_aa=0.
   real :: Pm_smag1=1., k1hel=0., k2hel=max_real, qexp_aa=0.
+  real :: nfact_aa=4.
   real :: r_inner=0., r_outer=0.
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
@@ -243,6 +244,7 @@ module Magnetic
   logical :: lscale_tobox=.true.
   logical :: lbraginsky=.false.
   logical :: lcoulomb=.false.
+  logical :: l_factors_aa=.false. 
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -271,7 +273,7 @@ module Magnetic
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
-      lcoulomb, qexp_aa
+      lcoulomb, qexp_aa, nfact_aa, l_factors_aa
 !
 ! Run parameters
 !
@@ -1921,7 +1923,8 @@ module Magnetic
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
             lskip_projection_aa, lvectorpotential, &
             lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
-            lpower_profile_file=lpower_profile_file, qexp=qexp_aa)
+            lpower_profile_file=lpower_profile_file, qexp=qexp_aa, &
+            nfact0=nfact_aa, l_factors0=l_factors_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')
