@@ -1,0 +1,57 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2020/05/19 07:33:50 wlyra Exp $',
+  ip=14,
+  nt=10, it1=1, isave=5000, itorder=5, ialive=0
+  cdt=0.4,
+  cdtv=0.4,
+  cdtv3=0.1
+  dtmin=1e-6
+!
+!  tmax = 62.84
+!  max_walltime = 85500
+!
+  dsnap=6.28319
+  dvid=0.3
+  loutput_varn_at_exact_tsnap=T
+  lread_aux=T
+!
+  lpencil_check=F
+  lpencil_check_small=F
+  fraction_tborder=0.1
+  wborder_int=0.1
+  wborder_ext=0.1
+!
+  lfargo_advection=F
+!
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  borderuu='initial-condition'
+/
+&density_run_pars
+  idiff='hyper3-mesh'                                                 
+  diffrho_hyper3_mesh=30.                                            
+  borderlnrho='initial-condition'
+/
+&viscosity_run_pars
+  ivisc='hyper3-mesh','nu-shock','nu-const'
+  nu_hyper3_mesh=30,nu_shock=4.,nu=1e-5
+/
+&pointmasses_run_pars
+  lfollow_particle=T,T
+  laccretion=F,F
+  lreset_cm=T
+  !lexclude_hills=F
+  llive_secondary=T
+/
+&shock_run_pars
+/
+&selfgrav_run_pars
+/
+&poisson_run_pars
+/

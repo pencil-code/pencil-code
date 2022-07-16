@@ -1,0 +1,57 @@
+!                           -*-f90-*-     (for Emacs)
+!
+! Initialisation parameters
+!
+  &init_pars
+  cvsid='$Id: start.in,v 1.2 2020/05/19 07:33:50 wlyra Exp $'
+  ip=14
+!
+  xyz0  =  0.4,0.00000000000000000000,-0.26,
+  xyz1  =  2.5,6.28318530717958647688, 0.26,
+!
+  lperi = F  , T  , T,           ! periodic direction?
+  !      ur  up   uz   rho  ar ap  az
+  bcx='a','a2','s' , 'a2','s'
+  lwrite_ic=T
+  llocal_iso=T
+  lwrite_aux=T
+  r_ref=1.
+  coord_system='cylindrical'
+  grid_func='log','linear','linear'
+
+  lshift_origin = F,F,F
+  lshift_origin_lower = F,T,F
+/
+&initial_condition_pars
+  temperature_power_law=1.0
+  density_power_law=1.5
+/
+&eos_init_pars
+  cs0  = 0.05
+  rho0 = 2e-3
+  gamma= 1.0
+/
+&hydro_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+  density_floor=-100
+/
+&pointmasses_init_pars
+  initxxq='eccentric'
+  initvvq='eccentric'
+  GNewton=1.0
+  density_scale=1.0
+!
+  xq0=0.,1.0
+  r_smooth=0.,0.015
+  iprimary=1
+  bcqx='out',bcqy='p'
+  ipotential_pointmass='newton','plummer'
+!
+  semimajor_axis=1.
+  eccentricity=0.3
+  pmass=1.,3e-5
+/
+&entropy_init_pars
+/
