@@ -784,10 +784,9 @@ module PointMasses
 !
       real, dimension (nx,nqpar) :: rp_mn, rpcyl_mn
       real, dimension (mx,3) :: ggt
-      real, dimension (3) :: xxq,rpsecondary
+      real, dimension (3) :: xxq,rpsecondary,accg
       real, dimension (nx) :: pot_energy,torque
-      real, dimension (nx,3) :: accg_mn
-      real :: accg_local,accg
+      real :: accg_local
       integer :: ks,j,ju
       logical :: lintegrate, lparticle_out
 !
@@ -844,22 +843,15 @@ module PointMasses
 !
                if (lcylindrical_gravity_nbody(ks)) then
                  call integrate_gasgravity(p,rpcyl_mn(:,ks),&
-                      xxq,accg_mn,r_smooth(ks))
+                      xxq,accg,r_smooth(ks))
                else
                  call integrate_gasgravity(p,rp_mn(:,ks),&
-                      xxq,accg_mn,r_smooth(ks))
+                      xxq,accg,r_smooth(ks))
                endif
 !
 !  Add it to its dfp
 !
-               do j=1,3
-                 accg_local =   sum(accg_mn(:,j))
-                 call mpireduce_sum(accg_local,accg,1)
-                 if (lroot) then
-                    ju=j-1+ivxq
-                    dfq(ks,ju) = dfq(ks,ju) + accg
-                 endif
-               enddo
+               dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg(1:3)
 !
 !  Calculate torques for output, if needed
 !
@@ -872,9 +864,9 @@ module PointMasses
 !  Integrate will add the cell volume, so we first remove it from the
 !  calculation.
 !
-                  torque=(rpsecondary(1)*accg_mn(:,2)-rpsecondary(2)*accg_mn(:,1))*&
-                       dVol1_x(l1:l2)*dVol1_y(m)*dVol1_z(n)
-                  !call cross(rpsecondary,accg,torque)
+                  !torque=(rpsecondary(1)*accg_mn(:,2)-rpsecondary(2)*accg_mn(:,1))*&
+                  !     dVol1_x(l1:l2)*dVol1_y(m)*dVol1_z(n)
+                  call cross(rpsecondary,accg,torque)
                   call integrate_mn_name(pmass(ks)*torque,idiag_torque(ks))
                endif
 !
@@ -1874,10 +1866,9 @@ module PointMasses
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(3) :: xxpar,sum_loc,accg
       real, dimension(nx,3) :: dist
-      real, dimension(nx) :: rrp,rp_mn,rpcyl_mn,selfgrav,density
-      real, dimension(nx) :: dv,jac,dqy,tmp
-      real :: vphi,phidot2,OO,rr
-      real :: dqx,dqz,rp0,fac
+      real, dimension(nx) :: rrp,rp_mn,rpcyl_mn,gasgravity,density,cellmass
+      real, dimension(nx) :: dv,tmp
+      real :: vphi,phidot2,OO,rr,rp0,fac
       integer :: j,k
 !
 !  Sanity check
@@ -1895,29 +1886,24 @@ module PointMasses
       mloop: do m=m1,m2
       nloop: do n=n1,n2
         if (coord_system=='cartesian') then
-          jac=1.;dqx=dx;dqy=dy;dqz=dz
           dist(:,1)=x(l1:l2)-xxpar(1)
           dist(:,2)=y(  m  )-xxpar(2)
           dist(:,3)=z(  n  )-xxpar(3)
         elseif (coord_system=='cylindric') then
-          jac=x(l1:l2);dqx=dx;dqy=x(l1:l2)*dy;dqz=dz
           dist(:,1)=x(l1:l2)-xxpar(1)*cos(y(m)-xxpar(2))
           dist(:,2)=         xxpar(2)*sin(y(m)-xxpar(2))
           dist(:,3)=z(  n  )-xxpar(3)
         elseif (coord_system=='spherical') then
           call fatal_error('correct_gasgravity_integrate', &
                ' not yet implemented for spherical polars')
-           dqx=0.;dqy=0.;dqz=0.
         else
           call fatal_error('correct_gasgravity_integrate','wrong coord_system')
-          dqx=0.;dqy=0.;dqz=0.
         endif
 !
-        if (nzgrid==1) then
-          dv=dqx*dqy
-        else
-          dv=dqx*dqy*dqz
-        endif
+        dv=1
+        if (nxgrid/=1) dv=dv/dline_1(:,1)
+        if (nygrid/=1) dv=dv/dline_1(:,2)
+        if (nzgrid/=1) dv=dv/dline_1(:,3)
 !
 !  The gravity of every single cell - should exclude inner and outer radii...
 !
@@ -1943,8 +1929,8 @@ module PointMasses
            rrp=rp_mn
         endif
 !
-        selfgrav = -GNewton*density_scale*&
-             density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
+      cellmass = density_scale*density*dv
+      gasgravity = GNewton*cellmass*(rrp**2 + rp0**2)**(-1.5)
 !
 !  Exclude the frozen zones
 !
@@ -1954,7 +1940,7 @@ module PointMasses
 !  And sum over processors with mpireduce
 !
         do j=1,3
-          tmp=selfgrav*dist(:,j)
+          tmp=gasgravity*dist(:,j)
           !take proper care of the trapezoidal rule
           !in the case of non-periodic boundaries
           fac = 1.
@@ -2165,10 +2151,11 @@ module PointMasses
 !
       use Mpicomm
 !
-      real, dimension(nx,3) :: dist,accg
+      real, dimension(nx,3) :: dist
       real, dimension(nx) :: rrp,rr,gasgravity,density,cellmass
-      real :: rp0
-      real, dimension(3) :: xxpar
+      real, dimension(nx) :: dv,tmp
+      real :: rp0,fac
+      real, dimension(3) :: xxpar,accg,sum_loc
       integer :: j
       type (pencil_case) :: p
       logical :: lfirstcall=.true.
@@ -2185,7 +2172,7 @@ module PointMasses
            "No gas gravity or dust gravity to add. "//&
            "Switch on lgas_gravity or ldust_gravity in n-body parameters")
 !
-      if (coord_system=='cartesian') then
+      if (coord_system=='cartesian') then      
         dist(:,1)=x(l1:l2)-xxpar(1)
         dist(:,2)=y(  m  )-xxpar(2)
         dist(:,3)=z(  n  )-xxpar(3)
@@ -2202,6 +2189,11 @@ module PointMasses
         call fatal_error('integrate_gasgravity','wrong coord_system')
       endif
 !
+      dv=1
+      if (nxgrid/=1) dv=dv/dline_1(:,1)
+      if (nygrid/=1) dv=dv/dline_1(:,2)
+      if (nzgrid/=1) dv=dv/dline_1(:,3)
+!
 !  The gravity of every single cell - should exclude inner and outer radii...
 !
 !  selfgrav = G*((rho+rhop)*dv)*mass*r*(r**2 + r0**2)**(-1.5)
@@ -2215,32 +2207,51 @@ module PointMasses
 !
       if (ldust.and.ldust_gravity) density=density+p%rhop
 !
-      cellmass=density*dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
-      gasgravity = GNewton*density_scale*cellmass*(rrp**2 + rp0**2)**(-1.5)
+      cellmass = density_scale*density*dv
+      gasgravity = GNewton*cellmass*(rrp**2 + rp0**2)**(-1.5)
 !
 !  Exclude the frozen zones
 !
-      if (lexclude_frozen.and.lcylinder_in_a_box) then
-       where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
-          gasgravity = 0
-        endwhere
-      else
-        if (l2D.or.(l3D.and.lcylindrical_gravity)) then
-          rr=p%rcyl_mn
+      if (lexclude_frozen) then
+        if (lcylinder_in_a_box) then
+          where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
+            gasgravity = 0
+          endwhere
         else
-          rr=p%r_mn
+          if (l2D.or.(l3D.and.lcylindrical_gravity)) then
+            rr=p%rcyl_mn
+          else
+            rr=p%r_mn
+          endif
+          where ((rr<=r_int).or.(rr>=r_ext))
+            gasgravity = 0
+          endwhere
         endif
-        where ((rr<=r_int).or.(rr>=r_ext))
-          gasgravity = 0
-        endwhere
       endif
 !
 !  Integrate the accelerations on this processor
 !  And sum over processors with mpireduce
 !
       do j=1,3
-        accg(:,j)=gasgravity*dist(:,j)
+        tmp=gasgravity*dist(:,j)
+        !take proper care of the trapezoidal rule
+        !in the case of non-periodic boundaries                    
+        fac = 1.
+        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
+          if (.not.lperi(2)) fac = .5*fac
+        endif
+!
+        if (lperi(1)) then
+          sum_loc(j) = fac*sum(tmp)
+        else
+          sum_loc(j) = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
+        endif
+        call mpireduce_sum(sum_loc(j),accg(j))
       enddo
+!
+!  Broadcast particle acceleration
+!
+      call mpibcast_real(accg,3)
 !
       if (lfirstcall) lfirstcall=.false.
 !
