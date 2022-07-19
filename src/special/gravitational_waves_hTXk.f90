@@ -130,7 +130,7 @@ module Special
   real :: lgt1, lgt2, lgf1, lgf2, lgf
   real :: scl_factor_target, Hp_target, app_target, lgt_current
   real :: lgt_ini, a_ini, Hp_ini, app_om=0
-! added variables XXX
+! added variables
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
   real, dimension(:), allocatable :: t_file, scl_factor, Hp_file
@@ -814,7 +814,10 @@ module Special
       endif
       stress_prefactor2=stress_prefactor/scale_factor
 !
-!  Possibility of reading scale factor file
+!  Possibility of reading scale factor file.
+!  The actual reading happened in initialize_special, so here it
+!  just checks whether it has done it; the data are defined for
+!  the entire module and are therefore always available.
 !
       if (lread_scl_factor_file) then
         inquire(FILE="a_vs_eta.dat", EXIST=lread_scl_factor_file_exists)
@@ -853,6 +856,9 @@ module Special
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           app_target=10**lgf/Hp_ini**2
           !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',app_target
+        else
+          if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
+          call fatal_error('dspecial_dt','we need the file a_vs_eta.dat')
         endif
       endif
 !
