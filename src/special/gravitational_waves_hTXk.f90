@@ -138,7 +138,7 @@ module Special
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
-  integer :: itorder_GW=1
+  integer :: itorder_GW=1, idt_file_safety=12
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -170,7 +170,7 @@ module Special
     ihorndeski_time, scale_factor0, horndeski_alpT_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
-    lread_scl_factor_file, t_ini, &
+    lread_scl_factor_file, t_ini, idt_file_safety, &
     lconstmod_in_stress, k_in_stress, itorder_GW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -475,6 +475,15 @@ module Special
           lgff=alog10(scl_factor)
           lgff2=alog10(Hp_file)
           lgff3=alog10(app_file)
+!
+!  Calculate and set tmax, i.e., the end time of the simulation, so as
+!  to have a regular exit. Note that tmax=max(t_file)/t_ini.
+!  However, to be able to interpolate, we need to stop one step before that.
+!  Therefore, we give idt_file_safety as an empirical number, which depends
+!  on the length of the time step near the end of the calculation.
+!
+          tmax=t_file(nt_file-idt_file_safety)/t_ini
+          if (lroot) print*,'initialize_special: reset tmax=maxval(t_file)/t_ini=',tmax
 !
 !  The values of scl_factor in the file are given divided by a_0 (present time).
 !  First, we need to find a_ini from t_ini (given as initial parameter)
@@ -825,18 +834,23 @@ module Special
       !
 !  t is given as t/t_ini by default, so to compare it with the stored values in the file, we
 !  need to use t*t_ini.
+!  So, lgt_current is not the log10 of the current time t, but of t/t_ini.
+!  At the end of the run, t=1.5e18, but t/t_ini=3.11900E+13 or so.
 !
           lgt_current=alog10(real(t))+lgt_ini
           it_file=int((lgt_current-lgt0)/dlgt)+1
   !AB: error in the following
   !AR: error should now be fixed
           if (it_file<1.or.it_file>nt_file) then
-            print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
-            call fatal_error('initialize_special','it<1.or.it>nt')
+            !print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+!AB: Alberto, did you write this? Shouldn't it be like so?
+            print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
+            call fatal_error('dspecial_dt','it<1.or.it>nt')
           endif
           !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
           lgt1=lgt_file(it_file)
           lgt2=lgt_file(it_file+1)
+          if (ip<11.and.lroot) print*,'AXEL: ',lgt1, lgt_current, lgt2, lgt2-lgt_current
           lgf1=lgff(it_file)
           lgf2=lgff(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
