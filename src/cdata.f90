@@ -166,6 +166,7 @@ module Cdata
   real :: reac_pchem,dt1_preac
   real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfractional_tstep_advance=.false.
+  logical :: lfractional_tstep_negative=.true.
   logical :: lfirstpoint=.false., llastpoint=.false.
 !$omp THREADPRIVATE(lfirstpoint,llastpoint)
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
