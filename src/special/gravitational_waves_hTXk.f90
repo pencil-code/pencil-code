@@ -119,7 +119,7 @@ module Special
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
-  real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
+  real :: scale_factor0=1., horndeski_alpT_exp=0.
   real :: scale_factor, slope_linphase_in_stress
 ! AR: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
@@ -167,7 +167,7 @@ module Special
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
     lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
-    ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
+    ihorndeski_time, scale_factor0, horndeski_alpT_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
     lread_scl_factor_file, t_ini, idt_file_safety, &
@@ -1701,7 +1701,7 @@ module Special
       endif
 !
 !  Horndeski preparations
-!  Allow for different prescriptions for the time dependence of horndeski_alpT_eff and horndeski_alpM_eff
+!  Allow for different prescriptions for the time dependence of horndeski_alpT_eff
 !
       if (lhorndeski) then
         horndeski_alpM_eff=horndeski_alpM/scale_factor
@@ -1715,15 +1715,10 @@ module Special
         select case (ihorndeski_time)
           case ('const')
             horndeski_alpT_eff=horndeski_alpT
-            horndeski_alpM_eff=horndeski_alpM
           case ('tanh')
             horndeski_alpT_eff=horndeski_alpT*tanh(1.-(scale_factor/scale_factor0)**horndeski_alpT_exp)
           case ('exp')
             horndeski_alpT_eff=horndeski_alpT*exp(-(scale_factor/scale_factor0)**horndeski_alpT_exp)
-          case ('scale_factor_power')
-            horndeski_alpM_eff=horndeski_alpM*scale_factor**horndeski_alpM_exp
-          !case ('dark_energy')
-            !horndeski_alpM_eff=horndeski_alpM_coeff*om_lambda
           case default
             call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
                 ,trim(idelkt))
