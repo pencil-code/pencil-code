@@ -85,7 +85,7 @@ class Averages(object):
         plane_list=None,
         var_index=-1,
         datadir="data",
-        simdir=None,
+        simdir=".",
         proc=-1,
         iter_list=None,
         avfile_list=None,
@@ -142,9 +142,6 @@ class Averages(object):
         import os
 
         l_h5 = False
-
-        if simdir is None:
-            simdir = '.'
 
         # Initialize the planes list.
         if plane_list:
