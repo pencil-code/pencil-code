@@ -126,7 +126,7 @@ module Special
 !
   logical :: lread_scl_factor_file_exists
   integer :: nt_file, it_file
-  real :: lgt0, dlgt, dummy
+  real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf
   real :: scl_factor_target, Hp_target, app_target, lgt_current
   real :: lgt_ini, a_ini, Hp_ini, app_om=0
@@ -460,8 +460,8 @@ module Special
         if (lread_scl_factor_file_exists) then
           if (lroot.and.ip<14) print*,'initialize_forcing: opening a_vs_eta.dat'
           open(9,file='a_vs_eta.dat',status='old')
-          read(9,*) nt_file, lgt0, dlgt
-          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt=',nt_file,lgt0,dlgt
+          read(9,*) nt_file, lgt0, dlgt, H0
+          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0=',nt_file,lgt0,dlgt,H0
           if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, app_file, &
                                             lgt_file, lgff, lgff2, lgff3)
           allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), app_file(nt_file), &
