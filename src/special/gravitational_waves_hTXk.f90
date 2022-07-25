@@ -520,8 +520,6 @@ module Special
 !
           lgt_current=alog10(real(t))+lgt_ini
           it_file=int((lgt_current-lgt0)/dlgt)+1
-!AB: error in the following
-!AR: error should now be fixed
           if (it_file<1.or.it_file>nt_file) then
             print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
             call fatal_error('initialize_special','it<1.or.it>nt')
@@ -839,11 +837,7 @@ module Special
 !
           lgt_current=alog10(real(t))+lgt_ini
           it_file=int((lgt_current-lgt0)/dlgt)+1
-  !AB: error in the following
-  !AR: error should now be fixed
           if (it_file<1.or.it_file>nt_file) then
-            !print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
-!AB: Alberto, did you write this? Shouldn't it be like so?
             print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
             call fatal_error('dspecial_dt','it<1.or.it>nt')
           endif
