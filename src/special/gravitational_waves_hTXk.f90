@@ -120,7 +120,7 @@ module Special
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
   real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
-  real :: scale_factor, slope_linphase_in_stress
+  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841
 ! AR: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
 !
@@ -170,7 +170,7 @@ module Special
     ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
-    lread_scl_factor_file, t_ini, idt_file_safety, &
+    lread_scl_factor_file, t_ini, OmL0, idt_file_safety, &
     lconstmod_in_stress, k_in_stress, itorder_GW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -1447,7 +1447,7 @@ module Special
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
       real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
-      real :: horndeski_alpT_eff
+      real :: horndeski_alpT_eff, Om_rat_Lam
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx
       complex :: hcomplex_new, gcomplex_new
@@ -1697,15 +1697,10 @@ module Special
 !  Horndeski preparations
 !  Allow for different prescriptions for the time dependence of horndeski_alpT_eff and horndeski_alpM_eff
 !
+! AR: time dependencies can be defined to modify horndeski_alpM and hence the eff and eff2 values can be defined
+! AR: later on. Hence, case selection can be moved to the beginning like so, please check
+!
       if (lhorndeski) then
-        horndeski_alpM_eff=horndeski_alpM/scale_factor
-        horndeski_alpM_eff2=horndeski_alpM/scale_factor**2
-        if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
-            !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp^2: ',Hp_target**2
-            !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp: ',Hp_target 
-            horndeski_alpM_eff=horndeski_alpM*Hp_target
-            horndeski_alpM_eff2=horndeski_alpM*Hp_target**2
-        endif
         select case (ihorndeski_time)
           case ('const')
             horndeski_alpT_eff=horndeski_alpT
@@ -1718,10 +1713,40 @@ module Special
             horndeski_alpM_eff=horndeski_alpM*scale_factor**horndeski_alpM_exp
           !case ('dark_energy')
             !horndeski_alpM_eff=horndeski_alpM_coeff*om_lambda
+          !
+          ! AR: Yutong, is it useful to add an option for dark energy dependence that does not read the file?
+          ! AR: if not, previous line can be deleted
+          ! 
+          case ('dark_energy')
+            if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
+              Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
+              horndeski_alpM_eff=horndeski_alpM*Om_rat_Lam
+              if ((lroot).and.(Om_rat_Lam==0)) print*,"the ratio Om_rat_Lam is too small", &
+                  " for single precision, consider using double precision"
+            else 
+              if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
+              if (lroot) print*,'set lread_scl_factor_file=T in run parameters'
+              call fatal_error('dspecial_dt',"we need the file a_vs_eta.dat")
+            endif
           case default
             call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
                 ,trim(idelkt))
         endselect
+        !horndeski_alpM_eff=horndeski_alpM/scale_factor
+        !horndeski_alpM_eff2=horndeski_alpM/scale_factor**2
+        !AR: I've moved this below since this is only used when the file is not read, right?
+        if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
+          !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp^2: ',Hp_target**2
+          !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp: ',Hp_target 
+          horndeski_alpM_eff=horndeski_alpM_eff*Hp_target
+          horndeski_alpM_eff2=horndeski_alpM_eff*Hp_target
+        else
+          !horndeski_alpM_eff=horndeski_alpM/scale_factor
+          !horndeski_alpM_eff2=horndeski_alpM/scale_factor**2
+          ! AR: to take into account time dependency
+          horndeski_alpM_eff=horndeski_alpM_eff/scale_factor
+          horndeski_alpM_eff2=horndeski_alpM_eff/scale_factor
+        endif
       endif
       if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
         app_om=app_target
