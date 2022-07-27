@@ -49,6 +49,7 @@ Matthias Rheinhardt,  mreinhardt/nordita.org,        rei,                  +358 
 Alex Richert,         alexrichert/gmail.com,         alexrichert,          ,                  ,                         ,            Penn State University
 Graeme R. Sarson,     g.r.sarson/ncl.ac.uk,          ,                     +44 191 222 5375,  ,                         ,            Newcastle University
 Julien Savre,         juliensavre/gmail.com,         ,                     +46 46 222 3624,   +46 7 00 94 71 55,        ,            University of Cambridge
+Ramkishor Sharma,     ramkishor.sharma/su.se         ,                     ,                  +46767530270              ,            Nordita
 Nishant K. Singh,     nishant.cosmo/gmail.com,       ,                     +91 9916785745,    ,                         ,            NORDITA
 Andrew Snodin,        andrew.snodin/ncl.ac.uk,       ,                     ,                  ,                         ,            King Mongkut's University of Technology North Bangkok
 Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2560 4115,     +91 94 210 37 292,        ,            Indian Institute of Astrophysics
