@@ -32,11 +32,7 @@ from test_utils import (
 @test
 def read_var() -> None:
     """Read var.dat (data cube) file."""
-    # Fixme: we shouldn't change directories here, as this can influence
-    # other tests
-    pwd = os.getcwd()
-    os.chdir(get_run_dir())
-    var = pc.read.var(trimall=True)
+    var = pc.read.var(trimall=True, datadir=get_data_dir())
     _assert_equal_tuple(var.f.shape, (5, 32, 32, 32))
 
     def ident(x: Any) -> Any:
@@ -56,8 +52,6 @@ def read_var() -> None:
     ]
     for (key, extract, expect, eps) in expected:
         test_extracted(getattr(var, key), extract, expect, key, eps)
-    os.chdir(pwd)
-
 
 @test
 def get_help() -> None:
