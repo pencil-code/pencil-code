@@ -128,11 +128,25 @@ def remesh() -> None:
 
 
 def get_data_dir() -> str:
-    return os.path.join(get_run_dir(), "data")
+    sim = pc.sim.get(get_run_dir(), quiet=True)
+    datadir = sim.datadir
+    if not os.path.exists(os.path.join(datadir, "time_series.dat")):
+        #TODO: Is it a good idea to print stuff like this during a test? Is this information needed at all?
+        print("Compiling and running {}. This may take some time.".format(sim.path))
+        sim.compile(bashrc=False, cleanall=False)
+        sim.run(bashrc=False)
+    return datadir
 
 
 def get_data_dir2() -> str:
-    return os.path.join(get_run_dir2(), "data")
+    sim = pc.sim.get(get_run_dir2(), quiet=True)
+    datadir = sim.datadir
+    if not os.path.exists(os.path.join(datadir, "time_series.dat")):
+        #TODO: Is it a good idea to print stuff like this during a test? Is this information needed at all?
+        print("Compiling and running {}. This may take some time.".format(sim.path))
+        sim.compile(bashrc=False, cleanall=False)
+        sim.run(bashrc=False)
+    return datadir
 
 
 def get_run_dir() -> str:
