@@ -668,7 +668,9 @@ class __Simulation__(object):
 
         return exists(join(self.path, "data", "time_series.dat"))
 
-    def compile(self, cleanall=True, fast=False, verbose=False, hostfile=None):
+    def compile(
+        self, cleanall=True, fast=False, verbose=False, hostfile=None, bashrc=True
+    ):
         """Compiles the simulation. Per default the linking is done before the
         compiling process is called. This method will use your settings as
         defined in your .bashrc-file.
@@ -683,6 +685,10 @@ class __Simulation__(object):
 
         fast : bool
             Set True for fast compilation.
+
+        bashrc : bool
+            True: source bashrc in the subprocess
+            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
         """
 
         from pencil import io
@@ -706,13 +712,14 @@ class __Simulation__(object):
             command=" ".join(command),
             verbose=verbose,
             logfile=join(self.pc_dir, "compilelog_" + timestamp),
+            bashrc=bashrc
         )
 
     def build(self, cleanall=True, fast=False, verbose=False):
         """Same as compile()"""
         return self.compile(cleanall=cleanall, fast=fast, verbose=verbose)
 
-    def bash(self, command, verbose="last100", logfile=False):
+    def bash(self, command, verbose="last100", logfile=False, bashrc=True):
         """Executes command in simulation directory.
         This method will use your settings as defined in your .bashrc-file.
         A log file will be produced within 'self.path/pc'-folder
@@ -726,11 +733,16 @@ class __Simulation__(object):
             lastN = show last N lines of output afterwards
              False = no output
              True = all output
+
+        bashrc : bool
+            True: source bashrc in the subprocess
+            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
         """
 
         import subprocess
         from pencil import io
         from os.path import join
+        import os
 
         timestamp = io.timestamp()
         io.mkdir(self.pc_dir)
@@ -749,10 +761,17 @@ class __Simulation__(object):
         else:
             print("! ERROR: Couldnt understand the command parameter: " + str(command))
 
+        if bashrc:
+            shellcmd = ["/bin/bash", "-i", "-c"]
+            env = None
+        else:
+            shellcmd = ["/bin/bash", "-c"]
+            env = os.environ
+
+        shellcmd.append(";".join(commands))
+
         with open(logfile, "w") as f:
-            rc = subprocess.call(
-                ["/bin/bash", "-i", "-c", ";".join(commands)], stdout=f, stderr=f
-            )
+            rc = subprocess.call(shellcmd, stdout=f, stderr=f, env=env)
 
         if type(verbose) == type("string"):
             outputlength = -int(verbose.split("last")[-1])
