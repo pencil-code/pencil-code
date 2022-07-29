@@ -1044,18 +1044,18 @@ class __Simulation__(object):
 
         Parameters
         ----------
-        cleanall : bool
-            Before calling pc_build, pc_build --cleanall is called.
-
         verbose : bool
-            Activate for verbosity.
+            Whether to print progress and detailed output
 
-        fast : bool
-            Set True for fast compilation.
+        hostfile : string
+            Pencil config file to use
 
         bashrc : bool
             True: source bashrc in the subprocess
             False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
+
+        cleardata : bool
+            Whether to clear existing data
         """
 
         from pencil import io
