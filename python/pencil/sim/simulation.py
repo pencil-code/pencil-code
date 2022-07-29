@@ -1039,7 +1039,7 @@ class __Simulation__(object):
             filename, quantity, newValue, sim=self, filepath=filepath, DEBUG=DEBUG
         )
 
-    def run(self, verbose=False, hostfile=None, bashrc=True):
+    def run(self, verbose=False, hostfile=None, bashrc=True, cleardata=False):
         """Runs the simulation.
 
         Parameters
@@ -1060,6 +1060,7 @@ class __Simulation__(object):
 
         from pencil import io
         from os.path import join
+        import os
 
         timestamp = io.timestamp()
 
@@ -1070,6 +1071,23 @@ class __Simulation__(object):
             command.append(" -f " + hostfile)
         if verbose:
             print("! Running " + self.path)
+
+        if not os.path.isdir(self.datadir):
+            if os.path.exists(self.datadir):
+                if verbose:
+                    print(
+                        "datadir exists but is not a directory; removing and creating a directory"
+                    )
+                os.remove(self.datadir)
+            else:
+                if verbose:
+                    print("Creating datadir")
+            os.mkdir(self.datadir)
+
+        if cleardata:
+            if verbose:
+                print("Clearing existing data")
+            self.clear_data(True, True)
 
         return self.bash(
             command=" ".join(command),
