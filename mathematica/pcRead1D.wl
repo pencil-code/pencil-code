@@ -15,14 +15,19 @@ BeginPackage["pcRead1D`"]
 (*Usage messages*)
 
 
-readTS::usage="readTS[sim,var] reads the column in time_series.dat that corresponds to 
-variable var. Support multiple vars: readTS[dir,var1,var2,...].
+readTS::usage="readTS[sim,Options] reads time_series.dat and returns an Association object.
+It always returns rectangular data by filling the missing elements by Missing[] (e.g. in
+cases where print.in has been modified before continuing a run).
 Input:
-  sim: String. Directory of the simulation folder
-  var: String. The variable to read; e.g., \"t\", or \"urms\".
-       var=\"HEAD\" gives all possible entries
+  sim: String. Directory of the run
+Options:
+  \"lRest\": By default True, which removes the first record in the file (usually when t=0)
 Output:
-  { {t1,t2,...}, {var1,...}, {var2,...} }";
+  An Association object whose keys include all the variables that have appeared
+Examples:
+  ts=readTS[sim], and then ts[\"t\"]={t1,t2,...}, ts[\"urms\"]={u1,u2,...}, etc.
+  readTS[sim,var] is the same as readTS[sim][var].
+  readTS[sim,var1,var2,...] is the same as readTS[sim]/@{var1,var2,...}";
 
 growthRate::usage="growthRage[sim,var,t1,t2] computes the exponential growth rate
 of var between time t1 and t2.
@@ -86,38 +91,31 @@ Begin["`Private`"]
 (*Time series*)
 
 
-Options[readTS]={"lRest"->True}
-readTS[sim_,All,OptionsPattern[]]:=Module[{file,ts,head,pos},
-  readTS::badform="`1`: Inconsistent number of columns in ts.";
-  file=sim<>"/data/time_series.dat";
-  ts=DeleteCases[Import[file],x_/;Length[x]==1];
-  If[Not[Equal@@(Length/@ts)],
-    Message[readTS::badform,sim];Return["BadTsFormat"]];
-  head=Rest@Flatten[StringSplit[First@Import[file],"-"..]];
-  If[Length[ts[[1]]]!=Length[head],
-    Message[readTS::badform,sim];Return[$Failed]];
-  If[OptionValue["lRest"],ts=Rest[ts]];
-  AssociationThread[head->Transpose[ts]]
+readTSSingle[ts_List]:=Module[{head,value},
+  head=Rest@StringSplit[ts[[1]],"-"..];
+  value=ts//Rest//StringReplace[#,"E"->"*^"]&//StringSplit//ToExpression;
+  AssociationThread[head->Transpose[value]]
 ]
-readTS[sim_,vars__]:=Module[{file,ts,head,pos},
-  readTS::badform="`1`: Inconsistent number of columns in ts.";
-  readTS::novar="`1`: Variable `2` not found in ts.";
-  file=sim<>"/data/time_series.dat";
-  ts=DeleteCases[Import[file],x_/;Length[x]==1];
-  If[Not[Equal@@(Length/@ts)],
-    Message[readTS::badform,sim];Return["BadTsFormat"]];
-  head=Rest@Flatten[StringSplit[First@Import[file],"-"..]];
-  If[vars=="HEAD",Return[head]];
-  If[Length[ts[[1]]]!=Length[head],
-    Message[readTS::badform,sim];Return[$Failed]];
-  Table[
-    If[(pos=Position[head,var])=={},
-      Message[readTS::novar,sim,var];ConstantArray[$Failed,ts//Length],
-      ts[[;;,pos[[1,1]]]]
-    ],
-    {var,{vars}}
-  ]/.{{x__}}:>{x}
+
+readTS[sim_String,OptionsPattern[{"lRest"->True}]]:=Module[{str,ts,fullHead,lookUp},
+  (* read time_series.dat into a 1D List of Strings *)
+  str=OpenRead@FileNameJoin[{sim,"data","time_series.dat"}];
+  ts=ReadList[str,Record];
+  Close[str];
+  (* for each chunk startring with "#", reform it into an Association *)
+  ts=readTSSingle/@Split[ts,!StringStartsQ[#2,"#"]&];
+  
+  (* merge chunks and fill with Missing[]*)
+  fullHead=Union@Flatten[Keys/@ts];
+  lookUp[key_]:=Lookup[#,key,ConstantArray[Missing[],#[[1]]//Length]]&/@ts;
+  
+  If[OptionValue["lRest"],
+    AssociationMap[Rest@*Flatten@*lookUp,fullHead],
+    AssociationMap[Flatten@*lookUp,fullHead]
+  ]
 ]
+readTS[sim_String,var_String,opt:OptionsPattern[]]:=readTS[sim,opt][var]
+readTS[sim_String,vars__String,opt:OptionsPattern[]]:=readTS[sim,opt]/@{vars}
 
 growthRate[sim_,var_,t1_,t2_]:=Module[{t,f,pos,a,tt},
 {t,f}=readTS[sim,"t",var];
