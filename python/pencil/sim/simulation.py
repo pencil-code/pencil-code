@@ -712,7 +712,7 @@ class __Simulation__(object):
             command=" ".join(command),
             verbose=verbose,
             logfile=join(self.pc_dir, "compilelog_" + timestamp),
-            bashrc=bashrc
+            bashrc=bashrc,
         )
 
     def build(self, cleanall=True, fast=False, verbose=False):
