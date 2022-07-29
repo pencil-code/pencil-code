@@ -49,6 +49,53 @@ def partial_derivatives() -> None:
     check_arr_close(df_ana, df_num)
 
 
+@test
+def derivatives_lap_grad() -> None:
+    """Laplacian and gradient of scalar fields"""
+    z, y, x = generate_xyz_grid()
+    dx = x[1, 1, 1] - x[0, 0, 0]
+    dy = y[1, 1, 1] - y[0, 0, 0]
+    dz = z[1, 1, 1] - z[0, 0, 0]
+
+    f = np.sin(x) * np.exp(y) * np.cos(z)
+    grad_f_x = np.exp(y) * np.cos(x) * np.cos(z)
+    grad_f_y = np.exp(y) * np.sin(x) * np.cos(z)
+    grad_f_z = -np.exp(y) * np.sin(x) * np.sin(z)
+    grad_f = np.stack([grad_f_x, grad_f_y, grad_f_z], axis=0)
+    Lap_f = -np.exp(y) * np.sin(x) * np.cos(z)
+
+    check_arr_close(grad_f, pcd.grad(f, dx, dy, dz))
+    check_arr_close(Lap_f, pcd.del2(f, dx, dy, dz))
+
+
+@test
+def derivatives_vector() -> None:
+    """Derivatives of vector fields"""
+    z, y, x = generate_xyz_grid()
+    dx = x[1, 1, 1] - x[0, 0, 0]
+    dy = y[1, 1, 1] - y[0, 0, 0]
+    dz = z[1, 1, 1] - z[0, 0, 0]
+
+    # Build the vector field to be tested
+    vx = np.sin(x) * np.exp(y) * np.cos(z)
+    vy = np.sin(x + y + z)
+    vz = np.exp(x) * np.cos(y + z)
+    v = np.stack([vx, vy, vz], axis=0)
+
+    div_v = (
+        np.exp(y) * np.cos(x) * np.cos(z)
+        + np.cos(x + y + z)
+        - np.exp(x) * np.sin(y + z)
+    )
+    curl_v_x = -np.exp(x) * np.sin(y + z) - np.cos(x + y + z)
+    curl_v_y = -np.exp(x) * np.cos(y + z) - np.exp(y) * np.sin(x) * np.sin(z)
+    curl_v_z = -np.exp(y) * np.sin(x) * np.cos(z) + np.cos(x + y + z)
+    curl_v = np.stack([curl_v_x, curl_v_y, curl_v_z], axis=0)
+
+    check_arr_close(div_v, pcd.div(v, dx, dy, dz))
+    check_arr_close(curl_v, pcd.curl(v, dx, dy, dz))
+
+
 def check_arr_close(a, b):
     _assert_close_arr(trim(a), trim(b), "max abs difference")
 
