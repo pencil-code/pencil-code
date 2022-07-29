@@ -14,6 +14,7 @@ from read import *
 from imports import *
 from basics import *
 from manual import *
+from derivatives import *
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)

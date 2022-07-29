@@ -35,6 +35,15 @@ def _assert_close(
         "{}: |{} - {}| > {}".format(variable, expected, actual, eps),
     )
 
+def _assert_close_arr(
+    expected: np.ndarray, actual: np.ndarray, variable: str, eps: float = 1.0e-6
+    ) -> None:
+    """Assert that the maximum difference between arrays actual and expected is at most eps."""
+    err = np.max(np.abs(actual - expected))
+    assert_true(
+        err <= eps,
+        "{}: error > {}".format(err, eps),
+    )
 
 def _assert_equal_tuple(
     expected: Tuple[int, ...], actual: Tuple[int, ...]
