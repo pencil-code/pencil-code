@@ -1080,13 +1080,10 @@ class __Simulation__(object):
         if not os.path.isdir(self.datadir):
             if os.path.exists(self.datadir):
                 if verbose:
-                    print(
-                        "datadir exists but is not a directory; removing and creating a directory"
-                    )
+                    print("datadir exists but is not a directory; removing it.")
                 os.remove(self.datadir)
-            else:
-                if verbose:
-                    print("Creating datadir")
+            if verbose:
+                print("Creating datadir")
             os.mkdir(self.datadir)
 
         return self.bash(
