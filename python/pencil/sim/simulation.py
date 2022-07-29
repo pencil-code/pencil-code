@@ -1038,3 +1038,42 @@ class __Simulation__(object):
         return change_value_in_file(
             filename, quantity, newValue, sim=self, filepath=filepath, DEBUG=DEBUG
         )
+
+    def run(self, verbose=False, hostfile=None, bashrc=True):
+        """Runs the simulation.
+
+        Parameters
+        ----------
+        cleanall : bool
+            Before calling pc_build, pc_build --cleanall is called.
+
+        verbose : bool
+            Activate for verbosity.
+
+        fast : bool
+            Set True for fast compilation.
+
+        bashrc : bool
+            True: source bashrc in the subprocess
+            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
+        """
+
+        from pencil import io
+        from os.path import join
+
+        timestamp = io.timestamp()
+
+        command = []
+        command.append("pc_run")
+
+        if hostfile:
+            command.append(" -f " + hostfile)
+        if verbose:
+            print("! Running " + self.path)
+
+        return self.bash(
+            command=" ".join(command),
+            verbose=verbose,
+            logfile=join(self.pc_dir, "runlog_" + timestamp),
+            bashrc=bashrc,
+        )
