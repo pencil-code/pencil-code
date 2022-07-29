@@ -53,14 +53,13 @@ def read_var() -> None:
     for (key, extract, expect, eps) in expected:
         test_extracted(getattr(var, key), extract, expect, key, eps)
 
+
 @test
 def get_help() -> None:
     """Get doc strings of imported functions."""
     math_dot_help = pc.math.dot.__doc__
     assert_true(
-        re.search(
-            r"Take dot product of two pencil-code vectors", math_dot_help
-        ),
+        re.search(r"Take dot product of two pencil-code vectors", math_dot_help),
         "Unexpected docstring for pc.math.dot: {}".format(math_dot_help),
     )
 
