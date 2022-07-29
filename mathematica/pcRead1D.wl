@@ -93,7 +93,7 @@ Begin["`Private`"]
 
 readTSSingle[ts_List]:=Module[{head,value},
   head=Rest@StringSplit[ts[[1]],"-"..];
-  value=ts//Rest//StringReplace[#,"E"->"*^"]&//StringSplit//ToExpression;
+  value=ts//Rest//StringReplace[#,{"e"->"*^","E"->"*^"}]&//StringSplit//ToExpression;
   AssociationThread[head->Transpose[value]]
 ]
 
@@ -129,16 +129,21 @@ a[1]/.FindFit[Transpose[{t,Log[f]}],a[1]*tt+a[2],{a[1],a[2]},tt]
 (*Spectra-like files*)
 
 
-read1D[sim_,file__String]:=Module[{data,pos},
-  data=Import@StringJoin[sim,"/data/",file];
-  pos=Flatten@Position[data,x_/;Length[x]==1];
-  data=Flatten/@Partition[data,pos[[2]]-pos[[1]]];
-  {First/@data,Rest/@data}
+read1D[sim_String,file__String]:=Module[{str,ts},
+  str=OpenRead[FileNameJoin[{sim,"data",StringJoin[file]}]];
+  ts=ReadList[str,Number,RecordLists->True];
+  Close[str];
+  
+  ts=Flatten/@Split[ts,Length[#2]>1&];
+  
+  {ts[[;;,1]],ts[[;;,2;;]]}
 ]
-read1D[sim_,file__String,l_Integer]:=Module[{data},
-  data=Import@StringJoin[sim,"/data/",file]//Flatten;
-  data=Partition[data,l+1];
-  {First/@data,Rest/@data}
+read1D[sim_String,file__String,l_Integer]:=Module[{str,ts},
+  str=OpenRead[FileNameJoin[{sim,"data",StringJoin[file]}]];
+  ts=ReadList[str,Number,RecordLists->False]//Partition[#,l+1]&;
+  Close[str];
+  
+  {ts[[;;,1]],ts[[;;,2;;]]}
 ]
 
 
