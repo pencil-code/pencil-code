@@ -1072,6 +1072,11 @@ class __Simulation__(object):
         if verbose:
             print("! Running " + self.path)
 
+        if cleardata:
+            if verbose:
+                print("Clearing existing data")
+            self.clear_data(True, True)
+
         if not os.path.isdir(self.datadir):
             if os.path.exists(self.datadir):
                 if verbose:
@@ -1083,11 +1088,6 @@ class __Simulation__(object):
                 if verbose:
                     print("Creating datadir")
             os.mkdir(self.datadir)
-
-        if cleardata:
-            if verbose:
-                print("Clearing existing data")
-            self.clear_data(True, True)
 
         return self.bash(
             command=" ".join(command),
