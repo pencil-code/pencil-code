@@ -43,6 +43,9 @@ def der_6th(f, dx_1, axis):
             )
         )
 
+    if dx_1 is None:
+        raise ValueError("dx_1 was not specified")
+
     f_t = np.moveaxis(f, axis, -1)
 
     l1 = nghost
@@ -105,6 +108,12 @@ def der2_6th(f, dx_1, dx_tilde, axis):
                 np.size(dx_1), np.size(f, axis)
             )
         )
+
+    if dx_1 is None:
+        raise ValueError("dx_1 was not specified")
+
+    if dx_tilde is None:
+        raise ValueError("dx_tilde was not specified")
 
     f_t = np.moveaxis(f, axis, -1)
 
@@ -173,6 +182,9 @@ def der6_2nd(f, dx_1, axis):
                 np.size(dx_1), np.size(f, axis)
             )
         )
+
+    if dx_1 is None:
+        raise ValueError("dx_1 was not specified")
 
     f_t = np.moveaxis(f, axis, -1)
 
