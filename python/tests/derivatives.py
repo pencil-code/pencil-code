@@ -11,7 +11,7 @@ from test_utils import (
     test,
     _assert_close_arr,
 )
-from numpy import exp, sin, cos
+from numpy import exp, sin, cos, sqrt, pi
 
 pcd = pc.math.derivatives
 
@@ -83,14 +83,34 @@ def derivatives_vector() -> None:
     vz = exp(x) * cos(y + z)
     v = np.stack([vx, vy, vz], axis=0)
 
+    # Analytical expressions
     div_v = exp(y) * cos(x) * cos(z) + cos(x + y + z) - exp(x) * sin(y + z)
     curl_v_x = -exp(x) * sin(y + z) - cos(x + y + z)
     curl_v_y = -exp(x) * cos(y + z) - exp(y) * sin(x) * sin(z)
     curl_v_z = -exp(y) * sin(x) * cos(z) + cos(x + y + z)
     curl_v = np.stack([curl_v_x, curl_v_y, curl_v_z], axis=0)
+    lap_v_x = -exp(y) * sin(x) * cos(z)
+    lap_v_y = -3 * sin(x + y + z)
+    lap_v_z = -exp(x) * cos(y + z)
+    lap_v = np.stack([lap_v_x, lap_v_y, lap_v_z], axis=0)
+    del6_v_x = -exp(y) * sin(x) * cos(z)
+    del6_v_y = -3 * sin(x + y + z)
+    del6_v_z = -exp(x) * cos(y + z)
+    del6_v = np.stack([del6_v_x, del6_v_y, del6_v_z], axis=0)
 
+    # Compare with numerical results.
     check_arr_close(div_v, pcd.div(v, dx, dy, dz))
     check_arr_close(curl_v, pcd.curl(v, dx, dy, dz))
+    check_arr_close(lap_v, pcd.div_grad_curl.del2v(v, dx, dy, dz))
+    # check_arr_close(del6_v, pcd.div_grad_curl.del6(v,dx,dy,dz)) # TODO Fails
+
+    del2cube_v = pcd.div_grad_curl.del2v(
+        pcd.div_grad_curl.del2v(pcd.div_grad_curl.del2v(v, dx, dy, dz), dx, dy, dz),
+        dx,
+        dy,
+        dz,
+    )
+    # check_arr_close(del6_v, del2cube_v) # TODO Fails
 
 
 @test
@@ -142,6 +162,25 @@ def derivatives_cylindrical() -> None:
         + cos(r + theta + z) / r
     )
     df_num = pcd.div(v, dr, dtheta, dz, x=r_1d, coordinate_system="cylindrical")
+    check_arr_close(df_ana, df_num)
+
+    # Vector Laplacian
+    lap_v_r = (
+        -2 * exp(theta) * sin(r) * cos(z)
+        + exp(theta) * cos(r) * cos(z) / r
+        - 2 * cos(r + theta + z) / r**2
+    )
+    lap_v_theta = (
+        -2 * r**2 * sin(r + theta + z)
+        + r * cos(r + theta + z)
+        + 2 * exp(theta) * sin(r) * cos(z)
+        - 2 * sin(r + theta + z)
+    ) / r**2
+    lap_v_z = (r - 1) * exp(r) * cos(theta + z) / r**2
+    df_ana = np.stack([lap_v_r, lap_v_theta, lap_v_z], axis=0)
+    df_num = pcd.div_grad_curl.del2v(
+        v, dr, dtheta, dz, x=r_1d, coordinate_system="cylindrical"
+    )
     check_arr_close(df_ana, df_num)
 
 
@@ -208,6 +247,62 @@ def derivatives_spherical() -> None:
         + sin(phi + r + theta) * cos(theta)
     ) / (r * sin(theta))
     df_num = pcd.div(
+        v, dr, dtheta, dphi, x=r_1d, y=theta_1d, coordinate_system="spherical"
+    )
+    check_arr_close(df_ana, df_num)
+
+    # Vector Laplacian
+    """
+    >>> from sympy import *
+    >>> r, theta, phi = symbols("r theta phi")
+    >>> vr = sin(r) * exp(theta) * cos(phi)
+    >>> vt = sin(r + theta + phi)
+    >>> vp = exp(r) * cos(theta + phi)
+    >>> lap_vr = diff(r**2*diff(vr,r),r)/r**2 + diff(sin(theta)*diff(vr,theta),theta)/(r**2*sin(theta)) + diff(vr,phi,phi)/(r**2*sin(theta)**2) #scalar laplacian of vr
+    >>> lap_vt = diff(r**2*diff(vt,r),r)/r**2 + diff(sin(theta)*diff(vt,theta),theta)/(r**2*sin(theta)) + diff(vt,phi,phi)/(r**2*sin(theta)**2)
+    >>> lap_vp = diff(r**2*diff(vp,r),r)/r**2 + diff(sin(theta)*diff(vp,theta),theta)/(r**2*sin(theta)) + diff(vp,phi,phi)/(r**2*sin(theta)**2)
+    >>> print(( lap_vr - 2*vr/r**2 - 2*diff(vt*sin(theta),theta)/(r**2*sin(theta)) - 2*diff(vp,phi)/(r**2*sin(theta)) ).simplify()) #r-component
+    >>> print(( lap_vt - vt/(r**2*sin(theta)**2) + 2*diff(vr,theta)/r**2 - 2*cos(theta)*diff(vp,phi)/(r**2*sin(theta)**2) ).simplify()) #theta-component
+    >>> print(( lap_vp - vp/(r**2*sin(theta)**2) + 2*diff(vr,phi)/(r**2*sin(theta)) + 2*cos(theta)*diff(vt,phi)/(r**2*sin(theta)**2) ).simplify()) #phi-component
+    """
+    lap_v_r = (
+        (-(r**2) * sin(r) + 2 * r * cos(r) - 2 * sin(r))
+        * exp(theta)
+        * sin(theta) ** 2
+        * cos(phi)
+        + (
+            8 * exp(r) * sin(phi + theta)
+            + sqrt(2) * exp(theta) * sin(phi + r - theta + pi / 4)
+            - sqrt(2) * exp(theta) * cos(-phi + r + theta + pi / 4)
+            + sqrt(2) * exp(theta) * cos(phi - r + theta + pi / 4)
+            - sqrt(2) * exp(theta) * cos(phi + r + theta + pi / 4)
+            - 8 * sin(phi + r + 2 * theta)
+        )
+        * sin(theta)
+        / 4
+        - exp(theta) * sin(r) * cos(phi)
+    ) / (r**2 * sin(theta) ** 2)
+    lap_v_theta = (
+        (
+            -(r**2) * sin(phi + r + theta)
+            + 2 * r * cos(phi + r + theta)
+            + 2 * exp(theta) * sin(r) * cos(phi)
+        )
+        * sin(theta) ** 2
+        + 2 * exp(r) * sin(phi + theta) * cos(theta)
+        + sin(theta) * cos(phi + r + 2 * theta)
+        - 2 * sin(phi + r + theta)
+    ) / (r**2 * sin(theta) ** 2)
+    lap_v_phi = (
+        r**2 * exp(r) * sin(theta) ** 2 * cos(phi + theta)
+        + 2 * r * exp(r) * sin(theta) ** 2 * cos(phi + theta)
+        - 5 * exp(r) * cos(phi + theta) / 2
+        + exp(r) * cos(phi + 3 * theta) / 2
+        - 2 * exp(theta) * sin(phi) * sin(r) * sin(theta)
+        + 2 * cos(theta) * cos(phi + r + theta)
+    ) / (r**2 * sin(theta) ** 2)
+    df_ana = np.stack([lap_v_r, lap_v_theta, lap_v_phi], axis=0)
+    df_num = pcd.div_grad_curl.del2v(
         v, dr, dtheta, dphi, x=r_1d, y=theta_1d, coordinate_system="spherical"
     )
     check_arr_close(df_ana, df_num)
