@@ -436,7 +436,7 @@ def del2v(f, dx, dy, dz, x=None, y=None, coordinate_system="cartesian"):
             del2(f[2], dx, dy, dz, x=x, y=y, coordinate_system="spherical")
             - f[2] / (x * np.sin(y)) ** 2
             + 2 * zder(f[0], dz) / (np.sin(y) * x ** 2)
-            - (2 * np.cos(y)) * zder(f[1], dz) / (x * np.sin(y)) ** 2
+            + (2 * np.cos(y)) * zder(f[1], dz) / (x * np.sin(y))**2
         )
     return del2v_value
 
