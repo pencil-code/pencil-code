@@ -31,18 +31,22 @@ module PointMasses
   real, dimension(nqpar) :: xq0=0.0, yq0=0.0, zq0=0.0
   real, dimension(nqpar) :: vxq0=0.0, vyq0=0.0, vzq0=0.0
   real, dimension(nqpar) :: pmass=0.0, r_smooth=impossible, pmass1
+  real, dimension(nqpar) :: r1_smooth
   real, dimension(nqpar) :: frac_smooth=0.4
   real, dimension(nqpar) :: accrete_hills_frac=0.2, final_ramped_mass=0.0
+  real, dimension(nqpar) :: StokesNumber=1.
+  real, pointer :: rhs_poisson_const, tstart_selfgrav
   real :: eccentricity=0.0, semimajor_axis=1.0
   real :: totmass, totmass1
   real :: GNewton1, GNewton=impossible, density_scale=0.001
   real :: cdtq=0.1
   real :: hills_tempering_fraction=0.8
-  real, pointer :: rhs_poisson_const, tstart_selfgrav
+  real :: ugas=0.0,Omega_coriolis=0.0
+  real :: tau_accretion=1.0
+!
   integer :: ramp_orbits=5
   integer :: iprimary=1, isecondary=2
   integer :: ivpx_cart=0,ivpy_cart=0,ivpz_cart=0
-!
   integer :: imass=0, ixq=0, iyq=0, izq=0, ivxq=0, ivyq=0, ivzq=0
   integer :: nqvar=0
 !
@@ -58,16 +62,14 @@ module PointMasses
   logical :: lgas_gravity=.true.,ldust_gravity=.false.
   logical :: lcorrect_gasgravity_lstart=.false.
   logical :: lexclude_hills=.false.
+  logical :: lgas_removal=.false.,lmomentum_removal=.false.
+  logical :: ladd_dragforce=.false.,lquadratic_drag=.false.,llinear_drag=.true.
+  logical :: lcoriolis_force=.false.
+  logical :: l2D,l3D
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
   character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newton'
   character (len=2*bclen+1) :: bcqx='p', bcqy='p', bcqz='p'
-!
-  logical :: ladd_dragforce=.false.,lquadratic_drag=.false.,llinear_drag=.true.
-  logical :: lcoriolis_force=.false.
-  logical :: l2D,l3D
-  real :: ugas=0.0,Omega_coriolis=0.0
-  real, dimension(nqpar) :: StokesNumber=1.
 !
   type IndexDustParticles
     integer :: ixw=0,iyw=0,izw=0
@@ -97,7 +99,7 @@ module PointMasses
       lgas_gravity,ldust_gravity,&
       ladd_dragforce,ugas,StokesNumber,&
       lquadratic_drag,llinear_drag,lcoriolis_force,Omega_coriolis,&
-      frac_smooth,lexclude_hills
+      frac_smooth,lexclude_hills,tau_accretion,lgas_removal,lmomentum_removal
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
@@ -285,6 +287,7 @@ module PointMasses
           endif
         enddo
       endif
+      r1_smooth=1./r_smooth
 !
       if (rsmooth/=r_smooth(iprimary)) then
         print*,'rsmooth from cdata=',rsmooth
@@ -323,6 +326,9 @@ module PointMasses
 !
 !  All pencils that the pointmasses module depends on are specified here.
 !
+!  TODO: (08/2022) Change the criteria so that p%rho is called only when needed,
+!        instead of every time the density module is used.
+!
 !  22-sep-06/wlad: adapted
 !
       if (ldensity) lpenc_requested(i_rho)=.true.
@@ -336,6 +342,8 @@ module PointMasses
           lpenc_requested(i_r_mn)=.true.
         endif
       endif
+!
+      if (lmomentum_removal) lpenc_requested(i_uu)=.true.
 !
       if (idiag_totenergy/=0) then
         lpenc_diagnos(i_u2)=.true.
@@ -799,6 +807,8 @@ module PointMasses
         call get_total_gravity(ggt)
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggt(l1:l2,:)
 !
+        if (lgas_removal.or.lmomentum_removal) call gas_accretion_by_pointmass(df,p)
+!
 !  Add the gas gravity to the pointmasses by integration if llive_secondary
 !  is true.   
 !
@@ -913,6 +923,47 @@ module PointMasses
       call keep_compiler_quiet(f)
 !      
     endsubroutine dvvq_dt_pointmasses_pencil
+!***********************************************************************
+    subroutine gas_accretion_by_pointmass(df,p)
+!
+!  Compute gas accretion rate, and remove it from the gas.
+!
+!  Add it accordingly to Eq 6 of Duffell et al. 2020 (ApJ, 901, 25)
+!      
+!  01-aug-22/wlad: coded
+!
+      use Sub, only: get_radial_distance
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: momentum_removal_rate
+      real, dimension (nx) :: prefactor,mass_removal_rate
+      real, dimension (nx) :: rp_sph,rp_cyl
+      integer :: j,ks
+!
+      intent (in) :: p
+      intent (inout) :: df
+!
+      do ks=1,nqpar
+        call get_radial_distance(rp_sph,rp_cyl,&
+             e1_=fq(ks,ixq),e2_=fq(ks,iyq),e3_=fq(ks,izq))
+        prefactor = tau_accretion*exp(-(rp_sph*r1_smooth(ks))**4.0)
+!
+        if (lgas_removal) then
+           mass_removal_rate     = - prefactor * p%rho
+           df(l1:l2,m,n,irho)    = df(l1:l2,m,n,irho)    + mass_removal_rate
+        endif
+!
+        if (lmomentum_removal) then
+           do j=1,3
+             momentum_removal_rate(:,j) = - prefactor * p%uu(:,j)
+           enddo
+           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + momentum_removal_rate
+        endif
+!
+     enddo
+!
+    endsubroutine  gas_accretion_by_pointmass
 !***********************************************************************
     subroutine pointmasses_pde(f,df)
 !
@@ -1531,8 +1582,8 @@ module PointMasses
       real :: rr,w2,smap,hills,phip,phi,pcut
       integer :: ks,i
 !
-      if (ks==iprimary) call fatal_error('calc_torque', &
-          'Nonsense to calculate torques for the star')
+      !if (ks==iprimary) call fatal_error('calc_torque', &
+      !    'Nonsense to calculate torques for the star')
 !
       if (lcartesian_coords) then
         rr    = sqrt(fq(ks,ixq)**2 + fq(ks,iyq)**2 + fq(ks,izq)**2)
