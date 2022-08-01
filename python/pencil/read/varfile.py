@@ -300,7 +300,7 @@ class DataCube(object):
         else:
             total_vars = dim.mvar
 
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
+        if param.io_strategy == "HDF5":
             #
             #  Read HDF5 files.
             #
@@ -343,7 +343,7 @@ class DataCube(object):
                         self.__setattr__(
                             key, (tmp["persist"][key][0]).astype(precision)
                         )
-        else:
+        elif param.io_strategy == "dist":
             #
             #  Read scattered Fortran binary files.
             #
@@ -517,6 +517,12 @@ class DataCube(object):
                     x = x_loc
                     y = y_loc
                     z = z_loc
+        else:
+            raise NotImplementedError(
+                "IO strategy {} not supported by the Python module.".format(
+                    param.io_strategy
+                )
+            )
 
         if magic is not None:
             if not np.all(param.lequidist):
