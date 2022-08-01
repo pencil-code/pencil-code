@@ -1697,9 +1697,6 @@ module Special
 !  Horndeski preparations
 !  Allow for different prescriptions for the time dependence of horndeski_alpT_eff and horndeski_alpM_eff
 !
-! AR: time dependencies can be defined to modify horndeski_alpM and hence the eff and eff2 values can be defined
-! AR: later on. Hence, case selection can be moved to the beginning like so, please check
-!
       if (lhorndeski) then
         select case (ihorndeski_time)
           case ('const')
@@ -1711,12 +1708,6 @@ module Special
             horndeski_alpT_eff=horndeski_alpT*exp(-(scale_factor/scale_factor0)**horndeski_alpT_exp)
           case ('scale_factor_power')
             horndeski_alpM_eff=horndeski_alpM*scale_factor**horndeski_alpM_exp
-          !case ('dark_energy')
-            !horndeski_alpM_eff=horndeski_alpM_coeff*om_lambda
-          !
-          ! AR: Yutong, is it useful to add an option for dark energy dependence that does not read the file?
-          ! AR: if not, previous line can be deleted
-          ! 
           case ('dark_energy')
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
               Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
@@ -1732,18 +1723,12 @@ module Special
             call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
                 ,trim(idelkt))
         endselect
-        !horndeski_alpM_eff=horndeski_alpM/scale_factor
-        !horndeski_alpM_eff2=horndeski_alpM/scale_factor**2
-        !AR: I've moved this below since this is only used when the file is not read, right?
         if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
           !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp^2: ',Hp_target**2
           !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp: ',Hp_target 
           horndeski_alpM_eff=horndeski_alpM_eff*Hp_target
           horndeski_alpM_eff2=horndeski_alpM_eff*Hp_target
         else
-          !horndeski_alpM_eff=horndeski_alpM/scale_factor
-          !horndeski_alpM_eff2=horndeski_alpM/scale_factor**2
-          ! AR: to take into account time dependency
           horndeski_alpM_eff=horndeski_alpM_eff/scale_factor
           horndeski_alpM_eff2=horndeski_alpM_eff/scale_factor
         endif
