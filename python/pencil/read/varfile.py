@@ -165,7 +165,7 @@ class DataCube(object):
     ):
         """
         read(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
-             trimall=False, magic=None, sim=None, precision='f')
+             trimall=False, magic=None, sim=None, precision='d')
 
         Read VAR files from Pencil Code. If proc < 0, then load all data
         and assemble, otherwise load VAR file from specified processor.
