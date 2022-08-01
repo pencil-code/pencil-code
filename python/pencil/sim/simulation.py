@@ -700,7 +700,7 @@ class __Simulation__(object):
         command.append("pc_build")
 
         if cleanall:
-            command.append(" --cleanall")
+            self.cleanall(verbose=verbose, hostfile=hostfile, bashrc=bashrc)
         if fast == True:
             command.append(" --fast")
         if hostfile:
@@ -792,6 +792,40 @@ class __Simulation__(object):
             )
             print("! " + logfile)
             return rc
+
+    def cleanall(self, verbose=False, hostfile=None, bashrc=True):
+        """Runs `pc_build --cleanall` in the simulation directory
+
+        Parameters
+        ----------
+        verbose : bool
+            Activate for verbosity.
+
+        bashrc : bool
+            True: source bashrc in the subprocess
+            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
+        """
+
+        from pencil import io
+        from os.path import join
+
+        timestamp = io.timestamp()
+
+        command = []
+        command.append("pc_build")
+        command.append(" --cleanall")
+
+        if hostfile:
+            command.append(" -f " + hostfile)
+        if verbose != False:
+            print("! Cleaning " + self.path)
+
+        return self.bash(
+            command=" ".join(command),
+            verbose=verbose,
+            logfile=join(self.pc_dir, "cleanlog_" + timestamp),
+            bashrc=bashrc,
+        )
 
     def clear_src(self, do_it=False, do_it_really=False):
         """This method clears the src directory of the simulation!
