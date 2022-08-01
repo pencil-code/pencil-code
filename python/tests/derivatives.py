@@ -64,9 +64,11 @@ def derivatives_lap_grad() -> None:
     grad_f_z = -exp(y) * sin(x) * sin(z)
     grad_f = np.stack([grad_f_x, grad_f_y, grad_f_z], axis=0)
     Lap_f = -exp(y) * sin(x) * cos(z)
+    del6_f = -exp(y) * sin(x) * cos(z)
 
     check_arr_close(grad_f, pcd.grad(f, dx, dy, dz))
     check_arr_close(Lap_f, pcd.del2(f, dx, dy, dz))
+    check_arr_close_coarse(del6_f, pcd.del6(f, dx, dy, dz))
 
 
 @test
@@ -102,15 +104,7 @@ def derivatives_vector() -> None:
     check_arr_close(div_v, pcd.div(v, dx, dy, dz))
     check_arr_close(curl_v, pcd.curl(v, dx, dy, dz))
     check_arr_close(lap_v, pcd.div_grad_curl.del2v(v, dx, dy, dz))
-    # check_arr_close(del6_v, pcd.div_grad_curl.del6(v,dx,dy,dz)) # TODO Fails
-
-    del2cube_v = pcd.div_grad_curl.del2v(
-        pcd.div_grad_curl.del2v(pcd.div_grad_curl.del2v(v, dx, dy, dz), dx, dy, dz),
-        dx,
-        dy,
-        dz,
-    )
-    # check_arr_close(del6_v, del2cube_v) # TODO Fails
+    check_arr_close_coarse(del6_v, pcd.del6(v,dx,dy,dz))
 
 
 @test
@@ -311,6 +305,9 @@ def derivatives_spherical() -> None:
 def check_arr_close(a, b):
     _assert_close_arr(trim(a), trim(b), "max abs difference")
 
+def check_arr_close_coarse(a, b):
+    #Check lower-order derivatives (e.g. xder6, which has a 2nd-order error) with a higher error tolerance.
+    _assert_close_arr(trim(a), trim(b), "max abs difference", eps=1e-2)
 
 def trim(arr):
     """
