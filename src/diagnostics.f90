@@ -230,7 +230,6 @@ module Diagnostics
 !  point or double precision.
 !
       if (lroot) then
-
         call save_name(tdiagnos,idiag_t)
         call save_name(dt,idiag_dt)
         call save_name(one_real*(it-1),idiag_it)

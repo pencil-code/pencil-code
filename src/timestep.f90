@@ -86,6 +86,8 @@ module Timestep
       real :: ds, dtsub
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt.
+!
+! <<<<<<<<<<<<<<  the following should be omitted at some point <<<<<<<<<<<<<<
 !  There is also an option to advance the time in progressively smaller
 !  fractions of the current time. This is used to model the end of inflation,
 !  when lfractional_tstep_negative should be used.
@@ -93,17 +95,18 @@ module Timestep
 !  From radiation era onward, lfractional_tstep_positive should be used
 !  to make sure the dt used in run.in is positive.
 !
-      if (.not. ldt) then
-        if (lfractional_tstep_advance) then
-          if (lfractional_tstep_negative) then
-            dt_beta_ts=-dt*t
-          else
-            dt_beta_ts=dt*t
-          endif
-        else
-          dt_beta_ts=dt*beta_ts
-        endif
-      endif
+  !   if (.not. ldt) then
+  !     if (lfractional_tstep_advance) then
+  !       if (lfractional_tstep_negative) then
+  !         dt_beta_ts=-dt*t
+  !       else
+  !         dt_beta_ts=dt*t
+  !       endif
+  !     else
+  !       dt_beta_ts=dt*beta_ts
+  !     endif
+  !   endif
+! >>>>>>>>>>>>>>>>>>>>  until here >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !
 !  Set up df and ds for each time sub.
 !

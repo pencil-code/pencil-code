@@ -3884,11 +3884,16 @@ module Sub
       real :: dt1_
       real :: dt1, dt1_local
       real, save :: dt1_last=0.0
-
+!
+!  dt1_local (or dt1_) is the inverse limiting time step at each processor.
+!
       dt1_local=dt1_
       ! Timestep growth limiter
       if (ddt > 0.) dt1_local=max(dt1_local,dt1_last)
       call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
+!
+!  not set the actual time step, based on dt1
+!
       dt=1.0/dt1
       if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
       ! Timestep growth limiter

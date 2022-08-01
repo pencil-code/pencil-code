@@ -274,10 +274,16 @@ module Equ
       call fill_farray_pressure(f)
 !
 !  Set inverse timestep to zero before entering loop over m and n.
+!  If we want to have a logarithmic time advance, we want set this here
+!  as the maximum. All other routines can then still make it shorter.
 !
       if (lfirst.and.ldt) then
         if (dtmax/=0.0) then
-          dt1_max=1./dtmax
+          if (lfractional_tstep_advance) then
+            dt1_max=1./(dt_incr*t)
+          else
+            dt1_max=1./dtmax
+          endif
         else
           dt1_max=0.0
         endif
