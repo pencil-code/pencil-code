@@ -60,8 +60,6 @@ def der_6th(f, dx_1, axis):
         )
         df_t[..., :l1] = df_t[..., l2 - nghost : l2]
         df_t[..., l2:] = df_t[..., l1 : l1 + nghost]
-    else:
-        df_t = 0.0
 
     return np.moveaxis(df_t, -1, axis)
 
@@ -133,8 +131,6 @@ def der2_6th(f, dx_1, dx_tilde, axis):
 
         d2f_t[..., :l1] = d2f_t[..., l2 - nghost : l2]
         d2f_t[..., l2:] = d2f_t[..., l1 : l1 + nghost]
-    else:
-        d2f_t = 0.0
 
     return np.moveaxis(d2f_t, -1, axis)
 
@@ -197,8 +193,6 @@ def der6_6th(f, dx_1, axis):
 
         d6f_t[..., :l1] = d6f_t[..., l2 - nghost : l2]
         d6f_t[..., l2:] = d6f_t[..., l1 : l1 + nghost]
-    else:
-        d6f_t = 0.0
 
     return np.moveaxis(d6f_t, -1, axis)
 
