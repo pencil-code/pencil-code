@@ -14,7 +14,7 @@ Contains the read class for the VAR file reading,
 some simulation attributes and the data cube.
 """
 import numpy as np
-
+import warnings
 
 def var(*args, **kwargs):
     """
@@ -274,12 +274,14 @@ class DataCube(object):
         dim = None
         param = None
         index = None
+        grid = None
 
         if isinstance(sim, __Simulation__):
             datadir = os.path.expanduser(sim.datadir)
             dim = sim.dim
             param = read.param(datadir=sim.datadir, quiet=True, conflicts_quiet=True)
             index = read.index(datadir=sim.datadir)
+            grid = read.grid(datadir=sim.datadir, quiet=True)
         else:
             datadir = os.path.expanduser(datadir)
             if dim is None:
@@ -294,6 +296,12 @@ class DataCube(object):
                 param = read.param(datadir=datadir, quiet=quiet, conflicts_quiet=True)
             if index is None:
                 index = read.index(datadir=datadir)
+            if grid is None:
+                try:
+                    grid = read.grid(datadir=datadir, quiet=True)
+                except FileNotFoundError:
+                    # KG: Handling this case because there is no grid.dat in `tests/input/serial-1/proc0` and we don't want the test to fail. Should we just drop this and add a grid.dat in the test input?
+                    warnings.warn("Grid.dat not found. Assuming the grid is uniform.")
 
         if param.lwrite_aux:
             total_vars = dim.mvar + dim.maux
@@ -525,21 +533,23 @@ class DataCube(object):
             )
 
         if magic is not None:
-            if not np.all(param.lequidist):
-                raise NotImplementedError("Magic functions are only implemented for equidistant grids.")
+            """
+            In the functions curl and curl2, the arguments (dx,dy,dz,x,y) are ignored when grid is not None. Nevertheless, we pass them below to take care of the case where the user is trying to read a snapshot without the corresponding grid.dat being present (such as in the test test_read_var).
+            """
             if "bb" in magic:
                 # Compute the magnetic field before doing trimall.
                 aa = self.f[index.ax - 1 : index.az, ...]
                 self.bb = dtype(
                     curl(
                         aa,
-                        dx,
-                        dy,
-                        dz,
+                        dx=dx,
+                        dy=dy,
+                        dz=dz,
                         x=x,
                         y=y,
                         run2D=run2D,
                         coordinate_system=param.coord_system,
+                        grid=grid,
                     )
                 )
                 if trimall:
@@ -551,7 +561,14 @@ class DataCube(object):
                 aa = self.f[index.ax - 1 : index.az, ...]
                 self.jj = dtype(
                     curl2(
-                        aa, dx, dy, dz, x=x, y=y, coordinate_system=param.coord_system
+                        aa,
+                        dx=dx,
+                        dy=dy,
+                        dz=dz,
+                        x=x,
+                        y=y,
+                        coordinate_system=param.coord_system,
+                        grid=grid,
                     )
                 )
                 if trimall:
@@ -564,13 +581,14 @@ class DataCube(object):
                 self.vort = dtype(
                     curl(
                         uu,
-                        dx,
-                        dy,
-                        dz,
+                        dx=dx,
+                        dy=dy,
+                        dz=dz,
                         x=x,
                         y=y,
                         run2D=run2D,
                         coordinate_system=param.coord_system,
+                        grid=grid,
                     )
                 )
                 if trimall:
