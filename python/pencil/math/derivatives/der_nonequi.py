@@ -135,11 +135,11 @@ def der2_6th(f, dx_1, dx_tilde, axis):
     return np.moveaxis(d2f_t, -1, axis)
 
 
-def der6_6th(f, dx_1, axis):
+def der6_2nd(f, dx_1, axis):
     """
-    der6_6th(f, dx_1, axis)
+    der6_2nd(f, dx_1, axis)
 
-    Compute the 6th order derivative, 6th order accurate in x. Adapted from der6_main in deriv.f90.
+    Compute the 6th order derivative, with 2nd order error in x. Adapted from der6_main in deriv.f90.
     This supports nonequidistant grids.
 
     Parameters
@@ -324,11 +324,11 @@ def zder2_6th(f, dz=None, dz_1=None, dz_tilde=None):
     return der2_6th(f, dz_1, dz_tilde, axis=-3)
 
 
-def xder6_6th(f, dx=None, dx_1=None):
+def xder6_2nd(f, dx=None, dx_1=None):
     """
-    xder6_6th(f, dx=None, dx_1=None)
+    xder6_2nd(f, dx=None, dx_1=None)
 
-    Compute the 6th order derivative, 6th order accurate in x.
+    Compute the 6th order derivative, with 2nd order error in x
 
     Parameters
     ----------
@@ -350,12 +350,12 @@ def xder6_6th(f, dx=None, dx_1=None):
         warnings.warn("Assuming equidistant grid")
         dx_1 = np.ones(np.size(f,-1)) / dx
 
-    return der6_6th(f, dx_1, axis=-1)
+    return der6_2nd(f, dx_1, axis=-1)
 
 
-def yder6_6th(f, dy=None, dy_1=None):
+def yder6_2nd(f, dy=None, dy_1=None):
     """
-    Same as xder6_6th, but for y axis
+    Same as xder6_2nd, but for y axis
     """
 
     if f.ndim != 3 and f.ndim != 4:
@@ -366,12 +366,12 @@ def yder6_6th(f, dy=None, dy_1=None):
         warnings.warn("Assuming equidistant grid")
         dy_1 = np.ones(np.size(f,-2)) / dy
 
-    return der6_6th(f, dy_1, axis=-2)
+    return der6_2nd(f, dy_1, axis=-2)
 
 
-def zder6_6th(f, dz=None, dz_1=None):
+def zder6_2nd(f, dz=None, dz_1=None):
     """
-    Same as xder6_6th, but for z axis
+    Same as xder6_2nd, but for z axis
     """
 
     if f.ndim != 3 and f.ndim != 4:
@@ -382,4 +382,4 @@ def zder6_6th(f, dz=None, dz_1=None):
         warnings.warn("Assuming equidistant grid")
         dz_1 = np.ones(np.size(f,-3)) / dz
 
-    return der6_6th(f, dz_1, axis=-3)
+    return der6_2nd(f, dz_1, axis=-3)
