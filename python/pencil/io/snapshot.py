@@ -25,6 +25,9 @@ def write_snapshot(
     y=None,
     z=None,
     lshear=False,
+    dx=None,
+    dy=None,
+    dz=None,
 ):
     """
     Write a snapshot given as numpy array.
@@ -63,6 +66,9 @@ def write_snapshot(
 
     *lshear*:
       Flag for the shear.
+    
+    *dx, dy, dz* : float
+      Grid spacing (for calculation in the case of nonequidistant grids, see subroutine grid.f90/construct_grid)
     """
 
     import os
@@ -124,9 +130,12 @@ def write_snapshot(
     z_ghost[nghost:-nghost] = z
 
     # Define the deltas.
-    dx = x[1] - x[0]
-    dy = y[1] - y[0]
-    dz = z[1] - z[0]
+    if dx is None:
+        dx = x[1] - x[0]
+    if dy is None:
+        dy = y[1] - y[0]
+    if dz is None:
+        dz = z[1] - z[0]
 
     # Define a time.
     if t is None:
