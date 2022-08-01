@@ -106,7 +106,7 @@ module PointMasses
   integer, dimension(nqpar)   :: idiag_torqext_gas=0,idiag_torqext_par=0
   integer, dimension(nqpar)   :: idiag_torqint_gas=0,idiag_torqint_par=0
   integer, dimension(nqpar)   :: idiag_period=0,idiag_torque=0
-  integer                     :: idiag_totenergy=0
+  integer                     :: idiag_totenergy=0,idiag_mdot_pt=0
 !
   contains
 !***********************************************************************
@@ -933,11 +933,12 @@ module PointMasses
 !  01-aug-22/wlad: coded
 !
       use Sub, only: get_radial_distance
+      use Diagnostics
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: momentum_removal_rate
-      real, dimension (nx) :: prefactor,mass_removal_rate
+      real, dimension (nx) :: prefactor,mass_removal_rate,argexp
       real, dimension (nx) :: rp_sph,rp_cyl
       integer :: j,ks
 !
@@ -947,11 +948,14 @@ module PointMasses
       do ks=1,nqpar
         call get_radial_distance(rp_sph,rp_cyl,&
              e1_=fq(ks,ixq),e2_=fq(ks,iyq),e3_=fq(ks,izq))
-        prefactor = tau_accretion*exp(-(rp_sph*r1_smooth(ks))**4.0)
+        argexp = min(rp_sph*r1_smooth(ks),3.0)
+        prefactor = tau_accretion*exp(-argexp**4.0)
 !
         if (lgas_removal) then
            mass_removal_rate     = - prefactor * p%rho
            df(l1:l2,m,n,irho)    = df(l1:l2,m,n,irho)    + mass_removal_rate
+           if (ldiagnos.and.idiag_mdot_pt/=0) &
+                call sum_lim_mn_name(mass_removal_rate,idiag_mdot_pt,p)
         endif
 !
         if (lmomentum_removal) then
@@ -2425,6 +2429,7 @@ module PointMasses
         idiag_torqint_gas=0;idiag_torqint_par=0
         idiag_period=0
         idiag_torque=0
+        idiag_mdot_pt=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -2488,10 +2493,12 @@ module PointMasses
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'totenergy',idiag_totenergy)
+        call parse_name(iname,cname(iname),cform(iname),'mdot_pt',idiag_mdot_pt)
       enddo
 !
        if (lwr) then
          call pointmass_index_append('i_totenergy',idiag_totenergy)
+         call pointmass_index_append('i_mdot_pt',idiag_mdot_pt)
        endif
 !
     endsubroutine rprint_pointmasses
