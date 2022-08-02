@@ -5279,7 +5279,9 @@ module Initcond
         kpeak1=1./kpeak
         kpeak21=1./kpeak**2
 !
-!
+!  Alberto: added option to compensate amplitude and peak using D1 and D2
+!           such that the maximum of the spectrum is located at kpeak
+! 
 !
         if (l_factors) then
           if ((initpower /= 0).and.(initpower2 /= 0)) then
