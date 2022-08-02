@@ -745,9 +745,24 @@ module Forcing
       endif
 !
 !  Turn on forcing intensity for force_double above z=0.
+!  Adding a z-profile is the default. To turn it off, put width_ff=0.
+!  If it is turned off, we put qdouble_profile=.5, to give both 50%,
+!  if force_double=force.
 !
-      if (lforcing_coefs_hel_double) &
-        qdouble_profile=.5*(1.+erfunc((z-r_ff)/width_ff))
+      if (lforcing_coefs_hel_double) then
+        if (width_ff==0.) then
+          qdouble_profile=.5
+        else
+          qdouble_profile=.5*(1.+erfunc((z-r_ff)/width_ff))
+        endif
+!
+!  Debug output
+!
+        if (ip<17.and.lroot) then
+          print*,'r_ff,width_ff=',r_ff,width_ff
+          print*,'qdouble_profile=',qdouble_profile
+        endif
+      endif
 !
 !  at the first step, the sin and cos functions are calculated for all
 !  x,y,z points and are then saved and used for all subsequent steps
@@ -1462,7 +1477,9 @@ module Forcing
 
       real :: phase, fact 
       real, dimension(3) :: kk
-
+!
+!  The routine fconst_coefs_hel generates various coefficients, including the phase.
+!
       call fconst_coefs_hel(force,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
       call fxyz_coefs_hel(coef1,coef2,coef3,kk,phase,fact,fda,fx,fy,fz)
 
@@ -1471,6 +1488,7 @@ module Forcing
     subroutine forcing_pars_hel(coef1,coef2,coef3,fda,kk,phase,fact)
 !
 !  Calculates position-independent and 1D coefficients for helical forcing.
+!  But this routine doesn't seem to be called from anywhere anymore.
 !
 !  4-oct-17/MR: outsourced from forcing_hel.
 !               Spotted bug: for old_forcing_evector=T, kk and ee remain undefined
@@ -1479,7 +1497,7 @@ module Forcing
 !
       real, dimension (3), intent(out) :: coef1,coef2,coef3,fda,kk
       real, intent(out) :: phase, fact 
-
+!
       call fconst_coefs_hel(force,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
 
     endsubroutine forcing_pars_hel
@@ -1500,6 +1518,9 @@ module Forcing
 !
       real, dimension (3) :: kk
       real :: phase, fact 
+!
+!  This one also calculates coefficients, which are new ones, independent
+!  of those in subroutine forcing_coefs_hel
 !
       call fconst_coefs_hel(force_double,kkx2,kky2,kkz2,nk2,kav2,coef1,coef2,coef3,kk,phase,fact,fda)
       call fxyz_coefs_hel(coef1,coef2,coef3,kk,phase,fact,fda,fx,fy,fz)
@@ -1542,6 +1563,7 @@ module Forcing
 !        call random_seed_wrapper(GET=seed)
 !if (lroot) write(20,*) 'forcing: seed=', seed(1:nseed)
         phase=pi*(2*fran(1)-1.)
+!AB: to add time-dependence XX
         ik=nk*(.9999*fran(2))+1
 !
 !  if lavoid_xymean=T and wavevector is close enough to [0,0,kz] discard it
@@ -1735,7 +1757,6 @@ module Forcing
 !
 !  08-aug-19/MR: carved out to produce fx,fy,fz from the other parameters.
 ! 
-
       use Mpicomm, only: stop_it
 
       real,    dimension (3), intent(in ) :: coef1,coef2,coef3,kk,fda
@@ -1962,7 +1983,6 @@ module Forcing
                     forcing_rhs2_old(:,j) = force_ampl*fda2_old(j)*cos(omega_ff*t) &
                                            *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
                 endif
-!
 !
 !  Possibility of adding second forcing function.
 ! 

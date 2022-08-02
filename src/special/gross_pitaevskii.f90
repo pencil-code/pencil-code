@@ -160,6 +160,7 @@ module Special
 !! other variables (needs to be consistent with reset list below)
 !!
    integer :: i_modpsim=0
+   integer :: i_modpsi2m=0
    integer :: i_Egpe1=0
    integer :: i_Egpe2=0
    integer :: i_Egpe3=0
@@ -603,6 +604,9 @@ module Special
           call sum_mn_name(sqrt(psi2),i_modpsim)
 ! see also integrate_mn_name
         endif
+        if (i_modpsi2m/=0) then
+          call sum_mn_name(psi2,i_modpsi2m)
+        endif
         if (i_Egpe1/=0) then
           call grad(f,ipsi_real,gpreal)
           call grad(f,ipsi_imag,gpimag)
@@ -610,7 +614,7 @@ module Special
           call dot2_mn(gpimag,gpimag2)
           call sum_mn_name(.5*(gpreal2+gpimag2),i_Egpe1)
         endif
-        if (i_Egpe2/=0) call sum_mn_name(pot_gpe*psi2,i_Egpe2)
+        if (i_Egpe2/=0) call sum_mn_name(pot_tot*psi2,i_Egpe2)
         if (i_Egpe3/=0) call sum_mn_name(.5*g_gpe*psi2**2,i_Egpe3)
       endif
 !
@@ -679,11 +683,12 @@ module Special
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-        i_modpsim=0; i_Egpe1=0; i_Egpe2=0; i_Egpe3=0
+        i_modpsim=0; i_modpsi2m=0; i_Egpe1=0; i_Egpe2=0; i_Egpe3=0
       endif
 !!
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'modpsim',i_modpsim)
+        call parse_name(iname,cname(iname),cform(iname),'modpsi2m',i_modpsi2m)
         call parse_name(iname,cname(iname),cform(iname),'Egpe1',i_Egpe1)
         call parse_name(iname,cname(iname),cform(iname),'Egpe2',i_Egpe2)
         call parse_name(iname,cname(iname),cform(iname),'Egpe3',i_Egpe3)

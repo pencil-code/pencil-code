@@ -2466,15 +2466,16 @@ module Initcond
 !
     endsubroutine sph_constb
 !***********************************************************************
-    subroutine hatwave(ampl,f,i,width,kx,ky,kz,power)
+    subroutine hatwave(ampl,f,i,width,kx,ky,kz,power,pos)
 !
 !  cosine wave (as initial condition)
 !
 !   9-jan-08/axel: adapted from coswave
+!  22-jul-22/axel: added keyword pos for positive values only
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, optional :: kx,ky,kz,power
+      real, optional :: kx, ky, kz, power, pos
       real :: ampl,k=1.,fac,width,pow=1.
 !
 !  wavenumber k
@@ -2490,7 +2491,11 @@ module Initcond
         else
           if (lroot) print*,'hatwave: kx,i=',k,i
           !f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(1+tanh((cos(k*x)**pow)/width),2,my),3,mz)
-          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(tanh((cos(k*x)**pow)/width),2,my),3,mz)
+          if (present(pos)) then
+            f(:,:,:,i)=f(:,:,:,i)+.5*fac*(1.+spread(spread(tanh((cos(k*x)**pow)/width),2,my),3,mz))
+          else
+            f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(tanh((cos(k*x)**pow)/width),2,my),3,mz)
+          endif
         endif
       endif
 !
