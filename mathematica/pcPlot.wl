@@ -21,6 +21,16 @@ pcPopup::usage="Using DisplayFunction->pcPopup will make a plot in a pop-up wind
 
 pcTicks::usage="Frame ticks in convenient forms."
 
+pcLegend::usage="pcLegend[l,opts] uses DensityPlot to make a bar legend.
+Input:
+  l: List. MinMax[l] will specify the lower and upper bounds of the data.
+Options:
+  opts: Will be inherited by DensityPlot and overwrite the default ones.
+        Usually one needs to adjust ImageSize, ImagePadding, and AspectRatio to have
+        the best looking.
+Output:
+  A bar legend as an Image object, which can be aligned with other figures using Grid."
+
 spaceTimeDiag::usage="spaceTimeDiag[sim,plane,var,plotStyle:] makes a butterfly diagram from planar averaged data.
 Input:
   sim: String. Directory of the simulation.
@@ -133,6 +143,17 @@ pcTicks["Log10i",max_:99]:=Table[{10^i,ToString@i},{i,-max,max}]
 
 
 (* ::Section:: *)
+(*Bar legend*)
+
+
+pcLegend[l_List,opt:OptionsPattern[]]:=DensityPlot[y,{x,0,1},{y,Sequence@@MinMax[l]},opt,
+  ColorFunction->ColorData[{"Rainbow","Reversed"}],PlotLegends->None,
+  FrameTicks->{{None,All},{None,None}},PlotRangePadding->None,
+  AspectRatio->12,ImagePadding->{{5,40},{5,5}},ImageSize->{80,240}
+]
+
+
+(* ::Section:: *)
 (*Butterfly diagram*)
 
 
@@ -197,7 +218,7 @@ showSliceVector[data_Association,var_String,{sp_String,loc_?NumericQ},plotStyle_
 
 
 (* ::Section:: *)
-(*Plot multiple panels with common axes*)
+(*Plot multiple panels with shared axes*)
 
 
 Options[pcPanelDataPlot]={"ImageSize0"->300,"ImagePadding0"->25,"Spacingx"->-2}
@@ -280,6 +301,7 @@ End[]
 
 Protect[
   pcLabelStyle,pcPlotStyle,pcPopup,pcTicks,
+  pcLegend,
   spaceTimeDiag,
   showVideo,
   showSlice,showSliceVector,
