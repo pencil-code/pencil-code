@@ -883,6 +883,10 @@ module Snapshot
         if (jj_kx0z)   call power_fft3d_vec(f,'jj','kx0z')
         if (ee_k00z)   call power_fft3d_vec(f,'ee','k00z')
 !
+!  output spectral fluxes
+!
+        if (mh_specflux) call powerSpecFlux(f,'maghel')
+!
         lspec=.false.
       endif
 !

@@ -5293,4 +5293,138 @@ endsubroutine pdf
   !
   endsubroutine power_fft3d_vec
 !***********************************************************************
+  subroutine powerSpecFlux(f,sp)
+!
+!  Calculate spectral fluxes of various quantities.
+!
+!   3-aug-22/hongzhe: adapted from powerEMF
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: gij, gij_etc, curl_mn, cross_mn
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i,ivec,ikx,iky,ikz,k
+  real :: k2
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension (mx,my,mz,3) :: EMF,JJJ,EMB,BBB
+  real, dimension(nx,ny,nz) :: a_re,a_im, b_re,b_im
+  real, dimension(nx,3) :: uu,aa,bb,jj,uxb,uxj
+  real, dimension(nx,3,3) :: aij,bij
+  real, dimension(nk) :: specT,specflux,specflux_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=*) :: sp
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id( &
+       "$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize spectral flux to zero
+  !
+  specT=0.
+  specflux=0.
+  specflux_sum=0.
+  !
+  !  compute nonlinear terms
+  !
+  do m=m1,m2
+  do n=n1,n2
+     uu=f(l1:l2,m,n,iux:iuz)
+     aa=f(l1:l2,m,n,iax:iaz)
+     call gij(f,iaa,aij,1)
+     call gij_etc(f,iaa,aa,aij,bij)
+     call curl_mn(aij,bb,aa)
+     call curl_mn(bij,jj,bb)
+     call cross_mn(uu,bb,uxb)
+     call cross_mn(uu,jj,uxj)
+     EMF(l1:l2,m,n,:)=uxb
+     EMB(l1:l2,m,n,:)=uxj
+     JJJ(l1:l2,m,n,:)=jj
+     BBB(l1:l2,m,n,:)=bb
+  enddo
+  enddo
+  !
+  !  loop over all the components
+  !
+  do ivec=1,3
+!
+!  Magnetic helicity spectral flux, defined as
+!  $\Pi(k)=-\int_0^k k'^2 dk' dOmega [b^*(k') \cdot emf(k') + c.c.]$
+!  so that $dH(k)/dt + d\Pi/dk = -2\eta k^2 H(k)$
+!
+    if (sp=='maghel') then
+      a_re = -EMF(l1:l2,m1:m2,n1:n2,ivec)
+      b_re = +BBB(l1:l2,m1:m2,n1:n2,ivec)
+      a_im = 0.
+      b_im = 0.
+!
+    endif
+!
+!  Doing the Fourier transform
+!
+    call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(b_re,b_im)
+!
+!  integration over shells
+!
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum local contribution in each shell
+!
+            specT(k+1)=specT(k+1) &
+               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+!
+!  end of loop through all points
+!
+          endif
+        enddo
+      enddo
+    enddo
+    !
+  enddo !(from loop over ivec)
+!
+!  compute spectral flux
+!
+  do ikx=1,nk
+    do iky=1,ikx
+      specflux(ikx) = specflux(ikx) + specT(iky)
+    enddo
+  enddo
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+  call mpireduce_sum(specflux,specflux_sum,nk)
+  !
+  !  append to diagnostics file
+  !
+  if (lroot) then
+    if (ip<10) print*,'Writing spectral flux ',sp &
+         ,' to ',trim(datadir)//'/powerflux_'//trim(sp)//'.dat'
+    open(1,file=trim(datadir)//'/powerflux_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,power_format) specflux_sum
+    close(1)
+  endif
+  !
+  endsubroutine powerSpecFlux
+!***********************************************************************
 endmodule power_spectrum
