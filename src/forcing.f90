@@ -39,7 +39,7 @@ module Forcing
   real :: fountain=1.,width_ff=.5,nexp_ff=1.,n_hel_sin_pow=0.
   real :: crosshel=0.
   real :: radius_ff=0., k1_ff=1., kx_ff=1., ky_ff=1., kz_ff=1., z_center=0.
-  real :: slope_ff=0., work_ff=0., omega_ff=0., n_equator_ff=1.
+  real :: slope_ff=0., work_ff=0., omega_ff=0., omega_double_ff=0., n_equator_ff=1.
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
   real :: wff_ampl=0.,  xff_ampl=0.,  yff_ampl=0.,  zff_ampl=0.
@@ -137,7 +137,7 @@ module Forcing
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain, fountain, tforce_stop, tforce_stop2, &
        radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
-       omega_ff, n_equator_ff, location_fixed, lrandom_location, nlocation, &
+       omega_ff, omega_double_ff, n_equator_ff, location_fixed, lrandom_location, nlocation, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl, xff_ampl, yff_ampl, zff_ampl, zff_hel, &
        wff2_ampl, xff2_ampl,yff2_ampl, zff2_ampl, &
@@ -1840,6 +1840,7 @@ module Forcing
 !                Spotted possible bug: for lforcing2_curl=T, calculation of forcing_rhs 
 !                seems not to be meaningful.
 !  12-jan-18/axel: added periodic forcing for omega_ff /= 0.
+!   3-aug-22/axel: added omega_double_ff for second forcing function
 !
       use Mpicomm
       use Sub
@@ -1988,12 +1989,12 @@ module Forcing
 ! 
                 if (lforcing_coefs_hel_double) then
                   forcing_rhs(:,j) = (1.-qdouble_profile(n))*forcing_rhs(:,j) &
-                                    +qdouble_profile(n)*force_ampl*fda2(j)*cos(omega_ff*t) &
+                                    +qdouble_profile(n)*force_ampl*fda2(j)*cos(omega_double_ff*t) &
                                     *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
 !
                   if (qforce/=0.) &
                     forcing_rhs_old(:,j) = (1.-qdouble_profile(n))*forcing_rhs_old(:,j) &
-                                          +qdouble_profile(n)*force_ampl*fda2_old(j)*cos(omega_ff*t) &
+                                          +qdouble_profile(n)*force_ampl*fda2_old(j)*cos(omega_double_ff*t) &
                                           *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
                 endif
 !
