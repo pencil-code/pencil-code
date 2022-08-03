@@ -244,7 +244,7 @@ module Magnetic
   logical :: lscale_tobox=.true.
   logical :: lbraginsky=.false.
   logical :: lcoulomb=.false.
-  logical :: l_factors_aa=.false. 
+  logical :: lfactors_aa=.false. 
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -273,7 +273,7 @@ module Magnetic
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
-      lcoulomb, qexp_aa, nfact_aa, l_factors_aa
+      lcoulomb, qexp_aa, nfact_aa, lfactors_aa
 !
 ! Run parameters
 !
@@ -1924,7 +1924,7 @@ module Magnetic
             lskip_projection_aa, lvectorpotential, &
             lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lpower_profile_file=lpower_profile_file, qexp=qexp_aa, &
-            nfact0=nfact_aa, l_factors0=l_factors_aa)
+            nfact0=nfact_aa, lfactors0=lfactors_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')

@@ -5058,10 +5058,10 @@ module Initcond
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
-      lno_noise,nfact0,l_factors0)
+      lno_noise,nfact0,lfactors0)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
-!  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2, 
+!  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
 !  and l=2*ncutoff.
 !  The relative helicity is relhel.
 !
@@ -5085,10 +5085,10 @@ module Initcond
       use General, only: loptest
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
-      logical, intent(in), optional :: lpower_profile_file, lno_noise,l_factors0
+      logical, intent(in), optional :: lpower_profile_file, lno_noise,lfactors0
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection
-      logical :: l_factors=.false.
+      logical :: lfactors=.false.
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
@@ -5127,10 +5127,10 @@ module Initcond
 !
 !
      if (present(nfact0)) then
-       nfact = nfact0     
-     endif 
-     if (present(l_factors0)) then
-       l_factors = l_factors0
+       nfact = nfact0
+     endif
+     if (present(lfactors0)) then
+       lfactors = lfactors0
      endif
 !
 !  Allocate memory for arrays.
@@ -5286,9 +5286,9 @@ module Initcond
 !
 !  Alberto: added option to compensate amplitude and peak using D1 and D2
 !           such that the maximum of the spectrum is located at kpeak
-! 
 !
-        if (l_factors) then
+!
+        if (lfactors) then
           if ((initpower /= 0).and.(initpower2 /= 0)) then
             D1 = -initpower/initpower2
             D2 = D1
@@ -6834,8 +6834,8 @@ module Initcond
 !***********************************************************************
     subroutine tanh_hyperbola(amp,f,ix,yzero,delta,kk)
 !
-!  initial vector potential as used by Moffatt and Hunt, "A model for magnetic 
-!  reconnection", 2002. 
+!  initial vector potential as used by Moffatt and Hunt, "A model for magnetic
+!  reconnection", 2002.
 
 !
 !  23 June 2016/dhruba.mitra
@@ -6850,10 +6850,10 @@ module Initcond
             f(l,m,:,ix+1) = 0.
             f(l,m,:,ix+2) = 0.5*amp*tanh((y(m)*y(m) - yzero*yzero-kk*kk*x(l)*x(l))/(delta*delta))
           enddo
-        enddo      
+        enddo
 
 !
-    endsubroutine 
+    endsubroutine
 !***********************************************************************
     subroutine pre_stellar_cloud(f, datafile, mass_cloud,  &
         cloud_mode, T_cloud_out_rel, dens_coeff, &
