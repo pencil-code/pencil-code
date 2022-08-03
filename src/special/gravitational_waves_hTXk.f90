@@ -114,13 +114,13 @@ module Special
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
-  logical :: lno_noise_GW=.false.
+  logical :: lno_noise_GW=.false., lfactors_GW=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
   real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
-  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841
+  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, nfact_GWs=4., nfact_GWh=4.
 ! AR: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
 !
@@ -149,7 +149,8 @@ module Special
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lonly_mag, lread_scl_factor_file, t_ini, &
-    lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW
+    lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW, &
+    lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -606,12 +607,14 @@ module Special
             cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
-            lremain_in_fourier=.true., lno_noise=lno_noise_GW)
+            lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
+            lfactors0=lfactors_GW, nfact0=nfact_GWh)
           call power_randomphase_hel(amplGW*kpeak_GW,initpower_GW+2.,initpower2_GW+2., &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,iggT,iggT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
-            lremain_in_fourier=.true., lno_noise=lno_noise_GW)
+            lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
+            lfactors0=lfactors_GW, nfact0=nfact_GWs)
         case default
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))
@@ -1714,7 +1717,7 @@ module Special
               horndeski_alpM_eff=horndeski_alpM*Om_rat_Lam
               if ((lroot).and.(Om_rat_Lam==0)) print*,"the ratio Om_rat_Lam is too small", &
                   " for single precision, consider using double precision"
-            else 
+            else
               if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
               if (lroot) print*,'set lread_scl_factor_file=T in run parameters'
               call fatal_error('dspecial_dt',"we need the file a_vs_eta.dat")
@@ -1725,7 +1728,7 @@ module Special
         endselect
         if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
           !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp^2: ',Hp_target**2
-          !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp: ',Hp_target 
+          !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp: ',Hp_target
           horndeski_alpM_eff=horndeski_alpM_eff*Hp_target
           horndeski_alpM_eff2=horndeski_alpM_eff*Hp_target
         else
