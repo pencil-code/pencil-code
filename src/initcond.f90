@@ -5087,8 +5087,7 @@ module Initcond
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
       logical, intent(in), optional :: lpower_profile_file, lno_noise,lfactors0
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
-      logical :: lskip_projection
-      logical :: lfactors=.false.
+      logical :: lskip_projection,lfactors
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
@@ -5097,8 +5096,8 @@ module Initcond
       real, dimension (:), allocatable :: kk, lgkk, power_factor, lgff
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
-      real :: nfact=4., kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
-      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1=0., D2=1.
+      real :: nfact, kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
+      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5124,13 +5123,17 @@ module Initcond
         lno_noise1 = .false.
       endif
 !
-!
+!  alberto: added option to use different values of nfact
 !
      if (present(nfact0)) then
        nfact = nfact0
+     else
+       nfact = 4.
      endif
      if (present(lfactors0)) then
        lfactors = lfactors0
+     else
+       lfactors = .false.
      endif
 !
 !  Allocate memory for arrays.
@@ -5284,10 +5287,12 @@ module Initcond
         kpeak1=1./kpeak
         kpeak21=1./kpeak**2
 !
-!  Alberto: added option to compensate amplitude and peak using D1 and D2
+!  alberto: added option to compensate amplitude and peak using D1 and D2
 !           such that the maximum of the spectrum is located at kpeak
+!           or at the plateau (if present)
 !
-!
+        D1=0.
+        D2=1.
         if (lfactors) then
           if ((initpower /= 0).and.(initpower2 /= 0)) then
             D1 = -initpower/initpower2
