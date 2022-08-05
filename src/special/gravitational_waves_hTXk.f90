@@ -91,7 +91,7 @@ module Special
   character (len=labellen) :: fourthird_in_stress='4/3'
   character (len=labellen) :: cc_light='1'
   character (len=labellen) :: aux_stress='stress', idelkt='jump', ihorndeski_time='const'
-  real :: amplGW=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
+  real :: amplGW=0., amplGW2=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
   real :: nscale_factor_conformal=1., tshift=0.
   real :: t_equality=3.789E11, t_acceleration=1.9215E13, t_0=1.3725E13
@@ -143,7 +143,7 @@ module Special
 ! input parameters
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
-    initGW, amplGW, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
+    initGW, amplGW, amplGW2, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
     lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
@@ -596,6 +596,13 @@ module Special
 !
 !  different initial condition for hT,X and gT,X
 !
+!
+!  alberto: added option to give as input the value at the peak of the spectrum
+!
+      if (amplGW2/=0.) then
+        amplGW=sqrt(amplGW2)
+      endif
+
       select case (initGW)
         case ('nothing')
           if (lroot) print*,'init_special: nothing'
@@ -1795,7 +1802,7 @@ module Special
                 om2=ksqr-2./(t+1.)**2
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
-	      elseif (lmatter_GW .or. ldark_energy_GW) then
+              elseif (lmatter_GW .or. ldark_energy_GW) then
                 om2=ksqr-2./t**2
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
