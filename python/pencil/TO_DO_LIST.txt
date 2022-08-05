@@ -5,7 +5,6 @@
 4. Implement particles reding modules for different types of particles. (VC, JA)
 6. Simulation objects last implementations (see below). (LFSR, VC)
 8. Coordinate transformations, including fields. (JA, SC)
-9. Derivatives on non-equidistant grids. (JA)
 11. Examples in all doc strings. Epydoc usage?
 
 
