@@ -86,16 +86,18 @@ pcReload[]:=Module[{},
   ted[sim_]:=ted[sim]=1/(kf[sim]*urms[sim]);	
   tedkf[sim_]:=tedkf[sim]=1/(kf[sim]*urmskf[sim]);
   
-  Clear[nu];
+  Clear[nu,ivisc];
   nu[sim_]:=nu[sim]=readParamNml[sim,"run.in","NU"];
+  ivisc[sim_,i_Integer:1]:=ivisc[sim,i]=readParamNml[sim,"run.in","IVISC"][[i]];
   
-  Clear[eta,etaTFM];
+  Clear[eta,etaTFM,iresis];
   eta[sim_]:=eta[sim]=
     If[readParamNml[sim,"start.in","lmagnetic"],
       readParamNml[sim,"run.in","ETA"],
       "No magnetic"
     ];
   etaTFM[sim_]:=readParamNml[sim,"run.in","ETATEST"];
+  iresis[sim_,i_Integer:1]:=iresis[sim,i]=ires=readParamNml[sim,"run.in","IRESISTIVITY"][[i]];
   
   Clear[kappaTFM];
   kappaTFM[sim_]:=readParamNml[sim,"run.in","KAPPATEST"];
@@ -143,7 +145,7 @@ getParam[sim_,"Nx"]:=readDim[sim]["nx"]
 getParam[sim_,"Ny"]:=readDim[sim]["ny"]
 getParam[sim_,"Nz"]:=readDim[sim]["nz"]
 getParam[sim_,"Nxyz"]:=readDim[sim]/@{"nx","ny","nz"}
-getParam[sim_,"LXYZ"]:=readParamNml[sim,"start.in","LXYZ"]
+getParam[sim_,"Lxyz"]:=readParamNml[sim,"start.in","LXYZ"]
 
 getParam[sim_,"urms"]:=urms[sim]
 getParam[sim_,"urmskf"]:=urmskf[sim]
@@ -152,53 +154,49 @@ getParam[sim_,"kf"]:=kf[sim]
 getParam[sim_,"nu"]:=nu[sim]
 getParam[sim_,"eta"]:=eta[sim]
 
-(*hyper viscosity and hyper resistivity*)
-getParam[sim_,"neta",i_:1]:=Switch[readParamNml[sim,"run.in","IRESISTIVITY"][[i]],
-  getParam::nores="Unknown iresistivity: `1`.";
-  "'eta-const'",  1,
-  "'eta-tdep'",   1,
-  "'hyper2'",     2,
-  "'hyper2-tdep'",2,
-  "'hyper3'",     3,
-  "'hyper3-tdep'",3,
-  _,              Message[getParam::nores,
-                    readParamNml[sim,"run.in","IRESISTIVITY"][[i]]];Return[$Failed]
-]
-
 (*dimensionless numbers*)
+(*Reynolds numbers*)
 getParam[sim_,"ReN"]:=urms[sim]/kf[sim]/nu[sim]
 getParam[sim_,"ReN",k2_]:=urms[sim]/k2/nu[sim] (*supply kf by hand*)
 getParam[sim_,"ReNkf"]:=urmskf[sim]/kf[sim]/nu[sim]
-
-getParam[sim_,"ReN2"]:=urms[sim]/kf[sim]^3/readParamNml[sim,"run.in","NU_HYPER2"]
-getParam[sim_,"ReN3"]:=urms[sim]/kf[sim]^5/readParamNml[sim,"run.in","NU_HYPER3"]
-
-getParam[sim_,"ReNn",i_Integer:1]:=Module[{ivisc=readParamNml[sim,"run.in","IVISC"][[i]]},
-  Switch[ivisc,
-    "'nu-const'",          getParam[sim,"ReN"],
-    "'hyper2-simplified'", getParam[sim,"ReN2"],
-    "'hyper3-simplified'", getParam[sim,"ReN3"],
-    _,                     Print[sim,": unknown ivisc=",ivisc];Return[$Failed]
-  ]
-]
 
 getParam[sim_,"ReM"]:=urms[sim]/kf[sim]/eta[sim]
 getParam[sim_,"ReM",k2_]:=urms[sim]/k2/eta[sim] (*supply kf by hand*)
 getParam[sim_,"PrM"]:=PrM[sim]
 getParam[sim_,"PrMTFM"]:=nu[sim]/etaTFM[sim]
 
-getParam[sim_,"ReM2"]:=urms[sim]/kf[sim]^3/readParamNml[sim,"run.in","ETA_HYPER2"]
-getParam[sim_,"ReM3"]:=urms[sim]/kf[sim]^5/readParamNml[sim,"run.in","ETA_HYPER3"]
+(*hyper Reynolds numbers*)
+getParam[sim_,"nHyperVisc",i_Integer:1]:=Switch[ivisc[sim,i],
+  "'nu-const'",          1,
+  "'hyper2-simplified'", 2,
+  "'hyper3-simplified'", 3,
+  _,                     Print[sim,": unknown ivisc=",ivisc[sim,i]];Return[$Failed]
+];
+getParam[sim_,"ReNn",i_Integer:1]:=Switch[ivisc[sim,i],
+  "'nu-const'",          getParam[sim,"ReN",i],
+  "'hyper2-simplified'", urms[sim]/kf[sim]^3/readParamNml[sim,"run.in","NU_HYPER2"],
+  "'hyper3-simplified'", urms[sim]/kf[sim]^5/readParamNml[sim,"run.in","NU_HYPER3"],
+  _,                     Print[sim,": unknown ivisc=",ivisc[sim,i]];Return[$Failed]
+];
 
-getParam[sim_,"ReMn",i_Integer:1]:=Module[{ires=readParamNml[sim,"run.in","IRESISTIVITY"][[i]]},
-  Switch[ires,
-    "'eta-const'", getParam[sim,"ReM"],
-    "'hyper2'",    getParam[sim,"ReM2"],
-    "'hyper3'",    getParam[sim,"ReM3"],
-    _,             Print[sim,": unknown iresistivity=",ires];Return[$Failed]
-  ]
+getParam[sim_,"nHyperEta",i_Integer:1]:=Switch[iresis[sim,i],
+  "'eta-const'",   1,
+  "'eta-tdep'",    1,
+  "'hyper2'",      2,
+  "'hyper2-tdep'", 2,
+  "'hyper3'",      3,
+  "'hyper3-tdep'", 3,
+  _,               Print[sim,": unknown iresistivity=",iresis[sim,i]];Return[$Failed]
+];
+
+getParam[sim_,"ReMn",i_Integer:1]:=Switch[iresis[sim,i],
+  "'eta-const'", getParam[sim,"ReM",i],
+  "'hyper2'",    urms[sim]/kf[sim]^3/readParamNml[sim,"run.in","ETA_HYPER2"],
+  "'hyper3'",    urms[sim]/kf[sim]^5/readParamNml[sim,"run.in","ETA_HYPER3"],
+  _,             Print[sim,": unknown iresistivity=",iresis];Return[$Failed]
 ]
 
+(*rotation and shear*)
 getParam[sim_,"Ro"]:=If[omega[sim]==0,"No rotation",kf[sim]*urms[sim]/2/omega[sim]]
 getParam[sim_,"Ro",k2_]:=If[omega[sim]==0,"No rotation",k2*urms[sim]/2/omega[sim]]
 getParam[sim_,"Rokf"]:=If[omega[sim]==0,"No rotation",kf[sim]*urmskf[sim]/2/omega[sim]]
