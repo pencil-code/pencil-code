@@ -120,8 +120,8 @@ module Special
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
   real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
-  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, nfact_GWs=4., nfact_GWh=4.
-! AR: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
+  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
+! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
 !
   logical :: lread_scl_factor_file_exists
@@ -150,7 +150,7 @@ module Special
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lonly_mag, lread_scl_factor_file, t_ini, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW, &
-    lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh
+    lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -610,6 +610,11 @@ module Special
           f(l1+1,m1,n1,ihhT)=amplGW
           f(l2-0,m1,n1,ihhT)=amplGW
         case ('power_randomphase_hel')
+          ! alberto: option to use same nfact for both GWs and GWh spectra
+          if (nfact_GW/=0.) then
+            nfact_GWs=nfact_GW
+            nfact_GWh=nfact_GW
+          endif
           call power_randomphase_hel(amplGW,initpower_GW,initpower2_GW, &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
