@@ -115,6 +115,7 @@ module Special
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
   logical :: lno_noise_GW=.false., lfactors_GW=.false.
+  logical :: lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
@@ -150,7 +151,8 @@ module Special
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lonly_mag, lread_scl_factor_file, t_ini, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW, &
-    lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW
+    lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW, &
+    lcomp_GWs_k, lcomp_GWh_k
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -586,6 +588,7 @@ module Special
 !  06-oct-2003/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: initpower_GWs,initpower2_GWs,compks,compkh,amplGWs
 !
       intent(inout) :: f
 !
@@ -615,18 +618,42 @@ module Special
             nfact_GWs=nfact_GW
             nfact_GWh=nfact_GW
           endif
+
+          ! alberto: option to obtain GWs spectrum by multiplying k^2 to GWh (if lcomp_GWs_k)
+          !          such that amplGW and kpeak_GW describe accurately GWh.
+          !          If, otherwise, lcomp_GWh_k, then GWs is prescribed by amplGW and kpeak_GW,
+          !          and GWh is obtained by dividing GWs by k^2.
+          !          Note that, otherwise, when lfactors_GW is used, both spectra are not exactly
+          !          proportional to each other by k^2.
+          compks=0.
+          compkh=0.
+          if ((lcomp_GWs_k).or.(lcomp_GWh_k)) then
+            initpower_GWs=initpower_GW
+            initpower2_GWs=initpower2_GW
+            amplGWs=amplGW
+            if (lcomp_GWs_k) then
+              compks=.5
+            else
+              compkh=-.5
+            endif
+          else
+            initpower_GWs=initpower_GW+2.
+            initpower2_GWs=initpower2_GW+2.
+            amplGWs=amplGW*kpeak_GW
+          endif
+
           call power_randomphase_hel(amplGW,initpower_GW,initpower2_GW, &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWh)
-          call power_randomphase_hel(amplGW*kpeak_GW,initpower_GW+2.,initpower2_GW+2., &
+            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh)
+          call power_randomphase_hel(amplGWs,initpower_GWs,initpower2_GWs, &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,iggT,iggT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWs)
+            lfactors0=lfactors_GW, nfact0=nfact_GWs, compk0=compks)
         case default
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))

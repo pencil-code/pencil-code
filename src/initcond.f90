@@ -5058,7 +5058,7 @@ module Initcond
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
-      lno_noise,nfact0,lfactors0)
+      lno_noise,nfact0,lfactors0,compk0)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5089,7 +5089,7 @@ module Initcond
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
-      real, intent(in), optional :: k1hel, k2hel, qexp, nfact0
+      real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r, r2
       real, dimension (:), allocatable :: kx, ky, kz
@@ -5097,7 +5097,7 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
       real :: nfact, kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
-      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2
+      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, compk
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5121,6 +5121,14 @@ module Initcond
         lno_noise1 = lno_noise
       else
         lno_noise1 = .false.
+      endif
+!
+!  alberto: added option to compesate spectral shape by a power of k
+!
+      if (present(compk0)) then
+        compk = compk0
+      else
+        compk = 0.
       endif
 !
 !  alberto: added option to use different values of nfact
@@ -5304,7 +5312,16 @@ module Initcond
 !  which comes from a kpeak^3 factor in the k^2 dk integration.
 !  The 1/2 factor comes from setting uk (as opposed to uk^2).
 !
-        fact=(kpeak1*scale_factor)**1.5
+!  alberto: if lfactor is chosen, the amplitude of the spectrum is
+!           independent of kpeak instead of the integrated energy,
+!           so avoid scaling in such case, also avoided scaling with domain size
+!           (only tested for 1D GW fields)
+!
+        if (lfactors) then
+          fact=(2*pi/Lx)**0.5
+        else
+          fact=(kpeak1*scale_factor)**1.5
+        endif
         fact=fact*(1 + D1)**nexp2
         if (lvectorpotential) then
           fact=fact*kpeak1
@@ -5313,6 +5330,11 @@ module Initcond
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
         endif
         r=fact*((k2*kpeak21)**mhalf)/(1.+D2*(k2*kpeak21)**nexp1)**nexp2
+!
+!  alberto: added possibility to multiply spectrum by a power of k (useful for GW for example)
+!           the final spectrum will be compensated by k^(4*compk)
+!
+        r=r*k2**compk
 !
 !  cutoff (changed to hyperviscous cutoff filter).
 !  The 1/2 factor is needed to account for the fact that the
