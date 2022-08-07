@@ -5058,7 +5058,7 @@ module Initcond
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
-      lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_log0, &
+      lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
@@ -5093,7 +5093,7 @@ module Initcond
       logical :: lskip_projection,lfactors,llogbranch
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
-      real, intent(in), optional :: initpower_log0, kpeak_log0, kbreak0
+      real, intent(in), optional :: initpower_med0, kpeak_log0, kbreak0
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r, r2
       real, dimension (:), allocatable :: kx, ky, kz
@@ -5102,7 +5102,7 @@ module Initcond
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
       real :: nfact, kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
       real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, compk
-      real :: kpeak_log, kbreak, kbreak1, kbreak2, initpower_log
+      real :: kpeak_log, kbreak, kbreak1, kbreak2, initpower_med, initpower_log
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5160,10 +5160,10 @@ module Initcond
 !  Check if the parameters of the logarithmic branch are given
 !
       if (llogbranch) then
-        if (present(initpower_log0)) then
-          initpower_log = initpower_log0
+        if (present(initpower_med0)) then
+          initpower_med = initpower_med0
         else
-          initpower_log = 1.
+          initpower_med = 1.
         endif
         if (present(kpeak_log0)) then
           kpeak_log = kpeak_log0
@@ -5315,6 +5315,14 @@ module Initcond
           endif
         endif
 !
+!  alberto: adapt input power law exponents to parameters that appear in the
+!           broken power law when a logarithmic branch is included
+!
+        if (llogbranch) then
+          initpower_log=.5*(initpower-initpower_med)
+          initpower2=-initpower_med+initpower2+initpower
+        endif
+!
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1 in 3-D.
 !  In general, E(k) ~ u^2 k^(D-1), so we have n=2m+D-1, so m=(n-D+1)/2
@@ -5339,14 +5347,14 @@ module Initcond
         fact=1.
         if (lfactors) then
           if (llogbranch) then
-            if ((initpower>2*initpower_log).and.(initpower2/=initpower_log)) then
+            if ((initpower>2*initpower_log).and.(initpower2/=2*initpower_log)) then
               D1=(initpower-2*initpower_log)/(-initpower2+2*initpower_log)
               D2=D1
             elseif ((initpower==0.).and.(initpower_log==0.)) then
               D1=1.
             endif
             if (initpower>=2*initpower_log) then
-              if (initpower2==initpower_log) then
+              if (initpower2==2*initpower_log) then
                 fact=fact*(kpeak_log*kpeak1)**(-initpower_log)
                 if (initpower==2*initpower_log) then
                   fact=fact*(1+D2)**nexp2
@@ -5403,6 +5411,9 @@ module Initcond
 !  TauGW to the spectrum, where TauGW is:
 !  ln (1 + kpeak_log/kbreak)**n when k <= kbreak and
 !  ln (1 + kpeak_log/k)**n when k > kbreak
+!
+!  The resulting spectrum asymptotically has slopes k^initpower at k < kbreak,
+!  k^initpower_med at kbreak < k < kpeak, k^(-initpower2) at k > kpeak
 !
         if (llogbranch) then
           do ikz=1,nz
