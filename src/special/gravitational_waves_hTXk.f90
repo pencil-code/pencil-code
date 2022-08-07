@@ -114,14 +114,15 @@ module Special
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
-  logical :: lno_noise_GW=.false., lfactors_GW=.false.
-  logical :: lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
+  logical :: lno_noise_GW=.false., lfactors_GW=.false.,lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
+  logical :: llogbranch_GW=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
   real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
   real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
+  real :: initpower_log_GW=1., kpeak_log_GW=1., kbreak_GW=0.5
 ! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
 !
@@ -152,7 +153,8 @@ module Special
     lonly_mag, lread_scl_factor_file, t_ini, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW, &
     lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW, &
-    lcomp_GWs_k, lcomp_GWh_k
+    lcomp_GWs_k, lcomp_GWh_k, llogbranch_GW, initpower_log_GW, &
+    kpeak_log_GW, kbreak_GW
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -647,13 +649,17 @@ module Special
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh)
+            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            llogbranch0=llogbranch_GW,initpower_log0=initpower_log_GW, &
+            kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW)
           call power_randomphase_hel(amplGWs,initpower_GWs,initpower2_GWs, &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,iggT,iggT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWs, compk0=compks)
+            lfactors0=lfactors_GW, nfact0=nfact_GWs, compk0=compks, &
+            llogbranch0=llogbranch_GW,initpower_log0=initpower_log_GW, &
+            kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW)
         case default
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))

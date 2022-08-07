@@ -5058,7 +5058,8 @@ module Initcond
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
-      lno_noise,nfact0,lfactors0,compk0)
+      lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_log0, &
+      kpeak_log0,kbreak0)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5080,16 +5081,19 @@ module Initcond
 !  17-sep-18/axel: added optional wavenumber interval for helical field.
 !  28-jan-19/axel: special treatment of 2-D case (nz==1)
 !  14-aug-20/axel: adapted for fft_xyz_parallel
+!  3-aug-22/alberto: added optional logarithmic branch
 !
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
-      logical, intent(in), optional :: lpower_profile_file, lno_noise,lfactors0
+      logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
+      logical, intent(in), optional :: llogbranch0
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
-      logical :: lskip_projection,lfactors
+      logical :: lskip_projection,lfactors,llogbranch
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
+      real, intent(in), optional :: initpower_log0, kpeak_log0, kbreak0
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r, r2
       real, dimension (:), allocatable :: kx, ky, kz
@@ -5098,6 +5102,7 @@ module Initcond
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
       real :: nfact, kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
       real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, compk
+      real :: kpeak_log, kbreak, kbreak1, kbreak2, initpower_log
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5143,6 +5148,36 @@ module Initcond
      else
        lfactors = .false.
      endif
+!
+!  alberto: added option to include additional logarithmic branch
+!
+      if (present(llogbranch0)) then
+        llogbranch = llogbranch0
+      else
+        llogbranch = .false.
+      endif
+!
+!  Check if the parameters of the logarithmic branch are given
+!
+      if (llogbranch) then
+        if (present(initpower_log0)) then
+          initpower_log = initpower_log0
+        else
+          initpower_log = 1.
+        endif
+        if (present(kpeak_log0)) then
+          kpeak_log = kpeak_log0
+        else
+          kpeak_log = 1.
+        endif
+        if (present(kbreak0)) then
+          kbreak = kbreak0
+        else
+          kbreak = .5
+        endif
+        kbreak1=1./kbreak
+        kbreak2=kbreak**2
+      endif
 !
 !  Allocate memory for arrays.
 !
@@ -5301,10 +5336,34 @@ module Initcond
 !
         D1=0.
         D2=1.
+        fact=1.
         if (lfactors) then
-          if ((initpower /= 0).and.(initpower2 /= 0)) then
-            D1 = -initpower/initpower2
-            D2 = D1
+          if (llogbranch) then
+            if ((initpower>2*initpower_log).and.(initpower2/=initpower_log)) then
+              D1=(initpower-2*initpower_log)/(-initpower2+2*initpower_log)
+              D2=D1
+            elseif ((initpower==0.).and.(initpower_log==0.)) then
+              D1=1.
+            endif
+            if (initpower>=2*initpower_log) then
+              if (initpower2==initpower_log) then
+                fact=fact*(kpeak_log*kpeak1)**(-initpower_log)
+                if (initpower==2*initpower_log) then
+                  fact=fact*(1+D2)**nexp2
+                endif
+              else
+                fact=fact*log(1+kpeak_log*kpeak1)**(-initpower_log)
+              endif
+            else
+              fact=fact*log(1+kpeak_log*kbreak1)**(-initpower_log)
+              fact=fact*(kpeak*kbreak1)**(.5*initpower)
+              fact=fact*(1+(kbreak*kpeak1)**(.5*nfact*(initpower-initpower2)))**nexp2
+            endif
+          else
+            if ((initpower/=0).and.(initpower2/=0)) then
+              D1=-initpower/initpower2
+              D2=D1
+            endif
           endif
         endif
 !
@@ -5318,9 +5377,9 @@ module Initcond
 !           (only tested for 1D GW fields)
 !
         if (lfactors) then
-          fact=(2*pi/Lx)**0.5
+          fact=fact*(2*pi/Lx)**0.5
         else
-          fact=(kpeak1*scale_factor)**1.5
+          fact=fact*(kpeak1*scale_factor)**1.5
         endif
         fact=fact*(1 + D1)**nexp2
         if (lvectorpotential) then
@@ -5335,6 +5394,29 @@ module Initcond
 !           the final spectrum will be compensated by k^(4*compk)
 !
         r=r*k2**compk
+!
+!  alberto: multiply the broken power law by the logarithmic branch using
+!           the condition k < kbreak
+!
+!  Produces a 'double' broken power law for GW spectrum using a logarithmic branch based
+!  on Roper Pol, Caprini, Neronov, Semikoz, 2022 (arXiv:2201.05630) by multiplying
+!  TauGW to the spectrum, where TauGW is:
+!  ln (1 + kpeak_log/kbreak)**n when k <= kbreak and
+!  ln (1 + kpeak_log/k)**n when k > kbreak
+!
+        if (llogbranch) then
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
+                if (k2(ikx,iky,ikz)<kbreak2) then
+                  r(ikx,iky,ikz)=r(ikx,iky,ikz)*log(1+kpeak_log*kbreak1)**initpower_log
+                else
+                  r(ikx,iky,ikz)=r(ikx,iky,ikz)*log(1+kpeak_log/sqrt(k2(ikx,iky,ikz)))**initpower_log
+                endif
+              enddo
+            enddo
+          enddo
+        endif
 !
 !  cutoff (changed to hyperviscous cutoff filter).
 !  The 1/2 factor is needed to account for the fact that the
