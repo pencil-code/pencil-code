@@ -5315,14 +5315,6 @@ module Initcond
           endif
         endif
 !
-!  alberto: adapt input power law exponents to parameters that appear in the
-!           broken power law when a logarithmic branch is included
-!
-        if (llogbranch) then
-          initpower_log=.5*(initpower-initpower_med)
-          initpower2=-initpower_med+initpower2+initpower
-        endif
-!
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1 in 3-D.
 !  In general, E(k) ~ u^2 k^(D-1), so we have n=2m+D-1, so m=(n-D+1)/2
@@ -5334,6 +5326,14 @@ module Initcond
 !  generate k^n spectrum with random phase (between -pi and pi)
 !
         nexp1=.25*nfact*(initpower-initpower2)
+        !
+        !  alberto: adapt input power law exponents to parameters that appear in the
+        !           broken power law when a logarithmic branch is included
+        !
+        if (llogbranch) then
+          nexp1=.25*nfact*(initpower_med-initpower2)
+          initpower_log=.5*(initpower-initpower_med)
+        endif
         nexp2=1./nfact
         kpeak1=1./kpeak
         kpeak21=1./kpeak**2
@@ -5347,33 +5347,59 @@ module Initcond
         fact=1.
         if (lfactors) then
           if (llogbranch) then
-            if ((initpower>2*initpower_log).and.(initpower2/=2*initpower_log)) then
-              D1=(initpower-2*initpower_log)/(-initpower2+2*initpower_log)
-              D2=D1
-            elseif ((initpower==0.).and.(initpower_log==0.)) then
-              D1=1.
+            !  alberto: changing sign of nfact allows to use spectral shapes with
+            !           initpower - initpower2 > 0
+            if (initpower_med<initpower2) then
+              nexp1=-nexp1
+              nexp2=-nexp2
+              nfact=-nfact
             endif
-            if (initpower>=2*initpower_log) then
-              if (initpower2==2*initpower_log) then
-                fact=fact*(kpeak_log*kpeak1)**(-initpower_log)
-                if (initpower==2*initpower_log) then
-                  fact=fact*(1+D2)**nexp2
+            if (initpower2/=0) then
+              if (initpower_med/=0) then
+                if (initpower2*initpower_med<0) then
+                  D1=-initpower_med/initpower2
+                else
+                  D1=1.
                 endif
-              else
-                fact=fact*log(1+kpeak_log*kpeak1)**(-initpower_log)
+                D2=D1
               endif
+              fact=fact*log(1+kpeak_log*kpeak1)**(-initpower_log)
             else
+              if (initpower_med==0) then
+                fact=fact*(1+D2)**nexp2
+              endif
+              fact=fact*(kpeak_log*kpeak1)**(-initpower_log)
+            endif
+            if ((initpower>=0).and.(initpower_med<0)) then
+              fact=(1+D1)**(-nexp2)*(kbreak*kpeak1)**(-.5*initpower)
+              fact=fact*(1+D2*(kbreak*kpeak1)**(.5*nfact*(initpower_med-initpower2)))**(-nexp2)
               fact=fact*log(1+kpeak_log*kbreak1)**(-initpower_log)
-              fact=fact*(kpeak*kbreak1)**(.5*initpower)
-              fact=fact*(1+(kbreak*kpeak1)**(.5*nfact*(initpower-initpower2)))**nexp2
+              if (initpower_med==initpower2) then
+                fact=fact*(1+D2)**(2*nexp2)
+              endif
             endif
           else
-            if ((initpower/=0).and.(initpower2/=0)) then
+            !  alberto: changing sign of nfact allows to use spectral shapes with
+            !           initpower - initpower2 > 0
+            if ((initpower-initpower2)<0) then
+              nexp1=-nexp1
+              nexp2=-nexp2
+            endif
+            if ((initpower*initpower2)<0) then
               D1=-initpower/initpower2
               D2=D1
+            elseif ((initpower*initpower2)==0) then
+              if ((initpower==0).and.(initpower2)==0) then
+                fact=fact*(1+D2)**nexp2
+              elseif (initpower2==0) then
+                fact=fact*D2**nexp2
+              endif
+            else
+              fact=fact*(1+D2)**nexp2
             endif
           endif
         endif
+        fact=fact*(1+D1)**nexp2
 !
 !  Multiply by kpeak1**1.5 to eliminate scaling with kpeak,
 !  which comes from a kpeak^3 factor in the k^2 dk integration.
@@ -5389,7 +5415,6 @@ module Initcond
         else
           fact=fact*(kpeak1*scale_factor)**1.5
         endif
-        fact=fact*(1 + D1)**nexp2
         if (lvectorpotential) then
           fact=fact*kpeak1
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))
