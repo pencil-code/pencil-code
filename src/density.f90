@@ -2444,13 +2444,17 @@ module Density
             .not. lffree .and. .not. lreduced_sound_speed .and. &
             ieos_profile=='nothing' .and. .not. lfargo_advection) then
           if (ldensity_nolog) then
+
             if (lrelativistic) then
               density_rhs=-p%divss_rel
             else
-              density_rhs=-p%ugrho-p%rho*p%divu
+              density_rhs=-p%rho*p%divu
+              if (ladvection_density) density_rhs = density_rhs - p%ugrho
             endif
             if (lrelativistic_eos) density_rhs=fourthird*density_rhs
+
           else
+
             density_rhs= - p%divu
             if (ladvection_density) density_rhs = density_rhs - p%uglnrho
 !
@@ -2465,6 +2469,7 @@ module Density
               density_rhs=fourthird*density_rhs
             endif
           endif
+
         else
           density_rhs=0.
         endif

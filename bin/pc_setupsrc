@@ -437,14 +437,19 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule/src/utils
   adddir $src/astaroth/submodule/scripts
   adddir $src/astaroth/submodule/acc
-  adddir $src/astaroth/submodule/acc/src
   adddir $src/astaroth/submodule/acc/pc_mhd_solver
   adddir $src/astaroth/submodule/acc/pencil
-  adddir $src/astaroth/submodule/acc/stdlib
+  adddir $src/astaroth/submodule/acc-runtime
+  adddir $src/astaroth/submodule/acc-runtime/acc
+  adddir $src/astaroth/submodule/acc-runtime/api
+  adddir $src/astaroth/submodule/acc-runtime/samples
+  adddir $src/astaroth/submodule/acc-runtime/samples/mhd
+  adddir $src/astaroth/submodule/acc-runtime/samples/mhd_modular
 }
 #
 adddir()
 {
+echo adddir: $1
   if [ ! -d $1 ]; then
     echo "No ${1##*/} directory found: creating new one ($1)."
     mkdir $1
@@ -464,9 +469,14 @@ link_astaroth_files()
   for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* \
 $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include/*.*h \
 $srcdir/astaroth/submodule/acc/CMakeLists.txt \
-$srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cu \
+$srcdir/astaroth/submodule/acc-runtime/CMakeLists.txt \
+$srcdir/astaroth/submodule/acc-runtime/acc/* \
+$srcdir/astaroth/submodule/acc-runtime/api/* \
+$srcdir/astaroth/submodule/acc-runtime/samples/mhd/* \
+$srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \
+$srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cc \
 $srcdir/astaroth/submodule/src/utils/*.h $srcdir/astaroth/submodule/src/utils/*.c $srcdir/astaroth/submodule/src/utils/CMakeLists.txt \
-$srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/src/core/kernels/*.cuh \
+$srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/src/core/kernels/* \
 $srcdir/astaroth/submodule/src/standalone/*.h $srcdir/astaroth/submodule/src/standalone/*.cc \
 $srcdir/astaroth/submodule/src/standalone/CMakeLists.txt \
 $srcdir/astaroth/submodule/src/standalone/model/*.cc $srcdir/astaroth/submodule/src/standalone/model/*.h \
@@ -496,7 +506,7 @@ link_cuda_files()
   cd $src/cuda
   n=0
   to_link=
-  for file in $srcdir/cuda/src/*.cu $srcdir/cuda/src/*.cuh $srcdir/cuda/src/*.cpp $srcdir/cuda/src/*.h $srcdir/cuda/src/makefile $srcdir/cuda/src/makefile.* $srcdir/cuda/src/*.conf 
+  for file in $srcdir/cuda/src/*.cc $srcdir/cuda/src/*.cuh $srcdir/cuda/src/*.cpp $srcdir/cuda/src/*.h $srcdir/cuda/src/makefile $srcdir/cuda/src/makefile.* $srcdir/cuda/src/*.conf 
   do
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
@@ -521,7 +531,7 @@ link_cuda_files()
   cd $src/cuda/src_new
   to_link=
   len=`expr match "$srcdir/cuda/src_new/" '.*src_new/'`
-  for file in $srcdir/cuda/src_new/*.cc $srcdir/cuda/src_new/*.txt $srcdir/cuda/src_new/Makefile* $srcdir/cuda/src_new/utils/*.h $srcdir/cuda/src_new/common/*.cc $srcdir/cuda/src_new/common/*.txt $srcdir/cuda/src_new/common/*.h $srcdir/cuda/src_new/gpu/*.cc $srcdir/cuda/src_new/gpu/*.txt $srcdir/cuda/src_new/gpu/*.h $srcdir/cuda/src_new/diagnostics/*.h $srcdir/cuda/src_new/diagnostics/*.cc $srcdir/cuda/src_new/gpu/cuda/*.cu* $srcdir/cuda/src_new/gpu/cuda/core/*.cu* $srcdir/cuda/src_new/gpu/cuda/generic/*.cu*
+  for file in $srcdir/cuda/src_new/*.cc $srcdir/cuda/src_new/*.txt $srcdir/cuda/src_new/Makefile* $srcdir/cuda/src_new/utils/*.h $srcdir/cuda/src_new/common/*.cc $srcdir/cuda/src_new/common/*.txt $srcdir/cuda/src_new/common/*.h $srcdir/cuda/src_new/gpu/*.cc $srcdir/cuda/src_new/gpu/*.txt $srcdir/cuda/src_new/gpu/*.h $srcdir/cuda/src_new/diagnostics/*.h $srcdir/cuda/src_new/diagnostics/*.cc $srcdir/cuda/src_new/gpu/cuda/*.cc* $srcdir/cuda/src_new/gpu/cuda/core/*.cc* $srcdir/cuda/src_new/gpu/cuda/generic/*.cu*
   do
     file_for_link $file
   done
@@ -722,9 +732,7 @@ if [ -f "$src/Makefile.local" ]; then
     if [ "$link_all" -eq 1 ]; then link_initial_condition_files; fi
   fi
   if [ "`grep '^[^#]*= *gpu' $src/Makefile.local`" != "" ]; then 
-    make_cuda_dir
     make_astaroth_dir
-    if [ "$link_all" -eq 1 ]; then link_cuda_files; fi
     if [ "$link_all" -eq 1 ]; then link_astaroth_files; fi
   fi
 fi
