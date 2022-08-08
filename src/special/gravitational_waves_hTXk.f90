@@ -1764,8 +1764,8 @@ module Special
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
               Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
               horndeski_alpM_eff=horndeski_alpM*Om_rat_Lam
-              !if ((lroot).and.(Om_rat_Lam==0)) print*,"the ratio Om_rat_Lam is too small", &
-              !    " for single precision, consider using double precision"
+              !!if ((lroot).and.(Om_rat_Lam==0)) print*,"the ratio Om_rat_Lam is too small", &
+              !!    " for single precision, consider using double precision"
             else
               if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
               if (lroot) print*,'set lread_scl_factor_file=T in run parameters'
