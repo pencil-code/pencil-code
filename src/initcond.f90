@@ -5059,7 +5059,7 @@ module Initcond
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
-      kpeak_log0,kbreak0)
+      kpeak_log0,kbreak0,ldouble0,nfactd0)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5081,19 +5081,21 @@ module Initcond
 !  17-sep-18/axel: added optional wavenumber interval for helical field.
 !  28-jan-19/axel: special treatment of 2-D case (nz==1)
 !  14-aug-20/axel: adapted for fft_xyz_parallel
-!  3-aug-22/alberto: added optional logarithmic branch
+!  7-aug-22/alberto: added optional logarithmic branch and double
+!                    broken power law
 !
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
-      logical, intent(in), optional :: llogbranch0
+      logical, intent(in), optional :: llogbranch0,ldouble0
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
-      logical :: lskip_projection,lfactors,llogbranch
+      logical :: lskip_projection,lfactors,llogbranch,ldouble
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
       real, intent(in), optional :: initpower_med0, kpeak_log0, kbreak0
+      real, intent(in), optional :: nfactd0
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r, r2
       real, dimension (:), allocatable :: kx, ky, kz
@@ -5101,8 +5103,9 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
       real :: nfact, kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
-      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, compk
-      real :: kpeak_log, kbreak, kbreak1, kbreak2, initpower_med, initpower_log
+      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, D3, compk
+      real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
+      real :: nfactd,nexp3,nexp4
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5157,18 +5160,27 @@ module Initcond
         llogbranch = .false.
       endif
 !
-!  Check if the parameters of the logarithmic branch are given
+!  alberto: added option to use double smoothed broken power laws
+!           logbranch is set to False if ldouble is used
 !
-      if (llogbranch) then
+      if (present(ldouble0)) then
+        ldouble = ldouble0
+        if (ldouble) then
+          llogbranch = .false.
+        endif
+      else
+        ldouble = .false.
+      endif
+!
+!  Check if the parameters of the logarithmic branch or the
+!  double broken power law are given
+!
+      if ((llogbranch).or.(ldouble)) then
+
         if (present(initpower_med0)) then
           initpower_med = initpower_med0
         else
           initpower_med = 1.
-        endif
-        if (present(kpeak_log0)) then
-          kpeak_log = kpeak_log0
-        else
-          kpeak_log = 1.
         endif
         if (present(kbreak0)) then
           kbreak = kbreak0
@@ -5177,7 +5189,25 @@ module Initcond
         endif
         kbreak1=1./kbreak
         kbreak2=kbreak**2
+        kbreak21=kbreak1**2
+
+        if (llogbranch) then
+          if (present(kpeak_log0)) then
+            kpeak_log = kpeak_log0
+          else
+            kpeak_log = 1.
+          endif
+        endif
+
+        if (ldouble) then
+          if (present(nfactd0)) then
+            nfactd = nfactd0
+          else
+            nfactd = 4.
+          endif
+        endif
       endif
+!
 !
 !  Allocate memory for arrays.
 !
@@ -5328,11 +5358,17 @@ module Initcond
         nexp1=.25*nfact*(initpower-initpower2)
         !
         !  alberto: adapt input power law exponents to parameters that appear in the
-        !           broken power law when a logarithmic branch is included
+        !           broken power law when a logarithmic branch is included or when
+        !           a double broken power law is included
         !
-        if (llogbranch) then
+        if ((llogbranch).or.(ldouble)) then
           nexp1=.25*nfact*(initpower_med-initpower2)
           initpower_log=.5*(initpower-initpower_med)
+        endif
+        if (ldouble) then
+          mhalf=.25*(initpower_med-dimensionality+1)
+          nexp3=1./nfactd
+          nexp4=.5*nfactd*initpower_log
         endif
         nexp2=1./nfact
         kpeak1=1./kpeak
@@ -5344,6 +5380,7 @@ module Initcond
 !
         D1=0.
         D2=1.
+        D3=1.
         fact=1.
         if (lfactors) then
           if (llogbranch) then
@@ -5365,18 +5402,57 @@ module Initcond
               endif
               fact=fact*log(1+kpeak_log*kpeak1)**(-initpower_log)
             else
-              if (initpower_med==0) then
-                fact=fact*(1+D2)**nexp2
-              endif
+              if (initpower_med==0) fact=fact*(1+D2)**nexp2
               fact=fact*(kpeak_log*kpeak1)**(-initpower_log)
             endif
             if ((initpower>=0).and.(initpower_med<0)) then
               fact=(1+D1)**(-nexp2)*(kbreak*kpeak1)**(-.5*initpower)
               fact=fact*(1+D2*(kbreak*kpeak1)**(.5*nfact*(initpower_med-initpower2)))**(-nexp2)
               fact=fact*log(1+kpeak_log*kbreak1)**(-initpower_log)
-              if (initpower_med==initpower2) then
-                fact=fact*(1+D2)**(2*nexp2)
+              if (initpower_med==initpower2) fact=fact*(1+D2)**(2*nexp2)
+            endif
+          elseif (ldouble) then
+            !  alberto: changing sign of nfact allows to use spectral shapes with
+            !           initpower - initpower2 > 0
+            if (initpower_med<initpower2) then
+              nexp1=-nexp1
+              nexp2=-nexp2
+            endif
+            if (initpower<initpower_med) then
+              nexp3=-nexp3
+              nexp4=-nexp4
+            endif
+            if (initpower2/=0) then
+              if (initpower_med/=0) then
+                if (initpower_med*initpower2<0) then
+                  D1=-initpower_med/initpower2
+                else
+                  D1=1.
+                endif
+                D2=D1
               endif
+              fact=fact*(1+D3*(kpeak*kbreak1)**(-2*nexp4))**nexp3
+            else
+              if (initpower_med==0) then
+                fact=fact*(1+D2)**nexp2
+                if (initpower==0) then
+                  fact=fact*(1+D1)**nexp2*(1+D3)**nexp3
+                endif
+              endif
+            endif
+            if ((initpower>=0).and.(initpower_med<0)) then
+              fact=1.
+              if ((initpower_med*initpower<0).and.(initpower2/=0)) then
+                D1=-initpower_med/initpower2
+                D2=D1
+              endif
+              if (initpower2*initpower_med>0) D2=1.
+              if (initpower/=0) then
+                D3=-initpower_med/initpower
+                fact=fact*(1 + D3)**nexp3
+              endif
+              fact=fact*(1+D1)**(-nexp2)*(kbreak*kpeak1)**(-.5*initpower_med)
+              fact=fact*(1+D2*(kbreak*kpeak1)**(2*nexp1))**nexp2
             endif
           else
             !  alberto: changing sign of nfact allows to use spectral shapes with
@@ -5428,6 +5504,11 @@ module Initcond
 !
         r=r*k2**compk
 !
+!  alberto: added model for double smoothed broken power law
+!
+        if (ldouble) then
+          r=r/(1.+D3*(k2*kbreak21)**(-nexp4))**nexp3
+        endif
 !  alberto: multiply the broken power law by the logarithmic branch using
 !           the condition k < kbreak
 !
