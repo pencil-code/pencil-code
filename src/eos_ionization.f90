@@ -419,8 +419,7 @@ module EquationOfState
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      intent(in)   :: f
-      intent(inout):: p
+      intent(inout):: f,p
       intent(in) :: lpenc_loc
 !
       integer :: i
