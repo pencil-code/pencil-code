@@ -398,7 +398,7 @@ module EquationOfState
 !
 !  9-oct-15/MR: coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
       type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_eos_pencpar(f,p,lpencil)
