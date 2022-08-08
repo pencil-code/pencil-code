@@ -2176,8 +2176,8 @@ module Density
 !
 ! 21-sep-13/MR    : coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
-      type (pencil_case),                intent(OUT):: p
+      real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
+      type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_density_pnc(f,p,lpencil)
 !
@@ -2190,8 +2190,8 @@ module Density
 !
 ! 21-sep-13/MR    : coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
-      type (pencil_case),                intent(OUT):: p
+      real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
+      type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_linear_density_pnc(f,p,lpencil)
 !

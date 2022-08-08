@@ -492,7 +492,7 @@ module EquationOfState
       use Sub, only: grad, del2, dot2
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      type (pencil_case),    intent(OUT) :: p
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx) :: glnTT2,TT1del2TT,del2lnrho
       real, dimension(nx) :: rho1del2rho,del2mu1,gmu12,glnpp2

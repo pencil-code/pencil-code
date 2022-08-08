@@ -2773,8 +2773,8 @@ module Hydro
 !                   for which pencils are calculated, default: all
 ! 21-sep-13/MR    : returned to pencil mask as parameter lpenc_loc
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
-      type (pencil_case),                intent(OUT):: p
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      type (pencil_case),                intent(INOUT):: p
       logical, dimension(:),             intent(IN) :: lpenc_loc
 !
       if (llinearized_hydro) then
@@ -2792,8 +2792,8 @@ module Hydro
 !
 ! 21-sep-13/MR    : coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
-      type (pencil_case),                intent(OUT):: p
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_hydro_pencpar(f,p,lpencil)
 !
@@ -2824,8 +2824,8 @@ module Hydro
       real, dimension (nx,3) :: tmp3
       integer :: i, j, ju, jj, kk, jk
 !
-      intent(in) :: lpenc_loc
-      intent(out):: p
+      intent(in)   :: lpenc_loc
+      intent(inout):: f,p
 !
 ! uu, is either directly p%uu=f(l1:l2,m,n,iux:iuz), or, if lrelativistic
 ! p%ss_rel=f(l1:l2,m,n,iux:iuz), and we compute p%lorentz_gamma and

@@ -477,7 +477,7 @@ module EquationOfState
       use Sub, only: grad, del2, dot2
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      type (pencil_case),    intent(OUT) :: p
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx,3) :: glnDiff_full_add, glncp
       real, dimension(nx) :: D_th, R_mix
