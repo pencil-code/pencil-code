@@ -91,7 +91,7 @@ module Hydro
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,initpower2=-5./3.,cutoff=0.,ncutoff=1., kpeak=10.
-  real :: xhalf, kgaussian_uu=0.
+  real :: xhalf, kgaussian_uu=0., nfact_uu=4.
   real, dimension (ninit) :: ampl_ux=0.0, ampl_uy=0.0, ampl_uz=0.0
   real, dimension (ninit) :: kx_ux=0.0, kx_uy=0.0, kx_uz=0.0
   real, dimension (ninit) :: ky_ux=0.0, ky_uy=0.0, ky_uz=0.0
@@ -135,6 +135,7 @@ module Hydro
   logical :: luu_fluc_as_aux=.false.
   logical :: luu_sph_as_aux=.false.
   logical :: lscale_tobox=.true.
+  logical :: lfactors_uu=.false.
   logical, target :: lpressuregradient_gas=.true.
   logical :: lcoriolis_force=.true.
   logical :: lshear_in_coriolis=.false.
@@ -177,7 +178,8 @@ module Hydro
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
-      ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux
+      ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
+      lfactors_uu
 !
 !  Run parameters.
 !
@@ -2121,7 +2123,8 @@ module Hydro
         case ('power_randomphase_hel')
           call power_randomphase_hel(ampluu(j),initpower,initpower2, &
             cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
-            lskip_projection, lvectorpotential,lscale_tobox)
+            lskip_projection, lvectorpotential,lscale_tobox, &
+            nfact0=nfact_uu, lfactors0=lfactors_uu)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)
