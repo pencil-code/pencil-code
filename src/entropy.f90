@@ -3172,8 +3172,8 @@ module Energy
       use Sub, only: u_dot_grad, grad, multmv, h_dot_grad
       use WENO_transport, only: weno_transp
 !
-      real, dimension(mx,my,mz,mfarray), intent(IN) :: f
-      type(pencil_case),                 intent(OUT):: p
+      real, dimension(mx,my,mz,mfarray), intent(IN)   :: f
+      type(pencil_case),                 intent(INOUT):: p
 !
       integer :: j
 !
