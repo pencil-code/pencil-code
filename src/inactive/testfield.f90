@@ -497,7 +497,7 @@ module Testfield
       use Hydro, only: calc_pencils_hydro
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: btest,uxbtest
