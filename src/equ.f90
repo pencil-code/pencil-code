@@ -828,7 +828,7 @@ module Equ
       use Dustdensity
       use Energy
       use EquationOfState
-      use Forcing, only: calc_pencils_forcing, forcing_continuous
+      use Forcing, only: calc_pencils_forcing, calc_diagnostics_forcing
       use General, only: notanumber
       use GhostFold, only: fold_df, fold_df_3points
       use Gravity
@@ -1017,7 +1017,7 @@ module Equ
 !
 !  Continuous forcing function (currently only for extra diagonstics)
 !
-        if (lforcing_cont) call forcing_continuous(df,p)
+        if (lforcing_cont) call calc_diagnostics_forcing(p)
 !
 !  Add and extra 'special' physics
 !
