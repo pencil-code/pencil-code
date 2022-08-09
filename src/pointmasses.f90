@@ -287,7 +287,11 @@ module PointMasses
           endif
         enddo
       endif
-      r1_smooth=1./r_smooth
+      where (r_smooth/=0.) 
+        r1_smooth=1./r_smooth
+      elsewhere
+        r1_smooth=0.     !MR: something better here?
+      endwhere
 !
       if (rsmooth/=r_smooth(iprimary)) then
         print*,'rsmooth from cdata=',rsmooth
