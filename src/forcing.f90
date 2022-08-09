@@ -34,7 +34,7 @@ module Forcing
   endinterface
 !
   real :: force=0.,force2=0., force_double=0., force1_scl=1., force2_scl=1.
-  real :: relhel=1., height_ff=0., r_ff=0., r_ff_hel=0., rcyl_ff=0.
+  real :: relhel=1., height_ff=0., r_ff=0., r_ff_hel=0., rcyl_ff=0., rel_zcomp=1.
   real :: Bconst=1., Bslope=0.
   real :: fountain=1.,width_ff=.5,nexp_ff=1.,n_hel_sin_pow=0.
   real :: crosshel=0.
@@ -133,7 +133,7 @@ module Forcing
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
        iforce,force,force_double,relhel,crosshel,height_ff,r_ff,r_ff_hel, &
-       rcyl_ff,width_ff,nexp_ff,lff_as_aux,Bconst,Bslope, &
+       rcyl_ff,width_ff,nexp_ff,lff_as_aux,Bconst,Bslope, rel_zcomp, &
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain, fountain, tforce_stop, tforce_stop2, &
        radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
@@ -940,7 +940,7 @@ module Forcing
             profx_ampl=exp(-.5*x(l1:l2)**2/radius_ff**2)
             profy_ampl=exp(-.5*y**2/radius_ff**2)
           endif
-        elseif (iforcing_cont(i)=='RobertsFlow-zdep') then
+        elseif (iforcing_cont(i)=='RobertsFlow-zdep'.or.iforcing_cont(i)=='Roberts-for-SSD') then
           if (lroot) print*,'forcing_cont: z-dependent Roberts Flow'
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
           siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
@@ -1032,7 +1032,7 @@ module Forcing
       where( Lxyz/=0.) k1xyz=2.*pi/Lxyz
 !
       if (r_ff /=0. .or. rcyl_ff/=0.) profz_k = tanh(z/width_ff)
-
+!
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(f)
@@ -1481,7 +1481,7 @@ module Forcing
 !  The routine fconst_coefs_hel generates various coefficients, including the phase.
 !
       call fconst_coefs_hel(force,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
-      call fxyz_coefs_hel(coef1,coef2,coef3,kk,phase,fact,fda,fx,fy,fz)
+      call fxyz_coefs_hel(coef1,coef2,coef3,kk,phase,fact,fx,fy,fz)
 
     endsubroutine forcing_coefs_hel
 !***********************************************************************
@@ -1523,7 +1523,7 @@ module Forcing
 !  of those in subroutine forcing_coefs_hel
 !
       call fconst_coefs_hel(force_double,kkx2,kky2,kkz2,nk2,kav2,coef1,coef2,coef3,kk,phase,fact,fda)
-      call fxyz_coefs_hel(coef1,coef2,coef3,kk,phase,fact,fda,fx,fy,fz)
+      call fxyz_coefs_hel(coef1,coef2,coef3,kk,phase,fact,fx,fy,fz)
 !
     endsubroutine forcing_coefs_hel2
 !***********************************************************************
@@ -1752,24 +1752,25 @@ module Forcing
       endif
 !
     endsubroutine fconst_coefs_hel
-!***********************************************************************
-    subroutine fxyz_coefs_hel(coef1,coef2,coef3,kk,phase,fact,fda,fx,fy,fz)
+!**************************************************************************
+    subroutine fxyz_coefs_hel(coef1,coef2,coef3,kk,phase,fact,fx,fy,fz)
 !
 !  08-aug-19/MR: carved out to produce fx,fy,fz from the other parameters.
 ! 
       use Mpicomm, only: stop_it
 
-      real,    dimension (3), intent(in ) :: coef1,coef2,coef3,kk,fda
+      real,    dimension (3), intent(in ) :: coef1,coef2,coef3,kk
       real,                   intent(in ) :: phase, fact
       complex, dimension (mx),intent(out) :: fx
       complex, dimension (my),intent(out) :: fy
       complex, dimension (mz),intent(out) :: fz
 
-      real :: kz, phase_x
+      real :: kx, kz, phase_x
 
       if (ldiscrete_phases) then
-        phase_x=nint(phase/(kk(1)*k1_ff*dx))*dx
-        fx=exp(cmplx(0.,kk(1)*k1_ff*(x+phase_x)))*fact
+        kx=kk(1)*k1_ff
+        phase_x=nint(phase/(kx*dx))*dx
+        fx=cmplx(cos(kx*(x+phase_x)),sin(kx*(x+phase_x)))*fact
       else
         fx=exp(cmplx(0.,kk(1)*k1_ff*x+phase))*fact
       endif
@@ -2054,7 +2055,6 @@ module Forcing
                     if (j==1.and.lxxcorr_forcing) &
                       f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,1)*force2_scl
                   endif
-!
                 endif
 !
 !  If one of the testfield methods is used, we need to add a forcing term
@@ -5694,6 +5694,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 !  f=(sinx,0,0)
 !
+        case('Roberts-for-SSD')
+          fact=ampl_ff(i)
+          force(:,1)=-fact*cosx(l1:l2,i)*siny(m,i)
+          force(:,2)=+fact*sinx(l1:l2,i)*cosy(m,i)
+          force(:,3)= fact*rel_zcomp*(cosx(l1:l2,i)**2-0.5)*(cosy(m,i)**2-0.5)
+!
         case ('sinx')
           if (lgentle(i).and.t<tgentle(i)) then
             fact=.5*ampl_ff(i)*(1.-cos(pi*t/tgentle(i)))
@@ -5919,7 +5925,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine forcing_cont
 !***********************************************************************
-    subroutine forcing_continuous(df,p)
+    subroutine calc_diagnostics_forcing(p)
 !
 !  add a continuous forcing term (used to be in hydro.f90)
 !
@@ -5928,37 +5934,37 @@ call fatal_error('hel_vec','radial profile should be quenched')
       use Diagnostics
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case), intent(IN) :: p
+
       real, dimension (nx,3) :: fxb
-      real, dimension (nx) :: uf,of,qf
-      type (pencil_case) :: p
+      real, dimension (nx) :: tmp
 !
 !  diagnostics
 !
       if (ldiagnos) then
         if (idiag_rufm/=0) then
-          call dot_mn(p%uu,p%fcont(:,:,1),uf)
-          call sum_mn_name(p%rho*uf,idiag_rufm)
+          call dot_mn(p%uu,p%fcont(:,:,1),tmp)
+          call sum_mn_name(p%rho*tmp,idiag_rufm)
         endif
 !
         if (idiag_rufint/=0) then
-          call dot_mn(p%uu,p%fcont(:,:,1),uf)
-          call integrate_mn_name(p%rho*uf,idiag_rufint)
+          call dot_mn(p%uu,p%fcont(:,:,1),tmp)
+          call integrate_mn_name(p%rho*tmp,idiag_rufint)
         endif
 !
         if (idiag_ufm/=0) then
-          call dot_mn(p%uu,p%fcont(:,:,1),uf)
-          call sum_mn_name(uf,idiag_ufm)
+          call dot_mn(p%uu,p%fcont(:,:,1),tmp)
+          call sum_mn_name(tmp,idiag_ufm)
         endif
 !
         if (idiag_ofm/=0) then
-          call dot_mn(p%oo,p%fcont(:,:,1),of)
-          call sum_mn_name(of,idiag_ofm)
+          call dot_mn(p%oo,p%fcont(:,:,1),tmp)
+          call sum_mn_name(tmp,idiag_ofm)
         endif
 !
         if (idiag_qfm/=0) then
-          call dot_mn(p%curlo,p%fcont(:,:,1),qf)
-          call sum_mn_name(qf,idiag_qfm)
+          call dot_mn(p%curlo,p%fcont(:,:,1),tmp)
+          call sum_mn_name(tmp,idiag_qfm)
         endif
 !
         if (lmagnetic) then
@@ -5971,9 +5977,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
         endif
       endif
 !
-      call keep_compiler_quiet(df)
-!
-    endsubroutine forcing_continuous
+    endsubroutine calc_diagnostics_forcing
 !***********************************************************************
     subroutine read_forcing_run_pars(iostat)
 !
@@ -6012,9 +6016,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
         case (id_record_FORCING_TSFORCE)
           if (read_persist ('FORCING_TSFORCE', tsforce)) return
           done = .true.
-        !case (id_record_FORCING_TORUS)
-        !  if (read_persist ('FORCING_TORUS', torus)) return
-        !  done = .true.
+        case (id_record_FORCING_TORUS)
+          if (read_persist ('FORCING_TORUS', torus)) return
+          done = .true.
       endselect
 !
       if (lroot) print *, 'input_persist_forcing: ', location, tsforce
