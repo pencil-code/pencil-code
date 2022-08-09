@@ -475,7 +475,7 @@ module EquationOfState
 !  9-oct-15/MR: coded
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
-      type (pencil_case),                intent(OUT)  :: p
+      type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_eos_pencpar(f,p,lpencil)
 !
@@ -492,14 +492,14 @@ module EquationOfState
       use Sub, only: grad, del2, dot2
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case),    intent(OUT) :: p
+      type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx) :: glnTT2,TT1del2TT,del2lnrho
       real, dimension(nx) :: rho1del2rho,del2mu1,gmu12,glnpp2
       real, dimension(nx) :: del2TT, gradTgradT
 !
-      intent(inout) :: f, lpenc_loc
-      intent(inout) :: p
+      intent(in) :: lpenc_loc
+      intent(inout) :: f,p
 !
       integer :: i
 !
