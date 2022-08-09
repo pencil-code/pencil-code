@@ -282,14 +282,12 @@ module power_spectrum
 !
   endsubroutine power_fft3d_vec
 !***********************************************************************
-  subroutine powerSpecFlux(f,sp)
+  subroutine power_mag_hel_transfer(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=*) :: sp
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(sp)
 !
-  endsubroutine powerSpecFlux
+  endsubroutine power_mag_hel_transfer
 !***********************************************************************
 endmodule power_spectrum

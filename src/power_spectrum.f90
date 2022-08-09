@@ -5293,9 +5293,62 @@ endsubroutine pdf
   !
   endsubroutine power_fft3d_vec
 !***********************************************************************
-  subroutine powerSpecFlux(f,sp)
+  subroutine power_shell_filter(a,ap,p)
 !
-!  Calculate spectral fluxes of various quantities.
+!  Take a real scalar field a(nx,ny,nz), take only the Fourier modes
+!  in the shell |k|=p, and return the inverse-transformed field ap
+!
+!   9-aug-22/hongzhe: coded
+!
+  use Fourier, only: fft_xyz_parallel
+!
+  real, dimension(nx,ny,nz), intent(in) :: a
+  real, dimension(nx,ny,nz), intent(out) :: ap
+  integer, intent(in) :: p
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i,ikx,iky,ikz,k
+  real, dimension(nx,ny,nz) :: a_re,a_im
+  real :: k2
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+!
+!  Define wave vector, defined here for the *full* mesh.
+!  Each processor will see only part of it.
+!  Ignore *2*pi/Lx factor, because later we want k to be integers
+!
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+!
+  a_re(:,:,:)=a(:,:,:)
+  a_im=0.
+  call fft_xyz_parallel(a_re,a_im)
+!
+  do ikx=1,nx
+  do iky=1,ny
+  do ikz=1,nz
+    k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+    k=nint(sqrt(k2))
+    if (.not.(k>=p.and.k<(p+1))) then
+      a_re(ikx,iky,ikz)=0.
+      a_im(ikx,iky,ikz)=0.
+    endif
+  enddo
+  enddo
+  enddo
+!
+  call fft_xyz_parallel(a_re,a_im,linv=.true.,lneed_im=.false.)
+  ap(:,:,:)=a_re(:,:,:)
+!
+  endsubroutine power_shell_filter
+!***********************************************************************
+  subroutine power_mag_hel_transfer(f)
+!
+!  Calculate magnetic helicity transfer function.
+!  The transfer rate T(p,q) refers to the magnetic helicity from shell q
+!  into shell p.
 !
 !   3-aug-22/hongzhe: adapted from powerEMF
 !
@@ -5304,127 +5357,97 @@ endsubroutine pdf
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,ivec,ikx,iky,ikz,k
+  integer :: i,p,q,ivec,ikx,iky,ikz,k
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension (mx,my,mz,3) :: EMF,JJJ,EMB,BBB
-  real, dimension(nx,ny,nz) :: a_re,a_im, b_re,b_im
-  real, dimension(nx,3) :: uu,aa,bb,jj,uxb,uxj
+  real, dimension(nx,3) :: uu,aa,bb,uxb
   real, dimension(nx,3,3) :: aij,bij
-  real, dimension(nk) :: specT,specflux,specflux_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
-  character (len=*) :: sp
+  real, dimension(nx,ny,nz,3) :: uuu,bbb
+  real, dimension(nx,ny,nz,3) :: bbb_p,bbb_q,emf_q
+  real, dimension(nk,nk) :: Tpq,Tpq_sum
 !
 !  identify version
 !
-  if (lroot .AND. ip<10) call svn_id( &
-       "$Id$")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
-  !  initialize spectral flux to zero
-  !
-  specT=0.
-  specflux=0.
-  specflux_sum=0.
-  !
-  !  compute nonlinear terms
-  !
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+!  initialize spectral flux to zero
+!
+  Tpq=0.
+  Tpq_sum=0.
+!
+!  obtain u and b
+!
   do m=m1,m2
   do n=n1,n2
-     uu=f(l1:l2,m,n,iux:iuz)
-     aa=f(l1:l2,m,n,iax:iaz)
-     call gij(f,iaa,aij,1)
-     call gij_etc(f,iaa,aa,aij,bij)
-     call curl_mn(aij,bb,aa)
-     call curl_mn(bij,jj,bb)
-     call cross_mn(uu,bb,uxb)
-     call cross_mn(uu,jj,uxj)
-     EMF(l1:l2,m,n,:)=uxb
-     EMB(l1:l2,m,n,:)=uxj
-     JJJ(l1:l2,m,n,:)=jj
-     BBB(l1:l2,m,n,:)=bb
+    uu=f(l1:l2,m,n,iux:iuz)
+    aa=f(l1:l2,m,n,iax:iaz)
+    call gij(f,iaa,aij,1)
+    call gij_etc(f,iaa,aa,aij,bij)
+    call curl_mn(aij,bb,aa)
+    uuu(:,m-nghost,n-nghost,:)=uu(:,:)
+    bbb(:,m-nghost,n-nghost,:)=bb(:,:)
   enddo
   enddo
-  !
-  !  loop over all the components
-  !
-  do ivec=1,3
 !
-!  Magnetic helicity spectral flux, defined as
-!  $\Pi(k)=-\int_0^k k'^2 dk' dOmega [b^*(k') \cdot emf(k') + c.c.]$
-!  so that $dH(k)/dt + d\Pi/dk = -2\eta k^2 H(k)$
+!  Loop over all p, and then loop over q<p.
+!  The q>p half is filled using Tpq(p,q)=-Tpq(q,p).
 !
-    if (sp=='maghel') then
-      a_re = -EMF(l1:l2,m1:m2,n1:n2,ivec)
-      b_re = +BBB(l1:l2,m1:m2,n1:n2,ivec)
-      a_im = 0.
-      b_im = 0.
-!
-    endif
-!
-!  Doing the Fourier transform
-!
-    call fft_xyz_parallel(a_re,a_im)
-    call fft_xyz_parallel(b_re,b_im)
-!
-!  integration over shells
-!
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-    do ikz=1,nz
-      do iky=1,ny
-        do ikx=1,nx
-          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-          k=nint(sqrt(k2))
-          if (k>=0 .and. k<=(nk-1)) then
-!
-!  sum local contribution in each shell
-!
-            specT(k+1)=specT(k+1) &
-               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
-!
-!  end of loop through all points
-!
-          endif
-        enddo
-      enddo
+  do p=0,nk-1
+    !
+    !  obtain the filtered field bbb_p
+    !
+    do ivec=1,3
+      call power_shell_filter(bbb(:,:,:,ivec),bbb_p(:,:,:,ivec),p)
     enddo
     !
-  enddo !(from loop over ivec)
+    do q=0,p-1
+      !
+      !  obtain the filtered field bbb_q
+      !
+      do ivec=1,3
+        call power_shell_filter(bbb(:,:,:,ivec),bbb_q(:,:,:,ivec),q)
+      enddo
+      !
+      !  compute emf_q=cross(uuu,bbb_q)
+      !
+      do iky=1,ny
+      do ikz=1,nz
+        uu=uuu(:,iky,ikz,:)
+        bb=bbb_q(:,iky,ikz,:)
+        call cross_mn(uu,bb,uxb)
+        emf_q(:,iky,ikz,:)=uxb
+      enddo
+      enddo
+      !
+      !  T(p,q)=\int bbb_p \cdot emf_q dV
+      !
+      Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(bbb_p*emf_q)
+    enddo  !  from q
+  enddo  !  from p
 !
-!  compute spectral flux
+!  fill the other half of Tpq.
 !
-  do ikx=1,nk
-    do iky=1,ikx
-      specflux(ikx) = specflux(ikx) + specT(iky)
-    enddo
+  do p=0,nk-1
+  do q=p+1,nk-1
+    Tpq(p,q)=-Tpq(q,p)
   enddo
-  !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
-  !
-  call mpireduce_sum(specflux,specflux_sum,nk)
-  !
-  !  append to diagnostics file
-  !
+  enddo
+!
+!  sum over processors
+!
+  call mpireduce_sum(Tpq,Tpq_sum,(/nk,nk/))
+!
+!  append to diagnostics file
+!
   if (lroot) then
-    if (ip<10) print*,'Writing spectral flux ',sp &
-         ,' to ',trim(datadir)//'/powerflux_'//trim(sp)//'.dat'
-    open(1,file=trim(datadir)//'/powerflux_'//trim(sp)//'.dat',position='append')
+    if (ip<10) print*,'Writing magnetic helicity transfer rate to ', &
+        trim(datadir)//'/power_mag_hel_transfer.dat'
+    open(1,file=trim(datadir)//'/power_mag_hel_transfer.dat',position='append')
     write(1,*) t
-    write(1,power_format) specflux_sum
+    write(1,power_format) Tpq_sum
     close(1)
   endif
   !
-  endsubroutine powerSpecFlux
+  endsubroutine power_mag_hel_transfer
 !***********************************************************************
 endmodule power_spectrum
