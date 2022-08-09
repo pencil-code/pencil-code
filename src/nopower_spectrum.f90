@@ -273,7 +273,7 @@ module power_spectrum
   subroutine power_fft3d_vec(f,sp,sp2)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=2) :: sp
+      character (len=*) :: sp
       character (len=4) :: sp2
 !
       call keep_compiler_quiet(f)

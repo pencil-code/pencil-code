@@ -882,6 +882,7 @@ module Snapshot
         if (jj_xkyz)   call power_fft3d_vec(f,'jj','xkyz')
         if (jj_kx0z)   call power_fft3d_vec(f,'jj','kx0z')
         if (ee_k00z)   call power_fft3d_vec(f,'ee','k00z')
+        if (gwT_fft3d) call power_fft3d_vec(f,'gwT','kxyz')
 !
 !  output spectral fluxes
 !

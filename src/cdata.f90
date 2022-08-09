@@ -607,7 +607,7 @@ module Cdata
   logical :: uu_fft3d=.false., oo_fft3d=.false., bb_fft3d=.false., jj_fft3d=.false.
   logical :: uu_xkyz=.false., oo_xkyz=.false., bb_xkyz=.false., jj_xkyz=.false.
   logical :: uu_kx0z=.false., oo_kx0z=.false., bb_kx0z=.false., jj_kx0z=.false.
-  logical :: bb_k00z=.false., ee_k00z=.false.
+  logical :: bb_k00z=.false., ee_k00z=.false., gwT_fft3d=.false.
   logical :: mh_specflux=.false.
 !
   ! Auxiliary parameters for boundary conditions:

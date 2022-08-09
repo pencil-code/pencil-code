@@ -5149,10 +5149,10 @@ endsubroutine pdf
     use Shear, only: shear_frame_transform
 !
   real, dimension (mx,my,mz,mfarray) :: f
-  character (len=2) :: sp
+  character (len=*) :: sp
   character (len=4) :: sp2
 !
-  integer :: i,ivec,ikx,iky,ikz,jkx,jky,jkz
+  integer :: ncomp,i,ivec,ikx,iky,ikz,jkx,jky,jkz
   integer :: kkout,kkoutx,kkouty,kkoutz
   real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nx) :: bbi
@@ -5161,6 +5161,7 @@ endsubroutine pdf
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=1) :: spxyz
+  logical :: lfft
 !
 !  identify version
 !
@@ -5185,9 +5186,14 @@ endsubroutine pdf
   allocate( fft(2,kkoutx,kkouty,kkoutz) )
   allocate( fft_sum(2,kkoutx,kkouty,kkoutz) )
   !
+  select case (sp)
+  case ('gwT'); ncomp=2; lfft=.false.
+  case default; ncomp=3; lfft=.true.
+  endselect
+  !
   !  loop over all components
   !
-  do ivec=1,3
+  do ivec=1,ncomp
     !
     !  initialize fft(real/imaginary,kx,ky,kz)
     !
@@ -5223,6 +5229,15 @@ endsubroutine pdf
       if (iee==0) call fatal_error('power_fft3d_vec','iee=0')
       a_re=f(l1:l2,m1:m2,n1:n2,iee+ivec-1)
       a_im=0.
+    elseif (sp=='gwT') then
+      if (iStressT==0) call fatal_error('power_fft3d_vec','iStressT=0')
+      if (ivec==1) then
+        a_re=f(l1:l2,m1:m2,n1:n2,iStressT)
+        a_im=f(l1:l2,m1:m2,n1:n2,iStressTim)
+      else
+        a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
+        a_im=f(l1:l2,m1:m2,n1:n2,iStressXim)
+      endif
     endif
     !
     !  shear-frame transformation
@@ -5235,11 +5250,13 @@ endsubroutine pdf
     !
     !  Fourier transformation
     !
-    if (sp2=='xkyz') then
-      call fft_y_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
-      call fft_z_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
-    else
-      call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+    if (lfft) then
+      if (sp2=='xkyz') then
+        call fft_y_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+        call fft_z_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+      else
+        call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+      endif
     endif
     !
     do ikz=1,nz
