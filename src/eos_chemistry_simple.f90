@@ -477,17 +477,18 @@ module EquationOfState
       use Sub, only: grad, del2, dot2
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case),    intent(OUT) :: p
+      type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
-      real, dimension(nx,3) :: glnDiff_full_add, glncp
-      real, dimension(nx) :: D_th, R_mix
 !
       intent(in) :: lpenc_loc
-      intent(inout) :: f,p
-!
+      intent(inout) :: f
+      intent(out) :: p
+
+      real, dimension(nx,3) :: glnDiff_full_add, glncp
+      real, dimension(nx) :: D_th, R_mix
       integer :: i,k,j2,j3
 !
-!! Cp/Cv pencils
+! Cp/Cv pencils
 !
           if (lpencil(i_cp)) p%cp =  f(l1:l2,m,n,icp)
 !
