@@ -174,7 +174,12 @@ CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 #
 # Default linker flags.
 #
-LDFLAGS ?= -ldl
+ifeq ($(LDFLAGS),)
+  LDFLAGS = -ldl
+else
+  LDFLAGS += -ldl
+endif
+
 DLL_FFLAGS ?= -fPIC
 DLL_LDFLAGS ?= -shared
 #
@@ -473,7 +478,9 @@ no_cuda_message:
     LIBGPU = astaroth_sgl.so
   endif
   LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
-  LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -lastaroth_core -l:$(LIBGPU)
+  LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -L astaroth/submodule/build/src/utils -lastaroth_core -lkernels -lastaroth_utils -l:$(LIBGPU)
+# the following needed?
+  LDFLAGS_LIB += -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -ldl
 else
   GPU_INTERFACE=
 endif
@@ -3149,7 +3156,7 @@ endif
 #
 linkonly:
 	$(LD) $(start) start.o $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LIBGPU) -o start.x
-	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LIBGPU) -o run.x
+	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LIBGPU) -o run.x
 #
 #  Use sloppier compiler for a few files that use F77 syntax.
 #  (and also for param_io.f90, since `gfortran-4.4.5 -std=f95' doesn't

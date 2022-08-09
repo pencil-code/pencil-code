@@ -1553,18 +1553,26 @@ module Forcing
       real, dimension(3) :: e1,e2,ee
       real :: norm,phi
       real :: fd,fd2
+      integer, save :: ideter=-1
 !
 !  generate random coefficients -1 < fran < 1
 !  ff=force*Re(exp(i(kx+phase)))
 !  |k_i| < akmax
 !
       do
-        call random_number_wrapper(fran,CHANNEL=channel_force)
-!        call random_seed_wrapper(GET=seed)
+        if (ideter>=0) then      ! deterministic selection of wavevector and phase
+          ik=mod(ideter-1,nk)+1
+          phase=pi*(real(ik)/real(nk))
+          ideter=ideter+1
+!print*, 'itsub,ideter=', itsub,ideter, ik, kkx(ik),kky(ik),kkz(ik),phase
+        else                     !random choice (default)
+          call random_number_wrapper(fran,CHANNEL=channel_force)
+!          call random_seed_wrapper(GET=seed)
 !if (lroot) write(20,*) 'forcing: seed=', seed(1:nseed)
-        phase=pi*(2*fran(1)-1.)
+          phase=pi*(2*fran(1)-1.)
 !AB: to add time-dependence XX
-        ik=nk*(.9999*fran(2))+1
+          ik=nk*(.9999*fran(2))+1
+        endif
 !
 !  if lavoid_xymean=T and wavevector is close enough to [0,0,kz] discard it
 !  and look for a new one
