@@ -158,6 +158,7 @@ module Hydro
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: PrRa  !preliminary
   real :: amp_factor=0.,kx_uu_perturb=0.
+  real :: qirro_uu=0.
   integer, dimension(ninit) :: ll_sh=0, mm_sh=0, n_xprof=-1
 !
   namelist /hydro_init_pars/ &
@@ -179,7 +180,7 @@ module Hydro
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
-      lfactors_uu
+      lfactors_uu, qirro_uu
 !
 !  Run parameters.
 !
@@ -2124,7 +2125,7 @@ module Hydro
           call power_randomphase_hel(ampluu(j),initpower,initpower2, &
             cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
             lskip_projection, lvectorpotential,lscale_tobox, &
-            nfact0=nfact_uu, lfactors0=lfactors_uu)
+            nfact0=nfact_uu, lfactors0=lfactors_uu, qirro=qirro_uu)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)

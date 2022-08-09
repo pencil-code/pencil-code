@@ -5059,7 +5059,7 @@ module Initcond
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
-      kpeak_log0,kbreak0,ldouble0,nfactd0)
+      kpeak_log0,kbreak0,ldouble0,nfactd0,qirro)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5095,7 +5095,7 @@ module Initcond
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
       real, intent(in), optional :: initpower_med0, kpeak_log0, kbreak0
-      real, intent(in), optional :: nfactd0
+      real, intent(in), optional :: nfactd0, qirro
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r, r2
       real, dimension (:), allocatable :: kx, ky, kz
@@ -5106,6 +5106,7 @@ module Initcond
       real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, D3, compk
       real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
       real :: nfactd,nexp3,nexp4
+      real :: qirro1, p
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5130,6 +5131,14 @@ module Initcond
       else
         lno_noise1 = .false.
       endif
+!
+!  qirro
+!
+     if (present(qirro)) then
+       qirro1 = qirro     
+     else
+       qirro1 = 0.
+     endif 
 !
 !  alberto: added option to compesate spectral shape by a power of k
 !
@@ -5207,7 +5216,6 @@ module Initcond
           endif
         endif
       endif
-!
 !
 !  Allocate memory for arrays.
 !
@@ -5586,7 +5594,7 @@ module Initcond
           enddo
         endif
 !
-!  scale with r: allow for special case with scalars here
+!  scale with r: allow for special case with *scalars* here
 !
         if (i2==i1) then
           u_re(:,:,:,1)=r*u_re(:,:,:,1)
@@ -5608,11 +5616,19 @@ module Initcond
 !  Use r=1/k^2 for normalization in khat_i * khat_j = ki*kj/k2.
 !  Remember that for the return transform, data have to be
 !  arranged in the order (kz,kx,ky).
+!  To allow also for the possibility of longitudinal initial fields, we write
+!  (1-q)*(delij-kikj) + q*kikj = (1-q)*delij - (1-2*q)*kikj.
 !
           if (lskip_projection) then
             v_re=u_re
             v_im=u_im
           else
+!
+!  Allow for possibility of irrotational contributions of fraction q,
+!  so the vortical fraction is (1-q) == p.
+!
+            p=1.-qirro1
+!
 !  In 2-D
             if (nz==1) then
               ikz=1
@@ -5620,22 +5636,25 @@ module Initcond
                 do ikx=1,nx
 !
 !  Real part of (ux, uy, uz) -> vx, vy, vz
+!  (kk.uu)/k2, vi = ui - ki kj uj, but now we write:
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                  r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
-                                 +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,1)=u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,2)=u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,3)=u_re(ikx,iky,ikz,3)
+                  r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                      (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                      +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
+                  v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                  v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                  v_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)
 !
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                  r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
-                                 +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,1)=u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,2)=u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,3)=u_im(ikx,iky,ikz,3)
+                  r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                      (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                      +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
+                  v_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                  v_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                  v_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)
                 enddo
               enddo
 !  In 3-D
@@ -5647,22 +5666,24 @@ module Initcond
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                    r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
-                                   +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
-                                   +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
-                    v_re(ikx,iky,ikz,1)=u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                    v_re(ikx,iky,ikz,2)=u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                    v_re(ikx,iky,ikz,3)=u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+                    r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                        (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                        +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
+                        +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+                    v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                    v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                    v_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
 !
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                    r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
-                                   +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
-                                   +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
-                    v_im(ikx,iky,ikz,1)=u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                    v_im(ikx,iky,ikz,2)=u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                    v_im(ikx,iky,ikz,3)=u_im(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+                    r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                        (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                        +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
+                        +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+                    v_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                    v_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                    v_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
                   enddo
                 enddo
               enddo
