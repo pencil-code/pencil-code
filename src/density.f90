@@ -60,6 +60,12 @@ module Density
   real :: width_eos_prof=0.2
   character(LEN=labellen) :: ireference_state='nothing', ieos_profile='nothing'
   real :: reference_state_mass=0.
+!
+!  Schur flow quantities
+!
+  real :: Schur_dlnrho_RHS_xyz
+  real, dimension (mz) :: Schur_dlnrho_RHS_z
+  real, dimension (mx,my) :: Schur_dlnrho_RHS_xy
 ! 
 ! reference state, components:  1       2          3              4            5      6     7         8            9        
 !                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
@@ -115,6 +121,7 @@ module Density
   logical :: lcalc_lnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
   logical :: lffree=.false.
+  logical :: lSchur_3D3D1D=.false.
   logical, target :: lreduced_sound_speed=.false.
   logical, target :: lscale_to_cs2top=.false.
   logical :: lconserve_total_mass=.false.
@@ -177,7 +184,8 @@ module Density
       lconserve_total_mass, total_mass, density_ceiling, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho, &
       lsubtract_init_stratification, ireference_state, &
-      h_sld_dens, lrho_flucz_as_aux, nlf_sld_dens, div_sld_dens
+      h_sld_dens, lrho_flucz_as_aux, nlf_sld_dens, div_sld_dens, &
+      lSchur_3D3D1D
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !  Note: drho2m is based on rho0, while rhof2m is based on <rho>(z).
@@ -2394,7 +2402,33 @@ module Density
 !
 !   2-apr-08/anders: coded
 !
+      use Sub, only: div, grad, dot_mn
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nx,3) :: glnrho, uu
+      real, dimension (nx) :: divu, uglnrho, Schur_dlnrho_RHS
+!
+      if (lSchur_3D3D1D) then
+!
+!  compute what would normally be the rhs of the continuity equation
+!
+        do n=n1,n2
+        do m=m1,m2
+          uu=f(l1:l2,m,n,iux:iuz)
+          call grad(f,ilnrho,glnrho)
+          call div(f,iux,divu)
+          call dot_mn(uu,glnrho,uglnrho)
+          Schur_dlnrho_RHS=uglnrho+divu
+          print*,'AXEL: m,n,Schur_dlnrho_RHS=',m,n,Schur_dlnrho_RHS
+        enddo
+        enddo
+!
+!  averages
+!
+  !real :: Schur_dlnrho_RHS_xyz
+  !real, dimension (mz) :: Schur_dlnrho_RHS_z
+  !real, dimension (mx,my) :: Schur_dlnrho_RHS_xy
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -2436,6 +2470,17 @@ module Density
       call timing('dlnrho_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE'
       if (headtt) call identify_bcs('lnrho',ilnrho)
+!
+!  If we want to do any so-called Schur flows, we solve a different
+!  continuity equation.
+!
+      if (lSchur_3D3D1D) then
+        print*,'AXEL: now dlnrho_dt'
+        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+            +Schur_dlnrho_RHS_xyz &
+            -Schur_dlnrho_RHS_z(n) &
+            -Schur_dlnrho_RHS_xy(l1:l2,m)
+      else
 !
 !  Continuity equation.
 !
@@ -2777,7 +2822,11 @@ module Density
 !  Apply border profile
 !
       if (lborder_profiles) call set_border_density(f,df,p)
-
+!
+!  endif from lSchur_3D3D1D query
+!
+      endif
+!
       call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
       call calc_diagnostics_density(f,p)
       call timing('dlnrho_dt','finished',mnloop=.true.)
