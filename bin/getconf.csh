@@ -174,6 +174,10 @@ if ($?SNIC_RESOURCE) then
   set masterhost = $SNIC_RESOURCE
   echo "masterhost="$masterhost
 endif
+if ($?LUMI_LMOD_FAMILY_CRAYPE_CPU) then
+  set masterhost = lumi
+  echo "masterhost="$masterhost
+endif
 if ("$masterhost" =~ gardar*) set hn = 'gardar'
 if ("$masterhost" =~ triolith) set hn = 'triolith'
 if ($?PBS_JOBID) then
@@ -842,7 +846,23 @@ else if (($hn =~ c*.mahti.csc.fi)) then
   set one_local_disc = 0
   set remote_top     = 0
   set local_binary = 0
-
+#--------------------------------------------------
+else if (($hn =~ nid* && $masterhost == lumi)) then
+  echo "Lumi - CSC, Kajaani, Finland"
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
+  endif
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
 #--------------------------------------------------
 else if (($hn =~ parker)) then
   echo "Parker - UFMG, BH, MG,Brazil"
