@@ -70,6 +70,7 @@ module Particles
   real :: compensate_sedimentation=1. ! Is this still being used?
   real :: mean_free_path_gas=0.0
   real :: cs2_powerlaw
+  logical, pointer :: lshearadvection_as_shift
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: lpar_spec=.false., learly_particle_map=.true.
   logical :: ldragforce_equi_global_eps=.false.
@@ -405,6 +406,10 @@ module Particles
             'not yet implemented for variable particle radius or number'
         call fatal_error('initialize_particles','')
       endif
+!
+!  Check if shear advection is on for time-step condition.
+!
+      if (lshear) call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift, caller='initialize_particles')
 !
 !  Write constants to disk.
 !
@@ -1988,7 +1993,7 @@ k_loop:   do while (.not. (k>npar_loc))
             do k=k1_iblock(iblock),k2_iblock(iblock)
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               dt1_advpx=abs(fp(k,ivpx))*dx1b(ix0,iblock)
-              if (lshear) then
+              if (lshear .and. .not. lshearadvection_as_shift) then
                 dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))&
                            *dy1b(iy0,iblock)
               else
