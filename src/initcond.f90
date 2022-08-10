@@ -5692,9 +5692,10 @@ module Initcond
 !
 !  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ikhat_k*sigma.
 !  Use r=sigma/k for normalization of sigma*khat_i = sigma*ki/sqrt(k2).
+!  Put r(k=0)=0, but this is only true for the root processor.
 !
           r=relhel/sqrt(k2)
-          r(1,1,1)=0.
+          if (lroot) r(1,1,1)=0.
 !
 !  put sigma=0 outside [r1hel,r2hel]
 !
