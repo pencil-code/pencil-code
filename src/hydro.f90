@@ -144,6 +144,7 @@ module Hydro
   logical :: lreflecteddy=.false.,louinit=.false.
   logical :: lskip_projection=.false.
   logical :: lrelativistic=.false.
+  logical :: lno_noise_uu=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -180,7 +181,7 @@ module Hydro
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
-      lfactors_uu, qirro_uu
+      lfactors_uu, qirro_uu, lno_noise_uu
 !
 !  Run parameters.
 !
@@ -226,6 +227,7 @@ module Hydro
   logical :: limpose_only_horizontal_uumz=.false.
   logical :: ltime_integrals_always=.true.
   logical :: lvart_in_shear_frame=.false.
+  logical :: lSchur_3D3D1D_uu=.false.
   real :: dtcor=0.
   character (len=labellen) :: uuprof='nothing'
 !
@@ -273,7 +275,7 @@ module Hydro
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
       limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
-      ltime_integrals_always, dtcor, lvart_in_shear_frame
+      ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1633,6 +1635,7 @@ module Hydro
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
+      f(:,:,:,iux:iuz)=0.
       do j=1,ninit
 !
         select case (inituu(j))
@@ -2125,7 +2128,8 @@ module Hydro
           call power_randomphase_hel(ampluu(j),initpower,initpower2, &
             cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
             lskip_projection, lvectorpotential,lscale_tobox, &
-            nfact0=nfact_uu, lfactors0=lfactors_uu, qirro=qirro_uu)
+            nfact0=nfact_uu, lfactors0=lfactors_uu, &
+            lno_noise=lno_noise_uu, qirro=qirro_uu)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)
@@ -3397,7 +3401,7 @@ module Hydro
       intent(inout) :: f,df
 
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: ftot
+      real, dimension (nx) :: ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
       integer :: j, ju
 !
       Fmax=tini
@@ -3419,12 +3423,23 @@ module Hydro
 !
       if (ladvection_velocity) then
         if (.not. lweno_transport .and. &
-            .not. lno_meridional_flow .and. .not. lfargo_advection) &
+            .not. lno_meridional_flow .and. .not. lfargo_advection) then
 !
 !  Subtract u.gradu. In the relativistic case, this is automatically
 !  u.gradS, and then we also need to subtract (divu)*S.
 !
-      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+        if (lSchur_3D3D1D_uu) then
+          call dot(p%uu,p%uij(:,1,:),ugu_Schur_x)
+          call dot(p%uu,p%uij(:,2,:),ugu_Schur_y)
+          ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+        else
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+        endif
+      endif
+!
       if (ldensity.and.lrelativistic) then
         call multsv(p%divu,p%ss_rel,tmpv)
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
