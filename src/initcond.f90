@@ -5636,8 +5636,8 @@ module Initcond
                 do ikx=1,nx
 !
 !  Real part of (ux, uy, uz) -> vx, vy, vz
-!  (kk.uu)/k2, vi = ui - ki kj uj, but now we write:
-!  (kk.uu)/k2, vi = ui - ki kj uj
+!  (kk.uu)/k2, ==> vi = ui - ki kj uj, but now we write:
+!  (kk.uu)/k2, ==> vi = (1-q)*ui - (1-2q) ki kj uj
 !
                   r(ikx,iky,ikz)=(1.-2.*qirro1)* &
                       (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
@@ -5709,8 +5709,8 @@ module Initcond
 !
 !  In 2-D
           if (nz==1) then
-            do iky=1,nz
-              do ikx=1,ny
+            do iky=1,ny
+              do ikx=1,nx
                 ikz=1
 !
 !  (vx, vy, vz) -> ux
