@@ -460,7 +460,7 @@ module EquationOfState
 !   12-aug-03/tony: implemented
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu_tmp
+      real, optional, intent(out) :: mu_tmp
 !
 !  mu = mu_H * (1 - xHe) + mu_He * xHe
 !     = mu_H + (mu_He-mu_H) * xHe

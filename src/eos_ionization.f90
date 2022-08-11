@@ -506,7 +506,7 @@ module EquationOfState
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
-    subroutine getmu(f,mu)
+    subroutine getmu(f,mu_tmp)
 !
 !  Calculate average particle mass.
 !  Note that the particles density is N = nHI + nHII + ne + nHe
@@ -519,13 +519,13 @@ module EquationOfState
 !   12-aug-03/tony: implemented
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu
+      real, optional, intent(out) :: mu_tmp
 !
-      mu=1.+3.97153*xHe
+      mu_tmp=1.+3.97153*xHe
 !
 ! tobi: the real mean molecular weight would be:
 !
-! mu=(1.+3.97153*xHe)/(1+yH+xHe)
+! mu_tmp=(1.+3.97153*xHe)/(1+yH+xHe)
 !
       call keep_compiler_quiet(present(f))
 !

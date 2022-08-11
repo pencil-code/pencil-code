@@ -319,7 +319,7 @@ module EquationOfState
 !   23 may-10/nils: fleshed it up
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu_tmp
+      real, optional, intent(out) :: mu_tmp
 !
       call keep_compiler_quiet(mu_tmp)
       call keep_compiler_quiet(present(f))

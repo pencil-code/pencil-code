@@ -2792,8 +2792,7 @@ module Special
 !
     endsubroutine calc_heat_cool_deltaE
 !***********************************************************************
-
-subroutine calc_heat_cool_H_part(df,p)
+    subroutine calc_heat_cool_H_part(df,p)
 !
 !  Apply external heating and cooling profile for heating per particle.
 !
@@ -2810,7 +2809,7 @@ subroutine calc_heat_cool_H_part(df,p)
 !     add to energy equation
 ! Calculate number of particles
      !   n_rho = rho / (pc_get_parameter ('m_proton', label=quantity) * mu)
-     call getmu(mu=mu) 
+     call getmu(mu_tmp=mu) 
      n_rho= p%rho/(1.67d-27/unit_mass * mu)
       if (ltemperature .and. ltemperature_nolog) then
         tmp =heat_cool * p%rho1 * p%cp1 * gamma * deltaH_part_init_z(n) * n_rho 

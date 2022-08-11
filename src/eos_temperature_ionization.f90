@@ -505,16 +505,16 @@ module EquationOfState
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
-    subroutine getmu(f,mu)
+    subroutine getmu(f,mu_tmp)
 !
 !  Calculate average particle mass in the gas relative to
 !
 !   12-aug-03/tony: implemented dummy
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu
+      real, optional, intent(out) :: mu_tmp
 !
-      mu=0.
+      mu_tmp=0.
       call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu

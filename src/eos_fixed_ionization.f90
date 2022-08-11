@@ -94,7 +94,7 @@ module EquationOfState
 !
     endsubroutine register_eos
 !*******************************************************************
-    subroutine getmu(f,mu)
+    subroutine getmu(f,mu_tmp)
 !
 !  Calculate mean molecular weight of the gas
 !
@@ -102,9 +102,9 @@ module EquationOfState
 !   30-mar-04/anders: Added molecular hydrogen to ionization_fixed
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu
+      real, optional, intent(out) :: mu_tmp
 !
-      mu = (1.+3.97153*xHe)/(1-xH2+xHe)
+      mu_tmp = (1.+3.97153*xHe)/(1-xH2+xHe)
 !
 ! Complain if xH2 not between 0 and 0.5
 !
