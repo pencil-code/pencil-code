@@ -62,6 +62,7 @@ module Viscosity
   logical :: lvisc_nu_non_newtonian=.false.
   logical :: lvisc_rho_nu_const=.false.
   logical :: lvisc_rho_nu_const_bulk=.false.
+  logical :: lvisc_rho_nu_const_prefact=.false.
   logical :: lvisc_sqrtrho_nu_const=.false.
   logical :: lvisc_nu_cspeed=.false.
   logical :: lvisc_mu_cspeed=.false.
@@ -134,7 +135,8 @@ module Viscosity
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
       h_sld_visc,nlf_sld_visc, lnusmag_as_aux, lsld_notensor, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
-      no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux
+      no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux, &
+      lvisc_rho_nu_const_prefact
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -1287,9 +1289,16 @@ module Viscosity
 !
 !  viscous force: mu/rho*(del2u+graddivu/3)
 !  -- the correct expression for rho*nu=const
+!  As a test for vorticity generation, we also allow for the possibility
+!  of setting the prefactor to mu (without 1/rho factor). In that case
+!  we set lvisc_rho_nu_const_prefact=T
 !
       if (lvisc_rho_nu_const) then
-        murho1=nu*p%rho1  !(=mu/rho)
+        if (lvisc_rho_nu_const_prefact) then
+          murho1=nu         !(=mu=dynamical viscosity)
+        else
+          murho1=nu*p%rho1  !(=mu/rho)
+        endif
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
               murho1*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))
