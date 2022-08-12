@@ -13,6 +13,7 @@ BOUNDCOND          =   boundcond
 DEBUG              = nodebug
 GHOST_CHECK        =   ghost_check
 DIAGNOSTICS        =   diagnostics
+DSL_MODULE         =
 FILE_IO            =   file_io_f95
 SYSCALLS           =   syscalls
 DERIV              =   deriv
@@ -469,6 +470,9 @@ no_cuda_message:
     endif
   endif
 #
+ifeq ($(DSL_MODULE),)
+  $(error 'For use with Astaroth you must provide the name of a DSL module')
+endif
   FFLAGS_GENERAL += -mcmodel=medium
   GPU_INTERFACE = gpu_astaroth_ansi.o
   GPU_DEPS = gpu_preps astaroth/submodule/build/src/core/libastaroth_core.so
@@ -2864,8 +2868,16 @@ endif
 ifeq ($(EOS),noeos)
 	@echo $(CUDA_RELPATH)'/noeos.f90' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 else
-	@echo '' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@echo ' ' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+#  Generation of field declarations for DSL code.
+#
+	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm tmp; \
+	rm -f astaroth/submodule/acc-runtime/samples/$(DSL_MODULE)/fields.h; \
+	for file in $$MODULESOURCES; do \
+        echo $$file; \
+	sed -f dsl.sed $$file >> astaroth/submodule/acc-runtime/samples/$(DSL_MODULE)/fields.h; \
+	done
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.

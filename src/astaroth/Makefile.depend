@@ -1,9 +1,9 @@
 AC_INCLUDE=submodule/include
 AC_STANDALONE=submodule/src/standalone
 AC_CORE=submodule/src/core
-AC_HEADERS=$(AC_INCLUDE)/astaroth.h $(AC_CORE)/math_utils.h
+AC_HEADERS=$(AC_INCLUDE)/astaroth.h submodule/acc-runtime/api/math_utils.h
 
-# c headers in src 
+# C headers in src 
 CHEADERS = ../cparam_c.h ../cdata_c.h ../sub_c.h ../headers_c.h ../forcing_c.h ../boundcond_c.h ../mpicomm_c.h
 
 PC_HEADERS = $(PCHEADER_DIR)/PC_module_parfuncs.h $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_modulepardecs.h $(PCHEADER_DIR)/PC_module_diagfuncs.h $(PCHEADER_DIR)/PC_modulediags.h $(PCHEADER_DIR)/PC_modulediags_init.h
@@ -12,11 +12,11 @@ gpu_astaroth.o: gpu_astaroth.cc $(AC_HEADERS) $(PCHEADER_DIR)/PC_moduleflags.h $
 #
 $(AC_STANDALONE)/config_loader.o: $(AC_STANDALONE)/config_loader.h $(AC_STANDALONE)/config_loader.cc $(AC_CORE)/errchk.h $(AC_CORE)/math_utils.h
 #
-$(AC_CORE)/astaroth.o: $(AC_INCLUDE)/astaroth.h $(AC_CORE)/astaroth.cu $(AC_CORE)/errchk.h $(AC_CORE)/math_utils.h $(AC_STANDALONE)/config_loader.o
-#
-$(AC_CORE)/device.o: $(AC_CORE)/device.cu $(AC_CORE)/errchk.h $(AC_CORE)/kernels/kernels.cuh
-
 #**************** obsolet 
+#$(AC_CORE)/astaroth.o: $(AC_INCLUDE)/astaroth.h $(AC_CORE)/astaroth.cu $(AC_CORE)/errchk.h $(AC_CORE)/math_utils.h $(AC_STANDALONE)/config_loader.o
+#
+#$(AC_CORE)/device.o: $(AC_CORE)/device.cu $(AC_CORE)/errchk.h $(AC_CORE)/kernels/kernels.cuh
+
 $(PCHEADER_DIR)/timeseries_$(PCHEADER_DIR).o: $(PCHEADER_DIR)/timeseries_$(PCHEADER_DIR).cc $(PCHEADER_DIR)/grid.h $(PCHEADER_DIR)/qualify.h utils/utils.h gpu/cuda/cuda_generic.cuh ../cparam_c.h ../cdata_c.h ../$(PCHEADER_DIR)_c.h $(PCHEADER_DIR)/PC_module_diagfuncs.h $(PCHEADER_DIR)/PC_modulediags_init.h $(PCHEADER_DIR)/PC_modulediags.h
 #
 gpu/cuda/generic/collectiveops_cuda_generic.o: gpu/cuda/generic/collectiveops_cuda_generic.cu gpu/cuda/generic/collectiveops_cuda_generic.cuh gpu/cuda/core/dconsts_core.cuh gpu/cuda/core/errorhandler_cuda.cuh utils/utils.h $(PCHEADER_DIR)/errorhandler.h $(PCHEADER_DIR)/config.h

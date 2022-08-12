@@ -71,34 +71,34 @@ sed -n '
 #
 if [[ $1 == 'par' ]]; then
   sed -n '
-          /copy_addr_c/ {
-            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], sizeof(real)) );  \/\/ \1 real/w tmp1
+          /call  *copy_addr *(/ {
+            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_par_'$modname'[\2-1], sizeof(real)) );  \/\/ \1 real/w tmp1
             t cont
-            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z]*\) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], sizeof(\3)) );  \/\/ \1 \3/w tmp1
+            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z]*\) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_par_'$modname'[\2-1], sizeof(\3)) );  \/\/ \1 \3/w tmp1
             t cont
-            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], \3*sizeof(real)) );  \/\/ \1 real(\3)/w tmp1
+            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_par_'$modname'[\2-1], \3*sizeof(real)) );  \/\/ \1 real(\3)/w tmp1
             t cont
-            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *! *\([a-zA-Z]*\) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], \4*sizeof(\3)) );  \/\/ \1 \3(\4)/w tmp1
+            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z]*\) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_par_'$modname'[\2-1], \4*sizeof(\3)) );  \/\/ \1 \3(\4)/w tmp1
             : cont
             p
           }
   '< tmp >> $modheader
 else
   sed -n '
-          /copy_addr_c/ {
+          /call  *copy_addr *(/ {
              h
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]\)\([mr][am][sx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U\2_VEC\L, h_grid.\U\1\1X\L);\n  save_name(diag,idiag_\1\2);\n}/ 
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=-reduce_cuda_PC(\U\2_VEC\L, h_grid.\U\1\1X\L);\n  save_name(diag,idiag_\1\2);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]\)\([mr][am][sx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U\2_VEC\L, h_grid.\U\1\1X\L);\n  save_name(diag,idiag_\1\2);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=-reduce_cuda_PC(\U\2_VEC\L, h_grid.\U\1\1X\L);\n  save_name(diag,idiag_\1\2);\n}/ 
              t store
              b cont
              : store
              p
              : cont
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]\)\([xyz]\)\([mr][iam][nsx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2\3>0) {\n  diag=reduce_cuda_PC(\U\3_SCAL\L, h_grid.\U\1\1\2\L);\n  save_name(diag,idiag_\1\2\3);\n}/ 
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]\)\([xyz]\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2\3>0) {\n  diag=-reduce_cuda_PC(\U\3_SCAL\L, h_grid.\U\1\1\2\L);\n  save_name(diag,diag_\1\2\3);\n}/ 
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]*\)\([mr][am][sx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U\2_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]*\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=-reduce_cuda_PC(\U\2_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]*\)\(m\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U SUM_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]\)\([xyz]\)\([mr][iam][nsx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2\3>0) {\n  diag=reduce_cuda_PC(\U\3_SCAL\L, h_grid.\U\1\1\2\L);\n  save_name(diag,idiag_\1\2\3);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]\)\([xyz]\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2\3>0) {\n  diag=-reduce_cuda_PC(\U\3_SCAL\L, h_grid.\U\1\1\2\L);\n  save_name(diag,diag_\1\2\3);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]*\)\([mr][am][sx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U\2_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]*\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=-reduce_cuda_PC(\U\2_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]*\)\(m\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U SUM_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
              t store1
              b cont1
              : store1
@@ -109,6 +109,7 @@ else
          }
   ' < tmp >> $modheader
 fi
+
 rm -f tmp
 #
 # writes macro definition of individual p_'$1' into $modfuncs
