@@ -1803,6 +1803,15 @@ module Hydro
             f(l1:l2,m,n,iuz)=ampluu(j)*(ABC_C*sin(ky_uu*y(m))    +ABC_B*cos(kx_uu*x(l1:l2)))
           enddo; enddo
 !
+        case ('Schur_3D3D1D')
+          if (headtt) print*,'Schur_3D3D1D flow'
+! uu
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)=ampluu(j)*sin(2.*kx_uu*x(l1:l2))*sin(2.*ky_uu*y(m))*sin(2.*kz_uu*z(n))
+            f(l1:l2,m,n,iuy)=ampluu(j)*cos(2.*kx_uu*x(l1:l2))*cos(2.*ky_uu*y(m))*sin(2.*kz_uu*z(n))
+            f(l1:l2,m,n,iuz)=ampluu(j)*5                                        *cos(3.*kz_uu*z(n))
+          enddo; enddo
+!
         case ('double_sine')
           if (headtt) print*,'double sine flow'
 ! uu
