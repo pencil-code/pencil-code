@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-This is a script which partially copies snapshots (i.e. only specified variables) between different simulations. This is useful when you are making new simulations with less/more/different physics.
+This is a script which partially copies snapshots (i.e. only specified variables) between different simulations. This is useful when you are making new simulations with less/more/different physics. If required, variables will be automatically remeshed.
 
 This script needs to be run after pc_start, as it uses the files written by pc_start to find out about the variables, processors etc. in the destination simulation. For variables that are not modified, the initial conditions set by pc_start will be preserved.
 
@@ -12,7 +12,7 @@ Kishore Gopalakrishnan (kishore96@gmail.com)
 import os
 import argparse
 
-parser = argparse.ArgumentParser(description="Copy only certain variables from one snapshot to another. This is useful in case you want to use a snapshot from one run to start another run which has additional/fewer modules. This script needs to be run after pc_start, as it uses the files written by pc_start to find out about the variables, processors etc. For variables that are not modified, the initial conditions set by pc_start will be preserved.",
+parser = argparse.ArgumentParser(description="Copy only certain variables from one snapshot to another. This is useful in case you want to use a snapshot from one run to start another run which has additional/fewer modules. If required, variables will be automatically remeshed. This script needs to be run after pc_start, as it uses the files written by pc_start to find out about the variables, processors etc. For variables that are not modified, the initial conditions set by pc_start will be preserved.",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                  epilog="Example: %(prog)s  --src-var VAR5 --dest-datadir sim2/data --dest-var var.dat --copy-these ux,uy,uz,lnrho sim1/data")
 parser.add_argument('SRC_DATADIR', help="Data directory from which snapshots will be read.", type = str )
@@ -50,10 +50,24 @@ def pythonify(i):
         setattr(i, k, getattr(i, k) - 1)
     return i
 
+def sizes_match(src_datadir, dest_datadir):
+    """
+    Given two data directories, check if the sizes of the respective simulations match.
+    """
+    dim_src = pc.read.dim(datadir=src_datadir)
+    dim_dest = pc.read.dim(datadir=dest_datadir)
+    if (dim_src.nx == dim_dest.nx) and (dim_src.ny == dim_dest.ny) and (dim_src.nz == dim_dest.nz):
+        return True
+    else:
+        return False
+
 #Get f array and indices from src simulation
 #TODO: Is it important/useful to copy ghost zones as well? Currently we don't do that.
 var = pc.read.var(var_file=src_var, datadir=src_datadir, trimall=True)
 f_old = var.f
+x_old = var.x
+y_old = var.y
+z_old = var.z
 i_src = pc.read.index(datadir=src_datadir)
 i_src = pythonify(i_src)
 
@@ -74,11 +88,18 @@ if keys_to_copy is None:
     #There may be some redundant indices like 'uu' (since we already have 'ux' etc.), but no harm in writing them anyway.
     keys_to_copy = i_src.__dict__.keys()
 
+#Remesh if required
+if not sizes_match(src_datadir, dest_datadir):
+    print("Remeshing")
+    f_remesh = pc.sim.local_remesh(f_old, x_old, y_old, z_old, x_new, y_new, z_new)
+else:
+    f_remesh = f_old
+
 #Copy the required keys.
 for k in keys_to_copy:
     if k in i_dest.__dict__:
         #Copy a particular key only if it exists in the destination sim.
-        f_new[getattr(i_dest, k)] = f_old[getattr(i_src, k)]
+        f_new[getattr(i_dest, k)] = f_remesh[getattr(i_src, k)]
 
 #Find out how many processors in new sim (needed for writing snapshot)
 dim = pc.read.dim(datadir=dest_datadir)
