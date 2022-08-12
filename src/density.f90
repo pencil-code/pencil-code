@@ -63,9 +63,9 @@ module Density
 !
 !  Schur flow quantities
 !
-  real :: Schur_dlnrho_RHS_xyz
-  real, dimension (mz) :: Schur_dlnrho_RHS_z
-  real, dimension (mx,my) :: Schur_dlnrho_RHS_xy
+  real :: Schur_dlnrho_RHS_xyzaver
+  real, dimension (mz) :: Schur_dlnrho_RHS_xyaver_z
+  real, dimension (mx,my) :: Schur_dlnrho_RHS_zaver_xy
 ! 
 ! reference state, components:  1       2          3              4            5      6     7         8            9        
 !                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
@@ -2402,16 +2402,22 @@ module Density
 !
 !   2-apr-08/anders: coded
 !
-      use Sub, only: div, grad, dot_mn
+      use Sub, only: div, grad, dot_mn, finalize_aver
+      use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx,3) :: glnrho, uu
       real, dimension (nx) :: divu, uglnrho, Schur_dlnrho_RHS
+      real :: tmp
 !
       if (lSchur_3D3D1D) then
 !
-!  compute what would normally be the rhs of the continuity equation
+!  compute what would normally be the rhs of the continuity equation.
+!  and also compute averages
 !
+        Schur_dlnrho_RHS_xyzaver=0.
+        Schur_dlnrho_RHS_xyaver_z=0.
+        Schur_dlnrho_RHS_zaver_xy=0.
         do n=n1,n2
         do m=m1,m2
           uu=f(l1:l2,m,n,iux:iuz)
@@ -2419,17 +2425,25 @@ module Density
           call div(f,iux,divu)
           call dot_mn(uu,glnrho,uglnrho)
           Schur_dlnrho_RHS=uglnrho+divu
+          Schur_dlnrho_RHS_xyaver_z(n) = Schur_dlnrho_RHS_xyaver_z(n)+sum(Schur_dlnrho_RHS)/nxgrid/nygrid
+          Schur_dlnrho_RHS_zaver_xy(l1:l2,m) = Schur_dlnrho_RHS_zaver_xy(l1:l2,m)+Schur_dlnrho_RHS/nzgrid
+          Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(Schur_dlnrho_RHS)/nxgrid/nygrid/nzgrid
           !print*,'AXEL: m,n,Schur_dlnrho_RHS=',m,n,Schur_dlnrho_RHS
           !print*,'AXEL: y,z,divu=',y(m),z(n),divu
           !print*,'AXEL: y,z,uglnrho=',y(m),z(n),uglnrho
         enddo
         enddo
-!
-!  averages
-!
-  !real :: Schur_dlnrho_RHS_xyz
-  !real, dimension (mz) :: Schur_dlnrho_RHS_z
-  !real, dimension (mx,my) :: Schur_dlnrho_RHS_xy
+        !
+        call finalize_aver(nprocxy,12,Schur_dlnrho_RHS_xyaver_z)
+        call finalize_aver(nprocz,3,Schur_dlnrho_RHS_zaver_xy)
+        if (ncpus>1) then
+          call mpiallreduce_sum(Schur_dlnrho_RHS_xyzaver,tmp)
+          Schur_dlnrho_RHS_xyzaver=tmp
+        endif
+        !Schur_dlnrho_RHS_xyzaver = sum(Schur_dlnrho_RHS_xyaver_z)/nzgrid
+        !call finalize_aver(nprocz,3,Schur_dlnrho_RHS_xyzaver)
+        !call finalize_aver(ncpus,123,Schur_dlnrho_RHS_xyzaver)
+        !
       endif
 !
       call keep_compiler_quiet(f)
@@ -2479,9 +2493,9 @@ module Density
       if (lSchur_3D3D1D) then
         print*,'AXEL: now dlnrho_dt'
         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-            +Schur_dlnrho_RHS_xyz &
-            -Schur_dlnrho_RHS_z(n) &
-            -Schur_dlnrho_RHS_xy(l1:l2,m)
+            +Schur_dlnrho_RHS_xyzaver &
+            -Schur_dlnrho_RHS_xyaver_z(n) &
+            -Schur_dlnrho_RHS_zaver_xy(l1:l2,m)
       else
 !
 !  Continuity equation.
