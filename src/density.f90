@@ -2491,11 +2491,11 @@ module Density
 !  continuity equation.
 !
       if (lSchur_3D3D1D) then
-        print*,'AXEL: now dlnrho_dt'
         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
             +Schur_dlnrho_RHS_xyzaver &
             -Schur_dlnrho_RHS_xyaver_z(n) &
             -Schur_dlnrho_RHS_zaver_xy(l1:l2,m)
+        if (m==m1) print*,'AXEL: now dlnrho_dt: ',Schur_dlnrho_RHS_xyaver_z(n)
       else
 !
 !  Continuity equation.
