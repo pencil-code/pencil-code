@@ -43,19 +43,19 @@ def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True):
         print("x", tmp.shape, xsrc.min(), xsrc.max(), xdst.min(), xdst.max())
         print("x", tmp.shape, xsrc.shape, xdst.shape)
     if not xsrc.size == xdst.size:
-        interpx = interp1d(xsrc, tmp, axis=-1)
+        interpx = interp1d(xsrc, tmp, axis=-1, fill_value="extrapolate")
         tmp = interpx(xdst)
     if not quiet:
         print("y", tmp.shape, ysrc.min(), ysrc.max(), ydst.min(), ydst.max())
         print("y", tmp.shape, ysrc.shape, ydst.shape)
     if not ysrc.size == ydst.size:
-        interpy = interp1d(ysrc, tmp, axis=-2)
+        interpy = interp1d(ysrc, tmp, axis=-2, fill_value="extrapolate")
         tmp = interpy(ydst)
     if not quiet:
         print("z", tmp.shape, zsrc.min(), zsrc.max(), zdst.min(), zdst.max())
         print("z", tmp.shape, zsrc.shape, zdst.shape)
     if not zsrc.size == zdst.size:
-        interpz = interp1d(zsrc, tmp, axis=-3)
+        interpz = interp1d(zsrc, tmp, axis=-3, fill_value="extrapolate")
         tmp = interpz(zdst)
 
     return tmp
