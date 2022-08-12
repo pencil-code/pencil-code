@@ -2419,7 +2419,9 @@ module Density
           call div(f,iux,divu)
           call dot_mn(uu,glnrho,uglnrho)
           Schur_dlnrho_RHS=uglnrho+divu
-          print*,'AXEL: m,n,Schur_dlnrho_RHS=',m,n,Schur_dlnrho_RHS
+          !print*,'AXEL: m,n,Schur_dlnrho_RHS=',m,n,Schur_dlnrho_RHS
+          !print*,'AXEL: y,z,divu=',y(m),z(n),divu
+          !print*,'AXEL: y,z,uglnrho=',y(m),z(n),uglnrho
         enddo
         enddo
 !
