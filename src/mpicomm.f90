@@ -10202,6 +10202,7 @@ endif
               floatbuf(2)=xyz1(1)
             endif
             if (any(abs(floatbuf(ind:ind+1)-(/xyz0(j),xyz1(j)/))>1.e-6)) then
+               print*, "FLOAT BUFFERS", floatbuf(1), floatbuf(2)
                print*," initialize_foreign_comm: WARNING: foreign "//trim(coornames(j))//" domain extent doesn't match;"
               !lok=.false. !MR: alleviate to selection
             endif
@@ -10251,9 +10252,10 @@ endif
 !
           call mpirecv_real(frgn_setup%renorm_t,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%renorm_t
-          frgn_setup%renorm_L = frgn_setup%extents(2,3) 
+          frgn_setup%renorm_L = frgn_setup%extents(2,1)  
           frgn_setup%renorm_UU=frgn_setup%renorm_L/frgn_setup%renorm_t
           frgn_setup%dt_out = frgn_setup%dt_out/frgn_setup%renorm_t
+print*, 'PENCIL - renormUU', frgn_setup%renorm_UU,frgn_setup%renorm_t,frgn_setup%dt_out
 !
 !  Send number of xyz-procs to foreign.
 !
@@ -10271,7 +10273,6 @@ endif
         call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_PENCIL)
         call mpibcast_int(frgn_setup%proc_multis,3,comm=MPI_COMM_PENCIL)
         call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)                       
-
         tag  = tag_foreign+iproc
 
         if (frgn_setup%procnums(1)==1) then   !EULAG case
@@ -10307,8 +10308,10 @@ endif
           call find_index_range(frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2)
 !print*,'PENCIL: frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2=', &
 !frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2
-          if (.not.lfirst_proc_x) il1=il1-1
-          if (.not.llast_proc_x) il2=il2+1
+!!! GM: PROBABLE INCONSISTENCY IN THE FOLLOWING COMMAND
+!!!          if (.not.lfirst_proc_x) il1=il1-1
+!!!          if (.not.llast_proc_x) il2=il2+1
+
 !
           frgn_setup%xind_rng(-1,:)=(/il1,il2/)
 !print*, 'PENCIL: xindrng=', iproc, frgn_setup%xind_rng(-1,:)
@@ -10331,7 +10334,7 @@ endif
               enddo
             else       ! EULAG case
               frgn_setup%xind_rng(0,:)=frgn_setup%xind_rng(-1,:)
-print*, 'PENCIL: xind_rng: iproc', iproc,' sendet an ',peer,' mit ', iproc+tag_foreign
+!print*, 'PENCIL: xind_rng: iproc', iproc,' sendet an ',peer,' mit ', iproc+tag_foreign
               call mpisend_int(frgn_setup%xind_rng(-1,:),2,peer+ncpus,iproc+tag_foreign,MPI_COMM_WORLD)
             endif
           else
@@ -10347,10 +10350,9 @@ print*, 'PENCIL: xind_rng: iproc', iproc,' sendet an ',peer,' mit ', iproc+tag_f
             endif
           endif
         endif  ! lfirst_proc_yz
-
         call mpibcast_int_arr2(frgn_setup%xind_rng(-1:0,:),(/2,2/),comm=MPI_COMM_YZPLANE)
         lenx=min(nx,frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1)
-!print*, "Pencil lenx", iproc, lenx
+!print*, "Pencil lenx", iproc, lenx, nx, frgn_setup%xind_rng(-1,:)
 
         if (allocated(frgn_buffer)) deallocate(frgn_buffer)
         allocate(frgn_buffer(lenx,ny,nz,3))
@@ -10383,6 +10385,8 @@ print*, 'PENCIL: xind_rng: iproc', iproc,' sendet an ',peer,' mit ', iproc+tag_f
         if (frgn_setup%xind_rng(px,1)>0) then
           lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1
           istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1
+!print*, 'PENCIL xparams: iproc,lenx,istart=', iproc,lenx_loc,istart
+!print*, 'PENCIL iproc xinds=', iproc,px,frgn_setup%xind_rng(px,1),frgn_setup%xind_rng(px,2),frgn_setup%xind_rng(-1,1)
           if (loptest(lnonblock)) then
             peer=frgn_setup%peer_rng(1)
             do iv=1,nvars
@@ -10403,17 +10407,13 @@ print*, 'PENCIL: xind_rng: iproc', iproc,' sendet an ',peer,' mit ', iproc+tag_f
           endif
         endif
       enddo
-!if (lroot) then
-!  t2 = MPI_WTIME()
-!  print *, 'PENCIL walltime[min]tot',tcount,t!(t2-t0)/60.
-!  tcount = tcount + 1
-!endif
 !write(200+iproc) frgn_buffer
 !if (.not.loptest(lnonblock))then
 !else
 !  print*, 'PENCIL INIT NON-BLOCK'
 !endif
-print*, 'PENCIL get_foreign_snap_initiate: successful', iproc
+!print*, 'PENCIL get_foreign_snap_initiate: successful', iproc
+
 !print *, 'PENCIL - MIN MAX W',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
 !print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
 !print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
