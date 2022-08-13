@@ -2265,7 +2265,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
       character(len=linelen) :: msg
       logical :: loc
-      integer :: shift
+      integer :: shift, inear_max
       real :: h, a, b, c
 !
 !  Sanity check.
@@ -2286,12 +2286,15 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       case (1) ckdir
         h = dx
         if (loc) shift = nx * ipx
+        if (loc) inear_max = nghost + nx
       case (2) ckdir
         h = dy
         if (loc) shift = ny * ipy
+        if (loc) inear_max = nghost + ny
       case (3) ckdir
         h = dz
         if (loc) shift = nz * ipz
+        if (loc) inear_max = nghost + nz
       case default ckdir
         write(msg,*) 'unknown direction dir = ', dir
         call fatal_error('inverse_grid', trim(msg))
@@ -2329,7 +2332,10 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
 !  Convert to the local index space if requested.
 !
-      if (loc) xi = xi - real(shift)
+      getloc: if (loc) then
+        xi = xi - real(shift)
+        where (x < xyz1(dir) .and. nint(xi) > inear_max) xi = nearest(xi, -1.0)
+      endif getloc
 !
     endsubroutine inverse_grid
 !***********************************************************************
