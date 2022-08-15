@@ -2428,9 +2428,6 @@ module Density
           Schur_dlnrho_RHS_xyaver_z(n) = Schur_dlnrho_RHS_xyaver_z(n)+sum(Schur_dlnrho_RHS)/nxgrid/nygrid
           Schur_dlnrho_RHS_zaver_xy(l1:l2,m) = Schur_dlnrho_RHS_zaver_xy(l1:l2,m)+Schur_dlnrho_RHS/nzgrid
           Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(Schur_dlnrho_RHS)/nxgrid/nygrid/nzgrid
-          !print*,'AXEL: m,n,Schur_dlnrho_RHS=',m,n,Schur_dlnrho_RHS
-          !print*,'AXEL: y,z,divu=',y(m),z(n),divu
-          !print*,'AXEL: y,z,uglnrho=',y(m),z(n),uglnrho
         enddo
         enddo
         !
@@ -2495,7 +2492,7 @@ module Density
             +Schur_dlnrho_RHS_xyzaver &
             -Schur_dlnrho_RHS_xyaver_z(n) &
             -Schur_dlnrho_RHS_zaver_xy(l1:l2,m)
-        if (m==m1) print*,'AXEL: now dlnrho_dt: ',Schur_dlnrho_RHS_xyaver_z(n)
+        !if (m==m1) print*,'AXEL: now dlnrho_dt: ',Schur_dlnrho_RHS_xyaver_z(n)
       else
 !
 !  Continuity equation.
