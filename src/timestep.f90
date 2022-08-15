@@ -95,7 +95,7 @@ module Timestep
 !  From radiation era onward, lfractional_tstep_positive should be used
 !  to make sure the dt used in run.in is positive.
 !
-  !   if (.not. ldt) then
+      if (.not. ldt) then
   !     if (lfractional_tstep_advance) then
   !       if (lfractional_tstep_negative) then
   !         dt_beta_ts=-dt*t
@@ -103,9 +103,9 @@ module Timestep
   !         dt_beta_ts=dt*t
   !       endif
   !     else
-  !       dt_beta_ts=dt*beta_ts
+          dt_beta_ts=dt*beta_ts
   !     endif
-  !   endif
+      endif
 ! >>>>>>>>>>>>>>>>>>>>  until here >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !
 !  Set up df and ds for each time sub.
