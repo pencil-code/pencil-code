@@ -2881,10 +2881,10 @@ endif
 	  echo '#include "../../..PC_moduleflags.h"' >> $(DSL_WORKDIR)/equations.h; \
 	  echo '' >> $(DSL_WORKDIR)/equations.h; \
 	fi
-	@echo '#include "integrators.h"' > $(DSL_WORKDIR)/solve.h
-	@echo '#include "equations.h"' >> $(DSL_WORKDIR)/solve.h
-	@echo '' >> $(DSL_WORKDIR)/solve.h
-	@echo 'Kernel solve() {' >> $(DSL_WORKDIR)/solve.h
+	@echo '#include "integrators.h"' > $(DSL_WORKDIR)/solve.ac
+	@echo '#include "equations.h"' >> $(DSL_WORKDIR)/solve.ac
+	@echo '' >> $(DSL_WORKDIR)/solve.ac
+	@echo 'Kernel solve() {' >> $(DSL_WORKDIR)/solve.ac
 	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm tmp; \
 	for file in $$MODULESOURCES; do \
 	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
@@ -2892,13 +2892,13 @@ endif
 	  if [[ "$$replcmt" != "" ]]; then \
 	    sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
 	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\1/'`; \
-	    echo '  write( '$$fieldname', rk3(previous('$$fieldname'), value('$$fieldname'), d'$$fieldname'_dt()))' >> $(DSL_WORKDIR)/solve.h; \
+	    echo '  write( '$$fieldname', rk3(previous('$$fieldname'), value('$$fieldname'), d'$$fieldname'_dt()))' >> $(DSL_WORKDIR)/solve.ac; \
 	    echo 'd'$$fieldname'_dt(){ }' >> $(DSL_WORKDIR)/equations.h; \
 	    echo '' >> $(DSL_WORKDIR)/equations.h; \
           fi \
 	done 
 	@sed -i -e'/^ *\/\// d' $(DSL_WORKDIR)/fieldecs.h
-	@echo '}' >> $(DSL_WORKDIR)/solve.h
+	@echo '}' >> $(DSL_WORKDIR)/solve.ac
 
 #	    echo FIELDNAME=$$fieldname; \
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
