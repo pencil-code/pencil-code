@@ -9,15 +9,15 @@
 #
 $(DEBUG_OBJ): debug_c.c $(HDF5_IO_OBJ) $(FILE_IO_OBJ) Makefile.src Makefile.local
 #
-nodebug.o: nodebug.f90 $(CDATA_OBJ) $(SUB_OBJ) Makefile.src Makefile.local
+nodebug.o: nodebug.f90 $(CDATA_OBJ) $(SUB_OBJ) 
 #
 fft.o: fft.f Makefile.src Makefile.local
 #
-gsl_wrapper.o: gsl_wrapper.c Makefile.src Makefile.local
+gsl_wrapper.o: gsl_wrapper.c
 #
-nogsl.o: nogsl.c Makefile.src Makefile.local
+nogsl.o: nogsl.c 
 #
-syscalls_ansi.o: syscalls_ansi.c Makefile.src Makefile.local
+syscalls_ansi.o: syscalls_ansi.c
 #
 io_dist.o: io_dist.h
 #
@@ -41,7 +41,7 @@ $(DIAGNOSTICS_OBJ): $(DIAGNOSTICS_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(FILE_IO_OBJ)
 #
 $(FARRAY_ALLOC_OBJ): $(FARRAY_ALLOC_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(MESSAGES_OBJ)
 #
-$(FILE_IO_OBJ): file_io.h file_io_common.inc $(FILE_IO_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o Makefile.src Makefile.local
+$(FILE_IO_OBJ): file_io.h file_io_common.inc $(FILE_IO_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o Makefile.src 
 #
 nolorenz_gauge.o: lorenz_gauge.h nolorenz_gauge.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(FARRAY_OBJ)
 #

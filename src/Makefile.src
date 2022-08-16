@@ -13,7 +13,6 @@ BOUNDCOND          =   boundcond
 DEBUG              = nodebug
 GHOST_CHECK        =   ghost_check
 DIAGNOSTICS        =   diagnostics
-DSL_MODULE         =
 FILE_IO            =   file_io_f95
 SYSCALLS           =   syscalls
 DERIV              =   deriv
@@ -470,9 +469,6 @@ no_cuda_message:
     endif
   endif
 #
-ifeq ($(DSL_MODULE),)
-  $(error 'For use with Astaroth you must provide the name of a DSL module')
-endif
   FFLAGS_GENERAL += -mcmodel=medium
   GPU_INTERFACE = gpu_astaroth_ansi.o
   GPU_DEPS = gpu_preps astaroth/submodule/build/src/core/libastaroth_core.so
@@ -2847,6 +2843,7 @@ endif
 CUDA_MAKEDIR=astaroth
 CUDA_INCDIR=$(CUDA_MAKEDIR)
 CUDA_RELPATH=..
+DSL_WORKDIR=$(CUDA_MAKEDIR)/submodule/acc-runtime/Pencil
 
 gpu_preps: $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h
 #
@@ -2870,14 +2867,41 @@ ifeq ($(EOS),noeos)
 else
 	@echo ' ' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
-#  Generation of field declarations for DSL code.
 #
+#  Generation of field (PDE variable) declarations for DSL code.
+#  TB improved: equations.h should be an individual target, depending on Makefile.local; 
+#               but how to protect the user edits?
+#  Generation of registration order of PDE variables.
+#  Generation of (empty) RHS functions and integration kernel.
+#
+	@sed -e'/^ *call register/ !d' -e's/ *call register_/\/\//' -e's/!.*$$//' register.f90 > $(DSL_WORKDIR)/fieldecs.h
+	@if [ ! -f "$(DSL_WORKDIR)/equations.h" ]; then \
+	  echo '#include "operators.h"' > $(DSL_WORKDIR)/equations.h; \
+	  echo '#include "fieldecs.h"' >> $(DSL_WORKDIR)/equations.h; \
+	  echo '#include "../../..PC_moduleflags.h"' >> $(DSL_WORKDIR)/equations.h; \
+	  echo '' >> $(DSL_WORKDIR)/equations.h; \
+	fi
+	@echo '#include "integrators.h"' > $(DSL_WORKDIR)/solve.h
+	@echo '#include "equations.h"' >> $(DSL_WORKDIR)/solve.h
+	@echo '' >> $(DSL_WORKDIR)/solve.h
+	@echo 'Kernel solve() {' >> $(DSL_WORKDIR)/solve.h
 	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm tmp; \
-	rm -f astaroth/submodule/acc-runtime/samples/$(DSL_MODULE)/fields.h; \
 	for file in $$MODULESOURCES; do \
-        echo $$file; \
-	sed -f dsl.sed $$file >> astaroth/submodule/acc-runtime/samples/$(DSL_MODULE)/fields.h; \
-	done
+	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
+	  replcmt=`sed -f dsl.sed $$file`; \
+	  if [[ "$$replcmt" != "" ]]; then \
+	    echo REPLCMT="$$replcmt"; \
+	    sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
+	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\1/'`; \
+	    echo FIELDNAME=$$fieldname; \
+	    echo '  write( '$$fieldname', rk3(previous('$$fieldname'), value('$$fieldname'), d'$$fieldname'_dt()))' >> $(DSL_WORKDIR)/solve.h; \
+	    echo 'd'$$fieldname'_dt(){ }' >> $(DSL_WORKDIR)/equations.h; \
+	    echo '' >> $(DSL_WORKDIR)/equations.h; \
+          fi \
+	done 
+	@sed -i -e'/^ *\/\// d' $(DSL_WORKDIR)/fieldecs.h
+	@echo '}' >> $(DSL_WORKDIR)/solve.h
+
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
@@ -3174,7 +3198,7 @@ linkonly:
 #  (and also for param_io.f90, since `gfortran-4.4.5 -std=f95' doesn't
 #  accept open(..., DELIM=...); this looks like a compiler bug.
 #
-$(SYSCALLS_OBJ): $(SYSCALLS_SRC) syscalls_ansi.o $(CPARAM_OBJ) Makefile.src
+$(SYSCALLS_OBJ): $(SYSCALLS_SRC) syscalls_ansi.o $(CPARAM_OBJ)
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(ALLOW_ARG_MISMATCH) -o $(SYSCALLS_OBJ) -c $(SYSCALLS_SRC)
 $(MPICOMM_OBJ): mpicomm.h $(MPICOMM_SRC) cdata.o
 	$(FC) $(MOST_COMP_FLAGS) $(CONVERSION_RELAXED) $(ALLOW_ARG_MISMATCH) -o $(MPICOMM).o -c $(MPICOMM).f90

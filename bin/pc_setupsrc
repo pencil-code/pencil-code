@@ -442,6 +442,8 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule/acc-runtime
   adddir $src/astaroth/submodule/acc-runtime/acc
   adddir $src/astaroth/submodule/acc-runtime/api
+  adddir $src/astaroth/submodule/acc-runtime/Pencil
+  adddir $src/astaroth/submodule/acc-runtime/stdlib
   adddir $src/astaroth/submodule/acc-runtime/samples
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd_modular
