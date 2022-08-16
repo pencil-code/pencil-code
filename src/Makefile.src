@@ -2890,10 +2890,8 @@ endif
 	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
 	  replcmt=`sed -f dsl.sed $$file`; \
 	  if [[ "$$replcmt" != "" ]]; then \
-	    echo REPLCMT="$$replcmt"; \
 	    sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
 	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\1/'`; \
-	    echo FIELDNAME=$$fieldname; \
 	    echo '  write( '$$fieldname', rk3(previous('$$fieldname'), value('$$fieldname'), d'$$fieldname'_dt()))' >> $(DSL_WORKDIR)/solve.h; \
 	    echo 'd'$$fieldname'_dt(){ }' >> $(DSL_WORKDIR)/equations.h; \
 	    echo '' >> $(DSL_WORKDIR)/equations.h; \
@@ -2902,6 +2900,7 @@ endif
 	@sed -i -e'/^ *\/\// d' $(DSL_WORKDIR)/fieldecs.h
 	@echo '}' >> $(DSL_WORKDIR)/solve.h
 
+#	    echo FIELDNAME=$$fieldname; \
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
