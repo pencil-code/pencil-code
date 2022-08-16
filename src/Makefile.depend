@@ -321,11 +321,11 @@ noyinyang.o: yinyang.h noyinyang.f90 $(CPARAM_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ)
 #
 noyinyang_mpi.o: yinyang_mpi.h noyinyang_mpi.f90 $(CPARAM_OBJ) $(GENERAL_OBJ) $(MPICOMM_OBJ) 
 #
-$(GPU_OBJ): $(GPU_INTERFACE) gpu.h $(GPU_SRC) $(CPARAM_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MPICOMM_OBJ) Makefile.src Makefile.local
+$(GPU_OBJ): $(GPU_INTERFACE) gpu.h $(GPU_SRC) $(CPARAM_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MPICOMM_OBJ) Makefile.src
 #
 nogpu.o: gpu.h nogpu.f90 $(GENERAL_OBJ)
 #
-gpu_astaroth_ansi.o: gpu_astaroth_ansi.c headers_c.h Makefile.src Makefile.local
+gpu_astaroth_ansi.o: gpu_astaroth_ansi.c headers_c.h Makefile.local
 #
 $(LSODE_FC_OBJ): $(LSODE_FC_SRC) $(CDATA_OBJ) $(CHEMISTRY_OBJ) 
 #

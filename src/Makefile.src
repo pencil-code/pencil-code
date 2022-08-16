@@ -2884,6 +2884,7 @@ endif
 	fi
 	@echo '#include "integrators.h"' > $(DSL_WORKDIR)/solve.ac
 	@echo '#include "equations.h"' >> $(DSL_WORKDIR)/solve.ac
+	@echo '#include "pardecs.h"' >> $(DSL_WORKDIR)/solve.ac
 	@echo '' >> $(DSL_WORKDIR)/solve.ac
 	@echo 'Kernel solve() {' >> $(DSL_WORKDIR)/solve.ac
 	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm tmp; \
