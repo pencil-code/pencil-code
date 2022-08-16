@@ -235,11 +235,12 @@ ifeq ($(FOURIER),fourier_fft)
   CFLAGS_FOURIER =
   FFLAGS_FOURIER =
   LD_FOURIER     = fft.o
-endif
-ifeq ($(FOURIER),fourier_fftpack)
-  CFLAGS_FOURIER =
-  FFLAGS_FOURIER =
-  LD_FOURIER     = fftpack.o
+else
+  ifeq ($(FOURIER),fourier_fftpack)
+    CFLAGS_FOURIER =
+    FFLAGS_FOURIER =
+    LD_FOURIER     = fftpack.o
+  endif
 endif
 #
 MODULE_CMD := $(shell command -v module 2> /dev/null)

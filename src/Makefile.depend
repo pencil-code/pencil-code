@@ -7,17 +7,9 @@
 #
 #  Non-F90 / undetectable dependencies.
 #
-$(DEBUG_OBJ): debug_c.c $(HDF5_IO_OBJ) $(FILE_IO_OBJ) Makefile.src Makefile.local
+debug.o: debug_c.c headers_c.h
 #
-nodebug.o: nodebug.f90 $(CDATA_OBJ) $(SUB_OBJ) 
-#
-fft.o: fft.f Makefile.src Makefile.local
-#
-gsl_wrapper.o: gsl_wrapper.c
-#
-nogsl.o: nogsl.c 
-#
-syscalls_ansi.o: syscalls_ansi.c
+nodebug.o: nodebug.f90 $(CDATA_OBJ) $(GENERAL_OBJ) 
 #
 io_dist.o: io_dist.h
 #
@@ -333,7 +325,7 @@ $(GPU_OBJ): $(GPU_INTERFACE) gpu.h $(GPU_SRC) $(CPARAM_OBJ) $(CDATA_OBJ) $(GENER
 #
 nogpu.o: gpu.h nogpu.f90 $(GENERAL_OBJ)
 #
-gpu_astaroth_ansi.o: gpu_astaroth_ansi.c Makefile.src Makefile.local
+gpu_astaroth_ansi.o: gpu_astaroth_ansi.c headers_c.h Makefile.src Makefile.local
 #
 $(LSODE_FC_OBJ): $(LSODE_FC_SRC) $(CDATA_OBJ) $(CHEMISTRY_OBJ) 
 #
