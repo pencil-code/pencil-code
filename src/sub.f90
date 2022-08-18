@@ -8301,7 +8301,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
     use General, only: loptest
 
     real, dimension (nx,3,3)         :: uij, sij
-    real, dimension (nx)             :: divu
+    real, dimension (nx)  , optional :: divu
     real, dimension (nx,3), optional :: uu
     logical,                optional :: lss
 !
@@ -8314,7 +8314,11 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
     lshear_ROS=lshear.and.loptest(lss)
 !
     do j=1,3
-      sij(:,j,j)=uij(:,j,j)-(1./3.)*divu
+      if (present(divu)) then
+        sij(:,j,j)=uij(:,j,j)-(1./3.)*divu
+      else
+        sij(:,j,j)=uij(:,j,j)
+      endif
       do i=j+1,3
         sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
         sij(:,j,i)=sij(:,i,j)
