@@ -42,6 +42,7 @@ module Density
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
   real, dimension (ninit) :: kxx_lnrho=0.0, kyy_lnrho=0.0, kzz_lnrho=0.0
   real, dimension (mz,1) :: lnrhomz
+  real, dimension (nz) :: lnrho_init_z_nz=0.0
   real, dimension (mz) :: lnrho_init_z=0.0
   real, dimension (mz) :: dlnrhodz_init_z=0.0, del2lnrho_glnrho2_init_z=0.0
   real, dimension (3) :: diffrho_hyper3_aniso=0.0
@@ -735,7 +736,10 @@ module Density
             endif
             call fatal_error('initialize_density','')
           else
-            read(19,*) lnrho_init_z
+            !read(19,*) lnrho_init_z
+!AXEL
+print*,'AXEL: lnrho_init_z_nz=',lnrho_init_z_nz
+            read(19,*) lnrho_init_z_nz
           endif
         close(19)
 !
@@ -1432,6 +1436,16 @@ module Density
             f(l1:l2,m,n,ilnrho)=log(rho_left(j))+ &
                 (log(rho_right(j))-log(rho_left(j)))*prof
           enddo; enddo
+        case ('nolog-shock-tube')
+!
+!  Shock tube test (should be consistent with hydro module).
+!  Remember that for ldensity_nolog=T, we say exp(...) at the end of this routine!
+!
+          call information('init_lnrho','standing shock')
+          do n=n1,n2; do m=m1,m2
+            prof=0.5*(1.+tanh(x(l1:l2)/widthlnrho(j)))
+            f(l1:l2,m,n,ilnrho)=log(rho_left(j)+(rho_right(j)-rho_left(j))*prof)
+          enddo; enddo
         case ('sin-xy')
 !
 !  sin profile in x and y.
@@ -1987,10 +2001,14 @@ module Density
         if (lweno_transport) then
           lpenc_requested(i_transprho)=.true.
         else
-          lpenc_requested(i_divu)=.true.
+          if (.not.lrelativistic) lpenc_requested(i_divu)=.true.
           if (ldensity_nolog) then
-            lpenc_requested(i_ugrho)=.true.
+            if (lrelativistic) then
+              lpenc_requested(i_divss_rel)=.true.
+            else
+              lpenc_requested(i_ugrho)=.true.
 !            lpenc_requested(i_uglnrho)=.false.
+            endif
           else
             lpenc_requested(i_uglnrho)=.true.
 !            lpenc_requested(i_ugrho)=.false.
@@ -2233,12 +2251,16 @@ module Density
       if (lrelativistic) then
         p%totenergy_rel=f(l1:l2,m,n,irho)
         p%rho=3.*p%totenergy_rel/(4.*p%lorentz_gamma2-1.)
+!print*,'AXEL1: p%totenergy_rel=',p%totenergy_rel
+!print*,'AXEL1: p%rho=',p%rho
       else
         p%rho=f(l1:l2,m,n,irho)
       endif
       if (lreference_state) p%rho=p%rho+reference_state(:,iref_rho)
 ! rho1
       if (lpenc_loc(i_rho1)) p%rho1=1.0/p%rho
+!print*,'AXEL1: lpenc_loc(i_rho1)=',lpenc_loc(i_rho1)
+!print*,'AXEL1: p%rho1=',p%rho1
 ! lnrho
       if (lpenc_loc(i_lnrho)) p%lnrho=log(p%rho)
 ! glnrho and grho
@@ -2502,7 +2524,6 @@ module Density
             .not. lffree .and. .not. lreduced_sound_speed .and. &
             ieos_profile=='nothing' .and. .not. lfargo_advection) then
           if (ldensity_nolog) then
-
             if (lrelativistic) then
               density_rhs=-p%divss_rel
             else
@@ -2517,7 +2538,7 @@ module Density
             if (ladvection_density) density_rhs = density_rhs - p%uglnrho
 !
 !  The following few lines only enter without lrelativistic,
-!  but with lrelativistic_eos.
+!  and also only without ldensity_nolog, but with lrelativistic_eos.
 !
             if (lrelativistic_eos.and..not.lrelativistic) then
               if (lhydro) then
@@ -3116,6 +3137,7 @@ module Density
       endif
 !
       call get_cp1(cp1)
+print*,'AXEL3: cp1=',cp1
       do n=n1,n2
         do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)

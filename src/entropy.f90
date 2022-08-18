@@ -1502,6 +1502,7 @@ module Energy
           case('xyjump'); call jump(f,iss,ss_left,ss_right,widthss,'xy')
           case('x-y-jump'); call jump(f,iss,ss_left,ss_right,widthss,'x-y')
           case('sinxsinz'); call sinxsinz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
+          case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
           case('hor-fluxtube')
             call htube(ampl_ss(j),f,iss,iss,radius_ss(j),epsilon_ss, &
                 center1_x(j),center1_z(j))

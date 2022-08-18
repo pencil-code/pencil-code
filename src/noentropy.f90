@@ -193,7 +193,7 @@ module Energy
 !
       use Density, only: beta_glnrho_scaled
 !
-      if (lhydro.and.lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
+      if (lhydro.and.lpressuregradient_gas.and..not.lrelativistic) lpenc_requested(i_fpres)=.true.
       if (leos.and.ldensity.and.lhydro.and.ldt) lpenc_requested(i_cs2)=.true.
       if (any(beta_glnrho_scaled /= 0.)) lpenc_requested(i_cs2)=.true.
 !
@@ -285,9 +285,15 @@ module Energy
 !  The relativistic EoS works ok even if cs2 is not 1/3, but
 !  it may still be a good idea to put cs0=1/sqrt(3)=0.57735
 !
+!print*,'AXEL31: ldensity=',ldensity
+!print*,'AXEL31: lrelativistic=',lrelativistic
+!print*,'AXEL31: lrelativistic_eos=',lrelativistic_eos
+!print*,'AXEL32: llocal_iso=',llocal_iso
               if (ldensity.and.lrelativistic_eos) then
                 if (lrelativistic) then
                   p%fpres(:,j)=-.75*p%cs2*p%grho(:,j)
+!print*,'AXEL3: p%cs2=',p%cs2
+!print*,'AXEL3: p%grho(:,j)=',p%grho(:,j)
                 else
                   p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
                 endif
@@ -375,9 +381,18 @@ module Energy
 !
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
-      if (lhydro.and.lpressuregradient_gas) then
+      if (lhydro.and.lpressuregradient_gas.and..not.lrelativistic) then
 
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres
+!
+!  If relativistic, we'd need to add the term S*divu here:
+!
+!     if (ldensity.and.lrelativistic) then
+!       call multsv(p%divu,p%ss_rel,tmpv)
+!       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
+!rint*,'AXEL6: p%ugu=',p%ugu
+!rint*,'AXEL6: tmpv=',tmpv
+!     endif
 !
 !  Add pressure force from global density gradient.
 !

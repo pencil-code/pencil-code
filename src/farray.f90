@@ -333,6 +333,7 @@ module FArrayManager
 ! 09-Jul-2020/PAB: reworked
 !
       use General, only: ioptest
+      use Cdata, only: lfatal_num_vector_369
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
@@ -344,7 +345,8 @@ module FArrayManager
       num_array = ioptest (array, 0)
 !
       if (num_vector == 1) num_vector = 0
-      if ((num_vector /= 0) .and. (num_vector /= 3) .and. (num_vector /= 6) .and. (num_vector /= 9)) &
+      if ((num_vector /= 0) .and. (num_vector /= 3) .and. (num_vector /= 6) .and. (num_vector /= 9) &
+          .and. lfatal_num_vector_369) &
           call fatal_error ("farray_index_append", "vector (or tensor) '"//trim(varname)//"' must have 3, 6, or 9 components!")
       call index_append (trim (varname), ivar, num_vector, num_array)
 !
