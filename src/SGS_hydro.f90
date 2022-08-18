@@ -55,13 +55,13 @@ module SGS_hydro
 !
 !  Register SGS Reynolds stress as auxilliary variable.
 !
-      call farray_register_auxiliary('tauSGSRey',itauSGSRey,array=6,communicated=.true.)
+      call farray_register_auxiliary('tauSGSRey',itauSGSRey,vector=6,communicated=.true.)
 print*, 'tauSGSRey=', itauSGSRey
 !
 !  Register SGS Maxwell stress as auxilliary variable.
 !
       if (lmagnetic) &
-        call farray_register_auxiliary('tauSGSMax',itauSGSMax,array=6,communicated=.true.)
+        call farray_register_auxiliary('tauSGSMax',itauSGSMax,vector=6,communicated=.true.)
 print*, 'tauSGSMax=', itauSGSMax
 !
 !  Register an extra aux slot for dissipation rate if requested (so
@@ -160,7 +160,7 @@ print*, 'tauSGSMax=', itauSGSMax
       lpenc_requested(i_ss12)=.true.
 
       if (lmagnetic) then
-
+        lpenc_requested(i_bij)=.true.
       endif
 
     endsubroutine pencil_criteria_SGS_hydro
@@ -195,7 +195,7 @@ print*, 'tauSGSMax=', itauSGSMax
       intent(inout) :: f,p
       intent(out) :: df
 
-      real, dimension(nx,3) :: tmp
+      real, dimension(nx,3) :: tmp,tmp1
       integer :: j
       real, dimension(nx) :: dtp
 !
@@ -206,8 +206,14 @@ print*, 'tauSGSMax=', itauSGSMax
       call div_other(f(:,:,:,(/itauSGSRey+1,itauSGSRey+3,itauSGSRey+4/)),tmp(:,2))
       call div_other(f(:,:,:,(/itauSGSRey+2,itauSGSRey+4,itauSGSRey+5/)),tmp(:,3))
 
-      if (lSGS_forc_as_aux) f(l1:l2,m,n,iSGS_force:iSGS_force+2)=-tmp
+      if (lmagnetic) then
+        call div(f,itauSGSMax,tmp1(:,1))
+        call div_other(f(:,:,:,(/itauSGSMax+1,itauSGSMax+3,itauSGSMax+4/)),tmp1(:,2))
+        call div_other(f(:,:,:,(/itauSGSMax+2,itauSGSMax+4,itauSGSMax+5/)),tmp1(:,3))
+        tmp=tmp+tmp1
+      endif
 
+      if (lSGS_forc_as_aux) f(l1:l2,m,n,iSGS_force:iSGS_force+2)=-tmp
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - tmp
 !
 !  define SGS_heat
@@ -224,34 +230,60 @@ print*, 'tauSGSMax=', itauSGSMax
     subroutine SGS_hydro_after_boundary(f,p)
 
       use Boundcond, only: update_ghosts
+      use Sub, only: traceless_strain
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 
       integer :: mm,nn
-      real, dimension(nx) :: E_SGS,uij2
+      real, dimension(nx) :: mij2
+      real, dimension(nx,3,3) :: mij
 !
 !  Requires communication to be finished!
 !
 !print*, 'in SGS_hydro_after_boundary'
+!
+      call tauij_SGS(p%uij,p%sij2,cReyStress,f,itauSGSRey,exp(p%lnrho))
+      call update_ghosts(f,itauSGSRey,itauSGSRey+5)
+
+      if (lmagnetic) then
+        call traceless_strain(p%bij,sij=mij)
+        mij2=sum(sum(mij**2,2),2)
+        call tauij_SGS(p%bij,mij2,cMaxStress,f,itauSGSMax)
+        call update_ghosts(f,itauSGSMax,itauSGSMax+5)
+      endif
+
+    endsubroutine SGS_hydro_after_boundary
+!***********************************************************************
+    subroutine tauij_SGS(uij,sij2,coef,f,k,rho)
+
+      real, dimension(nx,3,3) :: uij
+      real, dimension(nx) :: sij2
+      real, dimension(nx), optional :: rho
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: coef
+      integer :: k
+
+      integer :: mm,nn
+      real, dimension(nx) :: E_SGS,uij2
 
       do nn=n1,n2; do mm=m1,m2
 
-        E_SGS=cReyStress*max(dx,dy,dz)**2*exp(p%lnrho)*sqrt(2.*p%sij2)
-        uij2=sum(sum(p%uij(:,:,:)**2,2),2)
+        E_SGS=coef*max(dx,dy,dz)**2*sqrt(2.*sij2)
+        if (present(rho)) E_SGS=E_SGS*rho
 
-        f(l1:l2,mm,nn,itauSGSRey  ) = E_SGS*(sum(p%uij(:,1,:)**2,2)          /uij2 - 1./3.)   ! tau(1,1)
-        f(l1:l2,mm,nn,itauSGSRey+1) = E_SGS*(sum(p%uij(:,1,:)*p%uij(:,2,:),2)/uij2        )   ! tau(1,2)
-        f(l1:l2,mm,nn,itauSGSRey+2) = E_SGS*(sum(p%uij(:,1,:)*p%uij(:,3,:),2)/uij2        )   ! tau(1,3)
-        f(l1:l2,mm,nn,itauSGSRey+3) = E_SGS*(sum(p%uij(:,2,:)**2,2)          /uij2 - 1./3.)   ! tau(2,2)
-        f(l1:l2,mm,nn,itauSGSRey+4) = E_SGS*(sum(p%uij(:,2,:)*p%uij(:,3,:),2)/uij2        )   ! tau(2,3)
-        f(l1:l2,mm,nn,itauSGSRey+5) = E_SGS*(sum(p%uij(:,3,:)**2,2)          /uij2 - 1./3.)   ! tau(3,3)
+        uij2=sum(sum(uij**2,2),2)
+
+        f(l1:l2,mm,nn,k  ) = E_SGS*(sum(uij(:,1,:)**2,2)        /uij2 - 1./3.)   ! tau(1,1)
+        f(l1:l2,mm,nn,k+1) = E_SGS*(sum(uij(:,1,:)*uij(:,2,:),2)/uij2        )   ! tau(1,2)
+        f(l1:l2,mm,nn,k+2) = E_SGS*(sum(uij(:,1,:)*uij(:,3,:),2)/uij2        )   ! tau(1,3)
+        f(l1:l2,mm,nn,k+3) = E_SGS*(sum(uij(:,2,:)**2,2)        /uij2 - 1./3.)   ! tau(2,2)
+        f(l1:l2,mm,nn,k+4) = E_SGS*(sum(uij(:,2,:)*uij(:,3,:),2)/uij2        )   ! tau(2,3)
+        f(l1:l2,mm,nn,k+5) = E_SGS*(sum(uij(:,3,:)**2,2)        /uij2 - 1./3.)   ! tau(3,3)
 
       enddo; enddo
-!
-      call update_ghosts(f,itauSGSRey,itauSGSRey+5)
 
-    endsubroutine SGS_hydro_after_boundary
+    endsubroutine tauij_SGS
 !***********************************************************************
     subroutine SGS_hydro_before_boundary(f)
 
