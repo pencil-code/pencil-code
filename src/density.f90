@@ -736,9 +736,6 @@ module Density
             endif
             call fatal_error('initialize_density','')
           else
-            !read(19,*) lnrho_init_z
-!AXEL
-print*,'AXEL: lnrho_init_z_nz=',lnrho_init_z_nz
             read(19,*) lnrho_init_z_nz
           endif
         close(19)
@@ -2251,16 +2248,12 @@ print*,'AXEL: lnrho_init_z_nz=',lnrho_init_z_nz
       if (lrelativistic) then
         p%totenergy_rel=f(l1:l2,m,n,irho)
         p%rho=3.*p%totenergy_rel/(4.*p%lorentz_gamma2-1.)
-!print*,'AXEL1: p%totenergy_rel=',p%totenergy_rel
-!print*,'AXEL1: p%rho=',p%rho
       else
         p%rho=f(l1:l2,m,n,irho)
       endif
       if (lreference_state) p%rho=p%rho+reference_state(:,iref_rho)
 ! rho1
       if (lpenc_loc(i_rho1)) p%rho1=1.0/p%rho
-!print*,'AXEL1: lpenc_loc(i_rho1)=',lpenc_loc(i_rho1)
-!print*,'AXEL1: p%rho1=',p%rho1
 ! lnrho
       if (lpenc_loc(i_lnrho)) p%lnrho=log(p%rho)
 ! glnrho and grho
@@ -2514,7 +2507,6 @@ print*,'AXEL: lnrho_init_z_nz=',lnrho_init_z_nz
             +Schur_dlnrho_RHS_xyzaver &
             -Schur_dlnrho_RHS_xyaver_z(n) &
             -Schur_dlnrho_RHS_zaver_xy(l1:l2,m)
-        !if (m==m1) print*,'AXEL: now dlnrho_dt: ',Schur_dlnrho_RHS_xyaver_z(n)
       else
 !
 !  Continuity equation.
@@ -3137,7 +3129,6 @@ print*,'AXEL: lnrho_init_z_nz=',lnrho_init_z_nz
       endif
 !
       call get_cp1(cp1)
-print*,'AXEL3: cp1=',cp1
       do n=n1,n2
         do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)

@@ -1484,9 +1484,6 @@ module Hydro
 !  do xy-averaged mean flow for each component
 !
       if (lcalc_uumeanz) then
-print*,'AXEL6 ,iproc,f(l1,m1,n1,iux)=',iproc,f(l1,m1,n1,iux)
-print*,'AXEL6 ,iproc,f(l1,m1,n1,iux)=',iproc,sum(f(l1:l2/4,m1:m2/4,1,iux))
-!print*,'AXEL1 ,iproc,uumz(4,1)=',iproc,uumz(4,1)
         fact=1./nxygrid
         do nnz=1,mz
           do j=1,3
@@ -2874,11 +2871,6 @@ print*,'AXEL6 ,iproc,f(l1,m1,n1,iux)=',iproc,sum(f(l1:l2/4,m1:m2/4,1,iux))
 !p%ss_rel_factor=.75*p%rho1/p%lorentz_gamma2
             p%ss_rel_factor=(1.-.25/p%lorentz_gamma2)*totenergy_rel1
             call multsv_mn(p%ss_rel_factor,p%ss_rel,p%uu)
-!print*,'AXEL2: totenergy_rel1=',totenergy_rel1
-!print*,'AXEL2: f(l1:l2,m,n,irho)=',f(l1:l2,m,n,irho)
-!print*,'AXEL2: p%ss_rel_factor=',p%ss_rel_factor
-!print*,'AXEL2: p%ss_rel=',p%ss_rel
-!print*,'AXEL2: p%uu=',p%uu
           else
             p%uu=p%ss_rel
           endif
@@ -2905,9 +2897,6 @@ print*,'AXEL6 ,iproc,f(l1,m1,n1,iux)=',iproc,sum(f(l1:l2/4,m1:m2/4,1,iux))
     !      enddo
 !XX
 !         call multsv_mn(p%ss_rel_factor,p%ss_rel_ij,p%uij)
-!rint*,'AXEL35 p%ss_rel_factor=',p%ss_rel_factor
-!rint*,'AXEL35 p%ss_rel_ij=',p%ss_rel_ij
-!rint*,'AXEL35: p%uij=',p%uij
 !!
 !!  add ss_rel_factor_{,j} = ss_rel_factor*(-lnrho_{,j}-lngam_{,j}) * ss_rel_i
 !!
@@ -2915,7 +2904,6 @@ print*,'AXEL6 ,iproc,f(l1,m1,n1,iux)=',iproc,sum(f(l1:l2/4,m1:m2/4,1,iux))
 !         call multsv_add(2.*tmp3,-p%ss_rel2,p%glnrho,tmp3)
 !         call multsv_mn(.5/sqrt_ss_term*(9./16.)*p%rho1**2/p%lorentz_gamma2,tmp3,tmp3)
 !         call multvv_smat_add(p%ss_rel_factor,-p%glnrho-tmp3,p%ss_rel,p%uij)
-!print*,'AXEL4: p%uij=',p%uij
         else
           call gij(f,iuu,p%uij,1)
         endif
@@ -2936,9 +2924,6 @@ print*,'AXEL6 ,iproc,f(l1,m1,n1,iux)=',iproc,sum(f(l1:l2/4,m1:m2/4,1,iux))
 ! divS
       if (lpenc_loc(i_divss_rel)) then
         call div(f,iux,p%divss_rel)
-print*,'AXEL4: t=',t
-print*,'AXEL5: (f,iux)',minval(f(:,m1,n1,iux)),maxval(f(:,m1,n1,iux))
-print*,'AXEL6: compute div(f,iux,p%divss_rel)',minval(p%divss_rel),maxval(p%divss_rel)
       endif
 ! divu
       if (lpenc_loc(i_divu)) then
@@ -3543,7 +3528,6 @@ print*,'AXEL6: compute div(f,iux,p%divss_rel)',minval(p%divss_rel),maxval(p%divs
         else
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
         endif
-print*,'AXEL1 not to be invoked'
       endif
 !
       if (ldensity.and.lrelativistic) then
@@ -3556,7 +3540,6 @@ print*,'AXEL1 not to be invoked'
         call der(f,iTij+0,tmp,1) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
         call der(f,iTij+1,tmp,2) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
         call der(f,iTij+2,tmp,3) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-!print*,'AXEL3 took ders of Tij in _dt part'
 !
 !  next the off-diagonals
 !  T_11,1 + T_12,2 + T_13,3 = (0,1) + (3,2) + (5,3); (T23=T32 does not enter)
@@ -3574,9 +3557,6 @@ print*,'AXEL1 not to be invoked'
         call der(f,iTij+5,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
         call der(f,iTij+4,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
 !
-        !df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
-!rint*,'AXEL6: p%ugu=',p%ugu
-!rint*,'AXEL6: tmpv=',tmpv
       endif
 !
 !  WENO transport.
