@@ -31,7 +31,7 @@ module Energy
 !
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
-  logical, pointer :: lffree, lrelativistic_eos, lrelativistic
+  logical, pointer :: lffree, lrelativistic_eos, lconservative
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -73,10 +73,10 @@ module Energy
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
       if (lhydro) then
-        call get_shared_variable('lrelativistic', lrelativistic)
+        call get_shared_variable('lconservative', lconservative)
       else
-        allocate(lrelativistic)
-        lrelativistic=.false.
+        allocate(lconservative)
+        lconservative=.false.
       endif
 !
 !  Identify version number.
@@ -193,7 +193,7 @@ module Energy
 !
       use Density, only: beta_glnrho_scaled
 !
-      if (lhydro.and.lpressuregradient_gas.and..not.lrelativistic) lpenc_requested(i_fpres)=.true.
+      if (lhydro.and.lpressuregradient_gas.and..not.lconservative) lpenc_requested(i_fpres)=.true.
       if (leos.and.ldensity.and.lhydro.and.ldt) lpenc_requested(i_cs2)=.true.
       if (any(beta_glnrho_scaled /= 0.)) lpenc_requested(i_cs2)=.true.
 !
@@ -241,9 +241,7 @@ module Energy
         if (lstratz) then
           lpencil_in(i_glnrhos)=.true.
         else
-          if (lrelativistic) then
-            lpencil_in(i_grho)=.true.
-          else
+          if (.not.lconservative) then
             lpencil_in(i_glnrho)=.true.
           endif
         endif
@@ -285,16 +283,8 @@ module Energy
 !  The relativistic EoS works ok even if cs2 is not 1/3, but
 !  it may still be a good idea to put cs0=1/sqrt(3)=0.57735
 !
-!print*,'AXEL31: ldensity=',ldensity
-!print*,'AXEL31: lrelativistic=',lrelativistic
-!print*,'AXEL31: lrelativistic_eos=',lrelativistic_eos
-!print*,'AXEL32: llocal_iso=',llocal_iso
               if (ldensity.and.lrelativistic_eos) then
-                if (lrelativistic) then
-                  p%fpres(:,j)=-.75*p%cs2*p%grho(:,j)
-!print*,'AXEL3: p%cs2=',p%cs2
-!print*,'AXEL3: p%grho(:,j)=',p%grho(:,j)
-                else
+                if (.not.lconservative) then
                   p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
                 endif
               else
@@ -381,18 +371,9 @@ module Energy
 !
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
-      if (lhydro.and.lpressuregradient_gas.and..not.lrelativistic) then
+      if (lhydro.and.lpressuregradient_gas.and..not.lconservative) then
 
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres
-!
-!  If relativistic, we'd need to add the term S*divu here:
-!
-!     if (ldensity.and.lrelativistic) then
-!       call multsv(p%divu,p%ss_rel,tmpv)
-!       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
-!rint*,'AXEL6: p%ugu=',p%ugu
-!rint*,'AXEL6: tmpv=',tmpv
-!     endif
 !
 !  Add pressure force from global density gradient.
 !
@@ -403,11 +384,11 @@ module Energy
                                      - p%cs2*beta_glnrho_scaled(j)
           enddo
         endif
-     endif
+      endif
 
-     call calc_diagnostics_energy(f,p)
+      call calc_diagnostics_energy(f,p)
 !
-     call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f)
 !
     endsubroutine denergy_dt
 !***********************************************************************

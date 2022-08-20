@@ -103,7 +103,7 @@ module Density
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
   logical :: lrelativistic_eos=.false., ladvection_density=.true.
-  logical, pointer :: lrelativistic
+  logical, pointer :: lconservative
   logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -342,10 +342,10 @@ module Density
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
       if (lhydro) then
-        call get_shared_variable('lrelativistic', lrelativistic)
+        call get_shared_variable('lconservative', lconservative)
       else
-        allocate(lrelativistic)
-        lrelativistic=.false.
+        allocate(lconservative)
+        lconservative=.false.
       endif
 !
     endsubroutine register_density
@@ -1998,16 +1998,16 @@ module Density
         if (lweno_transport) then
           lpenc_requested(i_transprho)=.true.
         else
-          if (.not.lrelativistic) lpenc_requested(i_divu)=.true.
+          if (.not.lconservative) lpenc_requested(i_divu)=.true.
           if (ldensity_nolog) then
-            if (lrelativistic) then
+            if (lconservative) then
               lpenc_requested(i_divss_rel)=.true.
             else
               lpenc_requested(i_ugrho)=.true.
 !            lpenc_requested(i_uglnrho)=.false.
             endif
           else
-            if (lrelativistic) call fatal_error('pencil_criteria_density', 'must use ldensity_nolog=T')
+            if (lconservative) call fatal_error('pencil_criteria_density', 'must use ldensity_nolog=T')
             lpenc_requested(i_uglnrho)=.true.
 !            lpenc_requested(i_ugrho)=.false.
           endif
@@ -2055,13 +2055,6 @@ module Density
         if (lentropy) lpenc_requested(i_cv)=.true.
         if (ltemperature.and.ltemperature_nolog) lpenc_requested(i_TT)=.true.
         if (lthermal_energy) lpenc_requested(i_u2) = .true.
-      endif
-!
-      if (lrelativistic) then
-        lpenc_requested(i_lorentz_gamma2)=.true.
-        lpenc_requested(i_totenergy_rel)=.true.
-        lpenc_requested(i_ss_rel)=.true.
-  !     lpenc_requested(i_cs2)=.true.
       endif
 !
       if (lfargo_advection) then
@@ -2246,17 +2239,7 @@ module Density
 !
 ! rho
 !
-      if (lrelativistic) then
-  !     cs201=cs20+1.
-  !     p%totenergy_rel=f(l1:l2,m,n,irho)
-  !     !p%rho=3.*p%totenergy_rel/(4.*p%lorentz_gamma2-1.)
-  !     p%rho=p%totenergy_rel/(cs201*p%lorentz_gamma2-cs20)
-  !     print*,'AXEL lrelativistic_eos,cs2',lrelativistic_eos,cs20
-!XXX needed??
-        p%rho=1e30
-      else
-        p%rho=f(l1:l2,m,n,irho)
-      endif
+      p%rho=f(l1:l2,m,n,irho)
       if (lreference_state) p%rho=p%rho+reference_state(:,iref_rho)
 ! rho1
       if (lpenc_loc(i_rho1)) p%rho1=1.0/p%rho
@@ -2525,7 +2508,7 @@ module Density
 !  Evolution of rho; set and initiate density_rhs
 !
           if (ldensity_nolog) then
-            if (lrelativistic) then
+            if (lconservative) then
               density_rhs=-p%divss_rel
             else
               density_rhs=-p%rho*p%divu
@@ -2539,10 +2522,10 @@ module Density
             density_rhs= - p%divu
             if (ladvection_density) density_rhs = density_rhs - p%uglnrho
 !
-!  The following few lines only enter without lrelativistic,
+!  The following few lines only enter without lconservative,
 !  and also only without ldensity_nolog, but with lrelativistic_eos.
 !
-            if (lrelativistic_eos.and..not.lrelativistic) then
+            if (lrelativistic_eos.and..not.lconservative) then
               if (lhydro) then
                 call multvs(p%uu,density_rhs,tmpv)
                 df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
