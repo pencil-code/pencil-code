@@ -2007,6 +2007,7 @@ module Density
 !            lpenc_requested(i_uglnrho)=.false.
             endif
           else
+            if (lrelativistic) call fatal_error('pencil_criteria_density', 'must use ldensity_nolog=T')
             lpenc_requested(i_uglnrho)=.true.
 !            lpenc_requested(i_ugrho)=.false.
           endif
@@ -2057,9 +2058,10 @@ module Density
       endif
 !
       if (lrelativistic) then
-        lpenc_requested(i_lorentz_gamma)=.true.
+        lpenc_requested(i_lorentz_gamma2)=.true.
         lpenc_requested(i_totenergy_rel)=.true.
         lpenc_requested(i_ss_rel)=.true.
+  !     lpenc_requested(i_cs2)=.true.
       endif
 !
       if (lfargo_advection) then
@@ -2240,14 +2242,18 @@ module Density
       intent(in) :: f
       intent(inout) :: p
       real, dimension(nx) :: tmp
-!
       integer :: i
 !
 ! rho
 !
       if (lrelativistic) then
-        p%totenergy_rel=f(l1:l2,m,n,irho)
-        p%rho=3.*p%totenergy_rel/(4.*p%lorentz_gamma2-1.)
+  !     cs201=cs20+1.
+  !     p%totenergy_rel=f(l1:l2,m,n,irho)
+  !     !p%rho=3.*p%totenergy_rel/(4.*p%lorentz_gamma2-1.)
+  !     p%rho=p%totenergy_rel/(cs201*p%lorentz_gamma2-cs20)
+  !     print*,'AXEL lrelativistic_eos,cs2',lrelativistic_eos,cs20
+!XXX needed??
+        p%rho=1e30
       else
         p%rho=f(l1:l2,m,n,irho)
       endif
@@ -2515,17 +2521,21 @@ module Density
         if (.not. lweno_transport .and. &
             .not. lffree .and. .not. lreduced_sound_speed .and. &
             ieos_profile=='nothing' .and. .not. lfargo_advection) then
+!
+!  Evolution of rho; set and initiate density_rhs
+!
           if (ldensity_nolog) then
             if (lrelativistic) then
               density_rhs=-p%divss_rel
             else
               density_rhs=-p%rho*p%divu
               if (ladvection_density) density_rhs = density_rhs - p%ugrho
+              if (lrelativistic_eos) density_rhs=fourthird*density_rhs
             endif
-            if (lrelativistic_eos) density_rhs=fourthird*density_rhs
-
+!
+!  Evolution of lnrho
+!
           else
-
             density_rhs= - p%divu
             if (ladvection_density) density_rhs = density_rhs - p%uglnrho
 !

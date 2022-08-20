@@ -115,7 +115,7 @@ module Hydro
   real :: ABC_A=1., ABC_B=1., ABC_C=1.
   integer :: nb_rings=0
   integer :: neddy=0
-  integer :: iTij=0
+  integer :: iTij=0, ilorentz=0
 !
 ! variables for expansion into spherical harmonics
 !
@@ -130,7 +130,7 @@ module Hydro
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
-  logical :: loo_as_aux = .false.
+  logical :: loo_as_aux = .false., llorentz_as_aux = .false.
   logical :: luut_as_aux=.false., luust_as_aux=.false.
   logical :: loot_as_aux=.false., loost_as_aux=.false.
   logical :: luuk_as_aux=.false., look_as_aux=.false.
@@ -176,7 +176,7 @@ module Hydro
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
-      luuk_as_aux, look_as_aux, &
+      llorentz_as_aux, luuk_as_aux, look_as_aux, &
       mu_omega, nb_rings, om_rings, gap, &
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
@@ -265,7 +265,7 @@ module Hydro
       lcalc_ruumeanz, lcalc_ruumeanxy, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
-      loutest, ldiffrot_test, &
+      llorentz_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
@@ -837,6 +837,10 @@ module Hydro
 !
       !if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
       if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz)
+!
+!  relativistic Lorentz factor as aux
+!
+      if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz)
 !!
 !!  Fourier transformed uu as aux
 !!
@@ -844,6 +848,7 @@ module Hydro
 !!     if (look_as_aux) call register_report_aux('ook', iook)
 !
       if (lrelativistic) then
+        !call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.)
         call farray_register_auxiliary('Tij',iTij,vector=6)
       endif
 !
@@ -2539,7 +2544,7 @@ module Hydro
 !
       if (lrelativistic) then
         !lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_ss_rel)=.true.
+   !    lpenc_requested(i_ss_rel)=.true.
    !    lpenc_requested(i_ss_rel2)=.true.
    !    lpenc_requested(i_ss_rel_ij)=.true.
    !    lpenc_requested(i_glnrho)=.true.
@@ -2733,7 +2738,7 @@ module Hydro
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (lrelativistic) lpencil_in(i_rho1)=.true.
+  !   if (lrelativistic) lpencil_in(i_rho1)=.true.
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
       if (lpencil_in(i_sij)) then
@@ -2847,7 +2852,7 @@ module Hydro
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12
-      real, dimension (nx) :: totenergy_rel1, sqrt_ss_term, ratio_mom2en
+      real, dimension (nx) :: totenergy_rel1, sqrt_ss_term, rat
       real, dimension (nx,3) :: tmp3
       integer :: i, j, ju, jj, kk, jk
 !
@@ -2860,23 +2865,23 @@ module Hydro
 ! from Eq.(11) of Brandenburg, Enqvist, & Olesen (1996).
 !
       if (lpenc_loc(i_uu)) then
-        if (lrelativistic) then
-          p%ss_rel=f(l1:l2,m,n,iux:iuz)
-          call dot2_mn(p%ss_rel,p%ss_rel2)
-          if (ldensity) then
-            totenergy_rel1=1./f(l1:l2,m,n,irho)
-            ratio_mom2en=p%ss_rel2*totenergy_rel1**2
-            p%lorentz_gamma2=.5/(1.-ratio_mom2en)*(1.-.5*ratio_mom2en+sqrt(1.-.75*ratio_mom2en))
-!p%lorentz_gamma2=1.
-!p%ss_rel_factor=.75*p%rho1/p%lorentz_gamma2
-            p%ss_rel_factor=(1.-.25/p%lorentz_gamma2)*totenergy_rel1
-            call multsv_mn(p%ss_rel_factor,p%ss_rel,p%uu)
-          else
-            p%uu=p%ss_rel
-          endif
-        else
+   !    if (lrelativistic) then
+   !      p%ss_rel=f(l1:l2,m,n,iux:iuz)
+   !      call dot2_mn(p%ss_rel,p%ss_rel2)
+   !      if (ldensity) then
+   !        cs201=cs20+1.
+   !        cs2011=1./cs201
+   !        totenergy_rel1=1./f(l1:l2,m,n,irho)
+   !        rat=p%ss_rel2*totenergy_rel1**2
+   !        p%lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+   !        !p%ss_rel_factor=(1.-.25/p%lorentz_gamma2)*totenergy_rel1
+   !        call multsv_mn(p%ss_rel_factor,p%ss_rel,p%uu)
+   !      else
+   !        p%uu=p%ss_rel
+   !      endif
+   !    else
           p%uu=f(l1:l2,m,n,iux:iuz)
-        endif
+   !    endif
       endif
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
@@ -2921,7 +2926,9 @@ module Hydro
 !      if (.not.lpenc_loc_check_at_work) then
 !        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
 !      endif
-! divS
+!
+! divS, needed for relativistic calculations
+!
       if (lpenc_loc(i_divss_rel)) then
         call div(f,iux,p%divss_rel)
       endif
@@ -3305,8 +3312,9 @@ module Hydro
 !  15-dec-10/MR: adapted from density for homogeneity
 !  19-oct-15/ccyang: add calculation of the vorticity field.
 !
-      use Sub, only: curl
+      use Sub, only: curl, dot2_mn
       use Mpicomm, only: mpiallreduce_sum
+      use EquationOfState, only: cs20
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -3314,8 +3322,12 @@ module Hydro
 !
       real, dimension (mx,mz) :: fsum_tmp_cyl
       real, dimension (mx,my) :: fsum_tmp_sph
-      real, dimension (mx) :: uphi, ratio_mom2en, lorentz_gamma2, rho3, rho314gam2
+      real, dimension (mx) :: uphi
+      real, dimension (mx,3) :: ss_rel
+      real, dimension (mx) :: ss_rel2, totenergy_rel, totenergy_rel1, rat
+      real, dimension (mx) :: rho, rho3, rho314gam2, lorentz_gamma2
       real :: nygrid1,nzgrid1
+      real :: cs201, cs2011
       integer :: i, j
 !
 !  Remove mean momenta or mean flows if desired.
@@ -3336,19 +3348,35 @@ module Hydro
 !  so with p=cs2*rho/3="rho3", we have Tij=Ti0*Tj0/rho+cs2*rho*delij/3.
 !  To deal with truly nonrelativistic eos and conservative formulation,
 !  we need to set rho314gam2=1/rho.
+!  Note that the loop below is over all my and mz, not ny and nz,
+!  so it includes the ghost zones.
 !
       if (lrelativistic) then
       if (iTij /= 0) then
         do n=1,mz
         do m=1,my
-          !ratio_mom2en=(f(:,m,n,iux)**2+f(:,m,n,iuy)**2+f(:,m,n,iuz)**2)/f(:,m,n,irho)**2
-          !lorentz_gamma2=.5/(1.-ratio_mom2en)*(1.-.5*ratio_mom2en+sqrt(1.-.75*ratio_mom2en))
-          lorentz_gamma2=1.
-          rho3=f(:,m,n,irho)/(4.*lorentz_gamma2-1.)
-          !rho314gam2=.25/(rho3*lorentz_gamma2)
-          rho314gam2=1./(3.*rho3)
+          ss_rel=f(:,m,n,iux:iuz)
+          call dot2_mn(ss_rel,ss_rel2)
+          cs201=cs20+1.
+          cs2011=1./cs201
+          if (ldensity) then
+            totenergy_rel=f(:,m,n,irho)
+          else
+            totenergy_rel=1.
+          endif
+          totenergy_rel1=1./totenergy_rel
+          rat=ss_rel2*totenergy_rel1**2
+          lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+          !lorentz_gamma2=1.
 !
-!  Txx=(Tx0)^2/rho
+!  Possibility to save relativstic Lorentz factor as aux
+!
+          if (ilorentz /= 0) f(:,m,n,ilorentz)=sqrt(lorentz_gamma2)
+          rho=totenergy_rel/(cs201*lorentz_gamma2-cs20)
+          rho3=rho*cs20
+          rho314gam2=1./(cs201*rho*lorentz_gamma2)
+!
+!  Tii=(Ti0)^2/rho or Tii=(Ti0)^2/(4./3.*rho*gamma^2)
 !
           do j=0,2
             f(:,m,n,iTij+j)=rho314gam2*f(:,m,n,iuu+j)**2+rho3
