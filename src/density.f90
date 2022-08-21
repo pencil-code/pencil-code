@@ -2001,7 +2001,7 @@ module Density
           if (.not.lconservative) lpenc_requested(i_divu)=.true.
           if (ldensity_nolog) then
             if (lconservative) then
-              lpenc_requested(i_divss_rel)=.true.
+              lpenc_requested(i_divss)=.true.
             else
               lpenc_requested(i_ugrho)=.true.
 !            lpenc_requested(i_uglnrho)=.false.
@@ -2509,7 +2509,7 @@ module Density
 !
           if (ldensity_nolog) then
             if (lconservative) then
-              density_rhs=-p%divss_rel
+              density_rhs=-p%divss
             else
               density_rhs=-p%rho*p%divu
               if (ladvection_density) density_rhs = density_rhs - p%ugrho

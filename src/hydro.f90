@@ -24,9 +24,7 @@
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
 ! PENCILS PROVIDED der6u_res(3,3)
-! PENCILS PROVIDED ss_rel2; ss_rel(3)
-! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor; divss_rel
-! PENCILS PROVIDED Tijj(3)
+! PENCILS PROVIDED divss
 !***************************************************************
 !
 module Hydro
@@ -2854,7 +2852,6 @@ module Hydro
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12
-      real, dimension (nx) :: totenergy_rel1, sqrt_ss_term, rat
       real, dimension (nx,3) :: tmp3
       integer :: i, j, ju, jj, kk, jk
 !
@@ -2868,11 +2865,7 @@ module Hydro
       endif
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
-!
-! uij = u_i,j = ss_rel_factor * ss_rel_i,j + ss_rel_factor_{,j} * ss_rel_i
-! but in the relativistic case, p%uij is actually ss_rel_i,j.
-! Do the correction when the term is used in the momentum equation.
-! 
+! uij
       if (lpenc_loc(i_uij)) then
         call gij(f,iuu,p%uij,1)
 !
@@ -2892,8 +2885,8 @@ module Hydro
 !
 ! divS, needed for relativistic calculations
 !
-      if (lpenc_loc(i_divss_rel)) then
-        call div(f,iux,p%divss_rel)
+      if (lpenc_loc(i_divss)) then
+        call div(f,iux,p%divss)
       endif
 ! divu
       if (lpenc_loc(i_divu)) then
@@ -2929,12 +2922,7 @@ module Hydro
         endif
       endif
 !
-!  ugu. In the relativistic case, we compute u.gradS, so we need to input p%ss_rel_ij,
-!  but p%uu (as opposed to p%ss_rel) is needed, because it enteres as prefactor for upwinding,
-!  and of course as a prefactor in the u.grad operator.
-!  Note that in the relativistic case, ugu means actually u.gradS,
-!  but p%uu is always the actual u, not S. (The difficulty occurs only with derivatives of u,
-!  which involve rho and and, in the relativistic case, are currently done in noentropy!)
+!  ugu
 !
       if (lpenc_loc(i_ugu)) then
         if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
@@ -3271,7 +3259,7 @@ module Hydro
 !  15-dec-10/MR: adapted from density for homogeneity
 !  19-oct-15/ccyang: add calculation of the vorticity field.
 !
-      use Sub, only: curl, dot2_mn
+      use Sub, only: curl, dot2_mx
       use Mpicomm, only: mpiallreduce_sum
       use EquationOfState, only: cs20
 !
@@ -3282,8 +3270,8 @@ module Hydro
       real, dimension (mx,mz) :: fsum_tmp_cyl
       real, dimension (mx,my) :: fsum_tmp_sph
       real, dimension (mx) :: uphi
-      real, dimension (mx,3) :: ss_rel
-      real, dimension (mx) :: ss_rel2, totenergy_rel, totenergy_rel1, rat
+      real, dimension (mx,3) :: ss
+      real, dimension (mx) :: ss2, totenergy, totenergy1, rat
       real, dimension (mx) :: rho, press, rho_gam2, lorentz_gamma2
       real :: nygrid1,nzgrid1
       real :: cs201, cs2011
@@ -3316,30 +3304,30 @@ module Hydro
         do n=1,mz
         do m=1,my
           if (ldensity) then
-            totenergy_rel=f(:,m,n,irho)
-            totenergy_rel1=1./totenergy_rel
+            totenergy=f(:,m,n,irho)
+            totenergy1=1./totenergy
           else
-            totenergy_rel=1.
-            totenergy_rel1=1.
+            totenergy=1.
+            totenergy1=1.
           endif
           if (lrelativistic.or.llorentz_as_aux) then
-            ss_rel=f(:,m,n,iux:iuz)
-            call dot2_mn(ss_rel,ss_rel2)
-            rat=ss_rel2*totenergy_rel1**2
+            ss=f(:,m,n,iux:iuz)
+            call dot2_mx(ss,ss2)
+            rat=ss2*totenergy1**2
           endif
           if (lrelativistic) then
             cs201=cs20+1.
             cs2011=1./cs201
             lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
-            rho=totenergy_rel/(cs201*lorentz_gamma2-cs20)
+            rho=totenergy/(cs201*lorentz_gamma2-cs20)
             rho_gam2=1./(cs201*rho*lorentz_gamma2)
           else
-            rho=totenergy_rel
+            rho=totenergy
             if (lrelativistic_eos) then
               cs201=cs20+1.
-              rho_gam2=cs201*totenergy_rel1
+              rho_gam2=cs201*totenergy1
             else
-              rho_gam2=totenergy_rel1
+              rho_gam2=totenergy1
             endif
             if (llorentz_as_aux) lorentz_gamma2=1./(1.-rat)
           endif

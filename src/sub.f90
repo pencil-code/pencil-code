@@ -60,7 +60,7 @@ module Sub
   public :: ScalarTripleProduct
   public :: det3X3mat,Inv2_3X3mat
 !
-  public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
+  public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot2_mx, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm, dot_mn_vm_trans, div_mn_2tensor, trace_mn
   public :: dyadic2, dyadic2_other
   public :: cross, cross_mn, cross_mixed
@@ -883,6 +883,22 @@ module Sub
       endif
 !
     endsubroutine dot2_mn
+!***********************************************************************
+    subroutine dot2_mx(a,b)
+!
+!  Dot product with itself.
+!
+!  21-aug-22/axel: adapted from dot2_mn
+!
+      real, dimension (mx,3) :: a
+      real, dimension (mx) :: b
+!
+      intent(in) :: a
+      intent(out) :: b
+!
+      b=a(:,1)**2+a(:,2)**2+a(:,3)**2
+!
+    endsubroutine dot2_mx
 !***********************************************************************
     subroutine dot2_0(a,b)
 !
