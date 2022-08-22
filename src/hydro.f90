@@ -287,6 +287,9 @@ module Hydro
   integer :: idiag_outm=0       ! DIAG_DOC: $\left<\omv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_fkinzm=0     ! DIAG_DOC: $\left<{1\over2} \varrho\uv^2 u_z\right>$
+  integer :: idiag_gamm=0       ! DIAG_DOC: $\left<gamma\right>$
+  integer :: idiag_gamrms=0     ! DIAG_DOC: $\left<\gamma^2\right>^{1/2}$
+  integer :: idiag_gammax=0     ! DIAG_DOC: $\max(\gamma)$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_u2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=1} \uv^2 dV$,
                                 ! DIAG_DOC:   where $r=\sqrt{x^2+y^2+z^2}$
@@ -3749,7 +3752,7 @@ module Hydro
 !  Calculate maxima and rms values for diagnostic purposes
 !
       call timing('calc_0d_diagnostics_hydro','before ldiagnos',mnloop=.true.)
-
+!
       if (ldiagnos) then
         call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_durms/=0) then
@@ -3930,6 +3933,14 @@ module Hydro
             (p%rho*(z(n)*p%uu(:,1)-x(l1:l2)*p%uu(:,3)))**2,idiag_rly2m)
         if (idiag_rlz2m/=0) call sum_mn_name( &
             (p%rho*(x(l1:l2)*p%uu(:,2)-y(m)*p%uu(:,1)))**2,idiag_rlz2m)
+!
+!  Things related to Lorentz gamma; remember that ilorentz is already gamma**2
+!
+        if (ilorentz/=0) then
+          if (idiag_gamm/=0) call sum_mn_name(sqrt(abs(f(l1:l2,m,n,ilorentz))),idiag_gamm)
+          if (idiag_gamrms/=0) call sum_mn_name(f(l1:l2,m,n,ilorentz),idiag_gamrms,lsqrt=.true.)
+          if (idiag_gammax/=0) call max_mn_name(f(l1:l2,m,n,ilorentz),idiag_gammax,lsqrt=.true.)
+        endif
 !
 !  Total angular momentum in spherical coordinates
 !
@@ -5642,6 +5653,9 @@ module Hydro
         idiag_uotm=0
         idiag_outm=0
         idiag_fkinzm=0
+        idiag_gamm=0
+        idiag_gamrms=0
+        idiag_gammax=0
         idiag_u2m=0
         idiag_u2sphm=0
         idiag_um2=0
@@ -6038,6 +6052,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'EEK',idiag_EEK)
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
+        call parse_name(iname,cname(iname),cform(iname),'gamm',idiag_gamm)
+        call parse_name(iname,cname(iname),cform(iname),'gamrms',idiag_gamrms)
+        call parse_name(iname,cname(iname),cform(iname),'gammax',idiag_gammax)
         call parse_name(iname,cname(iname),cform(iname),'u2tm',idiag_u2tm)
         call parse_name(iname,cname(iname),cform(iname),'uotm',idiag_uotm)
         call parse_name(iname,cname(iname),cform(iname),'outm',idiag_outm)
