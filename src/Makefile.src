@@ -80,6 +80,7 @@ PSCALAR           = nopscalar
 ASCALAR           = noascalar
 RADIATION         = noradiation
 SELFGRAVITY       = noselfgravity
+SGSHYDRO          = noSGS_hydro
 SHEAR             = noshear
 SHOCK             = noshock
 SPECIAL           = nospecial
@@ -889,6 +890,9 @@ RADIATION_SRC=$(RADIATION).f90
 #
 SELFGRAVITY_OBJ=$(SELFGRAVITY).o
 SELFGRAVITY_SRC=$(SELFGRAVITY).f90
+#
+SGSHYDRO_OBJ=$(SGSHYDRO).o
+SGSHYDRO_SRC=$(SGSHYDRO).f90
 #
 SHEAR_OBJ=$(SHEAR).o
 SHEAR_SRC=$(SHEAR).f90
