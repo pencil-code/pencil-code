@@ -146,6 +146,7 @@ module Hydro
   logical :: lconservative=.false., lrelativistic=.false.
   logical, pointer :: lrelativistic_eos
   logical :: lno_noise_uu=.false.
+  logical :: llorentz_limiter=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -155,7 +156,7 @@ module Hydro
   real :: outest
   real :: ampl_Omega=0.0
   real :: omega_ini=0.0
-  logical :: loutest,ldiffrot_test=.false.
+  logical :: loutest, ldiffrot_test=.false.
   real :: r_cyl = 1.0, skin_depth = 1e-1
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: PrRa  !preliminary
@@ -182,7 +183,7 @@ module Hydro
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
-      lfactors_uu, qirro_uu, lno_noise_uu
+      lfactors_uu, qirro_uu, lno_noise_uu, llorentz_limiter
 !
 !  Run parameters.
 !
@@ -1654,7 +1655,8 @@ module Hydro
       real, dimension (3) :: tmpvec
 !
       real, dimension (nx,3) :: tmp_nx3
-      real, dimension (mx) :: tmpmx
+      real, dimension (mx,3) :: ss
+      real, dimension (mx) :: tmpmx, ss2
       real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0,ur,lnrhor
       real, dimension (:,:), allocatable :: yz
       real :: kabs,crit,eta_sigma,tmp0,phi0
@@ -2443,6 +2445,20 @@ module Hydro
 !
       enddo
 !
+!  Possibility of Lorentz limiter: u -> u/sqrt(1+u^2)
+!
+      if (llorentz_limiter) then
+        do n=1,mz
+        do m=1,my
+          ss=f(:,m,n,iux:iuz)
+          call dot2_mx(ss,ss2)
+          do j=1,3
+            f(:,m,n,j)=f(:,m,n,j)/sqrt(1.+ss2)
+          enddo
+        enddo
+        enddo
+      endif
+!
 !  Interface for user's own initial condition
 !
       if (linitial_condition) call initial_condition_uu(f)
@@ -2472,6 +2488,7 @@ module Hydro
 !
 ! mgellert, add random fluctuation only inside domain, not on boundary
 !           (to be able to use the 'freeze' option for BCs)
+!
       if (urandi /= 0) then
         if (urandi > 0) then
           if (lroot) print*, 'init_uu: Adding random uu fluctuations (not on boundary), urandi=',urandi
