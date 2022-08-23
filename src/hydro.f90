@@ -34,6 +34,7 @@ module Hydro
   use General, only: keep_compiler_quiet
   use Messages
   use Viscosity, only: calc_viscous_force
+  use SGS_hydro
 !
   implicit none
 !
@@ -877,7 +878,7 @@ module Hydro
           call farray_register_auxiliary('uu_fluc',iuu_fluc,vector=3)
           iuu_flucx = iuu_fluc; iuu_flucy = iuu_fluc+1; iuu_flucz = iuu_fluc+2;
         else
-          if (lroot) print*, 'initialize_hydro: iuu_fluc = ', iuu_fluc
+          if (lroot) print*, 'register_hydro: iuu_fluc = ', iuu_fluc
           call farray_index_append('iuu_fluc',iuu_fluc)
         endif
       endif
@@ -890,7 +891,7 @@ module Hydro
           call farray_register_auxiliary('uu_sph',iuu_sph,vector=3)
           iuu_sphr = iuu_sph; iuu_spht = iuu_sph+1; iuu_sphp = iuu_sph+2;
         else
-          if (lroot) print*, 'initialize_hydro: iuu_sph = ', iuu_sph
+          if (lroot) print*, 'register_hydro: iuu_sph = ', iuu_sph
           call farray_index_append('iuu_sph',iuu_sph)
         endif
       endif
@@ -943,6 +944,7 @@ module Hydro
 ! of gas velocity as auxiliary
 !
       if (lparticles_grad) lgradu_as_aux=.true.
+      if (lSGS_hydro) call register_SGS_hydro
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -1435,6 +1437,8 @@ module Hydro
       if (othresh_per_orms/=0..and.idiag_orms==0) then
         if (lroot) print*,'calc_othresh: need to set orms in print.in to get othresh.'
       endif
+!
+      if (lSGS_hydro) call initialize_SGS_hydro
 !
 !  Check if we are solving the relativistic eos equations.
 !  In that case we'd need to get lrelativistic_eos from density.
@@ -3492,7 +3496,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(in) :: p
+      intent(inout) :: p
       intent(inout) :: f,df
 
       real, dimension (nx,3) :: tmpv
@@ -3621,6 +3625,7 @@ module Hydro
 ! calculate viscous force
 !
       if (lviscosity) call calc_viscous_force(df,p)
+      if (lSGS_hydro) call calc_SGS_hydro_force(f,df,p)
 !
 !  ``uu/dx'' for timestep
 !
@@ -4766,14 +4771,17 @@ module Hydro
 !  12-sep-13/MR  : use finalize_aver
 !
       use Sub, only: finalize_aver
+      use Magnetic, only: calc_pencils_magnetic
 
       real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+
       real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
       real, dimension (3) :: OO, dOO, uum0
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
       integer :: i,j,l
 
-      intent(inout) :: f
+      type(pencil_case) :: p
 !
 !  possibility of setting interior boundary conditions
 !
@@ -4960,6 +4968,11 @@ module Hydro
         endif
       endif
 
+      if (lSGS_hydro) then
+        call calc_pencils_hydro(f,p)                    ! restrict to needed!
+        if (lmagnetic) call calc_pencils_magnetic(f,p)  ! restrict to needed!
+        call SGS_hydro_after_boundary(f,p)
+      endif
     endsubroutine hydro_after_boundary
 !***********************************************************************
     subroutine set_border_hydro(f,df,p)
@@ -5613,6 +5626,8 @@ module Hydro
 !
       read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat)
 !
+      if (lSGS_hydro) call read_SGS_hydro_run_pars(iostat)
+!
     endsubroutine read_hydro_run_pars
 !***********************************************************************
     subroutine write_hydro_run_pars(unit)
@@ -5621,6 +5636,8 @@ module Hydro
 !
       write(unit, NML=hydro_run_pars)
 !
+      if (lSGS_hydro) call write_SGS_hydro_run_pars(unit)
+
     endsubroutine write_hydro_run_pars
 !***********************************************************************
     subroutine input_persistent_hydro(id,done)
@@ -6617,6 +6634,8 @@ module Hydro
         if (lhelmholtz_decomp) call farray_index_append('iphiuu',iphiuu)
       endif
 !
+      if (lSGS_hydro) call rprint_SGS_hydro(lreset,lwrite)
+
     endsubroutine rprint_hydro
 !***********************************************************************
     subroutine get_slices_hydro(f,slices)
