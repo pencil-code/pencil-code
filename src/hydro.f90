@@ -3545,11 +3545,7 @@ module Hydro
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
-        else
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
-        endif
-!
-        if (lSchur_2D2D3D_uu) then
+        elseif (lSchur_2D2D3D_uu) then
           do j=1,3
           do i=1,3
             puij_Schur(:,i,j) = p%uij(:,i,j)
