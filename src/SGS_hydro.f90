@@ -155,9 +155,11 @@ print*, 'tauSGSMax=', itauSGSMax
 !
 !  20-11-04/anders: coded
 !
+      lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_graddivu)=.true.
+      lpenc_requested(i_uij)=.true.
       lpenc_requested(i_sij2)=.true.
-      lpenc_requested(i_ss12)=.true.
+      !lpenc_requested(i_ss12)=.true.
 
       if (lmagnetic) then
         lpenc_requested(i_bij)=.true.
@@ -184,7 +186,7 @@ print*, 'tauSGSMax=', itauSGSMax
 !
 !  20-11-04/anders: coded
 !
-      use Sub, only: div, div_other, dot2
+      use Sub, only: div, div_other, dot2, traceless_strain
       use Diagnostics, only: sum_mn_name
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -195,7 +197,9 @@ print*, 'tauSGSMax=', itauSGSMax
       intent(inout) :: f,p
       intent(out) :: df
 
+      real, dimension(nx) :: mij2
       real, dimension(nx,3) :: tmp,tmp1
+      real, dimension(nx,3,3) :: mij
       integer :: j
       real, dimension(nx) :: dtp
 !
@@ -273,6 +277,7 @@ print*, 'tauSGSMax=', itauSGSMax
         if (present(rho)) E_SGS=E_SGS*rho
 
         uij2=sum(sum(uij**2,2),2)
+        where (uij2==0) uij2=1.
 
         f(l1:l2,mm,nn,k  ) = E_SGS*(sum(uij(:,1,:)**2,2)        /uij2 - 1./3.)   ! tau(1,1)
         f(l1:l2,mm,nn,k+1) = E_SGS*(sum(uij(:,1,:)*uij(:,2,:),2)/uij2        )   ! tau(1,2)
