@@ -112,10 +112,9 @@ module SGS_hydro
 !
     endsubroutine calc_pencils_SGS_hydro
 !***********************************************************************
-    subroutine SGS_hydro_after_boundary(f,p)
+    subroutine SGS_hydro_after_boundary(f)
 
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
