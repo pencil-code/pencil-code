@@ -5383,11 +5383,20 @@ endsubroutine pdf
   real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj
   real, dimension(nx,ny,nz,3) :: tmp_p,bbb_q,emf_q
   real, dimension(nk,nk) :: Tpq,Tpq_sum
+  character (len=40) :: outfile
   character (len=*) :: sp
 !
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+!  set name for output file
+!
+  if (sp=='maghel') then
+    outfile='/power_mag_hel_transfer_'
+  elseif (sp=='magE') then
+    outfile='/power_mag_E_transfer_'
+  endif
 !
 !  initialize spectral flux to zero
 !
@@ -5468,8 +5477,8 @@ endsubroutine pdf
 !
   if (lroot) then
     if (ip<10) print*,'Writing magnetic energy or helicity transfer rate to ', &
-        trim(datadir)//'/power_mag_hel_transfer.dat'
-    open(1,file=trim(datadir)//'/power_mag_hel_transfer_'//trim(sp)//'.dat',position='append')
+        trim(datadir)//trim(outfile)
+    open(1,file=trim(datadir)//trim(outfile)//trim(sp)//'.dat',position='append')
     write(1,*) t
     write(1,power_format) Tpq_sum
     close(1)
