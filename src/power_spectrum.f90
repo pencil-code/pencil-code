@@ -5377,10 +5377,10 @@ endsubroutine pdf
   integer :: i,p,q,ivec,ikx,iky,ikz,k
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,3) :: uu,aa,bb,uxb
+  real, dimension(nx,3) :: uu,aa,bb,uxb,jj
   real, dimension(nx,3,3) :: aij,bij
-  real, dimension(nx,ny,nz,3) :: uuu,bbb
-  real, dimension(nx,ny,nz,3) :: bbb_p,bbb_q,emf_q
+  real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj
+  real, dimension(nx,ny,nz,3) :: bbb_p,bbb_q,emf_q,jjj_p
   real, dimension(nk,nk) :: Tpq,Tpq_sum
 !
 !  identify version
@@ -5401,6 +5401,8 @@ endsubroutine pdf
     call gij(f,iaa,aij,1)
     call gij_etc(f,iaa,aa,aij,bij)
     call curl_mn(aij,bb,aa)
+    call curl_mn(bij,jj,bb)
+    jjj(:,m-nghost,n-nghost,:)=jj(:,:)
     uuu(:,m-nghost,n-nghost,:)=uu(:,:)
     bbb(:,m-nghost,n-nghost,:)=bb(:,:)
   enddo
@@ -5414,7 +5416,8 @@ endsubroutine pdf
     !  obtain the filtered field bbb_p
     !
     do ivec=1,3
-      call power_shell_filter(bbb(:,:,:,ivec),bbb_p(:,:,:,ivec),p)
+      !call power_shell_filter(bbb(:,:,:,ivec),bbb_p(:,:,:,ivec),p)
+      call power_shell_filter(jjj(:,:,:,ivec),jjj_p(:,:,:,ivec),p)
     enddo
     !
     do q=0,p-1
@@ -5438,7 +5441,8 @@ endsubroutine pdf
       !
       !  T(p,q)=\int bbb_p \cdot emf_q dV
       !
-      Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(bbb_p*emf_q)
+      !Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(bbb_p*emf_q)
+      Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(jjj_p*emf_q)
     enddo  !  from q
   enddo  !  from p
 !
