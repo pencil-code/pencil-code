@@ -6080,7 +6080,7 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
     real, dimension(:) :: arr 
     real :: res
 
-    real(KIND=8), dimension(size(arr)) :: arrq 
+    real(KIND=rkind16), dimension(size(arr)) :: arrq 
 
     arrq=arr
     res=sum(arrq)
