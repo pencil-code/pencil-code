@@ -117,7 +117,6 @@ module SGS_hydro
       real, dimension (mx,my,mz,mfarray) :: f
 
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine SGS_hydro_after_boundary
 !***********************************************************************
