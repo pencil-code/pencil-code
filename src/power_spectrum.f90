@@ -5361,13 +5361,14 @@ endsubroutine pdf
 !
   endsubroutine power_shell_filter
 !***********************************************************************
-  subroutine power_mag_hel_transfer(f)
+  subroutine power_mag_hel_transfer(f,sp)
 !
-!  Calculate magnetic helicity transfer function.
+!  Calculate magnetic energy and helicity transfer functions.
 !  The transfer rate T(p,q) refers to the magnetic helicity from shell q
 !  into shell p.
 !
 !   3-aug-22/hongzhe: adapted from powerEMF
+!  24-aug-22/hongzhe: made switchable
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
@@ -5380,8 +5381,9 @@ endsubroutine pdf
   real, dimension(nx,3) :: uu,aa,bb,uxb,jj
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj
-  real, dimension(nx,ny,nz,3) :: bbb_p,bbb_q,emf_q,jjj_p
+  real, dimension(nx,ny,nz,3) :: tmp_p,bbb_q,emf_q
   real, dimension(nk,nk) :: Tpq,Tpq_sum
+  character (len=*) :: sp
 !
 !  identify version
 !
@@ -5413,11 +5415,16 @@ endsubroutine pdf
 !
   do p=0,nk-1
     !
-    !  obtain the filtered field bbb_p
+    !  obtain the filtered field tmp_p and compute tmp_p dot emf_q.
+    !  emf_q = uuu cross bbb_q
+    !  tmp_p = bbb_p for helicity, and jjj_p for energy
     !
     do ivec=1,3
-      !call power_shell_filter(bbb(:,:,:,ivec),bbb_p(:,:,:,ivec),p)
-      call power_shell_filter(jjj(:,:,:,ivec),jjj_p(:,:,:,ivec),p)
+      if (sp=='maghel') then
+        call power_shell_filter(bbb(:,:,:,ivec),tmp_p(:,:,:,ivec),p)
+      elseif (sp=='magE') then
+        call power_shell_filter(jjj(:,:,:,ivec),tmp_p(:,:,:,ivec),p)
+      endif
     enddo
     !
     do q=0,p-1
@@ -5441,8 +5448,7 @@ endsubroutine pdf
       !
       !  T(p,q)=\int bbb_p \cdot emf_q dV
       !
-      !Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(bbb_p*emf_q)
-      Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(jjj_p*emf_q)
+      Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(tmp_p*emf_q)
     enddo  !  from q
   enddo  !  from p
 !
@@ -5461,9 +5467,9 @@ endsubroutine pdf
 !  append to diagnostics file
 !
   if (lroot) then
-    if (ip<10) print*,'Writing magnetic helicity transfer rate to ', &
+    if (ip<10) print*,'Writing magnetic energy or helicity transfer rate to ', &
         trim(datadir)//'/power_mag_hel_transfer.dat'
-    open(1,file=trim(datadir)//'/power_mag_hel_transfer.dat',position='append')
+    open(1,file=trim(datadir)//'/power_mag_hel_transfer_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     write(1,power_format) Tpq_sum
     close(1)

@@ -608,7 +608,7 @@ module Cdata
   logical :: uu_xkyz=.false., oo_xkyz=.false., bb_xkyz=.false., jj_xkyz=.false.
   logical :: uu_kx0z=.false., oo_kx0z=.false., bb_kx0z=.false., jj_kx0z=.false.
   logical :: bb_k00z=.false., ee_k00z=.false., gwT_fft3d=.false.
-  logical :: mh_specflux=.false.
+  logical :: mh_specflux=.false., mE_specflux=.false.
 !
   ! Auxiliary parameters for boundary conditions:
   real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.

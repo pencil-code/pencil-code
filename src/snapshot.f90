@@ -886,7 +886,8 @@ module Snapshot
 !
 !  output spectral fluxes
 !
-        if (mh_specflux) call power_mag_hel_transfer(f)
+        if (mE_specflux) call power_mag_hel_transfer(f,'magE')
+        if (mh_specflux) call power_mag_hel_transfer(f,'maghel')
 !
         lspec=.false.
       endif

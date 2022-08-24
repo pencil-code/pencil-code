@@ -215,7 +215,8 @@ module Param_IO
       uut_spec, uut_polar, ouout_spec, ouout2_spec, ouout_polar, out_spec, uot_spec, &
       saffman_ub, saffman_mag, saffman_mag_c, saffman_aa, saffman_aa_c, saffman_bb, &
       uu_fft3d, oo_fft3d, bb_fft3d, jj_fft3d, uu_xkyz, oo_xkyz, bb_xkyz, jj_xkyz, &
-      uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, mh_specflux
+      uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, &
+      mh_specflux, mE_specflux
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
