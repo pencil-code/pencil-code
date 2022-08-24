@@ -5369,26 +5369,34 @@ endsubroutine pdf
 !
 !   3-aug-22/hongzhe: adapted from powerEMF
 !  24-aug-22/hongzhe: made switchable
+!  24-aug-22/axel: made Tpq,Tpq_sum allocatable, of size (nlk+1)^2, where nk=2**nlk
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,p,q,ivec,ikx,iky,ikz,k
+  integer :: i,p,q,lp,lq,ivec,ikx,iky,ikz,k,nlk
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,3) :: uu,aa,bb,uxb,jj
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj
   real, dimension(nx,ny,nz,3) :: tmp_p,bbb_q,emf_q
-  real, dimension(nk,nk) :: Tpq,Tpq_sum
+  !real, dimension(nk,nk) :: Tpq,Tpq_sum
+  real, allocatable, dimension(:,:) :: Tpq,Tpq_sum
   character (len=40) :: outfile
   character (len=*) :: sp
 !
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+!  2-D output only in log steps to power 2. Allocate array:
+!
+  nlk=nint(alog(float(nk))/alog(2.))+1
+  if (.not.allocated(Tpq)) allocate( Tpq(nlk,nlk) )
+  if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk,nlk) )
 !
 !  set name for output file
 !
@@ -5422,7 +5430,9 @@ endsubroutine pdf
 !  Loop over all p, and then loop over q<p.
 !  The q>p half is filled using Tpq(p,q)=-Tpq(q,p).
 !
-  do p=0,nk-1
+  !do p=0,nk-1
+  do lp=0,nlk-1
+    p=2**lp
     !
     !  obtain the filtered field tmp_p and compute tmp_p dot emf_q.
     !  emf_q = uuu cross bbb_q
@@ -5436,7 +5446,9 @@ endsubroutine pdf
       endif
     enddo
     !
-    do q=0,p-1
+    !do q=0,p-1
+    do lq=0,lp-1
+      q=2**lq
       !
       !  obtain the filtered field bbb_q
       !
@@ -5457,21 +5469,26 @@ endsubroutine pdf
       !
       !  T(p,q)=\int bbb_p \cdot emf_q dV
       !
-      Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(tmp_p*emf_q)
+      !Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(tmp_p*emf_q)
+      Tpq(lp+1,lq+1) = Tpq(lp+1,lq+1) + dx*dy*dz*sum(tmp_p*emf_q)
     enddo  !  from q
   enddo  !  from p
 !
 !  fill the other half of Tpq.
 !
-  do p=0,nk-1
-  do q=p+1,nk-1
-    Tpq(p,q)=-Tpq(q,p)
+ !do p=0,nk-1
+ !do q=p+1,nk-1
+ !  Tpq(p,q)=-Tpq(q,p)
+  do lp=0,nlk-1
+  do lq=lp+1,nlk-1
+    Tpq(lp+1,lq+1)=-Tpq(lq+1,lp+1)
   enddo
   enddo
 !
 !  sum over processors
 !
-  call mpireduce_sum(Tpq,Tpq_sum,(/nk,nk/))
+  !call mpireduce_sum(Tpq,Tpq_sum,(/nk,nk/))
+  call mpireduce_sum(Tpq,Tpq_sum,(/nlk,nlk/))
 !
 !  append to diagnostics file
 !
