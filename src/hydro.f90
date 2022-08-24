@@ -3511,14 +3511,9 @@ module Hydro
       intent(inout) :: f,df
 
       real, dimension (nx,3) :: tmpv
-<<<<<<< HEAD
-      real, dimension (nx) :: ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
+      real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
       real, dimension (nx,3,3) :: puij_Schur
       integer :: i, j, ju
-=======
-      real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
-      integer :: j, ju
->>>>>>> temp-branch
 !
       Fmax=tini
 !
