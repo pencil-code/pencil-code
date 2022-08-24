@@ -4807,8 +4807,6 @@ module Hydro
       real, dimension (3) :: OO, dOO, uum0
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
       integer :: i,j,l
-
-      type(pencil_case) :: p
 !
 !  possibility of setting interior boundary conditions
 !
@@ -4995,11 +4993,8 @@ module Hydro
         endif
       endif
 
-      if (lSGS_hydro) then
-        call calc_pencils_hydro(f,p)                    ! restrict to needed!
-        if (lmagnetic) call calc_pencils_magnetic(f,p)  ! restrict to needed!
-        call SGS_hydro_after_boundary(f,p)
-      endif
+      if (lSGS_hydro) call SGS_hydro_after_boundary(f)
+!
     endsubroutine hydro_after_boundary
 !***********************************************************************
     subroutine set_border_hydro(f,df,p)

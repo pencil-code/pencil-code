@@ -87,7 +87,7 @@ module Sub
 !
   public :: tensor_diffusion_coef
 !
-  public :: smooth_kernel, despike
+  public :: smooth_kernel, despike, smoothing_kernel
   public :: smooth, smooth_mn, get_smooth_kernel
 !
   public :: ludcmp, lubksb
@@ -4017,7 +4017,7 @@ module Sub
 !
     endsubroutine despike
 !***********************************************************************
-    subroutine smooth_kernel(f,j,smth)
+    subroutine smooth_kernel(f,j,smth,smth_kernel_)
 !
 !  Smooth scalar field FF using predefined constant gaussian like kernel.
 !
@@ -4025,11 +4025,18 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: smth
+      real, dimension(7,7,7), optional :: smth_kernel_
       integer :: j,l
 !
-      do l=l1,l2
-        smth(l-l1+1)=sum(smth_kernel*f(l-3:l+3,m-3:m+3,n-3:n+3,j))
-      enddo
+      if (present(smth_kernel_)) then
+        do l=l1,l2
+          smth(l-l1+1)=sum(smth_kernel_*f(l-3:l+3,m-3:m+3,n-3:n+3,j))
+        enddo
+      else
+        do l=l1,l2
+          smth(l-l1+1)=sum(smth_kernel*f(l-3:l+3,m-3:m+3,n-3:n+3,j))
+        enddo
+      endif
 !
     endsubroutine smooth_kernel
 !***********************************************************************
@@ -8663,5 +8670,66 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       endif
 !
     endsubroutine find_index_by_bisection
+!***********************************************************************
+    subroutine smoothing_kernel(kernel,lgaussian,weights_)
+!
+!  24-aug-02/fred&matthias: coded
+!
+      use General, only: loptest
+!
+      real, dimension (-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kernel
+      logical, optional :: lgaussian
+      real, dimension (-nghost:nghost), optional :: weights_
+      intent(out) :: kernel
+      intent(in) :: lgaussian, weights_
+!
+      integer :: i,j,k
+      real, dimension (-nghost:nghost) :: weights
+!
+!  Calculate the smoothing factors
+!
+      kernel = 1.
+!
+      if (present(weights_)) then
+        weights=weights_
+      else
+        if (nghost/=3) call fatal_error('smoothing_kernel','applies only for nghost=3')
+        if (loptest(lgaussian,.true.)) then
+          weights = (/1.,9.,45.,70.,45.,9.,1./)
+        else
+          weights = (/1.,6.,15.,20.,15.,6.,1./)
+        endif
+      endif
+!
+      if (nxgrid > 1) then
+        do i = -nghost,nghost
+          kernel(i,:,:) = kernel(i,:,:)*weights(i)
+        enddo
+      else
+        kernel(-nghost:-1,:,:) = 0.
+        kernel(+1:+nghost,:,:) = 0.
+      endif
+!
+      if (nygrid > 1) then
+        do j = -nghost,nghost
+          kernel(:,j,:) = kernel(:,j,:)*weights(j)
+        enddo
+      else
+        kernel(:,-nghost:-1,:) = 0.
+        kernel(:,+1:+nghost,:) = 0.
+      endif
+!
+      if (nzgrid > 1) then
+        do k = -nghost,nghost
+          kernel(:,:,k) = kernel(:,:,k)*weights(k)
+        enddo
+      else
+        kernel(:,:,-nghost:-1) = 0.
+        kernel(:,:,+1:+nghost) = 0.
+      endif
+!
+      kernel = kernel / sum(kernel)
+!
+    endsubroutine smoothing_kernel
 !***********************************************************************    
 endmodule Sub

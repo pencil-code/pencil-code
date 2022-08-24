@@ -38,6 +38,7 @@ module SGS_hydro
                                 lSGS_heat_as_aux, lSGS_forc_as_aux
 
   integer :: idiag_fSGSm=0, idiag_fSGSrmsx=0
+  real, dimension(7,7,7) :: smth_kernel
 
   contains
 !***********************************************************************
@@ -88,9 +89,13 @@ print*, 'tauSGSMax=', itauSGSMax
 !***********************************************************************
     subroutine initialize_SGS_hydro
 !
+      use Sub, only: smoothing_kernel
+!
       if (.not.ldensity) &
         call fatal_error('initialize_SGS_hydro','density needed')
-
+!
+      call smoothing_kernel(smth_kernel)
+!
     endsubroutine initialize_SGS_hydro
 !***********************************************************************
     subroutine read_SGS_hydro_run_pars(iostat)
@@ -209,7 +214,7 @@ print*, 'tauSGSMax=', itauSGSMax
       call div(f,itauSGSRey,tmp(:,1))
       call div_other(f(:,:,:,(/itauSGSRey+1,itauSGSRey+3,itauSGSRey+4/)),tmp(:,2))
       call div_other(f(:,:,:,(/itauSGSRey+2,itauSGSRey+4,itauSGSRey+5/)),tmp(:,3))
-
+      write (iproc+40,*) 'SGShydro: tmp',maxval(tmp) 
       if (lmagnetic) then
         call div(f,itauSGSMax,tmp1(:,1))
         call div_other(f(:,:,:,(/itauSGSMax+1,itauSGSMax+3,itauSGSMax+4/)),tmp1(:,2))
@@ -231,31 +236,54 @@ print*, 'tauSGSMax=', itauSGSMax
 
     endsubroutine calc_SGS_hydro_force
 !***********************************************************************
-    subroutine SGS_hydro_after_boundary(f,p)
+    subroutine SGS_hydro_after_boundary(f)
 
       use Boundcond, only: update_ghosts
-      use Sub, only: traceless_strain
+      use Sub, only: traceless_strain, div, gij, gij_etc, smooth_kernel
 
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
 
-      integer :: mm,nn
-      real, dimension(nx) :: mij2
-      real, dimension(nx,3,3) :: mij
+      integer :: mm,nn,j
+      real, dimension(nx) :: mij2, penc, sij2
+      real, dimension(nx,3) :: uu
+      real, dimension(nx,3,3) :: mij, uij, sij
 !
 !  Requires communication to be finished!
 !
 !print*, 'in SGS_hydro_after_boundary'
 !
-      call tauij_SGS(p%uij,p%sij2,cReyStress,f,itauSGSRey,exp(p%lnrho))
-      call update_ghosts(f,itauSGSRey,itauSGSRey+5)
-
-      if (lmagnetic) then
-        call traceless_strain(p%bij,sij=mij)
-        mij2=sum(sum(mij**2,2),2)
-        call tauij_SGS(p%bij,mij2,cMaxStress,f,itauSGSMax)
-        call update_ghosts(f,itauSGSMax,itauSGSMax+5)
-      endif
+        do n=n1,n2; do m=m1,m2
+          do j=iux,iuz
+             call smooth_kernel(f,j,penc,smth_kernel)
+             f(l1:l2,m,n,itauSGSRey+j-iux) = penc
+          enddo
+          if (lmagnetic) then 
+            do j=iax,iaz
+               call smooth_kernel(f,j,penc,smth_kernel)
+               f(l1:l2,m,n,itauSGSMax+j-iax) = penc
+            enddo
+          endif
+        enddo; enddo
+        if (lmagnetic) call update_ghosts(f,itauSGSMax,itauSGSMax+2)
+        call update_ghosts(f,itauSGSRey,itauSGSRey+2)
+        ! if not periodic bcs are required
+        do n=n1,n2; do m=m1,m2
+          call gij(f,itauSGSRey,uij,1)
+          call div(f,itauSGSRey,penc)
+          uu=f(l1:l2,m,n,itauSGSRey:itauSGSRey+2)
+          call traceless_strain(uij,penc,sij,uu)!,lshear_rateofstrain)
+          sij2=sum(sum(sij**2,2),2)
+          call tauij_SGS(uij,sij2,cReyStress,f,itauSGSRey) ! remember rho
+          write (iproc+40,*) 'SGShydro: uu',maxval(uu),'sij,sij2',maxval(sij),maxval(sij2)
+          call update_ghosts(f,itauSGSRey,itauSGSRey+5)
+          if (lmagnetic) then
+            call gij_etc(f,itauSGSMax,BIJ=uij)
+            call traceless_strain(uij,sij=mij)
+            mij2=sum(sum(mij**2,2),2)
+            call tauij_SGS(uij,mij2,cMaxStress,f,itauSGSMax)
+            call update_ghosts(f,itauSGSMax,itauSGSMax+5)
+          endif
+        enddo; enddo
 
     endsubroutine SGS_hydro_after_boundary
 !***********************************************************************
@@ -267,9 +295,16 @@ print*, 'tauSGSMax=', itauSGSMax
       real, dimension (mx,my,mz,mfarray) :: f
       real :: coef
       integer :: k
+      integer :: ni,nj,nk
 
       integer :: mm,nn
       real, dimension(nx) :: E_SGS,uij2
+!
+!  Smooth with a Gaussian profile
+!
+      ni = merge(3,0,nxgrid > 1)
+      nj = merge(3,0,nygrid > 1)
+      nk = merge(3,0,nzgrid > 1)
 
       do nn=n1,n2; do mm=m1,m2
 

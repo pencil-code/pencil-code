@@ -105,7 +105,7 @@ module Shock
 !  20-nov-02/tony: coded
 !
       use Messages, only: fatal_error
-      use Sub, only: register_report_aux
+      use Sub, only: register_report_aux, smoothing_kernel
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -124,42 +124,42 @@ module Shock
 !
 !  Calculate the smoothing factors
 !
-      smooth_factor = 1.
+      call smoothing_kernel(smooth_factor,lgaussian_smooth)
 !
-      if (lgaussian_smooth) then
-        weights = (/1.,9.,45.,70.,45.,9.,1./)
-      else
-        weights = (/1.,6.,15.,20.,15.,6.,1./)
-      endif
-!
-      if (nxgrid > 1) then
-        do i = -3,3
-          smooth_factor(i,:,:) = smooth_factor(i,:,:)*weights(i)
-        enddo
-      else
-        smooth_factor(-3:-1,:,:) = 0.
-        smooth_factor(+1:+3,:,:) = 0.
-      endif
-!
-      if (nygrid > 1) then
-        do j = -3,3
-          smooth_factor(:,j,:) = smooth_factor(:,j,:)*weights(j)
-        enddo
-      else
-        smooth_factor(:,-3:-1,:) = 0.
-        smooth_factor(:,+1:+3,:) = 0.
-      endif
-!
-      if (nzgrid > 1) then
-        do k = -3,3
-          smooth_factor(:,:,k) = smooth_factor(:,:,k)*weights(k)
-        enddo
-      else
-        smooth_factor(:,:,-3:-1) = 0.
-        smooth_factor(:,:,+1:+3) = 0.
-      endif
-!
-      smooth_factor = smooth_factor / sum(smooth_factor)
+!      if (lgaussian_smooth) then
+!        weights = (/1.,9.,45.,70.,45.,9.,1./)
+!      else
+!        weights = (/1.,6.,15.,20.,15.,6.,1./)
+!      endif
+!!
+!      if (nxgrid > 1) then
+!        do i = -3,3
+!          smooth_factor(i,:,:) = smooth_factor(i,:,:)*weights(i)
+!        enddo
+!      else
+!        smooth_factor(-3:-1,:,:) = 0.
+!        smooth_factor(+1:+3,:,:) = 0.
+!      endif
+!!
+!      if (nygrid > 1) then
+!        do j = -3,3
+!          smooth_factor(:,j,:) = smooth_factor(:,j,:)*weights(j)
+!        enddo
+!      else
+!        smooth_factor(:,-3:-1,:) = 0.
+!        smooth_factor(:,+1:+3,:) = 0.
+!      endif
+!!
+!      if (nzgrid > 1) then
+!        do k = -3,3
+!          smooth_factor(:,:,k) = smooth_factor(:,:,k)*weights(k)
+!        enddo
+!      else
+!        smooth_factor(:,:,-3:-1) = 0.
+!        smooth_factor(:,:,+1:+3) = 0.
+!      endif
+!!
+!      smooth_factor = smooth_factor / sum(smooth_factor)
 !
 !  Check that smooth order is within bounds
 !
