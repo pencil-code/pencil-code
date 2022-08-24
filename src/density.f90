@@ -42,6 +42,7 @@ module Density
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
   real, dimension (ninit) :: kxx_lnrho=0.0, kyy_lnrho=0.0, kzz_lnrho=0.0
   real, dimension (mz,1) :: lnrhomz
+  real, dimension (nz) :: lnrho_init_z_nz=0.0
   real, dimension (mz) :: lnrho_init_z=0.0
   real, dimension (mz) :: dlnrhodz_init_z=0.0, del2lnrho_glnrho2_init_z=0.0
   real, dimension (3) :: diffrho_hyper3_aniso=0.0
@@ -102,7 +103,7 @@ module Density
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
   logical :: lrelativistic_eos=.false., ladvection_density=.true.
-  logical, pointer :: lrelativistic
+  logical, pointer :: lconservative
   logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -341,10 +342,10 @@ module Density
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
       if (lhydro) then
-        call get_shared_variable('lrelativistic', lrelativistic)
+        call get_shared_variable('lconservative', lconservative)
       else
-        allocate(lrelativistic)
-        lrelativistic=.false.
+        allocate(lconservative)
+        lconservative=.false.
       endif
 !
     endsubroutine register_density
@@ -735,7 +736,7 @@ module Density
             endif
             call fatal_error('initialize_density','')
           else
-            read(19,*) lnrho_init_z
+            read(19,*) lnrho_init_z_nz
           endif
         close(19)
 !
@@ -1432,6 +1433,16 @@ module Density
             f(l1:l2,m,n,ilnrho)=log(rho_left(j))+ &
                 (log(rho_right(j))-log(rho_left(j)))*prof
           enddo; enddo
+        case ('nolog-shock-tube')
+!
+!  Shock tube test (should be consistent with hydro module).
+!  Remember that for ldensity_nolog=T, we say exp(...) at the end of this routine!
+!
+          call information('init_lnrho','standing shock')
+          do n=n1,n2; do m=m1,m2
+            prof=0.5*(1.+tanh(x(l1:l2)/widthlnrho(j)))
+            f(l1:l2,m,n,ilnrho)=log(rho_left(j)+(rho_right(j)-rho_left(j))*prof)
+          enddo; enddo
         case ('sin-xy')
 !
 !  sin profile in x and y.
@@ -1987,11 +1998,16 @@ module Density
         if (lweno_transport) then
           lpenc_requested(i_transprho)=.true.
         else
-          lpenc_requested(i_divu)=.true.
+          if (.not.lconservative) lpenc_requested(i_divu)=.true.
           if (ldensity_nolog) then
-            lpenc_requested(i_ugrho)=.true.
+            if (lconservative) then
+              lpenc_requested(i_divss)=.true.
+            else
+              lpenc_requested(i_ugrho)=.true.
 !            lpenc_requested(i_uglnrho)=.false.
+            endif
           else
+            if (lconservative) call fatal_error('pencil_criteria_density', 'must use ldensity_nolog=T')
             lpenc_requested(i_uglnrho)=.true.
 !            lpenc_requested(i_ugrho)=.false.
           endif
@@ -2039,12 +2055,6 @@ module Density
         if (lentropy) lpenc_requested(i_cv)=.true.
         if (ltemperature.and.ltemperature_nolog) lpenc_requested(i_TT)=.true.
         if (lthermal_energy) lpenc_requested(i_u2) = .true.
-      endif
-!
-      if (lrelativistic) then
-        lpenc_requested(i_lorentz_gamma)=.true.
-        lpenc_requested(i_totenergy_rel)=.true.
-        lpenc_requested(i_ss_rel)=.true.
       endif
 !
       if (lfargo_advection) then
@@ -2225,17 +2235,11 @@ module Density
       intent(in) :: f
       intent(inout) :: p
       real, dimension(nx) :: tmp
-!
       integer :: i
 !
 ! rho
 !
-      if (lrelativistic) then
-        p%totenergy_rel=f(l1:l2,m,n,irho)
-        p%rho=3.*p%totenergy_rel/(4.*p%lorentz_gamma2-1.)
-      else
-        p%rho=f(l1:l2,m,n,irho)
-      endif
+      p%rho=f(l1:l2,m,n,irho)
       if (lreference_state) p%rho=p%rho+reference_state(:,iref_rho)
 ! rho1
       if (lpenc_loc(i_rho1)) p%rho1=1.0/p%rho
@@ -2492,7 +2496,6 @@ module Density
             +Schur_dlnrho_RHS_xyzaver &
             -Schur_dlnrho_RHS_xyaver_z(n) &
             -Schur_dlnrho_RHS_zaver_xy(l1:l2,m)
-        !if (m==m1) print*,'AXEL: now dlnrho_dt: ',Schur_dlnrho_RHS_xyaver_z(n)
       else
 !
 !  Continuity equation.
@@ -2501,25 +2504,28 @@ module Density
         if (.not. lweno_transport .and. &
             .not. lffree .and. .not. lreduced_sound_speed .and. &
             ieos_profile=='nothing' .and. .not. lfargo_advection) then
+!
+!  Evolution of rho; set and initiate density_rhs
+!
           if (ldensity_nolog) then
-
-            if (lrelativistic) then
-              density_rhs=-p%divss_rel
+            if (lconservative) then
+              density_rhs=-p%divss
             else
               density_rhs=-p%rho*p%divu
               if (ladvection_density) density_rhs = density_rhs - p%ugrho
+              if (lrelativistic_eos) density_rhs=fourthird*density_rhs
             endif
-            if (lrelativistic_eos) density_rhs=fourthird*density_rhs
-
+!
+!  Evolution of lnrho
+!
           else
-
             density_rhs= - p%divu
             if (ladvection_density) density_rhs = density_rhs - p%uglnrho
 !
-!  The following few lines only enter without lrelativistic,
-!  but with lrelativistic_eos.
+!  The following few lines only enter without lconservative,
+!  and also only without ldensity_nolog, but with lrelativistic_eos.
 !
-            if (lrelativistic_eos.and..not.lrelativistic) then
+            if (lrelativistic_eos.and..not.lconservative) then
               if (lhydro) then
                 call multvs(p%uu,density_rhs,tmpv)
                 df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv

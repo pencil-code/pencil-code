@@ -5149,6 +5149,8 @@ module Initcond
       endif
 !
 !  alberto: added option to use different values of nfact
+!  Here, nfact is the exponent on k/k0, with an 1/nfact outside [1+(k/k0)^n]^(1/nfact).
+!  By default, we use a large nfact=4 to have a sharp transition.
 !
      if (present(nfact0)) then
        nfact = nfact0
@@ -5506,6 +5508,11 @@ module Initcond
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
         endif
         r=fact*((k2*kpeak21)**mhalf)/(1.+D2*(k2*kpeak21)**nexp1)**nexp2
+        if (lroot) print*,'mhalf,nexp1,nexp2=',mhalf,nexp1,nexp2
+!
+!  Examples: for initpower=4., initpower2=-2., get mhalf,nexp1,nexp2 = 0.75, 6.0, 0.25
+!  while for Jani Dahl setup, we put: initpower=3., initpower2=-3., nfact_uu=.6666667
+!  and get mhalf, nexp1, nexp2 = 0.5, 1.0, 1.5.
 !
 !  alberto: added possibility to multiply spectrum by a power of k (useful for GW for example)
 !           the final spectrum will be compensated by k^(4*compk)
