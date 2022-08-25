@@ -32,6 +32,9 @@ module power_spectrum
   include 'power_spectrum.h'
 !
   real :: pdf_max=30., pdf_min=-30., pdf_max_logscale=3.0, pdf_min_logscale=-3.
+  real :: tout_min=0., tout_max=0.
+  real :: specflux_dp=-2., specflux_dq=-2.
+  real, allocatable, dimension(:,:) :: legendre_zeros,glq_weight
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
   logical :: lhalf_factor_in_GW=.false., lcylindrical_spectra=.false.
   logical :: lread_gauss_quadrature=.false., lshear_frame_correlation=.false.
@@ -39,7 +42,6 @@ module power_spectrum
   integer :: firstout = 0
   logical :: lglq_dot_dat_exists=.false.
   integer :: n_glq=1
-  real, allocatable, dimension(:,:) :: legendre_zeros,glq_weight
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
   character (LEN=linelen) :: power_format='(1p,8e10.2)'
@@ -48,14 +50,13 @@ module power_spectrum
   integer :: n_spectra=0
   integer :: inz=0, n_segment_x=1
   integer :: kout_max=0
-  real :: tout_min=0., tout_max=0.
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
       lcylindrical_spectra, inz, n_segment_x, lhalf_factor_in_GW, &
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
       lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation, &
-      power_format, kout_max, tout_min, tout_max
+      power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq
 !
   contains
 !***********************************************************************
@@ -5370,13 +5371,15 @@ endsubroutine pdf
 !   3-aug-22/hongzhe: adapted from powerEMF
 !  24-aug-22/hongzhe: made switchable
 !  24-aug-22/axel: made Tpq,Tpq_sum allocatable, of size (nlk+1)^2, where nk=2**nlk
+!  25-aug-22/hongzhe: introduced specflux_dp and specflux_dq
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,p,q,lp,lq,ivec,ikx,iky,ikz,k,nlk
+  integer :: i,p,q,lp,lq,ivec,ikx,iky,ikz,k!,nlk
+  integer :: nlk_p, nlk_q
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,3) :: uu,aa,bb,uxb,jj
@@ -5392,11 +5395,29 @@ endsubroutine pdf
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
 !
-!  2-D output only in log steps to power 2. Allocate array:
+!  2-D output ; allocate array.
+!  Positive step sizes specflux_dp and specflux_dq for linear steps,
+!  and negative values for log steps. Default value for both is -2.
 !
-  nlk=nint(alog(float(nk))/alog(2.))+1
-  if (.not.allocated(Tpq)) allocate( Tpq(nlk,nlk) )
-  if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk,nlk) )
+  !nlk=nint(alog(float(nk))/alog(2.))+1
+  if (specflux_dp>0.) then
+    nlk_p = floor((nk-1.)/specflux_dp)+1
+  elseif (specflux_dp<0.) then
+    nlk_p = floor(alog(nk-1.)/alog(-specflux_dp))+1
+  else
+    call fatal_error('power_mag_hel_transfer','specflux_dp must be non-zero')
+  endif
+  if (specflux_dq>0.) then
+    nlk_q = floor((nk-1.)/specflux_dq)+1
+  elseif (specflux_dq<0.) then
+    nlk_q = floor(alog(nk-1.)/alog(-specflux_dq))+1
+  else
+    call fatal_error('power_mag_hel_transfer','specflux_dq must be non-zero')
+  endif
+  !if (.not.allocated(Tpq)) allocate( Tpq(nlk,nlk) )
+  !if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk,nlk) )
+  if (.not.allocated(Tpq)) allocate( Tpq(nlk_p,nlk_q) )
+  if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk_p,nlk_q) )
 !
 !  set name for output file
 !
@@ -5428,11 +5449,17 @@ endsubroutine pdf
   enddo
 !
 !  Loop over all p, and then loop over q<p.
-!  The q>p half is filled using Tpq(p,q)=-Tpq(q,p).
+!  If dp=dq, then the q>p half is filled using Tpq(p,q)=-Tpq(q,p).
+!  Otherwise, we loop over all p and q.
 !
   !do p=0,nk-1
-  do lp=0,nlk-1
-    p=2**lp
+  do lp=0,nlk_p-1
+    !p=2**lp
+    if (specflux_dp>0.) then
+      p=nint(specflux_dp*lp)
+    else
+      p=nint(abs(specflux_dp)**lp)
+    endif
     !
     !  obtain the filtered field tmp_p and compute tmp_p dot emf_q.
     !  tmp_p = bbb_p for helicity, and jjj_p for energy
@@ -5449,8 +5476,17 @@ endsubroutine pdf
     enddo
     !
     !do q=0,p-1
-    do lq=0,lp-1
-      q=2**lq
+    !do lq=0,lp-1
+    do lq=0,nlk_q-1
+    !  only when dp=dq and q>p, we don't need to compute Tpq
+    if (.not.(specflux_dp==specflux_dq.and.lq>lp)) then
+      !  compute Tpq
+      !q=2**lq
+      if (specflux_dq>0.) then
+        q=nint(specflux_dq*lq)
+      else
+        q=nint(abs(specflux_dq)**lq)
+      endif
       !
       !  obtain u_tmp and b_tmp
       !
@@ -5479,24 +5515,28 @@ endsubroutine pdf
       !
       !Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(tmp_p*emf_q)
       Tpq(lp+1,lq+1) = Tpq(lp+1,lq+1) + dx*dy*dz*sum(tmp_p*emf_q)
+    endif
     enddo  !  from q
   enddo  !  from p
 !
-!  fill the other half of Tpq.
+!  fill the other half of Tpq if dp=dq
 !
   !do p=0,nk-1
   !do q=p+1,nk-1
   !  Tpq(p,q)=-Tpq(q,p)
-  do lp=0,nlk-1
-  do lq=lp+1,nlk-1
-    Tpq(lp+1,lq+1)=-Tpq(lq+1,lp+1)
-  enddo
-  enddo
+  if (specflux_dp==specflux_dq) then
+    do lp=0,nlk_p-1
+    do lq=lp+1,nlk_q-1
+      Tpq(lp+1,lq+1)=-Tpq(lq+1,lp+1)
+    enddo
+    enddo
+  endif
 !
 !  sum over processors
 !
   !call mpireduce_sum(Tpq,Tpq_sum,(/nk,nk/))
-  call mpireduce_sum(Tpq,Tpq_sum,(/nlk,nlk/))
+  !call mpireduce_sum(Tpq,Tpq_sum,(/nlk,nlk/))
+  call mpireduce_sum(Tpq,Tpq_sum,(/nlk_p,nlk_q/))
 !
 !  append to diagnostics file
 !
