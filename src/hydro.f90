@@ -232,6 +232,8 @@ module Hydro
   logical :: lvart_in_shear_frame=.false.
   logical :: lSchur_3D3D1D_uu=.false.
   logical :: lSchur_2D2D3D_uu=.false.
+  logical :: lSchur_2D2D1D_uu=.false.
+
 
   real :: dtcor=0.
   character (len=labellen) :: uuprof='nothing'
@@ -280,7 +282,8 @@ module Hydro
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
       limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
-      ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, lSchur_2D2D3D_uu
+      ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, &
+      lSchur_2D2D3D_uu, lSchur_2D2D1D_uu
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -3556,6 +3559,20 @@ module Hydro
           call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
           call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
           call dot(p%uu,puij_Schur(:,3,:),ugu_Schur_z)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+        elseif (lSchur_2D2D1D_uu) then
+          do j=1,3
+          do i=1,3
+            puij_Schur(:,i,j) = p%uij(:,i,j)
+          enddo
+          enddo
+          puij_Schur(:,1,3) = 0
+          puij_Schur(:,2,3) = 0
+          call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
+          call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
+          ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
