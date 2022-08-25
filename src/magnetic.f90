@@ -176,7 +176,7 @@ module Magnetic
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
-  logical, pointer :: lrelativistic_eos
+  logical, pointer :: lrelativistic_eos, lconservative
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false., lset_AxAy_zero=.false.
   logical :: llorentzforce=.true., llorentz_rhoref=.false., linduction=.true.
@@ -1110,6 +1110,15 @@ module Magnetic
       if (ldensity) &
         call get_shared_variable('lrelativistic_eos', &
             lrelativistic_eos, caller='register_magnetic')
+!
+!  Check if we are solving for relativistic bulk motions, not just EoS.
+!
+      if (lhydro) then
+        call get_shared_variable('lconservative', lconservative)
+      else
+        allocate(lconservative)
+        lconservative=.false.
+      endif
 !
 !  register the mean-field module
 !
@@ -4308,7 +4317,14 @@ module Magnetic
                 df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+.75*p%jxbr
               else
                 if (iphiuu==0) then
-                  df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+!
+!  add Lorentz force, JxB in the conservative case and JxB/rho otherwise.
+!
+                  if (lconservative) then
+                    df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxb
+                  else
+                    df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+                  endif
                 else
                   df(l1:l2,m,n,iphiuu)=df(l1:l2,m,n,iphiuu)-.5*(p%b2-B_ext2)
                 endif
@@ -8171,10 +8187,15 @@ module Magnetic
 !  Don't overwrite the density, just add to the log of it.
 !
       do n=n1,n2; do m=m1,m2
-        f(l1:l2,m,n,ilnrho)=ampl_lr*(sin(kx*x(l1:l2))+f(l1:l2,m,n,ilnrho))
+        if (ldensity_nolog) then
+          f(l1:l2,m,n,irho)=exp(ampl_lr*(sin(kx*x(l1:l2))+f(l1:l2,m,n,ilnrho)))
+          rho=f(l1:l2,m,n,irho)
+        else
+          f(l1:l2,m,n,ilnrho)=ampl_lr*(sin(kx*x(l1:l2))+f(l1:l2,m,n,ilnrho))
+          rho=exp(f(l1:l2,m,n,ilnrho))
+        endif
         f(l1:l2,m,n,iuu+0 )=ampl_ux*sin(kx*x(l1:l2))
         f(l1:l2,m,n,iuu+1 )=ampl_uy*sin(kx*x(l1:l2))
-        rho=exp(f(l1:l2,m,n,ilnrho))
         ampl_Az=-ampl*sqrt(rho*mu0)/kx
         f(l1:l2,m,n,iaa+2 )=ampl_Az*cos(kx*x(l1:l2))
       enddo; enddo
