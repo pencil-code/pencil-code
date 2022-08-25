@@ -11,8 +11,8 @@
 ! CPARAM logical, parameter :: lSGS_hydro = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 6
-! COMMUNICATED AUXILIARIES 6
+! MAUX CONTRIBUTION 9
+! COMMUNICATED AUXILIARIES 9
 !
 !! PENCILS PROVIDED fSGS(3)
 ! PENCILS PROVIDED SGS_heat
@@ -29,7 +29,7 @@ module SGS_hydro
   include 'SGS_hydro.h'
 
 !
-  integer :: itauSGSRey=0, itauSGSMax=0, iSGS_heat=0, iSGS_force=0
+  integer :: itauSGSRey=0, itauSGSMax=0, iuusmooth=0, iaasmooth=0, iSGS_heat=0, iSGS_force=0
 !
   real :: cReyStress=1., cMaxStress=1. 
   logical :: lSGS_heat_as_aux=.false., lSGS_forc_as_aux=.false.
@@ -57,12 +57,15 @@ module SGS_hydro
 !  Register SGS Reynolds stress as auxilliary variable.
 !
       call farray_register_auxiliary('tauSGSRey',itauSGSRey,vector=6,communicated=.true.)
+      call farray_register_auxiliary('uusmooth',iuusmooth,vector=3)
 print*, 'tauSGSRey=', itauSGSRey
 !
 !  Register SGS Maxwell stress as auxilliary variable.
 !
-      if (lmagnetic) &
+      if (lmagnetic) then
         call farray_register_auxiliary('tauSGSMax',itauSGSMax,vector=6,communicated=.true.)
+        call farray_register_auxiliary('aasmoth',iaasmooth,vector=3)
+      endif
 print*, 'tauSGSMax=', itauSGSMax
 !
 !  Register an extra aux slot for dissipation rate if requested (so
@@ -160,15 +163,10 @@ print*, 'tauSGSMax=', itauSGSMax
 !
 !  20-11-04/anders: coded
 !
-      lpenc_requested(i_lnrho)=.true.
-      lpenc_requested(i_graddivu)=.true.
+      lpenc_requested(i_rho)=.true.
       lpenc_requested(i_uij)=.true.
       lpenc_requested(i_sij2)=.true.
-      !lpenc_requested(i_ss12)=.true.
-
-      if (lmagnetic) then
-        lpenc_requested(i_bij)=.true.
-      endif
+      if (lmagnetic) lpenc_requested(i_bij)=.true.
 
     endsubroutine pencil_criteria_SGS_hydro
 !***********************************************************************
@@ -254,30 +252,28 @@ print*, 'tauSGSMax=', itauSGSMax
 !
         do n=n1,n2; do m=m1,m2
           do j=iux,iuz
-             call smooth_kernel(f,j,penc,smth_kernel)
-             f(l1:l2,m,n,itauSGSRey+j-iux) = penc
+            call smooth_kernel(f,j,f(l1:l2,m,n,iuusmooth+j-iux),smth_kernel)
           enddo
           if (lmagnetic) then 
             do j=iax,iaz
-               call smooth_kernel(f,j,penc,smth_kernel)
-               f(l1:l2,m,n,itauSGSMax+j-iax) = penc
+              call smooth_kernel(f,j,f(l1:l2,m,n,iaasmooth+j-iax),smth_kernel)
             enddo
           endif
         enddo; enddo
-        if (lmagnetic) call update_ghosts(f,itauSGSMax,itauSGSMax+2)
-        call update_ghosts(f,itauSGSRey,itauSGSRey+2)
+        if (lmagnetic) call update_ghosts(f,iaasmooth,iaasmooth+2)
+        call update_ghosts(f,iuusmooth,iuusmooth+2)
         ! if not periodic bcs are required
         do n=n1,n2; do m=m1,m2
-          call gij(f,itauSGSRey,uij,1)
-          call div(f,itauSGSRey,penc)
-          uu=f(l1:l2,m,n,itauSGSRey:itauSGSRey+2)
+          call gij(f,iuusmooth,uij,1)
+          call div(f,iuusmooth,penc)
+          uu=f(l1:l2,m,n,iuusmooth:iuusmooth+2)
           call traceless_strain(uij,penc,sij,uu)!,lshear_rateofstrain)
           sij2=sum(sum(sij**2,2),2)
           call tauij_SGS(uij,sij2,cReyStress,f,itauSGSRey) ! remember rho
           write (iproc+40,*) 'SGShydro: uu',maxval(uu),'sij,sij2',maxval(sij),maxval(sij2)
           call update_ghosts(f,itauSGSRey,itauSGSRey+5)
           if (lmagnetic) then
-            call gij_etc(f,itauSGSMax,BIJ=uij)
+            call gij_etc(f,iaasmooth,BIJ=uij)
             call traceless_strain(uij,sij=mij)
             mij2=sum(sum(mij**2,2),2)
             call tauij_SGS(uij,mij2,cMaxStress,f,itauSGSMax)
