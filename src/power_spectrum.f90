@@ -5478,8 +5478,8 @@ endsubroutine pdf
     !do q=0,p-1
     !do lq=0,lp-1
     do lq=0,nlk_q-1
-    !  only when dp=dq and q>p, we don't need to compute Tpq
-    if (.not.(specflux_dp==specflux_dq.and.lq>lp)) then
+    !  only when sp=maghel, dp=dq and q>p, we don't need to compute Tpq
+    if (.not.(sp=='maghel'.and.specflux_dp==specflux_dq.and.lq>lp)) then
       !  compute Tpq
       !q=2**lq
       if (specflux_dq>0.) then
@@ -5524,7 +5524,7 @@ endsubroutine pdf
   !do p=0,nk-1
   !do q=p+1,nk-1
   !  Tpq(p,q)=-Tpq(q,p)
-  if (specflux_dp==specflux_dq) then
+  if (sp=='maghel'.and.specflux_dp==specflux_dq) then
     do lp=0,nlk_p-1
     do lq=lp+1,nlk_q-1
       Tpq(lp+1,lq+1)=-Tpq(lq+1,lp+1)
