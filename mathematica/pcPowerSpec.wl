@@ -15,12 +15,12 @@ BeginPackage["pcPowerSpec`"]
 (*Usage messages*)
 
 
-power1D::usage="power1D[data,nx] computes the 1D power spectrum of data. The normalization is
-Total[powerSpectrum]=Total[data^2].
+power1D::usage="power1D[data,{nx,ny,nz}] computes the 1D power spectrum of data. The normalization is
+Total[powerSpectrum]=Mean[data^2].
 Input:
-  data: 1D List of length nx^3. 
+  data: 1D List of dimension {nx,ny,nz}: { f111, f112, f113, ..., f121, f122, ... }.
 Output:
-  The power spectrum as a List of length nx/2, corresponding to wavenumbers 0,1,2,...,nx/2-1."
+  The power spectrum as a List of length Max[nx,ny,nz]/2, corresponding to wavenumbers 0,1,2,..."
 
 power1DintZ::usage="power1DintZ[data,nx,Options] first does an integration over z, then
 computes the 1D power spectrum in the xy plane. The normalization is Total[powerSpectrum]=Total[data^2].
@@ -46,23 +46,24 @@ Begin["`Private`"]
 
 
 (* shell-integrated power spectrum *)
-power1D[data_,nx_]:=Module[{data1,fft,kx,kxyz,knorm,kshell,pos,power,fact},
+power1D[data_,{nx_,ny_,nz_}]:=Module[{data1,fft,nmax,kx,kxyz,knorm,kshell,pos,power,fact},
   (* put data into a cube, do fft, and back to a 1D List *)
-  data1=Nest[Partition[#,nx]&,data,3];
+  data1=ArrayReshape[data,{nx,ny,nz}];
   fft=Flatten@Fourier[data1];
   
   (* kx, ky, and kz coordinates *)
-  kx=N@Range[0,nx-1]/.x_/;x>(nx/2-1):>x-nx;
+  nmax=Max[nx,ny,nz];
+  kx=N@Range[0,nmax-1]/.x_/;x>(nmax/2-1):>x-nmax;
   kxyz=Outer[List,kx,kx,kx]//Flatten[#,2]&;
   knorm=Norm/@kxyz;
   
   (* kr, and determine which positions belongs to each kr *)
-  kshell=Range[0,nx/2-1];
+  kshell=Range[0,nmax/2-1];
   pos=Position[knorm,x_/;Round[x]==#]&/@kshell;
   
   (* shell integration and normalization*)
   power=Re[Total[Extract[fft*Conjugate[fft],#]]&/@pos];
-  Return[power/Total[power]*Total[data^2]]
+  Return[power/Total[power]*Mean[data^2]]
 ]
 
 

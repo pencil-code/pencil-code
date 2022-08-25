@@ -114,7 +114,8 @@ pcPlotStyle[]:=Module[{setOps},
     }];
   (*Options for 1D ListPlot's*)
   setOps[{
-      Joined->True
+      Joined->True,
+      Method->"DefaultPlotStyle"->Directive[Black,AbsoluteThickness[1]]
     },{
       ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot
     }];
