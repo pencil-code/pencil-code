@@ -57,16 +57,19 @@ module SGS_hydro
 !  Register SGS Reynolds stress as auxilliary variable.
 !
       call farray_register_auxiliary('tauSGSRey',itauSGSRey,vector=6,communicated=.true.)
-      call farray_register_auxiliary('uusmooth',iuusmooth,vector=3)
+      call farray_register_auxiliary('uusmooth',iuusmooth,vector=3,communicated=.true.)
 print*, 'tauSGSRey=', itauSGSRey
+print*, 'uusmooth=', iuusmooth
 !
 !  Register SGS Maxwell stress as auxilliary variable.
 !
       if (lmagnetic) then
         call farray_register_auxiliary('tauSGSMax',itauSGSMax,vector=6,communicated=.true.)
-        call farray_register_auxiliary('aasmoth',iaasmooth,vector=3)
+        call farray_register_auxiliary('aasmooth',iaasmooth,vector=3,communicated=.true.)
+
       endif
 print*, 'tauSGSMax=', itauSGSMax
+print*, 'aasmooth=', iaasmooth
 !
 !  Register an extra aux slot for dissipation rate if requested (so
 !  SGS_heat is written to snapshots and can be easily analyzed later).
@@ -212,7 +215,6 @@ print*, 'tauSGSMax=', itauSGSMax
       call div(f,itauSGSRey,tmp(:,1))
       call div_other(f(:,:,:,(/itauSGSRey+1,itauSGSRey+3,itauSGSRey+4/)),tmp(:,2))
       call div_other(f(:,:,:,(/itauSGSRey+2,itauSGSRey+4,itauSGSRey+5/)),tmp(:,3))
-      write (iproc+40,*) 'SGShydro: tmp',maxval(tmp) 
       if (lmagnetic) then
         call div(f,itauSGSMax,tmp1(:,1))
         call div_other(f(:,:,:,(/itauSGSMax+1,itauSGSMax+3,itauSGSMax+4/)),tmp1(:,2))
@@ -270,7 +272,6 @@ print*, 'tauSGSMax=', itauSGSMax
           call traceless_strain(uij,penc,sij,uu)!,lshear_rateofstrain)
           sij2=sum(sum(sij**2,2),2)
           call tauij_SGS(uij,sij2,cReyStress,f,itauSGSRey) ! remember rho
-          write (iproc+40,*) 'SGShydro: uu',maxval(uu),'sij,sij2',maxval(sij),maxval(sij2)
           call update_ghosts(f,itauSGSRey,itauSGSRey+5)
           if (lmagnetic) then
             call gij_etc(f,iaasmooth,BIJ=uij)
