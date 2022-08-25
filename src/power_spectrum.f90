@@ -5382,7 +5382,7 @@ endsubroutine pdf
   real, dimension(nx,3) :: uu,aa,bb,uxb,jj
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj
-  real, dimension(nx,ny,nz,3) :: tmp_p,bbb_q,emf_q
+  real, dimension(nx,ny,nz,3) :: tmp_p,u_tmp,b_tmp,emf_q
   !real, dimension(nk,nk) :: Tpq,Tpq_sum
   real, allocatable, dimension(:,:) :: Tpq,Tpq_sum
   character (len=40) :: outfile
@@ -5435,8 +5435,10 @@ endsubroutine pdf
     p=2**lp
     !
     !  obtain the filtered field tmp_p and compute tmp_p dot emf_q.
-    !  emf_q = uuu cross bbb_q
     !  tmp_p = bbb_p for helicity, and jjj_p for energy
+    !  emf_q = u_tmp cross b_tmp
+    !  where u_tmp=uuu,   b_tmp=bbb_q for helicity,
+    !  and   u_tmp=uuu_q, b_tmp=bbb   for energy
     !
     do ivec=1,3
       if (sp=='maghel') then
@@ -5450,18 +5452,24 @@ endsubroutine pdf
     do lq=0,lp-1
       q=2**lq
       !
-      !  obtain the filtered field bbb_q
+      !  obtain u_tmp and b_tmp
       !
       do ivec=1,3
-        call power_shell_filter(bbb(:,:,:,ivec),bbb_q(:,:,:,ivec),q)
+        if (sp=='maghel') then
+          u_tmp(:,:,:,ivec)=uuu(:,:,:,ivec)
+          call power_shell_filter(bbb(:,:,:,ivec),b_tmp(:,:,:,ivec),q)
+        elseif (sp=='magE') then
+          call power_shell_filter(uuu(:,:,:,ivec),u_tmp(:,:,:,ivec),q)
+          b_tmp(:,:,:,ivec)=bbb(:,:,:,ivec)
+        endif
       enddo
       !
-      !  compute emf_q=cross(uuu,bbb_q)
+      !  compute emf_q=cross(u_tmp,b_tmp)
       !
       do iky=1,ny
       do ikz=1,nz
-        uu=uuu(:,iky,ikz,:)
-        bb=bbb_q(:,iky,ikz,:)
+        uu=u_tmp(:,iky,ikz,:)
+        bb=b_tmp(:,iky,ikz,:)
         call cross_mn(uu,bb,uxb)
         emf_q(:,iky,ikz,:)=uxb
       enddo
@@ -5476,9 +5484,9 @@ endsubroutine pdf
 !
 !  fill the other half of Tpq.
 !
- !do p=0,nk-1
- !do q=p+1,nk-1
- !  Tpq(p,q)=-Tpq(q,p)
+  !do p=0,nk-1
+  !do q=p+1,nk-1
+  !  Tpq(p,q)=-Tpq(q,p)
   do lp=0,nlk-1
   do lq=lp+1,nlk-1
     Tpq(lp+1,lq+1)=-Tpq(lq+1,lp+1)
