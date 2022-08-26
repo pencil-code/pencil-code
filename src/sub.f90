@@ -8695,9 +8695,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       else
         if (nghost==3) then
           if (loptest(lgaussian,.true.)) then
-            weights = (/1.,9.,45.,70.,45.,9.,1./)
+            weights(-3:3) = (/1.,9.,45.,70.,45.,9.,1./)
           else
-            weights = (/1.,6.,15.,20.,15.,6.,1./)
+            weights(-3:3) = (/1.,6.,15.,20.,15.,6.,1./)
           endif
         else
           call fatal_error('smoothing_kernel','applies only for nghost=3')
