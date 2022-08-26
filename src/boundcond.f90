@@ -78,6 +78,7 @@ module Boundcond
 !
       call boundconds_x(f)
       call initiate_isendrcv_bdry(f)
+!if (maxval(abs(f(:,:,:,iax:iay)))>0) print*, 'vor finalize, iproc',iproc,it,itsub
       call finalize_isendrcv_bdry(f)
       if (lcoarse) call coarsegrid_interp(f)
       call boundconds_y(f)
@@ -211,6 +212,8 @@ module Boundcond
       endif
 !
       call check_consistency_of_lperi('initialize_boundcond')
+!
+!  The following is all about reading the BC from a slice.
 !
       lbcxslc=any(bcx12=='slc'); lbcyslc=any(bcy12=='slc'); lbczslc=any(bcz12=='slc')
       if (lbcxslc.and..not.lactive_dimension(1)) return
@@ -553,7 +556,7 @@ module Boundcond
       integer :: j
 
       logical :: lget,lboth
-      integer, dimension(mvar), save :: ilayer=0
+      integer, dimension(max(1,mvar)), save :: ilayer=0
       real, dimension(mvar), save :: last_gettime
       real, save :: timediff
       real, dimension(nx,ny,mvar), save :: ahead_data
@@ -970,7 +973,7 @@ module Boundcond
                   ! BCX_DOC: in cylindrical coordinates
                   call bc_inlet_outlet_cyl(f,topbot,j,fbcx(:,k))
                 case ('tay')
-                  call tayler_expansion(f,topbot,j)
+                  call tayler_expansion(f,topbot,j,'x')
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
                 case ('slc')
@@ -1238,6 +1241,8 @@ module Boundcond
                 call bc_stratified_y(f,topbot,j)
               case ('nil','')
                 ! BCY_DOC: do nothing; assume that everything is set
+              case ('tay')
+                call tayler_expansion(f,topbot,j,'y')
               case ('slc')
                 call set_from_slice_y(f,topbot,j)
                 call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
@@ -1651,6 +1656,8 @@ module Boundcond
                 call bc_copy_z(f,topbot,j)
               case ('nil')
                 ! BCZ_DOC: do nothing; assume that everything is set
+              case ('tay')
+                call tayler_expansion(f,topbot,j,'z')
               case ('slc')
                 call set_from_slice_z(f,topbot,j)
                 !call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
@@ -8833,27 +8840,70 @@ module Boundcond
 !
     endsubroutine set_periodic_boundcond_on_aux
 !***********************************************************************
-    subroutine tayler_expansion(f,topbot,j)
+    subroutine tayler_expansion(f,topbot,j,dir)
 !
-      character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
+      character (len=bclen) :: topbot
       integer :: j
-!
-      select case (topbot)
-      case ('top')
-        f(l2+1,:,:,j) = + 4.*f(l2,:,:,j)   - 6.*f(l2-1,:,:,j) &
-                        + 4.*f(l2-2,:,:,j) -    f(l2-3,:,:,j)
-        f(l2+2,:,:,j) = +10.*f(l2,:,:,j)   -20.*f(l2-1,:,:,j) &
-                        +15.*f(l2-2,:,:,j) - 4.*f(l2-3,:,:,j)
-        f(l2+3,:,:,j) = +20.*f(l2,:,:,j)   -45.*f(l2-1,:,:,j) &
-                        +36.*f(l2-2,:,:,j) -10.*f(l2-3,:,:,j)
-      case ('bot')
-        f(l1-1,:,:,j) = + 4.*f(l1,:,:,j)   - 6.*f(l1+1,:,:,j) &
-                        + 4.*f(l1+2,:,:,j) -    f(l1+3,:,:,j)
-        f(l1-2,:,:,j) = +10.*f(l1,:,:,j)   -20.*f(l1+1,:,:,j) &
-                        +15.*f(l1+2,:,:,j) - 4.*f(l1+3,:,:,j)
-        f(l1-3,:,:,j) = +20.*f(l1,:,:,j)   -45.*f(l1+1,:,:,j) &
-                        +36.*f(l1+2,:,:,j) -10.*f(l1+3,:,:,j)
+      character :: dir
+
+      integer :: k,p
+      real, dimension(0:3,3), parameter :: coefs=reshape( &
+                                           (/ 4., -6., 4., -1., &
+                                             10.,-20.,15., -4., &
+                                             20.,-45.,36.,-10./),(/4,3/))
+      select case (dir)
+      case ('x')
+        select case (topbot)
+        case ('top')
+          do k=1,3
+            f(l2+k,:,:,j)=0.    
+            do p=0,3
+              f(l2+k,:,:,j) = f(l2+k,:,:,j)+coefs(p,k)*f(l2-p,:,:,j)
+            enddo
+          enddo
+        case ('bot')
+          do k=1,3
+            f(l1-k,:,:,j)=0.
+            do p=0,3
+              f(l1-k,:,:,j) = f(l1-k,:,:,j)+coefs(p,k)*f(l1+p,:,:,j)
+            enddo
+          enddo
+        endselect
+      case ('y')
+        select case (topbot)
+        case ('top')
+          do k=1,3
+            f(:,m2+k,:,j) = 0.
+            do p=0,3
+              f(:,m2+k,:,j) = f(:,m2+k,:,j)+coefs(p,k)*f(:,m2-p,:,j)
+            enddo
+          enddo
+        case ('bot')
+          do k=1,3
+            f(:,m1-k,:,j) = 0.
+            do p=0,3
+              f(:,m1-k,:,j) = f(:,m1-k,:,j)+coefs(p,k)*f(:,m1+p,:,j)
+            enddo
+          enddo
+        endselect
+      case ('z')
+        select case (topbot)
+        case ('top')
+          do k=1,3
+            f(:,:,n2+k,j) = 0.
+            do p=0,3
+              f(:,:,n2+k,j) = f(:,:,n2+k,j) + coefs(p,k)*f(:,:,n2-p,j)
+            enddo
+          enddo
+        case ('bot')
+          do k=1,3
+            f(:,:,n1-k,j) = 0.
+            do p=0,3
+              f(:,:,n1-k,j) = f(:,:,n1-k,j) + coefs(p,k)*f(:,:,n1+p,j)
+            enddo
+          enddo
+        endselect
       endselect
 !
     endsubroutine tayler_expansion
