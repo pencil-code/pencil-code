@@ -102,6 +102,24 @@ print*, 'aasmooth=', iaasmooth
 !
       call smoothing_kernel(smth_kernel)
 !
+!  Rectifying the boundary conditions.
+!
+      bcx12(iuusmooth:iuusmooth+2,:)=bcx12(iux:iuz,:)
+      bcy12(iuusmooth:iuusmooth+2,:)=bcy12(iux:iuz,:)
+      bcz12(iuusmooth:iuusmooth+2,:)=bcz12(iux:iuz,:)
+      if (.not.lperi(1)) bcx12(itauSGSRey:itauSGSRey+5,:)='tay'
+      if (.not.lperi(2)) bcy12(itauSGSRey:itauSGSRey+5,:)='tay'
+      if (.not.lperi(3)) bcz12(itauSGSRey:itauSGSRey+5,:)='tay'
+
+      if (lmagnetic) then
+        bcx12(iaasmooth:iaasmooth+2,:)=bcx12(iax:iaz,:)
+        bcy12(iaasmooth:iaasmooth+2,:)=bcy12(iax:iaz,:)
+        bcz12(iaasmooth:iaasmooth+2,:)=bcz12(iax:iaz,:)
+        if (.not.lperi(1)) bcx12(itauSGSMax:itauSGSMax+5,:)='tay'
+        if (.not.lperi(2)) bcy12(itauSGSMax:itauSGSMax+5,:)='tay'
+        if (.not.lperi(3)) bcz12(itauSGSMax:itauSGSMax+5,:)='tay'
+      endif
+
     endsubroutine initialize_SGS_hydro
 !***********************************************************************
     subroutine read_SGS_hydro_run_pars(iostat)
