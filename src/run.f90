@@ -194,7 +194,7 @@ program run
 !
   fproc_bounds = trim(datadir) // "/proc_bounds.dat"
   inquire (file=fproc_bounds, exist=lexist)
-  call mpibarrier()
+  call mpibarrier
 !
   cgrid: if (luse_oldgrid .and. lexist) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
@@ -349,7 +349,7 @@ program run
 !
   if (lparticles) then
     if (ip <= 6 .and. lroot) print *, "reading particle snapshot"
-    call read_snapshot_particles()
+    call read_snapshot_particles
   endif
 !
 !  Read point masses.
@@ -406,8 +406,8 @@ program run
 !  (must be done before need_XXXX can be used, for example)
 !
   call initialize_timestep
-  call initialize_boundcond
   call initialize_modules(f)
+  call initialize_boundcond
 !
   if (it1d==impossible_int) then
     it1d=it1
@@ -785,8 +785,7 @@ program run
 !  Save snapshot every isnap steps in case the run gets interrupted or when SAVE file is found.
 !  The time needs also to be written.
 !
-    if (lout) &
-      lsave = control_file_exists('SAVE', DELETE=.true.)
+    if (lout) lsave = control_file_exists('SAVE', DELETE=.true.)
 
     if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
       if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
