@@ -2905,6 +2905,7 @@ module Hydro
       use Deriv
       use Sub
       use WENO_transport
+      use EquationOfState, only: cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2912,6 +2913,7 @@ module Hydro
 !
       real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12
       real, dimension (nx,3) :: tmp3
+      real :: cs201
       integer :: i, j, ju, jj, kk, jk
 !
       intent(in)   :: lpenc_loc
@@ -2921,6 +2923,16 @@ module Hydro
 !
       if (lpenc_loc(i_uu)) then
         p%uu=f(l1:l2,m,n,iux:iuz)
+        if (lconservative) then
+          if (lrelativistic) then
+            cs201=cs20+1.
+            tmp=1./(f(l1:l2,m,n,irho)*f(l1:l2,m,n,ilorentz)*cs201)
+            call multsv_mn(tmp,p%uu,p%uu)
+          else
+            p%rho1=1./f(l1:l2,m,n,irho)
+            call multsv_mn(p%rho1,p%uu,p%uu)
+          endif
+        endif
       endif
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
