@@ -114,7 +114,7 @@ COMPILE_OPT IDL2, HIDDEN
   if (keyword_set(down)) then dimfile = 'dim_down.dat'
   if (keyword_set(ogrid)) then dimfile = 'ogdim.dat'
 ;
-  filename = datadir+'/grid.h5'
+  filename = datadir+'grid.h5'
 
   if (file_test (filename)) then begin
 ;
@@ -170,11 +170,11 @@ COMPILE_OPT IDL2, HIDDEN
       ; Read dimensions on local processor.
       if (keyword_set(reduced)) then $
           message, "pc_read_dim: /reduced and 'proc' cannot be set both."
-      filename = datadir+'/proc'+str(proc)+'/'+dimfile
+      filename = datadir+'proc'+str(proc)+'/'+dimfile
     end else begin
       ; Read global dimensions.
-      filename = datadir+'/'+dimfile
-      if (keyword_set(reduced)) then filename = datadir+'/reduced/'+dimfile
+      filename = datadir+dimfile
+      if (keyword_set(reduced)) then filename = datadir+'reduced/'+dimfile
     end
 ;
 ;  Check validity of input object.
