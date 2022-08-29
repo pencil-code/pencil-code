@@ -56,18 +56,15 @@ module SGS_hydro
 !
 !  Register SGS Reynolds stress as auxilliary variable.
 !
-      call farray_register_auxiliary('tauSGSRey',itauSGSRey,vector=6,communicated=.true.)
       call farray_register_auxiliary('uusmooth',iuusmooth,vector=3,communicated=.true.)
-print*, 'tauSGSRey=', itauSGSRey
-print*, 'uusmooth=', iuusmooth
+      if (lmagnetic) call farray_register_auxiliary('aasmooth',iaasmooth,vector=3,communicated=.true.)
 !
 !  Register SGS Maxwell stress as auxilliary variable.
 !
-      if (lmagnetic) then
-        call farray_register_auxiliary('tauSGSMax',itauSGSMax,vector=6,communicated=.true.)
-        call farray_register_auxiliary('aasmooth',iaasmooth,vector=3,communicated=.true.)
-
-      endif
+      call farray_register_auxiliary('tauSGSRey',itauSGSRey,vector=6,communicated=.true.)
+      if (lmagnetic) call farray_register_auxiliary('tauSGSMax',itauSGSMax,vector=6,communicated=.true.)
+print*, 'tauSGSRey=', itauSGSRey
+print*, 'uusmooth=', iuusmooth
 print*, 'tauSGSMax=', itauSGSMax
 print*, 'aasmooth=', iaasmooth
 !
@@ -256,12 +253,13 @@ print*, 'aasmooth=', iaasmooth
 !***********************************************************************
     subroutine SGS_hydro_after_boundary(f)
 
-      use Boundcond, only: update_ghosts
+      use Boundcond, only: update_ghosts, boundconds_x, boundconds_y, boundconds_z
+      use Mpicomm, only: finalize_isendrcv_bdry, initiate_isendrcv_bdry
       use Sub, only: traceless_strain, div, gij, gij_etc, smooth_kernel
 
       real, dimension (mx,my,mz,mfarray) :: f
 
-      integer :: mm,nn,j
+      integer :: imn,j
       real, dimension(nx) :: mij2, penc, sij2
       real, dimension(nx,3) :: uu
       real, dimension(nx,3,3) :: mij, uij, sij
@@ -270,7 +268,20 @@ print*, 'aasmooth=', iaasmooth
 !
 !print*, 'in SGS_hydro_after_boundary'
 !
-        do n=n1,n2; do m=m1,m2
+        call boundconds_x(f,iux,iuz)
+!
+        call initiate_isendrcv_bdry(f,iux,iuz)
+!
+        do imn=1,ny*nz
+!
+          n = nn(imn)
+          m = mm(imn)
+!
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f,iux,iuz)
+            call boundconds_y(f,iuy,iuy)
+            call boundconds_z(f,iuz,iuz)
+          endif
           do j=iux,iuz
             call smooth_kernel(f,j,f(l1:l2,m,n,iuusmooth+j-iux),smth_kernel)
           enddo
@@ -279,9 +290,17 @@ print*, 'aasmooth=', iaasmooth
               call smooth_kernel(f,j,f(l1:l2,m,n,iaasmooth+j-iax),smth_kernel)
             enddo
           endif
-        enddo; enddo
-        if (lmagnetic) call update_ghosts(f,iaasmooth,iaasmooth+2)
-        call update_ghosts(f,iuusmooth,iuusmooth+2)
+        enddo
+        if (lmagnetic) then
+          if (iaasmooth==iuusmooth+3) then
+            call update_ghosts(f,iuusmooth,iaasmooth+2)
+          else
+            call update_ghosts(f,iuusmooth,iuusmooth+2)
+            call update_ghosts(f,iaasmooth,iaasmooth+2)
+          endif
+        else
+          call update_ghosts(f,iuusmooth,iuusmooth+2)
+        endif
         ! if not periodic bcs are required
         do n=n1,n2; do m=m1,m2
           call gij(f,iuusmooth,uij,1)
@@ -290,15 +309,24 @@ print*, 'aasmooth=', iaasmooth
           call traceless_strain(uij,penc,sij,uu)!,lshear_rateofstrain)
           sij2=sum(sum(sij**2,2),2)
           call tauij_SGS(uij,sij2,cReyStress,f,itauSGSRey) ! remember rho
-          call update_ghosts(f,itauSGSRey,itauSGSRey+5)
+          ! what would be good bcs for stresses when not lperi
           if (lmagnetic) then
             call gij_etc(f,iaasmooth,BIJ=uij)
             call traceless_strain(uij,sij=mij)
             mij2=sum(sum(mij**2,2),2)
             call tauij_SGS(uij,mij2,cMaxStress,f,itauSGSMax)
-            call update_ghosts(f,itauSGSMax,itauSGSMax+5)
           endif
         enddo; enddo
+        if (lmagnetic) then
+          if (itauSGSMax==itauSGSRey+6) then
+            call update_ghosts(f,itauSGSRey,itauSGSMax+5)
+          else
+            call update_ghosts(f,itauSGSRey,itauSGSRey+5)
+            call update_ghosts(f,itauSGSMax,itauSGSMax+5)
+          endif
+        else
+          call update_ghosts(f,itauSGSRey,itauSGSRey+5)
+        endif
 
     endsubroutine SGS_hydro_after_boundary
 !***********************************************************************
@@ -310,18 +338,8 @@ print*, 'aasmooth=', iaasmooth
       real, dimension (mx,my,mz,mfarray) :: f
       real :: coef
       integer :: k
-      integer :: ni,nj,nk
 
-      integer :: mm,nn
       real, dimension(nx) :: E_SGS,uij2
-!
-!  Smooth with a Gaussian profile
-!
-      ni = merge(3,0,nxgrid > 1)
-      nj = merge(3,0,nygrid > 1)
-      nk = merge(3,0,nzgrid > 1)
-
-      do nn=n1,n2; do mm=m1,m2
 
         E_SGS=coef*max(dx,dy,dz)**2*sqrt(2.*sij2)
         if (present(rho)) E_SGS=E_SGS*rho
@@ -329,14 +347,12 @@ print*, 'aasmooth=', iaasmooth
         uij2=sum(sum(uij**2,2),2)
         where (uij2==0) uij2=1.
 
-        f(l1:l2,mm,nn,k  ) = E_SGS*(sum(uij(:,1,:)**2,2)        /uij2 - 1./3.)   ! tau(1,1)
-        f(l1:l2,mm,nn,k+1) = E_SGS*(sum(uij(:,1,:)*uij(:,2,:),2)/uij2        )   ! tau(1,2)
-        f(l1:l2,mm,nn,k+2) = E_SGS*(sum(uij(:,1,:)*uij(:,3,:),2)/uij2        )   ! tau(1,3)
-        f(l1:l2,mm,nn,k+3) = E_SGS*(sum(uij(:,2,:)**2,2)        /uij2 - 1./3.)   ! tau(2,2)
-        f(l1:l2,mm,nn,k+4) = E_SGS*(sum(uij(:,2,:)*uij(:,3,:),2)/uij2        )   ! tau(2,3)
-        f(l1:l2,mm,nn,k+5) = E_SGS*(sum(uij(:,3,:)**2,2)        /uij2 - 1./3.)   ! tau(3,3)
-
-      enddo; enddo
+        f(l1:l2,m,n,k  ) = E_SGS*(sum(uij(:,1,:)**2,2)        /uij2 - 1./3.)   ! tau(1,1)
+        f(l1:l2,m,n,k+1) = E_SGS*(sum(uij(:,1,:)*uij(:,2,:),2)/uij2        )   ! tau(1,2)
+        f(l1:l2,m,n,k+2) = E_SGS*(sum(uij(:,1,:)*uij(:,3,:),2)/uij2        )   ! tau(1,3)
+        f(l1:l2,m,n,k+3) = E_SGS*(sum(uij(:,2,:)**2,2)        /uij2 - 1./3.)   ! tau(2,2)
+        f(l1:l2,m,n,k+4) = E_SGS*(sum(uij(:,2,:)*uij(:,3,:),2)/uij2        )   ! tau(2,3)
+        f(l1:l2,m,n,k+5) = E_SGS*(sum(uij(:,3,:)**2,2)        /uij2 - 1./3.)   ! tau(3,3)
 
     endsubroutine tauij_SGS
 !***********************************************************************
