@@ -1759,7 +1759,7 @@ module Special
           case ('exp')
             horndeski_alpT_eff=horndeski_alpT*exp(-(scale_factor/scale_factor0)**horndeski_alpT_exp)
           case ('scale_factor_power')
-            horndeski_alpM_eff=horndeski_alpM*scale_factor**horndeski_alpM_exp
+            horndeski_alpM_eff=horndeski_alpM*(scale_factor*a_ini/scale_factor0)**horndeski_alpM_exp
           case ('dark_energy')
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
               Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
