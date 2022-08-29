@@ -1862,6 +1862,27 @@ module Hydro
             f(l1:l2,m,n,iuz)= ampluu(j)*sin(kx_uu*x(l1:l2))*sin(ky_uu*y(m))*cos(kz_uu*z(n))
           enddo; enddo
 !
+        case ('Schur_neutral')
+          if (headtt) print*,'Schur_neutral init flow'
+! uu
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)= ampluu(j)*cos(kx_uu*x(l1:l2))*sin(ky_uu*y(m))
+            f(l1:l2,m,n,iuy)=-ampluu(j)*sin(kx_uu*x(l1:l2))*cos(ky_uu*y(m))
+            f(l1:l2,m,n,iuz)= ampluu(j)*sin(kx_uu*x(l1:l2))*sin(ky_uu*y(m))
+          enddo; enddo
+!
+        case ('Schur_helical')
+          if (headtt) print*,'Schur_helical init flow'
+! uu
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)= 0.5*ampluu(j)*(1.4*cos(kx_uu*x(l1:l2))*sin(ky_uu*y(m))+ &
+                                                 sin(kx_uu*x(l1:l2))*cos(ky_uu*y(m)))
+            f(l1:l2,m,n,iuy)=-0.5*ampluu(j)*(1.4*sin(kx_uu*x(l1:l2))*cos(ky_uu*y(m))+ &
+                                                 cos(kx_uu*x(l1:l2))*sin(ky_uu*y(m)))
+            f(l1:l2,m,n,iuz)= 0.5*ampluu(j)*(1.4*sin(kx_uu*x(l1:l2))*sin(ky_uu*y(m))- &
+                                              2.*cos(kx_uu*x(l1:l2))*cos(ky_uu*y(m)))
+          enddo; enddo
+!
         case ('double_sine')
           if (headtt) print*,'double sine flow'
 ! uu
