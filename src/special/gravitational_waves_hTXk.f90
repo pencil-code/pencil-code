@@ -109,7 +109,8 @@ module Special
   logical :: lreal_space_hTX_boost_as_aux=.false., lreal_space_gTX_boost_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false., lmatter_GW=.false., ldark_energy_GW=.false.
   logical :: lonly_mag=.false., lread_scl_factor_file=.false.
-  logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
+  logical :: lstress=.true., lstress_ramp=.false., lstress_upscale=.false.
+  logical :: lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
@@ -117,7 +118,8 @@ module Special
   logical :: lno_noise_GW=.false., lfactors_GW=.false.,lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
   logical :: llogbranch_GW=.false., ldouble_GW=.false.
   real, dimension(3,3) :: ij_table
-  real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
+  real :: c_light2=1., delk=0., tdelk=0., tau_delk=1.
+  real :: tstress_ramp=0., stress_upscale_rate=0., stress_upscale_exp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
   real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
@@ -170,7 +172,9 @@ module Special
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
-    lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
+    lstress, lstress_ramp, tstress_ramp, &
+    lstress_upscale, stress_upscale_rate, stress_upscale_exp, &
+    linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
     ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
@@ -800,12 +804,17 @@ module Special
 !  Here, (t-tstart)/tstress_ramp increases linearly starting with tstart,
 !  which is always our initial time, until t-tstart=tstress_ramp.
 !  To turn off the stress at t=tturnoff, ..
+!  With lstress_upscale, we can upscale the stress at the rate stress_upscale_rate
+!  with a temporal exponent stress_upscale_exp.
 !
           if (lstress_ramp) then
             fact=min(real(t-tstart)/tstress_ramp, 1.)
             p%stress_ij(:,:)=p%stress_ij(:,:)*fact
           elseif (lturnoff) then
             if (t>tturnoff) p%stress_ij(:,:)=0.
+          elseif (lstress_upscale) then
+            fact=(real(t-tstart)*stress_upscale_rate)**stress_upscale_exp
+            p%stress_ij(:,:)=p%stress_ij(:,:)*fact
           endif
         endif
 !
