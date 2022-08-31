@@ -189,7 +189,7 @@ COMPILE_OPT IDL2,HIDDEN
     if (strpos(varpath,'allprocs') ne -1) and (n_elements (proc) eq 0) then $
       allprocs=1 $
     else $
-      if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
+      if (file_test (datadir+'proc0/'+varfile) and file_test (datadir+'proc1/', /directory) and not file_test (datadir+'proc1/'+varfile)) then allprocs = 2
   endif
 ;
 ; Check if allprocs is set.
@@ -210,7 +210,7 @@ COMPILE_OPT IDL2,HIDDEN
   pc_read_param, object=param, dim=dim, datadir=datadir, /quiet, single=single
   pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet, single=single
   if (not is_defined(par2)) then begin
-    print, 'Could not find '+datadir+'/param2.nml'
+    print, 'Could not find '+datadir+'param2.nml'
     if (magic) then print, 'This may give problems with magic variables.'
   endif
 ;
@@ -326,7 +326,7 @@ COMPILE_OPT IDL2,HIDDEN
     iyy=0
     if is_defined(object) then undefine, object
 
-    t = pc_read ('time', file=varfile, datadir=datadir, single=single)
+    t = pc_read('time', file=varfile, datadir=datadir, single=single)
 
     for pos = 0, n_elements (varcontent.idlvar)-1 do begin
       quantity = varcontent[pos].idlvar
@@ -563,20 +563,20 @@ COMPILE_OPT IDL2,HIDDEN
 ; Build the full path and filename.
 ;
     if (allprocs eq 2) then begin
-      filename=datadir+'/proc'+str(i*dim.nprocx*dim.nprocy)+'/'+varfile
+      filename=datadir+'proc'+str(i*dim.nprocx*dim.nprocy)+'/'+varfile
       procdim.ipz=i
     endif else if (allprocs eq 1) then begin
       if (keyword_set (reduced)) then procdir = 'reduced' else procdir = 'allprocs'
-      filename=datadir+'/'+procdir+'/'+varfile
+      filename=datadir+procdir+'/'+varfile
     endif else begin
       if (n_elements(proc) eq 1) then begin
-        filename=datadir+'/proc'+str(proc)+'/'+varfile
+        filename=datadir+'proc'+str(proc)+'/'+varfile
       endif else begin
-        filename=datadir+'/proc'+str(i)+'/'+varfile
+        filename=datadir+'proc'+str(i)+'/'+varfile
         if (not keyword_set(quiet)) then $
             print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
             strtrim(str((yinyang+1)*nprocs)), ' (', $
-            strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
+            strtrim(datadir+'proc'+str(i)+'/'+varfile), ')...'
         pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet, down=ldownsampled, ogrid=logrid
       endelse
     endelse
@@ -999,15 +999,16 @@ incomplete:
     if is_defined(zghosts) then tagnames += ",'zghosts'"
     if keyword_set(sphere) then tagnames += ",'sphere_data', 'fval'"
   endif 
-
-  tagnames += arraytostring(tags,QUOTE="'") 
 ;
 ;  Merged data into object.
 ;
-  if yinyang then $
-    tagnames += arraytostring(tags+'_merge',QUOTE="'")
-
   makeobject = "object = CREATE_STRUCT(name=nameobject,["+tagnames+"],t,"+xyzstring+",dx,dy,dz"
+;
+; Fill field names in tagnames, now array
+;
+  tagnames = tags
+  if yinyang then $
+    tagnames = [tagnames,tags+'_merge']
 
   if (param.lshear) then makeobject+=",deltay"
   if yinyang then begin
@@ -1017,18 +1018,20 @@ incomplete:
     if keyword_set(sphere) then makeobject += ",sphere_data,fval"
     mergevars=arraytostring(variables+'_merge')
   endif
+  makeobject += ")"
 ;
 ; Calculate magic variables if this has not been done yet and is needed before object creation.
 ;
   if magic then begin
     if validate_variables then $
       variables=tags $
-    else if not validate_variables and (not arg_present(object) or keyword_set(trimall) or keyword_set(unshear)) then begin
+    else if (not arg_present(object) or keyword_set(trimall) or keyword_set(unshear)) then begin
 
       for iv=0,n_elements(variables)-1 do begin
         if ( tags[iv] ne variables[iv] ) then res=execute(tags[iv]+'='+variables[iv])
       endfor
       variables=tags
+
     endif
   endif
 ;
@@ -1057,18 +1060,22 @@ incomplete:
   endif else begin
 
     if (not magic and keyword_set(trimall)) then variables='pc_noghost('+variables+', dim=dim)'
-    makeobject += arraytostring(variables)
-    if yinyang then makeobject += mergevars
-    makeobject += ")"      
 ;
 ; Execute command to make the structure.
 ;
-    if (execute(makeobject) ne 1) then begin
-      message, 'ERROR evaluating variables: '+makeobject+'; data will not be returned, but are available locally as t,x,y,z,dx,dy,dz,'+strjoin(tags,',')+'.', /info
-      undefine, object
-      stop
-      return
-    endif
+    dum=execute(makeobject)
+    for i=0,n_elements(tagnames)-1 do begin
+      makeobject="object=create_struct(object,'"+tagnames[i]+"',"+tagnames[i]+")"
+
+      if (execute(makeobject) ne 1) then begin
+        message, 'ERROR storing variable '+tagnames[i]+ $
+                 '; some data will not be returned, but are available locally as '+strjoin(tags[i:*],',')+' (also t,x,y,z,dx,dy,dz).', /info
+        stop
+        return
+      endif
+
+      dum=execute("undefine,"+tagnames[i])
+    endfor
 ;
 ; If requested print a summary (actually the default - unless being quiet).
 ;
