@@ -108,7 +108,7 @@ program run
   real :: wall_clock_time=0.0, time_per_step=0.0
   integer :: icount, mvar_in, isave_shift=0
   integer :: it_last_diagnostic, it_this_diagnostic, memuse, memory, memcpu
-  logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
+  logical :: lstop=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
   logical :: lnoreset_tzero=.false.
@@ -516,9 +516,10 @@ program run
 !
 !  Do loop in time.
 !
+  it = 1
   Time_loop: do while (it<=nt)
 !
-    lout   = (mod(it-1,it1) == 0) .and. (it > it1start)
+    lout = (mod(it-1,it1) == 0) .and. (it > it1start)
 !
     if (lout .or. emergency_stop) then
 !
