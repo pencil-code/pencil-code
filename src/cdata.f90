@@ -195,8 +195,8 @@ module Cdata
   real :: dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
-  integer :: isave=100, ialive=0, isaveglobal=0, nv1_capitalvar=1, lsave=.false.
-  logical :: lwrite_ts_hdf5=.false.
+  integer :: isave=100, ialive=0, isaveglobal=0, nv1_capitalvar=1
+  logical :: lwrite_ts_hdf5=.false., lsave=.false.
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lenforce_maux_check=.true., lwrite_avg1d_binary = .false.
   logical :: lread_oldsnap=.false., lwrite_var_anyway=.false.

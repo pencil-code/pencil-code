@@ -1114,7 +1114,7 @@ module Magnetic
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
       if (lhydro) then
-        call get_shared_variable('lconservative', lconservative)
+        call get_shared_variable('lconservative', lconservative, caller='register_magnetic')
         !call get_shared_variable('lrelativistic', lrelativistic)
       else
         allocate(lconservative)
@@ -1130,13 +1130,13 @@ module Magnetic
 !  Share the external magnetic field with module Shear.
 !
       if (lmagn_mf.or.lshock .or. leos .or. lspecial) &
-        call put_shared_variable('B_ext', B_ext)
+        call put_shared_variable('B_ext', B_ext, caller='register_magnetic')
 !
 !  Share the external magnetic field with mean field module.
 !
       !if (lmagn_mf) &
       if (lmagn_mf .or. (lhydro.and.lconservative)) &
-        call put_shared_variable('B_ext2', B_ext2)
+        call put_shared_variable('B_ext2', B_ext2, caller='register_magnetic')
 !
     endsubroutine register_magnetic
 !***********************************************************************

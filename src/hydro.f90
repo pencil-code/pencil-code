@@ -1451,12 +1451,11 @@ module Hydro
 !  But this only makes sense when we are are not already fully relativistic.
 !
       if (ldensity) &
-        call get_shared_variable('lrelativistic_eos', &
-            lrelativistic_eos, caller='register_hydro')
+        call get_shared_variable('lrelativistic_eos', lrelativistic_eos)
 !
 !  Get B_ext2 from magnetic module.
 !
-      call get_shared_variable('B_ext2',B_ext2,caller='initialize_hydro')
+      if (lmagnetic.and.lconservative) call get_shared_variable('B_ext2',B_ext2)
 !
       endsubroutine initialize_hydro
 !***********************************************************************
