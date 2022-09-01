@@ -137,7 +137,7 @@ module Cdata
 !
 !  Time integration parameters.
 !
-  integer :: nt=10000000, it=1, itorder=3, itsub=0, it_timing=0, it_rmv=0
+  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
   double precision :: t=0., toutoff=0.
@@ -195,7 +195,7 @@ module Cdata
   real :: dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
-  integer :: isave=100, ialive=0, isaveglobal=0, nv1_capitalvar=1
+  integer :: isave=100, ialive=0, isaveglobal=0, nv1_capitalvar=1, lsave=.false.
   logical :: lwrite_ts_hdf5=.false.
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lenforce_maux_check=.true., lwrite_avg1d_binary = .false.
@@ -226,7 +226,8 @@ module Cdata
   logical :: ldirect_access=.false.
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
   integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, startind=1
-  logical :: ldownsampl=.false., ldownsampling, lrepair_snap=.false.
+  logical :: ldownsampl=.false., ldownsampling=.false., lrepair_snap=.false., linterpol_on_repair=.false.
+
   integer, dimension(2) :: ivar_omit=(/0,0/)
   logical :: lzaver_on_input=.false.
   logical :: lfatal_num_vector_369=.true.
