@@ -10378,7 +10378,7 @@ print*, 'PENCIL - renormUU', frgn_setup%renorm_UU,frgn_setup%renorm_t,frgn_setup
       real, dimension(:,:,:,:) :: frgn_buffer
       integer :: nvars
       logical, optional :: lnonblock
-      integer, save :: tcount = 0
+
       integer :: istart,lenx_loc,px,iv,peer
 
       do px=0,frgn_setup%procnums(1)-1
@@ -10404,6 +10404,11 @@ print*, 'PENCIL - renormUU', frgn_setup%renorm_UU,frgn_setup%renorm_t,frgn_setup
 !              if(iv.eq.3) write(700+iproc) frgn_buffer(:,:,:,iv)
 !print *,'PENCIL MINMAX FRGN',iproc, minval(frgn_buffer), maxval(frgn_buffer)
             enddo
+!
+! If in time loop, receive signal from foreign code to save snapshot for
+! synchronous restart capability.
+!
+            if (it>0) call mpibcast_logical(lsave,frgn_setup%root,MPI_COMM_WORLD)
           endif
         endif
       enddo
@@ -10413,7 +10418,6 @@ print*, 'PENCIL - renormUU', frgn_setup%renorm_UU,frgn_setup%renorm_t,frgn_setup
 !  print*, 'PENCIL INIT NON-BLOCK'
 !endif
 !print*, 'PENCIL get_foreign_snap_initiate: successful', iproc
-
 !print *, 'PENCIL - MIN MAX W',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
 !print *, 'PENCIL - MIN MAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
 !print *, 'PENCIL - MIN MAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
