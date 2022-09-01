@@ -149,6 +149,7 @@ module Hydro
   logical :: lno_noise_uu=.false.
   logical :: llorentz_limiter=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
+  real, pointer :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
   real :: amp_meri_circ = 0.0
@@ -1453,7 +1454,9 @@ module Hydro
         call get_shared_variable('lrelativistic_eos', &
             lrelativistic_eos, caller='register_hydro')
 !
-      call keep_compiler_quiet(f)
+!  Get B_ext2 from magnetic module.
+!
+      call get_shared_variable('B_ext2',B_ext2,caller='initialize_hydro')
 !
       endsubroutine initialize_hydro
 !***********************************************************************
@@ -2926,7 +2929,9 @@ module Hydro
         if (lconservative) then
           if (lrelativistic) then
             cs201=cs20+1.
-            tmp=1./(f(l1:l2,m,n,irho)*f(l1:l2,m,n,ilorentz)*cs201)
+            !tmp=1./(f(l1:l2,m,n,irho)*f(l1:l2,m,n,ilorentz)*cs201)
+            !print*,'AXEL5 B_ext2=',B_ext2
+            tmp=1./(f(l1:l2,m,n,irho)*f(l1:l2,m,n,ilorentz)*cs201+B_ext2)
             call multsv_mn(tmp,p%uu,p%uu)
           else
             p%rho1=1./f(l1:l2,m,n,irho)

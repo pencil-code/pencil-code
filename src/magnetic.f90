@@ -1003,7 +1003,7 @@ module Magnetic
 !
       use Sub, only: register_report_aux
       use FArrayManager, only: farray_register_pde,farray_register_auxiliary
-      use SharedVariables, only: get_shared_variable
+      use SharedVariables, only: get_shared_variable, put_shared_variable
 !
       call farray_register_pde('aa',iaa,vector=3)
       iax = iaa; iay = iaa+1; iaz = iaa+2
@@ -1115,14 +1115,28 @@ module Magnetic
 !
       if (lhydro) then
         call get_shared_variable('lconservative', lconservative)
+        !call get_shared_variable('lrelativistic', lrelativistic)
       else
         allocate(lconservative)
+        !allocate(lrelativistic)
         lconservative=.false.
+        !lrelativistic=.false.
       endif
 !
 !  register the mean-field module
 !
       if (lmagn_mf) call register_magn_mf
+!
+!  Share the external magnetic field with module Shear.
+!
+      if (lmagn_mf.or.lshock .or. leos .or. lspecial) &
+        call put_shared_variable('B_ext', B_ext)
+!
+!  Share the external magnetic field with mean field module.
+!
+      !if (lmagn_mf) &
+      if (lmagn_mf .or. (lhydro.and.lconservative)) &
+        call put_shared_variable('B_ext2', B_ext2)
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -1173,16 +1187,6 @@ module Magnetic
 !  Share lbb_as_comaux with gravitational wave module.
 !
       call put_shared_variable('lbb_as_comaux', lbb_as_comaux, caller='initialize_magnetic')
-!
-!  Share the external magnetic field with module Shear.
-!
-      if (lmagn_mf.or.lshock .or. leos .or. lspecial) &
-        call put_shared_variable('B_ext', B_ext)
-!
-!  Share the external magnetic field with mean field module.
-!
-      if (lmagn_mf) &
-        call put_shared_variable('B_ext2', B_ext2)
 !
 !  Share several parameters for Alfven limiter with module Shock.
 !
@@ -2441,6 +2445,13 @@ module Magnetic
         enddo
         enddo
 !
+      endif
+!
+!  added magnetic energy to T00 (needed in relativistic case)
+!
+      if (lconservative) then
+        f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)+.5*B_ext2
+        if (lroot) print*,'added to T00: .5*B_ext2= ', .5*B_ext2
       endif
 !
     endsubroutine init_aa
