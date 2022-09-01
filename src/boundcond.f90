@@ -8592,17 +8592,20 @@ module Boundcond
 !  Motivation to prevent numerical spikes in shock fronts, which cannot be 
 !  absorbed in only three ghost cells, but boundary thermodynamics still 
 !  responsive to interior dynamics.
+!  06-jun-22/fred update to allow setting scale height is start.in or run.in
+!  default scale factor is 0.9, assumes unit_length = 1 kpc and scale is 900 pc
+!  change scale height add to start_pars or  run_pars density_scale_factor=...
 !
       use EquationOfState, only: get_cv1,get_cp1
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
-      real, parameter :: density_scale_cgs=2.7774e21 !900pc Reynolds 91, etc
+      !real, parameter :: density_scale_cgs=2.7774e21 !900pc Reynolds 91, etc
       real :: density_scale1, density_scale
       real :: cv1,cp1,cv,cp
 !
-      density_scale1=unit_length/density_scale_cgs
+      density_scale1=unit_length/density_scale_factor
       density_scale=1./density_scale1
       call get_cv1(cv1); cv=1./cv1
       call get_cp1(cp1); cp=1./cp1

@@ -129,7 +129,7 @@ module Param_IO
       lcutoff_corners, nycut, nzcut, rel_dang, &
       sigmaSB_set, c_light_set, cp_set, k_B_set, m_u_set, &
       lnoghost_strati, ichannel1, ichannel2, tag_foreign, &
-      lfatal_num_vector_369
+      lfatal_num_vector_369, density_scale_factor
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
@@ -216,7 +216,7 @@ module Param_IO
       saffman_ub, saffman_mag, saffman_mag_c, saffman_aa, saffman_aa_c, saffman_bb, &
       uu_fft3d, oo_fft3d, bb_fft3d, jj_fft3d, uu_xkyz, oo_xkyz, bb_xkyz, jj_xkyz, &
       uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, &
-      mh_specflux, mE_specflux
+      mh_specflux, mE_specflux, density_scale_facto
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
