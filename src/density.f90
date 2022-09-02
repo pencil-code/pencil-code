@@ -1461,6 +1461,16 @@ module Density
             f(l1:l2,m,n,ilnrho)=log(rho0*(1+ &
                 ampllnrho(j)*sin(kx_lnrho(j)*x(l1:l2))*sin(ky_lnrho(j)*y(m))))
           enddo; enddo
+        case ('Schur_rho')
+!
+!  3d3d1d Schur flow init density, but in rho, not ln(rho).
+!
+          call information('init_lnrho','rho=(1+0.5*Sin(x+y))*(1+0.5*Sin(z))')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ilnrho)=log(rho0*(1+ &
+                ampllnrho(j)*sin((kx_lnrho(j)*x(l1:l2))+ky_lnrho(j)*y(m)) &
+                    *(1+ampllnrho(j)*sin(kz_lnrho(j)*z(n)))))
+          enddo; enddo
         case ('linear')
 !
 !  Linear profile in kk.xxx.
