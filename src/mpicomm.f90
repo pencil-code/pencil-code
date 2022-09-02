@@ -10255,7 +10255,7 @@ endif
           frgn_setup%renorm_L = frgn_setup%extents(2,1)  
           frgn_setup%renorm_UU=frgn_setup%renorm_L/frgn_setup%renorm_t
           frgn_setup%dt_out = frgn_setup%dt_out/frgn_setup%renorm_t
-print*, 'PENCIL - renormUU', frgn_setup%renorm_UU,frgn_setup%renorm_t,frgn_setup%dt_out
+print*, 'PENCIL - renormUU, t_last_rcv, dt_out', frgn_setup%renorm_UU,frgn_setup%t_last_recvd,frgn_setup%dt_out, t-frgn_setup%t_last_recvd
 !
 !  Send number of xyz-procs to foreign.
 !
@@ -10323,7 +10323,6 @@ print*, 'PENCIL - renormUU', frgn_setup%renorm_UU,frgn_setup%renorm_t,frgn_setup
 !
             if (frgn_setup%procnums(1)>1) then
               do px=0,frgn_setup%procnums(1)-1
-
                 call mpisendrecv_int(frgn_setup%xind_rng(-1,:),2,ncpus+px,tag_foreign+iproc, &
                                      frgn_setup%xind_rng(px,:),ncpus+px,tag_foreign+frgn_setup%ncpus+px,MPI_COMM_WORLD)
                 if (frgn_setup%peer_rng(1)>0) then
@@ -10454,10 +10453,12 @@ print*, 'PENCIL - renormUU', frgn_setup%renorm_UU,frgn_setup%renorm_t,frgn_setup
         if (size(f,1)==mx) then
           if(size(frgn_buffer,1).gt.nx) lf1 = 2
           f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+          !!!f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=frgn_buffer(lf1:,ny::-1,:,:)/frgn_setup%renorm_UU !For invertion of theta
 
         else
           if(size(frgn_buffer,1).gt.size(f,1)) lf1 = 2
           f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU            
+          !!!f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,ny::-1,:,:)/frgn_setup%renorm_UU  !For invertion of theta
         endif
        
       else if (lfirst_proc_yz) then 
