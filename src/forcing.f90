@@ -951,6 +951,16 @@ module Forcing
           sinx(:,i)=sin(kf_fcont(i)*x)
           siny(:,i)=sin(kf_fcont(i)*y)
           sinz(:,i)=sin(kf_fcont(i)*z)
+        elseif (iforcing_cont(i)=='Schur_helical') then
+          if (lroot) print*,'forcing_cont: Schur helical flow'
+          sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
+          siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
+          sinz(:,i)=sin(kf_fcont(i)*z); cosz(:,i)=cos(kf_fcont(i)*z)
+        elseif (iforcing_cont(i)=='Schur_nonhelical') then
+          if (lroot) print*,'forcing_cont: Schur nonhelical flow'
+          sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
+          siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
+          sinz(:,i)=sin(kf_fcont(i)*z); cosz(:,i)=cos(kf_fcont(i)*z)
         elseif (iforcing_cont(i)=='KolmogorovFlow-x') then
           if (lroot) print*,'forcing_cont: Kolmogorov flow'
           cosx(:,i)=cos(kf_fcont(i)*x)
@@ -5572,16 +5582,17 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*(ABC_C(i)*sinz(n    ,i)+fact2*ABC_B(i)*cosy(m    ,i))
           force(:,2)=fact*(ABC_A(i)*sinx(l1:l2,i)+fact2*ABC_C(i)*cosz(n    ,i))
           force(:,3)=fact*(ABC_B(i)*siny(m    ,i)+fact2*ABC_A(i)*cosx(l1:l2,i))
+<<<<<<< HEAD
         case('Schur_nonhelical')
-          fact=ampl_ff(i)
-          force(:,1)= fact*(cosx(l1:l2,i)*siny(m,i))
-          force(:,2)=-fact*(sinx(l1:l2,i)*cosy(m,i))
-          force(:,3)= fact*(sinx(l1:l2,i)*siny(m,i))
+          force(:,1)= ampl_ff(i)*(cosx(l1:l2,i)*siny(m,i))
+          force(:,2)=-ampl_ff(i)*(sinx(l1:l2,i)*cosy(m,i))
+          force(:,3)= ampl_ff(i)*(sinx(l1:l2,i)*siny(m,i))
         case('Schur_helical')
-          fact=ampl_ff(i)
-          force(:,1)= 0.5*fact*( 1.4*cosx(l1:l2,i)*siny(m,i)+  sinx(l1:l2,i)*cosy(m,i))
-          force(:,2)=-0.5*fact*(-1.4*sinx(l1:l2,i)*cosy(m,i)-  cosx(l1:l2,i)*siny(m,i))
-          force(:,3)= 0.5*fact*( 1.4*sinx(l1:l2,i)*siny(m,i)-2*cosx(l1:l2,i)*cosy(m,i))
+          force(:,1)= 0.5*ampl_ff(i)*( 1.4*cosx(l1:l2,i)*siny(m,i)+  sinx(l1:l2,i)*cosy(m,i))
+          force(:,2)=-0.5*ampl_ff(i)*(-1.4*sinx(l1:l2,i)*cosy(m,i)-  cosx(l1:l2,i)*siny(m,i))
+          force(:,3)= 0.5*ampl_ff(i)*( 1.4*sinx(l1:l2,i)*siny(m,i)-2*cosx(l1:l2,i)*cosy(m,i))
+=======
+>>>>>>> parent of 11c947a... add helical and non-helical force to Schur flow in iforce_cont
         case('ABCtdep')
           fact2=relhel
           fact=ampl_ff(i)/sqrt(ABC_A(i)**2+ABC_B(i)**2+ABC_C(i)**2)
