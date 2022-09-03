@@ -5582,7 +5582,6 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*(ABC_C(i)*sinz(n    ,i)+fact2*ABC_B(i)*cosy(m    ,i))
           force(:,2)=fact*(ABC_A(i)*sinx(l1:l2,i)+fact2*ABC_C(i)*cosz(n    ,i))
           force(:,3)=fact*(ABC_B(i)*siny(m    ,i)+fact2*ABC_A(i)*cosx(l1:l2,i))
-<<<<<<< HEAD
         case('Schur_nonhelical')
           force(:,1)= ampl_ff(i)*(cosx(l1:l2,i)*siny(m,i))
           force(:,2)=-ampl_ff(i)*(sinx(l1:l2,i)*cosy(m,i))
@@ -5591,8 +5590,6 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)= 0.5*ampl_ff(i)*( 1.4*cosx(l1:l2,i)*siny(m,i)+  sinx(l1:l2,i)*cosy(m,i))
           force(:,2)=-0.5*ampl_ff(i)*(-1.4*sinx(l1:l2,i)*cosy(m,i)-  cosx(l1:l2,i)*siny(m,i))
           force(:,3)= 0.5*ampl_ff(i)*( 1.4*sinx(l1:l2,i)*siny(m,i)-2*cosx(l1:l2,i)*cosy(m,i))
-=======
->>>>>>> parent of 11c947a... add helical and non-helical force to Schur flow in iforce_cont
         case('ABCtdep')
           fact2=relhel
           fact=ampl_ff(i)/sqrt(ABC_A(i)**2+ABC_B(i)**2+ABC_C(i)**2)
