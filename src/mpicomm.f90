@@ -10255,7 +10255,7 @@ endif
           frgn_setup%renorm_L = frgn_setup%extents(2,1)  
           frgn_setup%renorm_UU=frgn_setup%renorm_L/frgn_setup%renorm_t
           frgn_setup%dt_out = frgn_setup%dt_out/frgn_setup%renorm_t
-print*, 'PENCIL - renormUU, t_last_rcv, dt_out', frgn_setup%renorm_UU,frgn_setup%t_last_recvd,frgn_setup%dt_out, t-frgn_setup%t_last_recvd
+!print*, 'PENCIL - renormUU, t_last_rcv, dt_out', frgn_setup%renorm_UU,frgn_setup%t_last_recvd,frgn_setup%dt_out, t-frgn_setup%t_last_recvd
 !
 !  Send number of xyz-procs to foreign.
 !
