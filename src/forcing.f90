@@ -67,6 +67,7 @@ module Forcing
   logical :: lforce_peri=.false., lforce_cuty=.false.
   logical :: lforcing2_same=.false., lforcing2_curl=.false.
   logical :: lff_as_aux = .false.
+  logical :: lforcing_osc = .false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false., lforcing_coefs_hel_double=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -165,7 +166,8 @@ module Forcing
        omega_tidal, R0_tidal, phi_tidal, omega_vortex, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
        n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex, &
-       lrandom_time, laniso_forcing_old, tcor_GP, kmin_GP,kmax_GP,nk_GP,beta_GP
+       lrandom_time, laniso_forcing_old, lforcing_osc, &
+       tcor_GP, kmin_GP,kmax_GP,nk_GP,beta_GP
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -5605,8 +5607,15 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*cosz(n,i)
           force(:,2)=0.
           force(:,3)=0.
+!
+!  nocos (=Archontis flow), here with temporal modulation
+!  if omega_ff or omega_double_ff are non-vanishing.
+!
         case ('nocos')
           fact=ampl_ff(i)
+          if (lforcing_osc) then
+            fact=fact*(cos(omega_ff*t)+cos(omega_double_ff*t))
+          endif
           force(:,1)=fact*sinz(n    ,i)
           force(:,2)=fact*sinx(l1:l2,i)
           force(:,3)=fact*siny(m    ,i)
@@ -5921,7 +5930,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
         case('zero')
           force=0.
 !
-!  nothing (but why not?)
+!  nothing (But why not? Could just replace by a warning.)
 !
         case ('nothing')
           if (i==1) call stop_it('forcing: no valid continuous iforcing_cont specified')
