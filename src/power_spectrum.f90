@@ -2673,6 +2673,12 @@ module power_spectrum
   !  spectrum of lnrho (or normalized enthalpy).
   !  Need to take log if we work with linear density.
   !
+  elseif (sp=='ux') then
+      a_re=f(l1:l2,m1:m2,n1:n2,iux)
+  elseif (sp=='uy') then
+      a_re=f(l1:l2,m1:m2,n1:n2,iuy)
+  elseif (sp=='uz') then
+      a_re=f(l1:l2,m1:m2,n1:n2,iuz)
   elseif (sp=='lr') then
     if (ldensity_nolog) then
       a_re=alog(f(l1:l2,m1:m2,n1:n2,irho))
