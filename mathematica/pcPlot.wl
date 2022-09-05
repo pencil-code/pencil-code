@@ -153,6 +153,12 @@ pcLegend[l_List,opt:OptionsPattern[]]:=DensityPlot[y,{x,0,1},{y,Sequence@@MinMax
   AspectRatio->12,ImagePadding->{{5,40},{5,5}},ImageSize->{80,240}
 ]
 
+pcLegend[l_List,"h",opt:OptionsPattern[]]:=DensityPlot[x,{x,Sequence@@MinMax[l]},{y,0,1},opt,
+  ColorFunction->ColorData[{"Rainbow","Reversed"}],PlotLegends->None,
+  FrameTicks->{{None,None},{All,None}},PlotRangePadding->None,
+  AspectRatio->1/12,ImagePadding->{{5,5},{40,5}},ImageSize->{240,80}
+]
+
 
 (* ::Section:: *)
 (*Butterfly diagram*)

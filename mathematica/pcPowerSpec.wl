@@ -46,24 +46,39 @@ Begin["`Private`"]
 
 
 (* shell-integrated power spectrum *)
-power1D[data_,{nx_,ny_,nz_}]:=Module[{data1,fft,nmax,kx,kxyz,knorm,kshell,pos,power,fact},
-  (* put data into a cube, do fft, and back to a 1D List *)
-  data1=ArrayReshape[data,{nx,ny,nz}];
-  fft=Flatten@Fourier[data1];
+Options[power1D]={"Method"->"kxyz1"}
+power1D[data_,{nx_,ny_,nz_},Lxyz_List:{2\[Pi],2\[Pi],2\[Pi]},OptionsPattern[]]:=
+  Module[{nk,kxyz,fnorm,kshell,power,pos},
   
   (* kx, ky, and kz coordinates *)
-  nmax=Max[nx,ny,nz];
-  kx=N@Range[0,nmax-1]/.x_/;x>(nmax/2-1):>x-nmax;
-  kxyz=Outer[List,kx,kx,kx]//Flatten[#,2]&;
-  knorm=Norm/@kxyz;
+  (* assume Lxyz=2\[Pi] for now *)
+  nk={nx,ny,nz};
+  kxyz=N@Outer[List,Sequence@@Map[Join[Range[0,#1/2-1],Range[-#1/2,-1]]&,nk]]//Flatten[#,2]&;
   
-  (* kr, and determine which positions belongs to each kr *)
-  kshell=Range[0,nmax/2-1];
-  pos=Position[knorm,x_/;Round[x]==#]&/@kshell;
+  Switch[OptionValue["Method"],
+    (* shell integration; use coarse grid *)
+    "kxyz1",
+      fnorm=Identity; kshell=Range[0,Min[nk]/2-1],
+    (* shell integration; use fine grid *)
+    "kxyz2",
+      fnorm=Identity; kshell=Range[0,Max[nk]/2-1],
+    (* Norm[{kx,ky}] shells *)
+    "kxy",
+      fnorm=Most; kshell=Range[0,Max[nk[[1;;2]]]/2-1],
+    (* kz shells *)
+    "kz",
+      fnorm=Last; kshell=Range[0,nk[[-1]]/2-1]
+  ];
   
-  (* shell integration and normalization*)
-  power=Re[Total[Extract[fft*Conjugate[fft],#]]&/@pos];
-  Return[power/Total[power]*Mean[data^2]]
+  (* Fourier power *)
+  power=ArrayReshape[data,{nx,ny,nz}]//Fourier//Flatten;
+  power=power*Conjugate[power];
+  
+  (* do integration *)
+  pos=Position[Round@*Norm@*fnorm/@kxyz,#]&/@kshell;
+  power=Re@Total[Extract[power,#]]&/@pos;
+  
+  Return@Transpose[{kshell,power/Total[power]*Mean[data^2]}]
 ]
 
 
