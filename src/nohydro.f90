@@ -136,7 +136,7 @@ module Hydro
       uut_spec=.false.; uut_polar=.false.; ouout_spec=.false.
       out_spec=.false.; uot_spec=.false.
       ub_spec=.false.; uxj_spec=.false.; EMF_spec=.false.
-      ux_spec=.false., uy_spec=.false., uz_spec=.false.
+      ux_spec=.false.; uy_spec=.false.; uz_spec=.false.
 
       call keep_compiler_quiet(f)
 !
