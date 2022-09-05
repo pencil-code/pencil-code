@@ -99,7 +99,7 @@ module Hydro
   real :: lambda_kinflow=1., zinfty_kinflow=0.
   real :: w_sldchar_hyd=1.0
   real :: sigma_uukin=1., tau_uukin=1., time_uukin=1., sigma1_uukin_scl_yz=1.
-  real :: binary_radius=0.
+  real :: binary_radius=0., radius_kinflow=0., width_kinflow=0.
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -126,7 +126,7 @@ module Hydro
       lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, &
       ll_sh, mm_sh, n_xprof, lrandom_ampl, &
       sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz, &
-      binary_radius
+      binary_radius, radius_kinflow, width_kinflow
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -2020,11 +2020,19 @@ module Hydro
             p%uu(:,3)=tmp_mn*z(n)
           endif
         else
+!
+!  Outer cutoff for r>radius_kinflow possible when width_kinflow/=0.
+!
           if (headtt) print*,'Brandt (Cartesian)',ampl_kinflow
           exp_kinflow1=1./exp_kinflow
           exp_kinflow2=.5*exp_kinflow
           pom2=x(l1:l2)**2+y(m)**2
-          profx_kinflow1=+1./(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
+          if (width_kinflow/=0.) then
+            tmp_mn=.5*(1.-erfunc((sqrt(pom2)-radius_kinflow)/width_kinflow))
+          else
+            tmp_mn=1.
+          endif
+          profx_kinflow1=tmp_mn/(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
           if (wind_radius/=0.) then
             if (headtt) print*,'also add BDMSST93-wind along r'
             tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
