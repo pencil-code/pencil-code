@@ -3561,6 +3561,13 @@ module Energy
 !
 !  Radiative heat flux at the top (assume here that hcond=hcond0=const).
 !
+! KG, 6 Sep 2022: BUG: The first call of surf_mn_name for this diagnostic (and
+! also the following one) will be when lfirstpoint=.false., so surf_mn_name will
+! not initialize the diagnostic properly. Pencil_check indeed complains that
+! 'diagnostics depend on pencil initialization'. I'm just leaving a comment here
+! since I am not sure what the cleanest way to fix it would be. Perhaps it is not
+! a good idea to depend on lfirstpoint in surf_mn_name.
+!
         if (idiag_fradtop/=0.and.llast_proc_z.and.n==n2) then
           if (hcond0==0.) then
             Ktmp=chi*p%rho*p%cp
