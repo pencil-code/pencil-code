@@ -346,7 +346,7 @@ module Hydro
       endif
 
       if (kinematic_flow=='from-foreign-snap') then
-        if (lforeign) then
+        if (lforeign.and..not.lreloading) then
           call initialize_foreign_comm(frgn_buffer) 
 !
 !  Initially, take two snapshots.
@@ -2366,7 +2366,9 @@ module Hydro
         if (lkinflow_as_aux) then
           if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! divu
-          if (lpenc_loc(i_divu)) p%divu=0. ! tb implemented
+          if (lpenc_loc(i_divu)) call div(f,i_uu,p%divu)  !!! ghost zones missing
+! curlu
+          if (lpenc_loc(i_oo)) call curl(f,i_uu,p%oo)
 !if(maxval(p%uu).gt.1.0e+10) print *,'PENCIL PUUMAX',iproc,m,n, maxval(p%uu)
 !if(n==n1.and.m==m1)print *,'PENCIL PUUMAX',iproc,maxval(abs(p%uu)),minval(abs(p%uu)) 
 
