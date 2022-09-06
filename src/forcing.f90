@@ -5579,6 +5579,11 @@ call fatal_error('hel_vec','radial profile should be quenched')
           fact2=relhel
           fact1=.5*(1.+relhel**2)
           fact=ampl_ff(i)/sqrt(fact1*(ABC_A(i)**2+ABC_B(i)**2+ABC_C(i)**2))
+          if (lforcing_osc) then
+            fact=fact*(cos(omega_ff*t)+cos(omega_double_ff*t))
+          else if (lforcing_osc2) then
+            fact=fact*(cos(omega_ff*t)+cos(omega_double_ff*t))**2
+          endif
           force(:,1)=fact*(ABC_C(i)*sinz(n    ,i)+fact2*ABC_B(i)*cosy(m    ,i))
           force(:,2)=fact*(ABC_A(i)*sinx(l1:l2,i)+fact2*ABC_C(i)*cosz(n    ,i))
           force(:,3)=fact*(ABC_B(i)*siny(m    ,i)+fact2*ABC_A(i)*cosx(l1:l2,i))
