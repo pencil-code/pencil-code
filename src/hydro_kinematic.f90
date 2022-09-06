@@ -352,8 +352,8 @@ module Hydro
 !  Initially, take two snapshots.
 !
           call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!.true.
-          if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
-          if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
+          if (.not.allocated(interp_buffer)) allocate(interp_buffer(mx,my,mz,3))
+          if (.not.allocated(uu_2)) allocate(uu_2(mx,my,mz,3))
 !print *, 'PENCIL UU2EVAL', iproc,nx, ny, ny,  size(uu_2, 1)
           call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer,lnonblock=.false.)!!!.true.
 !if (lroot) print*, 'PENCIL FMAX INIT' , maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
@@ -2366,7 +2366,7 @@ module Hydro
         if (lkinflow_as_aux) then
           if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! divu
-          if (lpenc_loc(i_divu)) call div(f,i_uu,p%divu)  !!! ghost zones missing
+          if (lpenc_loc(i_divu)) call div(f,i_uu,p%divu)  ! requires ghost zones! 
 ! curlu
           if (lpenc_loc(i_oo)) call curl(f,i_uu,p%oo)
 !if(maxval(p%uu).gt.1.0e+10) print *,'PENCIL PUUMAX',iproc,m,n, maxval(p%uu)
@@ -2501,7 +2501,7 @@ module Hydro
         if (lfirst) then
 !if (lroot) print*,'PENCIL walltime t,tf', t, t_foreign
           if (update_foreign_data(t,t_foreign)) then
-            f(l1:l2,m1:m2,n1:n2,iux:iuz) = uu_2
+            f(:,:,:,iux:iuz) = uu_2
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
           endif
@@ -2512,8 +2512,8 @@ module Hydro
         else
           fac=dt/(t_foreign-t+dt)
         endif
-        f(l1:l2,m1:m2,n1:n2,iux:iuz) = (1.-fac)*f(l1:l2,m1:m2,n1:n2,iux:iuz) + fac*uu_2
-!print*, 'PENCIL FMAX' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
+        f(:,:,:,iux:iuz) = (1.-fac)*f(:,:,:,iux:iuz) + fac*uu_2
+!print*, 'PENCIL FMAX' , iproc, maxval(abs(f(:,:,:,iux:iuz)))
       endif
 !
     endsubroutine hydro_before_boundary
