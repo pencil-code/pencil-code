@@ -482,8 +482,8 @@ module Energy
 !  Register slot for running average of entropy is required
 !
       if (lss_running_aver_as_var) then
-          call farray_register_pde('ss_run_aver',iss_run_aver)
-          lss_running_aver=.true.
+        call farray_register_pde('ss_run_aver',iss_run_aver)
+        lss_running_aver=.true.
       endif
 !
 !  Identify version number.
