@@ -10354,7 +10354,7 @@ endif
 !print*, "Pencil lenx", iproc, lenx, nx, frgn_setup%xind_rng(-1,:)
 
         if (allocated(frgn_buffer)) deallocate(frgn_buffer)
-        allocate(frgn_buffer(lenx,ny,nz,3))
+        allocate(frgn_buffer(lenx+2*nghost,my,mz,3))
         if (allocated(frgn_setup%recv_req)) deallocate(frgn_setup%recv_req)
         allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1)) 
 
@@ -10382,22 +10382,24 @@ endif
 
       do px=0,frgn_setup%procnums(1)-1
         if (frgn_setup%xind_rng(px,1)>0) then
-          lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1
-          istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1
+
+          istart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1-nghost
+          lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1+2*nghost
+
 !print*, 'PENCIL xparams: iproc,lenx,istart=', iproc,lenx_loc,istart
 !print*, 'PENCIL iproc xinds=', iproc,px,frgn_setup%xind_rng(px,1),frgn_setup%xind_rng(px,2),frgn_setup%xind_rng(-1,1)
           if (loptest(lnonblock)) then
             peer=frgn_setup%peer_rng(1)
             do iv=1,nvars
               call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
-                                (/lenx_loc,ny,nz/),peer,peer-ncpus,MPI_COMM_WORLD,frgn_setup%recv_req(px))
+                                (/lenx_loc,my,mz/),peer,peer-ncpus,MPI_COMM_WORLD,frgn_setup%recv_req(px))
             enddo
           else       ! blocking case
             peer=frgn_setup%peer_rng(1)
 !print*, 'PENCIL recv: iproc,peer,tag=', iproc,peer+ncpus,peer
             do iv=1,nvars
               call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
-                                (/lenx_loc,ny,nz/),peer+ncpus,peer,MPI_COMM_WORLD)
+                                (/lenx_loc,my,mz/),peer+ncpus,peer,MPI_COMM_WORLD)
 !              if(iv.eq.1) write(100+iproc) frgn_buffer(:,:,:,iv)
 !              if(iv.eq.2) write(400+iproc) frgn_buffer(:,:,:,iv)
 !              if(iv.eq.3) write(700+iproc) frgn_buffer(:,:,:,iv)
@@ -10450,16 +10452,9 @@ endif
 !
       if (trim(frgn_setup%name)=='EULAG') then           
         if (loptest(lnonblock)) call mpiwait(frgn_setup%recv_req(px))
-        if (size(f,1)==mx) then
-          if(size(frgn_buffer,1).gt.nx) lf1 = 2
-          f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
-          !!!f(l1:l2,m1:m2,n1:n2,ivar1:ivar2)=frgn_buffer(lf1:,ny::-1,:,:)/frgn_setup%renorm_UU !For invertion of theta
-
-        else
-          if(size(frgn_buffer,1).gt.size(f,1)) lf1 = 2
-          f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU            
-          !!!f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,ny::-1,:,:)/frgn_setup%renorm_UU  !For invertion of theta
-        endif
+        if(size(frgn_buffer,1) > size(f,1)) lf1 = 2
+        f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU            
+        !!!f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,my::-1,:,:)/frgn_setup%renorm_UU  !For invertion of theta
        
       else if (lfirst_proc_yz) then 
         if (frgn_setup%proc_multis(1)>1) then
@@ -10505,8 +10500,8 @@ endif
 !
 ! 20-oct-21/MR: coded
 ! 
-      double precision :: t
-      real :: t_foreign
+      double precision, intent(IN) :: t
+      real,             intent(OUT):: t_foreign
 
       if (t-frgn_setup%t_last_recvd>0.) then
         frgn_setup%t_last_recvd=frgn_setup%t_last_recvd+frgn_setup%dt_out
