@@ -162,9 +162,8 @@ module Cdata
   real, dimension (nx) :: maxadvec=0., advec2=0., advec2_hypermesh=0.
   real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
   real, dimension (nx) :: dt1_max
-  real                 :: dt1_poly_relax, trelax_poly
-  real, dimension (nx) :: dt1_reac, reac_chem, reac_dust
-  real :: reac_pchem,dt1_preac
+  real, dimension (nx) :: reac_chem, reac_dust
+  real                 :: trelax_poly, reac_pchem
   real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfractional_tstep_advance=.false.
   logical :: lfractional_tstep_negative=.true.
