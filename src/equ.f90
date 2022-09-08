@@ -864,7 +864,8 @@ module Equ
 
       integer :: nyz
       real, dimension (nx,3) :: df_iuu_pencil
-      real, dimension(nx) :: dt1_advec, dt1_diffus, dt1_src
+      real, dimension(nx) :: dt1_advec, dt1_diffus, dt1_src, dt1_reac
+      real :: dt1_poly_relax, dt1_preac
 
       nyz=ny*nz
       mn_loop: do imn=1,nyz
