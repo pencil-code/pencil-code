@@ -1677,7 +1677,7 @@ module Density
 !   03-apr-20/joern: restructured and fixed slope-limited diffusion:
 !                    removed from here.
 !
-      use Sub, only: grad, finalize_aver, calc_all_diff_fluxes, div
+      use Sub, only: finalize_aver
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
