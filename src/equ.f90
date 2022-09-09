@@ -818,7 +818,6 @@ module Equ
 !                to the individual modules.
 !
       use Diagnostics
-      use BorderProfiles, only: calc_pencils_borderprofiles
       use Chiral
       use Chemistry
       use Cosmicray

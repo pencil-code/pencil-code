@@ -97,6 +97,7 @@
     use Messages, only: fatal_error
     use Syscalls, only: extract_str
     use Cdata, only: lroot
+
     integer, parameter :: RTLD_LAZY=0, RTLD_NOW=1
 
     character(LEN=128) :: line,parstr
@@ -126,7 +127,6 @@
 
     call extract_str("nm src/special.so|grep calc_pencils_special|grep "//trim(special_modules(1))// &
                      "|sed -e's/.* \([^ ][^ ]*\)$/\1/'",line)
-!if (lroot) print*, 'line=', trim(line)
     do i=1,n_special_modules
       do j=1,n_subroutines
         call extract_str("echo '"//trim(line)//"'|sed -e's/"//trim(special_modules(1))//"/"//trim(special_modules(i))// &
