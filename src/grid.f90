@@ -2263,6 +2263,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       real, dimension(:), intent(out) :: xi
       logical, intent(in), optional :: local
 !
+      integer, dimension(size(xi)) :: inear
       character(len=linelen) :: msg
       logical :: loc
       integer :: shift, inear_max
@@ -2334,7 +2335,9 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
       getloc: if (loc) then
         xi = xi - real(shift)
-        where (x < xyz1(dir) .and. nint(xi) > inear_max) xi = nearest(xi, -1.0)
+        inear = nint(xi)
+        where ((x < xyz1(dir) .and. inear > inear_max) .or. &
+               (x < xyz0(dir) .and. inear > nghost)) xi = nearest(xi, -1.0)
       endif getloc
 !
     endsubroutine inverse_grid
