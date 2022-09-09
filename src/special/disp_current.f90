@@ -30,25 +30,27 @@ module Special
 !
   ! input parameters
   real :: ampl=1e-3, alpf=0.
-  real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0
+  real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0, ampl_a0=0.0
   real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0
   real :: ky_ex=0.0, ky_ey=0.0, ky_ez=0.0
   real :: kz_ex=0.0, kz_ey=0.0, kz_ez=0.0
-  real :: phase_ex=0.0, phase_ey=0.0, phase_ez=0.0
+  real :: kx_a0=0.0, ky_a0=0.0, kz_a0=0.0
+  real :: phase_ex=0.0, phase_ey=0.0, phase_ez=0.0, phase_a0=0.0
   real :: amplee=0.0, initpower_ee=0.0, initpower2_ee=0.0
   real :: cutoff_ee=0.0, ncutoff_ee=0.0, kpeak_ee=0.0
   real :: relhel_ee=0.0, kgaussian_ee=0.0
-  integer :: ia0
+  integer :: ia0, idiva_name
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true.
-  character(len=50) :: initee='zero'
+  character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
-    initee, alpf, &
-    ampl_ex, ampl_ey, ampl_ez, &
+    initee, inita0, alpf, &
+    ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
     kx_ex, kx_ey, kx_ez, &
     ky_ex, ky_ey, ky_ez, &
     kz_ex, kz_ey, kz_ez, &
-    phase_ex, phase_ey, phase_ez, &
+    kx_a0, ky_a0, kz_a0, &
+    phase_ex, phase_ey, phase_ez, phase_a0, &
     llorenz_gauge_disp, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee
@@ -95,6 +97,7 @@ module Special
 !
       if (llorenz_gauge_disp) then
         call farray_register_pde('a0',ia0)
+        call farray_register_pde('diva_name',idiva_name)
       endif
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
@@ -138,6 +141,7 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: diva
 !
       intent(inout) :: f
 !
@@ -164,7 +168,28 @@ module Special
           call stop_it("")
       endselect
 !
-      call keep_compiler_quiet(f)
+!  Initialize diva_name if llorenz_gauge_disp=T
+!
+      if (llorenz_gauge_disp) then
+        do n=n1,n2; do m=m1,m2
+          call div(f,iaa,diva)
+          f(l1:l2,m,n,idiva_name)=diva
+        enddo; enddo
+!
+!  initial conditions for A0 (provided llorenz_gauge_disp=T)
+!
+        select case (inita0)
+          case ('coswave-phase')
+            call coswave_phase(f,ia0,ampl_a0,kx_a0,ky_a0,kz_a0,phase_a0)
+          case ('zero'); f(:,:,:,ia0)=0.
+          case default
+            !
+            !  Catch unknown values
+            !
+            if (lroot) print*,'initee: No such value for inita0: ', trim(inita0)
+            call stop_it("")
+        endselect
+      endif
 !
     endsubroutine init_special
 !***********************************************************************
@@ -256,6 +281,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: gtmp, gphi
+      real, dimension (nx) :: tmp, del2a0
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -278,19 +304,22 @@ module Special
 !  dA0/dt = divA
 !  dAA/dt = ... + gradA0
 !
-        if (llorenz_gauge_disp) then
-          df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
-          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
-        endif
-!
 !  helical term:
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
 !
         if (alpf/=0.) then
           call grad(f,iinfl_phi,gphi)
           call cross(gphi,p%el,gtmp)
-    !     call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
-    !     df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
+          call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
+          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
+          if (llorenz_gauge_disp) then
+            call del2(f,ia0,del2a0)
+            call dot_mn(gphi,p%bb,tmp)
+            !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
+            df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
+            df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp+del2a0
+            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
+          endif
         endif
       endif
 !

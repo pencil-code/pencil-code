@@ -32,7 +32,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of backreact_infl_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -72,7 +72,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module backreact_infl
+module Special
 !
   use Cparam
   use Cdata
@@ -104,7 +104,7 @@ module backreact_infl
   character (len=labellen) :: Vprime_choice='quadratic'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
 !
-  namelist /backreact_infl_init_pars/ &
+  namelist /special_init_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini, &
       c_light_axion, lambda_axion, amplphi, ampldphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
@@ -112,7 +112,7 @@ module backreact_infl
       initpower_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox
 !
-  namelist /backreact_infl_run_pars/ &
+  namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, ascale_ini, &
       lbackreact_infl, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble
@@ -449,7 +449,7 @@ module backreact_infl
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=backreact_infl_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -457,7 +457,7 @@ module backreact_infl
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=backreact_infl_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -467,7 +467,7 @@ module backreact_infl
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=backreact_infl_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -475,7 +475,7 @@ module backreact_infl
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=backreact_infl_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -799,12 +799,16 @@ module backreact_infl
         if (iex==0) then
           em_term=0.
         else
-          a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
-          el=f(l1:l2,m,n,iex:iez)
-          call curl(f,iaa,bb)
-          call dot2_mn(bb,b2)
-          call dot2_mn(el,e2)
-          em_term=fourthird*(e2+b2)*a21
+          if (lbackreact_infl) then
+            a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
+            el=f(l1:l2,m,n,iex:iez)
+            call curl(f,iaa,bb)
+            call dot2_mn(bb,b2)
+            call dot2_mn(el,e2)
+            em_term=.5*fourthird*(e2+b2)*a21
+          else
+            em_term=0.
+          endif
         endif
         dphi=f(l1:l2,m,n,iinfl_dphi)
         call grad(f,iinfl_phi,gphi)
@@ -886,4 +890,4 @@ module backreact_infl
 !
     endsubroutine  set_init_parameters
 !***********************************************************************
-endmodule backreact_infl
+endmodule Special
