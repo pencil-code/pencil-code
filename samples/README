@@ -23,7 +23,7 @@ corona                              Jörn Warnecke <joern[dot]warnecke/gmail[dot
 corona                              Sven Bingert <sven[dot]bingert/gwdg[dot]de>
 cosmicray                           Andrew Snodin <Andrew.Snodin/gmail[dot]com>
 cylindrical-globaldisk-dzone        Wladimir Lyra <wladimir.lyra/gmail[dot]com>
-damped_alfven_waves                 Chao-Chin Yang <ccyang/unlv[dot]edu>
+damped_alfven_waves                 Chao-Chin Yang <ccyang/ua[dot]edu>
 debris-photoelectric-fluid          Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 dust_turb_globaldisk                Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 dust-vortex                         Anders Johansen <anders/astro.lu.se>
@@ -32,7 +32,7 @@ forced-boundary                     Sven Bingert <sven[dot]bingert/gwdg[dot]de>
 geodynamo                           Graeme Sarson <G.R.Sarson/newcastle[dot]ac[dot]uk>
 helical-MHDturb                     Axel Brandenburg <brandenb/nordita[dot]org>
 hexagon                             succeeds # One of [succeeds|failing since <date>|obsolete| ...]
-implicit_resistivity                Chao-Chin Yang <ccyang/unlv[dot]edu>
+implicit_resistivity                Chao-Chin Yang <ccyang/ua[dot]edu>
 incompress_conv_peri                Axel Brandenburg <brandenb/nordita[dot]org>
 incompress_turb                     Axel Brandenburg <brandenb/nordita[dot]org>
 interstellar_old                    Axel Brandenburg <brandenb/nordita[dot]org>
@@ -61,10 +61,10 @@ Pencil-MagIC                        Matthias Rheinhardt <matthias[dot]rheinhardt
 random_uu_particles                 Anders Johansen <anders/astro.lu.se>
 sedimentation                       Anders Johansen <anders/astro[dot]lu[dot]se>
 sedimentation                       Matthias Rheinhardt <mreinhardt/nordita[dot]org>
-sedimentation                       Chao-Chin Yang <ccyang/unlv[dot]edu>
+sedimentation                       Chao-Chin Yang <ccyang/ua[dot]edu>
 shear-buoyancy                      Axel Brandenburg <brandenb/nordita[dot]org>
 sink-particles                      Wladimir Lyra <wladimir.lyra/gmail[dot]com>
-sink-particles                      Chao-Chin Yang <ccyang/unlv[dot]edu>
+sink-particles                      Chao-Chin Yang <ccyang/ua[dot]edu>
 small-scale-dynamo_slope-limited-diffusion Jörn Warnecke <joern[dot]warnecke/gmail[dot]com>
 sound-spherical-bufferzone          succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 sound-spherical-noequi              succeeds # One of [succeeds|failing since <date>|obsolete| ...]
@@ -148,10 +148,10 @@ turbulent_flame                     Nils Erland L. Haugen <nils.e.haugen/gmail[d
 2d-tests/selfgravdisk-planet-dust   Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 2d-tests/selfgravitating-shearwave  Anders Johansen <anders/astro.lu.se>
 2d-tests/selfgravitating-shearwave  Matthias Rheinhardt <mreinhardt/nordita[dot]org>
-2d-tests/selfgravitating-shearwave  Chao-Chin Yang <ccyang/unlv[dot]edu>
+2d-tests/selfgravitating-shearwave  Chao-Chin Yang <ccyang/ua[dot]edu>
 2d-tests/selfgrav-shearwave-dust-par Anders Johansen <anders/astro.lu.se>
 2d-tests/shearwave-dust-par         Anders Johansen <anders/astro[dot]lu[dot]se>
-2d-tests/shearwave-dust-par         Chao-Chin Yang <ccyang/unlv[dot]edu>
+2d-tests/shearwave-dust-par         Chao-Chin Yang <ccyang/ua[dot]edu>
 2d-tests/SolarAtmosMag+Boris_Corr+Heatflux Piyali Chatterjee <mail/piyali.chatterjee AT iiap / res / in>
 2d-tests/spherical_viscous_ring     Wladimir Lyra <wladimir.lyra/gmail[dot]com>
 2d-tests/StokesConvectionMultigrid  Wladimir Lyra <wladimir.lyra/gmail[dot]com>
