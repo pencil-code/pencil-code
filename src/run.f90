@@ -72,7 +72,6 @@ program run
   use HDF5_IO,         only: initialize_hdf5
   use Hydro,           only: hydro_clean_up
   use ImplicitPhysics, only: calc_heatcond_ADI
-  use Interstellar,    only: check_SN,addmassflux
   use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
   use HDF5_IO,         only: wdim
   use Magnetic,        only: rescaling_magnetic
