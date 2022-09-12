@@ -145,6 +145,8 @@ module Hydro
   integer :: idiag_ourms=0      ! DIAG_DOC: $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$
   integer :: idiag_oxurms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$
   integer :: idiag_EEK=0        ! DIAG_DOC: $\left<\varrho\uv^2\right>/2$
+!  
+  integer :: idiag_oumxy=0
 !
 !  Video data.
 !
@@ -346,28 +348,30 @@ module Hydro
       endif
 
       if (kinematic_flow=='from-foreign-snap') then
-        if (lforeign.and..not.lreloading) then
-          call initialize_foreign_comm(frgn_buffer) 
+        if (lforeign) then
+          if (.not.lreloading) then
+            call initialize_foreign_comm(frgn_buffer) 
 !
 !  Initially, take two snapshots.
 !
-          call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!.true.
-          if (.not.allocated(interp_buffer)) allocate(interp_buffer(mx,my,mz,3))
-          if (.not.allocated(uu_2)) allocate(uu_2(mx,my,mz,3))
+            call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!.true.
+            if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
+            if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
 !print *, 'PENCIL UU2EVAL', iproc,nx, ny, ny,  size(uu_2, 1)
-          call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer,lnonblock=.false.)!!!.true.
+            call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer,lnonblock=.false.)!!!.true.
 !if (lroot) print*, 'PENCIL FMAX INIT' , maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
 !print*, 'PENCIL FMAX INIT' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
-          call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
-          call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
+            call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
+            call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
 !        
 ! prepare receiving next snapshot
 !       
-          call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
+            call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
 !print*, 'Pencil successful', iproc
 !        call mpibarrier(MPI_COMM_UNIVERSE)
 !call mpifinalize
 !stop
+          endif
         else
           call fatal_error("initialize_hydro", "No foreign code available")
         endif
@@ -472,7 +476,7 @@ module Hydro
           idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0) &
           lpenc_diagnos(i_o2)=.true.
-      if (idiag_oum/=0 .or. idiag_ourms/=0) lpenc_diagnos(i_ou)=.true.
+      if (idiag_oum/=0 .or. idiag_ourms/=0 .or. idiag_oumxy/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_oxurms/=0) lpenc_diagnos(i_oxu2)=.true.
       if (idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
 !
@@ -2366,9 +2370,9 @@ module Hydro
         if (lkinflow_as_aux) then
           if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! divu
-          if (lpenc_loc(i_divu)) call div(f,i_uu,p%divu)  ! requires ghost zones! 
+          if (lpenc_loc(i_divu)) call div(f,iuu,p%divu)  !!! ghost zones missing
 ! curlu
-          if (lpenc_loc(i_oo)) call curl(f,i_uu,p%oo)
+          if (lpenc_loc(i_oo)) call curl(f,iuu,p%oo)
 !if(maxval(p%uu).gt.1.0e+10) print *,'PENCIL PUUMAX',iproc,m,n, maxval(p%uu)
 !if(n==n1.and.m==m1)print *,'PENCIL PUUMAX',iproc,maxval(abs(p%uu)),minval(abs(p%uu)) 
 
@@ -2457,8 +2461,8 @@ module Hydro
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
         if (idiag_ekintot/=0) &
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
+        call sum_mn_name(p%divu,idiag_divum)
       endif
-      if (idiag_divum/=0)  call sum_mn_name(p%divu,idiag_divum)
 !
       call keep_compiler_quiet(f)
 !
@@ -2568,6 +2572,9 @@ module Hydro
           if (idiag_phase1/=0) call save_name(phase1,idiag_phase1)
           if (idiag_phase2/=0) call save_name(phase2,idiag_phase2)
         endif
+      endif
+      if (l2davgfirst) then     
+        call zsum_mn_name_xy(p%ou,idiag_oumxy)
       endif
 !  store slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
@@ -3237,7 +3244,7 @@ module Hydro
       use Diagnostics, only: parse_name
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname,inamev
+      integer :: iname,inamev,ixy
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -3262,6 +3269,7 @@ module Hydro
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
         idiag_EEK=0; idiag_ekin=0; idiag_ekintot=0
         idiag_divum=0
+        idiag_oumxy=0
         ivid_uu=0
       endif
 !
@@ -3308,6 +3316,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uzpt',idiag_uzpt)
         call parse_name(iname,cname(iname),cform(iname),'phase1',idiag_phase1)
         call parse_name(iname,cname(iname),cform(iname),'phase2',idiag_phase2)
+      enddo
+      do ixy=1,nnamexy
+      call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oumxy',idiag_oumxy)
       enddo
 !
 !  check for those quantities for which we want video slices
