@@ -623,7 +623,7 @@ module Testfield
           case ('B11-B22');     call set_bbtest_B11_B22(B0test,jtest)
           case ('B11');         call set_bbtest_B11_B22(B0test,jtest)
           case ('B12');         call set_bbtest_B11_B22(B0test,3)
-          case ('B=0')                                                    !(dont do anything)
+          case ('B=0');         B0test=0.
           case default
             call fatal_error('daatest_dt','undefined itestfield value')
         endselect
