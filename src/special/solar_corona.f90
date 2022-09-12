@@ -252,9 +252,12 @@ module Special
               "Newton cooling is currently not implemented for entropy (see 'nc_tau', 'nc_alt', 'nc_lnrho_num_magn').", .true.)
 !
       if (lbfield) then
-        if (luse_mag_field) call fatal_error("solar_corona/initialize_special", "luse_mag_field not implemented with bfield")
-        if (lset_boundary_emf) call fatal_error("solar_corona/initialize_special", "lset_boundary_emf not implemented with bfield")
-        if (lflux_emerg_bottom) call fatal_error("solar_corona/initialize_special", "lflux_emerg_bottom not implemented with bfield")
+        if (luse_mag_field) call fatal_error("solar_corona/initialize_special", &
+                                             "luse_mag_field not implemented with bfield")
+        if (lset_boundary_emf) call fatal_error("solar_corona/initialize_special", &
+                                                "lset_boundary_emf not implemented with bfield")
+        if (lflux_emerg_bottom) call fatal_error("solar_corona/initialize_special", &
+                                                 "lflux_emerg_bottom not implemented with bfield")
         if (swamp_eta > 0.0) call fatal_error("solar_corona/initialize_special", "not implemented with bfield. ")
       endif
 !
