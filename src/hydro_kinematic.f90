@@ -354,15 +354,17 @@ module Hydro
 !
 !  Initially, take two snapshots.
 !
-            call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!.true.
-            if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
-            if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
+          call get_foreign_snap_initiate(3,frgn_buffer)    !,lnonblock=.true.)
+          if (.not.allocated(interp_buffer)) allocate(interp_buffer(mx,my,mz,3))
+          if (.not.allocated(uu_2)) allocate(uu_2(mx,my,mz,3))
 !print *, 'PENCIL UU2EVAL', iproc,nx, ny, ny,  size(uu_2, 1)
-            call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer,lnonblock=.false.)!!!.true.
+          call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer)   !,lnonblock=.true.)
+!print*, 'Pencil successful get_foreign_snap_finalize 1', iproc
 !if (lroot) print*, 'PENCIL FMAX INIT' , maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
 !print*, 'PENCIL FMAX INIT' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
+!print*, 'Pencil successful get_foreign_snap_finalize 2', iproc
 !        
 ! prepare receiving next snapshot
 !       
@@ -2377,7 +2379,7 @@ module Hydro
 !if(n==n1.and.m==m1)print *,'PENCIL PUUMAX',iproc,maxval(abs(p%uu)),minval(abs(p%uu)) 
 
         else
-          call inevitably_fatal_error('hydro_kinematic', '"from-snap" requires lkinflow_as_aux=T')
+          call inevitably_fatal_error('hydro_kinematic', '"from-[foreign-]snap" requires lkinflow_as_aux=T')
         endif
         lupdate_aux=.false.
 !
