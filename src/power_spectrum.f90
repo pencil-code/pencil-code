@@ -37,6 +37,7 @@ module power_spectrum
   real, allocatable, dimension(:,:) :: legendre_zeros,glq_weight
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
   logical :: lhalf_factor_in_GW=.false., lcylindrical_spectra=.false.
+  logical :: lhorizontal_spectra=.false., lvertical_spectra=.false.
   logical :: lread_gauss_quadrature=.false., lshear_frame_correlation=.false.
   integer :: legendre_lmax=1
   integer :: firstout = 0
@@ -56,7 +57,8 @@ module power_spectrum
       lcylindrical_spectra, inz, n_segment_x, lhalf_factor_in_GW, &
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
       lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation, &
-      power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq
+      power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq, &
+      lhorizontal_spectra, lvertical_spectra
 !
   contains
 !***********************************************************************
@@ -2637,6 +2639,8 @@ module power_spectrum
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nk) :: spectrum,spectrum_sum
+  real, dimension(nk) :: hor_spectrum, hor_spectrum_sum
+  real, dimension(nk) :: ver_spectrum, ver_spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -2662,6 +2666,10 @@ module power_spectrum
   !
   spectrum=0.
   spectrum_sum=0.
+  hor_spectrum=0.
+  hor_spectrum_sum=0.
+  ver_spectrum=0.
+  ver_spectrum_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  For "kin", calculate spectra of <uk^2> and <ok.uk>
@@ -2773,12 +2781,36 @@ module power_spectrum
   do ikz=1,nz
     do iky=1,ny
       do ikx=1,nx
+        !
+        !  integration over shells
+        !
         k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) then
           spectrum(k+1)=spectrum(k+1) &
              +a_re(ikx,iky,ikz)**2 &
              +a_im(ikx,iky,ikz)**2
+        endif
+        !
+        !  integration over the vertical direction
+        !
+        if (lhorizontal_spectra) then
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
+            hor_spectrum(k+1)=hor_spectrum(k+1) &
+             +a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
+          endif
+        endif
+        !
+        !  integration over the horizontal direction
+        !
+        if (lvertical_spectra) then
+          k=nint(abs(kz(ikz+ipz*nz)))
+          if (k>=0 .and. k<=(nk-1)) then
+            ver_spectrum(k+1)=ver_spectrum(k+1) &
+             +a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
+          endif
         endif
       enddo
     enddo
@@ -2788,6 +2820,8 @@ module power_spectrum
   !  The result is available only on root
   !
   call mpireduce_sum(spectrum,spectrum_sum,nk)
+  if (lhorizontal_spectra) call mpireduce_sum(hor_spectrum,hor_spectrum_sum,nk)
+  if (lvertical_spectra) call mpireduce_sum(ver_spectrum,ver_spectrum_sum,nk)
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -2807,6 +2841,20 @@ module power_spectrum
     write(1,*) t
     write(1,power_format) spectrum_sum
     close(1)
+    !
+    if (lhorizontal_spectra) then
+      open(1,file=trim(datadir)//'/power_hor_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      write(1,power_format) hor_spectrum_sum
+      close(1)
+    endif
+    !
+    if (lvertical_spectra) then
+      open(1,file=trim(datadir)//'/power_ver_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      write(1,power_format) ver_spectrum_sum
+      close(1)
+    endif
   endif
   !
   endsubroutine powerscl
