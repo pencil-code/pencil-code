@@ -42,6 +42,7 @@ module Special
   integer :: ia0, idiva_name
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true.
+  logical :: lvectorpotential=.false.
   character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
     initee, inita0, alpf, &
@@ -158,7 +159,7 @@ module Special
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplee,initpower_ee,initpower2_ee, &
             cutoff_ee,ncutoff_ee,kpeak_ee,f,iex,iez,relhel_ee,kgaussian_ee, &
-            lskip_projection_ee, lscale_tobox)
+            lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox)
 !
         case default
           !

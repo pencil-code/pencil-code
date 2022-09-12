@@ -5219,6 +5219,21 @@ module Initcond
         endif
       endif
 !
+!  Debug output
+!
+      if (lroot) then
+        print*,'i1,i2=',i1,i2
+        print*,'ampl,initpower,initpower2=',ampl,initpower,initpower2
+        print*,'cutoff,ncutoff,kpeak,i1,i2,relhel,kgaussian=',cutoff,ncutoff,kpeak,i1,i2,relhel,kgaussian
+        !print*,'lskip_projection,lvectorpotential,lscale_tobox1=',lskip_projection,lvectorpotential,lscale_tobox1
+        print*,'lskip_projection,lscale_tobox1=',lskip_projection,lscale_tobox1
+        !print*,'k1hel,k2hel,lremain_in_fourier,lpower_profile_file,qexp=',k1hel,k2hel,lremain_in_fourier,lpower_profile_file,qexp
+        print*,'lremain_in_fourier1',lremain_in_fourier1
+  !     print*,'lno_noise,nfact,lfactors=',lno_noise,nfact,lfactors
+  !     print*,'compk,llogbranch,initpower_med=',compk,llogbranch,initpower_med
+  !     print*,'kpeak_log,kbreak,ldouble,nfactd,qirro1=',kpeak_log,kbreak,ldouble,nfactd,qirro1
+      endif
+!
 !  Allocate memory for arrays.
 !
       allocate(k2(nx,ny,nz),stat=stat)
@@ -5508,7 +5523,7 @@ module Initcond
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
         endif
         r=fact*((k2*kpeak21)**mhalf)/(1.+D2*(k2*kpeak21)**nexp1)**nexp2
-        if (lroot) print*,'mhalf,nexp1,nexp2=',mhalf,nexp1,nexp2
+        if (lroot) print*,'kpeak,mhalf,nexp1,nexp2=',kpeak,mhalf,nexp1,nexp2
 !
 !  Examples: for initpower=4., initpower2=-2., get mhalf,nexp1,nexp2 = 0.75, 6.0, 0.25
 !  while for Jani Dahl setup, we put: initpower=3., initpower2=-3., nfact_uu=.6666667
