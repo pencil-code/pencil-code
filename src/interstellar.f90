@@ -743,6 +743,8 @@ module Interstellar
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
         print*,'initialize_interstellar: finished'
       endif
+      if (ladd_massflux) call warning('initialize_interstellar','ladd_massflux now depricated,' // &
+            'set lconserve_total_mass, total_mass in density_run_pars instead')
 !
 !  Fred: 06-Nov-17 added SN_rate column and changed site_mass to site_Nsol
 !        Note changes may affect reading/meaning of pre-existing file contents
@@ -842,7 +844,7 @@ module Interstellar
 !  cooling_select in interstellar_init_pars added
 !
       if (cooling_select == 'RBN') then
-        if (lroot) print*,'initialize_interstellar: default RBN cooling fct'
+              if (lroot) print*,'select_cooling: default RBN cooling fct'
         coolT_cgs = (/  100.0,       &
                         2000.0,      &
                         8000.0,      &
@@ -886,7 +888,7 @@ module Interstellar
 !  and extended range to 1E13 in SSrr to deal with temperature spiking
 !
       else if (cooling_select == 'RBNr') then
-        if (lroot) print*,'initialize_interstellar: RBN cooling fct (revised)'
+              if (lroot) print*,'select_cooling: RBN cooling fct (revised)'
         coolT_cgs = (/  10.0,         &
                         2000.0,       &
                         8000.0,       &
@@ -961,7 +963,7 @@ module Interstellar
         ncool=5
 !
       else if (cooling_select == 'SSr') then
-        if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
+              if (lroot) print*,'select_cooling: revised SS cooling fct'
         coolT_cgs = (/  10.0,        &
                         141.0,       &
                         313.0,       &
@@ -1000,7 +1002,7 @@ module Interstellar
 !  Revised to make continuous
 !
       else if (cooling_select == 'SSrr') then
-        if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
+              if (lroot) print*,'select_cooling: revised SS cooling fct'
         coolT_cgs = (/  10.0,                 &
                         141.0,                &
                         313.0,                &
@@ -1041,7 +1043,7 @@ module Interstellar
 !  as Gressel simulation (2008) with constants revised for continuity
 !
       else if (cooling_select == 'WSW') then
-        if (lroot) print*,'initialize_interstellar: WSW cooling fct'
+              if (lroot) print*,'select_cooling: WSW cooling fct'
         coolT_cgs = (/  90.0,                 &
                         141.0,                &
                         313.0,                &
@@ -1080,7 +1082,7 @@ module Interstellar
 !  As above but with cooling truncated below 2e4 K for Cioffi comparison
 !
       else if (cooling_select == 'WSWr') then
-        if (lroot) print*,'initialize_interstellar: WSWr cooling fct'
+              if (lroot) print*,'select_cooling: WSWr cooling fct'
         coolT_cgs = (/  2E2,                  &
                         1.2E4,                &
                         1E5,                  &
@@ -1116,7 +1118,7 @@ module Interstellar
                         tiny(0.) /)
         ncool=10
       else if (cooling_select == 'off') then
-        if (lroot) print*,'initialize_interstellar: no cooling applied'
+              if (lroot) print*,'select_cooling: no cooling applied'
         coolT_cgs=tiny(0.0)
         coolH_cgs=tiny(0.0)
         coolB=tiny(0.)
@@ -1125,7 +1127,7 @@ module Interstellar
 ! BEGIN TEMPORARY
       if (any(coolH_cgs(1:ncool) == 0) &
         .or. any(coolT_cgs(1:ncool+1) == 0)) then
-        call fatal_error('initialize_interstellar', &
+        call fatal_error('select_cooling', &
         'Calculating lncoolH and lncoolT: One of the cooling coefficient is zero')
       endif
 ! END TEMPORARY
@@ -1635,7 +1637,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call check_SN(f)
-      call addmassflux(f)
+      !call addmassflux(f)
 !
     endsubroutine interstellar_before_boundary
 !*****************************************************************************
