@@ -2681,7 +2681,7 @@ module Interstellar
 !
       rhomax=maxval(tmpz)
       itmp=-1
-      if (mod(it,2)==0) then
+      if (mod(it,2)==0.and..not.lstart) then  ! for reproducibility: it=1 -> it=0 initially
         ii1=1; ii2=nprocz; ii3=1
       else
         ii1=nprocz; ii2=1; ii3=-1
@@ -2698,7 +2698,7 @@ module Interstellar
 !
       rhomax=0.
       rhotmp=0.
-      if (mod(it,2)==0) then
+      if (mod(it,2)==0.and..not.lstart) then
         ii1=n1;ii2=n2;ii3=1
       else
         ii1=n2;ii2=n1;ii3=-1

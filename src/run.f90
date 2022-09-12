@@ -485,7 +485,7 @@ program run
 !
 !  Perform pencil_case consistency check if requested.
 !
-  it = 1
+  it = 1          ! needed for pencil check
   suppress_pencil_check = control_file_exists("NO-PENCIL-CHECK")
   if ( (lpencil_check .and. .not. suppress_pencil_check) .or. &
        ((.not.lpencil_check).and.lpencil_check_small) ) &
