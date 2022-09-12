@@ -5592,9 +5592,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)=-ampl_ff(i)*(sinx(l1:l2,i)*cosy(m,i))
           force(:,3)= ampl_ff(i)*(sinx(l1:l2,i)*siny(m,i))
         case('Schur_helical')
-          force(:,1)= 0.5*ampl_ff(i)*( 1.4*cosx(l1:l2,i)*siny(m,i)+  sinx(l1:l2,i)*cosy(m,i))
-          force(:,2)=-0.5*ampl_ff(i)*(-1.4*sinx(l1:l2,i)*cosy(m,i)-  cosx(l1:l2,i)*siny(m,i))
-          force(:,3)= 0.5*ampl_ff(i)*( 1.4*sinx(l1:l2,i)*siny(m,i)-2*cosx(l1:l2,i)*cosy(m,i))
+          force(:,1)=     0.5*ampl_ff(i)*(         cosx(l1:l2,i)*siny(m,i))+ &
+                      0.5*0.5*ampl_ff(i)*( sqrt(2.0)*cosx(l1:l2,i)*siny(m,i) +  sinx(l1:l2,i)*cosy(m,i))
+          force(:,2)=    -0.5*ampl_ff(i)*(         sinx(l1:l2,i)*cosy(m,i))- &
+                      0.5*0.5*ampl_ff(i)*(-sqrt(2.0)*sinx(l1:l2,i)*cosy(m,i) -  cosx(l1:l2,i)*siny(m,i))
+          force(:,3)=     0.5*ampl_ff(i)*(         sinx(l1:l2,i)*siny(m,i))+ &
+                      0.5*0.5*ampl_ff(i)*( sqrt(2.0)*sinx(l1:l2,i)*siny(m,i) -2*cosx(l1:l2,i)*cosy(m,i))
         case('ABCtdep')
           fact2=relhel
           fact=ampl_ff(i)/sqrt(ABC_A(i)**2+ABC_B(i)**2+ABC_C(i)**2)
