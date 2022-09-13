@@ -18,7 +18,7 @@
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3); aps
 ! PENCILS PROVIDED b2; b21; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); curlb(3); e3xa(3)
 ! PENCILS PROVIDED el(3); e2; bijtilde(3,3),bij_cov_corr(3,3)
-! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uj; uxb(3); uxb2
+! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uj; ob; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
 ! PENCILS PROVIDED ujxb; oxuxb(3); jxbxb(3); jxbrxb(3)
@@ -487,6 +487,7 @@ module Magnetic
   integer :: idiag_jzbzm=0      ! DIAG_DOC: $\left<j_zB_z\right>$
 
   integer :: idiag_uam=0        ! DIAG_DOC: $\left<\uv\cdot\Av\right>$
+  integer :: idiag_obm=0        ! DIAG_DOC: $\left<\ov\cdot\Bv\right>$
   integer :: idiag_ujm=0        ! DIAG_DOC: $\left<\uv\cdot\Jv\right>$
   integer :: idiag_fbm=0        ! DIAG_DOC: $\left<\fv\cdot\Bv\right>$
   integer :: idiag_fxbxm=0      ! DIAG_DOC: $\left<f_x B_x\right>$
@@ -838,6 +839,7 @@ module Magnetic
   integer :: idiag_abmz=0       ! XYAVG_DOC: $\left<\Av\cdot\Bv\right>|_{xy}$
   integer :: idiag_ubmz=0       ! XYAVG_DOC: $\left<\uv\cdot\Bv\right>|_{xy}$
   integer :: idiag_ujmz=0       ! XYAVG_DOC: $\left<\uv\cdot\Jv\right>|_{xy}$
+  integer :: idiag_obmz=0       ! XYAVG_DOC: $\left<\ov\cdot\Bv\right>|_{xy}$
   integer :: idiag_uamz=0       ! XYAVG_DOC: $\left<\uv\cdot\Av\right>|_{xy}$
   integer :: idiag_bzdivamz=0   ! XYAVG_DOC: $\left<B_z\nabla\cdot\Av\right>|_{xy}$
   integer :: idiag_divamz=0     ! XYAVG_DOC: $\left<\nabla\cdot\Av\right>|_{xy}$
@@ -2872,6 +2874,7 @@ module Magnetic
       if (idiag_ubm/=0 .or. idiag_ubmz/=0 &
           .or. idiag_ubbzm/=0) lpenc_diagnos(i_ub)=.true.
       if (idiag_ujm/=0 .or. idiag_ujmz/=0) lpenc_diagnos(i_uj)=.true.
+      if (idiag_obm/=0 .or. idiag_obmz/=0) lpenc_diagnos(i_ob)=.true.
 !
       if (idiag_djuidjbim/=0 .or. idiag_uxDxuxbm/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_uxjm/=0) lpenc_diagnos(i_uxj)=.true.
@@ -3119,6 +3122,11 @@ module Magnetic
 !
       if (lpencil_in(i_ub)) then
         lpencil_in(i_uu)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+!
+      if (lpencil_in(i_ob)) then
+        lpencil_in(i_oo)=.true.
         lpencil_in(i_bb)=.true.
       endif
 !
@@ -3955,6 +3963,8 @@ module Magnetic
       if (lpenc_loc(i_jxbr2)) call dot2_mn(p%jxbr,p%jxbr2)
 ! ub
       if (lpenc_loc(i_ub)) call dot_mn(p%uu,p%bb,p%ub)
+! ob
+      if (lpenc_loc(i_ob)) call dot_mn(p%oo,p%bb,p%ob)
 ! uj
       if (lpenc_loc(i_uj)) call dot_mn(p%uu,p%jj,p%uj)
 ! cosub
@@ -5885,6 +5895,10 @@ module Magnetic
 !
       if (idiag_uam/=0) call sum_mn_name(p%ua,idiag_uam)
 !
+!  Current-vortex cross helicity (linkage between flow and magnetic flux tubes).
+!
+      if (idiag_obm/=0) call sum_mn_name(p%ob,idiag_obm)
+!
 !  Current-vortex cross helicity (linkage between vortex and current tubes).
 !
       if (idiag_ujm/=0) call sum_mn_name(p%uj,idiag_ujm)
@@ -6384,6 +6398,7 @@ module Magnetic
         call xysum_mn_name_z(p%ab,idiag_abmz)
         if (idiag_ubmz/=0) call xysum_mn_name_z(p%ub,idiag_ubmz)
         if (idiag_ujmz/=0) call xysum_mn_name_z(p%uj,idiag_ujmz)
+        if (idiag_obmz/=0) call xysum_mn_name_z(p%ob,idiag_obmz)
         if (idiag_uamz/=0) call xysum_mn_name_z(p%ua,idiag_uamz)
         if (idiag_divamz/=0) call xysum_mn_name_z(p%diva,idiag_divamz)
         if (idiag_bzdivamz/=0) call xysum_mn_name_z(p%bb(:,3)*p%diva,idiag_bzdivamz)
@@ -9509,7 +9524,7 @@ module Magnetic
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
         idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0; idiag_hjbm=0
-        idiag_uam=0; idiag_ubm=0; idiag_dubrms=0; idiag_dobrms=0; idiag_ujm=0
+        idiag_uam=0; idiag_ubm=0; idiag_dubrms=0; idiag_dobrms=0; idiag_ujm=0; idiag_obm=0
         idiag_uxbxm=0; idiag_uybxm=0; idiag_uzbxm=0
         idiag_uxbym=0; idiag_uybym=0; idiag_uzbym=0
         idiag_uxbzm=0; idiag_uybzm=0; idiag_uzbzm=0
@@ -9555,7 +9570,7 @@ module Magnetic
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
         idiag_bxbzmz=0; idiag_bybzmz=0
         idiag_b2mx=0; idiag_a2mz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
-        idiag_jbmz=0; idiag_abmz=0; idiag_ubmz=0; idiag_ujmz=0; idiag_uamz=0
+        idiag_jbmz=0; idiag_abmz=0; idiag_ubmz=0; idiag_ujmz=0; idiag_obmz=0; idiag_uamz=0
         idiag_bzdivamz=0; idiag_divamz=0; idiag_d6abmz=0
         idiag_uxbxmz=0; idiag_uybxmz=0; idiag_uzbxmz=0
         idiag_uxbymz=0; idiag_uybymz=0; idiag_uzbymz=0
@@ -9703,6 +9718,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jybzm',idiag_jybzm)
         call parse_name(iname,cname(iname),cform(iname),'jzbzm',idiag_jzbzm)
         call parse_name(iname,cname(iname),cform(iname),'uam',idiag_uam)
+        call parse_name(iname,cname(iname),cform(iname),'obm',idiag_obm)
         call parse_name(iname,cname(iname),cform(iname),'ujm',idiag_ujm)
         call parse_name(iname,cname(iname),cform(iname),'fbm',idiag_fbm)
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
@@ -10081,6 +10097,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'abmz',idiag_abmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ubmz',idiag_ubmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ujmz',idiag_ujmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'obmz',idiag_obmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uamz',idiag_uamz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzdivamz',idiag_bzdivamz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'divamz',idiag_divamz)
