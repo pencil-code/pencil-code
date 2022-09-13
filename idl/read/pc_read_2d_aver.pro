@@ -231,6 +231,7 @@ COMPILE_OPT IDL2,HIDDEN
     nvar = nvar_all
     ivarpos = indgen(nvar)
   endif else begin
+;
     nvar=n_elements(variables)
     ivarpos=intarr(nvar)
 ;
@@ -313,10 +314,6 @@ COMPILE_OPT IDL2,HIDDEN
     nxg = nx
   endelse
 ;
-;  Define arrays to put data in. The user may supply the length of
-;  the time dimension (nit). Otherwise nit will be read from the
-;  file data/t2davg.dat.
-;
   if (not keyword_set(nit)) then begin
 ;
 ;  Test if the file that stores the time and number of 2d-averages, t2davg,
@@ -390,11 +387,28 @@ COMPILE_OPT IDL2,HIDDEN
       message, 'ERROR: cannot find file '+ filename[ip]
   endfor
 ;
+;  Tentative read of first chunk. (Could be done for each time.)
+;
+  recmark=1L & t_in = zero
+
+  openr, lun, filename[0], swap_endian=swap_endian, /get_lun
+  readu, lun,recmark,t_in,recmark,recmark
+  nvar_real = recmark/(nx*ny*data_bytes)
+  if nvar_real ne nvar_all then $
+    message, 'Warning: file contains only '+strtrim(string(nvar_real),2)+' instead of '+strtrim(string(nvar_all),2)+ $
+	     ' variables. Continue with '+strtrim(string(nvar_real),2)+' variables!', /continue
+  free_lun, lun
+  close, lun
+;
 ;  Method 1: Read in full data processor by processor. Does not allow plotting.
 ;
   if (iplot lt 0) then begin
 ;
-    array_local=make_array(nx,ny,nvar_all, type=type_idl)
+;  Define arrays to put data in. The user may supply the length of
+;  the time dimension (nit). Otherwise nit will be read from the
+;  file data/t2davg.dat.
+;
+    array_local=make_array(nx,ny,nvar_real, type=type_idl)
     array_global=make_array(nxg,nyg,nret,nvar, type=single ? 4 : type_idl)
       
     type_as_on_disk = (not keyword_set(single)) or type_idl eq 4
@@ -438,7 +452,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
         if t ge tmin then begin
           readu, lun, array_local
-          array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,nread,*]=array_local[*,*,ivarpos]
+	  inds=where(ivarpos lt nvar_real)
+          array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,nread,inds]=array_local[*,*,ivarpos[inds]]
           tt[nread]=t
           nread++
           if njump gt 1 then begin
