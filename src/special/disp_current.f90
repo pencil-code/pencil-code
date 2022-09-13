@@ -70,6 +70,8 @@ module Special
   integer :: idiag_erms=0       ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
   integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
   integer :: idiag_a0rms=0      ! DIAG_DOC: $\left<A_0^2\right>^{1/2}$
+  integer :: idiag_grms=0   ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
+  integer :: idiag_da0rms=0   ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -215,6 +217,7 @@ module Special
       endif
 
       if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
+      if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
       if (idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
       if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
 !
@@ -334,6 +337,8 @@ module Special
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
         call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
+        call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
+        call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
 !
         call xysum_mn_name_z(p%el(:,1),idiag_exmz)
         call xysum_mn_name_z(p%el(:,2),idiag_eymz)
@@ -403,7 +408,7 @@ module Special
 !
       if (lreset) then
         idiag_erms=0; idiag_emax=0
-        idiag_a0rms=0
+        idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0
         cformv=''
       endif
 !
@@ -413,6 +418,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'erms',idiag_erms)
         call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
         call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)
+        call parse_name(iname,cname(iname),cform(iname),'grms',idiag_grms)
+        call parse_name(iname,cname(iname),cform(iname),'da0rms',idiag_da0rms)
       enddo
 !
       do inamez=1,nnamez
