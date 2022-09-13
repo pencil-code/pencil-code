@@ -104,7 +104,7 @@ module Param_IO
       vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
-      bb2_spec, jj2_spec, ele_spec, pot_spec, &
+      bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
       SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       StT_spec, StX_spec, &
@@ -146,7 +146,7 @@ module Param_IO
       lspec_start, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
-      bb2_spec, jj2_spec, ele_spec, pot_spec, &
+      bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
       SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       StT_spec, StX_spec, &

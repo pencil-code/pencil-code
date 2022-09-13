@@ -2629,12 +2629,13 @@ module power_spectrum
     use Mpicomm, only: mpireduce_sum
     use Sub, only: curli, grad
     use SharedVariables, only: get_shared_variable
+    use FArrayManager
 !
   logical, intent(in), optional :: lsqrt
   integer, intent(in), optional :: iapn_index
   integer, pointer :: inp,irhop,iapn(:)
   integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz, ivec, im, in
+  integer :: i,k,ikx,iky,ikz, ivec, im, in, ia0
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im
@@ -2681,6 +2682,13 @@ module power_spectrum
   !  spectrum of lnrho (or normalized enthalpy).
   !  Need to take log if we work with linear density.
   !
+  elseif (sp=='a0') then
+    ia0=farray_index_by_name('a0')
+    if (ia0/=0) then
+      a_re=f(l1:l2,m1:m2,n1:n2,ia0)
+    else
+      call warning ('powerscl',"ia0=0 doesn't work.")
+    endif
   elseif (sp=='ux') then
       a_re=f(l1:l2,m1:m2,n1:n2,iux)
   elseif (sp=='uy') then
