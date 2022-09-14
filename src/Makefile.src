@@ -2282,6 +2282,16 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE=-fdefault-real-8 #(mahti-[^g]|mahti[^-])
 #CFLAGS=-DFUNDERSC=1 -O1 #(mahti-[^g]|mahti[^-])
 ##
+## Lumi: cray_shasta_c
+##
+#FC=ftn #(uan02*)
+#FSTD_95=-std95 #(uan02*)
+#F90=$(FC) #(uan02*)
+#CC=cc #(uan02*)
+#FFLAGS=-O1 #-fimplicit-none #(uan02*)
+##FFLAGS_DOUBLE=-fdefault-real-8 #(uan02*)
+#CFLAGS=-DFUNDERSC=1 -O1 #(uan02*)
+##
 ## Parker: UFMG, BH, Brasil
 ##
 #FC=mpiifort #(parker)
