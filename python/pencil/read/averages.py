@@ -565,8 +565,8 @@ class Averages(object):
                         )
                         raw_idx += 1
                     line_idx += 1
-            except ValueError:
-                print("Error: There was a problem reading {}.\nCalculated values: n_vars = {}, nw = {}.\nAre these correct?".format(aver_file_name, n_vars, nw))
+            except:
+                print("Error: There was a problem reading {} at line {}.\nCalculated values: n_vars = {}, nw = {}.\nAre these correct?".format(aver_file_name, line_idx, n_vars, nw))
                 raise
 
             # Restructure the raw data and add it to the Averages object.
