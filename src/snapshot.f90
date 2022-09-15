@@ -609,7 +609,16 @@ module Snapshot
         lfirst_call=.false.
       endif
 !
-      call update_snaptime(file,tspec,nspec,dspec,t,lspec)
+!  The output time for spectra was always too late by dt, so therefore,
+!  as an option (not the default), we add dt to the current time, so
+!  as to output at the correct time. At some point, we should actually
+!  make this the default.
+!
+      if (lspec_at_tplusdt) then
+        call update_snaptime(file,tspec,nspec,dspec,t+dt,lspec)
+      else
+        call update_snaptime(file,tspec,nspec,dspec,t,lspec)
+      endif
 !
     endsubroutine powersnap_prepare
 !***********************************************************************
