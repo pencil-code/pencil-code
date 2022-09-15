@@ -461,13 +461,12 @@ ifeq ($(GPU),gpu_astaroth)
   ifneq ($(MODULE_CMD),)
     CUDA_LOADED := $(shell (module list |& grep -i cuda) )
     ifeq ($(CUDA_LOADED),)
-no_cuda_message:
-	@echo ";;;"
-	@echo ";;; No CUDA module seems to be loaded! Exit."
-	@echo ";;; Try (one of) the following: $(shell (module avail |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') )"
-	@echo ";;;"
-	@exit 1
-
+      $(warning  No CUDA module seems to be loaded!)
+      $(info Try (one of) the following: $(shell (module avail |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
+      YESNO ?= $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
+      ifeq ($(YESNO),N)
+        $(error Exit) 
+      endif
     endif
   endif
 #
