@@ -174,7 +174,9 @@ class SliceSeries(object):
         from scipy.io import FortranFile
         from pencil import read
 
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
+        param = read.param()
+        if param.io_strategy == 'HDF5':
+        #if os.path.exists(os.path.join(datadir, "grid.h5")):
             l_h5 = True
             import h5py
         else:
@@ -319,6 +321,8 @@ class SliceSeries(object):
                 setattr(self, "coordinate", ind_object)
         else:
             # Define the directory that contains the slice files.
+            grid = read.grid(quiet=True)
+            print("reading grid data for slice positions")
             if proc < 0:
                 slice_dir = datadir
             else:
@@ -376,13 +380,26 @@ class SliceSeries(object):
                 tend = None
             else:
                 nt = None
-            for extension in extension_list:
+            pos_object = Foo()
+            ind_object = Foo()
+            inds = list()
+            if not "r" in extension_list:
+                slicepos_fn = os.path.join(datadir, "slice_position.dat")
+                slicepos = open(slicepos_fn, 'r')
+                for line in slicepos:
+                    if line.strip().split()[0] == "T":
+                        inds.append(int(line.strip().split()[1]))
+            else:
+                for i in range(len(extension_list)):
+                    pos_list.append(4)
+            for extension, ind in zip(extension_list,inds):
                 if not quiet:
                     print("Extension: " + str(extension))
                     sys.stdout.flush()
                 # This one will store the data.
                 ext_object = Foo()
-
+                pos_list = list()
+                ind_list = list()
                 for field in field_list:
                     if not quiet:
                         print("  -> Field: " + str(field))
@@ -410,12 +427,15 @@ class SliceSeries(object):
                     if extension == "xy" or extension == "Xy" or extension == "xy2" or extension == "xy3" or extension == "xy4":
                         hsize = dim.nx
                         vsize = dim.ny
+                        pos = grid.z[ind]
                     elif extension == "xz":
                         hsize = dim.nx
                         vsize = dim.nz
+                        pos = grid.y[ind]
                     elif extension == "yz":
                         hsize = dim.ny
                         vsize = dim.nz
+                        pos = grid.x[ind]
                     elif extension == "r":
                         # Read grid size of radial slices by iterating to the last
                         # line of slice_position.dat. This will break if/when there
@@ -428,6 +448,8 @@ class SliceSeries(object):
                         hsize = int(pars[1])
                         vsize = int(pars[2])
                         slicepos.close()
+                        print("Warning: dummy pos and coord added. Not correctly implemented for extention 'r'")
+                        pos = grid.x[ind]
                     else:
                         raise ValueError("Unknown extension: {}".format(extension))
 
@@ -440,7 +462,7 @@ class SliceSeries(object):
                     it = 0
                     self.t = list()
                     slice_series = list()
-
+                    add_pos = len(pos_list) == 0
                     if not quiet:
                         print("  -> Reading... ", file_name)
                         sys.stdout.flush()
@@ -470,6 +492,9 @@ class SliceSeries(object):
                                         slice_series.append(raw_data[:-1])
                                     else:
                                         slice_series.append(raw_data[:-2])
+                                    if add_pos:
+                                        ind_list.append(ind)
+                                        pos_list.append(pos)
                                     islice += 1
                             elif it in iter_list or not nt:
                                 self.t.append(time)
@@ -477,6 +502,9 @@ class SliceSeries(object):
                                     slice_series.append(raw_data[:-1])
                                 else:
                                     slice_series.append(raw_data[:-2])
+                                if add_pos:
+                                    ind_list.append(ind)
+                                    pos_list.append(pos)
                                 islice += 1
                         it += 1
                     if not quiet:
@@ -497,5 +525,9 @@ class SliceSeries(object):
                             tmp_series.append(slice_series[iislice, ::downsample, ::downsample])
                         slice_series = np.array(tmp_series)
                     setattr(ext_object, field, slice_series)
+                setattr(pos_object, extension, np.array(pos_list))
+                setattr(ind_object, extension, np.array(ind_list))
 
                 setattr(self, extension, ext_object)
+                setattr(self, "position", pos_object)
+                setattr(self, "coordinate", ind_object)
