@@ -2710,10 +2710,10 @@ module HDF5_IO
       if (ivar <= 0) return
 !
       if (lroot) open (lun_output, file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
-      if ((vector > 0) .and. (array > 0)) then
+      if ((vector > 0) .and. (abs(array) > 0)) then
         ! expand array first: iuud => [iuud1,iuud2,iuud3,...]
         ! expand vector then: iuud# => [iuud#x,iuud#y,iuud#z] => ivar+(#-1)*vector+[0,1,2]
-        do arr = 1, array
+        do arr = 1, abs(array)
           pos = ivar + (arr-1) * vector
           if ('i'//trim(index_get (pos, quiet=.true.)) /= trim(varname)//trim(itoa(arr))//'x') then
             if (lroot) write (lun_output,*) trim(varname)//trim(itoa(arr))//'x='//trim(itoa(pos))
