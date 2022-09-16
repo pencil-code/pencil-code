@@ -98,7 +98,6 @@ class Index(object):
                 continue
             try:
                 val = int(clean.split("=")[1].strip())
-                print('index:',name,val,lh5)
             except:
                 val = np.arange(int(re.search(r"\(([0-9]+)\)", clean).group(1)))[
                     0
@@ -132,7 +131,6 @@ class Index(object):
                 ntestlnrho = val
             elif name == "ntestscalar":
                 ntestscalar = val
-        print("lh5:",not lh5)
         if not lh5:
             if ntestfield > 0:
                 self.__delattr__("aatest")
