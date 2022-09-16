@@ -104,7 +104,7 @@ module Hydro
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
   logical :: lkinflow_as_comaux=.false.
-  logical :: lrandom_ampl=.false.
+  logical :: lrandom_ampl=.false., lsmooth_vel=.true
 !
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
@@ -124,7 +124,7 @@ module Hydro
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
       lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, &
-      ll_sh, mm_sh, n_xprof, lrandom_ampl, &
+      ll_sh, mm_sh, n_xprof, lrandom_ampl, lsmooth_vel, &
       sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz, &
       binary_radius, radius_kinflow, width_kinflow
 !
@@ -157,6 +157,7 @@ module Hydro
 !  Foreign data.
 !
   real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer, interp_buffer
+  real, dimension (-nghost:nghost,-nghost:nghost,-nghost:nghost) :: smooth_factor
 
   contains
 !***********************************************************************
@@ -194,7 +195,7 @@ module Hydro
 !                  also oscillating with omega_kinflow
 !
       use FArrayManager
-      use Sub, only: erfunc, ylm, ylm_other
+      use Sub, only: erfunc, ylm, ylm_other, smoothing_kernel
       use Boundcond, only: update_ghosts
       use General
       use Mpicomm
@@ -374,7 +375,8 @@ module Hydro
 !call mpifinalize
 !stop
           endif
-        else
+          if (lsmooth_vel) call smoothing_kernel(smooth_factor,lgaussian=.true.)
+       else
           call fatal_error("initialize_hydro", "No foreign code available")
         endif
       endif
