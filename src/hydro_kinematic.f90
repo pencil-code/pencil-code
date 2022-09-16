@@ -100,11 +100,11 @@ module Hydro
   real :: w_sldchar_hyd=1.0
   real :: sigma_uukin=1., tau_uukin=1., time_uukin=1., sigma1_uukin_scl_yz=1.
   real :: binary_radius=0., radius_kinflow=0., width_kinflow=0.
-  integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
+  integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100, smooth_width=1
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
   logical :: lkinflow_as_comaux=.false.
-  logical :: lrandom_ampl=.false., lsmooth_vel=.true
+  logical :: lrandom_ampl=.false.
 !
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
@@ -124,7 +124,7 @@ module Hydro
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
       lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, &
-      ll_sh, mm_sh, n_xprof, lrandom_ampl, lsmooth_vel, &
+      ll_sh, mm_sh, n_xprof, lrandom_ampl,smooth_width, &
       sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz, &
       binary_radius, radius_kinflow, width_kinflow
 !
@@ -157,7 +157,7 @@ module Hydro
 !  Foreign data.
 !
   real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer, interp_buffer
-  real, dimension (-nghost:nghost,-nghost:nghost,-nghost:nghost) :: smooth_factor
+  real, dimension (:,:,:), allocatable :: smooth_factor
 
   contains
 !***********************************************************************
@@ -352,19 +352,26 @@ module Hydro
         if (lforeign) then
           if (.not.lreloading) then
             call initialize_foreign_comm(frgn_buffer) 
+            if (smooth_width>0) then 
+              smooth_width = min(smooth_width, nghost)
+              allocate(smooth_factor(-smooth_width:smooth_width,-smooth_width:smooth_width,-smooth_width:smooth_width))           
+              call smoothing_kernel(smooth_factor,lgaussian=.true.)
+            endif
 !
 !  Initially, take two snapshots.
 !
-          call get_foreign_snap_initiate(3,frgn_buffer)    !,lnonblock=.true.)
-          if (.not.allocated(interp_buffer)) allocate(interp_buffer(mx,my,mz,3))
-          if (.not.allocated(uu_2)) allocate(uu_2(mx,my,mz,3))
+            call get_foreign_snap_initiate(3,frgn_buffer)    !,lnonblock=.true.)
+            if (.not.allocated(interp_buffer)) allocate(interp_buffer(mx,my,mz,3))
+            if (.not.allocated(uu_2)) allocate(uu_2(mx,my,mz,3))
 !print *, 'PENCIL UU2EVAL', iproc,nx, ny, ny,  size(uu_2, 1)
-          call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer)   !,lnonblock=.true.)
+            call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer)   !,lnonblock=.true.)
+            if (smooth_width > 0) call smooth_velocity(f,iux,iuz)
 !print*, 'Pencil successful get_foreign_snap_finalize 1', iproc
 !if (lroot) print*, 'PENCIL FMAX INIT' , maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
 !print*, 'PENCIL FMAX INIT' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
+            if (smooth_width > 0) call smooth_velocity(uu_2, 1,3)  
 !print*, 'Pencil successful get_foreign_snap_finalize 2', iproc
 !        
 ! prepare receiving next snapshot
@@ -375,7 +382,6 @@ module Hydro
 !call mpifinalize
 !stop
           endif
-          if (lsmooth_vel) call smoothing_kernel(smooth_factor,lgaussian=.true.)
        else
           call fatal_error("initialize_hydro", "No foreign code available")
         endif
@@ -383,6 +389,67 @@ module Hydro
       call calc_means_hydro(f)
 !
     endsubroutine initialize_hydro
+!***********************************************************************
+    subroutine smooth_velocity(f,iu1, iu2)
+
+      use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
+      
+      real, dimension(:,:,:,:) :: f
+      integer :: iu1, iu2
+
+      real, dimension(mx,my,mz,3) :: tmp
+      real, dimension(nx, 3) :: penc
+      integer :: ni, nj, nk, imn, i, j, k
+!
+!  Smooth with a Gaussian profile
+!
+      ni = merge(smooth_width,0,nxgrid > 1)
+      nj = merge(smooth_width,0,nygrid > 1)
+      nk = merge(smooth_width,0,nzgrid > 1)
+!
+!  Because of a bug in the shearing boundary conditions we must first manually
+!  set the y boundary conditions on the shock profile.
+!
+      if (lshear) then
+        !!!call boundconds_y(f,ishock,ishock)
+        !!!call initiate_isendrcv_bdry(f,ishock,ishock)
+        !!!call finalize_isendrcv_bdry(f,ishock,ishock)
+      endif
+!
+      !!!call boundconds_x(f,ishock,ishock)
+      !!!call initiate_isendrcv_bdry(f,ishock,ishock)
+!
+      tmp = 0.0
+!
+      do imn=1,ny*nz
+!
+        n = nn(imn)
+        m = mm(imn)
+!
+        if (necessary(imn)) then
+          !!!call finalize_isendrcv_bdry(f,ishock,ishock)
+          !!!call boundconds_y(f,ishock,ishock)
+          !!!call boundconds_z(f,ishock,ishock)
+        endif
+!
+        penc = 0.0
+!
+        do k=-nk,nk
+        do j=-nj,nj
+        do i=-ni,ni
+          penc = penc + smooth_factor(i,j,k)*f(l1+i:l2+i,m+j,n+k,iu1:iu2)
+        enddo
+        enddo
+        enddo
+!
+        do j=1,3
+          tmp(l1:l2,m,n,j) = penc(:,j)
+        enddo
+!
+      enddo
+      f(:,:,:,iu1:iu2) = tmp
+!
+    endsubroutine smooth_velocity
 !***********************************************************************
     subroutine calc_means_hydro(f)
 !
@@ -2511,6 +2578,7 @@ module Hydro
           if (update_foreign_data(t,t_foreign)) then
             f(:,:,:,iux:iuz) = uu_2
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
+            if (smooth_width > 0) call smooth_velocity(uu_2,1,3)
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
           endif
         endif
