@@ -10453,7 +10453,7 @@ endif
       if (trim(frgn_setup%name)=='EULAG') then           
         if (loptest(lnonblock)) call mpiwait(frgn_setup%recv_req(px))
         if(size(frgn_buffer,1) > size(f,1)) lf1 = 2
-        f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU            
+        f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
         !!!f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,my::-1,:,:)/frgn_setup%renorm_UU  !For invertion of theta
        
       else if (lfirst_proc_yz) then 
