@@ -1610,13 +1610,13 @@ module Interstellar
 !  26-mar-05/tony: coded
 !  11-mar-06/axel: added idiag_nrhom
 !
-      lpenc_requested(i_ee)=.true.
+      lpenc_requested(i_lnrho)=.true.
+      lpenc_requested(i_rho1)=.true.
       lpenc_requested(i_cv1)=.true.
       lpenc_requested(i_cv)=.true.
-      lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_lnTT)=.true.
+      lpenc_requested(i_ee)=.true.
       lpenc_requested(i_TT1)=.true.
-      lpenc_requested(i_rho1)=.true.
 !
       if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
 !
@@ -3258,7 +3258,7 @@ module Interstellar
 !  ??-nov-02/grs : coded from GalaxyCode
 !  20-may-03/tony: pencil formulation and broken into subroutines
 !
-      use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb ,&
+      use EquationOfState, only: ilnrho_ee, eoscalc, eosperturb ,&
                                  ilnrho_ss, irho_ss
       use Mpicomm, only: mpiallreduce_max, mpiallreduce_sum
       use General, only: keep_compiler_quiet
