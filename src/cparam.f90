@@ -197,6 +197,7 @@ module Cparam
   double precision, parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
   double precision, parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
   double precision, parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
+  double precision, parameter :: density_scale_cgs=2.7774d21 ![cm] 900pc Reynolds 91, etc
 !
   logical, parameter :: ALWAYS_FALSE=.false.
 !

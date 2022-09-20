@@ -152,7 +152,7 @@ module Cdata
   real :: ddt=0.0
   real :: dtmin=1.0e-6, dtmax=1.0e37
   real :: nu_sts=0.1
-  real :: density_scale_factor = 0.9
+  real :: density_scale_factor=impossible
   integer :: permute_sts=0
   integer:: ireset_tstart=2
 !
