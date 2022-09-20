@@ -15,6 +15,7 @@ some simulation attributes and the data cube.
 """
 import numpy as np
 import warnings
+from pencil.math import natural_sort
 
 def var(*args, **kwargs):
     """
@@ -308,10 +309,12 @@ class DataCube(object):
         else:
             total_vars = dim.mvar
 
+        lh5 = False
         if param.io_strategy == "HDF5":
             #
             #  Read HDF5 files.
             #
+            lh5 = True
             import h5py
 
             run2D = param.lwrite_2d
@@ -532,6 +535,13 @@ class DataCube(object):
                 )
             )
 
+        aatest = []
+        uutest = []
+        for key in index.__dict__.keys():
+            if "aatest" in key:
+                aatest.append(key)
+            if "uutest" in key:
+                uutest.append(key)
         if magic is not None:
             """
             In the functions curl and curl2, the arguments (dx,dy,dz,x,y) are ignored when grid is not None. Nevertheless, we pass them below to take care of the case where the user is trying to read a snapshot without the corresponding grid.dat being present (such as in the test test_read_var).
@@ -556,6 +566,58 @@ class DataCube(object):
                     self.bb = self.bb[
                         :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
                     ]
+            if "bbtest" in magic:
+                if lh5:
+                    # Compute the magnetic field before doing trimall.
+                    for j in range(int(len(aatest) / 3)):
+                        key = aatest[j*3][:-1]
+                        value = index.__dict__[aatest[j*3]]
+                        aa = self.f[value - 1 : value + 2, ...]
+                        bb = dtype(
+                            curl(
+                                aa,
+                                dx=dx,
+                                dy=dy,
+                                dz=dz,
+                                x=x,
+                                y=y,
+                                run2D=run2D,
+                                coordinate_system=param.coord_system,
+                                grid=grid,
+                            )
+                        )
+                        if trimall:
+                            setattr(self,"bb"+key[2:],bb[
+                                :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
+                            ])
+                        else:
+                            setattr(self,"bb"+key[2:],bb)
+                else:
+                    if hasattr(index, "aatest1"):
+                        naatest = int(len(aatest) / 3)
+                        for j in range(0, naatest):
+                            key = "aatest" + str(np.mod(j + 1, naatest))
+                            value = index.__dict__["aatest1"] + 3 * j
+                            aa = self.f[value - 1 : value + 2, ...]
+                            bb = dtype(
+                                curl(
+                                    aa,
+                                    dx=dx,
+                                    dy=dy,
+                                    dz=dz,
+                                    x=x,
+                                    y=y,
+                                    run2D=run2D,
+                                    coordinate_system=param.coord_system,
+                                    grid=grid,
+                                )
+                            )
+                            if trimall:
+                                setattr(self,"bb"+key[2:],bb[
+                                    :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
+                                ])
+                            else:
+                                setattr(self,"bb"+key[2:],bb)
             if "jj" in magic:
                 # Compute the electric current field before doing trimall.
                 aa = self.f[index.ax - 1 : index.az, ...]
@@ -636,13 +698,7 @@ class DataCube(object):
 
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity
-        aatest = []
-        uutest = []
         for key in index.__dict__.keys():
-            if "aatest" in key:
-                aatest.append(key)
-            if "uutest" in key:
-                uutest.append(key)
             if (
                 key != "global_gg"
                 and key != "keys"
@@ -652,28 +708,40 @@ class DataCube(object):
                 value = index.__dict__[key]
                 setattr(self, key, self.f[value - 1, ...])
         # Special treatment for vector quantities.
-        if hasattr(index, "uu"):
-            self.uu = self.f[index.ux - 1 : index.uz, ...]
-        if hasattr(index, "aa"):
-            self.aa = self.f[index.ax - 1 : index.az, ...]
+        if hasattr(index, "ux"):
+            setattr(self, "uu", self.f[index.ux - 1 : index.uz, ...])
+        if hasattr(index, "ax"):
+            setattr(self, "aa", self.f[index.ax - 1 : index.az, ...])
         if hasattr(index, "uu_sph"):
             self.uu_sph = self.f[index.uu_sphx - 1 : index.uu_sphz, ...]
         if hasattr(index, "bb_sph"):
             self.bb_sph = self.f[index.bb_sphx - 1 : index.bb_sphz, ...]
         # Special treatment for test method vector quantities.
         # Note index 1,2,3,...,0 last vector may be the zero field/flow
-        if hasattr(index, "aatest1"):
-            naatest = int(len(aatest) / 3)
-            for j in range(0, naatest):
-                key = "aatest" + str(np.mod(j + 1, naatest))
-                value = index.__dict__["aatest1"] + 3 * j
+        if not lh5:
+            if hasattr(index, "aatest1"):
+                naatest = int(len(aatest) / 3)
+                for j in range(0, naatest):
+                    key = "aatest" + str(np.mod(j + 1, naatest))
+                    value = index.__dict__["aatest1"] + 3 * j
+                    setattr(self, key, self.f[value - 1 : value + 2, ...])
+            if hasattr(index, "uutest1"):
+                nuutest = int(len(uutest) / 3)
+                for j in range(0, nuutest):
+                    key = "uutest" + str(np.mod(j + 1, nuutest))
+                    value = index.__dict__["uutest"] + 3 * j
+                    setattr(self, key, self.f[value - 1 : value + 2, ...])
+        else:
+            #Dummy operation to be corrected
+            for j in range(int(len(aatest) / 3)):
+                key = aatest[j*3][:-1]
+                value = index.__dict__[aatest[j*3]]
                 setattr(self, key, self.f[value - 1 : value + 2, ...])
-        if hasattr(index, "uutest1"):
-            nuutest = int(len(uutest) / 3)
-            for j in range(0, nuutest):
-                key = "uutest" + str(np.mod(j + 1, nuutest))
-                value = index.__dict__["uutest"] + 3 * j
+            for j in range(int(len(uutest) / 3)):
+                key = uutest[j*3][:-1]
+                value = index.__dict__[uutest[j*3]]
                 setattr(self, key, self.f[value - 1 : value + 2, ...])
+            
 
         self.t = t
         self.dx = dx

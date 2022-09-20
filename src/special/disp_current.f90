@@ -6,7 +6,7 @@
 !  25-feb-07/axel: adapted from nospecial.f90
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of disp_current_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED e2; el(3); a0; ga0(3)
 !***************************************************************
 !
-module Special
+module disp_current
 !
   use Cparam
   use Cdata
@@ -39,12 +39,15 @@ module Special
   real :: amplee=0.0, initpower_ee=0.0, initpower2_ee=0.0
   real :: cutoff_ee=0.0, ncutoff_ee=0.0, kpeak_ee=0.0
   real :: relhel_ee=0.0, kgaussian_ee=0.0
+  real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
+  real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
+  real :: relhel_a0=0.0, kgaussian_a0=0.0
   integer :: ia0, idiva_name
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
-  logical :: lscale_tobox=.true.
+  logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false.
   character(len=50) :: initee='zero', inita0='zero'
-  namelist /special_init_pars/ &
+  namelist /disp_current_init_pars/ &
     initee, inita0, alpf, &
     ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
     kx_ex, kx_ey, kx_ez, &
@@ -54,10 +57,12 @@ module Special
     phase_ex, phase_ey, phase_ez, phase_a0, &
     llorenz_gauge_disp, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
-    cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee
+    cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
+    ampla0, initpower_a0, initpower2_a0, &
+    cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0
 !
   ! run parameters
-  namelist /special_run_pars/ &
+  namelist /disp_current_run_pars/ &
     alpf, llorenz_gauge_disp
 !
 ! Declare any index variables necessary for main or
@@ -185,6 +190,11 @@ module Special
           case ('coswave-phase')
             call coswave_phase(f,ia0,ampl_a0,kx_a0,ky_a0,kz_a0,phase_a0)
           case ('zero'); f(:,:,:,ia0)=0.
+          case ('power_randomphase')
+            call power_randomphase_hel(ampla0,initpower_a0,initpower2_a0, &
+              cutoff_a0,ncutoff_a0,kpeak_a0,f,ia0,ia0, &
+              relhel_a0,kgaussian_a0, lskip_projection_a0, lvectorpotential, &
+              lscale_tobox, lpower_profile_file=.false.)
           case default
             !
             !  Catch unknown values
@@ -354,7 +364,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=disp_current_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -362,7 +372,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=disp_current_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -372,7 +382,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=disp_current_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -380,7 +390,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=disp_current_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -474,7 +484,7 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+    include '../disp_current_dummies.inc'
 !********************************************************************
 !
-endmodule Special
+endmodule disp_current

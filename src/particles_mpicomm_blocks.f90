@@ -2500,6 +2500,14 @@ module Particles_mpicomm
         endif
         ipx0=(ix0-1)/nx
         ix0=ix0-ipx0*nx
+        roerrx: if (xxp(1) < procx_bounds(ipx0) .and. ix0 == 1) then
+          if (ipx0 > 0) then
+            ipx0 = ipx0 - 1
+            ix0 = nx
+          else
+            ix0 = 0
+          endif
+        endif roerrx
         ibx0=(ix0-1)/nxb
         ix0=ix0-ibx0*nxb+nghostb
       else
@@ -2518,6 +2526,14 @@ module Particles_mpicomm
         endif
         ipy0=(iy0-1)/ny
         iy0=iy0-ipy0*ny
+        roerry: if (xxp(2) < procy_bounds(ipy0) .and. iy0 == 1) then
+          if (ipy0 > 0) then
+            ipy0 = ipy0 - 1
+            iy0 = ny
+          else
+            iy0 = 0
+          endif
+        endif roerry
         iby0=(iy0-1)/nyb
         iy0=iy0-iby0*nyb+nghostb
       else
@@ -2536,6 +2552,14 @@ module Particles_mpicomm
         endif
         ipz0=(iz0-1)/nz
         iz0=iz0-ipz0*nz
+        roerrz: if (xxp(3) < procz_bounds(ipz0) .and. iz0 == 1) then
+          if (ipz0 > 0) then
+            ipz0 = ipz0 - 1
+            iz0 = nz
+          else
+            iz0 = 0
+          endif
+        endif roerrz
         ibz0=(iz0-1)/nzb
         iz0=iz0-ibz0*nzb+nghostb
       else

@@ -68,7 +68,7 @@ module Shock
 !
   integer :: idiag_shockmx=0       ! YZAVG_DOC:
 !
-  real, dimension (-3:3,-3:3,-3:3) :: smooth_factor
+  real, dimension (-nghost:nghost,-nghost:nghost,-nghost:nghost) :: smooth_factor
 !
   interface shock_divu_perp
     module procedure shock_divu_perp_pencil
@@ -164,10 +164,8 @@ module Shock
 !  Check that smooth order is within bounds
 !
       if (lroot) then
-        if (ishock_max < 1.or.ishock_max > 3) then
-          call fatal_error('initialize_shock', &
-                           'ishock_max needs to be between 1 and 3.')
-        endif
+        if (ishock_max < 1.or.ishock_max > nghost) &
+          call fatal_error('initialize_shock', 'ishock_max needs to be between 1 and nghost.')
       endif
 !
 !  Die if periodic boundary condition for shock viscosity, but not for
@@ -459,7 +457,7 @@ module Shock
 !  Cut off small divergence if requested.
 !
       if (div_threshold > 0.0) &
-          where(abs(f(:,:,:,ishock)) < div_threshold) f(:,:,:,ishock) = 0.0
+        where(abs(f(:,:,:,ishock)) < div_threshold) f(:,:,:,ishock) = 0.0
 !
 !  Take maximum over a number of grid cells
 !
