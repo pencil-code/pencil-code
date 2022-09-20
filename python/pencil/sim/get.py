@@ -24,6 +24,11 @@ def get(path=".", quiet=False):
         try:
             sim = load("sim", folder=join(path, "pc"))
             sim.update(quiet=quiet)
+
+            if sim.path != path:
+                # The name of the directory containing the simulation has somehow changed (maybe the user renamed it). Better to just try to reload the sim from scratch.
+                raise RuntimeError
+
             return sim
         except:
             import os
