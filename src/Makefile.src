@@ -202,11 +202,7 @@ include Makefile-standard.inc
 ifneq ($(PARTICLES),noparticles)
   PARTICLES_MAIN    =   particles_main
   PARTICLES_SUB     =   particles_sub
-  ifeq ($(DERIV),deriv_2nd)
-    GHOSTFOLD = noghostfold
-  else
-    GHOSTFOLD = ghostfold_$(MPICOMM)
-  endif
+  GHOSTFOLD         =   ghostfold_$(MPICOMM)
   PARTICLES_MPICOMM = noparticles_mpicomm
   ifeq ($(PARTICLES_MAP),noparticles_map)
     PARTICLES_MAP     =   particles_map
@@ -1577,9 +1573,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS=-O0 -finit-real=nan -fno-underscoring -g -fbacktrace -fbounds-check #(norlx65)
 #FFLAGS=-O0 -finit-real=nan -fno-underscoring -g -fbacktrace #(norlx65)
 #FFLAGS=-O0 -fno-underscoring -g -fbacktrace #(norlx65)
-#FFLAGS=-O0 -finit-real=nan -fno-underscoring -g -fbacktrace -fbounds-check #(norlx65)
-#FFLAGS=-O3 -fno-underscoring #(norlx65)
-#FFLAGS=-O0 -fno-underscoring #(norlx65)
 #CC=mpicc #(norlx65)
 #CFLAGS=-O1 #(norlx65)
 #LD_MPI= #(norlx65)
@@ -3299,7 +3292,7 @@ include Makefile.library
 #
 #  Dependencies for regular files.
 #
-#include Makefile.depend
+include Makefile.depend
 
 # DO NOT DELETE
 
