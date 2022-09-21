@@ -100,7 +100,7 @@ module Hydro
   real :: w_sldchar_hyd=1.0
   real :: sigma_uukin=1., tau_uukin=1., time_uukin=1., sigma1_uukin_scl_yz=1.
   real :: binary_radius=0., radius_kinflow=0., width_kinflow=0.
-  integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100, smooth_width=1
+  integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100, smooth_width=3
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
   logical :: lkinflow_as_comaux=.false.
@@ -158,7 +158,7 @@ module Hydro
 !
   real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer, interp_buffer
   real, dimension (:,:,:), allocatable :: smooth_factor
-
+!
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -354,8 +354,8 @@ module Hydro
             call initialize_foreign_comm(frgn_buffer) 
             if (smooth_width>0) then 
               smooth_width = min(smooth_width, nghost)
-              allocate(smooth_factor(-smooth_width:smooth_width,-smooth_width:smooth_width,-smooth_width:smooth_width))           
-              call smoothing_kernel(smooth_factor,lgaussian=.true.)
+              allocate(smooth_factor(-smooth_width:smooth_width,-smooth_width:smooth_width,-smooth_width:smooth_width))
+              call smoothing_kernel(smooth_factor,lgaussian=.true., smth_wid=smooth_width)
             endif
 !
 !  Initially, take two snapshots.
