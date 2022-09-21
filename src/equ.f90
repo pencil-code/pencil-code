@@ -51,7 +51,7 @@ module Equ
       use Gpu
       use Gravity
       use Hydro
-      use Interstellar, only: interstellar_before_boundary
+      use Interstellar, only: interstellar_before_boundary, check_SN
       use Magnetic
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
@@ -348,6 +348,10 @@ module Equ
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif
+!
+!  earliest call to check_SN that does not break the pencil chece!
+!
+      if (linterstellar) call check_SN(f)
 !
 !  Finish the job for the anelastic approximation
 !
