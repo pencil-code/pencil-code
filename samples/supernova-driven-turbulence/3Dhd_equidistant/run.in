@@ -12,8 +12,8 @@
   !dsnap=2., dvid=2., slice_position='m' 
   bcz = 's','s','ubs','ism','ism','cop','cop'
   ip=1963
-  lpencil_check=F
-  lpencil_check_small=F
+  lpencil_check=T
+  lpencil_check_small=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars

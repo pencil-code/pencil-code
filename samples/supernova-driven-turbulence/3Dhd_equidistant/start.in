@@ -12,6 +12,7 @@
   bcz = 's','s','ubs','ism','ism','s','s'
   lwrite_aux=T
   lfix_unit_std=T
+  ip=1963
 /
 &initial_condition_pars
 /
