@@ -137,7 +137,7 @@ else if ($hn =~ *stampede*) then #stampede.tacc.utexas.edu
   else
     set str='s/work/scratch/g'
   endif
-else if ($USER =~ ccyang) then
+else if ($USER =~ ccyang || $hn =~ UA-74RNJ1H) then
   echo "Special entry for Chao-Chin Yang"
   set str='s/devel/scratch/'
 else if ($hn =~ login*) then
