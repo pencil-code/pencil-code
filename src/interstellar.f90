@@ -2864,10 +2864,7 @@ module Interstellar
                 cum_prob_SN(itmp)=cum_prob_SN(itmp-1)+&
                                    exp(-0.5*((z(i)-zdisk)/hSN)**2)
               endif
-              probmpi(i-nghost)=cum_prob_SN(itmp)
             enddo
-            call mpibcast_real(probmpi,nz,PROC=icpu*nprocx*nprocy)
-            cum_prob_SN(icpu*nz+1:icpu*nz+nz)=probmpi
           enddo
           cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
 !
@@ -2912,10 +2909,7 @@ module Interstellar
               cum_prob_SN(itmp)=cum_prob_SN(itmp-1)+&
                                  exp(-0.5*((z(i)-zdisk)/hSN)**2)
             endif
-            probmpi(i-nghost)=cum_prob_SN(itmp)
           enddo
-          !call mpibcast_real(probmpi,nz,PROC=icpu*nprocx*nprocy)
-          !cum_prob_SN(icpu*nz+1:icpu*nz+nz)=probmpi
         enddo
         cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
 !
