@@ -520,15 +520,19 @@ module Io
       call output_hdf5 ('number', mv)
       if (mv > 0) then
         call create_group_hdf5 ('points')
-        do pos=1, nc
-          label = trim (labels(pos))
-          if (label(1:1) == 'i') then
-            label = trim (label(2:))
-            last = len (trim (label))
-            if (label(last:last) == 'q') label = trim (label(1:last-1))
-          endif
-          call output_hdf5 ('points/'//trim(label), fq(:,pos), mv)
-        enddo
+        if (nc > 0) then
+          pos = 1
+          do while (pos <= nc)
+            label = trim (labels(pos))
+            if (label(1:1) == 'i') then
+              label = trim (label(2:))
+              last = len (trim (label))
+              if (label(last:last) == 'q') label = trim (label(1:last-1))
+            endif
+            call output_hdf5 ('points/'//trim(label), fq(:,pos), mv)
+            pos = pos + 1
+          enddo
+        endif
       endif
       call output_hdf5 ('time', real (t))
       call file_close_hdf5
