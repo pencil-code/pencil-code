@@ -203,7 +203,7 @@ class Tensors(object):
                     u[i, :, :, :] = tmp[imask]
                 else:
                     u[i, :, :, 0] = aver.z.__getattribute__(index)[imask, :, iy]
-            except KeyError:
+            except AttributeError:
                 hasUmean=False
             else:
                 hasUmean=True
