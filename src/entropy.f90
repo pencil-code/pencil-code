@@ -609,6 +609,7 @@ module Energy
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nz) :: tmpz
+      real, dimension (nx) :: tmpz_penc
       real :: beta1, cp1, beta0, TT_bcz, star_cte
       integer :: i, j, n, m, stat
       logical :: lnothing, exist
@@ -947,15 +948,15 @@ module Energy
           case ('wave-pressure-equil')
             call get_cp1(cp1)
             do n=n1,n2; do m=m1,m2
-              tmpz=ampl_ss(j)*cos(kx_ss*x(l1:l2))*cos(ky_ss*y(m))*cos(kz_ss*z(n))
-              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+tmpz
+              tmpz_penc=ampl_ss(j)*cos(kx_ss*x(l1:l2))*cos(ky_ss*y(m))*cos(kz_ss*z(n))
+              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+tmpz_penc
               if (ldensity_nolog) then
-                tmpz=1./exp(cp1*tmpz)
-                f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)*tmpz
+                tmpz_penc=1./exp(cp1*tmpz_penc)
+                f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)*tmpz_penc
                 if (lreference_state) &
-                  f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)-(1.-tmpz)*reference_state(:,iref_rho)
+                  f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)-(1.-tmpz_penc)*reference_state(:,iref_rho)
               else
-                f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-cp1*tmpz
+                f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-cp1*tmpz_penc
               endif
             enddo; enddo
           case default
