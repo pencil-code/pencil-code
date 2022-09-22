@@ -437,7 +437,7 @@ $i=0;
 foreach my $pencil (@pencil_names){
   $data_cparam_pencil .= ", " if ($i != 0);
   $data_cparam_pencil .= "'$pencil" . " " x ($penc_name_len-length($pencil)) . "'";
-  $data_cparam_pencil .= "  &\n   " if (($i % 4) == 3);
+  $data_cparam_pencil .= "  &\n   " if (($i % 5) == 3);
   $i++;
 }
 $data_cparam_pencil .= " /)\n";
