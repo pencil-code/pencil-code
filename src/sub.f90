@@ -8671,22 +8671,23 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
     endsubroutine find_index_by_bisection
 !***********************************************************************
-    subroutine smoothing_kernel(kernel,lgaussian,weights_, smth_wid)
+    subroutine smoothing_kernel(kernel,lgaussian,weights_,smth_wid)
 !
 !  24-aug-02/fred&matthias: coded
 !
       use General, only: loptest
 !
-      integer, optional :: smth_wid   !Get the width of the smoothing array
-      real, dimension (:,:,:) ::kernel
+      real, dimension (:,:,:) :: kernel
       logical, optional :: lgaussian
       real, dimension(:), optional :: weights_
+      integer, optional :: smth_wid   ! width of the smoothing array
+
       intent(out) :: kernel
-      intent(in) :: lgaussian, weights_
+      intent(in) :: lgaussian,weights_,smth_wid
 !
       integer :: i,j,k,width
-      real :: mu=0., sig=1., twopi=6.283185
-      real, dimension(:),  allocatable ::weights
+      real, parameter :: mu=0., sig=1., twopi=6.283185
+      real, dimension(:),  allocatable :: weights
 !
 !  Calculate the smoothing factors
 !
@@ -8695,7 +8696,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       if (present(weights_)) then
         weights=weights_
       else 
-        if (size(kernel,1)/2==nghost) then !In this kase size(kernel,1)/2=3
+        if (size(kernel,1)/2==nghost) then       ! i.e. smoothing width = nghost
           width = nghost
           allocate(weights(-width:width))
           if (loptest(lgaussian,.true.)) then
@@ -8703,22 +8704,22 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
           else
             weights(-width:width) = (/1.,6.,15.,20.,15.,6.,1./)
           endif
-        else if (present(smth_wid)) then !Take into account possible alternative widths
+        else if (present(smth_wid)) then         ! take into account possible alternative width
             width = smth_wid
             allocate(weights(-width:width))
-            if(loptest(lgaussian,.true.)) then
-              do i=1, 2*width+1 !Fill the weights with gaussian distri.
-                weights(i-width-1)  = exp(-0.5*(((i-width-1) - mu)/sig)**2) / (sig*sqrt(twopi))
+            if (loptest(lgaussian,.true.)) then
+              do i=-width, width                  ! fill the weights with gaussian distribution.
+                weights(i) = exp(-0.5*((i - mu)/sig)**2) / (sig*sqrt(twopi))
               enddo
-              weights = weights/weights(-width) !Normalize to begin/end in 1.0
+              weights = weights/weights(-width)  ! normalize to begin/end in 1.0
             else
               call fatal_error('smoothing_kernel','Case not implemented yet')
-              !weights(-smth_wid:smth_wid) = (//) !What rule was applied to the second case?
+              !weights(-smth_wid:smth_wid) = (//) ! What rule was applied to the non-Gaussian case?
             endif
         else          
-          call fatal_error('smoothing_kernel','check correct parameters')
-        endif !size(kernel) & present(smth_wid)
-      endif !present(weigths_)
+          call fatal_error('smoothing_kernel','check parameters')
+        endif ! size(kernel) & present(smth_wid)
+      endif   ! present(weigths_)
 !
       if (nxgrid > 1) then
         do i = 1,2*width+1
@@ -8728,7 +8729,6 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         kernel(:width,:,:) = 0.
         kernel(width+2:,:,:) = 0.
       endif
-! 
 ! 
       if (nygrid > 1) then
         do j = 1,2*width+1
