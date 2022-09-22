@@ -608,7 +608,7 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (nz) :: tmpz
+      real, dimension (nzgrid) :: tmpz
       real, dimension (nx) :: tmpz_penc
       real :: beta1, cp1, beta0, TT_bcz, star_cte
       integer :: i, j, n, m, stat
