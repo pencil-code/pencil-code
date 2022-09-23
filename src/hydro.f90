@@ -1208,10 +1208,10 @@ module Hydro
         call get_shared_variable('reference_state',reference_state)
 !
       lcalc_uumeanz = lcalc_uumeanz .or. lcalc_uumean .or. ltestfield_xz .or. &      ! lcalc_uumean for compatibility
-                      lremove_uumeanz .or. lremove_uumeanz_horizontal
+                      lremove_uumeanz .or. lremove_uumeanz_horizontal .or. lSchur_3D3D1D_uu
       lcalc_uumeanx = lcalc_uumeanx.or.lremove_uumeanx
       lcalc_uumeany = lcalc_uumeany.or.lremove_uumeany
-      lcalc_uumeanxy = lcalc_uumeanxy .or. lremove_uumeanxy.or.ltestfield_xy
+      lcalc_uumeanxy = lcalc_uumeanxy .or. lremove_uumeanxy.or.ltestfield_xy.or.lSchur_2D2D3D_uu
 !
       if (lremove_uumeanz.or.lremove_uumeanx.or.lremove_uumeany) then
         if (lremove_mean_flow) call warning('initialize_hydro', &
@@ -4963,6 +4963,25 @@ module Hydro
             enddo
           enddo
         endif
+!
+!  Do z-averaged for Schur flows
+!
+      if (lSchur_2D2D3D_uu) then
+        do j=1,2
+          do n=1,mz
+            !f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumxy(:,:,j)
+            f(:,:,n,iuu+j-1) = uumxy(:,:,j)
+          enddo
+        enddo
+      endif
+!
+!  Do xy-averaged for Schur flows
+!
+      if (lSchur_3D3D1D_uu) then
+        do n=1,mz
+            f(:,:,n,iuu+2) = uumz(n,3)
+        enddo
+      endif
 !
 !  Remove mean flow (xy average).
 !
