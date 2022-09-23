@@ -465,7 +465,8 @@ module Param_IO
       integer :: idum
 !
 !AB: putting it to impossible is not correct; it should be inherited from the previous run.
-!     tstart=impossible
+!AB: enabled again...
+      tstart=impossible
 !
 !  Open namelist file.
 !
