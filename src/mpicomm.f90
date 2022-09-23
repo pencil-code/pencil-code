@@ -310,7 +310,6 @@ print*, 'lforeign, nprocs, nprocs_penc=', lforeign, nprocs, nprocs_penc
             print*, 'number of processors = '//trim(itoa(nprocs))// &
                     ' = number of own processors -> no procs for foreign code left'
           endif
-        
           call stop_it('initialize_mpicomm')
         endif
       endif
@@ -10112,7 +10111,6 @@ endif
         frgn_setup%root=ncpus
         frgn_setup%tag=tag_foreign
         frgn_setup%t_last_recvd=t
-
 !print*, 'iproc, iproc_world, MPI_COMM_UNIVERSE, MPI_COMM_WORLD=', iproc, &
 !        iproc_world, MPI_COMM_UNIVERSE, MPI_COMM_WORLD
         if (lroot) then
@@ -10143,7 +10141,6 @@ endif
 !  Receive processor numbers of foreign code.
 !      
           call mpirecv_int(intbuf,3,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
-          
           frgn_setup%procnums=intbuf
           frgn_setup%ncpus=product(intbuf)
           !if (ncpus+frgn_setup%ncpus/=nprocs) &
@@ -10224,7 +10221,6 @@ endif
 !  Send confirmation flag that setup is acceptable.
 ! 
           call mpisend_logical(lok,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
-
         endif
 
         call mpibcast_logical(lok,comm=MPI_COMM_PENCIL)
@@ -10275,9 +10271,6 @@ endif
           call mpisend_int(nprocz,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !
         endif
-call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
-call MPI_FINALIZE(mpierr)
-stop
 
         call mpibcast_real(frgn_setup%renorm_L,comm=MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%renorm_t,comm=MPI_COMM_PENCIL)
@@ -10287,7 +10280,7 @@ stop
         call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_PENCIL)
         call mpibcast_int(frgn_setup%proc_multis,3,comm=MPI_COMM_PENCIL)
         tag  = tag_foreign+iproc
-
+!
         if (frgn_setup%procnums(1)==1) then   !EULAG case
 !print*, 'PENCIL: frgn_setup%proc_multis=', frgn_setup%proc_multis
 
@@ -10308,6 +10301,7 @@ stop
         allocate(frgn_setup%yind_rng(-1:frgn_setup%procnums(2)-1,2)); frgn_setup%yind_rng=0
 !
         if (lfirst_proc_xz) then             ! on processors of first YBEAM
+
 !                              
 !  Broadcast foreign ygrid to all procs with iprocx=iprocz=0.
 !                              
@@ -10324,12 +10318,18 @@ stop
 !
           do py=0,frgn_setup%procnums(2)-1
 !
-!       Determine the peer using EULAG proc grid conventions.
+!       Determine the peer using PENCIL (Not EULAG) proc grid conventions.
 !
             peer = find_proc_general(0,py,0,frgn_setup%procnums(3),frgn_setup%procnums(2),frgn_setup%procnums(1),.true.)
 
-            call mpisendrecv_int(frgn_setup%yind_rng(-1,:),2,ncpus+peer,tag_foreign+iproc, & 
-                                 frgn_setup%yind_rng(py,:),ncpus+peer,tag_foreign,MPI_COMM_WORLD)
+print*,'PCASA 1', iproc, ncpus+peer, tag_foreign+iproc
+
+            call mpisend_int(frgn_setup%yind_rng(-1,:),2,ncpus+peer,tag_foreign+iproc, MPI_COMM_WORLD)
+            !!!call mpisendrecv_int(frgn_setup%yind_rng(-1,:),2,ncpus+peer,tag_foreign+iproc, & 
+            !!!                     frgn_setup%yind_rng(py,:),ncpus+peer,tag_foreign+peer,MPI_COMM_WORLD)
+            call mpirecv_int(intbuf,2,ncpus+peer,tag_foreign+peer,MPI_COMM_WORLD)
+            frgn_setup%yind_rng(py,:)=intbuf(1:2)
+!print*,'PCASA2', iproc
             if (frgn_setup%ypeer_rng(1)>0) then
               if (frgn_setup%yind_rng(py,1)==0) frgn_setup%ypeer_rng(2)=py-1
             else
@@ -10339,6 +10339,11 @@ stop
           if (frgn_setup%ypeer_rng(2)==0) frgn_setup%ypeer_rng(2)=py-1
 !
         endif   !lfirst_proc_xz
+
+!print*, 'PENCIL - BARRIER', iproc
+call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+call MPI_FINALIZE(mpierr)
+stop
 
         if (lfirst_proc_yz) then             ! on processors of first XBEAM
 !                              

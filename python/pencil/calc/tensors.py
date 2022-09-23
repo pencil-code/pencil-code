@@ -39,7 +39,7 @@ class Tensors(object):
         aver=[],
         datatopdir=".",
         lskip_zeros=False,
-        proc=0,
+        proc=-1,
         rank=0,
         rmfzeros=1,
         rmbzeros=1,
@@ -85,6 +85,8 @@ class Tensors(object):
         from pencil import read
 
         os.chdir(datatopdir)  # return to working directory
+        if isinstance(aver,list):
+            aver = read.aver('z',proc=proc)
         grid = read.grid(proc=proc, trim=True, quiet=True)
         # if iy None or scalar create numpy array
         try:
