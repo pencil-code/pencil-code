@@ -4964,24 +4964,15 @@ module Hydro
           enddo
         endif
 !
-!  Do z-averaged for Schur flows
+!  Do z-averaging for Schur flows
 !
-      if (lSchur_2D2D3D_uu) then
-        do j=1,2
-          do n=1,mz
-            !f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumxy(:,:,j)
-            f(:,:,n,iuu+j-1) = uumxy(:,:,j)
+        if (lSchur_2D2D3D_uu) then
+          do j=1,2
+            do n=1,mz
+              f(:,:,n,iuu+j-1) = uumxy(:,:,j)
+            enddo
           enddo
-        enddo
-      endif
-!
-!  Do xy-averaged for Schur flows
-!
-      if (lSchur_3D3D1D_uu) then
-        do n=1,mz
-            f(:,:,n,iuu+2) = uumz(n,3)
-        enddo
-      endif
+        endif
 !
 !  Remove mean flow (xy average).
 !
@@ -4999,6 +4990,14 @@ module Hydro
             do n=1,mz
               f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
             enddo
+          enddo
+        endif
+!
+!  Do xy-averaging for Schur flows
+!
+        if (lSchur_3D3D1D_uu) then
+          do n=1,mz
+            f(:,:,n,iuu+2) = uumz(n,3)
           enddo
         endif
 !
