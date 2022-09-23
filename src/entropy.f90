@@ -3353,10 +3353,10 @@ module Energy
 !  Add advection term from an imposed spatially constant gradient of S.
 !  This makes sense really only for periodic boundary conditions.
 !
-        do j=1,3
-          if (gradS0_imposed(j)/=0.) &
-            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-gradS0_imposed(j)*p%uu(:,j)
-        enddo
+      do j=1,3
+        if (gradS0_imposed(j)/=0.) &
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-gradS0_imposed(j)*p%uu(:,j)
+      enddo
 !
 !  Calculate viscous contribution to entropy.
 !
