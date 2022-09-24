@@ -10,6 +10,10 @@
 %%   bfield.f90
 %%   density_stratified.f90
 %%   gravity_simple.f90
+%%   hydro_81461.f90
+%%   hydro_81501.f90
+%%   hydro_81502.f90
+%%   hydro_81610.f90
 %%   hydro_potential.f90
 %%   magnetic_shearboxJ.f90
 %%   shock_highorder.f90
@@ -117,6 +121,114 @@
   \var{epotuxmx}  & $\left<\varrho \Phi_{\rm grav}
                     u_x \right>_{yz}$
                     \quad(potential energy flux) \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_81461.f90}} \\
+\midrule
+  \var{uxmx}      & $\left< u_x \right>_{yz}$ \\
+  \var{uymx}      & $\left< u_y \right>_{yz}$ \\
+  \var{uzmx}      & $\left< u_z \right>_{yz}$ \\
+  \var{ruxmx}     & $\left<\varrho u_x \right>_{yz}$ \\
+  \var{ruymx}     & $\left<\varrho u_y \right>_{yz}$ \\
+  \var{ruzmx}     & $\left<\varrho u_z \right>_{yz}$ \\
+  \var{rux2mx}    & $\langle\rho u_x^2\rangle_{yz}$ \\
+  \var{ruy2mx}    & $\langle\rho u_y^2\rangle_{yz}$ \\
+  \var{ruz2mx}    & $\langle\rho u_z^2\rangle_{yz}$ \\
+  \var{ruxuymx}   & $\langle\rho u_x u_y\rangle_{yz}$ \\
+  \var{ruxuzmx}   & $\langle\rho u_x u_z\rangle_{yz}$ \\
+  \var{ruyuzmx}   & $\langle\rho u_y u_z\rangle_{yz}$ \\
+  \var{ux2mx}     & $\left<u_x^2\right>_{yz}$ \\
+  \var{uy2mx}     & $\left<u_y^2\right>_{yz}$ \\
+  \var{uz2mx}     & $\left<u_z^2\right>_{yz}$ \\
+  \var{ox2mx}     & $\left<\omega_x^2\right>_{yz}$ \\
+  \var{oy2mx}     & $\left<\omega_y^2\right>_{yz}$ \\
+  \var{oz2mx}     & $\left<\omega_z^2\right>_{yz}$ \\
+  \var{uxuymx}    & $\langle u_x u_y\rangle_{yz}$ \\
+  \var{uxuzmx}    & $\langle u_x u_z\rangle_{yz}$ \\
+  \var{uyuzmx}    & $\langle u_y u_z\rangle_{yz}$ \\
+  \var{oumx}      & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>_{yz}$ \\
+  \var{ekinmx}    & $\langle{1\over2}\rho u^2\rangle_{xy}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_81501.f90}} \\
+\midrule
+  \var{uxmx}      & $\left< u_x \right>_{yz}$ \\
+  \var{uymx}      & $\left< u_y \right>_{yz}$ \\
+  \var{uzmx}      & $\left< u_z \right>_{yz}$ \\
+  \var{ruxmx}     & $\left<\varrho u_x \right>_{yz}$ \\
+  \var{ruymx}     & $\left<\varrho u_y \right>_{yz}$ \\
+  \var{ruzmx}     & $\left<\varrho u_z \right>_{yz}$ \\
+  \var{rux2mx}    & $\langle\rho u_x^2\rangle_{yz}$ \\
+  \var{ruy2mx}    & $\langle\rho u_y^2\rangle_{yz}$ \\
+  \var{ruz2mx}    & $\langle\rho u_z^2\rangle_{yz}$ \\
+  \var{ruxuymx}   & $\langle\rho u_x u_y\rangle_{yz}$ \\
+  \var{ruxuzmx}   & $\langle\rho u_x u_z\rangle_{yz}$ \\
+  \var{ruyuzmx}   & $\langle\rho u_y u_z\rangle_{yz}$ \\
+  \var{ux2mx}     & $\left<u_x^2\right>_{yz}$ \\
+  \var{uy2mx}     & $\left<u_y^2\right>_{yz}$ \\
+  \var{uz2mx}     & $\left<u_z^2\right>_{yz}$ \\
+  \var{ox2mx}     & $\left<\omega_x^2\right>_{yz}$ \\
+  \var{oy2mx}     & $\left<\omega_y^2\right>_{yz}$ \\
+  \var{oz2mx}     & $\left<\omega_z^2\right>_{yz}$ \\
+  \var{uxuymx}    & $\langle u_x u_y\rangle_{yz}$ \\
+  \var{uxuzmx}    & $\langle u_x u_z\rangle_{yz}$ \\
+  \var{uyuzmx}    & $\langle u_y u_z\rangle_{yz}$ \\
+  \var{oumx}      & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>_{yz}$ \\
+  \var{ekinmx}    & $\langle{1\over2}\rho u^2\rangle_{xy}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_81502.f90}} \\
+\midrule
+  \var{uxmx}      & $\left< u_x \right>_{yz}$ \\
+  \var{uymx}      & $\left< u_y \right>_{yz}$ \\
+  \var{uzmx}      & $\left< u_z \right>_{yz}$ \\
+  \var{ruxmx}     & $\left<\varrho u_x \right>_{yz}$ \\
+  \var{ruymx}     & $\left<\varrho u_y \right>_{yz}$ \\
+  \var{ruzmx}     & $\left<\varrho u_z \right>_{yz}$ \\
+  \var{rux2mx}    & $\langle\rho u_x^2\rangle_{yz}$ \\
+  \var{ruy2mx}    & $\langle\rho u_y^2\rangle_{yz}$ \\
+  \var{ruz2mx}    & $\langle\rho u_z^2\rangle_{yz}$ \\
+  \var{ruxuymx}   & $\langle\rho u_x u_y\rangle_{yz}$ \\
+  \var{ruxuzmx}   & $\langle\rho u_x u_z\rangle_{yz}$ \\
+  \var{ruyuzmx}   & $\langle\rho u_y u_z\rangle_{yz}$ \\
+  \var{ux2mx}     & $\left<u_x^2\right>_{yz}$ \\
+  \var{uy2mx}     & $\left<u_y^2\right>_{yz}$ \\
+  \var{uz2mx}     & $\left<u_z^2\right>_{yz}$ \\
+  \var{ox2mx}     & $\left<\omega_x^2\right>_{yz}$ \\
+  \var{oy2mx}     & $\left<\omega_y^2\right>_{yz}$ \\
+  \var{oz2mx}     & $\left<\omega_z^2\right>_{yz}$ \\
+  \var{uxuymx}    & $\langle u_x u_y\rangle_{yz}$ \\
+  \var{uxuzmx}    & $\langle u_x u_z\rangle_{yz}$ \\
+  \var{uyuzmx}    & $\langle u_y u_z\rangle_{yz}$ \\
+  \var{oumx}      & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>_{yz}$ \\
+  \var{ekinmx}    & $\langle{1\over2}\rho u^2\rangle_{xy}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_81610.f90}} \\
+\midrule
+  \var{uxmx}      & $\left< u_x \right>_{yz}$ \\
+  \var{uymx}      & $\left< u_y \right>_{yz}$ \\
+  \var{uzmx}      & $\left< u_z \right>_{yz}$ \\
+  \var{ruxmx}     & $\left<\varrho u_x \right>_{yz}$ \\
+  \var{ruymx}     & $\left<\varrho u_y \right>_{yz}$ \\
+  \var{ruzmx}     & $\left<\varrho u_z \right>_{yz}$ \\
+  \var{rux2mx}    & $\langle\rho u_x^2\rangle_{yz}$ \\
+  \var{ruy2mx}    & $\langle\rho u_y^2\rangle_{yz}$ \\
+  \var{ruz2mx}    & $\langle\rho u_z^2\rangle_{yz}$ \\
+  \var{ruxuymx}   & $\langle\rho u_x u_y\rangle_{yz}$ \\
+  \var{ruxuzmx}   & $\langle\rho u_x u_z\rangle_{yz}$ \\
+  \var{ruyuzmx}   & $\langle\rho u_y u_z\rangle_{yz}$ \\
+  \var{ux2mx}     & $\left<u_x^2\right>_{yz}$ \\
+  \var{uy2mx}     & $\left<u_y^2\right>_{yz}$ \\
+  \var{uz2mx}     & $\left<u_z^2\right>_{yz}$ \\
+  \var{ox2mx}     & $\left<\omega_x^2\right>_{yz}$ \\
+  \var{oy2mx}     & $\left<\omega_y^2\right>_{yz}$ \\
+  \var{oz2mx}     & $\left<\omega_z^2\right>_{yz}$ \\
+  \var{uxuymx}    & $\langle u_x u_y\rangle_{yz}$ \\
+  \var{uxuzmx}    & $\langle u_x u_z\rangle_{yz}$ \\
+  \var{uyuzmx}    & $\langle u_y u_z\rangle_{yz}$ \\
+  \var{oumx}      & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>_{yz}$ \\
+  \var{ekinmx}    & $\langle{1\over2}\rho u^2\rangle_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{hydro_potential.f90}} \\
 \midrule

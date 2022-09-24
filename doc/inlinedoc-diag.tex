@@ -30,6 +30,10 @@
 %%   gravitational_waves_hij6.f90
 %%   gravity_simple.f90
 %%   heatflux.f90
+%%   hydro_81461.f90
+%%   hydro_81501.f90
+%%   hydro_81502.f90
+%%   hydro_81610.f90
 %%   hydro_kinematic.f90
 %%   hydro_potential.f90
 %%   lorenz_gauge.f90
@@ -107,6 +111,9 @@
   \var{outm}      & $\left<\omv(t)\cdot\int_0^t\uv(t')
                     dt'\right>$ \\
   \var{fkinzm}    & $\left<{1\over2} \varrho\uv^2 u_z\right>$ \\
+  \var{gamm}      & $\left<gamma\right>$ \\
+  \var{gamrms}    & $\left<\gamma^2\right>^{1/2}$ \\
+  \var{gammax}    & $\max(\gamma)$ \\
   \var{u2m}       & $\left<\uv^2\right>$ \\
   \var{u2sphm}    & $\int_{r=0}^{r=1} \uv^2 dV$,
                     where $r=\sqrt{x^2+y^2+z^2}$ \\
@@ -139,10 +146,15 @@
   \var{uxm}       & $\left<u_x\right>$ \\
   \var{uym}       & $\left<u_y\right>$ \\
   \var{uzm}       & $\left<u_z\right>$ \\
+  \var{uzcx10m}   & $\left<u_z\cos10x\right>$ \\
+  \var{uzsx10m}   & $\left<u_z\sin10x\right>$ \\
   \var{uduum}     & $\left<\boldsymbol{u}\cdot\boldsymbol{u}\right>$ \\
   \var{ux2m}      & $\left<u_x^2\right>$ \\
   \var{uy2m}      & $\left<u_y^2\right>$ \\
   \var{uz2m}      & $\left<u_z^2\right>$ \\
+  \var{ux3m}      & $\left<u_x^3\right>$ \\
+  \var{uy3m}      & $\left<u_y^3\right>$ \\
+  \var{uz3m}      & $\left<u_z^3\right>$ \\
   \var{ux4m}      & $\left<u_x^4\right>$ \\
   \var{uy4m}      & $\left<u_y^4\right>$ \\
   \var{uz4m}      & $\left<u_z^4\right>$ \\
@@ -234,6 +246,12 @@
   \var{ox2m}      & $\left<\omega_x^2\right>$ \\
   \var{oy2m}      & $\left<\omega_y^2\right>$ \\
   \var{oz2m}      & $\left<\omega_z^2\right>$ \\
+  \var{ox3m}      & $\left<\omega_x^3\right>$ \\
+  \var{oy3m}      & $\left<\omega_y^3\right>$ \\
+  \var{oz3m}      & $\left<\omega_z^3\right>$ \\
+  \var{ox4m}      & $\left<\omega_x^4\right>$ \\
+  \var{oy4m}      & $\left<\omega_y^4\right>$ \\
+  \var{oz4m}      & $\left<\omega_z^4\right>$ \\
   \var{oxuzxm}    & $\left<\omega_x u_{z,x} \right>$ \\
   \var{oyuzym}    & $\left<\omega_y u_{z,y} \right>$ \\
   \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
@@ -397,6 +415,7 @@
   \var{j2m}       & $\left<\jv^2\right>$ \\
   \var{jm2}       & $\max(\jv^2)$ \\
   \var{abm}       & $\left<\Av\cdot\Bv\right>$ \\
+  \var{gLamam}    & $\left<\nabla\Lambda\cdot\Av\right>$ \\
   \var{gLambm}    & $\left<\nabla\Lambda\cdot\Bv\right>$ \\
   \var{abumx}     & $\left<u_x\Av\cdot\Bv\right>$ \\
   \var{abumy}     & $\left<u_y\Av\cdot\Bv\right>$ \\
@@ -593,6 +612,9 @@
   \var{bx2m}      & $\left< B_x^2 \right>$ \\
   \var{by2m}      & $\left< B_y^2 \right>$ \\
   \var{bz2m}      & $\left< B_z^2 \right>$ \\
+  \var{bx3m}      & $\left< B_x^3 \right>$ \\
+  \var{by3m}      & $\left< B_y^3 \right>$ \\
+  \var{bz3m}      & $\left< B_z^3 \right>$ \\
   \var{bx4m}      & $\left< B_x^4 \right>$ \\
   \var{by4m}      & $\left< B_y^4 \right>$ \\
   \var{bz4m}      & $\left< B_z^4 \right>$ \\
@@ -636,6 +658,8 @@
   \var{WL2D}      & $\left<J_i u_j A_{i,j} \right>$ \\
   \var{WL3D}      & $-\left<J_i u_j A_{j,i} \right>$ \\
   \var{WL3D2}     & $\left<J_i A_j u_{j,i} \right>$ \\
+  \var{bij2m}     & $\left<|\hat{B}_{i,j}|^2\right>$ \\
+  \var{sijbibjm}  & $\left<S_{i,j} B_i B_j\right>$ \\
   \var{ubgbpm}    & $\left<\uv\cdot(\Bv\cdot\nabla\Bv)\right>$ \\
   \var{ugb22m}    & $\left<\uv\cdot\nabla\Bv^2/2)\right>$ \\
   \var{jxbrmax}   & $\max(|\Jv\times\Bv/\rho|)$ \\
@@ -1049,6 +1073,782 @@
   \var{qrms}      & $\sqrt(|\qv|^2)$ \\
   \var{qsatmin}   & minimum of qsat/qabs \\
   \var{qsatrms}   & rms of qsat/abs \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_81461.f90}} \\
+\midrule
+  \var{u2tm}      & $\left<\uv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
+  \var{uotm}      & $\left<\uv(t)\cdot\int_0^t\omv(t')
+                    dt'\right>$ \\
+  \var{outm}      & $\left<\omv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
+  \var{fkinzm}    & $\left<{1\over2} \varrho\uv^2 u_z\right>$ \\
+  \var{gamm}      & $\left<gamma\right>$ \\
+  \var{gamrms}    & $\left<\gamma^2\right>^{1/2}$ \\
+  \var{gammax}    & $\max(\gamma)$ \\
+  \var{u2m}       & $\left<\uv^2\right>$ \\
+  \var{u2sphm}    & $\int_{r=0}^{r=1} \uv^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
+  \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
+  \var{uypt}      & $u_y(x_1,y_1,z_1,t)$ \\
+  \var{uzpt}      & $u_z(x_1,y_1,z_1,t)$ \\
+  \var{uxp2}      & $u_x(x_2,y_2,z_2,t)$ \\
+  \var{uyp2}      & $u_y(x_2,y_2,z_2,t)$ \\
+  \var{uzp2}      & $u_z(x_2,y_2,z_2,t)$ \\
+  \var{uxuypt}    & $(u_x u_y)(x_1,y_1,z_1,t)$ \\
+  \var{uyuzpt}    & $(u_y u_z)(x_1,y_1,z_1,t)$ \\
+  \var{uzuxpt}    & $(u_z u_x)(x_1,y_1,z_1,t)$ \\
+  \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
+  \var{urmsx}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_xaver_range \\
+  \var{urmsz}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_zaver_range \\
+  \var{durms}     & $\left<\delta\uv^2\right>^{1/2}$ \\
+  \var{umax}      & $\max(|\uv|)$ \\
+  \var{umin}      & $\min(|\uv|)$ \\
+  \var{uxrms}     & $\left<u_x^2\right>^{1/2}$ \\
+  \var{uyrms}     & $\left<u_y^2\right>^{1/2}$ \\
+  \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
+  \var{uxmin}     & $\min(|u_x|)$ \\
+  \var{uymin}     & $\min(|u_y|)$ \\
+  \var{uzmin}     & $\min(|u_z|)$ \\
+  \var{uxmax}     & $\max(|u_x|)$ \\
+  \var{uymax}     & $\max(|u_y|)$ \\
+  \var{uzmax}     & $\max(|u_z|)$ \\
+  \var{uxm}       & $\left<u_x\right>$ \\
+  \var{uym}       & $\left<u_y\right>$ \\
+  \var{uzm}       & $\left<u_z\right>$ \\
+  \var{uzcx10m}   & $\left<u_z\cos10x\right>$ \\
+  \var{uzsx10m}   & $\left<u_z\sin10x\right>$ \\
+  \var{uduum}     & $\left<\boldsymbol{u}\cdot\boldsymbol{u}\right>$ \\
+  \var{ux2m}      & $\left<u_x^2\right>$ \\
+  \var{uy2m}      & $\left<u_y^2\right>$ \\
+  \var{uz2m}      & $\left<u_z^2\right>$ \\
+  \var{ux3m}      & $\left<u_x^3\right>$ \\
+  \var{uy3m}      & $\left<u_y^3\right>$ \\
+  \var{uz3m}      & $\left<u_z^3\right>$ \\
+  \var{ux4m}      & $\left<u_x^4\right>$ \\
+  \var{uy4m}      & $\left<u_y^4\right>$ \\
+  \var{uz4m}      & $\left<u_z^4\right>$ \\
+  \var{uxuy2m}    & $\left<u_x^2u_y^2\right>$ \\
+  \var{uyuz2m}    & $\left<u_y^2u_z^2\right>$ \\
+  \var{uzux2m}    & $\left<u_z^2u_x^2\right>$ \\
+  \var{ux2ccm}    & $\left<u_x^2\cos^2kz\right>$ \\
+  \var{ux2ssm}    & $\left<u_x^2\sin^2kz\right>$ \\
+  \var{uy2ccm}    & $\left<u_y^2\cos^2kz\right>$ \\
+  \var{uy2ssm}    & $\left<u_y^2\sin^2kz\right>$ \\
+  \var{uxuycsm}   & $\left<u_xu_y\cos kz\sin kz\right>$ \\
+  \var{uxuym}     & $\left<u_x u_y\right>$ \\
+  \var{uxuzm}     & $\left<u_x u_z\right>$ \\
+  \var{uyuzm}     & $\left<u_y u_z\right>$ \\
+  \var{umx}       & $\left< u_x \right>$ \\
+  \var{umy}       & $\left< u_y \right>$ \\
+  \var{umz}       & $\left< u_z \right>$ \\
+  \var{omumz}     & $\left<\left<\Wv\right>_{xy}
+                    \cdot\left<\Uv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umamz}     & $\left<\left<\uv\right>_{xy}\cdot\left<\Av\right>_{xy}\right>$ \\
+  \var{umbmz}     & $\left<\left<\Uv\right>_{xy}
+                    \cdot\left<\Bv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umxbmz}    & $\left<\left<\Uv\right>_{xy}
+                    \times\left<\Bv\right>_{xy}
+                    \right>_z$ \quad($xy$-averaged
+                    mean emf) \\
+  \var{rux2m}     & $\left<\rho u_x^2\right>$ \\
+  \var{ruy2m}     & $\left<\rho u_y^2\right>$ \\
+  \var{ruz2m}     & $\left<\rho u_z^2\right>$ \\
+  \var{divum}     & $\left<{\rm div}\uv)\right>$ \\
+  \var{rdivum}    & $\left<\varrho{\rm div}\uv)\right>$ \\
+  \var{divu2m}    & $\left<({\rm div}\uv)^2\right>$ \\
+  \var{gdivu2m}   & $\left<({\rm grad\,div}\uv)^2\right>$ \\
+  \var{u3u21m}    & $\left<u_3 u_{2,1}\right>$ \\
+  \var{u1u32m}    & $\left<u_1 u_{3,2}\right>$ \\
+  \var{u2u13m}    & $\left<u_2 u_{1,3}\right>$ \\
+  \var{u2u31m}    & $\left<u_2 u_{3,1}\right>$ \\
+  \var{u3u12m}    & $\left<u_3 u_{1,2}\right>$ \\
+  \var{u1u23m}    & $\left<u_1 u_{2,3}\right>$ \\
+  \var{ruxm}      & $\left<\varrho u_x\right>$
+                    \quad(mean $x$-momentum density) \\
+  \var{ruym}      & $\left<\varrho u_y\right>$
+                    \quad(mean $y$-momentum density) \\
+  \var{ruzm}      & $\left<\varrho u_z\right>$
+                    \quad(mean $z$-momentum density) \\
+  \var{ruxtot}    & $\left<\rho |u|\right>$
+                    \quad(mean absolute $x$-momentum density) \\
+  \var{rumax}     & $\max(\varrho |\uv|)$
+                    \quad(maximum modulus of momentum) \\
+  \var{ruxuym}    & $\left<\varrho u_x u_y\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruxuzm}    & $\left<\varrho u_x u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruyuzm}    & $\left<\varrho u_y u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
+  \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
+  \var{rlxm}      & $\left< \rho y u_z - z u_y \right>$ \\
+  \var{rlym}      & $\left< \rho z u_x - x u_z \right>$ \\
+  \var{rlzm}      & $\left< \rho x u_y - y u_x \right>$ \\
+  \var{rlx2m}     & $\left<(\rho y u_z-z u_y)^2\right>$ \\
+  \var{rly2m}     & $\left<(\rho z u_x-x u_z)^2\right>$ \\
+  \var{rlz2m}     & $\left<(\rho x u_y-y u_x)^2\right>$ \\
+  \var{tot_ang_mom} & Total angular momentum in spherical
+                    coordinates about the axis. \\
+  \var{dtu}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{u}|]$
+                    \quad(time step relative to
+                    advective time step;
+                    see \S~\ref{time-step}) \\
+  \var{oum}       & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
+  \var{oxum}      & $\left<\boldsymbol{\omega}\times\uv\right>$ \\
+  \var{ourms}     & $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$ \\
+  \var{oxurms}    & $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$ \\
+  \var{ou_int}    & $\int_V\boldsymbol{\omega}\cdot\uv\,dV$ \\
+  \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
+  \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
+  \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
+                    \equiv \left<(\curl\uv)^2\right>$ \\
+  \var{o2u2m}     & $\left<\uv^2\boldsymbol{\omega}^2\right>$ \\
+  \var{o2sphm}    & $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
+  \var{orms}      & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
+  \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
+  \var{ox2m}      & $\left<\omega_x^2\right>$ \\
+  \var{oy2m}      & $\left<\omega_y^2\right>$ \\
+  \var{oz2m}      & $\left<\omega_z^2\right>$ \\
+  \var{ox3m}      & $\left<\omega_x^3\right>$ \\
+  \var{oy3m}      & $\left<\omega_y^3\right>$ \\
+  \var{oz3m}      & $\left<\omega_z^3\right>$ \\
+  \var{ox4m}      & $\left<\omega_x^4\right>$ \\
+  \var{oy4m}      & $\left<\omega_y^4\right>$ \\
+  \var{oz4m}      & $\left<\omega_z^4\right>$ \\
+  \var{oxuzxm}    & $\left<\omega_x u_{z,x} \right>$ \\
+  \var{oyuzym}    & $\left<\omega_y u_{z,y} \right>$ \\
+  \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
+  \var{oxozm}     & $\left<\omega_x\omega_z\right>$ \\
+  \var{oyozm}     & $\left<\omega_y\omega_z\right>$ \\
+  \var{qfm}       & $\left<\qv\cdot\fv\right>$ \\
+  \var{q2m}       & $\left<\qv^2\right>$ \\
+  \var{qrms}      & $\left<\qv^2\right>^{1/2}$ \\
+  \var{qmax}      & $\max(|\qv|)$ \\
+  \var{qom}       & $\left<\qv\cdot\omv\right>$ \\
+  \var{quxom}     & $\left<\qv\cdot(\uv\times\omv)\right>$ \\
+  \var{pvzm}      & $\left<\omega_z + 2\Omega/\varrho\right>$
+                    \quad(z component of potential vorticity) \\
+  \var{oumphi}    & $\left<\omv\cdot\uv\right>_\varphi$ \\
+  \var{ugurmsx}   & $\left<\left(\uv\nabla\uv\right)^2\right>^{1/2}$
+                    for the hydro_xaver_range \\
+  \var{ugu2m}     & $\left<\uv\nabla\uv\right>^2$ \\
+  \var{dudx}      & $\left<\frac{\delta \uv}{\delta x}\right>$ \\
+  \var{Marms}     & $\left<\uv^2/\cs^2\right>$
+                    \quad(rms Mach number) \\
+  \var{Mamax}     & $\max |\uv|/\cs$
+                    \quad(maximum Mach number) \\
+  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
+  \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
+  \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
+  \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
+  \var{uyglnrxm}  & $\left<u_y\partial_x\ln\varrho\right>$ \\
+  \var{uzdivum}   & $\left<u_z\nabla\cdot\uv\right>$ \\
+  \var{uxuydivum} & $\left<u_x u_y\nabla\cdot\uv\right>$ \\
+  \var{divuHrms}  & $(\nabla_{\rm H}\cdot\uv_{\rm H})^{\rm rms}$ \\
+  \var{uxxrms}    & $u_{x,x}^{\rm rms}$ \\
+  \var{uyyrms}    & $u_{y,y}^{\rm rms}$ \\
+  \var{uxzrms}    & $u_{x,z}^{\rm rms}$ \\
+  \var{uyzrms}    & $u_{y,z}^{\rm rms}$ \\
+  \var{uzyrms}    & $u_{z,y}^{\rm rms}$ \\
+  \var{dtF}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{F}|]$
+                    \quad(time step relative to
+                    max force time step;
+                    see \S~\ref{time-step})
+                    $ \int u_r(\theta,\phi)Y^m_{\ell}(\theta,\phi)\sin(\theta)d\theta d\phi$ \\
+  \var{udpxxm}    & components of symmetric tensor
+                    $\left< u_i \partial_j p + u_j \partial_i p \right>$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_81501.f90}} \\
+\midrule
+  \var{u2tm}      & $\left<\uv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
+  \var{uotm}      & $\left<\uv(t)\cdot\int_0^t\omv(t')
+                    dt'\right>$ \\
+  \var{outm}      & $\left<\omv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
+  \var{fkinzm}    & $\left<{1\over2} \varrho\uv^2 u_z\right>$ \\
+  \var{gamm}      & $\left<gamma\right>$ \\
+  \var{gamrms}    & $\left<\gamma^2\right>^{1/2}$ \\
+  \var{gammax}    & $\max(\gamma)$ \\
+  \var{u2m}       & $\left<\uv^2\right>$ \\
+  \var{u2sphm}    & $\int_{r=0}^{r=1} \uv^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
+  \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
+  \var{uypt}      & $u_y(x_1,y_1,z_1,t)$ \\
+  \var{uzpt}      & $u_z(x_1,y_1,z_1,t)$ \\
+  \var{uxp2}      & $u_x(x_2,y_2,z_2,t)$ \\
+  \var{uyp2}      & $u_y(x_2,y_2,z_2,t)$ \\
+  \var{uzp2}      & $u_z(x_2,y_2,z_2,t)$ \\
+  \var{uxuypt}    & $(u_x u_y)(x_1,y_1,z_1,t)$ \\
+  \var{uyuzpt}    & $(u_y u_z)(x_1,y_1,z_1,t)$ \\
+  \var{uzuxpt}    & $(u_z u_x)(x_1,y_1,z_1,t)$ \\
+  \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
+  \var{urmsx}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_xaver_range \\
+  \var{urmsz}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_zaver_range \\
+  \var{durms}     & $\left<\delta\uv^2\right>^{1/2}$ \\
+  \var{umax}      & $\max(|\uv|)$ \\
+  \var{umin}      & $\min(|\uv|)$ \\
+  \var{uxrms}     & $\left<u_x^2\right>^{1/2}$ \\
+  \var{uyrms}     & $\left<u_y^2\right>^{1/2}$ \\
+  \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
+  \var{uxmin}     & $\min(|u_x|)$ \\
+  \var{uymin}     & $\min(|u_y|)$ \\
+  \var{uzmin}     & $\min(|u_z|)$ \\
+  \var{uxmax}     & $\max(|u_x|)$ \\
+  \var{uymax}     & $\max(|u_y|)$ \\
+  \var{uzmax}     & $\max(|u_z|)$ \\
+  \var{uxm}       & $\left<u_x\right>$ \\
+  \var{uym}       & $\left<u_y\right>$ \\
+  \var{uzm}       & $\left<u_z\right>$ \\
+  \var{uzcx10m}   & $\left<u_z\cos10x\right>$ \\
+  \var{uzsx10m}   & $\left<u_z\sin10x\right>$ \\
+  \var{uduum}     & $\left<\boldsymbol{u}\cdot\boldsymbol{u}\right>$ \\
+  \var{ux2m}      & $\left<u_x^2\right>$ \\
+  \var{uy2m}      & $\left<u_y^2\right>$ \\
+  \var{uz2m}      & $\left<u_z^2\right>$ \\
+  \var{ux3m}      & $\left<u_x^3\right>$ \\
+  \var{uy3m}      & $\left<u_y^3\right>$ \\
+  \var{uz3m}      & $\left<u_z^3\right>$ \\
+  \var{ux4m}      & $\left<u_x^4\right>$ \\
+  \var{uy4m}      & $\left<u_y^4\right>$ \\
+  \var{uz4m}      & $\left<u_z^4\right>$ \\
+  \var{uxuy2m}    & $\left<u_x^2u_y^2\right>$ \\
+  \var{uyuz2m}    & $\left<u_y^2u_z^2\right>$ \\
+  \var{uzux2m}    & $\left<u_z^2u_x^2\right>$ \\
+  \var{ux2ccm}    & $\left<u_x^2\cos^2kz\right>$ \\
+  \var{ux2ssm}    & $\left<u_x^2\sin^2kz\right>$ \\
+  \var{uy2ccm}    & $\left<u_y^2\cos^2kz\right>$ \\
+  \var{uy2ssm}    & $\left<u_y^2\sin^2kz\right>$ \\
+  \var{uxuycsm}   & $\left<u_xu_y\cos kz\sin kz\right>$ \\
+  \var{uxuym}     & $\left<u_x u_y\right>$ \\
+  \var{uxuzm}     & $\left<u_x u_z\right>$ \\
+  \var{uyuzm}     & $\left<u_y u_z\right>$ \\
+  \var{umx}       & $\left< u_x \right>$ \\
+  \var{umy}       & $\left< u_y \right>$ \\
+  \var{umz}       & $\left< u_z \right>$ \\
+  \var{omumz}     & $\left<\left<\Wv\right>_{xy}
+                    \cdot\left<\Uv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umamz}     & $\left<\left<\uv\right>_{xy}\cdot\left<\Av\right>_{xy}\right>$ \\
+  \var{umbmz}     & $\left<\left<\Uv\right>_{xy}
+                    \cdot\left<\Bv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umxbmz}    & $\left<\left<\Uv\right>_{xy}
+                    \times\left<\Bv\right>_{xy}
+                    \right>_z$ \quad($xy$-averaged
+                    mean emf) \\
+  \var{rux2m}     & $\left<\rho u_x^2\right>$ \\
+  \var{ruy2m}     & $\left<\rho u_y^2\right>$ \\
+  \var{ruz2m}     & $\left<\rho u_z^2\right>$ \\
+  \var{divum}     & $\left<{\rm div}\uv)\right>$ \\
+  \var{rdivum}    & $\left<\varrho{\rm div}\uv)\right>$ \\
+  \var{divu2m}    & $\left<({\rm div}\uv)^2\right>$ \\
+  \var{gdivu2m}   & $\left<({\rm grad\,div}\uv)^2\right>$ \\
+  \var{u3u21m}    & $\left<u_3 u_{2,1}\right>$ \\
+  \var{u1u32m}    & $\left<u_1 u_{3,2}\right>$ \\
+  \var{u2u13m}    & $\left<u_2 u_{1,3}\right>$ \\
+  \var{u2u31m}    & $\left<u_2 u_{3,1}\right>$ \\
+  \var{u3u12m}    & $\left<u_3 u_{1,2}\right>$ \\
+  \var{u1u23m}    & $\left<u_1 u_{2,3}\right>$ \\
+  \var{ruxm}      & $\left<\varrho u_x\right>$
+                    \quad(mean $x$-momentum density) \\
+  \var{ruym}      & $\left<\varrho u_y\right>$
+                    \quad(mean $y$-momentum density) \\
+  \var{ruzm}      & $\left<\varrho u_z\right>$
+                    \quad(mean $z$-momentum density) \\
+  \var{ruxtot}    & $\left<\rho |u|\right>$
+                    \quad(mean absolute $x$-momentum density) \\
+  \var{rumax}     & $\max(\varrho |\uv|)$
+                    \quad(maximum modulus of momentum) \\
+  \var{ruxuym}    & $\left<\varrho u_x u_y\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruxuzm}    & $\left<\varrho u_x u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruyuzm}    & $\left<\varrho u_y u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
+  \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
+  \var{rlxm}      & $\left< \rho y u_z - z u_y \right>$ \\
+  \var{rlym}      & $\left< \rho z u_x - x u_z \right>$ \\
+  \var{rlzm}      & $\left< \rho x u_y - y u_x \right>$ \\
+  \var{rlx2m}     & $\left<(\rho y u_z-z u_y)^2\right>$ \\
+  \var{rly2m}     & $\left<(\rho z u_x-x u_z)^2\right>$ \\
+  \var{rlz2m}     & $\left<(\rho x u_y-y u_x)^2\right>$ \\
+  \var{tot_ang_mom} & Total angular momentum in spherical
+                    coordinates about the axis. \\
+  \var{dtu}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{u}|]$
+                    \quad(time step relative to
+                    advective time step;
+                    see \S~\ref{time-step}) \\
+  \var{oum}       & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
+  \var{oxum}      & $\left<\boldsymbol{\omega}\times\uv\right>$ \\
+  \var{ourms}     & $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$ \\
+  \var{oxurms}    & $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$ \\
+  \var{ou_int}    & $\int_V\boldsymbol{\omega}\cdot\uv\,dV$ \\
+  \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
+  \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
+  \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
+                    \equiv \left<(\curl\uv)^2\right>$ \\
+  \var{o2u2m}     & $\left<\uv^2\boldsymbol{\omega}^2\right>$ \\
+  \var{o2sphm}    & $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
+  \var{orms}      & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
+  \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
+  \var{ox2m}      & $\left<\omega_x^2\right>$ \\
+  \var{oy2m}      & $\left<\omega_y^2\right>$ \\
+  \var{oz2m}      & $\left<\omega_z^2\right>$ \\
+  \var{ox3m}      & $\left<\omega_x^3\right>$ \\
+  \var{oy3m}      & $\left<\omega_y^3\right>$ \\
+  \var{oz3m}      & $\left<\omega_z^3\right>$ \\
+  \var{ox4m}      & $\left<\omega_x^4\right>$ \\
+  \var{oy4m}      & $\left<\omega_y^4\right>$ \\
+  \var{oz4m}      & $\left<\omega_z^4\right>$ \\
+  \var{oxuzxm}    & $\left<\omega_x u_{z,x} \right>$ \\
+  \var{oyuzym}    & $\left<\omega_y u_{z,y} \right>$ \\
+  \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
+  \var{oxozm}     & $\left<\omega_x\omega_z\right>$ \\
+  \var{oyozm}     & $\left<\omega_y\omega_z\right>$ \\
+  \var{qfm}       & $\left<\qv\cdot\fv\right>$ \\
+  \var{q2m}       & $\left<\qv^2\right>$ \\
+  \var{qrms}      & $\left<\qv^2\right>^{1/2}$ \\
+  \var{qmax}      & $\max(|\qv|)$ \\
+  \var{qom}       & $\left<\qv\cdot\omv\right>$ \\
+  \var{quxom}     & $\left<\qv\cdot(\uv\times\omv)\right>$ \\
+  \var{pvzm}      & $\left<\omega_z + 2\Omega/\varrho\right>$
+                    \quad(z component of potential vorticity) \\
+  \var{oumphi}    & $\left<\omv\cdot\uv\right>_\varphi$ \\
+  \var{ugurmsx}   & $\left<\left(\uv\nabla\uv\right)^2\right>^{1/2}$
+                    for the hydro_xaver_range \\
+  \var{ugu2m}     & $\left<\uv\nabla\uv\right>^2$ \\
+  \var{dudx}      & $\left<\frac{\delta \uv}{\delta x}\right>$ \\
+  \var{Marms}     & $\left<\uv^2/\cs^2\right>$
+                    \quad(rms Mach number) \\
+  \var{Mamax}     & $\max |\uv|/\cs$
+                    \quad(maximum Mach number) \\
+  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
+  \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
+  \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
+  \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
+  \var{uyglnrxm}  & $\left<u_y\partial_x\ln\varrho\right>$ \\
+  \var{uzdivum}   & $\left<u_z\nabla\cdot\uv\right>$ \\
+  \var{uxuydivum} & $\left<u_x u_y\nabla\cdot\uv\right>$ \\
+  \var{divuHrms}  & $(\nabla_{\rm H}\cdot\uv_{\rm H})^{\rm rms}$ \\
+  \var{uxxrms}    & $u_{x,x}^{\rm rms}$ \\
+  \var{uyyrms}    & $u_{y,y}^{\rm rms}$ \\
+  \var{uxzrms}    & $u_{x,z}^{\rm rms}$ \\
+  \var{uyzrms}    & $u_{y,z}^{\rm rms}$ \\
+  \var{uzyrms}    & $u_{z,y}^{\rm rms}$ \\
+  \var{dtF}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{F}|]$
+                    \quad(time step relative to
+                    max force time step;
+                    see \S~\ref{time-step})
+                    $ \int u_r(\theta,\phi)Y^m_{\ell}(\theta,\phi)\sin(\theta)d\theta d\phi$ \\
+  \var{udpxxm}    & components of symmetric tensor
+                    $\left< u_i \partial_j p + u_j \partial_i p \right>$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_81502.f90}} \\
+\midrule
+  \var{u2tm}      & $\left<\uv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
+  \var{uotm}      & $\left<\uv(t)\cdot\int_0^t\omv(t')
+                    dt'\right>$ \\
+  \var{outm}      & $\left<\omv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
+  \var{fkinzm}    & $\left<{1\over2} \varrho\uv^2 u_z\right>$ \\
+  \var{gamm}      & $\left<gamma\right>$ \\
+  \var{gamrms}    & $\left<\gamma^2\right>^{1/2}$ \\
+  \var{gammax}    & $\max(\gamma)$ \\
+  \var{u2m}       & $\left<\uv^2\right>$ \\
+  \var{u2sphm}    & $\int_{r=0}^{r=1} \uv^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
+  \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
+  \var{uypt}      & $u_y(x_1,y_1,z_1,t)$ \\
+  \var{uzpt}      & $u_z(x_1,y_1,z_1,t)$ \\
+  \var{uxp2}      & $u_x(x_2,y_2,z_2,t)$ \\
+  \var{uyp2}      & $u_y(x_2,y_2,z_2,t)$ \\
+  \var{uzp2}      & $u_z(x_2,y_2,z_2,t)$ \\
+  \var{uxuypt}    & $(u_x u_y)(x_1,y_1,z_1,t)$ \\
+  \var{uyuzpt}    & $(u_y u_z)(x_1,y_1,z_1,t)$ \\
+  \var{uzuxpt}    & $(u_z u_x)(x_1,y_1,z_1,t)$ \\
+  \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
+  \var{urmsx}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_xaver_range \\
+  \var{urmsz}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_zaver_range \\
+  \var{durms}     & $\left<\delta\uv^2\right>^{1/2}$ \\
+  \var{umax}      & $\max(|\uv|)$ \\
+  \var{umin}      & $\min(|\uv|)$ \\
+  \var{uxrms}     & $\left<u_x^2\right>^{1/2}$ \\
+  \var{uyrms}     & $\left<u_y^2\right>^{1/2}$ \\
+  \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
+  \var{uxmin}     & $\min(|u_x|)$ \\
+  \var{uymin}     & $\min(|u_y|)$ \\
+  \var{uzmin}     & $\min(|u_z|)$ \\
+  \var{uxmax}     & $\max(|u_x|)$ \\
+  \var{uymax}     & $\max(|u_y|)$ \\
+  \var{uzmax}     & $\max(|u_z|)$ \\
+  \var{uxm}       & $\left<u_x\right>$ \\
+  \var{uym}       & $\left<u_y\right>$ \\
+  \var{uzm}       & $\left<u_z\right>$ \\
+  \var{uzcx10m}   & $\left<u_z\cos10x\right>$ \\
+  \var{uzsx10m}   & $\left<u_z\sin10x\right>$ \\
+  \var{uduum}     & $\left<\boldsymbol{u}\cdot\boldsymbol{u}\right>$ \\
+  \var{ux2m}      & $\left<u_x^2\right>$ \\
+  \var{uy2m}      & $\left<u_y^2\right>$ \\
+  \var{uz2m}      & $\left<u_z^2\right>$ \\
+  \var{ux3m}      & $\left<u_x^3\right>$ \\
+  \var{uy3m}      & $\left<u_y^3\right>$ \\
+  \var{uz3m}      & $\left<u_z^3\right>$ \\
+  \var{ux4m}      & $\left<u_x^4\right>$ \\
+  \var{uy4m}      & $\left<u_y^4\right>$ \\
+  \var{uz4m}      & $\left<u_z^4\right>$ \\
+  \var{uxuy2m}    & $\left<u_x^2u_y^2\right>$ \\
+  \var{uyuz2m}    & $\left<u_y^2u_z^2\right>$ \\
+  \var{uzux2m}    & $\left<u_z^2u_x^2\right>$ \\
+  \var{ux2ccm}    & $\left<u_x^2\cos^2kz\right>$ \\
+  \var{ux2ssm}    & $\left<u_x^2\sin^2kz\right>$ \\
+  \var{uy2ccm}    & $\left<u_y^2\cos^2kz\right>$ \\
+  \var{uy2ssm}    & $\left<u_y^2\sin^2kz\right>$ \\
+  \var{uxuycsm}   & $\left<u_xu_y\cos kz\sin kz\right>$ \\
+  \var{uxuym}     & $\left<u_x u_y\right>$ \\
+  \var{uxuzm}     & $\left<u_x u_z\right>$ \\
+  \var{uyuzm}     & $\left<u_y u_z\right>$ \\
+  \var{umx}       & $\left< u_x \right>$ \\
+  \var{umy}       & $\left< u_y \right>$ \\
+  \var{umz}       & $\left< u_z \right>$ \\
+  \var{omumz}     & $\left<\left<\Wv\right>_{xy}
+                    \cdot\left<\Uv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umamz}     & $\left<\left<\uv\right>_{xy}\cdot\left<\Av\right>_{xy}\right>$ \\
+  \var{umbmz}     & $\left<\left<\Uv\right>_{xy}
+                    \cdot\left<\Bv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umxbmz}    & $\left<\left<\Uv\right>_{xy}
+                    \times\left<\Bv\right>_{xy}
+                    \right>_z$ \quad($xy$-averaged
+                    mean emf) \\
+  \var{rux2m}     & $\left<\rho u_x^2\right>$ \\
+  \var{ruy2m}     & $\left<\rho u_y^2\right>$ \\
+  \var{ruz2m}     & $\left<\rho u_z^2\right>$ \\
+  \var{divum}     & $\left<{\rm div}\uv)\right>$ \\
+  \var{rdivum}    & $\left<\varrho{\rm div}\uv)\right>$ \\
+  \var{divu2m}    & $\left<({\rm div}\uv)^2\right>$ \\
+  \var{gdivu2m}   & $\left<({\rm grad\,div}\uv)^2\right>$ \\
+  \var{u3u21m}    & $\left<u_3 u_{2,1}\right>$ \\
+  \var{u1u32m}    & $\left<u_1 u_{3,2}\right>$ \\
+  \var{u2u13m}    & $\left<u_2 u_{1,3}\right>$ \\
+  \var{u2u31m}    & $\left<u_2 u_{3,1}\right>$ \\
+  \var{u3u12m}    & $\left<u_3 u_{1,2}\right>$ \\
+  \var{u1u23m}    & $\left<u_1 u_{2,3}\right>$ \\
+  \var{ruxm}      & $\left<\varrho u_x\right>$
+                    \quad(mean $x$-momentum density) \\
+  \var{ruym}      & $\left<\varrho u_y\right>$
+                    \quad(mean $y$-momentum density) \\
+  \var{ruzm}      & $\left<\varrho u_z\right>$
+                    \quad(mean $z$-momentum density) \\
+  \var{ruxtot}    & $\left<\rho |u|\right>$
+                    \quad(mean absolute $x$-momentum density) \\
+  \var{rumax}     & $\max(\varrho |\uv|)$
+                    \quad(maximum modulus of momentum) \\
+  \var{ruxuym}    & $\left<\varrho u_x u_y\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruxuzm}    & $\left<\varrho u_x u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruyuzm}    & $\left<\varrho u_y u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
+  \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
+  \var{rlxm}      & $\left< \rho y u_z - z u_y \right>$ \\
+  \var{rlym}      & $\left< \rho z u_x - x u_z \right>$ \\
+  \var{rlzm}      & $\left< \rho x u_y - y u_x \right>$ \\
+  \var{rlx2m}     & $\left<(\rho y u_z-z u_y)^2\right>$ \\
+  \var{rly2m}     & $\left<(\rho z u_x-x u_z)^2\right>$ \\
+  \var{rlz2m}     & $\left<(\rho x u_y-y u_x)^2\right>$ \\
+  \var{tot_ang_mom} & Total angular momentum in spherical
+                    coordinates about the axis. \\
+  \var{dtu}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{u}|]$
+                    \quad(time step relative to
+                    advective time step;
+                    see \S~\ref{time-step}) \\
+  \var{oum}       & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
+  \var{oxum}      & $\left<\boldsymbol{\omega}\times\uv\right>$ \\
+  \var{ourms}     & $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$ \\
+  \var{oxurms}    & $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$ \\
+  \var{ou_int}    & $\int_V\boldsymbol{\omega}\cdot\uv\,dV$ \\
+  \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
+  \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
+  \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
+                    \equiv \left<(\curl\uv)^2\right>$ \\
+  \var{o2u2m}     & $\left<\uv^2\boldsymbol{\omega}^2\right>$ \\
+  \var{o2sphm}    & $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
+  \var{orms}      & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
+  \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
+  \var{ox2m}      & $\left<\omega_x^2\right>$ \\
+  \var{oy2m}      & $\left<\omega_y^2\right>$ \\
+  \var{oz2m}      & $\left<\omega_z^2\right>$ \\
+  \var{ox3m}      & $\left<\omega_x^3\right>$ \\
+  \var{oy3m}      & $\left<\omega_y^3\right>$ \\
+  \var{oz3m}      & $\left<\omega_z^3\right>$ \\
+  \var{ox4m}      & $\left<\omega_x^4\right>$ \\
+  \var{oy4m}      & $\left<\omega_y^4\right>$ \\
+  \var{oz4m}      & $\left<\omega_z^4\right>$ \\
+  \var{oxuzxm}    & $\left<\omega_x u_{z,x} \right>$ \\
+  \var{oyuzym}    & $\left<\omega_y u_{z,y} \right>$ \\
+  \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
+  \var{oxozm}     & $\left<\omega_x\omega_z\right>$ \\
+  \var{oyozm}     & $\left<\omega_y\omega_z\right>$ \\
+  \var{qfm}       & $\left<\qv\cdot\fv\right>$ \\
+  \var{q2m}       & $\left<\qv^2\right>$ \\
+  \var{qrms}      & $\left<\qv^2\right>^{1/2}$ \\
+  \var{qmax}      & $\max(|\qv|)$ \\
+  \var{qom}       & $\left<\qv\cdot\omv\right>$ \\
+  \var{quxom}     & $\left<\qv\cdot(\uv\times\omv)\right>$ \\
+  \var{pvzm}      & $\left<\omega_z + 2\Omega/\varrho\right>$
+                    \quad(z component of potential vorticity) \\
+  \var{oumphi}    & $\left<\omv\cdot\uv\right>_\varphi$ \\
+  \var{ugurmsx}   & $\left<\left(\uv\nabla\uv\right)^2\right>^{1/2}$
+                    for the hydro_xaver_range \\
+  \var{ugu2m}     & $\left<\uv\nabla\uv\right>^2$ \\
+  \var{dudx}      & $\left<\frac{\delta \uv}{\delta x}\right>$ \\
+  \var{Marms}     & $\left<\uv^2/\cs^2\right>$
+                    \quad(rms Mach number) \\
+  \var{Mamax}     & $\max |\uv|/\cs$
+                    \quad(maximum Mach number) \\
+  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
+  \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
+  \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
+  \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
+  \var{uyglnrxm}  & $\left<u_y\partial_x\ln\varrho\right>$ \\
+  \var{uzdivum}   & $\left<u_z\nabla\cdot\uv\right>$ \\
+  \var{uxuydivum} & $\left<u_x u_y\nabla\cdot\uv\right>$ \\
+  \var{divuHrms}  & $(\nabla_{\rm H}\cdot\uv_{\rm H})^{\rm rms}$ \\
+  \var{uxxrms}    & $u_{x,x}^{\rm rms}$ \\
+  \var{uyyrms}    & $u_{y,y}^{\rm rms}$ \\
+  \var{uxzrms}    & $u_{x,z}^{\rm rms}$ \\
+  \var{uyzrms}    & $u_{y,z}^{\rm rms}$ \\
+  \var{uzyrms}    & $u_{z,y}^{\rm rms}$ \\
+  \var{dtF}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{F}|]$
+                    \quad(time step relative to
+                    max force time step;
+                    see \S~\ref{time-step})
+                    $ \int u_r(\theta,\phi)Y^m_{\ell}(\theta,\phi)\sin(\theta)d\theta d\phi$ \\
+  \var{udpxxm}    & components of symmetric tensor
+                    $\left< u_i \partial_j p + u_j \partial_i p \right>$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_81610.f90}} \\
+\midrule
+  \var{u2tm}      & $\left<\uv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
+  \var{uotm}      & $\left<\uv(t)\cdot\int_0^t\omv(t')
+                    dt'\right>$ \\
+  \var{outm}      & $\left<\omv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
+  \var{fkinzm}    & $\left<{1\over2} \varrho\uv^2 u_z\right>$ \\
+  \var{gamm}      & $\left<gamma\right>$ \\
+  \var{gamrms}    & $\left<\gamma^2\right>^{1/2}$ \\
+  \var{gammax}    & $\max(\gamma)$ \\
+  \var{u2m}       & $\left<\uv^2\right>$ \\
+  \var{u2sphm}    & $\int_{r=0}^{r=1} \uv^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
+  \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
+  \var{uypt}      & $u_y(x_1,y_1,z_1,t)$ \\
+  \var{uzpt}      & $u_z(x_1,y_1,z_1,t)$ \\
+  \var{uxp2}      & $u_x(x_2,y_2,z_2,t)$ \\
+  \var{uyp2}      & $u_y(x_2,y_2,z_2,t)$ \\
+  \var{uzp2}      & $u_z(x_2,y_2,z_2,t)$ \\
+  \var{uxuypt}    & $(u_x u_y)(x_1,y_1,z_1,t)$ \\
+  \var{uyuzpt}    & $(u_y u_z)(x_1,y_1,z_1,t)$ \\
+  \var{uzuxpt}    & $(u_z u_x)(x_1,y_1,z_1,t)$ \\
+  \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
+  \var{urmsx}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_xaver_range \\
+  \var{urmsz}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_zaver_range \\
+  \var{durms}     & $\left<\delta\uv^2\right>^{1/2}$ \\
+  \var{umax}      & $\max(|\uv|)$ \\
+  \var{umin}      & $\min(|\uv|)$ \\
+  \var{uxrms}     & $\left<u_x^2\right>^{1/2}$ \\
+  \var{uyrms}     & $\left<u_y^2\right>^{1/2}$ \\
+  \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
+  \var{uxmin}     & $\min(|u_x|)$ \\
+  \var{uymin}     & $\min(|u_y|)$ \\
+  \var{uzmin}     & $\min(|u_z|)$ \\
+  \var{uxmax}     & $\max(|u_x|)$ \\
+  \var{uymax}     & $\max(|u_y|)$ \\
+  \var{uzmax}     & $\max(|u_z|)$ \\
+  \var{uxm}       & $\left<u_x\right>$ \\
+  \var{uym}       & $\left<u_y\right>$ \\
+  \var{uzm}       & $\left<u_z\right>$ \\
+  \var{uzcx10m}   & $\left<u_z\cos10x\right>$ \\
+  \var{uzsx10m}   & $\left<u_z\sin10x\right>$ \\
+  \var{uduum}     & $\left<\boldsymbol{u}\cdot\boldsymbol{u}\right>$ \\
+  \var{ux2m}      & $\left<u_x^2\right>$ \\
+  \var{uy2m}      & $\left<u_y^2\right>$ \\
+  \var{uz2m}      & $\left<u_z^2\right>$ \\
+  \var{ux3m}      & $\left<u_x^3\right>$ \\
+  \var{uy3m}      & $\left<u_y^3\right>$ \\
+  \var{uz3m}      & $\left<u_z^3\right>$ \\
+  \var{ux4m}      & $\left<u_x^4\right>$ \\
+  \var{uy4m}      & $\left<u_y^4\right>$ \\
+  \var{uz4m}      & $\left<u_z^4\right>$ \\
+  \var{uxuy2m}    & $\left<u_x^2u_y^2\right>$ \\
+  \var{uyuz2m}    & $\left<u_y^2u_z^2\right>$ \\
+  \var{uzux2m}    & $\left<u_z^2u_x^2\right>$ \\
+  \var{ux2ccm}    & $\left<u_x^2\cos^2kz\right>$ \\
+  \var{ux2ssm}    & $\left<u_x^2\sin^2kz\right>$ \\
+  \var{uy2ccm}    & $\left<u_y^2\cos^2kz\right>$ \\
+  \var{uy2ssm}    & $\left<u_y^2\sin^2kz\right>$ \\
+  \var{uxuycsm}   & $\left<u_xu_y\cos kz\sin kz\right>$ \\
+  \var{uxuym}     & $\left<u_x u_y\right>$ \\
+  \var{uxuzm}     & $\left<u_x u_z\right>$ \\
+  \var{uyuzm}     & $\left<u_y u_z\right>$ \\
+  \var{umx}       & $\left< u_x \right>$ \\
+  \var{umy}       & $\left< u_y \right>$ \\
+  \var{umz}       & $\left< u_z \right>$ \\
+  \var{omumz}     & $\left<\left<\Wv\right>_{xy}
+                    \cdot\left<\Uv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umamz}     & $\left<\left<\uv\right>_{xy}\cdot\left<\Av\right>_{xy}\right>$ \\
+  \var{umbmz}     & $\left<\left<\Uv\right>_{xy}
+                    \cdot\left<\Bv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean cross helicity production) \\
+  \var{umxbmz}    & $\left<\left<\Uv\right>_{xy}
+                    \times\left<\Bv\right>_{xy}
+                    \right>_z$ \quad($xy$-averaged
+                    mean emf) \\
+  \var{rux2m}     & $\left<\rho u_x^2\right>$ \\
+  \var{ruy2m}     & $\left<\rho u_y^2\right>$ \\
+  \var{ruz2m}     & $\left<\rho u_z^2\right>$ \\
+  \var{divum}     & $\left<{\rm div}\uv)\right>$ \\
+  \var{rdivum}    & $\left<\varrho{\rm div}\uv)\right>$ \\
+  \var{divu2m}    & $\left<({\rm div}\uv)^2\right>$ \\
+  \var{gdivu2m}   & $\left<({\rm grad\,div}\uv)^2\right>$ \\
+  \var{u3u21m}    & $\left<u_3 u_{2,1}\right>$ \\
+  \var{u1u32m}    & $\left<u_1 u_{3,2}\right>$ \\
+  \var{u2u13m}    & $\left<u_2 u_{1,3}\right>$ \\
+  \var{u2u31m}    & $\left<u_2 u_{3,1}\right>$ \\
+  \var{u3u12m}    & $\left<u_3 u_{1,2}\right>$ \\
+  \var{u1u23m}    & $\left<u_1 u_{2,3}\right>$ \\
+  \var{ruxm}      & $\left<\varrho u_x\right>$
+                    \quad(mean $x$-momentum density) \\
+  \var{ruym}      & $\left<\varrho u_y\right>$
+                    \quad(mean $y$-momentum density) \\
+  \var{ruzm}      & $\left<\varrho u_z\right>$
+                    \quad(mean $z$-momentum density) \\
+  \var{ruxtot}    & $\left<\rho |u|\right>$
+                    \quad(mean absolute $x$-momentum density) \\
+  \var{rumax}     & $\max(\varrho |\uv|)$
+                    \quad(maximum modulus of momentum) \\
+  \var{ruxuym}    & $\left<\varrho u_x u_y\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruxuzm}    & $\left<\varrho u_x u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{ruyuzm}    & $\left<\varrho u_y u_z\right>$
+                    \quad(mean Reynolds stress) \\
+  \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
+  \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
+  \var{rlxm}      & $\left< \rho y u_z - z u_y \right>$ \\
+  \var{rlym}      & $\left< \rho z u_x - x u_z \right>$ \\
+  \var{rlzm}      & $\left< \rho x u_y - y u_x \right>$ \\
+  \var{rlx2m}     & $\left<(\rho y u_z-z u_y)^2\right>$ \\
+  \var{rly2m}     & $\left<(\rho z u_x-x u_z)^2\right>$ \\
+  \var{rlz2m}     & $\left<(\rho x u_y-y u_x)^2\right>$ \\
+  \var{tot_ang_mom} & Total angular momentum in spherical
+                    coordinates about the axis. \\
+  \var{dtu}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{u}|]$
+                    \quad(time step relative to
+                    advective time step;
+                    see \S~\ref{time-step}) \\
+  \var{oum}       & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
+  \var{oxum}      & $\left<\boldsymbol{\omega}\times\uv\right>$ \\
+  \var{ourms}     & $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$ \\
+  \var{oxurms}    & $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$ \\
+  \var{ou_int}    & $\int_V\boldsymbol{\omega}\cdot\uv\,dV$ \\
+  \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
+  \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
+  \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
+                    \equiv \left<(\curl\uv)^2\right>$ \\
+  \var{o2u2m}     & $\left<\uv^2\boldsymbol{\omega}^2\right>$ \\
+  \var{o2sphm}    & $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
+                    where $r=\sqrt{x^2+y^2+z^2}$ \\
+  \var{orms}      & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
+  \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
+  \var{ox2m}      & $\left<\omega_x^2\right>$ \\
+  \var{oy2m}      & $\left<\omega_y^2\right>$ \\
+  \var{oz2m}      & $\left<\omega_z^2\right>$ \\
+  \var{ox3m}      & $\left<\omega_x^3\right>$ \\
+  \var{oy3m}      & $\left<\omega_y^3\right>$ \\
+  \var{oz3m}      & $\left<\omega_z^3\right>$ \\
+  \var{ox4m}      & $\left<\omega_x^4\right>$ \\
+  \var{oy4m}      & $\left<\omega_y^4\right>$ \\
+  \var{oz4m}      & $\left<\omega_z^4\right>$ \\
+  \var{oxuzxm}    & $\left<\omega_x u_{z,x} \right>$ \\
+  \var{oyuzym}    & $\left<\omega_y u_{z,y} \right>$ \\
+  \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
+  \var{oxozm}     & $\left<\omega_x\omega_z\right>$ \\
+  \var{oyozm}     & $\left<\omega_y\omega_z\right>$ \\
+  \var{qfm}       & $\left<\qv\cdot\fv\right>$ \\
+  \var{q2m}       & $\left<\qv^2\right>$ \\
+  \var{qrms}      & $\left<\qv^2\right>^{1/2}$ \\
+  \var{qmax}      & $\max(|\qv|)$ \\
+  \var{qom}       & $\left<\qv\cdot\omv\right>$ \\
+  \var{quxom}     & $\left<\qv\cdot(\uv\times\omv)\right>$ \\
+  \var{pvzm}      & $\left<\omega_z + 2\Omega/\varrho\right>$
+                    \quad(z component of potential vorticity) \\
+  \var{oumphi}    & $\left<\omv\cdot\uv\right>_\varphi$ \\
+  \var{ugurmsx}   & $\left<\left(\uv\nabla\uv\right)^2\right>^{1/2}$
+                    for the hydro_xaver_range \\
+  \var{ugu2m}     & $\left<\uv\nabla\uv\right>^2$ \\
+  \var{dudx}      & $\left<\frac{\delta \uv}{\delta x}\right>$ \\
+  \var{Marms}     & $\left<\uv^2/\cs^2\right>$
+                    \quad(rms Mach number) \\
+  \var{Mamax}     & $\max |\uv|/\cs$
+                    \quad(maximum Mach number) \\
+  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
+  \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
+  \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
+  \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
+  \var{uyglnrxm}  & $\left<u_y\partial_x\ln\varrho\right>$ \\
+  \var{uzdivum}   & $\left<u_z\nabla\cdot\uv\right>$ \\
+  \var{uxuydivum} & $\left<u_x u_y\nabla\cdot\uv\right>$ \\
+  \var{divuHrms}  & $(\nabla_{\rm H}\cdot\uv_{\rm H})^{\rm rms}$ \\
+  \var{uxxrms}    & $u_{x,x}^{\rm rms}$ \\
+  \var{uyyrms}    & $u_{y,y}^{\rm rms}$ \\
+  \var{uxzrms}    & $u_{x,z}^{\rm rms}$ \\
+  \var{uyzrms}    & $u_{y,z}^{\rm rms}$ \\
+  \var{uzyrms}    & $u_{z,y}^{\rm rms}$ \\
+  \var{dtF}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{F}|]$
+                    \quad(time step relative to
+                    max force time step;
+                    see \S~\ref{time-step})
+                    $ \int u_r(\theta,\phi)Y^m_{\ell}(\theta,\phi)\sin(\theta)d\theta d\phi$ \\
+  \var{udpxxm}    & components of symmetric tensor
+                    $\left< u_i \partial_j p + u_j \partial_i p \right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{hydro_kinematic.f90}} \\
 \midrule
@@ -2629,6 +3429,7 @@
   \var{Sij2m}     & $\left<\Strain^2\right>$ \\
   \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
   \var{epsKint}   & $\int(2\nu\varrho\Strain^2)\,dV$ \\
+  \var{sijoiojm}  & $\left<S_{i,j} \omega_i \omega_j\right>$ \\
   \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
                     \delta x^2/\nu_{\rm max}]$
                     \quad(time step relative to
