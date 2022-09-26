@@ -276,6 +276,10 @@ module Pscalar
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,icc)=-amplcc*cos(kx_cc*x(l1:l2))
           enddo; enddo
+       case ('Schur')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,icc)=-amplcc*sin(kx_cc*x(l1:l2))*sin(ky_cc*y(m))*cos(kz_cc*z(n))
+          enddo; enddo
         case ('tang-discont-z')
           print*,'init_lncc: widthcc=',widthcc
           do n=n1,n2; do m=m1,m2
