@@ -206,7 +206,7 @@ module Mpicomm
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL, mpierr)
       call MPI_COMM_RANK(MPI_COMM_PENCIL, iproc, mpierr)
-!if (lroot) print*, 'Pencil1: iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD=', iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD
+print*, 'Pencil1: iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD=', iapp, nprocs, ncpus   !MPI_COMM_PENCIL, MPI_COMM_WORLD
 !
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_PENCIL!
 !
@@ -4981,7 +4981,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (lforeign.and.lroot) &
         call MPI_SEND(.true.,1,MPI_LOGICAL,frgn_setup%root,tag_foreign,MPI_COMM_WORLD,mpierr)
-      if (lforeign.and.lroot) print*, 'PENCIL: to,tag=', frgn_setup%root,tag_foreign
 
       call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
       call MPI_FINALIZE(mpierr)
@@ -10118,7 +10117,8 @@ endif
 !
 !  Send communication tag to foreign code.
 !
-          call mpisend_int(tag_foreign,frgn_setup%root,0,MPI_COMM_WORLD)
+         call mpisend_int(tag_foreign,frgn_setup%root,0,MPI_COMM_WORLD)
+!print*, 'PENCIL: tag=', tag_foreign
 !
 !  Receive length of name of foreign code.
 !
@@ -10244,7 +10244,6 @@ endif
 !  Receive vector of foreign global x(r)-grid points.
 !
           call mpirecv_real(frgn_setup%xgrid,nxgrid_foreign,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
-!print*, 'PENCIL: foreign xgrid=', frgn_setup%xgrid
 !
 !  Renormalize X-coord to Pencil domain.
 !
@@ -10279,9 +10278,8 @@ endif
 !       
         call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_PENCIL)
         call mpibcast_int(frgn_setup%proc_multis,3,comm=MPI_COMM_PENCIL)
-        tag  = tag_foreign+iproc
 !
-        if (frgn_setup%procnums(1)==1) then   !EULAG case
+!        if (frgn_setup%procnums(1)==1) then   !EULAG case
 !print*, 'PENCIL: frgn_setup%proc_multis=', frgn_setup%proc_multis
 
           !frgn_setup%peer_rng = find_proc_general(ipz/frgn_setup%proc_multis(3), &
@@ -10292,16 +10290,15 @@ endif
 !print*,'PENCIL - peer=', iproc, frgn_setup%peer_rng(1), &
 !ipz/frgn_setup%proc_multis(3), ipy/frgn_setup%proc_multis(2), ipx/frgn_setup%proc_multis(1)
 
-        endif
+!        endif
 !
-!  Allocate array for index ranges w.r.t. frgn_setup%xgrid for each foreign
-!  proc. frgn_setup%xind_rng(-1,:) is overall index range.
+!  Allocate array for index ranges w.r.t. frgn_setup%[xy]grid for each foreign
+!  proc. frgn_setup%[xy]ind_rng(-1,:) is overall index range.
 !
         allocate(frgn_setup%xind_rng(-1:frgn_setup%procnums(1)-1,2)); frgn_setup%xind_rng=0
         allocate(frgn_setup%yind_rng(-1:frgn_setup%procnums(2)-1,2)); frgn_setup%yind_rng=0
 !
         if (lfirst_proc_xz) then             ! on processors of first YBEAM
-
 !                              
 !  Broadcast foreign ygrid to all procs with iprocx=iprocz=0.
 !                              
@@ -10310,7 +10307,7 @@ endif
 !  Determine index range frgn_setup%yind_rng in foreign ygrid which is needed
 !  for individual processors in y direction.
 !
-          call find_index_range(frgn_setup%ygrid,nygrid_foreign,y(m1),y(m2),im1,im2)
+          call find_index_range(frgn_setup%ygrid,nygrid_foreign,y(m1),y(m2),im1,im2,lextend=.true.)
           frgn_setup%yind_rng(-1,:)=(/im1,im2/)     ! global y index range of rank iproc
 !
 !  Ask all foreign processors in first y beam
@@ -10331,9 +10328,9 @@ print*,'PCASA 1', iproc, ncpus+peer, tag_foreign+iproc
             frgn_setup%yind_rng(py,:)=intbuf(1:2)
 !print*,'PCASA2', iproc
             if (frgn_setup%ypeer_rng(1)>=0) then
-              if (frgn_setup%yind_rng(py,1)==0) frgn_setup%ypeer_rng(2)=py-1
+              if (frgn_setup%yind_rng(py,1)> frgn_setup%yind_rng(py,2)) frgn_setup%ypeer_rng(2)=py-1
             else
-              if (frgn_setup%yind_rng(py,1)>0) frgn_setup%ypeer_rng(1)=py
+              if (frgn_setup%yind_rng(py,1)<=frgn_setup%yind_rng(py,2)) frgn_setup%ypeer_rng(1)=py
             endif
           enddo
           if (frgn_setup%ypeer_rng(2)<0) frgn_setup%ypeer_rng(2)=py-1
@@ -10349,7 +10346,7 @@ print*,'PCASA 1', iproc, ncpus+peer, tag_foreign+iproc
 !  Determine index range frgn_setup%xind_rng in frgn_setup%xgrid which is needed for individual
 !  processors in x direction.
 !
-          call find_index_range(frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2)
+          call find_index_range(frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2,lextend=.true.)
 !print*,'PENCIL: frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2=', &
 !frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2
 !!! GM: PROBABLE INCONSISTENCY IN THE FOLLOWING COMMAND
@@ -10382,21 +10379,17 @@ print*,'PCASA 1', iproc, ncpus+peer, tag_foreign+iproc
 !
 !  If px has no share, px-1 is last of peer range.
 !
-              if (frgn_setup%xind_rng(px,1)==0) frgn_setup%xpeer_rng(2)=px-1 
+              if (frgn_setup%xind_rng(px,1)>frgn_setup%xind_rng(px,2)) frgn_setup%xpeer_rng(2)=px-1 
             else                                   ! if start of peer range has not yet been detected
 !
 !  If px has share, it is first of peer range.
 !
-              if (frgn_setup%xind_rng(px,1)>0) frgn_setup%xpeer_rng(1)=px
+              if (frgn_setup%xind_rng(px,1)<=frgn_setup%xind_rng(px,2)) frgn_setup%xpeer_rng(1)=px
             endif
           enddo
           if (frgn_setup%xpeer_rng(2)<0) frgn_setup%xpeer_rng(2)=px-1
 
         endif  ! lfirst_proc_yz
-
-call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
-call MPI_FINALIZE(mpierr)
-stop
 
         call mpibcast_int_arr2(frgn_setup%xind_rng,(/frgn_setup%procnums(1)+1,2/),comm=MPI_COMM_YZPLANE)
         call mpibcast_int_arr(frgn_setup%xpeer_rng,2,comm=MPI_COMM_YZPLANE)
@@ -10439,7 +10432,8 @@ stop
           
         ixstart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1-nghost
         lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1+2*nghost
-        peer = find_proc_general(0,py,px,frgn_setup%procnums(3),frgn_setup%procnums(2),frgn_setup%procnums(1),.true.)
+        peer = find_proc_general(ipz/frgn_setup%proc_multis(3),py,px,frgn_setup%procnums(3), &
+                                 frgn_setup%procnums(2),frgn_setup%procnums(1),.true.)
 
         do py=frgn_setup%ypeer_rng(1),frgn_setup%ypeer_rng(2)
 
@@ -10447,14 +10441,22 @@ stop
           leny_loc=frgn_setup%yind_rng(py,2)-frgn_setup%yind_rng(py,1)+1+2*nghost
 
           do iv=1,nvars
-            call mpirecv_real(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv), &
-                              (/lenx_loc,leny_loc,mz/),peer+ncpus,peer+tag_foreign,MPI_COMM_WORLD,frgn_setup%recv_req(px))
+            if (loptest(lnonblock)) then
+              call mpirecv_real(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv), &
+                                (/lenx_loc,leny_loc,mz/),peer+ncpus,peer+tag_foreign,MPI_COMM_WORLD,frgn_setup%recv_req(px))
+            else
+              call mpirecv_real(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv), &
+                                (/lenx_loc,leny_loc,mz/),peer+ncpus,peer+tag_foreign,MPI_COMM_WORLD)
+            endif
           enddo
 
         enddo
       enddo
+!
       return
-
+!
+! Below old version.
+!
       do px=0,frgn_setup%procnums(1)-1
         if (frgn_setup%xind_rng(px,1)>0) then
 

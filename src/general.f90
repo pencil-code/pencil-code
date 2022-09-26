@@ -1339,9 +1339,13 @@ module General
       real :: aa1,aa2
       logical, optional :: lextend
 !
+      intent(in)   :: aa,naa,aa1,aa2,lextend
+      intent(out)  :: ii1,ii2
+!
       real, parameter :: eps=1e-6
-      intent(in)  :: aa,naa,aa1,aa2,lextend
-      intent(out) :: ii1,ii2
+      logical :: lext
+!
+      lext=loptest(lextend)
 !
 !  If zero extent in this direction, set indices to interior values.
 !
@@ -1357,6 +1361,7 @@ module General
       do ii=1,naa
         if (aa(ii)-aa1>=-eps) then
           ii1=ii
+          if (lext.and.aa(ii)-aa1>-eps) ii1=max(ii-1,1)
           exit
         endif
       enddo
@@ -1367,6 +1372,7 @@ module General
       do ii=naa,1,-1
         if (aa(ii)-aa2<=eps) then
           ii2=ii
+          if (lext.and.aa(ii)-aa2<-eps) ii2=min(ii+1,naa)
           return
         endif
       enddo
