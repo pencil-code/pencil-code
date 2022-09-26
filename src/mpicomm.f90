@@ -150,8 +150,8 @@ module Mpicomm
     integer :: ncpus,tag,root
     integer, dimension(:), allocatable :: recv_req
     real :: dt_out, t_last_recvd
-    integer, dimension(2) :: xpeer_rng=0
-    integer, dimension(2) :: ypeer_rng=0
+    integer, dimension(2) :: xpeer_rng=-1
+    integer, dimension(2) :: ypeer_rng=-1
     integer, dimension(3) :: procnums
     integer, dimension(3) :: dims
     real, dimension(2,3) :: extents
@@ -296,9 +296,9 @@ module Mpicomm
 !
       call MPI_COMM_SIZE(MPI_COMM_PENCIL, nprocs_penc, mpierr)
       nprocs_foreign=nprocs-nprocs_penc
-print*, 'lforeign, nprocs, nprocs_penc=', lforeign, nprocs, nprocs_penc
+
       if (.not.( lyinyang.and.nprocs_penc==2*ncpus .or. &
-                 (lforeign.and.nprocs_foreign>0 .or. .not.lforeign).and.nprocs_penc==ncpus )) then
+                 (lforeign.and.(nprocs_foreign>0.or.lstart) .or. .not.lforeign).and.nprocs_penc==ncpus )) then
         if (lroot) then
           if (lyinyang) then
             print*, 'Compiled with 2*ncpus = ', 2*ncpus, &
@@ -10324,26 +10324,21 @@ endif
 
 print*,'PCASA 1', iproc, ncpus+peer, tag_foreign+iproc
 
-            call mpisend_int(frgn_setup%yind_rng(-1,:),2,ncpus+peer,tag_foreign+iproc, MPI_COMM_WORLD)
-            !!!call mpisendrecv_int(frgn_setup%yind_rng(-1,:),2,ncpus+peer,tag_foreign+iproc, & 
-            !!!                     frgn_setup%yind_rng(py,:),ncpus+peer,tag_foreign+peer,MPI_COMM_WORLD)
-            call mpirecv_int(intbuf,2,ncpus+peer,tag_foreign+peer,MPI_COMM_WORLD)
+            !call mpisend_int(frgn_setup%yind_rng(-1,:),2,ncpus+peer,tag_foreign+iproc, MPI_COMM_WORLD)
+            call mpisendrecv_int(frgn_setup%yind_rng(-1,:),2,ncpus+peer,tag_foreign+iproc, & 
+                                 intbuf,ncpus+peer,tag_foreign+peer,MPI_COMM_WORLD)
+            !call mpirecv_int(intbuf,2,ncpus+peer,tag_foreign+peer,MPI_COMM_WORLD)
             frgn_setup%yind_rng(py,:)=intbuf(1:2)
 !print*,'PCASA2', iproc
-            if (frgn_setup%ypeer_rng(1)>0) then
+            if (frgn_setup%ypeer_rng(1)>=0) then
               if (frgn_setup%yind_rng(py,1)==0) frgn_setup%ypeer_rng(2)=py-1
             else
               if (frgn_setup%yind_rng(py,1)>0) frgn_setup%ypeer_rng(1)=py
             endif
           enddo
-          if (frgn_setup%ypeer_rng(2)==0) frgn_setup%ypeer_rng(2)=py-1
+          if (frgn_setup%ypeer_rng(2)<0) frgn_setup%ypeer_rng(2)=py-1
 !
         endif   !lfirst_proc_xz
-
-!print*, 'PENCIL - BARRIER', iproc
-call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
-call MPI_FINALIZE(mpierr)
-stop
 
         if (lfirst_proc_yz) then             ! on processors of first XBEAM
 !                              
@@ -10378,11 +10373,11 @@ stop
 !
 !       Determine the peer using EULAG proc grid conventions.
 !
-            peer = find_proc_general(0,0,px,frgn_setup%procnums(3),frgn_setup%procnums(2),frgn_setup%procnums(1),.true.)+ncpus
-            call mpisendrecv_int(frgn_setup%xind_rng(-1,:),2,peer,tag_foreign+iproc, &
-                                 frgn_setup%xind_rng(px,:),  peer,tag_foreign+peer,MPI_COMM_WORLD)
+            peer = find_proc_general(0,0,px,frgn_setup%procnums(3),frgn_setup%procnums(2),frgn_setup%procnums(1),.true.)
+            call mpisendrecv_int(frgn_setup%xind_rng(-1,:),2,peer+ncpus,tag_foreign+iproc,intbuf,peer+ncpus,tag_foreign+peer,MPI_COMM_WORLD)
+            frgn_setup%xind_rng(px,:)=intbuf(1:2)
 
-            if (frgn_setup%xpeer_rng(1)>0) then    ! if start of peer range has already been detected
+            if (frgn_setup%xpeer_rng(1)>=0) then    ! if start of peer range has already been detected
 !
 !  If px has no share, px-1 is last of peer range.
 !
@@ -10394,9 +10389,13 @@ stop
               if (frgn_setup%xind_rng(px,1)>0) frgn_setup%xpeer_rng(1)=px
             endif
           enddo
-          if (frgn_setup%xpeer_rng(2)==0) frgn_setup%xpeer_rng(2)=px-1
+          if (frgn_setup%xpeer_rng(2)<0) frgn_setup%xpeer_rng(2)=px-1
 
         endif  ! lfirst_proc_yz
+
+call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+call MPI_FINALIZE(mpierr)
+stop
 
         call mpibcast_int_arr2(frgn_setup%xind_rng,(/frgn_setup%procnums(1)+1,2/),comm=MPI_COMM_YZPLANE)
         call mpibcast_int_arr(frgn_setup%xpeer_rng,2,comm=MPI_COMM_YZPLANE)
@@ -10427,13 +10426,33 @@ stop
 !
 ! 20-oct-21/MR: coded
 !
-      use General, only: loptest
+      use General, only: loptest, find_proc_general
 
       real, dimension(:,:,:,:) :: frgn_buffer
       integer :: nvars
       logical, optional :: lnonblock
 
-      integer :: istart,lenx_loc,px,iv,peer
+      integer :: istart,ixstart,iystart,lenx_loc,leny_loc,px,py,iv,peer
+
+      do px=frgn_setup%xpeer_rng(1),frgn_setup%xpeer_rng(2)
+          
+        ixstart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1-nghost
+        lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1+2*nghost
+        peer = find_proc_general(0,py,px,frgn_setup%procnums(3),frgn_setup%procnums(2),frgn_setup%procnums(1),.true.)
+
+        do py=frgn_setup%ypeer_rng(1),frgn_setup%ypeer_rng(2)
+
+          iystart=frgn_setup%yind_rng(py,1)-frgn_setup%yind_rng(-1,1)+1-nghost
+          leny_loc=frgn_setup%yind_rng(py,2)-frgn_setup%yind_rng(py,1)+1+2*nghost
+
+          do iv=1,nvars
+            call mpirecv_real(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv), &
+                              (/lenx_loc,leny_loc,mz/),peer+ncpus,peer+tag_foreign,MPI_COMM_WORLD,frgn_setup%recv_req(px))
+          enddo
+
+        enddo
+      enddo
+      return
 
       do px=0,frgn_setup%procnums(1)-1
         if (frgn_setup%xind_rng(px,1)>0) then
