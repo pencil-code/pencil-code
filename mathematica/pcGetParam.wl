@@ -173,7 +173,7 @@ getParam[sim_,"nHyperVisc",i_Integer:1]:=Switch[ivisc[sim,i],
   _,                     Print[sim,": unknown ivisc=",ivisc[sim,i]];Return[$Failed]
 ];
 getParam[sim_,"ReNn",i_Integer:1]:=Switch[ivisc[sim,i],
-  "'nu-const'",          getParam[sim,"ReN",i],
+  "'nu-const'",          getParam[sim,"ReN"],
   "'hyper2-simplified'", urms[sim]/kf[sim]^3/readParamNml[sim,"run.in","NU_HYPER2"],
   "'hyper3-simplified'", urms[sim]/kf[sim]^5/readParamNml[sim,"run.in","NU_HYPER3"],
   _,                     Print[sim,": unknown ivisc=",ivisc[sim,i]];Return[$Failed]
@@ -190,7 +190,7 @@ getParam[sim_,"nHyperEta",i_Integer:1]:=Switch[iresis[sim,i],
 ];
 
 getParam[sim_,"ReMn",i_Integer:1]:=Switch[iresis[sim,i],
-  "'eta-const'", getParam[sim,"ReM",i],
+  "'eta-const'", getParam[sim,"ReM"],
   "'hyper2'",    urms[sim]/kf[sim]^3/readParamNml[sim,"run.in","ETA_HYPER2"],
   "'hyper3'",    urms[sim]/kf[sim]^5/readParamNml[sim,"run.in","ETA_HYPER3"],
   _,             Print[sim,": unknown iresistivity=",iresis];Return[$Failed]
