@@ -10374,7 +10374,8 @@ print*,'PCASA 1', iproc, ncpus+peer, tag_foreign+iproc
 !       Determine the peer using EULAG proc grid conventions.
 !
             peer = find_proc_general(0,0,px,frgn_setup%procnums(3),frgn_setup%procnums(2),frgn_setup%procnums(1),.true.)
-            call mpisendrecv_int(frgn_setup%xind_rng(-1,:),2,peer+ncpus,tag_foreign+iproc,intbuf,peer+ncpus,tag_foreign+peer,MPI_COMM_WORLD)
+            call mpisendrecv_int(frgn_setup%xind_rng(-1,:),2,peer+ncpus,tag_foreign+iproc, &
+                                 intbuf,peer+ncpus,tag_foreign+peer,MPI_COMM_WORLD)
             frgn_setup%xind_rng(px,:)=intbuf(1:2)
 
             if (frgn_setup%xpeer_rng(1)>=0) then    ! if start of peer range has already been detected
