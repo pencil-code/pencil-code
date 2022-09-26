@@ -1326,7 +1326,7 @@ module General
 !
     endfunction upper_case
 !***********************************************************************
-    subroutine find_index_range(aa,naa,aa1,aa2,ii1,ii2)
+    subroutine find_index_range(aa,naa,aa1,aa2,ii1,ii2,lextend)
 !
 !  Find index range (ii1,ii2) such that aa
 !
@@ -1337,9 +1337,10 @@ module General
       integer :: naa,ii,ii1,ii2
       real, dimension (naa) :: aa
       real :: aa1,aa2
+      logical, optional :: lextend
 !
       real, parameter :: eps=1e-6
-      intent(in)  :: aa,naa,aa1,aa2
+      intent(in)  :: aa,naa,aa1,aa2,lextend
       intent(out) :: ii1,ii2
 !
 !  If zero extent in this direction, set indices to interior values.
