@@ -54,8 +54,8 @@ s/double  *precision *\([*]*\):: */extern double \1,/
       s/^ *extern  *[a-zA-Z][a-zA-Z]* *[\*]* *,/,/
       # remove terminating , and & in continuation lines
       s/, *& *$//
-      s/, *\*\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *= *\&[^,]*/#define \1_ MPREcdataMINF\1MSUF \n/g
-      s/, *\([a-zA-Z0-9_][a-zA-Z0-9_]*\)/#define \1 MPREcdataMINF\1MSUF \n/g
+      s/, *\*\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *= *\&[^,]*/#define \1_ MODULE_PREFIXcdataMODULE_INFIX\1MODULE_SUFFIX \n/g
+      s/, *\([a-zA-Z0-9_][a-zA-Z0-9_]*\)/#define \1 MODULE_PREFIXcdataMODULE_INFIX\1MODULE_SUFFIX \n/g
       /^ *, *$/ d
       w tmp
       g

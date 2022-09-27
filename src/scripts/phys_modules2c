@@ -54,19 +54,35 @@ sed -n '
 # writes declarations of n_$1s_<modname>, p_$1_<modname> and call of push$1s2c into $modname_$1s_c.h
 #
 rm -f $modheader tmp1
-sed -n '
-  /parameter/ {
-     h
-     s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX$modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
-     t store
-     b cont
-     : store
-     p
-     : cont
-     g
-     s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/'$MODULE_PREFIX$modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
-  }
-' < tmp >> $modfuncs
+if [[ $MODULE_NAME_ORDER == 'CRAY' ]]; then
+  sed -n '
+    /parameter/ {
+       h
+       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$modname$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
+       t store
+       b cont
+       : store
+       p
+       : cont
+       g
+       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$modname$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
+    }
+  ' < tmp >> $modfuncs
+else
+  sed -n '
+    /parameter/ {
+       h
+       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX$modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
+       t store
+       b cont
+       : store
+       p
+       : cont
+       g
+       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/'$MODULE_PREFIX$modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
+    }
+  ' < tmp >> $modfuncs
+fi
 #
 if [[ $1 == 'par' ]]; then
   sed -n '

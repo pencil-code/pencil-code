@@ -2208,24 +2208,24 @@ endif
 
 # Determine compiler specific [PRE|IN|SUF]FIX for qualified names of module quantities
 if ( -e src/start.x ) then
-  eval `nm src/start.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+  #eval `nm src/start.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
 else if ( -l src/start.x ) then
   set tmp = `readlink src/start.x`
-  eval `nm $tmp | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+  #eval `nm $tmp | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
 else if ( -e src/run.x ) then
-  eval `nm src/run.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+  #eval `nm src/run.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
 else if ( -l src/run.x ) then
   set tmp = `readlink src/run.x`
-  eval `nm $tmp | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+  #eval `nm $tmp | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
 else
   echo "Neither start.x nor run.x found!"
   (sleep 1; kill -KILL $$ >& /dev/null) &       # schedule full-featured suicide
   kill -TERM $$                                 # .. but try exiting in civilized manner
 endif
 
-if $?MODULE_PREFIX then
-  echo 'MODULE_[PRE|IN|SUF]FIX="'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
-endif
+#if $?MODULE_PREFIX then
+#  echo 'MODULE_[PRE|IN|SUF]FIX="'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
+#endif
 
 setenv PC_MODULES_LIST `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g'` 
 

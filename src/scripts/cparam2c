@@ -6,4 +6,8 @@ sed -f scripts/cparam.sed cparam.inc >> cparam.inc_c.h
 
 echo '#define MIN(a,b) (a<b ? a : b)' > cparam_c.h
 echo '#define MAX(a,b) (a>b ? a : b)' >> cparam_c.h
-sed -f scripts/cparam.sed -e's/integer *:: *\([a-zA-Z0-9_]*\) *= *[^!;]*.*$/#define \1 '$MODULE_PREFIX'cparam'$MODULE_INFIX'\1'$MODULE_SUFFIX'\n  extern FINT \1;/' cparam.f90 >> cparam_c.h
+if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
+  sed -f scripts/cparam.sed -e's/integer *:: *\([a-zA-Z0-9_]*\) *= *[^!;]*.*$/#define \1 '$MODULE_PREFIX'\1'$MODULE_INFIX'cparam'$MODULE_SUFFIX'\n  extern FINT \1;/' cparam.f90 >> cparam_c.h
+else
+  sed -f scripts/cparam.sed -e's/integer *:: *\([a-zA-Z0-9_]*\) *= *[^!;]*.*$/#define \1 '$MODULE_PREFIX'cparam'$MODULE_INFIX'\1'$MODULE_SUFFIX'\n  extern FINT \1;/' cparam.f90 >> cparam_c.h
+fi

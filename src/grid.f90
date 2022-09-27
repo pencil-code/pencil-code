@@ -1482,22 +1482,24 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 
     endsubroutine coarsegrid_interp
 !***********************************************************************
-    subroutine quintic_interp(nn,a,ninds)
+    subroutine quintic_interp(nn,a,ninds,dc)
 
       integer :: nn
       real, dimension(:,:) :: a
       integer, dimension(:) :: ninds
+      real :: dc
 ! interpolation weights: 1/([-120,24,-12,12,-24,120]*dx^5) =
 ! [-0.00833333,0.0416667,-0.0833333,0.0833333,-0.0416667,0.00833333]*dx^-5
 
       integer :: iv,izu
-      real, dimension(6) :: coefs
+      real, dimension(6), parameter :: coefs = &
+            (/-0.00833333,0.0416667,-0.0833333,0.0833333,-0.0416667,0.00833333/)
 
       izu=ipz*nz+nghost
 
  !     dels=zgrid(inds)-zgrid(nn)
       do iv=1,mvar
-        a(nn,iv) = sum(a(ninds,iv)*coefs)
+        a(nn,iv) = sum(a(ninds,iv)*coefs)/dc**(-5)
       enddo
 
     endsubroutine quintic_interp

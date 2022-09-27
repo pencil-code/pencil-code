@@ -1,9 +1,17 @@
 rm -f boundcond_c.h
 echo '# pragma once' > boundcond_c.h
 echo '# include "headers_c.h"' >> boundcond_c.h
-echo '# define boundconds_x_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_x_c'$MODULE_SUFFIX >> boundcond_c.h
+
+if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
+  echo '# define boundconds_x_c '$MODULE_PREFIX'boundcond_x_c'$MODULE_INFIX'boundconds'$MODULE_SUFFIX >> boundcond_c.h
+  echo '# define boundconds_y_c '$MODULE_PREFIX'boundcond_y_c'$MODULE_INFIX'boundconds'$MODULE_SUFFIX >> boundcond_c.h
+  echo '# define boundconds_z_c '$MODULE_PREFIX'boundcond_z_c'$MODULE_INFIX'boundconds'$MODULE_SUFFIX >> boundcond_c.h
+else
+  echo '# define boundconds_x_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_x_c'$MODULE_SUFFIX >> boundcond_c.h
+  echo '# define boundconds_y_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_y_c'$MODULE_SUFFIX >> boundcond_c.h
+  echo '# define boundconds_z_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_z_c'$MODULE_SUFFIX >> boundcond_c.h
+fi
+
 echo 'extern "C" void *boundconds_x_c(REAL *f, int *ivar1, int *ivar2);' >> boundcond_c.h
-echo '# define boundconds_y_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_y_c'$MODULE_SUFFIX >> boundcond_c.h
 echo 'extern "C" void *boundconds_y_c(REAL *f, int *ivar1, int *ivar2);' >> boundcond_c.h
-echo '# define boundconds_z_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_z_c'$MODULE_SUFFIX >> boundcond_c.h
 echo 'extern "C" void *boundconds_z_c(REAL *f, int *ivar1, int *ivar2);' >> boundcond_c.h
