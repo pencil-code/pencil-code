@@ -24,7 +24,6 @@
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
 ! PENCILS PROVIDED der6u_res(3,3)
-! PENCILS PROVIDED divss
 !***************************************************************
 !
 module Hydro
@@ -204,7 +203,7 @@ module Hydro
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1.
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
-  integer :: novec,novecmax=nx*ny*nz/4
+  integer :: novec,novecmax=nx*ny*nz/4, niter_relB=1
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
   logical :: lremove_mean_angmom=.false.
@@ -234,8 +233,6 @@ module Hydro
   logical :: lSchur_3D3D1D_uu=.false.
   logical :: lSchur_2D2D3D_uu=.false.
   logical :: lSchur_2D2D1D_uu=.false.
-
-
   real :: dtcor=0.
   character (len=labellen) :: uuprof='nothing'
 !
@@ -266,7 +263,7 @@ module Hydro
       lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       omega_out, omega_in, lprecession, omega_precession, omega_fourier, &
       alpha_precession, lshear_rateofstrain, r_omega, w_omega, &
-      lconservative, lrelativistic, lalways_use_gij_etc, amp_centforce, &
+      lconservative, lrelativistic, niter_relB, lalways_use_gij_etc, amp_centforce, &
       lcalc_uumean, lcalc_uumeanx, lcalc_uumeanxy, lcalc_uumeanxz, lcalc_uumeanz, &
       lcalc_ruumeanz, lcalc_ruumeanxy, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
@@ -857,7 +854,9 @@ module Hydro
 !
       if (lconservative) then
         call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.)
-        if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.)
+        if (llorentz_as_aux) then
+          call register_report_aux('lorentz', ilorentz,communicated=.true.)
+        endif
       else
         if (lrelativistic) then
           call fatal_error('register_hydro','no lrelativistic without lconservative')
@@ -2551,6 +2550,15 @@ module Hydro
         endif
       endif
 !
+!  Initialize auxiliaries to zero.
+!
+      if (lconservative) then
+        f(:,:,:,iTij:iTij+5)=0.
+        if (llorentz_as_aux) then
+          f(:,:,:,ilorentz)=0.
+        endif
+      endif
+!
     endsubroutine init_uu
 !***********************************************************************
     subroutine pencil_criteria_hydro
@@ -2558,6 +2566,8 @@ module Hydro
 !  All pencils that the Hydro module depends on are specified here.
 !
 !  20-nov-04/anders: coded
+!
+      lpenc_requested(i_uu)=.true.
 !
       if (lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) & 
         lpenc_requested(i_uij) = .true.
@@ -2905,9 +2915,11 @@ module Hydro
 !  21-sep-13/MR    : instead pencil mask as parameter lpenc_loc
 !  19-feb-15/MR    : adapted weno transport to use of reference state
 !
-      use Deriv
-      use Sub
-      use WENO_transport
+      use Deriv, only: der6, der5i1j
+      use Sub, only: multsv_mn, del2v_etc, gij_etc, u_dot_grad, del6v, &
+        dot2_mn, gij, div_mn, traceless_strain, curl_mn, multm2_sym_mn, &
+        dot_mn, cross, del4v, del4graddiv, d2fi_dxj, del2fi_dxjk, h_dot_grad
+      use WENO_transport, only: weno_transp
       use EquationOfState, only: cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2922,17 +2934,29 @@ module Hydro
       intent(in)   :: lpenc_loc
       intent(inout):: f,p
 !
-! uu is directly p%uu=f(l1:l2,m,n,iux:iuz) even if lrelativistic
+!  uu is directly p%uu=f(l1:l2,m,n,iux:iuz), but with lconservative
+!  it is the momentum, or T^{0i} in the relativistic case.
 !
       if (lpenc_loc(i_uu)) then
-        p%uu=f(l1:l2,m,n,iux:iuz)
+        p%uu=f(l1:l2,m,n,iux:iuz)  !(in the conservative case, this becomes the velocity later!)
+!
+!  In the relativistic case, which must also be conservative, cs201=4/3, if cs2=1/3.
+!  At this point, the Lorentz factor gamma^2 is already available.
+!  We solve here Eq. (39) of the notes.
+!
         if (lconservative) then
           if (lrelativistic) then
             cs201=cs20+1.
-            !tmp=1./(f(l1:l2,m,n,irho)*f(l1:l2,m,n,ilorentz)*cs201)
-            !print*,'AXEL5 B_ext2=',B_ext2
-            tmp=1./(f(l1:l2,m,n,irho)*f(l1:l2,m,n,ilorentz)*cs201+B_ext2)
-            call multsv_mn(tmp,p%uu,p%uu)
+            if (lmagnetic) then
+              tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
+            else
+              tmp=1./(f(l1:l2,m,n,irho)/(1.-.25/f(l1:l2,m,n,ilorentz)))
+            endif
+      !     call multsv_mn(tmp,p%uu,p%uu)
+!
+!  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
+!  so to get the velocity, we have to divide by it.
+!
           else
             p%rho1=1./f(l1:l2,m,n,irho)
             call multsv_mn(p%rho1,p%uu,p%uu)
@@ -2961,9 +2985,10 @@ module Hydro
 !
 ! divS, needed for relativistic calculations
 !
-      if (lpenc_loc(i_divss)) then
-        call div(f,iux,p%divss)
-      endif
+!     if (lpenc_loc(i_divss)) then
+!       call div(f,iux,p%divss)
+!print*,'AXEL: divss now calculated: p%divss(1:5)=',p%divss(1:5)
+!     endif
 ! divu
       if (lpenc_loc(i_divu)) then
         call div_mn(p%uij,p%divu,p%uu)
@@ -3347,11 +3372,11 @@ module Hydro
       real, dimension (mx,my) :: fsum_tmp_sph
       real, dimension (mx) :: uphi
       real, dimension (mx,3) :: ss
-      real, dimension (mx) :: ss2, totenergy, totenergy1, rat
-      real, dimension (mx) :: rho, press, rho_gam2, lorentz_gamma2
+      real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
+      real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2
       real :: nygrid1,nzgrid1
       real :: cs201, cs2011
-      integer :: i, j
+      integer :: i, j, iter_relB
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -3370,50 +3395,96 @@ module Hydro
 !  In the non-relativisitic case, then Tij=rho*ui*uj+delij*p,
 !  so with p=cs2*rho/3="press", we have Tij=Ti0*Tj0/rho+cs2*rho*delij/3.
 !  To deal with truly nonrelativistic eos and conservative formulation,
-!  we need to set rho_gam2=1/rho.
+!  we need to set rho_gam21=1/rho.
 !  Note that the loop below is over all my and mz, not ny and nz,
 !  so it includes the ghost zones.
 !  Allowed for possibility to save relativistic Lorentz factor as aux.
+!  The magnetic case can only be done iteratively, so we first compute
+!  gamma for the nonmagnetic case.
 !
       if (lconservative) then
         if (iTij==0) call fatal_error("hydro_before_boundary","must compute Tij for lconservative")
+        cs201=cs20+1.
+        cs2011=1./cs201
         do n=1,mz
         do m=1,my
           if (ldensity) then
-            totenergy=f(:,m,n,irho)
-            totenergy1=1./totenergy
+            if (lmagnetic) then
+              if (B_ext2/=0.) then
+                hydro_energy=f(:,m,n,irho)-.5*B_ext2
+              else
+                hydro_energy=f(:,m,n,irho)
+              endif
+            else
+              hydro_energy=f(:,m,n,irho)
+            endif
+            hydro_energy1=1./hydro_energy
           else
-            totenergy=1.
-            totenergy1=1.
+            hydro_energy=1.
+            hydro_energy1=1.
           endif
+!
+!  Compute lorentz_gamma2.
+!
           if (lrelativistic.or.llorentz_as_aux) then
             ss=f(:,m,n,iux:iuz)
             call dot2_mx(ss,ss2)
-            rat=ss2*totenergy1**2
-          endif
-          if (lrelativistic) then
-            cs201=cs20+1.
-            cs2011=1./cs201
-            lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
-            rho=totenergy/(cs201*lorentz_gamma2-cs20)
-            rho_gam2=1./(cs201*rho*lorentz_gamma2)
-          else
-            rho=totenergy
-            if (lrelativistic_eos) then
-              cs201=cs20+1.
-              rho_gam2=cs201*totenergy1
+            rat0=ss2*hydro_energy1**2
+            if (lmagnetic) then
+              vA2_pseudo=B_ext2*cs2011*hydro_energy1
+              rat=rat0/(1.+vA2_pseudo)**2
             else
-              rho_gam2=totenergy1
+              rat=rat0
             endif
-            if (llorentz_as_aux) lorentz_gamma2=1./(1.-rat)
+            lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+!
+!  In the magnetic case, we need to solve lorentz_gamma2 iteratively; first initialize it:
+!  We also don't know rho yet (because it involves gamma^2), so we iterate for that, too.
+!  In the magnetic case, the equation for lorentz_gamma2 is no longer quadratic, because
+!  the term (1.+vA2_pseudo)**2 itself contains lorentz_gamma2.
+!  The expression rho_gam2 means the same as (4/3)*rho*gamma^2, and rho_gam21=1/rho_gam2.
+!  Now iterate (only works if relativistic)
+!
+            if (lmagnetic) then
+              do iter_relB=1,niter_relB
+                if (lrelativistic) then
+                  rho1=(cs201*lorentz_gamma2-cs20)/hydro_energy
+                  rho_gam20=cs2011*rho1/lorentz_gamma2
+                  vA2_pseudo=B_ext2*rho_gam20
+                  rat=rat0/(1.+vA2_pseudo)**2
+                  lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+                else
+                  if (llorentz_as_aux) lorentz_gamma2=1./(1.-rat)
+                endif
+              enddo
+              rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
+              rho_gam21=1./(cs201*rho*lorentz_gamma2+B_ext2)
+            else
+              rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
+              rho_gam21=1./(cs201*rho*lorentz_gamma2)
+            endif
+!
+!  If just conservative and non-relativistic, we just set rho and rho_gam21.
+!
+          else
+            if (lrelativistic_eos) then
+              rho=cs201*hydro_energy
+            else
+              rho=hydro_energy
+            endif
+            rho_gam21=1./(cs201*rho)
           endif
+!
+!  At the end, we put lorentz_gamma2 into the f array.
+!
           if (ilorentz /= 0) f(:,m,n,ilorentz)=lorentz_gamma2
           press=rho*cs20
 !
+!  Now set the nonmagnetic stresses; begin with the diagonal components:
 !  Tii=(Ti0)^2/rho or Tii=(Ti0)^2/(4./3.*rho*gamma^2)
 !
           do j=0,2
-            f(:,m,n,iTij+j)=rho_gam2*f(:,m,n,iuu+j)**2+press
+            f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2+press
           enddo
 !
 !  off-diagonal terms:
@@ -3421,9 +3492,9 @@ module Hydro
 !  "Tij5" = T23
 !  "Tij6" = T31
 !
-          f(:,m,n,iTij+3+0)=rho_gam2*f(:,m,n,iuu+0)*f(:,m,n,iuu+1)
-          f(:,m,n,iTij+3+1)=rho_gam2*f(:,m,n,iuu+1)*f(:,m,n,iuu+2)
-          f(:,m,n,iTij+3+2)=rho_gam2*f(:,m,n,iuu+2)*f(:,m,n,iuu+0)
+          f(:,m,n,iTij+3+0)=rho_gam21*f(:,m,n,iuu+0)*f(:,m,n,iuu+1)
+          f(:,m,n,iTij+3+1)=rho_gam21*f(:,m,n,iuu+1)*f(:,m,n,iuu+2)
+          f(:,m,n,iTij+3+2)=rho_gam21*f(:,m,n,iuu+2)*f(:,m,n,iuu+0)
 !
 !  The following hasn't been prepared yet.
 !
@@ -3438,6 +3509,9 @@ module Hydro
     !     endif
         enddo
         enddo
+!
+!  Here is the endif of lconservative.
+!
       endif
 !
 !  Calculate the vorticity field if required.
@@ -3577,56 +3651,55 @@ module Hydro
 !  but that is currently done in noentropy.
 !
       if (ladvection_velocity) then
-      if (.not. lconservative .and. .not. lweno_transport .and. &
-          .not. lno_meridional_flow .and. .not. lfargo_advection) then
-        if (lSchur_3D3D1D_uu) then
-          call dot(p%uu,p%uij(:,1,:),ugu_Schur_x)
-          call dot(p%uu,p%uij(:,2,:),ugu_Schur_y)
-          ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
-        elseif (lSchur_2D2D3D_uu) then
-          do j=1,3
-          do i=1,3
-            puij_Schur(:,i,j) = p%uij(:,i,j)
-          enddo
-          enddo
-          puij_Schur(:,1,3) = 0
-          puij_Schur(:,2,3) = 0
-          call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
-          call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
-          call dot(p%uu,puij_Schur(:,3,:),ugu_Schur_z)
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
-        elseif (lSchur_2D2D1D_uu) then
-          do j=1,3
-          do i=1,3
-            puij_Schur(:,i,j) = p%uij(:,i,j)
-          enddo
-          enddo
-          puij_Schur(:,1,3) = 0
-          puij_Schur(:,2,3) = 0
-          call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
-          call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
-          ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
-        else
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+        if (.not. lconservative .and. .not. lweno_transport .and. &
+            .not. lno_meridional_flow .and. .not. lfargo_advection) then
+          if (lSchur_3D3D1D_uu) then
+            call dot(p%uu,p%uij(:,1,:),ugu_Schur_x)
+            call dot(p%uu,p%uij(:,2,:),ugu_Schur_y)
+            ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+          elseif (lSchur_2D2D3D_uu) then
+            do j=1,3
+            do i=1,3
+              puij_Schur(:,i,j) = p%uij(:,i,j)
+            enddo
+            enddo
+            puij_Schur(:,1,3) = 0
+            puij_Schur(:,2,3) = 0
+            call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
+            call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
+            call dot(p%uu,puij_Schur(:,3,:),ugu_Schur_z)
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+          elseif (lSchur_2D2D1D_uu) then
+            do j=1,3
+            do i=1,3
+              puij_Schur(:,i,j) = p%uij(:,i,j)
+            enddo
+            enddo
+            puij_Schur(:,1,3) = 0
+            puij_Schur(:,2,3) = 0
+            call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
+            call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
+            ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+          else
+            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+          endif
         endif
-
-      endif
 !
-      if (ldensity.and.lconservative) then
+        if (ldensity.and.lconservative) then
 !
 !  diagonals first
 !
-        call der(f,iTij+0,tmp,1) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-        call der(f,iTij+1,tmp,2) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-        call der(f,iTij+2,tmp,3) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+          call der(f,iTij+0,tmp,1) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+          call der(f,iTij+1,tmp,2) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+          call der(f,iTij+2,tmp,3) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
 !
 !  "Tij4" = T12
 !  "Tij5" = T23
@@ -3634,20 +3707,20 @@ module Hydro
 !  next the off-diagonals
 !  T_11,1 + T_12,2 + T_13,3 = (0,1) + (3,2) + (5,3); (T23=T32 does not enter)
 !
-        call der(f,iTij+3,tmp,2) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-        call der(f,iTij+5,tmp,3) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+          call der(f,iTij+3,tmp,2) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+          call der(f,iTij+5,tmp,3) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
 !
 !  T_21,1 + T_22,2 + T_23,3 = (1,2) + (3,1) + (4,3); (T13=T31 does not enter)
 !
-        call der(f,iTij+3,tmp,1) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-        call der(f,iTij+4,tmp,3) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+          call der(f,iTij+3,tmp,1) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+          call der(f,iTij+4,tmp,3) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
 !
 !  T_31,1 + T_32,2 + T_33,3 = (2,3) + (5,1) + (4,2); (T12=T21 does not enter)
 !
-        call der(f,iTij+5,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-        call der(f,iTij+4,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+          call der(f,iTij+5,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+          call der(f,iTij+4,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
 !
-      endif
+        endif
 !
 !  WENO transport.
 !
@@ -3671,6 +3744,8 @@ module Hydro
 !
         if (lfargo_advection) &
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%uuadvec_guu
+!
+!  endif from ladvection_velocity
 !
       endif
 !

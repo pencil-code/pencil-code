@@ -18,7 +18,7 @@
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3); transprho
 ! PENCILS PROVIDED ekin, uuadvec_glnrho; uuadvec_grho
 ! PENCILS PROVIDED rhos1; glnrhos(3)
-! PENCILS PROVIDED totenergy_rel
+! PENCILS PROVIDED totenergy_rel; divss
 !
 !***************************************************************
 module Density
@@ -977,7 +977,7 @@ module Density
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
       use Mpicomm
-      use Sub
+      use Sub, only: blob
       use InitialCondition, only: initial_condition_lnrho
       use SharedVariables, only: get_shared_variable
 !
@@ -2237,7 +2237,7 @@ module Density
 !                suppressed weno for log density
 !
       use WENO_transport
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad,del6_strict,calc_del6_for_upwind
+      use Sub, only: div,grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad,del6_strict,calc_del6_for_upwind
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2323,6 +2323,16 @@ module Density
         if (lupw_rho) then
           call calc_del6_for_upwind(f,irho,p%uu_advec,tmp)
           p%uuadvec_grho = p%uuadvec_grho - tmp
+        endif
+      endif
+!
+! divS, needed for relativistic calculations
+!
+      if (lpenc_loc(i_divss)) then
+        if (lhydro) then
+          call div(f,iux,p%divss)
+        else
+          call fatal_error_local('calc_pencils_linear_density_pnc','divss not allowed')
         endif
       endif
 !
@@ -2821,7 +2831,6 @@ module Density
         if (headtt .and. ldiff_hyper3lnrho_strict ) print*, &
            'dlnrho_dt: diffrho_hyper3_strict=', diffrho_hyper3
       endif
-
 !
 !  Add diffusion term to continuity equation
 !

@@ -1118,12 +1118,9 @@ module Magnetic
 !
       if (lhydro) then
         call get_shared_variable('lconservative', lconservative, caller='register_magnetic')
-        !call get_shared_variable('lrelativistic', lrelativistic)
       else
         allocate(lconservative)
-        !allocate(lrelativistic)
         lconservative=.false.
-        !lrelativistic=.false.
       endif
 !
 !  register the mean-field module
@@ -2450,10 +2447,11 @@ module Magnetic
 !
       endif
 !
-!  added magnetic energy to T00 (needed in relativistic case)
+!  Add magnetic energy to T00 [needed in conservative (relativistic) case].
+!  Currently only the imposed field is added.
 !
       if (lconservative) then
-        f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)+.5*B_ext2
+        f(:,:,:,irho)=f(:,:,:,irho)+.5*B_ext2
         if (lroot) print*,'added to T00: .5*B_ext2= ', .5*B_ext2
       endif
 !
@@ -8210,23 +8208,31 @@ module Magnetic
 !
       ampl_lr=+0.
       ampl_ux=+0.
-      if (ldensity.and.lrelativistic_eos) then
-        ampl_uy=+ampl*sqrt(.75)
-      else
-        ampl_uy=+ampl
+      if (ldensity) then
+        if (lconservative) then
+          ampl_uy=+ampl*sqrt(4./3.+B_ext2)
+        elseif (lrelativistic_eos) then
+          ampl_uy=+ampl*sqrt(.75)
+        else
+          ampl_uy=+ampl
+        endif
       endif
+      if (lroot) print*,'ampl_uy=',ampl_uy
 !
 !  ux and Ay.
 !  Don't overwrite the density, just add to the log of it.
-!
+!  In the lconservative case, lconservative=T, rho is at the moment really rho,
+!  not T^{00}, because the .5*B^2 term is added later.
+! 
       do n=n1,n2; do m=m1,m2
         if (ldensity_nolog) then
-          f(l1:l2,m,n,irho)=exp(ampl_lr*(sin(kx*x(l1:l2))+f(l1:l2,m,n,ilnrho)))
+!--       f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)+exp(ampl_lr*(sin(kx*x(l1:l2))+f(l1:l2,m,n,irho)))
           rho=f(l1:l2,m,n,irho)
         else
-          f(l1:l2,m,n,ilnrho)=ampl_lr*(sin(kx*x(l1:l2))+f(l1:l2,m,n,ilnrho))
+!--       f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+ampl_lr*sin(kx*x(l1:l2))
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
+!
         f(l1:l2,m,n,iuu+0 )=ampl_ux*sin(kx*x(l1:l2))
         f(l1:l2,m,n,iuu+1 )=ampl_uy*sin(kx*x(l1:l2))
         ampl_Az=-ampl*sqrt(rho*mu0)/kx
