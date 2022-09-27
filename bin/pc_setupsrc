@@ -484,7 +484,6 @@ $srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/sr
 $srcdir/astaroth/submodule/src/standalone/*.h $srcdir/astaroth/submodule/src/standalone/*.cc \
 $srcdir/astaroth/submodule/src/standalone/CMakeLists.txt \
 $srcdir/astaroth/submodule/src/standalone/model/*.cc $srcdir/astaroth/submodule/src/standalone/model/*.h \
-#$srcdir/astaroth/submodule/3rdparty/*.sh $srcdir/astaroth/submodule/scripts/*.sh \
 $srcdir/astaroth/submodule/acc/*.sh $srcdir/astaroth/submodule/acc/src/* $srcdir/astaroth/submodule/acc/pc_mhd_solver/* \
 $srcdir/astaroth/submodule/acc/pencil/*.h $srcdir/astaroth/submodule/acc/stdlib/*.h
   do
