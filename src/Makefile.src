@@ -2291,6 +2291,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS=-O1 #-fimplicit-none #(uan02*)
 ##FFLAGS_DOUBLE=-fdefault-real-8 #(uan02*)
 #CFLAGS=-DFUNDERSC=1 -O1 #(uan02*)
+#ALLOW_ARG_MISMATCH = -fallow-argument-mismatch
 ##
 ## Parker: UFMG, BH, Brasil
 ##
