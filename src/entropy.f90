@@ -6358,14 +6358,14 @@ module Energy
           theta_profile=(onethird-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
           prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
           heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
-          div_cool = div_cool - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
+          div_cool = - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
           prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
           heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
           div_cool = div_cool - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
         else
           prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
           heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
-          div_cool = div_cool - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
+          div_cool = - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
           prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
           heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
           div_cool = div_cool - cool_int*prof*(p%cs2-cs2_int)/cs2_int

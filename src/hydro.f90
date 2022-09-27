@@ -1372,6 +1372,7 @@ module Hydro
             call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_corona'")
           prof_amp1=0.5*(tanh((x(l1:l2)-rdampext)/wdamp)+1.)
         elseif (lcartesian_coords) then
+          zbot=xyz0(3)
           prof_amp3=0.5*(tanh((z-zbot)/wdamp)+1.)
         endif
 
@@ -5059,7 +5060,7 @@ module Hydro
         if (lcalc_uumeanxy) then
           do j=1,3
             do n=1,mz
-              f(l1:l2,m1:m2,n,iuu_fluc+j-1) = f(l1:l2,m1:m2,n,iuu+j-1) - uumxy(l1:l2-nghost,m1:m2-nghost,j)
+              f(l1:l2,m1:m2,n,iuu_fluc+j-1) = f(l1:l2,m1:m2,n,iuu+j-1) - uumxy(l1:l2,m1:m2,j)
             enddo
           enddo
         endif

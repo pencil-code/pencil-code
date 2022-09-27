@@ -7733,6 +7733,7 @@ module Boundcond
 !
 !  Get local wave numbers
 !
+      nxl=l2-l1+1; nyl=m2-m1+1
       kx = spread(kx_fft(ipx*nxl+1:ipx*nxl+nxl),2,nyl)
       ky = spread(ky_fft(ipy*nyl+1:ipy*nyl+nyl),1,nxl)
 !
