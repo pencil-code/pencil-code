@@ -427,7 +427,7 @@ make_astaroth_dir()
   [ -h $src/astaroth/submodule ] && rm $src/astaroth/submodule
   adddir $src/astaroth/submodule
 ## subdirectories of submodule
-  adddir $src/astaroth/submodule/3rdparty
+  #adddir $src/astaroth/submodule/3rdparty
   adddir $src/astaroth/submodule/include
   adddir $src/astaroth/submodule/src
   adddir $src/astaroth/submodule/src/core
@@ -435,7 +435,7 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule/src/standalone
   adddir $src/astaroth/submodule/src/standalone/model
   adddir $src/astaroth/submodule/src/utils
-  adddir $src/astaroth/submodule/scripts
+#  adddir $src/astaroth/submodule/scripts
 #  adddir $src/astaroth/submodule/acc
 #  adddir $src/astaroth/submodule/acc/pc_mhd_solver
 #  adddir $src/astaroth/submodule/acc/pencil
@@ -484,7 +484,7 @@ $srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/sr
 $srcdir/astaroth/submodule/src/standalone/*.h $srcdir/astaroth/submodule/src/standalone/*.cc \
 $srcdir/astaroth/submodule/src/standalone/CMakeLists.txt \
 $srcdir/astaroth/submodule/src/standalone/model/*.cc $srcdir/astaroth/submodule/src/standalone/model/*.h \
-$srcdir/astaroth/submodule/3rdparty/*.sh $srcdir/astaroth/submodule/scripts/*.sh \
+#$srcdir/astaroth/submodule/3rdparty/*.sh $srcdir/astaroth/submodule/scripts/*.sh \
 $srcdir/astaroth/submodule/acc/*.sh $srcdir/astaroth/submodule/acc/src/* $srcdir/astaroth/submodule/acc/pc_mhd_solver/* \
 $srcdir/astaroth/submodule/acc/pencil/*.h $srcdir/astaroth/submodule/acc/stdlib/*.h
   do
