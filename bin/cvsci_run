@@ -88,7 +88,7 @@ endif
 #  add power spectra, if they exist
 #  (for the time being, test existence only on a few such files)
 #
-  \ls | egrep '*power.*\.dat' >/dev/null
+# \ls | egrep '*power.*\.dat' >/dev/null
   if ( ! $status ) then
     $add_cmd $add_data_opt *power*.dat
   endif
