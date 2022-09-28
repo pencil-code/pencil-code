@@ -1777,7 +1777,7 @@ module HDF5_IO
       logical, optional, intent(in) :: compress
 !
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
-      integer, dimension(4), parameter :: chunk_dims=(/128,128,128,128/)
+      integer(kind=8), dimension(4), parameter :: chunk_dims=(/128,128,128,128/)
 !
       if (.not. lcollective) &
         call check_error (1, '4D array output requires global file', name, caller='output_hdf5_4D')
