@@ -237,7 +237,7 @@ module HDF5_IO
         call check_error (h5_err, 'create global file access property list', caller='file_open_hdf5')
         call h5pset_fapl_mpio_f (h5_plist, ioptest(comm,MPI_COMM_WORLD), MPI_INFO_NULL, h5_err)
         call check_error (h5_err, 'modify global file access property list')
-!
+
         if (ltrunc) then
           ! create empty (or truncated) HDF5 file
           call h5fcreate_f (trim (file), H5F_ACC_TRUNC_F, h5_file, h5_err, access_prp=h5_plist)
@@ -930,38 +930,40 @@ module HDF5_IO
       use Iso_c_binding
 
       character (len=*), intent(in) :: name
-      type(torus_rect), intent(in), target :: data
-      type(C_PTR) :: ptr
+      type(torus_rect), intent(in) :: data
+      integer(KIND=ikind8) :: ptr
       integer(SIZE_T) :: offset
 
 !
       integer(HID_T) :: h5_torustype, h5_vec3type
-      integer(HSIZE_T), dimension(1) :: dims, size
+      integer(HSIZE_T), dimension(1) :: size
+
       real :: dummy
 
+      return !  because of problem with compound data type
       ! create data type
-      call h5tcreate_f(H5T_COMPOUND_F, 8*sizeof(dummy), h5_torustype, h5_err)
+      !call h5tcreate_f(H5T_COMPOUND_F, 8*sizeof(dummy), h5_torustype, h5_err)
       call check_error (h5_err, 'create torus data type', name)
 
-      dims=(/3/)
-      call h5tarray_create_f(h5_ntype, 1, dims, h5_vec3type, h5_err)
+      size=(/3/)
+      !call h5tarray_create_f(h5_ntype, 1, size, h5_vec3type, h5_err)
       offset=OFFSETOF(data,data%center(1))
-      call h5tinsert_f(h5_torustype,"center",offset,h5_vec3type,h5_err)
+      !call h5tinsert_f(h5_torustype,"center",offset,h5_vec3type,h5_err)
       offset=OFFSETOF(data,data%th)
-      call h5tinsert_f(h5_torustype,"th",offset,h5_ntype,h5_err)
+      !call h5tinsert_f(h5_torustype,"th",offset,h5_ntype,h5_err)
       offset=OFFSETOF(data,data%ph)
-      call h5tinsert_f(h5_torustype,"ph",offset,h5_ntype,h5_err)
+      !call h5tinsert_f(h5_torustype,"ph",offset,h5_ntype,h5_err)
       offset=OFFSETOF(data,data%r_in)
-      call h5tinsert_f(h5_torustype,"r_in",offset,h5_ntype,h5_err)
+      !call h5tinsert_f(h5_torustype,"r_in",offset,h5_ntype,h5_err)
       offset=OFFSETOF(data,data%thick)
-      call h5tinsert_f(h5_torustype,"thick",offset,h5_ntype,h5_err)
+      !call h5tinsert_f(h5_torustype,"thick",offset,h5_ntype,h5_err)
       offset=OFFSETOF(data,data%height)
-      call h5tinsert_f(h5_torustype,"height",offset,h5_ntype,h5_err)
+      !call h5tinsert_f(h5_torustype,"height",offset,h5_ntype,h5_err)
       call check_error (h5_err, 'populate torus data type', name)
 
       ! create data space
       size = (/ 1 /)
-      call h5screate_simple_f (1, size, h5_dspace, h5_err)
+      !call h5screate_simple_f (1, size, h5_dspace, h5_err)
       call check_error (h5_err, 'create torus data space', name)
 
       if (exists_in_hdf5 (name)) then
@@ -970,7 +972,7 @@ module HDF5_IO
         call check_error (h5_err, 'open torus dataset', name)
       else
         ! create dataset
-        call h5dcreate_f (h5_file, trim (name), h5_torustype, h5_dspace, h5_dset, h5_err)
+        !call h5dcreate_f (h5_file, trim (name), h5_torustype, h5_dspace, h5_dset, h5_err)
         call check_error (h5_err, 'create torus dataset', name)
       endif
 
@@ -1763,7 +1765,7 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_3D
 !***********************************************************************
-    subroutine output_hdf5_4D(name, data, nv)
+    subroutine output_hdf5_4D(name, data, nv, compress)
 !
 !  Write HDF5 dataset from a distributed 4D array.
 !
@@ -1772,8 +1774,10 @@ module HDF5_IO
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: data
+      logical, optional, intent(in) :: compress
 !
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
+      integer, dimension(4), parameter :: chunk_dims=(/128,128,128,128/)
 !
       if (.not. lcollective) &
         call check_error (1, '4D array output requires global file', name, caller='output_hdf5_4D')
@@ -1790,6 +1794,11 @@ module HDF5_IO
       ! define 'memory-space' to indicate the local data portion in memory
       call h5screate_simple_f (n_dims+1, local_size, h5_mspace, h5_err)
       call check_error (h5_err, 'create local memory space', name)
+
+      if (loptest(compress)) then     ! not yet tested
+        call h5pset_chunk_f(h5_plist, 4, chunk_dims, h5_err)
+        call h5pset_deflate_f(h5_plist, 6, h5_err)
+      endif
 !
       if (exists_in_hdf5 (name)) then
         ! open dataset
@@ -1863,7 +1872,7 @@ module HDF5_IO
       integer, intent(in) :: nv
       double precision, dimension (nv), intent(in) :: data
 !
-      integer(kind=8), dimension(1) :: size
+      integer(KIND=ikind8), dimension(1) :: size
 !
       if (lcollective) call check_error (1, 'local output requires local file', caller='output_local_hdf5_double_1D')
       if (.not. lwrite) return
