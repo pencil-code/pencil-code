@@ -121,6 +121,8 @@ module Forcing
   ! GP_TC13 forcing
   real :: tcor_GP=1.,kmin_GP=1.,kmax_GP=2.,beta_GP=1.3333
   integer :: nk_GP=2
+  ! random Taylor-Green forcing
+  real :: theta_TG=0.
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -980,6 +982,12 @@ module Forcing
             siny(:,i)=embedy(:,i)*siny(:,i); cosy(:,i)=embedy(:,i)*cosy(:,i)
             cosz(:,i)=embedz(:,i)*cosz(:,i)
           endif
+        elseif (iforcing_cont(i)=='TG-random-nonhel' .or. &
+            iforcing_cont(i)=='TG-random-hel') then
+          if (lroot) print*,'forcing_cont: TG-random--calc sinx, cosx, etc'
+          sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
+          siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
+          sinz(:,i)=sin(kf_fcont(i)*z); cosz(:,i)=cos(kf_fcont(i)*z)
         elseif (iforcing_cont(i)=='cosx*cosy*cosz') then
           if (lroot) print*,'forcing_cont: cosx(:,i)*cosy(:,i)*cosz(:,i)'
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
@@ -5203,6 +5211,21 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine calc_GP_TC13
 !***********************************************************************
+   subroutine calc_TG_random(i)
+!
+!  28-sep-22/hongzhe: The Taylor-Green forcing with randomness.
+!
+      use General, only: random_number_wrapper
+!
+      integer,  intent(in) :: i
+!
+      real :: r_TG
+!
+      if (lfirst) call random_number_wrapper(r_TG,CHANNEL=channel_force)
+      theta_TG=r_TG*2.*pi
+!
+    endsubroutine calc_TG_random
+!***********************************************************************
     subroutine forcing_after_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray),intent(OUT) :: f
@@ -5217,6 +5240,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 !  precalculate parameters that are new at each timestep,
 !  but the same for all pencils
+!
+      use General, only: random_number_wrapper
 !
       integer :: i
       real :: ecost,esint,ecoxt,ecoyt,ecozt
@@ -5245,6 +5270,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
           sinxt(:,i)=sin(kf_fcont(i)*x+ecoxt); cosxt(:,i)=cos(kf_fcont(i)*x+ecoxt)
           sinyt(:,i)=sin(kf_fcont(i)*y+ecoyt); cosyt(:,i)=cos(kf_fcont(i)*y+ecoyt)
           sinzt(:,i)=sin(kf_fcont(i)*z+ecozt); coszt(:,i)=cos(kf_fcont(i)*z+ecozt)
+        elseif (iforcing_cont(i)=='TG-random-nonhel' .or. &
+            iforcing_cont(i)=='TG-random-hel') then
+          call calc_TG_random(i)
         endif
       enddo
 !
@@ -5830,6 +5858,23 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=+fact*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
           force(:,2)=-fact*cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
           force(:,3)=0.
+!
+!  Taylor-Green forcing with randomness
+!
+        case ('TG-random-nonhel')
+          force(:,1)=ampl_ff(i)*sin(theta_TG+2.*pi/3)/sqrt(3.)*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
+          force(:,2)=ampl_ff(i)*sin(theta_TG-2.*pi/3)/sqrt(3.)*cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
+          force(:,3)=ampl_ff(i)*sin(theta_TG)/sqrt(3.)*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
+!
+!  Fully helical Taylor-Green forcing with randomness
+!
+        case ('TG-random-hel')
+          force(:,1)=ampl_ff(i)*(cos(theta_TG+pi/6.)/sqrt(6.)*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i) &
+              -(sin(theta_TG)+cos(theta_TG-pi/6.))/sqrt(18.)*cosx(l1:l2,i)*siny(m,i)*sinz(n,i))
+          force(:,2)=ampl_ff(i)*(-cos(theta_TG-pi/6.)/sqrt(6.)*cosx(l1:l2,i)*siny(m,i)*cosz(n,i) &
+              +(sin(theta_TG)-cos(theta_TG+pi/6.))/sqrt(18.)*sinx(l1:l2,i)*cosy(m,i)*sinz(n,i))
+          force(:,3)=ampl_ff(i)*(sin(theta_TG)/sqrt(6.)*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i) &
+              +(cos(theta_TG-pi/6.)+cos(theta_TG+pi/6.))/sqrt(18.)*sinx(l1:l2,i)*siny(m,i)*cosz(n,i))
 !
 !  Compressive u=-grad(phi) with phi=cos(x+y+z) forcing
 !
