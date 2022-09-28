@@ -166,6 +166,7 @@ indices = [ $
   { name:'iYY_chiral', label:'YY chiral', dims:1 }, $
   { name:'ispecial', label:'Special', dims:1 }, $
   { name:'ispec_3vec', label:'Special vector', dims:3 }, $
+  { name:'ilorentz', label:'Lorentz factor', dims:1 }, $
   { name:'iphi', label:'Electric potential', dims:1 }, $
   { name:'iLam', label:'Gauge potential', dims:1 }, $
   { name:'idiva', label:'divA', dims:1 }, $
@@ -243,6 +244,19 @@ indices_aux = [ $
   { name:'iglhc', label:'Gradient of thermal conductivity', dims:3 }, $
   { name:'ippaux', label:'Auxiliary pressure', dims:1 }, $
   { name:'ispecaux', label:'Special auxiliary variable', dims:1 }, $
+; { name:'iTij', label:'Tij', dims:6 }, $
+  { name:'iTij_xx', label:'iTij_xx', dims:1 }, $
+  { name:'iTij_xy', label:'iTij_xx', dims:1 }, $
+  { name:'iTij_xz', label:'iTij_xx', dims:1 }, $
+  { name:'iTij_yy', label:'iTij_xx', dims:1 }, $
+  { name:'iTij_yz', label:'iTij_xx', dims:1 }, $
+  { name:'iTij_zz', label:'iTij_xx', dims:1 }, $
+  { name:'iTij1', label:'Tij1', dims:1 }, $
+  { name:'iTij2', label:'Tij2', dims:1 }, $
+  { name:'iTij3', label:'Tij3', dims:1 }, $
+  { name:'iTij4', label:'Tij4', dims:1 }, $
+  { name:'iTij5', label:'Tij5', dims:1 }, $
+  { name:'iTij6', label:'Tij6', dims:1 }, $
 ; { name:'iStr', label:'Str', dims:6 }, $
   { name:'iSt1', label:'St1', dims:1 }, $
   { name:'iSt2', label:'St2', dims:1 }, $
