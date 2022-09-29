@@ -904,7 +904,7 @@ module Hydro
 !  For Helmholtz decomposition of uu the potential of the curl-free part is registered  as an auxiliary.
 !
       if (lhelmholtz_decomp) then
-        if (dsnap_down==0.) call fatal_error('register_hydro','Helmholtz decomposition requires dsnap_down>0')
+        !if (dsnap_down==0.) call fatal_error('register_hydro','Helmholtz decomposition requires dsnap_down>0')
         call farray_register_auxiliary('phiuu',iphiuu)
       endif
 !
@@ -6940,9 +6940,11 @@ module Hydro
 
       if (lhelmholtz_decomp) then 
 
-        call fatal_error("hydro_after_timestep","Helmholtz decomposition not yet operational")
+        !call fatal_error("hydro_after_timestep","Helmholtz decomposition not yet operational")
+        if (it==1) call warning("hydro_after_timestep","Helmholtz decomposition under development")
 
-        if (decomp_prepare()) then
+        !if (decomp_prepare()) then
+        if (.true.) then
 !
 !  Find the divergence of uu and put it into the f-slot which is later used for the flow potential.
 !
@@ -6956,6 +6958,7 @@ module Hydro
           if (lperi(3)) then
             call inverse_laplacian(f(l1:l2,m1:m2,n1:n2,iphiuu))
           else
+            call fatal_error('hydro_after_timestep','Helmholtz decomposition not yet operational')
             if (iorder_z==2) then
               !call inverse_laplacian_z_2nd_neumann(f)
             else
