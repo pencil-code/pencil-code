@@ -606,8 +606,8 @@ module Magnetic
   integer :: idiag_bym=0        ! DIAG_DOC: $\left<B_y\right>$
   integer :: idiag_bzm=0        ! DIAG_DOC: $\left<B_z\right>$
   integer :: idiag_bxbym=0      ! DIAG_DOC: $\left<B_x B_y\right>$
-  integer :: idiag_bxbzm=0      ! DIAG_DOC:
-  integer :: idiag_bybzm=0      ! DIAG_DOC:
+  integer :: idiag_bxbzm=0      ! DIAG_DOC: $\left<B_x B_z\right>$
+  integer :: idiag_bybzm=0      ! DIAG_DOC: $\left<B_y B_z\right>$
   integer :: idiag_djuidjbim=0  ! DIAG_DOC:
   integer :: idiag_bij_cov_diffmax=0! DIAG_DOC: difference between two implementations of covariant derivatives
   integer :: idiag_bmx=0        ! DIAG_DOC: $\left<\left<\Bv\right>_{yz}^2
