@@ -2647,7 +2647,7 @@ module power_spectrum
   real, dimension(nzgrid) :: kz
   real, dimension(nx) :: bbi
   real, dimension(nx,3) :: gLam
-  character (len=2) :: sp
+  character (len=*) :: sp
   !
   !  identify version
   !
@@ -2690,11 +2690,15 @@ module power_spectrum
       call warning ('powerscl',"ia0=0 doesn't work.")
     endif
   elseif (sp=='ux') then
-      a_re=f(l1:l2,m1:m2,n1:n2,iux)
+    a_re=f(l1:l2,m1:m2,n1:n2,iux)
   elseif (sp=='uy') then
-      a_re=f(l1:l2,m1:m2,n1:n2,iuy)
+    a_re=f(l1:l2,m1:m2,n1:n2,iuy)
   elseif (sp=='uz') then
-      a_re=f(l1:l2,m1:m2,n1:n2,iuz)
+    a_re=f(l1:l2,m1:m2,n1:n2,iuz)
+  elseif (sp=='phiuu') then
+    !  compressible part of the Helmholtz decomposition of uu
+    !  uu = curl(A_uu) + grad(phiuu)
+    a_re=f(l1:l2,m1:m2,n1:n2,iphiuu)
   elseif (sp=='lr') then
     if (ldensity_nolog) then
       a_re=alog(f(l1:l2,m1:m2,n1:n2,irho))

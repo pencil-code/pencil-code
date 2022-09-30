@@ -110,7 +110,7 @@ module Param_IO
       StT_spec, StX_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
-      nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, &
+      nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, phiuu_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
       np_spec, np_ap_spec, rhop_spec, &
@@ -152,7 +152,7 @@ module Param_IO
       StT_spec, StX_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
-      nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, &
+      nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, phiuu_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
       np_spec, np_ap_spec, rhop_spec, &
