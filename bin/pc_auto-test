@@ -16,9 +16,6 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # line 17
 
 # Name:   pc_auto-test
-# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# Date:   12-Aug-2002
-# SVN: $Id$
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
