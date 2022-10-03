@@ -1642,6 +1642,13 @@ sub write_to_file {
     }
 }
 # ---------------------------------------------------------------------- #
+sub git_version {
+# Return the current version of the code.
+    my $rev = `$ENV{PENCIL_HOME}/utils/pc_identify_revision --one-line`;
+    chomp $rev;
+    return $rev;
+}
+# ---------------------------------------------------------------------- #
 sub get_maintainer_list {
 # Return comma-separated list of maintaners of directories listed in
 # %failed, avoiding duplicate entries.
@@ -1740,6 +1747,7 @@ END {
             open(my $log, ">>", $logfile)
               or warn "Cannot open $logfile for writing";
             print $log strftime("%Y-%m-%d_%H:%M:%S_%Z ", localtime);
+            print $log sprintf("%-22s : ", git_version());
 
             if (%failed) {
                 my $failed_count = scalar(keys %failed);
