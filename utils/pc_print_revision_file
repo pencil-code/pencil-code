@@ -3,7 +3,7 @@
 # Description:
 #   Print the revision file if it is up-to-date, where up-to-date-ness is
 #   determined by comparing the time stamp to one of the binaries.
-# This script expects to be run from the run directory.
+#   This script expects to be run from the run directory.
 # Usage:
 #   pc_print_revision_file src/start.x
 #   pc_print_revision_file src/run.x

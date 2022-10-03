@@ -1,19 +1,27 @@
 #!/bin/sh
 
-# Description:
-#   Try hard to identify the current revision of the code.
-#   Works for Git and the Github SVN bridge.
-#   For a SVN sandbox, requires connection to (and authentication
-#   with) the server.
-# Usage:
-#   pc_identify_revision [--reset|-r] [--print-file-name|-p]
-# Examples:
-#   pc_identify_revision                    # Write revision file
-#   pc_identify_revision --reset            # Delete revision file
-#   pc_identify_revision --print-file-name  # print name of rev. file
 
 revision_file='revision.txt'
-quiet=''                        # set to '1' to suppress diff output
+
+
+usage() {
+    cat <<EOT
+Usage:
+  pc_identify_revision [--reset|-r] [--print-file-name|-p]
+
+Try hard to identify the current revision of the code.
+Works for Git and the Github SVN bridge.
+For a SVN sandbox, requires connection to (and authentication with)
+the server.
+
+Examples:
+  pc_identify_revision                    # Print revision and diff
+  pc_identify_revision --one-line         # Print revision
+  pc_identify_revision --print-file-name  # Print name of rev. file
+  pc_identify_revision --write            # Write rev. and diff to file
+  pc_identify_revision --reset            # Delete revision file
+EOT
+}
 
 
 reset_locale () {
@@ -28,69 +36,99 @@ check_prerequisites () {
     # Sanity checks.
     # Some of these requirements could be weakened, but it is better
     # to play safe.
-    if [ -z $PENCIL_HOME ]; then
+    if [ -z "$PENCIL_HOME" ]; then
         echo "Error: \$PENCIL_HOME must be set."
         exit 1
     fi
 }
 
 
-write_revision_file () {
-    printf 'Revision: ' >> ${revision_file}
-
+write_revision () {
+    printf 'Revision: '
     if [ -d "${PENCIL_HOME}/.git" ]; then
-        write_revision_file_from_git_sandbox
+        write_revision_from_git_sandbox
     elif [ -d "${PENCIL_HOME}/.svn" ]; then
-        write_revision_file_from_svn_sandbox
+        write_revision_from_svn_sandbox
     else
-        echo 'Warning: Cannot determine a revision number' \
-            >> ${revision_file}
+        echo 'Warning: Cannot determine a revision number'
     fi
 }
 
 
-write_revision_file_from_git_sandbox () {
-    git_cmd rev-parse HEAD >> ${revision_file}
-    git_cmd status --short --untracked-files=no >> ${revision_file}
+write_revision_from_git_sandbox () {
+    revision="$(git_cmd rev-parse --short HEAD)"
+    modified="$(git_cmd status --short --untracked-files=no)"
+    if [ "$one_line" ]; then
+        if [ "$modified" ]; then
+            echo "${revision}+"
+        else
+            echo "$revision"
+            fi
+    else
+        echo "$revision"
+        echo "$modified"
+    fi
 }
 
 
-write_revision_file_from_svn_sandbox () {
-    # SVN revision:
-    svn_cmd info | grep 'Last Changed Rev' >> ${revision_file}
-    svn_cmd status | (grep -Ev '^\?' || true) >> ${revision_file}
+write_revision__from_svn_sandbox () {
+    revision="$(svn_cmd info | grep 'Last Changed Rev')"
+    modified="$(svn_cmd status | (grep -Ev '^\?' || true))"
+    if [ "$one_line" ]; then
+        if [ "$modified" ]; then
+            echo "${revision}+"
+        else
+            echo "$revision"
+            fi
+    else
+        echo "$revision"
+        echo "$modified"
+    fi
 }
 
 
 git_cmd () {
     # Run a git command from the top directory
-    (cd $PENCIL_HOME; git "$@")
+    (cd "$PENCIL_HOME" && git "$@")
 }
 
 
 svn_cmd () {
     # Run a SVN command from the top directory
-    (cd $PENCIL_HOME; svn "$@")
+    (cd "$PENCIL_HOME" && svn "$@")
 }
 
 
 main () {
-    if [ "$1" = "--print-file-name" -o "$1" = "-p" ]; then
-        echo "${revision_file}"
-        exit 0
-    elif [ "$1" = "--reset" -o "$1" = "-r" ]; then
-        write_file=''
-    else
-        write_file=1
-    fi
+    write_file=''
+    one_line=''
+
+    for arg in "$@"; do
+        if [ "$arg" = "--help" ] || [ "$arg" = "-h" ]; then
+            usage
+            exit 0
+        elif [ "$arg" = "--print-file-name" ] || [ "$arg" = "-p" ]; then
+            echo "${revision_file}"
+            exit 0
+        elif [ "$arg" = "--reset" ] || [ "$arg" = "-r" ]; then
+            rm -f "${revision_file}"
+            exit 0
+        elif [ "$arg" = "--write" ] || [ "$arg" = "-w" ]; then
+            write_file=1
+        elif [ "$arg" = "--one-line" ] || [ "$arg" = "-o" ]; then
+            one_line=1
+        fi
+    done
 
     reset_locale
 
     check_prerequisites
-    rm -f ${revision_file}
 
-    if [ $write_file ]; then
-        write_revision_file
+    if [ "$write_file" ]; then
+        rm -f ${revision_file}
+        write_revision > ${revision_file}
+    else
+        write_revision
     fi
 }
 
