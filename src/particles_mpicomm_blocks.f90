@@ -2227,13 +2227,29 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine output_blocks(filename)
 !
+!  Dispatches to a blocks writer according to the IO strategy.
+!
+!  04-oct-22/ccyang: coded
+!
+      use IO, only: IO_strategy
+!
+      character(len=*), intent(in) :: filename
+!
+      dispatch: if (IO_strategy == "dist") then
+        call output_blocks_dist(filename)
+      else dispatch
+        call fatal_error("output_blocks", "IO strategy " // trim(IO_strategy) // " is not implemented. ")
+      endif dispatch
+!
+    endsubroutine output_blocks
+!***********************************************************************
+    subroutine output_blocks_dist(filename)
+!
 !  Write block domain decomposition to file.
 !
 !  04-nov-09/anders: coded
 !
-      character(len=*) :: filename
-!
-      intent (in) :: filename
+      character(len=*), intent(in) :: filename
 !
       open(lun_output,file=filename,form='unformatted')
 !
@@ -2272,7 +2288,7 @@ module Particles_mpicomm
 !
       close(lun_output)
 !
-    endsubroutine output_blocks
+    endsubroutine output_blocks_dist
 !***********************************************************************
     subroutine input_blocks(filename)
 !
