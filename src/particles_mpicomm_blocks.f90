@@ -2292,16 +2292,32 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine input_blocks(filename)
 !
+!  Dispatches to a blocks reader according to the IO strategy.
+!
+!  05-oct-22/ccyang: coded
+!
+      use IO, only: IO_strategy
+!
+      character(len=*), intent(in) :: filename
+!
+      dispatch: if (IO_strategy == "dist") then
+        call input_blocks_dist(filename)
+      else dispatch
+        call fatal_error("input_blocks", "IO strategy " // trim(IO_strategy) // " is not implemented. ")
+      endif dispatch
+!
+    endsubroutine input_blocks
+!***********************************************************************
+    subroutine input_blocks_dist(filename)
+!
 !  Read block domain decomposition from file.
 !
 !  04-nov-09/anders: coded
 !
-      character(len=*) :: filename
+      character(len=*), intent(in) :: filename
 !
       real :: t_block
       integer :: dummy
-!
-      intent (in) :: filename
 !
       iproc_parent_block=-1
       ibrick_parent_block=-1
@@ -2351,7 +2367,7 @@ module Particles_mpicomm
       endif
       call fatal_error_local_collect()
 !
-    endsubroutine input_blocks
+    endsubroutine input_blocks_dist
 !***********************************************************************
     subroutine sort_blocks()
 !
