@@ -6,7 +6,7 @@
 !  25-feb-07/axel: adapted from nospecial.f90
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of disp_current_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED e2; el(3); a0; ga0(3)
 !***************************************************************
 !
-module disp_current
+module Special
 !
   use Cparam
   use Cdata
@@ -47,7 +47,7 @@ module disp_current
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false.
   character(len=50) :: initee='zero', inita0='zero'
-  namelist /disp_current_init_pars/ &
+  namelist /special_init_pars/ &
     initee, inita0, alpf, &
     ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
     kx_ex, kx_ey, kx_ez, &
@@ -62,7 +62,7 @@ module disp_current
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0
 !
   ! run parameters
-  namelist /disp_current_run_pars/ &
+  namelist /special_run_pars/ &
     alpf, llorenz_gauge_disp
 !
 ! Declare any index variables necessary for main or
@@ -215,8 +215,10 @@ module disp_current
       lpenc_requested(i_aa)=.true.
       if (alpf/=0.) then
         lpenc_requested(i_bb)=.true.
-  !     lpenc_requested(i_infl_dphi)=.true.
-  !     lpenc_requested(i_infl_a2)=.true.
+        lpenc_requested(i_infl_phi)=.true.
+        lpenc_requested(i_infl_dphi)=.true.
+        lpenc_requested(i_gphi)=.true.
+        lpenc_requested(i_infl_a2)=.true.
       endif
       lpenc_requested(i_el)=.true.
       lpenc_requested(i_ga0)=.true.
@@ -294,7 +296,7 @@ module disp_current
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gtmp, gphi
+      real, dimension (nx,3) :: gtmp
       real, dimension (nx) :: tmp, del2a0
 !
       intent(in) :: f,p
@@ -322,13 +324,14 @@ module disp_current
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
 !
         if (alpf/=0.) then
-          call grad(f,iinfl_phi,gphi)
-          call cross(gphi,p%el,gtmp)
+          call cross(p%gphi,p%el,gtmp)
           call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
+!          print*,"p%infl_phi",p%infl_phi
+!          print*,"p%infl_dphi",p%infl_dphi
           df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
           if (llorenz_gauge_disp) then
             call del2(f,ia0,del2a0)
-            call dot_mn(gphi,p%bb,tmp)
+            call dot_mn(p%gphi,p%bb,tmp)
             !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
             df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
             df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp+del2a0
@@ -364,7 +367,7 @@ module disp_current
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=disp_current_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -372,7 +375,7 @@ module disp_current
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=disp_current_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -382,7 +385,7 @@ module disp_current
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=disp_current_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -390,7 +393,7 @@ module disp_current
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=disp_current_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -484,7 +487,7 @@ module disp_current
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../disp_current_dummies.inc'
+    include '../special_dummies.inc'
 !********************************************************************
 !
-endmodule disp_current
+endmodule Special

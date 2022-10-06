@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED infl_phi; infl_dphi; infl_a2; infl_a21
+! PENCILS PROVIDED infl_phi; infl_dphi; infl_a2; infl_a21; gphi(3)
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -89,7 +89,7 @@ module Special
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0
   real :: ncutoff_phi=1.
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
-  real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0.
+  real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0., eps=.01
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
   real :: initpower_phi=0.,  cutoff_phi=0.,  initpower2_phi=0.
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
@@ -105,7 +105,7 @@ module Special
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
-      initspecial, phi0, dphi0, axionmass, ascale_ini, &
+      initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       c_light_axion, lambda_axion, amplphi, ampldphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
@@ -113,7 +113,7 @@ module Special
       ncutoff_phi, lscale_tobox
 !
   namelist /special_run_pars/ &
-      initspecial, phi0, dphi0, axionmass, ascale_ini, &
+      initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble
 !
@@ -222,7 +222,7 @@ module Special
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, eps=.01, Hubble_ini, lnascale
+      real :: Vpotential, Hubble_ini, lnascale
       integer :: j
 !
       intent(inout) :: f
@@ -294,6 +294,10 @@ module Special
         lpenc_requested(i_infl_a21)=.true.
       endif
 !
+!  pencil for gradient of phi
+!
+      lpenc_requested(i_gphi)=.true.
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -315,6 +319,8 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
+      use Sub, only: grad
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -322,7 +328,7 @@ module Special
       intent(inout) :: p
 !
 ! infl_phi
-      if (lpencil(i_infl_phi)) p%infl_dphi=f(l1:l2,m,n,iinfl_phi)
+      if (lpencil(i_infl_phi)) p%infl_phi=f(l1:l2,m,n,iinfl_phi)
 !
 ! infl_dphi
       if (lpencil(i_infl_dphi)) p%infl_dphi=f(l1:l2,m,n,iinfl_dphi)
@@ -332,6 +338,9 @@ module Special
 !
 ! infl_a21
       if (lpencil(i_infl_a21)) p%infl_a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
+!
+! infl_gphi
+      if (lpencil(i_gphi)) call grad(f,iinfl_phi,p%gphi)
 !
 !  Magnetic field needed for Maxwell stress
 !
