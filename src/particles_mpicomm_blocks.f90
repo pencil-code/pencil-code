@@ -2229,7 +2229,7 @@ module Particles_mpicomm
 !
 !  Dispatches to a blocks writer according to the IO strategy.
 !
-!  04-oct-22/ccyang: coded
+!  07-oct-22/ccyang: coded
 !
       use IO, only: IO_strategy
 !
@@ -2237,6 +2237,8 @@ module Particles_mpicomm
 !
       dispatch: if (IO_strategy == "dist") then
         call output_blocks_dist(filename)
+      elseif (IO_strategy == "MPI-IO") then dispatch
+        call output_blocks_mpi(filename)
       else dispatch
         call fatal_error("output_blocks", "IO strategy " // trim(IO_strategy) // " is not implemented. ")
       endif dispatch
@@ -2245,7 +2247,7 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine output_blocks_dist(filename)
 !
-!  Write block domain decomposition to file.
+!  Write block domain decomposition to file, one file per process.
 !
 !  04-nov-09/anders: coded
 !
@@ -2290,11 +2292,25 @@ module Particles_mpicomm
 !
     endsubroutine output_blocks_dist
 !***********************************************************************
+    subroutine output_blocks_mpi(filename)
+!
+!  Write block domain decomposition to file, using MPI I/O.
+!
+!  07-oct-22/ccyang: stub
+!
+      character(len=*), intent(in) :: filename
+!
+      call keep_compiler_quiet(filename)
+!
+      call fatal_error("output_blocks_mpi", "not implemented yet. ")
+!
+    endsubroutine output_blocks_mpi
+!***********************************************************************
     subroutine input_blocks(filename)
 !
 !  Dispatches to a blocks reader according to the IO strategy.
 !
-!  05-oct-22/ccyang: coded
+!  07-oct-22/ccyang: coded
 !
       use IO, only: IO_strategy
 !
@@ -2302,6 +2318,8 @@ module Particles_mpicomm
 !
       dispatch: if (IO_strategy == "dist") then
         call input_blocks_dist(filename)
+      elseif (IO_strategy == "MPI-IO") then dispatch
+        call input_blocks_mpi(filename)
       else dispatch
         call fatal_error("input_blocks", "IO strategy " // trim(IO_strategy) // " is not implemented. ")
       endif dispatch
@@ -2368,6 +2386,20 @@ module Particles_mpicomm
       call fatal_error_local_collect()
 !
     endsubroutine input_blocks_dist
+!***********************************************************************
+    subroutine input_blocks_mpi(filename)
+!
+!  Read block domain decomposition from file, using MPI I/O.
+!
+!  07-oct-22/ccyang: stub
+!
+      character(len=*), intent(in) :: filename
+!
+      call keep_compiler_quiet(filename)
+!
+      call fatal_error("input_blocks_mpi", "not implemented yet. ")
+!
+    endsubroutine input_blocks_mpi
 !***********************************************************************
     subroutine sort_blocks()
 !
