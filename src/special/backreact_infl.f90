@@ -95,7 +95,7 @@ module Special
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
-  real :: a2rhopm, a2rhopm_all
+  real :: ddotam, a2rhopm, a2rhopm_all, ddotam_all
   real, pointer :: alpf
   logical :: lbackreact_infl=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true.
@@ -127,6 +127,7 @@ module Special
   integer :: idiag_dphirms=0   ! DIAG_DOC: $\left<(\phi')^2\right>^{1/2}$
   integer :: idiag_Hubblem=0   ! DIAG_DOC: $\left<{\cal H}\right>$
   integer :: idiag_lnam=0      ! DIAG_DOC: $\left<\ln a\right>$
+  integer :: idiag_ddotam=0    ! DIAG_DOC: $a''/a$
 !
   contains
 !****************************************************************************
@@ -446,6 +447,7 @@ module Special
         if (idiag_dphirms/=0) call sum_mn_name(dphi**2,idiag_dphirms,lsqrt=.true.)
         if (idiag_Hubblem/=0) call sum_mn_name(Hscript,idiag_Hubblem)
         if (idiag_lnam/=0) call sum_mn_name(lnascale,idiag_lnam)
+        if (idiag_ddotam/=0) call save_name(ddotam_all,idiag_ddotam)
       endif
 
       call keep_compiler_quiet(p)
@@ -505,7 +507,7 @@ module Special
       if (lreset) then
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
-        idiag_Hubblem=0; idiag_lnam=0
+        idiag_Hubblem=0; idiag_lnam=0; idiag_ddotam=0
       endif
 !
       do iname=1,nname
@@ -517,6 +519,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dphirms',idiag_dphirms)
         call parse_name(iname,cname(iname),cform(iname),'Hubblem',idiag_Hubblem)
         call parse_name(iname,cname(iname),cform(iname),'lnam',idiag_lnam)
+        call parse_name(iname,cname(iname),cform(iname),'ddotam',idiag_ddotam)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
@@ -795,10 +798,12 @@ module Special
 !
       use Mpicomm, only: mpireduce_sum
       use Sub, only: dot2_mn, grad, curl
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, em_term
+      real, dimension (nx) :: ddota, phi, a2, Vpotential
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !
@@ -809,7 +814,8 @@ module Special
           em_term=0.
         else
           if (lbackreact_infl) then
-            a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
+            a2=exp(2.*f(l1:l2,m,n,iinfl_lna))
+            a21=1./a2
             el=f(l1:l2,m,n,iex:iez)
             call curl(f,iaa,bb)
             call dot2_mn(bb,b2)
@@ -819,14 +825,33 @@ module Special
             em_term=0.
           endif
         endif
+        phi=f(l1:l2,m,n,iinfl_phi)
         dphi=f(l1:l2,m,n,iinfl_dphi)
         call grad(f,iinfl_phi,gphi)
         call dot2_mn(gphi,gphi2)
         a2rhop=dphi**2+gphi2+em_term
         a2rhopm=a2rhopm+sum(a2rhop)
+!
+!  Choice of different potentials
+!
+        select case (Vprime_choice)
+          case ('quadratic'); Vpotential=.5*axionmass2*phi**2
+          case ('quartic'); Vpotential=axionmass2*phi+(lambda_axion/6.)*phi**3  !(to be corrected)
+          case ('cos-profile'); Vpotential=axionmass2*lambda_axion*sin(lambda_axion*phi)  !(to be corrected)
+          case default
+            call fatal_error("init_special: No such value for initspecial:" &
+                ,trim(Vprime_choice))
+        endselect
+!
+!  compute ddotam = a"/a (needed for GW module)
+!
+        ddota=-dphi**2-gphi2+2.5*a2*Vpotential
+        ddotam=ddotam+four_pi_over_three*sum(ddota)
       enddo
       enddo
       call mpireduce_sum(a2rhopm/nwgrid,a2rhopm_all)
+      call mpireduce_sum(ddotam/nwgrid,ddotam_all)
+      call put_shared_variable('ddotam',ddotam_all)
 !
     endsubroutine special_after_boundary
 !***********************************************************************

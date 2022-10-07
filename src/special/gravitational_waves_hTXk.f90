@@ -97,6 +97,7 @@ module Special
   real :: nscale_factor_conformal=1., tshift=0.
   real :: t_equality=3.789E11, t_acceleration=1.9215E13, t_0=1.3725E13
   real :: k1hel=0., k2hel=1., kgaussian_GW=0., ncutoff_GW=2., relhel_GW=0.
+  real, pointer :: ddotam
   logical :: lno_transverse_part=.false., lgamma_factor=.false.
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
   logical :: lswitch_sign_e_X_boost=.true.
@@ -1138,8 +1139,16 @@ module Special
 !  communicated.
 !
 !  07-aug-17/axel: coded
+
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!  get a"/a (here called ddotam)
+!
+      if (lscalar) then
+        call get_shared_variable('ddotam',ddotam)
+      endif
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -1863,6 +1872,10 @@ module Special
                 om=sqrt(abs(om2))
               elseif (lreheating_GW) then
                 om2=ksqr-2./(t+1.)**2
+                lsign_om2=(om2 >= 0.)
+                om=sqrt(abs(om2))
+              elseif (lscalar) then
+                om2=ksqr-ddotam
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
               elseif (lmatter_GW .or. ldark_energy_GW) then
