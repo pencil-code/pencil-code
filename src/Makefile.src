@@ -1451,6 +1451,16 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##FFLAGS_DOUBLE=-s default64 #(phoenix)
 #CFLAGS=-DFUNDERSC=1 -O2 #(phoenix)
 ##
+##
+## Samriddhi on PARAM Siddhi
+##
+#FC=mpiifort #(login-siddhi)
+#FFLAGS= -O2 -mcmodel=large #(login-siddhi)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(login-siddhi)
+#CC=mpiicc #(login-siddhi)
+#CFLAGS=-O2 -DFUNDERSC=1 #(login-siddhi)
+##
+##
 ## Axel on LCD
 ##
 #FC=mpif90 #(hydra2*)
@@ -2306,12 +2316,12 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ## Triton.aalto.fi: FGI cluster at Aalto
 ##
-#FC=mpifort #(login*|manterm1|kapylap1|rheinhm1)
-#F90=$(FC) #(login*|manterm1|kapylap1|rheinhm1)
-#CC=mpicc #(login*|manterm1|kapylap1|rheinhm1)
-#FFLAGS_DOUBLE=-fdefault-real-8 #(login*|manterm1|kapylap1|rheinhm1)
-#CFLAGS=-DFUNDERSC=1 -O3 #(login*|manterm1|kapylap1|rheinhm1)
-#LD_MPI= #(login*|manterm1|kapylap1|rheinhm1)
+#FC=mpifort #(manterm1|kapylap1|rheinhm1)
+#F90=$(FC) #(manterm1|kapylap1|rheinhm1)
+#CC=mpicc #(manterm1|kapylap1|rheinhm1)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(manterm1|kapylap1|rheinhm1)
+#CFLAGS=-DFUNDERSC=1 -O3 #(manterm1|kapylap1|rheinhm1)
+#LD_MPI= #(manterm1|kapylap1|rheinhm1)
 ##
 ## Steve's test cluster
 ##
