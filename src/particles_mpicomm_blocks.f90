@@ -188,7 +188,7 @@ module Particles_mpicomm
 !
 !  Read block domain decomposition from file.
 !
-        call input_blocks(trim(directory_dist)//'/blocks.dat')
+        call input_blocks("blocks.dat")
       endif
 !
 !  For placing particles in blocks the CPUs need a common reference point that
@@ -2251,7 +2251,7 @@ module Particles_mpicomm
 !
       character(len=*), intent(in) :: filename
 !
-      open(lun_output,file=filename,form='unformatted')
+      open(lun_output, file=trim(directory_dist)//'/'//filename, form='unformatted')
 !
         write(lun_output) t
         write(lun_output) nblock_loc, nproc_parent, nproc_foster
@@ -2323,7 +2323,7 @@ module Particles_mpicomm
       ibrick_parent_block=-1
       iproc_foster_brick=-1
 !
-      open(lun_output,file=filename,form='unformatted')
+      open(lun_output, file=trim(directory_dist)//'/'//filename, form='unformatted')
 !
         read(lun_output) t_block
         read(lun_output) nblock_loc, nproc_parent, nproc_foster
