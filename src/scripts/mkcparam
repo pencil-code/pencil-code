@@ -45,6 +45,9 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #   must be separated by a "," or ";", and for non-scalar pencils the
 #   dimensions must be specified in parenthesis immediately after the
 #   pencil name.
+#   Multiple occurences of a ! PENCILS PROVIDED line for the same pencil
+#   results in a warning, but no warning for multiple ! PENCILS EXPECTED
+#   lines or ! PENCILS PROVIDED and ! PENCILS EXPECTED for the same pencil.
 #
 #   Output is written as a Fortran program and supposed to end up in the
 #   local file src/cparam.inc .
@@ -178,6 +181,8 @@ file: foreach my $infile (@ARGV) {
     if ($line=~ /$pencils_decl/) {
       # my @pencils = split /\s*;\s*/, $2;
       # foreach my $pencil (@pencils) {
+      my $provided=0;
+      if ($line =~ '^!\ PENCILS\ PROVIDED') {$provided=1};
       while ($line =~ s{
                            ^                          # anchor at start
                            (?:                        # group, don't capture
@@ -223,7 +228,9 @@ file: foreach my $infile (@ARGV) {
         foreach my $pencil_name_used (@pencil_names){
           if ($pencil_name eq $pencil_name_used) {$pencil_already_used=1;}
         }
-        push @{$pencil_file_map{$pencil_name}}, $infile;
+        if ($provided == 1){
+          push @{$pencil_file_map{$pencil_name}}, $infile;
+        }
         if ($pencil_already_used eq 0) {
           push @pencil_names, $pencil_name;
           push @pencil_sizes, $pencil_size;
