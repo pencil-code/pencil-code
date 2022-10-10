@@ -131,7 +131,7 @@ module Mpicomm
                                           isend_stat_Tuu,isend_stat_Tlu
   integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
                                           irecv_stat_Fll,irecv_stat_Ful
-  integer :: real_arr_maxsize
+  integer :: REAL_ARR_MAXSIZE
 !
 !  Data for Yin-Yang communication.
 !
@@ -265,7 +265,7 @@ print*, 'Pencil1: iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD=', iapp, nprocs, ncpus  
       if ((nz<nghost) .and. (nzgrid/=1)) &
            call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
 !
-      call MPI_TYPE_CONTIGUOUS(max_int, MPI_REAL, real_arr_maxsize, mpierr)
+      call MPI_TYPE_CONTIGUOUS(max_int, MPI_REAL, REAL_ARR_MAXSIZE, mpierr)
 
     endsubroutine mpicomm_init
 !***********************************************************************
@@ -3117,6 +3117,61 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
                     tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpisend_real_arr_assumed
+!***********************************************************************
+    subroutine mpisend_real_arr_huge(array,len_array,partner,tag,comm)
+!
+!  Allows to communicate arrays with length > max_int.
+!  06-oct-22/MR: coded
+!
+      use General, only: ioptest
+
+      real, dimension(*) :: array
+      integer(KIND=ikind8) :: len_array
+      integer :: partner,tag
+      integer, optional :: comm
+!
+      integer :: mult,res
+
+      if (len_array == 0) return
+
+      mult=len_array/max_int
+      res =len_array-mult*max_int
+
+      if (mult>0) &
+        call MPI_SEND (array, mult, REAL_ARR_MAXSIZE, partner, tag, MPI_COMM_GRID, mpierr)
+      if (res>0) &
+        call MPI_SEND(array(len_array-res+1), res, MPI_REAL, partner, tag+1, &
+                     ioptest(comm,MPI_COMM_GRID), mpierr)
+
+    endsubroutine mpisend_real_arr_huge
+!***********************************************************************
+    subroutine mpirecv_real_arr_huge(array,len_array,partner,tag,comm)
+!     
+!  Allows to communicate arrays with length > max_int.
+!  06-oct-22/MR: coded
+!     
+      use General, only: ioptest
+            
+      real, dimension(*) :: array
+      integer(KIND=ikind8) :: len_array
+      integer :: partner,tag
+      integer, optional :: comm
+!
+      integer :: mult,res
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+
+      if (len_array == 0) return
+
+      mult=len_array/max_int
+      res =len_array-mult*max_int
+            
+      if (mult>0) &
+        call MPI_RECV(array, mult, REAL_ARR_MAXSIZE, partner, tag, MPI_COMM_GRID, stat, mpierr)
+      if (res>0) &
+        call MPI_RECV(array(len_array-res+1), res, MPI_REAL, partner, tag+1, &
+                     ioptest(comm,MPI_COMM_GRID),stat,mpierr)
+
+    endsubroutine mpirecv_real_arr_huge
 !***********************************************************************
     subroutine mpirecv_real_arr_assumed(bcast_array,nbcast_array,offset,proc_rec,tag_id,comm)
 !
@@ -6959,7 +7014,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: bnx, bny, bnz, bna ! transfer box sizes
       integer :: cnx, cny ! transfer box sizes minus ghosts
       integer :: rny ! y-row box size
-      integer :: px, py, pz, collector, partner, nbox, nrow, alloc_err
+      integer :: px, py, pz, collector, partner, alloc_err
+      integer(KIND=ikind8) :: nbox, nrow
       integer :: x_add, x_sub, y_add, y_sub
       integer, parameter :: xtag=123, ytag=124
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -7009,7 +7065,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             y_row(:,py*cny+1+y_add:py*cny+my,:,:) = in(:,1+y_add:my,:,:)
           else
             ! receive from y-row partner
-            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call mpirecv_real_arr_huge(buffer,nbox,partner,ytag)
+            ! old version: call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             y_row(:,py*cny+1+y_add:py*cny+my-y_sub,:,:) = buffer(:,1+y_add:my-y_sub,:,:)
           endif
         enddo
@@ -7018,14 +7075,16 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         if (iproc /= collector) then
           ! send to collector
-          call MPI_SEND (y_row, nrow, MPI_REAL, collector, xtag, MPI_COMM_GRID, mpierr)
+          call mpisend_real_arr_huge(y_row,nrow,collector,xtag)
+          ! old version: call MPI_SEND (y_row, nrow, MPI_REAL, collector, xtag, MPI_COMM_GRID, mpierr)
           deallocate (y_row)
         endif
 !
       elseif (ipz == pz) then
         ! send to collector of the y-row (lfirst_proc_y)
         partner = ipx + ipz*nprocxy
-        call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+        call mpisend_real_arr_huge(in,nbox,partner,ytag)
+        ! old version: call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
       if (iproc == collector) then
@@ -7045,7 +7104,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             deallocate (y_row)
           else
             ! receive from partner
-            call MPI_RECV (buffer, nrow, MPI_REAL, partner, xtag, MPI_COMM_GRID, stat, mpierr)
+            call mpirecv_real_arr_huge(buffer,nrow,partner,xtag)
+            ! old version: call MPI_RECV (buffer, nrow, MPI_REAL, partner, xtag, MPI_COMM_GRID, stat, mpierr)
             out(px*cnx+1+x_add:px*cnx+mx-x_sub,:,:,:) = buffer(1+x_add:mx-x_sub,:,:,:)
           endif
         enddo
@@ -7076,8 +7136,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: rnx, rny ! x- and y-row box sizes
       integer :: px, py, pz, broadcaster, partner, alloc_err
       integer(KIND=ikind8) :: nbox,nrow
-      integer :: nbox_mult,nbox_rem,nrow_mult,nrow_rem
-      integer, parameter :: xtag=125, ytag=126, ytag_rem=127, xtag_rem=128
+      integer, parameter :: xtag=125, ytag=126
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: y_row, buffer, extended
@@ -7095,11 +7154,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       rny = gny + 2*nghost
       nrow = bnx*rny*bnz*bna
 !
-      nbox_mult=nbox/max_int
-      nbox_rem =nbox-nbox_mult*max_int
-      nrow_mult=nrow/max_int
-      nrow_rem =nrow-nrow_mult*max_int
-
       broadcaster = ipz * nprocxy
       if (present (source_proc)) broadcaster = broadcaster + source_proc
       pz = ipz
@@ -7157,10 +7211,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           else
             ! send to partner
             buffer = in(px*cnx+1:px*cnx+mx,:,:,:)
-            if (nrow_mult>0) &
-              call MPI_SEND (buffer, nrow_mult, real_arr_maxsize, partner, xtag, MPI_COMM_GRID, mpierr)
-            if (nrow_rem>0) &
-              call mpisend_real_arr_assumed(buffer,nrow_rem,nrow-nrow_rem+1,partner, xtag_rem, MPI_COMM_GRID)
+            
+            call mpisend_real_arr_huge(buffer,nrow,partner,xtag)
             !old version: call MPI_SEND (buffer, int(nrow), MPI_REAL, partner, xtag, MPI_COMM_GRID, mpierr)
           endif
         enddo
@@ -7170,10 +7222,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (lfirst_proc_y .and. (ipz == pz)) then
         if (iproc /= broadcaster) then
           ! receive y-row from broadcaster
-          if (nrow_mult>0) &
-            call MPI_RECV (y_row, nrow_mult, real_arr_maxsize, broadcaster, xtag, MPI_COMM_GRID, stat, mpierr)
-          if (nrow_rem>0) &
-            call mpirecv_real_arr_assumed(y_row,nrow_rem,nrow-nrow_rem+1,broadcaster,xtag_rem,MPI_COMM_GRID)
+
+          call mpirecv_real_arr_huge(y_row,nrow,broadcaster,xtag)
           !old version: call MPI_RECV (y_row, int(nrow), MPI_REAL, broadcaster, xtag, MPI_COMM_GRID, stat, mpierr)
         endif
 !
@@ -7188,11 +7238,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           else
             ! send to partner
             buffer = y_row(:,py*cny+1:py*cny+my,:,:)
-            if (nbox_mult>0) &
-              call MPI_SEND (buffer, nbox_mult, real_arr_maxsize, partner, ytag, MPI_COMM_GRID, mpierr)
-            if (nbox_rem>0) &
-              call mpisend_real_arr_assumed(buffer,nbox_rem,nbox-nbox_rem+1,partner, ytag_rem, MPI_COMM_GRID)
 
+            call mpisend_real_arr_huge(buffer,nbox,partner,ytag)
             !old version: call MPI_SEND (buffer, int(nbox), MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
@@ -7200,10 +7247,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       elseif (ipz == pz) then
         ! receive local data from y-row partner (lfirst_proc_y)
         partner = ipx + ipz*nprocxy
-        if (nbox_mult>0) &
-          call MPI_RECV (out, nbox_mult, real_arr_maxsize, partner, ytag, MPI_COMM_GRID, stat, mpierr)
-        if (nbox_rem>0) &
-          call mpirecv_real_arr_assumed(out,nbox_rem,nbox-nbox_rem+1,partner, ytag_rem, MPI_COMM_GRID)
+
+        call mpirecv_real_arr_huge(out,nbox,partner,ytag)
         !old version: call MPI_RECV (out, int(nbox), MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
