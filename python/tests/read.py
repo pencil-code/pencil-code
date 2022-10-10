@@ -21,6 +21,7 @@ from pencil.read.timeseries import ts
 from pencil.read.dims import dim
 from pencil.read.varfile import var
 from pencil.read.params import param
+from pencil.read.powers import power
 
 
 DATA_DIR = os.path.realpath(
@@ -148,3 +149,24 @@ def test_read_var() -> None:
     ]
     for (key, extract, expect, eps) in expected:
         test_extracted(getattr(data, key), extract, expect, key, eps)
+
+
+@test
+def test_read_power() -> None:
+    """Read power spectra"""
+    ps = power(datadir=DATA_DIR, quiet=True)
+
+    expected = {
+        "t": np.array([1.0477389, 2.0494874]),
+        "krms": np.array([0.0, 1.29]),
+        "kin": np.array([[1.88e-10, 1.41e-07], [8.16e-10, 1.40e-06]]),
+        "hel_kin": np.array([[-2.08e-15, 1.14e-08], [2.26e-15, 2.66e-07]]),
+        # TODO: test reading complex 'spectra' as well.
+    }
+    for key, val in expected.items():
+        expect = val
+        actual = getattr(ps, key)
+        assert_true(
+            np.allclose(expect, actual),
+            "power.{}: expected {}, got {}".format(key, expect, actual),
+        )
