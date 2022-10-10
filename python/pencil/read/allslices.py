@@ -174,7 +174,7 @@ class SliceSeries(object):
         from scipy.io import FortranFile
         from pencil import read
 
-        param = read.param()
+        param = read.param(datadir=datadir)
         if param.io_strategy == 'HDF5':
         #if os.path.exists(os.path.join(datadir, "grid.h5")):
             l_h5 = True
@@ -321,7 +321,7 @@ class SliceSeries(object):
                 setattr(self, "coordinate", ind_object)
         else:
             # Define the directory that contains the slice files.
-            grid = read.grid(quiet=True)
+            grid = read.grid(datadir=datadir, quiet=True)
             print("reading grid data for slice positions")
             if proc < 0:
                 slice_dir = datadir
