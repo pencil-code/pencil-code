@@ -73,9 +73,9 @@ if (! -e "NEVERLOCK") touch LOCK
 
 # Are we running the MPI version?
 if ( -e "src/start.x" || -l "src/start.x" ) then
-  set mpi = `nm src/start.x | grep -i -c MPI_INIT`
+  set mpi = `nm src/start.x | grep -i -c '[^0-9a-zA-Z]MPI_INIT[^0-9a-zA-Z]*'`
 else if ( -e "src/run.x" || -l "src/run.x" ) then
-  set mpi = `nm src/run.x | grep -i -c MPI_INIT
+  set mpi = `nm src/run.x | grep -i -c '[^0-9a-zA-Z]MPI_INIT[^0-9a-zA-Z]*'`
 else
   echo "Neither start.x nor run.x found!"
   (sleep 1; kill -KILL $$ >& /dev/null) &       # schedule full-featured suicide
