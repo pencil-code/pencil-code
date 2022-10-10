@@ -73,9 +73,9 @@ if (! -e "NEVERLOCK") touch LOCK
 
 # Are we running the MPI version?
 if ( -e "src/start.x" || -l "src/start.x" ) then
-  set mpi = `fgrep --ignore-case -c 'MPI_INIT' src/start.x`
+  set mpi = `nm src/start.x | grep -i -c MPI_INIT`
 else if ( -e "src/run.x" || -l "src/run.x" ) then
-  set mpi = `fgrep --ignore-case -c 'MPI_INIT' src/run.x`
+  set mpi = `nm src/run.x | grep -i -c MPI_INIT
 else
   echo "Neither start.x nor run.x found!"
   (sleep 1; kill -KILL $$ >& /dev/null) &       # schedule full-featured suicide
@@ -800,10 +800,10 @@ else if (($hn =~ r*c*.bullx)) then
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
-  set mpirun = 'mpirun'
-  #set mpirun = 'srun'
-  #set npops = "-np $ncpus"
-  set npops = "-n $ncpus"
+  #set mpirun = 'orterun'
+  set mpirun = 'srun'
+  set npops = "-np $ncpus"
+  #set npops = "-display-devel-map -map-by slot -n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
   set remote_top     = 0
