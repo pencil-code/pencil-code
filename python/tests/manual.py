@@ -145,6 +145,9 @@ def get_data_dir2() -> str:
         print("Compiling and running {}. This may take some time.".format(sim.path))
         sim.compile(bashrc=False, cleanall=False)
         sim.run(bashrc=False)
+    if not os.path.exists(os.path.join(datadir, "slice_position.dat")):
+        sim.bash("pc_build -t read_all_videofiles", bashrc=False, verbose=False)
+        sim.bash("src/read_all_videofiles.x", bashrc=False, verbose=False)
     return datadir
 
 
