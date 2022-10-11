@@ -167,7 +167,24 @@ def test_read_power() -> None:
         "krms": np.array([0.0, 1.29]),
         "kin": np.array([[1.88e-10, 1.41e-07], [8.16e-10, 1.40e-06]]),
         "hel_kin": np.array([[-2.08e-15, 1.14e-08], [2.26e-15, 2.66e-07]]),
-        # TODO: test reading complex 'spectra' as well.
+        "kin_cyl": np.array(
+            [
+                [
+                    [5.26e-12, 5.57e-13],
+                    [1.39e-12, 1.77e-12],
+                    [3.30e-12, 2.94e-12],
+                    [3.34e-12, 3.77e-12],
+                    [3.32e-12, 5.04e-12],
+                ],
+                [
+                    [2.95e-14, 1.66e-13],
+                    [7.53e-13, 7.91e-13],
+                    [2.73e-12, 2.96e-12],
+                    [3.67e-12, 4.60e-12],
+                    [5.31e-12, 7.56e-12],
+                ],
+            ]
+        ),
     }
     for key, val in expected.items():
         expect = val
