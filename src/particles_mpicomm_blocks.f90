@@ -2302,6 +2302,7 @@ module Particles_mpicomm
 !
       character(len=*), intent(in) :: filename
 !
+      integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
       integer :: handle, ierr
 !
@@ -2313,11 +2314,19 @@ module Particles_mpicomm
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), MPI_INFO_NULL, handle, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error("output_blocks_mpi", "unable to open file '" // trim(fpath) // "'")
 !
+!  Write time.
+!
+      time: if (lroot) then
+        call MPI_FILE_WRITE(handle, t, 1, MPI_DOUBLE_PRECISION, istat, ierr)
+        if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write time")
+      endif time
+!
 !  Close file.
 !
       call MPI_FILE_CLOSE(handle, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error("output_blocks_mpi", "unable to close file")
 !
+      call fatal_error_local_collect()
       call fatal_error("output_blocks_mpi", "not implemented yet. ")
 !
     endsubroutine output_blocks_mpi
@@ -2413,7 +2422,9 @@ module Particles_mpicomm
 !
       character(len=*), intent(in) :: filename
 !
+      integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
+      double precision :: tfile
       integer :: handle, ierr
 !
       call keep_compiler_quiet(filename)
@@ -2424,11 +2435,21 @@ module Particles_mpicomm
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, MPI_MODE_RDONLY, MPI_INFO_NULL, handle, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to open file '" // trim(fpath) // "'")
 !
+!  Read time.
+!
+      call MPI_FILE_READ_ALL(handle, tfile, 1, MPI_DOUBLE_PRECISION, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to read time")
+      time: if (t /= tfile) then
+        print *, "input_blocks_mpi: iproc, t(file), t(code) = ", iproc, tfile, t
+        call fatal_error_local("input_blocks_mpi", "inconsistent time stamp")
+      endif time
+!
 !  Close file.
 !
       call MPI_FILE_CLOSE(handle, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to close file")
 !
+      call fatal_error_local_collect()
       call fatal_error("input_blocks_mpi", "not implemented yet. ")
 !
     endsubroutine input_blocks_mpi
