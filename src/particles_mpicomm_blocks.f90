@@ -2407,11 +2407,27 @@ module Particles_mpicomm
 !
 !  Read block domain decomposition from file, using MPI I/O.
 !
-!  07-oct-22/ccyang: stub
+!  11-oct-22/ccyang: in progress
+!
+      use MPI
 !
       character(len=*), intent(in) :: filename
 !
+      character(len=fnlen) :: fpath
+      integer :: handle, ierr
+!
       call keep_compiler_quiet(filename)
+!
+!  Open file for read.
+!
+      fpath = trim(directory_snap) // '/' // trim(filename)
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, MPI_MODE_RDONLY, MPI_INFO_NULL, handle, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to open file '" // trim(fpath) // "'")
+!
+!  Close file.
+!
+      call MPI_FILE_CLOSE(handle, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to close file")
 !
       call fatal_error("input_blocks_mpi", "not implemented yet. ")
 !
