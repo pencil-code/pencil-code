@@ -3259,9 +3259,8 @@ endsubroutine pdf
   integer :: i,ivec,ikx,iky,ikz,kr,ipdf
   integer, dimension(nk-1,npdf) :: pdf_ang,pdf_ang_sum
   real :: k2,ang
-  real, dimension(nx,ny,nz,3) :: a_re,b_re,a_im,b_im
-  real, dimension(nx,ny,nz) :: gk,ak_re,ak_im,bk_re,bk_im
-  real, dimension(nx,ny,nz) :: aa,bb,ab
+  real, dimension(nx,ny,nz,3) :: a_re,b_re
+  real, dimension(nx,ny,nz) :: ak,bk,aa,bb,ab
   real, dimension(nx,3) :: bbi
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
@@ -3289,7 +3288,6 @@ endsubroutine pdf
       call del2v_etc(f,iaa,curlcurl=bbi)
       a_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  current density
     enddo; enddo
-    a_im=0.; b_im=0.
   elseif (sp=='ub') then
     if (iaa==0)  call fatal_error('pdf_ang_1d','iaa=0')
     do n=n1,n2; do m=m1,m2
@@ -3297,7 +3295,6 @@ endsubroutine pdf
       b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  magnetic field
     enddo; enddo
     a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
-    a_im=0.; b_im=0.
   endif  !  sp
   !
   !  compute kr-dependent pdf
@@ -3308,34 +3305,18 @@ endsubroutine pdf
     !  initialize a.a, b.b, and a.b, for filtered fields
     !
     aa=0.; bb=0.; ab=0.
-    !
-    !  find the filtering kernel
-    !
-    gk=0.
-    do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-      k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-      if (kr==nint(sqrt(k2))) gk(ikx,iky,ikz)=1.
-    enddo; enddo; enddo
-    !
-    !  obtain filtered fields ak and bk
-    !
     do ivec=1,3
-      call fft_xyz_parallel(a_re(:,:,:,ivec),a_im(:,:,:,ivec))
-      call fft_xyz_parallel(b_re(:,:,:,ivec),b_im(:,:,:,ivec))
       !
-      ak_re(:,:,:) = gk(:,:,:)*a_re(:,:,:,ivec)
-      ak_im(:,:,:) = gk(:,:,:)*a_im(:,:,:,ivec)
-      bk_re(:,:,:) = gk(:,:,:)*b_re(:,:,:,ivec)
-      bk_im(:,:,:) = gk(:,:,:)*b_im(:,:,:,ivec)
+      !  obtained filtered fields
       !
-      call fft_xyz_parallel(ak_re,ak_im,linv=.true.,lneed_im=.false.)
-      call fft_xyz_parallel(bk_re,bk_im,linv=.true.,lneed_im=.false.)
+      call power_shell_filter(a_re(:,:,:,ivec),ak,kr)
+      call power_shell_filter(b_re(:,:,:,ivec),bk,kr)
       !
       !  dot products
       !
-      aa = aa+ak_re**2
-      bb = bb+bk_re**2
-      ab = ab+ak_re*bk_re
+      aa = aa+ak**2
+      bb = bb+bk**2
+      ab = ab+ak*bk
     enddo
     !
     !  compute pdf
