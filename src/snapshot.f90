@@ -845,6 +845,7 @@ module Snapshot
 !
         if (ang_jb_pdf1d) call pdf1d_ang(f,'jb')
         if (ang_ub_pdf1d) call pdf1d_ang(f,'ub')
+        if (ang_ou_pdf1d) call pdf1d_ang(f,'ou')
 !
 !  Do pdf for the magnetic field
 !

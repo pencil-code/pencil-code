@@ -3295,6 +3295,12 @@ endsubroutine pdf
       b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  magnetic field
     enddo; enddo
     a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
+  elseif (sp=='ou') then
+    do n=n1,n2; do m=m1,m2
+      call curl(f,iuu,bbi)
+      b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  vorticity field
+    enddo; enddo
+    a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
   endif  !  sp
   !
   !  compute kr-dependent pdf
