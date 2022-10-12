@@ -2314,11 +2314,13 @@ module Particles_mpicomm
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), MPI_INFO_NULL, handle, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error("output_blocks_mpi", "unable to open file '" // trim(fpath) // "'")
 !
-!  Write number of processes and time.
+!  Write header.
 !
       root: if (lroot) then
         call MPI_FILE_WRITE(handle, ncpus, 1, MPI_INTEGER, istat, ierr)
         if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write ncpus")
+        call MPI_FILE_WRITE(handle, nbricks, 1, MPI_INTEGER, istat, ierr)
+        if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write nbricks")
         call MPI_FILE_WRITE(handle, t, 1, MPI_DOUBLE_PRECISION, istat, ierr)
         if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write time")
       endif root
@@ -2445,6 +2447,15 @@ module Particles_mpicomm
         if (lroot) print *, "input_blocks_mpi: ncpus(file), ncpus(code) = ", n, ncpus
         call fatal_error("input_blocks_mpi", "inconsistent ncpus")
       endif nproc
+!
+!  Read number of bricks per process.
+!
+      call MPI_FILE_READ_ALL(handle, n, 1, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to read nbricks")
+      nb: if (n /= nbricks) then
+        if (lroot) print *, "input_blocks_mpi: nbricks(file), nbricks(code) = ", n, nbricks
+        call fatal_error("input_blocks_mpi", "inconsistent nbricks")
+      endif nb
 !
 !  Read time.
 !
