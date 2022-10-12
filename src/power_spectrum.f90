@@ -2627,7 +2627,8 @@ module power_spectrum
     use Fourier, only: fft_xyz_parallel
     use General, only: itoa
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: curli, grad
+    use Sub, only: curli, grad, div
+    use Poisson, only: inverse_laplacian
     use SharedVariables, only: get_shared_variable
     use FArrayManager
 !
@@ -2698,7 +2699,13 @@ module power_spectrum
   elseif (sp=='phiuu') then
     !  compressible part of the Helmholtz decomposition of uu
     !  uu = curl(A_uu) + grad(phiuu)
-    a_re=f(l1:l2,m1:m2,n1:n2,iphiuu)
+    !a_re=f(l1:l2,m1:m2,n1:n2,iphiuu)
+    !  same as phiuu but doing inverse laplacian here
+    !  so we don't need lhelmholtz_decomp=T
+    do n=n1,n2; do m=m1,m2
+      call div(f,iuu,a_re(:,m-nghost,n-nghost))
+    enddo; enddo
+    call inverse_laplacian(a_re)
   elseif (sp=='lr') then
     if (ldensity_nolog) then
       a_re=alog(f(l1:l2,m1:m2,n1:n2,irho))
