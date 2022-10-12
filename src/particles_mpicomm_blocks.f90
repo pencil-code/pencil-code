@@ -2314,12 +2314,14 @@ module Particles_mpicomm
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), MPI_INFO_NULL, handle, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error("output_blocks_mpi", "unable to open file '" // trim(fpath) // "'")
 !
-!  Write time.
+!  Write number of processes and time.
 !
-      time: if (lroot) then
+      root: if (lroot) then
+        call MPI_FILE_WRITE(handle, ncpus, 1, MPI_INTEGER, istat, ierr)
+        if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write ncpus")
         call MPI_FILE_WRITE(handle, t, 1, MPI_DOUBLE_PRECISION, istat, ierr)
         if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write time")
-      endif time
+      endif root
 !
 !  Close file.
 !
@@ -2425,7 +2427,7 @@ module Particles_mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
       double precision :: tfile
-      integer :: handle, ierr
+      integer :: handle, ierr, n
 !
       call keep_compiler_quiet(filename)
 !
@@ -2434,6 +2436,15 @@ module Particles_mpicomm
       fpath = trim(directory_snap) // '/' // trim(filename)
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, MPI_MODE_RDONLY, MPI_INFO_NULL, handle, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to open file '" // trim(fpath) // "'")
+!
+!  Read number of processes.
+!
+      call MPI_FILE_READ_ALL(handle, n, 1, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to read ncpus")
+      nproc: if (n /= ncpus) then
+        if (lroot) print *, "input_blocks_mpi: ncpus(file), ncpus(code) = ", n, ncpus
+        call fatal_error("input_blocks_mpi", "inconsistent ncpus")
+      endif nproc
 !
 !  Read time.
 !
