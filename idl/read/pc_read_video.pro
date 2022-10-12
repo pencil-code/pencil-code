@@ -59,7 +59,7 @@ pc_set_precision, datadir=datadir, dim=dim, /quiet
     field=field[0]
     num_planes = n_elements (planes)
     default, mask, replicate (1B, num_planes)
-    mask = mask and [ xyread, xzread, yzread, xy2read, xy3read, xy4read, xz2read ]
+    mask = mask and [ xyread, xzread, yzread, xy2read, xy3read, xy4read, xz2read, rread ]
     mask = mask and file_test (datadir+'/slices/'+field+'_'+planes+'.h5')
     object = { field:field }
     for i = 0, num_planes-1 do begin
