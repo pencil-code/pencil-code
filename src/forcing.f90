@@ -5221,7 +5221,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       real :: r_TG
 !
-      if (lfirst) call random_number_wrapper(r_TG,CHANNEL=channel_force)
+      call random_number_wrapper(r_TG,CHANNEL=channel_force)
       theta_TG=r_TG*2.*pi
 !
     endsubroutine calc_TG_random
