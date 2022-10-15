@@ -2637,7 +2637,7 @@ module power_spectrum
   integer, pointer :: inp,irhop,iapn(:)
   integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz, ivec, im, in, ia0
-  real :: k2
+  real :: k2,fact
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nk) :: spectrum,spectrum_sum
@@ -2696,12 +2696,10 @@ module power_spectrum
     a_re=f(l1:l2,m1:m2,n1:n2,iuy)
   elseif (sp=='uz') then
     a_re=f(l1:l2,m1:m2,n1:n2,iuz)
-  elseif (sp=='phiuu') then
-    !  compressible part of the Helmholtz decomposition of uu
+  elseif (sp=='ucp') then
+    !  Compressible part of the Helmholtz decomposition of uu
     !  uu = curl(A_uu) + grad(phiuu)
-    !a_re=f(l1:l2,m1:m2,n1:n2,iphiuu)
-    !  same as phiuu but doing inverse laplacian here
-    !  so we don't need lhelmholtz_decomp=T
+    !  We compute phiuu here, and take grad of phiuu later
     do n=n1,n2; do m=m1,m2
       call div(f,iuu,a_re(:,m-nghost,n-nghost))
     enddo; enddo
@@ -2805,10 +2803,15 @@ module power_spectrum
         !
         k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
         k=nint(sqrt(k2))
+        if (sp=='ucp') then
+          fact=k2  !  take gradient
+        else
+          fact=1.
+        endif
         if (k>=0 .and. k<=(nk-1)) then
           spectrum(k+1)=spectrum(k+1) &
-             +a_re(ikx,iky,ikz)**2 &
-             +a_im(ikx,iky,ikz)**2
+             +fact*a_re(ikx,iky,ikz)**2 &
+             +fact*a_im(ikx,iky,ikz)**2
         endif
         !
         !  integration over the vertical direction
@@ -2818,7 +2821,7 @@ module power_spectrum
           k=nint(sqrt(k2))
           if (k>=0 .and. k<=(nk-1)) then
             hor_spectrum(k+1)=hor_spectrum(k+1) &
-             +a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
+             +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
           endif
         endif
         !
@@ -2828,7 +2831,7 @@ module power_spectrum
           k=nint(abs(kz(ikz+ipz*nz)))
           if (k>=0 .and. k<=(nk-1)) then
             ver_spectrum(k+1)=ver_spectrum(k+1) &
-             +a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
+             +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
           endif
         endif
       enddo

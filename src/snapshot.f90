@@ -714,7 +714,7 @@ module Snapshot
         if (ux_spec)  call powerscl(f,'ux')
         if (uy_spec)  call powerscl(f,'uy')
         if (uy_spec)  call powerscl(f,'uz')
-        if (phiuu_spec) call powerscl(f,'phiuu')
+        if (ucp_spec) call powerscl(f,'ucp')
         !if (lro_spec) call powerscl(f,'ro',lsqrt)
         if (lr_spec)  call powerscl(f,'lr')
         if (pot_spec) call powerscl(f,'po')
