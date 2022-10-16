@@ -71,7 +71,7 @@ write_revision_from_git_sandbox () {
 }
 
 
-write_revision__from_svn_sandbox () {
+write_revision_from_svn_sandbox () {
     revision="$(svn_cmd info | grep 'Last Changed Rev')"
     modified="$(svn_cmd status | (grep -Ev '^\?' || true))"
     if [ "$one_line" ]; then
