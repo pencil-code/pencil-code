@@ -14,6 +14,7 @@
 # scp-proc-to-proc dim.dat $ekhi/pencil-code/axel/disc/radiation/3D/MCV288_h1em5d4_S10_nu5em2_eta5em2a_noheat2
 # scp-proc-to-proc dim.dat $ekhi/pencil-code/mohira/forced/spherical_surface/144x288x72e_rep3
 # scp-proc-to-proc dim.dat $ekhi/pencil-code/jenny/chiral_fluids/turbulent_decay/288_3D_kf60_mu040_lambda1e11d_double .
+# scp-proc-to-proc VAR0 $nor65/pencil-code/axel/forced/ssdy/D512_Pm20a
 #
 #  to copy from another machine to here
 #
@@ -21,6 +22,7 @@
 #   scp-proc-to-proc dim.dat . $ekhi/pencil-code/axel/disc/radiation/3D/MCV288_h1em5d4_S3
 #   scp-proc-to-proc dim.dat . $ekhi/pencil-code/axel/disc/radiation/3D/MCV288_h1em5d4_S3
 #  scp-proc-to-proc dim.dat . $ekhi/pencil-code/axel/meanfield/cylindrical/oscil/axi576x320_9pix5pi_B005a2
+# scp-proc-to-proc dim.dat . $nor51/data/axel/forced/Bkm1Pot/KH1152tnuk4b_sig0_PrM100
 
 #  will copy all var.dat files from current directory to var.dat in
 #  another run directory.
@@ -44,7 +46,7 @@ foreach proc ($procdirs)
     nohup ssh $2:s/:/ mkdir //data/$proc >& /dev/null
 
     echo "scp $3/data/$proc/$1 $2/data/$proc"
-    nohup scp $3/data/$proc/$1 $2/data/$proc &
+    nohup scp $3/data/$proc/$1 $2/data/$proc
     sleep .2
   endif
   set counter = `expr $counter + 1`
