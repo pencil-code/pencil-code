@@ -27,7 +27,7 @@ if (-e NEWDIR) then
     echo ""
     echo "new directory:"
     pwd
-    tsnap-all
+    #tsnap-all
     if (-e data/legend.dat) cat data/legend.dat
     if (-e data/time_series.dat) tail -5 data/time_series.dat |grep -v "#"
     #
