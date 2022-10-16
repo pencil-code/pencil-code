@@ -51,8 +51,8 @@ endif
 #  add directories and files to cvs
 #  also get a copy of their time stamps before checking in
 #
-  ls -l *.in *.dat *.pro src/*.local > .log
-  $add_cmd *.in alpha_in.dat k.dat k_double.dat kvect.dat power_profile.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro .log >& /dev/null
+  ls -l *.in *.dat *.pro src/*.local src/*.txt > .log
+  $add_cmd *.in alpha_in.dat k.dat k_double.dat kvect.dat power_profile.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat Iv*.dat correl*.dat particles_initial.dat particles_initial_header.pro .log >& /dev/null
 
 #
   if (-e data) then
@@ -145,14 +145,14 @@ endif
     if ( $status ) then
       $add_cmd src
       cd src
-      $add_cmd *.local .build-history .moduleinfo
+      $add_cmd *.local *.txt .build-history .moduleinfo
       cd ..
       if ( $0:t == 'cvsci_run' ) then
         cvs ci -m "added new run: `uname -n -s`" src
       endif
     endif
   else
-    $add_cmd -h src/*.local src/.build-history >& /dev/null
+    $add_cmd -h src/*.local src/*.txt src/.build-history >& /dev/null
   endif
 
   cd ..
