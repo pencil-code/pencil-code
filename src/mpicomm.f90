@@ -9317,10 +9317,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ncnt, i
 !
 !  MR: These long integer variables would be necessary for big nxgrid*nygrid,
-!      but there is now MPI_GATHERV which would accept a long int shifts argument.
+!      but there is no MPI_GATHERV which would accept a long int shifts argument.
 !
-      !integer(KIND=ikind8) :: nlayer, nshift
-      integer :: nlayer, nshift
+      integer(KIND=ikind8) :: nlayer, nshift
       !integer(KIND=ikind8), dimension(ncpus) :: shifts
       integer, dimension(ncpus) :: shifts
       integer, dimension(ncpus) :: counts
@@ -9329,8 +9328,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (lroot) then
 !
-        counts = ncnt
         nlayer = nz*nxgrid*nygrid
+        if (nlayer>max_int) &
+          call stop_it("mpigather: integer overflow in shifts")
+        counts = ncnt
 !
         shifts(1) = 0
         nshift = nlayer
