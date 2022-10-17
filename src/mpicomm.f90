@@ -133,8 +133,6 @@ module Mpicomm
                                           irecv_stat_Fll,irecv_stat_Ful
   integer :: REAL_ARR_MAXSIZE
 !
-  integer(kind=MPI_OFFSET_KIND) :: size_int = 0, size_real = 0, size_double = 0
-!
 !  Data for Yin-Yang communication.
 !
   logical :: lcorner_yz=.false.
@@ -226,18 +224,7 @@ print*, 'Pencil1: iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD=', iapp, nprocs, ncpus  
       else
         mpi_precision = MPI_DOUBLE_PRECISION
       endif
-!
-!  Remeber the sizes of some MPI elementary types.
-!
-      call MPI_TYPE_SIZE_X(MPI_INTEGER, size_int, mpierr)
-      call stop_it_if_any(mpierr /= MPI_SUCCESS, "unable to find MPI_INTEGER size")
-!
-      call MPI_TYPE_SIZE_X(mpi_precision, size_real, mpierr)
-      call stop_it_if_any(mpierr /= MPI_SUCCESS, "unable to find MPI real size")
-!
-      call MPI_TYPE_SIZE_X(MPI_DOUBLE_PRECISION, size_double, mpierr)
-      call stop_it_if_any(mpierr /= MPI_SUCCESS, "unable to find MPI_DOUBLE_PRECISION size")
-!
+
       call MPI_COMM_DUP(MPI_COMM_PENCIL, MPI_COMM_GRID,mpierr)
       iproc_world=iproc
 !
@@ -279,7 +266,7 @@ print*, 'Pencil1: iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD=', iapp, nprocs, ncpus  
            call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
 !
       call MPI_TYPE_CONTIGUOUS(max_int, MPI_REAL, REAL_ARR_MAXSIZE, mpierr)
-!
+
     endsubroutine mpicomm_init
 !***********************************************************************
     subroutine initialize_mpicomm

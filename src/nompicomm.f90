@@ -13,8 +13,7 @@ module Mpicomm
 !
   integer, parameter :: MPI_COMM_WORLD=0, MPI_ANY_TAG=0, MPI_INFO_NULL=0
   integer :: nprocs=1
-  integer :: size_int = 0, size_real = 0, size_double = 0
-!
+
   include 'mpicomm.h'
 !
   interface mpireduce_sum_double
