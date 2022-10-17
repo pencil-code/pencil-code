@@ -447,8 +447,9 @@ def slices2h5(
         for line in readlines2:
             lines2.append(line.split(" ")[-1].split("\n")[0].lower())
     # check if number of slice options as expected
+    # 8 slices is also ok for the star-in-a-box setup
     try:
-        len(lines1) == 7
+        len(lines1) == 7 or len(lines1) == 8
     except ValueError:
         if rank == 0:
             print("ERROR: slice keys and positions must be set, " + "see lines 212...")
@@ -464,6 +465,8 @@ def slices2h5(
                 positions[key] = grid.y[num - 1]
             if "yz" in key:
                 positions[key] = grid.x[num - 1]
+            if "r" in key:
+                positions[key] = read.param().r_rslice
             coordinates[key] = num
     if l_mpi:
         import glob
