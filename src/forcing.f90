@@ -5618,7 +5618,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
         case('Schur_nonhelical')
           force(:,1)= ampl_ff(i)*(cosx(l1:l2,i)*siny(m,i))
           force(:,2)=-ampl_ff(i)*(sinx(l1:l2,i)*cosy(m,i))
-          force(:,3)= ampl_ff(i)*(sinx(l1:l2,i)*siny(m,i))
+          force(:,3)= ampl_ff(i)*(sinx(l1:l2,i)*siny(m,i)*cosz(n,i))
         case('Schur_helical')
           force(:,1)=     0.5*ampl_ff(i)*(         cosx(l1:l2,i)*siny(m,i))+ &
                       0.5*0.5*ampl_ff(i)*( sqrt(2.0)*cosx(l1:l2,i)*siny(m,i) +  sinx(l1:l2,i)*cosy(m,i))
