@@ -535,7 +535,7 @@ module Interstellar
       f(:,:,:,inetheat)=0.0
 !
       if (lroot) print &
-          "(1x,'initialize_interstellar: t_next_SNI =',e10.3)",t_next_SNI
+          "(1x,'initialize_interstellar: t_next_SNI =',e15.8)",t_next_SNI
 !
       if (lroot.and.luniform_zdist_SNI) then
         print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
@@ -752,9 +752,9 @@ module Interstellar
       if (lroot .and. lstart) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         write(1,'("#",5A)')  &
-            '---it----------t---------itype-iproc---l-----m-----n-------x---', &
-            '---------y------------z-----------rho---------rhom----------TT-', &
-            '----------EE----------Ekin----------Ecr--------t_sedov---',&
+            '---it-----------t----------itype-iproc---l-----m-----n-------x-',&
+            '-----------y------------z-----------rho---------rhom---------',&
+            '-TT-----------EE----------Ekin----------Ecr--------t_sedov---',&
             '---radius------site_Nsol----added_Nsol-------maxTT---', &
             '---t_interval----SN_rate--'
         close(1)
@@ -809,7 +809,7 @@ module Interstellar
 !  Write unit_Lambda to pc_constants file
 !
       if (lroot) then
-        print "(1x,'initialize_interstellar: t_next_SNI, t_next_SNII=',2e10.3)", &
+        print "(1x,'initialize_interstellar: t_next_SNI, t_next_SNII=',2e15.8)", &
             t_next_SNI, t_next_SNII
         open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
         write (1,'(a,1pd26.16)') 'unit_Lambda=',unit_Lambda
@@ -1969,7 +1969,7 @@ module Interstellar
               endif
               t_next_SNI=SN_list(1,i+1)
               if (lroot) print &
-                  "(1x,'check_SN: t_next_SNI on list =',e10.3)",t_next_SNI
+                  "(1x,'check_SN: t_next_SNI on list =',e15.8)",t_next_SNI
               exit
             endif
           enddo
@@ -2205,7 +2205,7 @@ module Interstellar
 !  Pre-determine time for next SNI.
 !
       if (lroot) print &
-          "(1x,'set_next_SNI: Old t_next_SNI =',e10.3)",t_next_SNI
+          "(1x,'set_next_SNI: Old t_next_SNI =',e15.8)",t_next_SNI
       if (lreset_ism_seed) then
         seed=seed_reset
         call random_seed_wrapper(PUT=seed)
@@ -2225,7 +2225,7 @@ module Interstellar
 !
       t_next_SNI=t+scaled_interval
       if (lroot) print &
-          "(1x,'set_next_SNI: Next SNI at time =',e10.3)",t_next_SNI
+          "(1x,'set_next_SNI: Next SNI at time =',e15.8)",t_next_SNI
 !
     endsubroutine set_next_SNI
 !*****************************************************************************
@@ -2248,7 +2248,7 @@ module Interstellar
 !  different regimes, so this acts as a contraint on the rate.
 !
       if (lroot) print &
-          "(1x,'check_SNII: Old t_next_SNII =',e10.3)",t_next_SNII
+          "(1x,'check_SNII: Old t_next_SNII =',e15.8)",t_next_SNII
       if (lreset_ism_seed) then
         seed=seed_reset
         call random_seed_wrapper(PUT=seed)
@@ -2306,7 +2306,7 @@ module Interstellar
 !
       t_next_SNII=t+scaled_interval
       if (lroot) print &
-          "(1x,'check_SNII: Next SNII at time =',e10.3)",t_next_SNII
+          "(1x,'check_SNII: Next SNII at time =',e15.8)",t_next_SNII
 !
     endsubroutine set_next_SNII
 !*****************************************************************************
@@ -3815,7 +3815,7 @@ module Interstellar
         print "(1x,'explode_SN:  Ambient Nsol = ',   e10.3)",site_mass/solar_mass
         print "(1x,'explode_SN:    Sedov time = ',   e10.3)", SNR%feat%t_sedov
         print "(1x,'explode_SN:   Shell speed = ',   e10.3)",uu_sedov
-        write(1,'(i10,E13.6,5i6,16E13.5)') &
+        write(1,'(i10,E15.7,5i6,16E13.5)') &
             it, t, SNR%indx%SN_type, SNR%indx%iproc, SNR%indx%l, SNR%indx%m, &
             SNR%indx%n, SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, &
             SNR%feat%rhom, SNR%site%TT, SNR%feat%EE+SNR%feat%CR, &
