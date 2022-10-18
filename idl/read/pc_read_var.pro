@@ -135,7 +135,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default data directory.
 ;
-  datadir = pc_get_datadir(datadir)
+  datadir = strtrim(pc_get_datadir(datadir),2)
+  if strpos(datadir,'/',/reverse_search) ne strlen(datadir)-1 then datadir+='/'
 ;
 ; Name and path of varfile to read.
 ;
@@ -1065,7 +1066,7 @@ incomplete:
 ;
     dum=execute(makeobject)
     for i=0,n_elements(tagnames)-1 do begin
-      makeobject="object=create_struct(object,'"+tagnames[i]+"',"+tagnames[i]+")"
+      makeobject="object=create_struct(object,'"+tagnames[i]+"',"+variables[i]+")"
 
       if (execute(makeobject) ne 1) then begin
         message, 'ERROR storing variable '+tagnames[i]+ $
