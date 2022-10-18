@@ -23,7 +23,7 @@ else
 endif
 
 #echo ENVIRONMENT: $PENCIL_CONFIG_FILES
-if (-e .config-files) then
+if ( -e .config-files || $PENCIL_CONFIG_FILES != '' ) then
   cd ..
   echo "Building" $0:t.x "(if necessary) by pc_build"
   pc_build -l -q -s -t $0:t > /dev/null
