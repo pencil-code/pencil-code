@@ -418,6 +418,7 @@ class Averages(object):
             n_times = len(tmp.keys()) - 1
             if tmp['last'][()].item() < n_times-2:
                 n_times = tmp['last'][()].item() + 1
+            start_time, end_time = 0, tmp[str(n_times-1)]['time'][()].item()
             if time_range:
                 if isinstance(time_range, list):
                     time_range = time_range
@@ -447,7 +448,6 @@ class Averages(object):
                     itlist.append(tmp['last'][0])
             else:
                 itlist = natural_sort(tmp.keys())[:n_times]
-            print(start_time, end_time, itlist[-10:])
 
             if time_range:
                 tmplist = list()
