@@ -175,14 +175,6 @@ module Register
            'Check your MVAR and/or MAUX CONTRIBUTION in cparam.local')
       endif
 !
-!  Restrict ivar_omit to range 1,...,mvar.
-!
-      if (ivar_omit(1)>mvar) then
-        ivar_omit=0
-      else
-        ivar_omit(2)=min(ivar_omit(2),mvar)
-      endif
-!
 !  Initialize headt for root processor only.
 !
       if (lroot) headt=.true.
