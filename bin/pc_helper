@@ -22,14 +22,16 @@ else
   endif
 endif
 
-echo "Building" $0:t.x "(if necessary)"
 #echo ENVIRONMENT: $PENCIL_CONFIG_FILES
 if (-e .config-files) then
+  cd ..
+  echo "Building" $0:t.x "(if necessary) by pc_build"
   pc_build -l -q -s -t $0:t > /dev/null
 else
+  echo "Building" $0:t.x "(if necessary) by make"
   make $0:t > /dev/null
+  cd ..
 endif
-cd ..
 
 if ( $? != 0) then
   echo "Build of executable $0:t.x failed."
