@@ -460,9 +460,11 @@ ifeq ($(GPU),gpu_astaroth)
 #
   ifneq ($(MODULE_CMD),)
     CUDA_LOADED := $(shell (module list |& grep -i cuda) )
-    ifeq ($(CUDA_LOADED),)
-      $(warning  No CUDA module seems to be loaded!)
+    ROCM_LOADED := $(shell (module list |& grep -i rocm) )
+    ifeq ($(CUDA_LOADED)$(ROCM_LOADED),)
+      $(warning  No CUDA or ROCM module seems to be loaded!)
       $(info Try (one of) the following: $(shell (module avail |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
+      $(info or: $(shell (module avail |& grep -i rocm | sed -e's/^.* \([^ ]*[Rr][Oo][Cc][Mm][^ ]*\) .*$$/\1/') ) )
       YESNO ?= $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
       ifeq ($(YESNO),N)
         $(error Exit) 
@@ -470,16 +472,17 @@ ifeq ($(GPU),gpu_astaroth)
     endif
   endif
 #
-  FFLAGS_GENERAL += -mcmodel=medium
+  #FFLAGS_GENERAL += -mcmodel=medium
   GPU_INTERFACE = gpu_astaroth_ansi.o
   ifeq ($(REAL_PRECISION),double)
-    LIBGPU = astaroth/astaroth_dbl.so
+    LIBGPU = astaroth_dbl.so
   else
-    LIBGPU = astaroth/astaroth_sgl.so
+    LIBGPU = astaroth_sgl.so
   endif
 #  GPU_DEPS = $(LIBGPU) gpu_preps
   GPU_DEPS = gpu_preps
-  LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
+  #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
+  LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
   LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -L astaroth/submodule/build/src/utils -lastaroth_core -lkernels -lastaroth_utils -l:$(LIBGPU)
 # the following needed?
   LDFLAGS_LIB += -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -ldl
@@ -2298,10 +2301,10 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FSTD_95=-std95 #(uan02*)
 #F90=$(FC) #(uan02*)
 #CC=cc #(uan02*)
-#FFLAGS=-O1 #-fimplicit-none #(uan02*)
-##FFLAGS_DOUBLE=-fdefault-real-8 #(uan02*)
-#CFLAGS=-DFUNDERSC=1 -O1 #(uan02*)
-#ALLOW_ARG_MISMATCH = -fallow-argument-mismatch
+#FFLAGS=-O1 #-s integer64 #-march=native   #target-cpu=x86-milan #-fimplicit-none #(uan02*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(uan02*)
+#FFLAGS_DOUBLE=-s real64 #(uan02*)
+#CFLAGS=-DFUNDERSC=1 -O1 #-march=native #(uan02*)
 ##
 ## Parker: UFMG, BH, Brasil
 ##
@@ -3099,7 +3102,23 @@ cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/
 	scripts/mkcparam -b $(preprocess)
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
+ifeq ($(MODULE_NAME_ORDER),CRAY)
+	@sed --follow-symlinks -i -e'1, /type/ s/integer ::/integer,bind(C) ::/' -e'/^ *module Cparam/ a \  use, intrinsic :: iso_c_binding' cparam.f90
+endif
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam.f90
+ifeq ($(MODULE_NAME_ORDER),CRAY)
+	@sed --follow-symlinks -i -e's/,bind(C)//' -e'/iso_c_binding/ d' cparam.f90
+endif
+#
+cdata.o:  cdata.f90 cparam.local cparam.inc cparam_pencils.inc
+ifeq ($(MODULE_NAME_ORDER),CRAY)
+	@sed --follow-symlinks -i -e'/allocatable/ !s/ ::/,bind(C) ::/' -e'/parameter,/ s/,bind(C)//' cdata.f90
+#	-e's/integer, *dimension/integer,bind(C), dimension/' cdata.f90
+endif
+	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata.f90
+ifeq ($(MODULE_NAME_ORDER),CRAY)
+	@sed --follow-symlinks -i -e's/,bind(C)//' cdata.f90
+endif
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
 ifeq ($(SPECIAL_MULT),1)
