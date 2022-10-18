@@ -106,6 +106,7 @@ module Viscosity
   logical :: lvisc_mixture=.false.
   logical :: lvisc_spitzer=.false.
   logical :: lvisc_slope_limited=.false.
+  logical :: lvisc_schur_223=.false.
   logical :: limplicit_viscosity=.false.
   logical :: lmeanfield_nu=.false.
   logical :: lmagfield_nu=.false.
@@ -521,6 +522,9 @@ module Viscosity
           if (lroot) print*,'viscous force: slope-limited diffusion'
           if (lroot) print*,'viscous force: using ',trim(div_sld_visc),' order'
           lvisc_slope_limited=.true.
+        case ('nu-223schur')
+          if (lroot) print*,'viscous force: nu-223schur'
+          lvisc_schur_223=.true.
         case ('none',' ')
           ! do nothing
         case default
@@ -1184,6 +1188,10 @@ module Viscosity
       if (lboussinesq) lpenc_requested(i_graddivu)=.false.
       if (damp_sound/=0.) lpenc_requested(i_divu)=.true.
       if (lvisc_hyper3_mesh_residual) lpenc_requested(i_der6u_res)=.true.
+      if (lvisc_schur_223) then
+        lpenc_requested(i_del2u)=.true.
+        lpenc_requested(i_d2uidxj)=.true.
+      endif
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
@@ -2255,6 +2263,15 @@ module Viscosity
             enddo
           endif
         endif
+      endif
+!
+!  viscous force: in Schur-223 flow we use
+!  fvisc=nu*\nabla_h^2 u_h in the horizontal direction, and
+!  fvisc=nu*del2 u_z in the vertical direction
+!
+      if (lvisc_schur_223) then
+        p%fvisc=p%fvisc+nu*p%del2u
+        p%fvisc(:,1:2)=p%fvisc(:,1:2)-nu*p%d2uidxj(:,1:2,3)
       endif
 !
 !  Calculate Lambda effect
