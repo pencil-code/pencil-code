@@ -4940,15 +4940,6 @@ module EquationOfState
 !
     endsubroutine set_stratz
 !***********************************************************************
-    subroutine pushdiags2c(p_diag)
-!
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(:) :: p_diag
-!
-    call keep_compiler_quiet(p_diag)
-!
-    endsubroutine pushdiags2c
-!***********************************************************************
     subroutine pushpars2c(p_par)
 !
     use Syscalls, only: copy_addr

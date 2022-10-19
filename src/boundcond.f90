@@ -5804,6 +5804,7 @@ module Boundcond
                +      (f(l1:l2,m1+3:m2+3,iref,iaz)-f(l1:l2,m1-3:m2-3,iref,iaz)))
          else
            if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
+           bbx=0.
          endif
          if (nzgrid/=1) then
            fac=(1./60)*spread(spread(dz_1(iref),1,nx),2,ny)
@@ -5821,6 +5822,7 @@ module Boundcond
                +      (f(l1:l2,m1:m2,iref+3,iax)-f(l1:l2,m1:m2,iref-3,iax)))
          else
            if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+           bby=0.
          endif
          if (nxgrid/=1) then
            fac=(1./60)*spread(dx_1(l1:l2),2,ny)
@@ -5838,6 +5840,7 @@ module Boundcond
                +      (f(l1+3:l2+3,m1:m2,iref,iay)-f(l1-3:l2-3,m1:m2,iref,iay)))
          else
            if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
+           bbz=0.
          endif
          if (nygrid/=1) then
            fac=(1./60)*spread(dy_1(m1:m2),1,nx)

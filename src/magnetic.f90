@@ -993,6 +993,8 @@ module Magnetic
   real :: eta_shock_jump1=1.0, eta_tdep=0.0, Arms=0.0
   real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kern_jjsmooth
 !
+  real, dimension(nz,nprocz) :: z_allprocs
+
   contains
 !***********************************************************************
     subroutine register_magnetic
@@ -1877,6 +1879,8 @@ module Magnetic
         call alloc_slice_buffers(poynting_xy,poynting_xz,poynting_yz,poynting_xy2, &
                                  poynting_xy3,poynting_xy4,poynting_xz2,poynting_r)
 !
+      z_allprocs=reshape(zgrid,(/nz,nprocz/))
+
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)

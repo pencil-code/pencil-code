@@ -472,8 +472,6 @@ module Cdata
   real, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez,fnamexy, fnamexz
   real, dimension(:,:,:,:), allocatable :: fnamerz
   integer, dimension (:,:), allocatable :: sound_coords_list
-  real, dimension (nz,nprocz) :: z_allprocs
-  equivalence (zgrid,z_allprocs)
   character (len=fmtlen), allocatable :: cform(:),cformv(:),cform_sound(:), &
                                          cformxy(:),cformxz(:),cformrz(:), &
                                          cformz(:),cformy(:),cformx(:),cformr(:)
