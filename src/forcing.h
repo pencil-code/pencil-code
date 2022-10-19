@@ -16,6 +16,6 @@
   public :: forcing_cont
   public :: forcing_pars_hel
 
-  public :: pushpars2c, pushdiags2c
+  public :: pushpars2c
 
   public :: n_forcing_cont  ! should be protected

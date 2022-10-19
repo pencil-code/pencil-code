@@ -27,7 +27,7 @@ module Viscosity
   include 'viscosity.h'
 !
   logical :: lvisc_first=.false.
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+  integer :: pushpars2c        ! should be procedure pointer (F2003)
 !
   contains
 !***********************************************************************

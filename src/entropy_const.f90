@@ -47,7 +47,7 @@ module Energy
   logical :: lcalc_heatcond_constchi=.false.
   logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+  integer :: pushpars2c  ! should be procedure pointer (F2003)
 !
   ! input parameters
   namelist /entropy_init_pars/ &

@@ -47,7 +47,7 @@ module Energy
   integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\uv\right>$
   integer :: idiag_ufpresm=0
   integer :: idiag_csm=0        ! DIAG_DOC: $\left<c_{\rm s}\right>$
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+  integer :: pushpars2c    ! should be procedure pointer (F2003)
 !
   contains
 !***********************************************************************

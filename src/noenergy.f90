@@ -24,7 +24,7 @@ module Energy
   use Messages
 !
   implicit none
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+  integer :: pushpars2c  ! should be procedure pointer (F2003)
 !
   include 'energy.h'
 !
