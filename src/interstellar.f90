@@ -2861,14 +2861,12 @@ module Interstellar
       endif
     endif Get_z
 
-    if (lnew_cluster) then
-      mpicluster = (/x_cluster,y_cluster,z_cluster,t_cluster/)
-      call mpibcast_real(mpicluster,4)
-      x_cluster=mpicluster(1)
-      y_cluster=mpicluster(2)
-      z_cluster=mpicluster(3)
-      t_cluster=mpicluster(4)
-    endif
+    mpicluster = (/x_cluster,y_cluster,z_cluster,t_cluster/)
+    call mpibcast_real(mpicluster,4)
+    x_cluster=mpicluster(1)
+    y_cluster=mpicluster(2)
+    z_cluster=mpicluster(3)
+    t_cluster=mpicluster(4)
 !
     call share_SN_parameters(f,SNR)
 !
