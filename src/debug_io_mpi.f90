@@ -272,7 +272,6 @@ contains
 !
       use Mpicomm, only: stop_it
 !
-!
       character (len=*), intent(in) :: file
       integer, intent(in) :: ndim
       real, dimension (nx), intent(in) :: a
@@ -305,10 +304,12 @@ contains
 !  don't handle writing the grid, but that does not seem to be used
 !  anyway.
 !
+      use Mpicomm, only: stop_it
+!
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv
 !
-      integer :: reclen
+      integer(KIND=ikind8) :: reclen
       integer(kind=MPI_OFFSET_KIND) :: fpos
       real :: t_sp   ! t in single precision for backwards compatibility
       integer, parameter :: test_int = 0
@@ -328,21 +329,21 @@ contains
         !
         fpos = 0                ! open-record marker
         reclen = nxgrid*nygrid*nzgrid*nv*byte_per_float
-        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        if (reclen>max_int) call stop_it('write_record_info: reclen>max_int')
+        call MPI_FILE_WRITE_AT(fhandle,fpos,int(reclen),1,MPI_INTEGER,status,ierr)
         fpos = fpos + byte_per_int
                                 ! the data itself has already been written by ouput_vect
         fpos = fpos + reclen    ! close-record marker
-        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        call MPI_FILE_WRITE_AT(fhandle,fpos,int(reclen),1,MPI_INTEGER,status,ierr)
         fpos = fpos + byte_per_int
         !
         ! time in a new record
         !
-        reclen = byte_per_float
-        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        call MPI_FILE_WRITE_AT(fhandle,fpos,byte_per_float,1,MPI_INTEGER,status,ierr)
         fpos = fpos + byte_per_int
         call MPI_FILE_WRITE_AT(fhandle,fpos,t_sp,1,MPI_REAL,status,ierr)
-        fpos = fpos + reclen
-        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        fpos = fpos + byte_per_float
+        call MPI_FILE_WRITE_AT(fhandle,fpos,byte_per_float,1,MPI_INTEGER,status,ierr)
         fpos = fpos + byte_per_int
       endif
       !
