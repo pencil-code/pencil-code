@@ -9320,15 +9320,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !      but there is no MPI_GATHERV which would accept a long int shifts argument.
 !
       integer(KIND=ikind8) :: nlayer, nshift
-      !integer(KIND=ikind8), dimension(ncpus) :: shifts
-      integer, dimension(ncpus) :: shifts
+      integer(KIND=ikind8), dimension(ncpus) :: shifts
       integer, dimension(ncpus) :: counts
 !
       ncnt = nxgrid*ny
 !
       if (lroot) then
 !
-        nlayer = nz*nxgrid*nygrid
+        nlayer = nz*int8(nxgrid)*int8(nygrid)
         if (nlayer>max_int) &
           call stop_it("mpigather: integer overflow in shifts")
         counts = ncnt
@@ -9350,7 +9349,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       do i=1,nz
-        call MPI_GATHERV(sendbuf(1,1,i), ncnt, MPI_REAL, recvbuf(1,1,i), counts, shifts, &
+        call MPI_GATHERV(sendbuf(1,1,i), ncnt, MPI_REAL, recvbuf(1,1,i), counts, int(shifts), &
                          MPI_REAL, root, MPI_COMM_GRID, mpierr)
       enddo
 !
