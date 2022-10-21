@@ -3,9 +3,9 @@ echo '# pragma once' > boundcond_c.h
 echo '# include "headers_c.h"' >> boundcond_c.h
 
 if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
-  echo '# define boundconds_x_c '$MODULE_PREFIX'boundcond_x_c'$MODULE_INFIX'boundconds'$MODULE_SUFFIX >> boundcond_c.h
-  echo '# define boundconds_y_c '$MODULE_PREFIX'boundcond_y_c'$MODULE_INFIX'boundconds'$MODULE_SUFFIX >> boundcond_c.h
-  echo '# define boundconds_z_c '$MODULE_PREFIX'boundcond_z_c'$MODULE_INFIX'boundconds'$MODULE_SUFFIX >> boundcond_c.h
+  echo '# define boundconds_x_c '$MODULE_PREFIX'boundconds_x_c'$MODULE_INFIX'boundcond'$MODULE_SUFFIX >> boundcond_c.h
+  echo '# define boundconds_y_c '$MODULE_PREFIX'boundconds_y_c'$MODULE_INFIX'boundcond'$MODULE_SUFFIX >> boundcond_c.h
+  echo '# define boundconds_z_c '$MODULE_PREFIX'boundconds_z_c'$MODULE_INFIX'boundcond'$MODULE_SUFFIX >> boundcond_c.h
 else
   echo '# define boundconds_x_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_x_c'$MODULE_SUFFIX >> boundcond_c.h
   echo '# define boundconds_y_c '$MODULE_PREFIX'boundcond'$MODULE_INFIX'boundconds_y_c'$MODULE_SUFFIX >> boundcond_c.h

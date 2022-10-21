@@ -1,6 +1,6 @@
 sed -f scripts/cdata.sed cdata.f90 > cdata_c.h
 if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
-  sed -e's/MODULE_PREFIX\(.*\)MODULE_INFIX\(.*\)MODULE_SUFFIX/'$MODULE_PREFIX'\2'$MODULE_INFIX'\1'$MODULE_SUFFIX'/' tmp > defines_cdata.h
+  sed -e's/MODULE_PREFIX\(.*\)MODULE_INFIX\(.*\)MODULE_SUFFIX/\2/' tmp > defines_cdata.h
 else
   sed -e's/MODULE_PREFIX/'$MODULE_PREFIX'/' -e's/MODULE_INFIX/'$MODULE_INFIX'/' -e's/MODULE_SUFFIX/'$MODULE_SUFFIX'/' tmp > defines_cdata.h
 fi

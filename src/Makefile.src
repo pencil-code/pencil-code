@@ -2702,6 +2702,8 @@ ifneq (,$(filter gfortran%,$(COMPILER)))
     $(warning GCC version > 9 ==> allowing argument mismatch in $(MPICOMM).f90, $(PARTICLES_MPICOMM_SRC), $(SYSCALLS_SRC) and fftpack.f90.)
     ALLOW_ARG_MISMATCH = -fallow-argument-mismatch
   endif
+else
+  IS_CRAY = $(shell $(FC) --version | grep -i Cray)
 endif
 #
 #  Default linker to compiler settings, if unset.
@@ -3102,22 +3104,22 @@ cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/
 	scripts/mkcparam -b $(preprocess)
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
-ifeq ($(MODULE_NAME_ORDER),CRAY)
-	@sed --follow-symlinks -i -e'1, /type/ s/integer ::/integer,bind(C) ::/' -e'/^ *module Cparam/ a \  use, intrinsic :: iso_c_binding' cparam.f90
-endif
+ifneq (,$(IS_CRAY))
+	@sed -e'1, /type/ s/integer ::/integer,bind(C) ::/' -e'/^ *module Cparam/ a \  use, intrinsic :: iso_c_binding' cparam.f90 > cparam_tmp.f90
+	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam_tmp.f90
+	@rm -f cparam_tmp.f90
+else
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam.f90
-ifeq ($(MODULE_NAME_ORDER),CRAY)
-	@sed --follow-symlinks -i -e's/,bind(C)//' -e'/iso_c_binding/ d' cparam.f90
 endif
 #
 cdata.o:  cdata.f90 cparam.local cparam.inc cparam_pencils.inc
-ifeq ($(MODULE_NAME_ORDER),CRAY)
-	@sed --follow-symlinks -i -e'/allocatable/ !s/ ::/,bind(C) ::/' -e'/parameter,/ s/,bind(C)//' cdata.f90
-#	-e's/integer, *dimension/integer,bind(C), dimension/' cdata.f90
-endif
+ifneq (,$(IS_CRAY))
+	@sed -e'/allocatable/ !s/ ::/,bind(C) ::/' -e'/parameter,/ s/,bind(C)//' cdata.f90 > cdata_tmp.f90
+#       -e's/integer, *dimension/integer,bind(C), dimension/' cdata.f90
+	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata_tmp.f90
+	@rm -rf cdata_tmp.f90
+else
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata.f90
-ifeq ($(MODULE_NAME_ORDER),CRAY)
-	@sed --follow-symlinks -i -e's/,bind(C)//' cdata.f90
 endif
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local

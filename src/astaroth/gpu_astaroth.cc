@@ -27,7 +27,6 @@
 #include "PC_moduleflags.h"
 #include "../cparam_c.h"
 #include "../cdata_c.h"
-
 #include "../sub_c.h"                   // provides set_dt
 #include "../boundcond_c.h"             // provides boundconds[xyz] etc.
 #include "../mpicomm_c.h"               // provides finalize_sendrcv_bdry
@@ -61,10 +60,10 @@ AcReal max_diffus()
 {
         AcReal maxdiffus_=0.;
 #if LVISCOSITY
-        maxdiffus_=nu*dxyz_2[nghost];
+        maxdiffus_=nu*dxyz_2[nghost-1];
 #endif
 #if LMAGNETIC
-        maxdiffus_=std::max(maxdiffus_,eta*dxyz_2[nghost]);
+        maxdiffus_=std::max(maxdiffus_,eta*dxyz_2[nghost-1]);
 #endif
         return maxdiffus_;
 }

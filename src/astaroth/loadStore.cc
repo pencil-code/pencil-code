@@ -13,6 +13,8 @@
 #include <cmath>
 #include <algorithm>
 
+#define real AcReal
+
 #include "submodule/acc-runtime/api/math_utils.h"
 #include "astaroth.h"
 #include "../cparam_c.h"
