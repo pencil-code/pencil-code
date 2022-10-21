@@ -65,6 +65,7 @@ module General
   public :: compress_nvidia
   public :: qualify_position_bilin, qualify_position_bicub, &
             qualify_position_biquin
+  public :: binomial,merge_lists
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -6093,5 +6094,59 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
     res=sum(arrq)
   
     endfunction safe_sum
+!***********************************************************************
+    function binomial(n,k) result(res)
+!                  
+! Calculates binomial /n\ .
+!                     \k/
+! Returns zero for invalid input.
+!
+! 19-oct-22/MR: coded
+!
+      integer, intent(IN) :: n,k
+      integer :: res
+
+      integer :: i
+
+      if (n<=0 .or. k<=0 .or. k>n) then
+        res=0
+        return
+      endif
+
+      if (n==k) then
+        res=1
+        return
+      else
+        res=n
+        do i=1,k-1
+          res=(res*(n-i))/(i+1)
+        enddo
+      endif
+
+    endfunction binomial
+!***********************************************************************
+    subroutine merge_lists(list1,len1,list2)
+!
+! Merges two lists of integers: returns list of unique elements of both.
+!
+! 19-oct-22/MR: coded
+!
+      integer, dimension(*), intent(INOUT):: list1
+      integer              , intent(INOUT):: len1
+      integer, dimension(:), intent(IN)   :: list2
+
+      integer :: ind,i,j
+
+      ind=len1
+iloop:do i=1,size(list2)
+        do j=1,len1
+          if (list2(i)==list1(j)) cycle iloop
+        enddo
+        ind=ind+1
+        list1(ind)=list2(i)
+      enddo iloop
+      len1=ind
+
+    endsubroutine merge_lists
 !***********************************************************************
   endmodule General
