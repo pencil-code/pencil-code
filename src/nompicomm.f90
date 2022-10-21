@@ -1161,6 +1161,23 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_max_scl_int
 !***********************************************************************
+    subroutine mpireduce_max_arr_int(fmax_tmp,fmax,nreduce,comm)
+!
+!  Calculate total maximum for each array element and return to root.
+!
+      use General, only: ioptest
+
+      integer :: nreduce
+      integer, dimension(nreduce) :: fmax_tmp,fmax
+      integer, optional :: comm
+!
+      if (nreduce==0) return
+!
+      fmax=fmax_tmp
+      if (ALWAYS_FALSE) print*, nreduce,present(comm)
+!
+    endsubroutine mpireduce_max_arr_int
+!***********************************************************************
     subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce,comm)
 !
       integer :: nreduce
