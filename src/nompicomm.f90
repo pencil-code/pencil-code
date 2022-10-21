@@ -2995,7 +2995,7 @@ module Mpicomm
       integer, dimension(*) :: list
       integer :: len
      
-      call keep_compiler_quiet(list)
+      call keep_compiler_quiet(list(len))
       call keep_compiler_quiet(len)
 
     endsubroutine mpiallreduce_merge
