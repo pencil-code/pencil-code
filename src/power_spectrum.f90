@@ -35,7 +35,7 @@ module power_spectrum
   real :: tout_min=0., tout_max=0.
   real :: specflux_dp=-2., specflux_dq=-2.
   real, allocatable, dimension(:,:) :: legendre_zeros,glq_weight
-  logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
+  logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false., ltrue_binning=.false.
   logical :: lhalf_factor_in_GW=.false., lcylindrical_spectra=.false.
   logical :: lhorizontal_spectra=.false., lvertical_spectra=.false.
   logical :: lread_gauss_quadrature=.false., lshear_frame_correlation=.false.
@@ -51,6 +51,9 @@ module power_spectrum
   integer :: n_spectra=0
   integer :: inz=0, n_segment_x=1
   integer :: kout_max=0
+  real :: max_k2 = (nxgrid/2)**2 + (nygrid/2)**2 + (nzgrid/2)**2
+  integer, dimension(:), allocatable :: k2s
+  integer :: nk_truebin=0
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
@@ -58,14 +61,23 @@ module power_spectrum
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
       lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation, &
       power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq, &
-      lhorizontal_spectra, lvertical_spectra
+      lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2
 !
   contains
 !***********************************************************************
     subroutine initialize_power_spectrum
 !
       use Messages
-      integer :: ikr, ikmu
+      use General, only: binomial, pos_in_array, quick_sort
+      use Mpicomm, only: mpiallreduce_merge
+
+      integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len
+      real :: k2
+      real, dimension(nxgrid) :: kx
+      real, dimension(nygrid) :: ky
+      real, dimension(nzgrid) :: kz
+      integer, dimension(:), allocatable :: order
+
       !!! the following warnings should become fatal errors
       if (((dx /= dy) .and. ((nxgrid-1)*(nxgrid-1) /= 0)) .or. &
           ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
@@ -100,6 +112,41 @@ module power_spectrum
       endif
       if (ispecialvar2==0) then
         mu_spec=.false.
+      endif
+
+      if (ltrue_binning) then
+!
+! Determine the k^2 in the range from 0 to max_k2.
+!
+        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+
+        if (allocated(k2s)) deallocate(k2s)
+        len=2*binomial(int(sqrt(max_k2/3.)+2),3)   ! only valid for isotropic 3D grid!
+        allocate(k2s(len)); k2s=0
+
+        ind=0
+outer:  do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+              k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+              if (k2>max_k2) cycle
+              if (pos_in_array(int(k2),k2s)==0) then
+                ind=ind+1
+                k2s(ind)=int(k2)
+                if (ind==len) exit outer
+              endif
+            enddo
+          enddo
+        enddo outer
+
+        nk_truebin=ind
+
+        call mpiallreduce_merge(k2s,nk_truebin)
+        allocate(order(nk_truebin))
+        call quick_sort(k2s(:nk_truebin),order)
+
       endif
 
     endsubroutine initialize_power_spectrum
@@ -267,19 +314,24 @@ module power_spectrum
       use Mpicomm, only: mpireduce_sum
       use General, only: itoa
       use Sub, only: curli
+      use File_io, only: file_exists
 !
-  integer, intent(in), optional :: iapn_index
-! integer, pointer :: inp,irhop,iapn(:)
-  integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
+  character (len=*) :: sp
+  integer, intent(in), optional :: iapn_index
+
+! integer, pointer :: inp,irhop,iapn(:)
+  integer :: nk
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb,oo
-  real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
-  character (len=*) :: sp
+  real :: k2
+  real, dimension(:), allocatable :: spectrum,spectrum_sum
+  character(LEN=fnlen) :: filename
+  logical :: lwrite_ks
   !
   !  identify version
   !
@@ -294,6 +346,12 @@ module power_spectrum
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
+  if (ltrue_binning) then
+    nk=nk_truebin
+  else
+    nk=nxgrid/2
+  endif
+  allocate(spectrum(nk),spectrum_sum(nk))
   spectrum=0.
   spectrum_sum=0.
   !
@@ -345,15 +403,30 @@ module power_spectrum
 !  integration over shells
 !
      if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-     do ikz=1,nz
-        do iky=1,ny
-           do ikx=1,nx
-              k=nint(sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
-              if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
-                   +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-           enddo
-        enddo
-     enddo
+     if (ltrue_binning) then
+!  
+!  Sum spectral contributions into bins of k^2 - avoids rounding of k.
+!
+       do ikz=1,nz
+          do iky=1,ny
+             do ikx=1,nx
+                k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+                where(int(k2)==k2s) &
+                  spectrum=spectrum+a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+             enddo
+          enddo
+       enddo
+     else
+       do ikz=1,nz
+          do iky=1,ny
+             do ikx=1,nx
+                k=nint(sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+                if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
+                     +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+             enddo
+          enddo
+       enddo
+     endif
      !
   enddo !(loop over ivec)
   !
@@ -369,16 +442,23 @@ module power_spectrum
 !  append to diagnostics file
 !
   if (lroot) then
-    if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
-         ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
-    spectrum_sum=.5*spectrum_sum
-    if (sp=='ud') then
-       open(1,file=trim(datadir)//'/power_'//trim(sp)//'-'//&
-            trim(itoa(iapn_index))//'.dat',position='append')
-    else
-      open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
-    endif
 !
+    spectrum_sum=.5*spectrum_sum
+!
+    if (sp=='ud') then
+      filename=trim(datadir)//'/power_'//trim(sp)//'-'//trim(itoa(iapn_index))//'.dat'
+    else
+      filename=trim(datadir)//'/power'//trim(sp)//'.dat'
+    endif
+
+    lwrite_ks=ltrue_binning .and. .not.file_exists(filename)
+    open(1,file=filename,position='append')
+    if (ip<10) print*,'Writing power spectra of variable '//trim(sp)//' to '//trim(filename)
+!
+    if (lwrite_ks) then
+      write(1,*) nk_truebin
+      write(1,*) real(k2s(:nk_truebin))
+    endif
     write(1,*) t   
     write(1,power_format) spectrum_sum 
     close(1)
