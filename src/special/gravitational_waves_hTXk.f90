@@ -125,7 +125,7 @@ module Special
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
   real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
-  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
+  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, OmM0=0.3158, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
   real :: initpower_med_GW=1., kpeak_log_GW=1., kbreak_GW=0.5, nfactd_GW=4.
 ! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
@@ -181,7 +181,7 @@ module Special
     ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
-    lread_scl_factor_file, t_ini, OmL0, idt_file_safety, &
+    lread_scl_factor_file, t_ini, OmL0, OmM0, idt_file_safety, &
     lconstmod_in_stress, k_in_stress, itorder_GW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -1529,7 +1529,7 @@ module Special
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
       real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
-      real :: horndeski_alpT_eff, Om_rat_Lam
+      real :: horndeski_alpT_eff, Om_rat_Lam, Om_rat_Mat
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx
       complex :: hcomplex_new, gcomplex_new
@@ -1790,6 +1790,8 @@ module Special
             horndeski_alpT_eff=horndeski_alpT*exp(-(scale_factor/scale_factor0)**horndeski_alpT_exp)
           case ('scale_factor_power')
             horndeski_alpM_eff=horndeski_alpM*(scale_factor*a_ini/scale_factor0)**horndeski_alpM_exp
+          case ('matter')
+            horndeski_alpM_eff=horndeski_alpM*(1-Om_rat_Mat/1-OmM0)
           case ('dark_energy')
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
               Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
