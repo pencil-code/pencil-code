@@ -2970,5 +2970,17 @@ module Mpicomm
 !  Dummy routine.
 !    
     endsubroutine set_rslice_communicator
+ !***********************************************************************
+    subroutine mpiallreduce_merge(list,len)
+!
+! 20-oct-22/MR: coded
+! 
+      integer, dimension(*) :: list
+      integer :: len
+     
+      call keep_compiler_quiet(list)
+      call keep_compiler_quiet(len)
+
+    endsubroutine mpiallreduce_merge
 !***********************************************************************
 endmodule Mpicomm

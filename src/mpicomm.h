@@ -36,6 +36,7 @@
   public :: mpisend_nonblock_real,mpisend_nonblock_int
   public :: mpirecv_nonblock_real,mpirecv_nonblock_int
 
+  public :: mpiallreduce_merge
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
   public :: isendrcv_bdry_x
@@ -238,6 +239,8 @@
   interface mpireduce_max
     module procedure mpireduce_max_scl
     module procedure mpireduce_max_arr
+    module procedure mpireduce_max_scl_int
+    module procedure mpireduce_max_arr_int
   endinterface
 !
   interface mpireduce_max_int

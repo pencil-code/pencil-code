@@ -4613,6 +4613,23 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpireduce_max_scl_int
 !***********************************************************************
+    subroutine mpireduce_max_arr_int(fmax_tmp,fmax,nreduce,comm)
+!
+!  Calculate total maximum for each array element and return to root.
+!
+      use General, only: ioptest
+
+      integer :: nreduce
+      integer, dimension(nreduce) :: fmax_tmp,fmax
+      integer, optional :: comm
+!
+      if (nreduce==0) return
+!
+      call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_INTEGER, MPI_MAX, root, &
+                      ioptest(comm,MPI_COMM_GRID), mpierr)
+!
+    endsubroutine mpireduce_max_arr_int
+!***********************************************************************
     subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce,comm)
 !
 !  Calculate total maximum for each array element and return to root.
@@ -10713,5 +10730,40 @@ stop
       if (rank==0) root_rslice=iproc
 
     endsubroutine set_rslice_communicator
+!***********************************************************************
+    subroutine mpiallreduce_merge(list,len)
+!
+!  Merges an integer list across all processors.
+!  Returns list of unique elements.
+!
+!  19-oct-22/MR: coded
+!
+      use General, only: merge_lists
+
+      integer, dimension(*) :: list
+      integer :: len
+
+      integer :: maxlen,ip,len_proc
+      integer, dimension(:), allocatable :: buffer
+
+      call mpireduce_max(len,maxlen)
+      if (lroot) then
+        allocate(buffer(maxlen))
+
+        do ip=1,ncpus-1
+          call mpirecv_int(len_proc,ip,ip)
+          call mpirecv_int(buffer,len_proc,ip,ip)
+          call merge_lists(list,len,buffer(1:len_proc))
+        enddo
+
+      else
+        call mpisend_int(len,root,iproc)
+        call mpisend_int(list,len,root,iproc)
+      endif
+
+      call mpibcast_int(len,root)
+      call mpibcast_int(list,len,root)
+
+    endsubroutine mpiallreduce_merge
 !***********************************************************************
   endmodule Mpicomm
