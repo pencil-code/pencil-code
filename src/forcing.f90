@@ -67,7 +67,7 @@ module Forcing
   logical :: lforce_peri=.false., lforce_cuty=.false.
   logical :: lforcing2_same=.false., lforcing2_curl=.false.
   logical :: lff_as_aux = .false.
-  logical :: lforcing_osc = .false., lforcing_osc2 = .false.
+  logical :: lforcing_osc = .false., lforcing_osc2 = .false., lforcing_osc_double = .false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false., lforcing_coefs_hel_double=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -168,7 +168,8 @@ module Forcing
        omega_tidal, R0_tidal, phi_tidal, omega_vortex, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
        n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex, &
-       lrandom_time, laniso_forcing_old, lforcing_osc, lforcing_osc2, &
+       lrandom_time, laniso_forcing_old, &
+       lforcing_osc, lforcing_osc2, lforcing_osc_double, &
        tcor_GP, kmin_GP,kmax_GP,nk_GP,beta_GP
 !
 ! other variables (needs to be consistent with reset list below)
@@ -5607,14 +5608,29 @@ call fatal_error('hel_vec','radial profile should be quenched')
           fact2=relhel
           fact1=.5*(1.+relhel**2)
           fact=ampl_ff(i)/sqrt(fact1*(ABC_A(i)**2+ABC_B(i)**2+ABC_C(i)**2))
-          if (lforcing_osc) then
-            fact=fact*(cos(omega_ff*t)+cos(omega_double_ff*t))
-          else if (lforcing_osc2) then
-            fact=fact*(cos(omega_ff*t)+cos(omega_double_ff*t))**2
+          if (lforcing_osc_double) then
+            force(:,1)=fact*(ABC_C(i)*(sin(kf_fcont(i)*z(n)    +omega_ff       *t) &
+                                      +cos(kf_fcont(i)*z(n)    +omega_double_ff*t)) &
+                      +fact2*ABC_B(i)*(cos(kf_fcont(i)*y(m)    +omega_ff       *t) &
+                                      +sin(kf_fcont(i)*y(m)    +omega_double_ff*t)))
+            force(:,2)=fact*(ABC_A(i)*(sin(kf_fcont(i)*x(l1:l2)+omega_ff       *t) &
+                                      +cos(kf_fcont(i)*x(l1:l2)+omega_double_ff*t)) &
+                      +fact2*ABC_C(i)*(cos(kf_fcont(i)*z(n)    +omega_ff       *t) &
+                                      +sin(kf_fcont(i)*z(n)    +omega_double_ff*t)))
+            force(:,3)=fact*(ABC_B(i)*(sin(kf_fcont(i)*y(m)    +omega_ff       *t) &
+                                      +cos(kf_fcont(i)*y(m)    +omega_double_ff*t)) &
+                      +fact2*ABC_A(i)*(cos(kf_fcont(i)*x(l1:l2)+omega_ff       *t) &
+                                      +sin(kf_fcont(i)*x(l1:l2)+omega_double_ff*t)))
+          else
+            if (lforcing_osc) then
+              fact=fact*(cos(omega_ff*t)+cos(omega_double_ff*t))
+            else if (lforcing_osc2) then
+              fact=fact*(cos(omega_ff*t)+cos(omega_double_ff*t))**2
+            endif
+            force(:,1)=fact*(ABC_C(i)*sinz(n    ,i)+fact2*ABC_B(i)*cosy(m    ,i))
+            force(:,2)=fact*(ABC_A(i)*sinx(l1:l2,i)+fact2*ABC_C(i)*cosz(n    ,i))
+            force(:,3)=fact*(ABC_B(i)*siny(m    ,i)+fact2*ABC_A(i)*cosx(l1:l2,i))
           endif
-          force(:,1)=fact*(ABC_C(i)*sinz(n    ,i)+fact2*ABC_B(i)*cosy(m    ,i))
-          force(:,2)=fact*(ABC_A(i)*sinx(l1:l2,i)+fact2*ABC_C(i)*cosz(n    ,i))
-          force(:,3)=fact*(ABC_B(i)*siny(m    ,i)+fact2*ABC_A(i)*cosx(l1:l2,i))
         case('Schur_nonhelical')
           force(:,1)= ampl_ff(i)*(cosx(l1:l2,i)*siny(m,i))
           force(:,2)=-ampl_ff(i)*(sinx(l1:l2,i)*cosy(m,i))
