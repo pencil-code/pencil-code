@@ -565,6 +565,9 @@ module Special
           lgf2=lgff4(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           OmM_target=10**lgf
+        else
+          if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
+          call fatal_error('initialize_special','we need the file a_vs_eta.dat')
         endif
       endif
 !
