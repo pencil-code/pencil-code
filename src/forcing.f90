@@ -40,6 +40,7 @@ module Forcing
   real :: crosshel=0.
   real :: radius_ff=0., k1_ff=1., kx_ff=1., ky_ff=1., kz_ff=1., z_center=0.
   real :: slope_ff=0., work_ff=0., omega_ff=0., omega_double_ff=0., n_equator_ff=1.
+  real :: ampl_double_ff=0.
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
   real :: wff_ampl=0.,  xff_ampl=0.,  yff_ampl=0.,  zff_ampl=0.
@@ -140,7 +141,8 @@ module Forcing
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain, fountain, tforce_stop, tforce_stop2, &
        radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
-       omega_ff, omega_double_ff, n_equator_ff, location_fixed, lrandom_location, nlocation, &
+       omega_ff, omega_double_ff, n_equator_ff, ampl_double_ff, &
+       location_fixed, lrandom_location, nlocation, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl, xff_ampl, yff_ampl, zff_ampl, zff_hel, &
        wff2_ampl, xff2_ampl,yff2_ampl, zff2_ampl, &
@@ -5610,17 +5612,17 @@ call fatal_error('hel_vec','radial profile should be quenched')
           fact=ampl_ff(i)/sqrt(fact1*(ABC_A(i)**2+ABC_B(i)**2+ABC_C(i)**2))
           if (lforcing_osc_double) then
             force(:,1)=fact*(ABC_C(i)*(sin(kf_fcont(i)*z(n)    +omega_ff       *t) &
-                                      +cos(kf_fcont(i)*z(n)    +omega_double_ff*t)) &
+                       +ampl_double_ff*cos(kf_fcont(i)*z(n)    +omega_double_ff*t)) &
                       +fact2*ABC_B(i)*(cos(kf_fcont(i)*y(m)    +omega_ff       *t) &
-                                      +sin(kf_fcont(i)*y(m)    +omega_double_ff*t)))
+                       +ampl_double_ff*sin(kf_fcont(i)*y(m)    +omega_double_ff*t)))
             force(:,2)=fact*(ABC_A(i)*(sin(kf_fcont(i)*x(l1:l2)+omega_ff       *t) &
-                                      +cos(kf_fcont(i)*x(l1:l2)+omega_double_ff*t)) &
+                       +ampl_double_ff*cos(kf_fcont(i)*x(l1:l2)+omega_double_ff*t)) &
                       +fact2*ABC_C(i)*(cos(kf_fcont(i)*z(n)    +omega_ff       *t) &
-                                      +sin(kf_fcont(i)*z(n)    +omega_double_ff*t)))
+                       +ampl_double_ff*sin(kf_fcont(i)*z(n)    +omega_double_ff*t)))
             force(:,3)=fact*(ABC_B(i)*(sin(kf_fcont(i)*y(m)    +omega_ff       *t) &
-                                      +cos(kf_fcont(i)*y(m)    +omega_double_ff*t)) &
+                       +ampl_double_ff*cos(kf_fcont(i)*y(m)    +omega_double_ff*t)) &
                       +fact2*ABC_A(i)*(cos(kf_fcont(i)*x(l1:l2)+omega_ff       *t) &
-                                      +sin(kf_fcont(i)*x(l1:l2)+omega_double_ff*t)))
+                       +ampl_double_ff*sin(kf_fcont(i)*x(l1:l2)+omega_double_ff*t)))
           else
             if (lforcing_osc) then
               fact=fact*(cos(omega_ff*t)+cos(omega_double_ff*t))
