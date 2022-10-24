@@ -124,7 +124,7 @@ module power_spectrum
 
         if (allocated(k2s)) deallocate(k2s)
         len=2*binomial(int(sqrt(max_k2/3.)+2),3)   ! only valid for isotropic 3D grid!
-        allocate(k2s(len)); k2s=0
+        allocate(k2s(len)); k2s=-1
 
         ind=0
 outer:  do ikz=1,nz
