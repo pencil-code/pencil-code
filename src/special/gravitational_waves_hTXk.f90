@@ -134,13 +134,13 @@ module Special
   integer :: nt_file, it_file
   real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf
-  real :: scl_factor_target, Hp_target, app_target, lgt_current
-  real :: lgt_ini, a_ini, Hp_ini, app_om=0
+  real :: scl_factor_target, Hp_target, app_target, OmM_target, lgt_current
+  real :: lgt_ini, a_ini, Hp_ini, app_om=0, OmM_ini
 ! added variables
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
-  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file
-  real, dimension(:), allocatable :: app_file, lgt_file, lgff, lgff2, lgff3
+  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file, OmM_file
+  real, dimension(:), allocatable :: app_file, lgt_file, lgff, lgff2, lgff3, lgff4
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
@@ -471,21 +471,22 @@ module Special
         if (lread_scl_factor_file_exists) then
           if (lroot.and.ip<14) print*,'initialize_forcing: opening a_vs_eta.dat'
           open(9,file='a_vs_eta.dat',status='old')
-          read(9,*) nt_file, lgt0, dlgt, H0
-          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0=',nt_file,lgt0,dlgt,H0
-          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, app_file, &
-                                            lgt_file, lgff, lgff2, lgff3)
-          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), app_file(nt_file), &
-                   lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file))
+          read(9,*) nt_file, lgt0, dlgt, H0, OmM0
+          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0,OmM0=',nt_file,lgt0,dlgt,H0,OmM0
+          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, app_file, OmM_file, &
+                                            lgt_file, lgff, lgff2, lgff3, lgff4)
+          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), app_file(nt_file), OmM_file(nt_file), &
+                   lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file), lgff4(nt_file))
           do it_file=1,nt_file
-            read(9,*) dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file)
-          !if (ip<14) print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file)
+            read(9,*) dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file), OmM_file(it_file)
+          !if (ip<14) print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file), OmM_file(it_file)
           enddo
           close(9)
           lgt_file=alog10(t_file)
           lgff=alog10(scl_factor)
           lgff2=alog10(Hp_file)
           lgff3=alog10(app_file)
+          lgff4=alog10(OmM_file)
 !
 !  Calculate and set tmax, i.e., the end time of the simulation, so as
 !  to have a regular exit. Note that tmax=max(t_file)/t_ini.
@@ -516,7 +517,11 @@ module Special
           lgf2=lgff2(it_file+1)
           lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           Hp_ini=10**lgf
-          !if (ip<14) print*,'ALBERTO, print a_*, H_*: ',a_ini,Hp_ini
+          lgf1=lgff2(it_file)
+          lgf2=lgff2(it_file+1)
+          lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          OmM_ini=10**lgf
+          !if (ip<14) print*,'ALBERTO, print a_*, H_*, OmM_*: ',a_ini,Hp_ini,OmM_ini
 !
 !  Divide by a_ini to have a/a_ini and recompute log(a) and log(t) after dividing, respectively
 !  by a_ini and t_ini.
@@ -556,6 +561,10 @@ module Special
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           app_target=10**lgf/Hp_ini**2
           !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',app_target
+          lgf1=lgff4(it_file)
+          lgf2=lgff4(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          OmM_target=10**lgf
         endif
       endif
 !
@@ -938,6 +947,10 @@ module Special
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           app_target=10**lgf/Hp_ini**2
           !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',app_target
+          lgf1=lgff3(it_file)
+          lgf2=lgff3(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          OmM_target=10**lgf
         else
           if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
           call fatal_error('dspecial_dt','we need the file a_vs_eta.dat')
@@ -1791,7 +1804,7 @@ module Special
           case ('scale_factor_power')
             horndeski_alpM_eff=horndeski_alpM*(scale_factor*a_ini/scale_factor0)**horndeski_alpM_exp
           case ('matter')
-            horndeski_alpM_eff=horndeski_alpM*(1-Om_rat_Mat/1-OmM0)
+            horndeski_alpM_eff=horndeski_alpM*(1-OmM_target/1-OmM0)
           case ('dark_energy')
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
               Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
