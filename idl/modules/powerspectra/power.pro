@@ -158,9 +158,11 @@ end
 globalmin=1e12
 globalmax=1e-30
 i=1L
+ltrue_binning = param.ltrue_binning and arg_present(qk)
+
 openr, unit, datatopdir+'/'+file1, /get_lun
 
-  if param.ltrue_binning then begin
+  if ltrue_binning then begin
     imax=0 & readf,unit,imax
     k2s=fltarr(imax) & readf,unit,k2s
   endif
@@ -268,7 +270,7 @@ endelse
 ;
 i=1L
 openr, unit_1, datatopdir+'/'+file1, /get_lun
-    if param.ltrue_binning then begin
+    if ltrue_binning then begin
       readf,unit_1,imax & readf,unit_1,k2s
       if unit_2__open then begin
         readf,unit_2,imax & readf,unit_2,k2s
