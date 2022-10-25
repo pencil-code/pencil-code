@@ -2317,7 +2317,7 @@ module Particles_mpicomm
 !
 !  Write block domain decomposition to file, using MPI I/O.
 !
-!  11-oct-22/ccyang: in progress
+!  25-oct-22/ccyang: in progress
 !
       use MPI
 !
@@ -2325,7 +2325,8 @@ module Particles_mpicomm
 !
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
-      integer :: handle, ierr
+      integer :: handle, stype, ierr
+      integer(KIND=MPI_OFFSET_KIND) :: offset
 !
       call keep_compiler_quiet(filename)
 !
@@ -2345,6 +2346,25 @@ module Particles_mpicomm
         call MPI_FILE_WRITE(handle, t, 1, MPI_DOUBLE_PRECISION, istat, ierr)
         if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write time")
       endif root
+!
+!  Write individual counts.
+!
+      call MPI_TYPE_CREATE_SUBARRAY(2, (/ 3, ncpus /), (/ 3, 1 /), (/ 0, iproc /), &
+                                    MPI_ORDER_FORTRAN, MPI_INTEGER, stype, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to create MPI subarray")
+!
+      call MPI_TYPE_COMMIT(stype, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to commit MPI data type")
+!
+      offset = 2 * size_of_int + size_of_double
+      call MPI_FILE_SET_VIEW(handle, offset, MPI_BYTE, stype, "native", MPI_INFO_NULL, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to set view")
+!
+      call MPI_FILE_WRITE_ALL(handle, (/ nblock_loc, nproc_parent, nproc_foster /), 3, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write counts")
+!
+      call MPI_TYPE_FREE(stype, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to free subarray type")
 !
 !  Close file.
 !
@@ -2441,12 +2461,13 @@ module Particles_mpicomm
 !
 !  Read block domain decomposition from file, using MPI I/O.
 !
-!  11-oct-22/ccyang: in progress
+!  25-oct-22/ccyang: in progress
 !
       use MPI
 !
       character(len=*), intent(in) :: filename
 !
+      integer, dimension(3,ncpus) :: narray  ! (/ nblock_loc, nproc_parent, nproc_foster /) stacked
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
       double precision :: tfile
@@ -2486,6 +2507,15 @@ module Particles_mpicomm
         print *, "input_blocks_mpi: iproc, t(file), t(code) = ", iproc, tfile, t
         call fatal_error_local("input_blocks_mpi", "inconsistent time stamp")
       endif time
+!
+!  Read counts.
+!
+      call MPI_FILE_READ_ALL(handle, narray, 3 * ncpus, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to read counts")
+!
+      nblock_loc = narray(1,iproc+1)
+      nproc_parent = narray(2,iproc+1)
+      nproc_foster = narray(3,iproc+1)
 !
 !  Close file.
 !
