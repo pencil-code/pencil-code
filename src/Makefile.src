@@ -524,6 +524,7 @@ no_hdf5_message:
   endif
 endif
 #
+# IO_PP is used for helper executables: ignores alternative IO.
 IO_PP:=$(IO)
 IO_PP_SRC=$(IO_PP).f90
 IO_PP_OBJ=$(IO_PP).o
