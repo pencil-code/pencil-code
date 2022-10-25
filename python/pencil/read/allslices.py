@@ -153,7 +153,6 @@ class SliceSeries(object):
         Notes
         -----
         Use the attribute keys to get a list of attributes
-        
 
         Examples
         --------
@@ -176,7 +175,10 @@ class SliceSeries(object):
 
         param = read.param(datadir=datadir)
         if param.io_strategy == 'HDF5':
-        #if os.path.exists(os.path.join(datadir, "grid.h5")):
+            l_h5 = True
+            import h5py
+        # Keep this for sims that were converted from Fortran to hdf5
+        elif os.path.exists(os.path.join(datadir, "grid.h5")):
             l_h5 = True
             import h5py
         else:
@@ -390,8 +392,11 @@ class SliceSeries(object):
                     if line.strip().split()[0] == "T":
                         inds.append(int(line.strip().split()[1]))
             else:
-                for i in range(len(extension_list)):
-                    pos_list.append(4)
+                slicepos_fn = os.path.join(datadir, "slice_position.dat")
+                slicepos = open(slicepos_fn, 'r')
+                for line in slicepos:
+                    if line.strip().split()[0] == "T":
+                        inds.append(0)
             for extension, ind in zip(extension_list,inds):
                 if not quiet:
                     print("Extension: " + str(extension))
@@ -447,9 +452,8 @@ class SliceSeries(object):
                         pars = line.split()
                         hsize = int(pars[1])
                         vsize = int(pars[2])
-                        slicepos.close()
-                        print("Warning: dummy pos and coord added. Not correctly implemented for extention 'r'")
-                        pos = grid.x[ind]
+                        #slicepos.close()
+                        pos = param.r_rslice
                     else:
                         raise ValueError("Unknown extension: {}".format(extension))
 

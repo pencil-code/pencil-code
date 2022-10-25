@@ -58,7 +58,7 @@ class Averages(object):
             print(i)
 
     def read(
-        self, datadir="data", avg_file="1", var_index=-1, iter_list=None, precision="f"
+        self, datadir="data", avg_file=None, var_index=-1, iter_list=None, precision="f"
     ):
         """
          read(datadir="data", avg_file="1", var_index=-1, iter_list=None, precision="f")
@@ -86,6 +86,8 @@ class Averages(object):
         """
 
         import os
+        import numpy as np
+        from pencil import read
 
         l_h5 = False
 
@@ -101,9 +103,18 @@ class Averages(object):
         else:
             if os.path.exists("data/averages/phiavg.list"):
                 in_file_name_list.append("data/averages/phiavg.list")
-                aver_file_name_list.append(
+                if avg_file:
+                    aver_file_name_list.append(
                     os.path.join("averages", "PHIAVG" + avg_file)
-                )
+                    )
+                else:
+                    nphiavg = sum(1 for line in open('data/averages/phiavg.files'))
+                    in_file_name_list = []
+                    for phi_index in range(1,nphiavg):
+                        in_file_name_list.append("data/averages/phiavg.list")
+                        aver_file_name_list.append(
+                        os.path.join("averages", "PHIAVG" + str(phi_index))
+                        )
         if not in_file_name_list:
             print("error: invalid plane name")
             sys.stdout.flush()
@@ -112,6 +123,13 @@ class Averages(object):
         class Foo(object):
             pass
 
+        glob_dim = read.dim(datadir)
+        nu = glob_dim.nx / 2
+        nv = glob_dim.nz
+        t_list = np.zeros(shape=(len(aver_file_name_list)))
+        raw_data_list = np.zeros(shape=(len(aver_file_name_list),42,int(nv),int(nu)))
+
+        ii=0
         for in_file_name, aver_file_name in zip(in_file_name_list, aver_file_name_list):
             # This one will store the data.
             ext_object = Foo()
@@ -135,20 +153,24 @@ class Averages(object):
                 l_h5=l_h5,
             )
 
-            # Add the raw data to self.
-            var_idx = 0
-            for var in variables:
-                if var_index >= 0:
-                    if var_idx == var_index:
-                        setattr(ext_object, var.strip(), raw_data[:, ...])
-                else:
-                    setattr(ext_object, var.strip(), raw_data[var_idx, :, ...])
-                var_idx += 1
+            t_list[ii] = t
+            raw_data_list[ii,:] = raw_data
+            ii=ii+1
 
-            self.t = t
-            self.r_cyl = r_cyl
-            self.z_cyl = z_cyl
-            self.phiavg = ext_object
+        # Add the raw data to self.
+        var_idx = 0
+        for var in variables:
+            if var_index >= 0:
+                if var_idx == var_index:
+                    setattr(ext_object, var.strip(), raw_data_list[:,:, ...])
+            else:
+                setattr(ext_object, var.strip(), raw_data_list[:,var_idx, :, ...])
+            var_idx += 1
+
+        self.t = t_list
+        self.r_cyl = r_cyl
+        self.z_cyl = z_cyl
+        self.phiavg = ext_object
 
         return 0
 
@@ -200,7 +222,6 @@ class Averages(object):
 
             # Prepare the raw data.
             raw_data = []
-            t = []
 
             # Read records
             # path=os.path.join(datadir, aver_file_name)

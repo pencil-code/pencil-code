@@ -466,7 +466,7 @@ def slices2h5(
             if "yz" in key:
                 positions[key] = grid.x[num - 1]
             if "r" in key:
-                positions[key] = read.param().r_rslice
+                positions[key] = read.param(datadir=fromdatadir).r_rslice
             coordinates[key] = num
     if l_mpi:
         import glob
@@ -671,7 +671,8 @@ def aver2h5(
                     os.chdir(olddir)
                     print("reading " + xl + "averages on rank", rank)
                     sys.stdout.flush()
-                    av = read.aver(plane_list=xl, iter_list=iter_list)
+                    #av = read.aver(plane_list=xl, iter_list=iter_list)
+                    av = read.aver(plane_list=xl)
                     os.chdir(newdir)
                     write_h5_averages(
                         av,
@@ -723,13 +724,16 @@ def aver2h5(
             if l2D:
                 plane_list = []
                 os.chdir(olddir)
-                for xl in ["x", "y", "z"]:
+                for xl in ["x", "y", "z", "phi"]:
                     if exists(xl + "aver.in"):
                         plane_list.append(xl)
                 if len(plane_list) > 0:
                     for key in plane_list:
                         os.chdir(olddir)
-                        av = read.aver(plane_list=key)
+                        if key == "phi":
+                            av = read.phiaver()
+                        else:
+                            av = read.aver(plane_list=key)
                         os.chdir(newdir)
                         write_h5_averages(
                             av,

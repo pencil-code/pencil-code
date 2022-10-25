@@ -178,6 +178,9 @@ class Averages(object):
             param = read.param(datadir=datadir)
         if param.io_strategy == "HDF5":
             lh5 = True
+        # Keep this for sims that were converted from Fortran to hdf5
+        if os.path.exists(os.path.join(datadir, "grid.h5")):
+            lh5 = True
 
         if not lh5:
             #Reading averages from Fortran binary and ascii files
@@ -239,6 +242,10 @@ class Averages(object):
                     if os.path.exists(os.path.join(simdir, "zaver.in")):
                         in_file_name_list.append("zaver.in")
                         aver_file_name_list.append("zaverages.dat")
+                if plane_list.count("phi") > 0:
+                    if os.path.exists(os.path.join(simdir, "phiaver.in")):
+                        in_file_name_list.append("data/averages/phiavg.list")
+                        aver_file_name_list.append(os.path.join("averages", "phi.h5"))
                 if not in_file_name_list:
                     print("error: invalid plane name")
                     sys.stdout.flush()
@@ -272,7 +279,7 @@ class Averages(object):
                         n_vars,
                         precision=precision,
                     )
-                if plane == "y" or plane == "z":
+                if plane == "y" or plane == "z" or plane == "phi":
                     t, raw_data = self.__read_1d_aver(
                         plane,
                         datadir,
@@ -295,7 +302,7 @@ class Averages(object):
                         setattr(ext_object, var.strip(), raw_data[:, var_idx, ...])
                     var_idx += 1
                 plane_keys = ext_object.__dict__.keys()
-                setattr(ext_object, 'keys', plane_keys)    
+                setattr(ext_object, 'keys', plane_keys)
 
                 self.t = t
                 setattr(self, plane, ext_object)
@@ -323,14 +330,14 @@ class Averages(object):
                     avfile_list = avfile_list
                 else:
                     avfile_list = [avfile_list]
-            # Check plane_list if present matches data files and avfile_list if present 
+            # Check plane_list if present matches data files and avfile_list if present
             if plane_list:
                 if isinstance(plane_list, list):
                     plane_list = plane_list
                 else:
                     plane_list = [plane_list]
                 for prefix in plane_list:
-                    # Check matches in avfile_list if present 
+                    # Check matches in avfile_list if present
                     if avfile_list:
                         if not prefix+".h5" in avfile_list:
                             print(prefix+" does not match in avfile_list and plane_list")
@@ -443,7 +450,7 @@ class Averages(object):
                 for it in itlist:
                     if not str(it) in tmp.keys():
                         itlist.remove(it)
-                if not len(itlist) > 0:     
+                if not len(itlist) > 0:
                     print("Warning read.aver: iter_list has no match in {{av_file}} keys - reading only {{tmp['last'][0]}} instead")
                     itlist.append(tmp['last'][0])
             else:
@@ -504,7 +511,7 @@ class Averages(object):
             plane_keys = list(ext_object.__dict__.keys())
             if 'keys' in plane_keys:
                 plane_keys.remove('keys')
-            setattr(ext_object, 'keys', plane_keys)    
+            setattr(ext_object, 'keys', plane_keys)
 
         return t, ext_object
 
