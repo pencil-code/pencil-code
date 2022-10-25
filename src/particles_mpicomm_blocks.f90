@@ -13,6 +13,8 @@ module Particles_mpicomm
   use Messages
   use Particles_cdata
 !
+  use MPI, only: MPI_OFFSET_KIND
+!
   implicit none
 !
   include 'particles_mpicomm.h'
@@ -49,6 +51,8 @@ module Particles_mpicomm
   logical :: lreblock_particles_run=.false., lbrick_partition=.false.
   logical :: ladopt_own_light_bricks=.false.
 !
+  integer(kind=MPI_OFFSET_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
+!
   !include 'mpif.h'
 !
   contains
@@ -60,11 +64,15 @@ module Particles_mpicomm
 !
 !  31-oct-09/anders: coded
 !
+      use MPI
+!
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
 !
       integer :: iblock, ibrick
 !
       integer :: ibx, iby, ibz
+!
+      integer :: mpi_err
 !
 !  Check consistency of brick partition.
 !
@@ -202,6 +210,19 @@ module Particles_mpicomm
       call mpibcast_real(xref_par)
       call mpibcast_real(yref_par)
       call mpibcast_real(zref_par)
+!
+!  Remeber the sizes of some MPI elementary types.
+!
+      call MPI_TYPE_SIZE_X(MPI_INTEGER, size_of_int, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI_INTEGER size")
+!
+      call MPI_TYPE_SIZE_X(mpi_precision, size_of_real, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI real size")
+!
+      call MPI_TYPE_SIZE_X(MPI_DOUBLE_PRECISION, size_of_double, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI_DOUBLE_PRECISION size")
+!
+      call fatal_error_local_collect()
 !
       call keep_compiler_quiet(f)
 !
