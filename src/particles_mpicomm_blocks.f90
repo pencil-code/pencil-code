@@ -2323,6 +2323,8 @@ module Particles_mpicomm
 !
       character(len=*), intent(in) :: filename
 !
+      character(len=*), parameter :: rname = "output_blocks_mpi"
+!
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
       integer :: handle, stype, ierr
@@ -2334,45 +2336,45 @@ module Particles_mpicomm
 !
       fpath = trim(directory_snap) // '/' // trim(filename)
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), MPI_INFO_NULL, handle, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error("output_blocks_mpi", "unable to open file '" // trim(fpath) // "'")
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
 !
 !  Write header.
 !
       root: if (lroot) then
         call MPI_FILE_WRITE(handle, ncpus, 1, MPI_INTEGER, istat, ierr)
-        if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write ncpus")
+        if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write ncpus")
         call MPI_FILE_WRITE(handle, nbricks, 1, MPI_INTEGER, istat, ierr)
-        if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write nbricks")
+        if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write nbricks")
         call MPI_FILE_WRITE(handle, t, 1, MPI_DOUBLE_PRECISION, istat, ierr)
-        if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write time")
+        if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
       endif root
 !
 !  Write individual counts.
 !
       call MPI_TYPE_CREATE_SUBARRAY(2, (/ 3, ncpus /), (/ 3, 1 /), (/ 0, iproc /), &
                                     MPI_ORDER_FORTRAN, MPI_INTEGER, stype, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to create MPI subarray")
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI subarray")
 !
       call MPI_TYPE_COMMIT(stype, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to commit MPI data type")
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to commit MPI data type")
 !
       offset = 2 * size_of_int + size_of_double
       call MPI_FILE_SET_VIEW(handle, offset, MPI_BYTE, stype, "native", MPI_INFO_NULL, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to set view")
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to set view")
 !
       call MPI_FILE_WRITE_ALL(handle, (/ nblock_loc, nproc_parent, nproc_foster /), 3, MPI_INTEGER, istat, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to write counts")
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write counts")
 !
       call MPI_TYPE_FREE(stype, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error_local("output_blocks_mpi", "unable to free subarray type")
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to free subarray type")
 !
 !  Close file.
 !
       call MPI_FILE_CLOSE(handle, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error("output_blocks_mpi", "unable to close file")
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
 !
       call fatal_error_local_collect()
-      call fatal_error("output_blocks_mpi", "not implemented yet. ")
+      call fatal_error(rname, "not implemented yet. ")
 !
     endsubroutine output_blocks_mpi
 !***********************************************************************
@@ -2467,6 +2469,8 @@ module Particles_mpicomm
 !
       character(len=*), intent(in) :: filename
 !
+      character(len=*), parameter :: rname = "input_blocks_mpi"
+!
       integer, dimension(3,ncpus) :: narray  ! (/ nblock_loc, nproc_parent, nproc_foster /) stacked
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
@@ -2479,39 +2483,39 @@ module Particles_mpicomm
 !
       fpath = trim(directory_snap) // '/' // trim(filename)
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, MPI_MODE_RDONLY, MPI_INFO_NULL, handle, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to open file '" // trim(fpath) // "'")
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
 !
 !  Read number of processes.
 !
       call MPI_FILE_READ_ALL(handle, n, 1, MPI_INTEGER, istat, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to read ncpus")
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read ncpus")
       nproc: if (n /= ncpus) then
         if (lroot) print *, "input_blocks_mpi: ncpus(file), ncpus(code) = ", n, ncpus
-        call fatal_error("input_blocks_mpi", "inconsistent ncpus")
+        call fatal_error(rname, "inconsistent ncpus")
       endif nproc
 !
 !  Read number of bricks per process.
 !
       call MPI_FILE_READ_ALL(handle, n, 1, MPI_INTEGER, istat, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to read nbricks")
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read nbricks")
       nb: if (n /= nbricks) then
         if (lroot) print *, "input_blocks_mpi: nbricks(file), nbricks(code) = ", n, nbricks
-        call fatal_error("input_blocks_mpi", "inconsistent nbricks")
+        call fatal_error(rname, "inconsistent nbricks")
       endif nb
 !
 !  Read time.
 !
       call MPI_FILE_READ_ALL(handle, tfile, 1, MPI_DOUBLE_PRECISION, istat, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to read time")
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read time")
       time: if (t /= tfile) then
         print *, "input_blocks_mpi: iproc, t(file), t(code) = ", iproc, tfile, t
-        call fatal_error_local("input_blocks_mpi", "inconsistent time stamp")
+        call fatal_error_local(rname, "inconsistent time stamp")
       endif time
 !
 !  Read counts.
 !
       call MPI_FILE_READ_ALL(handle, narray, 3 * ncpus, MPI_INTEGER, istat, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to read counts")
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read counts")
 !
       nblock_loc = narray(1,iproc+1)
       nproc_parent = narray(2,iproc+1)
@@ -2520,10 +2524,10 @@ module Particles_mpicomm
 !  Close file.
 !
       call MPI_FILE_CLOSE(handle, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error("input_blocks_mpi", "unable to close file")
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
 !
       call fatal_error_local_collect()
-      call fatal_error("input_blocks_mpi", "not implemented yet. ")
+      call fatal_error(rname, "not implemented yet. ")
 !
     endsubroutine input_blocks_mpi
 !***********************************************************************
