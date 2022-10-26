@@ -5880,18 +5880,20 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  Taylor-Green forcing with randomness
 !
         case ('TG-random-nonhel')
-          force(:,1)=ampl_ff(i)*sin(theta_TG+2.*pi/3)/sqrt(3.)*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
-          force(:,2)=ampl_ff(i)*sin(theta_TG-2.*pi/3)/sqrt(3.)*cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
-          force(:,3)=ampl_ff(i)*sin(theta_TG)/sqrt(3.)*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
+          fact=ampl_ff(i)*sqrt(dt)
+          force(:,1)=fact*sin(theta_TG+2.*pi/3)/sqrt(3.)*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
+          force(:,2)=fact*sin(theta_TG-2.*pi/3)/sqrt(3.)*cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
+          force(:,3)=fact*sin(theta_TG)/sqrt(3.)*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
 !
 !  Fully helical Taylor-Green forcing with randomness
 !
         case ('TG-random-hel')
-          force(:,1)=ampl_ff(i)*(cos(theta_TG+pi/6.)/sqrt(6.)*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i) &
+          fact=ampl_ff(i)*sqrt(dt)
+          force(:,1)=fact*(cos(theta_TG+pi/6.)/sqrt(6.)*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i) &
               -(sin(theta_TG)+cos(theta_TG-pi/6.))/sqrt(18.)*cosx(l1:l2,i)*siny(m,i)*sinz(n,i))
-          force(:,2)=ampl_ff(i)*(-cos(theta_TG-pi/6.)/sqrt(6.)*cosx(l1:l2,i)*siny(m,i)*cosz(n,i) &
+          force(:,2)=fact*(-cos(theta_TG-pi/6.)/sqrt(6.)*cosx(l1:l2,i)*siny(m,i)*cosz(n,i) &
               +(sin(theta_TG)-cos(theta_TG+pi/6.))/sqrt(18.)*sinx(l1:l2,i)*cosy(m,i)*sinz(n,i))
-          force(:,3)=ampl_ff(i)*(sin(theta_TG)/sqrt(6.)*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i) &
+          force(:,3)=fact*(sin(theta_TG)/sqrt(6.)*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i) &
               +(cos(theta_TG-pi/6.)+cos(theta_TG+pi/6.))/sqrt(18.)*sinx(l1:l2,i)*siny(m,i)*cosz(n,i))
 !
 !  Compressive u=-grad(phi) with phi=cos(x+y+z) forcing
