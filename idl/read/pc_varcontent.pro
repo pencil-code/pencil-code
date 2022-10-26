@@ -219,6 +219,13 @@ indices_aux = [ $
   { name:'ikapparho', label:'Opacity', dims:1 }, $
   { name:'isss', label:'Entropy as auxiliary variable', dims:1 }, $
   { name:'iKR_Frad', label:'Radiative flux scaled with kappa*rho', dims:3 }, $
+; { name:'iKR_press', label:'Radiative pressur scaled with kappa*rho', dims:6 }, $
+  { name:'iKR_press_xx', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
+  { name:'iKR_press_yy', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
+  { name:'iKR_press_zz', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
+  { name:'iKR_press_xy', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
+  { name:'iKR_press_yz', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
+  { name:'iKR_press_zx', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
   { name:'iyH', label:'Hydrogen ionization fraction', dims:1 }, $
   { name:'ishock', label:'Shock profile', dims:1 }, $
   { name:'ishock_perp', label:'B-perpendicular shock profile', dims:1 }, $
