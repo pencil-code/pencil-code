@@ -158,11 +158,25 @@ end
 globalmin=1e12
 globalmax=1e-30
 i=1L
-ltrue_binning = param.ltrue_binning and arg_present(qk)
+quantitites=['u','r2u','r3u','o','b','a','ud']
+if is_defined(v1) then $
+  ltrue_binning1 = param.ltrue_binning and is_in(quantitites,v1) ge 0 $
+else $
+  ltrue_binning1 = 0
+
+if is_defined(v2) then $
+  ltrue_binning2 = param.ltrue_binning and is_in(quantitites,v2) ge 0 $
+else $
+  ltrue_binning2 = 0
+
+if is_defined(v3) then $
+  ltrue_binning3 = param.ltrue_binning and is_in(quantitites,v3) ge 0 $
+else $
+  ltrue_binning3 = 0
 
 openr, unit, datatopdir+'/'+file1, /get_lun
 
-  if ltrue_binning then begin
+  if ltrue_binning1 then begin
     imax=0 & readf,unit,imax
     k2s=fltarr(imax) & readf,unit,k2s
   endif
@@ -270,14 +284,14 @@ endelse
 ;
 i=1L
 openr, unit_1, datatopdir+'/'+file1, /get_lun
-    if ltrue_binning then begin
+    if ltrue_binning1 then begin
       readf,unit_1,imax & readf,unit_1,k2s
-      if unit_2__open then begin
-        readf,unit_2,imax & readf,unit_2,k2s
-      endif
-      if unit_3__open then begin
-        readf,unit_3,imax & readf,unit_3,k2s
-      endif
+    endif
+    if ltrue_binning2 and unit_2__open then begin
+      readf,unit_2,imax & readf,unit_2,k2s
+    endif
+    if ltrue_binning3 and unit_3__open then begin
+      readf,unit_3,imax & readf,unit_3,k2s
     endif
 
     while ~eof(unit_1) do begin
