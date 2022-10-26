@@ -1105,10 +1105,10 @@ def write_h5_averages(
         if file_name == "phi":
             file_name = "phiavg"
         for key in aver.__getattribute__(file_name).__dict__.keys():
-            if not key == "key":
+            if not key == "keys":
                 data = aver.__getattribute__(file_name).__getattribute__(key)
-                #if file_name == "y" or file_name == "z":
-                #    data = np.swapaxes(data, 1, 2)
+                if file_name == "y" or file_name == "z":
+                    data = np.swapaxes(data, 1, 2)
                 for it in range(0, nt):
                     if aver_by_proc:
                         dataset_h5(
@@ -1143,21 +1143,22 @@ def write_h5_averages(
         for key in aver.__getattribute__(file_name).__dict__.keys():
             # key needs to be broadcast as order of keys may vary on each process
             # causing segmentation fault
-            data = aver.__getattribute__(file_name).__getattribute__(key)
-            #if file_name == "y" or file_name == "z":
-            #    data = np.swapaxes(data, 1, 2)
-            if not quiet:
-                print("writing", key, "on rank", rank)
-                sys.stdout.flush()
-            for it in indx:
-                if aver_by_proc:
-                    ds[str(it)][key][proc * nn : (proc + 1) * nn] = data[it - indx[0]]
-                else:
-                    try:
-                        data.shape
-                        ds[str(it)][key][:] = data[it - indx[0]]
-                    except:
-                        continue
+            if not key == "keys":
+                data = aver.__getattribute__(file_name).__getattribute__(key)
+                if file_name == "y" or file_name == "z":
+                    data = np.swapaxes(data, 1, 2)
+                if not quiet:
+                    print("writing", key, "on rank", rank)
+                    sys.stdout.flush()
+                for it in indx:
+                    if aver_by_proc:
+                        ds[str(it)][key][proc * nn : (proc + 1) * nn] = data[it - indx[0]]
+                    else:
+                        try:
+                            data.shape
+                            ds[str(it)][key][:] = data[it - indx[0]]
+                        except:
+                            continue
     if not quiet:
         print(filename + " written on rank {}".format(rank))
         sys.stdout.flush()
