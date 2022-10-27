@@ -75,6 +75,8 @@ COMPILE_OPT IDL2,HIDDEN
   default, swap_endian, 0
   default, reduced, 0
   default, single, 0
+  default, noaux, 0
+  default, quiet, 0
 ;
   if (keyword_set (reduced)) then allprocs = 1
 ;
@@ -99,7 +101,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
     if (not is_defined(varcontent)) then $
-      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
+      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=run_param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
     
     quantities = varcontent[*].idlvar
     num_quantities = n_elements (quantities)
