@@ -2393,7 +2393,7 @@ module Interstellar
       use Grid, only: get_grid_mn
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rho, rho_cloud, lnTT, TT, yH
+      real, dimension(nx) :: rho, rho_cloud, lnTT, TT
       real :: cloud_mass, cloud_mass_dim, freq_SNII, prob_SNII
       real :: franSN, fsum1, fsum1_tmp, fmpi1
       real, dimension(ncpus) :: cloud_mass_byproc
@@ -2432,12 +2432,10 @@ module Interstellar
           if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
           if (ldensity_nolog) then
             rho(1:nx)=f(l1:l2,m,n,irho)
-            call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss)&
-                ,yH=yH,lnTT=lnTT)
+            call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss), lnTT=lnTT)
           else
             rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
-            call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
-                ,yH=yH,lnTT=lnTT)
+            call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),lnTT=lnTT)
           endif
           TT(1:nx)=exp(lnTT(1:nx))
           rho_cloud(1:nx)=0.0

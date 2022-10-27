@@ -8616,6 +8616,7 @@ module Boundcond
         density_scale=density_scale_factor
       endif
       density_scale1=1./density_scale
+!
       call get_cv1(cv1); cv=1./cv1
       call get_cp1(cp1); cp=1./cp1
 !
@@ -8631,8 +8632,8 @@ module Boundcond
             endif
           else if (j==iss) then
             if (ldensity_nolog) then
-              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*&
-                  (log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1)))+&
+              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv) * &
+                  (log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1))) + &
                   cv*log((z(n1)-z(n1-k))*density_scale+1.)
             else
               f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*&
