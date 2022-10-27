@@ -100,7 +100,7 @@ module Special
   real, pointer :: ddotam
   logical :: lno_transverse_part=.false., lgamma_factor=.false.
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
-  logical :: lswitch_sign_e_X_boost=.true.
+  logical :: lswitch_sign_e_X_boost=.false.
   logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
   logical :: lelectmag=.false., lscalar=.false.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
@@ -174,6 +174,8 @@ module Special
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
+    vx_boost, vy_boost, vz_boost, & !added by emma oct 26-- correct place?
+    lboost, & !emma
     lstress, lstress_ramp, tstress_ramp, &
     lstress_upscale, stress_upscale_rate, stress_upscale_exp, &
     linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
@@ -1863,7 +1865,7 @@ module Special
 !  boosted x components of k, and squared quantities.
 !
             gamma_boost=1./sqrt(1.-(vx_boost**2+vy_boost**2+vz_boost**2))
-            k1_boost=gamma_boost*(-vx_boost*ksqr+kx_fft(ikx+ipx*nx))
+            k1_boost=gamma_boost*(-vx_boost*sqrt(ksqr)+kx_fft(ikx+ipx*nx))
             k1sqr_boost=k1_boost**2
             ksqr_boost=k1sqr_boost+k2sqr+k3sqr
 !
@@ -2280,12 +2282,12 @@ module Special
               eXT=0.
               eXX=0.
               do j=1,3
-              do i=1,j
+              do i=1,3
                 ij=ij_table(i,j)
-                eTT=eTT+.25*e_T_boost(ij)*e_T(ij)
-                eTX=eTX+.25*e_T_boost(ij)*e_X(ij)
-                eXT=eXT+.25*e_X_boost(ij)*e_T(ij)
-                eXX=eXX+.25*e_X_boost(ij)*e_X(ij)
+                eTT=eTT+e_T_boost(ij)*e_T(ij)
+                eTX=eTX+e_T_boost(ij)*e_X(ij)
+                eXT=eXT+e_X_boost(ij)*e_T(ij)
+                eXX=eXX+e_X_boost(ij)*e_X(ij)
               enddo
               enddo
 !
