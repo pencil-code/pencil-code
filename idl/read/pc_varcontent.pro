@@ -225,7 +225,7 @@ indices_aux = [ $
   { name:'iKR_pres_zz', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
   { name:'iKR_pres_xy', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
   { name:'iKR_pres_yz', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
-  { name:'iKR_pres_zx', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
+  { name:'iKR_pres_xz', label:'Radiative pressur scaled with kappa*rho', dims:1 }, $
   { name:'iyH', label:'Hydrogen ionization fraction', dims:1 }, $
   { name:'ishock', label:'Shock profile', dims:1 }, $
   { name:'ishock_perp', label:'B-perpendicular shock profile', dims:1 }, $
