@@ -2098,7 +2098,15 @@ module Hydro
           if (lroot) print*, &
               'init_uu: gauss-x-z, widthuu, ampluu=', widthuu, ampluu(j)
           do l=l1,l2; do m=m1,m2
-            f(l,m,n1:n2,iux) = ampluu(j)*exp(-z(n1:n2)**2/widthuu**2)
+            f(l,m,n1:n2,iux) = f(l,m,n1:n2,iux) + ampluu(j)*exp(-z(n1:n2)**2/widthuu**2)
+          enddo; enddo
+!
+        case ('gauss-z-z')
+          if (lroot) print*, &
+              'init_uu: gauss-z-z, widthuu, ampluu=', widthuu, ampluu(j)
+          do l=l1,l2; do m=m1,m2
+            !f(l,m,n1:n2,iuz) = f(l,m,n1:n2,iuz) + ampluu(j)*exp(-z(n1:n2)**2/widthuu**2)
+            f(l,m,1:mz,iuz) = f(l,m,1:mz,iuz) + ampluu(j)*exp(-z**2/widthuu**2)
           enddo; enddo
 !
         case ('const-ux')
@@ -2952,7 +2960,8 @@ module Hydro
             else
               tmp=1./(f(l1:l2,m,n,irho)/(1.-.25/f(l1:l2,m,n,ilorentz)))
             endif
-      !     call multsv_mn(tmp,p%uu,p%uu)
+            call multsv_mn(tmp,p%uu,p%uu)
+!p%uu=0.
 !
 !  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
 !  so to get the velocity, we have to divide by it.
@@ -3474,6 +3483,7 @@ module Hydro
             endif
             rho_gam21=1./(cs201*rho)
           endif
+!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: rho_gam2(80:160)=',t,rho_gam2(80:160)
 !
 !  At the end, we put lorentz_gamma2 into the f array.
 !
@@ -3483,6 +3493,8 @@ module Hydro
 !  Now set the nonmagnetic stresses; begin with the diagonal components:
 !  Tii=(Ti0)^2/rho or Tii=(Ti0)^2/(4./3.*rho*gamma^2)
 !
+!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,irho)=',t,f(80:160,m,n,irho)
+!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,iuu)=',t,f(80:160,m,n,iuu)
           do j=0,2
             f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2+press
           enddo
