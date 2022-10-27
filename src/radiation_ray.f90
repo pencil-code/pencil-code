@@ -213,8 +213,8 @@ module Radiation
 !  Remember putting "! MAUX CONTRIBUTION 6" (or adding 6) in cparam.local!
 !
       if (lradpress) then
-        call farray_register_auxiliary('KR_press',iKR_press,vector=6)
-        iKR_pressxx = iKR_press
+        call farray_register_auxiliary('KR_pres',iKR_press,vector=6)
+        iKR_pressxx = iKR_press+0
         iKR_pressyy = iKR_press+1
         iKR_presszz = iKR_press+2
         iKR_pressxy = iKR_press+3
@@ -587,6 +587,7 @@ module Radiation
               f(:,:,:,iQrad)=0.0
               if (lradflux) f(:,:,:,iKR_Fradx:iKR_Fradz)=0.0
               if (lradpress) f(:,:,:,iKR_pressxx:iKR_presszx)=0.0
+print*,'AXEL: iKR_pressxx:iKR_presszx=',iKR_pressxx,iKR_presszx
             endif
 !
 !  Loop over rays.
@@ -640,6 +641,7 @@ module Radiation
                   k=iKR_press+(ij-1)
                   f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,i)*unit_vec(idir,j) &
                     *(Qrad+Srad)*f(:,:,:,ikapparho)
+print*,'AXEL: i,j,k=',i,j,k
                 enddo
                 enddo
               endif
