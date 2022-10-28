@@ -3,7 +3,8 @@
 s/.*/\L&/g
 #s/huge *(0)/std::numeric_limits<FINT>::max()/g 
 s/huge *(0)/INT_MAX/g 
-s/huge *(0\.0*)/AC_REAL_MAX/g 
+s/huge *(int.*)/INT_MAX/g 
+s/huge *(0\.0*)/FLT_MAX/g 
 s/huge *(0\.*0*d0)/DBL_MAX/g 
 s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /tiny *(/ d
@@ -17,9 +18,10 @@ s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\) *$/pow(\1,\2)/g
 s/include *.\([a-z]*\.inc\). *$/# include "\1_c.h"/
 s/include *.\([a-z]*\.local\). *$/# include "\1_c.h"/
 s/\([^ ]\) *!.*$/\1/
-s/^ *module .*$/# pragma once \n# include <limits.h> \n# include "headers_c.h"/ 
+s/^ *module .*$/# pragma once \n#include <float.h>\n#include <limits.h>\n# include "headers_c.h"/ 
 /end *module / d
 s/integer *( *kind *= *ikind8 *) *, *parameter *::/const long long /
+s/integer *( *kind *= *ikind4 *) *, *parameter *::/const long /
 s/integer *, *parameter *::/const FINT /
 s/logical *, *parameter *::/const int /
 s/real *, *parameter *::/const REAL /
