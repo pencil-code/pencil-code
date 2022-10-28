@@ -1749,21 +1749,21 @@ END {
             print $log strftime("%Y-%m-%d_%H:%M:%S_%Z ", localtime);
             print $log sprintf("%-22s : ", git_version());
 
-            if (%failed) {
-                my $failed_count = scalar(keys %failed);
-                print $log sprintf("%d/%d failed: ", $failed_count, $ntests);
-                my $first = 1;
-                while (my ($dir, $phase) = each %failed) {
-                    if ($first) {
-                        $first = 0;
-                    } else {
-                        print $log ", ";
-                    }
-                    print $log sprintf("%s (%s)", compactify($dir), $phase);
-                }
-            } else {
-                print $log sprintf("All %d tests succeeded ", $ntests);
-            }
+        #   if (%failed) {
+        #       my $failed_count = scalar(keys %failed);
+        #       print $log sprintf("%d/%d failed: ", $failed_count, $ntests);
+        #       my $first = 1;
+        #       while (my ($dir, $phase) = each %failed) {
+        #           if ($first) {
+        #               $first = 0;
+        #           } else {
+        #               print $log ", ";
+        #           }
+        #           print $log sprintf("%s (%s)", compactify($dir), $phase);
+        #       }
+        #   } else {
+        #       print $log sprintf("All %d tests succeeded ", $ntests);
+        #   }
             print $log "\n";
             close($log);
         }
