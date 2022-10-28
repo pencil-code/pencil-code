@@ -2243,6 +2243,26 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##FFLAGS=-O3 -fcheck=all #(uan02*)
 #FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(uan02*)
 ##
+##  Dardel (Axel, gFortran compiler, uan01)
+##
+#FC=ftn #(uan01*)
+#F90=$(FC) #(uan01*)
+#CC=cc #(uan01*)
+#CFLAGS=-DFUNDERSC=1 -O3 -mcmodel=large #(uan01*)
+##NS: added compiler option -ffree-line-length-0
+##NS: to allow for long lines in source codes (max col no def was 132)
+##FFLAGS=-O3 -ffree-line-length-0 -large #(uan01*)
+#FFLAGS=-O3 -ffree-line-length-0 #(uan01*)
+#FFLAGS=-O3 -mcmodel=large #(uan01*)
+##FFLAGS=-O0 -ffree-line-length-0 -mcmodel=large #(uan01*)
+#FFLAGS=-O1 -fallow-argument-mismatch #(uan01*)
+#FFLAGS=-O0 #(uan01*)
+#FFLAGS=-O2 #(uan01*)
+#FFLAGS=-O0 -fallow-argument-mismatch -mcmodel=large #(uan01*)
+##NS: use following for debugging the code
+##FFLAGS=-O3 -fcheck=all #(uan01*)
+#FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(uan01*)
+##
 ##
 ##HP CP4000 BL Proliant supercluster
 ##Vuori - (Espoo, Finland)
@@ -2695,7 +2715,7 @@ endif
 
 $(info Compiler: $(COMPILER))
 # If the compiler is from GCC, determine its version.
-ifneq (,$(filter gfortran%,$(COMPILER)))
+ifneq (,$(shell $(FC) --version | grep -i GNU))
   GCC_VERSION = $(shell $(FC) -dumpversion)
   $(info GCC version: $(GCC_VERSION))
 #$(shell echo "AXEL GCC version: " $(GCC_VERSION))
