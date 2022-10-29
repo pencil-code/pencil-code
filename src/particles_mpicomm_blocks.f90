@@ -2325,10 +2325,20 @@ module Particles_mpicomm
 !
       character(len=*), parameter :: rname = "output_blocks_mpi"
 !
+      integer, dimension(ncpus) :: nblock_loc_arr
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
+      integer :: nblock_cum
       integer :: handle, stype, ierr
       integer(KIND=MPI_OFFSET_KIND) :: offset
+!
+!  Communicate counts of blocks.
+!
+      nblock_loc_arr = 0
+      nblock_loc_arr(iproc+1) = nblock_loc
+      call MPI_ALLREDUCE(MPI_IN_PLACE, nblock_loc_arr, ncpus, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to communicate nblock_loc")
+      nblock_cum = sum(nblock_loc_arr(:iproc))
 !
 !  Open file for write.
 !
