@@ -2317,7 +2317,7 @@ module Particles_mpicomm
 !
 !  Write block domain decomposition to file, using MPI I/O.
 !
-!  25-oct-22/ccyang: in progress
+!  28-oct-22/ccyang: in progress
 !
       use MPI
 !
@@ -2329,8 +2329,6 @@ module Particles_mpicomm
       character(len=fnlen) :: fpath
       integer :: handle, stype, ierr
       integer(KIND=MPI_OFFSET_KIND) :: offset
-!
-      call keep_compiler_quiet(filename)
 !
 !  Open file for write.
 !
@@ -2463,7 +2461,7 @@ module Particles_mpicomm
 !
 !  Read block domain decomposition from file, using MPI I/O.
 !
-!  25-oct-22/ccyang: in progress
+!  28-oct-22/ccyang: in progress
 !
       use MPI
 !
@@ -2476,8 +2474,6 @@ module Particles_mpicomm
       character(len=fnlen) :: fpath
       double precision :: tfile
       integer :: handle, ierr, n
-!
-      call keep_compiler_quiet(filename)
 !
 !  Open file for read.
 !
