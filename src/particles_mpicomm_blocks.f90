@@ -2329,7 +2329,7 @@ module Particles_mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
       integer :: nblock_cum
-      integer :: handle, stype, ierr
+      integer :: handle, mpi_type, ierr
       integer(KIND=MPI_OFFSET_KIND) :: offset
 !
 !  Communicate counts of blocks.
@@ -2357,26 +2357,27 @@ module Particles_mpicomm
         if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
       endif root
 !
-!  Write individual counts.
+!  Decompose the write by processes.
 !
-      call MPI_TYPE_CREATE_SUBARRAY(2, (/ 3, ncpus /), (/ 3, 1 /), (/ 0, iproc /), &
-                                    MPI_ORDER_FORTRAN, MPI_INTEGER, stype, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI subarray")
+      call MPI_TYPE_CONTIGUOUS(3, MPI_INTEGER, mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI contiguous type")
 !
-      call MPI_TYPE_COMMIT(stype, ierr)
+      call MPI_TYPE_COMMIT(mpi_type, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to commit MPI data type")
 !
       offset = 2 * size_of_int + size_of_double
-      call MPI_FILE_SET_VIEW(handle, offset, MPI_BYTE, stype, "native", MPI_INFO_NULL, ierr)
+      call MPI_FILE_SET_VIEW(handle, offset + iproc * 3 * size_of_int, MPI_BYTE, mpi_type, "native", MPI_INFO_NULL, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to set view")
+!
+!  Write individual counts.
 !
       call MPI_FILE_WRITE_ALL(handle, (/ nblock_loc, nproc_parent, nproc_foster /), 3, MPI_INTEGER, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write counts")
 !
-      call MPI_TYPE_FREE(stype, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to free subarray type")
+!  Clean up and close the file.
 !
-!  Close file.
+      call MPI_TYPE_FREE(mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to free MPI data type")
 !
       call MPI_FILE_CLOSE(handle, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
