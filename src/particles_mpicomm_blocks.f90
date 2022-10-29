@@ -1122,6 +1122,7 @@ module Particles_mpicomm
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
           ibrick_parent_block(0:nblock_loc-1)
       ibrick_global_rec_previous=-1
+      lmigrate_previous = .false.
 !
 !  Possible to iterate until all particles have migrated.
 !
@@ -1479,9 +1480,9 @@ module Particles_mpicomm
         ibx=modulo(ibrick,nbx)
         iby=modulo(ibrick/nbx,nby)
         ibz=ibrick/(nbx*nby)
-        npbrick(ibrick)=sum(f(l1+ibx*nxb:l1+(ibx+1)*nxb-1, &
-                              m1+iby*nyb:m1+(iby+1)*nyb-1, &
-                              n1+ibz*nzb:n1+(ibz+1)*nzb-1,inp))
+        npbrick(ibrick)=nint(sum(f(l1+ibx*nxb:l1+(ibx+1)*nxb-1, &
+                                   m1+iby*nyb:m1+(iby+1)*nyb-1, &
+                                   n1+ibz*nzb:n1+(ibz+1)*nzb-1,inp)))
       enddo
 !
 !  For perfect load balancing we want npar/ncpus particles per processor.
@@ -2805,9 +2806,12 @@ module Particles_mpicomm
     endsubroutine get_brick_index
 !***********************************************************************
     subroutine communicate_fpbuf(to_neigh,from_neigh,her_npbuf,my_npbuf)
-
+!
       integer, intent(in) :: to_neigh,from_neigh
       integer, intent(in) :: her_npbuf,my_npbuf
+!
+      call keep_compiler_quiet(to_neigh, from_neigh, her_npbuf, my_npbuf)
+!
     endsubroutine communicate_fpbuf
 !***********************************************************************
 endmodule Particles_mpicomm
