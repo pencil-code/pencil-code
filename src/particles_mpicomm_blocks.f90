@@ -2360,7 +2360,9 @@ module Particles_mpicomm
 !
 !  Decompose the write by processes.
 !
-      call MPI_TYPE_CREATE_STRUCT(1, (/ 3 /), (/ iproc * 3 * size_of_int /), (/ MPI_INTEGER /), mpi_type, ierr)
+      call MPI_TYPE_CREATE_STRUCT(2, (/ 3, nbricks /), &
+                                     (/ iproc * 3 * size_of_int, (ncpus * 3 + iproc * nbricks) * size_of_int /), &
+                                     (/ MPI_INTEGER, MPI_INTEGER /), mpi_type, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
 !
       call MPI_TYPE_COMMIT(mpi_type, ierr)
@@ -2370,10 +2372,13 @@ module Particles_mpicomm
       call MPI_FILE_SET_VIEW(handle, offset, MPI_BYTE, mpi_type, "native", MPI_INFO_NULL, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to set view")
 !
-!  Write individual counts.
+!  Write integer data.
 !
       call MPI_FILE_WRITE_ALL(handle, (/ nblock_loc, nproc_parent, nproc_foster /), 3, MPI_INTEGER, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write counts")
+!
+      call MPI_FILE_WRITE_ALL(handle, iproc_foster_brick, nbricks, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write iproc_foster_brick")
 !
 !  Clean up and close the file.
 !
@@ -2473,7 +2478,7 @@ module Particles_mpicomm
 !
 !  Read block domain decomposition from file, using MPI I/O.
 !
-!  28-oct-22/ccyang: in progress
+!  29-oct-22/ccyang: in progress
 !
       use MPI
 !
@@ -2485,7 +2490,8 @@ module Particles_mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
       double precision :: tfile
-      integer :: handle, ierr, n
+      integer :: handle, mpi_type, ierr, n
+      integer(KIND=MPI_OFFSET_KIND) :: offset
 !
 !  Open file for read.
 !
@@ -2529,7 +2535,29 @@ module Particles_mpicomm
       nproc_parent = narray(2,iproc+1)
       nproc_foster = narray(3,iproc+1)
 !
-!  Close file.
+!  Identify the file view for each process.
+!
+      call MPI_TYPE_CREATE_STRUCT(1, (/ nbricks /), &
+                                     (/ iproc * nbricks * size_of_int /), &
+                                     (/ MPI_INTEGER /), mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
+!
+      call MPI_TYPE_COMMIT(mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to commit MPI data type")
+!
+      offset = (2 + ncpus * 3) * size_of_int + size_of_double
+      call MPI_FILE_SET_VIEW(handle, offset, MPI_BYTE, mpi_type, "native", MPI_INFO_NULL, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to set view")
+!
+!  Read integer data.
+!
+      call MPI_FILE_READ_ALL(handle, iproc_foster_brick, nbricks, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read iproc_foster_brick")
+!
+!  Clean up and close file.
+!
+      call MPI_TYPE_FREE(mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to free MPI data type")
 !
       call MPI_FILE_CLOSE(handle, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
