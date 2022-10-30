@@ -121,6 +121,19 @@ module Particles_mpicomm
       endif
       call fatal_error_local_collect()
 !
+!  Remeber the sizes of some MPI elementary types.
+!
+      call MPI_TYPE_SIZE_X(MPI_INTEGER, size_of_int, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI_INTEGER size")
+!
+      call MPI_TYPE_SIZE_X(mpi_precision, size_of_real, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI real size")
+!
+      call MPI_TYPE_SIZE_X(MPI_DOUBLE_PRECISION, size_of_double, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI_DOUBLE_PRECISION size")
+!
+      call fatal_error_local_collect()
+!
 !  Distribute particles evenly among processors to begin with.
 !
       if (lstart) call dist_particles_evenly_procs(ipar)
@@ -210,19 +223,6 @@ module Particles_mpicomm
       call mpibcast_real(xref_par)
       call mpibcast_real(yref_par)
       call mpibcast_real(zref_par)
-!
-!  Remeber the sizes of some MPI elementary types.
-!
-      call MPI_TYPE_SIZE_X(MPI_INTEGER, size_of_int, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI_INTEGER size")
-!
-      call MPI_TYPE_SIZE_X(mpi_precision, size_of_real, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI real size")
-!
-      call MPI_TYPE_SIZE_X(MPI_DOUBLE_PRECISION, size_of_double, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI_DOUBLE_PRECISION size")
-!
-      call fatal_error_local_collect()
 !
       call keep_compiler_quiet(f)
 !
