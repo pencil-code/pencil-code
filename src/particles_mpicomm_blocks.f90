@@ -2318,7 +2318,7 @@ module Particles_mpicomm
 !
 !  Write block domain decomposition to file, using MPI I/O.
 !
-!  28-oct-22/ccyang: in progress
+!  29-oct-22/ccyang: in progress
 !
       use MPI
 !
@@ -2360,14 +2360,14 @@ module Particles_mpicomm
 !
 !  Decompose the write by processes.
 !
-      call MPI_TYPE_CONTIGUOUS(3, MPI_INTEGER, mpi_type, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI contiguous type")
+      call MPI_TYPE_CREATE_STRUCT(1, (/ 3 /), (/ iproc * 3 * size_of_int /), (/ MPI_INTEGER /), mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
 !
       call MPI_TYPE_COMMIT(mpi_type, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to commit MPI data type")
 !
       offset = 2 * size_of_int + size_of_double
-      call MPI_FILE_SET_VIEW(handle, offset + iproc * 3 * size_of_int, MPI_BYTE, mpi_type, "native", MPI_INFO_NULL, ierr)
+      call MPI_FILE_SET_VIEW(handle, offset, MPI_BYTE, mpi_type, "native", MPI_INFO_NULL, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to set view")
 !
 !  Write individual counts.
