@@ -2360,8 +2360,8 @@ module Particles_mpicomm
 !
 !  Decompose the write by processes.
 !
-      call MPI_TYPE_CREATE_STRUCT(2, (/ 3, nbricks /), &
-                                     (/ iproc * 3 * size_of_int, (ncpus * 3 + iproc * nbricks) * size_of_int /), &
+      call MPI_TYPE_CREATE_STRUCT(2, (/ 3, nbricks + 2 * nblock_loc /), &
+                                     (/ iproc * 3 * size_of_int, (ncpus * 3 + iproc * nbricks + 2 * nblock_cum) * size_of_int /), &
                                      (/ MPI_INTEGER, MPI_INTEGER /), mpi_type, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
 !
@@ -2379,6 +2379,12 @@ module Particles_mpicomm
 !
       call MPI_FILE_WRITE_ALL(handle, iproc_foster_brick, nbricks, MPI_INTEGER, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write iproc_foster_brick")
+!
+      call MPI_FILE_WRITE_ALL(handle, iproc_parent_block, nblock_loc, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write iproc_parent_block")
+!
+      call MPI_FILE_WRITE_ALL(handle, ibrick_parent_block, nblock_loc, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write ibrick_parent_block")
 !
 !  Clean up and close the file.
 !
@@ -2537,8 +2543,8 @@ module Particles_mpicomm
 !
 !  Identify the file view for each process.
 !
-      call MPI_TYPE_CREATE_STRUCT(1, (/ nbricks /), &
-                                     (/ iproc * nbricks * size_of_int /), &
+      call MPI_TYPE_CREATE_STRUCT(1, (/ nbricks + 2 * nblock_loc /), &
+                                     (/ (iproc * nbricks + 2 * sum(narray(1,:iproc))) * size_of_int /), &
                                      (/ MPI_INTEGER /), mpi_type, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
 !
@@ -2553,6 +2559,12 @@ module Particles_mpicomm
 !
       call MPI_FILE_READ_ALL(handle, iproc_foster_brick, nbricks, MPI_INTEGER, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read iproc_foster_brick")
+!
+      call MPI_FILE_READ_ALL(handle, iproc_parent_block, nblock_loc, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read iproc_parent_block")
+!
+      call MPI_FILE_READ_ALL(handle, ibrick_parent_block, nblock_loc, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read ibrick_parent_block")
 !
 !  Clean up and close file.
 !
