@@ -630,7 +630,6 @@ class Averages(object):
                     inx1 = var_ind * pnu * pnv
                     inx2 = (var_ind + 1) * pnu * pnv
                     vindex.append([inx1,inx2])
-            print("debug: vindex",vindex)
             # Read the data.
             t = []
             proc_data = []
@@ -667,7 +666,6 @@ class Averages(object):
                 ltime = True
             else:
                 ltime = False
-            print("debug:", liter, plane_iter_list)
             #    # split by iteration overrules split by variable
             #    var_index = -1
             iiter = 0
@@ -734,7 +732,7 @@ class Averages(object):
                     else:
                         raw_data = np.zeros([len(t), n_vars, nv, nu], dtype=precision)
                 else:
-                        raw_data = np.zeros([len(t), len(vindex), nv, nu], dtype=precision)
+                    raw_data = np.zeros([len(t), len(vindex), nv, nu], dtype=precision)
             raw_data[
                 :, :, idx_v : idx_v + pnv, idx_u : idx_u + pnu
             ] = proc_data.copy()
