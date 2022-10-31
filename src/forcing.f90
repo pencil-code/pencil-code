@@ -114,7 +114,7 @@ module Forcing
   real, dimension(n_forcing_cont_max) :: omega_fcont=0., omegay_fcont=0., omegaz_fcont=0.
   real, dimension(n_forcing_cont_max) :: eps_fcont=0., tgentle=0., z_center_fcont=0.
   real, dimension(n_forcing_cont_max) :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
-  real, dimension(n_forcing_cont_max) :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
+  real, dimension(n_forcing_cont_max) :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1., theta_TG=0.
   real :: ampl_diffrot=1.0,omega_exponent=1.0
   real :: omega_tidal=1.0, R0_tidal=1.0, phi_tidal=1.0, Omega_vortex=0.
   real :: cs0eff=impossible
@@ -122,8 +122,6 @@ module Forcing
   ! GP_TC13 forcing
   real :: tcor_GP=1.,kmin_GP=1.,kmax_GP=2.,beta_GP=1.3333
   integer :: nk_GP=2
-  ! random Taylor-Green forcing
-  real :: theta_TG=0.
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -5225,7 +5223,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real :: r_TG
 !
       call random_number_wrapper(r_TG,CHANNEL=channel_force)
-      theta_TG=r_TG*2.*pi
+      theta_TG(i)=r_TG*2.*pi
 !
     endsubroutine calc_TG_random
 !***********************************************************************
@@ -5881,20 +5879,20 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         case ('TG-random-nonhel')
           fact=ampl_ff(i)*sqrt(dt)
-          force(:,1)=fact*sin(theta_TG+2.*pi/3)/sqrt(3.)*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
-          force(:,2)=fact*sin(theta_TG-2.*pi/3)/sqrt(3.)*cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
-          force(:,3)=fact*sin(theta_TG)/sqrt(3.)*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
+          force(:,1)=fact*sin(theta_TG(i)+2.*pi/3)/sqrt(3.)*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
+          force(:,2)=fact*sin(theta_TG(i)-2.*pi/3)/sqrt(3.)*cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
+          force(:,3)=fact*sin(theta_TG(i))/sqrt(3.)*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
 !
 !  Fully helical Taylor-Green forcing with randomness
 !
         case ('TG-random-hel')
           fact=ampl_ff(i)*sqrt(dt)
-          force(:,1)=fact*(cos(theta_TG+pi/6.)/sqrt(6.)*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i) &
-              -(sin(theta_TG)+cos(theta_TG-pi/6.))/sqrt(18.)*cosx(l1:l2,i)*siny(m,i)*sinz(n,i))
-          force(:,2)=fact*(-cos(theta_TG-pi/6.)/sqrt(6.)*cosx(l1:l2,i)*siny(m,i)*cosz(n,i) &
-              +(sin(theta_TG)-cos(theta_TG+pi/6.))/sqrt(18.)*sinx(l1:l2,i)*cosy(m,i)*sinz(n,i))
-          force(:,3)=fact*(sin(theta_TG)/sqrt(6.)*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i) &
-              +(cos(theta_TG-pi/6.)+cos(theta_TG+pi/6.))/sqrt(18.)*sinx(l1:l2,i)*siny(m,i)*cosz(n,i))
+          force(:,1)=fact*(cos(theta_TG(i)+pi/6.)/sqrt(6.)*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i) &
+              -(sin(theta_TG(i))+cos(theta_TG(i)-pi/6.))/sqrt(18.)*cosx(l1:l2,i)*siny(m,i)*sinz(n,i))
+          force(:,2)=fact*(-cos(theta_TG(i)-pi/6.)/sqrt(6.)*cosx(l1:l2,i)*siny(m,i)*cosz(n,i) &
+              +(sin(theta_TG(i))-cos(theta_TG(i)+pi/6.))/sqrt(18.)*sinx(l1:l2,i)*cosy(m,i)*sinz(n,i))
+          force(:,3)=fact*(sin(theta_TG(i))/sqrt(6.)*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i) &
+              +(cos(theta_TG(i)-pi/6.)+cos(theta_TG(i)+pi/6.))/sqrt(18.)*sinx(l1:l2,i)*siny(m,i)*cosz(n,i))
 !
 !  Compressive u=-grad(phi) with phi=cos(x+y+z) forcing
 !
