@@ -92,6 +92,7 @@ class Averages(object):
         var_index=-1,
         var_names=list(),
         iter_list=None,
+        niter = 9999,
         iter_step=1,
         time_range=None,
         param=list(),
@@ -135,6 +136,9 @@ class Averages(object):
             Iteration indices for which to sample the slices.
             Single value only that index is sampled. Two indices indicate first and last index.
             More than two indicies specifies the precise list of indices to be sampled.
+
+        niter : int
+            if iter_list is not used for fortran format a default index list will be used of size niter.
 
         iter_step : when sampling iterations number of steps, when iter_list length is two.
 
@@ -196,9 +200,9 @@ class Averages(object):
                     if os.path.exists(os.path.join(simdir, prefix + "aver.in")):
                         plane_list.append(prefix)
 
-            if var_index >= 0:
-                print("var_index {} requires plane_list = 'y' or 'z',".format(var_index))
-                sys.stdout.flush()
+            #if var_index >= 0:
+            #    print("var_index {} requires plane_list = 'y' or 'z',".format(var_index))
+            #    sys.stdout.flush()
             if avfile_list:
                 if isinstance(avfile_list, list):
                     aver_file_name_list = avfile_list
@@ -266,43 +270,74 @@ class Averages(object):
                 variables = file_id.readlines()
                 file_id.close()
                 variables = [
-                    v for v in variables if v[0] != "#" and not v.isspace()
+                    v.strip("\n") for v in variables if v[0] != "#" and not v.isspace()
                 ]  # Ignore commented variables and blank lines in the .in file.
                 n_vars = len(variables)
-
+                print(variables)
+                if len(var_names) > 0:
+                    if isinstance(var_names, list):
+                        plane_var_names = var_names
+                    else:
+                        plane_var_names = [var_names]
+                    for var_name in plane_var_names:
+                        if not var_name in variables:
+                            plane_var_names.remove(var_name)
+                    if len(plane_var_names) < 1:
+                        print("Warning read.aver: var_names has no match in {} - reading all variables instead".format(in_file_name))
+                    else:
+                        var_index = list()
+                        for indx, var in zip(range(n_vars),variables):
+                            if var in plane_var_names:
+                                var_index.append(indx)
                 if plane == "xy" or plane == "xz" or plane == "yz":
                     t, raw_data = self.__read_2d_aver(
                         plane,
                         datadir,
-                        variables,
                         aver_file_name,
                         n_vars,
+                        var_names,
+                        var_index,
+                        iter_list,
+                        iter_step,
+                        time_range,
+                        proc,
                         precision=precision,
                     )
                 if plane == "y" or plane == "z" or plane == "phi":
                     t, raw_data = self.__read_1d_aver(
                         plane,
                         datadir,
-                        variables,
                         aver_file_name,
                         n_vars,
+                        var_names,
                         var_index,
                         iter_list,
+                        iter_step,
+                        time_range,
                         proc,
                         precision=precision,
                     )
 
                 # Add the raw data to self.
                 var_idx = 0
-                for var in variables:
-                    if var_index >= 0:
-                        if var_idx == var_index:
-                            setattr(ext_object, var.strip(), raw_data[:, ...])
-                    else:
+                if not isinstance(var_index,list):
+                    for var in variables:
+                        print('var_index',var_index)
+                        if var_index >= 0:
+                            if var_idx == var_index:
+                                setattr(ext_object, var.strip(), raw_data[:, ...])
+                        else:
+                            setattr(ext_object, var.strip(), raw_data[:, var_idx, ...])
+                        var_idx += 1
+                else:
+                    for var, var_idx in zip(plane_var_names,
+                                                range(len(plane_var_names))):
                         setattr(ext_object, var.strip(), raw_data[:, var_idx, ...])
-                    var_idx += 1
                 plane_keys = ext_object.__dict__.keys()
-                setattr(ext_object, 'keys', plane_keys)
+                plane_keys = list(ext_object.__dict__.keys())
+                if "keys" in plane_keys:
+                    plane_keys.remove("keys")
+                setattr(ext_object, "keys", plane_keys)
 
                 self.t = t
                 setattr(self, plane, ext_object)
@@ -451,7 +486,7 @@ class Averages(object):
                     if not str(it) in tmp.keys():
                         itlist.remove(it)
                 if not len(itlist) > 0:
-                    print("Warning read.aver: iter_list has no match in {{av_file}} keys - reading only {{tmp['last'][0]}} instead")
+                    print("Warning read.aver: iter_list has no match in {} keys - reading only {} instead".format(av_file,tmp['last'][0]))
                     itlist.append(tmp['last'][0])
             else:
                 itlist = natural_sort(tmp.keys())[:n_times]
@@ -478,7 +513,7 @@ class Averages(object):
                     if not var_name in tmp[str(itlist[0])].keys():
                         var_names.remove(var_name)
                 if len(var_names) < 1:
-                    print("Warning read.aver: var_names has no match in {{av_file}} keys - reading all variables instead")
+                    print("Warning read.aver: var_names has no match in {} keys - reading all variables instead".format(av_file))
                     var_names = list(tmp[str(itlist[0])].keys())
             else:
                 var_names = list(tmp[str(itlist[0])].keys())
@@ -509,9 +544,9 @@ class Averages(object):
 
                 setattr(ext_object, var.strip(), raw_data)
             plane_keys = list(ext_object.__dict__.keys())
-            if 'keys' in plane_keys:
-                plane_keys.remove('keys')
-            setattr(ext_object, 'keys', plane_keys)
+            if "keys" in plane_keys:
+                plane_keys.remove("keys")
+            setattr(ext_object, "keys", plane_keys)
 
         return t, ext_object
 
@@ -519,11 +554,13 @@ class Averages(object):
         self,
         plane,
         datadir,
-        variables,
         aver_file_name,
         n_vars,
+        var_names,
         var_index,
         iter_list,
+        iter_step,
+        time_range,
         proc,
         precision="f",
     ):
@@ -579,9 +616,21 @@ class Averages(object):
             if plane == "z":
                 pnu = proc_dim.nx
                 pnv = proc_dim.ny
-            if var_index >= 0:
-                inx1 = var_index * pnu * pnv
-                inx2 = (var_index + 1) * pnu * pnv
+            vindex = list()
+            if not isinstance(var_index,list):
+                if var_index >= 0:
+                    inx1 = var_index * pnu * pnv
+                    inx2 = (var_index + 1) * pnu * pnv
+                else:
+                    inx1 = 0
+                    inx2 = (n_vars + 1) * pnu * pnv
+                vindex.append([inx1, inx2])
+            else:
+                for var_ind in var_index:
+                    inx1 = var_ind * pnu * pnv
+                    inx2 = (var_ind + 1) * pnu * pnv
+                    vindex.append([inx1,inx2])
+            print("debug: vindex",vindex)
             # Read the data.
             t = []
             proc_data = []
@@ -594,58 +643,69 @@ class Averages(object):
                 print("Averages of processor {0} missing.".format(proc))
                 sys.stdout.flush()
                 break
+            #indices can be specified for subset of time series
             if iter_list:
                 if isinstance(iter_list, list):
-                    iter_list = iter_list
+                    plane_iter_list = iter_list
                 else:
-                    iter_list = [iter_list]
-                # split by iteration overrules split by variable
-                var_index = -1
-                iiter = 0
-                while True:
-                    try:
-                        if iiter in iter_list:
-                            t.append(file_id.read_record(dtype=read_precision)[0])
-                            proc_data.append(
-                                file_id.read_record(dtype=read_precision)
-                            )
-                            if iiter >= iter_list[-1]:
-                                # Finished reading.
-                                break
-                            iiter += 1
-                        else:
-                            file_id.read_record(dtype=read_precision)[0]
-                            file_id.read_record(dtype=read_precision)
-                            iiter += 1
-                    except:
-                        # Finished reading.
-                        break
+                    plane_iter_list = [iter_list]
+                liter = True
             else:
-                while True:
-                    try:
-                        t.append(file_id.read_record(dtype=read_precision)[0])
-                        if var_index >= 0:
-                            proc_data.append(
-                                file_id.read_record(dtype=read_precision)[
-                                    inx1:inx2
-                                ].astype(precision)
-                            )
+                plane_iter_list = [0,1,2,3]
+                liter = False
+            if time_range:
+                if isinstance(time_range, list):
+                    time_range = time_range
+                else:
+                    time_range = [time_range]
+                if len(time_range) == 1:
+                    start_time = 0.
+                    end_time = time_range[0]
+                elif len(time_range) == 2:
+                    start_time = time_range[0]
+                    end_time = time_range[1]
+                ltime = True
+            else:
+                ltime = False
+            print("debug:", liter, plane_iter_list)
+            #    # split by iteration overrules split by variable
+            #    var_index = -1
+            iiter = 0
+            while True:
+                if not liter:
+                    plane_iter_list.append(iiter+1)
+                try:
+                    if iiter in plane_iter_list:
+                        t_tmp = file_id.read_record(dtype=read_precision)[0].astype(precision)
+                        if ltime:
+                            if t_tmp >= start_time:
+                                if t_tmp <= end_time:
+                                    t.append(t_tmp)
+                                    v_tmp = file_id.read_record(dtype=read_precision).astype(precision)
+                                    for inx1, inx2 in vindex:
+                                        proc_data.append(v_tmp[inx1:inx2])
                         else:
-                            proc_data.append(
-                                file_id.read_record(dtype=read_precision).astype(
-                                    precision
-                                )
-                            )
-                    except:
+                            t.append(t_tmp)
+                            v_tmp = file_id.read_record(dtype=read_precision).astype(precision)
+                            for inx1, inx2 in vindex:
+                                proc_data.append(v_tmp[inx1:inx2])
+                    if iiter >= plane_iter_list[-1]:
                         # Finished reading.
                         break
+                    iiter += 1
+                except:
+                    # Finished reading.
+                    break
             file_id.close()
             # Reshape the proc data into [len(t), pnu, pnv].
             proc_data = np.array(proc_data, dtype=precision)
-            if var_index >= 0:
-                proc_data = proc_data.reshape([len(t), 1, pnv, pnu])
+            if not isinstance(var_index, list):
+                if var_index >= 0:
+                    proc_data = proc_data.reshape([len(t), 1, pnv, pnu])
+                else:
+                    proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
             else:
-                proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
+                    proc_data = proc_data.reshape([len(t), len(vindex), pnv, pnu])
 
             if not all_procs:
                 return np.array(t, dtype=precision), proc_data.swapaxes(2, 3)
@@ -668,10 +728,13 @@ class Averages(object):
 
             if not isinstance(raw_data, np.ndarray):
                 # Initialize the raw_data array with correct dimensions.
-                if var_index >= 0:
-                    raw_data = np.zeros([len(t), 1, nv, nu], dtype=precision)
+                if not isinstance(var_index, list):
+                    if var_index >= 0:
+                        raw_data = np.zeros([len(t), 1, nv, nu], dtype=precision)
+                    else:
+                        raw_data = np.zeros([len(t), n_vars, nv, nu], dtype=precision)
                 else:
-                    raw_data = np.zeros([len(t), n_vars, nv, nu], dtype=precision)
+                        raw_data = np.zeros([len(t), len(vindex), nv, nu], dtype=precision)
             raw_data[
                 :, :, idx_v : idx_v + pnv, idx_u : idx_u + pnu
             ] = proc_data.copy()
@@ -685,9 +748,14 @@ class Averages(object):
         self,
         plane,
         datadir,
-        variables,
         aver_file_name,
         n_vars,
+        var_names,
+        var_index,
+        iter_list,
+        iter_step,
+        time_range,
+        proc,
         precision="f",
     ):
         """
