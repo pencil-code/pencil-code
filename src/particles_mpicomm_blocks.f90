@@ -2328,13 +2328,15 @@ module Particles_mpicomm
 !
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
-      integer :: nblock_cum, n
+      integer :: nblock_cum, nparent_cum, nfoster_cum, n
       integer :: handle, mpi_type, ierr
       integer(KIND=MPI_OFFSET_KIND) :: offset
 !
 !  Communicate local counts.
 !
       call cumulate_counts(nblock_loc, nblock_cum)
+      call cumulate_counts(nproc_parent, nparent_cum)
+      call cumulate_counts(nproc_foster, nfoster_cum)
 !
 !  Open file for write.
 !
