@@ -1179,7 +1179,13 @@ module Particles_main
           call particles_boundconds(f)
         endif
         call output_particles(snapname,fp,ipar)
-        if (lparticles_blocks) call output_blocks("blocks.dat")
+        if (lparticles_blocks) then
+          if (snapname == "PVAR0") then
+            call output_blocks("BLOCKS0")
+          else
+            call output_blocks("blocks.dat")
+          endif
+        endif
         if (ip<=10 .and. lroot) &
              print*,'wsnap_particles: written snapshot ', snapname
         if (present(flist)) call log_filename_to_file(snapname,flist)
