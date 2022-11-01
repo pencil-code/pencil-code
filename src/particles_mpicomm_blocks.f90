@@ -2326,20 +2326,15 @@ module Particles_mpicomm
 !
       character(len=*), parameter :: rname = "output_blocks_mpi"
 !
-      integer, dimension(ncpus) :: nblock_loc_arr
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
       integer :: nblock_cum, n
       integer :: handle, mpi_type, ierr
       integer(KIND=MPI_OFFSET_KIND) :: offset
 !
-!  Communicate counts of blocks.
+!  Communicate local counts.
 !
-      nblock_loc_arr = 0
-      nblock_loc_arr(iproc+1) = nblock_loc
-      call MPI_ALLREDUCE(MPI_IN_PLACE, nblock_loc_arr, ncpus, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to communicate nblock_loc")
-      nblock_cum = sum(nblock_loc_arr(:iproc))
+      call cumulate_counts(nblock_loc, nblock_cum)
 !
 !  Open file for write.
 !
@@ -2907,6 +2902,28 @@ module Particles_mpicomm
       if (present(status)) status = 0
 !
     endsubroutine get_brick_index
+!***********************************************************************
+    subroutine cumulate_counts(nloc, ncum)
+!
+!  Finds the cumulative count from processes of upper ranks.
+!
+!  01-nov-22/ccyang: coded
+!
+      use MPI
+!
+      integer, intent(in) :: nloc
+      integer, intent(out) :: ncum
+!
+      integer, dimension(ncpus) :: nloc_arr
+      integer :: ierr
+!
+      nloc_arr = 0
+      nloc_arr(iproc+1) = nloc
+      call MPI_ALLREDUCE(MPI_IN_PLACE, nloc_arr, ncpus, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error("cumulate_counts", "unable to communicate nloc")
+      ncum = sum(nloc_arr(:iproc))
+!
+    endsubroutine cumulate_counts
 !***********************************************************************
     subroutine communicate_fpbuf(to_neigh,from_neigh,her_npbuf,my_npbuf)
 !
