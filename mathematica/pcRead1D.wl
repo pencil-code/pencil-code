@@ -8,7 +8,7 @@
 *)
 
 
-BeginPackage["pcRead1D`"]
+BeginPackage["pcRead1D`","pcReadBasic`"]
 
 
 (* ::Chapter:: *)
@@ -78,6 +78,16 @@ Input:
   varNames: Strings, one or more variables to be read. Need to be registered in sim/xyaver.in
 Output:
   A List with its first element {t1,t2,...}, and the rest time series of Nx(yz) dimentional data."
+
+readSpecFluxPQ::usage="readSpecFluxPQ[sim] returns the wavenumber coordinates for the
+spectral flux files, based on the values of specflux_dp and specflux_dq in run.in."
+
+readSpecFlux::usage="readSpecFlux[sim,file] reads spectral flux files.
+Input:
+  sim: String. Directory of the run
+  file: String. Name of the data file, including .dat
+Output:
+  {{t1, t2, ..., tn}, d}, where d is a n\[Cross]npq\[Cross]3 List."
 
 
 Begin["`Private`"]
@@ -191,6 +201,31 @@ readAves[sim_,plane_,varNames__]:=
   ]
 
 
+(* ::Section:: *)
+(*Spectral fluxes*)
+
+
+readSpecFluxPQ[sim_]:=Module[{dp,dq,nk,nlk,grid},
+  dp=readParamNml[sim,"run.in","SPECFLUX_DP"];
+  dq=readParamNml[sim,"run.in","SPECFLUX_DQ"];
+  nk=readDim[sim]["nx"]/2;
+  
+  nlk[d_]:=Floor@If[d>0,(nk-1)/d+1,Log[-d,nk-1]+1];
+  grid[d_]:=If[d>0,d*Range[0,nlk[d]-1],(-d)^Range[0,nlk[d]-1]];
+  
+  Round@{grid[dp],grid[dq]}
+]
+readSpecFlux[sim_,file_]:=Module[{pq,grid,t,tra},
+  pq=readSpecFluxPQ[sim];
+  grid=Table[{pp,qq},{qq,pq[[2]]},{pp,pq[[1]]}]//Flatten[#,1]&;
+  
+  {t,tra}=read1D[sim,file,Times@@(Length/@pq)];
+  tra=Flatten/@Transpose[{grid,#}]&/@tra;
+  
+  Return[{t,tra}]
+]
+
+
 (* ::Chapter:: *)
 (*End*)
 
@@ -201,7 +236,8 @@ End[]
 Protect[
   readTS,growthRate,
   read1D,read1DSigned,read1D2Scale,
-  readAves
+  readAves,
+  readSpecFluxPQ,readSpecFlux
 ]
 
 
