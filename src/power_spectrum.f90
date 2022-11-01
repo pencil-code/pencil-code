@@ -5529,7 +5529,6 @@ endsubroutine pdf
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj
   real, dimension(nx,ny,nz,3) :: tmp_p,u_tmp,b_tmp,emf_q
-  !real, dimension(nk,nk) :: Tpq,Tpq_sum
   real, allocatable, dimension(:,:) :: Tpq,Tpq_sum
   character (len=40) :: outfile
   character (len=*) :: sp
@@ -5542,7 +5541,6 @@ endsubroutine pdf
 !  Positive step sizes specflux_dp and specflux_dq for linear steps,
 !  and negative values for log steps. Default value for both is -2.
 !
-  !nlk=nint(alog(float(nk))/alog(2.))+1
   if (specflux_dp>0.) then
     nlk_p = floor((nk-1.)/specflux_dp)+1
   elseif (specflux_dp<0.) then
@@ -5557,8 +5555,6 @@ endsubroutine pdf
   else
     call fatal_error('power_mag_hel_transfer','specflux_dq must be non-zero')
   endif
-  !if (.not.allocated(Tpq)) allocate( Tpq(nlk,nlk) )
-  !if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk,nlk) )
   if (.not.allocated(Tpq)) allocate( Tpq(nlk_p,nlk_q) )
   if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk_p,nlk_q) )
 !
@@ -5595,9 +5591,7 @@ endsubroutine pdf
 !  If dp=dq, then the q>p half is filled using Tpq(p,q)=-Tpq(q,p).
 !  Otherwise, we loop over all p and q.
 !
-  !do p=0,nk-1
   do lp=0,nlk_p-1
-    !p=2**lp
     if (specflux_dp>0.) then
       p=nint(specflux_dp*lp)
     else
@@ -5618,13 +5612,10 @@ endsubroutine pdf
       endif
     enddo
     !
-    !do q=0,p-1
-    !do lq=0,lp-1
     do lq=0,nlk_q-1
     !  only when sp=maghel, dp=dq and q>p, we don't need to compute Tpq
     if (.not.(sp=='maghel'.and.specflux_dp==specflux_dq.and.lq>lp)) then
       !  compute Tpq
-      !q=2**lq
       if (specflux_dq>0.) then
         q=nint(specflux_dq*lq)
       else
@@ -5656,7 +5647,6 @@ endsubroutine pdf
       !
       !  T(p,q)=\int bbb_p \cdot emf_q dV
       !
-      !Tpq(p,q) = Tpq(p,q) + dx*dy*dz*sum(tmp_p*emf_q)
       Tpq(lp+1,lq+1) = Tpq(lp+1,lq+1) + dx*dy*dz*sum(tmp_p*emf_q)
     endif
     enddo  !  from q
@@ -5664,9 +5654,6 @@ endsubroutine pdf
 !
 !  fill the other half of Tpq if dp=dq
 !
-  !do p=0,nk-1
-  !do q=p+1,nk-1
-  !  Tpq(p,q)=-Tpq(q,p)
   if (sp=='maghel'.and.specflux_dp==specflux_dq) then
     do lp=0,nlk_p-1
     do lq=lp+1,nlk_q-1
@@ -5677,8 +5664,6 @@ endsubroutine pdf
 !
 !  sum over processors
 !
-  !call mpireduce_sum(Tpq,Tpq_sum,(/nk,nk/))
-  !call mpireduce_sum(Tpq,Tpq_sum,(/nlk,nlk/))
   call mpireduce_sum(Tpq,Tpq_sum,(/nlk_p,nlk_q/))
 !
 !  append to diagnostics file
