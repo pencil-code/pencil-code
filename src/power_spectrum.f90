@@ -5518,20 +5518,19 @@ endsubroutine pdf
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: gij, gij_etc, curl_mn, cross_mn
+    use Sub, only: gij, gij_etc, curl_mn, cross_mn, del2v_etc
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i,p,q,lp,lq,ivec,ikx,iky,ikz,k!,nlk
   integer :: nlk_p, nlk_q
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,3) :: uu,aa,bb,uxb,jj
+  real, dimension(nx,3) :: uu,aa,bb,uxb,jj,curljj
   real, dimension(nx,3,3) :: aij,bij
-  real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj
+  real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj,curljjj
   real, dimension(nx,ny,nz,3) :: tmp_p,u_tmp,b_tmp,emf_q
   real, allocatable, dimension(:,:) :: Tpq,Tpq_sum
-  character (len=40) :: outfile
-  character (len=*) :: sp
+  character (len=2) :: sp
 !
 !  identify version
 !
@@ -5558,14 +5557,6 @@ endsubroutine pdf
   if (.not.allocated(Tpq)) allocate( Tpq(nlk_p,nlk_q) )
   if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk_p,nlk_q) )
 !
-!  set name for output file
-!
-  if (sp=='maghel') then
-    outfile='/power_transfer_mag_'
-  elseif (sp=='magE') then
-    outfile='/power_mag_E_transfer_'
-  endif
-!
 !  initialize spectral flux to zero
 !
   Tpq=0.
@@ -5587,6 +5578,20 @@ endsubroutine pdf
   enddo
   enddo
 !
+!  To compute transfer rate of the the current helicity,
+!  we need curl of J, and we do this using ibb
+!
+  if (sp=='Hc') then
+    if (ibb==0) call fatal_error('power_transfer_mag',&
+        'Hc_specflux needs lbb_as_aux=T')
+    do m=m1,m2
+    do n=n1,n2
+      call del2v_etc(f,ibb,curlcurl=curljj)
+      curljjj(:,m-nghost,n-nghost,:)=curljj(:,:)
+    enddo
+    enddo
+  endif
+!
 !  Loop over all p, and then loop over q<p.
 !  If dp=dq, then the q>p half is filled using Tpq(p,q)=-Tpq(q,p).
 !  Otherwise, we loop over all p and q.
@@ -5599,22 +5604,25 @@ endsubroutine pdf
     endif
     !
     !  obtain the filtered field tmp_p and compute tmp_p dot emf_q.
-    !  tmp_p = bbb_p for helicity, and jjj_p for energy
-    !  emf_q = u_tmp cross b_tmp
-    !  where u_tmp=uuu,   b_tmp=bbb_q for helicity,
-    !  and   u_tmp=uuu_q, b_tmp=bbb   for energy
+    !  For 'Hm': tmp_p=bbb_p,     emf_q=uuu cross bbb_q
+    !  For 'Em': tmp_p=jjj_p,     emf_q=uuu_q cross bbb
+    !  For 'Hc': tmp_p=curljjj_p, emf_q=uuu cross bbb_q
     !
     do ivec=1,3
-      if (sp=='maghel') then
+      if (sp=='Hm') then
         call power_shell_filter(bbb(:,:,:,ivec),tmp_p(:,:,:,ivec),p)
-      elseif (sp=='magE') then
+      elseif (sp=='Em') then
         call power_shell_filter(jjj(:,:,:,ivec),tmp_p(:,:,:,ivec),p)
+      elseif (sp=='Hc') then
+        call power_shell_filter(curljjj(:,:,:,ivec),tmp_p(:,:,:,ivec),p)
       endif
     enddo
     !
     do lq=0,nlk_q-1
-    !  only when sp=maghel, dp=dq and q>p, we don't need to compute Tpq
-    if (.not.(sp=='maghel'.and.specflux_dp==specflux_dq.and.lq>lp)) then
+    !
+    !  only when sp='Hm', dp=dq and q>p, we don't need to compute Tpq
+    !
+    if (.not.(sp=='Hm'.and.specflux_dp==specflux_dq.and.lq>lp)) then
       !  compute Tpq
       if (specflux_dq>0.) then
         q=nint(specflux_dq*lq)
@@ -5625,10 +5633,10 @@ endsubroutine pdf
       !  obtain u_tmp and b_tmp
       !
       do ivec=1,3
-        if (sp=='maghel') then
+        if (sp=='Hm'.or.sp=='Hc') then
           u_tmp(:,:,:,ivec)=uuu(:,:,:,ivec)
           call power_shell_filter(bbb(:,:,:,ivec),b_tmp(:,:,:,ivec),q)
-        elseif (sp=='magE') then
+        elseif (sp=='Em') then
           call power_shell_filter(uuu(:,:,:,ivec),u_tmp(:,:,:,ivec),q)
           b_tmp(:,:,:,ivec)=bbb(:,:,:,ivec)
         endif
@@ -5652,9 +5660,9 @@ endsubroutine pdf
     enddo  !  from q
   enddo  !  from p
 !
-!  fill the other half of Tpq if dp=dq
+!  fill the q>p half of Tpq if dp=dq
 !
-  if (sp=='maghel'.and.specflux_dp==specflux_dq) then
+  if (sp=='Hm'.and.specflux_dp==specflux_dq) then
     do lp=0,nlk_p-1
     do lq=lp+1,nlk_q-1
       Tpq(lp+1,lq+1)=-Tpq(lq+1,lp+1)
@@ -5670,8 +5678,8 @@ endsubroutine pdf
 !
   if (lroot) then
     if (ip<10) print*,'Writing magnetic energy or helicity transfer rate to ', &
-        trim(datadir)//trim(outfile)
-    open(1,file=trim(datadir)//trim(outfile)//trim(sp)//'.dat',position='append')
+        trim(datadir)//'/power_transfer_mag_'//trim(sp)//'.dat'
+    open(1,file=trim(datadir)//'/power_transfer_mag_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     write(1,power_format) Tpq_sum
     close(1)
