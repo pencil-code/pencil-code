@@ -5505,7 +5505,7 @@ endsubroutine pdf
 !
   endsubroutine power_shell_filter
 !***********************************************************************
-  subroutine power_mag_hel_transfer(f,sp)
+  subroutine power_transfer_mag(f,sp)
 !
 !  Calculate magnetic energy and helicity transfer functions.
 !  The transfer rate T(p,q) refers to the magnetic helicity from shell q
@@ -5546,14 +5546,14 @@ endsubroutine pdf
   elseif (specflux_dp<0.) then
     nlk_p = floor(alog(nk-1.)/alog(-specflux_dp))+1
   else
-    call fatal_error('power_mag_hel_transfer','specflux_dp must be non-zero')
+    call fatal_error('power_transfer_mag','specflux_dp must be non-zero')
   endif
   if (specflux_dq>0.) then
     nlk_q = floor((nk-1.)/specflux_dq)+1
   elseif (specflux_dq<0.) then
     nlk_q = floor(alog(nk-1.)/alog(-specflux_dq))+1
   else
-    call fatal_error('power_mag_hel_transfer','specflux_dq must be non-zero')
+    call fatal_error('power_transfer_mag','specflux_dq must be non-zero')
   endif
   if (.not.allocated(Tpq)) allocate( Tpq(nlk_p,nlk_q) )
   if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk_p,nlk_q) )
@@ -5561,7 +5561,7 @@ endsubroutine pdf
 !  set name for output file
 !
   if (sp=='maghel') then
-    outfile='/power_mag_hel_transfer_'
+    outfile='/power_transfer_mag_'
   elseif (sp=='magE') then
     outfile='/power_mag_E_transfer_'
   endif
@@ -5677,6 +5677,6 @@ endsubroutine pdf
     close(1)
   endif
   !
-  endsubroutine power_mag_hel_transfer
+  endsubroutine power_transfer_mag
 !***********************************************************************
 endmodule power_spectrum

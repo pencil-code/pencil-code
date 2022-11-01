@@ -282,7 +282,7 @@ module power_spectrum
 !
   endsubroutine power_fft3d_vec
 !***********************************************************************
-  subroutine power_mag_hel_transfer(f,sp)
+  subroutine power_transfer_mag(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=*) :: sp
@@ -290,6 +290,6 @@ module power_spectrum
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
 !
-  endsubroutine power_mag_hel_transfer
+  endsubroutine power_transfer_mag
 !***********************************************************************
 endmodule power_spectrum
