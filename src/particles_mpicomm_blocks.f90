@@ -2318,7 +2318,7 @@ module Particles_mpicomm
 !
 !  Write block domain decomposition to file, using MPI I/O.
 !
-!  01-nov-22/ccyang: in progress
+!  01-nov-22/ccyang: coded
 !
       use MPI
 !
@@ -2357,8 +2357,9 @@ module Particles_mpicomm
 !
 !  Decompose the write by processes.
 !
-      n = nbricks + 2 * nblock_loc
-      offset = size_of_int * (ncpus * 3 + iproc * nbricks + 2 * nblock_cum) + size_of_real * (3 * (mxb + myb + mzb) * nblock_cum)
+      n = nbricks + 2 * nblock_loc + nproc_parent + nproc_foster
+      offset = size_of_int * (ncpus * 3 + iproc * nbricks + 2 * nblock_cum + nparent_cum + nfoster_cum) &
+             + size_of_real * (3 * (mxb + myb + mzb) * nblock_cum)
       call MPI_TYPE_CREATE_STRUCT(3, (/ 3, n, 3 * (mxb + myb + mzb) * nblock_loc /), &
                                      (/ iproc * 3 * size_of_int, offset, offset + n * size_of_int /), &
                                      (/ MPI_INTEGER, MPI_INTEGER, mpi_precision /), mpi_type, ierr)
@@ -2384,6 +2385,12 @@ module Particles_mpicomm
 !
       call MPI_FILE_WRITE_ALL(handle, ibrick_parent_block, nblock_loc, MPI_INTEGER, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write ibrick_parent_block")
+!
+      call MPI_FILE_WRITE_ALL(handle, iproc_parent_list, nproc_parent, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write iproc_parent_list")
+!
+      call MPI_FILE_WRITE_ALL(handle, iproc_foster_list, nproc_foster, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write iproc_foster_list")
 !
 !  Write real data.
 !
@@ -2423,7 +2430,6 @@ module Particles_mpicomm
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
 !
       call fatal_error_local_collect()
-      call fatal_error(rname, "not implemented yet. ")
 !
     endsubroutine output_blocks_mpi
 !***********************************************************************
@@ -2512,7 +2518,7 @@ module Particles_mpicomm
 !
 !  Read block domain decomposition from file, using MPI I/O.
 !
-!  01-nov-22/ccyang: in progress
+!  01-nov-22/ccyang: coded
 !
       use MPI
 !
@@ -2524,7 +2530,8 @@ module Particles_mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
       double precision :: tfile
-      integer :: handle, mpi_type, ierr, nblock_cum, n
+      integer :: handle, mpi_type, ierr
+      integer :: nblock_cum, nparent_cum, nfoster_cum, n
       integer(KIND=MPI_OFFSET_KIND) :: offset
 !
 !  Open file for read.
@@ -2569,11 +2576,15 @@ module Particles_mpicomm
       nproc_parent = narray(2,iproc+1)
       nproc_foster = narray(3,iproc+1)
 !
+      nblock_cum = sum(narray(1,:iproc))
+      nparent_cum = sum(narray(2,:iproc))
+      nfoster_cum = sum(narray(3,:iproc))
+!
 !  Identify the file view for each process.
 !
-      n = nbricks + 2 * nblock_loc
-      nblock_cum = sum(narray(1,:iproc))
-      offset = size_of_int * (iproc * nbricks + 2 * nblock_cum) + size_of_real * (3 * (mxb + myb + mzb) * nblock_cum)
+      n = nbricks + 2 * nblock_loc + nproc_parent + nproc_foster
+      offset = size_of_int * (iproc * nbricks + 2 * nblock_cum + nparent_cum + nfoster_cum) &
+             + size_of_real * (3 * (mxb + myb + mzb) * nblock_cum)
       call MPI_TYPE_CREATE_STRUCT(2, (/ n, 3 * (mxb + myb + mzb) * nblock_loc /), &
                                      (/ offset, offset + size_of_int * n /), &
                                      (/ MPI_INTEGER, mpi_precision /), mpi_type, ierr)
@@ -2596,6 +2607,12 @@ module Particles_mpicomm
 !
       call MPI_FILE_READ_ALL(handle, ibrick_parent_block, nblock_loc, MPI_INTEGER, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read ibrick_parent_block")
+!
+      call MPI_FILE_READ_ALL(handle, iproc_parent_list, nproc_parent, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to read iproc_parent_list")
+!
+      call MPI_FILE_READ_ALL(handle, iproc_foster_list, nproc_foster, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to read iproc_foster_list")
 !
 !  Read real data.
 !
@@ -2635,7 +2652,6 @@ module Particles_mpicomm
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
 !
       call fatal_error_local_collect()
-      call fatal_error(rname, "not implemented yet. ")
 !
     endsubroutine input_blocks_mpi
 !***********************************************************************
