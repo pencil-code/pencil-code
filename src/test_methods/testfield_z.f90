@@ -442,6 +442,7 @@ module Testfield
         write(1,'(a,i1)') 'lsoca_jxb='  ,merge(1,0,lsoca_jxb)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         write(1,'(a,f5.2)') 'ktestfield=',ktestfield
+        write(1,'(a,f5.2)') 'ktestfield_effective=',ktestfield_effective
         write(1,'(a,f7.4)') 'lin_testfield=',lin_testfield
         write(1,'(a,f7.4)') 'lam_testfield=',lam_testfield
         write(1,'(a,f7.4)') 'om_testfield=', om_testfield
@@ -623,7 +624,7 @@ module Testfield
           case ('B11-B22');     call set_bbtest_B11_B22(B0test,jtest)
           case ('B11');         call set_bbtest_B11_B22(B0test,jtest)
           case ('B12');         call set_bbtest_B11_B22(B0test,3)
-          case ('B=0')                                                    !(dont do anything)
+          case ('B=0');         B0test=0.
           case default
             call fatal_error('daatest_dt','undefined itestfield value')
         endselect

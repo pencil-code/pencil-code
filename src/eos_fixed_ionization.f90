@@ -94,7 +94,7 @@ module EquationOfState
 !
     endsubroutine register_eos
 !*******************************************************************
-    subroutine getmu(f,mu)
+    subroutine getmu(f,mu_tmp)
 !
 !  Calculate mean molecular weight of the gas
 !
@@ -102,9 +102,9 @@ module EquationOfState
 !   30-mar-04/anders: Added molecular hydrogen to ionization_fixed
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu
+      real, optional, intent(out) :: mu_tmp
 !
-      mu = (1.+3.97153*xHe)/(1-xH2+xHe)
+      mu_tmp = (1.+3.97153*xHe)/(1-xH2+xHe)
 !
 ! Complain if xH2 not between 0 and 0.5
 !
@@ -414,8 +414,9 @@ module EquationOfState
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      intent(in) :: f, lpenc_loc
-      intent(inout) :: p
+      intent(inout):: f
+      intent(in)   :: lpenc_loc
+      intent(out)  :: p
 !
       integer :: i
 !
@@ -1447,15 +1448,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
-!***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(:) :: p_diag
-
-    call keep_compiler_quiet(p_diag)
-
-    endsubroutine pushdiags2c
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

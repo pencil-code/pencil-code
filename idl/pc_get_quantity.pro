@@ -171,7 +171,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 	if (strcmp (quantity, 'grad_u', /fold_case)) then begin
 		; Velocity gradient
-		if (n_elements (grad_u) eq 0) then grad_u = (grad (sqrt (dot2 (vars[*,*,*,index.uu]))))[l1:l2,m1:m2,n1:n2,*] * unit.velocity
+		if (n_elements (grad_u) eq 0) then grad_u = (grad (sqrt (dot2 (vars[*,*,*,index.uu]))))[l1:l2,m1:m2,n1:n2,*] * unit.velocity / unit.length
 		return, grad_u
 	end
 	if (strcmp (quantity, 'grad_u_abs', /fold_case)) then begin

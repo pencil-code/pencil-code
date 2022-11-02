@@ -59,24 +59,28 @@ pc_set_precision, datadir=datadir, dim=dim, /quiet
     field=field[0]
     num_planes = n_elements (planes)
     default, mask, replicate (1B, num_planes)
-    mask = mask and [ xyread, xzread, yzread, xy2read, xy3read, xy4read, xz2read ]
+    mask = mask and [ xyread, xzread, yzread, xy2read, xy3read, xy4read, xz2read, rread ]
     mask = mask and file_test (datadir+'/slices/'+field+'_'+planes+'.h5')
-    object = { field:field }
-    for i = 0, num_planes-1 do begin
-      if (mask[i]) then object = create_struct (object, planes[i], pc_read_slice (field, planes[i], datadir=datadir, time=t, coord=coord, pos=pos, single=single))
-    endfor
-    default, t, single ? 0. : zero
-    default, coord, single ? !Values.F_NaN : !Values.D_NaN*zero
-    default, pos, -1
-    object = create_struct (object, 't', t, 'coordinate', coord, 'position', pos, 'num_planes', num_planes, 'num_snapshots', n_elements (t))
-    if (keyword_set (print)) then begin
-      ; print summary
-      print, 'field="', field, '", datadir="', datadir, '"'
-      print, 'min(t)  , max(t)   = ', min(t), ',', max(t)
+    if n_elements(where(mask)) eq 0 then $
+      print, 'No planes! - Returning.' $
+    else begin
+      object = { field:field }
       for i = 0, num_planes-1 do begin
-        if (mask[i]) then print, 'min('+planes[i]+') , max('+planes[i]+')  = ', minmax(object.(i+1))
+        if (mask[i]) then object = create_struct (object, planes[i], pc_read_slice (field, planes[i], datadir=datadir, time=t, coord=coord, pos=pos, single=single))
       endfor
-    endif
+      default, t, single ? 0. : zero
+      default, coord, single ? !Values.F_NaN : !Values.D_NaN*zero
+      default, pos, -1
+      object = create_struct (object, 't', t, 'coordinate', coord, 'position', pos, 'num_planes', n_elements(where(mask)), 'num_snapshots', n_elements (t))
+      if (keyword_set (print)) then begin
+        ; print summary
+        print, 'field="', field, '", datadir="', datadir, '"'
+        print, 'min(t)  , max(t)   = ', min(t), ',', max(t)
+        for i = 0, num_planes-1 do begin
+          if (mask[i]) then print, 'min('+planes[i]+') , max('+planes[i]+')  = ', minmax(object.(i+1))
+        endfor
+      endif
+    endelse
     return
   endif
 ;

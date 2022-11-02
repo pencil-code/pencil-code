@@ -11,6 +11,7 @@ module Deriv
 !
   use Messages
   use Cdata
+  use General, only: keep_compiler_quiet
   use Cparam, only: lactive_dimension, nxgrid, nygrid, nzgrid
 !
   implicit none
@@ -275,7 +276,7 @@ module Deriv
     call keep_compiler_quiet(idir)
     call keep_compiler_quiet(arr)
     call keep_compiler_quiet(der)
-    
+ 
     endsubroutine distr_der
 !***********************************************************************
     subroutine der2_main(f,k,df2,j,lwo_line_elem)

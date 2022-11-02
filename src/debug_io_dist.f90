@@ -203,10 +203,10 @@ contains
       real :: t_sp   ! t in single precision for backwards compatibility
       character (len=fnlen) :: filename
 !
+      filename = trim (datadir_snap)//'/'//trim (file)
       t_sp = t
       if (ip<9.and.lroot.and.imn==1) &
            print*,'output_pencil_vect('//filename//'): ndim=',ndim
-      filename = trim (datadir_snap)//'/'//trim (filename)
 !
       if (headt .and. (imn==1)) write(*,'(A)') &
            'output_pencil: Writing to ' // trim(filename) // &

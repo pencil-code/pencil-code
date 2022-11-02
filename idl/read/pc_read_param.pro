@@ -60,10 +60,10 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Build the full path and filename and check for existence.
 ;
-  idl_subdir = datadir+'/idl'
+  idl_subdir = datadir+'idl'
   if (not file_test (idl_subdir, /directory)) then file_mkdir, idl_subdir
   if (keyword_set(param2) or keyword_set(run_param)) then begin
-    filename = datadir+'/param2.nml'
+    filename = datadir+'param2.nml'
     outfile = idl_subdir+'/run_param.pro'
     if (not file_test(filename)) then begin
       if (not keyword_set(quiet)) then $
@@ -72,7 +72,7 @@ COMPILE_OPT IDL2,HIDDEN
     end
     param2=1
   endif else begin
-    filename = datadir+'/param.nml'
+    filename = datadir+'param.nml'
     outfile = idl_subdir+'/start_param.pro'
     if (not file_test(filename)) then $
         message, "ERROR: '"+filename+"' not found - datadir may not be initialized, please execute 'start.csh'."

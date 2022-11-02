@@ -549,7 +549,7 @@ module Chemistry
           lnothing = .true.
         case ('constant')
           do k = 1,nchemspec
-            f(:,:,:,ichemspec(k)) = amplchemk(k)
+            f(:,:,:,ichemspec(k)) = f(:,:,:,ichemspec(k)) + amplchemk2(k)
           enddo
         case ('positive-noise')
           do k = 1,nchemspec
@@ -582,7 +582,7 @@ module Chemistry
           enddo
         case ('hatwave-x')
           do k = 1,nchemspec
-            call hatwave(amplchem,f,ichemspec(k),widthchem,kx=kx_chem)
+            call hatwave(amplchem,f,ichemspec(k),widthchem,kx=kx_chem,pos=1.)
           enddo
         case ('hatwave-y')
           do k = 1,nchemspec

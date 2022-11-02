@@ -43,7 +43,11 @@ def is_int(num_str):
     except ValueError:
         return False
     else:
-        return a == b
+        if '.' in num_str:
+            #The input string explicitly contained a decimal point, so treat it as a float.
+            return False
+        else:
+            return a == b
 
 
 def is_float(num_str):

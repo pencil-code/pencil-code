@@ -20,7 +20,7 @@ mpaux=0L
 ;
 ; Check for existence and read the data.
 ;
-filename=datadir+'/pdim.dat'
+filename=datadir+'pdim.dat'
 if (file_test(filename)) then begin
   if is_valid(object,'PDIM',filename) then return
   if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'

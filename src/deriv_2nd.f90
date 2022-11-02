@@ -119,27 +119,21 @@ module Deriv
       intent(in)  :: f,j
       intent(out) :: df
 !
-      call fatal_error('deriv_2nd','der_other not implemented yet')
-!
 !debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
 !debug                          der_call_count(1,icount_der_other,j,1) + 1
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./60)*dx_1(l1:l2)
-          df=fac*(+ 45.0*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
-                  -  9.0*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
-                  +      (f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)))
+          fac=.5*dx_1(l1:l2)
+          df=fac*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n))
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./60)*dy_1(m)
-          df=fac*(+ 45.0*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
-                  -  9.0*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
-                  +      (f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
+          fac=.5*dy_1(m)
+          df=fac*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n))
           if (lspherical_coords)     df=df*r1_mn
           if (lcylindrical_coords)   df=df*rcyl_mn1
         else
@@ -148,10 +142,8 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./60)*dz_1(n)
-          df=fac*(+ 45.0*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
-                  -  9.0*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
-                  +      (f(l1:l2,m,n+3)-f(l1:l2,m,n-3)))
+          fac=.5*dz_1(n)
+          df=fac*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1))
           if (lspherical_coords) df=df*r1_mn*sin1th(m)
         else
           df=0.

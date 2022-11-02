@@ -32,11 +32,7 @@ from test_utils import (
 @test
 def read_var() -> None:
     """Read var.dat (data cube) file."""
-    # Fixme: we shouldn't change directories here, as this can influence
-    # other tests
-    pwd = os.getcwd()
-    os.chdir(get_run_dir())
-    var = pc.read.var(trimall=True)
+    var = pc.read.var(trimall=True, datadir=get_data_dir())
     _assert_equal_tuple(var.f.shape, (5, 32, 32, 32))
 
     def ident(x: Any) -> Any:
@@ -56,7 +52,6 @@ def read_var() -> None:
     ]
     for (key, extract, expect, eps) in expected:
         test_extracted(getattr(var, key), extract, expect, key, eps)
-    os.chdir(pwd)
 
 
 @test
@@ -64,9 +59,7 @@ def get_help() -> None:
     """Get doc strings of imported functions."""
     math_dot_help = pc.math.dot.__doc__
     assert_true(
-        re.search(
-            r"Take dot product of two pencil-code vectors", math_dot_help
-        ),
+        re.search(r"Take dot product of two pencil-code vectors", math_dot_help),
         "Unexpected docstring for pc.math.dot: {}".format(math_dot_help),
     )
 
@@ -134,11 +127,28 @@ def remesh() -> None:
 
 
 def get_data_dir() -> str:
-    return os.path.join(get_run_dir(), "data")
+    sim = pc.sim.get(get_run_dir(), quiet=True)
+    datadir = sim.datadir
+    if not os.path.exists(os.path.join(datadir, "time_series.dat")):
+        #TODO: Is it a good idea to print stuff like this during a test? Is this information needed at all?
+        print("Compiling and running {}. This may take some time.".format(sim.path))
+        sim.compile(bashrc=False, cleanall=False)
+        sim.run(bashrc=False)
+    return datadir
 
 
 def get_data_dir2() -> str:
-    return os.path.join(get_run_dir2(), "data")
+    sim = pc.sim.get(get_run_dir2(), quiet=True)
+    datadir = sim.datadir
+    if not os.path.exists(os.path.join(datadir, "time_series.dat")):
+        #TODO: Is it a good idea to print stuff like this during a test? Is this information needed at all?
+        print("Compiling and running {}. This may take some time.".format(sim.path))
+        sim.compile(bashrc=False, cleanall=False)
+        sim.run(bashrc=False)
+    if not os.path.exists(os.path.join(datadir, "slice_position.dat")):
+        sim.bash("pc_build -t read_all_videofiles", bashrc=False, verbose=False)
+        sim.bash("src/read_all_videofiles.x", bashrc=False, verbose=False)
+    return datadir
 
 
 def get_run_dir() -> str:

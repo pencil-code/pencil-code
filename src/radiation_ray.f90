@@ -74,6 +74,7 @@ module Radiation
   real, dimension (mnu) :: kappa_cst=1.0, kappa20_cst=0.0
   real, dimension (:), allocatable :: lnTT_table
   real, dimension (:,:), allocatable :: lnSS_table
+  real, dimension (3,3) :: ij_table
   real :: arad
   real :: dtau_thresh_min, dtau_thresh_max
   real :: tau_top=0.0, TT_top=0.0
@@ -108,17 +109,20 @@ module Radiation
   integer :: ipzstart, ipzstop, ipystart, ipystop, ipxstart, ipxstop
   integer :: nIsurf=1
   integer :: nlnTT_table=1
+  integer :: iKR_press=0, iKR_pressxx=0, iKR_pressyy=0, iKR_presszz=0
+  integer :: iKR_pressxy=0, iKR_pressyz=0, iKR_presszx=0
 !
   logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y
   logical :: lfix_radweight_1d=.true.
   logical :: lcooling=.true., lrad_debug=.false.
   logical :: lno_rad_heating=.false.
   logical :: lintrinsic=.true., lcommunicate=.true., lrevision=.true.
-  logical :: lradpressure=.false., lradflux=.false., lsingle_ray=.false.
+  logical :: lradpressure=.false., lradpress=.false., lradflux=.false., lsingle_ray=.false.
   logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
   logical :: lcheck_tau_division=.false., lread_source_function=.false.
   logical :: lcutoff_opticallythin=.false.,lcutoff_zconst=.false.
   logical :: lcdtrad_old=.true.
+  logical :: ldoppler_rad=.false.
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
@@ -147,7 +151,7 @@ module Radiation
       TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
       nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
-      lcommunicate, lrevision, lradflux, Frad_boundary_ref, lrad_cool_diffus, &
+      lcommunicate, lrevision, lradflux, lradpress, Frad_boundary_ref, lrad_cool_diffus, &
       lrad_pres_diffus, scalefactor_Srad, scalefactor_kappa, &
       angle_weight, lcheck_tau_division, &
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, expo_temp_opa_buff, &
@@ -155,7 +159,7 @@ module Radiation
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
       lread_source_function, kapparho_floor,lcutoff_opticallythin, &
       lcutoff_zconst,z_cutoff,cool_wid, TT_bump, sigma_bump, ampl_bump, &
-      kappa_ceiling
+      kappa_ceiling, ldoppler_rad
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -164,7 +168,7 @@ module Radiation
       nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kx_Srad, ky_Srad, kz_Srad, kx_kapparho, ky_kapparho, kz_kapparho, &
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
-      lcommunicate, lrevision, lcooling, lradflux, lradpressure, &
+      lcommunicate, lrevision, lcooling, lradflux, lradpress, lradpressure, &
       Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, lcdtrad_old, &
       cdtrad, cdtrad_thin, cdtrad_thick, cdtrad_cgam, &
       scalefactor_Srad, scalefactor_kappa, &
@@ -176,7 +180,7 @@ module Radiation
       scalefactor_cooling, scalefactor_radpressure, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
       lcutoff_zconst,z_cutoff,cool_wid,lno_rad_heating,qrad_max,zclip_dwn, &
-      zclip_up, TT_bump, sigma_bump, ampl_bump, kappa_ceiling
+      zclip_up, TT_bump, sigma_bump, ampl_bump, kappa_ceiling, ldoppler_rad
 !
   contains
 !***********************************************************************
@@ -203,6 +207,19 @@ module Radiation
         iKR_Fradx = iKR_Frad
         iKR_Frady = iKR_Frad+1
         iKR_Fradz = iKR_Frad+2
+      endif
+!
+!  Allocated auxiliary arrays for radiative flux only if lradpress=T
+!  Remember putting "! MAUX CONTRIBUTION 6" (or adding 6) in cparam.local!
+!
+      if (lradpress) then
+        call farray_register_auxiliary('KR_pres',iKR_press,vector=6)
+        iKR_pressxx = iKR_press+0
+        iKR_pressyy = iKR_press+1
+        iKR_presszz = iKR_press+2
+        iKR_pressxy = iKR_press+3
+        iKR_pressyz = iKR_press+4
+        iKR_presszx = iKR_press+5
       endif
 !
 !  Identify version number (generated automatically by SVN).
@@ -413,6 +430,18 @@ module Radiation
         dlnTT_table=(nlnTT_table-1)/(lnTT_table(nlnTT_table)-lnTT_table(1))
       endif
 !
+!  set index table
+!
+      ij_table(1,1)=1
+      ij_table(2,2)=2
+      ij_table(3,3)=3
+      ij_table(1,2)=4
+      ij_table(2,3)=5
+      ij_table(3,1)=6
+      ij_table(2,1)=4
+      ij_table(3,2)=5
+      ij_table(1,3)=6
+!
       if (ivid_Jrad/=0) &
         call alloc_slice_buffers(Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,ncomp=nnu)
 
@@ -524,7 +553,7 @@ module Radiation
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
-      integer :: j,k,inu
+      integer :: i,j,ij,k,inu
 !
 !  Identifier.
 !
@@ -557,6 +586,8 @@ module Radiation
             if (inu==1) then
               f(:,:,:,iQrad)=0.0
               if (lradflux) f(:,:,:,iKR_Fradx:iKR_Fradz)=0.0
+              if (lradpress) f(:,:,:,iKR_pressxx:iKR_presszx)=0.0
+print*,'AXEL: iKR_pressxx:iKR_presszx=',iKR_pressxx,iKR_presszx
             endif
 !
 !  Loop over rays.
@@ -597,6 +628,21 @@ module Radiation
                   k=iKR_Frad+(j-1)
                   f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j) &
                     *(Qrad+Srad)*f(:,:,:,ikapparho)
+                enddo
+              endif
+!
+!  Calculate radiative pressure. Multiply it here by opacity to have the correct
+!  frequency-dependent contributions from all frequencies.
+!
+              if (lradpress) then
+                do j=1,3
+                do i=1,j
+                  ij=ij_table(i,j)
+                  k=iKR_press+(ij-1)
+                  f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,i)*unit_vec(idir,j) &
+                    *(Qrad+Srad)*f(:,:,:,ikapparho)
+print*,'AXEL: i,j,k=',i,j,k
+                enddo
                 enddo
               endif
 !
@@ -738,6 +784,7 @@ module Radiation
       real,dimension(mz) :: dlength
       real :: Srad1st,Srad2nd,emdtau1,emdtau2,emdtau
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
+      real :: u_dot_n, u_dot_n_p, u_dot_n_m, u_dot_n_1st, dudtau_p, dudtau_m
 !
 !  Identifier.
 !
@@ -762,7 +809,6 @@ module Radiation
       do n=nnstart,nnstop,nsign
       do m=mmstart,mmstop,msign
       do l=llstart,llstop,lsign
-!
         dtau_m=sqrt(f(l-lrad,m-mrad,n-nrad,ikapparho)* &
                     f(l,m,n,ikapparho))*0.5*(dlength(n-nrad)+dlength(n))
         dtau_p=sqrt(f(l,m,n,ikapparho)* &
@@ -776,6 +822,9 @@ module Radiation
 !
         dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
         dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
+!
+!  Compute terms for intrinsic calculation
+!
         Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
         Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
         if (dtau_m>dtau_thresh_max) then
@@ -794,6 +843,34 @@ module Radiation
         tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
         Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
                    -Srad1st*emdtau1-Srad2nd*emdtau2
+!
+!  extra term when Doppler shift
+!
+        if (ldoppler_rad) then
+!
+!  compute u.n and its derivatives
+!
+          u_dot_n=f(l,m,n,iux)*unit_vec(idir,1) &
+                 +f(l,m,n,iuy)*unit_vec(idir,2) &
+                 +f(l,m,n,iuz)*unit_vec(idir,3)
+          u_dot_n_p=f(l+lrad,m+mrad,n+nrad,iux)*unit_vec(idir,1) &
+                   +f(l+lrad,m+mrad,n+nrad,iuy)*unit_vec(idir,2) &
+                   +f(l+lrad,m+mrad,n+nrad,iuz)*unit_vec(idir,3)
+          u_dot_n_m=f(l-lrad,m-mrad,n-nrad,iux)*unit_vec(idir,1) &
+                   +f(l-lrad,m-mrad,n-nrad,iuy)*unit_vec(idir,2) &
+                   +f(l-lrad,m-mrad,n-nrad,iuz)*unit_vec(idir,3)
+          dudtau_m=(u_dot_n-u_dot_n_m)/dtau_m
+          dudtau_p=(u_dot_n_p-u_dot_n)/dtau_p
+          u_dot_n_1st=(dudtau_p*dtau_m+dudtau_m*dtau_p)/(dtau_m+dtau_p)
+!
+!  compute extra terms: 4*S*u.n and its derivative
+!
+          Qrad(l,m,n)=Qrad(l,m,n)+emdtau1*u_dot_n*4.*Srad(l,m,n) &
+                 +4.*emdtau2*(u_dot_n*Srad1st+u_dot_n_1st*Srad(l,m,n))
+! print*,'AXEL: u_dot_n=',u_dot_n
+print*,'AXEL4 idir,u_dot_n_1st=',idir,u_dot_n_1st, dudtau_p, dudtau_m!, u_dot_n_p, u_dot_n_m
+!print*,'AXEL4 idir=',unit_vec(idir,:),dtau_m,Srad(l,m,n)
+        endif
       enddo
       enddo
       enddo

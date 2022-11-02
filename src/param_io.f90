@@ -96,7 +96,7 @@ module Param_IO
       pretend_lnTT, lprocz_slowest, lzorder, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
-      tstart, lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &
+      lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &
       fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
       fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
@@ -104,13 +104,13 @@ module Param_IO
       vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
-      bb2_spec, jj2_spec, ele_spec, pot_spec, &
+      bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
       SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       StT_spec, StX_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
-      nd_spec, ud_spec, &
+      nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, ucp_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
       np_spec, np_ap_spec, rhop_spec, &
@@ -129,13 +129,13 @@ module Param_IO
       lcutoff_corners, nycut, nzcut, rel_dang, &
       sigmaSB_set, c_light_set, cp_set, k_B_set, m_u_set, &
       lnoghost_strati, ichannel1, ichannel2, tag_foreign, &
-      lfatal_num_vector_369
+      lfatal_num_vector_369, density_scale_factor
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
       lshift_origin, lshift_origin_lower, coord_system, &
-      nt, it1, it1start, it1d, it_rmv, dt, cdt, ddt, &
-      lfractional_tstep_advance, &
+      nt, it1, it1start, it1d, it_rmv, dt, cdt, ddt, dt_incr, &
+      lfractional_tstep_advance, lfractional_tstep_negative, &
       cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, &
@@ -143,21 +143,21 @@ module Param_IO
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, &
-      lspec_start, vel_spec, mag_spec, &
+      lspec_start, lspec_at_tplusdt, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
-      bb2_spec, jj2_spec, ele_spec, pot_spec, &
+      bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
       SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       StT_spec, StX_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
-      nd_spec, ud_spec, &
+      nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, ucp_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
       np_spec, np_ap_spec, rhop_spec, &
       r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, &
-      lnspecial_pdf, special_pdf, ang_jb_pdf1d, ang_ub_pdf1d, &
+      lnspecial_pdf, special_pdf, ang_jb_pdf1d, ang_ub_pdf1d, ang_ou_pdf1d, &
       kinflow, ladv_der_as_aux, lkinflow_as_aux, &
       ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
       kx_kinflow, ky_kinflow, kz_kinflow, dtphase_kinflow, &
@@ -215,7 +215,8 @@ module Param_IO
       uut_spec, uut_polar, ouout_spec, ouout2_spec, ouout_polar, out_spec, uot_spec, &
       saffman_ub, saffman_mag, saffman_mag_c, saffman_aa, saffman_aa_c, saffman_bb, &
       uu_fft3d, oo_fft3d, bb_fft3d, jj_fft3d, uu_xkyz, oo_xkyz, bb_xkyz, jj_xkyz, &
-      uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z
+      uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, &
+      Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
@@ -463,6 +464,8 @@ module Param_IO
       character(len=fnlen) :: file = 'run.in'
       integer :: idum
 !
+!AB: putting it to impossible is not correct; it should be inherited from the previous run.
+!AB: enabled again...
       tstart=impossible
 !
 !  Open namelist file.

@@ -212,50 +212,53 @@ module Special
           call fatal_error ('solar_corona', &
               "'irefz' must lie in the bottom layer of processors.")
       if (((nglevel < 1) .or. (nglevel > max_gran_levels))) &
-          call fatal_error ('solar_corona/gran_driver', &
+          call fatal_error ('solar_corona/initialize_special', &
               "'nglevel' is invalid and/or larger than 'max_gran_levels'.")
       ! Using vorticity increase, the x- and y-directions must be equidistant.
       if (lgranulation .and. (vorticity_factor > 0.0) .and. ((dx /= dy) .or. any (.not. lequidist(1:2)))) &
-          call fatal_error ('solar_corona/gran_driver', &
+          call fatal_error ('solar_corona/initialize_special', &
               "If 'vorticity_factor' is active, the grid must be equidistant in x and y.")
       ! For only one granulation level, no parallelization is required.
       if (lgran_parallel .and. (nglevel == 1)) &
-          call fatal_error ('solar_corona/gran_driver', &
+          call fatal_error ('solar_corona/initialize_special', &
               "If 'nglevel' is 1, 'lgran_parallel' should be deactivated.")
       ! If not at least 3 procs above the ipz=0 plane are available,
       ! computing of granular velocities has to be done non-parallel.
       if (lgran_parallel .and. ((nprocz-1)*nprocxy < nglevel)) &
-          call fatal_error ('solar_corona/gran_driver', &
+          call fatal_error ('solar_corona/initialize_special', &
               "There are not enough processors to activate 'lgran_parallel'.")
       if (lquench .and. (.not. lmagnetic)) &
-          call fatal_error ('solar_corona', &
+          call fatal_error ('solar_corona/initialize_special', &
               "Quenching needs the magnetic module.")
       if ((Bavoid > 0.0) .and. (.not. lmagnetic)) &
-          call fatal_error ('solar_corona', &
+          call fatal_error ('solar_corona/initialize_special', &
               "'Bavoid' needs the magnetic module.")
       if ((nc_tau > 0.0) .and. (nc_alt == 0.0) .and. (nc_lnrho_num_magn == 0.0)) &
-          call fatal_error ('solar_corona', &
+          call fatal_error ('solar_corona/initialize_special', &
               "Please select decaying of Newton Cooling using 'nc_alt' or 'nc_lnrho_num_magn'.")
       ! Restoration half-time of initial total vertical flux:
       if ((flux_tau > 0.0) .and. (Bz_flux <= 0.0)) &
-          call fatal_error ('solar_corona/mag_driver', &
+          call fatal_error ('solar_corona/initialize_special', &
               "Together with 'flux_tau', 'Bz_flux' needs to be set and positive.")
       ! Check if heat conduction terms are implemented:
       if ((K_spitzer /= 0.0) .and. (lentropy .or. (ltemperature .and. ltemperature_nolog))) &
-          call fatal_error('solar_corona/calc_heatcond_tensor', &
+          call fatal_error('solar_corona/initialize_special', &
               "Heat conduction 'K_spitzer' currently requirees logarithmic temperature.", .true.)
       if ((K_iso /= 0.0) .and. lentropy) &
-          call fatal_error('solar_corona/calc_heatcond_grad', &
+          call fatal_error('solar_corona/initialize_special', &
               "Heat conduction 'K_iso' is currently not implemented for entropy.", .true.)
       if (((nc_tau > 0.0) .or. (nc_alt /= 0.0) .or. (nc_lnrho_num_magn /= 0.0)) .and. lentropy) &
-          call fatal_error('solar_corona/calc_heat_cool_newton', &
+          call fatal_error('solar_corona/initialize_special', &
               "Newton cooling is currently not implemented for entropy (see 'nc_tau', 'nc_alt', 'nc_lnrho_num_magn').", .true.)
 !
       if (lbfield) then
-        if (luse_mag_field) call fatal_error("solar_corona", "luse_mag_field not implemented with bfield")
-        if (lset_boundary_emf) call fatal_error("solar_corona", "lset_boundary_emf not implemented with bfield")
-        if (lflux_emerg_bottom) call fatal_error("solar_corona", "lflux_emerg_bottom not implemented with bfield")
-        if (swamp_eta > 0.0) call fatal_error("solar_corona", "not implemented with bfield. ")
+        if (luse_mag_field) call fatal_error("solar_corona/initialize_special", &
+                                             "luse_mag_field not implemented with bfield")
+        if (lset_boundary_emf) call fatal_error("solar_corona/initialize_special", &
+                                                "lset_boundary_emf not implemented with bfield")
+        if (lflux_emerg_bottom) call fatal_error("solar_corona/initialize_special", &
+                                                 "lflux_emerg_bottom not implemented with bfield")
+        if (swamp_eta > 0.0) call fatal_error("solar_corona/initialize_special", "not implemented with bfield. ")
       endif
 !
       if ((.not. lreloading) .and. lrun) nano_seed = 0
@@ -263,7 +266,7 @@ module Special
       if (lpencil_check_at_work) return
 !
       if (luse_timedep_magnetogram .and. .not. parallel_file_exists (mag_times_dat)) &
-          call fatal_error ('solar_corona/mag_driver', &
+          call fatal_error ('solar_corona/initialize_special', &
               "Could not find file '"//trim (mag_times_dat)//"'.")
 !
       if (lgranulation .and. lrun) then
@@ -2792,8 +2795,7 @@ module Special
 !
     endsubroutine calc_heat_cool_deltaE
 !***********************************************************************
-
-subroutine calc_heat_cool_H_part(df,p)
+    subroutine calc_heat_cool_H_part(df,p)
 !
 !  Apply external heating and cooling profile for heating per particle.
 !
@@ -2835,8 +2837,7 @@ subroutine calc_heat_cool_H_part(df,p)
 !
     endsubroutine calc_heat_cool_H_part
 !***********************************************************************
-
-subroutine calc_heat_cool_H_vol(df,p)
+   subroutine calc_heat_cool_H_vol(df,p)
 !
 !  Apply external heating and cooling profile for heating per particle.
 !

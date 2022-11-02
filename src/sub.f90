@@ -60,7 +60,7 @@ module Sub
   public :: ScalarTripleProduct
   public :: det3X3mat,Inv2_3X3mat
 !
-  public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
+  public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot2_mx, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm, dot_mn_vm_trans, div_mn_2tensor, trace_mn
   public :: dyadic2, dyadic2_other
   public :: cross, cross_mn, cross_mixed
@@ -87,7 +87,7 @@ module Sub
 !
   public :: tensor_diffusion_coef
 !
-  public :: smooth_kernel, despike
+  public :: smooth_kernel, despike, smoothing_kernel
   public :: smooth, smooth_mn, get_smooth_kernel
 !
   public :: ludcmp, lubksb
@@ -883,6 +883,22 @@ module Sub
       endif
 !
     endsubroutine dot2_mn
+!***********************************************************************
+    subroutine dot2_mx(a,b)
+!
+!  Dot product with itself.
+!
+!  21-aug-22/axel: adapted from dot2_mn
+!
+      real, dimension (mx,3) :: a
+      real, dimension (mx) :: b
+!
+      intent(in) :: a
+      intent(out) :: b
+!
+      b=a(:,1)**2+a(:,2)**2+a(:,3)**2
+!
+    endsubroutine dot2_mx
 !***********************************************************************
     subroutine dot2_0(a,b)
 !
@@ -3884,11 +3900,16 @@ module Sub
       real :: dt1_
       real :: dt1, dt1_local
       real, save :: dt1_last=0.0
-
+!
+!  dt1_local (or dt1_) is the inverse limiting time step at each processor.
+!
       dt1_local=dt1_
       ! Timestep growth limiter
       if (ddt > 0.) dt1_local=max(dt1_local,dt1_last)
       call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
+!
+!  not set the actual time step, based on dt1
+!
       dt=1.0/dt1
       if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
       ! Timestep growth limiter
@@ -3996,7 +4017,7 @@ module Sub
 !
     endsubroutine despike
 !***********************************************************************
-    subroutine smooth_kernel(f,j,smth)
+    subroutine smooth_kernel(f,j,smth,smth_kernel_)
 !
 !  Smooth scalar field FF using predefined constant gaussian like kernel.
 !
@@ -4004,11 +4025,18 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: smth
+      real, dimension(7,7,7), optional :: smth_kernel_
       integer :: j,l
 !
-      do l=l1,l2
-        smth(l-l1+1)=sum(smth_kernel*f(l-3:l+3,m-3:m+3,n-3:n+3,j))
-      enddo
+      if (present(smth_kernel_)) then
+        do l=l1,l2
+          smth(l-l1+1)=sum(smth_kernel_*f(l-3:l+3,m-3:m+3,n-3:n+3,j))
+        enddo
+      else
+        do l=l1,l2
+          smth(l-l1+1)=sum(smth_kernel*f(l-3:l+3,m-3:m+3,n-3:n+3,j))
+        enddo
+      endif
 !
     endsubroutine smooth_kernel
 !***********************************************************************
@@ -8296,7 +8324,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
     use General, only: loptest
 
     real, dimension (nx,3,3)         :: uij, sij
-    real, dimension (nx)             :: divu
+    real, dimension (nx)  , optional :: divu
     real, dimension (nx,3), optional :: uu
     logical,                optional :: lss
 !
@@ -8309,7 +8337,11 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
     lshear_ROS=lshear.and.loptest(lss)
 !
     do j=1,3
-      sij(:,j,j)=uij(:,j,j)-(1./3.)*divu
+      if (present(divu)) then
+        sij(:,j,j)=uij(:,j,j)-(1./3.)*divu
+      else
+        sij(:,j,j)=uij(:,j,j)
+      endif
       do i=j+1,3
         sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
         sij(:,j,i)=sij(:,i,j)
@@ -8638,5 +8670,86 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       endif
 !
     endsubroutine find_index_by_bisection
+!***********************************************************************
+    subroutine smoothing_kernel(kernel,lgaussian,weights_,smth_wid)
+!
+!  24-aug-02/fred&matthias: coded
+!
+      use General, only: loptest
+!
+      real, dimension (:,:,:) :: kernel
+      logical, optional :: lgaussian
+      real, dimension(:), optional :: weights_
+      integer, optional :: smth_wid   ! width of the smoothing array
+
+      intent(out) :: kernel
+      intent(in) :: lgaussian,weights_,smth_wid
+!
+      integer :: i,j,k,width
+      real, parameter :: mu=0., sig=1., twopi=6.283185
+      real, dimension(:),  allocatable :: weights
+!
+!  Calculate the smoothing factors
+!
+      kernel = 1.
+!
+      if (present(weights_)) then
+        weights=weights_
+      else 
+        if (size(kernel,1)/2==nghost) then       ! i.e. smoothing width = nghost
+          width = nghost
+          allocate(weights(-width:width))
+          if (loptest(lgaussian,.true.)) then
+            weights(-width:width) = (/1.,9.,45.,70.,45.,9.,1./)
+          else
+            weights(-width:width) = (/1.,6.,15.,20.,15.,6.,1./)
+          endif
+        else if (present(smth_wid)) then         ! take into account possible alternative width
+            width = smth_wid
+            allocate(weights(-width:width))
+            if (loptest(lgaussian,.true.)) then
+              do i=-width, width                  ! fill the weights with gaussian distribution.
+                weights(i) = exp(-0.5*((i - mu)/sig)**2) / (sig*sqrt(twopi))
+              enddo
+              weights = weights/weights(-width)  ! normalize to begin/end in 1.0
+            else
+              call fatal_error('smoothing_kernel','Case not implemented yet')
+              !weights(-smth_wid:smth_wid) = (//) ! What rule was applied to the non-Gaussian case?
+            endif
+        else          
+          call fatal_error('smoothing_kernel','check parameters')
+        endif ! size(kernel) & present(smth_wid)
+      endif   ! present(weigths_)
+!
+      if (nxgrid > 1) then
+        do i = 1,2*width+1
+          kernel(i,:,:) = kernel(i,:,:)*weights(i-width-1)
+        enddo
+      else
+        kernel(:width,:,:) = 0.
+        kernel(width+2:,:,:) = 0.
+      endif
+! 
+      if (nygrid > 1) then
+        do j = 1,2*width+1
+          kernel(:,j,:) = kernel(:,j,:)*weights(j-width-1)
+        enddo
+      else
+        kernel(:,:width,:) = 0.
+        kernel(:,width+2:,:) = 0.
+      endif
+! 
+      if (nzgrid > 1) then
+        do k = 1,2*width+1
+          kernel(:,:,k) = kernel(:,:,k)*weights(k-width-1)
+        enddo
+      else
+        kernel(:,:,:width) = 0.
+        kernel(:,:,width+2:) = 0.
+      endif
+! 
+      kernel = kernel / sum(kernel)
+!
+    endsubroutine smoothing_kernel
 !***********************************************************************    
 endmodule Sub

@@ -78,6 +78,9 @@ class Index(object):
 
         if param is None:
             param = read.param(datadir=datadir, quiet=True)
+        lh5 = False
+        if param.io_strategy == "HDF5":
+            lh5 = True
         if dim is None:
             dim = read.dim(datadir=datadir)
 
@@ -100,6 +103,7 @@ class Index(object):
                     0
                 ] + int(clean.split("=")[1].strip().split("+")[1])
 
+            #debug
             if (
                 val != 0
                 and val <= totalvars
@@ -127,19 +131,20 @@ class Index(object):
                 ntestlnrho = val
             elif name == "ntestscalar":
                 ntestscalar = val
-        if ntestfield > 0:
-            self.__delattr__("aatest")
-            for i in range(1, ntestfield + 1):
-                setattr(self, "aatest" + str(i), iaatest - 1 + i)
-        if ntestflow > 0:
-            self.__delattr__("uutest")
-            for i in range(1, ntestflow + 1):
-                setattr(self, "uutest" + str(i), iuutest - 1 + i)
-        if ntestlnrho > 0:
-            self.__delattr__("hhtest")
-            for i in range(1, ntestlnrho + 1):
-                setattr(self, "hhtest" + str(i), ihhtest - 1 + i)
-        if ntestscalar > 0:
-            self.__delattr__("cctest")
-            for i in range(1, ntestscalar + 1):
-                setattr(self, "cctest" + str(i), icctest - 1 + i)
+        if not lh5:
+            if ntestfield > 0:
+                self.__delattr__("aatest")
+                for i in range(1, ntestfield + 1):
+                    setattr(self, "aatest" + str(i), iaatest - 1 + i)
+            if ntestflow > 0:
+                self.__delattr__("uutest")
+                for i in range(1, ntestflow + 1):
+                    setattr(self, "uutest" + str(i), iuutest - 1 + i)
+            if ntestlnrho > 0:
+                self.__delattr__("hhtest")
+                for i in range(1, ntestlnrho + 1):
+                    setattr(self, "hhtest" + str(i), ihhtest - 1 + i)
+            if ntestscalar > 0:
+                self.__delattr__("cctest")
+                for i in range(1, ntestscalar + 1):
+                    setattr(self, "cctest" + str(i), icctest - 1 + i)

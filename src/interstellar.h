@@ -12,17 +12,12 @@
   public :: rprint_interstellar
   public :: get_slices_interstellar
   public :: init_interstellar
-  
- 
 
   public :: pencil_criteria_interstellar
 
-
   public :: interstellar_before_boundary
-
 
   public :: calc_heat_cool_interstellar
   public :: input_persistent_interstellar
   public :: output_persistent_interstellar
-  public :: addmassflux
   public :: check_SN

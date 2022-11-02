@@ -39,6 +39,7 @@
 ! MAUX CONTRIBUTION 18
 !
 ! PENCILS PROVIDED stress_ij(6)
+! PENCILS PROVIDED gphi(3)
 !
 !***************************************************************
 !
@@ -91,16 +92,17 @@ module Special
   character (len=labellen) :: fourthird_in_stress='4/3'
   character (len=labellen) :: cc_light='1'
   character (len=labellen) :: aux_stress='stress', idelkt='jump', ihorndeski_time='const'
-  real :: amplGW=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
+  real :: amplGW=0., amplGW2=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
   real :: nscale_factor_conformal=1., tshift=0.
   real :: t_equality=3.789E11, t_acceleration=1.9215E13, t_0=1.3725E13
   real :: k1hel=0., k2hel=1., kgaussian_GW=0., ncutoff_GW=2., relhel_GW=0.
+  real, pointer :: ddotam
   logical :: lno_transverse_part=.false., lgamma_factor=.false.
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
-  logical :: lswitch_sign_e_X_boost=.true.
+  logical :: lswitch_sign_e_X_boost=.false.
   logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
-  logical :: lelectmag=.false.
+  logical :: lelectmag=.false., lscalar=.false.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lggTX_as_aux_boost=.false., lhhTX_as_aux_boost=.false.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
@@ -109,47 +111,54 @@ module Special
   logical :: lreal_space_hTX_boost_as_aux=.false., lreal_space_gTX_boost_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false., lmatter_GW=.false., ldark_energy_GW=.false.
   logical :: lonly_mag=.false., lread_scl_factor_file=.false.
-  logical :: lstress=.true., lstress_ramp=.false., lturnoff=.false., ldelkt=.false.
+  logical :: lstress=.true., lstress_ramp=.false., lstress_upscale=.false.
+  logical :: lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
-  logical :: lno_noise_GW=.false.
+  logical :: lno_noise_GW=.false., lfactors_GW=.false.,lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
+  logical :: llogbranch_GW=.false., ldouble_GW=.false.
   real, dimension(3,3) :: ij_table
-  real :: c_light2=1., delk=0., tdelk=0., tau_delk=1., tstress_ramp=0., tturnoff=1.
+  real :: c_light2=1., delk=0., tdelk=0., tau_delk=1.
+  real :: tstress_ramp=0., stress_upscale_rate=0., stress_upscale_exp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
   real :: horndeski_alpM=0., horndeski_alpT=0.
-  real :: scale_factor0=1., horndeski_alpT_exp=0.
-  real :: scale_factor, slope_linphase_in_stress
-! AR: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
+  real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
+  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, OmM0=0.3158, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
+  real :: initpower_med_GW=1., kpeak_log_GW=1., kbreak_GW=0.5, nfactd_GW=4.
+! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
 !
   logical :: lread_scl_factor_file_exists
   integer :: nt_file, it_file
-  real :: lgt0, dlgt, dummy
+  real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf
-  real :: scl_factor_target, Hp_target, app_target, lgt_current
-  real :: lgt_ini, a_ini, Hp_ini, app_om=0
-! added variables XXX
+  real :: scl_factor_target, Hp_target, app_target, OmM_target, lgt_current
+  real :: lgt_ini, a_ini, Hp_ini, app_om=0, OmM_ini
+! added variables
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
-  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file
-  real, dimension(:), allocatable :: app_file, lgt_file, lgff, lgff2, lgff3
+  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file, OmM_file
+  real, dimension(:), allocatable :: app_file, lgt_file, lgff, lgff2, lgff3, lgff4
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
-  integer :: itorder_GW=1
+  integer :: itorder_GW=1, idt_file_safety=12
 !
 ! input parameters
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
-    initGW, amplGW, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
+    initGW, amplGW, amplGW2, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
     lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
-    lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
+    lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, lscalar, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lonly_mag, lread_scl_factor_file, t_ini, &
-    lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW
+    lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW, &
+    lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW, &
+    lcomp_GWs_k, lcomp_GWh_k, llogbranch_GW, initpower_med_GW, &
+    kpeak_log_GW, kbreak_GW, ldouble_GW, nfactd_GW
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -158,19 +167,23 @@ module Special
     lswitch_sign_e_X_boost, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     t_equality, t_acceleration, &
-    lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, &
+    lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, lscalar, &
     lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
-    lstress, lstress_ramp, tstress_ramp, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
+    vx_boost, vy_boost, vz_boost, & !added by emma oct 26-- correct place?
+    lboost, & !emma
+    lstress, lstress_ramp, tstress_ramp, &
+    lstress_upscale, stress_upscale_rate, stress_upscale_exp, &
+    linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
-    ihorndeski_time, scale_factor0, horndeski_alpT_exp, &
+    ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
-    lread_scl_factor_file, t_ini, &
+    lread_scl_factor_file, t_ini, OmL0, OmM0, idt_file_safety, &
     lconstmod_in_stress, k_in_stress, itorder_GW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -460,21 +473,31 @@ module Special
         if (lread_scl_factor_file_exists) then
           if (lroot.and.ip<14) print*,'initialize_forcing: opening a_vs_eta.dat'
           open(9,file='a_vs_eta.dat',status='old')
-          read(9,*) nt_file, lgt0, dlgt
-          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt=',nt_file,lgt0,dlgt
-          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, app_file, &
-                                            lgt_file, lgff, lgff2, lgff3)
-          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), app_file(nt_file), &
-                   lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file))
+          read(9,*) nt_file, lgt0, dlgt, H0, OmM0
+          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0,OmM0=',nt_file,lgt0,dlgt,H0,OmM0
+          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, app_file, OmM_file, &
+                                            lgt_file, lgff, lgff2, lgff3, lgff4)
+          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), app_file(nt_file), OmM_file(nt_file), &
+                   lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file), lgff4(nt_file))
           do it_file=1,nt_file
-            read(9,*) dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file)
-          !if (ip<14) print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file)
+            read(9,*) dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file), OmM_file(it_file)
+          !if (ip<14) print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file), OmM_file(it_file)
           enddo
           close(9)
           lgt_file=alog10(t_file)
           lgff=alog10(scl_factor)
           lgff2=alog10(Hp_file)
           lgff3=alog10(app_file)
+          lgff4=alog10(OmM_file)
+!
+!  Calculate and set tmax, i.e., the end time of the simulation, so as
+!  to have a regular exit. Note that tmax=max(t_file)/t_ini.
+!  However, to be able to interpolate, we need to stop one step before that.
+!  Therefore, we give idt_file_safety as an empirical number, which depends
+!  on the length of the time step near the end of the calculation.
+!
+          tmax=t_file(nt_file-idt_file_safety)/t_ini
+          if (lroot) print*,'initialize_special: reset tmax=maxval(t_file)/t_ini=',tmax
 !
 !  The values of scl_factor in the file are given divided by a_0 (present time).
 !  First, we need to find a_ini from t_ini (given as initial parameter)
@@ -496,7 +519,11 @@ module Special
           lgf2=lgff2(it_file+1)
           lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           Hp_ini=10**lgf
-          !if (ip<14) print*,'ALBERTO, print a_*, H_*: ',a_ini,Hp_ini
+          lgf1=lgff2(it_file)
+          lgf2=lgff2(it_file+1)
+          lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          OmM_ini=10**lgf
+          !if (ip<14) print*,'ALBERTO, print a_*, H_*, OmM_*: ',a_ini,Hp_ini,OmM_ini
 !
 !  Divide by a_ini to have a/a_ini and recompute log(a) and log(t) after dividing, respectively
 !  by a_ini and t_ini.
@@ -511,8 +538,6 @@ module Special
 !
           lgt_current=alog10(real(t))+lgt_ini
           it_file=int((lgt_current-lgt0)/dlgt)+1
-!AB: error in the following
-!AR: error should now be fixed
           if (it_file<1.or.it_file>nt_file) then
             print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
             call fatal_error('initialize_special','it<1.or.it>nt')
@@ -538,6 +563,13 @@ module Special
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           app_target=10**lgf/Hp_ini**2
           !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',app_target
+          lgf1=lgff4(it_file)
+          lgf2=lgff4(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          OmM_target=10**lgf
+        else
+          if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
+          call fatal_error('initialize_special','we need the file a_vs_eta.dat')
         endif
       endif
 !
@@ -578,6 +610,7 @@ module Special
 !  06-oct-2003/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: initpower_GWs,initpower2_GWs,initpower_med_GWs,compks,compkh,amplGWs
 !
       intent(inout) :: f
 !
@@ -588,6 +621,13 @@ module Special
 !
 !  different initial condition for hT,X and gT,X
 !
+!
+!  alberto: added option to give as input the value at the peak of the spectrum
+!
+      if (amplGW2/=0.) then
+        amplGW=sqrt(amplGW2)
+      endif
+
       select case (initGW)
         case ('nothing')
           if (lroot) print*,'init_special: nothing'
@@ -595,16 +635,55 @@ module Special
           f(l1+1,m1,n1,ihhT)=amplGW
           f(l2-0,m1,n1,ihhT)=amplGW
         case ('power_randomphase_hel')
+          ! alberto: option to use same nfact for both GWs and GWh spectra
+          if (nfact_GW/=0.) then
+            nfact_GWs=nfact_GW
+            nfact_GWh=nfact_GW
+          endif
+
+          ! alberto: option to obtain GWs spectrum by multiplying k^2 to GWh (if lcomp_GWs_k)
+          !          such that amplGW and kpeak_GW describe accurately GWh.
+          !          If, otherwise, lcomp_GWh_k, then GWs is prescribed by amplGW and kpeak_GW,
+          !          and GWh is obtained by dividing GWs by k^2.
+          !          Note that, otherwise, when lfactors_GW is used, both spectra are not exactly
+          !          proportional to each other by k^2.
+          compks=0.
+          compkh=0.
+          if ((lcomp_GWs_k).or.(lcomp_GWh_k)) then
+            initpower_GWs=initpower_GW
+            initpower2_GWs=initpower2_GW
+            initpower_med_GWs=initpower_med_GW
+            amplGWs=amplGW
+            if (lcomp_GWs_k) then
+              compks=.5
+            else
+              compkh=-.5
+            endif
+          else
+            initpower_GWs=initpower_GW+2.
+            initpower2_GWs=initpower2_GW+2.
+            initpower_med_GWs=initpower_med_GW+2.
+            amplGWs=amplGW*kpeak_GW
+          endif
+
           call power_randomphase_hel(amplGW,initpower_GW,initpower2_GW, &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
-            lremain_in_fourier=.true., lno_noise=lno_noise_GW)
-          call power_randomphase_hel(amplGW,initpower_GW+2.,initpower2_GW+2., &
+            lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
+            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
+            kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
+            nfactd0=nfact_GW)
+          call power_randomphase_hel(amplGWs,initpower_GWs,initpower2_GWs, &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,iggT,iggT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
-            lremain_in_fourier=.true., lno_noise=lno_noise_GW)
+            lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
+            lfactors0=lfactors_GW, nfact0=nfact_GWs, compk0=compks, &
+            llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GWs, &
+            kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
+            nfactd0=nfact_GW)
         case default
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))
@@ -650,6 +729,12 @@ module Special
       if (lelectmag) then
         lpenc_requested(i_el)=.true.
         if (trace_factor/=0.) lpenc_requested(i_e2)=.true.
+      endif
+!
+!  gradient of scalar field (phi) needed for stress
+!
+      if (lscalar) then
+        lpenc_requested(i_gphi)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -721,6 +806,7 @@ module Special
               if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
               if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
               if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
+              if (lscalar)   p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%gphi(:,i)*p%gphi(:,j)
             endif
 !
 !  Remove trace.
@@ -741,18 +827,27 @@ module Special
 !  Here, (t-tstart)/tstress_ramp increases linearly starting with tstart,
 !  which is always our initial time, until t-tstart=tstress_ramp.
 !  To turn off the stress at t=tturnoff, ..
+!  With lstress_upscale, we can upscale the stress at the rate stress_upscale_rate
+!  with a temporal exponent stress_upscale_exp.
 !
           if (lstress_ramp) then
             fact=min(real(t-tstart)/tstress_ramp, 1.)
             p%stress_ij(:,:)=p%stress_ij(:,:)*fact
           elseif (lturnoff) then
             if (t>tturnoff) p%stress_ij(:,:)=0.
+          elseif (lstress_upscale) then
+            fact=(real(t-tstart)*stress_upscale_rate)**stress_upscale_exp
+            p%stress_ij(:,:)=p%stress_ij(:,:)*fact
           endif
         endif
 !
 !  endif of lfirst query
 !
       endif
+!
+!  Dummy pencils. At the moment, we say that gravitational_waves_hTXk
+!  calculates the p%gphi pencil, but in reality it is calculated in one
+!  of the special routines (special/backreact_infl).
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -814,7 +909,10 @@ module Special
       endif
       stress_prefactor2=stress_prefactor/scale_factor
 !
-!  Possibility of reading scale factor file
+!  Possibility of reading scale factor file.
+!  The actual reading happened in initialize_special, so here it
+!  just checks whether it has done it; the data are defined for
+!  the entire module and are therefore always available.
 !
       if (lread_scl_factor_file) then
         inquire(FILE="a_vs_eta.dat", EXIST=lread_scl_factor_file_exists)
@@ -822,18 +920,19 @@ module Special
       !
 !  t is given as t/t_ini by default, so to compare it with the stored values in the file, we
 !  need to use t*t_ini.
+!  So, lgt_current is not the log10 of the current time t, but of t/t_ini.
+!  At the end of the run, t=1.5e18, but t/t_ini=3.11900E+13 or so.
 !
           lgt_current=alog10(real(t))+lgt_ini
           it_file=int((lgt_current-lgt0)/dlgt)+1
-  !AB: error in the following
-  !AR: error should now be fixed
           if (it_file<1.or.it_file>nt_file) then
-            print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
-            call fatal_error('initialize_special','it<1.or.it>nt')
+            print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
+            call fatal_error('dspecial_dt','it<1.or.it>nt')
           endif
           !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
           lgt1=lgt_file(it_file)
           lgt2=lgt_file(it_file+1)
+          if (ip<11.and.lroot) print*,'AXEL: ',lgt1, lgt_current, lgt2, lgt2-lgt_current
           lgf1=lgff(it_file)
           lgf2=lgff(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
@@ -853,6 +952,13 @@ module Special
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           app_target=10**lgf/Hp_ini**2
           !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',app_target
+          lgf1=lgff3(it_file)
+          lgf2=lgff3(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          OmM_target=10**lgf
+        else
+          if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
+          call fatal_error('dspecial_dt','we need the file a_vs_eta.dat')
         endif
       endif
 !
@@ -1051,8 +1157,16 @@ module Special
 !  communicated.
 !
 !  07-aug-17/axel: coded
+
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!  get a"/a (here called ddotam)
+!
+      if (lscalar) then
+        call get_shared_variable('ddotam',ddotam)
+      endif
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -1433,7 +1547,7 @@ module Special
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
       real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
-      real :: horndeski_alpT_eff
+      real :: horndeski_alpT_eff, Om_rat_Lam, Om_rat_Mat
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx
       complex :: hcomplex_new, gcomplex_new
@@ -1681,28 +1795,45 @@ module Special
       endif
 !
 !  Horndeski preparations
-!  Allow for different prescriptions for the time dependence of horndeski_alpT_eff
+!  Allow for different prescriptions for the time dependence of horndeski_alpT_eff and horndeski_alpM_eff
 !
       if (lhorndeski) then
-        horndeski_alpM_eff=horndeski_alpM/scale_factor
-        horndeski_alpM_eff2=horndeski_alpM/scale_factor**2
-        if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
-            !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp^2: ',Hp_target**2
-            !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp: ',Hp_target 
-            horndeski_alpM_eff=horndeski_alpM*Hp_target
-            horndeski_alpM_eff2=horndeski_alpM*Hp_target**2
-        endif
         select case (ihorndeski_time)
           case ('const')
             horndeski_alpT_eff=horndeski_alpT
+            horndeski_alpM_eff=horndeski_alpM
           case ('tanh')
             horndeski_alpT_eff=horndeski_alpT*tanh(1.-(scale_factor/scale_factor0)**horndeski_alpT_exp)
           case ('exp')
             horndeski_alpT_eff=horndeski_alpT*exp(-(scale_factor/scale_factor0)**horndeski_alpT_exp)
+          case ('scale_factor_power')
+            horndeski_alpM_eff=horndeski_alpM*(scale_factor*a_ini/scale_factor0)**horndeski_alpM_exp
+          case ('matter')
+            horndeski_alpM_eff=horndeski_alpM*(1-OmM_target/1-OmM0)
+          case ('dark_energy')
+            if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
+              Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
+              horndeski_alpM_eff=horndeski_alpM*Om_rat_Lam
+              !!if ((lroot).and.(Om_rat_Lam==0)) print*,"the ratio Om_rat_Lam is too small", &
+              !!    " for single precision, consider using double precision"
+            else
+              if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
+              if (lroot) print*,'set lread_scl_factor_file=T in run parameters'
+              call fatal_error('dspecial_dt',"we need the file a_vs_eta.dat")
+            endif
           case default
             call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
                 ,trim(idelkt))
         endselect
+        if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
+          !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp^2: ',Hp_target**2
+          !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp: ',Hp_target
+          horndeski_alpM_eff=horndeski_alpM_eff*Hp_target
+          horndeski_alpM_eff2=horndeski_alpM_eff*Hp_target
+        else
+          horndeski_alpM_eff=horndeski_alpM_eff/scale_factor
+          horndeski_alpM_eff2=horndeski_alpM_eff/scale_factor
+        endif
       endif
       if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
         app_om=app_target
@@ -1734,7 +1865,7 @@ module Special
 !  boosted x components of k, and squared quantities.
 !
             gamma_boost=1./sqrt(1.-(vx_boost**2+vy_boost**2+vz_boost**2))
-            k1_boost=gamma_boost*(-vx_boost*ksqr+kx_fft(ikx+ipx*nx))
+            k1_boost=gamma_boost*(-vx_boost*sqrt(ksqr)+kx_fft(ikx+ipx*nx))
             k1sqr_boost=k1_boost**2
             ksqr_boost=k1sqr_boost+k2sqr+k3sqr
 !
@@ -1763,7 +1894,11 @@ module Special
                 om2=ksqr-2./(t+1.)**2
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
-	      elseif (lmatter_GW .or. ldark_energy_GW) then
+              elseif (lscalar) then
+                om2=ksqr-ddotam
+                lsign_om2=(om2 >= 0.)
+                om=sqrt(abs(om2))
+              elseif (lmatter_GW .or. ldark_energy_GW) then
                 om2=ksqr-2./t**2
                 lsign_om2=(om2 >= 0.)
                 om=sqrt(abs(om2))
@@ -2147,12 +2282,12 @@ module Special
               eXT=0.
               eXX=0.
               do j=1,3
-              do i=1,j
+              do i=1,3
                 ij=ij_table(i,j)
-                eTT=eTT+.25*e_T_boost(ij)*e_T(ij)
-                eTX=eTX+.25*e_T_boost(ij)*e_X(ij)
-                eXT=eXT+.25*e_X_boost(ij)*e_T(ij)
-                eXX=eXX+.25*e_X_boost(ij)*e_X(ij)
+                eTT=eTT+e_T_boost(ij)*e_T(ij)
+                eTX=eTX+e_T_boost(ij)*e_X(ij)
+                eXT=eXT+e_X_boost(ij)*e_T(ij)
+                eXX=eXX+e_X_boost(ij)*e_X(ij)
               enddo
               enddo
 !

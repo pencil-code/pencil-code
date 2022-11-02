@@ -5,6 +5,7 @@
 /BORDER_PROFILES/ b end
 /DEBUG/ b end
 /DERIV/ b end
+/DSL_MODULE/ b end
 /FOURIER/ b end
 /GHOSTFOLD/ b end
 /GSL/ b end

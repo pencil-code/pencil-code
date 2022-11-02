@@ -47,8 +47,10 @@ Jeffrey S. Oishi,     jsoishi/gmail.com,             ,                     +1 34
 Raphael Plasson,      ,                              ,                     +46 7 3575 8374,   ,                         ,            Harvard University
 Matthias Rheinhardt,  mreinhardt/nordita.org,        rei,                  +358 50 4480159,   ,+49 1590 2984560         ,            Aalto University
 Alex Richert,         alexrichert/gmail.com,         alexrichert,          ,                  ,                         ,            Penn State University
+Alberto Roper Pol     alberto.roper.pol/gmail.com,   AlbertoRoper,         +33 749 341453                                            APC, Universite Paris Cite, CNRS
 Graeme R. Sarson,     g.r.sarson/ncl.ac.uk,          ,                     +44 191 222 5375,  ,                         ,            Newcastle University
 Julien Savre,         juliensavre/gmail.com,         ,                     +46 46 222 3624,   +46 7 00 94 71 55,        ,            University of Cambridge
+Ramkishor Sharma,     ramkishor.sharma/su.se         ,                     ,                  +46767530270              ,            Nordita
 Nishant K. Singh,     nishant.cosmo/gmail.com,       ,                     +91 9916785745,    ,                         ,            NORDITA
 Andrew Snodin,        andrew.snodin/ncl.ac.uk,       ,                     ,                  ,                         ,            King Mongkut's University of Technology North Bangkok
 Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2560 4115,     +91 94 210 37 292,        ,            Indian Institute of Astrophysics
@@ -56,7 +58,7 @@ Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 91
 Johannes Tschernitz,  johannes.tschernitz/uni-graz.at,joh-tsch             ,                  ,                         ,            University of Graz
 Jörn Warnecke,        joern.warnecke/gmail.com,      joern.warnecke,       +49 551 384 979 398, +49 176 31545191,       dehrgeif,    Max-Planck-Institut für Sonnensystemforschung Göttingen
 Tijmen van Wettum,    ,                              TvanWettum,           ,                  ,                         ,            Transfer Solutions Leerdam Netherlands
-Chao-Chin Yang,       ccyang/unlv.edu,               ccyang/unlv.edu,      +1 702 895 0961,   ,                         ,            University of Nevada, Las Vegas
+Chao-Chin Yang,       ccyang/ua.edu,                 ccyang/ua.edu,        +1 205 348 3792,   ,                         ,            The University of Alabama
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         ,            Norges teknisk-naturvitenskapelige universitet
 Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,     ,                     ,                  +46 73 627 2556,          ,            NORDITA
 Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 191 208 3560,  ,                         luizfelippesr, Newcastle University

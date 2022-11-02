@@ -1,4 +1,4 @@
-PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k, $
+PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k,qk=k2s,$
           spec1=spec1,spec2=spec2,spec3=spec3,scal2=scal2,scal3=scal3, $
           i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
@@ -65,16 +65,18 @@ default,compensate3,compensate1
 default,compensate,compensate1
 default,datatopdir,'data'
 ;
+pc_read_param,obj=param,/param2,/quiet,datadir=datatopdir
+;
 ;  This is done to make the code backward compatible.
 ;
-if  keyword_set(all) then begin
-    last=0
+if keyword_set(all) then begin
+  last=0
 end
-if  keyword_set(wait) then begin
-    w=wait
+if keyword_set(wait) then begin
+  w=wait
 end
-if  n_elements(v1) eq 1L then begin
-    file1='power'+v1+'.dat'
+if n_elements(v1) eq 1L then begin
+  file1='power'+v1+'.dat'
 ;
 ;  second spectrum
 ;
@@ -136,26 +138,13 @@ if  keyword_set(v1) then begin
   end
 end
 imax=nx/2
-if keyword_set(cyl) then begin
-  if keyword_set(double) then begin
-    spectrum1=dblarr(imax,dim.nz)
-  endif else begin
-    spectrum1=fltarr(imax,dim.nz)
-  endelse
-endif else begin
-  if keyword_set(double) then begin
-    spectrum1=dblarr(imax)
-  endif else begin
-    spectrum1=fltarr(imax)
-  endelse
-endelse
 ;
 if n_elements(size) eq 0 then size=2.*!pi
 k0=2.*!pi/size
-wavenumbers=indgen(imax)*k0 
 ;k=findgen(imax)+1.
 k=findgen(imax)
 zwav=findgen(dim.nz)-dim.nz/2
+;
 if  keyword_set(v1) then begin
   if ((v1 EQ "_phiu") OR (v1 EQ "_phi_kin") $
        OR (v1 EQ "hel_phi_kin") OR (v1 EQ "hel_phi_mag") $
@@ -169,7 +158,34 @@ end
 globalmin=1e12
 globalmax=1e-30
 i=1L
+quantitites=['u','r2u','r3u','o','b','a','ud']
+if is_defined(v1) then $
+  ltrue_binning1 = param.ltrue_binning and is_in(quantitites,v1) ge 0 $
+else $
+  ltrue_binning1 = 0
+
+if is_defined(v2) then $
+  ltrue_binning2 = param.ltrue_binning and is_in(quantitites,v2) ge 0 $
+else $
+  ltrue_binning2 = 0
+
+if is_defined(v3) then $
+  ltrue_binning3 = param.ltrue_binning and is_in(quantitites,v3) ge 0 $
+else $
+  ltrue_binning3 = 0
+
 openr, unit, datatopdir+'/'+file1, /get_lun
+
+  if ltrue_binning1 then begin
+    imax=0 & readf,unit,imax
+    k2s=fltarr(imax) & readf,unit,k2s
+  endif
+  
+  if keyword_set(cyl) then $
+    spectrum1=keyword_set(double) ? dblarr(imax,dim.nz) : fltarr(imax,dim.nz) $
+  else $
+    spectrum1=keyword_set(double) ? dblarr(imax) : fltarr(imax)
+
   while ~eof(unit) do begin
     readf,unit,time
     readf,unit,spectrum1
@@ -180,20 +196,12 @@ openr, unit, datatopdir+'/'+file1, /get_lun
     if (min(spectrum1) lt globalmin) then globalmin=min(spectrum1)
     i++
   endwhile
+
 free_lun, unit
-if keyword_set(cyl) then begin
-  if keyword_set(double) then begin
-    spec1=dblarr(imax,dim.nz,i-1)
-  endif else begin
-    spec1=fltarr(imax,dim.nz,i-1)
-  endelse
-endif else begin
-  if keyword_set(double) then begin
-    spec1=dblarr(imax,i-1)
-  endif else begin
-    spec1=fltarr(imax,i-1)
-  endelse
-endelse
+if keyword_set(cyl) then $
+  spec1=keyword_set(double) ? dblarr(imax,dim.nz,i-1) : fltarr(imax,dim.nz,i-1) $
+else $
+  spec1=keyword_set(double) ? dblarr(imax,i-1) : fltarr(imax,i-1)
 ;
 tt=fltarr(i-1)
 lasti=i-2
@@ -276,6 +284,16 @@ endelse
 ;
 i=1L
 openr, unit_1, datatopdir+'/'+file1, /get_lun
+    if ltrue_binning1 then begin
+      readf,unit_1,imax & readf,unit_1,k2s
+    endif
+    if ltrue_binning2 and unit_2__open then begin
+      readf,unit_2,imax & readf,unit_2,k2s
+    endif
+    if ltrue_binning3 and unit_3__open then begin
+      readf,unit_3,imax & readf,unit_3,k2s
+    endif
+
     while ~eof(unit_1) do begin
       	readf,unit_1,time
        	readf,unit_1,spectrum1

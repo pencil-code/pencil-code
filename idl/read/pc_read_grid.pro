@@ -110,7 +110,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
   else $
     gridfile='grid'
 
-  filename=datadir+'/'+gridfile+'.h5'
+  filename=datadir+gridfile+'.h5'
 
   if file_test(filename) then begin
 ;
@@ -158,7 +158,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
     gridfile += '.dat'
 ;
-    allprocs_exists = file_test(datadir+'/allprocs/'+gridfile)
+    allprocs_exists = file_test(datadir+'allprocs/'+gridfile)
     default, swap_endian, 0
 ;
 ; Default allprocs.
@@ -183,14 +183,14 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
     ncpus=1 & iterate_cpus=0
     if (keyword_set (reduced)) then begin
-      filename=datadir+'/reduced/'+gridfile
+      filename=datadir+'reduced/'+gridfile
     endif else if is_defined(proc) then begin
-      filename=datadir+'/proc'+str(proc)+'/'+gridfile
+      filename=datadir+'proc'+str(proc)+'/'+gridfile
     endif else if ((allprocs gt 0) or allprocs_exists) then begin
     ;;;endif else if ((allprocs gt 0)) then begin
-      filename=datadir+'/allprocs/'+gridfile
+      filename=datadir+'allprocs/'+gridfile
     endif else begin
-      filename=datadir+'/procs/'+gridfile
+      filename=datadir+'procs/'+gridfile
       ncpus=dim.nprocx*dim.nprocy*dim.nprocz
       iterate_cpus=1
     endelse
@@ -231,7 +231,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 
       if iterate_cpus then begin
 
-        filename_loc=datadir+'/proc'+str(i)+'/'+gridfile
+        filename_loc=datadir+'proc'+str(i)+'/'+gridfile
         ; Read processor box dimensions
         undefine, procdim
         pc_read_dim,object=procdim,datadir=datadir,proc=i,QUIET=QUIET, down=down

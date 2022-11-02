@@ -44,7 +44,7 @@
 ! Initial conditions
   public :: isothermal_entropy,isothermal_lnrho_ss
   public :: get_stratz
-  public :: pushpars2c, pushdiags2c
+  public :: pushpars2c
 
 !ajwm SHOULDN'T BE PUBLIC
   public :: cs0,cs20,lnrho0,rho0

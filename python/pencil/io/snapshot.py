@@ -25,6 +25,9 @@ def write_snapshot(
     y=None,
     z=None,
     lshear=False,
+    dx=None,
+    dy=None,
+    dz=None,
 ):
     """
     Write a snapshot given as numpy array.
@@ -63,6 +66,9 @@ def write_snapshot(
 
     *lshear*:
       Flag for the shear.
+
+    *dx, dy, dz* : float
+      Grid spacing (for calculation in the case of nonequidistant grids, see subroutine grid.f90/construct_grid)
     """
 
     import os
@@ -124,9 +130,12 @@ def write_snapshot(
     z_ghost[nghost:-nghost] = z
 
     # Define the deltas.
-    dx = x[1] - x[0]
-    dy = y[1] - y[0]
-    dz = z[1] - z[0]
+    if dx is None:
+        dx = x[1] - x[0]
+    if dy is None:
+        dy = y[1] - y[0]
+    if dz is None:
+        dz = z[1] - z[0]
 
     # Define a time.
     if t is None:
@@ -1039,6 +1048,11 @@ def write_h5_averages(
             n1 = dim.ny
             nn = procdim.ny
         n2 = dim.nx
+        if file_name == "phi":
+            nproc = dim.nprocz
+            n1 = dim.z
+            n2 = dim.nx/2.
+
         # number of iterations to record
     if not nt:
         nt = aver.t.shape[0]
@@ -1088,51 +1102,63 @@ def write_h5_averages(
                 comm=comm,
                 size=size,
             )
+        if file_name == "phi":
+            file_name = "phiavg"
         for key in aver.__getattribute__(file_name).__dict__.keys():
-            data = aver.__getattribute__(file_name).__getattribute__(key)
-            if file_name == "y" or file_name == "z":
-                data = np.swapaxes(data, 1, 2)
-            for it in range(0, nt):
-                if aver_by_proc:
-                    dataset_h5(
-                        ds[str(it)],
-                        key,
-                        status=state,
-                        shape=(n1, n2),
-                        dtype=precision,
-                        overwrite=overwrite,
-                        rank=rank,
-                        comm=comm,
-                        size=size,
-                    )
-                else:
-                    dataset_h5(
-                        ds[str(it)],
-                        key,
-                        status=state,
-                        shape=data[0].shape,
-                        dtype=precision,
-                        overwrite=overwrite,
-                        rank=rank,
-                        comm=comm,
-                        size=size,
-                    )
+            if not key == "keys":
+                data = aver.__getattribute__(file_name).__getattribute__(key)
+                if file_name == "y" or file_name == "z":
+                    data = np.swapaxes(data, 1, 2)
+                for it in range(0, nt):
+                    if aver_by_proc:
+                        dataset_h5(
+                            ds[str(it)],
+                            key,
+                            status=state,
+                            shape=(n1, n2),
+                            dtype=precision,
+                            overwrite=overwrite,
+                            rank=rank,
+                            comm=comm,
+                            size=size,
+                        )
+                    else:
+                        try:
+                            data.shape
+                            dataset_h5(
+                                ds[str(it)],
+                                key,
+                                status=state,
+                                shape=data[0].shape,
+                                dtype=precision,
+                                overwrite=overwrite,
+                                rank=rank,
+                                comm=comm,
+                                size=size,
+                            )
+                        except:
+                            continue
         for it in indx:
             ds[str(it)]["time"][:] = aver.t[it - indx[0]]
         for key in aver.__getattribute__(file_name).__dict__.keys():
             # key needs to be broadcast as order of keys may vary on each process
             # causing segmentation fault
-            data = aver.__getattribute__(file_name).__getattribute__(key)
-            if file_name == "y" or file_name == "z":
-                data = np.swapaxes(data, 1, 2)
-            if not quiet:
-                print("writing", key, "on rank", rank)
-                sys.stdout.flush()
-            for it in indx:
-                if aver_by_proc:
-                    ds[str(it)][key][proc * nn : (proc + 1) * nn] = data[it - indx[0]]
-                else:
-                    ds[str(it)][key][:] = data[it - indx[0]]
+            if not key == "keys":
+                data = aver.__getattribute__(file_name).__getattribute__(key)
+                if file_name == "y" or file_name == "z":
+                    data = np.swapaxes(data, 1, 2)
+                if not quiet:
+                    print("writing", key, "on rank", rank)
+                    sys.stdout.flush()
+                for it in indx:
+                    if aver_by_proc:
+                        ds[str(it)][key][proc * nn : (proc + 1) * nn] = data[it - indx[0]]
+                    else:
+                        try:
+                            data.shape
+                            ds[str(it)][key][:] = data[it - indx[0]]
+                        except:
+                            continue
     if not quiet:
         print(filename + " written on rank {}".format(rank))
         sys.stdout.flush()
@@ -1216,7 +1242,7 @@ def write_h5_slices(
     # open file for writing data
     nt = vslice.t.shape[0]
     for extension in vslice.__dict__.keys():
-        if not extension in "t":
+        if not (extension == "t" or extension == "coordinate" or extension == "position"):
             for field in vslice.__getattribute__(extension).__dict__.keys():
                 filename = join(datadir, field + "_" + extension + ".h5")
                 if append:

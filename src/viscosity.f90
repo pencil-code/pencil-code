@@ -62,6 +62,7 @@ module Viscosity
   logical :: lvisc_nu_non_newtonian=.false.
   logical :: lvisc_rho_nu_const=.false.
   logical :: lvisc_rho_nu_const_bulk=.false.
+  logical :: lvisc_rho_nu_const_prefact=.false.
   logical :: lvisc_sqrtrho_nu_const=.false.
   logical :: lvisc_nu_cspeed=.false.
   logical :: lvisc_mu_cspeed=.false.
@@ -105,6 +106,7 @@ module Viscosity
   logical :: lvisc_mixture=.false.
   logical :: lvisc_spitzer=.false.
   logical :: lvisc_slope_limited=.false.
+  logical :: lvisc_schur_223=.false.
   logical :: limplicit_viscosity=.false.
   logical :: lmeanfield_nu=.false.
   logical :: lmagfield_nu=.false.
@@ -134,7 +136,8 @@ module Viscosity
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
       h_sld_visc,nlf_sld_visc, lnusmag_as_aux, lsld_notensor, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
-      no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux
+      no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux, &
+      lvisc_rho_nu_const_prefact
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -519,6 +522,9 @@ module Viscosity
           if (lroot) print*,'viscous force: slope-limited diffusion'
           if (lroot) print*,'viscous force: using ',trim(div_sld_visc),' order'
           lvisc_slope_limited=.true.
+        case ('nu-223schur')
+          if (lroot) print*,'viscous force: nu-223schur'
+          lvisc_schur_223=.true.
         case ('none',' ')
           ! do nothing
         case default
@@ -1182,6 +1188,10 @@ module Viscosity
       if (lboussinesq) lpenc_requested(i_graddivu)=.false.
       if (damp_sound/=0.) lpenc_requested(i_divu)=.true.
       if (lvisc_hyper3_mesh_residual) lpenc_requested(i_der6u_res)=.true.
+      if (lvisc_schur_223) then
+        lpenc_requested(i_del2u)=.true.
+        lpenc_requested(i_d2uidxj)=.true.
+      endif
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
@@ -1287,9 +1297,16 @@ module Viscosity
 !
 !  viscous force: mu/rho*(del2u+graddivu/3)
 !  -- the correct expression for rho*nu=const
+!  As a test for vorticity generation, we also allow for the possibility
+!  of setting the prefactor to mu (without 1/rho factor). In that case
+!  we set lvisc_rho_nu_const_prefact=T
 !
       if (lvisc_rho_nu_const) then
-        murho1=nu*p%rho1  !(=mu/rho)
+        if (lvisc_rho_nu_const_prefact) then
+          murho1=nu         !(=mu=dynamical viscosity)
+        else
+          murho1=nu*p%rho1  !(=mu/rho)
+        endif
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
               murho1*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))
@@ -2248,6 +2265,15 @@ module Viscosity
         endif
       endif
 !
+!  viscous force: in Schur-223 flow we use
+!  fvisc=nu*\nabla_h^2 u_h in the horizontal direction, and
+!  fvisc=nu*del2 u_z in the vertical direction
+!
+      if (lvisc_schur_223) then
+        p%fvisc=p%fvisc+nu*p%del2u
+        p%fvisc(:,1:2)=p%fvisc(:,1:2)-nu*p%d2uidxj(:,1:2,3)
+      endif
+!
 !  Calculate Lambda effect
 !
       if (llambda_effect) then
@@ -2920,15 +2946,6 @@ module Viscosity
                   +costh(m)*dlomega_dtheta) + lomega*costh(m)*dlhor_dtheta
 !
     endsubroutine calc_lambda
-!***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(:) :: p_diag
-
-    call keep_compiler_quiet(p_diag)
-
-    endsubroutine pushdiags2c
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

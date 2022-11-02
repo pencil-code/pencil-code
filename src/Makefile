@@ -2871,7 +2871,7 @@ ifneq ($(MODULE_CMD),)
                                -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
 endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
-	$${PENCIL_HOME}/utils/pc_identify_revision
+	$${PENCIL_HOME}/utils/pc_identify_revision --write
 
 code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
@@ -2892,7 +2892,7 @@ ifneq ($(MODULE_CMD),)
                                -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
 endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
-	$${PENCIL_HOME}/utils/pc_identify_revision
+	$${PENCIL_HOME}/utils/pc_identify_revision --write
 #
 FASTEXECS=code combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 fast:

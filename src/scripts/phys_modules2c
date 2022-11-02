@@ -16,21 +16,20 @@ fi
 modheader=../$modname'_'$1's_c.h'
 if [[ $1 == par ]]; then
   ptype=void
-  headerdir=./
+  headerdir=submodule/acc-runtime/$DSL_MODULE_DIR
   modinit=$modheader
-  modecs=../$modname'_par_decs_c.h'
-  rm -f $modecs
+  modecs=tmp2
 else
   ptype=int
   headerdir=diagnostics
-  modinit=../$modname'_diags_init_c.h'
+  modinit=$modname'_diags_init_c.h'
   modecs=/dev/null
   rm -f $modinit
 fi
 #
 # writes declaration of push$1s2c into $modfuncs
 #
-modfuncs=$headerdir/PC_module_$1funcs.h
+modfuncs=PC_module_$1funcs.h
 rm -f tmp
 if [ -f $modfuncs ]; then
   sed -e'/'$modname'/ d' < $modfuncs > tmp
@@ -55,50 +54,69 @@ sed -n '
 # writes declarations of n_$1s_<modname>, p_$1_<modname> and call of push$1s2c into $modname_$1s_c.h
 #
 rm -f $modheader tmp1
-sed -n '
-  /parameter/ {
-     h
-     s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX$modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
-     t store
-     b cont
-     : store
-     p
-     : cont
-     g
-     s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/'$MODULE_PREFIX$modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
-  }
-' < tmp >> $modfuncs
+if [[ $MODULE_NAME_ORDER == 'CRAY' ]]; then
+  sed -n '
+    /parameter/ {
+       h
+       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$modname$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
+       t store
+       b cont
+       : store
+       p
+       : cont
+       g
+       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$modname$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
+    }
+  ' < tmp >> $modfuncs
+else
+  sed -n '
+    /parameter/ {
+       h
+       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX$modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
+       t store
+       b cont
+       : store
+       p
+       : cont
+       g
+       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/'$MODULE_PREFIX$modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
+    }
+  ' < tmp >> $modfuncs
+fi
 #
 if [[ $1 == 'par' ]]; then
   sed -n '
-          /copy_addr_c/ {
-            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], sizeof(real)) );  \/\/ \1 real/w tmp1
+          /call  *copy_addr *(/ {
+            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *$/ config.real_params[\uA\uC\l_\1]=\1; \/\/ [\2-1] \1 real/w tmp1
             t cont
-            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z]*\) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], sizeof(\3)) );  \/\/ \1 \3/w tmp1
+            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z]*\) *$/ config.\3_params[\uA\uC\l_\1]=\1; \/\/ [\2-1] \1 \3/w tmp1
             t cont
-            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], \3*sizeof(real)) );  \/\/ \1 real(\3)/w tmp1
+            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ \/\/memcpy(config.real_arr_params[\uA\uC\l_\1],\1,\3*sizeof(real)); \/\/ [\2-1] \1 real(\3)/w tmp1
             t cont
-            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *! *\([a-zA-Z]*\) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], \4*sizeof(\3)) );  \/\/ \1 \3(\4)/w tmp1
+            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z]*\) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ \/\/memcpy(config.\3_arr_params[\uA\uC\l_\1],\1,\4*sizeof(\3));  \/\/ [\2-1] \1 \3(\4)/w tmp1
             : cont
             p
           }
   '< tmp >> $modheader
+#            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *$/ config.real_params[\uA\uC\l_\1]=\1;  \/\/ \1 real/w tmp1
+#            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_par_'$modname'[\2-1], sizeof(real)) );  \/\/ \1 real/w tmp1
+#            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z]*\) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_par_'$modname'[\2-1], sizeof(\3)) ); \/\/ \1 \3/w tmp1
 else
   sed -n '
-          /copy_addr_c/ {
+          /call  *copy_addr *(/ {
              h
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]\)\([mr][am][sx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U\2_VEC\L, h_grid.\U\1\1X\L);\n  save_name(diag,idiag_\1\2);\n}/ 
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=-reduce_cuda_PC(\U\2_VEC\L, h_grid.\U\1\1X\L);\n  save_name(diag,idiag_\1\2);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]\)\([mr][am][sx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U\2_VEC\L, h_grid.\U\1\1X\L);\n  save_name(diag,idiag_\1\2);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=-reduce_cuda_PC(\U\2_VEC\L, h_grid.\U\1\1X\L);\n  save_name(diag,idiag_\1\2);\n}/ 
              t store
              b cont
              : store
              p
              : cont
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]\)\([xyz]\)\([mr][iam][nsx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2\3>0) {\n  diag=reduce_cuda_PC(\U\3_SCAL\L, h_grid.\U\1\1\2\L);\n  save_name(diag,idiag_\1\2\3);\n}/ 
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]\)\([xyz]\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2\3>0) {\n  diag=-reduce_cuda_PC(\U\3_SCAL\L, h_grid.\U\1\1\2\L);\n  save_name(diag,diag_\1\2\3);\n}/ 
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]*\)\([mr][am][sx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U\2_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]*\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=-reduce_cuda_PC(\U\2_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
-             s/call  *copy_addr_c *( *idiag_\([a-zA-Z0-9_]*\)\(m\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U SUM_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]\)\([xyz]\)\([mr][iam][nsx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2\3>0) {\n  diag=reduce_cuda_PC(\U\3_SCAL\L, h_grid.\U\1\1\2\L);\n  save_name(diag,idiag_\1\2\3);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]\)\([xyz]\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2\3>0) {\n  diag=-reduce_cuda_PC(\U\3_SCAL\L, h_grid.\U\1\1\2\L);\n  save_name(diag,diag_\1\2\3);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]*\)\([mr][am][sx]\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U\2_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]*\)\(min\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=-reduce_cuda_PC(\U\2_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
+             s/call  *copy_addr *( *idiag_\([a-zA-Z0-9_]*\)\(m\) *, *p_'$1' *( *\([0-9]*\) *) *) *$/if (idiag_\1\2>0) {\n  diag=reduce_cuda_PC(\U SUM_SCAL\L, h_grid.\U\1\L);\n  save_name(diag,idiag_\1\2);\n}/ 
              t store1
              b cont1
              : store1
@@ -109,46 +127,43 @@ else
          }
   ' < tmp >> $modheader
 fi
+
 rm -f tmp
 #
 # writes macro definition of individual p_'$1' into $modfuncs
 #
 if [ -f tmp1 ]; then
   sed -n '
-         /p_/ {
-          s/^.*\(p_'$1'_'$modname' *\[ *[1-9][0-9]*-1 *\]\).*\/\/ *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *\([a-zA-Z][a-zA-Z]*\) *$/#define \2 (*((\3 *) \1)) \/\/ \3 from '$modname'/
-          t cont
-          b dimen
-          : cont
-          p
-          s/^#define  *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) .*\/\/ *\([a-zA-Z][a-zA-Z]*\) .*$/DCONST_EXTERN __constant__ \2 d_\U\1;/
-          H
-          b end
-          : dimen
-          s/^.*\(p_'$1'_'$modname' *\[ *[1-9][0-9]*-1 *\]\).*\/\/ *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *\([a-zA-Z0-9_][a-zA-Z0-9_]*\)\(([a-zA-Z0-9_][a-zA-Z0-9_]*)\) *$/#define \2 ((\3 *)\1) \/\/ \3\4 from '$modname'/
-          t cont1
-          b end
-          : cont1
-          p
-          s/^#define  *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) .*\/\/ *\([a-zA-Z][a-zA-Z]*\)(\([a-zA-Z0-9_][a-zA-Z0-9_]*\)).*$/DCONST_EXTERN __constant__ \2 d_\U\1[\L\3];/
-          H
-          : end
-         }
+         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *$/#define \2 (*((\3 *) p_par_'$modname'\1))/
+         t cont
+         b dimen
+         : cont
+         p
+         s/^#define *\([a-zA-Z0-9_]*\).*(( *\([a-zA-Z0-9_]*\) .*$/\2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
+         H
+         b end
+         : dimen
+         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9]* *)\) *$/#define \2 ((\3 *) p_par_'$1'_'$modname'\1) \/\/ \4/
+         p
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_]*\)) *$/\2[\3] AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
+         H
+         : end
          $ {
             g
             w '$modecs'
            }
-  ' < tmp1 >> $modfuncs
-  rm -f tmp1
+         ' < tmp1 >> $modfuncs
+#  rm -f tmp1
 fi
 #
-# writes #include "$modname_$1s_c.h" into $headerdir/PC_module$1s.h
+# writes #include "$modname_$1s_c.h" into /PC_module$1s.h
 #
-echo '#include "'$modheader'"' >> $headerdir/PC_module$1s.h
+echo '#include "'$modheader'"' >> PC_module$1s.h
 #
 # writes #include "$modname_par_decs_c.h" into $headerdir/PC_modulepardecs.h
 #
 if [[ $1 == 'par' ]]; then
-  echo '#include "'$modecs'"' >> $headerdir/PC_modulepardecs.h
+  cat $modecs >> $headerdir/PC_modulepardecs.h
+  rm -f tmp2
 fi
 

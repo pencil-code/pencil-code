@@ -44,7 +44,7 @@ module Energy
   logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=intlen) :: iinit_str
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+  integer :: pushpars2c  ! should be procedure pointer (F2003)
 !
   namelist /entropy_init_pars/ &
       initss, ss_const, T0, beta_glnrho_global, ladvection_energy

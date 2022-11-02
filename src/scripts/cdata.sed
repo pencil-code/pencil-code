@@ -2,7 +2,7 @@
 /^ *type *[a-zA-Z0-9_]* *$/,/^ *end *type *[a-zA-Z0-9_]* *$/ d
 #remove comment lines
 /^ *!/ d
-#remove lines containig use, public, equivalence, character or target
+#remove lines containing use, public, equivalence, character or target
 /^ *use/ d
 /^ *public/ d
 /^ *equivalence/ d
@@ -41,6 +41,8 @@ s/real *\([*]*\):: */extern REAL \1,/
 s/logical *\([*]*\):: */extern int \1,/
 s/double  *precision *\([*]*\):: */extern double \1,/
 #remove initializations for non-constant items
+/const/ !s/ *= *[a-zA-Z0-9_]* *([^)][^)]*)[^,]*,/,/g
+/const/ !s/ *= *[a-zA-Z0-9_]* *([^)][^)]*)[^,]*$//
 /const/ !s/ *= *[^,]*,/,/g        
 /const/ !s/ *= *[^,]* *$//g
 #insert pointer assignment for array quantities
@@ -52,8 +54,8 @@ s/double  *precision *\([*]*\):: */extern double \1,/
       s/^ *extern  *[a-zA-Z][a-zA-Z]* *[\*]* *,/,/
       # remove terminating , and & in continuation lines
       s/, *& *$//
-      s/, *\*\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *= *\&[^,]*/#define \1_ MPREcdataMINF\1MSUF \n/g
-      s/, *\([a-zA-Z0-9_][a-zA-Z0-9_]*\)/#define \1 MPREcdataMINF\1MSUF \n/g
+      s/, *\*\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *= *\&[^,]*/#define \1_ MODULE_PREFIXcdataMODULE_INFIX\1MODULE_SUFFIX \n/g
+      s/, *\([a-zA-Z0-9_][a-zA-Z0-9_]*\)/#define \1 MODULE_PREFIXcdataMODULE_INFIX\1MODULE_SUFFIX \n/g
       /^ *, *$/ d
       w tmp
       g

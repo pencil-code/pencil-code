@@ -399,7 +399,7 @@ module EquationOfState
 !  9-oct-15/MR: coded
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
-      type (pencil_case),                intent(OUT)  :: p
+      type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_eos_pencpar(f,p,lpencil)
 !
@@ -419,8 +419,7 @@ module EquationOfState
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      intent(inout) :: f
-      intent(out) :: p
+      intent(inout):: f,p
       intent(in) :: lpenc_loc
 !
       integer :: i
@@ -507,7 +506,7 @@ module EquationOfState
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
-    subroutine getmu(f,mu)
+    subroutine getmu(f,mu_tmp)
 !
 !  Calculate average particle mass.
 !  Note that the particles density is N = nHI + nHII + ne + nHe
@@ -520,13 +519,13 @@ module EquationOfState
 !   12-aug-03/tony: implemented
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu
+      real, optional, intent(out) :: mu_tmp
 !
-      mu=1.+3.97153*xHe
+      mu_tmp=1.+3.97153*xHe
 !
 ! tobi: the real mean molecular weight would be:
 !
-! mu=(1.+3.97153*xHe)/(1+yH+xHe)
+! mu_tmp=(1.+3.97153*xHe)/(1+yH+xHe)
 !
       call keep_compiler_quiet(present(f))
 !
@@ -2072,15 +2071,6 @@ module EquationOfState
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
-!***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(:) :: p_diag
-
-    call keep_compiler_quiet(p_diag)
-
-    endsubroutine pushdiags2c
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

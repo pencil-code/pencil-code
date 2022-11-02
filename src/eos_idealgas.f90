@@ -460,7 +460,7 @@ module EquationOfState
 !   12-aug-03/tony: implemented
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu_tmp
+      real, optional, intent(out) :: mu_tmp
 !
 !  mu = mu_H * (1 - xHe) + mu_He * xHe
 !     = mu_H + (mu_He-mu_H) * xHe
@@ -762,7 +762,7 @@ module EquationOfState
 !  9-oct-15/MR: coded
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
-      type (pencil_case),                intent(OUT)  :: p
+      type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_eos_pencpar(f,p,lpencil)
 !
@@ -779,7 +779,7 @@ module EquationOfState
       use Sub
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
-      type (pencil_case),                intent(OUT)  :: p
+      type (pencil_case),                intent(INOUT):: p
       logical, dimension(:),             intent(IN)   :: lpenc_loc
 !
       real, dimension(nx) :: tmp
@@ -4939,15 +4939,6 @@ module EquationOfState
       call get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
     endsubroutine set_stratz
-!***********************************************************************
-    subroutine pushdiags2c(p_diag)
-!
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(:) :: p_diag
-!
-    call keep_compiler_quiet(p_diag)
-!
-    endsubroutine pushdiags2c
 !***********************************************************************
     subroutine pushpars2c(p_par)
 !

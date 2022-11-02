@@ -12,8 +12,8 @@
   !dsnap=2., dvid=2., slice_position='m' 
   bcz = 's','s','ubs','ism','ism','cop','cop'
   ip=1963
-  lpencil_check=F
-  lpencil_check_small=F
+  lpencil_check=T
+  lpencil_check_small=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
@@ -50,7 +50,7 @@
 !! override persistent variables read in from varfile
 !  lSNII=T, l_persist_overwrite_lSNII=T
 !  lSNI=T, l_persist_overwrite_lSNI=T 
-  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
+!  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
 !  t_next_SNII=9e-4, l_persist_overwrite_tSNII=T
 !! rest random number after crash for new SN site 
 !  lreset_ism_seed=T

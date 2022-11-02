@@ -78,9 +78,9 @@ if (! $?_sourceme) then		# called for the fist time?
     endif
     #  Set library path for linker
     if ($?LD_LIBRARY_PATH) then
-      setenv LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:./src:./src/astaroth:./src/astaroth/submodule/build/src/core"
+      setenv LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:./src:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels:./src/astaroth/submodule/build/src/utils"
     else
-      setenv LD_LIBRARY_PATH "./src:./src/astaroth:./src/astaroth/submodule/build/src/core"
+      setenv LD_LIBRARY_PATH "./src:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels:./src/astaroth/submodule/build/src/utils"
     endif
 #    #  Set Perl module path [no longer needed]
 #    set _perl5lib = "${PENCIL_HOME}/lib/perl"

@@ -32,7 +32,7 @@ n2b=0L
 ;
 ; Check for existence and read the data.
 ;
-filename=datadir+'/bdim.dat'
+filename=datadir+'bdim.dat'
 if (file_test(filename)) then begin
   if is_valid(object,'BDIM',filename) then return
   if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'

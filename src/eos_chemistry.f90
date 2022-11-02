@@ -326,7 +326,7 @@ module EquationOfState
 !   23 may-10/nils: fleshed it up
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu_tmp
+      real, optional, intent(out) :: mu_tmp
 !
       call keep_compiler_quiet(mu_tmp)
       call keep_compiler_quiet(present(f))
@@ -475,7 +475,7 @@ module EquationOfState
 !  9-oct-15/MR: coded
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
-      type (pencil_case),                intent(OUT)  :: p
+      type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_eos_pencpar(f,p,lpencil)
 !
@@ -498,8 +498,8 @@ module EquationOfState
       real, dimension(nx) :: rho1del2rho,del2mu1,gmu12,glnpp2
       real, dimension(nx) :: del2TT, gradTgradT
 !
-      intent(inout) :: f, lpenc_loc
-      intent(inout) :: p
+      intent(in) :: lpenc_loc
+      intent(inout) :: f,p
 !
       integer :: i
 !
@@ -1739,15 +1739,6 @@ module EquationOfState
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
-!***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(:) :: p_diag
-
-    call keep_compiler_quiet(p_diag)
-
-    endsubroutine pushdiags2c
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

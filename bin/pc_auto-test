@@ -16,9 +16,6 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # line 17
 
 # Name:   pc_auto-test
-# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# Date:   12-Aug-2002
-# SVN: $Id$
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -51,7 +48,7 @@ use constant NOQUIET     => 0;
 use constant QUIET       => 1;
 use constant LOCK_FAILED => 128; # return status if we can't get lock
 use Cwd;
-use POSIX qw(floor);
+use POSIX qw(floor strftime);
 use Getopt::Long;
 use vars qw{ %failed $test_status }; # do we really need global vars here?
 use IPC::Open2;
@@ -131,14 +128,15 @@ my %tests = (
                          2d-tests/selfgravdisk-logspirals
                          2d-tests/turbulent_potential
                          2d-tests/WhiteDwarfDisk
-		         2d-tests/cylinder_ogrid_thermo_chem
+                         2d-tests/cylinder_ogrid_thermo_chem
                          2d-tests/shallow-water
                          2d-tests/torque_migration_noniso
                          sink-particles
-			 2d-tests/jupiter-atmosphere-cyclogenesis
-			 convective-overstability-particles
-			 streaming-instability-sink
-			 1d-tests/hyperdiffusion
+                         2d-tests/jupiter-atmosphere-cyclogenesis
+                         convective-overstability-particles
+                         streaming-instability-sink
+                         1d-tests/hyperdiffusion
+                         2d-tests/eccentricity-decay
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -162,10 +160,10 @@ my %tests = (
                          spherical-convection-corona
                          small-scale-dynamo_slope-limited-diffusion
                          meanfield_special_e_tensor_GCD
-			 dust-accretion
-			 superparticle_condensation
-			 superparticle-coagulation
-			 superparticle-condensation-coagulation
+                         dust-accretion
+                         superparticle_condensation
+                         superparticle-coagulation
+                         superparticle-condensation-coagulation
                      )],
              # Level 4 for now contains overlong tests (e.g. test that
              # compile, start and then run for more than 5 minutes on
@@ -281,6 +279,7 @@ Options:
   -r,  --reload            \tKeep reloading parameters (using KEEP_RELOADING)
   -l,  --list              \tList test directories (don't run any tests)
   -L,  --list-all          \tList even test dirs lacking reference.out
+       --logfile=FILE      \tAppend one-line summary to the given file
   -t,  --time              \tPrint CPU time used
   -T,  --summarize-times   \tPrint timings line for pencil-test and statistics
   -i,  --infofile=<file>   \tAfter last test, print content of <file>
@@ -357,6 +356,7 @@ GetOptions(\%opts,
                -r   --reload
                -l   --list
                -L   --list-all
+                    --logfile=s
                -t   --time
                -T   --summarize-times
                -i=s --infofile=s
@@ -401,9 +401,10 @@ my $clean       = ($opts{'C'} || $opts{'clean'}           || 0    );
 my $reload      = ($opts{'r'} || $opts{'reload'}          || 0    );
 my $list_only   = ($opts{'l'} || $opts{'list'}            || 0    );
 my $list_all    = ($opts{'L'} || $opts{'list-all'}        || 0    );
+my $logfile     = (              $opts{'logfile'}         || ''   );
+my $infofile    = ($opts{'i'} || $opts{'infofile'}        || ''   );
 my $time        = ($opts{'t'} || $opts{'time'}            || 0    );
 my $summarize_t = ($opts{'T'} || $opts{'summarize-times'} || 0    );
-my $infofile    = ($opts{'i'} || $opts{'infofile'}        || ''   );
 my $pencil_home = ($opts{'D'} || $opts{'pencil-home'}     || "$ENV{PENCIL_HOME}"
                                                              || '');
 my $niceval     = ($opts{'N'} || $opts{'nice'}            || 0    );
@@ -1641,6 +1642,13 @@ sub write_to_file {
     }
 }
 # ---------------------------------------------------------------------- #
+sub git_version {
+# Return the current version of the code.
+    my $rev = `$ENV{PENCIL_HOME}/utils/pc_identify_revision --one-line`;
+    chomp $rev;
+    return $rev;
+}
+# ---------------------------------------------------------------------- #
 sub get_maintainer_list {
 # Return comma-separated list of maintaners of directories listed in
 # %failed, avoiding duplicate entries.
@@ -1732,6 +1740,32 @@ END {
               " = ", s_to_hms($t_global{'compile'}),
               " + ", s_to_hms($t_global{'start+run'}),
               "\n";
+        }
+
+        # Log test status to log file
+        if ($logfile) {
+            open(my $log, ">>", $logfile)
+              or warn "Cannot open $logfile for writing";
+            print $log strftime("%Y-%m-%d_%H:%M:%S_%Z ", localtime);
+            print $log sprintf("%-22s : ", git_version());
+
+        #   if (%failed) {
+        #       my $failed_count = scalar(keys %failed);
+        #       print $log sprintf("%d/%d failed: ", $failed_count, $ntests);
+        #       my $first = 1;
+        #       while (my ($dir, $phase) = each %failed) {
+        #           if ($first) {
+        #               $first = 0;
+        #           } else {
+        #               print $log ", ";
+        #           }
+        #           print $log sprintf("%s (%s)", compactify($dir), $phase);
+        #       }
+        #   } else {
+        #       print $log sprintf("All %d tests succeeded ", $ntests);
+        #   }
+            print $log "\n";
+            close($log);
         }
 
         # Print info from file

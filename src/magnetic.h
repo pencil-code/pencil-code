@@ -31,6 +31,7 @@
   public :: calc_diagnostics_magnetic
   public :: magnetic_calc_spectra
   public :: beltrami_phase
+  !public :: braginsky
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !

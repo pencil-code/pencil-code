@@ -16,9 +16,6 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # line 17
 #
 # Name:   pencil-test
-# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2008-07-11 05:02:53 $
-# $Revision: 1.40 $
 # Description:
 #   Run the pencil code's auto test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.

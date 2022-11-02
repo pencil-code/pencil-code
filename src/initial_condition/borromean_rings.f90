@@ -25,12 +25,20 @@ module InitialCondition
 ! width_ring = width of the flux tubes
 ! [xyz]scale = scale in each dimension
 
-  real :: ampl=1.0, width_ring=0.6, minor_axis=1.0, major_axis=2.5
-  real :: xscale = 1.0, yscale = 1.0, zscale = 1.0
+  ! Note that spine_resolution refers to the number of spine points per ellipse. The total
+  ! number of spine points will be three times that number.
+  !integer :: spine_resolution = 200
+
+  real :: ampl=1.0, width_ring_a=0.6, width_ring_b=0.6,width_ring_c=0.2, minor_axis=1.0, major_axis=2.5
+  real :: xscale=1.0, yscale=1.0, zscale=1.0
+  real :: twist_a=0.0, twist_b=0.0, twist_c=0.0
+  real :: xshift=0, yshift=0, zshift=0.0
   character (len=labellen) :: prof='constant'
 !
   namelist /initial_condition_pars/ &
-      ampl,width_ring,prof,minor_axis,major_axis,xscale,yscale,zscale
+      ampl,width_ring_a, width_ring_b,width_ring_c,&
+      prof,minor_axis,major_axis,xscale,yscale,zscale,&
+      twist_a,twist_b,twist_c,xshift,yshift,zshift
 !
   contains
 !***********************************************************************
@@ -89,130 +97,166 @@ module InitialCondition
       use Mpicomm, only: stop_it
       use Poisson
       use Sub
-      
+
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ellipse_param, circle_param, circle_radius
-      real :: delta_ellipse_param, delta_circle_param, delta_circle_radius
-      real, dimension(3) :: ellipse_pos, circle_pos, tangent, normal
+      real, dimension (:), allocatable :: distance_to_spine
+      real :: xspacing, yspacing, zspacing,delta_ellipse_param,ellipse_param
+      real, dimension (3) :: origin, rho , B_0, c_0 , twist_vector, p
+      real :: curvature_factor, rho_len , scaling , B_0_strength , twist , width_ring
+      !real, dimension( 200 , 3):: spine, tangent, curvature, connection_vec
+      real, dimension(: , :), allocatable :: spine, tangent, curvature, connection_vec
+      integer :: l, j,  ju ,spine_index, min_index
       integer :: domain_width, domain_depth, domain_height
-      integer :: l, j, ju, ellipse_idx
+      ! The next variable is the number of spine points in the entire knot. spine_resolution is 
+      !  the number of spine points per ellipse. So full_spine_resolution = 3*spine_resolution
+      integer :: full_spine_resolution
       ! The next 2 variables are used for the uncurling.
       real, dimension (nx,ny,nz,3) :: jj, tmpJ  ! This is phi for poisson.f90
+      integer :: spine_resolution=200
+      
+
+      full_spine_resolution = spine_resolution*3
+      allocate(spine(full_spine_resolution,3), tangent(full_spine_resolution,3), &
+               curvature(full_spine_resolution,3), connection_vec(full_spine_resolution,3), &
+               distance_to_spine(full_spine_resolution))
       
 !
 !  initialize the magnetic flux tube
 !
       domain_width = l2-l1; domain_depth = m2-m1; domain_height = n2-n1
+      delta_ellipse_param = 2.*pi / real(spine_resolution)
 !
-!  Calculate the minimum step size of the curve parameters 
-!  to avoid discretisation issues, like mesh points without magnetic field
-!
-      delta_ellipse_param = 1./max(domain_width,domain_depth,domain_height) / major_axis
-      delta_circle_param = delta_ellipse_param/(width_ring/2.)
-      delta_circle_radius = delta_circle_param
-!
-      
-!
-!  loop which goes around the ellipses
-!
-      do ellipse_idx = 1,3
-        ellipse_param = 0.
-!
-!  loop which moves along the ellipse
-!
-        do
-          if (ellipse_param .gt. 2.*pi) exit              
-          if (ellipse_idx .eq. 1) then
-            ellipse_pos(1) = major_axis*sin(ellipse_param)
-            ellipse_pos(2) = minor_axis*cos(ellipse_param)
-            ellipse_pos(3) = 0
-            tangent(1) = major_axis*cos(ellipse_param)
-            tangent(2) = -major_axis*sin(ellipse_param)
-            tangent(3) = 0
-          endif
-          if (ellipse_idx .eq. 2) then
-            ellipse_pos(1) = minor_axis*cos(ellipse_param)
-            ellipse_pos(2) = 0
-            ellipse_pos(3) = major_axis*sin(ellipse_param)
-            tangent(1) = -major_axis*sin(ellipse_param)
-            tangent(2) = 0
-            tangent(3) = major_axis*cos(ellipse_param)
-          endif
-          if (ellipse_idx .eq. 3) then
-            ellipse_pos(1) = 0
-            ellipse_pos(2) = major_axis*sin(ellipse_param)
-            ellipse_pos(3) = minor_axis*cos(ellipse_param)
-            tangent(1) = 0
-            tangent(2) = major_axis*cos(ellipse_param)
-            tangent(3) = -major_axis*sin(ellipse_param)
-          endif
-          tangent = tangent / sqrt(tangent(1)**2+tangent(2)**2+tangent(3)**2)
-!
-!  Find vector which is orthonormal to tangent vector.
-!
-          if (abs(tangent(1)) .le. 0.5) then
-            normal(1) = tangent(1)**2 - 1.0
-            normal(2) = tangent(2)*tangent(1)
-            normal(3) = tangent(3)*tangent(1)
-          elseif (abs(tangent(2)) .le. 0.5) then
-            normal(1) = tangent(1)*tangent(2)
-            normal(2) = tangent(2)**2 - 1.0
-            normal(3) = tangent(3)*tangent(2)
-          else
-            normal(1) = tangent(1)*tangent(3)
-            normal(2) = tangent(2)*tangent(3)
-            normal(3) = tangent(3)**2 - 1.0
-          endif
-!
-!  normalize the normal vector
-!
-          normal = normal / sqrt(normal(1)**2+normal(2)**2+normal(3)**2)
+      xspacing = 2.*pi / real(domain_width)
+      yspacing = 2.*pi / real(domain_depth)
+      zspacing = 2.*pi / real(domain_height)
+      origin = (/ -real(domain_width - 1)*xspacing/2., &
+                  -real(domain_depth - 1)*yspacing/2., -real(domain_height - 1)*zspacing/2. /)
 
-          circle_radius = 0.
-!
-!  loop which changes the circle's radius
-!
-          do
-            if (circle_radius .gt. width_ring/2.) exit
-            circle_param = 0.
-!
-!  loop which goes around the circle
-!
-            do
-              if (circle_param .gt. 2.*pi) exit
-              circle_pos(1) = ellipse_pos(1) + circle_radius * &
-              ((tangent(1)*tangent(1)*(1-cos(circle_param))+cos(circle_param))*normal(1) + &
-              (tangent(1)*tangent(2)*(1-cos(circle_param))-tangent(3)*sin(circle_param))*normal(2) + &
-              (tangent(1)*tangent(3)*(1-cos(circle_param))+tangent(2)*sin(circle_param))*normal(3))
-              circle_pos(2) = ellipse_pos(2) + circle_radius * &
-              ((tangent(1)*tangent(2)*(1-cos(circle_param))+tangent(3)*sin(circle_param))*normal(1) + &
-              (tangent(2)*tangent(2)*(1-cos(circle_param))+cos(circle_param))*normal(2) + &
-              (tangent(2)*tangent(3)*(1-cos(circle_param))-tangent(1)*sin(circle_param))*normal(3))
-              circle_pos(3) = ellipse_pos(3) + circle_radius * &
-              ((tangent(1)*tangent(3)*(1-cos(circle_param))-tangent(2)*sin(circle_param))*normal(1) + &
-              (tangent(2)*tangent(3)*(1-cos(circle_param))+tangent(1)*sin(circle_param))*normal(2) + &
-              (tangent(3)*tangent(3)*(1-cos(circle_param))+cos(circle_param))*normal(3))
-!
-!  Find the corresponding mesh point to this position.
-!
-              l = nint(circle_pos(1)/(2.*pi)*domain_width*xscale + domain_width/2.0)
-              m = nint(circle_pos(2)/(2.*pi)*domain_depth*yscale + domain_depth/2.0)
-              n = nint(circle_pos(3)/(2.*pi)*domain_height*zscale + domain_height/2.0)
-!
-!  Write the magnetic field B.
-!  Note that B is written in the f-array where A is stored. This is
-!  corrected further in the code.
-!
-              f(l,m,n,iax:iaz) = tangent*ampl
-              
-              circle_param = circle_param + delta_circle_param
+!  We will now loop over ellipses a, b, c separately
+!  Ellipse a has a major axis parallel to the x-axis and minor axis parallel to y
+!  Ellipse b has a major axis parallel to the z-axis and minor axis parallel to x
+!  Ellipse c has a major axis parallel to the y-axis and minor axis parallel to z
+!  All ellipses are stored in the same array, with indeces as follows:
+!   a: 1 to spine_resolution
+!   b: spine_resolution+1 to 2*spine_resolution
+!   c: 2*spine_resolution+1 to 3*spine_resolution
+
+
+
+      do spine_index = 1, spine_resolution
+        ellipse_param = real(spine_index)*delta_ellipse_param
+
+!  Loop over ellipse a
+        spine(spine_index,1) = major_axis*sin(ellipse_param)
+        spine(spine_index,2) = minor_axis*cos(ellipse_param)
+        spine(spine_index,3) = 0
+
+        tangent(spine_index,1) = major_axis*cos(ellipse_param)
+        tangent(spine_index,2) = -minor_axis*sin(ellipse_param)
+        tangent(spine_index,3) = 0
+
+        curvature(spine_index,1) = -major_axis*sin(ellipse_param)
+        curvature(spine_index,2) = -minor_axis*cos(ellipse_param)
+        curvature(spine_index,3) = 0
+
+!  Loop over ellipse b
+        spine(spine_index + spine_resolution,1) = minor_axis*cos(ellipse_param)
+        spine(spine_index + spine_resolution,2) = 0
+        spine(spine_index + spine_resolution,3) = major_axis*sin(ellipse_param)
+
+        tangent(spine_index + spine_resolution,1) = -minor_axis*sin(ellipse_param)
+        tangent(spine_index + spine_resolution,2) = 0
+        tangent(spine_index + spine_resolution,3) = major_axis*cos(ellipse_param)
+
+        curvature(spine_index + spine_resolution,1) = -minor_axis*cos(ellipse_param)
+        curvature(spine_index + spine_resolution,2) = 0
+        curvature(spine_index + spine_resolution,3) = -major_axis*sin(ellipse_param)
+
+!  Loop over ellipse c
+        spine(spine_index + spine_resolution*2,1) = 0
+        spine(spine_index + spine_resolution*2,2) = major_axis*sin(ellipse_param)
+        spine(spine_index + spine_resolution*2,3) = minor_axis*cos(ellipse_param)
+
+        tangent(spine_index + spine_resolution*2,1) = 0
+        tangent(spine_index + spine_resolution*2,2) = major_axis*cos(ellipse_param)
+        tangent(spine_index + spine_resolution*2,3) = -minor_axis*sin(ellipse_param)
+
+        curvature(spine_index + spine_resolution*2,1) = 0
+        curvature(spine_index + spine_resolution*2,2) = -major_axis*sin(ellipse_param)
+        curvature(spine_index + spine_resolution*2,3) = -minor_axis*cos(ellipse_param)
+      enddo
+      tangent = tangent / sqrt(major_axis**2 + minor_axis**2)
+
+! Variable names:
+!   p = physical position of point in mesh
+!   s = spine
+!   t = tangent
+!   c = curvature
+!   rho = min(p-s); rho_len = vec_len(rho)
+
+! B_0, c_0 are magnetic field (i.e. tangent) and curvature at closest pt on spine respectively
+      do l=1,mx
+        do m=1,my
+          do n=1,mz
+            ! p = (x,y,z)
+            ! p is the physical position of the grid point
+            p(1:3) = (/ x(l), y(m), z(n) /)
+
+            ! rho_len = min(vector_len(p-s))
+            ! distances from every point of the spine to p
+            do spine_index=1,full_spine_resolution
+              connection_vec(spine_index,:) =  p - spine(spine_index,:)
+              distance_to_spine(spine_index) = sqrt( connection_vec(spine_index,1)**2. + &
+              connection_vec(spine_index,2)**2. + connection_vec(spine_index,3)**2. )
             enddo
-            circle_radius = circle_radius + delta_circle_radius
+
+            ! let S_p be the spine point closest to p
+            ! min_index is the locaton of S_p in the array "spine"
+            min_index = minloc(distance_to_spine,dim=1)
+            if (min_index .lt. spine_resolution) then
+                  twist = twist_a
+                  width_ring = width_ring_a
+            else if (min_index .lt. 2*spine_resolution) then
+                  twist = twist_b
+                  width_ring = width_ring_b
+            else
+                  twist = twist_c
+                  width_ring = width_ring_c
+            endif
+            ! rho is the vector from S_p to p, 
+            rho(:) = connection_vec(min_index,:)
+            rho_len = sqrt(rho(1)**2 + rho(2)**2 + rho(3)**2)
+
+            ! B_0 and c_0 are tangent and curvature at corresp spine segment
+            ! B_0_strength will be used to normalise B_0 and twist_vector below
+            B_0(:) = tangent(min_index,:)
+            B_0_strength = sqrt( B_0(1)**2 + B_0(2)**2 + B_0(3)**2)
+            c_0(:) = curvature(min_index,:)
+
+            ! Curvature based scaling by (1-dot(c,rho))
+            ! i.e. by ratio of radius of curvature at p vs S_p
+            curvature_factor = 1. - dot_product(c_0,rho)
+
+            ! Twist vector perpendicular to the spine and rho
+            ! twist_vector = vector_prod(B_0 , rho) * twist
+            twist_vector(1) = B_0(2)*rho(3) - B_0(3)*rho(2)
+            twist_vector(2) = B_0(3)*rho(1) - B_0(1)*rho(3)
+            twist_vector(3) = B_0(1)*rho(2) - B_0(2)*rho(1)
+            twist_vector = twist_vector*twist/rho_len
+
+            ! Scaling function using tanh and dist from spine
+            ! Note that width_ring = 2* radius_ring, so mult by 10 instead of 5
+            scaling = tanh(-60.*rho_len/width_ring + 29.3)/2. + 0.5
+
+            ! Calc magnetic field at p
+            f(l,m,n,iax:iaz) = (B_0 + twist_vector)*scaling*ampl*curvature_factor/B_0_strength
           enddo
-          ellipse_param = ellipse_param + delta_ellipse_param
         enddo
       enddo
-      
+
+      deallocate(spine, tangent, curvature, connection_vec, distance_to_spine)  
+
+
 !
 !  Transform the magnetic field into a vector potential
 !

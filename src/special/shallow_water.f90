@@ -131,7 +131,7 @@ module Special
   contains
 !
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_special
 !
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
@@ -193,7 +193,7 @@ module Special
 !
 !  Initialize storms
 !
-      if (lcalc_storm) call update_storms()
+      if (lcalc_storm) call update_storms
 !
       tmass_relaxation1 = 1./tmass_relaxation
 !
@@ -251,7 +251,7 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine pencil_criteria_special()
+    subroutine pencil_criteria_special
 !
 !  All pencils that this special module depends on are specified here.
 !
@@ -514,7 +514,7 @@ module Special
 !  xc, yc, rstorm, tpeak, and tstorm will be re-written.
 !  Call it only on the first stage, and the first imn point.
 !
-      if (lfirst.and.lfirstloop.and.it/=1) call update_storms()
+      if (lfirst.and.lfirstloop.and.it>1) call update_storms
 !         
 !  Now that we have the parameters of the storms, construct the
 !  function and add to the equation of motion. 
@@ -567,7 +567,7 @@ module Special
 !    
   endsubroutine calc_storm_function
 !***********************************************************************
-  subroutine update_storms()
+  subroutine update_storms
 !
 !  This subroutine checks if a storm is over, and if so, adds a new one. 
 !    
@@ -614,7 +614,7 @@ module Special
 !  Restarting a simulation. Read the list of storms. All procs
 !  read the file and set their modes.
 !
-      restarting_first_timestep: if (it==1) then
+      restarting_first_timestep: if (it==0) then
 !      
 !  Not start time. The storms are already set. Test if they need updating.
 !  A storm needs updating if it has reached its end, which is the peak time

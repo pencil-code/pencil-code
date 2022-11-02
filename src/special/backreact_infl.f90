@@ -32,7 +32,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of backreact_infl_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED infl_phi; infl_dphi; infl_a2; infl_a21
+! PENCILS PROVIDED infl_phi; infl_dphi; infl_a2; infl_a21; gphi(3)
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -72,7 +72,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module backreact_infl
+module Special
 !
   use Cparam
   use Cdata
@@ -89,13 +89,13 @@ module backreact_infl
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0
   real :: ncutoff_phi=1.
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
-  real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0.
+  real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0., eps=.01
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
   real :: initpower_phi=0.,  cutoff_phi=0.,  initpower2_phi=0.
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
-  real :: a2rhopm, a2rhopm_all
+  real :: ddotam, a2rhopm, a2rhopm_all, ddotam_all
   real, pointer :: alpf
   logical :: lbackreact_infl=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true.
@@ -104,16 +104,16 @@ module backreact_infl
   character (len=labellen) :: Vprime_choice='quadratic'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
 !
-  namelist /backreact_infl_init_pars/ &
-      initspecial, phi0, dphi0, axionmass, ascale_ini, &
+  namelist /special_init_pars/ &
+      initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       c_light_axion, lambda_axion, amplphi, ampldphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox
 !
-  namelist /backreact_infl_run_pars/ &
-      initspecial, phi0, dphi0, axionmass, ascale_ini, &
+  namelist /special_run_pars/ &
+      initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble
 !
@@ -127,6 +127,7 @@ module backreact_infl
   integer :: idiag_dphirms=0   ! DIAG_DOC: $\left<(\phi')^2\right>^{1/2}$
   integer :: idiag_Hubblem=0   ! DIAG_DOC: $\left<{\cal H}\right>$
   integer :: idiag_lnam=0      ! DIAG_DOC: $\left<\ln a\right>$
+  integer :: idiag_ddotam=0    ! DIAG_DOC: $a''/a$
 !
   contains
 !****************************************************************************
@@ -222,7 +223,7 @@ module backreact_infl
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, eps=.01, Hubble_ini, lnascale
+      real :: Vpotential, Hubble_ini, lnascale
       integer :: j
 !
       intent(inout) :: f
@@ -294,6 +295,10 @@ module backreact_infl
         lpenc_requested(i_infl_a21)=.true.
       endif
 !
+!  pencil for gradient of phi
+!
+      lpenc_requested(i_gphi)=.true.
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -315,6 +320,8 @@ module backreact_infl
 !
 !  24-nov-04/tony: coded
 !
+      use Sub, only: grad
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -322,7 +329,7 @@ module backreact_infl
       intent(inout) :: p
 !
 ! infl_phi
-      if (lpencil(i_infl_phi)) p%infl_dphi=f(l1:l2,m,n,iinfl_phi)
+      if (lpencil(i_infl_phi)) p%infl_phi=f(l1:l2,m,n,iinfl_phi)
 !
 ! infl_dphi
       if (lpencil(i_infl_dphi)) p%infl_dphi=f(l1:l2,m,n,iinfl_dphi)
@@ -332,6 +339,9 @@ module backreact_infl
 !
 ! infl_a21
       if (lpencil(i_infl_a21)) p%infl_a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
+!
+! infl_gphi
+      if (lpencil(i_gphi)) call grad(f,iinfl_phi,p%gphi)
 !
 !  Magnetic field needed for Maxwell stress
 !
@@ -437,6 +447,7 @@ module backreact_infl
         if (idiag_dphirms/=0) call sum_mn_name(dphi**2,idiag_dphirms,lsqrt=.true.)
         if (idiag_Hubblem/=0) call sum_mn_name(Hscript,idiag_Hubblem)
         if (idiag_lnam/=0) call sum_mn_name(lnascale,idiag_lnam)
+        if (idiag_ddotam/=0) call save_name(ddotam_all,idiag_ddotam)
       endif
 
       call keep_compiler_quiet(p)
@@ -449,7 +460,7 @@ module backreact_infl
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=backreact_infl_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -457,7 +468,7 @@ module backreact_infl
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=backreact_infl_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -467,7 +478,7 @@ module backreact_infl
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=backreact_infl_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -475,7 +486,7 @@ module backreact_infl
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=backreact_infl_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -496,7 +507,7 @@ module backreact_infl
       if (lreset) then
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
-        idiag_Hubblem=0; idiag_lnam=0
+        idiag_Hubblem=0; idiag_lnam=0; idiag_ddotam=0
       endif
 !
       do iname=1,nname
@@ -508,6 +519,7 @@ module backreact_infl
         call parse_name(iname,cname(iname),cform(iname),'dphirms',idiag_dphirms)
         call parse_name(iname,cname(iname),cform(iname),'Hubblem',idiag_Hubblem)
         call parse_name(iname,cname(iname),cform(iname),'lnam',idiag_lnam)
+        call parse_name(iname,cname(iname),cform(iname),'ddotam',idiag_ddotam)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
@@ -786,10 +798,12 @@ module backreact_infl
 !
       use Mpicomm, only: mpireduce_sum
       use Sub, only: dot2_mn, grad, curl
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, em_term
+      real, dimension (nx) :: ddota, phi, a2, Vpotential
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !
@@ -799,21 +813,45 @@ module backreact_infl
         if (iex==0) then
           em_term=0.
         else
-          a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
-          el=f(l1:l2,m,n,iex:iez)
-          call curl(f,iaa,bb)
-          call dot2_mn(bb,b2)
-          call dot2_mn(el,e2)
-          em_term=fourthird*(e2+b2)*a21
+          if (lbackreact_infl) then
+            a2=exp(2.*f(l1:l2,m,n,iinfl_lna))
+            a21=1./a2
+            el=f(l1:l2,m,n,iex:iez)
+            call curl(f,iaa,bb)
+            call dot2_mn(bb,b2)
+            call dot2_mn(el,e2)
+            em_term=.5*fourthird*(e2+b2)*a21
+          else
+            em_term=0.
+          endif
         endif
+        phi=f(l1:l2,m,n,iinfl_phi)
         dphi=f(l1:l2,m,n,iinfl_dphi)
         call grad(f,iinfl_phi,gphi)
         call dot2_mn(gphi,gphi2)
         a2rhop=dphi**2+gphi2+em_term
         a2rhopm=a2rhopm+sum(a2rhop)
+!
+!  Choice of different potentials
+!
+        select case (Vprime_choice)
+          case ('quadratic'); Vpotential=.5*axionmass2*phi**2
+          case ('quartic'); Vpotential=axionmass2*phi+(lambda_axion/6.)*phi**3  !(to be corrected)
+          case ('cos-profile'); Vpotential=axionmass2*lambda_axion*sin(lambda_axion*phi)  !(to be corrected)
+          case default
+            call fatal_error("init_special: No such value for initspecial:" &
+                ,trim(Vprime_choice))
+        endselect
+!
+!  compute ddotam = a"/a (needed for GW module)
+!
+        ddota=-dphi**2-gphi2+2.5*a2*Vpotential
+        ddotam=ddotam+four_pi_over_three*sum(ddota)
       enddo
       enddo
       call mpireduce_sum(a2rhopm/nwgrid,a2rhopm_all)
+      call mpireduce_sum(ddotam/nwgrid,ddotam_all)
+      call put_shared_variable('ddotam',ddotam_all)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -886,4 +924,4 @@ module backreact_infl
 !
     endsubroutine  set_init_parameters
 !***********************************************************************
-endmodule backreact_infl
+endmodule Special

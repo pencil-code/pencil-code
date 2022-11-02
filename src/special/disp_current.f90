@@ -30,28 +30,36 @@ module Special
 !
   ! input parameters
   real :: ampl=1e-3, alpf=0.
-  real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0
+  real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0, ampl_a0=0.0
   real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0
   real :: ky_ex=0.0, ky_ey=0.0, ky_ez=0.0
   real :: kz_ex=0.0, kz_ey=0.0, kz_ez=0.0
-  real :: phase_ex=0.0, phase_ey=0.0, phase_ez=0.0
+  real :: kx_a0=0.0, ky_a0=0.0, kz_a0=0.0
+  real :: phase_ex=0.0, phase_ey=0.0, phase_ez=0.0, phase_a0=0.0
   real :: amplee=0.0, initpower_ee=0.0, initpower2_ee=0.0
   real :: cutoff_ee=0.0, ncutoff_ee=0.0, kpeak_ee=0.0
   real :: relhel_ee=0.0, kgaussian_ee=0.0
-  integer :: ia0
+  real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
+  real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
+  real :: relhel_a0=0.0, kgaussian_a0=0.0
+  integer :: ia0, idiva_name
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
-  logical :: lscale_tobox=.true.
-  character(len=50) :: initee='zero'
+  logical :: lscale_tobox=.true., lskip_projection_a0=.false.
+  logical :: lvectorpotential=.false.
+  character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
-    initee, alpf, &
-    ampl_ex, ampl_ey, ampl_ez, &
+    initee, inita0, alpf, &
+    ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
     kx_ex, kx_ey, kx_ez, &
     ky_ex, ky_ey, ky_ez, &
     kz_ex, kz_ey, kz_ez, &
-    phase_ex, phase_ey, phase_ez, &
+    kx_a0, ky_a0, kz_a0, &
+    phase_ex, phase_ey, phase_ez, phase_a0, &
     llorenz_gauge_disp, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
-    cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee
+    cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
+    ampla0, initpower_a0, initpower2_a0, &
+    cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -67,6 +75,8 @@ module Special
   integer :: idiag_erms=0       ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
   integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
   integer :: idiag_a0rms=0      ! DIAG_DOC: $\left<A_0^2\right>^{1/2}$
+  integer :: idiag_grms=0   ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
+  integer :: idiag_da0rms=0   ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -95,6 +105,7 @@ module Special
 !
       if (llorenz_gauge_disp) then
         call farray_register_pde('a0',ia0)
+        call farray_register_pde('diva_name',idiva_name)
       endif
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
@@ -138,6 +149,7 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: diva
 !
       intent(inout) :: f
 !
@@ -154,7 +166,7 @@ module Special
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplee,initpower_ee,initpower2_ee, &
             cutoff_ee,ncutoff_ee,kpeak_ee,f,iex,iez,relhel_ee,kgaussian_ee, &
-            lskip_projection_ee, lscale_tobox)
+            lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox)
 !
         case default
           !
@@ -164,7 +176,33 @@ module Special
           call stop_it("")
       endselect
 !
-      call keep_compiler_quiet(f)
+!  Initialize diva_name if llorenz_gauge_disp=T
+!
+      if (llorenz_gauge_disp) then
+        do n=n1,n2; do m=m1,m2
+          call div(f,iaa,diva)
+          f(l1:l2,m,n,idiva_name)=diva
+        enddo; enddo
+!
+!  initial conditions for A0 (provided llorenz_gauge_disp=T)
+!
+        select case (inita0)
+          case ('coswave-phase')
+            call coswave_phase(f,ia0,ampl_a0,kx_a0,ky_a0,kz_a0,phase_a0)
+          case ('zero'); f(:,:,:,ia0)=0.
+          case ('power_randomphase')
+            call power_randomphase_hel(ampla0,initpower_a0,initpower2_a0, &
+              cutoff_a0,ncutoff_a0,kpeak_a0,f,ia0,ia0, &
+              relhel_a0,kgaussian_a0, lskip_projection_a0, lvectorpotential, &
+              lscale_tobox, lpower_profile_file=.false.)
+          case default
+            !
+            !  Catch unknown values
+            !
+            if (lroot) print*,'initee: No such value for inita0: ', trim(inita0)
+            call stop_it("")
+        endselect
+      endif
 !
     endsubroutine init_special
 !***********************************************************************
@@ -177,8 +215,10 @@ module Special
       lpenc_requested(i_aa)=.true.
       if (alpf/=0.) then
         lpenc_requested(i_bb)=.true.
-  !     lpenc_requested(i_infl_dphi)=.true.
-  !     lpenc_requested(i_infl_a2)=.true.
+        lpenc_requested(i_infl_phi)=.true.
+        lpenc_requested(i_infl_dphi)=.true.
+        lpenc_requested(i_gphi)=.true.
+        lpenc_requested(i_infl_a2)=.true.
       endif
       lpenc_requested(i_el)=.true.
       lpenc_requested(i_ga0)=.true.
@@ -189,6 +229,7 @@ module Special
       endif
 
       if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
+      if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
       if (idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
       if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
 !
@@ -255,7 +296,8 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gtmp, gphi
+      real, dimension (nx,3) :: gtmp
+      real, dimension (nx) :: tmp, del2a0
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -278,19 +320,23 @@ module Special
 !  dA0/dt = divA
 !  dAA/dt = ... + gradA0
 !
-        if (llorenz_gauge_disp) then
-          df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
-          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
-        endif
-!
 !  helical term:
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
 !
         if (alpf/=0.) then
-          call grad(f,iinfl_phi,gphi)
-          call cross(gphi,p%el,gtmp)
-    !     call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
-    !     df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
+          call cross(p%gphi,p%el,gtmp)
+          call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
+!          print*,"p%infl_phi",p%infl_phi
+!          print*,"p%infl_dphi",p%infl_dphi
+          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
+          if (llorenz_gauge_disp) then
+            call del2(f,ia0,del2a0)
+            call dot_mn(p%gphi,p%bb,tmp)
+            !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
+            df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
+            df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp+del2a0
+            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
+          endif
         endif
       endif
 !
@@ -304,6 +350,8 @@ module Special
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
         call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
+        call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
+        call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
 !
         call xysum_mn_name_z(p%el(:,1),idiag_exmz)
         call xysum_mn_name_z(p%el(:,2),idiag_eymz)
@@ -373,7 +421,7 @@ module Special
 !
       if (lreset) then
         idiag_erms=0; idiag_emax=0
-        idiag_a0rms=0
+        idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0
         cformv=''
       endif
 !
@@ -383,6 +431,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'erms',idiag_erms)
         call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
         call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)
+        call parse_name(iname,cname(iname),cform(iname),'grms',idiag_grms)
+        call parse_name(iname,cname(iname),cform(iname),'da0rms',idiag_da0rms)
       enddo
 !
       do inamez=1,nnamez

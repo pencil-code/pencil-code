@@ -16,7 +16,7 @@ BeginPackage["pc`","pcUtils`",
   "pcReadBasic`","pcRead1D`","pcRead2D`","pcReadFFT`",
   "pcReadVAR`","pcGetParam`","pcPlot`","pcPlot3D`",
   "pcTFM`","pcParticleStalker`","pcDerivative`",
-  "pcPowercor`"
+  "pcPowercor`","pcPowerSpec`"
 ]
 
 
@@ -31,7 +31,8 @@ Input:
      configured subkernels.
 ";
 
-pcFunctions::usage="pcFunctions[] returns a list of all available functions in this package."
+pcFunctions::usage="pcFunctions[] returns a list of all available functions in this package.
+pcFunctions[str] returns those whose names contain the String str."
 
 
 Begin["`Private`"]
@@ -65,6 +66,7 @@ pcParallelize[n_|PatternSequence[]]:=With[{dir=pcDirectory},
 
 
 pcFunctions[]:=Cases[Names["pc*`*"],x_/;!StringContainsQ[x,"Private"]]
+pcFunctions[str_String]:=Cases[pcFunctions[],_?(StringContainsQ[#,str]&)]
 
 
 (* ::Chapter:: *)

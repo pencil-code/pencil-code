@@ -73,9 +73,9 @@ if (! -e "NEVERLOCK") touch LOCK
 
 # Are we running the MPI version?
 if ( -e "src/start.x" || -l "src/start.x" ) then
-  set mpi = `fgrep --ignore-case -c 'MPI_INIT' src/start.x`
+  set mpi = `nm src/start.x | grep -i -c '[^0-9a-zA-Z]MPI_INIT[^0-9a-zA-Z]*'`
 else if ( -e "src/run.x" || -l "src/run.x" ) then
-  set mpi = `fgrep --ignore-case -c 'MPI_INIT' src/run.x`
+  set mpi = `nm src/run.x | grep -i -c '[^0-9a-zA-Z]MPI_INIT[^0-9a-zA-Z]*'`
 else
   echo "Neither start.x nor run.x found!"
   (sleep 1; kill -KILL $$ >& /dev/null) &       # schedule full-featured suicide
@@ -172,6 +172,10 @@ if ($?PBS_O_HOST) then
 endif
 if ($?SNIC_RESOURCE) then
   set masterhost = $SNIC_RESOURCE
+  echo "masterhost="$masterhost
+endif
+if ($?LUMI_LMOD_FAMILY_CRAYPE_CPU) then
+  set masterhost = lumi
   echo "masterhost="$masterhost
 endif
 if ("$masterhost" =~ gardar*) set hn = 'gardar'
@@ -786,26 +790,6 @@ else if ($hn =~ clogin*) then
   set one_local_disc = 0
   set remote_top     = 0
   set local_binary = 0
-else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ mreinhar || $USER =~ fagent || $USER =~ pekkila)) then
-  echo "sisu - CSC, Kajaani, Finland"
-  if ($?SLURM_JOB_ID) then
-    echo "Running job: $SLURM_JOB_ID"
-    if (!($?SLURM_SUBMIT_DIR)) then
-      setenv SLURM_SUBMIT_DIR `pwd`
-    endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
-  endif
-  set mpirunops = "-j 1"
-  set mpirun = 'aprun'
-  set npops = "-n $ncpus"
-  set local_disc = 0
-  set one_local_disc = 0
-  set remote_top     = 0
-  set local_binary = 0
-#--------------------------------------------------
-#else if (($hn =~ r*) && ($USER =~ pkapyla || $USER =~ mkorpi)) then
-#else if (($hn =~ r*c*)) then
 else if (($hn =~ r*c*.bullx)) then
   echo "Puhti - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
@@ -816,10 +800,10 @@ else if (($hn =~ r*c*.bullx)) then
     touch $SLURM_SUBMIT_DIR/data/jobid.dat
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
-  set mpirun = 'mpirun'
-  #set mpirun = 'srun'
-  #set npops = "-np $ncpus"
-  set npops = "-n $ncpus"
+  #set mpirun = 'orterun'
+  set mpirun = 'srun'
+  set npops = "-np $ncpus"
+  #set npops = "-display-devel-map -map-by slot -n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
   set remote_top     = 0
@@ -842,7 +826,23 @@ else if (($hn =~ c*.mahti.csc.fi)) then
   set one_local_disc = 0
   set remote_top     = 0
   set local_binary = 0
-
+#--------------------------------------------------
+else if (($hn =~ nid* && $masterhost == lumi)) then
+  echo "Lumi - CSC, Kajaani, Finland"
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
+  endif
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
 #--------------------------------------------------
 else if (($hn =~ parker)) then
   echo "Parker - UFMG, BH, MG,Brazil"
@@ -2208,24 +2208,24 @@ endif
 
 # Determine compiler specific [PRE|IN|SUF]FIX for qualified names of module quantities
 if ( -e src/start.x ) then
-  eval `nm src/start.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+  #eval `nm src/start.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
 else if ( -l src/start.x ) then
   set tmp = `readlink src/start.x`
-  eval `nm $tmp | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+  #eval `nm $tmp | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
 else if ( -e src/run.x ) then
-  eval `nm src/run.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+  #eval `nm src/run.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
 else if ( -l src/run.x ) then
   set tmp = `readlink src/run.x`
-  eval `nm $tmp | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
+  #eval `nm $tmp | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
 else
   echo "Neither start.x nor run.x found!"
   (sleep 1; kill -KILL $$ >& /dev/null) &       # schedule full-featured suicide
   kill -TERM $$                                 # .. but try exiting in civilized manner
 endif
 
-if $?MODULE_PREFIX then
-  echo 'MODULE_[PRE|IN|SUF]FIX="'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
-endif
+#if $?MODULE_PREFIX then
+#  echo 'MODULE_[PRE|IN|SUF]FIX="'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
+#endif
 
 setenv PC_MODULES_LIST `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g'` 
 

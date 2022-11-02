@@ -99,8 +99,8 @@ module Hydro
   real :: lambda_kinflow=1., zinfty_kinflow=0.
   real :: w_sldchar_hyd=1.0
   real :: sigma_uukin=1., tau_uukin=1., time_uukin=1., sigma1_uukin_scl_yz=1.
-  real :: binary_radius=0.
-  integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
+  real :: binary_radius=0., radius_kinflow=0., width_kinflow=0.
+  integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100, smooth_width=3
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
   logical :: lkinflow_as_comaux=.false.
@@ -124,9 +124,9 @@ module Hydro
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
       lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, &
-      ll_sh, mm_sh, n_xprof, lrandom_ampl, &
+      ll_sh, mm_sh, n_xprof, lrandom_ampl,smooth_width, &
       sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz, &
-      binary_radius
+      binary_radius, radius_kinflow, width_kinflow
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -145,6 +145,8 @@ module Hydro
   integer :: idiag_ourms=0      ! DIAG_DOC: $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$
   integer :: idiag_oxurms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$
   integer :: idiag_EEK=0        ! DIAG_DOC: $\left<\varrho\uv^2\right>/2$
+!  
+  integer :: idiag_oumxy=0
 !
 !  Video data.
 !
@@ -155,7 +157,8 @@ module Hydro
 !  Foreign data.
 !
   real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer, interp_buffer
-
+  real, dimension (:,:,:), allocatable :: smooth_factor
+!
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -192,7 +195,7 @@ module Hydro
 !                  also oscillating with omega_kinflow
 !
       use FArrayManager
-      use Sub, only: erfunc, ylm, ylm_other
+      use Sub, only: erfunc, ylm, ylm_other, smoothing_kernel
       use Boundcond, only: update_ghosts
       use General
       use Mpicomm
@@ -347,34 +350,106 @@ module Hydro
 
       if (kinematic_flow=='from-foreign-snap') then
         if (lforeign) then
-          call initialize_foreign_comm(frgn_buffer) 
+          if (.not.lreloading) then
+            call initialize_foreign_comm(frgn_buffer) 
+            if (smooth_width>0) then 
+              smooth_width = min(smooth_width, nghost)
+              allocate(smooth_factor(-smooth_width:smooth_width,-smooth_width:smooth_width,-smooth_width:smooth_width))
+              call smoothing_kernel(smooth_factor,lgaussian=.true., smth_wid=smooth_width)
+            endif
 !
 !  Initially, take two snapshots.
 !
-          call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!.true.
-          if (.not.allocated(interp_buffer)) allocate(interp_buffer(nx,ny,nz,3))
-          if (.not.allocated(uu_2)) allocate(uu_2(nx,ny,nz,3))
+            call get_foreign_snap_initiate(3,frgn_buffer)    !,lnonblock=.true.)
+            if (.not.allocated(interp_buffer)) allocate(interp_buffer(mx,my,mz,3))
+            if (.not.allocated(uu_2)) allocate(uu_2(mx,my,mz,3))
 !print *, 'PENCIL UU2EVAL', iproc,nx, ny, ny,  size(uu_2, 1)
-          call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer,lnonblock=.false.)!!!.true.
+            call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer)   !,lnonblock=.true.)
+            if (smooth_width > 0) call smooth_velocity(f,iux,iuz)
+!print*, 'Pencil successful get_foreign_snap_finalize 1', iproc
 !if (lroot) print*, 'PENCIL FMAX INIT' , maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
 !print*, 'PENCIL FMAX INIT' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
-          call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
-          call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
+            call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
+            call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
+            if (smooth_width > 0) call smooth_velocity(uu_2, 1,3)  
+!print*, 'Pencil successful get_foreign_snap_finalize 2', iproc
 !        
 ! prepare receiving next snapshot
 !       
-          call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
-print*, 'Pencil successful', iproc
+            call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
+!print*, 'Pencil successful', iproc
 !        call mpibarrier(MPI_COMM_UNIVERSE)
 !call mpifinalize
 !stop
-        else
+          endif
+       else
           call fatal_error("initialize_hydro", "No foreign code available")
         endif
       endif
       call calc_means_hydro(f)
 !
     endsubroutine initialize_hydro
+!***********************************************************************
+    subroutine smooth_velocity(f,iu1, iu2)
+
+      use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
+      
+      real, dimension(:,:,:,:) :: f
+      integer :: iu1, iu2
+
+      real, dimension(mx,my,mz,3) :: tmp
+      real, dimension(nx, 3) :: penc
+      integer :: ni, nj, nk, imn, i, j, k
+!
+!  Smooth with a Gaussian profile
+!
+      ni = merge(smooth_width,0,nxgrid > 1)
+      nj = merge(smooth_width,0,nygrid > 1)
+      nk = merge(smooth_width,0,nzgrid > 1)
+!
+!  Because of a bug in the shearing boundary conditions we must first manually
+!  set the y boundary conditions on the shock profile.
+!
+      if (lshear) then
+        !!!call boundconds_y(f,ishock,ishock)
+        !!!call initiate_isendrcv_bdry(f,ishock,ishock)
+        !!!call finalize_isendrcv_bdry(f,ishock,ishock)
+      endif
+!
+      !!!call boundconds_x(f,ishock,ishock)
+      !!!call initiate_isendrcv_bdry(f,ishock,ishock)
+!
+      tmp = 0.0
+!
+      do imn=1,ny*nz
+!
+        n = nn(imn)
+        m = mm(imn)
+!
+        if (necessary(imn)) then
+          !!!call finalize_isendrcv_bdry(f,ishock,ishock)
+          !!!call boundconds_y(f,ishock,ishock)
+          !!!call boundconds_z(f,ishock,ishock)
+        endif
+!
+        penc = 0.0
+!
+        do k=-nk,nk
+        do j=-nj,nj
+        do i=-ni,ni
+          penc = penc + smooth_factor(i,j,k)*f(l1+i:l2+i,m+j,n+k,iu1:iu2)
+        enddo
+        enddo
+        enddo
+!
+        do j=1,3
+          tmp(l1:l2,m,n,j) = penc(:,j)
+        enddo
+!
+      enddo
+      f(:,:,:,iu1:iu2) = tmp
+!
+    endsubroutine smooth_velocity
 !***********************************************************************
     subroutine calc_means_hydro(f)
 !
@@ -472,7 +547,7 @@ print*, 'Pencil successful', iproc
           idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0) &
           lpenc_diagnos(i_o2)=.true.
-      if (idiag_oum/=0 .or. idiag_ourms/=0) lpenc_diagnos(i_ou)=.true.
+      if (idiag_oum/=0 .or. idiag_ourms/=0 .or. idiag_oumxy/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_oxurms/=0) lpenc_diagnos(i_oxu2)=.true.
       if (idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
 !
@@ -2020,11 +2095,19 @@ print*, 'Pencil successful', iproc
             p%uu(:,3)=tmp_mn*z(n)
           endif
         else
+!
+!  Outer cutoff for r>radius_kinflow possible when width_kinflow/=0.
+!
           if (headtt) print*,'Brandt (Cartesian)',ampl_kinflow
           exp_kinflow1=1./exp_kinflow
           exp_kinflow2=.5*exp_kinflow
           pom2=x(l1:l2)**2+y(m)**2
-          profx_kinflow1=+1./(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
+          if (width_kinflow/=0.) then
+            tmp_mn=.5*(1.-erfunc((sqrt(pom2)-radius_kinflow)/width_kinflow))
+          else
+            tmp_mn=1.
+          endif
+          profx_kinflow1=tmp_mn/(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
           if (wind_radius/=0.) then
             if (headtt) print*,'also add BDMSST93-wind along r'
             tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
@@ -2358,12 +2441,14 @@ print*, 'Pencil successful', iproc
         if (lkinflow_as_aux) then
           if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! divu
-          if (lpenc_loc(i_divu)) p%divu=0. ! tb implemented
+          if (lpenc_loc(i_divu)) call div(f,iuu,p%divu)  !!! ghost zones missing
+! curlu
+          if (lpenc_loc(i_oo)) call curl(f,iuu,p%oo)
 !if(maxval(p%uu).gt.1.0e+10) print *,'PENCIL PUUMAX',iproc,m,n, maxval(p%uu)
 !if(n==n1.and.m==m1)print *,'PENCIL PUUMAX',iproc,maxval(abs(p%uu)),minval(abs(p%uu)) 
 
         else
-          call inevitably_fatal_error('hydro_kinematic', '"from-snap" requires lkinflow_as_aux=T')
+          call inevitably_fatal_error('hydro_kinematic', '"from-[foreign-]snap" requires lkinflow_as_aux=T')
         endif
         lupdate_aux=.false.
 !
@@ -2447,8 +2532,8 @@ print*, 'Pencil successful', iproc
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
         if (idiag_ekintot/=0) &
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
+        call sum_mn_name(p%divu,idiag_divum)
       endif
-      if (idiag_divum/=0)  call sum_mn_name(p%divu,idiag_divum)
 !
       call keep_compiler_quiet(f)
 !
@@ -2491,8 +2576,9 @@ print*, 'Pencil successful', iproc
         if (lfirst) then
 !if (lroot) print*,'PENCIL walltime t,tf', t, t_foreign
           if (update_foreign_data(t,t_foreign)) then
-            f(l1:l2,m1:m2,n1:n2,iux:iuz) = uu_2
+            f(:,:,:,iux:iuz) = uu_2
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
+            if (smooth_width > 0) call smooth_velocity(uu_2,1,3)
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
           endif
         endif
@@ -2502,8 +2588,8 @@ print*, 'Pencil successful', iproc
         else
           fac=dt/(t_foreign-t+dt)
         endif
-        f(l1:l2,m1:m2,n1:n2,iux:iuz) = (1.-fac)*f(l1:l2,m1:m2,n1:n2,iux:iuz) + fac*uu_2
-!print*, 'PENCIL FMAX' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
+        f(:,:,:,iux:iuz) = (1.-fac)*f(:,:,:,iux:iuz) + fac*uu_2
+!print*, 'PENCIL FMAX' , iproc, maxval(abs(f(:,:,:,iux:iuz)))
       endif
 !
     endsubroutine hydro_before_boundary
@@ -2558,6 +2644,9 @@ print*, 'Pencil successful', iproc
           if (idiag_phase1/=0) call save_name(phase1,idiag_phase1)
           if (idiag_phase2/=0) call save_name(phase2,idiag_phase2)
         endif
+      endif
+      if (l2davgfirst) then     
+        call zsum_mn_name_xy(p%ou,idiag_oumxy)
       endif
 !  store slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
@@ -3227,7 +3316,7 @@ print*, 'Pencil successful', iproc
       use Diagnostics, only: parse_name
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname,inamev
+      integer :: iname,inamev,ixy
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -3252,6 +3341,7 @@ print*, 'Pencil successful', iproc
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
         idiag_EEK=0; idiag_ekin=0; idiag_ekintot=0
         idiag_divum=0
+        idiag_oumxy=0
         ivid_uu=0
       endif
 !
@@ -3298,6 +3388,9 @@ print*, 'Pencil successful', iproc
         call parse_name(iname,cname(iname),cform(iname),'uzpt',idiag_uzpt)
         call parse_name(iname,cname(iname),cform(iname),'phase1',idiag_phase1)
         call parse_name(iname,cname(iname),cform(iname),'phase2',idiag_phase2)
+      enddo
+      do ixy=1,nnamexy
+      call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oumxy',idiag_oumxy)
       enddo
 !
 !  check for those quantities for which we want video slices

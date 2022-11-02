@@ -568,7 +568,7 @@
 !  Set zero value of all variables inside the solid geometry far from
 !  all interfaces. This is done for more easy interpretation of postprocessing.
 !
-      if (it==1) then
+      if (.not.lreloading) then
           do i=l1,l2
           do j=m1,m2
           do k=n1,n2

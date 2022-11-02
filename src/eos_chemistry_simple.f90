@@ -319,7 +319,7 @@ module EquationOfState
 !   23 may-10/nils: fleshed it up
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu_tmp
+      real, optional, intent(out) :: mu_tmp
 !
       call keep_compiler_quiet(mu_tmp)
       call keep_compiler_quiet(present(f))
@@ -460,7 +460,7 @@ module EquationOfState
 !  9-oct-15/MR: coded
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
-      type (pencil_case),                intent(OUT)  :: p
+      type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_eos_pencpar(f,p,lpencil)
 !
@@ -479,15 +479,16 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
-      real, dimension(nx,3) :: glnDiff_full_add, glncp
-      real, dimension(nx) :: D_th, R_mix
 !
       intent(in) :: lpenc_loc
-      intent(inout) :: p
-!
+      intent(inout) :: f
+      intent(out) :: p
+
+      real, dimension(nx,3) :: glnDiff_full_add, glncp
+      real, dimension(nx) :: D_th, R_mix
       integer :: i,k,j2,j3
 !
-!! Cp/Cv pencils
+! Cp/Cv pencils
 !
           if (lpencil(i_cp)) p%cp =  f(l1:l2,m,n,icp)
 !
@@ -1712,15 +1713,6 @@ module EquationOfState
       call keep_compiler_quiet(average_pressure)
 
     endsubroutine get_average_pressure
-!***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(:) :: p_diag
-
-    call keep_compiler_quiet(p_diag)
-
-    endsubroutine pushdiags2c
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

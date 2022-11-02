@@ -152,8 +152,7 @@ class Param(object):
         # Verify path of files in list.
         for filen in files:
             if not os.path.exists(filen):
-                print("read.param: no such file {0}.".format(filen))
-                raise ValueError
+                raise ValueError("read.param: no such file {0}.".format(filen))
 
         # Read the parameters into a dictionary.
         param_list = dict()

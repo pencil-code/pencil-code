@@ -51,7 +51,7 @@ module Equ
       use Gpu
       use Gravity
       use Hydro
-      use Interstellar, only: interstellar_before_boundary
+      use Interstellar, only: interstellar_before_boundary, check_SN
       use Magnetic
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
@@ -274,10 +274,16 @@ module Equ
       call fill_farray_pressure(f)
 !
 !  Set inverse timestep to zero before entering loop over m and n.
+!  If we want to have a logarithmic time advance, we want set this here
+!  as the maximum. All other routines can then still make it shorter.
 !
       if (lfirst.and.ldt) then
         if (dtmax/=0.0) then
-          dt1_max=1./dtmax
+          if (lfractional_tstep_advance) then
+            dt1_max=1./(dt_incr*t)
+          else
+            dt1_max=1./dtmax
+          endif
         else
           dt1_max=0.0
         endif
@@ -342,6 +348,10 @@ module Equ
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif
+!
+!  earliest call to check_SN that does not break the pencil chece!
+!
+      if (linterstellar) call check_SN(f)
 !
 !  Finish the job for the anelastic approximation
 !
@@ -812,7 +822,6 @@ module Equ
 !                to the individual modules.
 !
       use Diagnostics
-      use BorderProfiles, only: calc_pencils_borderprofiles
       use Chiral
       use Chemistry
       use Cosmicray
@@ -822,7 +831,7 @@ module Equ
       use Dustdensity
       use Energy
       use EquationOfState
-      use Forcing, only: calc_pencils_forcing, forcing_continuous
+      use Forcing, only: calc_pencils_forcing, calc_diagnostics_forcing
       use General, only: notanumber
       use GhostFold, only: fold_df, fold_df_3points
       use Gravity
@@ -858,7 +867,8 @@ module Equ
 
       integer :: nyz
       real, dimension (nx,3) :: df_iuu_pencil
-      real, dimension(nx) :: dt1_advec, dt1_diffus, dt1_src
+      real, dimension(nx) :: dt1_advec, dt1_diffus, dt1_src, dt1_reac
+      real :: dt1_poly_relax, dt1_preac
 
       nyz=ny*nz
       mn_loop: do imn=1,nyz
@@ -1011,7 +1021,7 @@ module Equ
 !
 !  Continuous forcing function (currently only for extra diagonstics)
 !
-        if (lforcing_cont) call forcing_continuous(df,p)
+        if (lforcing_cont) call calc_diagnostics_forcing(p)
 !
 !  Add and extra 'special' physics
 !

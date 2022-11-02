@@ -32,14 +32,17 @@ module power_spectrum
   include 'power_spectrum.h'
 !
   real :: pdf_max=30., pdf_min=-30., pdf_max_logscale=3.0, pdf_min_logscale=-3.
-  logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
+  real :: tout_min=0., tout_max=0.
+  real :: specflux_dp=-2., specflux_dq=-2.
+  real, allocatable, dimension(:,:) :: legendre_zeros,glq_weight
+  logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false., ltrue_binning=.false.
   logical :: lhalf_factor_in_GW=.false., lcylindrical_spectra=.false.
+  logical :: lhorizontal_spectra=.false., lvertical_spectra=.false.
   logical :: lread_gauss_quadrature=.false., lshear_frame_correlation=.false.
   integer :: legendre_lmax=1
   integer :: firstout = 0
   logical :: lglq_dot_dat_exists=.false.
   integer :: n_glq=1
-  real, allocatable, dimension(:,:) :: legendre_zeros,glq_weight
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
   character (LEN=linelen) :: power_format='(1p,8e10.2)'
@@ -48,21 +51,33 @@ module power_spectrum
   integer :: n_spectra=0
   integer :: inz=0, n_segment_x=1
   integer :: kout_max=0
-  real :: tout_min=0., tout_max=0.
+  real :: max_k2 = (nxgrid/2)**2 + (nygrid/2)**2 + (nzgrid/2)**2
+  integer, dimension(:), allocatable :: k2s
+  integer :: nk_truebin=0
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
       lcylindrical_spectra, inz, n_segment_x, lhalf_factor_in_GW, &
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
       lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation, &
-      power_format, kout_max, tout_min, tout_max
+      power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq, &
+      lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2
 !
   contains
 !***********************************************************************
     subroutine initialize_power_spectrum
 !
       use Messages
-      integer :: ikr, ikmu
+      use General, only: binomial, pos_in_array, quick_sort
+      use Mpicomm, only: mpiallreduce_merge
+
+      integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len
+      real :: k2
+      real, dimension(nxgrid) :: kx
+      real, dimension(nygrid) :: ky
+      real, dimension(nzgrid) :: kz
+      integer, dimension(:), allocatable :: order
+
       !!! the following warnings should become fatal errors
       if (((dx /= dy) .and. ((nxgrid-1)*(nxgrid-1) /= 0)) .or. &
           ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
@@ -97,6 +112,41 @@ module power_spectrum
       endif
       if (ispecialvar2==0) then
         mu_spec=.false.
+      endif
+
+      if (ltrue_binning) then
+!
+! Determine the k^2 in the range from 0 to max_k2.
+!
+        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+
+        if (allocated(k2s)) deallocate(k2s)
+        len=2*binomial(int(sqrt(max_k2/3.)+2),3)   ! only valid for isotropic 3D grid!
+        allocate(k2s(len)); k2s=-1
+
+        ind=0
+outer:  do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+              k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+              if (k2>max_k2) cycle
+              if (pos_in_array(int(k2),k2s)==0) then
+                ind=ind+1
+                k2s(ind)=int(k2)
+                if (ind==len) exit outer
+              endif
+            enddo
+          enddo
+        enddo outer
+
+        nk_truebin=ind
+
+        call mpiallreduce_merge(k2s,nk_truebin)
+        allocate(order(nk_truebin))
+        call quick_sort(k2s(:nk_truebin),order)
+
       endif
 
     endsubroutine initialize_power_spectrum
@@ -264,19 +314,24 @@ module power_spectrum
       use Mpicomm, only: mpireduce_sum
       use General, only: itoa
       use Sub, only: curli
+      use File_io, only: file_exists
 !
-  integer, intent(in), optional :: iapn_index
-! integer, pointer :: inp,irhop,iapn(:)
-  integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
+  character (len=*) :: sp
+  integer, intent(in), optional :: iapn_index
+
+! integer, pointer :: inp,irhop,iapn(:)
+  integer :: nk
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb,oo
-  real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
-  character (len=*) :: sp
+  real :: k2
+  real, dimension(:), allocatable :: spectrum,spectrum_sum
+  character(LEN=fnlen) :: filename
+  logical :: lwrite_ks
   !
   !  identify version
   !
@@ -291,6 +346,12 @@ module power_spectrum
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
+  if (ltrue_binning) then
+    nk=nk_truebin
+  else
+    nk=nxgrid/2
+  endif
+  allocate(spectrum(nk),spectrum_sum(nk))
   spectrum=0.
   spectrum_sum=0.
   !
@@ -342,15 +403,30 @@ module power_spectrum
 !  integration over shells
 !
      if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-     do ikz=1,nz
-        do iky=1,ny
-           do ikx=1,nx
-              k=nint(sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
-              if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
-                   +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-           enddo
-        enddo
-     enddo
+     if (ltrue_binning) then
+!  
+!  Sum spectral contributions into bins of k^2 - avoids rounding of k.
+!
+       do ikz=1,nz
+          do iky=1,ny
+             do ikx=1,nx
+                k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+                where(int(k2)==k2s) &
+                  spectrum=spectrum+a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+             enddo
+          enddo
+       enddo
+     else
+       do ikz=1,nz
+          do iky=1,ny
+             do ikx=1,nx
+                k=nint(sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+                if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
+                     +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+             enddo
+          enddo
+       enddo
+     endif
      !
   enddo !(loop over ivec)
   !
@@ -366,16 +442,23 @@ module power_spectrum
 !  append to diagnostics file
 !
   if (lroot) then
-    if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
-         ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
-    spectrum_sum=.5*spectrum_sum
-    if (sp=='ud') then
-       open(1,file=trim(datadir)//'/power_'//trim(sp)//'-'//&
-            trim(itoa(iapn_index))//'.dat',position='append')
-    else
-      open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
-    endif
 !
+    spectrum_sum=.5*spectrum_sum
+!
+    if (sp=='ud') then
+      filename=trim(datadir)//'/power_'//trim(sp)//'-'//trim(itoa(iapn_index))//'.dat'
+    else
+      filename=trim(datadir)//'/power'//trim(sp)//'.dat'
+    endif
+
+    lwrite_ks=ltrue_binning .and. .not.file_exists(filename)
+    open(1,file=filename,position='append')
+    if (ip<10) print*,'Writing power spectra of variable '//trim(sp)//' to '//trim(filename)
+!
+    if (lwrite_ks) then
+      write(1,*) nk_truebin
+      write(1,*) real(k2s(:nk_truebin))
+    endif
     write(1,*) t   
     write(1,power_format) spectrum_sum 
     close(1)
@@ -2624,24 +2707,28 @@ module power_spectrum
     use Fourier, only: fft_xyz_parallel
     use General, only: itoa
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: curli, grad
+    use Sub, only: curli, grad, div
+    use Poisson, only: inverse_laplacian
     use SharedVariables, only: get_shared_variable
+    use FArrayManager
 !
   logical, intent(in), optional :: lsqrt
   integer, intent(in), optional :: iapn_index
   integer, pointer :: inp,irhop,iapn(:)
   integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz, ivec, im, in
-  real :: k2
+  integer :: i,k,ikx,iky,ikz, ivec, im, in, ia0
+  real :: k2,fact
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nk) :: spectrum,spectrum_sum
+  real, dimension(nk) :: hor_spectrum, hor_spectrum_sum
+  real, dimension(nk) :: ver_spectrum, ver_spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   real, dimension(nx) :: bbi
   real, dimension(nx,3) :: gLam
-  character (len=2) :: sp
+  character (len=*) :: sp
   !
   !  identify version
   !
@@ -2661,6 +2748,10 @@ module power_spectrum
   !
   spectrum=0.
   spectrum_sum=0.
+  hor_spectrum=0.
+  hor_spectrum_sum=0.
+  ver_spectrum=0.
+  ver_spectrum_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  For "kin", calculate spectra of <uk^2> and <ok.uk>
@@ -2672,6 +2763,27 @@ module power_spectrum
   !  spectrum of lnrho (or normalized enthalpy).
   !  Need to take log if we work with linear density.
   !
+  elseif (sp=='a0') then
+    ia0=farray_index_by_name('a0')
+    if (ia0/=0) then
+      a_re=f(l1:l2,m1:m2,n1:n2,ia0)
+    else
+      call warning ('powerscl',"ia0=0 doesn't work.")
+    endif
+  elseif (sp=='ux') then
+    a_re=f(l1:l2,m1:m2,n1:n2,iux)
+  elseif (sp=='uy') then
+    a_re=f(l1:l2,m1:m2,n1:n2,iuy)
+  elseif (sp=='uz') then
+    a_re=f(l1:l2,m1:m2,n1:n2,iuz)
+  elseif (sp=='ucp') then
+    !  Compressible part of the Helmholtz decomposition of uu
+    !  uu = curl(A_uu) + grad(phiuu)
+    !  We compute phiuu here, and take grad of phiuu later
+    do n=n1,n2; do m=m1,m2
+      call div(f,iuu,a_re(:,m-nghost,n-nghost))
+    enddo; enddo
+    call inverse_laplacian(a_re)
   elseif (sp=='lr') then
     if (ldensity_nolog) then
       a_re=alog(f(l1:l2,m1:m2,n1:n2,irho))
@@ -2766,12 +2878,41 @@ module power_spectrum
   do ikz=1,nz
     do iky=1,ny
       do ikx=1,nx
+        !
+        !  integration over shells
+        !
         k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
         k=nint(sqrt(k2))
+        if (sp=='ucp') then
+          fact=k2  !  take gradient
+        else
+          fact=1.
+        endif
         if (k>=0 .and. k<=(nk-1)) then
           spectrum(k+1)=spectrum(k+1) &
-             +a_re(ikx,iky,ikz)**2 &
-             +a_im(ikx,iky,ikz)**2
+             +fact*a_re(ikx,iky,ikz)**2 &
+             +fact*a_im(ikx,iky,ikz)**2
+        endif
+        !
+        !  integration over the vertical direction
+        !
+        if (lhorizontal_spectra) then
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
+            hor_spectrum(k+1)=hor_spectrum(k+1) &
+             +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
+          endif
+        endif
+        !
+        !  integration over the horizontal direction
+        !
+        if (lvertical_spectra) then
+          k=nint(abs(kz(ikz+ipz*nz)))
+          if (k>=0 .and. k<=(nk-1)) then
+            ver_spectrum(k+1)=ver_spectrum(k+1) &
+             +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
+          endif
         endif
       enddo
     enddo
@@ -2781,6 +2922,8 @@ module power_spectrum
   !  The result is available only on root
   !
   call mpireduce_sum(spectrum,spectrum_sum,nk)
+  if (lhorizontal_spectra) call mpireduce_sum(hor_spectrum,hor_spectrum_sum,nk)
+  if (lvertical_spectra) call mpireduce_sum(ver_spectrum,ver_spectrum_sum,nk)
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -2800,6 +2943,20 @@ module power_spectrum
     write(1,*) t
     write(1,power_format) spectrum_sum
     close(1)
+    !
+    if (lhorizontal_spectra) then
+      open(1,file=trim(datadir)//'/power_hor_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      write(1,power_format) hor_spectrum_sum
+      close(1)
+    endif
+    !
+    if (lvertical_spectra) then
+      open(1,file=trim(datadir)//'/power_ver_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      write(1,power_format) ver_spectrum_sum
+      close(1)
+    endif
   endif
   !
   endsubroutine powerscl
@@ -3192,9 +3349,8 @@ endsubroutine pdf
   integer :: i,ivec,ikx,iky,ikz,kr,ipdf
   integer, dimension(nk-1,npdf) :: pdf_ang,pdf_ang_sum
   real :: k2,ang
-  real, dimension(nx,ny,nz,3) :: a_re,b_re,a_im,b_im
-  real, dimension(nx,ny,nz) :: gk,ak_re,ak_im,bk_re,bk_im
-  real, dimension(nx,ny,nz) :: aa,bb,ab
+  real, dimension(nx,ny,nz,3) :: a_re,b_re
+  real, dimension(nx,ny,nz) :: ak,bk,aa,bb,ab
   real, dimension(nx,3) :: bbi
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
@@ -3222,7 +3378,6 @@ endsubroutine pdf
       call del2v_etc(f,iaa,curlcurl=bbi)
       a_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  current density
     enddo; enddo
-    a_im=0.; b_im=0.
   elseif (sp=='ub') then
     if (iaa==0)  call fatal_error('pdf_ang_1d','iaa=0')
     do n=n1,n2; do m=m1,m2
@@ -3230,7 +3385,12 @@ endsubroutine pdf
       b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  magnetic field
     enddo; enddo
     a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
-    a_im=0.; b_im=0.
+  elseif (sp=='ou') then
+    do n=n1,n2; do m=m1,m2
+      call curl(f,iuu,bbi)
+      b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  vorticity field
+    enddo; enddo
+    a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
   endif  !  sp
   !
   !  compute kr-dependent pdf
@@ -3241,34 +3401,18 @@ endsubroutine pdf
     !  initialize a.a, b.b, and a.b, for filtered fields
     !
     aa=0.; bb=0.; ab=0.
-    !
-    !  find the filtering kernel
-    !
-    gk=0.
-    do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-      k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-      if (kr==nint(sqrt(k2))) gk(ikx,iky,ikz)=1.
-    enddo; enddo; enddo
-    !
-    !  obtain filtered fields ak and bk
-    !
     do ivec=1,3
-      call fft_xyz_parallel(a_re(:,:,:,ivec),a_im(:,:,:,ivec))
-      call fft_xyz_parallel(b_re(:,:,:,ivec),b_im(:,:,:,ivec))
       !
-      ak_re(:,:,:) = gk(:,:,:)*a_re(:,:,:,ivec)
-      ak_im(:,:,:) = gk(:,:,:)*a_im(:,:,:,ivec)
-      bk_re(:,:,:) = gk(:,:,:)*b_re(:,:,:,ivec)
-      bk_im(:,:,:) = gk(:,:,:)*b_im(:,:,:,ivec)
+      !  obtained filtered fields
       !
-      call fft_xyz_parallel(ak_re,ak_im,linv=.true.,lneed_im=.false.)
-      call fft_xyz_parallel(bk_re,bk_im,linv=.true.,lneed_im=.false.)
+      call power_shell_filter(a_re(:,:,:,ivec),ak,kr)
+      call power_shell_filter(b_re(:,:,:,ivec),bk,kr)
       !
       !  dot products
       !
-      aa = aa+ak_re**2
-      bb = bb+bk_re**2
-      ab = ab+ak_re*bk_re
+      aa = aa+ak**2
+      bb = bb+bk**2
+      ab = ab+ak*bk
     enddo
     !
     !  compute pdf
@@ -5149,10 +5293,10 @@ endsubroutine pdf
     use Shear, only: shear_frame_transform
 !
   real, dimension (mx,my,mz,mfarray) :: f
-  character (len=2) :: sp
+  character (len=*) :: sp
   character (len=4) :: sp2
 !
-  integer :: i,ivec,ikx,iky,ikz,jkx,jky,jkz
+  integer :: ncomp,i,ivec,ikx,iky,ikz,jkx,jky,jkz
   integer :: kkout,kkoutx,kkouty,kkoutz
   real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nx) :: bbi
@@ -5161,6 +5305,7 @@ endsubroutine pdf
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=1) :: spxyz
+  logical :: lfft
 !
 !  identify version
 !
@@ -5185,9 +5330,14 @@ endsubroutine pdf
   allocate( fft(2,kkoutx,kkouty,kkoutz) )
   allocate( fft_sum(2,kkoutx,kkouty,kkoutz) )
   !
+  select case (sp)
+  case ('gwT'); ncomp=2; lfft=.false.
+  case default; ncomp=3; lfft=.true.
+  endselect
+  !
   !  loop over all components
   !
-  do ivec=1,3
+  do ivec=1,ncomp
     !
     !  initialize fft(real/imaginary,kx,ky,kz)
     !
@@ -5223,6 +5373,15 @@ endsubroutine pdf
       if (iee==0) call fatal_error('power_fft3d_vec','iee=0')
       a_re=f(l1:l2,m1:m2,n1:n2,iee+ivec-1)
       a_im=0.
+    elseif (sp=='gwT') then
+      if (iStressT==0) call fatal_error('power_fft3d_vec','iStressT=0')
+      if (ivec==1) then
+        a_re=f(l1:l2,m1:m2,n1:n2,iStressT)
+        a_im=f(l1:l2,m1:m2,n1:n2,iStressTim)
+      else
+        a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
+        a_im=f(l1:l2,m1:m2,n1:n2,iStressXim)
+      endif
     endif
     !
     !  shear-frame transformation
@@ -5235,11 +5394,13 @@ endsubroutine pdf
     !
     !  Fourier transformation
     !
-    if (sp2=='xkyz') then
-      call fft_y_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
-      call fft_z_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
-    else
-      call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+    if (lfft) then
+      if (sp2=='xkyz') then
+        call fft_y_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+        call fft_z_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+      else
+        call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+      endif
     endif
     !
     do ikz=1,nz
@@ -5292,5 +5453,238 @@ endsubroutine pdf
   deallocate(fft,fft_sum)
   !
   endsubroutine power_fft3d_vec
+!***********************************************************************
+  subroutine power_shell_filter(a,ap,p)
+!
+!  Take a real scalar field a(nx,ny,nz), take only the Fourier modes
+!  in the shell |k|=p, and return the inverse-transformed field ap
+!
+!   9-aug-22/hongzhe: coded
+!
+  use Fourier, only: fft_xyz_parallel
+!
+  real, dimension(nx,ny,nz), intent(in) :: a
+  real, dimension(nx,ny,nz), intent(out) :: ap
+  integer, intent(in) :: p
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i,ikx,iky,ikz,k
+  real, dimension(nx,ny,nz) :: a_re,a_im
+  real :: k2
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+!
+!  Define wave vector, defined here for the *full* mesh.
+!  Each processor will see only part of it.
+!  Ignore *2*pi/Lx factor, because later we want k to be integers
+!
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+!
+  a_re(:,:,:)=a(:,:,:)
+  a_im=0.
+  call fft_xyz_parallel(a_re,a_im)
+!
+  do ikx=1,nx
+  do iky=1,ny
+  do ikz=1,nz
+    k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+    k=nint(sqrt(k2))
+    if (.not.(k>=p.and.k<(p+1))) then
+      a_re(ikx,iky,ikz)=0.
+      a_im(ikx,iky,ikz)=0.
+    endif
+  enddo
+  enddo
+  enddo
+!
+  call fft_xyz_parallel(a_re,a_im,linv=.true.,lneed_im=.false.)
+  ap(:,:,:)=a_re(:,:,:)
+!
+  endsubroutine power_shell_filter
+!***********************************************************************
+  subroutine power_transfer_mag(f,sp)
+!
+!  Calculate magnetic energy and helicity transfer functions.
+!  The transfer rate T(p,q) refers to the magnetic helicity from shell q
+!  into shell p.
+!
+!   3-aug-22/hongzhe: adapted from powerEMF
+!  24-aug-22/hongzhe: made switchable
+!  24-aug-22/axel: made Tpq,Tpq_sum allocatable, of size (nlk+1)^2, where nk=2**nlk
+!  25-aug-22/hongzhe: introduced specflux_dp and specflux_dq
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: gij, gij_etc, curl_mn, cross_mn, del2v_etc
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i,p,q,lp,lq,ivec,ikx,iky,ikz,k!,nlk
+  integer :: nlk_p, nlk_q
+  real :: k2
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,3) :: uu,aa,bb,uxb,jj,curljj
+  real, dimension(nx,3,3) :: aij,bij
+  real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj,curljjj
+  real, dimension(nx,ny,nz,3) :: tmp_p,u_tmp,b_tmp,emf_q
+  real, allocatable, dimension(:,:) :: Tpq,Tpq_sum
+  character (len=2) :: sp
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+!  2-D output ; allocate array.
+!  Positive step sizes specflux_dp and specflux_dq for linear steps,
+!  and negative values for log steps. Default value for both is -2.
+!
+  if (specflux_dp>0.) then
+    nlk_p = floor((nk-1.)/specflux_dp)+1
+  elseif (specflux_dp<0.) then
+    nlk_p = floor(alog(nk-1.)/alog(-specflux_dp))+1
+  else
+    call fatal_error('power_transfer_mag','specflux_dp must be non-zero')
+  endif
+  if (specflux_dq>0.) then
+    nlk_q = floor((nk-1.)/specflux_dq)+1
+  elseif (specflux_dq<0.) then
+    nlk_q = floor(alog(nk-1.)/alog(-specflux_dq))+1
+  else
+    call fatal_error('power_transfer_mag','specflux_dq must be non-zero')
+  endif
+  if (.not.allocated(Tpq)) allocate( Tpq(nlk_p,nlk_q) )
+  if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk_p,nlk_q) )
+!
+!  initialize spectral flux to zero
+!
+  Tpq=0.
+  Tpq_sum=0.
+!
+!  obtain u and b
+!
+  do m=m1,m2
+  do n=n1,n2
+    uu=f(l1:l2,m,n,iux:iuz)
+    aa=f(l1:l2,m,n,iax:iaz)
+    call gij(f,iaa,aij,1)
+    call gij_etc(f,iaa,aa,aij,bij)
+    call curl_mn(aij,bb,aa)
+    call curl_mn(bij,jj,bb)
+    jjj(:,m-nghost,n-nghost,:)=jj(:,:)
+    uuu(:,m-nghost,n-nghost,:)=uu(:,:)
+    bbb(:,m-nghost,n-nghost,:)=bb(:,:)
+  enddo
+  enddo
+!
+!  To compute transfer rate of the the current helicity,
+!  we need curl of J, and we do this using ibb
+!
+  if (sp=='Hc') then
+    if (ibb==0) call fatal_error('power_transfer_mag',&
+        'Hc_specflux needs lbb_as_aux=T')
+    do m=m1,m2
+    do n=n1,n2
+      call del2v_etc(f,ibb,curlcurl=curljj)
+      curljjj(:,m-nghost,n-nghost,:)=curljj(:,:)
+    enddo
+    enddo
+  endif
+!
+!  Loop over all p, and then loop over q<p.
+!  If dp=dq, then the q>p half is filled using Tpq(p,q)=-Tpq(q,p).
+!  Otherwise, we loop over all p and q.
+!
+  do lp=0,nlk_p-1
+    if (specflux_dp>0.) then
+      p=nint(specflux_dp*lp)
+    else
+      p=nint(abs(specflux_dp)**lp)
+    endif
+    !
+    !  obtain the filtered field tmp_p and compute tmp_p dot emf_q.
+    !  For 'Hm': tmp_p=bbb_p,     emf_q=uuu cross bbb_q
+    !  For 'Em': tmp_p=jjj_p,     emf_q=uuu_q cross bbb
+    !  For 'Hc': tmp_p=curljjj_p, emf_q=uuu cross bbb_q
+    !
+    do ivec=1,3
+      if (sp=='Hm') then
+        call power_shell_filter(bbb(:,:,:,ivec),tmp_p(:,:,:,ivec),p)
+      elseif (sp=='Em') then
+        call power_shell_filter(jjj(:,:,:,ivec),tmp_p(:,:,:,ivec),p)
+      elseif (sp=='Hc') then
+        call power_shell_filter(curljjj(:,:,:,ivec),tmp_p(:,:,:,ivec),p)
+      endif
+    enddo
+    !
+    do lq=0,nlk_q-1
+    !
+    !  only when sp='Hm', dp=dq and q>p, we don't need to compute Tpq
+    !
+    if (.not.(sp=='Hm'.and.specflux_dp==specflux_dq.and.lq>lp)) then
+      !  compute Tpq
+      if (specflux_dq>0.) then
+        q=nint(specflux_dq*lq)
+      else
+        q=nint(abs(specflux_dq)**lq)
+      endif
+      !
+      !  obtain u_tmp and b_tmp
+      !
+      do ivec=1,3
+        if (sp=='Hm'.or.sp=='Hc') then
+          u_tmp(:,:,:,ivec)=uuu(:,:,:,ivec)
+          call power_shell_filter(bbb(:,:,:,ivec),b_tmp(:,:,:,ivec),q)
+        elseif (sp=='Em') then
+          call power_shell_filter(uuu(:,:,:,ivec),u_tmp(:,:,:,ivec),q)
+          b_tmp(:,:,:,ivec)=bbb(:,:,:,ivec)
+        endif
+      enddo
+      !
+      !  compute emf_q=cross(u_tmp,b_tmp)
+      !
+      do iky=1,ny
+      do ikz=1,nz
+        uu=u_tmp(:,iky,ikz,:)
+        bb=b_tmp(:,iky,ikz,:)
+        call cross_mn(uu,bb,uxb)
+        emf_q(:,iky,ikz,:)=uxb
+      enddo
+      enddo
+      !
+      !  T(p,q)=\int bbb_p \cdot emf_q dV
+      !
+      Tpq(lp+1,lq+1) = Tpq(lp+1,lq+1) + dx*dy*dz*sum(tmp_p*emf_q)
+    endif
+    enddo  !  from q
+  enddo  !  from p
+!
+!  fill the q>p half of Tpq if dp=dq
+!
+  if (sp=='Hm'.and.specflux_dp==specflux_dq) then
+    do lp=0,nlk_p-1
+    do lq=lp+1,nlk_q-1
+      Tpq(lp+1,lq+1)=-Tpq(lq+1,lp+1)
+    enddo
+    enddo
+  endif
+!
+!  sum over processors
+!
+  call mpireduce_sum(Tpq,Tpq_sum,(/nlk_p,nlk_q/))
+!
+!  append to diagnostics file
+!
+  if (lroot) then
+    if (ip<10) print*,'Writing magnetic energy or helicity transfer rate to ', &
+        trim(datadir)//'/power_transfer_mag_'//trim(sp)//'.dat'
+    open(1,file=trim(datadir)//'/power_transfer_mag_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,power_format) Tpq_sum
+    close(1)
+  endif
+  !
+  endsubroutine power_transfer_mag
 !***********************************************************************
 endmodule power_spectrum

@@ -72,7 +72,6 @@ program run
   use HDF5_IO,         only: initialize_hdf5
   use Hydro,           only: hydro_clean_up
   use ImplicitPhysics, only: calc_heatcond_ADI
-  use Interstellar,    only: check_SN,addmassflux
   use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
   use HDF5_IO,         only: wdim
   use Magnetic,        only: rescaling_magnetic
@@ -108,7 +107,7 @@ program run
   real :: wall_clock_time=0.0, time_per_step=0.0
   integer :: icount, mvar_in, isave_shift=0
   integer :: it_last_diagnostic, it_this_diagnostic, memuse, memory, memcpu
-  logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
+  logical :: lstop=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
   logical :: lnoreset_tzero=.false.
@@ -194,7 +193,7 @@ program run
 !
   fproc_bounds = trim(datadir) // "/proc_bounds.dat"
   inquire (file=fproc_bounds, exist=lexist)
-  call mpibarrier()
+  call mpibarrier
 !
   cgrid: if (luse_oldgrid .and. lexist) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
@@ -349,7 +348,7 @@ program run
 !
   if (lparticles) then
     if (ip <= 6 .and. lroot) print *, "reading particle snapshot"
-    call read_snapshot_particles()
+    call read_snapshot_particles
   endif
 !
 !  Read point masses.
@@ -406,8 +405,8 @@ program run
 !  (must be done before need_XXXX can be used, for example)
 !
   call initialize_timestep
-  call initialize_boundcond
   call initialize_modules(f)
+  call initialize_boundcond
 !
   if (it1d==impossible_int) then
     it1d=it1
@@ -486,6 +485,7 @@ program run
 !
 !  Perform pencil_case consistency check if requested.
 !
+  it = 1          ! needed for pencil check
   suppress_pencil_check = control_file_exists("NO-PENCIL-CHECK")
   if ( (lpencil_check .and. .not. suppress_pencil_check) .or. &
        ((.not.lpencil_check).and.lpencil_check_small) ) &
@@ -518,7 +518,7 @@ program run
 !
   Time_loop: do while (it<=nt)
 !
-    lout   = (mod(it-1,it1) == 0) .and. (it > it1start)
+    lout = (mod(it-1,it1) == 0) .and. (it > it1start)
 !
     if (lout .or. emergency_stop) then
 !
@@ -785,8 +785,7 @@ program run
 !  Save snapshot every isnap steps in case the run gets interrupted or when SAVE file is found.
 !  The time needs also to be written.
 !
-    if (lout) &
-      lsave = control_file_exists('SAVE', DELETE=.true.)
+    if (lout) lsave = control_file_exists('SAVE', DELETE=.true.)
 
     if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
       if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
@@ -927,7 +926,7 @@ program run
   if (lroot) then
     wall_clock_time=time2-time1
     print*
-    write(*,'(A,1pG10.3,A,1pG9.2,A)') &
+    write(*,'(A,1pG10.3,A,1pG11.4,A)') &
         ' Wall clock time [hours] = ', wall_clock_time/3600.0, &
         ' (+/- ', real(mpiwtick())/3600.0, ')'
     if (it>1) then
@@ -936,7 +935,7 @@ program run
             ' Wall clock time/timestep/(meshpoint+particle) [microsec] =', &
             wall_clock_time/icount/(nw+npar/ncpus)/ncpus/1.0e-6
       else
-        write(*,'(A,1pG10.3)') &
+        write(*,'(A,1pG14.7)') &
             ' Wall clock time/timestep/meshpoint [microsec] =', &
             wall_clock_time/icount/nw/ncpus/1.0e-6
       endif

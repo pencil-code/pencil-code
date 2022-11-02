@@ -276,6 +276,10 @@ module Pscalar
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,icc)=-amplcc*cos(kx_cc*x(l1:l2))
           enddo; enddo
+       case ('Schur')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,icc)=-amplcc*sin(kx_cc*x(l1:l2))*sin(ky_cc*y(m))*cos(kz_cc*z(n))
+          enddo; enddo
         case ('tang-discont-z')
           print*,'init_lncc: widthcc=',widthcc
           do n=n1,n2; do m=m1,m2
@@ -1114,5 +1118,14 @@ module Pscalar
       first=.false.
 !
     endsubroutine tensor_diff
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(pscalar_diff,p_par(1))
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Pscalar

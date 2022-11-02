@@ -12,7 +12,6 @@
 %%   1D_loop.f90
 %%   advective_gauge.f90
 %%   anelastic.f90
-%%   backreact_infl.f90
 %%   bfield.f90
 %%   chemistry.f90
 %%   chemistry_simple.f90
@@ -35,7 +34,6 @@
 %%   lorenz_gauge.f90
 %%   lucky_droplet.f90
 %%   magnetic_shearboxJ.f90
-%%   maxwell.f90
 %%   meanfield.f90
 %%   meanfield_demfdt.f90
 %%   neutralvelocity.f90
@@ -49,10 +47,7 @@
 %%   particles_surfspec.f90
 %%   particles_tetrad.f90
 %%   polymer.f90
-%%   radial_dist_func.f90
 %%   reaction_0D.f90
-%%   rel_1d.f90
-%%   selfgravity.f90
 %%   shear.f90
 %%   shock.f90
 %%   shock_highorder.f90
@@ -287,9 +282,6 @@
   \var{rhomzmask} & $\left<\varrho\right>$ for
                     the density_zaver_range \\
   \var{rho2m}     & $\left<\varrho^2\right>$ \\
-  \var{rho4m}     & $\left<\varrho^4\right>$ \\
-  \var{rho6m}     & $\left<\varrho^6\right>$ \\
-  \var{rho12m}    & $\left<\varrho^{12}\right>$ \\
   \var{rhof2m}    & $\left<\varrho'^2\right>$ \\
   \var{drho2m}    & $<(\varrho-\varrho_0)^2>$ \\
   \var{drhom}     & $<\varrho-\varrho_0>$ \\
@@ -370,8 +362,6 @@
   \var{Kkramersm} & $\left< K_{\rm kramers} \right>$ \\
   \var{chikrammin} & $\min (\chi_{\rm kramers})$ \\
   \var{chikrammax} & $\max (\chi_{\rm kramers})$ \\
-  \var{TT2m}      & $\left<(T)^2\right>$
-                    \quad(mean squared temperature) \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -391,13 +381,10 @@
   \var{b2m}       & $\left<\Bv^2\right>$ \\
   \var{EEM}       & $\left<\Bv^2\right>/2$ \\
   \var{b4m}       & $\left<\Bv^4\right>$ \\
-  \var{b6m}       & $\left<\Bv^6\right>$ \\
-  \var{b12m}      & $\left<\Bv^12\right>$ \\
   \var{bm2}       & $\max(\Bv^2)$ \\
   \var{j2m}       & $\left<\jv^2\right>$ \\
   \var{jm2}       & $\max(\jv^2)$ \\
   \var{abm}       & $\left<\Av\cdot\Bv\right>$ \\
-  \var{gLambm}    & $\left<\nabla\Lambda\cdot\Bv\right>$ \\
   \var{abumx}     & $\left<u_x\Av\cdot\Bv\right>$ \\
   \var{abumy}     & $\left<u_y\Av\cdot\Bv\right>$ \\
   \var{abumz}     & $\left<u_z\Av\cdot\Bv\right>$ \\
@@ -408,8 +395,6 @@
   \var{jbrms}     & $\left<(\jv\cdot\Bv)^2\right>^{1/2}$ \\
   \var{ajm}       & $\left<\jv\cdot\Av\right>$ \\
   \var{jbm}       & $\left<\jv\cdot\Bv\right>$ \\
-  \var{a2b2m}     & $\left<\Av^2\cdot\Bv^2\right>$ \\
-  \var{j2b2m}     & $\left<\jv^2\cdot\Bv^2\right>$ \\
   \var{jbmh}      & $\left<\Jv\cdot\Bv\right>$ (temp) \\
   \var{jbmn}      & $\left<\Jv\cdot\Bv\right>$ (north) \\
   \var{jbms}      & $\left<\Jv\cdot\Bv\right>$ (south) \\
@@ -504,7 +489,6 @@
   \var{jrms}      & $\left<\jv^2\right>^{1/2}$ \\
   \var{hjrms}     & $\left<\jv^2\right>^{1/2}$ \\
   \var{jmax}      & $\max(|\jv|)$ \\
-  \var{vA23rms}   & $\left<\Bv^2/\varrho^{4/3}\right>^{1/2}$ \\
   \var{vArms}     & $\left<\Bv^2/\varrho\right>^{1/2}$ \\
   \var{vAmax}     & $\max(\Bv^2/\varrho)^{1/2}$ \\
   \var{dtb}       & $\delta t / [c_{\delta t}\,\delta x
@@ -537,7 +521,6 @@
   \var{bym}       & $\left<B_y\right>$ \\
   \var{bzm}       & $\left<B_z\right>$ \\
   \var{bxbym}     & $\left<B_x B_y\right>$ \\
-  \var{bij_cov_diffmax} & difference between two implementations of covariant derivatives \\
   \var{bmx}       & $\left<\left<\Bv\right>_{yz}^2
                     \right>^{1/2}$
                     \quad(energy of $yz$-averaged
@@ -633,11 +616,6 @@
   \var{b2divum}   & $\left<\Bv^2\nabla\cdot\uv\right>$ \\
   \var{jdel2am}   & $\left<\Jv\cdot\nabla^2\Av)\right>$ \\
   \var{ujxbm}     & $\left<\uv\cdot(\Jv\times\Bv)\right>$ \\
-  \var{WL2D}      & $\left<J_i u_j A_{i,j} \right>$ \\
-  \var{WL3D}      & $-\left<J_i u_j A_{j,i} \right>$ \\
-  \var{WL3D2}     & $\left<J_i A_j u_{j,i} \right>$ \\
-  \var{ubgbpm}    & $\left<\uv\cdot(\Bv\cdot\nabla\Bv)\right>$ \\
-  \var{ugb22m}    & $\left<\uv\cdot\nabla\Bv^2/2)\right>$ \\
   \var{jxbrmax}   & $\max(|\Jv\times\Bv/\rho|)$ \\
   \var{jxbr2m}    & $\left<(\Jv\times\Bv/\rho)^2\right>$ \\
   \var{bmxy_rms}  & $\sqrt{[\left<b_x\right>_z(x,y)]^2 +
@@ -665,8 +643,6 @@
                     of $J_{\rm hyper}$ parallel to B \\
   \var{hjperpm}   & Mean value of the component
                     of $J_{\rm hyper}$ perpendicular to B \\
-  \var{b2sphm}    & $\int_{r=0}^{r=1} \Bv^2 dV$,
-                    where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{brmsx}     & $\left<\Bv^2\right>^{1/2}$ for
                     the magnetic_xaver_range \\
   \var{brmsz}     & $\left<\Bv^2\right>^{1/2}$ for
@@ -718,17 +694,6 @@
   \var{divrhoum}  & $\left<\nabla\cdot(\varrho\uv)\right>$ \\
   \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
   \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{backreact_infl.f90}} \\
-\midrule
-  \var{phim}      & $\left<\phi\right>$ \\
-  \var{phi2m}     & $\left<\phi^2\right>$ \\
-  \var{phirms}    & $\left<\phi^2\right>^{1/2}$ \\
-  \var{dphim}     & $\left<\phi'\right>$ \\
-  \var{dphi2m}    & $\left<(\phi')^2\right>$ \\
-  \var{dphirms}   & $\left<(\phi')^2\right>^{1/2}$ \\
-  \var{Hubblem}   & $\left<{\cal H}\right>$ \\
-  \var{lnam}      & $\left<\ln a\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{bfield.f90}} \\
 \midrule
@@ -793,16 +758,12 @@
 \midrule
   \var{muSm}      & $\left<\mu_S\right>$ \\
   \var{muSrms}    & $\left<\mu_S^2\right>^{1/2}$ \\
-  \var{muSmax}    & $\max\mu$ \\
   \var{mu5m}      & $\left<\mu_5\right>$ \\
   \var{mu51m}     & $\left<|\mu_5|\right>$ \\
-  \var{mu53m}     & $\left<\mu_5^3\right>$ \\
-  \var{mu54m}     & $\left<\mu_5^4\right>$ \\
   \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
   \var{mu5min}    & $\min\mu_5$ \\
   \var{mu5max}    & $\max\mu_5$ \\
   \var{mu5abs}    & $\max|\mu_5|$ \\
-  \var{gamf5m}    & $\left<\Gamma_5\right>$ \\
   \var{gmu5rms}   & $\left<(\nabla\mu_5)^2\right>^{1/2}$ \\
   \var{gmuSrms}   & $\left<(\nabla\mu_S)^2\right>^{1/2}$ \\
   \var{gmu5mx}    & $\left<\nabla\mu_5\right>_x$ \\
@@ -821,9 +782,7 @@
   \var{dt_chiral} & total time-step contribution from chiral MHD \\
   \var{mu5bxm}    & $\left<\mu_5B_x\right>$ \\
   \var{mu5b2m}    & $\left<\mu_5B^2\right>$ \\
-  \var{mu5jbm}    & $\left<\mu_5\Jv\cdot\Bv\right>$ \\
   \var{jxm}       & $\langle J_x\rangle$ \\
-  \var{Dmu5_tdep} & $D(t)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule
@@ -857,9 +816,8 @@
 \midrule
   \multicolumn{2}{c}{Module \file{disp_current.f90}} \\
 \midrule
-  \var{erms}      & $\left<\Ev^2\right>^{1/2}$ \\
-  \var{emax}      & $\max(|\Ev|)$ \\
-  \var{a0rms}     & $\left<A_0^2\right>^{1/2}$ \\
+  \var{EErms}     & $\left<\Ev^2\right>^{1/2}$ \\
+  \var{EEmax}     & $\max(|\Ev|)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{dustdensity.f90}} \\
 \midrule
@@ -960,9 +918,6 @@
   \var{ggT2m}     & $\bra{g_T^2}$ \\
   \var{ggX2m}     & $\bra{g_X^2}$ \\
   \var{ggTXm}     & $\bra{g_T g_X}$ \\
-  \var{nlin0}     & $\bra{nlin0}$ \\
-  \var{nlin1}     & $\bra{nlin1}$ \\
-  \var{nlin2}     & $\bra{nlin2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravitational_waves_hTXk_no_xpara.f90}} \\
 \midrule
@@ -1473,21 +1428,6 @@
   \var{Eymxy}     & $\left<{\cal E}_y\right>_{z}$ \\
   \var{Ezmxy}     & $\left<{\cal E}_z\right>_{z}$ \\
 \midrule
-  \multicolumn{2}{c}{Module \file{maxwell.f90}} \\
-\midrule
-  \var{aa2m}      & $\langle A^2\rangle$ \\
-  \var{ee2m}      & $\langle E^2\rangle$ \\
-  \var{EEEM}      & $\langle(E^2+B^2)/2\rangle$ \\
-  \var{akxpt}     & $Akx^{pt}$ \\
-  \var{ekxpt}     & $Ekx^{pt}$ \\
-  \var{sigma}     & $\sigma$ \\
-  \var{emag}      & $\int_V{1\over2\mu_0}\Bv^2\, dV$ \\
-  \var{bmax}      & $\max(|\Bv|)$ \\
-  \var{brms}      & $\left<\Bv^2\right>^{1/2}$ \\
-  \var{arms}      & $\left<\Av^2\right>^{1/2}$ \\
-  \var{erms}      & $\left<\Ev^2\right>^{1/2}$ \\
-  \var{bfrms}     & $\left<{\Bv'}^2\right>^{1/2}$ \\
-\midrule
   \multicolumn{2}{c}{Module \file{meanfield.f90}} \\
 \midrule
   \var{qsm}       & $\left<q_p(\overline{B})\right>$ \\
@@ -1599,16 +1539,6 @@
   \var{polytrm}   & $\left\langle Tr[C_{ij}]\right\rangle$ \\
   \var{frmax}     & $\max(f(r))$ \\
 \midrule
-  \multicolumn{2}{c}{Module \file{radial_dist_func.f90}} \\
-\midrule
-  \var{rad}       & $r/r_\ast$ \\
-  \var{tauk}      & $\tau_k$ \\
-  \var{tt1m}      & $\langle T \rangle$ \\
-  \var{qq1m}      & $\langle \ln T \rangle$ \\
-  \var{qq2m}      & $\langle \ln T^2 \rangle$ \\
-  \var{qq3m}      & $\langle \ln T^3 \rangle$ \\
-  \var{qq4m}      & $\langle \ln T^4 \rangle$ \\
-\midrule
   \multicolumn{2}{c}{Module \file{reaction_0D.f90}} \\
 \midrule
   \var{eem}       & $\langle \eta \rangle$ \\
@@ -1640,16 +1570,6 @@
   \var{L3}        & $L_3$ \\
   \var{L4}        & $L_4$ \\
   \var{L5}        & $L_5$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{rel_1d.f90}} \\
-\midrule
-  \var{betm}      & $\left<\beta\right>$ \\
-  \var{betmax}    & $\beta_{\max}$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{selfgravity.f90}} \\
-\midrule
-  \var{rugpotselfm} & $\left<\rho\uv\cdot\nabla\Phi\right>$ \\
-  \var{gpotself2m} & $\left<(\nabla\Phi)^2\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\
 \midrule
@@ -1917,7 +1837,6 @@
   \var{u0rms}     & $\left<u_{0}^2\right>^{1/2}$ \\
   \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
   \var{h0rms}     & $\left<h_{0}^2\right>^{1/2}$ \\
-  \var{rho0m}     & $\left<\exp h_{0}\right>$ \\
   \var{u0max}     & $\operatorname{max}\left|\boldsymbol{u}_{0}\right|$ \\
   \var{b0max}     & $\operatorname{max}\left|\boldsymbol{b}_{0}\right|$ \\
   \var{h0max}     & $\operatorname{max}h_{0}$ \\
@@ -1928,9 +1847,6 @@
   \var{E12rms}    & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
   \var{E22rms}    & $\left<{\cal E}_{22}^2\right>^{1/2}$ \\
   \var{E0rms}     & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
-  \var{E0mrms}    & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
-  \var{E0xrms}    & $\left<{\cal E}_{0,x}^2\right>^{1/2}$ \\
-  \var{E0yrms}    & $\left<{\cal E}_{0,y}^2\right>^{1/2}$ \\
   \var{Ex11pt}    & ${\cal E}_x^{11}$ \\
   \var{Ex21pt}    & ${\cal E}_x^{21}$ \\
   \var{Ex12pt}    & ${\cal E}_x^{12}$ \\
@@ -1954,14 +1870,6 @@
   \var{E122z}     & ${\cal E}_1^{22}$ \\
   \var{E222z}     & ${\cal E}_2^{22}$ \\
   \var{E322z}     & ${\cal E}_3^{22}$ \\
-  \var{alp11z}    & $\alpha_{11}(z,t)$ \\
-  \var{alp21z}    & $\alpha_{21}(z,t)$ \\
-  \var{alp12z}    & $\alpha_{12}(z,t)$ \\
-  \var{alp22z}    & $\alpha_{22}(z,t)$ \\
-  \var{eta11z}    & $\eta_{11}(z,t)$ \\
-  \var{eta21z}    & $\eta_{21}(z,t)$ \\
-  \var{eta12z}    & $\eta_{12}(z,t)$ \\
-  \var{eta22z}    & $\eta_{22}(z,t)$ \\
   \var{E10z}      & ${\cal E}_1^{0}$ \\
   \var{E20z}      & ${\cal E}_2^{0}$ \\
   \var{E30z}      & ${\cal E}_3^{0}$ \\
@@ -2628,7 +2536,6 @@
                     \fv_{\rm visc}\right>$ \\
   \var{Sij2m}     & $\left<\Strain^2\right>$ \\
   \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
-  \var{epsKint}   & $\int(2\nu\varrho\Strain^2)\,dV$ \\
   \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
                     \delta x^2/\nu_{\rm max}]$
                     \quad(time step relative to

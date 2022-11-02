@@ -14,7 +14,7 @@ As of 7 Dec 2019: 16 owners:
         Dhrubaditya Mitra <dhruba.mitra@gmail.com>,
         Rheinhardt Matthias <matthias.rheinhardt@aalto.fi>,
         Joern Warnecke <warnecke@mps.mpg.de>,
-        Chao-Chin Yang <ccyang@astro.lu.se>
+        Chao-Chin Yang <ccyang@ua.edu>
 
    1758+91 Philippe Bourdin+PABourdin
    1118+206  mrheinhardt, Matthias Rheinhardt

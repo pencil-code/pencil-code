@@ -13,6 +13,8 @@ module Particles_mpicomm
   use Messages
   use Particles_cdata
 !
+  use MPI, only: MPI_OFFSET_KIND
+!
   implicit none
 !
   include 'particles_mpicomm.h'
@@ -49,6 +51,8 @@ module Particles_mpicomm
   logical :: lreblock_particles_run=.false., lbrick_partition=.false.
   logical :: ladopt_own_light_bricks=.false.
 !
+  integer(kind=MPI_OFFSET_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
+!
   !include 'mpif.h'
 !
   contains
@@ -60,11 +64,15 @@ module Particles_mpicomm
 !
 !  31-oct-09/anders: coded
 !
+      use MPI
+!
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
 !
       integer :: iblock, ibrick
 !
       integer :: ibx, iby, ibz
+!
+      integer :: mpi_err
 !
 !  Check consistency of brick partition.
 !
@@ -111,6 +119,19 @@ module Particles_mpicomm
             nbrickz, nzgrid
         call fatal_error_local('initialize_particles_mpicomm','')
       endif
+      call fatal_error_local_collect()
+!
+!  Remeber the sizes of some MPI elementary types.
+!
+      call MPI_TYPE_SIZE_X(MPI_INTEGER, size_of_int, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI_INTEGER size")
+!
+      call MPI_TYPE_SIZE_X(mpi_precision, size_of_real, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI real size")
+!
+      call MPI_TYPE_SIZE_X(MPI_DOUBLE_PRECISION, size_of_double, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI_DOUBLE_PRECISION size")
+!
       call fatal_error_local_collect()
 !
 !  Distribute particles evenly among processors to begin with.
@@ -188,7 +209,7 @@ module Particles_mpicomm
 !
 !  Read block domain decomposition from file.
 !
-        call input_blocks(trim(directory_dist)//'/blocks.dat')
+        call input_blocks("blocks.dat")
       endif
 !
 !  For placing particles in blocks the CPUs need a common reference point that
@@ -1101,6 +1122,7 @@ module Particles_mpicomm
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
           ibrick_parent_block(0:nblock_loc-1)
       ibrick_global_rec_previous=-1
+      lmigrate_previous = .false.
 !
 !  Possible to iterate until all particles have migrated.
 !
@@ -1458,9 +1480,9 @@ module Particles_mpicomm
         ibx=modulo(ibrick,nbx)
         iby=modulo(ibrick/nbx,nby)
         ibz=ibrick/(nbx*nby)
-        npbrick(ibrick)=sum(f(l1+ibx*nxb:l1+(ibx+1)*nxb-1, &
-                              m1+iby*nyb:m1+(iby+1)*nyb-1, &
-                              n1+ibz*nzb:n1+(ibz+1)*nzb-1,inp))
+        npbrick(ibrick)=nint(sum(f(l1+ibx*nxb:l1+(ibx+1)*nxb-1, &
+                                   m1+iby*nyb:m1+(iby+1)*nyb-1, &
+                                   n1+ibz*nzb:n1+(ibz+1)*nzb-1,inp)))
       enddo
 !
 !  For perfect load balancing we want npar/ncpus particles per processor.
@@ -1882,14 +1904,6 @@ module Particles_mpicomm
              iproc_recv, tag_id+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
-        call mpirecv_nonblock_real(dx1b_recv(:,iblock), mxb, &
-             iproc_recv, tag_id2+ibrick_global, ireq)
-        nreq=nreq+1
-        ireq_array(nreq)=ireq
-        call mpirecv_nonblock_real(dVol1xb_recv(:,iblock), mxb, &
-             iproc_recv, tag_id3+ibrick_global, ireq)
-        nreq=nreq+1
-        ireq_array(nreq)=ireq
         iblock=iblock+1
       enddo
 !
@@ -1903,18 +1917,67 @@ module Particles_mpicomm
                iproc_send, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
+        endif
+        iblock=iblock+1
+      enddo
+      do ireq=1,nreq
+        call mpiwait(ireq_array(ireq))
+      enddo
+!
+      nreq=0
+      iblock=0
+      do while (iblock<nblock_loc)
+        iproc_recv=iproc_grandparent(iblock)
+        ibrick_global= &
+            iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+        call mpirecv_nonblock_real(dx1b_recv(:,iblock), mxb, &
+             iproc_recv, tag_id+ibrick_global, ireq)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
+        iblock=iblock+1
+      enddo
+      iblock=0
+      do while (iblock<nblock_loc_old)
+        iproc_send=iproc_grandchild(iblock)
+        if (iproc_send/=-1) then
+          ibrick_global= &
+              iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
           call mpisend_nonblock_real(dx1b(:,iblock), mxb, &
-               iproc_send, tag_id2+ibrick_global, ireq)
-          nreq=nreq+1
-          ireq_array(nreq)=ireq
-          call mpisend_nonblock_real(dVol1xb(:,iblock), mxb, &
-               iproc_send, tag_id3+ibrick_global, ireq)
+               iproc_send, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
         endif
         iblock=iblock+1
       enddo
+      do ireq=1,nreq
+        call mpiwait(ireq_array(ireq))
+      enddo
 !
+      nreq=0
+      iblock=0
+      do while (iblock<nblock_loc)
+        iproc_recv=iproc_grandparent(iblock)
+        ibrick_global= &
+            iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+        call mpirecv_nonblock_real(dVol1xb_recv(:,iblock), mxb, &
+             iproc_recv, tag_id+ibrick_global, ireq)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
+        iblock=iblock+1
+      enddo
+      iblock=0
+      do while (iblock<nblock_loc_old)
+        iproc_send=iproc_grandchild(iblock)
+        if (iproc_send/=-1) then
+          ibrick_global= &
+              iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
+          call mpisend_nonblock_real(dVol1xb(:,iblock), mxb, &
+               iproc_send, tag_id+ibrick_global, ireq)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
+        endif
+        iblock=iblock+1
+      enddo
       do ireq=1,nreq
         call mpiwait(ireq_array(ireq))
       enddo
@@ -1935,17 +1998,8 @@ module Particles_mpicomm
             myb, iproc_recv, tag_id+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
-        call mpirecv_nonblock_real(dy1b_recv(:,iblock), &
-            myb, iproc_recv, tag_id2+ibrick_global, ireq)
-        nreq=nreq+1
-        ireq_array(nreq)=ireq
-        call mpirecv_nonblock_real(dVol1yb_recv(:,iblock), &
-            myb, iproc_recv, tag_id3+ibrick_global, ireq)
-        nreq=nreq+1
-        ireq_array(nreq)=ireq
         iblock=iblock+1
       enddo
-!
       iblock=0
       do while (iblock<nblock_loc_old)
         iproc_send=iproc_grandchild(iblock)
@@ -1956,18 +2010,67 @@ module Particles_mpicomm
               iproc_send, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
+        endif
+        iblock=iblock+1
+      enddo
+      do ireq=1,nreq
+        call mpiwait(ireq_array(ireq))
+      enddo
+!
+      nreq=0
+      iblock=0
+      do while (iblock<nblock_loc)
+        iproc_recv=iproc_grandparent(iblock)
+        ibrick_global= &
+            iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+        call mpirecv_nonblock_real(dy1b_recv(:,iblock), &
+            myb, iproc_recv, tag_id+ibrick_global, ireq)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
+        iblock=iblock+1
+      enddo
+      iblock=0
+      do while (iblock<nblock_loc_old)
+        iproc_send=iproc_grandchild(iblock)
+        if (iproc_send/=-1) then
+          ibrick_global= &
+              iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
           call mpisend_nonblock_real(dy1b(:,iblock), myb, &
-              iproc_send, tag_id2+ibrick_global, ireq)
-          nreq=nreq+1
-          ireq_array(nreq)=ireq
-          call mpisend_nonblock_real(dVol1yb(:,iblock), myb, &
-              iproc_send, tag_id3+ibrick_global, ireq)
+              iproc_send, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
         endif
         iblock=iblock+1
       enddo
+      do ireq=1,nreq
+        call mpiwait(ireq_array(ireq))
+      enddo
 !
+      nreq=0
+      iblock=0
+      do while (iblock<nblock_loc)
+        iproc_recv=iproc_grandparent(iblock)
+        ibrick_global= &
+            iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+        call mpirecv_nonblock_real(dVol1yb_recv(:,iblock), &
+            myb, iproc_recv, tag_id+ibrick_global, ireq)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
+        iblock=iblock+1
+      enddo
+      iblock=0
+      do while (iblock<nblock_loc_old)
+        iproc_send=iproc_grandchild(iblock)
+        if (iproc_send/=-1) then
+          ibrick_global= &
+              iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
+          call mpisend_nonblock_real(dVol1yb(:,iblock), myb, &
+              iproc_send, tag_id+ibrick_global, ireq)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
+        endif
+        iblock=iblock+1
+      enddo
       do ireq=1,nreq
         call mpiwait(ireq_array(ireq))
       enddo
@@ -1988,17 +2091,8 @@ module Particles_mpicomm
             iproc_recv, tag_id+ibrick_global, ireq)
         nreq=nreq+1
         ireq_array(nreq)=ireq
-        call mpirecv_nonblock_real(dz1b_recv(:,iblock), mzb, &
-             iproc_recv, tag_id2+ibrick_global, ireq)
-        nreq=nreq+1
-        ireq_array(nreq)=ireq
-        call mpirecv_nonblock_real(dVol1zb_recv(:,iblock), mzb, &
-            iproc_recv, tag_id3+ibrick_global, ireq)
-        nreq=nreq+1
-        ireq_array(nreq)=ireq
         iblock=iblock+1
       enddo
-!
       iblock=0
       do while (iblock<nblock_loc_old)
         iproc_send=iproc_grandchild(iblock)
@@ -2009,18 +2103,67 @@ module Particles_mpicomm
               iproc_send, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
+        endif
+        iblock=iblock+1
+      enddo
+      do ireq=1,nreq
+        call mpiwait(ireq_array(ireq))
+      enddo
+!
+      nreq=0
+      iblock=0
+      do while (iblock<nblock_loc)
+        iproc_recv=iproc_grandparent(iblock)
+        ibrick_global= &
+            iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+        call mpirecv_nonblock_real(dz1b_recv(:,iblock), mzb, &
+             iproc_recv, tag_id+ibrick_global, ireq)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
+        iblock=iblock+1
+      enddo
+      iblock=0
+      do while (iblock<nblock_loc_old)
+        iproc_send=iproc_grandchild(iblock)
+        if (iproc_send/=-1) then
+          ibrick_global= &
+              iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
           call mpisend_nonblock_real(dz1b(:,iblock), mzb, &
-              iproc_send, tag_id2+ibrick_global, ireq)
-          nreq=nreq+1
-          ireq_array(nreq)=ireq
-          call mpisend_nonblock_real(dVol1zb(:,iblock), mzb, &
-              iproc_send, tag_id3+ibrick_global, ireq)
+              iproc_send, tag_id+ibrick_global, ireq)
           nreq=nreq+1
           ireq_array(nreq)=ireq
         endif
         iblock=iblock+1
       enddo
+      do ireq=1,nreq
+        call mpiwait(ireq_array(ireq))
+      enddo
 !
+      nreq=0
+      iblock=0
+      do while (iblock<nblock_loc)
+        iproc_recv=iproc_grandparent(iblock)
+        ibrick_global= &
+            iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+        call mpirecv_nonblock_real(dVol1zb_recv(:,iblock), mzb, &
+            iproc_recv, tag_id+ibrick_global, ireq)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
+        iblock=iblock+1
+      enddo
+      iblock=0
+      do while (iblock<nblock_loc_old)
+        iproc_send=iproc_grandchild(iblock)
+        if (iproc_send/=-1) then
+          ibrick_global= &
+              iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
+          call mpisend_nonblock_real(dVol1zb(:,iblock), mzb, &
+              iproc_send, tag_id+ibrick_global, ireq)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
+        endif
+        iblock=iblock+1
+      enddo
       do ireq=1,nreq
         call mpiwait(ireq_array(ireq))
       enddo
@@ -2106,15 +2249,33 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine output_blocks(filename)
 !
-!  Write block domain decomposition to file.
+!  Dispatches to a blocks writer according to the IO strategy.
+!
+!  07-oct-22/ccyang: coded
+!
+      use IO, only: IO_strategy
+!
+      character(len=*), intent(in) :: filename
+!
+      dispatch: if (IO_strategy == "dist") then
+        call output_blocks_dist(filename)
+      elseif (IO_strategy == "MPI-IO") then dispatch
+        call output_blocks_mpi(filename)
+      else dispatch
+        call fatal_error("output_blocks", "IO strategy " // trim(IO_strategy) // " is not implemented. ")
+      endif dispatch
+!
+    endsubroutine output_blocks
+!***********************************************************************
+    subroutine output_blocks_dist(filename)
+!
+!  Write block domain decomposition to file, one file per process.
 !
 !  04-nov-09/anders: coded
 !
-      character(len=*) :: filename
+      character(len=*), intent(in) :: filename
 !
-      intent (in) :: filename
-!
-      open(lun_output,file=filename,form='unformatted')
+      open(lun_output, file=trim(directory_dist)//'/'//filename, form='unformatted')
 !
         write(lun_output) t
         write(lun_output) nblock_loc, nproc_parent, nproc_foster
@@ -2151,26 +2312,163 @@ module Particles_mpicomm
 !
       close(lun_output)
 !
-    endsubroutine output_blocks
+    endsubroutine output_blocks_dist
+!***********************************************************************
+    subroutine output_blocks_mpi(filename)
+!
+!  Write block domain decomposition to file, using MPI I/O.
+!
+!  01-nov-22/ccyang: coded
+!
+      use MPI
+!
+      character(len=*), intent(in) :: filename
+!
+      character(len=*), parameter :: rname = "output_blocks_mpi"
+!
+      integer, dimension(MPI_STATUS_SIZE) :: istat
+      character(len=fnlen) :: fpath
+      integer :: nblock_cum, nparent_cum, nfoster_cum, n
+      integer :: handle, mpi_type, ierr
+      integer(KIND=MPI_OFFSET_KIND) :: offset
+!
+!  Communicate local counts.
+!
+      call cumulate_counts(nblock_loc, nblock_cum)
+      call cumulate_counts(nproc_parent, nparent_cum)
+      call cumulate_counts(nproc_foster, nfoster_cum)
+!
+!  Open file for write.
+!
+      fpath = trim(directory_snap) // '/' // trim(filename)
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), MPI_INFO_NULL, handle, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
+!
+!  Write header.
+!
+      root: if (lroot) then
+        call MPI_FILE_WRITE(handle, ncpus, 1, MPI_INTEGER, istat, ierr)
+        if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write ncpus")
+        call MPI_FILE_WRITE(handle, nbricks, 1, MPI_INTEGER, istat, ierr)
+        if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write nbricks")
+        call MPI_FILE_WRITE(handle, t, 1, MPI_DOUBLE_PRECISION, istat, ierr)
+        if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
+      endif root
+!
+!  Decompose the write by processes.
+!
+      n = nbricks + 2 * nblock_loc + nproc_parent + nproc_foster
+      offset = size_of_int * (ncpus * 3 + iproc * nbricks + 2 * nblock_cum + nparent_cum + nfoster_cum) &
+             + size_of_real * (3 * (mxb + myb + mzb) * nblock_cum)
+      call MPI_TYPE_CREATE_STRUCT(3, (/ 3, n, 3 * (mxb + myb + mzb) * nblock_loc /), &
+                                     (/ iproc * 3 * size_of_int, offset, offset + n * size_of_int /), &
+                                     (/ MPI_INTEGER, MPI_INTEGER, mpi_precision /), mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
+!
+      call MPI_TYPE_COMMIT(mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to commit MPI data type")
+!
+      offset = 2 * size_of_int + size_of_double
+      call MPI_FILE_SET_VIEW(handle, offset, MPI_BYTE, mpi_type, "native", MPI_INFO_NULL, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to set view")
+!
+!  Write integer data.
+!
+      call MPI_FILE_WRITE_ALL(handle, (/ nblock_loc, nproc_parent, nproc_foster /), 3, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write counts")
+!
+      call MPI_FILE_WRITE_ALL(handle, iproc_foster_brick, nbricks, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write iproc_foster_brick")
+!
+      call MPI_FILE_WRITE_ALL(handle, iproc_parent_block, nblock_loc, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write iproc_parent_block")
+!
+      call MPI_FILE_WRITE_ALL(handle, ibrick_parent_block, nblock_loc, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write ibrick_parent_block")
+!
+      call MPI_FILE_WRITE_ALL(handle, iproc_parent_list, nproc_parent, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write iproc_parent_list")
+!
+      call MPI_FILE_WRITE_ALL(handle, iproc_foster_list, nproc_foster, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write iproc_foster_list")
+!
+!  Write real data.
+!
+      call MPI_FILE_WRITE_ALL(handle, xb(:,0:nblock_loc-1), mxb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write xb")
+!
+      call MPI_FILE_WRITE_ALL(handle, yb(:,0:nblock_loc-1), myb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write yb")
+!
+      call MPI_FILE_WRITE_ALL(handle, zb(:,0:nblock_loc-1), mzb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write zb")
+!
+      call MPI_FILE_WRITE_ALL(handle, dx1b(:,0:nblock_loc-1), mxb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dx1b")
+!
+      call MPI_FILE_WRITE_ALL(handle, dy1b(:,0:nblock_loc-1), myb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dy1b")
+!
+      call MPI_FILE_WRITE_ALL(handle, dz1b(:,0:nblock_loc-1), mzb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dz1b")
+!
+      call MPI_FILE_WRITE_ALL(handle, dVol1xb(:,0:nblock_loc-1), mxb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dVol1xb")
+!
+      call MPI_FILE_WRITE_ALL(handle, dVol1yb(:,0:nblock_loc-1), myb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dVol1yb")
+!
+      call MPI_FILE_WRITE_ALL(handle, dVol1zb(:,0:nblock_loc-1), mzb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dVol1zb")
+!
+!  Clean up and close the file.
+!
+      call MPI_TYPE_FREE(mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to free MPI data type")
+!
+      call MPI_FILE_CLOSE(handle, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
+!
+      call fatal_error_local_collect()
+!
+    endsubroutine output_blocks_mpi
 !***********************************************************************
     subroutine input_blocks(filename)
+!
+!  Dispatches to a blocks reader according to the IO strategy.
+!
+!  07-oct-22/ccyang: coded
+!
+      use IO, only: IO_strategy
+!
+      character(len=*), intent(in) :: filename
+!
+      dispatch: if (IO_strategy == "dist") then
+        call input_blocks_dist(filename)
+      elseif (IO_strategy == "MPI-IO") then dispatch
+        call input_blocks_mpi(filename)
+      else dispatch
+        call fatal_error("input_blocks", "IO strategy " // trim(IO_strategy) // " is not implemented. ")
+      endif dispatch
+!
+    endsubroutine input_blocks
+!***********************************************************************
+    subroutine input_blocks_dist(filename)
 !
 !  Read block domain decomposition from file.
 !
 !  04-nov-09/anders: coded
 !
-      character(len=*) :: filename
+      character(len=*), intent(in) :: filename
 !
       real :: t_block
       integer :: dummy
-!
-      intent (in) :: filename
 !
       iproc_parent_block=-1
       ibrick_parent_block=-1
       iproc_foster_brick=-1
 !
-      open(lun_output,file=filename,form='unformatted')
+      open(lun_output, file=trim(directory_dist)//'/'//filename, form='unformatted')
 !
         read(lun_output) t_block
         read(lun_output) nblock_loc, nproc_parent, nproc_foster
@@ -2214,7 +2512,148 @@ module Particles_mpicomm
       endif
       call fatal_error_local_collect()
 !
-    endsubroutine input_blocks
+    endsubroutine input_blocks_dist
+!***********************************************************************
+    subroutine input_blocks_mpi(filename)
+!
+!  Read block domain decomposition from file, using MPI I/O.
+!
+!  01-nov-22/ccyang: coded
+!
+      use MPI
+!
+      character(len=*), intent(in) :: filename
+!
+      character(len=*), parameter :: rname = "input_blocks_mpi"
+!
+      integer, dimension(3,ncpus) :: narray  ! (/ nblock_loc, nproc_parent, nproc_foster /) stacked
+      integer, dimension(MPI_STATUS_SIZE) :: istat
+      character(len=fnlen) :: fpath
+      double precision :: tfile
+      integer :: handle, mpi_type, ierr
+      integer :: nblock_cum, nparent_cum, nfoster_cum, n
+      integer(KIND=MPI_OFFSET_KIND) :: offset
+!
+!  Open file for read.
+!
+      fpath = trim(directory_snap) // '/' // trim(filename)
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, MPI_MODE_RDONLY, MPI_INFO_NULL, handle, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
+!
+!  Read number of processes.
+!
+      call MPI_FILE_READ_ALL(handle, n, 1, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read ncpus")
+      nproc: if (n /= ncpus) then
+        if (lroot) print *, "input_blocks_mpi: ncpus(file), ncpus(code) = ", n, ncpus
+        call fatal_error(rname, "inconsistent ncpus")
+      endif nproc
+!
+!  Read number of bricks per process.
+!
+      call MPI_FILE_READ_ALL(handle, n, 1, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read nbricks")
+      nb: if (n /= nbricks) then
+        if (lroot) print *, "input_blocks_mpi: nbricks(file), nbricks(code) = ", n, nbricks
+        call fatal_error(rname, "inconsistent nbricks")
+      endif nb
+!
+!  Read time.
+!
+      call MPI_FILE_READ_ALL(handle, tfile, 1, MPI_DOUBLE_PRECISION, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read time")
+      time: if (t /= tfile) then
+        print *, "input_blocks_mpi: iproc, t(file), t(code) = ", iproc, tfile, t
+        call fatal_error_local(rname, "inconsistent time stamp")
+      endif time
+!
+!  Read counts.
+!
+      call MPI_FILE_READ_ALL(handle, narray, 3 * ncpus, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read counts")
+!
+      nblock_loc = narray(1,iproc+1)
+      nproc_parent = narray(2,iproc+1)
+      nproc_foster = narray(3,iproc+1)
+!
+      nblock_cum = sum(narray(1,:iproc))
+      nparent_cum = sum(narray(2,:iproc))
+      nfoster_cum = sum(narray(3,:iproc))
+!
+!  Identify the file view for each process.
+!
+      n = nbricks + 2 * nblock_loc + nproc_parent + nproc_foster
+      offset = size_of_int * (iproc * nbricks + 2 * nblock_cum + nparent_cum + nfoster_cum) &
+             + size_of_real * (3 * (mxb + myb + mzb) * nblock_cum)
+      call MPI_TYPE_CREATE_STRUCT(2, (/ n, 3 * (mxb + myb + mzb) * nblock_loc /), &
+                                     (/ offset, offset + size_of_int * n /), &
+                                     (/ MPI_INTEGER, mpi_precision /), mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
+!
+      call MPI_TYPE_COMMIT(mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to commit MPI data type")
+!
+      offset = (2 + ncpus * 3) * size_of_int + size_of_double
+      call MPI_FILE_SET_VIEW(handle, offset, MPI_BYTE, mpi_type, "native", MPI_INFO_NULL, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to set view")
+!
+!  Read integer data.
+!
+      call MPI_FILE_READ_ALL(handle, iproc_foster_brick, nbricks, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read iproc_foster_brick")
+!
+      call MPI_FILE_READ_ALL(handle, iproc_parent_block, nblock_loc, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read iproc_parent_block")
+!
+      call MPI_FILE_READ_ALL(handle, ibrick_parent_block, nblock_loc, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read ibrick_parent_block")
+!
+      call MPI_FILE_READ_ALL(handle, iproc_parent_list, nproc_parent, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to read iproc_parent_list")
+!
+      call MPI_FILE_READ_ALL(handle, iproc_foster_list, nproc_foster, MPI_INTEGER, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to read iproc_foster_list")
+!
+!  Read real data.
+!
+      call MPI_FILE_READ_ALL(handle, xb, mxb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read xb")
+!
+      call MPI_FILE_READ_ALL(handle, yb, myb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read yb")
+!
+      call MPI_FILE_READ_ALL(handle, zb, mzb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read zb")
+!
+      call MPI_FILE_READ_ALL(handle, dx1b, mxb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dx1b")
+!
+      call MPI_FILE_READ_ALL(handle, dy1b, myb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dy1b")
+!
+      call MPI_FILE_READ_ALL(handle, dz1b, mzb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dz1b")
+!
+      call MPI_FILE_READ_ALL(handle, dVol1xb, mxb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dVol1xb")
+!
+      call MPI_FILE_READ_ALL(handle, dVol1yb, myb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dVol1yb")
+!
+      call MPI_FILE_READ_ALL(handle, dVol1zb, mzb * nblock_loc, mpi_precision, istat, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dVol1zb")
+!
+!  Clean up and close file.
+!
+      call MPI_TYPE_FREE(mpi_type, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to free MPI data type")
+!
+      call MPI_FILE_CLOSE(handle, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
+!
+      call fatal_error_local_collect()
+!
+    endsubroutine input_blocks_mpi
 !***********************************************************************
     subroutine sort_blocks()
 !
@@ -2379,6 +2818,14 @@ module Particles_mpicomm
         endif
         ipx0=(ix0-1)/nx
         ix0=ix0-ipx0*nx
+        roerrx: if (xxp(1) < procx_bounds(ipx0) .and. ix0 == 1) then
+          if (ipx0 > 0) then
+            ipx0 = ipx0 - 1
+            ix0 = nx
+          else
+            ix0 = 0
+          endif
+        endif roerrx
         ibx0=(ix0-1)/nxb
         ix0=ix0-ibx0*nxb+nghostb
       else
@@ -2397,6 +2844,14 @@ module Particles_mpicomm
         endif
         ipy0=(iy0-1)/ny
         iy0=iy0-ipy0*ny
+        roerry: if (xxp(2) < procy_bounds(ipy0) .and. iy0 == 1) then
+          if (ipy0 > 0) then
+            ipy0 = ipy0 - 1
+            iy0 = ny
+          else
+            iy0 = 0
+          endif
+        endif roerry
         iby0=(iy0-1)/nyb
         iy0=iy0-iby0*nyb+nghostb
       else
@@ -2415,6 +2870,14 @@ module Particles_mpicomm
         endif
         ipz0=(iz0-1)/nz
         iz0=iz0-ipz0*nz
+        roerrz: if (xxp(3) < procz_bounds(ipz0) .and. iz0 == 1) then
+          if (ipz0 > 0) then
+            ipz0 = ipz0 - 1
+            iz0 = nz
+          else
+            iz0 = 0
+          endif
+        endif roerrz
         ibz0=(iz0-1)/nzb
         iz0=iz0-ibz0*nzb+nghostb
       else
@@ -2458,10 +2921,35 @@ module Particles_mpicomm
 !
     endsubroutine get_brick_index
 !***********************************************************************
+    subroutine cumulate_counts(nloc, ncum)
+!
+!  Finds the cumulative count from processes of upper ranks.
+!
+!  01-nov-22/ccyang: coded
+!
+      use MPI
+!
+      integer, intent(in) :: nloc
+      integer, intent(out) :: ncum
+!
+      integer, dimension(ncpus) :: nloc_arr
+      integer :: ierr
+!
+      nloc_arr = 0
+      nloc_arr(iproc+1) = nloc
+      call MPI_ALLREDUCE(MPI_IN_PLACE, nloc_arr, ncpus, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+      if (ierr /= MPI_SUCCESS) call fatal_error("cumulate_counts", "unable to communicate nloc")
+      ncum = sum(nloc_arr(:iproc))
+!
+    endsubroutine cumulate_counts
+!***********************************************************************
     subroutine communicate_fpbuf(to_neigh,from_neigh,her_npbuf,my_npbuf)
-
+!
       integer, intent(in) :: to_neigh,from_neigh
       integer, intent(in) :: her_npbuf,my_npbuf
+!
+      call keep_compiler_quiet(to_neigh, from_neigh, her_npbuf, my_npbuf)
+!
     endsubroutine communicate_fpbuf
 !***********************************************************************
 endmodule Particles_mpicomm

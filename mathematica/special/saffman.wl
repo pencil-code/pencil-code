@@ -56,7 +56,7 @@ pqDiag[sim_,p_,q_,t_,style_List:{},OptionsPattern[]]:=Module[{pq,style2,n,r},
   ];
   If[OptionValue["lnotPQ"],
     Show[pq,style2,style],
-    n=2getParam[sim,"neta"];
+    n=2getParam[sim,"nHyperEta"];
     r=readParamNml[sim,"run.in","ETA_TDEP_EXPONENT"];
     Show[pq,
       Plot[2(1-x),{x,0,1},PlotStyle->Directive[AbsoluteThickness[1],Black]],

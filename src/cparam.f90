@@ -7,7 +7,8 @@ module Cparam
   implicit none
 !
   integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
-  integer, parameter :: ikind1=selected_int_kind(2)   ! 1-byte real kind
+  integer, parameter :: ikind4=selected_int_kind(9)   ! 4-byte integer kind
+  integer, parameter :: ikind1=selected_int_kind(2)   ! 1-byte integer kind
   integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
   integer, parameter :: rkind4=selected_real_kind(6)  ! 4-byte real kind
   integer, parameter :: rkind16 = selected_real_kind(33, 4931) ! 16-byte real kind
@@ -104,7 +105,8 @@ module Cparam
 !
 !  Predefine maximum possible numbers.
 !
-  integer, parameter :: max_int=huge(0)
+  integer(KIND=ikind4), parameter :: int_sgl=0
+  integer, parameter :: max_int=huge(int_sgl)
   real, parameter :: huge_real=huge(0.)
   double precision, parameter :: huge_double=huge(0.d0)
   real, parameter :: max_real=huge_real/10.    ! division necessary as INTEL compiler considers
@@ -197,6 +199,7 @@ module Cparam
   double precision, parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
   double precision, parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
   double precision, parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
+  double precision, parameter :: density_scale_cgs=2.7774d21 ![cm] 900pc Reynolds 91, etc
 !
   logical, parameter :: ALWAYS_FALSE=.false.
 !

@@ -2466,15 +2466,16 @@ module Initcond
 !
     endsubroutine sph_constb
 !***********************************************************************
-    subroutine hatwave(ampl,f,i,width,kx,ky,kz,power)
+    subroutine hatwave(ampl,f,i,width,kx,ky,kz,power,pos)
 !
 !  cosine wave (as initial condition)
 !
 !   9-jan-08/axel: adapted from coswave
+!  22-jul-22/axel: added keyword pos for positive values only
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, optional :: kx,ky,kz,power
+      real, optional :: kx, ky, kz, power, pos
       real :: ampl,k=1.,fac,width,pow=1.
 !
 !  wavenumber k
@@ -2490,7 +2491,11 @@ module Initcond
         else
           if (lroot) print*,'hatwave: kx,i=',k,i
           !f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(1+tanh((cos(k*x)**pow)/width),2,my),3,mz)
-          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(tanh((cos(k*x)**pow)/width),2,my),3,mz)
+          if (present(pos)) then
+            f(:,:,:,i)=f(:,:,:,i)+.5*fac*(1.+spread(spread(tanh((cos(k*x)**pow)/width),2,my),3,mz))
+          else
+            f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(tanh((cos(k*x)**pow)/width),2,my),3,mz)
+          endif
         endif
       endif
 !
@@ -5053,10 +5058,11 @@ module Initcond
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
-      lno_noise)
+      lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
+      kpeak_log0,kbreak0,ldouble0,nfactd0,qirro)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
-!  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2, 
+!  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
 !  and l=2*ncutoff.
 !  The relative helicity is relhel.
 !
@@ -5075,24 +5081,32 @@ module Initcond
 !  17-sep-18/axel: added optional wavenumber interval for helical field.
 !  28-jan-19/axel: special treatment of 2-D case (nz==1)
 !  14-aug-20/axel: adapted for fft_xyz_parallel
+!  7-aug-22/alberto: added optional logarithmic branch and double
+!                    broken power law
 !
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
-      logical, intent(in), optional :: lpower_profile_file, lno_noise
+      logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
+      logical, intent(in), optional :: llogbranch0,ldouble0
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
-      logical :: lskip_projection
+      logical :: lskip_projection,lfactors,llogbranch,ldouble
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
-      real, intent(in), optional :: k1hel, k2hel, qexp
+      real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
+      real, intent(in), optional :: initpower_med0, kpeak_log0, kbreak0
+      real, intent(in), optional :: nfactd0, qirro
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r, r2
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (:), allocatable :: kk, lgkk, power_factor, lgff
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
-      real :: nfact=4., kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
-      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1
+      real :: nfact, kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
+      real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, D3, compk
+      real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
+      real :: nfactd,nexp3,nexp4
+      real :: qirro1, p
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5116,6 +5130,108 @@ module Initcond
         lno_noise1 = lno_noise
       else
         lno_noise1 = .false.
+      endif
+!
+!  qirro
+!
+     if (present(qirro)) then
+       qirro1 = qirro     
+     else
+       qirro1 = 0.
+     endif 
+!
+!  alberto: added option to compesate spectral shape by a power of k
+!
+      if (present(compk0)) then
+        compk = compk0
+      else
+        compk = 0.
+      endif
+!
+!  alberto: added option to use different values of nfact
+!  Here, nfact is the exponent on k/k0, with an 1/nfact outside [1+(k/k0)^n]^(1/nfact).
+!  By default, we use a large nfact=4 to have a sharp transition.
+!
+     if (present(nfact0)) then
+       nfact = nfact0
+     else
+       nfact = 4.
+     endif
+     if (present(lfactors0)) then
+       lfactors = lfactors0
+     else
+       lfactors = .false.
+     endif
+!
+!  alberto: added option to include additional logarithmic branch
+!
+      if (present(llogbranch0)) then
+        llogbranch = llogbranch0
+      else
+        llogbranch = .false.
+      endif
+!
+!  alberto: added option to use double smoothed broken power laws
+!           logbranch is set to False if ldouble is used
+!
+      if (present(ldouble0)) then
+        ldouble = ldouble0
+        if (ldouble) then
+          llogbranch = .false.
+        endif
+      else
+        ldouble = .false.
+      endif
+!
+!  Check if the parameters of the logarithmic branch or the
+!  double broken power law are given
+!
+      if ((llogbranch).or.(ldouble)) then
+
+        if (present(initpower_med0)) then
+          initpower_med = initpower_med0
+        else
+          initpower_med = 1.
+        endif
+        if (present(kbreak0)) then
+          kbreak = kbreak0
+        else
+          kbreak = .5
+        endif
+        kbreak1=1./kbreak
+        kbreak2=kbreak**2
+        kbreak21=kbreak1**2
+
+        if (llogbranch) then
+          if (present(kpeak_log0)) then
+            kpeak_log = kpeak_log0
+          else
+            kpeak_log = 1.
+          endif
+        endif
+
+        if (ldouble) then
+          if (present(nfactd0)) then
+            nfactd = nfactd0
+          else
+            nfactd = 4.
+          endif
+        endif
+      endif
+!
+!  Debug output
+!
+      if (lroot) then
+        print*,'i1,i2=',i1,i2
+        print*,'ampl,initpower,initpower2=',ampl,initpower,initpower2
+        print*,'cutoff,ncutoff,kpeak,i1,i2,relhel,kgaussian=',cutoff,ncutoff,kpeak,i1,i2,relhel,kgaussian
+        !print*,'lskip_projection,lvectorpotential,lscale_tobox1=',lskip_projection,lvectorpotential,lscale_tobox1
+        print*,'lskip_projection,lscale_tobox1=',lskip_projection,lscale_tobox1
+        !print*,'k1hel,k2hel,lremain_in_fourier,lpower_profile_file,qexp=',k1hel,k2hel,lremain_in_fourier,lpower_profile_file,qexp
+        print*,'lremain_in_fourier1',lremain_in_fourier1
+  !     print*,'lno_noise,nfact,lfactors=',lno_noise,nfact,lfactors
+  !     print*,'compk,llogbranch,initpower_med=',compk,llogbranch,initpower_med
+  !     print*,'kpeak_log,kbreak,ldouble,nfactd,qirro1=',kpeak_log,kbreak,ldouble,nfactd,qirro1
       endif
 !
 !  Allocate memory for arrays.
@@ -5265,22 +5381,189 @@ module Initcond
 !  generate k^n spectrum with random phase (between -pi and pi)
 !
         nexp1=.25*nfact*(initpower-initpower2)
+        !
+        !  alberto: adapt input power law exponents to parameters that appear in the
+        !           broken power law when a logarithmic branch is included or when
+        !           a double broken power law is included
+        !
+        if ((llogbranch).or.(ldouble)) then
+          nexp1=.25*nfact*(initpower_med-initpower2)
+          initpower_log=.5*(initpower-initpower_med)
+        endif
+        if (ldouble) then
+          mhalf=.25*(initpower_med-dimensionality+1)
+          nexp3=1./nfactd
+          nexp4=.5*nfactd*initpower_log
+        endif
         nexp2=1./nfact
         kpeak1=1./kpeak
         kpeak21=1./kpeak**2
+!
+!  alberto: added option to compensate amplitude and peak using D1 and D2
+!           such that the maximum of the spectrum is located at kpeak
+!           or at the plateau (if present)
+!
+        D1=0.
+        D2=1.
+        D3=1.
+        fact=1.
+        if (lfactors) then
+          if (llogbranch) then
+            !  alberto: changing sign of nfact allows to use spectral shapes with
+            !           initpower - initpower2 > 0
+            if (initpower_med<initpower2) then
+              nexp1=-nexp1
+              nexp2=-nexp2
+              nfact=-nfact
+            endif
+            if (initpower2/=0) then
+              if (initpower_med/=0) then
+                if (initpower2*initpower_med<0) then
+                  D1=-initpower_med/initpower2
+                else
+                  D1=1.
+                endif
+                D2=D1
+              endif
+              fact=fact*log(1+kpeak_log*kpeak1)**(-initpower_log)
+            else
+              if (initpower_med==0) fact=fact*(1+D2)**nexp2
+              fact=fact*(kpeak_log*kpeak1)**(-initpower_log)
+            endif
+            if ((initpower>=0).and.(initpower_med<0)) then
+              fact=(1+D1)**(-nexp2)*(kbreak*kpeak1)**(-.5*initpower)
+              fact=fact*(1+D2*(kbreak*kpeak1)**(.5*nfact*(initpower_med-initpower2)))**(-nexp2)
+              fact=fact*log(1+kpeak_log*kbreak1)**(-initpower_log)
+              if (initpower_med==initpower2) fact=fact*(1+D2)**(2*nexp2)
+            endif
+          elseif (ldouble) then
+            !  alberto: changing sign of nfact allows to use spectral shapes with
+            !           initpower - initpower2 > 0
+            if (initpower_med<initpower2) then
+              nexp1=-nexp1
+              nexp2=-nexp2
+            endif
+            if (initpower<initpower_med) then
+              nexp3=-nexp3
+              nexp4=-nexp4
+            endif
+            if (initpower2/=0) then
+              if (initpower_med/=0) then
+                if (initpower_med*initpower2<0) then
+                  D1=-initpower_med/initpower2
+                else
+                  D1=1.
+                endif
+                D2=D1
+              endif
+              fact=fact*(1+D3*(kpeak*kbreak1)**(-2*nexp4))**nexp3
+            else
+              if (initpower_med==0) then
+                fact=fact*(1+D2)**nexp2
+                if (initpower==0) then
+                  fact=fact*(1+D1)**nexp2*(1+D3)**nexp3
+                endif
+              endif
+            endif
+            if ((initpower>=0).and.(initpower_med<0)) then
+              fact=1.
+              if ((initpower_med*initpower<0).and.(initpower2/=0)) then
+                D1=-initpower_med/initpower2
+                D2=D1
+              endif
+              if (initpower2*initpower_med>0) D2=1.
+              if (initpower/=0) then
+                D3=-initpower_med/initpower
+                fact=fact*(1 + D3)**nexp3
+              endif
+              fact=fact*(1+D1)**(-nexp2)*(kbreak*kpeak1)**(-.5*initpower_med)
+              fact=fact*(1+D2*(kbreak*kpeak1)**(2*nexp1))**nexp2
+            endif
+          else
+            !  alberto: changing sign of nfact allows to use spectral shapes with
+            !           initpower - initpower2 > 0
+            if ((initpower-initpower2)<0) then
+              nexp1=-nexp1
+              nexp2=-nexp2
+            endif
+            if ((initpower*initpower2)<0) then
+              D1=-initpower/initpower2
+              D2=D1
+            elseif ((initpower*initpower2)==0) then
+              if ((initpower==0).and.(initpower2)==0) then
+                fact=fact*(1+D2)**nexp2
+              elseif (initpower2==0) then
+                fact=fact*D2**nexp2
+              endif
+            else
+              fact=fact*(1+D2)**nexp2
+            endif
+          endif
+        endif
+        fact=fact*(1+D1)**nexp2
 !
 !  Multiply by kpeak1**1.5 to eliminate scaling with kpeak,
 !  which comes from a kpeak^3 factor in the k^2 dk integration.
 !  The 1/2 factor comes from setting uk (as opposed to uk^2).
 !
-        fact=(kpeak1*scale_factor)**1.5
+!  alberto: if lfactor is chosen, the amplitude of the spectrum is
+!           independent of kpeak instead of the integrated energy,
+!           so avoid scaling in such case, also avoided scaling with domain size
+!           (only tested for 1D GW fields)
+!
+        if (lfactors) then
+          fact=fact*(2*pi/Lx)**0.5
+        else
+          fact=fact*(kpeak1*scale_factor)**1.5
+        endif
         if (lvectorpotential) then
           fact=fact*kpeak1
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))
         else
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
         endif
-        r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
+        r=fact*((k2*kpeak21)**mhalf)/(1.+D2*(k2*kpeak21)**nexp1)**nexp2
+        if (lroot) print*,'kpeak,mhalf,nexp1,nexp2=',kpeak,mhalf,nexp1,nexp2
+!
+!  Examples: for initpower=4., initpower2=-2., get mhalf,nexp1,nexp2 = 0.75, 6.0, 0.25
+!  while for Jani Dahl setup, we put: initpower=3., initpower2=-3., nfact_uu=.6666667
+!  and get mhalf, nexp1, nexp2 = 0.5, 1.0, 1.5.
+!
+!  alberto: added possibility to multiply spectrum by a power of k (useful for GW for example)
+!           the final spectrum will be compensated by k^(4*compk)
+!
+        r=r*k2**compk
+!
+!  alberto: added model for double smoothed broken power law
+!
+        if (ldouble) then
+          r=r/(1.+D3*(k2*kbreak21)**(-nexp4))**nexp3
+        endif
+!  alberto: multiply the broken power law by the logarithmic branch using
+!           the condition k < kbreak
+!
+!  Produces a 'double' broken power law for GW spectrum using a logarithmic branch based
+!  on Roper Pol, Caprini, Neronov, Semikoz, 2022 (arXiv:2201.05630) by multiplying
+!  TauGW to the spectrum, where TauGW is:
+!  ln (1 + kpeak_log/kbreak)**n when k <= kbreak and
+!  ln (1 + kpeak_log/k)**n when k > kbreak
+!
+!  The resulting spectrum asymptotically has slopes k^initpower at k < kbreak,
+!  k^initpower_med at kbreak < k < kpeak, k^(-initpower2) at k > kpeak
+!
+        if (llogbranch) then
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
+                if (k2(ikx,iky,ikz)<kbreak2) then
+                  r(ikx,iky,ikz)=r(ikx,iky,ikz)*log(1+kpeak_log*kbreak1)**initpower_log
+                else
+                  r(ikx,iky,ikz)=r(ikx,iky,ikz)*log(1+kpeak_log/sqrt(k2(ikx,iky,ikz)))**initpower_log
+                endif
+              enddo
+            enddo
+          enddo
+        endif
 !
 !  cutoff (changed to hyperviscous cutoff filter).
 !  The 1/2 factor is needed to account for the fact that the
@@ -5333,7 +5616,7 @@ module Initcond
           enddo
         endif
 !
-!  scale with r: allow for special case with scalars here
+!  scale with r: allow for special case with *scalars* here
 !
         if (i2==i1) then
           u_re(:,:,:,1)=r*u_re(:,:,:,1)
@@ -5355,11 +5638,19 @@ module Initcond
 !  Use r=1/k^2 for normalization in khat_i * khat_j = ki*kj/k2.
 !  Remember that for the return transform, data have to be
 !  arranged in the order (kz,kx,ky).
+!  To allow also for the possibility of longitudinal initial fields, we write
+!  (1-q)*(delij-kikj) + q*kikj = (1-q)*delij - (1-2*q)*kikj.
 !
           if (lskip_projection) then
             v_re=u_re
             v_im=u_im
           else
+!
+!  Allow for possibility of irrotational contributions of fraction q,
+!  so the vortical fraction is (1-q) == p.
+!
+            p=1.-qirro1
+!
 !  In 2-D
             if (nz==1) then
               ikz=1
@@ -5367,22 +5658,25 @@ module Initcond
                 do ikx=1,nx
 !
 !  Real part of (ux, uy, uz) -> vx, vy, vz
-!  (kk.uu)/k2, vi = ui - ki kj uj
+!  (kk.uu)/k2, ==> vi = ui - ki kj uj, but now we write:
+!  (kk.uu)/k2, ==> vi = (1-q)*ui - (1-2q) ki kj uj
 !
-                  r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
-                                 +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,1)=u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,2)=u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,3)=u_re(ikx,iky,ikz,3)
+                  r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                      (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                      +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
+                  v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                  v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                  v_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)
 !
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                  r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
-                                 +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,1)=u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,2)=u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,3)=u_im(ikx,iky,ikz,3)
+                  r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                      (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                      +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
+                  v_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                  v_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                  v_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)
                 enddo
               enddo
 !  In 3-D
@@ -5394,22 +5688,24 @@ module Initcond
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                    r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
-                                   +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
-                                   +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
-                    v_re(ikx,iky,ikz,1)=u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                    v_re(ikx,iky,ikz,2)=u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                    v_re(ikx,iky,ikz,3)=u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+                    r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                        (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                        +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
+                        +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+                    v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                    v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                    v_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
 !
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                    r(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
-                                   +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
-                                   +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
-                    v_im(ikx,iky,ikz,1)=u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                    v_im(ikx,iky,ikz,2)=u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                    v_im(ikx,iky,ikz,3)=u_im(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+                    r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                        (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                        +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
+                        +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+                    v_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                    v_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                    v_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
                   enddo
                 enddo
               enddo
@@ -5418,9 +5714,10 @@ module Initcond
 !
 !  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ikhat_k*sigma.
 !  Use r=sigma/k for normalization of sigma*khat_i = sigma*ki/sqrt(k2).
+!  Put r(k=0)=0, but this is only true for the root processor.
 !
           r=relhel/sqrt(k2)
-          r(1,1,1)=0.
+          if (lroot) r(1,1,1)=0.
 !
 !  put sigma=0 outside [r1hel,r2hel]
 !
@@ -5434,8 +5731,8 @@ module Initcond
 !
 !  In 2-D
           if (nz==1) then
-            do iky=1,nz
-              do ikx=1,ny
+            do iky=1,ny
+              do ikx=1,nx
                 ikz=1
 !
 !  (vx, vy, vz) -> ux
@@ -6807,8 +7104,8 @@ module Initcond
 !***********************************************************************
     subroutine tanh_hyperbola(amp,f,ix,yzero,delta,kk)
 !
-!  initial vector potential as used by Moffatt and Hunt, "A model for magnetic 
-!  reconnection", 2002. 
+!  initial vector potential as used by Moffatt and Hunt, "A model for magnetic
+!  reconnection", 2002.
 
 !
 !  23 June 2016/dhruba.mitra
@@ -6823,10 +7120,10 @@ module Initcond
             f(l,m,:,ix+1) = 0.
             f(l,m,:,ix+2) = 0.5*amp*tanh((y(m)*y(m) - yzero*yzero-kk*kk*x(l)*x(l))/(delta*delta))
           enddo
-        enddo      
+        enddo
 
 !
-    endsubroutine 
+    endsubroutine
 !***********************************************************************
     subroutine pre_stellar_cloud(f, datafile, mass_cloud,  &
         cloud_mode, T_cloud_out_rel, dens_coeff, &

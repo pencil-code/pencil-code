@@ -97,14 +97,16 @@ module Special
           lnTT_min=-max_real, lnTT_min_tau=1.0,lnTT_max=-max_real,lnTT_max_tau=1.0
   real :: cool_RTV,x_cutoff,TTsponge=0.0,lnTT_sponge_tau=1.0,border_width=0.1
   real :: cs0p=0.104,C_heatflux=132.0,tau_res=0.65
+  real :: heat_vol=0.0,heat_LH=0.2783,heat_FS=9.74d-4
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
-           lset_boundary_emf,lupin,nlf,lslope_limited_special, &
-           lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau, &
-           lnTT_max,lnTT_max_tau, &
-           cool_RTV,cool_RTV_cutoff,x_cutoff,cool_type, &
+           lset_boundary_emf,lupin,nlf,lslope_limited_special,&
+           lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau,&
+           lnTT_max,lnTT_max_tau,&
+           cool_RTV,cool_RTV_cutoff,x_cutoff,cool_type,&
            lset_sponge_lnTT,TTsponge,lnTT_sponge_tau,border_width,&
-           lactivate_reservoir,cs0p,C_heatflux,tau_res
+           lactivate_reservoir,cs0p,C_heatflux,tau_res,&
+           heat_LH,heat_FS,heat_vol
 ! Declare index of new variables in f array (if any).
 !
 !!   integer :: ispecial=0
@@ -213,11 +215,13 @@ module Special
 !  18-07-06/tony: coded
 !
      lpenc_requested(i_y_mn)=.true.
-     if (cool_RTV /= 0.0) then
+     if (cool_RTV /= 0.0 .or. heat_vol /= 0.0) then
         lpenc_requested(i_lnrho) = .true.
         lpenc_requested(i_lnTT) = .true.
         lpenc_requested(i_cp1) = .true.
+        lpenc_requested(i_cv1) = .true.
       endif
+
 
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -541,7 +545,7 @@ module Special
         endif
       endif
       if (cool_RTV /= 0.0) call calc_heat_cool_RTV(df,p)
-    
+      if (heat_vol /= 0.0) call calc_heat_volumetric(df,p)
 !
     endsubroutine special_calc_energy
 !***********************************************************************
@@ -1772,11 +1776,15 @@ module Special
 !          ln(ne*ni) = ln( 1.17*rho^2/(1.34*mp)^2)
 !     lnneni = 2*p%lnrho + alog(1.17) - 2*alog(1.34)-2.*alog(real(m_p))
 !
-      lnneni = 2.*(p%lnrho+61.4412 +alog(real(unit_mass)))
+      lnneni = 2.*(p%lnrho-alog(m_p))
 !
       call get_lnQ(lnTT_SI, lnQ, delta_lnTT)
+      if (unit_system=='cgs') then
+        rtv_cool = lnQ+29.933-unit_lnQ+lnneni-p%lnTT-p%lnrho
+      else
+        rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
+      endif
 !
-      rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
       rtv_cool = p%cv1*exp(rtv_cool)
 !
       rtv_cool = rtv_cool*cool_RTV
@@ -1814,6 +1822,45 @@ module Special
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
+    subroutine calc_heat_volumetric(df,p)
+!
+!  Volumetric coronal heating H=FS /LH* (R^2/r^2) *exp(-(r-R)/LH)
+!  Note the solar radius Rs=1 here or unit_length=Rs.
+!
+!  15-jun-22/piyali: coded
+!
+      use EquationOfState, only: gamma
+      use Diagnostics,     only: max_mn_name
+      use Mpicomm,         only: stop_it
+      use SharedVariables, only: get_shared_variable
+!
+      integer :: ierr
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+      real, dimension(nx) :: vol_heat, tmp
+!
+      vol_heat=(heat_FS/heat_LH)*(1.0/x(l1:l2))**2*exp(-(x(l1:l2)-1.0)/heat_LH)
+      vol_heat = heat_vol*p%cv1*vol_heat*exp(-p%lnrho-p%lnTT)
+
+!
+!     add to temperature equation
+!
+      if (ltemperature) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+vol_heat
+      else
+        if (lentropy) &
+            call stop_it('solar_corona: calc_volumetric_heat:lentropy=not implemented')
+      endif
+!
+      if (lfirst .and. ldt) then
+        print*,'vol_heat',maxval(vol_heat),&
+        (heat_FS/heat_LH)*maxval(p%cv1*exp(-p%lnrho-p%lnTT)/x(l1:l2)**2*exp(-(x(l1:l2)-1.)/heat_LH))
+        tmp = max (vol_heat/cdts, abs (vol_heat/max (tini, max_real)))
+        dt1_max = max(dt1_max,tmp)
+      endif
+!
+    endsubroutine calc_heat_volumetric
+!***********************************************************************
     subroutine get_lnQ(lnTT,lnQ,delta_lnTT)
 !
 !  input: lnTT in SI units
@@ -1830,14 +1877,14 @@ module Special
           12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760, &
           14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273, &
           15.6576, 69.0776 /)
-      real, parameter, dimension(37) :: intlnQ = (/ &
-          -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650, &
-          -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765, &
-          -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776, &
-          -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778, &
-          -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196, &
-          -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637, &
-          -0.66650 /)
+       real, parameter, dimension(37) :: intlnQ=(/&
+            -119.34510,-115.43072,-111.66982,-108.06241,-104.60852,-100.15681,&
+            -96.779713,-93.939815,-91.767525,-90.639548,-89.465610,-86.956249,&
+            -84.355487,-81.748557,-79.822987,-79.234218,-79.488279,-79.478674,&
+            -79.347207,-79.293414,-79.515901,-79.661797,-79.477600,-79.377800,&
+            -79.400803,-79.515900,-79.746201,-80.198997,-80.905197,-81.319603,&
+            -81.987396,-82.202301,-82.509300,-82.547699,-82.417198,-82.263702,&
+            -82.263702 /)
 !
       ! 16 points extracted from Cook et al. (1989)
       real, parameter, dimension(16) :: intlnT1 = (/ &

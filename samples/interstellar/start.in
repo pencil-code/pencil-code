@@ -12,6 +12,7 @@
   bcz = 's','s','ubs','ism','ism','s','s'
   lwrite_aux=T
   lfix_unit_std=T
+  ip=1963
 /
 &initial_condition_pars
 /
@@ -35,7 +36,7 @@
 &interstellar_init_pars
   initinterstellar='multiple'
   initial_SNI = 1
-  lSNII=F
+  lSNII=T
   lSNI=T
   lSN_scale_rad=T
   N_mass=100.0

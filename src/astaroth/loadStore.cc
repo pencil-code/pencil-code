@@ -13,7 +13,9 @@
 #include <cmath>
 #include <algorithm>
 
-#include "submodule/src/core/math_utils.h"
+#define real AcReal
+
+#include "submodule/acc-runtime/api/math_utils.h"
 #include "astaroth.h"
 #include "../cparam_c.h"
 #include "../cdata_c.h"
@@ -102,7 +104,7 @@ void loadOuterTop(AcMesh& mesh, Stream stream)
 {
         int3 start={0,my-halo_widths_y[TOP],halo_widths_z[BOT]};
         int3 end={mx,my,mz-halo_widths_z[TOP]};  //end is exclusive
-
+//printf("loadOuterTop: %d %d %d %d %d %d \n", start.x,end.x,start.y,end.y,start.z,end.z);
         acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
 }
 
@@ -137,15 +139,18 @@ void storeInnerFront(AcMesh& mesh, Stream stream)
         int3 start=(int3){l1,m1,n1}-1;
         int3 end=(int3){l2,m2,n1+halo_widths_z[BOT]-1}-1+1;   //end is exclusive
 
-        acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer, AC_XY);
+//printf("storeInnerFront: start,end= %d %d %d %d %d %d \n",start.x, end.x,start.y, end.y,start.z, end.z);
+        acNodeStoreIXYPlate(node, stream, start, end, &mesh, AC_FRONT);
+        //acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer, AC_XY);
 }
 
 void storeInnerBack(AcMesh& mesh, Stream stream)
 {
         int3 start=(int3){l1,m1,n2-halo_widths_z[TOP]+1}-1;
         int3 end=(int3){l2,m2,n2}-1+1;    //end is exclusive
-
-        acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer, AC_XY);
+//printf("storeInnerBack: start,end= %d %d %d %d %d %d \n",start.x, end.x,start.y, end.y,start.z, end.z);
+        acNodeStoreIXYPlate(node, stream, start, end, &mesh, AC_BACK);
+        //acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer, AC_XY);
 }
 
 void storeInnerBot(AcMesh& mesh, Stream stream)

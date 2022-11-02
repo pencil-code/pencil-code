@@ -6,7 +6,8 @@
   public :: output_persistent_forcing, input_persistent_forcing
   public :: rprint_forcing
   public :: addforce
-  public :: forcing_continuous, forcing_after_boundary
+  public :: calc_diagnostics_forcing
+  public :: forcing_after_boundary   !,forcing_continuous
   public :: lhydro_forcing, ltestflow_forcing
   
   public :: pencil_criteria_forcing, pencil_interdep_forcing
@@ -15,6 +16,6 @@
   public :: forcing_cont
   public :: forcing_pars_hel
 
-  public :: pushpars2c, pushdiags2c
+  public :: pushpars2c
 
   public :: n_forcing_cont  ! should be protected

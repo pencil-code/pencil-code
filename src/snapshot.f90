@@ -609,7 +609,16 @@ module Snapshot
         lfirst_call=.false.
       endif
 !
-      call update_snaptime(file,tspec,nspec,dspec,t,lspec)
+!  The output time for spectra was always too late by dt, so therefore,
+!  as an option (not the default), we add dt to the current time, so
+!  as to output at the correct time. At some point, we should actually
+!  make this the default.
+!
+      if (lspec_at_tplusdt) then
+        call update_snaptime(file,tspec,nspec,dspec,t+dt,lspec)
+      else
+        call update_snaptime(file,tspec,nspec,dspec,t,lspec)
+      endif
 !
     endsubroutine powersnap_prepare
 !***********************************************************************
@@ -700,7 +709,12 @@ module Snapshot
         if (jj2_spec) call powerhel(f,'jj2',lfirstcall_powerhel)
         if (uzs_spec) call powerhel(f,'uzs',lfirstcall_powerhel)
         if (EP_spec)  call powerhel(f,'bEP',lfirstcall_powerhel)
+        if (a0_spec)  call powerscl(f,'a0')
         if (ro_spec)  call powerscl(f,'ro')
+        if (ux_spec)  call powerscl(f,'ux')
+        if (uy_spec)  call powerscl(f,'uy')
+        if (uy_spec)  call powerscl(f,'uz')
+        if (ucp_spec) call powerscl(f,'ucp')
         !if (lro_spec) call powerscl(f,'ro',lsqrt)
         if (lr_spec)  call powerscl(f,'lr')
         if (pot_spec) call powerscl(f,'po')
@@ -831,6 +845,7 @@ module Snapshot
 !
         if (ang_jb_pdf1d) call pdf1d_ang(f,'jb')
         if (ang_ub_pdf1d) call pdf1d_ang(f,'ub')
+        if (ang_ou_pdf1d) call pdf1d_ang(f,'ou')
 !
 !  Do pdf for the magnetic field
 !
@@ -882,6 +897,13 @@ module Snapshot
         if (jj_xkyz)   call power_fft3d_vec(f,'jj','xkyz')
         if (jj_kx0z)   call power_fft3d_vec(f,'jj','kx0z')
         if (ee_k00z)   call power_fft3d_vec(f,'ee','k00z')
+        if (gwT_fft3d) call power_fft3d_vec(f,'gwT','kxyz')
+!
+!  output spectral fluxes
+!
+        if (Em_specflux) call power_transfer_mag(f,'Em')
+        if (Hm_specflux) call power_transfer_mag(f,'Hm')
+        if (Hc_specflux) call power_transfer_mag(f,'Hc')
 !
         lspec=.false.
       endif

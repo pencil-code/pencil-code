@@ -8,21 +8,26 @@
 *)
 
 
-BeginPackage["pcRead1D`"]
+BeginPackage["pcRead1D`","pcReadBasic`"]
 
 
 (* ::Chapter:: *)
 (*Usage messages*)
 
 
-readTS::usage="readTS[sim,var] reads the column in time_series.dat that corresponds to 
-variable var. Support multiple vars: readTS[dir,var1,var2,...].
+readTS::usage="readTS[sim,Options] reads time_series.dat and returns an Association object.
+It always returns rectangular data by filling the missing elements by Missing[] (e.g. in
+cases where print.in has been modified before continuing a run).
 Input:
-  sim: String. Directory of the simulation folder
-  var: String. The variable to read; e.g., \"t\", or \"urms\".
-       var=\"HEAD\" gives all possible entries
+  sim: String. Directory of the run
+Options:
+  \"lRest\": By default True, which removes the first record in the file (usually when t=0)
 Output:
-  { {t1,t2,...}, {var1,...}, {var2,...} }";
+  An Association object whose keys include all the variables that have appeared
+Examples:
+  ts=readTS[sim], and then ts[\"t\"]={t1,t2,...}, ts[\"urms\"]={u1,u2,...}, etc.
+  readTS[sim,var] is the same as readTS[sim][var].
+  readTS[sim,var1,var2,...] is the same as readTS[sim]/@{var1,var2,...}";
 
 growthRate::usage="growthRage[sim,var,t1,t2] computes the exponential growth rate
 of var between time t1 and t2.
@@ -74,6 +79,16 @@ Input:
 Output:
   A List with its first element {t1,t2,...}, and the rest time series of Nx(yz) dimentional data."
 
+readSpecFluxPQ::usage="readSpecFluxPQ[sim] returns the wavenumber coordinates for the
+spectral flux files, based on the values of specflux_dp and specflux_dq in run.in."
+
+readSpecFlux::usage="readSpecFlux[sim,file] reads spectral flux files.
+Input:
+  sim: String. Directory of the run
+  file: String. Name of the data file, including .dat
+Output:
+  {{t1, t2, ..., tn}, d}, where d is a n\[Cross]npq\[Cross]3 List."
+
 
 Begin["`Private`"]
 
@@ -86,38 +101,31 @@ Begin["`Private`"]
 (*Time series*)
 
 
-Options[readTS]={"lRest"->True}
-readTS[sim_,All,OptionsPattern[]]:=Module[{file,ts,head,pos},
-  readTS::badform="`1`: Inconsistent number of columns in ts.";
-  file=sim<>"/data/time_series.dat";
-  ts=DeleteCases[Import[file],x_/;Length[x]==1];
-  If[Not[Equal@@(Length/@ts)],
-    Message[readTS::badform,sim];Return["BadTsFormat"]];
-  head=Rest@Flatten[StringSplit[First@Import[file],"-"..]];
-  If[Length[ts[[1]]]!=Length[head],
-    Message[readTS::badform,sim];Return[$Failed]];
-  If[OptionValue["lRest"],ts=Rest[ts]];
-  AssociationThread[head->Transpose[ts]]
+readTSSingle[ts_List]:=Module[{head,value},
+  head=Rest@StringSplit[ts[[1]],"-"..];
+  value=ts//Rest//StringReplace[#,{"e"->"*^","E"->"*^"}]&//StringSplit//ToExpression;
+  AssociationThread[head->Transpose[value]]
 ]
-readTS[sim_,vars__]:=Module[{file,ts,head,pos},
-  readTS::badform="`1`: Inconsistent number of columns in ts.";
-  readTS::novar="`1`: Variable `2` not found in ts.";
-  file=sim<>"/data/time_series.dat";
-  ts=DeleteCases[Import[file],x_/;Length[x]==1];
-  If[Not[Equal@@(Length/@ts)],
-    Message[readTS::badform,sim];Return["BadTsFormat"]];
-  head=Rest@Flatten[StringSplit[First@Import[file],"-"..]];
-  If[vars=="HEAD",Return[head]];
-  If[Length[ts[[1]]]!=Length[head],
-    Message[readTS::badform,sim];Return[$Failed]];
-  Table[
-    If[(pos=Position[head,var])=={},
-      Message[readTS::novar,sim,var];ConstantArray[$Failed,ts//Length],
-      ts[[;;,pos[[1,1]]]]
-    ],
-    {var,{vars}}
-  ]/.{{x__}}:>{x}
+
+readTS[sim_String,OptionsPattern[{"lRest"->True}]]:=Module[{str,ts,fullHead,lookUp},
+  (* read time_series.dat into a 1D List of Strings *)
+  str=OpenRead@FileNameJoin[{sim,"data","time_series.dat"}];
+  ts=ReadList[str,Record];
+  Close[str];
+  (* for each chunk startring with "#", reform it into an Association *)
+  ts=readTSSingle/@Split[ts,!StringStartsQ[#2,"#"]&];
+  
+  (* merge chunks and fill with Missing[]*)
+  fullHead=Union@Flatten[Keys/@ts];
+  lookUp[key_]:=Lookup[#,key,ConstantArray[Missing[],#[[1]]//Length]]&/@ts;
+  
+  If[OptionValue["lRest"],
+    AssociationMap[Rest@*Flatten@*lookUp,fullHead],
+    AssociationMap[Flatten@*lookUp,fullHead]
+  ]
 ]
+readTS[sim_String,var_String,opt:OptionsPattern[]]:=readTS[sim,opt][var]
+readTS[sim_String,vars__String,opt:OptionsPattern[]]:=readTS[sim,opt]/@{vars}
 
 growthRate[sim_,var_,t1_,t2_]:=Module[{t,f,pos,a,tt},
 {t,f}=readTS[sim,"t",var];
@@ -131,16 +139,21 @@ a[1]/.FindFit[Transpose[{t,Log[f]}],a[1]*tt+a[2],{a[1],a[2]},tt]
 (*Spectra-like files*)
 
 
-read1D[sim_,file__String]:=Module[{data,pos},
-  data=Import@StringJoin[sim,"/data/",file];
-  pos=Flatten@Position[data,x_/;Length[x]==1];
-  data=Flatten/@Partition[data,pos[[2]]-pos[[1]]];
-  {First/@data,Rest/@data}
+read1D[sim_String,file__String]:=Module[{str,ts},
+  str=OpenRead[FileNameJoin[{sim,"data",StringJoin[file]}]];
+  ts=ReadList[str,Number,RecordLists->True];
+  Close[str];
+  
+  ts=Flatten/@Split[ts,Length[#2]>1&];
+  
+  {ts[[;;,1]],ts[[;;,2;;]]}
 ]
-read1D[sim_,file__String,l_Integer]:=Module[{data},
-  data=Import@StringJoin[sim,"/data/",file]//Flatten;
-  data=Partition[data,l+1];
-  {First/@data,Rest/@data}
+read1D[sim_String,file__String,l_Integer]:=Module[{str,ts},
+  str=OpenRead[FileNameJoin[{sim,"data",StringJoin[file]}]];
+  ts=ReadList[str,Number,RecordLists->False]//Partition[#,l+1]&;
+  Close[str];
+  
+  {ts[[;;,1]],ts[[;;,2;;]]}
 ]
 
 
@@ -188,6 +201,31 @@ readAves[sim_,plane_,varNames__]:=
   ]
 
 
+(* ::Section:: *)
+(*Spectral fluxes*)
+
+
+readSpecFluxPQ[sim_]:=Module[{dp,dq,nk,nlk,grid},
+  dp=readParamNml[sim,"run.in","SPECFLUX_DP"];
+  dq=readParamNml[sim,"run.in","SPECFLUX_DQ"];
+  nk=readDim[sim]["nx"]/2;
+  
+  nlk[d_]:=Floor@If[d>0,(nk-1)/d+1,Log[-d,nk-1]+1];
+  grid[d_]:=If[d>0,d*Range[0,nlk[d]-1],(-d)^Range[0,nlk[d]-1]];
+  
+  Round@{grid[dp],grid[dq]}
+]
+readSpecFlux[sim_,file_]:=Module[{pq,grid,t,tra},
+  pq=readSpecFluxPQ[sim];
+  grid=Table[{pp,qq},{qq,pq[[2]]},{pp,pq[[1]]}]//Flatten[#,1]&;
+  
+  {t,tra}=read1D[sim,file,Times@@(Length/@pq)];
+  tra=Flatten/@Transpose[{grid,#}]&/@tra;
+  
+  Return[{t,tra}]
+]
+
+
 (* ::Chapter:: *)
 (*End*)
 
@@ -198,7 +236,8 @@ End[]
 Protect[
   readTS,growthRate,
   read1D,read1DSigned,read1D2Scale,
-  readAves
+  readAves,
+  readSpecFluxPQ,readSpecFlux
 ]
 
 

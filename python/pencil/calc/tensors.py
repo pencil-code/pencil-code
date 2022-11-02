@@ -39,7 +39,7 @@ class Tensors(object):
         aver=[],
         datatopdir=".",
         lskip_zeros=False,
-        proc=0,
+        proc=-1,
         rank=0,
         rmfzeros=1,
         rmbzeros=1,
@@ -85,6 +85,8 @@ class Tensors(object):
         from pencil import read
 
         os.chdir(datatopdir)  # return to working directory
+        if isinstance(aver,list):
+            aver = read.aver('z',proc=proc)
         grid = read.grid(proc=proc, trim=True, quiet=True)
         # if iy None or scalar create numpy array
         try:
@@ -203,8 +205,10 @@ class Tensors(object):
                     u[i, :, :, :] = tmp[imask]
                 else:
                     u[i, :, :, 0] = aver.z.__getattribute__(index)[imask, :, iy]
-            except KeyError:
-                pass
+            except AttributeError:
+                hasUmean=False
+            else:
+                hasUmean=True
         for i in range(0, 3):
             for j in range(0, 3):
                 index = alpformat.format(i + 1, j + 1)
@@ -238,7 +242,8 @@ class Tensors(object):
 
         # apply the specified averaging or smoothing: 'None' returns unprocessed arrays
         if callable(timereducer):
-            u = timereducer(u, trargs)
+            if hasUmean:
+                u = timereducer(u, trargs)
             alp = timereducer(alp, trargs)
             eta = timereducer(eta, trargs)
 
@@ -249,7 +254,8 @@ class Tensors(object):
         # Create output tensors
         datatype = alp.dtype
         datashape = [alp.shape[-3], alp.shape[-2], alp.shape[-1], 1]
-        setattr(self, "utensor", np.zeros([3] + datashape, dtype=datatype))
+        if hasUmean:
+            setattr(self, "utensor", np.zeros([3] + datashape, dtype=datatype))
         setattr(self, "alpha", np.zeros([3, 3] + datashape, dtype=datatype))
         setattr(self, "beta", np.zeros([3, 3] + datashape, dtype=datatype))
         setattr(self, "gamma", np.zeros([3] + datashape, dtype=datatype))
@@ -270,13 +276,14 @@ class Tensors(object):
         self.bcoef = np.swapaxes(self.bcoef, -3, -2)
 
         irr, ith, iph = 0, 1, 2
-
+ 
         # u-tensor
-        print("Calculating utensor on rank {}".format(rank))
+        if hasUmean:
+            print("Calculating utensor on rank {}".format(rank))
         # utensor[:,:,:,:,0] = u[:,:,:,:] - np.mean(u[:,:,:,:],axis=1,keepdims=True)
-        self.utensor[:, :, :, :, 0] = u[:, :, :, :]
-        self.utensor = np.swapaxes(self.utensor, -4, -1)
-        self.utensor = np.swapaxes(self.utensor, -3, -2)
+            self.utensor[:, :, :, :, 0] = u[:, :, :, :]
+            self.utensor = np.swapaxes(self.utensor, -4, -1)
+            self.utensor = np.swapaxes(self.utensor, -3, -2)
         # Alpha tensor
         print("Calculating alpha on rank {}".format(rank))
         self.alpha[irr, irr, :, :, :, 0] = (

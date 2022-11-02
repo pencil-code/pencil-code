@@ -541,7 +541,7 @@ module Io
       character (len=*), optional, intent(in) :: label
 !
       call fatal_error ('input_part_snap', 'not implemented for "io_collect"', .true.)
-      ipar(1)=0; nv=0; npar_total=0; ap(1,1)=0.
+      ipar=0; nv=0; npar_total=0; ap=0.
 !
     endsubroutine input_part_snap
 !***********************************************************************

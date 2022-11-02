@@ -153,6 +153,14 @@ module Interstellar
 !
     endsubroutine interstellar_before_boundary
 !***********************************************************************
+    subroutine check_SN(f)
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine check_SN
+!***********************************************************************
     subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  adapted from calc_heat_cool
@@ -167,16 +175,6 @@ module Interstellar
       call keep_compiler_quiet(Hmax)
 !
     endsubroutine calc_heat_cool_interstellar
-!***********************************************************************
-    subroutine check_SN(f)
-!
-!  dummy routine for checking for SNe (interstellar)
-!
-    real, dimension(mx,my,mz,mfarray) :: f
-!
-    call keep_compiler_quiet(f)
-!
-    endsubroutine check_SN
 !***********************************************************************
     subroutine addmassflux(f)
 !

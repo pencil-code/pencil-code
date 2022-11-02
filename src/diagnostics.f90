@@ -11,6 +11,7 @@ module Diagnostics
   use Cdata
   use Messages
   use Mpicomm
+  use General, only: safe_sum
 !
   implicit none
 !
@@ -229,7 +230,6 @@ module Diagnostics
 !  point or double precision.
 !
       if (lroot) then
-
         call save_name(tdiagnos,idiag_t)
         call save_name(dt,idiag_dt)
         call save_name(one_real*(it-1),idiag_it)
@@ -274,10 +274,11 @@ module Diagnostics
 !  Write 'time_series.h5' if output format is HDF5
 !
         if (IO_strategy == "HDF5".and.lwrite_ts_hdf5) call output_timeseries (buffer, fname_keep)
+        nnamel=nname
+        call compress(buffer,cform=='',nnamel)
 !
 !  Insert imaginary parts behind real ones if quantity is complex.
 !
-        nnamel=nname
         do iname=nname,1,-1
           if (itype_name(iname)>=ilabel_complex .and. cform(iname)/='') &
             call insert(buffer,(/fname_keep(iname)/),iname+1,nnamel)
@@ -285,7 +286,6 @@ module Diagnostics
 !
 !  Put output line into a string.
 !
-        call compress(buffer,cform=='',nnamel)
         write(line,trim(fform)) buffer(1:nnamel)
         call clean_line(line)
 !
@@ -2020,8 +2020,8 @@ module Diagnostics
           itsub_save=itsub
         endif
 !
-        fname(iname)  =fname(iname)  +sum(weight*a)
-        fweight(iname)=fweight(iname)+sum(weight)
+        fname(iname)  =fname(iname)  +sum(weight*a)     ! safe_sum(weight*a)
+        fweight(iname)=fweight(iname)+sum(weight)       ! safe_sum(weight)
 !
 !  Set corresponding entry in itype_name.
 !
@@ -2153,6 +2153,7 @@ module Diagnostics
 !  initialize by the volume element (which is different for different m and n)
 !
       tmp=sum(a*dVol_x(l1:l2))*dVol_y(m)*dVol_z(n)
+      !tmp=safe_sum(a*dVol_x(l1:l2))*dVol_y(m)*dVol_z(n)
 !
 !  initialize if one is on the first point, or add up otherwise
 !
@@ -2577,7 +2578,7 @@ module Diagnostics
 !
 !  22-sep-20/MR: adapted from zsum_mn_name_xy_mpar
 !
-      use Cdata,   only: n,m
+      use Cdata, only: m
 !
       real,    dimension(:,:,:),      intent(in) :: arr
       integer,                        intent(in) :: iname
@@ -2604,7 +2605,7 @@ module Diagnostics
 !
 !  22-sep-20/MR: adapted from zsum_mn_name_xy_mpar
 !
-      use Cdata,   only: n,m
+      use Cdata, only: m
 !
       real,    dimension(:,:),        intent(in) :: arr
       integer,                        intent(in) :: iname

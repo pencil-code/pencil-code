@@ -668,7 +668,9 @@ class __Simulation__(object):
 
         return exists(join(self.path, "data", "time_series.dat"))
 
-    def compile(self, cleanall=True, fast=False, verbose=False, hostfile=None):
+    def compile(
+        self, cleanall=True, fast=False, verbose=False, hostfile=None, bashrc=True
+    ):
         """Compiles the simulation. Per default the linking is done before the
         compiling process is called. This method will use your settings as
         defined in your .bashrc-file.
@@ -683,6 +685,10 @@ class __Simulation__(object):
 
         fast : bool
             Set True for fast compilation.
+
+        bashrc : bool
+            True: source bashrc in the subprocess
+            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
         """
 
         from pencil import io
@@ -694,7 +700,7 @@ class __Simulation__(object):
         command.append("pc_build")
 
         if cleanall:
-            command.append(" --cleanall")
+            self.cleanall(verbose=verbose, hostfile=hostfile, bashrc=bashrc)
         if fast == True:
             command.append(" --fast")
         if hostfile:
@@ -706,13 +712,14 @@ class __Simulation__(object):
             command=" ".join(command),
             verbose=verbose,
             logfile=join(self.pc_dir, "compilelog_" + timestamp),
+            bashrc=bashrc,
         )
 
     def build(self, cleanall=True, fast=False, verbose=False):
         """Same as compile()"""
         return self.compile(cleanall=cleanall, fast=fast, verbose=verbose)
 
-    def bash(self, command, verbose="last100", logfile=False):
+    def bash(self, command, verbose="last100", logfile=False, bashrc=True):
         """Executes command in simulation directory.
         This method will use your settings as defined in your .bashrc-file.
         A log file will be produced within 'self.path/pc'-folder
@@ -726,11 +733,16 @@ class __Simulation__(object):
             lastN = show last N lines of output afterwards
              False = no output
              True = all output
+
+        bashrc : bool
+            True: source bashrc in the subprocess
+            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
         """
 
         import subprocess
         from pencil import io
         from os.path import join
+        import os
 
         timestamp = io.timestamp()
         io.mkdir(self.pc_dir)
@@ -749,10 +761,17 @@ class __Simulation__(object):
         else:
             print("! ERROR: Couldnt understand the command parameter: " + str(command))
 
+        if bashrc:
+            shellcmd = ["/bin/bash", "-i", "-c"]
+            env = None
+        else:
+            shellcmd = ["/bin/bash", "-c"]
+            env = os.environ
+
+        shellcmd.append(";".join(commands))
+
         with open(logfile, "w") as f:
-            rc = subprocess.call(
-                ["/bin/bash", "-i", "-c", ";".join(commands)], stdout=f, stderr=f
-            )
+            rc = subprocess.call(shellcmd, stdout=f, stderr=f, env=env)
 
         if type(verbose) == type("string"):
             outputlength = -int(verbose.split("last")[-1])
@@ -773,6 +792,40 @@ class __Simulation__(object):
             )
             print("! " + logfile)
             return rc
+
+    def cleanall(self, verbose=False, hostfile=None, bashrc=True):
+        """Runs `pc_build --cleanall` in the simulation directory
+
+        Parameters
+        ----------
+        verbose : bool
+            Activate for verbosity.
+
+        bashrc : bool
+            True: source bashrc in the subprocess
+            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
+        """
+
+        from pencil import io
+        from os.path import join
+
+        timestamp = io.timestamp()
+
+        command = []
+        command.append("pc_build")
+        command.append(" --cleanall")
+
+        if hostfile:
+            command.append(" -f " + hostfile)
+        if verbose != False:
+            print("! Cleaning " + self.path)
+
+        return self.bash(
+            command=" ".join(command),
+            verbose=verbose,
+            logfile=join(self.pc_dir, "cleanlog_" + timestamp),
+            bashrc=bashrc,
+        )
 
     def clear_src(self, do_it=False, do_it_really=False):
         """This method clears the src directory of the simulation!
@@ -1018,4 +1071,58 @@ class __Simulation__(object):
 
         return change_value_in_file(
             filename, quantity, newValue, sim=self, filepath=filepath, DEBUG=DEBUG
+        )
+
+    def run(self, verbose=False, hostfile=None, bashrc=True, cleardata=False):
+        """Runs the simulation.
+
+        Parameters
+        ----------
+        verbose : bool
+            Whether to print progress and detailed output
+
+        hostfile : string
+            Pencil config file to use
+
+        bashrc : bool
+            True: source bashrc in the subprocess
+            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
+
+        cleardata : bool
+            Whether to clear existing data
+        """
+
+        from pencil import io
+        from os.path import join
+        import os
+
+        timestamp = io.timestamp()
+
+        command = []
+        command.append("pc_run")
+
+        if hostfile:
+            command.append(" -f " + hostfile)
+        if verbose:
+            print("! Running " + self.path)
+
+        if cleardata:
+            if verbose:
+                print("Clearing existing data")
+            self.clear_data(True, True)
+
+        if not os.path.isdir(self.datadir):
+            if os.path.exists(self.datadir):
+                if verbose:
+                    print("datadir exists but is not a directory; removing it.")
+                os.remove(self.datadir)
+            if verbose:
+                print("Creating datadir")
+            os.mkdir(self.datadir)
+
+        return self.bash(
+            command=" ".join(command),
+            verbose=verbose,
+            logfile=join(self.pc_dir, "runlog_" + timestamp),
+            bashrc=bashrc,
         )

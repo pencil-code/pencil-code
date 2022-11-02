@@ -89,7 +89,7 @@ module Solid_Cells
 !
   contains
 !***********************************************************************
-    subroutine register_solid_cells()
+    subroutine register_solid_cells
 !
 !  Dummy routine
 !
@@ -182,9 +182,7 @@ module Solid_Cells
 !  Prepare the solid geometry
 !
       call find_solid_cell_boundaries(f)
-      if (interpolation_method == 'staircase') then
-        call calculate_shift_matrix
-      endif
+      if (interpolation_method == 'staircase') call calculate_shift_matrix
 !
 ! Find nearest grid point of the "forcepoints" on all cylinders. Arrays
 ! are only allocated if c_dragx, c_dragy or c_dragz is set in print.in.
@@ -195,7 +193,8 @@ module Solid_Cells
           idiag_c_dragz /= 0 .or. idiag_Nusselt /= 0 .or. &
           idiag_c_dragx_p /= 0 .or. idiag_c_dragy_p /= 0 .or. &
           idiag_c_dragz_p /= 0 ) then
-        allocate(fpnearestgrid(nobjects,nforcepoints,3))
+        if (.not.allocated(fpnearestgrid)) &              ! for reloading
+          allocate(fpnearestgrid(nobjects,nforcepoints,3))
         call fp_nearest_grid
         rhosum    = 0.0
         irhocount = 0
@@ -203,14 +202,16 @@ module Solid_Cells
       if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
           idiag_c_dragz /= 0 .or. idiag_c_dragx_p /= 0 .or. &
           idiag_c_dragy_p /= 0 .or. idiag_c_dragz_p /= 0) then
-        allocate(c_dragx(nobjects))
-        allocate(c_dragy(nobjects))
-        allocate(c_dragz(nobjects))
-        allocate(c_dragx_p(nobjects))
-        allocate(c_dragy_p(nobjects))
-        allocate(c_dragz_p(nobjects))
+        if (.not.allocated(c_dragx)) then              ! for reloading
+          allocate(c_dragx(nobjects))
+          allocate(c_dragy(nobjects))
+          allocate(c_dragz(nobjects))
+          allocate(c_dragx_p(nobjects))
+          allocate(c_dragy_p(nobjects))
+          allocate(c_dragz_p(nobjects))
+        endif
       endif
-      if (idiag_Nusselt /= 0) allocate(Nusselt(nobjects))
+      if (idiag_Nusselt /= 0.and..not.allocated(Nusselt)) allocate(Nusselt(nobjects))
 !
 ! Try to find flow direction
 !
@@ -2521,6 +2522,7 @@ module Solid_Cells
 !  19-nov-2008/nils: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+
       integer :: i, j, k, iobj, cw
       real :: x2, y2, z2, xval_p, xval_m, yval_p, yval_m, zval_p, zval_m
       real :: dr, r_point, x_obj, y_obj, z_obj, r_obj
@@ -3048,15 +3050,11 @@ module Solid_Cells
 !  Set zero value of all variables inside the solid geometry far from
 !  all interfaces. This is done for more easy interpretation of postprocessing.
 !
-      if (it == 1) then
-        do iobj = 1,nobjects
-          do i = 1,mx
-            do j = 1,my
-              do k = 1,mz
-                if (ba(i,j,k,1) == 9 .and. ba(i,j,k,2) == 9 .and. ba(i,j,k,3) == 9) then
-                  f(i,j,k,iux:iuz) = 0
-                endif
-              enddo
+      if (.not.lreloading) then
+        do i = 1,mx
+          do j = 1,my
+            do k = 1,mz
+              if (all(ba(i,j,k,1:3) == 9)) f(i,j,k,iux:iuz) = 0
             enddo
           enddo
         enddo
@@ -3282,7 +3280,7 @@ module Solid_Cells
 !
     endsubroutine find_point
 !***********************************************************************
-    subroutine pencil_criteria_solid_cells()
+    subroutine pencil_criteria_solid_cells
 !
 !  All pencils that the Solid_Cells module depends on are specified here.
 !

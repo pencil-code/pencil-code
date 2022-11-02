@@ -482,8 +482,8 @@ module Energy
 !  Register slot for running average of entropy is required
 !
       if (lss_running_aver_as_var) then
-          call farray_register_pde('ss_run_aver',iss_run_aver)
-          lss_running_aver=.true.
+        call farray_register_pde('ss_run_aver',iss_run_aver)
+        lss_running_aver=.true.
       endif
 !
 !  Identify version number.
@@ -608,7 +608,8 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (nz) :: tmpz
+      real, dimension (nzgrid) :: tmpz
+      real, dimension (nx) :: tmpz_penc
       real :: beta1, cp1, beta0, TT_bcz, star_cte
       integer :: i, j, n, m, stat
       logical :: lnothing, exist
@@ -947,15 +948,15 @@ module Energy
           case ('wave-pressure-equil')
             call get_cp1(cp1)
             do n=n1,n2; do m=m1,m2
-              tmpz=ampl_ss(j)*cos(kx_ss*x(l1:l2))*cos(ky_ss*y(m))*cos(kz_ss*z(n))
-              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+tmpz
+              tmpz_penc=ampl_ss(j)*cos(kx_ss*x(l1:l2))*cos(ky_ss*y(m))*cos(kz_ss*z(n))
+              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+tmpz_penc
               if (ldensity_nolog) then
-                tmpz=1./exp(cp1*tmpz)
-                f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)*tmpz
+                tmpz_penc=1./exp(cp1*tmpz_penc)
+                f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)*tmpz_penc
                 if (lreference_state) &
-                  f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)-(1.-tmpz)*reference_state(:,iref_rho)
+                  f(l1:l2,m,n,irho)=f(l1:l2,m,n,irho)-(1.-tmpz_penc)*reference_state(:,iref_rho)
               else
-                f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-cp1*tmpz
+                f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-cp1*tmpz_penc
               endif
             enddo; enddo
           case default
@@ -1502,6 +1503,7 @@ module Energy
           case('xyjump'); call jump(f,iss,ss_left,ss_right,widthss,'xy')
           case('x-y-jump'); call jump(f,iss,ss_left,ss_right,widthss,'x-y')
           case('sinxsinz'); call sinxsinz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
+          case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
           case('hor-fluxtube')
             call htube(ampl_ss(j),f,iss,iss,radius_ss(j),epsilon_ss, &
                 center1_x(j),center1_z(j))
@@ -3172,8 +3174,8 @@ module Energy
       use Sub, only: u_dot_grad, grad, multmv, h_dot_grad
       use WENO_transport, only: weno_transp
 !
-      real, dimension(mx,my,mz,mfarray), intent(IN) :: f
-      type(pencil_case),                 intent(OUT):: p
+      real, dimension(mx,my,mz,mfarray), intent(IN)   :: f
+      type(pencil_case),                 intent(INOUT):: p
 !
       integer :: j
 !
@@ -3351,10 +3353,10 @@ module Energy
 !  Add advection term from an imposed spatially constant gradient of S.
 !  This makes sense really only for periodic boundary conditions.
 !
-        do j=1,3
-          if (gradS0_imposed(j)/=0.) &
-            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-gradS0_imposed(j)*p%uu(:,j)
-        enddo
+      do j=1,3
+        if (gradS0_imposed(j)/=0.) &
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-gradS0_imposed(j)*p%uu(:,j)
+      enddo
 !
 !  Calculate viscous contribution to entropy.
 !
@@ -3559,6 +3561,13 @@ module Energy
         endif
 !
 !  Radiative heat flux at the top (assume here that hcond=hcond0=const).
+!
+! KG, 6 Sep 2022: BUG: The first call of surf_mn_name for this diagnostic (and
+! also the following one) will be when lfirstpoint=.false., so surf_mn_name will
+! not initialize the diagnostic properly. Pencil_check indeed complains that
+! 'diagnostics depend on pencil initialization'. I'm just leaving a comment here
+! since I am not sure what the cleanest way to fix it would be. Perhaps it is not
+! a good idea to depend on lfirstpoint in surf_mn_name.
 !
         if (idiag_fradtop/=0.and.llast_proc_z.and.n==n2) then
           if (hcond0==0.) then
@@ -6349,14 +6358,14 @@ module Energy
           theta_profile=(onethird-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
           prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
           heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
-          div_cool = div_cool - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
+          div_cool = - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
           prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
           heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
           div_cool = div_cool - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
         else
           prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
           heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
-          div_cool = div_cool - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
+          div_cool = - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
           prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
           heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
           div_cool = div_cool - cool_int*prof*(p%cs2-cs2_int)/cs2_int
@@ -8222,15 +8231,6 @@ module Energy
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_energy
-!***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(:) :: p_diag
-
-    call keep_compiler_quiet(p_diag)
-
-    endsubroutine pushdiags2c
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

@@ -68,19 +68,19 @@ program remesh
   integer :: cpu_local,iyy,icpu
   integer :: counx, couny, counz, xstart,xstop, ystart,ystop, zstart, zstop
   integer :: nprocxx, nprocyy, nproczz
-  logical :: exist, lshort
+  logical :: lexist, lshort
   integer :: idx, ifxa, ifxe, idy, ifya, ifye, idz, ifza, ifze, iv
   character(LEN=128) :: clperi
 
   clperi=get_from_nml_str('LPERI',trim(datadir)//'/param2.nml',lvec=.true.)
-  if (.not.exist) then
+  if (clperi=='') then
     print*, 'lperi could not be identified!'
     stop
   endif
   call convert_nml(trim(clperi),lperi)
 !
-  lyinyang=get_from_nml_log('LYINYANG',exist,trim(datadir)//'/param.nml')
-  if (.not.exist) then
+  lyinyang=get_from_nml_log('LYINYANG',lexist,trim(datadir)//'/param.nml')
+  if (.not.lexist) then
     print*, 'lyinyang could not be identified!'
     lyinyang=.false.
   endif
@@ -89,8 +89,8 @@ program remesh
 !
 !  Read rel_dang for Yin-Yang grid.
 !
-    rel_dang=get_from_nml_real('REL_DANG',exist,trim(datadir)//'/param2.nml')
-    if (.not.exist) then
+    rel_dang=get_from_nml_real('REL_DANG',lexist,trim(datadir)//'/param2.nml')
+    if (.not.lexist) then
       print*, 'rel_dang could not be identified!'
       stop
     endif
@@ -121,8 +121,8 @@ program remesh
 !
 !  Read input parameters from varfile.in
 !
-  inquire(FILE='varfile.in',EXIST=exist)
-  if (exist) then
+  inquire(FILE='varfile.in',EXIST=lexist)
+  if (lexist) then
     open(1,FILE='varfile.in',FORM='formatted')
     read(1,'(a)') varfile
     close(1)
@@ -224,8 +224,9 @@ yinyang_loop: &
 !
 ! Check for existence of varfile.
 !
-      inquire(FILE=trim(file),EXIST=exist)
-      if (exist) then
+      inquire(FILE=trim(file),EXIST=lexist)
+print*,'varfile=',icpu,trim(file)
+      if (lexist) then
 !
 !  File found for iyy=ncpus, i.e. iproc=ncpus --> a Yin-Yang grid supposed.
 !

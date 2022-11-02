@@ -137,11 +137,11 @@ module Cdata
 !
 !  Time integration parameters.
 !
-  integer :: nt=10000000, it=1, itorder=3, itsub=0, it_timing=0, it_rmv=0
+  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
   double precision :: t=0., toutoff=0.
-  real :: dt=0.0
+  real :: dt=0.0, dt_incr=0.0
   real :: cdt=0.9, cdts=1.0, cdtr=1.0, cdtc=1.0, cdt_poly=1.0
  !real :: cdtv=0.15, cdtv2=0.03, cdtv3=0.01
 !AB: 5 autotests failed after having decreased cdtv. I suggest to reassess
@@ -152,6 +152,7 @@ module Cdata
   real :: ddt=0.0
   real :: dtmin=1.0e-6, dtmax=1.0e37
   real :: nu_sts=0.1
+  real :: density_scale_factor=impossible
   integer :: permute_sts=0
   integer:: ireset_tstart=2
 !
@@ -161,11 +162,11 @@ module Cdata
   real, dimension (nx) :: maxadvec=0., advec2=0., advec2_hypermesh=0.
   real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
   real, dimension (nx) :: dt1_max
-  real                 :: dt1_poly_relax, trelax_poly
-  real, dimension (nx) :: dt1_reac, reac_chem, reac_dust
-  real :: reac_pchem,dt1_preac
+  real, dimension (nx) :: reac_chem, reac_dust
+  real                 :: trelax_poly, reac_pchem
   real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfractional_tstep_advance=.false.
+  logical :: lfractional_tstep_negative=.true.
   logical :: lfirstpoint=.false., llastpoint=.false.
 !$omp THREADPRIVATE(lfirstpoint,llastpoint)
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
@@ -188,13 +189,13 @@ module Cdata
   character (len=fnlen) :: directory_snap='',directory_dist='',directory_collect=''
   character (len=fnlen) :: modify_filename='modify.dat'
   character (len=fmtlen) :: fmt_avgs='e14.5e3'
-  logical :: lsnap=.false., lsnap_down=.false., lspec=.false., lspec_start=.false.
+  logical :: lsnap=.false., lsnap_down=.false., lspec=.false., lspec_start=.false., lspec_at_tplusdt=.false.
   real :: dsnap=100., dsnap_down=0., d1davg=impossible, d2davg=100., dvid=0., dspec=impossible
   real :: dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100, ialive=0, isaveglobal=0, nv1_capitalvar=1
-  logical :: lwrite_ts_hdf5=.false.
+  logical :: lwrite_ts_hdf5=.false., lsave=.false.
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lenforce_maux_check=.true., lwrite_avg1d_binary = .false.
   logical :: lread_oldsnap=.false., lwrite_var_anyway=.false.
@@ -224,7 +225,8 @@ module Cdata
   logical :: ldirect_access=.false.
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
   integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, startind=1
-  logical :: ldownsampl=.false., ldownsampling, lrepair_snap=.false.
+  logical :: ldownsampl=.false., ldownsampling=.false., lrepair_snap=.false., linterpol_on_repair=.false.
+
   integer, dimension(2) :: ivar_omit=(/0,0/)
   logical :: lzaver_on_input=.false.
   logical :: lfatal_num_vector_369=.true.
@@ -470,8 +472,6 @@ module Cdata
   real, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez,fnamexy, fnamexz
   real, dimension(:,:,:,:), allocatable :: fnamerz
   integer, dimension (:,:), allocatable :: sound_coords_list
-  real, dimension (nz,nprocz) :: z_allprocs
-  equivalence (zgrid,z_allprocs)
   character (len=fmtlen), allocatable :: cform(:),cformv(:),cform_sound(:), &
                                          cformxy(:),cformxz(:),cformrz(:), &
                                          cformz(:),cformy(:),cformx(:),cformr(:)
@@ -581,6 +581,7 @@ module Cdata
   logical :: sp_spec=.false., ssp_spec=.false., sssp_spec=.false., mu_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false., oun_spec=.false.
   logical :: np_spec=.false., np_ap_spec=.false., rhop_spec=.false., ele_spec=.false., pot_spec=.false.
+  logical :: ux_spec=.false., uy_spec=.false., uz_spec=.false., a0_spec=.false., ucp_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false., Stg_spec=.false.
@@ -592,7 +593,7 @@ module Cdata
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.
   logical :: gcc_pdf=.false., lngcc_pdf=.false., lnspecial_pdf=.false., special_pdf=.false.
-  logical :: ang_jb_pdf1d=.false., ang_ub_pdf1d=.false.
+  logical :: ang_jb_pdf1d=.false., ang_ub_pdf1d=.false., ang_ou_pdf1d=.false.
   logical :: test_nonblocking=.false.,onedall=.false.
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.
   logical :: lsfflux=.false.
@@ -606,7 +607,8 @@ module Cdata
   logical :: uu_fft3d=.false., oo_fft3d=.false., bb_fft3d=.false., jj_fft3d=.false.
   logical :: uu_xkyz=.false., oo_xkyz=.false., bb_xkyz=.false., jj_xkyz=.false.
   logical :: uu_kx0z=.false., oo_kx0z=.false., bb_kx0z=.false., jj_kx0z=.false.
-  logical :: bb_k00z=.false., ee_k00z=.false.
+  logical :: bb_k00z=.false., ee_k00z=.false., gwT_fft3d=.false.
+  logical :: Em_specflux=.false., Hm_specflux=.false., Hc_specflux=.false.
 !
   ! Auxiliary parameters for boundary conditions:
   real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.
