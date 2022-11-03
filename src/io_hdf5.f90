@@ -73,6 +73,8 @@ module Io
 !
       use General, only: directory_names_std
 !
+      character(LEN=5) :: locking
+
 !  check whether directory_snap contains `/allprocs' -- if so, revert to the
 !  default name.
 !  Rationale: if directory_snap was not explicitly set in start.in, it
@@ -80,6 +82,10 @@ module Io
 !
       if ((datadir_snap == '') .or. (index(datadir_snap,'allprocs')>0)) &
         datadir_snap = datadir
+
+      call getenv('HDF5_USE_FILE_LOCKING',locking)
+      if (trim(locking)/='FALSE') &
+        call warning('register_io','HDF5 files are possibly locked; writing may fail.')
 !
       call directory_names_std
 
