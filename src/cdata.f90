@@ -195,7 +195,7 @@ module Cdata
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100, ialive=0, isaveglobal=0, nv1_capitalvar=1
-  logical :: lwrite_ts_hdf5=.false., lsave=.false.
+  logical :: lwrite_ts_hdf5=.true., lsave=.false.
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lenforce_maux_check=.true., lwrite_avg1d_binary = .false.
   logical :: lread_oldsnap=.false., lwrite_var_anyway=.false.
@@ -224,7 +224,7 @@ module Cdata
   logical :: loutput_varn_at_exact_tsnap=.false.
   logical :: ldirect_access=.false.
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
-  integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, startind=1
+  integer, dimension(3) :: downsampl=1, firstind=1, ndown=0
   logical :: ldownsampl=.false., ldownsampling=.false., lrepair_snap=.false., linterpol_on_repair=.false.
 
   integer, dimension(2) :: ivar_omit=(/0,0/)
