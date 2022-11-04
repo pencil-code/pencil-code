@@ -96,6 +96,7 @@ module Radiation
   real :: TT_bump=0.0, sigma_bump=1.0, ampl_bump=0.0
   real :: z_cutoff=impossible,cool_wid=impossible, qrad_max=0.0,  &
           zclip_dwn=-max_real,zclip_up=max_real,kappa_ceiling=max_real
+  real :: Qderfact
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -122,7 +123,8 @@ module Radiation
   logical :: lcheck_tau_division=.false., lread_source_function=.false.
   logical :: lcutoff_opticallythin=.false.,lcutoff_zconst=.false.
   logical :: lcdtrad_old=.true.
-  logical :: ldoppler_rad=.false.
+  logical :: ldoppler_rad=.false., ldoppler_rad_includeQ=.false.
+  logical :: ldoppler_rad_includeQder=.false.
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
@@ -159,7 +161,7 @@ module Radiation
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
       lread_source_function, kapparho_floor,lcutoff_opticallythin, &
       lcutoff_zconst,z_cutoff,cool_wid, TT_bump, sigma_bump, ampl_bump, &
-      kappa_ceiling, ldoppler_rad
+      kappa_ceiling, ldoppler_rad, ldoppler_rad_includeQ, ldoppler_rad_includeQder
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -180,7 +182,8 @@ module Radiation
       scalefactor_cooling, scalefactor_radpressure, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
       lcutoff_zconst,z_cutoff,cool_wid,lno_rad_heating,qrad_max,zclip_dwn, &
-      zclip_up, TT_bump, sigma_bump, ampl_bump, kappa_ceiling, ldoppler_rad
+      zclip_up, TT_bump, sigma_bump, ampl_bump, kappa_ceiling, &
+      ldoppler_rad, ldoppler_rad_includeQ, ldoppler_rad_includeQder
 !
   contains
 !***********************************************************************
@@ -444,7 +447,15 @@ module Radiation
 !
       if (ivid_Jrad/=0) &
         call alloc_slice_buffers(Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,ncomp=nnu)
-
+!
+!  Switch factor for Dopper term
+!
+      if (ldoppler_rad_includeQder) then
+        Qderfact=1.
+      else
+        Qderfact=0.
+      endif
+!
     endsubroutine initialize_radiation
 !***********************************************************************
     subroutine calc_angle_weights
@@ -587,7 +598,6 @@ module Radiation
               f(:,:,:,iQrad)=0.0
               if (lradflux) f(:,:,:,iKR_Fradx:iKR_Fradz)=0.0
               if (lradpress) f(:,:,:,iKR_pressxx:iKR_presszx)=0.0
-print*,'AXEL: iKR_pressxx:iKR_presszx=',iKR_pressxx,iKR_presszx
             endif
 !
 !  Loop over rays.
@@ -641,7 +651,6 @@ print*,'AXEL: iKR_pressxx:iKR_presszx=',iKR_pressxx,iKR_presszx
                   k=iKR_press+(ij-1)
                   f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,i)*unit_vec(idir,j) &
                     *(Qrad+Srad)*f(:,:,:,ikapparho)
-print*,'AXEL: i,j,k=',i,j,k
                 enddo
                 enddo
               endif
@@ -782,8 +791,9 @@ print*,'AXEL: i,j,k=',i,j,k
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real,dimension(mz) :: dlength
-      real :: Srad1st,Srad2nd,emdtau1,emdtau2,emdtau
-      real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
+      real :: Srad1st,Srad2nd,dSdtau_m,dSdtau_p
+      real :: Qrad1st,Qrad2nd,dQdtau_m,dQdtau_p
+      real :: dtau_m,dtau_p,emdtau1,emdtau2,emdtau
       real :: u_dot_n, u_dot_n_p, u_dot_n_m, u_dot_n_1st, dudtau_p, dudtau_m
 !
 !  Identifier.
@@ -844,6 +854,12 @@ print*,'AXEL: i,j,k=',i,j,k
         Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
                    -Srad1st*emdtau1-Srad2nd*emdtau2
 !
+!  Q derivative term
+!
+        dQdtau_m=(Qrad(l,m,n)-Qrad(l-lrad,m-mrad,n-nrad))/dtau_m
+        dQdtau_p=(Qrad(l+lrad,m+mrad,n+nrad)-Qrad(l,m,n))/dtau_p
+        Qrad1st=(dQdtau_p*dtau_m+dQdtau_m*dtau_p)/(dtau_m+dtau_p)
+!
 !  extra term when Doppler shift
 !
         if (ldoppler_rad) then
@@ -865,11 +881,14 @@ print*,'AXEL: i,j,k=',i,j,k
 !
 !  compute extra terms: 4*S*u.n and its derivative
 !
-          Qrad(l,m,n)=Qrad(l,m,n)+emdtau1*u_dot_n*4.*Srad(l,m,n) &
-                 +4.*emdtau2*(u_dot_n*Srad1st+u_dot_n_1st*Srad(l,m,n))
-! print*,'AXEL: u_dot_n=',u_dot_n
-print*,'AXEL4 idir,u_dot_n_1st=',idir,u_dot_n_1st, dudtau_p, dudtau_m!, u_dot_n_p, u_dot_n_m
-!print*,'AXEL4 idir=',unit_vec(idir,:),dtau_m,Srad(l,m,n)
+          if (ldoppler_rad_includeQ) then
+            Qrad(l,m,n)=Qrad(l,m,n)+emdtau1*u_dot_n*(4.*Srad(l,m,n)+Qrad(l,m,n)) &
+                   +4.*emdtau2*(u_dot_n*Srad1st+u_dot_n_1st*Srad(l,m,n)) &
+                   +   emdtau2*(u_dot_n*Qrad1st+u_dot_n_1st*Qrad(l,m,n))*Qderfact
+          else
+            Qrad(l,m,n)=Qrad(l,m,n)+emdtau1*u_dot_n*4.*Srad(l,m,n) &
+                   +4.*emdtau2*(u_dot_n*Srad1st+u_dot_n_1st*Srad(l,m,n))
+          endif
         endif
       enddo
       enddo
