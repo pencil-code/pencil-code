@@ -174,8 +174,8 @@ module Special
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, &
-    vx_boost, vy_boost, vz_boost, & !added by emma oct 26-- correct place?
-    lboost, & !emma
+    vx_boost, vy_boost, vz_boost, & 
+    lboost, &
     lstress, lstress_ramp, tstress_ramp, &
     lstress_upscale, stress_upscale_rate, stress_upscale_exp, &
     linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
@@ -1537,11 +1537,12 @@ module Special
       real, dimension (6) :: e_T_boost, e_X_boost
       real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
       real, dimension (3) :: e1, e2, kvec
-      real, dimension (3) :: e1_boost, e2_boost
+      real, dimension (3) :: e1_boost, e2_boost, vboost, kvec_boost, khat_boost !emma added nov4
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       real :: fact, delkt, om2_min, kmin
-      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
-      real :: gamma_boost, k1_boost, k1sqr_boost, ksqr_boost
+      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
+      real :: gamma_boost, v_boostsqr, kdotv, e1dote3,e2dote1,e2dote3!last added only for a test emma nov4
+      real :: k1_boost, k1sqr_boost, k2_boost,k2sqr_boost,k3_boost, k3sqr_boost, ksqr_boost, ksqrt_boost
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
@@ -1861,13 +1862,31 @@ module Special
             k2sqr=k2**2
             k3sqr=k3**2
             ksqr=k1sqr+k2sqr+k3sqr
+            ksqrt = sqrt(ksqr)
 !
 !  boosted x components of k, and squared quantities.
 !
-            gamma_boost=1./sqrt(1.-(vx_boost**2+vy_boost**2+vz_boost**2))
-            k1_boost=gamma_boost*(-vx_boost*sqrt(ksqr)+kx_fft(ikx+ipx*nx))
+            v_boostsqr = vx_boost**2+vy_boost**2+vz_boost**2
+            gamma_boost=1./sqrt(1.-v_boostsqr)
+            vboost(1)=vx_boost
+            vboost(2)=vy_boost
+            vboost(3)=vz_boost
+            !added above component definitions for later computation, emma
+            !k1_boost=gamma_boost*(-vx_boost*ksqrt+kx_fft(ikx+ipx*nx))
+            !generalising the boost:
+            kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
+            k1_boost = k1+kdotv*vx_boost - gamma_boost*ksqrt*vx_boost
+            k2_boost = k2+kdotv*vy_boost - gamma_boost*ksqrt*vy_boost
+            k3_boost = k3+kdotv*vz_boost - gamma_boost*ksqrt*vz_boost
             k1sqr_boost=k1_boost**2
-            ksqr_boost=k1sqr_boost+k2sqr+k3sqr
+            k2sqr_boost=k2_boost**2
+            k3sqr_boost=k3_boost**2
+            ksqr_boost=k1sqr_boost+k2sqr_boost+k3sqr_boost
+            ksqrt_boost=sqrt(ksqr_boost)
+            kvec_boost(1)=k1_boost
+            kvec_boost(2)=k2_boost
+            kvec_boost(3)=k3_boost
+            khat_boost = kvec_boost/ksqrt_boost
 !
 !  find two vectors e1 and e2 to compute e_T and e_X
 !
@@ -2225,29 +2244,49 @@ module Special
 !  begin by initilizing them to zero
 !  compute boosted e1 and e2 vectors
 !
+!emma: delete following if if decide to use second method below
             if (lboost) then
-              if(abs(k1_boost)<abs(k2)) then
-                if(abs(k1_boost)<abs(k3)) then !(k1_boost is pref dir)
-                  e1_boost=(/0.,-k3,+k2/)
-                  e2_boost=(/k2sqr+k3sqr,-k2*k1_boost,-k3*k1_boost/)
-                else !(k3 is pref dir)
-                  e1_boost=(/k2,-k1_boost,0./)
-                  e2_boost=(/k1_boost*k3,k2*k3,-(k1sqr_boost+k2sqr)/)
-                endif
-              else !(k2 smaller than k1_boost)
-                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
-                  e1_boost=(/-k3,0.,+k1_boost/)
-                  e2_boost=(/+k1_boost*k2,-(k1sqr_boost+k3sqr),+k3*k2/)
-                else !(k3 is pref dir)
-                  e1_boost=(/k2,-k1_boost,0./)
-                  e2_boost=(/k1_boost*k3,k2*k3,-(k1sqr_boost+k2sqr)/)
-                endif
-              endif
+!              if(abs(k1_boost)<abs(k2_boost)) then
+!                if(abs(k1_boost)<abs(k3_boost)) then !(k1_boost is pref dir)
+!                  e1_boost=(/0.,-k3_boost,+k2_boost/)
+!                  e2_boost=(/k2sqr_boost+k3sqr_boost,-k2_boost*k1_boost,-k3_boost*k1_boost/)
+!                else !(k3 is pref dir)
+!                  e1_boost=(/k2_boost,-k1_boost,0./)
+!                  e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
+!                endif
+!              else !(k2 smaller than k1_boost)
+!                if(abs(k2_boost)<abs(k3_boost)) then !(k2 is pref dir)
+!                  e1_boost=(/-k3_boost,0.,+k1_boost/)
+!                  e2_boost=(/+k1_boost*k2_boost,-(k1sqr_boost+k3sqr_boost),+k3_boost*k2_boost/)
+!                else !(k3 is pref dir)
+!                  e1_boost=(/k2_boost,-k1_boost,0./)
+!                  e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
+!                endif
+!              endif
 !
 !  normalize boosted e1 and e2 vectors
 !
-              e1_boost=e1_boost/sqrt(e1_boost(1)**2+e1_boost(2)**2+e1_boost(3)**2)
-              e2_boost=e2_boost/sqrt(e2_boost(1)**2+e2_boost(2)**2+e2_boost(3)**2)
+              !e1_boost=e1_boost/sqrt(e1_boost(1)**2+e1_boost(2)**2+e1_boost(3)**2)
+              !e2_boost=e2_boost/sqrt(e2_boost(1)**2+e2_boost(2)**2+e2_boost(3)**2)
+!
+! changed method for boosting e1 and e2
+!
+              !if (t>61.and.k1==1.and.k2==1.and.k3==1) print*,'basis',e1,e1_boost,e2,e2_boost !emma nov3 test
+              if (lboost) then
+               !e1dote3=0 !this is only for a test, emma      
+               !e2dote3=0
+               !e2dote1=0
+                do i=1,3
+                  e1_boost(i)=e1(i)+(gamma_boost-1)*(e1(1)*vx_boost+e1(2)*vy_boost+e1(3)*vz_boost)*vboost(i)/v_boostsqr
+                  e1_boost(i)=e1_boost(i)-gamma_boost*vboost(i)
+                  e2_boost(i)=e2(i)+(gamma_boost-1)*(e2(1)*vx_boost+e2(2)*vy_boost+e2(3)*vz_boost)*vboost(i)/v_boostsqr
+                  e2_boost(i)=e2_boost(i)-gamma_boost*vboost(i)
+                 ! e1dote3=e1dote3+e1_boost(i)*khat_boost(i)
+                 ! e2dote3=e2dote3+e2_boost(i)*khat_boost(i)
+                 ! e2dote1=e2dote1+e2_boost(i)*e1_boost(i)
+                enddo
+              endif
+              !if (t>62.and.k1==1.and.k2==1.and.k3==1) print*,'e1',e1dote3,e2dote3,e2dote1 !emma test nov4
 !
 !  compute e_T_boost and e_X_boost
 !
@@ -2258,6 +2297,9 @@ module Special
                 e_X_boost(ij)=e1_boost(i)*e2_boost(j)+e2_boost(i)*e1_boost(j)
               enddo
               enddo
+              !emma: following test, nov3
+              !if (t>61.and.k1==1.and.k2==1.and.k3==1) print*,'polar',e_T_boost(1),e_T_boost(2),e_T_boost(3),&
+              !e_T_boost(4),e_T_boost(5),e_T_boost(6)
 !
 !  possibility of swapping the sign of e_X
 !
@@ -2290,6 +2332,8 @@ module Special
                 eXX=eXX+e_X_boost(ij)*e_X(ij)
               enddo
               enddo
+              !if (t>60.and.k1==1.and.k2==1.and.k3==0) print*,'eTT,eTX,eXT,eXX',eTT,eTX,eXT,eXX !emma nov3 test
+              !if (t>60.and.k1==1.and.k2==1.and.k3==0) print*,'k-vec',k1,k1_boost,k2,k2_boost,k3,k3_boost
 !
 !  apply transformation from unboosted to boosted h and g
 !
