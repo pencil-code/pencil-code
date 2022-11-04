@@ -18,6 +18,12 @@ except:
            or 'pip install h5py' (Python 2)."
     )
 
+try:
+    import os
+    os.environ['HDF5_USE_FILE_LOCKING']='FALSE'
+except:
+    print("os could not be imported -> HDF5 file locking still in effect.")
+    
 # Load sub-modules.
 from . import io
 from . import diag
