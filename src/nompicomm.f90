@@ -11,6 +11,7 @@ module Mpicomm
 !
   implicit none
 !
+  integer, parameter :: size_of_int = 0, size_of_real = 0, size_of_double = 0
   integer, parameter :: MPI_COMM_WORLD=0, MPI_ANY_TAG=0, MPI_INFO_NULL=0
   integer :: nprocs=1
 

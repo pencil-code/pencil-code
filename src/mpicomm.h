@@ -81,6 +81,7 @@
   public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, &
             MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, MPI_COMM_RSLICE, &
             MPI_INFO_NULL, MPI_ANY_TAG, lyang
+  public :: size_of_int, size_of_real, size_of_double
 !
   interface mpirecv_logical
     module procedure mpirecv_logical_scl
@@ -422,4 +423,3 @@
   character(LEN=4), public :: cyinyang=' '
 
   integer :: mpi_precision
-

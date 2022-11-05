@@ -67,6 +67,7 @@ module Mpicomm
 !    module procedure mpigather_and_out_cmplx
 !  endinterface
 !
+  integer(kind=MPI_COUNT_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
   logical :: lcommunicate_y=.false.
 !
 !  For f-array processor boundaries
@@ -226,6 +227,17 @@ module Mpicomm
 
       call MPI_COMM_DUP(MPI_COMM_PENCIL, MPI_COMM_GRID,mpierr)
       iproc_world=iproc
+!
+!  Remeber the sizes of some MPI elementary types.
+!
+      call MPI_TYPE_SIZE_X(MPI_INTEGER, size_of_int, mpierr)
+      call stop_it_if_any(mpierr /= MPI_SUCCESS, "unable to find MPI_INTEGER size")
+!
+      call MPI_TYPE_SIZE_X(mpi_precision, size_of_real, mpierr)
+      call stop_it_if_any(mpierr /= MPI_SUCCESS, "unable to find MPI real size")
+!
+      call MPI_TYPE_SIZE_X(MPI_DOUBLE_PRECISION, size_of_double, mpierr)
+      call stop_it_if_any(mpierr /= MPI_SUCCESS, "unable to find MPI_DOUBLE_PRECISION size")
 !
 !  Check consistency in processor layout.
 !

@@ -49,8 +49,6 @@ module Particles_mpicomm
   logical :: lreblock_particles_run=.false., lbrick_partition=.false.
   logical :: ladopt_own_light_bricks=.false.
 !
-  integer(kind=MPI_COUNT_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
-!
   contains
 !***********************************************************************
     subroutine initialize_particles_mpicomm(f)
@@ -115,19 +113,6 @@ module Particles_mpicomm
             nbrickz, nzgrid
         call fatal_error_local('initialize_particles_mpicomm','')
       endif
-      call fatal_error_local_collect()
-!
-!  Remeber the sizes of some MPI elementary types.
-!
-      call MPI_TYPE_SIZE_X(MPI_INTEGER, size_of_int, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI_INTEGER size")
-!
-      call MPI_TYPE_SIZE_X(mpi_precision, size_of_real, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI real size")
-!
-      call MPI_TYPE_SIZE_X(MPI_DOUBLE_PRECISION, size_of_double, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("initialize_particles_mpicomm", "unable to find MPI_DOUBLE_PRECISION size")
-!
       call fatal_error_local_collect()
 !
 !  Distribute particles evenly among processors to begin with.
@@ -2320,7 +2305,7 @@ module Particles_mpicomm
 !
 !  01-nov-22/ccyang: coded
 !
-      use Mpicomm, only: mpi_precision
+      use Mpicomm, only: mpi_precision, size_of_int, size_of_real, size_of_double
 !
       character(len=*), intent(in) :: filename
 !
@@ -2520,7 +2505,7 @@ module Particles_mpicomm
 !
 !  01-nov-22/ccyang: coded
 !
-      use Mpicomm, only: mpi_precision
+      use Mpicomm, only: mpi_precision, size_of_int, size_of_real, size_of_double
 !
       character(len=*), intent(in) :: filename
 !
