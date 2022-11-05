@@ -51,6 +51,7 @@ module power_spectrum
   integer :: n_spectra=0
   integer :: inz=0, n_segment_x=1
   integer :: kout_max=0
+  integer :: specflux_pmin=0,specflux_pmax=nxgrid/2-1
   real :: max_k2 = (nxgrid/2)**2 + (nygrid/2)**2 + (nzgrid/2)**2
   integer, dimension(:), allocatable :: k2s
   integer :: nk_truebin=0
@@ -61,7 +62,8 @@ module power_spectrum
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
       lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation, &
       power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq, &
-      lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2
+      lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2, &
+      specflux_pmin, specflux_pmax
 !
   contains
 !***********************************************************************
@@ -5521,7 +5523,7 @@ endsubroutine pdf
     use Sub, only: gij, gij_etc, curl_mn, cross_mn, del2v_etc
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,p,q,lp,lq,ivec,ikx,iky,ikz,k!,nlk
+  integer :: i,p,q,lp,lq,ivec,ikx,iky,ikz,k
   integer :: nlk_p, nlk_q
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
@@ -5531,6 +5533,7 @@ endsubroutine pdf
   real, dimension(nx,ny,nz,3) :: tmp_p,u_tmp,b_tmp,emf_q
   real, allocatable, dimension(:,:) :: Tpq,Tpq_sum
   character (len=2) :: sp
+  logical :: lTpq_anti_symmetric
 !
 !  identify version
 !
@@ -5541,9 +5544,9 @@ endsubroutine pdf
 !  and negative values for log steps. Default value for both is -2.
 !
   if (specflux_dp>0.) then
-    nlk_p = floor((nk-1.)/specflux_dp)+1
+    nlk_p = floor((specflux_pmax-specflux_pmin)/specflux_dp)+1
   elseif (specflux_dp<0.) then
-    nlk_p = floor(alog(nk-1.)/alog(-specflux_dp))+1
+    nlk_p = floor(alog(1.*specflux_pmax)/alog(-specflux_dp))+1
   else
     call fatal_error('power_transfer_mag','specflux_dp must be non-zero')
   endif
@@ -5556,6 +5559,12 @@ endsubroutine pdf
   endif
   if (.not.allocated(Tpq)) allocate( Tpq(nlk_p,nlk_q) )
   if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk_p,nlk_q) )
+!
+!  In some cases Tpq is anti-symmetric in p and q
+!
+  lTpq_anti_symmetric=.false.
+  if (specflux_dp==specflux_dq.and.nlk_p==nlk_q &
+      .and.sp=='Hm') lTpq_anti_symmetric=.true.
 !
 !  initialize spectral flux to zero
 !
@@ -5598,7 +5607,7 @@ endsubroutine pdf
 !
   do lp=0,nlk_p-1
     if (specflux_dp>0.) then
-      p=nint(specflux_dp*lp)
+      p=specflux_pmin+nint(specflux_dp*lp)
     else
       p=nint(abs(specflux_dp)**lp)
     endif
@@ -5619,11 +5628,7 @@ endsubroutine pdf
     enddo
     !
     do lq=0,nlk_q-1
-    !
-    !  only when sp='Hm', dp=dq and q>p, we don't need to compute Tpq
-    !
-    if (.not.(sp=='Hm'.and.specflux_dp==specflux_dq.and.lq>lp)) then
-      !  compute Tpq
+    if (.not.(lTpq_anti_symmetric.and.lq>lp)) then
       if (specflux_dq>0.) then
         q=nint(specflux_dq*lq)
       else
@@ -5653,16 +5658,14 @@ endsubroutine pdf
       enddo
       enddo
       !
-      !  T(p,q)=\int bbb_p \cdot emf_q dV
-      !
       Tpq(lp+1,lq+1) = Tpq(lp+1,lq+1) + dx*dy*dz*sum(tmp_p*emf_q)
     endif
     enddo  !  from q
   enddo  !  from p
 !
-!  fill the q>p half of Tpq if dp=dq
+!  fill the q>p half of Tpq
 !
-  if (sp=='Hm'.and.specflux_dp==specflux_dq) then
+  if (lTpq_anti_symmetric) then
     do lp=0,nlk_p-1
     do lq=lp+1,nlk_q-1
       Tpq(lp+1,lq+1)=-Tpq(lq+1,lp+1)

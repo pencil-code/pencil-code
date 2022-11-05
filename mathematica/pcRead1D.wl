@@ -205,24 +205,25 @@ readAves[sim_,plane_,varNames__]:=
 (*Spectral fluxes*)
 
 
-readSpecFluxPQ[sim_]:=Module[{dp,dq,nk,nlk,grid},
+readSpecFluxPQ[sim_]:=Module[{pmin,pmax,dp,dq,nk,grid},
+  pmin=readParamNml[sim,"run.in","SPECFLUX_PMIN"];
+  pmax=readParamNml[sim,"run.in","SPECFLUX_PMAX"];
   dp=readParamNml[sim,"run.in","SPECFLUX_DP"];
   dq=readParamNml[sim,"run.in","SPECFLUX_DQ"];
   nk=readDim[sim]["nx"]/2;
   
-  nlk[d_]:=Floor@If[d>0,(nk-1)/d+1,Log[-d,nk-1]+1];
-  grid[d_]:=If[d>0,d*Range[0,nlk[d]-1],(-d)^Range[0,nlk[d]-1]];
+  grid[d_,min_:0,max_:nk-1]:=If[d>0,Range[min,max,d],(-d)^Range[0,Floor@Log[-d,max]]];
   
-  Round@{grid[dp],grid[dq]}
+  Round@{grid[dp,pmin,pmax],grid[dq]}
 ]
-readSpecFlux[sim_,file_]:=Module[{pq,grid,t,tra},
-  pq=readSpecFluxPQ[sim];
-  grid=Table[{pp,qq},{qq,pq[[2]]},{pp,pq[[1]]}]//Flatten[#,1]&;
+readSpecFlux[sim_,file_]:=Module[{p,q,t,tra,tmp},
+  {p,q}=readSpecFluxPQ[sim];
+  {t,tra}=read1D[sim,file,Length[p]*Length[q]];
+  Do[
+    tmp[i][p[[j]],q[[k]]]=Partition[tra[[i]],Length[p]][[k,j]],
+    {k,q//Length},{j,p//Length},{i,t//Length}];
   
-  {t,tra}=read1D[sim,file,Times@@(Length/@pq)];
-  tra=Flatten/@Transpose[{grid,#}]&/@tra;
-  
-  Return[{t,tra}]
+  {t,p,q,Table[tmp[i],{i,Length[t]}]}
 ]
 
 
