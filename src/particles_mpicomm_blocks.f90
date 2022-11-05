@@ -7,8 +7,6 @@
 !
 module Particles_mpicomm
 !
-  use MPI
-!
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -16,6 +14,7 @@ module Particles_mpicomm
 !
   implicit none
 !
+  include 'mpif.h'
   include 'particles_mpicomm.h'
 !
   integer, parameter :: nxb=nxgrid/nbrickx,nyb=nygrid/nbricky,nzb=nzgrid/nbrickz
@@ -50,9 +49,7 @@ module Particles_mpicomm
   logical :: lreblock_particles_run=.false., lbrick_partition=.false.
   logical :: ladopt_own_light_bricks=.false.
 !
-  integer(kind=MPI_OFFSET_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
-!
-  !include 'mpif.h'
+  integer(kind=MPI_COUNT_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
 !
   contains
 !***********************************************************************
@@ -2364,7 +2361,7 @@ module Particles_mpicomm
       offset = size_of_int * (ncpus * 3 + iproc * nbricks + 2 * nblock_cum + nparent_cum + nfoster_cum) &
              + size_of_real * (3 * (mxb + myb + mzb) * nblock_cum)
       call MPI_TYPE_CREATE_STRUCT(3, (/ 3, n, 3 * (mxb + myb + mzb) * nblock_loc /), &
-                                     (/ iproc * 3 * size_of_int, offset, offset + n * size_of_int /), &
+                                     int((/ iproc * 3 * size_of_int, offset, offset + n * size_of_int /), kind=MPI_ADDRESS_KIND), &
                                      (/ MPI_INTEGER, MPI_INTEGER, mpi_precision /), mpi_type, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
 !
@@ -2589,7 +2586,7 @@ module Particles_mpicomm
       offset = size_of_int * (iproc * nbricks + 2 * nblock_cum + nparent_cum + nfoster_cum) &
              + size_of_real * (3 * (mxb + myb + mzb) * nblock_cum)
       call MPI_TYPE_CREATE_STRUCT(2, (/ n, 3 * (mxb + myb + mzb) * nblock_loc /), &
-                                     (/ offset, offset + size_of_int * n /), &
+                                     int((/ offset, offset + size_of_int * n /), kind=MPI_ADDRESS_KIND), &
                                      (/ MPI_INTEGER, mpi_precision /), mpi_type, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
 !
