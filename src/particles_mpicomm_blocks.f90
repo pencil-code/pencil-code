@@ -7,13 +7,12 @@
 !
 module Particles_mpicomm
 !
+  use MPI
+!
   use Cdata
   use General, only: keep_compiler_quiet
-  use Mpicomm
   use Messages
   use Particles_cdata
-!
-  use MPI, only: MPI_OFFSET_KIND
 !
   implicit none
 !
@@ -64,7 +63,7 @@ module Particles_mpicomm
 !
 !  31-oct-09/anders: coded
 !
-      use MPI
+      use Mpicomm, only: mpi_precision, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
 !
@@ -433,6 +432,7 @@ module Particles_mpicomm
 !  28-oct-09/anders: coded
 !
       use Diagnostics, only: max_name
+      use Mpicomm, only: mpibcast_logical, mpirecv_int, mpirecv_real, mpireduce_or, mpisend_int, mpisend_real
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
@@ -739,6 +739,7 @@ module Particles_mpicomm
 !  28-oct-09/anders: coded
 !
       use Diagnostics, only: max_name
+      use Mpicomm, only: mpibcast_logical, mpirecv_int, mpirecv_real, mpireduce_or, mpisend_int, mpisend_real
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
@@ -1093,6 +1094,7 @@ module Particles_mpicomm
 !  TODO: For ncpus>>1000 this subroutine possibly uses too much memory.
 !
       use Diagnostics, only: max_name
+      use Mpicomm, only: mpibcast_logical, mpirecv_int, mpirecv_real, mpireduce_or, mpisend_int, mpisend_real
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
@@ -1440,7 +1442,8 @@ module Particles_mpicomm
 !
 !  12-oct-09/anders: coded
 !
-      use Mpicomm
+      use Mpicomm, only: mpirecv_int, mpirecv_nonblock_int, mpirecv_nonblock_real, mpirecv_real, &
+                         mpisend_int, mpisend_nonblock_int, mpisend_nonblock_real, mpisend_real, mpiwait
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
@@ -2320,7 +2323,7 @@ module Particles_mpicomm
 !
 !  01-nov-22/ccyang: coded
 !
-      use MPI
+      use Mpicomm, only: mpi_precision
 !
       character(len=*), intent(in) :: filename
 !
@@ -2520,7 +2523,7 @@ module Particles_mpicomm
 !
 !  01-nov-22/ccyang: coded
 !
-      use MPI
+      use Mpicomm, only: mpi_precision
 !
       character(len=*), intent(in) :: filename
 !
@@ -2765,7 +2768,7 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine report_missing_particles(message)
 !
-      use Mpicomm, only: mpireduce_sum_int
+      use Mpicomm, only: mpibcast_int, mpireduce_sum_int
 !
       character (len=*) :: message
 !
@@ -2926,8 +2929,6 @@ module Particles_mpicomm
 !  Finds the cumulative count from processes of upper ranks.
 !
 !  01-nov-22/ccyang: coded
-!
-      use MPI
 !
       integer, intent(in) :: nloc
       integer, intent(out) :: ncum
