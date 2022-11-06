@@ -67,7 +67,7 @@ module Mpicomm
 !    module procedure mpigather_and_out_cmplx
 !  endinterface
 !
-  integer(kind=MPI_COUNT_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
+  integer(kind=MPI_OFFSET_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
   logical :: lcommunicate_y=.false.
 !
 !  For f-array processor boundaries
