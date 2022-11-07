@@ -789,8 +789,8 @@ sub my_ok {
 	} else {
 	  if ($phase eq 'running'){$loglink .= '/run.log'};
 	}
-	$loglink .= '" target="_blank"> Error log</a>';
-	if ($phase eq 'compilation') {$loglink = ''};  #.'/compile.log'
+	$loglink .= '" target="_blank">Error log</a>';
+	if ($phase eq 'compilation' || $phase eq 'results') {$loglink = ''};  #.'/compile.log'
 	#print " not ok: $timestr\n$mesg\n";
 	print " not ok: $timestr $loglink\n$mesg\n";
         $test_status = 1;
