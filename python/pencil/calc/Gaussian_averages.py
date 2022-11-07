@@ -315,8 +315,8 @@ def load_dataset(src, key, lindx, lindy, lindz, nghost):
     else:
         n3, n4, m3, m4, l3, l4 = None, None, None, None, None, None
         # define array indices in z direction
-        if var.shape[-3] == nz:
-            n1, n2 = lindz[0], lindz[-1]+1
+        if var.shape[-3] >= nz:
+            n1, n2 = 0, lindz.size
             nn1, nn2 = 0, lindz.size
         else:
             if lindz[0] == np.min(lindz):
@@ -335,8 +335,8 @@ def load_dataset(src, key, lindx, lindy, lindz, nghost):
                 else:
                     nn4 = np.mod(lindz.size, nz)
         # define array indices in y direction
-        if var.shape[-2] == ny:
-            m1, m2 = lindy[0], lindy[-1]+1
+        if var.shape[-2] >= ny:
+            m1, m2 =  0, lindy.size
             mm1, mm2 = 0, lindy.size
         else:
             if lindy[0] == np.min(lindy):
@@ -355,8 +355,8 @@ def load_dataset(src, key, lindx, lindy, lindz, nghost):
                 else:
                     mm4 = np.mod(lindy.size, ny)
         # define array indices in x direction
-        if var.shape[-1] == nx:
-            l1, l2 = lindx[0], lindx[-1]+1
+        if var.shape[-1] >= nx:
+            l1, l2 = 0, lindx.size
             ll1, ll2 = 0, lindx.size
         else:
             if lindx[0] == np.min(lindx):
