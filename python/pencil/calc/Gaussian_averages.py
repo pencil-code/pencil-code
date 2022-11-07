@@ -96,8 +96,7 @@ def kernel_smooth(
         )[1]
     else:
         nchunks = [1, 1, 1]
-    if not quiet:
-        print("nchunks {}".format(nchunks))
+    print("nchunks {}".format(nchunks))
     # for mpi split chunks across processes
     if size > 1:
         locindx = np.array_split(np.arange(nx) + nghost, nchunks[0])
