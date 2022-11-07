@@ -959,6 +959,7 @@ module HDF5_IO
 !   Output 1D chunked average to a file.
 !
 !   16-Nov-2018/PABourdin: coded
+!   07-nov-2022/ccyang: use output_average_1D instead of output_average_2D
 !
       character (len=*), intent(in) :: path, label
       integer, intent(in) :: nc
@@ -969,12 +970,25 @@ module HDF5_IO
       logical, intent(in) :: lbinary, lwrite
       real, dimension(:), optional, intent(in) :: header
 !
-      call keep_compiler_quiet(full)
+      integer, dimension(3) :: dims
+      real, dimension(full,nc) :: raveled
+!
+!  Ravel the data to true 1D.
+!
+      dims = shape(data)
+      if (dims(1) * dims(2) /= full) then
+        if (lroot) print *, "output_average_1D_chunked: shape(data) = ", dims
+        if (lroot) print *, "output_average_1D_chunked: full = ", full
+        call fatal_error("output_average_1D_chunked", "inconsistent dimensions")
+      endif
+      raveled = reshape(data(:,:,1:nc), (/ full, nc /))
+!
+!  Call 1D writer.
 !
       if (present (header)) then
-        call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
+        call output_average_1D(path, label, nc, name, raveled, time, lbinary, lwrite, header)
       else
-        call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite)
+        call output_average_1D(path, label, nc, name, raveled, time, lbinary, lwrite)
       endif
 !
     endsubroutine output_average_1D_chunked
