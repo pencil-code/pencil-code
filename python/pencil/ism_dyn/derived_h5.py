@@ -1,7 +1,7 @@
 # derived_h5.py
 """ Derive auxilliary data and other diagnostics from var.h5 file and
     save to new h5 file
- 
+
     uses:
       compute "data" arrays of size [nz,ny,nx] as required
       store "time" of snapshot
@@ -19,8 +19,8 @@ import os
 def is_vector(key):
     """Check if the variable denoted by the label key is a vector."""
     vec = False
-    for tag in ("aa", "uu", "bb", "jj", "upot", "urot", "vort", "uxb", 
-                "meanuu", "meanbb", "meanjj", "meanvort",  
+    for tag in ("aa", "uu", "bb", "jj", "upot", "urot", "vort", "uxb",
+                "meanuu", "meanbb", "meanjj", "meanvort",
                 "etadel2a", "curluxb", "curletadel2a", "advec_force",
                 "fvisc", "grav", "gradp", "shear", "coriolis", "lorentz" ):
         if key in tag:
@@ -211,6 +211,8 @@ def derive_data(
                 if iz[-1] == locindz[-1][-1]:
                     n2out = n2
                     varn2 = n2
+                if not quiet:
+                    print("remeshing " + key + "z chunk {}".format([iz]))
                 for iy in [indy[np.mod(ichunk + int(ichunk / nchunks[2]), nchunks[1])]]:
                     m1, m2 = iy[0] - nghost, iy[-1] + nghost + 1
                     m1out = m1 + nghost
@@ -223,6 +225,8 @@ def derive_data(
                     if iy[-1] == locindy[-1][-1]:
                         m2out = m2
                         varm2 = m2
+                    if not quiet:
+                        print("remeshing " + key + "y chunk {}".format([iy]))
                     for ix in [
                         indx[
                             np.mod(
@@ -245,7 +249,7 @@ def derive_data(
                             l2out = l2
                             varl2 = l2
                         if not quiet:
-                            print("remeshing " + key + " chunk {}".format([iz, iy, ix]))
+                            print("remeshing " + key + "x chunk {}".format([ix]))
                         var = calc_derived_data(
                             src["data"],
                             dst["data"],
@@ -632,7 +636,7 @@ def calc_derived_data(
                 bb = bfield(src, dst, "bb", par, gd, l1, l2, m1, m2, n1, n2, nghost)
             var = dot(aa, bb)
             return var
-        
+
     #==========================================================================
     def urand(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
         if key == "u2rand":
