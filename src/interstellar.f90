@@ -2019,6 +2019,7 @@ module Interstellar
         SNRs(iSNR)%indx%SN_type=type_list
         SNRs(iSNR)%feat%radius=width_SN
         call position_SN_testposition(f,SNRs(iSNR))
+        ierr=iEXPLOSION_OK
         call explode_SN(f,SNRs(iSNR),ierr,preSN)
 !
 !  Free up slots in case loop fails repeatedly over many time steps.
@@ -3194,7 +3195,7 @@ module Interstellar
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(inout) :: SNR
       integer, intent(inout), optional, dimension(4,npreSN) :: preSN
-      integer, optional :: ierr
+      integer, intent(inout), optional :: ierr
 !
       real :: c_SN,cmass_SN,cvelocity_SN,ecr_SN,cmass_tmp,c_SNmax
       real :: width_energy, width_mass, width_velocity
@@ -3278,7 +3279,11 @@ module Interstellar
       SNR%feat%rhom=rhom
       endif
       radius2=SNR%feat%radius**2
-      call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
+      if (present(ierr)) then
+        call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
+      else
+        call get_properties(f,SNR,rhom,ekintot,rhomin)
+      endif
       SNR%feat%rhom=rhom
 !
 !  Calculate effective Sedov evolution time and shell speed diagnostic.
