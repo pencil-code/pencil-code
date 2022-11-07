@@ -122,7 +122,7 @@ module Special
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1.
   real :: tstress_ramp=0., stress_upscale_rate=0., stress_upscale_exp=0., tturnoff=1.
-  real :: rescale_GW=1., vx_boost, vy_boost, vz_boost
+  real :: rescale_GW=1., vx_boost=0., vy_boost=0., vz_boost=0.
   real :: horndeski_alpM=0., horndeski_alpT=0.
   real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
   real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, OmM0=0.3158, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
@@ -1874,7 +1874,11 @@ module Special
             !added above component definitions for later computation, emma
             !k1_boost=gamma_boost*(-vx_boost*ksqrt+kx_fft(ikx+ipx*nx))
             !generalising the boost:
-            kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
+            if (v_boostsqr==0.) then
+              kdotv==0.
+            else
+              kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
+            endif
             k1_boost = k1+kdotv*vx_boost - gamma_boost*ksqrt*vx_boost
             k2_boost = k2+kdotv*vy_boost - gamma_boost*ksqrt*vy_boost
             k3_boost = k3+kdotv*vz_boost - gamma_boost*ksqrt*vz_boost
