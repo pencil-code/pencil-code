@@ -30,7 +30,7 @@ def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=None,
     """
     # Author: Chao-Chin Yang
     # Created: 2013-10-28
-    # Last Modified: 2018-09-20
+    # Last Modified: 2022-11-07
     from . import read
     import math
     import matplotlib.pyplot as plt
@@ -38,22 +38,26 @@ def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=None,
     from scipy.interpolate import interp1d
 
     # Check the plane of the average.
+    par = read.parameters(datadir=datadir)
+    g = read.grid(datadir=datadir, par=par)
     if plane == 'xy':
         xlabel = '$z$'
         xdir = 2
+        x = g.z
     elif plane == 'xz':
         xlabel = '$y$'
         xdir = 1
+        x = g.y
     elif plane == 'yz':
         xlabel = '$x$'
         xdir = 0
+        x = g.x
     else:
         raise ValueError("Keyword plane only accepts 'xy', 'xz', or 'yz'. ")
 
     # Read the data.
     print("Reading 1D averages...")
     time, avg = read.avg1d(datadir=datadir, plane=plane, verbose=False)
-    par = read.parameters(datadir=datadir)
     xmin, xmax = par.xyz0[xdir], par.xyz1[xdir]
 
     # Set colorbar label.
@@ -79,8 +83,7 @@ def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=None,
 
     # Plot the space-time diagram.
     print("Plotting...")
-    img = plt.imshow(a, origin='bottom', extent=[xmin,xmax,tmin,tmax],
-                        aspect='auto', **kwargs)
+    img = plt.pcolormesh(x, t, a, **kwargs)
     ax = plt.gca()
     ax.set_ylabel('$t$')
     ax.set_xlabel(xlabel)
