@@ -58,7 +58,6 @@ def common_factors(nx, ny, nz, nmin=8):
     xdivisors = divisors(xfactors, nx, nmin=nmin)
     ydivisors = divisors(yfactors, ny, nmin=nmin)
     zdivisors = divisors(zfactors, nz, nmin=nmin)
-    print("divisors x:", xdivisors, "y:", ydivisors, "z:", zdivisors)
     return xdivisors, ydivisors, zdivisors
 
 
@@ -76,6 +75,8 @@ def cpu_optimal(
     size=1,
 ):
     xdiv, ydiv, zdiv = common_factors(nx, ny, nz, nmin=nmin)
+    if not quiet:
+        print("divisors x:", xdiv, "y:", ydiv, "z:", zdiv)
 
     nvar = mvar + maux
     # size of farray in MB
@@ -83,7 +84,8 @@ def cpu_optimal(
     ncpu_max = int(nsize / MBmin) + 1
     if size > 1:
         ncpu_max = min(size, ncpu_max)
-    print("ncpu_max", ncpu_max)
+    if not quiet:
+        print("ncpu_max", ncpu_max)
     cpu_list = list()
     for div in (xdiv, ydiv, zdiv):
         tmp = list()
@@ -92,7 +94,8 @@ def cpu_optimal(
                 tmp.append(nt)
         cpu_list.append(tmp)
     xdiv, ydiv, zdiv = cpu_list
-    print("cpu_list", cpu_list)
+    if not quiet:
+        print("cpu_list", cpu_list)
     ncpu_list = list()
     int_ncpu_max = 1
     ncpu_list.append(1)
@@ -109,7 +112,8 @@ def cpu_optimal(
             if not quiet:
                 print(div, ncpu_list[-1])
     ncpu_max = max(ncpu_list)
-    print("ncpu_max divisible", ncpu_max)
+    if not quiet:
+        print("ncpu_max divisible", ncpu_max)
     nprocx = 1
     nprocy = 1
     nprocz = 1
