@@ -109,10 +109,6 @@ def cpu_optimal(
             if not quiet:
                 print(div, ncpu_list[-1])
     ncpu_max = max(ncpu_list)
-    # fft_xyz_parallel removes need for x constraint
-    # if lpower:
-    #    nprocyz_max = min(ncpu_max,max(ny,nz))
-    #    ncpu_max = min(ncpu_max,max(ny,nz))
     print("ncpu_max divisible", ncpu_max)
     nprocx = 1
     nprocy = 1
@@ -120,32 +116,14 @@ def cpu_optimal(
     nprocx_last = 1
     nprocy_last = 1
     nprocz_last = 1
-    for iprocx in xdiv:
+    npxyz = nx + ny + nz
+    for iprocz in zdiv:
         for iprocy in ydiv:
-            for iprocz in zdiv:
-                if np.mod(ncpu_max, nprocx_last * nprocy_last * iprocz) == 0:
-                    nprocz = min(nz / iprocz, ncpu_max / nprocx_last / nprocy_last)
-                    if iprocz * iprocy * iprocx <= ncpu_max:
-                        nprocz_last = nprocz
-                    if not quiet:
-                        print(
-                            "iprocz {}, iprocy {}, iprocx {}, nprocz_last {}, nprocy_last {}, nprocx_last {}".format(
-                                iprocz,
-                                iprocy,
-                                iprocx,
-                                nprocz_last,
-                                nprocy_last,
-                                nprocx_last,
-                            )
-                        )
-            if np.mod(ncpu_max, nprocx_last * iprocy * iprocz) == 0:
-                nprocy = min(ny / iprocy, ncpu_max / iprocz / nprocx_last)
-                if iprocz * iprocy * iprocx <= ncpu_max:
-                    nprocy_last = nprocy
-        if np.mod(ncpu_max, iprocx * iprocy * iprocz) == 0:
-            nprocx = min(nx / iprocx, ncpu_max / iprocz / iprocy)
-            if iprocz * iprocy * iprocx <= ncpu_max:
-                nprocx_last = nprocx
+            for iprocx in xdiv:
+                if np.mod(ncpu_max, iprocx * iprocy * iprocz) <= 0:
+                    if nx/iprocx + ny/iprocy + nz/iprocz < npxyz:
+                        npxyz = nx/iprocx + ny/iprocy + nz/iprocz
+                        nprocz_last = iprocz; nprocy_last = iprocy; nprocx_last = iprocx;
     nprocx = nprocx_last
     nprocy = nprocy_last
     nprocz = nprocz_last
