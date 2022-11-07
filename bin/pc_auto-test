@@ -783,7 +783,16 @@ sub my_ok {
     if ($arg1 eq $arg2) {
         print " ok      $timestr\n" unless ($quiet);
     } else {
-        print " not ok: $timestr\n$mesg\n";
+	my $loglink = '<a href="http://'.`hostname`.$dir;
+	if ($phase eq 'starting') {
+	  $loglink .= '/start.log';
+	} else {
+	  if ($phase eq 'running'){$loglink .= '/run.log'};
+	}
+	$loglink .= '" target="_blank"> Error log</a>';
+	if ($phase eq 'compilation') {$loglink = ''};  #.'/compile.log'
+	#print " not ok: $timestr\n$mesg\n";
+	print " not ok: $timestr $loglink\n$mesg\n";
         $test_status = 1;
         # report only first failure:
         $failed{$dir} = $phase unless defined($failed{$dir});
