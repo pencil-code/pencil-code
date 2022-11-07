@@ -198,6 +198,7 @@ module HDF5_IO
 !
       call fatal_error ('input_hdf5_profile_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
       call keep_compiler_quiet(ldim)
       call keep_compiler_quiet(gdim)
       call keep_compiler_quiet(np1)
@@ -454,6 +455,7 @@ module HDF5_IO
 !
       call fatal_error ('output_hdf5_double_0D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
 !
     endsubroutine output_hdf5_double_0D
 !***********************************************************************
@@ -465,6 +467,7 @@ module HDF5_IO
 !
       call fatal_error ('output_hdf5_double_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
       call keep_compiler_quiet(nv)
 !
     endsubroutine output_hdf5_double_1D
@@ -555,7 +558,8 @@ module HDF5_IO
 ! 
       real, dimension(2*nname), intent(in) :: data, data_im
 ! 
-      ! dummy routine   
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(data_im)
 !                       
     endsubroutine output_timeseries
 !***********************************************************************
@@ -685,6 +689,8 @@ module HDF5_IO
       real, intent(in) :: pos
       integer, intent(in) :: grid_pos
       real, dimension (:,:), pointer :: data
+!
+      call keep_compiler_quiet(grid_pos)
 !
       if (.not. lwrite .or. .not. associated(data)) return
 !
@@ -858,6 +864,8 @@ module HDF5_IO
 !
       integer :: pos, np
 !
+      call keep_compiler_quiet(lhas_ghost)
+!
 !  If within a loop, do this only for the first step (indicated by lwrite_prof).
 !
       if (lwrite_prof) then
@@ -895,6 +903,8 @@ module HDF5_IO
       integer :: pos
       real, dimension(np) :: coord
 !
+      call keep_compiler_quiet(lhas_ghost)
+!
       ! Read profile.
       open(lun_input,file=trim(directory)//type//'/prof_'//trim(fname)//'.dat')
       do pos=1, np
@@ -921,6 +931,8 @@ module HDF5_IO
       real, dimension(:), optional, intent(in) :: header
 !
       character (len=fnlen) :: filename
+!
+      call keep_compiler_quiet(name)
 !
       if (.not. lwrite .or. (nc <= 0)) return
 !
@@ -957,6 +969,8 @@ module HDF5_IO
       logical, intent(in) :: lbinary, lwrite
       real, dimension(:), optional, intent(in) :: header
 !
+      call keep_compiler_quiet(full)
+!
       if (present (header)) then
         call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
       else
@@ -981,6 +995,8 @@ module HDF5_IO
 !
       character (len=fnlen) :: filename
       integer :: ia
+!
+      call keep_compiler_quiet(name)
 !
       if (.not. lwrite .or. (nc <= 0)) return
 !
