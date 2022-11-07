@@ -1875,7 +1875,7 @@ module Special
             !k1_boost=gamma_boost*(-vx_boost*ksqrt+kx_fft(ikx+ipx*nx))
             !generalising the boost:
             if (v_boostsqr==0.) then
-              kdotv==0.
+              kdotv = 0.
             else
               kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
             endif
