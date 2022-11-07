@@ -1890,7 +1890,7 @@ module Special
             kvec_boost(1)=k1_boost
             kvec_boost(2)=k2_boost
             kvec_boost(3)=k3_boost
-            khat_boost = kvec_boost/ksqrt_boost
+            !!!khat_boost = kvec_boost/ksqrt_boost    !MR: not used, but potential troublemaker for ksqrt_boost=0.
 !
 !  find two vectors e1 and e2 to compute e_T and e_X
 !
@@ -2280,15 +2280,18 @@ module Special
                !e1dote3=0 !this is only for a test, emma      
                !e2dote3=0
                !e2dote1=0
-                do i=1,3
-                  e1_boost(i)=e1(i)+(gamma_boost-1)*(e1(1)*vx_boost+e1(2)*vy_boost+e1(3)*vz_boost)*vboost(i)/v_boostsqr
-                  e1_boost(i)=e1_boost(i)-gamma_boost*vboost(i)
-                  e2_boost(i)=e2(i)+(gamma_boost-1)*(e2(1)*vx_boost+e2(2)*vy_boost+e2(3)*vz_boost)*vboost(i)/v_boostsqr
-                  e2_boost(i)=e2_boost(i)-gamma_boost*vboost(i)
-                 ! e1dote3=e1dote3+e1_boost(i)*khat_boost(i)
-                 ! e2dote3=e2dote3+e2_boost(i)*khat_boost(i)
-                 ! e2dote1=e2dote1+e2_boost(i)*e1_boost(i)
-                enddo
+                e1_boost(:2)=e1(:2); e2_boost(:2)=e2(:2)
+                if (v_boostsqr/=0.) then
+                  do i=1,3
+                    e1_boost(i)=e1_boost(i)+(gamma_boost-1)*(e1(1)*vx_boost+e1(2)*vy_boost+e1(3)*vz_boost)*vboost(i)/v_boostsqr
+                    e1_boost(i)=e1_boost(i)-gamma_boost*vboost(i)
+                    e2_boost(i)=e2_boost(i)+(gamma_boost-1)*(e2(1)*vx_boost+e2(2)*vy_boost+e2(3)*vz_boost)*vboost(i)/v_boostsqr
+                    e2_boost(i)=e2_boost(i)-gamma_boost*vboost(i)
+                   ! e1dote3=e1dote3+e1_boost(i)*khat_boost(i)
+                   ! e2dote3=e2dote3+e2_boost(i)*khat_boost(i)
+                   ! e2dote1=e2dote1+e2_boost(i)*e1_boost(i)
+                  enddo
+                endif
               endif
               !if (t>62.and.k1==1.and.k2==1.and.k3==1) print*,'e1',e1dote3,e2dote3,e2dote1 !emma test nov4
 !
