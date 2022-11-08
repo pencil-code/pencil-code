@@ -316,6 +316,7 @@ Options:
        --no-lock           \tIgnore and don't write lock file
        --debug             \tPrint lots of debugging output
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
+       --errlink           \tLink to error log (starting and running)
 Examples:
   pc_auto-test      # run standard program, recycling .o files
   pc_auto-test -C   # run standard program, compiling from scratch
@@ -382,7 +383,8 @@ GetOptions(\%opts,
                     --nodelist=s
                     --no-summary
                     --nolock      --no-lock
-                    --fast )
+                    --fast 
+                    --errlink )
           ) or $help=1, die "Aborting.\n";
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
@@ -430,6 +432,7 @@ my $notify      = (              $opts{'notify'}          || ''   );
 my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'}
                                                              || 0 );
 my $fast        = (              $opts{'fast'}            || ''   );
+my $errlink     = (              $opts{'errlink'}         || ''   );
 
 my %interpreter_map;
 if (defined($script_tests)) {
@@ -783,16 +786,19 @@ sub my_ok {
     if ($arg1 eq $arg2) {
         print " ok      $timestr\n" unless ($quiet);
     } else {
-	my $loglink = '<a href="http://'.`hostname`.$dir;
-	if ($phase eq 'starting') {
-	  $loglink .= '/start.log';
-	} else {
-	  if ($phase eq 'running'){$loglink .= '/run.log'};
-	}
-	$loglink .= '" target="_blank">Error log</a>';
-	if ($phase eq 'compilation' || $phase eq 'results') {$loglink = ''};  #.'/compile.log'
-	#print " not ok: $timestr\n$mesg\n";
-	print " not ok: $timestr $loglink\n$mesg\n";
+        if ($errlink) {
+	  my $loglink = '<a href="http://'.`hostname`.$dir;
+	  if ($phase eq 'starting') {
+	    $loglink .= '/start.log';
+	  } else {
+	    if ($phase eq 'running'){$loglink .= '/run.log'};
+	  }
+	  $loglink .= '" target="_blank">Error log</a>';
+	  if ($phase eq 'compilation' || $phase eq 'results') {$loglink = ''};  #.'/compile.log'
+	  print " not ok: $timestr $loglink\n$mesg\n";
+        } else {
+	  print " not ok: $timestr\n$mesg\n";
+        }
         $test_status = 1;
         # report only first failure:
         $failed{$dir} = $phase unless defined($failed{$dir});
