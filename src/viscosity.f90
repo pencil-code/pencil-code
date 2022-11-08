@@ -209,9 +209,9 @@ module Viscosity
 !
 ! phi averaged diagnostics given in phiaver.in
 !
-  integer :: idiag_fviscrsphmphi ! PHIAVG_DOC: $\left<2\nu\varrho u_i
-                                 ! PHIAVG_DOC: \mathcal{S}_{ir} \right>_\varphi$
-                                 ! PHIAVG_DOC: ($r$-xomponent of viscous flux)
+  integer :: idiag_fviscrsphmphi=0 ! PHIAVG_DOC: $\left<2\nu\varrho u_i
+                                   ! PHIAVG_DOC: \mathcal{S}_{ir} \right>_\varphi$
+                                   ! PHIAVG_DOC: ($r$-xomponent of viscous flux)
 !
 ! Module Variables
 !
@@ -920,6 +920,7 @@ module Viscosity
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscymxy',idiag_fviscymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscsmmxy',idiag_fviscsmmxy)
       enddo
+!
 !  check for those quantities for which we want phi-averages
 !
       do irz=1,nnamerz
@@ -1183,7 +1184,7 @@ module Viscosity
 ! PJK: But what if you don't use one of those?
 ! JW: p%uu is needed, these others are already requested.
       if (idiag_fviscrsphmphi/=0) then
-         lpenc_diagnos2d(i_evr)=.true.
+        lpenc_diagnos2d(i_evr)=.true.
       endif
       if (lboussinesq) lpenc_requested(i_graddivu)=.false.
       if (damp_sound/=0.) lpenc_requested(i_divu)=.true.

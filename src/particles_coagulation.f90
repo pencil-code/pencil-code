@@ -65,19 +65,18 @@ module Particles_coagulation
   real :: rdifference = 1.0
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0, idiag_dt1_coag_par=0
-             
 !
   real :: deltad = 1., a0 = 1.
   real :: r1, r2, r3, r4, r5, r6, r7, r8, r_diff
-  integer :: idiag_k100_100, idiag_k100_80, idiag_k100_60, idiag_k100_50, &
-             idiag_k100_40, idiag_k100_30, idiag_k100_20, idiag_k100_10, &
-             idiag_k80_80, idiag_k80_60, idiag_k80_50, idiag_k80_40, &
-             idiag_k80_30, idiag_k80_20, idiag_k80_10, idiag_k60_60, &
-             idiag_k60_50, idiag_k60_40, idiag_k60_30, idiag_k60_20, &
-             idiag_k60_10, idiag_k50_50, idiag_k50_40, idiag_k50_30, &
-             idiag_k50_20, idiag_k50_10, idiag_k40_40, idiag_k40_30, &
-             idiag_k40_20, idiag_k40_10, idiag_k30_30, idiag_k30_20, &
-             idiag_k30_10, idiag_k20_20, idiag_k20_10, idiag_k10_10
+  integer :: idiag_k100_100=0, idiag_k100_80=0, idiag_k100_60=0, idiag_k100_50=0, &
+             idiag_k100_40=0, idiag_k100_30=0, idiag_k100_20=0, idiag_k100_10=0, &
+             idiag_k80_80=0, idiag_k80_60=0, idiag_k80_50=0, idiag_k80_40=0, &
+             idiag_k80_30=0, idiag_k80_20=0, idiag_k80_10=0, idiag_k60_60=0, &
+             idiag_k60_50=0, idiag_k60_40=0, idiag_k60_30=0, idiag_k60_20=0, &
+             idiag_k60_10=0, idiag_k50_50=0, idiag_k50_40=0, idiag_k50_30=0, &
+             idiag_k50_20=0, idiag_k50_10=0, idiag_k40_40=0, idiag_k40_30=0, &
+             idiag_k40_20=0, idiag_k40_10=0, idiag_k30_30=0, idiag_k30_20=0, &
+             idiag_k30_10=0, idiag_k20_20=0, idiag_k20_10=0, idiag_k10_10=0
   integer :: rbin = 0
 !
   namelist /particles_coag_run_pars/ &
