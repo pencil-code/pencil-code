@@ -1055,7 +1055,7 @@ outer:  do ikz=1,nz
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
-  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
+  logical, save :: lwrite_krms=.true.
   logical :: lfirstcall
 !
 !  passive scalar contributions (hardwired for now)
@@ -1590,7 +1590,7 @@ outer:  do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, im, in, ivec, stat
+  integer :: i, k, ikx, iky, ikz, ivec, stat
   real :: k2
   real, dimension(mx,my,mz,mfarray) :: f
   real, dimension(mx,my,mz,3) :: Lor
@@ -1844,7 +1844,7 @@ outer:  do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec, stat
+  integer :: i,k,ikx,iky,ikz,ivec, stat
   real :: k2
   real, dimension(mx,my,mz,mfarray) :: f
   real, dimension(mx,my,mz,3) :: Lor
@@ -2059,7 +2059,7 @@ outer:  do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  integer :: i,k,ikx,iky,ikz,ivec
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,3) :: EMF,JJJ,EMB,BBB
@@ -2252,7 +2252,7 @@ outer:  do ikz=1,nz
         h_dot_grad_vec
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  integer :: i,k,ikx,iky,ikz,ivec
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,3) :: Adv, Str, BBB
@@ -2450,11 +2450,9 @@ outer:  do ikz=1,nz
 
   integer, parameter :: nk=nxgrid/2
 
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  integer :: i,k,ikx,iky,ikz
   real :: k2
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx,3) :: aa,bb,jj,jxb
-  real, dimension(nx,3,3) :: aij,bij
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, allocatable, dimension(:) :: spectrum,spectrumhel
@@ -3350,7 +3348,7 @@ endsubroutine pdf
   integer, parameter :: nk=nxgrid/2, npdf=130
   integer :: i,ivec,ikx,iky,ikz,kr,ipdf
   integer, dimension(nk-1,npdf) :: pdf_ang,pdf_ang_sum
-  real :: k2,ang
+  real :: ang
   real, dimension(nx,ny,nz,3) :: a_re,b_re
   real, dimension(nx,ny,nz) :: ak,bk,aa,bb,ab
   real, dimension(nx,3) :: bbi
@@ -3871,7 +3869,7 @@ endsubroutine pdf
 
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkz, ivec, jvec, im, in
+  integer :: i, ikx, iky, ikz, ivec, jvec, im, in
   integer :: ikr, ikmu
   integer, dimension(nk) :: nmu
   real, allocatable, dimension(:,:) :: kmu, dmu
@@ -4321,7 +4319,7 @@ endsubroutine pdf
     use Chiral, only: iXX_chiral, iYY_chiral
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, ikx, iky, ikz, jkz, im, in, ivec
+  integer :: i, ikx, iky, ikz, im, in, ivec
   integer :: k3, k
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
@@ -4483,13 +4481,12 @@ endsubroutine pdf
     use SharedVariables, only: get_shared_variable
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, jvec, ivec_jj
-  integer :: nshear, jkx,jky
+  integer :: i, k, ikx, iky, ikz, jkz, ivec
+  integer :: jkx
   real :: k2
   real, pointer :: t_cor
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx,ny,nz) :: h_re,ht_re
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
@@ -4502,7 +4499,7 @@ endsubroutine pdf
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=*) :: sp
-  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
+  logical, save :: lwrite_krms=.true.
 !
 !  identify version
 !
@@ -5056,13 +5053,13 @@ endsubroutine pdf
     use Cdata, only: pi
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj,ikr
+  integer :: i, ikx, iky, ikz, im, in, ivec, ikr
   integer :: nv,nvmin,nsum,nsub,icor
   integer :: kxx,kyy,kzz,kint
   real :: k2,rr,k,j0,j0x,j0y,j0z,j1
   real, dimension(4) :: w
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,h_re,h_im
+  real, dimension(nx,ny,nz) :: a_re,b_re,h_re,h_im
   real, dimension(nx,ny,nz) :: gLam
   real, dimension(nx) :: bbi
   real, dimension(nx,3) :: gLam_tmp
@@ -5523,9 +5520,8 @@ endsubroutine pdf
     use Sub, only: gij, gij_etc, curl_mn, cross_mn, del2v_etc
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,p,q,lp,lq,ivec,ikx,iky,ikz,k
+  integer :: p,q,lp,lq,ivec,iky,ikz
   integer :: nlk_p, nlk_q
-  real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,3) :: uu,aa,bb,uxb,jj,curljj
   real, dimension(nx,3,3) :: aij,bij

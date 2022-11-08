@@ -60,7 +60,6 @@ module Particles_lyapunov
 !      use Mpicomm, only: mpiallreduce_sum
 !      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
-      real, dimension(nx,3:3) :: uij 
 !
 !      call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)

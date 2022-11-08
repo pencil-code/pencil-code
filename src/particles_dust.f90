@@ -348,8 +348,7 @@ module Particles
       use SharedVariables, only: put_shared_variable
 !
       use General, only: itoa
-      integer k,ind_tmp
-      character(len=intlen) :: sdust
+      integer ind_tmp
 !
       if (lroot) call svn_id( &
           "$Id: particles_dust.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
@@ -478,7 +477,7 @@ module Particles
       real, dimension(mpar_loc,mparray), intent(in) :: fp
 !
       real :: rhom
-      integer :: ierr, jspec
+      integer :: jspec
       logical, pointer :: lshearadvection_as_shift
       real, pointer :: reference_state_mass
       integer :: ik, icnt
@@ -3801,8 +3800,6 @@ module Particles
       logical :: lcentrifugal_force_gravity=.true., lcoriolis_force_gravity=.true., lindirect_terms=.true.
       real, dimension(3) :: ggp
       integer :: k
-      integer :: ierr
-      type (pencil_case) :: p
 !
       if (lramp_mass .and.(t <= t_ramp_mass)) then
 !
@@ -4010,7 +4007,7 @@ module Particles
       real :: rho1_point, tausp1_par, up2, urel
       real :: weight, weight_x, weight_y, weight_z
       real :: dxp, dyp, dzp, volume_cell
-      integer :: k, l, ix0, iy0, iz0, ierr, irad
+      integer :: k, l, ix0, iy0, iz0, irad
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       integer, dimension(3) :: inear
       logical :: lsink, lvapour

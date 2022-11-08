@@ -406,7 +406,6 @@ module PointMasses
       real, dimension(nqpar) :: kep_vel,sma
       real, dimension(nqpar,3) :: velocity
       real, dimension(nqpar,3) :: positions
-      real :: tmp,parc
       real :: absolute_offset_star,baricenter_secondaries
       real :: velocity_baricenter_secondaries,mass_secondaries
       integer :: k,ks
@@ -798,8 +797,7 @@ module PointMasses
       real, dimension (mx,3) :: ggt
       real, dimension (3) :: xxq,rpsecondary,accg
       real, dimension (nx) :: pot_energy,torque
-      real :: accg_local
-      integer :: ks,j,ju
+      integer :: ks
       logical :: lintegrate, lparticle_out
 !
       intent (in) :: f, p
@@ -1160,7 +1158,7 @@ module PointMasses
       real :: dt1_nbody, r_ij, v_ij, a_ij
       integer :: ks
 !
-      real, dimension (3) :: evr_cart,evr,positions
+      real, dimension (3) :: evr_cart,positions
 !
       logical, intent(in) :: lcallpointmass
 !
@@ -1316,7 +1314,7 @@ module PointMasses
 !
       integer :: ks
       real, dimension (nx,ny,nz,3) :: acceleration
-      real, dimension (3) :: accg,torque
+      real, dimension (3) :: accg
       real :: a_ij,r_ij
 !
       call get_acceleration(acceleration)
@@ -1927,7 +1925,7 @@ module PointMasses
       real, dimension(nx,3) :: dist
       real, dimension(nx) :: rrp,rp_mn,rpcyl_mn,gasgravity,density,cellmass
       real, dimension(nx) :: dv,tmp
-      real :: vphi,phidot2,OO,rr,rp0,fac
+      real :: rp0,fac
       integer :: j,k
 !
 !  Sanity check
@@ -2040,8 +2038,6 @@ module PointMasses
 
       real :: rdx1,rdy1,rdz1
       real :: rdx2,rdy2,rdz2
-      integer :: ix0_global,iy0_global,iz0_global
-      integer :: ix1_global,iy1_global,iz1_global
 
       integer :: ipx0,ipy0,ipz0
       integer :: ipx1,ipy1,ipz1
@@ -2673,7 +2669,6 @@ module PointMasses
       use Particles_main, only: fetch_nparloc
 !    
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: np_aux
 !
       if (lroot) then
         if (itsub==1) then

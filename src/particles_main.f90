@@ -1213,7 +1213,6 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-      integer :: l
 !
 !  Loop over slices
 !

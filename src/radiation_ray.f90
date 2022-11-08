@@ -792,7 +792,7 @@ module Radiation
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real,dimension(mz) :: dlength
       real :: Srad1st,Srad2nd,dSdtau_m,dSdtau_p
-      real :: Qrad1st,Qrad2nd,dQdtau_m,dQdtau_p
+      real :: Qrad1st,dQdtau_m,dQdtau_p
       real :: dtau_m,dtau_p,emdtau1,emdtau2,emdtau
       real :: u_dot_n, u_dot_n_p, u_dot_n_m, u_dot_n_1st, dudtau_p, dudtau_m
 !
