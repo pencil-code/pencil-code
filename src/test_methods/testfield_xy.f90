@@ -209,7 +209,7 @@ module Testfield
       use Sub, only: curl, cross_mn, finalize_aver
       use Hydro, only:  calc_pencils_hydro
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx,3) :: btest,uxbtest
       integer :: jtest,j,ml
