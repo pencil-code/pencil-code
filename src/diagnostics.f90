@@ -1132,13 +1132,14 @@ module Diagnostics
 !  24-Nov-2018/PABourdin: redesigned
 !
       use HDF5_IO, only: output_average
+      use IO, only: output_average_2D
       use Mpicomm, only: mpiwtime
 !
       real :: taver
 !
       if (lwrite_yaverages.and.ip<=12.and.lroot) taver=mpiwtime()
       if (lwrite_yaverages) &
-          call output_average (directory_dist, 'y', nnamexz, cnamexz, fnamexz, t2davgfirst, .true., lfirst_proc_y)
+          call output_average_2D (directory_dist, 'y', nnamexz, cnamexz, fnamexz, t2davgfirst, lfirst_proc_y)
       if (lwrite_yaverages.and.ip<=12.and.lroot) print*,&
           'write_2daverages: write y averages in ',&
                        mpiwtime()-taver,' seconds'
@@ -1147,13 +1148,13 @@ module Diagnostics
       if (lwrite_zaverages .and. (.not. lyang .or. lcaproot)) then
         if (lcaproot) then
           ! cap root (Yang)
-          call output_average (directory_dist, 'z', nnamexy, cnamexy, fnamexy_cap, t2davgfirst, .true., lfirst_proc_z)
+          call output_average_2D (directory_dist, 'z', nnamexy, cnamexy, fnamexy_cap, t2davgfirst, lfirst_proc_z)
           if (ip<=12.and.lroot) print*,&
               'write_2daverages: write z averages in ',&
                            mpiwtime()-taver,' seconds'
         else
           ! z-beam root (Yin)
-          call output_average (directory_dist, 'z', nnamexy, cnamexy, fnamexy, t2davgfirst, .true., lfirst_proc_z)
+          call output_average_2D (directory_dist, 'z', nnamexy, cnamexy, fnamexy, t2davgfirst, lfirst_proc_z)
 
           if (ip<=12.and.lroot) print*,&
               'write_2daverages: write z averages in ', mpiwtime()-taver,' seconds'

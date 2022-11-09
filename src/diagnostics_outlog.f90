@@ -1050,17 +1050,18 @@ module Diagnostics
 !  24-Nov-2018/PABourdin: redesigned
 !
       use HDF5_IO, only: output_average
+      use IO, only: output_average_2D
 !
       if (lwrite_yaverages) &
-          call output_average (directory_dist, 'y', nnamexz, fnamexz, t2davgfirst, .true., lfirst_proc_y)
+          call output_average_2D (directory_dist, 'y', nnamexz, fnamexz, t2davgfirst, lfirst_proc_y)
 !
       if (lwrite_zaverages .and. (.not. lyang .or. lcaproot)) then
         if (lcaproot) then
           ! cap root (Yang)
-          call output_average (directory_dist, 'z', nnamexy, fnamexy_cap, t2davgfirst, .true., lfirst_proc_z)
+          call output_average_2D (directory_dist, 'z', nnamexy, fnamexy_cap, t2davgfirst, lfirst_proc_z)
         else
           ! z-beam root (Yin)
-          call output_average (directory_dist, 'z', nnamexy, fnamexy, t2davgfirst, .true., lfirst_proc_z)
+          call output_average_2D (directory_dist, 'z', nnamexy, fnamexy, t2davgfirst, lfirst_proc_z)
         endif
       endif
 !

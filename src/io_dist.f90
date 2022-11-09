@@ -186,6 +186,43 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
+    subroutine output_average_2D(path, label, nc, name, data, time, lwrite, header)
+!
+!   Output average to a file.
+!
+!   16-Nov-2018/PABourdin: coded
+!   08-nov-2022/ccyang: remove plain text output (never used)
+!
+      use General, only: keep_compiler_quiet
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:), intent(in) :: data
+      real, intent(in) :: time
+      logical, intent(in) :: lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename
+      integer :: ia
+!
+      call keep_compiler_quiet(name)
+!
+      if (.not. lwrite .or. (nc <= 0)) return
+!
+      filename = trim(path) // '/' // trim(label) // 'averages.dat'
+      open(lun_output, file=filename, form='unformatted', position='append')
+      if (present (header)) write(lun_output) header
+      write(lun_output) time
+      if (label(1:1) == 'z') then
+        write(lun_output) ( data(ia,:,:), ia=1, nc )
+      else
+        write(lun_output) data(:,:,1:nc)
+      endif
+      close(lun_output)
+!
+    endsubroutine output_average_2D
+!***********************************************************************
     subroutine output_slice_position()
 !
 !  Record slice positions.

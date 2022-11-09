@@ -455,7 +455,7 @@ module HDF5_IO
 !
       call fatal_error ('output_hdf5_double_0D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
-      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(real(data))
 !
     endsubroutine output_hdf5_double_0D
 !***********************************************************************
@@ -467,7 +467,7 @@ module HDF5_IO
 !
       call fatal_error ('output_hdf5_double_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
-      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(real(data))
       call keep_compiler_quiet(nv)
 !
     endsubroutine output_hdf5_double_1D
@@ -992,52 +992,6 @@ module HDF5_IO
       endif
 !
     endsubroutine output_average_1D_chunked
-!***********************************************************************
-    subroutine output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
-!
-!   Output average to a file.
-!
-!   16-Nov-2018/PABourdin: coded
-!
-      character (len=*), intent(in) :: path, label
-      integer, intent(in) :: nc
-      character (len=fmtlen), dimension(nc), intent(in) :: name
-      real, dimension(:,:,:), intent(in) :: data
-      real, intent(in) :: time
-      logical, intent(in) :: lbinary, lwrite
-      real, dimension(:), optional, intent(in) :: header
-!
-      character (len=fnlen) :: filename
-      integer :: ia
-!
-      call keep_compiler_quiet(name)
-!
-      if (.not. lwrite .or. (nc <= 0)) return
-!
-      filename = trim(path) // '/' // trim(label) // 'averages.dat'
-      if (lbinary) then
-        open(lun_output, file=filename, form='unformatted', position='append')
-        if (present (header)) write(lun_output) header
-        write(lun_output) time
-        if (label(1:1) == 'z') then
-          write(lun_output) ( data(ia,:,:), ia=1, nc )
-        else
-          write(lun_output) data(:,:,1:nc)
-        endif
-        close(lun_output)
-      else
-        open(lun_output, file=filename, position='append')
-        if (present (header)) write(lun_output,'(1p,8'//trim(fmt_avgs)//')') header
-        write(lun_output,'(1pe12.5)') time
-        if (label(1:1) == 'z') then
-          write(lun_output,'(1p,8'//trim(fmt_avgs)//')') ( data(ia,:,:), ia=1, nc )
-        else
-          write(lun_output,'(1p,8'//trim(fmt_avgs)//')') data(:,:,1:nc)
-        endif
-        close(lun_output)
-      endif
-!
-    endsubroutine output_average_2D
 !***********************************************************************
     subroutine output_average_phi(path, number, nr, nc, name, data, time, r, dr)
 !       
