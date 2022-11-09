@@ -26,22 +26,25 @@ thrown away."
 pcDifferences::usage="pcDifferences[l] returns
 {(l2-l1)/2, (l2-l1)/2+(l4-l3)/2, ..., (l[n]-l[n-1])/2}."
 
-pcFit::usage="pcFit[data,sp,fact:{1,1,1},\"lEcho\"->False] fits the data with 
-some model specified by sp, prints out the result, and returns a the fitted curve.
-One can also use Reap[pcFit[...]] to get the fitting parameters.
+pcFit::usage="pcFit[data,sp,fact:{1,1,1}] fits the data with
+some model specified by sp, prints out the result, and returns the fitted model.
 Inputs:
   data: A List of the form {{x1,y1},{x2,y2},...,{xn,yn}.
   sp: Either a String that matches the implemented models, or simply an expression
       using \"x\" as the variable and \"a\"[i] as parameters.
       Example: \"a\"[1]+Log[\"a\"[2],\"x\"]^(\"a\"[3]).
-      For the moment allows for up to 10 paramters.
+      For the moment allows for up to 3 paramters.
   fact: Optional. A List of length 3. The fitted curve is rescaled: The x coordinates of the
         first and last points are rescaled by a factor of fact[[1]] and fact[[2]],
         respectively, and the whole curve is rescaled by fact[[3]].
-Options:
-  \"lEcho\": If True, then returns the original data rather than the fitted curve.
 Outputs:
-  Prints out the fitted parameters, and returns a List."
+  Prints out the fitted model (PowerLaw and Exp models also return a linear curve),
+  and returns an Association object, with the following keys:
+    \"FittedModel\" -> the resulting FittedModel object
+    \"FittedCurve\" -> the fitted and rescaled data
+    \"Parameters\" -> the fitted parameters
+    \"Errors\"  -> errors of the fitted parameters
+    \"PwE\" -> the fitted parameters with errors around them."
 
 pcNumberToTex::usage="pcNumberToTex[x,n:1] first converts a number x into scientific form
 with n-digit precision, and then converts it into a Tex-form string.
@@ -88,30 +91,40 @@ pcDifferences[l_]:=Module[{dl},
   {dl[[1]]/2,Mean/@(Partition[dl,2,1]),dl[[-1]]/2}//Flatten
 ]
 
-Options[pcFit]={"lEcho"->False};
-pcFit[data_,sp_,fact_List:{1,1,1},OptionsPattern[]]:=Module[{model,llog,a,x,sol,minmax},
-  llog=False;
+pcFit[data_,sp_,fact_List:{1,1,1}]:=Module[
+  {llinear,funcx,funcy,model,a,x,tmp,fit,fittedCurve,p,e},
+  llinear=False;
+  funcx=funcy={Identity,Identity};
+  
   model=Switch[sp,
-    "PowerLaw",llog=True;a[1]+a[2]*x,
+    "PowerLaw",llinear=True;funcx=funcy={Log,Exp},
     "PowerLaw+C",a[1]+a[2]*x^a[3],
-    "Linear",a[1]+a[2]*x,
-    "Exp",a[1]*Exp[a[2]*x],
+    "Linear",llinear=True,
+    "Exp",llinear=True;funcy={Log,Exp},
     "Exp+C",a[1]+a[2]*Exp[a[3]*x],
     _,sp/.{"x"->x,"a"->a}
   ];
-  Sow[model/.{a[i_]:>("a["<>ToString@i<>"]"),x->"x"}];
-  If[llog,
-    sol=FindFit[Log@data,model,a/@Range[10],x];
-    model=Exp[model/.x->Log[x]/.sol],
-    (*else*)
-    sol=FindFit[Log@data,model,a/@Range[10],x];
-    model=model/.sol
+  tmp=Transpose[{funcx[[1]][data[[;;,1]]],funcy[[1]][data[[;;,2]]]}];
+  
+  fit=If[llinear,
+    LinearModelFit[tmp,x,x],
+    NonlinearModelFit[tmp,model,a/@Range[3],x]
   ];
-  Sow[sol/.a[i_]:>("a["<>ToString@i<>"]")];
-  Print["Fit result: ",model/.x->"x"];
-  If[OptionValue["lEcho"],data//Return];
-  minmax=MinMax[data[[;;,1]]]*fact[[1;;2]];
-  Table[{x,fact[[3]]*model},{x,Subdivide[Sequence@@minmax,32]}]
+  fittedCurve=Module[{xx,yy},
+    xx=fact[[1;;2]]*MinMax[funcx[[2]][tmp[[;;,1]]]];
+    xx=Subdivide[Sequence@@xx,32];
+    yy=fact[[3]]*funcy[[2]][fit["Function"]/@funcx[[1]][xx]];
+    Transpose[{xx,yy}]
+  ];
+  
+  Print["Fit result: ",fit["BestFit"]/.x->"x"];
+  Association[
+    "FittedModel"->fit,
+    "FittedCurve"->fittedCurve,
+    "Parameters"->(p=If[llinear,fit["BestFitParameters"],(a/@Range[3])/.fit["BestFitParameters"]]),
+    "Error"->(e=fit["ParameterErrors"]),
+    "PwE"->Around@@@Transpose[{p,e}]
+  ]
 ]
 
 pkgDir=$InputFileName//DirectoryName;
