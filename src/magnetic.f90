@@ -303,6 +303,7 @@ module Magnetic
   real :: gamma_epspb=2.4, exp_epspb, ncr_quench=0.
   real :: ampl_eta_uz=0.0
   real :: no_ohmic_heat_z0=1.0, no_ohmic_heat_zwidth=0.0
+  real :: imp_alpha0=0.0, imp_halpha=0.0
   real, target :: betamin_jxb = 0.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
@@ -344,6 +345,7 @@ module Magnetic
   logical :: lrhs_max=.false.
   logical :: ltime_integrals_always=.true.
   logical :: lvart_in_shear_frame=.false.
+  logical :: limp_alpha=.false.
   real :: dtcor=0.
   real :: h_sld_magn=2.0,nlf_sld_magn=1.0,fac_sld_magn=1.0
   real :: ampl_efield=0.
@@ -384,7 +386,7 @@ module Magnetic
       eta_zwidth2, eta_xwidth0, eta_xwidth1, eta_rwidth0, eta_rwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_r0, eta_r1, &
       eta1_aniso_ratio, eta1_aniso, eta1_aniso_r, eta1_aniso_d, alp_aniso, quench_aniso, &
-      eta_aniso_BB, &
+      limp_alpha, imp_halpha, imp_alpha0, eta_aniso_BB, &
       eta_spitzer, borderaa, ljj_as_comaux, lsmooth_jj, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
@@ -5217,6 +5219,16 @@ module Magnetic
               dAdt = dAdt + p%uxb+fres-gua
             else
               call fatal_error('daa_dt','must put lua_as_aux=T')
+            endif
+!
+!  limp_alpha=T, add artificial z dependent alpha dynamo.
+!
+            if(limp_alpha) then
+              if (abs(z(n))<=imp_halpha/2) then
+                dAdt = dAdt+ p%uxb+fres+imp_alpha0*sin(pi*z(n)/imp_halpha)*p%bb
+              else
+                dAdt = dAdt+ p%uxb+fres+sign(imp_alpha0,z(n))*exp(-((2*z(n)-sign(imp_halpha,z(n)))/imp_halpha)**2)*p%bb
+              endif
             endif
 !
 !  ladvective_gauge=F, so just the normal uxb term plus resistive term.
