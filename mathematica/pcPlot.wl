@@ -105,8 +105,8 @@ pcPlotStyle[]:=Module[{setOps},
   (*General options for all plots*)
   setOps[{
       PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,
-      FrameStyle->pcLabelStyle,ImageSize->{300,300/GoldenRatio},
-      ImagePadding->{{60,10},{60,10}}
+      FrameStyle->pcLabelStyle,ImageSize->{360,360/GoldenRatio},
+      ImagePadding->{{60,10},{40,10}}
     },{
       Plot,LogPlot,LogLogPlot,LogLinearPlot,DensityPlot,
       ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot,

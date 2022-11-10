@@ -95,6 +95,7 @@ pcFit[data_,sp_,fact_List:{1,1,1}]:=Module[
   {llinear,funcx,funcy,model,a,x,tmp,fit,fittedCurve,p,e},
   llinear=False;
   funcx=funcy={Identity,Identity};
+  tmp=data/.Around[xx_,yy_]:>xx;
   
   model=Switch[sp,
     "PowerLaw",llinear=True;funcx=funcy={Log,Exp},
@@ -104,7 +105,7 @@ pcFit[data_,sp_,fact_List:{1,1,1}]:=Module[
     "Exp+C",a[1]+a[2]*Exp[a[3]*x],
     _,sp/.{"x"->x,"a"->a}
   ];
-  tmp=Transpose[{funcx[[1]][data[[;;,1]]],funcy[[1]][data[[;;,2]]]}];
+  tmp=Transpose[{funcx[[1]][tmp[[;;,1]]],funcy[[1]][tmp[[;;,2]]]}];
   
   fit=If[llinear,
     LinearModelFit[tmp,x,x],
