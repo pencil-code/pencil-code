@@ -46,6 +46,7 @@ module InitialCondition
   real :: rho_m_0 = 1.0, T_0 = 1.0
   real :: z_0 = 1.0  ! Note that R/mu = 0.4 in some cases. Consider this with z_0 = R/(mu g) T_0.
   character (len=labellen) :: profile = 'isothermal'
+  character (len=labellen) :: profile_cc = 'constant'
   real :: lam = 20
   integer :: passive_scalar = 0, n_smooth = 2
   character (len=labellen) :: b_field = 'abc'
@@ -53,7 +54,7 @@ module InitialCondition
   real :: k_aa = 1., ampl = 1., asym_factor = 1., sigma_b = 1.
   
   namelist /initial_condition_pars/ &
-      r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, T_0, z_0, lam, profile, passive_scalar, b_field, tau, k_aa, &
+      r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, T_0, z_0, lam, profile, profile_cc, passive_scalar, b_field, tau, k_aa, &
       ampl, asym_factor, sigma_b, n_smooth
 !
   contains
@@ -307,18 +308,29 @@ module InitialCondition
 !
     ! initialize the temperature of the medium and the bubble
     if (passive_scalar == 1) then
-        do n = n1, n2, 1
-            do m = m1, m2, 1
-                do l = l1, l2, 1
-                    ! check if this point lies in the bubble
-                    if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
-                        f(l,m,n,ilncc) = 1.
-                    else
-                        f(l,m,n,ilncc) = 0.
-                    endif
+        if (profile_cc == 'contant') then
+            do n = n1, n2, 1
+                do m = m1, m2, 1
+                    do l = l1, l2, 1
+                        ! check if this point lies in the bubble
+                        if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
+                            f(l,m,n,ilncc) = 1.
+                        else
+                            f(l,m,n,ilncc) = 0.
+                        endif
+                    enddo
                 enddo
             enddo
-        enddo
+        endif
+        if (profile_cc == 'gaussian') then
+            do n = n1, n2, 1
+                do m = m1, m2, 1
+                    do l = l1, l2, 1
+                        f(l,m,n,ilncc) = -((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2)/r_b**2
+                    enddo
+                enddo
+            enddo
+        endif
     endif
 !      
     endsubroutine initial_condition_lncc
