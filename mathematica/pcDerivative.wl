@@ -8,7 +8,7 @@
 *)
 
 
-BeginPackage["pcDerivative`"]
+BeginPackage["pcDerivative`","pcReadBasic`"]
 
 
 (* ::Chapter:: *)
@@ -192,6 +192,20 @@ gradDiv[{fx_,fy_,fz_},mx_,my_,mz_,ghx_,ghy_,ghz_,dx_,dy_,dz_]:=MapThread[Plus[
 curl2[{fx_,fy_,fz_},mx_,my_,mz_,ghx_,ghy_,ghz_,dx_,dy_,dz_]:=Module[{lapf},
   lapf=laplacian[#,mx,my,mz,ghx,ghy,ghz,dx,dy,dz]&/@{fx,fy,fz};
   gradDiv[{fx,fy,fz},mx,my,mz,ghx,ghy,ghz,dx,dy,dz]-lapf
+]
+
+
+(* ::Section:: *)
+(*Derivatives on VAR files*)
+
+
+div[sim_,var_,vec_List]:=Module[{mx,my,mz,gh1,gh2,gh3,dxyz,tmp},
+  {mx,my,mz}=readDim[sim]/@{"mx","my","mz"};
+  {gh1,gh2,gh3}=readDim[sim]/@{"gh1","gh2","gh3"};
+  dxyz=var/@{"dx","dy","dz"};
+  tmp=div[var/@vec,mx,my,mz,gh1,gh2,gh3,Sequence@@dxyz];
+  tmp=tmp//ArrayReshape[#,{mx,my,mz}]&;
+  tmp[[gh1+1;;mx-gh1,gh2+1;;my-gh2,gh3+1;;mz-gh3]]//Flatten
 ]
 
 
