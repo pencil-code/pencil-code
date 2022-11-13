@@ -64,8 +64,8 @@ module Messages
 
       inquire(FILE="COLOR", EXIST=ltermcap_color)
 !
-      if (mailaddress=='') &
-        call get_env_var('PENCIL_USER_MAILADDR',mailaddress)
+      if (mailaddress=='') call get_env_var('MAILADDR',mailaddress)
+
       if (mailaddress/='') then
         if (index(trim(mailaddress),'@')==0 .or. index(trim(mailaddress),'.')==0) then
           call warning('initialize_messages', 'invalid mail address')
@@ -73,8 +73,10 @@ module Messages
         endif
       endif
 
-      call get_env_var('PENCIL_USER_MAILCMD',mailcmd)
+      if (mailcmd=='') call get_env_var('MAILCMD',mailcmd)
       if (mailcmd=='') mailcmd = 'mail'
+      if (submithost=='') call get_env_var("SLURM_SUBMIT_HOST",submithost)
+      if (submithost=='') call get_env_var("HOSTNAME",submithost)
 
     endsubroutine initialize_messages
 !***********************************************************************

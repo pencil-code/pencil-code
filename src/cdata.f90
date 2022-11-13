@@ -654,8 +654,12 @@ module Cdata
 !
 !  A buffer in which to construct an error message.
 !
-  character (len=linelen) :: errormsg, mailcmd=''
-  character (len=linelen) :: mailaddress=''
+  character (len=linelen) :: errormsg
+!
+!  For mailing from code.
+!
+  character (len=linelen) :: mailcmd='',mailaddress='',submithost=''
+!
   logical :: lstop_on_ioerror=.true.
 !
 !  Auxiliary variables.

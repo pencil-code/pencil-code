@@ -165,7 +165,7 @@ module Param_IO
       lnowrite, noghost_for_isave, nghost_read_fewer, &
       test_nonblocking, lwrite_tracers, lwrite_fsum, lwrite_fixed_points, lwrite_ts_hdf5, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_notestflow, lread_oldsnap_nopscalar, &
-      lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, lrepair_snap, &
+      lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, lrepair_snap, linterpol_on_repair, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
       lread_oldsnap_noisothmhd, lread_oldsnap_onlyA, &
       lread_oldsnap_rho2lnrho, lread_oldsnap_nosink, lwrite_dim_again, lwrite_last_powersnap, &
@@ -202,7 +202,7 @@ module Param_IO
       lread_less, lread_nogrid, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
       ldynamical_diffusion, ldyndiff_useumax, re_mesh, lghostfold_usebspline, &
-      lreset_seed, loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
+      lreset_seed, loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, mailcmd, submithost,&
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, ivar_omit, &
