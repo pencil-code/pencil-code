@@ -342,7 +342,7 @@ program run
 !
   call rprint_list(LRESET=.false.)
   if (lparticles) call particles_rprint_list(.false.)
-  call report_undefined_diagnostics
+  if (lreport_undefined_diagnostics) call report_undefined_diagnostics
 !
 !  Read particle snapshot.
 !
@@ -660,6 +660,7 @@ program run
 !  MR: the following should only be done in the first substep, shouldn't it?
 !  AB: yes, so this is the right place, right?
 !  MR: I mean, it should be reversed to lpencil = lpenc_requested for 2nd and further substeps.
+!  AB: the line above says lpencil = lpenc_requested, and now you want to revert to it. How?
     if (l1davg.or.lout) lpencil=lpencil .or. lpenc_diagnos
     if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
     if (lvideo) lpencil=lpencil .or. lpenc_video

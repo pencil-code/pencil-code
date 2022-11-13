@@ -325,7 +325,7 @@ program start
   call rprint_list(.false.)
   if (lparticles) call particles_rprint_list(.false.)
 !
-  call report_undefined_diagnostics
+  if (lreport_undefined_diagnostics) call report_undefined_diagnostics
 !
 !  Set up limits of averaging if needed.
 !

@@ -737,6 +737,11 @@ module Cdata
 !
   logical :: pretend_lnTT=.false.
 !
+!  Use lreport_undefined_diagnostics=F to suppress reporting of
+!  undefined diagnostics. It puts hashes, but sometimes incorrectly so.
+!
+  logical :: lreport_undefined_diagnostics=.true.
+!
 !  Scrap yard. Please categorise these variables if you know what they do.
 !  Even better: move them to their relevant modules.
 !

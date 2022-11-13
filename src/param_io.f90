@@ -93,7 +93,7 @@ module Param_IO
       lread_oldsnap_onlyA, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, lenforce_maux_check, &
-      pretend_lnTT, lprocz_slowest, lzorder, &
+      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, lzorder, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
       lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &
@@ -183,8 +183,8 @@ module Param_IO
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
       fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, &
       Udrift_bc, ttransient, tavg, idx_tavg, lserial_io, nr_directions, &
-      lsfu, lsfb, lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, &
-      onedall, pretend_lnTT, old_cdtv, lmaxadvec_sum, save_lastsnap, &
+      lsfu, lsfb, lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, onedall, &
+      lreport_undefined_diagnostics, pretend_lnTT, old_cdtv, lmaxadvec_sum, save_lastsnap, &
       lwrite_aux, lwrite_dvar, force_lower_bound, force_upper_bound, &
       lenforce_maux_check, nv1_capitalvar, mskipvar, lread_oldsnap_mskipvar, &
       oned, twod, lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
