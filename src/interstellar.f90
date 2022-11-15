@@ -752,7 +752,7 @@ module Interstellar
       if (lroot .and. lstart) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         write(1,'("#",5A)')  &
-            '---it-----------t----------itype-iproc---l-----m-----n-------x-',&
+            '---it-----------t------------itype-iproc---l-----m-----n-------x-',&
             '-----------y------------z-----------rho---------rhom---------',&
             '-TT-----------EE----------Ekin----------Ecr--------t_sedov---',&
             '---radius------site_Nsol----added_Nsol-------maxTT---', &
@@ -3756,7 +3756,7 @@ module Interstellar
         print "(1x,'explode_SN:  Ambient Nsol = ',   e10.3)",site_mass/solar_mass
         print "(1x,'explode_SN:    Sedov time = ',   e10.3)", SNR%feat%t_sedov
         print "(1x,'explode_SN:   Shell speed = ',   e10.3)",uu_sedov
-        write(1,'(i10,E15.7,5i6,16E13.5)') &
+        write(1,'(i10,E16.8,5i6,16E13.5)') &
             it, t, SNR%indx%SN_type, SNR%indx%iproc, SNR%indx%l, SNR%indx%m, &
             SNR%indx%n, SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, &
             SNR%feat%rhom, SNR%site%TT, SNR%feat%EE+SNR%feat%CR, &
