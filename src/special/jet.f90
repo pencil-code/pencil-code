@@ -65,11 +65,11 @@ module Special
 !!  character, len(50) :: initcustom
 !
 ! input parameters
-  namelist /jet_init_pars/ &
+  namelist /special_init_pars/ &
       initspecial,turb_inlet_dir,u_t,velocity_ratio,radius,momentum_thickness,&
       jet_center
   ! run parameters
-  namelist /jet_run_pars/  &
+  namelist /special_run_pars/  &
        turb_inlet_dir
 !
   contains
@@ -298,7 +298,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=jet_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -306,7 +306,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=jet_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -316,7 +316,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=jet_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -324,7 +324,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=jet_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
