@@ -40,7 +40,7 @@ module Special
 !!  character, len(50) :: initcustom
 !
 ! input parameters
-  namelist /internal_flow_init_pars/ &
+  namelist /special_init_pars/ &
        initspecial,central_vel,ampluu_spec,Re_tau
 !
   integer :: idiag_turbint=0
@@ -257,7 +257,7 @@ module Special
               tmp=0
               tmp(m1:m2)=mean_u(1:ny,1)
               call der_pencil(2,tmp,du_mean_dy)
-              if (lroot) print*,'rhom is hardcoded in internal_flow.f90: dspecial_dt'
+              !if (lroot) print*,'rhom is hardcoded in internal_flow.f90: dspecial_dt'
               tau_tmp=du_mean_dy(m1+3)*nu*1.2
 !              tau_tmp=-(mean_u(2,1)-mean_u(1,1))/(y(l1+1)-y(l1+0))
             else
@@ -278,7 +278,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=internal_flow_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -286,7 +286,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=internal_flow_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
