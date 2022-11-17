@@ -8,7 +8,7 @@
 *)
 
 
-BeginPackage["pcUtils`"]
+BeginPackage["pcUtils`","pcRead1D`"]
 
 
 (* ::Chapter:: *)
@@ -70,6 +70,24 @@ Output:
 % tb21 & tb22 \\
 \\hline
 \\end{tabular}"
+
+pcCombine::usage="pcCombine[sim,simCont,readF,args] combines data produced by two runs,
+sim and simCont, where simCont is supposed to be a run restarted from some intermediate
+time of sim. Data from sim after this restarting time will be removed.
+Inputs:
+  sim, simCont: String. Directories of the two runs.
+  readF: The function needed to read the data file(s).
+  args: Argument(s) needed by readF.
+Outputs:
+  Same format as that of readF.
+Example:
+  pcCombine[sim,simCont,read1D2Scale,\"power_kin.dat\",5] to combine the spectrum data."
+
+pcMergePower::usage="pcMergePower[sim,simCont] merges the data/power*.dat files of sim
+and simCont, where simCont is supposed to be a run restarted from some intermediate
+time of sim. Data from sim after this restarting time will be removed. The old power*.dat
+files will be renamed to power*.dat.bk. If a .bk file exists, it will not be rewritten and
+the corresponding data file will be skipped and not merged."
 
 pcPkgDir::usage="pcPkgDir[] opens the directory of this package."
 
@@ -178,6 +196,55 @@ pcWriteTexTable[file_,head_,content_,OptionsPattern[]]:=Module[{a},
 ]
 
 
+(* ::Section:: *)
+(*Combine data*)
+
+
+pcCombine[sim_String,simCont_String:"None",readF_,args__]:=
+Module[{sim2,data1,data2,t0,pos},
+  pcCombine::noNewDir="The second directory is not given, and newDirCont.in is not found.";
+  
+  sim2=simCont;
+  If[sim2=="None",
+    If[FileExistsQ[sim<>"/newDirCont.in"],
+      sim2=Import[sim<>"/newDirCont.in"],
+      Message[pcCombine:noNewDir];Return[$Failed]
+    ]
+  ];
+  
+  data1=readF[sim,args];
+  data2=readF[sim2,args];
+  
+  (* remove the t>=t0 part in data1 *)
+  t0=data2[[1,1]];
+  pos=Position[data1[[1]],tt_/;tt<t0];
+  data1=Extract[#,pos]&/@data1;
+  
+  Join@@@Transpose[{data1,data2}]
+]
+
+pcMergePower[sim_String,simCont_String]:=
+Module[{files,old,bk,combined},
+  pcMergePower::oldExists="A back-up file .old exists for `1`. Skipping.";
+  
+  files=FileNameTake/@FileNames["power*",sim<>"/data/"];
+  
+  Do[
+    old=FileNameJoin[{sim,"data",ff}];
+    bk=FileNameJoin[{sim,"data",ff<>".old"}];
+    
+    If[FileExistsQ[bk],Message[pcMergePower::oldExists,ff];Continue[]];
+    combined=pcCombine[sim,simCont,read1D,ff];
+    RenameFile[old,bk];
+    Export[old,Riffle@@combined],
+    
+    {ff,files}
+  ];
+  
+  Print["Finished combining: ",files]
+]
+
+
 (* ::Chapter:: *)
 (*End*)
 
@@ -188,7 +255,8 @@ End[]
 Protect[
   pcAround,pcDivide,pcDifferences,pcFit,
   pkgDir,
-  pcNumberToTex,pcWriteTexTable
+  pcNumberToTex,pcWriteTexTable,
+  pcCombine, pcMergePower
 ]
 
 

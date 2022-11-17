@@ -15,6 +15,7 @@ BeginPackage["pcPlot`","pcReadBasic`","pcRead1D`","pcRead2D`"]
 (*Usage messages*)
 
 
+pcColors::usage="Some self-defined colors."
 pcLabelStyle::usage="Font and size.";
 pcPlotStyle::usage="Set some plot styles.";
 pcPopup::usage="Using DisplayFunction->pcPopup will make a plot in a pop-up window."
@@ -93,6 +94,16 @@ Begin["`Private`"]
 
 (* ::Chapter:: *)
 (*Functions*)
+
+
+(* ::Section:: *)
+(*Self-defined colors*)
+
+
+pcColors=Association[
+  "Red"->RGBColor[{166,42,23}/255],
+  "Blue"->RGBColor[{28,77,124}/255]
+];
 
 
 (* ::Section:: *)
@@ -307,6 +318,7 @@ End[]
 
 
 Protect[
+  pcColors,
   pcLabelStyle,pcPlotStyle,pcPopup,pcTicks,
   pcLegend,
   spaceTimeDiag,
