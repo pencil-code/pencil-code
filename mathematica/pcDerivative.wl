@@ -42,11 +42,15 @@ Output:
   {df/dx,df/dy,df/dz}, each as an mx*my*mz length List"
 
 div::usage="div[{fx,fy,fz},mx,my,mz,ghx,ghy,ghz,dx,dy,dz] returns the divergence of f.
+Alternatively, div[sim,var,vec] directly takes divergence on a var file.
 Input:
-  fx,fy,fz: three components of f, each as a 1D List of length mx*my*mz.
-             Must be sorted by coordiantes
-  ghx,ghy,ghz: numbers of ghost cells
-  dx,dy,dz:  grid spacings
+  fx,fy,fz: Three components of f, each as a 1D List of length mx*my*mz.
+             Must be sorted by coordiantes.
+  ghx,ghy,ghz: Numbers of ghost cells.
+  dx,dy,dz: Grid spacings.
+  sim: Directory of the run.
+  var: The return of readVARN[...]. Must include ghost zones.
+  vec: The three components of the vector, e.g., {\"uu1\",\"uu2\",\"uu3\"}.
 Output:
   div(f), as an mx*my*mz length List"
 
@@ -84,6 +88,11 @@ Input:
   dx,dy,dz:  grid spacings
 Output:
   grad(div f), as three mx*my*mz length Lists"
+
+trim::usage="trim[sim,f] trims the ghost zones of data f.
+Input:
+  sim: Directory of the run.
+  f: A List of length mx*my*mz."
 
 
 Begin["`Private`"]
@@ -199,13 +208,22 @@ curl2[{fx_,fy_,fz_},mx_,my_,mz_,ghx_,ghy_,ghz_,dx_,dy_,dz_]:=Module[{lapf},
 (*Derivatives on VAR files*)
 
 
-div[sim_,var_,vec_List]:=Module[{mx,my,mz,gh1,gh2,gh3,dxyz,tmp},
-  {mx,my,mz}=readDim[sim]/@{"mx","my","mz"};
-  {gh1,gh2,gh3}=readDim[sim]/@{"gh1","gh2","gh3"};
-  dxyz=var/@{"dx","dy","dz"};
-  tmp=div[var/@vec,mx,my,mz,gh1,gh2,gh3,Sequence@@dxyz];
-  tmp=tmp//ArrayReshape[#,{mx,my,mz}]&;
+trim[sim_,ff_]:=Module[{mx,my,mz,gh1,gh2,gh3,tmp},
+  {mx,my,mz,gh1,gh2,gh3}=readDim[sim]/@{"mx","my","mz","gh1","gh2","gh3"};
+  tmp=ff//ArrayReshape[#,{mx,my,mz}]&;
   tmp[[gh1+1;;mx-gh1,gh2+1;;my-gh2,gh3+1;;mz-gh3]]//Flatten
+]
+
+div[sim_,var_,vec_List]:=Module[{mx,my,mz,gh1,gh2,gh3,dxyz,tmp},
+  {mx,my,mz,gh1,gh2,gh3}=readDim[sim]/@{"mx","my","mz","gh1","gh2","gh3"};
+  dxyz=var/@{"dx","dy","dz"};
+  trim[sim,div[var/@vec,mx,my,mz,gh1,gh2,gh3,Sequence@@dxyz]]
+]
+
+grad[sim_,var_,sc_]:=Module[{mx,my,mz,gh1,gh2,gh3,dxyz,tmp},
+  {mx,my,mz,gh1,gh2,gh3}=readDim[sim]/@{"mx","my","mz","gh1","gh2","gh3"};
+  dxyz=var/@{"dx","dy","dz"};
+  trim[sim,#]&/@grad[var[sc],mx,my,mz,gh1,gh2,gh3,Sequence@@dxyz]
 ]
 
 
@@ -218,7 +236,8 @@ End[]
 
 Protect[
   der,der2,
-  grad,div,curl,curl2,laplacian
+  grad,div,curl,curl2,laplacian,
+  trim
 ]
 
 
