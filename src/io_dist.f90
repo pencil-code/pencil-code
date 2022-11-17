@@ -995,11 +995,11 @@ module Io
 !
       if (lwrite_2d) then
         if (nx==1) then
-          write(lun_output) a(4,:,:,:)
+          write(lun_output) a(nghost+1,:,:,:)
         elseif (ny==1) then
-          write(lun_output) a(:,4,:,:)
+          write(lun_output) a(:,nghost+1,:,:)
         elseif (nz==1) then
-          write(lun_output) a(:,:,4,:)
+          write(lun_output) a(:,:,nghost+1,:)
         else
           call fatal_error('output_globals','lwrite_2d used for 3-D simulation!')
         endif
@@ -1062,11 +1062,11 @@ module Io
 !
       if (lwrite_2d) then
         if (nx==1) then
-          read(lun_input) a(4,:,:,:)
+          read(lun_input) a(nghost+1,:,:,:)
         elseif (ny==1) then
-          read(lun_input) a(:,4,:,:)
+          read(lun_input) a(:,nghost+1,:,:)
         elseif (nz==1) then
-          read(lun_input) a(:,:,4,:)
+          read(lun_input) a(:,:,nghost+1,:)
         else
           call fatal_error('input_globals','lwrite_2d used for 3-D simulation!')
         endif
@@ -1086,11 +1086,11 @@ module Io
 !
       if (lwrite_2d) then
         if (nx==1) then
-          read(lun_input) a(4,:,:,:)
+          read(lun_input) a(nghost+1,:,:,:)
         elseif (ny==1) then
-          read(lun_input) a(:,4,:,:)
+          read(lun_input) a(:,nghost+1,:,:)
         elseif (nz==1) then
-          read(lun_input) a(:,:,4,:)
+          read(lun_input) a(:,:,nghost+1,:)
         else
           call fatal_error('input_globals','lwrite_2d used for 3-D simulation!')
         endif
