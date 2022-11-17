@@ -65,7 +65,7 @@ module Io
       integer :: alloc_err
 !
       if (lroot) call svn_id ("$Id$")
-      if (ldistribute_persist) call fatal_error ('io_mpi2', "Distibuted persistent variables are not allowed with MPI-IO.")
+      if (ldistribute_persist) call fatal_error ('io_mpi2', "Distributed persistent variables not allowed with MPI-IO.")
 !
       lmonolithic_io = .true.
 !
@@ -460,7 +460,7 @@ module Io
 !
 ! Truncate the file to fit the global data.
 !
-      total_size = int(product(global_size), KIND=MPI_OFFSET_KIND)
+      total_size = product(int(global_size, KIND=MPI_OFFSET_KIND))
       call MPI_FILE_SET_SIZE(handle, total_size, mpi_err)
       call check_success ("output", "set size of", file)
 !
@@ -580,7 +580,7 @@ module Io
       call MPI_TYPE_CREATE_SUBARRAY(2, sizes, subsizes, starts, order, mpi_precision, dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create subarray type")
 !
-      dsize = int(product(sizes), KIND=MPI_OFFSET_KIND) * realsize
+      dsize = product(int(sizes, KIND=MPI_OFFSET_KIND)) * realsize
       call MPI_TYPE_CREATE_STRUCT(2, (/ 1, nadd /), (/ 0_MPI_OFFSET_KIND, dsize /), (/ dtype, mpi_precision /), dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create struct type")
       dsize = dsize + int(nadd, KIND=MPI_OFFSET_KIND) * realsize
@@ -749,7 +749,7 @@ module Io
 !
 !  Write additional data.
 !
-      offset = offset + int(npar_tot * mparray, KIND=MPI_OFFSET_KIND) * realsize
+      offset = offset + int(npar_tot, KIND=MPI_OFFSET_KIND) * mparray * realsize
       call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
       call check_success("output_part", "set global view of", fpath)
       if (lroot) then
@@ -1038,21 +1038,21 @@ module Io
       lpar_loc = .true.
 !
       inx: if (lactive_dimension(1)) then
-        call MPI_FILE_READ_AT_ALL(handle, int((ixp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
+        call MPI_FILE_READ_AT_ALL(handle, (ixp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
                                   rbuf, npar_tot, mpi_precision, status, mpi_err)
         call check_success("input_part", "read xp of", fpath)
         lpar_loc = lpar_loc .and. procx_bounds(ipx) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procx_bounds(ipx+1)
       endif inx
 !
       iny: if (lactive_dimension(2)) then
-        call MPI_FILE_READ_AT_ALL(handle, int((iyp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
+        call MPI_FILE_READ_AT_ALL(handle, (iyp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
                                   rbuf, npar_tot, mpi_precision, status, mpi_err)
         call check_success("input_part", "read yp of", fpath)
         lpar_loc = lpar_loc .and. procy_bounds(ipy) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procy_bounds(ipy+1)
       endif iny
 !
       inz: if (lactive_dimension(3)) then
-        call MPI_FILE_READ_AT_ALL(handle, int((izp - 1) * npar_tot, KIND=MPI_OFFSET_KIND), &
+        call MPI_FILE_READ_AT_ALL(handle, (izp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
                                   rbuf, npar_tot, mpi_precision, status, mpi_err)
         call check_success("input_part", "read zp of", fpath)
         lpar_loc = lpar_loc .and. procz_bounds(ipz) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procz_bounds(ipz+1)
