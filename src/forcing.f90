@@ -4503,7 +4503,6 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
 !  have opposite twists at
 !
-      y0=xyz0(2)
       ytwist1=y0+0.25*Ly
       ytwist2=y0+0.75*Ly
 !

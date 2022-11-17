@@ -11,13 +11,12 @@
 //General
 #include <cmath>
 #include <algorithm>
-#include <limits>
 #include <stdio.h>
 #include <string.h>
 
 #define CUDA_ERRCHK(X)
 
-#include "submodule/acc-runtime/api/math_utils.h"
+//#include "submodule/acc-runtime/api/math_utils.h"
 #include "submodule/include/astaroth.h"
 #define real AcReal
 #define EXTERN 
@@ -68,7 +67,7 @@ AcReal max_diffus()
         return maxdiffus_;
 }
 /***********************************************************************************************/
-//Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries
+//Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
 //
 extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=false)
 {
@@ -242,6 +241,7 @@ extern "C" void initGPU()
 /***********************************************************************************************/
 void setupConfig(AcMeshInfo & config){
 
+printf("nx etc. %d %d %d %.14f %.14f %.14f \n",nx,ny,nz,dx,dy,dz);
      config.int_params[AC_nx]=nx;
      config.int_params[AC_ny]=ny;
      config.int_params[AC_nz]=nz;
@@ -265,7 +265,6 @@ void setupConfig(AcMeshInfo & config){
      config.real_params[AC_dsx]=dx;
      config.real_params[AC_dsy]=dy;
      config.real_params[AC_dsz]=dz;
-printf("nx etc. %d %d %d %.14f %.14f %.14f \n",nx,ny,nz,dx,dy,dz);
 printf("l1i etc. %d %d %d %d %d %d \n", l1i,l2i,n1i,n2i,m1i,m2i);
 //printf("dxmin, dxmax= %f %f \n", dxmin,dxmax); //it, isubstep);
      //config.real_params[AC_inv_dsx] = 1./dx;
