@@ -1198,7 +1198,6 @@ module Io
         if (lroot) then
           write (lun_output) gx, gy, gz
           close (lun_output)
-          deallocate(gx,gy,gz) 
        endif
      endif
 !
