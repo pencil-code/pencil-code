@@ -127,8 +127,8 @@ module Forcing
 !
   real, dimension (my,n_forcing_cont_max) :: phi1_ff
   real, dimension (mx,n_forcing_cont_max) :: phi2_ff
-  real, dimension (mx,n_forcing_cont_max) :: sinx,cosx,sinxt,cosxt,embedx
-  real, dimension (my,n_forcing_cont_max) :: siny,cosy,sinyt,cosyt,embedy
+  real, dimension (mx,n_forcing_cont_max) :: sinx,cosx,sinxt,cosxt,embedx,expmk2x2
+  real, dimension (my,n_forcing_cont_max) :: siny,cosy,sinyt,cosyt,embedy,expmk2y2
   real, dimension (mz,n_forcing_cont_max) :: sinz,cosz,sinzt,coszt,embedz
   real, dimension (100,n_forcing_cont_max) :: xi_GP,eta_GP
 !
@@ -1043,6 +1043,9 @@ module Forcing
         !call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.) !old form
         call random_isotropic_KS_setup_test !Test KS model code with 3 specific
         !modes.
+        elseif (iforcing_cont(i)=='exp(-x2-y2)') then
+          expmk2x2(:,i)=exp(-kf_fcont(i)**2*x**2)
+          expmk2y2(:,i)=exp(-kf_fcont(i)**2*y**2)
         endif
       enddo
       if (lroot .and. n_forcing_cont==0) &
@@ -6015,6 +6018,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
                                     sin_kdotxwt*KS_B(3,modeN)
         enddo
         force=ampl_ff(i)*force
+!
+!  fz=Exp(-(kf_cont*r)^2), where r=sqrt(x^2+y^2)
+!
+      case ('exp(-x2-y2)')
+        force(:,1) = 0.
+        force(:,2) = 0.
+        force(:,3) = ampl_ff(i)*expmk2x2(l1:l2,i)*expmk2y2(m,i)
 !
 !  possibility of putting zero, e.g., for purely magnetic forcings
 !
