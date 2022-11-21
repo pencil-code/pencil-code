@@ -128,7 +128,7 @@ module Special
   character (len=labellen) :: gammaf5_tdep='const'
 !
   namelist /special_init_pars/ &
-      initspecial, mu5_const, cdtchiral &
+      initspecial, mu5_const, cdtchiral, &
       lmuS, lCVE, lmu5adv, lmuSadv, muS_const, &
       amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
       amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
