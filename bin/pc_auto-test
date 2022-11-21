@@ -787,7 +787,7 @@ sub my_ok {
         print " ok      $timestr\n" unless ($quiet);
     } else {
         if ($errlink) {
-	  my $loglink = '<a href="http://'.`hostname`.$dir;
+	  my $loglink = '<a href="'.($dir =~ s/^.*(\/samples\/.*$)/.$1/r);
 	  if ($phase eq 'starting') {
 	    $loglink .= '/start.log';
 	  } else {
