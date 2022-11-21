@@ -140,6 +140,14 @@ indices = [ $
   { name:'iggXim', label:'ggXim', dims:1 }, $
   { name:'ihhTim', label:'hhTim', dims:1 }, $
   { name:'ihhXim', label:'hhXim', dims:1 }, $
+  { name:'iggT_boost', label:'ggT_boost', dims:1 }, $
+  { name:'iggX_boost', label:'ggX_boost', dims:1 }, $
+  { name:'ihhT_boost', label:'hhT_boost', dims:1 }, $
+  { name:'ihhX_boost', label:'hhX_boost', dims:1 }, $
+  { name:'iggTim_boost', label:'ggTim_boost', dims:1 }, $
+  { name:'iggXim_boost', label:'ggXim_boost', dims:1 }, $
+  { name:'ihhTim_boost', label:'hhTim_boost', dims:1 }, $
+  { name:'ihhXim_boost', label:'hhXim_boost', dims:1 }, $
   { name:'ihij', label:'hij', dims:6 }, $
   { name:'igij', label:'gij', dims:6 }, $
   { name:'ip11', label:'Polymer Tensor 11', dims:1 }, $
