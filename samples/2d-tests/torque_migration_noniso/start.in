@@ -15,7 +15,7 @@
   lwrite_ic=T
   lwrite_aux=T
   r_ref=1.
-  coord_system='cylindrical'
+  coord_system='cylindric'
 !
 /
 &initial_condition_pars
