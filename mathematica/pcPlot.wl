@@ -102,7 +102,9 @@ Begin["`Private`"]
 
 pcColors=Association[
   "Red"->RGBColor[{166,42,23}/255],
-  "Blue"->RGBColor[{28,77,124}/255]
+  "Blue"->RGBColor[{28,77,124}/255],
+  "Rainbow"->ColorData["Rainbow"],
+  "RainbowR"->ColorData[{"Rainbow","Reversed"}]
 ];
 
 
