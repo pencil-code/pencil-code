@@ -1222,7 +1222,7 @@ module Hydro
       use WENO_transport
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case), intent(out) :: p
+      type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp

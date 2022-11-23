@@ -72,7 +72,7 @@ module Energy
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
-      if (lhydro) then
+      if (lhydro.and.iphiuu==0) then
         call get_shared_variable('lconservative', lconservative)
       else
         allocate(lconservative)
