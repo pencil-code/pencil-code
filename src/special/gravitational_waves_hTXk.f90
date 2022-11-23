@@ -125,7 +125,7 @@ module Special
   real :: rescale_GW=1., vx_boost=0., vy_boost=0., vz_boost=0.
   real :: horndeski_alpM=0., horndeski_alpT=0.
   real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
-  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, OmM0=0.3158, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
+  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, OmM0=0.3158, OmT0=1.0, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
   real :: initpower_med_GW=1., kpeak_log_GW=1., kbreak_GW=0.5, nfactd_GW=4.
 ! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
@@ -134,13 +134,13 @@ module Special
   integer :: nt_file, it_file
   real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf
-  real :: scl_factor_target, Hp_target, app_target, OmM_target, lgt_current
-  real :: lgt_ini, a_ini, Hp_ini, app_om=0, OmM_ini
+  real :: scl_factor_target, Hp_target, app_target, OmM_target, OmT_target, lgt_current
+  real :: lgt_ini, a_ini, Hp_ini, app_om=0, OmM_ini, OmT_ini
 ! added variables
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
-  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file, OmM_file
-  real, dimension(:), allocatable :: app_file, lgt_file, lgff, lgff2, lgff3, lgff4
+  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file, OmM_file, OmT_file
+  real, dimension(:), allocatable :: app_file, lgt_file, lgff, lgff2, lgff3, lgff4, lgff5
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
@@ -183,7 +183,7 @@ module Special
     ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
-    lread_scl_factor_file, t_ini, OmL0, OmM0, idt_file_safety, &
+    lread_scl_factor_file, t_ini, OmL0, OmM0, OmT0, idt_file_safety, &
     lconstmod_in_stress, k_in_stress, itorder_GW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -473,15 +473,17 @@ module Special
         if (lread_scl_factor_file_exists) then
           if (lroot.and.ip<14) print*,'initialize_forcing: opening a_vs_eta.dat'
           open(9,file='a_vs_eta.dat',status='old')
-          read(9,*) nt_file, lgt0, dlgt, H0, OmM0
-          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0,OmM0=',nt_file,lgt0,dlgt,H0,OmM0
-          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, app_file, OmM_file, &
-                                            lgt_file, lgff, lgff2, lgff3, lgff4)
-          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), app_file(nt_file), OmM_file(nt_file), &
-                   lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file), lgff4(nt_file))
+          read(9,*) nt_file, lgt0, dlgt, H0, OmM0, OmT0
+          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0,OmM0,OmT0=',nt_file,lgt0,dlgt,H0,OmM0,OmT0
+          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, app_file, OmM_file, OmT_file, &
+                                            lgt_file, lgff, lgff2, lgff3, lgff4, lgff5)
+          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), app_file(nt_file), &
+                   OmM_file(nt_file), OmT_file(nt_file), &
+                   lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file), lgff4(nt_file), lgff5(nt_file))
           do it_file=1,nt_file
-            read(9,*) dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file), OmM_file(it_file)
-          !if (ip<14) print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file), OmM_file(it_file)
+            read(9,*) dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file), &
+                      OmM_file(it_file), OmT_file(it_file)
+          !if (ip<14) print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file), OmM_file(it_file), OmT_file(it_file)
           enddo
           close(9)
           lgt_file=alog10(t_file)
@@ -489,6 +491,7 @@ module Special
           lgff2=alog10(Hp_file)
           lgff3=alog10(app_file)
           lgff4=alog10(OmM_file)
+          lgff5=alog10(OmT_file)
 !
 !  Calculate and set tmax, i.e., the end time of the simulation, so as
 !  to have a regular exit. Note that tmax=max(t_file)/t_ini.
@@ -519,11 +522,15 @@ module Special
           lgf2=lgff2(it_file+1)
           lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           Hp_ini=10**lgf
-          lgf1=lgff2(it_file)
-          lgf2=lgff2(it_file+1)
+          lgf1=lgff4(it_file)
+          lgf2=lgff4(it_file+1)
           lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           OmM_ini=10**lgf
-          !if (ip<14) print*,'ALBERTO, print a_*, H_*, OmM_*: ',a_ini,Hp_ini,OmM_ini
+          lgf1=lgff5(it_file)
+          lgf2=lgff5(it_file+1)
+          lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          OmT_ini=10**lgf
+          !if (ip<14) print*,'ALBERTO, print a_*, H_*, OmM_*, OmT_*: ',a_ini,Hp_ini,OmM_ini,OmT_ini
 !
 !  Divide by a_ini to have a/a_ini and recompute log(a) and log(t) after dividing, respectively
 !  by a_ini and t_ini.
@@ -567,6 +574,10 @@ module Special
           lgf2=lgff4(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           OmM_target=10**lgf
+          lgf1=lgff5(it_file)
+          lgf2=lgff5(it_file+1)
+          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          OmT_target=10**lgf
         else
           if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
           call fatal_error('initialize_special','we need the file a_vs_eta.dat')
@@ -1810,7 +1821,7 @@ module Special
           case ('scale_factor_power')
             horndeski_alpM_eff=horndeski_alpM*(scale_factor*a_ini/scale_factor0)**horndeski_alpM_exp
           case ('matter')
-            horndeski_alpM_eff=horndeski_alpM*(1-OmM_target/1-OmM0)
+            horndeski_alpM_eff=horndeski_alpM*(1-OmM_target/OmT_target)/(1-OmM0)
           case ('dark_energy')
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
               Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
