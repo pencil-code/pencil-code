@@ -135,7 +135,8 @@ module Special
   real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf
   real :: scl_factor_target, Hp_target, app_target, OmM_target, OmT_target, lgt_current
-  real :: lgt_ini, a_ini, Hp_ini, app_om=0, OmM_ini, OmT_ini
+  real :: lgt_ini, a_ini, Hp_ini, app_om=0
+! real :: OmM_ini, OmT_ini
 ! added variables
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
@@ -522,14 +523,14 @@ module Special
           lgf2=lgff2(it_file+1)
           lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           Hp_ini=10**lgf
-          lgf1=lgff4(it_file)
-          lgf2=lgff4(it_file+1)
-          lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          OmM_ini=10**lgf
-          lgf1=lgff5(it_file)
-          lgf2=lgff5(it_file+1)
-          lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          OmT_ini=10**lgf
+          !lgf1=lgff4(it_file)
+          !lgf2=lgff4(it_file+1)
+          !lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          !OmM_ini=10**lgf
+          !lgf1=lgff5(it_file)
+          !lgf2=lgff5(it_file+1)
+          !lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          !OmT_ini=10**lgf
           !if (ip<14) print*,'ALBERTO, print a_*, H_*, OmM_*, OmT_*: ',a_ini,Hp_ini,OmM_ini,OmT_ini
 !
 !  Divide by a_ini to have a/a_ini and recompute log(a) and log(t) after dividing, respectively
@@ -1560,6 +1561,7 @@ module Special
       real :: eTT, eTX, eXT, eXX
       real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
       real :: horndeski_alpT_eff, Om_rat_Lam, Om_rat_Mat
+      real :: Om_rat_matt, Om_rat_tot1
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx
       complex :: hcomplex_new, gcomplex_new
@@ -1821,10 +1823,22 @@ module Special
           case ('scale_factor_power')
             horndeski_alpM_eff=horndeski_alpM*(scale_factor*a_ini/scale_factor0)**horndeski_alpM_exp
           case ('matter')
-            horndeski_alpM_eff=horndeski_alpM*(1-OmM_target/OmT_target)/(1-OmM0)
+            if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
+              Om_rat_matt=(scale_factor*a_ini/scale_factor0)**(-3)*OmM0
+              Om_rat_tot1=(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
+              !horndeski_alpM_eff=horndeski_alpM*(1-OmM_target/OmT_target)/(1-OmM0)
+              horndeski_alpM_eff=horndeski_alpM*(1-Om_rat_matt*Om_rat_tot1)/(1-OmM0)
+            else
+              if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
+              if (lroot) print*,'set lread_scl_factor_file=T in run parameters'
+              call fatal_error('dspecial_dt',"we need the file a_vs_eta.dat")
+            endif
           case ('dark_energy')
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
-              Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
+              !Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
+              Om_rat_tot1=(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
+              !Om_rat_Lam=(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
+              !Om_rat_Lam=1./OmT_target
               horndeski_alpM_eff=horndeski_alpM*Om_rat_Lam
               !!if ((lroot).and.(Om_rat_Lam==0)) print*,"the ratio Om_rat_Lam is too small", &
               !!    " for single precision, consider using double precision"
