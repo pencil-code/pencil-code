@@ -1839,7 +1839,8 @@ module Special
               Om_rat_tot1=(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
               !Om_rat_Lam=(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
               !Om_rat_Lam=1./OmT_target
-              horndeski_alpM_eff=horndeski_alpM*Om_rat_Lam
+              !horndeski_alpM_eff=horndeski_alpM*Om_rat_Lam
+              horndeski_alpM_eff=horndeski_alpM*Om_rat_tot1
               !!if ((lroot).and.(Om_rat_Lam==0)) print*,"the ratio Om_rat_Lam is too small", &
               !!    " for single precision, consider using double precision"
             else
