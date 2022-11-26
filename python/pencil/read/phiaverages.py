@@ -102,6 +102,7 @@ class Averages(object):
             #
         else:
             if os.path.exists("data/averages/phiavg.list"):
+                naverages = sum(1 for line in open('data/averages/phiavg.list'))
                 in_file_name_list.append("data/averages/phiavg.list")
                 if avg_file:
                     aver_file_name_list.append(
@@ -127,7 +128,7 @@ class Averages(object):
         nu = glob_dim.nx / 2
         nv = glob_dim.nz
         t_list = np.zeros(shape=(len(aver_file_name_list)))
-        raw_data_list = np.zeros(shape=(len(aver_file_name_list),42,int(nv),int(nu)))
+        raw_data_list = np.zeros(shape=(len(aver_file_name_list),naverages,int(nv),int(nu)))
 
         ii=0
         for in_file_name, aver_file_name in zip(in_file_name_list, aver_file_name_list):
