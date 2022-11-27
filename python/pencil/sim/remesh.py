@@ -73,6 +73,7 @@ def get_dstgrid(
     dtype=np.float64,
     lsymmetric=True,
     quiet=True,
+    dstprecision=[b"D"]
 ):
     """
     get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1], multxyz=[2,2,2],
@@ -124,7 +125,11 @@ def get_dstgrid(
     srcsets = srch5["settings"]
     sets = group_h5(dsth5, "settings", status="a")
     for key in srcsets.keys():
-        dset = dataset_h5(sets, key, data=srcsets[key][()], status="a")
+        if not key == "precision":
+            dset = dataset_h5(sets, key, data=srcsets[key][()], status="a", dtype=type(srcsets[key][0]))
+        else:
+            if not dsth5.driver == "mpio":
+                sets.create_dataset("precision",data=dstprecision)
     # update grid dimensions
     sets["nx"][()] = int(srcsets["nx"][()] * multxyz[0] / fracxyz[0])
     sets["mx"][()] = sets["nx"][()] + 2 * dstghost
@@ -146,7 +151,11 @@ def get_dstgrid(
     srcgrid = srch5["grid"]
     grid = group_h5(dsth5, "grid", status="a")
     for key in srcgrid.keys():
-        dset = dataset_h5(grid, key, data=srcgrid[key][()], status="a")
+        try:
+            dtype=type(srcgrid[key][0])
+        except:
+            dtype=type(srcgrid[key][()].item())
+        dset = dataset_h5(grid, key, data=srcgrid[key][()], status="a", dtype=dtype)
     # replace grid data changed for dstsim
     for ii, mm in [[0, "mx"], [1, "my"], [2, "mz"]]:
         if not srcpar["lequidist"][ii]:
@@ -370,6 +379,7 @@ def src2dst_remesh(
         print("precision " + dstprecision + " not valid")
         return 1
 
+    ladd_bytes=False
     if is_sim_dir(src):
         srcsim = simulation(src, quiet=quiet)
     else:
@@ -378,19 +388,29 @@ def src2dst_remesh(
     if is_sim_dir(dst):
         dstsim = simulation(dst, quiet=quiet)
     else:
-        dstname = str.split(dst, "/")[-1]
-        dstpath = str.strip(dst, dstname)
-        if len(dstpath) == 0:
-            dstpath = str.strip(srcsim.path, srcsim.name)
-        dstsim = srcsim.copy(
-            path_root=dstpath,
-            name=dstname,
-            quiet=quiet,
-            OVERWRITE=OVERWRITE,
-            optionals=optionals,
-            start_optionals=start_optionals,
-            rename_submit_script=rename_submit_script,
-        )
+        if comm:
+            comm.Barrier()
+        if rank == 0:
+            dstname = str.split(dst, "/")[-1]
+            dstpath = str.strip(dst, dstname)
+            if len(dstpath) == 0:
+                dstpath = str.strip(srcsim.path, srcsim.name)
+            dstsim = srcsim.copy(
+                path_root=dstpath,
+                name=dstname,
+                quiet=quiet,
+                OVERWRITE=OVERWRITE,
+                optionals=optionals,
+                start_optionals=start_optionals,
+                rename_submit_script=rename_submit_script,
+            )
+        if comm:
+            comm.Barrier()
+        if not rank == 0:
+            dstsim = simulation(dst, quiet=quiet)
+        if comm:
+            comm.Barrier()
+
     print("opening src file and dst file on rank{}".format(rank))
     with open_h5(
         join(srcsim.path, srcdatadir, h5in), "r", rank=rank, comm=comm
@@ -403,6 +423,7 @@ def src2dst_remesh(
             count=count,
             rank=rank,
             comm=comm,
+            overwrite=True,
         ) as dsth5:
             # apply settings and grid to dst h5 files
             get_dstgrid(
@@ -417,6 +438,7 @@ def src2dst_remesh(
                 dtype=dtype,
                 lsymmetric=lsymmetric,
                 quiet=quiet,
+                dstprecision=dstprecision,
             )
             print("get_dstgrid completed on rank {}".format(rank))
             # use settings to determine available proc dist then set ncpus
@@ -468,27 +490,21 @@ def src2dst_remesh(
                 return 1
             group = group_h5(dsth5, "unit", status="w")
             for key in srch5["unit"].keys():
-                if (
-                    type(srch5["unit"][key][()]) == np.float64
-                    or type(srch5["unit"][key][()]) == np.float32
-                ):
+                if not key == "system":
                     dset = dataset_h5(
                         group,
                         key,
                         status="w",
                         data=srch5["unit"][key][()],
                         overwrite=True,
-                        dtype=dtype,
-                    )
+                        dtype=dtype,)
                 else:
-                    dset = dataset_h5(
-                        group,
-                        key,
-                        status="w",
-                        data=srch5["unit"][key][()],
-                        overwrite=True,
-                    )
-            gridh5 = open_h5(join(dstsim.datadir, "grid.h5"), status="w")
+                    if not dsth5.driver == "mpio":
+                        group.create_dataset("system",data=srch5["unit"][key][()])
+                    else:
+                        ladd_bytes=True
+                        unitsys = srch5["unit"][key][()]
+            gridh5 = open_h5(join(dstsim.datadir, "grid.h5"), status="w",overwrite=True)
             dsth5.copy("settings", gridh5)
             dsth5.copy("grid", gridh5)
             dsth5.copy("unit", gridh5)
@@ -671,15 +687,34 @@ def src2dst_remesh(
                                 dset[n1out:n2out, m1out:m2out, l1out:l2out] = dtype(
                                     var[varn1:varn2, varm1:varm2, varl1:varl2]
                                 )
-    dstsim.update()
-    dstsim.change_value_in_file("src/cparam.local", "ncpus", str(nprocs))
-    dstsim.change_value_in_file("src/cparam.local", "nprocx", str(ncpus[0]))
-    dstsim.change_value_in_file("src/cparam.local", "nprocy", str(ncpus[1]))
-    dstsim.change_value_in_file("src/cparam.local", "nprocz", str(ncpus[2]))
-    dstsim.change_value_in_file("src/cparam.local", "nxgrid", str(dstsim.dim.nxgrid))
-    # dstsim.change_value_in_file('src/cparam.local','nygrid',
-    #                                                    str(dstsim.dim.nygrid))
-    dstsim.change_value_in_file("src/cparam.local", "nzgrid", str(dstsim.dim.nzgrid))
+    #"mpio" cannot handle byte types so update settings in serial on root 
+    if ladd_bytes:
+        if comm:
+            comm.Barrier()
+        if rank == 0:
+            with open_h5(
+                join(dstsim.path, dstdatadir, h5out),
+                "a", 
+                rank=rank,
+                comm=None,
+                overwrite=False,
+                ) as dsth5:
+                dsth5["settings"].create_dataset("precision",data=dstprecision)
+                dsth5["unit"].create_dataset("system",data=unitsys)
+
+        if comm:
+            comm.Barrier()
+    ##The subsequest tools need to be improved to complete revision of *.local and
+    ##compilation if required -- see pipelines 
+    #dstsim.update()
+    #dstsim.change_value_in_file("src/cparam.local", "ncpus", str(nprocs))
+    #dstsim.change_value_in_file("src/cparam.local", "nprocx", str(ncpus[0]))
+    #dstsim.change_value_in_file("src/cparam.local", "nprocy", str(ncpus[1]))
+    #dstsim.change_value_in_file("src/cparam.local", "nprocz", str(ncpus[2]))
+    #dstsim.change_value_in_file("src/cparam.local", "nxgrid", str(dstsim.dim.nxgrid))
+    ## dstsim.change_value_in_file('src/cparam.local','nygrid',
+    ##                                                    str(dstsim.dim.nygrid))
+    #dstsim.change_value_in_file("src/cparam.local", "nzgrid", str(dstsim.dim.nzgrid))
 
     # cmd = 'source '+join(srcsim.path,'src','.moduleinfo')
     # os.system(cmd)
