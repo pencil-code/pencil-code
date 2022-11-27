@@ -656,10 +656,13 @@ class __Simulation__(object):
         tmp_dict = self.tmp_dict
         self.tmp_dict = {}
 
-        save(self, name="sim", folder=self.pc_dir)
-
-        # restore self.tmp_dict
-        self.tmp_dict = tmp_dict
+        try:
+            save(self, name="sim", folder=self.pc_dir)
+            # restore self.tmp_dict
+            self.tmp_dict = tmp_dict
+        except:
+            print("Warning: Could not import save from io.dill*. Try:")
+            print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
 
     def started(self):
         """Returns whether simulation has already started.
