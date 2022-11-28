@@ -527,7 +527,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, int1_list, stat
       integer, dimension(4) :: int4_list
-      real, dimension(9) :: real9_list
+      real, dimension(13) :: real13_list
       real :: t_list,x_list,y_list,z_list
       logical :: exist
 !
@@ -795,7 +795,7 @@ module Interstellar
         read(33,*,iostat=stat)
         do  i=1,nlist
           read(33,*,iostat=stat) &
-              int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real9_list
+              int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
           if (stat<0) exit
           SN_list(1,i)=t_list
           SN_list(2,i)=x_list
@@ -1969,7 +1969,7 @@ module Interstellar
               endif
               t_next_SNI=SN_list(1,i+1)
               if (lroot) print &
-                  "(1x,'check_SN: t_next_SNI on list =',e15.8)",t_next_SNI
+                  "(1x,'check_SN: t_next_SNI on list =',e16.8)",t_next_SNI
               exit
             endif
           enddo
