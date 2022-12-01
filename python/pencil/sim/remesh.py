@@ -73,7 +73,10 @@ def get_dstgrid(
     dtype=np.float64,
     lsymmetric=True,
     quiet=True,
-    dstprecision=[b"D"]
+    dstprecision=[b"D"],
+    rank=0,
+    comm=None,
+    size=1,
 ):
     """
     get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1], multxyz=[2,2,2],
@@ -126,94 +129,123 @@ def get_dstgrid(
     sets = group_h5(dsth5, "settings", status="a")
     for key in srcsets.keys():
         if not key == "precision":
-            dset = dataset_h5(sets, key, data=srcsets[key][()], status="a", dtype=type(srcsets[key][0]))
+            dset = dataset_h5(sets, key, shape=srcsets[key][()].shape, status="a", dtype=type(srcsets[key][0]))
+            if rank == 0:
+                sets[key][()] = srcsets[key][()]
         else:
             if not dsth5.driver == "mpio":
-                sets.create_dataset("precision",data=dstprecision)
+                if rank == 0:
+                    sets.create_dataset("precision",data=dstprecision)
+        if comm:
+            comm.Barrier()
     # update grid dimensions
-    sets["nx"][()] = int(srcsets["nx"][()] * multxyz[0] / fracxyz[0])
-    sets["mx"][()] = sets["nx"][()] + 2 * dstghost
-    sets["ny"][()] = int(srcsets["ny"][()] * multxyz[1] / fracxyz[1])
-    sets["my"][()] = sets["ny"][()] + 2 * dstghost
-    sets["nz"][()] = int(srcsets["nz"][()] * multxyz[2] / fracxyz[2])
-    sets["mz"][()] = sets["nz"][()] + 2 * dstghost
-    sets["l1"][()] = dstghost
-    sets["l2"][()] = sets["mx"][()] - 1 - dstghost
-    sets["m1"][()] = dstghost
-    sets["m2"][()] = sets["my"][()] - 1 - dstghost
-    sets["n1"][()] = dstghost
-    sets["n2"][()] = sets["mz"][()] - 1 - dstghost
-    if not ncpus == [1, 1, 1]:
-        sets["nprocx"][()] = ncpus[0]
-        sets["nprocy"][()] = ncpus[1]
-        sets["nprocz"][()] = ncpus[2]
+    if rank == 0:
+        sets["nx"][()] = int(srcsets["nx"][()] * multxyz[0] / fracxyz[0])
+        sets["mx"][()] = sets["nx"][()] + 2 * dstghost
+        sets["ny"][()] = int(srcsets["ny"][()] * multxyz[1] / fracxyz[1])
+        sets["my"][()] = sets["ny"][()] + 2 * dstghost
+        sets["nz"][()] = int(srcsets["nz"][()] * multxyz[2] / fracxyz[2])
+        sets["mz"][()] = sets["nz"][()] + 2 * dstghost
+        sets["l1"][()] = dstghost
+        sets["l2"][()] = sets["mx"][()] - 1 - dstghost
+        sets["m1"][()] = dstghost
+        sets["m2"][()] = sets["my"][()] - 1 - dstghost
+        sets["n1"][()] = dstghost
+        sets["n2"][()] = sets["mz"][()] - 1 - dstghost
+        if not ncpus == [1, 1, 1]:
+            sets["nprocx"][()] = ncpus[0]
+            sets["nprocy"][()] = ncpus[1]
+            sets["nprocz"][()] = ncpus[2]
+    if comm:
+        comm.Barrier()
     # copy the grid from the srcsim to dstsim var.h5 and grid.h5
     srcgrid = srch5["grid"]
     grid = group_h5(dsth5, "grid", status="a")
     for key in srcgrid.keys():
         try:
-            dtype=type(srcgrid[key][0])
+            loc_dtype=type(srcgrid[key][0])
+            dset = dataset_h5(grid, key, shape=srcgrid[key][()].shape, status="a", dtype=loc_dtype)
         except:
-            dtype=type(srcgrid[key][()].item())
-        dset = dataset_h5(grid, key, data=srcgrid[key][()], status="a", dtype=dtype)
+            loc_dtype=type(srcgrid[key][()].item())
+            dset = dataset_h5(grid, key, data=srcgrid[key][()].item(), status="a", dtype=loc_dtype)
+        if rank == 0:
+            grid[key][()] = srcgrid[key][()]
+        if comm:
+            comm.Barrier()
     # replace grid data changed for dstsim
     for ii, mm in [[0, "mx"], [1, "my"], [2, "mz"]]:
         if not srcpar["lequidist"][ii]:
-            print(
-                "get_dstgrid WARNING: non-equidistant grid not implemented\n",
-                "continuing with equidistant grid.\n",
-                "Please implement non-equidistant grid options.",
-            )
+            if rank == 0:
+                print(
+                    "get_dstgrid WARNING: non-equidistant grid not implemented\n",
+                    "continuing with equidistant grid.\n",
+                    "Please implement non-equidistant grid options.",
+                )
         if not sets[mm][()] == srcsets[mm][()]:
             # assuming for now par.lxyz is the same
             mstr = mm[1]
-            grid["d" + mstr][()] = dtype(
-                (srcgrid[mstr][-srcghost] - srcgrid[mstr][srcghost])
-                / (sets["n" + mstr][()] - 1)
-            )
+            grid["d" + mstr][()] = (srcgrid[mstr][-srcghost] - 
+                    srcgrid[mstr][srcghost])/ (sets["n" + mstr][()] - 1)
             grid.__delitem__(mstr)
-            grid.create_dataset(mstr, (sets[mm][()],), dtype=dtype)
-            print(
-                "grid 161:",
-                mstr,
-                srcgrid[mstr][srcghost],
-                grid["d" + mstr][()],
-                srcgrid[mstr][-srcghost - 1][()],
-                sets["n" + mstr][()],
-            )
-            grid[mstr][dstghost:-dstghost] = np.linspace(
-                srcgrid[mstr][srcghost] - grid["d" + mstr][()],
-                srcgrid[mstr][-srcghost - 1][()],
-                sets["n" + mstr][0],
-                dtype=dtype,
-            )
-            if srcpar["lshift_origin"][ii] or lsymmetric:
-                grid[mstr][dstghost:-dstghost] += dtype(0.5 * grid["d" + mstr][()])
-            elif srcpar["lshift_origin_lower"][ii]:
-                grid[mstr][dstghost:-dstghost] -= dtype(0.5 * grid["d" + mstr][()])
-            for jj in range(0, dstghost):
-                grid[mstr][jj] = (
-                    grid[mstr][dstghost] - (dstghost - jj) * grid["d" + mstr][()]
+            grid.create_dataset(mstr, (sets['m'+mstr][()].item(),), dtype=dtype)
+            if rank == 0:
+                print(
+                    "get_dstgrid line 192:",
+                    mstr,
+                    srcgrid[mstr][srcghost],
+                    grid["d" + mstr][()],
+                    srcgrid[mstr][-srcghost - 1][()],
+                    sets["n" + mstr][()],
                 )
-                grid[mstr][jj - dstghost] = (
-                    grid[mstr][-dstghost - 1] + (jj + 1) * grid["d" + mstr][()]
-                )
-            if not srcpar["lperi"][ii]:
-                grid["L" + mstr][()] = srcgrid["L" + mstr][()] + grid["d" + mstr][()]
-                grid["O" + mstr][()] = (
-                    srcgrid["O" + mstr][()] - 0.5 * grid["d" + mstr][()]
-                )
+            if rank == 0:
+                print(grid["d" + mstr][()], srcgrid[mstr][-srcghost - 1][()],sets["n" + mstr][0])
+                grid[mstr][dstghost:-dstghost] = dtype(np.linspace(
+                    srcgrid[mstr][srcghost] - grid["d" + mstr][()],
+                    srcgrid[mstr][-srcghost - 1][()],
+                    sets["n" + mstr][0]
+                ))
+            if comm:
+                comm.Barrier()
+            if rank == 0:
+                if srcpar["lshift_origin"][ii] or lsymmetric:
+                    grid[mstr][dstghost:-dstghost] += dtype(0.5 * grid["d" + mstr][()])
+                elif srcpar["lshift_origin_lower"][ii]:
+                    grid[mstr][dstghost:-dstghost] -= dtype(0.5 * grid["d" + mstr][()])
+                for jj in range(0, dstghost):
+                    grid[mstr][jj] = (
+                        grid[mstr][dstghost] - (dstghost - jj) * grid["d" + mstr][()]
+                    )
+                    grid[mstr][jj - dstghost] = (
+                        grid[mstr][-dstghost - 1] + (jj + 1) * grid["d" + mstr][()]
+                    )
+            if comm:
+                comm.Barrier()
+            if rank == 0:
+                if not srcpar["lperi"][ii]:
+                    grid["L" + mstr][()] = srcgrid["L" + mstr][()] + grid["d" + mstr][()]
+                    grid["O" + mstr][()] = (
+                        srcgrid["O" + mstr][()] - 0.5 * grid["d" + mstr][()]
+                    )
+            if comm:
+                comm.Barrier()
             grid.__delitem__("d" + mstr + "_1")
             grid.create_dataset(
-                "d" + mstr + "_1", data=1.0 / np.gradient(grid[mstr][()]), dtype=dtype
+                "d" + mstr + "_1", shape = grid[mstr][()].shape, dtype=dtype
             )
+            if rank == 0:
+                grid["d" + mstr + "_1"][()] = dtype(1.0 / np.gradient(grid[mstr][()]))
+            if comm:
+                comm.Barrier()
             grid.__delitem__("d" + mstr + "_tilde")
             grid.create_dataset(
                 "d" + mstr + "_tilde",
-                data=np.gradient(grid["d" + mstr + "_1"][()]),
+                shape=grid["d" + mstr + "_1"][()].shape,
                 dtype=dtype,
             )
-
+            if rank == 0:
+                grid["d" + mstr + "_tilde"][()] = dtype(np.gradient(grid["d" + mstr + "_1"][()]))
+            if comm:
+                comm.Barrier()
 
 def src2dst_remesh(
     src,
@@ -369,21 +401,24 @@ def src2dst_remesh(
     from pencil import is_sim_dir
 
     start_time = time.time()
-    print("started at {}".format(time.ctime(start_time)))
+    if rank == 0 or rank == size - 1:
+        print("started at {}".format(time.ctime(start_time)))
     # set dtype from precision
     if dstprecision[0] == b"D":
         dtype = np.float64
     elif dstprecision[0] == b"S":
         dtype = np.float32
     else:
-        print("precision " + dstprecision + " not valid")
+        if rank == 0 or rank == size - 1:
+            print("precision " + dstprecision + " not valid")
         return 1
 
     ladd_bytes=False
     if is_sim_dir(src):
         srcsim = simulation(src, quiet=quiet)
     else:
-        print('src2dst_remesh ERROR: src"' + src + '" is not a valid simulation path')
+        if rank == 0 or rank == size - 1:
+            print('src2dst_remesh ERROR: src"' + src + '" is not a valid simulation path')
         return 1
     if is_sim_dir(dst):
         dstsim = simulation(dst, quiet=quiet)
@@ -411,10 +446,13 @@ def src2dst_remesh(
         if comm:
             comm.Barrier()
 
-    print("opening src file and dst file on rank{}".format(rank))
+    if rank == 0 or rank == size - 1:
+        print("opening src file on rank{}".format(rank))
     with open_h5(
-        join(srcsim.path, srcdatadir, h5in), "r", rank=rank, comm=comm
+        join(srcsim.path, srcdatadir, h5in), "r", rank=rank, comm=comm, size=size
     ) as srch5:
+        if rank == 0 or rank == size - 1:
+            print("opening dst file on rank{}".format(rank))
         with open_h5(
             join(dstsim.path, dstdatadir, h5out),
             "w",
@@ -423,6 +461,7 @@ def src2dst_remesh(
             count=count,
             rank=rank,
             comm=comm,
+            size=size,
             overwrite=True,
         ) as dsth5:
             # apply settings and grid to dst h5 files
@@ -439,8 +478,23 @@ def src2dst_remesh(
                 lsymmetric=lsymmetric,
                 quiet=quiet,
                 dstprecision=dstprecision,
+                rank=rank,
+                comm=comm,
+                size=size,
             )
-            print("get_dstgrid completed on rank {}".format(rank))
+            if rank == 0 or rank == size - 1:
+                print("get_dstgrid completed on rank {}".format(rank))
+        with open_h5(
+            join(dstsim.path, dstdatadir, h5out),
+            "a",
+            lfs=lfs,
+            MB=MB,
+            count=count,
+            rank=rank,
+            comm=comm,
+            size=size,
+            overwrite=True,
+        ) as dsth5:
             # use settings to determine available proc dist then set ncpus
             factors = cpu_optimal(
                 dsth5["settings/nx"][0],
@@ -452,22 +506,26 @@ def src2dst_remesh(
                 nmin=nmin,
                 MBmin=MBmin,
             )
-            print(
-                "remesh check grid: optional cpus upto min grid of"
-                + "nmin={}\n".format(nmin)
-                + "cpu options {}\n".format(factors)
-                + "new mesh: {}, {}, {}\n".format(
-                    dsth5["settings/nx"][0],
-                    dsth5["settings/ny"][0],
-                    dsth5["settings/nz"][0],
+            if rank == 0 or rank == size - 1:
+                print(
+                    "remesh check grid: optional cpus upto min grid of"
+                    + "nmin={}\n".format(nmin)
+                    + "cpu options {}\n".format(factors)
+                    + "new mesh: {}, {}, {}\n".format(
+                        dsth5["settings/nx"][0],
+                        dsth5["settings/ny"][0],
+                        dsth5["settings/nz"][0],
+                    )
+                    + 'To execute remesh set "check_grid=False".'
                 )
-                + 'To execute remesh set "check_grid=False".'
-            )
             if ncpus == [1, 1, 1]:
                 ncpus = [factors[1][0], factors[1][1], factors[1][2]]
+            if rank == 0:
                 dsth5["settings/nprocx"][0] = ncpus[0]
                 dsth5["settings/nprocy"][0] = ncpus[1]
                 dsth5["settings/nprocz"][0] = ncpus[2]
+            if comm:
+                comm.Barrier()
             nprocs = ncpus[0] * ncpus[1] * ncpus[2]
             srcprocs = (
                 srch5["settings/nprocx"][0]
@@ -475,17 +533,18 @@ def src2dst_remesh(
                 * srch5["settings/nprocz"][0]
             )
             if srcprocs > nprocs:
-                print(
-                    "\n**********************************************************\n"
-                    + "remesh WARNING: {} procs reduced from {}.\n".format(
-                        nprocs, srcprocs
+                if rank == 0 or rank == size - 1:
+                    print(
+              "\n**********************************************************\n"
+              + "remesh WARNING: {} procs reduced from {}.\n".format(
+                  nprocs, srcprocs
+              )
+              + "Review multxyz {} and fracxyz {} for more\n".format(
+                  multxyz, fracxyz
+              )
+              + "efficient parallel processing options."
+              + "\n**********************************************************\n"
                     )
-                    + "Review multxyz {} and fracxyz {} for more\n".format(
-                        multxyz, fracxyz
-                    )
-                    + "efficient parallel processing options."
-                    + "\n**********************************************************\n"
-                )
             if check_grid:
                 return 1
             group = group_h5(dsth5, "unit", status="w")
@@ -495,20 +554,31 @@ def src2dst_remesh(
                         group,
                         key,
                         status="w",
-                        data=srch5["unit"][key][()],
+                        shape=(1,),
                         overwrite=True,
                         dtype=dtype,)
+                    if rank == 0:
+                        group[key][()] = dtype(srch5["unit"][key][()])
                 else:
                     if not dsth5.driver == "mpio":
                         group.create_dataset("system",data=srch5["unit"][key][()])
                     else:
                         ladd_bytes=True
                         unitsys = srch5["unit"][key][()]
-            gridh5 = open_h5(join(dstsim.datadir, "grid.h5"), status="w",overwrite=True)
-            dsth5.copy("settings", gridh5)
-            dsth5.copy("grid", gridh5)
-            dsth5.copy("unit", gridh5)
-            gridh5.close()
+                if comm:
+                    comm.Barrier()
+            if rank == 0:
+                gridh5 = open_h5(join(dstsim.datadir, "grid.h5"), status="w",overwrite=True)
+                dsth5["settings/nprocx"][0] = ncpus[0]
+                dsth5["settings/nprocy"][0] = ncpus[1]
+                dsth5["settings/nprocz"][0] = ncpus[2]
+                dsth5.copy("settings", gridh5)
+                dsth5.copy("grid", gridh5)
+                dsth5.copy("unit", gridh5)
+                gridh5.close()
+            if comm:
+                comm.Barrier()
+
             if "persist" in srch5.keys():
                 group = group_h5(dsth5, "persist", status="w")
                 for key in srch5["persist"].keys():
@@ -522,17 +592,28 @@ def src2dst_remesh(
                             group,
                             key,
                             status="w",
-                            data=tmp,
+                            shape=(nprocs,),
                             overwrite=True,
                             dtype=dtype,
                         )
+                        if rank == 0:
+                            dset[()] = tmp
                     else:
                         dset = dataset_h5(
-                            group, key, status="w", data=tmp, overwrite=True
+                            group, key, status="w", shape=tmp.shape, overwrite=True, 
+                            dtype=type(srch5["persist"][key][0])
                         )
+                        if rank == 0:
+                            dset[()] = tmp
+                    if comm:
+                        comm.Barrier()
             dset = dataset_h5(
-                dsth5, "time", status="w", data=srch5["time"][()], dtype=dtype
+                dsth5, "time", status="w", shape=(1,), dtype=dtype
             )
+            if rank == 0:
+                dsth5["time"][()] = dtype(srch5["time"][()])
+            if comm:
+                comm.Barrier()
             nx, ny, nz = (
                 dsth5["settings"]["nx"][0],
                 dsth5["settings"]["ny"][0],
@@ -543,7 +624,8 @@ def src2dst_remesh(
             if dstchunksize > chunksize:
                 lchunks = True
                 nchunks = cpu_optimal(nx, ny, nz, mvar=1, maux=0, MBmin=chunksize)[1]
-                print("nchunks {}".format(nchunks))
+                if rank == 0 or rank == size - 1:
+                    print("nchunks {}".format(nchunks))
                 indx = np.array_split(np.arange(nx) + dstghost, nchunks[0])
                 indy = np.array_split(np.arange(ny) + dstghost, nchunks[1])
                 indz = np.array_split(np.arange(nz) + dstghost, nchunks[2])
@@ -553,11 +635,13 @@ def src2dst_remesh(
                     dsth5["settings"]["mz"][0],
                 )
                 if not quiet:
-                    print("nx {}, ny {}, nz {}".format(nx, ny, nz))
-                    print("mx {}, my {}, mz {}".format(mx, my, mz))
+                    if rank == 0 or rank == size - 1:
+                        print("nx {}, ny {}, nz {}".format(nx, ny, nz))
+                        print("mx {}, my {}, mz {}".format(mx, my, mz))
             group = group_h5(dsth5, "data", status="w")
             for key in srch5["data"].keys():
-                print("remeshing " + key)
+                if rank == 0 or rank == size - 1:
+                    print("remeshing " + key)
                 if not lchunks:
                     var = local_remesh(
                         srch5["data"][key][()],
@@ -569,7 +653,8 @@ def src2dst_remesh(
                         dsth5["grid"]["z"],
                         quiet=quiet,
                     )
-                    print("writing " + key + " shape {}".format(var.shape))
+                    if rank == 0 or rank == size - 1:
+                        print("writing " + key + " shape {}".format(var.shape))
                     dset = dataset_h5(
                         group, key, status="w", data=var, overwrite=True, dtype=dtype
                     )
@@ -582,7 +667,8 @@ def src2dst_remesh(
                         overwrite=True,
                         dtype=dtype,
                     )
-                    print("writing " + key + " shape {}".format([mz, my, mx]))
+                    if rank == 0 or rank == size - 1:
+                        print("writing " + key + " shape {}".format([mz, my, mx]))
                     for iz in range(nchunks[2]):
                         n1, n2 = indz[iz][0] - dstghost, indz[iz][-1] + dstghost
                         srcn1 = np.max(
@@ -728,17 +814,20 @@ def src2dst_remesh(
     # output, error = process.communicate()
     # print(cmd,output,error)
     if srcprocs > nprocs:
-        print(
+        if rank == 0 or rank == size - 1:
+            print(
             "\n**********************************************************\n"
-            + "remesh WARNING: {} procs reduced from {}.\n".format(nprocs, srcprocs)
-            + "Review multxyz {} and fracxyz {} for more\n".format(multxyz, fracxyz)
-            + "efficient parallel processing options."
+        + "remesh WARNING: {} procs reduced from {}.\n".format(nprocs, srcprocs)
+        + "Review multxyz {} and fracxyz {} for more\n".format(multxyz, fracxyz)
+        + "efficient parallel processing options."
             + "\n**********************************************************\n"
         )
     end_time = time.time()
-    print(
-        "end at {} after {} seconds".format(time.ctime(end_time), end_time - start_time)
-    )
+    if rank == 0 or rank == size - 1:
+        print(
+              "end at {} after {} seconds".format(
+                 time.ctime(end_time), end_time - start_time)
+        )
 
 
 # remains to copy other files and edit param files
