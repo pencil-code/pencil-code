@@ -59,7 +59,7 @@ def open_h5(
                 + path
             )
         fname = str.strip(fname, ".dat") + ".h5"
-    mkdir(path, rank=rank, lfs=lfs, MB=MB, count=count)
+    mkdir(path, rank=rank, lfs=lfs, MB=MB, count=count, comm=comm)
     if status == "w" and exists(join(path, fname)):
         if not overwrite:
             try:
