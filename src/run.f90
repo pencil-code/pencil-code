@@ -487,8 +487,8 @@ program run
 !
   it = 1          ! needed for pencil check
   suppress_pencil_check = control_file_exists("NO-PENCIL-CHECK")
-  if ( (lpencil_check .and. .not. suppress_pencil_check) .or. &
-       ((.not.lpencil_check).and.lpencil_check_small) ) &
+  if ( ((lpencil_check .and. .not. suppress_pencil_check) .or. &
+        (.not.lpencil_check.and.lpencil_check_small)) .and. nt>0 ) &
     call pencil_consistency_check(f,df,p)
 !
 !  Start timing for final timing statistics.
