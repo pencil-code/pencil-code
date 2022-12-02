@@ -273,7 +273,7 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
-    subroutine output_average_2D(path, label, nc, name, data, time, lwrite, header)
+    subroutine output_average_2D(label, nc, name, data, time, lwrite, header)
 !
 !   Output average to a file.
 !
@@ -283,7 +283,7 @@ module Io
       use General, only: itoa
       use Mpicomm, only: mpibcast_int
 !
-      character (len=*), intent(in) :: path, label
+      character (len=*), intent(in) :: label
       integer, intent(in) :: nc
       character (len=fmtlen), dimension(nc), intent(in) :: name
       real, dimension(:,:,:), intent(in), target :: data

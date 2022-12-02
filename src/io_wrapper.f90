@@ -337,23 +337,22 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
-    subroutine output_average_2D(path, label, nc, name, data, time, lwrite, header)
+    subroutine output_average_2D(label, nc, name, data, time, lwrite, header)
 !
 !  Output 2D average to a file.
 !
-!  08-nov-2022/ccyang: stub
+!  01-dec-2022/ccyang: stub
 !
       use General, only: keep_compiler_quiet
 !
       integer, intent(in) :: nc
       character(len=fmtlen), dimension(nc), intent(in) :: name
-      character(len=*), intent(in) :: path, label
+      character(len=*), intent(in) :: label
       real, dimension(:,:,:), intent(in) :: data
       real, intent(in) :: time
       logical, intent(in) :: lwrite
       real, dimension(:), optional, intent(in) :: header
 !
-      call keep_compiler_quiet(path)
       call keep_compiler_quiet(label)
       call keep_compiler_quiet(nc)
       call keep_compiler_quiet(name)

@@ -186,16 +186,17 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
-    subroutine output_average_2D(path, label, nc, name, data, time, lwrite, header)
+    subroutine output_average_2D(label, nc, name, data, time, lwrite, header)
 !
 !   Output average to a file.
 !
 !   16-Nov-2018/PABourdin: coded
 !   08-nov-2022/ccyang: remove plain text output (never used)
 !
+      use Cdata, only: directory_dist
       use General, only: keep_compiler_quiet
 !
-      character (len=*), intent(in) :: path, label
+      character (len=*), intent(in) :: label
       integer, intent(in) :: nc
       character (len=fmtlen), dimension(nc), intent(in) :: name
       real, dimension(:,:,:), intent(in) :: data
@@ -210,7 +211,7 @@ module Io
 !
       if (.not. lwrite .or. (nc <= 0)) return
 !
-      filename = trim(path) // '/' // trim(label) // 'averages.dat'
+      filename = trim(directory_dist) // '/' // trim(label) // 'averages.dat'
       open(lun_output, file=filename, form='unformatted', position='append')
       if (present (header)) write(lun_output) header
       write(lun_output) time

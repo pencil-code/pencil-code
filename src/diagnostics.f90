@@ -1147,7 +1147,7 @@ module Diagnostics
 !
       yavg: if (lwrite_yaverages) then
         if (ltimer) taver = mpiwtime()
-        call output_average_2D(directory_dist, 'y', nnamexz, cnamexz, fnamexz, t2davgfirst, lfirst_proc_y)
+        call output_average_2D('y', nnamexz, cnamexz, fnamexz, t2davgfirst, lfirst_proc_y)
         if (ltimer) print *, 'write_2daverages: write y averages in ', mpiwtime() - taver, ' seconds'
       endif yavg
 !
@@ -1155,10 +1155,10 @@ module Diagnostics
         if (ltimer) taver = mpiwtime()
         if (lcaproot) then
           ! cap root (Yang)
-          call output_average_2D(directory_dist, 'z', nnamexy, cnamexy, fnamexy_cap, t2davgfirst, lfirst_proc_z)
+          call output_average_2D('z', nnamexy, cnamexy, fnamexy_cap, t2davgfirst, lfirst_proc_z)
         else
           ! z-beam root (Yin)
-          call output_average_2D(directory_dist, 'z', nnamexy, cnamexy, fnamexy, t2davgfirst, lfirst_proc_z)
+          call output_average_2D('z', nnamexy, cnamexy, fnamexy, t2davgfirst, lfirst_proc_z)
         endif
         if (ltimer) print *, 'write_2daverages: write z averages in ', mpiwtime() - taver, ' seconds'
       endif zavg

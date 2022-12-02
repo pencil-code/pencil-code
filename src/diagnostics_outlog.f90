@@ -1053,15 +1053,15 @@ module Diagnostics
       use IO, only: output_average_2D
 !
       if (lwrite_yaverages) &
-          call output_average_2D (directory_dist, 'y', nnamexz, fnamexz, t2davgfirst, lfirst_proc_y)
+          call output_average_2D ('y', nnamexz, fnamexz, t2davgfirst, lfirst_proc_y)
 !
       if (lwrite_zaverages .and. (.not. lyang .or. lcaproot)) then
         if (lcaproot) then
           ! cap root (Yang)
-          call output_average_2D (directory_dist, 'z', nnamexy, fnamexy_cap, t2davgfirst, lfirst_proc_z)
+          call output_average_2D ('z', nnamexy, fnamexy_cap, t2davgfirst, lfirst_proc_z)
         else
           ! z-beam root (Yin)
-          call output_average_2D (directory_dist, 'z', nnamexy, fnamexy, t2davgfirst, lfirst_proc_z)
+          call output_average_2D ('z', nnamexy, fnamexy, t2davgfirst, lfirst_proc_z)
         endif
       endif
 !
