@@ -16,7 +16,7 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 1
+! MVAR CONTRIBUTION 8
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -41,7 +41,7 @@ module Special
   real :: k=1e-2, fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
   real :: Q=3e-4, Qdot=0., chi_prefactor=.49, chidot=0., H=1.04e-6
   real :: chi, psi, psidot, a, TR, TRdot
-  character(len=50) :: init_axionSU2back='zero'
+  character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k, fdecay, g, lam, mu, Q, Qdot, chi_prefactor, chidot, H
 !
@@ -95,6 +95,7 @@ module Special
 !  Initialize any module variables which are parameter dependent
 !
       call keep_compiler_quiet(f)
+print*,'AXEL1S Q=',f(l1:l2,m,n,iaxionSU2back_Q)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -137,6 +138,7 @@ module Special
           if (lroot) print*,'init_axionSU2back: No such value for init_axionSU2back: ', trim(init_axionSU2back)
           call stop_it("")
       endselect
+print*,'AXEL1, Q=',Q
 !
     endsubroutine init_special
 !***********************************************************************
@@ -217,6 +219,7 @@ module Special
 !  Set the 8 variable
 !
       Q=f(l1:l2,m,n,iaxionSU2back_Q)
+print*,'AXEL1R Q=',Q
       Qdot=f(l1:l2,m,n,iaxionSU2back_Qdot)
       chi=f(l1:l2,m,n,iaxionSU2back_chi)
       chidot=f(l1:l2,m,n,iaxionSU2back_chidot)
@@ -269,6 +272,7 @@ module Special
       integer, intent(out) :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      !call keep_compiler_quiet(f)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
