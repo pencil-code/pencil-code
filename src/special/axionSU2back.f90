@@ -16,7 +16,7 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 12
+! MVAR CONTRIBUTION 8
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -36,7 +36,6 @@ module Special
 !
   integer :: iaxi_Q=0, iaxi_Qdot=0, iaxi_chi=0, iaxi_chidot=0
   integer :: iaxi_psi=0, iaxi_psidot=0, iaxi_TR=0, iaxi_TRdot=0
-  integer :: iaxi_DUM1=0, iaxi_DUM2=0, iaxi_DUM3=0, iaxi_DUM4=0
 !
   ! input parameters
   real :: k=1e-2, fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
@@ -77,8 +76,6 @@ module Special
 !
 !  Set iaxionSU2back to consecutive numbers
 !
-      call farray_register_pde('axi_DUM1',iaxi_DUM1)
-      call farray_register_pde('axi_DUM2',iaxi_DUM2)
       call farray_register_pde('axi_Q',iaxi_Q)
       call farray_register_pde('axi_Qdot',iaxi_Qdot)
       call farray_register_pde('axi_chi',iaxi_chi)
@@ -87,11 +84,6 @@ module Special
       call farray_register_pde('axi_psidot',iaxi_psidot)
       call farray_register_pde('axi_TR',iaxi_TR)
       call farray_register_pde('axi_TRdot',iaxi_TRdot)
-      call farray_register_pde('axi_DUM3',iaxi_DUM3)
-      call farray_register_pde('axi_DUM4',iaxi_DUM4)
-print*,'A) iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot=',iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot
-print*,'A) iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot=',iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot
-print*,'A) iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4=',iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4
 !
     endsubroutine register_special
 !***********************************************************************
@@ -132,14 +124,14 @@ print*,'A) iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4=',iaxi_DUM1, iaxi_DUM2, ia
           TR=(a/sqrt(2.*k))
           TRdot=TR*k
           chi=chi_prefactor*pi*fdecay
-          f(l1:l2,m,n,iaxi_Q)=Q
-          f(l1:l2,m,n,iaxi_Qdot)=Qdot
-          f(l1:l2,m,n,iaxi_chi)=chi
-          f(l1:l2,m,n,iaxi_chidot)=chidot
-          f(l1:l2,m,n,iaxi_psi)=psi
-          f(l1:l2,m,n,iaxi_psidot)=psidot
-          f(l1:l2,m,n,iaxi_TR)=TR
-          f(l1:l2,m,n,iaxi_TRdot)=TRdot
+          f(:,:,:,iaxi_Q)=Q
+          f(:,:,:,iaxi_Qdot)=Qdot
+          f(:,:,:,iaxi_chi)=chi
+          f(:,:,:,iaxi_chidot)=chidot
+          f(:,:,:,iaxi_psi)=psi
+          f(:,:,:,iaxi_psidot)=psidot
+          f(:,:,:,iaxi_TR)=TR
+          f(:,:,:,iaxi_TRdot)=TRdot
 !
         case default
           !
@@ -148,11 +140,6 @@ print*,'A) iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4=',iaxi_DUM1, iaxi_DUM2, ia
           if (lroot) print*,'init_axionSU2back: No such value for init_axionSU2back: ', trim(init_axionSU2back)
           call stop_it("")
       endselect
-print*,'B) iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot=',iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot
-print*,'B) iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot=',iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot
-print*,'B) iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4=',iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4
-print*,'B) f(1,1,1,:)=',f(1,1,1,:)
-print*,'B) f=',f
 !
     endsubroutine init_special
 !***********************************************************************
@@ -232,12 +219,6 @@ print*,'B) f=',f
 !
 !  Set the 8 variable
 !
-print*,'AXEL 0: iaxi_Q, iaxi_Qdot=',iaxi_Q, iaxi_Qdot
-print*,'AXEL 21a: f(1,1,1,:)=',f(1,1,1,:)
-print*,'C) iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot=',iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot
-print*,'C) iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot=',iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot
-print*,'C) iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4=',iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4
-print*,'C) f(1,1,1,:)=',f(1,1,1,:)
       Q=f(l1:l2,m,n,iaxi_Q)
       Qdot=f(l1:l2,m,n,iaxi_Qdot)
       chi=f(l1:l2,m,n,iaxi_chi)
