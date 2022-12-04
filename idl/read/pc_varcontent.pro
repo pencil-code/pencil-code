@@ -187,6 +187,14 @@ indices = [ $
   { name:'iam', label:'Meanfield dynamo', dims:3 }, $
   { name:'ipsi_real', label:'Wave function real part', dims:1 }, $
   { name:'ipsi_imag', label:'Wave function imaginary part', dims:1 }, $
+  { name:'iaxi_Q', label:'axi_Q', dims:1 }, $
+  { name:'iaxi_Qdot', label:'axi_Qdot', dims:1 }, $
+  { name:'iaxi_chi', label:'axi_chi', dims:1 }, $
+  { name:'iaxi_chidot', label:'axi_chidot', dims:1 }, $
+  { name:'iaxi_psi', label:'axi_psi', dims:1 }, $
+  { name:'iaxi_psidot', label:'axi_psidot', dims:1 }, $
+  { name:'iaxi_TR', label:'axi_TR', dims:1 }, $
+  { name:'iaxi_TRdot', label:'axi_TRdot', dims:1 }, $
   { name:'ialpm', label:'alpm', dims:1 }, $
   { name:'ietat', label:'etat', dims:1 }, $
   { name:'ieta', label:'Dust resistivity', dims:1 }, $
