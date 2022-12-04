@@ -16,7 +16,7 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 8
+! MVAR CONTRIBUTION 12
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -34,8 +34,9 @@ module Special
 !
 ! Declare index of variables
 !
-  integer :: iaxionSU2back_Q=0, iaxionSU2back_Qdot=0, iaxionSU2back_chi=0, iaxionSU2back_chidot=0
-  integer :: iaxionSU2back_psi=0, iaxionSU2back_psidot=0, iaxionSU2back_TR=0, iaxionSU2back_TRdot=0
+  integer :: iaxi_Q=0, iaxi_Qdot=0, iaxi_chi=0, iaxi_chidot=0
+  integer :: iaxi_psi=0, iaxi_psidot=0, iaxi_TR=0, iaxi_TRdot=0
+  integer :: iaxi_DUM1=0, iaxi_DUM2=0, iaxi_DUM3=0, iaxi_DUM4=0
 !
   ! input parameters
   real :: k=1e-2, fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
@@ -51,7 +52,10 @@ module Special
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_Q =0 ! DIAG_DOC: $Q$
+  integer :: idiag_Q =0   ! DIAG_DOC: $Q$
+  integer :: idiag_chi =0 ! DIAG_DOC: $\chi$
+  integer :: idiag_psi =0 ! DIAG_DOC: $\psi$
+  integer :: idiag_TR =0  ! DIAG_DOC: $T_R$
 !
   contains
 !
@@ -73,14 +77,21 @@ module Special
 !
 !  Set iaxionSU2back to consecutive numbers
 !
-      call farray_register_pde('axionSU2back_Q',iaxionSU2back_Q)
-      call farray_register_pde('axionSU2back_Qdot',iaxionSU2back_Qdot)
-      call farray_register_pde('axionSU2back_chi',iaxionSU2back_chi)
-      call farray_register_pde('axionSU2back_chidot',iaxionSU2back_chidot)
-      call farray_register_pde('axionSU2back_psi',iaxionSU2back_psi)
-      call farray_register_pde('axionSU2back_psidot',iaxionSU2back_psidot)
-      call farray_register_pde('axionSU2back_TR',iaxionSU2back_TR)
-      call farray_register_pde('axionSU2back_TRdot',iaxionSU2back_TRdot)
+      call farray_register_pde('axi_DUM1',iaxi_DUM1)
+      call farray_register_pde('axi_DUM2',iaxi_DUM2)
+      call farray_register_pde('axi_Q',iaxi_Q)
+      call farray_register_pde('axi_Qdot',iaxi_Qdot)
+      call farray_register_pde('axi_chi',iaxi_chi)
+      call farray_register_pde('axi_chidot',iaxi_chidot)
+      call farray_register_pde('axi_psi',iaxi_psi)
+      call farray_register_pde('axi_psidot',iaxi_psidot)
+      call farray_register_pde('axi_TR',iaxi_TR)
+      call farray_register_pde('axi_TRdot',iaxi_TRdot)
+      call farray_register_pde('axi_DUM3',iaxi_DUM3)
+      call farray_register_pde('axi_DUM4',iaxi_DUM4)
+print*,'A) iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot=',iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot
+print*,'A) iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot=',iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot
+print*,'A) iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4=',iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4
 !
     endsubroutine register_special
 !***********************************************************************
@@ -95,7 +106,6 @@ module Special
 !  Initialize any module variables which are parameter dependent
 !
       call keep_compiler_quiet(f)
-print*,'AXEL1S Q=',f(l1:l2,m,n,iaxionSU2back_Q)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -122,14 +132,14 @@ print*,'AXEL1S Q=',f(l1:l2,m,n,iaxionSU2back_Q)
           TR=(a/sqrt(2.*k))
           TRdot=TR*k
           chi=chi_prefactor*pi*fdecay
-          f(l1:l2,m,n,iaxionSU2back_Q)=Q
-          f(l1:l2,m,n,iaxionSU2back_Qdot)=Qdot
-          f(l1:l2,m,n,iaxionSU2back_chi)=chi
-          f(l1:l2,m,n,iaxionSU2back_chidot)=chidot
-          f(l1:l2,m,n,iaxionSU2back_psi)=psi
-          f(l1:l2,m,n,iaxionSU2back_psidot)=psidot
-          f(l1:l2,m,n,iaxionSU2back_TR)=TR
-          f(l1:l2,m,n,iaxionSU2back_TRdot)=TRdot
+          f(l1:l2,m,n,iaxi_Q)=Q
+          f(l1:l2,m,n,iaxi_Qdot)=Qdot
+          f(l1:l2,m,n,iaxi_chi)=chi
+          f(l1:l2,m,n,iaxi_chidot)=chidot
+          f(l1:l2,m,n,iaxi_psi)=psi
+          f(l1:l2,m,n,iaxi_psidot)=psidot
+          f(l1:l2,m,n,iaxi_TR)=TR
+          f(l1:l2,m,n,iaxi_TRdot)=TRdot
 !
         case default
           !
@@ -138,7 +148,11 @@ print*,'AXEL1S Q=',f(l1:l2,m,n,iaxionSU2back_Q)
           if (lroot) print*,'init_axionSU2back: No such value for init_axionSU2back: ', trim(init_axionSU2back)
           call stop_it("")
       endselect
-print*,'AXEL1, Q=',Q
+print*,'B) iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot=',iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot
+print*,'B) iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot=',iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot
+print*,'B) iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4=',iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4
+print*,'B) f(1,1,1,:)=',f(1,1,1,:)
+print*,'B) f=',f
 !
     endsubroutine init_special
 !***********************************************************************
@@ -218,15 +232,20 @@ print*,'AXEL1, Q=',Q
 !
 !  Set the 8 variable
 !
-      Q=f(l1:l2,m,n,iaxionSU2back_Q)
-print*,'AXEL1R Q=',Q
-      Qdot=f(l1:l2,m,n,iaxionSU2back_Qdot)
-      chi=f(l1:l2,m,n,iaxionSU2back_chi)
-      chidot=f(l1:l2,m,n,iaxionSU2back_chidot)
-      psi=f(l1:l2,m,n,iaxionSU2back_psi)
-      psidot=f(l1:l2,m,n,iaxionSU2back_psidot)
-      TR=f(l1:l2,m,n,iaxionSU2back_TR)
-      TRdot=f(l1:l2,m,n,iaxionSU2back_TRdot)
+print*,'AXEL 0: iaxi_Q, iaxi_Qdot=',iaxi_Q, iaxi_Qdot
+print*,'AXEL 21a: f(1,1,1,:)=',f(1,1,1,:)
+print*,'C) iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot=',iaxi_Q, iaxi_Qdot, iaxi_chi, iaxi_chidot
+print*,'C) iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot=',iaxi_psi, iaxi_psidot, iaxi_TR, iaxi_TRdot
+print*,'C) iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4=',iaxi_DUM1, iaxi_DUM2, iaxi_DUM3, iaxi_DUM4
+print*,'C) f(1,1,1,:)=',f(1,1,1,:)
+      Q=f(l1:l2,m,n,iaxi_Q)
+      Qdot=f(l1:l2,m,n,iaxi_Qdot)
+      chi=f(l1:l2,m,n,iaxi_chi)
+      chidot=f(l1:l2,m,n,iaxi_chidot)
+      psi=f(l1:l2,m,n,iaxi_psi)
+      psidot=f(l1:l2,m,n,iaxi_psidot)
+      TR=f(l1:l2,m,n,iaxi_TR)
+      TRdot=f(l1:l2,m,n,iaxi_TRdot)
 !
 !  Set parameters
 !
@@ -240,20 +259,20 @@ print*,'AXEL1R Q=',Q
 !
 !  background
 !
-      df(l1:l2,m,n,iaxionSU2back_Q)=df(l1:l2,m,n,iaxionSU2back_Q)+Qdot
-      df(l1:l2,m,n,iaxionSU2back_Qdot)=df(l1:l2,m,n,iaxionSU2back_Qdot) &
+      df(l1:l2,m,n,iaxi_Q)=df(l1:l2,m,n,iaxi_Q)+Qdot
+      df(l1:l2,m,n,iaxi_Qdot)=df(l1:l2,m,n,iaxi_Qdot) &
         +g*lamf*chidot*Q**2-3.*H*Qdot-(Hdot+2*H**2)*Q-2.*g**2*Q**3
-      df(l1:l2,m,n,iaxionSU2back_chi)=df(l1:l2,m,n,iaxionSU2back_chi)+chidot
-      df(l1:l2,m,n,iaxionSU2back_chidot)=df(l1:l2,m,n,iaxionSU2back_chidot) &
+      df(l1:l2,m,n,iaxi_chi)=df(l1:l2,m,n,iaxi_chi)+chidot
+      df(l1:l2,m,n,iaxi_chidot)=df(l1:l2,m,n,iaxi_chidot) &
         -3.*g*lamf*Q**2*(Qdot+H*Q)-3.*H*chidot-Uprime
 !
 !  perturbation
 !
-      df(l1:l2,m,n,iaxionSU2back_psi)=df(l1:l2,m,n,iaxionSU2back_psi)+psidot
-      df(l1:l2,m,n,iaxionSU2back_psidot)=df(l1:l2,m,n,iaxionSU2back_psidot) &
+      df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+      df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
         -H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
-      df(l1:l2,m,n,iaxionSU2back_TR)=df(l1:l2,m,n,iaxionSU2back_TR)+TRdot
-      df(l1:l2,m,n,iaxionSU2back_TRdot)=df(l1:l2,m,n,iaxionSU2back_TRdot) &
+      df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
+      df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
         -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
         +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
 
@@ -261,6 +280,9 @@ print*,'AXEL1R Q=',Q
 !
       if (ldiagnos) then
         if (idiag_Q/=0) call sum_mn_name(Q,idiag_Q)
+        if (idiag_chi/=0) call sum_mn_name(chi,idiag_chi)
+        if (idiag_psi/=0) call sum_mn_name(psi,idiag_psi)
+        if (idiag_TR/=0) call sum_mn_name(TR,idiag_TR)
       endif
 !
     endsubroutine dspecial_dt
@@ -325,11 +347,14 @@ print*,'AXEL1R Q=',Q
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Q=0
+        idiag_Q=0; idiag_chi=0; idiag_psi=0; idiag_TR=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'Q' ,idiag_Q)
+        call parse_name(iname,cname(iname),cform(iname),'chi' ,idiag_chi)
+        call parse_name(iname,cname(iname),cform(iname),'psi' ,idiag_psi)
+        call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
       enddo
 !
     endsubroutine rprint_special
