@@ -1283,7 +1283,7 @@ module Register
         print*,'lpoint,lpoint2=',lpoint,lpoint2
         print*,'mpoint,mpoint2=',mpoint,mpoint2
         print*,'npoint,npoint2=',npoint,npoint2
-        call fatal_error('write_pt_positions','one of them is not in range')
+!       call fatal_error('write_pt_positions','one of them is not in range')
       endif
 !
       ikx=lpoint-nghost
