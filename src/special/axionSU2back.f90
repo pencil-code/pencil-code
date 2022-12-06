@@ -58,6 +58,11 @@ module Special
   integer :: idiag_chi =0 ! DIAG_DOC: $\chi$
   integer :: idiag_psi =0 ! DIAG_DOC: $\psi$
   integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
+  integer :: idiag_grand=0 ! DIAG_DOC: $G_R$
+!
+! z averaged diagnostics given in zaver.in
+!
+  integer :: idiag_grandxy=0      ! ZAVG_DOC: $\left< G_R \right>_{z}$
 !
   contains
 !
@@ -102,7 +107,8 @@ module Special
 !  Initialize any module variables which are parameter dependent
 !
       do ik=1,nx
-        k(ik)=k0+dk*(ik-1)
+        k(ik)=k0+dk*(ik-1+iproc*nx)
+        print*,'iproc,ik=',iproc,k(ik)
       enddo
 !
       call keep_compiler_quiet(f)
@@ -125,7 +131,7 @@ module Special
 !
 !  Initial condition; depends on k, which is here set to x.
 !
-print*,'init_special: k=',k
+      print*,'init_special: iproc,k=',iproc,k
       select case (init_axionSU2back)
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
@@ -221,6 +227,7 @@ print*,'init_special: k=',k
       real, dimension (nx) :: Q, Qdot, chi, chidot
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: Uprime, lamf, mQ, xi, a, epsQE, epsQB
+      real, dimension (nx) :: grand
       real :: Mpl2=1., Hdot=0.
       type (pencil_case) :: p
 !
@@ -272,7 +279,11 @@ print*,'init_special: k=',k
       df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
         -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
         +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
-
+!
+!  integrand (for diagnostics)
+!
+      grand=(xi*H-k/a)*TR**2*k**3
+!
 !  diagnostics
 !
       if (ldiagnos) then
@@ -280,6 +291,13 @@ print*,'init_special: k=',k
         if (idiag_chi/=0) call sum_mn_name(chi,idiag_chi)
         if (idiag_psi/=0) call sum_mn_name(psi,idiag_psi)
         if (idiag_TR/=0)  call sum_mn_name(TR,idiag_TR)
+        if (idiag_grand/=0) then
+          call sum_mn_name(grand,idiag_grand)
+        endif
+      endif
+!
+      if (l2davgfirst) then
+        if (idiag_grandxy/=0)   call zsum_mn_name_xy(grand,idiag_grandxy)
       endif
 !
     endsubroutine dspecial_dt
@@ -333,7 +351,7 @@ print*,'init_special: k=',k
 !
 !   SAMPLE IMPLEMENTATION
 !
-      integer :: iname
+      integer :: iname, inamexy, inamexz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -344,7 +362,8 @@ print*,'init_special: k=',k
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Q=0; idiag_chi=0; idiag_psi=0; idiag_TR=0
+        idiag_Q=0; idiag_chi=0; idiag_psi=0; idiag_TR=0; idiag_grand=0
+        idiag_grandxy=0
       endif
 !
       do iname=1,nname
@@ -352,6 +371,13 @@ print*,'init_special: k=',k
         call parse_name(iname,cname(iname),cform(iname),'chi' ,idiag_chi)
         call parse_name(iname,cname(iname),cform(iname),'psi' ,idiag_psi)
         call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
+        call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
+      enddo
+!
+!  Check for those quantities for which we want z-averages.
+!
+      do inamexy=1,nnamexy
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'grandxy',idiag_grandxy)
       enddo
 !
     endsubroutine rprint_special
