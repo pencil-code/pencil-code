@@ -38,23 +38,26 @@ module Special
   integer :: iaxi_psi=0, iaxi_psidot=0, iaxi_TR=0, iaxi_TRdot=0
 !
   ! input parameters
-  real :: k=1e-2, fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
-  real :: Q=3e-4, Qdot=0., chi_prefactor=.49, chidot=0., H=1.04e-6
-  real :: chi, psi, psidot, a, TR, TRdot
+  real :: a, k0=1e-2, dk=1e-2
+  real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
+  real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
-    k, fdecay, g, lam, mu, Q, Qdot, chi_prefactor, chidot, H
+    k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H
 !
   ! run parameters
   namelist /special_run_pars/ &
-    k, fdecay, g, lam, mu, H
+    k0, dk, fdecay, g, lam, mu, H
+!
+  ! k array
+  real, dimension (nx) :: k, Q, Qdot, chi, chidot
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_Q =0   ! DIAG_DOC: $Q$
+  integer :: idiag_Q   =0 ! DIAG_DOC: $Q$
   integer :: idiag_chi =0 ! DIAG_DOC: $\chi$
   integer :: idiag_psi =0 ! DIAG_DOC: $\psi$
-  integer :: idiag_TR =0  ! DIAG_DOC: $T_R$
+  integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
 !
   contains
 !
@@ -76,14 +79,14 @@ module Special
 !
 !  Set iaxionSU2back to consecutive numbers
 !
-      call farray_register_pde('axi_Q',iaxi_Q)
-      call farray_register_pde('axi_Qdot',iaxi_Qdot)
-      call farray_register_pde('axi_chi',iaxi_chi)
+      call farray_register_pde('axi_Q'     ,iaxi_Q)
+      call farray_register_pde('axi_Qdot'  ,iaxi_Qdot)
+      call farray_register_pde('axi_chi'   ,iaxi_chi)
       call farray_register_pde('axi_chidot',iaxi_chidot)
-      call farray_register_pde('axi_psi',iaxi_psi)
+      call farray_register_pde('axi_psi'   ,iaxi_psi)
       call farray_register_pde('axi_psidot',iaxi_psidot)
-      call farray_register_pde('axi_TR',iaxi_TR)
-      call farray_register_pde('axi_TRdot',iaxi_TRdot)
+      call farray_register_pde('axi_TR'    ,iaxi_TR)
+      call farray_register_pde('axi_TRdot' ,iaxi_TRdot)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -94,8 +97,13 @@ module Special
 !  19-feb-2019/axel: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ik
 !
 !  Initialize any module variables which are parameter dependent
+!
+      do ik=1,nx
+        k(ik)=k0+dk*(ik-1)
+      enddo
 !
       call keep_compiler_quiet(f)
 !
@@ -110,28 +118,36 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: psi, psidot, TR, TRdot
+      real :: chi0
 !
       intent(inout) :: f
 !
-!  Initial condition; same for every population.
+!  Initial condition; depends on k, which is here set to x.
 !
+print*,'init_special: k=',k
       select case (init_axionSU2back)
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
+          print*,'AXEL: k=',k
           a=exp(H*t)
           psi=(a/sqrt(2.*k))
           psidot=psi*k
           TR=(a/sqrt(2.*k))
           TRdot=TR*k
-          chi=chi_prefactor*pi*fdecay
-          f(:,:,:,iaxi_Q)=Q
-          f(:,:,:,iaxi_Qdot)=Qdot
-          f(:,:,:,iaxi_chi)=chi
-          f(:,:,:,iaxi_chidot)=chidot
-          f(:,:,:,iaxi_psi)=psi
-          f(:,:,:,iaxi_psidot)=psidot
-          f(:,:,:,iaxi_TR)=TR
-          f(:,:,:,iaxi_TRdot)=TRdot
+          chi0=chi_prefactor*pi*fdecay
+          do n=n1,n2
+          do m=m1,m2
+            f(l1:l2,m,n,iaxi_Q)=Q0
+            f(l1:l2,m,n,iaxi_Qdot)=Qdot0
+            f(l1:l2,m,n,iaxi_chi)=chi0
+            f(l1:l2,m,n,iaxi_chidot)=chidot0
+            f(l1:l2,m,n,iaxi_psi)=psi
+            f(l1:l2,m,n,iaxi_psidot)=psidot
+            f(l1:l2,m,n,iaxi_TR)=TR
+            f(l1:l2,m,n,iaxi_TRdot)=TRdot
+          enddo
+          enddo
 !
         case default
           !
@@ -260,10 +276,10 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
-        if (idiag_Q/=0) call sum_mn_name(Q,idiag_Q)
+        if (idiag_Q/=0)   call sum_mn_name(Q,idiag_Q)
         if (idiag_chi/=0) call sum_mn_name(chi,idiag_chi)
         if (idiag_psi/=0) call sum_mn_name(psi,idiag_psi)
-        if (idiag_TR/=0) call sum_mn_name(TR,idiag_TR)
+        if (idiag_TR/=0)  call sum_mn_name(TR,idiag_TR)
       endif
 !
     endsubroutine dspecial_dt
