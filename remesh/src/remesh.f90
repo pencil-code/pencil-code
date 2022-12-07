@@ -33,8 +33,9 @@ program remesh
 !
   use Cdata
   use Cparam
+  use Mpicomm
   use Syscalls, only: system_cmd
-  use General, only: get_from_nml_str,get_from_nml_real,get_from_nml_log,convert_nml
+  use General   !, only: get_from_nml_str,get_from_nml_real,get_from_nml_log,convert_nml
   use Common
 !
   implicit none
@@ -44,16 +45,22 @@ program remesh
   character (len=130) :: file,destination,file_new,varfile='var.dat'
   character (len=130) :: file2,dimfile,dimfile_loc,dimfile2_loc,gridfile
   character (len=4)   :: overwrite='yes'
-  character (len=6)   :: ch
+  character (len=6)   :: ch,chx,chy,chz
   character (len=1)   :: prec
   integer :: i,j,k,itx=1,ity=1,itz=1
   integer :: kk,jj,ii,cpu
-  integer :: mxout,myout,mzout,dummy,ipxx,ipyy,ipzz
+  integer :: dummy,ipxx,ipyy,ipzz
   integer :: mxout_grid,myout_grid,mzout_grid
   integer :: addx, addy, addz
   integer :: iproc_new, cpu_count=1
   integer, dimension (mprocs) :: cpu_global
-  real, dimension (mx,my,mz,mvar) :: a
+
+  real, dimension(mx,my,mz,mvar) :: a
+  real, dimension(mxcoll,mycoll,mzcoll,mvar) :: acoll
+  real, dimension(:), allocatable :: xcoll     !mxcoll) :: xcoll
+  real, dimension(mycoll) :: ycoll
+  real, dimension(mzcoll) :: zcoll
+
 ! SC: added axtra dimension in x direction to 'f' array
   real, dimension (mmx_grid,mmy_grid,mmz_grid,mvar) :: f
   real, dimension (mmx,mmy,mmz,mvar,mprocs) :: ff
@@ -65,39 +72,62 @@ program remesh
   real, dimension (mmz,mprocs) :: rrz
   real :: tdummy, t_sp
   real :: facx, facy, facz, x0loc, y0loc, z0loc, w1, w2,dang,dang_old
-  integer :: cpu_local,iyy,icpu
+  integer :: cpu_local,iyy,icpu,out_size,io_len
   integer :: counx, couny, counz, xstart,xstop, ystart,ystop, zstart, zstop
   integer :: nprocxx, nprocyy, nproczz
   logical :: lexist, lshort
-  integer :: idx, ifxa, ifxe, idy, ifya, ifye, idz, ifza, ifze, iv
+  integer :: idx, ifxa, ifxe, idy, ifya, ifye, idz, ifza, ifze, iv, icpu0, icpu1, nprocs_rem
+  integer :: i1x, i2x, i1y, i2y, i1z, i2z, isx, isy, isz, srcproc, idpx, idpy, idpz
   character(LEN=128) :: clperi
+  integer, dimension(3) :: layout_src, layout_dst, layout_rem
 
-  clperi=get_from_nml_str('LPERI',trim(datadir)//'/param2.nml',lvec=.true.)
-  if (clperi=='') then
-    print*, 'lperi could not be identified!'
-    stop
+  call mpicomm_init
+  if (all((/mulx,muly,mulz/)==1) .and. all((/divx,divy,divz/)==1) .and. &
+      all((/remesh_parx,remesh_pary,remesh_parz/)==1 )) then
+    if (lroot) print*, 'No remeshing needed!'
+    call mpifinalize
   endif
+
+  if (any(min((/mulx,muly,mulz/),(/divx,divy,divz/))>1)) then
+    if (lroot) print*, 'mul[xyz] and div[xyz] must not both be >1!'
+    call mpifinalize
+  endif
+
+  if (lroot) then 
+    clperi=get_from_nml_str('LPERI',trim(datadir)//'/param2.nml',lvec=.true.)
+    if (clperi=='') then
+      print*, 'lperi could not be identified!'
+      stop
+    endif
+  endif
+  call mpibcast(clperi)
   call convert_nml(trim(clperi),lperi)
 !
-  lyinyang=get_from_nml_log('LYINYANG',lexist,trim(datadir)//'/param.nml')
-  if (.not.lexist) then
-    print*, 'lyinyang could not be identified!'
-    lyinyang=.false.
+  if (lroot) then 
+    lyinyang=get_from_nml_log('LYINYANG',lexist,trim(datadir)//'/param.nml')
+    if (.not.lexist) then
+      print*, 'lyinyang could not be identified!'
+      lyinyang=.false.
+    endif
   endif
-
+  call mpibcast(lyinyang)
+!
   if (lyinyang) then
 !
 !  Read rel_dang for Yin-Yang grid.
 !
-    rel_dang=get_from_nml_real('REL_DANG',lexist,trim(datadir)//'/param2.nml')
-    if (.not.lexist) then
-      print*, 'rel_dang could not be identified!'
-      stop
+    if (lroot) then 
+      rel_dang=get_from_nml_real('REL_DANG',lexist,trim(datadir)//'/param2.nml')
+      if (.not.lexist) then
+        print*, 'rel_dang could not be identified!'
+        stop
+      endif
     endif
+    call mpibcast(rel_dang)
     dang_old=rel_dang*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi
 
     if (remesh_pary/=remesh_parz) then
-      print*,'remesh_pary/=remesh_parz - this is not recommendable for Yin-Yang grids!'
+      if (lroot) print*,'remesh_pary/=remesh_parz - this is not recommendable for Yin-Yang grids!'
       dang=dang_old/sqrt(float(remesh_pary*remesh_parz))
     else
       dang=dang_old/remesh_pary
@@ -105,46 +135,78 @@ program remesh
 
   endif
 !
-  print*,'mx,my,mz,mvar=',mx,my,mz,mvar
-!
-!  Print out parameters of conversion
-!
-  print*,'increase processor numbers in [xyz] by mul[xyz]=',mulx,muly,mulz
-  print*,'remesh by factor remesh_par[xyz]=',remesh_parx,remesh_pary,remesh_parz
-!
 !  Read input parameters from remesh.in
 !
-  open(1,FILE='remesh.in',FORM='formatted')
-  read(1,'(a)') destination
-  close(1)
-  print*,'destination='//destination
+  if (lroot) then 
+    open(1,FILE='remesh.in',FORM='formatted')
+    read(1,'(a)') destination
+    close(1)
 !
 !  Read input parameters from varfile.in
 !
-  inquire(FILE='varfile.in',EXIST=lexist)
-  if (lexist) then
-    open(1,FILE='varfile.in',FORM='formatted')
-    read(1,'(a)') varfile
-    close(1)
+    inquire(FILE='varfile.in',EXIST=lexist)
+    if (lexist) then
+      open(1,FILE='varfile.in',FORM='formatted')
+      read(1,'(a)') varfile
+      close(1)
+    endif
   endif
-  print*,'varfile='//varfile
+  call mpibcast(destination)
+  call mpibcast(varfile)
+!
+  if (lroot) then
+    print*,'mx,my,mz,mvar=',mx,my,mz,mvar
+!
+!  Print out parameters of conversion
+!
+    print*,'increase processor numbers in [xyz] by mul[xyz]=',mulx,muly,mulz
+    print*,'decrease processor numbers in [xyz] by div[xyz]=',divx,divy,divz
+    print*,'remesh by factor remesh_par[xyz]=',remesh_parx,remesh_pary,remesh_parz
+    print*,'destination='//destination
+    print*,'varfile='//varfile
+!
+  endif
 !
 !  Confirm remeshing
 !
-  write(*,*)
-  write(*,*) 'Do you really want to overwrite ', trim(destination),'?'
-  write(*,'(a$)') ' (Answer yes or no): '
-  read(*,*,end=9) overwrite
+  if (nprocs==1) then
+    write(*,*)
+    write(*,*) 'Do you really want to overwrite ', trim(destination),'?'
+    write(*,'(a$)') ' (Answer yes or no): '
+    read(*,*,end=9) overwrite
+  else
+    overwrite='yes'
+  endif
 9 if ( overwrite .eq. 'yes') then
 !
 ! Read global dim.dat in order to find precision
 !
-    call safe_character_assign(dimfile,trim(datadir)//'/dim.dat')
-    if (ip<8) print*,'Reading '//trim(dimfile)
-    open(1,FILE=dimfile,FORM='formatted')
-    read(1,*) dummy,dummy,dummy,dummy,dummy
-    read(1,*) prec
-    close(1)
+    if (lroot) then
+      call safe_character_assign(dimfile,trim(datadir)//'/dim.dat')
+      if (ip<8) print*,'Reading '//trim(dimfile)
+      open(1,FILE=dimfile,FORM='formatted')
+      read(1,*) dummy,dummy,dummy,dummy,dummy
+      read(1,*) prec
+      close(1)
+    endif
+    call mpibcast(prec)
+!
+!  Determine proc layouts
+!
+   layout_src=(/nprocx,nprocy,nprocz/)
+   layout_dst=(/mulx*layout_src(1)/divx,muly*layout_src(2)/divy,mulz*layout_src(3)/divz/)
+!if (lroot) &
+!print*, 'layout_src,dst=', layout_src, layout_dst
+   layout_rem=layout_src
+   if (divx>1) layout_rem(1)=layout_dst(1)
+   if (divy>1) layout_rem(2)=layout_dst(2)
+   if (divz>1) layout_rem(3)=layout_dst(3)
+   nprocs_rem=product(layout_rem)
+
+   if (nprocs/=nprocs_rem) then
+     if (lroot) print*, 'nprocs/=nprocs_rem', nprocs,nprocs_rem
+     stop
+   endif
 !
 !  Determine new size of global array
 !
@@ -154,16 +216,15 @@ program remesh
 !
 !  Determine new size of local array
 !
-    mxout=remesh_parx*nx+2*nghost
-    myout=remesh_pary*ny+2*nghost
-    mzout=remesh_parz*nz+2*nghost
+    nprocxx=nprocx*mulx/divx
+    nprocyy=nprocy*muly/divy
+    nproczz=nprocz*mulz/divz
 
-    nprocxx=nprocx*mulx
-    nprocyy=nprocy*muly
-    nproczz=nprocz*mulz
+    allocate(xcoll(mxcoll))
 !
 !  Write size of global array to destination/data/dim.dat
 !
+    if (lroot) then
     call safe_character_assign(dimfile,&
          trim(destination)//'/'//trim(datadir)//'/dim.dat')
     if (ip<8) print*,'Writing '//trim(dimfile)
@@ -178,6 +239,7 @@ program remesh
 !
     write(1,'(4i3)') nprocxx, nprocyy, nproczz, 1
     close(1)
+    endif
 !
 ! Factor for d[xyz].
 !
@@ -202,30 +264,51 @@ program remesh
         facz=(nzgrid-1.)/(remesh_parz*nzgrid-1.)
       endif
     endif
+
+    if (lroot) then
+      print*,'mx,my,mz,mvar=',mx,my,mz,mvar
+      print*,'lshear=',lshear
+    endif
+
+    if (nprocs==1) then
+      icpu0=0; icpu1=nprocs_rem-1
+    else
+      icpu0=iproc; icpu1=iproc
+    endif
 !
 !  Loop over number of CPU's in original run
 !
 yinyang_loop: &
-    do iyy=0,ncpus,ncpus
-    do icpu=0,ncpus-1
-    
-      ipx = modulo(icpu, nprocx)
-      ipy = modulo(icpu/nprocx, nprocy)
-      ipz = icpu/(nprocx*nprocy)
+    do iyy=0,0   !ncpus,ncpus
+    do icpu=icpu0,icpu1
+   
+      call find_proc_coords_general(icpu,layout_rem(1),layout_rem(2),layout_rem(3),ipx,ipy,ipz)
+      !ipx = modulo(icpu, nprocx)
+      !ipy = modulo(icpu/nprocx, nprocy)
+      !ipz = icpu/(nprocx*nprocy)
       cpu=icpu+iyy
+
+      i1z=1; i2z=mz
+      do isz=0,divz-1
+      i1y=1; i2y=my;
+      do isy=0,divy-1
+      i1x=1; i2x=mx;
+      do isx=0,divx-1
+
+      srcproc=find_proc_general(ipx*divx+isx,ipy*divy+isy,ipz*divz+isz,layout_src(1),layout_src(2),layout_src(3))
 !
 !  Create name of varfile (this is typically var.dat) 
 !
       ip=10
-      call chn(cpu,ch)
+      call chn(srcproc,ch)
       call safe_character_assign(file,&
           trim(datadir)//'/proc'//trim(ch)//'/'//trim(varfile))
-      if (ip<8) print*,'Reading '//trim(file)
+      if (lroot.and.ip<8) print*,'Reading '//trim(file)
 !
 ! Check for existence of varfile.
 !
       inquire(FILE=trim(file),EXIST=lexist)
-print*,'varfile=',icpu,trim(file)
+!print*,'varfile=',icpu,trim(file)
       if (lexist) then
 !
 !  File found for iyy=ncpus, i.e. iproc=ncpus --> a Yin-Yang grid supposed.
@@ -234,26 +317,26 @@ print*,'varfile=',icpu,trim(file)
           lyang=.true.
           print*, 'This run is treated as a Yin-Yang one!'
           if (muly/=mulz) then
-            print*, 'muly/=mulz --> nprocz=3*nprocy violated for new layout!'
+            if (lroot) print*, 'muly/=mulz --> nprocz=3*nprocy violated for new layout!'
             stop
           endif
         endif
       elseif (iyy==0 .or. lyang) then
-        print *, 'Varfile for iproc=', cpu, 'not found!'
+        print *, 'Varfile for proc=', cpu, 'not found!'
         stop
       else
 !
 !  File not found for proc=ncpus: If Yin-Yang run stop, 
 !                                 otherwise leave loop.
         if (lyinyang) then
-          print *, 'Varfile for iproc=', cpu, 'not found!'
+          print *, 'Varfile for proc=', cpu, 'not found!'
           stop
         else
           exit
         endif
       endif
 
-      print*,'Remeshing processor',cpu+1,'of',ncpus+iyy,'processors'
+      !print*,'Remeshing processor',cpu+1,'of',ncpus+iyy,'processors'
       if (lyang) print*, '(Yang grid)'
 !
 !  Read varfile (this is typically var.dat).
@@ -262,9 +345,8 @@ print*,'varfile=',icpu,trim(file)
 !
 ! Possibility to jump here from below
 !
-      print*,'mx,my,mz,mvar=',mx,my,mz,mvar
-      print*,'lshear=',lshear
       read(1) a
+      acoll(i1x:i2x,i1y:i2y,i1z:i2z,:)=a
 !
 !  try first to read with deltay, but if that fails then
 !  go to the next possibility without deltay.
@@ -299,7 +381,7 @@ print*,'varfile=',icpu,trim(file)
       t=t_sp
       close(1)
 !
-!  Read grid.dat 
+!  Read grid.dat (needed?)
 !
       call safe_character_assign(file,&
           trim(datadir)//'/proc'//trim(ch)//'/grid.dat')
@@ -310,6 +392,17 @@ print*,'varfile=',icpu,trim(file)
       read(1) Lx,Ly,Lz
       read(1) dx_1,dy_1,dz_1
       close(1)
+
+      xcoll(i1x:i2x)=x
+      ycoll(i1y:i2y)=y
+      zcoll(i1z:i2z)=z
+
+      i1x=i1x+nx; i2x=i2x+nx; 
+      enddo
+      i1y=i1y+ny; i2y=i2y+ny; 
+      enddo
+      i1z=i1z+nz; i2z=i2z+nz;
+      enddo    ! end collection loop
 !
 !  Finding global processor number for new run
 !
@@ -317,28 +410,30 @@ print*,'varfile=',icpu,trim(file)
       do counz=0,mulz-1
         do couny=0,muly-1
           do counx=0,mulx-1
-            iproc_new &
-                =ipz*nprocy*nprocx*mulz*muly*mulx+counz*muly*mulx*nprocx*nprocy &
-                +ipy*nprocx*muly*mulx+couny*mulx*nprocx &
-                +ipx*mulx+counx
+            !iproc_new &
+            !    =ipz*nprocy*nprocx*mulz*muly*mulx+counz*muly*mulx*nprocx*nprocy &
+            !    +ipy*nprocx*muly*mulx+couny*mulx*nprocx &
+            !    +ipx*mulx+counx
 !!$            iproc_new=ipz*(nprocy*mulz*muly)+ipy*muly &
 !!$                +couny+nprocy*muly*counz
+            iproc_new = find_proc_general(mulx*ipx+counx,muly*ipy+couny,mulz*ipz+counz,layout_dst(1),layout_dst(2),layout_dst(3))
             cpu_global(cpu_count)=iproc_new
             cpu_count=cpu_count+1
           enddo
         enddo
       enddo
+!print*, 'cpu, cpu_global=', cpu, cpu_global
 !
 !  Calculate new grid.
 !  Should now also work for *coarsening* the grid.
 !
       if (remesh_parx/=1.) then
-        if (lperi(1)) then
-          x0loc=x(l1)-dx/2.
+        if (lperi(1).or.ipx>0) then
+          x0loc=xcoll(l1)-dx/2.
           dx=dx*facx
           x0loc=x0loc+dx/2.
         else
-          x0loc=x(l1)
+          x0loc=xcoll(l1)
           dx=dx*facx
         endif
 !
@@ -360,17 +455,17 @@ print*,'varfile=',icpu,trim(file)
           rx(ll2+i)=rx(ll2)+i*dx
         enddo
       else
-        rx(1:mx)=x; rdx_1(1:mx)=dx_1; rdx_tilde(1:mx)=dx_tilde
+        rx(1:mx)=xcoll; rdx_1(1:mx)=dx_1; rdx_tilde(1:mx)=dx_tilde
       endif
 !     
       if (remesh_pary/=1.) then
 
-        if (lperi(2)) then
-          y0loc=y(m1)-dy/2.
+        if (lperi(2).or.ipy>0) then
+          y0loc=ycoll(m1)-dy/2.
           dy=dy*facy
           y0loc=y0loc+dy/2.
         else
-          y0loc=y(m1)
+          y0loc=ycoll(m1)
           dy=dy*facy
         endif
       
@@ -388,17 +483,17 @@ print*,'varfile=',icpu,trim(file)
           ry(mm2+i)=ry(mm2)+i*dy
         enddo
       else
-        ry(1:my)=y; rdy_1(1:my)=dy_1; rdy_tilde(1:my)=dy_tilde
+        ry(1:my)=ycoll; rdy_1(1:my)=dy_1; rdy_tilde(1:my)=dy_tilde
       endif
 !
       if (remesh_parz/=1.) then
 
-        if (lperi(3)) then
-          z0loc=z(n1)-dz/2.
+        if (lperi(3).or.ipz>0) then
+          z0loc=zcoll(n1)-dz/2.
           dz=dz*facz
           z0loc=z0loc+dz/2.
         else
-          z0loc=z(n1)
+          z0loc=zcoll(n1)
           dz=dz*facz
         endif
       
@@ -416,20 +511,20 @@ print*,'varfile=',icpu,trim(file)
           rz(nn2+i)=rz(nn2)+i*dz
         enddo
       else
-        rz(1:mz)=z; rdz_1(1:mz)=dz_1; rdz_tilde(1:mz)=dz_tilde
+        rz(1:mz)=zcoll; rdz_1(1:mz)=dz_1; rdz_tilde(1:mz)=dz_tilde
       endif
 !
 !  Interpolating f-array to increased number of mesh points if only one
 !  direction is remeshed.
 !  Yet to be tested.
 !
-      if (.false.) then
+      if (.false.) then   !m[xyz] -> m[xyz]coll !!!
       if (remesh_parx>1 .and. remesh_pary==1 .and. remesh_parz==1) then
         do i=1,mmx_grid
           do ii=2,mx
-            if (rx(i)<=x(ii).and.rx(i)>=x(ii-1)) exit
+            if (rx(i)<=xcoll(ii).and.rx(i)>=xcoll(ii-1)) exit
           enddo
-          w2=(rx(i)-x(ii-1))/dx; w1=(x(ii)-rx(i))/dx
+          w2=(rx(i)-xcoll(ii-1))/dx; w1=(xcoll(ii)-rx(i))/dx
           f(i,1:my,1:mz,:)=a(ii-1,1:my,1:mz,:)*w1+a(ii,1:my,1:mz,:)*w2
         enddo
       endif
@@ -437,9 +532,9 @@ print*,'varfile=',icpu,trim(file)
       if (remesh_parx==1 .and. remesh_pary>1 .and. remesh_parz==1) then
         do i=1,mmy_grid
           do ii=2,my
-            if (ry(i)<=y(ii).and.ry(i)>=y(ii-1)) exit
+            if (ry(i)<=ycoll(ii).and.ry(i)>=ycoll(ii-1)) exit
           enddo
-          w2=(ry(i)-y(ii-1))/dy; w1=(y(ii)-ry(i))/dy
+          w2=(ry(i)-ycoll(ii-1))/dy; w1=(ycoll(ii)-ry(i))/dy
           f(1:mx,i,1:mz,:)=a(1:mx,ii-1,1:mz,:)*w1+a(1:mx,ii,1:mz,:)*w2
         enddo
       endif
@@ -447,27 +542,28 @@ print*,'varfile=',icpu,trim(file)
       if (remesh_parx==1 .and. remesh_pary==1 .and. remesh_parz>1) then
         do i=1,mmz_grid
           do ii=2,mz
-            if (rz(i)<=z(ii).and.rz(i)>=z(ii-1)) exit
+            if (rz(i)<=zcoll(ii).and.rz(i)>=zcoll(ii-1)) exit
           enddo
-          w2=(rz(i)-z(ii-1))/dz; w1=(z(ii)-rz(i))/dz
+          w2=(rz(i)-zcoll(ii-1))/dz; w1=(zcoll(ii)-rz(i))/dz
           f(1:mx,1:my,i,:)=a(1:mx,1:my,ii-1,:)*w1+a(1:mx,1:my,ii,:)*w2
         enddo
       endif
       endif
+!print*, 'rz=', cpu, rz
 !
 !  Scattering f-array to increased number of mesh points. 
 !
       itx=remesh_parx
-      do i=0,mxout-(2-remesh_parx),remesh_parx
+      do i=0,mmx_grid-(2-remesh_parx),remesh_parx
         do ii=0,remesh_parx-1
           ity=remesh_pary
-          do j=0,myout-(2-remesh_pary),remesh_pary
+          do j=0,mmy_grid-(2-remesh_pary),remesh_pary
             do jj=0,remesh_pary-1
               itz=remesh_parz
-              do k=0,mzout-(2-remesh_parz),remesh_parz
+              do k=0,mmz_grid-(2-remesh_parz),remesh_parz
                 do kk=0,remesh_parz-1
 !
-! Doubling
+! Tripling or doubling
 !
                   if (remesh_parx .eq. 3) then
                     addx=ii 
@@ -475,14 +571,14 @@ print*,'varfile=',icpu,trim(file)
                     if (itx .eq. 2) then
                       if (addx .eq. 0) addx=1
                     endif
-                    if (itx .eq. mx-2) then
+                    if (itx .eq. mxcoll-2) then
                       if (addx .eq. 2) addx=1
                     endif
-                    if (itx .eq. mx-1) addx=0   
+                    if (itx .eq. mxcoll-1) addx=0   
                   elseif (remesh_parx .eq. 2) then
                     addx=ii 
                     if (itx .eq. 2)    addx=1
-                    if (itx .eq. mx-1) addx=0   
+                    if (itx .eq. mxcoll-1) addx=0   
                   else
                     addx=1
                   endif
@@ -493,26 +589,26 @@ print*,'varfile=',icpu,trim(file)
                     if (ity .eq. 2) then
                       if (addy .eq. 0) addy=1
                     endif
-                    if (ity .eq. my-2) then
+                    if (ity .eq. mycoll-2) then
                       if (addy .eq. 2) addy=1
                     endif
-                    if (ity .eq. my-1) addy=0   
+                    if (ity .eq. mycoll-1) addy=0   
                     addz=kk 
                     if (itz .eq. 3)    addz=1
                     if (itz .eq. 2) then
                       if (addz .eq. 0) addz=1
                     endif
-                    if (itz .eq. mz-2) then
+                    if (itz .eq. mzcoll-2) then
                       if (addz .eq. 2) addz=1
                     endif
-                    if (itz .eq. mz-1) addz=0  
+                    if (itz .eq. mzcoll-1) addz=0  
                   elseif (remesh_parz .eq. 2) then
                     addy=jj
                     addz=kk
                     if (ity .eq. 2)    addy=1
-                    if (ity .eq. my-1) addy=0
+                    if (ity .eq. mycoll-1) addy=0
                     if (itz .eq. 2)    addz=1
-                    if (itz .eq. mz-1) addz=0
+                    if (itz .eq. mzcoll-1) addz=0
                   else
                     addy=1
                     addz=1
@@ -520,7 +616,7 @@ print*,'varfile=',icpu,trim(file)
 !
 ! SC: added 'i+addx' to 'f' array
 !
-                  f(i+addx,j+addy,k+addz,:)=a(itx,ity,itz,:)
+                  f(i+addx,j+addy,k+addz,:)=acoll(itx,ity,itz,:)
                 enddo
                 itz=itz+1
               enddo
@@ -586,20 +682,37 @@ print*,'varfile=',icpu,trim(file)
 !
 !  Write new var.dat 
 !
+      inquire(IOLENGTH=io_len) t_sp
+      out_size=nnx*nny*nnz*io_len
       do i=1,mprocs
-        call chn(cpu_global(i),ch)
-        call safe_character_assign(file_new,trim(datadir)//'/proc'//trim(ch)//'/var.dat')
-        call safe_character_assign(file2,trim(destination)//'/'//trim(file_new))
-        if (ip<8) print*,'Writing '//trim(file2)
-        open(91,file=file2,form='unformatted')
-        write(91) ff(:,:,:,:,i)
-        if (lshear) then
-           write(91) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz,deltay
-          print*,'wrote deltay=',deltay
+        if (lastaroth) then
+          call find_proc_coords_general(cpu_global(i),layout_dst(1),layout_dst(2),layout_dst(3),idpx,idpy,idpz)
+          call chn(idpx*nnx,chx); call chn(idpy*nny,chy); call chn(idpz*nnz,chz);
+          call safe_character_assign(file_new,trim(destination)//'/'//trim(datadir)//'/allprocs/field-')
+          call safe_character_assign(file2,'-segment-'//trim(chx)//'-'//trim(chy)//'-'//trim(chz)//'.mesh')
+          do j=1,mvar
+            !call chn(j,ch)
+!print*, trim(file_new)//trim(fields(j))//trim(file2)
+            open(91,file=trim(file_new)//trim(fields(j))//trim(file2),form='unformatted',access='direct',recl=out_size)
+            write(91,rec=1) ff(nghost+1:nghost+nnx,nghost+1:nghost+nny,nghost+1:nghost+nnz,j,i)
+            close(91)
+          enddo
         else
-           write(91) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz
+          call chn(cpu_global(i),ch)
+          call safe_character_assign(file_new,trim(datadir)//'/proc'//trim(ch)//'/var.dat')
+          call safe_character_assign(file2,trim(destination)//'/'//trim(file_new))
+          if (ip<8) print*,'Writing '//trim(file2)
+!print*, 'cpu, cpu_global, rrx=', cpu, cpu_global(i), rrx(:,i)
+          open(91,file=file2,form='unformatted')
+          write(91) ff(:,:,:,:,i)
+          if (lshear) then
+            write(91) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz,deltay
+            print*,'wrote deltay=',deltay
+          else
+            write(91) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz
+          endif
+          close(91)
         endif
-        close(91)
       enddo
 !
 !  Write dim.dat for new local processor(s)
@@ -607,10 +720,10 @@ print*,'varfile=',icpu,trim(file)
       do i=1,mprocs
 
         iproc_new=cpu_global(i)
-        ipxx = modulo(iproc_new, nprocxx)
+        ipxx = modulo(iproc_new,nprocxx)
         ipyy = modulo(iproc_new/nprocxx, nprocyy)
         ipzz = iproc_new/(nprocxx*nprocyy)
-        call chn(cpu_global(i),ch)
+        call chn(iproc_new,ch)
         call safe_character_assign(dimfile_loc,trim(datadir)//'/proc'//trim(ch)//'/dim.dat')
         call safe_character_assign(dimfile2_loc,trim(destination)//'/'//trim(dimfile_loc))
         if (ip<8) print*,'Writing ',dimfile2_loc
@@ -643,11 +756,16 @@ print*,'varfile=',icpu,trim(file)
 !
     enddo
     enddo yinyang_loop
+
+    if (lroot) print*, 'Remeshing successfully finished.'
+
   elseif (overwrite .eq. 'no') then
-    print*,'OK, -maybe some other time'
+    print*,'OK, -maybe some other time.'
   else
     print*,'You must answer yes or no!'
   endif
+  call mpibarrier
+  call mpifinalize
 !
 endprogram remesh
 !***********************************************************************

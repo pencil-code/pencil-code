@@ -9,7 +9,10 @@
   integer, parameter :: mulx=1
   integer, parameter :: muly=1
   integer, parameter :: mulz=2
-  integer, parameter :: mprocs=mulz*muly*mulx
+  integer, parameter :: divx=1
+  integer, parameter :: divy=1
+  integer, parameter :: divz=1
+
   integer, parameter :: remesh_par=2
   integer, parameter :: remesh_parx=remesh_par
   integer, parameter :: remesh_pary=remesh_par
@@ -19,3 +22,8 @@
 !  (it stems from our spheromak experiments)
 !
 ! integer, parameter :: mvec=3
+!
+  logical, parameter :: lastaroth=.false.
+  character(LEN=16), dimension(mvar), parameter :: fields = ''
+  !(/'VTXBUF_UUX','VTXBUF_UUY','VTXBUF_UUZ','VTXBUF_LNRHO','VTXBUF_SS'/)   !'VTXBUF_AX','VTXBUF_AY','VTXBUF_AZ'/)
+

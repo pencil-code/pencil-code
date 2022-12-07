@@ -76,8 +76,6 @@ else
    echo "No such file: $file"
 endif
 end
-
-
 #
 #  LINK all *.f90, and the Makefile from remesh to local remesh directory
 #  for convenience, README is also linked into remesh directory
@@ -96,12 +94,10 @@ foreach file ($redir/src/*.f90 $redir/src/Makefile $redir/README )
     echo "No such file: $file"
   endif
 end
-
-
 #
 #  LINK the necessarry files from local remesh directory
 #
-foreach file ($srcdir/cdata.f90 $srcdir/cparam.f90 $srcdir/syscalls.f90 $srcdir/syscalls_ansi.c $srcdir/general.f90 $srcdir/general.h $srcdir/headers_c.h $srcdir/scripts)
+foreach file ($srcdir/cdata.f90 $srcdir/cparam.f90 $srcdir/syscalls.f90 $srcdir/syscalls_ansi.c $srcdir/mpicomm.f90 $srcdir/mpicomm.h $srcdir/noyinyang.f90 $srcdir/yinyang.h $srcdir/general.f90 $srcdir/general.h $srcdir/headers_c.h $srcdir/scripts)
   if (-e $file) then
     if (! -e $file:t) then
       ln -s $file .

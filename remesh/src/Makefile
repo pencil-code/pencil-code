@@ -35,14 +35,14 @@ CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 ## Overwrite settings that are local to each run directory
 include Makefile.local
 
-MPICOMM   = mpicomm_
+#MPICOMM   = mpicomm_
 LDMPI=
 
 include Makefile.inc  ## needed ? 
 
 ## Default settings
-FC=f90
-FFLAGS=-O1
+FC=mpiifort
+FFLAGS=-O1 -g -traceback
 CFLAGS=-O3 -DFUNDERSC=1
 
 ## The following block (`Begin/End machine dependent') specifies compilers
@@ -75,8 +75,8 @@ CFLAGS=-O3 -DFUNDERSC=1
 ## (AB/22-06-03: Here I've cut+pasted the current block from $PENCIL_HOME/src)
 ## The -tpp7 flag leads to a 10% speedup on nl6
 #FC=f95
-#FC=mpif90
-#FFLAGS=-O3
+#FC=mpiifort
+#FFLAGS=-O1 -g -traceback -check bounds
 #F90FLAGS=-u -tpp7
 #F90FLAGS= # (fire)
 #F90FLAGS=
@@ -285,7 +285,7 @@ code:
 	make remesh.x
 #	make remesh.x remesh_ext.x
 
-technical=cparam.o cdata.o common.o syscalls.o syscalls_ansi.o general.o
+technical=cparam.o cdata.o common.o syscalls.o syscalls_ansi.o general.o $(MPICOMM).o noyinyang.o
 remesh=remesh.o $(technical)
 #remesh_ext=remesh_ext.o $(technical)
 
@@ -304,11 +304,15 @@ common.o:    common.f90 common.local cdata.o cparam.o
 syscalls.o:  syscalls.f90 syscalls_ansi.o
 syscalls_ansi.o:  syscalls_ansi.c
 general.o:   general.f90 cdata.o cparam.o syscalls.o
+mpicomm_double.f90: mpicomm.f90
+	sed -e 's/MPI_REAL/MPI_DOUBLE_PRECISION/g' -e 's/MPI_COMPLEX/MPI_DOUBLE_COMPLEX/g' mpicomm.f90 > mpicomm_double.f90
+#
+$(MPICOMM).o:  $(MPICOMM).f90 noyinyang.o
 #deriv.o:     deriv.f90 cdata.o
 
 # Clean up, but leave makefile and TAGS
 clean:
-	rm -f *.x *.o *.mod *.d *.inc
+	rm -f *.x *.o *.mod *.d
 	rm -f work.pc work.pcl
 
 # Clean up all

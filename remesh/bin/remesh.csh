@@ -40,7 +40,7 @@ end
 
 # Run
 echo 'Starting remesh/remesh.x'
-remesh/remesh.x
+srun remesh/remesh.x
 
 echo ""
 date
