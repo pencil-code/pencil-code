@@ -531,7 +531,11 @@ module Io
       logical, intent(in) :: lwrite
       real, dimension(:), optional, intent(in) :: header
 !
-      call keep_compiler_quiet(label)
+      character(len=*), parameter :: rname = "output_average_2D"
+      integer, parameter :: amode = ior(ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), MPI_MODE_APPEND)
+      character(len=fnlen) :: fpath
+      integer :: handle
+!
       call keep_compiler_quiet(navg)
       call keep_compiler_quiet(avgname)
       call keep_compiler_quiet(avgdata)
@@ -539,7 +543,18 @@ module Io
       call keep_compiler_quiet(lwrite)
       if (present(header)) call keep_compiler_quiet(header)
 !
-      call fatal_error("output_average_2D", "not implemented")
+!  Open average file.
+!
+      fpath = trim(directory_snap) // '/' // trim(label) // "averages.dat"
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, amode, io_info, handle, mpi_err)
+      call check_success(rname, "open", fpath)
+!
+!  Close average file.
+!
+      call MPI_FILE_CLOSE(handle, mpi_err)
+      call check_success(rname, "close", fpath)
+!
+      call fatal_error(rname, "not implemented")
 !
     endsubroutine output_average_2D
 !***********************************************************************
