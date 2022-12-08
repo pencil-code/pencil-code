@@ -184,7 +184,7 @@ module Cdata
 !
 !  Input/output of data.
 !
-  character (len=fnlen) :: datadir='data', datadir_prestart='data_prestart'
+  character (len=fnlen) :: workdir='.', datadir='data', datadir_prestart='data_prestart'
   character (len=fnlen) :: directory='', datadir_snap='', directory_prestart=''
   character (len=fnlen) :: directory_snap='',directory_dist='',directory_collect=''
   character (len=fnlen) :: modify_filename='modify.dat'
