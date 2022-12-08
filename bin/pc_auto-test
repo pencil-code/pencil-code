@@ -316,7 +316,7 @@ Options:
        --no-lock           \tIgnore and don't write lock file
        --debug             \tPrint lots of debugging output
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
-       --errlink           \tLink to error log (starting and running)
+       --errlink=linkpath  \tpath from HTML directory to a symbolic link to the samples dir where the autotest results dwell
 Examples:
   pc_auto-test      # run standard program, recycling .o files
   pc_auto-test -C   # run standard program, compiling from scratch
@@ -787,7 +787,7 @@ sub my_ok {
         print " ok      $timestr\n" unless ($quiet);
     } else {
         if ($errlink) {
-	  my $loglink = '<a href="'.($dir =~ s/^.*(\/samples\/.*$)/.$1/r);
+	  my $loglink = '<a href="'.($dir =~ s/^.*\/samples\/(.*$)/$errlink\/$1/r);
 	  if ($phase eq 'starting') {
 	    $loglink .= '/start.log';
 	  } else {
