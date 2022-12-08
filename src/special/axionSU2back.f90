@@ -58,11 +58,13 @@ module Special
   integer :: idiag_chi =0 ! DIAG_DOC: $\chi$
   integer :: idiag_psi =0 ! DIAG_DOC: $\psi$
   integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
-  integer :: idiag_grand=0 ! DIAG_DOC: $G_R$
+  integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
+  integer :: idiag_grant=0 ! DIAG_DOC: ${\cal T}^\chi$
 !
 ! z averaged diagnostics given in zaver.in
 !
-  integer :: idiag_grandxy=0      ! ZAVG_DOC: $\left< G_R \right>_{z}$
+  integer :: idiag_grandxy=0      ! ZAVG_DOC: $\left< {\cal T}^Q\right>_{z}$
+  integer :: idiag_grantxy=0      ! ZAVG_DOC: $\left< {\cal T}^\chi\right>_{z}$
 !
   contains
 !
@@ -227,7 +229,7 @@ module Special
       real, dimension (nx) :: Q, Qdot, chi, chidot
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: Uprime, lamf, mQ, xi, a, epsQE, epsQB
-      real, dimension (nx) :: grand
+      real, dimension (nx) :: grand, grant
       real :: Mpl2=1., Hdot=0.
       type (pencil_case) :: p
 !
@@ -282,22 +284,27 @@ module Special
 !
 !  integrand (for diagnostics)
 !
-      grand=(xi*H-k/a)*TR**2*k**3
+      !grand=(xi*H-k/a)*TR**2*k**3
+      grand=(4.*pi*k**2)*(xi*H-k/a)*TR**2*(+   g/(3.*a**2))/twopi**3
+      grant=(4.*pi*k**2)*(mQ*H-k/a)*TR**2*(-lamf/(2.*a**2))/twopi**3
+!
+if (ip<10) print*,'xi,H,k,a,TR,g,a',xi,H,k,a,TR,g,a
+if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))
 !
 !  diagnostics
 !
       if (ldiagnos) then
-        if (idiag_Q/=0)   call sum_mn_name(Q,idiag_Q)
-        if (idiag_chi/=0) call sum_mn_name(chi,idiag_chi)
-        if (idiag_psi/=0) call sum_mn_name(psi,idiag_psi)
-        if (idiag_TR/=0)  call sum_mn_name(TR,idiag_TR)
-        if (idiag_grand/=0) then
-          call sum_mn_name(grand,idiag_grand)
-        endif
+        call sum_mn_name(Q,idiag_Q)
+        call sum_mn_name(chi,idiag_chi)
+        call sum_mn_name(psi,idiag_psi)
+        call sum_mn_name(TR,idiag_TR)
+        call sum_mn_name(grand,idiag_grand)
+        call sum_mn_name(grant,idiag_grant)
       endif
 !
       if (l2davgfirst) then
         if (idiag_grandxy/=0)   call zsum_mn_name_xy(grand,idiag_grandxy)
+        if (idiag_grantxy/=0)   call zsum_mn_name_xy(grant,idiag_grantxy)
       endif
 !
     endsubroutine dspecial_dt
@@ -363,7 +370,7 @@ module Special
 !
       if (lreset) then
         idiag_Q=0; idiag_chi=0; idiag_psi=0; idiag_TR=0; idiag_grand=0
-        idiag_grandxy=0
+        idiag_grandxy=0; idiag_grantxy=0
       endif
 !
       do iname=1,nname
@@ -372,11 +379,13 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'psi' ,idiag_psi)
         call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
         call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
+        call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
 !
       do inamexy=1,nnamexy
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'grandxy',idiag_grandxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'grandxy',idiag_grandxy)
       enddo
 !
