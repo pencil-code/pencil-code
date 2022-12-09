@@ -585,9 +585,11 @@ module Cdata
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false., Stg_spec=.false.
+  logical :: GWs_spec_boost=.false., GWh_spec_boost=.false.
   logical :: StT_spec=.false., StX_spec=.false.
   logical :: GWd_spec=.false., GWe_spec=.false., GWf_spec=.false., GWg_spec=.false.
   logical :: SCL_spec=.false., VCT_spec=.false., Tpq_spec=.false., TGW_spec=.false.
+  logical :: SCL_spec_boost=.false., VCT_spec_boost=.false.
   logical :: har_spec=.false., hav_spec=.false., bb2_spec=.false., jj2_spec=.false., b2_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.
