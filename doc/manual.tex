@@ -294,6 +294,7 @@
 \newcommand{\gv}            {\vec{g}}
 \newcommand{\jv}            {\vec{j}}
 \newcommand{\kv}            {\vec{k}}
+\newcommand{\ov}            {\vec{\omega}}
 \newcommand{\uv}            {\vec{u}}
 \newcommand{\vv}            {\vec{v}}
 \newcommand{\qv}            {\vec{q}}
@@ -5873,6 +5874,9 @@ calculations. Parallelization, however, is not yet possible for pure particle
 runs, since it relies on splitting the grid between the processors. At the
 time of writing (spring 2009), the $N$-body code does not allow the particles
 to have a time-evolving mass.
+
+The module \file{pointmasses.f90} is also an $N$-body solver.
+\index{Point masses}
 
 % ---------------------------------------------------------------------- %
 
