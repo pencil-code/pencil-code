@@ -22,6 +22,9 @@ pcPopup::usage="Using DisplayFunction->pcPopup will make a plot in a pop-up wind
 
 pcTicks::usage="Frame ticks in convenient forms."
 
+pcInset::usage="pcInset[str,posx,posy] is equivalent to
+Inset[Style[str,pcLabelStyle],Scaled[{posx,posy}]]."
+
 pcLegend::usage="pcLegend[l,opts] uses DensityPlot to make a bar legend.
 Input:
   l: List. MinMax[l] will specify the lower and upper bounds of the data.
@@ -154,6 +157,8 @@ pcPopup[plot_]:=CreateDocument[plot,
 
 pcTicks["10^i",max_:99]:=Table[{10^i,Superscript["10",ToString@i]},{i,-max,max}]
 pcTicks["Log10i",max_:99]:=Table[{10^i,ToString@i},{i,-max,max}]
+
+pcInset[str_String,posx_,posy_]:=Inset[Style[str,pcLabelStyle],Scaled[{posx,posy}]]
 
 
 (* ::Section:: *)
@@ -321,7 +326,7 @@ End[]
 
 Protect[
   pcColors,
-  pcLabelStyle,pcPlotStyle,pcPopup,pcTicks,
+  pcLabelStyle,pcPlotStyle,pcPopup,pcTicks,pcInset,
   pcLegend,
   spaceTimeDiag,
   showVideo,
