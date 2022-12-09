@@ -547,12 +547,12 @@ module Io
 !
       fpath = trim(directory_snap) // '/' // trim(label) // "averages.dat"
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, amode, io_info, handle, mpi_err)
-      call check_success(rname, "open", fpath)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
 !
 !  Close average file.
 !
       call MPI_FILE_CLOSE(handle, mpi_err)
-      call check_success(rname, "close", fpath)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
 !
       call fatal_error(rname, "not implemented")
 !
