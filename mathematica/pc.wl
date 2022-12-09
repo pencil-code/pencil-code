@@ -1,14 +1,14 @@
 (* ::Package:: *)
 
 (* :Name: pc` *)
-(* :Author: Hongzhe Zhou, Stockholm, 2021*)
+(* :Author: Hongzhe Zhou, Shanghai, 2022*)
 (* :Version: 0.1 *)
 (* :Summary:
     Needs this package automatically Needs the following:
       pcReadBasic, pcRead1D, pcRead2D,
       pcReadVAR, pcGetParam, pcPlot,
       pcTFM, pcParticleStalker,pcDerivative,
-      pcPowercor
+      pcPowercor,pcStreamLine
 *)
 
 
@@ -16,7 +16,7 @@ BeginPackage["pc`","pcUtils`",
   "pcReadBasic`","pcRead1D`","pcRead2D`","pcReadFFT`",
   "pcReadVAR`","pcGetParam`","pcPlot`","pcPlot3D`",
   "pcTFM`","pcParticleStalker`","pcDerivative`",
-  "pcPowercor`","pcPowerSpec`"
+  "pcPowercor`","pcPowerSpec`","pcStreamLine`"
 ]
 
 
