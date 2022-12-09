@@ -110,9 +110,14 @@ pcDifferences[l_]:=Module[{dl},
 ]
 
 pcFit[data_,sp_,fact_List:{1,1,1}]:=Module[
-  {llinear,funcx,funcy,model,a,x,tmp,fit,fittedCurve,p,e},
+  {llinear,funcx,funcy,model,a,x,tmp,dx,dy,weights,fit,fittedCurve,p,e},
   llinear=False;
   funcx=funcy={Identity,Identity};
+  
+  dx=data[[;;,1]]/._?NumericQ->0/.x_Around->x["Uncertainty"];
+  dy=data[[;;,2]]/._?NumericQ->0/.x_Around->x["Uncertainty"];
+  weights=dx^2+dy^2;
+  weights=If[MemberQ[weights,x_/;x==0],Automatic,1/weights];
   tmp=data/.Around[xx_,yy_]:>xx;
   
   model=Switch[sp,
@@ -126,8 +131,8 @@ pcFit[data_,sp_,fact_List:{1,1,1}]:=Module[
   tmp=Transpose[{funcx[[1]][tmp[[;;,1]]],funcy[[1]][tmp[[;;,2]]]}];
   
   fit=If[llinear,
-    LinearModelFit[tmp,x,x],
-    NonlinearModelFit[tmp,model,a/@Range[3],x]
+    LinearModelFit[tmp,x,x,Weights->weights],
+    NonlinearModelFit[tmp,model,a/@Range[3],x,Weights->weights]
   ];
   fittedCurve=Module[{xx,yy},
     xx=fact[[1;;2]]*MinMax[funcx[[2]][tmp[[;;,1]]]];
@@ -137,11 +142,13 @@ pcFit[data_,sp_,fact_List:{1,1,1}]:=Module[
   ];
   
   Print["Fit result: ",fit["BestFit"]/.x->"x"];
+  p=If[llinear,fit["BestFitParameters"],(a/@Range[3])/.fit["BestFitParameters"]];
+  e=If[Length[data]>=3,fit["ParameterErrors"],ConstantArray[0,Length[p]]];
   Association[
     "FittedModel"->fit,
     "FittedCurve"->fittedCurve,
-    "Parameters"->(p=If[llinear,fit["BestFitParameters"],(a/@Range[3])/.fit["BestFitParameters"]]),
-    "Error"->(e=fit["ParameterErrors"]),
+    "Parameters"->p,
+    "Error"->e,
     "PwE"->Around@@@Transpose[{p,e}]
   ]
 ]
