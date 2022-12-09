@@ -203,6 +203,8 @@
   \var{Kkramersmz} & $\left< K_0 T^{(3-b)}/\rho^{(a+1)} \right>_{xy}$ \\
   \var{ethmz}     & $\left<\varrho e\right>_{xy}$ \\
   \var{fpreszmz}  & $-\left<\frac{\nabla p}{\varrho}\right>_{xy}$ \\
+  \var{gTT2mz}    & $\left< {\nabla T}^2 \right>_{xy}$ \\
+  \var{gss2mz}    & $\left< {\nabla s}^2 \right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -243,6 +245,8 @@
   \var{d6amz3}    & $\left<\nabla^6 \Av \right>_{xy}|_z$ \\
   \var{abmz}      & $\left<\Av\cdot\Bv\right>|_{xy}$ \\
   \var{ubmz}      & $\left<\uv\cdot\Bv\right>|_{xy}$ \\
+  \var{ujmz}      & $\left<\uv\cdot\Jv\right>|_{xy}$ \\
+  \var{obmz}      & $\left<\ov\cdot\Bv\right>|_{xy}$ \\
   \var{uamz}      & $\left<\uv\cdot\Av\right>|_{xy}$ \\
   \var{bzdivamz}  & $\left<B_z\nabla\cdot\Av\right>|_{xy}$ \\
   \var{divamz}    & $\left<\nabla\cdot\Av\right>|_{xy}$ \\
@@ -265,6 +269,7 @@
   \var{bxbymz}    & $\left< B_x B_y \right>_{xy}$ \\
   \var{bxbzmz}    & $\left< B_x B_z \right>_{xy}$ \\
   \var{bybzmz}    & $\left< B_y B_z \right>_{xy}$ \\
+  \var{a2mz}      & $\left<\Av^2\right>_{xy}$ \\
   \var{b2mz}      & $\left<\Bv^2\right>_{xy}$ \\
   \var{bf2mz}     & $\left<\Bv'^2\right>_{xy}$ \\
   \var{j2mz}      & $\left<\jv^2\right>_{xy}$ \\
@@ -295,9 +300,9 @@
 \midrule
   \multicolumn{2}{c}{Module \file{disp_current.f90}} \\
 \midrule
-  \var{EExmz}     & $\left<{\cal E}_x\right>_{xy}$ \\
-  \var{EEymz}     & $\left<{\cal E}_y\right>_{xy}$ \\
-  \var{EEzmz}     & $\left<{\cal E}_z\right>_{xy}$ \\
+  \var{exmz}      & $\left<{\cal E}_x\right>_{xy}$ \\
+  \var{eymz}      & $\left<{\cal E}_y\right>_{xy}$ \\
+  \var{ezmz}      & $\left<{\cal E}_z\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravity_simple.f90}} \\
 \midrule
