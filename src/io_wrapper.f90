@@ -41,7 +41,7 @@ module Io
       IO_strategy = IO_strategy_
       lcollective_IO = lcollective_IO_
       call register_io_
-      if (IO_strategy_out=='dist') lwr_grid = .true.
+      lwr_grid = .true.
     endif
 
   endsubroutine register_io
