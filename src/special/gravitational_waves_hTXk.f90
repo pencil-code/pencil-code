@@ -107,6 +107,7 @@ module Special
   logical :: lggTX_as_aux_boost=.false., lhhTX_as_aux_boost=.false.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
+  logical :: GWs_spec_complex_boost=.true. ! added for boost
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
   logical :: lreal_space_hTX_boost_as_aux=.false., lreal_space_gTX_boost_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false., lmatter_GW=.false., ldark_energy_GW=.false.
@@ -253,6 +254,12 @@ module Special
     real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel,Stghel
     real, dimension(nk) :: SCL, VCT, Tpq, TGW
     complex, dimension(nx) :: complex_Str_T, complex_Str_X
+    ! emma added (dec 6) for boost:
+    real, dimension(nk) :: GWs_boost   ,GWh_boost   ,GWm_boost   ,Str_boost   ,Stg_boost
+    real, dimension(nk) :: GWshel_boost,GWhhel_boost,GWmhel_boost,Strhel_boost,Stghel_boost
+    real, dimension(nk) :: SCL_boost, VCT_boost, Tpq_boost, TGW_boost
+    complex, dimension(nx) :: complex_Str_T_boost, complex_Str_X_boost
+    ! not sure if it's necessary to have all of above, but starting with this
   endtype GWspectra
 
   type(GWspectra) :: spectra
@@ -1215,6 +1222,13 @@ module Special
       real :: k1, k2, k3, ksqr,one_over_k2,one_over_k4,sign_switch
       real :: k1mNy, k2mNy, k3mNy, SCL_re, SCL_im
       real, dimension(3) :: VCT_re, VCT_im, kvec
+! for boost (dec 7)
+      real :: k1_boost,k2_boost,k3_boost, ksqr_boost, ksqrt_boost
+      real :: one_over_k2_boost,one_over_k4_boost
+      real :: vx_boost, vy_boost, vz_boost
+      real, dimension(3) :: kvec_boost, vboost
+      real :: gamma_boost, v_boostsqr, kdotv
+      real :: SCL_re_boost, SCL_im_boost, VCT_re_boost, VCT_im_boost
 !
       spectra%GWs=0.; spectra%GWshel=0.
       spectra%GWh=0.; spectra%GWhhel=0.
@@ -1223,6 +1237,14 @@ module Special
       spectra%Stg=0.; spectra%Stghel=0.
       spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
       spectra%TGW=0.
+      !added emma (dec 6) for boosted spectra
+      spectra%GWs_boost=0.; spectra%GWshel_boost=0.
+      spectra%GWh_boost=0.; spectra%GWhhel_boost=0.
+      spectra%GWm_boost=0.; spectra%GWmhel_boost=0.
+      spectra%Str_boost=0.; spectra%Strhel_boost=0.
+      spectra%Stg_boost=0.; spectra%Stghel_boost=0.
+      spectra%SCL_boost=0.; spectra%VCT_boost=0.; spectra%Tpq_boost=0.
+      spectra%TGW_boost=0.
 !
 !  Define negative Nyquist wavenumbers if lswitch_symmetric
 !
@@ -1281,6 +1303,41 @@ module Special
             kvec(1)=k1
             kvec(2)=k2
             kvec(3)=k3
+! 
+! Boosted k, added by emma (dec 7)
+            if (lboost) then
+            v_boostsqr = vx_boost**2+vy_boost**2+vz_boost**2
+            gamma_boost=1./sqrt(1.-v_boostsqr)
+            vboost(1)=vx_boost
+            vboost(2)=vy_boost
+            vboost(3)=vz_boost
+            if (v_boostsqr==0.) then
+              kdotv = 0.
+            else
+              kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
+            endif
+            k1_boost = k1+kdotv*vx_boost - gamma_boost*sqrt(ksqr)*vx_boost
+            k2_boost = k2+kdotv*vy_boost - gamma_boost*sqrt(ksqr)*vy_boost
+            k3_boost = k3+kdotv*vz_boost - gamma_boost*sqrt(ksqr)*vz_boost
+            ksqr_boost=k1_boost**2+k2_boost**2+k3_boost**2
+            ksqrt_boost=sqrt(ksqr_boost)
+!            
+            if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
+              one_over_k2_boost=0.
+            else
+              one_over_k2_boost=1./ksqr_boost
+            endif
+            one_over_k4_boost=one_over_k2_boost**2
+!
+
+!  set boosted k vector            
+            kvec_boost(1)=k1_boost
+            kvec_boost(2)=k2_boost
+            kvec_boost(3)=k3_boost
+!
+
+            endif
+!
 !
             if (SCL_spec) then
               SCL_re=0.
@@ -1308,6 +1365,35 @@ module Special
                 enddo
               enddo
             endif
+! 
+! repeat for boosted case? (emma, dec-7)
+! check if this is right, boost Tpq needed?
+!            if (lboost) then
+!            if (SCL_spec_boost) then
+!              SCL_re_boost=0.
+!              SCL_im_boost=0.
+!              do q=1,3
+!              do p=1,3
+!                pq=ij_table(p,q)
+!               SCL_re_boost=SCL_re_boost-1.5*kvec_boost(p)*kvec_boost(q)*one_over_k4_boost*Tpq_re(ikx,iky,ikz,pq)
+!                SCL_im_boost=SCL_im_boost-1.5*kvec_boost(p)*kvec_boost(q)*one_over_k4_boost*Tpq_im(ikx,iky,ikz,pq)
+!              enddo
+!              enddo
+!            endif
+!
+!            if (VCT_spec_boost) then
+!              do q=1,3
+!                VCT_re_boost(q)=+twothird*kvec_boost(q)*SCL_im_boost
+!                VCT_im_boost(q)=-twothird*kvec_boost(q)*SCL_re_boost
+!                do p=1,3
+!                  pq=ij_table(p,q)
+!                  VCT_re_boost(q)=VCT_re_boost(q)+2.*kvec_boost(p)*one_over_k2_boost*Tpq_im(ikx,iky,ikz,pq)
+!                  VCT_im_boost(q)=VCT_im_boost(q)-2.*kvec_boost(p)*one_over_k2_boost*Tpq_re(ikx,iky,ikz,pq)
+!                enddo
+!              enddo
+!            endif
+!            endif
+! above (boosted) section causing errors and don't need right now -emma
 !
             ik=1+nint(sqrt(ksqr)/kscale_factor)
 !
@@ -1346,6 +1432,33 @@ module Special
                   spectra%complex_Str_X(ikx)=0.
                 endif
               endif
+! added by emma (dec 7) to include boosted spectra
+              if (lboost) then
+                if (GWs_spec_boost) then
+                        spectra%GWs_boost(ik)=spectra%GWs_boost(ik) &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggX_boost)**2 &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim_boost)**2 &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggT_boost)**2 &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggTim_boost)**2
+                        spectra%GWshel_boost(ik)=spectra%GWshel_boost(ik)+2*sign_switch*( &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim_boost) &
+                        *f(nghost+ikx,nghost+iky,nghost+ikz,iggT_boost) &
+                        -f(nghost+ikx,nghost+iky,nghost+ikz,iggX_boost) &
+                        *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim_boost) )
+                endif
+                if (GWs_spec_complex_boost) then
+                        if (k2_boost==0. .and. k3_boost==0.) then
+                          spectra%complex_Str_T_boost(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhT_boost), &
+                                                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim_boost))
+                          spectra%complex_Str_X_boost(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX_boost), &
+                                                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim_boost))
+                        else
+                          spectra%complex_Str_T_boost(ikx)=0.
+                          spectra%complex_Str_X_boost(ikx)=0.
+                        endif
+                endif
+             endif
+!end boost addition
 !
 !  Gravitational wave strain spectrum computed from h
 !
@@ -1361,6 +1474,23 @@ module Special
                    -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
                    *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
               endif
+!
+!  Boosted GW strain spectrumc computed from h
+              if (lboost) then
+              if (GWh_spec_boost) then
+                spectra%GWh_boost(ik)=spectra%GWh_boost(ik) &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX_boost  )**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim_boost)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT_boost)**2 &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim_boost)**2
+                spectra%GWhhel_boost(ik)=spectra%GWhhel_boost(ik)+2*sign_switch*( &
+                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim_boost) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT_boost ) &
+                   -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX_boost) &
+                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim_boost) )
+              endif
+              endif
+! still need to add other boosted spectra (as follows below) -emma
 !
 !  Gravitational wave mixed spectrum computed from h and g
 !
@@ -2275,51 +2405,55 @@ module Special
 !  compute boosted e1 and e2 vectors
 !
 !emma: delete following if if decide to use second method below
+
             if (lboost) then
-!              if(abs(k1_boost)<abs(k2_boost)) then
-!                if(abs(k1_boost)<abs(k3_boost)) then !(k1_boost is pref dir)
-!                  e1_boost=(/0.,-k3_boost,+k2_boost/)
-!                  e2_boost=(/k2sqr_boost+k3sqr_boost,-k2_boost*k1_boost,-k3_boost*k1_boost/)
-!                else !(k3 is pref dir)
-!                  e1_boost=(/k2_boost,-k1_boost,0./)
-!                  e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
-!                endif
-!              else !(k2 smaller than k1_boost)
-!                if(abs(k2_boost)<abs(k3_boost)) then !(k2 is pref dir)
-!                  e1_boost=(/-k3_boost,0.,+k1_boost/)
-!                  e2_boost=(/+k1_boost*k2_boost,-(k1sqr_boost+k3sqr_boost),+k3_boost*k2_boost/)
-!                else !(k3 is pref dir)
-!                  e1_boost=(/k2_boost,-k1_boost,0./)
-!                  e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
-!                endif
-!              endif
+                e1dote3=0 !this is only for a test, emma
+                e2dote3=0
+                e2dote1=0
+!emma: changed if statements to keep construction choice consistent with un-boosted case (dec 9)                
+              if(abs(k1)<abs(k2)) then
+                if(abs(k1_boost)<abs(k3_boost)) then !(k1_boost is pref dir)
+                  e1_boost=(/0.,-k3_boost,+k2_boost/)
+                  e2_boost=(/k2sqr_boost+k3sqr_boost,-k2_boost*k1_boost,-k3_boost*k1_boost/)
+                else !(k3 is pref dir)
+                  e1_boost=(/k2_boost,-k1_boost,0./)
+                  e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
+                endif
+              else !(k2 smaller than k1_boost)
+                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                  e1_boost=(/-k3_boost,0.,+k1_boost/)
+                  e2_boost=(/+k1_boost*k2_boost,-(k1sqr_boost+k3sqr_boost),+k3_boost*k2_boost/)
+                else !(k3 is pref dir)
+                  e1_boost=(/k2_boost,-k1_boost,0./)
+                  e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
+                endif
+              endif
 !
 !  normalize boosted e1 and e2 vectors
 !
-              !e1_boost=e1_boost/sqrt(e1_boost(1)**2+e1_boost(2)**2+e1_boost(3)**2)
-              !e2_boost=e2_boost/sqrt(e2_boost(1)**2+e2_boost(2)**2+e2_boost(3)**2)
+              e1_boost=e1_boost/sqrt(e1_boost(1)**2+e1_boost(2)**2+e1_boost(3)**2)
+              e2_boost=e2_boost/sqrt(e2_boost(1)**2+e2_boost(2)**2+e2_boost(3)**2)
 !
 ! changed method for boosting e1 and e2
-!
-              !if (t>61.and.k1==1.and.k2==1.and.k3==1) print*,'basis',e1,e1_boost,e2,e2_boost !emma nov3 test
-              if (lboost) then
-               !e1dote3=0 !this is only for a test, emma      
-               !e2dote3=0
-               !e2dote1=0
-                e1_boost(:2)=e1(:2); e2_boost(:2)=e2(:2)
-                if (v_boostsqr/=0.) then
-                  do i=1,3
-                    e1_boost(i)=e1_boost(i)+(gamma_boost-1)*(e1(1)*vx_boost+e1(2)*vy_boost+e1(3)*vz_boost)*vboost(i)/v_boostsqr
-                    e1_boost(i)=e1_boost(i)-gamma_boost*vboost(i)
-                    e2_boost(i)=e2_boost(i)+(gamma_boost-1)*(e2(1)*vx_boost+e2(2)*vy_boost+e2(3)*vz_boost)*vboost(i)/v_boostsqr
-                    e2_boost(i)=e2_boost(i)-gamma_boost*vboost(i)
+               ! e1_boost(:2)=e1(:2); e2_boost(:2)=e2(:2)
+!                if (v_boostsqr/=0.) then
+!                  do i=1,3
+!                    e1_boost(i)=e1_boost(i)+(gamma_boost-1)*(e1(1)*vx_boost+e1(2)*vy_boost+e1(3)*vz_boost)*vboost(i)/v_boostsqr
+!                    e1_boost(i)=e1_boost(i)-gamma_boost*vboost(i)
+!                    e2_boost(i)=e2_boost(i)+(gamma_boost-1)*(e2(1)*vx_boost+e2(2)*vy_boost+e2(3)*vz_boost)*vboost(i)/v_boostsqr
+!                    e2_boost(i)=e2_boost(i)-gamma_boost*vboost(i)
                    ! e1dote3=e1dote3+e1_boost(i)*khat_boost(i)
                    ! e2dote3=e2dote3+e2_boost(i)*khat_boost(i)
                    ! e2dote1=e2dote1+e2_boost(i)*e1_boost(i)
-                  enddo
-                endif
-              endif
-              !if (t>62.and.k1==1.and.k2==1.and.k3==1) print*,'e1',e1dote3,e2dote3,e2dote1 !emma test nov4
+!                  enddo
+!                endif
+              !test (emma, dec 9)
+              ! do i = 1,3
+              !    e1dote3=e1dote3+e1_boost(i)*khat_boost(i)
+              !    e2dote3=e2dote3+e2_boost(i)*khat_boost(i)
+              !    e2dote1=e2dote1+e2_boost(i)*e1_boost(i)
+              ! enddo
+              ! if (t>62.and.k1==1.and.k2==1.and.k3==1) print*,'13,23,21',e1dote3,e2dote3,e2dote1 !emma test nov4
 !
 !  compute e_T_boost and e_X_boost
 !
