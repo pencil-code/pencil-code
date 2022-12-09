@@ -24,7 +24,7 @@ module Io
 !
   use Cdata
   use Cparam, only: fnlen, max_int
-  use Messages, only: fatal_error, fatal_error_local, svn_id, warning
+  use Messages, only: fatal_error, fatal_error_local, fatal_error_local_collect, svn_id, warning
   use Mpicomm, only: mpi_precision
 !
   implicit none
@@ -539,7 +539,6 @@ module Io
       call keep_compiler_quiet(navg)
       call keep_compiler_quiet(avgname)
       call keep_compiler_quiet(avgdata)
-      call keep_compiler_quiet(time)
       call keep_compiler_quiet(lwrite)
       if (present(header)) call keep_compiler_quiet(header)
 !
@@ -548,6 +547,14 @@ module Io
       fpath = trim(directory_snap) // '/' // trim(label) // "averages.dat"
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, amode, io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
+!
+!  Write time.
+!
+      wtime: if (lroot) then
+        call MPI_FILE_WRITE(handle, (/ time /), 1, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
+      endif wtime
+      call fatal_error_local_collect()
 !
 !  Close average file.
 !
