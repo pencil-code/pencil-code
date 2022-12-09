@@ -2269,7 +2269,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       character(len=linelen) :: msg
       logical :: loc
       integer :: shift, inear_max
-      real :: h, a, b, c
+      real :: h, a, b, c, xiup
 !
 !  Sanity check.
 !
@@ -2281,21 +2281,26 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       loc = .false.
       if (present(local)) loc = local
 !
-!  Check the direction.
+!  Check the direction (assuming xilo = 0).
 !
       h = 0.0
+      xiup = 0.0
       shift = 0
+      inear_max = nghost
       ckdir: select case (dir)
       case (1) ckdir
         h = dx
+        xiup = real(nxgrid - merge(0, 1, lperi(1)))
         if (loc) shift = nx * ipx
         if (loc) inear_max = nghost + nx
       case (2) ckdir
         h = dy
+        xiup = real(nygrid - merge(0, 1, (lperi(2) .or. lpole(2))))
         if (loc) shift = ny * ipy
         if (loc) inear_max = nghost + ny
       case (3) ckdir
         h = dz
+        xiup = real(nzgrid - merge(0, 1, lperi(3)))
         if (loc) shift = nz * ipz
         if (loc) inear_max = nghost + nz
       case default ckdir
@@ -2318,6 +2323,9 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         a = a * b / sqrt(1.0 + 2.0 * a * (1.0 - a) * c)
         b = (sqrt(1.0 + a * a) * b - a * c) / Lxyz(dir)
         xi = (arcsinh(a) + arcsinh(b * (x - xyz0(dir)) - a)) / (coeff_grid(dir) * h)
+!
+      case ("log") func
+        xi = xiup / log(xyz1(dir) / xyz0(dir)) * log(x / xyz0(dir))
 !
       case default func
         call fatal_error('inverse_grid in grid.f90', &
