@@ -65,6 +65,13 @@ Examples:
 
 tSnap::usage="tSnap[sim,iproc:0] returns time of VARN files in the ith processor."
 
+pcIntpltVar::usage="pcIntpltVar[VAR,vars] gives interpolated functions of vars in the VAR file.
+Input:
+  VAR: The returned object of readVARN[...].
+  vars: A List of Strings, e.g., {\"bbb1\",\"bbb2\",\"bbb3\"}.
+Output:
+  A List of InterpolatingFunctions."
+
 
 Begin["`Private`"]
 
@@ -302,6 +309,15 @@ readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=Module[{
 ]
 
 
+(* ::Section:: *)
+(*Interpolation*)
+
+
+pcIntpltVar[var_,vars_List]:=Table[
+  Interpolation@Transpose[{Transpose[var/@{"x","y","z"}],var[f]}],
+{f,vars}]
+
+
 (* ::Chapter:: *)
 (*End*)
 
@@ -310,7 +326,8 @@ End[]
 
 
 Protect[
-  readVARNProc,readVARN,tSnap
+  readVARNProc,readVARN,tSnap,
+  pcIntpltVar
 ]
 
 
