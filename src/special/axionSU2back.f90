@@ -41,13 +41,17 @@ module Special
   real :: a, k0=1e-2, dk=1e-2
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
+  real :: Mpl2=1., Hdot=0., lamf
+  real :: grand_sum, grant_sum, grant_sum_prev, dgrant_sum
+  real :: sbackreact_Q=1., sbackreact_chi=1.
+  logical :: lbackreact=.false., lgrant_sum_prev=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H
 !
   ! run parameters
   namelist /special_run_pars/ &
-    k0, dk, fdecay, g, lam, mu, H
+    k0, dk, fdecay, g, lam, mu, H, lbackreact, sbackreact_Q, sbackreact_chi
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -60,6 +64,8 @@ module Special
   integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
   integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
   integer :: idiag_grant=0 ! DIAG_DOC: ${\cal T}^\chi$
+  integer :: idiag_grand2=0 ! DIAG_DOC: ${\cal T}^Q$ (test)
+  integer :: idiag_dgrant=0 ! DIAG_DOC: $\dot{\cal T}^\chi$
 !
 ! z averaged diagnostics given in zaver.in
 !
@@ -112,6 +118,17 @@ module Special
         k(ik)=k0+dk*(ik-1+iproc*nx)
         print*,'iproc,ik=',iproc,k(ik)
       enddo
+      lamf=lam/fdecay
+!
+!  Expect that grant_sum_prev=F, but this has an effect a bit later
+!  when dgrant is being computed.
+!
+      if (lgrant_sum_prev) then
+        print*,'lgrant_sum_prev=T in initialize_special NOT EXPECTED'
+      else
+        print*,'lgrant_sum_prev=F in initialize_special is OK'
+        grant_sum_prev=0.
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -137,7 +154,7 @@ module Special
       select case (init_axionSU2back)
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
-          print*,'AXEL: k=',k
+          print*,'k=',k
           a=exp(H*t)
           psi=(a/sqrt(2.*k))
           psidot=psi*k
@@ -228,9 +245,8 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: Q, Qdot, chi, chidot
       real, dimension (nx) :: psi, psidot, TR, TRdot
-      real, dimension (nx) :: Uprime, lamf, mQ, xi, a, epsQE, epsQB
+      real, dimension (nx) :: Uprime, mQ, xi, a, epsQE, epsQB
       real, dimension (nx) :: grand, grant
-      real :: Mpl2=1., Hdot=0.
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -256,7 +272,6 @@ module Special
 !  Set parameters
 !
       Uprime=-mu**4/fdecay*sin(chi/fdecay)
-      lamf=lam/fdecay
       mQ=g*Q/H
       xi=lamf*chidot/(2.*H)
       a=exp(H*t)
@@ -288,6 +303,11 @@ module Special
       grand=(4.*pi*k**2)*(xi*H-k/a)*TR**2*(+   g/(3.*a**2))/twopi**3
       grant=(4.*pi*k**2)*(mQ*H-k/a)*TR**2*(-lamf/(2.*a**2))/twopi**3
 !
+      if (lbackreact) then
+        df(l1:l2,m,n,iaxi_Qdot)=df(l1:l2,m,n,iaxi_Qdot)-sbackreact_Q*grand_sum
+        df(l1:l2,m,n,iaxi_chidot)=df(l1:l2,m,n,iaxi_chidot)-sbackreact_chi*dgrant_sum
+      endif
+!
 if (ip<10) print*,'xi,H,k,a,TR,g,a',xi,H,k,a,TR,g,a
 if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))
 !
@@ -300,6 +320,8 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call sum_mn_name(TR,idiag_TR)
         call sum_mn_name(grand,idiag_grand)
         call sum_mn_name(grant,idiag_grant)
+        call save_name(grand_sum,idiag_grand2)
+        call save_name(dgrant_sum,idiag_dgrant)
       endif
 !
       if (l2davgfirst) then
@@ -346,6 +368,70 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!  Possibility to modify the f array before the boundaries are
+!  communicated.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array
+!
+!  13-may-18/axel: added remove_mean_value for hij and gij
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+    endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine special_after_boundary(f)
+!
+!  Possibility to modify the f array after the boundaries are
+!  communicated.
+!
+!  07-aug-17/axel: coded
+
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nx) :: mQ, xi, a, epsQE, epsQB
+      real, dimension (nx) :: grand, grant
+      real, dimension (nx) :: psi, psidot, TR, TRdot
+!
+!  Set parameters
+!
+      Q=f(l1:l2,m,n,iaxi_Q)
+      Qdot=f(l1:l2,m,n,iaxi_Qdot)
+      chidot=f(l1:l2,m,n,iaxi_chidot)
+      TR=f(l1:l2,m,n,iaxi_TR)
+!
+      mQ=g*Q/H
+      xi=lamf*chidot/(2.*H)
+      a=exp(H*t)
+      epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
+      epsQB=g**2*Q**4/(Mpl2*H**2)
+!
+!  integrand (for diagnostics)
+!
+      grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TR**2*(+   g/(3.*a**2))/twopi**3
+      grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TR**2*(-lamf/(2.*a**2))/twopi**3
+!
+      call mpiallreduce_sum(sum(grand),grand_sum,1)
+      call mpiallreduce_sum(sum(grant),grant_sum,1)
+!
+!  Differentiate in time and update grant_sum_prev.
+!  lgrant_sum_prev=T means that grant_sum_prev exists
+!
+      if (lfirst) then
+        if (lgrant_sum_prev) then
+          dgrant_sum=(grant_sum-grant_sum_prev)/dt
+        else
+          dgrant_sum=0.
+          lgrant_sum_prev=.true.
+        endif
+        grant_sum_prev=grant_sum
+      endif
+!
+    endsubroutine special_after_boundary
+!***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to special
@@ -369,7 +455,8 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Q=0; idiag_chi=0; idiag_psi=0; idiag_TR=0; idiag_grand=0
+        idiag_Q=0; idiag_chi=0; idiag_psi=0; idiag_TR=0
+        idiag_grand=0; idiag_grant=0; idiag_grand2=0; idiag_dgrant=0
         idiag_grandxy=0; idiag_grantxy=0
       endif
 !
@@ -379,14 +466,16 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call parse_name(iname,cname(iname),cform(iname),'psi' ,idiag_psi)
         call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
         call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
-        call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
+        call parse_name(iname,cname(iname),cform(iname),'grant' ,idiag_grant)
+        call parse_name(iname,cname(iname),cform(iname),'grand2' ,idiag_grand2)
+        call parse_name(iname,cname(iname),cform(iname),'dgrant' ,idiag_dgrant)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
 !
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'grandxy',idiag_grandxy)
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'grandxy',idiag_grandxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'grantxy',idiag_grantxy)
       enddo
 !
     endsubroutine rprint_special
