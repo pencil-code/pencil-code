@@ -384,7 +384,7 @@ GetOptions(\%opts,
                     --no-summary
                     --nolock      --no-lock
                     --fast 
-                    --errlink )
+                    --errlink=s )
           ) or $help=1, die "Aborting.\n";
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
@@ -791,10 +791,10 @@ sub my_ok {
 	  if ($phase eq 'starting') {
 	    $loglink .= '/start.log';
 	  } else {
-	    if ($phase eq 'running'){$loglink .= '/run.log'};
+	    if ($phase eq 'running' || $phase eq 'results') {$loglink .= '/run.log'};
 	  }
 	  $loglink .= '" target="_blank">Error log</a>';
-	  if ($phase eq 'compilation' || $phase eq 'results') {$loglink = ''};  #.'/compile.log'
+	  if ($phase eq 'compilation') {$loglink = ''};  #.'/compile.log'
 	  print " not ok: $timestr $loglink\n$mesg\n";
         } else {
 	  print " not ok: $timestr\n$mesg\n";
