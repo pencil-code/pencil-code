@@ -62,6 +62,7 @@
   swamp_diffrho = 1e+1
   swamp_chi = 1e+1
   swamp_eta = 2e+1
+  unknown_par=0
 /
 &shock_run_pars
   lforce_periodic_shockviscosity = T
