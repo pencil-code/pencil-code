@@ -4800,7 +4800,7 @@ module Special
 !
       real :: a,b
 !
-      minmod_alt&=sign(0.5,a)*max(0.0,min(abs(a),sign(1.0,a)*b))
+      minmod_alt=sign(0.5,a)*max(0.0,min(abs(a),sign(1.0,a)*b))
 !
     endfunction minmod_alt
 !***********************************************************************
