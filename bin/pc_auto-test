@@ -791,10 +791,18 @@ sub my_ok {
 	  if ($phase eq 'starting') {
 	    $loglink .= '/start.log';
 	  } else {
-	    if ($phase eq 'running' || $phase eq 'results') {$loglink .= '/run.log'};
+	    if ($phase eq 'running' || $phase eq 'results') {$loglink .= '/run.log'}
+	    else {
+              if ($phase eq 'compilation') {
+		open(FH, '>', $dir.'/build.log') or die $!;
+		print FH $mesg;
+		$mesg='';
+		$loglink .= '/build.log';
+              }
+	      else {$loglink = ''}
+	    }
 	  }
-	  $loglink .= '" target="_blank">Error log</a>';
-	  if ($phase eq 'compilation') {$loglink = ''};  #.'/compile.log'
+	  if ($loglink) {$loglink .= '" target="_blank">Error log</a>'}
 	  print " not ok: $timestr $loglink\n$mesg\n";
         } else {
 	  print " not ok: $timestr\n$mesg\n";
