@@ -2,6 +2,19 @@
 Visualization routines.
 """
 
+try:
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    l_mpi = True
+    l_mpi = l_mpi and (size != 1)
+except ImportError:
+    rank = 0
+    size = 1
+    comm = None
+    l_mpi = False
+
 from .animate_interactive import animate_interactive
 
 from .animate_multislices import *
@@ -20,14 +33,16 @@ try:
     from . import pv_plotter_utils
     from . import pv_volume_plotter
 except Exception as e:
-    print(f"Exception while loading PyVista plotter tools. Exception: {e}")
-    print(
-        "Warning: Make sure you have all the required libraries! See pv_plotter.py"
-        " docstrings for requirements."
-    )
+    if rank == 0:
+        print(f"Exception while loading PyVista plotter tools. Exception: {e}")
+        print(
+            "Warning: Make sure you have all the required libraries! See pv_plotter.py"
+            " docstrings for requirements."
+        )
 
 try:
     from . import rvid_box
 except:
-    print("Warning: Could not import visu.rvid_box. Try:")
-    print("$ conda install -c plotly plotly-orca psutil requests")
+    if rank == 0:
+        print("Warning: Could not import visu.rvid_box. Try:")
+        print("$ conda install -c plotly plotly-orca psutil requests")

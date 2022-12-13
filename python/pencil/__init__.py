@@ -3,26 +3,42 @@ The __init__ file is used not only to import the sub-modules, but also to
 set everything up properly.
 """
 
-print("Warning: pencilnew has moved to pencil.")
-print("         pencil has moved to pencil_old.")
-print("To change your scripts accordingly:")
-print("import pencilnew as pc -> import pencil as pc")
-print("import pencil as pc -> import pencil_old as pc")
+try:
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    l_mpi = True
+    l_mpi = l_mpi and (size != 1)
+except ImportError:
+    rank = 0
+    size = 1
+    comm = None
+    l_mpi = False
+
+if rank == 0:
+    print("Warning: pencilnew has moved to pencil.")
+    print("         pencil has moved to pencil_old.")
+    print("To change your scripts accordingly:")
+    print("import pencilnew as pc -> import pencil as pc")
+    print("import pencil as pc -> import pencil_old as pc")
 
 try:
     import h5py
 # except ImportError:
 except:
-    print(
-        "Error: You need to install h5py library doing 'pip3 install h5py' (Python 3) \
-           or 'pip install h5py' (Python 2)."
-    )
+    if rank == 0:
+        print(
+            "Error: You need to install h5py library doing 'pip3 install h5py' (Python 3) \
+               or 'pip install h5py' (Python 2)."
+        )
 
 try:
     import os
     os.environ['HDF5_USE_FILE_LOCKING']='FALSE'
 except:
-    print("os could not be imported -> HDF5 file locking still in effect.")
+    if rank == 0:
+        print("os could not be imported -> HDF5 file locking still in effect.")
     
 # Load sub-modules.
 from . import io
@@ -85,12 +101,13 @@ def check_dependencies():
     not_found = [importlib.util.find_spec(dep) is None for dep in dependencies]
     missing_dependencies = list(compress(dependencies, not_found))
 
-    print(
-        "WARNING: The following python modules have not been found. \
-          Full functionallity may not be granted!"
-    )
+    if rank == 0:
+        print(
+            "WARNING: The following python modules have not been found. \
+              Full functionallity may not be granted!"
+        )
 
-    if "vtk" in missing_dependencies:
-        print("Warning: vtk missing. Try to install the python-vtk or pyevtk module.")
-    if "tqdm" in missing_dependencies:
-        print("Warning: tqdm missing. Check out https://github.com/tqdm/tqdm.")
+        if "vtk" in missing_dependencies:
+            print("Warning: vtk missing. Try to install the python-vtk or pyevtk module.")
+        if "tqdm" in missing_dependencies:
+            print("Warning: tqdm missing. Check out https://github.com/tqdm/tqdm.")
