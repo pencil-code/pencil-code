@@ -5,6 +5,7 @@
 Contains the classes and methods to read the simulation dimensions.
 """
 import numpy as np
+from pencil import read
 
 
 def dim(*args, **kwargs):
@@ -69,7 +70,7 @@ class Dim(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, datadir="data", proc=-1, ogrid=False, down=False):
+    def read(self, datadir="data", proc=-1, ogrid=False, down=False, param=None):
         """
         dim(datadir='data', proc=-1)
 
@@ -92,10 +93,12 @@ class Dim(object):
 
         import os
 
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
+        if not param:
+            param = read.param(datadir=datadir)
+        if param.io_strategy == "HDF5":
             import h5py
 
-            with h5py.File(os.path.join(datadir, "grid.h5"), "r") as tmp:
+            with h5py.File(os.path.join(datadir,"allprocs","var.h5"), "r") as tmp:
                 self.mx = np.array(tmp["settings"]["mx"][()]).item()
                 self.my = np.array(tmp["settings"]["my"][()]).item()
                 self.mz = np.array(tmp["settings"]["mz"][()]).item()
