@@ -56,9 +56,12 @@ module HDF5_IO
 !
   contains
 !***********************************************************************
-    subroutine initialize_hdf5
+    subroutine initialize_hdf5(nxyz,ngrid)
 !
+      integer, dimension(3), optional :: nxyz,ngrid
       ! nothing to do
+      call keep_compiler_quiet(nxyz)
+      call keep_compiler_quiet(ngrid)
 !
     endsubroutine initialize_hdf5
 !***********************************************************************
