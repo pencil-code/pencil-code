@@ -13,20 +13,35 @@
       compute summary statistics "stats" 
       compute "structure" functions as required
 """
+
+try:
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    l_mpi = True
+    l_mpi = l_mpi and (size != 1)
+except ImportError:
+    rank = 0
+    size = 1
+    comm = None
+    l_mpi = False
+
 import numpy as np
 from pencil.math import dot, dot2, cross, cpu_optimal
 from pencil.math.derivatives import curl, div, curl2, grad, del2
 try:
-     from pencil.calc import grav_profile
+    from pencil.calc import grav_profile
 except:
-     print("grav_profile not defined: setting to zero")
-     def grav_profile(grav, x, y, z):
-         if "z" in grav:
-             return np.zeros_like(z)
-         if "y" in grav:
-             return np.zeros_like(y)
-         if "x" in grav:
-             return np.zeros_like(x)
+    if rank == 0:
+        print("grav_profile not defined: setting to zero")
+    def grav_profile(grav, x, y, z):
+        if "z" in grav:
+            return np.zeros_like(z)
+        if "y" in grav:
+            return np.zeros_like(y)
+        if "x" in grav:
+            return np.zeros_like(x)
 
 from pencil.ism_dyn import calc_derived_data, is_vector, der_limits, under_limits
 from pencil.io import group_h5, dataset_h5
