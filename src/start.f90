@@ -63,7 +63,7 @@ program start
   use Filter
   use Gravity,          only: init_gg
   use Grid
-  use HDF5_IO,          only: initialize_hdf5
+  use HDF5_IO,          only: init_hdf5, initialize_hdf5
   use Hydro,            only: init_uu
   use Hyperresi_strict, only: hyperresistivity_strict
   use Hypervisc_strict, only: hyperviscosity_strict
@@ -160,6 +160,7 @@ program start
 !
 !  Initialise HDF5 communication.
 !
+  call init_hdf5
   call initialize_hdf5
 !
 !  Register variables in the f array.

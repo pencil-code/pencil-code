@@ -39,7 +39,7 @@ module Snapshot
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use General, only: safe_character_assign
       use IO, only: output_snap, log_filename_to_file, lun_output, wgrid
-      use HDF5_IO, only: wdim
+      use HDF5_IO, only: wdim, initialize_hdf5
       use Sub, only: read_snaptime, update_snaptime
       use Grid, only: save_grid, coords_aux
       use Messages, only: warning
@@ -201,6 +201,7 @@ module Snapshot
 !
 !  Downsampled ouput in VARd<n> (n>0) snapshot
 !
+        call initialize_hdf5(ndown,ngrid_down)
         call safe_character_assign(file,'VARd'//ch)
         call output_snap(buffer,1,nv2-nv1+1,file)
         close(lun_output)
@@ -208,6 +209,7 @@ module Snapshot
 !  Restore grid (including auxiliaries)
 !
         call save_grid(lrestore=.true.)
+        call initialize_hdf5
         ldownsampling=.false.
 !
         if (present(flist)) call log_filename_to_file(file,flist)

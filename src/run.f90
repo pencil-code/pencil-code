@@ -69,11 +69,10 @@ program run
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays, &
                              coarsegrid_interp
   use Gpu,             only: gpu_init, register_gpu
-  use HDF5_IO,         only: initialize_hdf5
+  use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
   use Hydro,           only: hydro_clean_up
   use ImplicitPhysics, only: calc_heatcond_ADI
   use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
-  use HDF5_IO,         only: wdim
   use Magnetic,        only: rescaling_magnetic
   use Messages
   use Mpicomm
@@ -154,6 +153,7 @@ program run
 !
 !  Initialise HDF5 communication.
 !
+  call init_hdf5
   call initialize_hdf5
 !
 !  Check whether quad precision is supported
@@ -176,6 +176,7 @@ program run
     if (any(ndown==0)) &
       call fatal_error('run','zero points in processor ' &
                        //trim(itoa(iproc))//' for downsampling')
+    call mpiallreduce_sum_int(ndown,ngrid_down,3)
   endif
 !
 !  Set up directory names.

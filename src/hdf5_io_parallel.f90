@@ -6,7 +6,7 @@
 module HDF5_IO
 !
   use Cdata
-  use Cparam, only: mvar, maux, labellen
+  use Cparam
   use General, only: loptest, itoa, numeric_precision, keep_compiler_quiet
   use HDF5
   use Messages, only: fatal_error, warning
@@ -84,25 +84,30 @@ module HDF5_IO
 !
   contains
 !***********************************************************************
-    subroutine initialize_hdf5
+    subroutine initialize_hdf5(nxyz,ngrid)
 !
 !  Initialize the HDF IO.
 !
 !  28-Oct-2016/PABoudin: coded
 !
-      use Syscalls, only: sizeof_real
+      use Cdata
+      integer, dimension(3), optional :: nxyz,ngrid
 
+      ! dimensions for local data portion without ghost layers
+      if (present(nxyz)) then
+        local_subsize(1:3) = nxyz
+      else
+        local_subsize(1:3) = (/nx,ny,nz/)
+      endif
+      local_subsize(4:n_dims+1) = 1
+!
       ! dimensions for local data portion with ghost layers
-      local_size(1) = mx
-      local_size(2) = my
-      local_size(3) = mz
+      local_size(1:3) = local_subsize(1:3)+2*nghost
       local_size(4:n_dims+1) = 1
 !
-      ! dimensions for local data portion without ghost layers
-      local_subsize(1) = nx
-      local_subsize(2) = ny
-      local_subsize(3) = nz
-      local_subsize(4:n_dims+1) = 1
+      ! starting position of this processor's data portion in the global file
+      global_start(1:3) = nghost + (/ipx,ipy,ipz/)*local_subsize(1:3)
+      global_start(4:n_dims+1) = 0
 !
       ! include the ghost layers only on the outer box boundaries
       if (lfirst_proc_x) local_subsize(1) = local_subsize(1) + nghost
@@ -125,16 +130,12 @@ module HDF5_IO
       if (lfirst_proc_z) local_start(3) = local_start(3) - nghost
 !
       ! size of the data in the global file
-      global_size(1) = mxgrid
-      global_size(2) = mygrid
-      global_size(3) = mzgrid
+      if (present(ngrid)) then
+        global_size(1:3) = ngrid+2*nghost
+      else
+        global_size(1:3) = (/mxgrid,mygrid,mzgrid/)
+      endif
       global_size(4:n_dims+1) = 1
-!
-      ! starting position of this processor's data portion in the global file
-      global_start(1) = nghost + ipx*nx
-      global_start(2) = nghost + ipy*ny
-      global_start(3) = nghost + ipz*nz
-      global_start(4:n_dims+1) = 0
 !
       ! include lower ghost layers on the lower edge
       ! (upper ghost cells are taken care of by the increased 'local_subsize')
@@ -142,6 +143,12 @@ module HDF5_IO
       if (lfirst_proc_y) global_start(2) = global_start(2) - nghost
       if (lfirst_proc_z) global_start(3) = global_start(3) - nghost
 !
+    endsubroutine initialize_hdf5
+!***********************************************************************
+    subroutine init_hdf5
+!
+      use Syscalls, only: sizeof_real
+
       ! initialize parallel HDF5 Fortran libaray
       call h5open_f (h5_err)
       call check_error (h5_err, 'initialize parallel HDF5 library', caller='initialize_hdf5')
@@ -152,7 +159,7 @@ module HDF5_IO
         h5_ntype = h5_dptype
       endif
 !
-    endsubroutine initialize_hdf5
+    endsubroutine init_hdf5
 !***********************************************************************
     subroutine finalize_hdf5
 !
