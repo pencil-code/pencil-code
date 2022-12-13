@@ -202,9 +202,7 @@ module Snapshot
 !  Downsampled ouput in VARd<n> (n>0) snapshot
 !
         call safe_character_assign(file,'VARd'//ch)
-        open (lun_output, FILE=trim(directory_snap)//'/'//file, &
-              FORM='unformatted', status='replace')
-        call output_snap(buffer,1,nv2-nv1+1)
+        call output_snap(buffer,1,nv2-nv1+1,file)
         close(lun_output)
 !
 !  Restore grid (including auxiliaries)
