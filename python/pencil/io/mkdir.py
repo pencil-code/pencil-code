@@ -7,7 +7,7 @@
 #####################################################################################
 
 
-def mkdir(destination, rank=0, lfs=False, MB=1, count=1, comm=None):
+def mkdir(destination, lfs=False, MB=1, count=1):
     ##
     ## external modules
     import os
@@ -16,16 +16,15 @@ def mkdir(destination, rank=0, lfs=False, MB=1, count=1, comm=None):
     ##
     ## create dir if not existing
     if not os.path.exists(destination):
-        if comm:
-            comm.Barrier()
-        if rank == 0:
+        try:
             os.makedirs(destination)
-            if lfs:
-                cmd = "lfs setstripe -S {}M -c {} ".format(MB, count) + destination
-                process = sub.Popen(cmd.split(), stdout=sub.PIPE)
-                output, error = process.communicate()
-                print(cmd, output, error)
-        if comm:
-            comm.Barrier()
+        except:
+            if os.path.exists(destination):
+                pass
+        if lfs:
+            cmd = "lfs setstripe -S {}M -c {} ".format(MB, count) + destination
+            process = sub.Popen(cmd.split(), stdout=sub.PIPE)
+            output, error = process.communicate()
+            print(cmd, output, error)
         return True
     return False
