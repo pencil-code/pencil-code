@@ -7,6 +7,19 @@ manipulate simulations.
 import os
 from os.path import join, exists, split, islink, realpath, abspath, basename
 
+try:
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    l_mpi = True
+    l_mpi = l_mpi and (size != 1)
+except ImportError:
+    rank = 0
+    size = 1
+    comm = None
+    l_mpi = False
+
 
 def simulation(*args, **kwargs):
     """
@@ -117,6 +130,9 @@ class __Simulation__(object):
         quiet=True,
         rename_submit_script=False,
         OVERWRITE=False,
+        lfs=False,
+        MB=1,
+        count=1,
     ):
         """
         This method does a copy of the simulation object by creating a new
@@ -661,8 +677,9 @@ class __Simulation__(object):
             # restore self.tmp_dict
             self.tmp_dict = tmp_dict
         except:
-            print("Warning: Could not import save from io.dill*. Try:")
-            print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
+            if rank == 0:
+                print("Warning: Could not import save from io.dill*. Try:")
+                print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
 
     def started(self):
         """Returns whether simulation has already started.
