@@ -176,7 +176,9 @@ program run
     if (any(ndown==0)) &
       call fatal_error('run','zero points in processor ' &
                        //trim(itoa(iproc))//' for downsampling')
-    call mpiallreduce_sum_int(ndown,ngrid_down,3)
+    call mpiallreduce_sum_int(ndown(1),ngrid_down(1),comm=MPI_COMM_XBEAM)
+    call mpiallreduce_sum_int(ndown(2),ngrid_down(2),comm=MPI_COMM_YBEAM)
+    call mpiallreduce_sum_int(ndown(3),ngrid_down(3),comm=MPI_COMM_ZBEAM)
   endif
 !
 !  Set up directory names.
