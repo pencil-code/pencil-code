@@ -521,6 +521,7 @@ module Io
 !
 !  01-dec-2022/ccyang: stub
 !
+      use Cparam, only: root
       use General, only: keep_compiler_quiet
 !
       integer, intent(in) :: navg
@@ -532,8 +533,8 @@ module Io
       real, dimension(:), optional, intent(in) :: header
 !
       character(len=*), parameter :: rname = "output_average_2D"
-      integer, parameter :: amode = ior(ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), MPI_MODE_APPEND)
       character(len=fnlen) :: fpath
+      integer(KIND=MPI_OFFSET_KIND) :: disp
       integer :: handle
 !
       call keep_compiler_quiet(navg)
@@ -545,16 +546,25 @@ module Io
 !  Open average file.
 !
       fpath = trim(directory_snap) // '/' // trim(label) // "averages.dat"
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, amode, io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
 !
 !  Write time.
 !
       wtime: if (lroot) then
+        call MPI_FILE_SEEK(handle, 0_MPI_OFFSET_KIND, MPI_SEEK_END, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to move handle")
         call MPI_FILE_WRITE(handle, (/ time /), 1, mpi_precision, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
+        call MPI_FILE_GET_POSITION(handle, disp, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to get position")
       endif wtime
       call fatal_error_local_collect()
+!
+!  Broadcast the start position for the average data.
+!
+      call MPI_BCAST(disp, 1, MPI_OFFSET_KIND, root, MPI_COMM_WORLD, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to broadcast position")
 !
 !  Close average file.
 !
