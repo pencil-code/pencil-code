@@ -519,7 +519,7 @@ module Io
 !
 !  Output 2D average to a file.
 !
-!  01-dec-2022/ccyang: stub
+!  14-dec-2022/ccyang: in progress
 !
       use Cparam, only: root
       use General, only: keep_compiler_quiet
@@ -533,9 +533,11 @@ module Io
       real, dimension(:), optional, intent(in) :: header
 !
       character(len=*), parameter :: rname = "output_average_2D"
+      integer, dimension(2) :: asizes, asubs, astarts
       character(len=fnlen) :: fpath
       integer(KIND=MPI_OFFSET_KIND) :: disp
-      integer :: handle
+      integer :: handle, dtype
+      integer :: i, n
 !
       call keep_compiler_quiet(navg)
       call keep_compiler_quiet(avgname)
@@ -563,15 +565,55 @@ module Io
 !
 !  Broadcast the start position for the average data.
 !
-      call MPI_BCAST(disp, 1, MPI_OFFSET_KIND, root, MPI_COMM_WORLD, mpi_err)
+      call MPI_BCAST(disp, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to broadcast position")
 !
-!  Close average file.
+!  Decompose the write by processes.
+!
+      dims: if (label == "x") then
+        asizes = (/ nygrid, nzgrid /)
+        asubs = (/ ny, nz /)
+        astarts = (/ ipy * ny, ipz * nz /)
+      elseif (label == "y") then dims
+        asizes = (/ nxgrid, nzgrid /)
+        asubs = (/ nx, nz /)
+        astarts = (/ ipx * nx, ipz * nz /)
+      elseif (label == "z") then dims
+        asizes = (/ nxgrid, nygrid /)
+        asubs = (/ nx, ny /)
+        astarts = (/ ipx * nx, ipy * ny /)
+      else dims
+        call fatal_error(rname, "unknown label " // trim(label))
+      endif dims
+!
+      call MPI_TYPE_CREATE_SUBARRAY(2, asizes, asubs, astarts, order, mpi_precision, dtype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to create subarray")
+!
+      call MPI_TYPE_COMMIT(dtype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to commit data type")
+!
+      call MPI_FILE_SET_VIEW(handle, disp, mpi_precision, dtype, "native", io_info, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to set local view")
+!
+!  Write the averages.
+!
+      n = merge(product(asubs), 0, lwrite)
+      comp: do i = 1, navg
+        if (label == "z") then
+          call MPI_FILE_WRITE_ALL(handle, avgdata(i,:,:), n, mpi_precision, status, mpi_err)
+        else
+          call MPI_FILE_WRITE_ALL(handle, avgdata(:,:,i), n, mpi_precision, status, mpi_err)
+        endif
+        if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to write average")
+      enddo comp
+!
+!  Clean up and close average file.
+!
+      call MPI_TYPE_FREE(dtype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to free data type")
 !
       call MPI_FILE_CLOSE(handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
-!
-      call fatal_error(rname, "not implemented")
 !
     endsubroutine output_average_2D
 !***********************************************************************
