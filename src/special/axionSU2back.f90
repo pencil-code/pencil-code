@@ -42,16 +42,17 @@ module Special
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
   real :: Mpl2=1., Hdot=0., lamf
+  real, dimension (nx) :: grand, grant
   real :: grand_sum, grant_sum, grant_sum_prev, dgrant_sum
   real :: sbackreact_Q=1., sbackreact_chi=1.
-  logical :: lbackreact=.false., lgrant_sum_prev=.false.
+  logical :: lbackreact=.false., lgrant_sum_prev=.false., lwith_eps=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H
 !
   ! run parameters
   namelist /special_run_pars/ &
-    k0, dk, fdecay, g, lam, mu, H, lbackreact, sbackreact_Q, sbackreact_chi
+    k0, dk, fdecay, g, lam, mu, H, lbackreact, sbackreact_Q, sbackreact_chi, lwith_eps
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -116,7 +117,6 @@ module Special
 !
       do ik=1,nx
         k(ik)=k0+dk*(ik-1+iproc*nx)
-        print*,'iproc,ik=',iproc,k(ik)
       enddo
       lamf=lam/fdecay
 !
@@ -150,7 +150,7 @@ module Special
 !
 !  Initial condition; depends on k, which is here set to x.
 !
-      print*,'init_special: iproc,k=',iproc,k
+      write(6,1000) 'iproc,k=',iproc,k
       select case (init_axionSU2back)
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
@@ -182,6 +182,7 @@ module Special
           call stop_it("")
       endselect
 !
+1000  format(a,2x,i3,80f8.4)
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
@@ -246,7 +247,6 @@ module Special
       real, dimension (nx) :: Q, Qdot, chi, chidot
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: Uprime, mQ, xi, a, epsQE, epsQB
-      real, dimension (nx) :: grand, grant
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -290,18 +290,25 @@ module Special
 !  perturbation
 !
       df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
-      df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-        -H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
+      if (lwith_eps) then
+        df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
+          -H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
+      else
+        df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
+          -H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
+      endif
       df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
-      df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
-        -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
-        +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
+      if (lwith_eps) then
+        df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
+          -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
+          +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
+      else
+        df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
+          -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
+          +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
+      endif
 !
-!  integrand (for diagnostics)
-!
-      !grand=(xi*H-k/a)*TR**2*k**3
-      grand=(4.*pi*k**2)*(xi*H-k/a)*TR**2*(+   g/(3.*a**2))/twopi**3
-      grant=(4.*pi*k**2)*(mQ*H-k/a)*TR**2*(-lamf/(2.*a**2))/twopi**3
+!  Optionally, include backreaction:
 !
       if (lbackreact) then
         df(l1:l2,m,n,iaxi_Qdot)=df(l1:l2,m,n,iaxi_Qdot)-sbackreact_Q*grand_sum
@@ -393,7 +400,6 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: mQ, xi, a, epsQE, epsQB
-      real, dimension (nx) :: grand, grant
       real, dimension (nx) :: psi, psidot, TR, TRdot
 !
 !  Set parameters
