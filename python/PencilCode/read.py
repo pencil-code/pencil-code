@@ -42,6 +42,83 @@ class Dict:
 
         return self._keys
 #=======================================================================
+def allprocs_avg2d(datadir='./data', direction='z'):
+    """Returns the time series of the 2D averages read from allprocs/.
+
+    Keyword Arguments:
+        datadir
+            Name of the data directory.
+        direction
+            Direction of the average: 'x', 'y', or 'z'.
+    """
+    # Author: Chao-Chin Yang
+    # Created: 2022-12-14
+    # Last Modified: 2022-12-14
+    import numpy as np
+    from pathlib import Path
+    from struct import unpack
+
+    # Find the dimensions and the precision.
+    dim = dimensions(datadir=datadir)
+    fmt, dtype, nb = _get_precision(dim)
+
+    # Check the direction of average.
+    if direction == 'x':
+        n1, n2 = dim.nygrid, dim.nzgrid
+    elif direction == 'y':
+        n1, n2 = dim.nxgrid, dim.nzgrid
+    elif direction == 'z':
+        n1, n2 = dim.nxgrid, dim.nygrid
+    else:
+        raise ValueError("Keyword direction only accepts 'x', 'y', or 'z'. ")
+
+    # Read the names of the averages.
+    workdir = Path(datadir).parent.as_posix()
+    var = varname(datadir=workdir, filename=direction.strip()+'aver.in')
+    nvar = len(var)
+    adim = np.array((n1, n2, nvar))
+    nbavg = nb * adim.prod()
+
+    # Open file.
+    path = Path(datadir) / "allprocs" / (direction.strip() + "averages.dat")
+    f = open(path, 'rb')
+
+    # Define data stream.
+    def get_time():
+        buf = f.read(nb)
+        if len(buf) > 0:
+            return unpack(fmt, buf)[0]
+        else:
+            return None
+
+    def get_avg():
+        try:
+            a = np.frombuffer(f.read(nbavg), dtype=dtype)
+            a = a.reshape(adim, order='F')
+        except:
+            raise EOFError("incompatible data file")
+        return a
+
+    # Read the data.
+    times = []
+    avg = [[] for i in range(nvar)]
+    while True:
+        t1 = get_time()
+        if t1 is None: break
+        times.append(t1)
+        a = get_avg()
+        for i in range(nvar):
+            avg[i].append(a[:,:,i])
+
+    # Close file.
+    f.close()
+
+    # Return the data.
+    times = np.array(times)
+    avg = [np.stack(a, axis=0) for a in avg]
+    avg = np.rec.array(avg, names=var)
+    return times, avg
+#=======================================================================
 def allprocs_grid(datadir='./data', dim=None):
     """Returns the grid under allprocs/.
 
