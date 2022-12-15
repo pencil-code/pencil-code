@@ -40,12 +40,13 @@ module Particles_radius
   real, pointer :: G_condensation, ssat0 
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   real :: xi_accretion = 0., lambda = 1.
+  real :: coeff_Kelvin = 0.,  coeff_kappa = 0.
   real :: n0 = 1., alpha = 1., b=1.
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
-  logical :: lcondensation_rate=.false., ldt_evaporation=.false.
+  logical :: lcondensation_rate=.false., lkohler=.false., ldt_evaporation=.false.
   logical :: ldt_condensation=.false., ldt_condensation_off=.false.
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
@@ -76,6 +77,7 @@ module Particles_radius
       lconstant_radius_w_chem, &
       initap, lreinitialize_ap, ap0, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
+      lkohler, coeff_Kelvin, coeff_kappa, &
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
       ldt_condensation, ldt_condensation_off, &
       ldust_condensation, xi_accretion, ldust_accretion, &
@@ -816,6 +818,7 @@ module Particles_radius
               elseif (lascalar) then
                 if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
                 if (lcondensation_rate) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
+                if (lcondensation_rate .and. lkohler) dapdt = G_condensation*(f(ix,m,n,issat) - coeff_Kelvin/fp(k,iap) + coeff_kappa/fp(k,iap)**3)/fp(k,iap)
                 if (lcondensation_rate .and. ldust_condensation) dapdt = G_condensation*f(ix,m,n,issat)
               else
                 dapdt = 0.25*vth(ix)*rhopmat1* &
