@@ -370,7 +370,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True,
 
     return t, avg
 #=======================================================================
-def avg2d(datadir='./data', direction='z'):
+def avg2d(datadir='./data', direction='z', par=None):
     """Returns the time series of the 2D averages.
 
     Keyword Arguments:
@@ -378,6 +378,9 @@ def avg2d(datadir='./data', direction='z'):
             Name of the data directory.
         direction
             Direction of average: 'x', 'y', or 'z'.
+        par
+            Parameters supplied by parameters().  If None, the
+            parameters will be read in at runtime.
     """
     # Author: Chao-Chin Yang
     # Created: 2015-03-27
@@ -385,7 +388,8 @@ def avg2d(datadir='./data', direction='z'):
     import numpy as np
 
     # Delegate to allprocs_avg2d() if using MPI IO.
-    par = parameters(datadir=datadir)
+    if par is None:
+        par = parameters(datadir=datadir)
     if par.io_strategy == "MPI-IO":
         return allprocs_avg2d(datadir=datadir, direction=direction)
 
