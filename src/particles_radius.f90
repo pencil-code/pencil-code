@@ -818,7 +818,8 @@ module Particles_radius
               elseif (lascalar) then
                 if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
                 if (lcondensation_rate) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
-                if (lcondensation_rate .and. lkohler) dapdt = G_condensation*(f(ix,m,n,issat) - coeff_Kelvin/fp(k,iap) + coeff_kappa/fp(k,iap)**3)/fp(k,iap)
+                if (lcondensation_rate .and. lkohler) &
+                  dapdt = G_condensation*(f(ix,m,n,issat) - coeff_Kelvin/fp(k,iap) + coeff_kappa/fp(k,iap)**3)/fp(k,iap)
                 if (lcondensation_rate .and. ldust_condensation) dapdt = G_condensation*f(ix,m,n,issat)
               else
                 dapdt = 0.25*vth(ix)*rhopmat1* &
