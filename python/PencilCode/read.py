@@ -379,8 +379,16 @@ def avg2d(datadir='./data', direction='z'):
         direction
             Direction of average: 'x', 'y', or 'z'.
     """
-    # Chao-Chin Yang, 2015-03-27
+    # Author: Chao-Chin Yang
+    # Created: 2015-03-27
+    # Last Modified: 2022-12-14
     import numpy as np
+
+    # Delegate to allprocs_avg2d() if using MPI IO.
+    par = parameters(datadir=datadir)
+    if par.io_strategy == "MPI-IO":
+        return allprocs_avg2d(datadir=datadir, direction=direction)
+
     # Get the dimensions.
     dim = dimensions(datadir=datadir)
     if direction == 'x':
@@ -394,11 +402,13 @@ def avg2d(datadir='./data', direction='z'):
         n2 = dim.nygrid
     else:
         raise ValueError("Keyword direction only accepts 'x', 'y', or 'z'. ")
+
     # Allocate data arrays.
     t, avg1 = proc_avg2d(datadir=datadir, direction=direction)
     nt = len(t)
     var = avg1.dtype.names
     avg = np.rec.array(len(var) * [np.zeros((nt,n1,n2))], names=var)
+
     # Read the averages from each process and assemble the data.
     for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
         dim1 = proc_dim(datadir=datadir, proc=proc)
@@ -423,6 +433,7 @@ def avg2d(datadir='./data', direction='z'):
         if any(t1 != t):
             print("Warning: inconsistent time series. ")
         avg[:,iproc1*n1:(iproc1+1)*n1,iproc2*n2:(iproc2+1)*n2] = avg1
+
     # Return the time and the averages.
     return t, avg
 #=======================================================================
