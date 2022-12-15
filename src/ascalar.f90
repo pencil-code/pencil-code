@@ -66,11 +66,11 @@ module Ascalar
   real, dimension(nx,ny,nz) :: ttcm_volume, accm_volume 
   real, dimension(nx) :: es_T=0.0, qvs_T=0.0
   real, dimension(nx) :: buoyancy=0.0
-  logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
+  logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false., l_T_source=.true.
   logical :: lupw_acc=.false., lcondensation_rate=.false., lconstTT=.false., lTT_mean=.false., lupw_ttc=.false.
 
   namelist /ascalar_run_pars/ &
-      lupw_acc, lascalar_sink, Rascalar_sink, ascalar_sink, &
+      lupw_acc, lascalar_sink, Rascalar_sink, ascalar_sink, l_T_source, &
       ascalar_diff, gradacc0, lcondensation_rate, vapor_mixing_ratio_qvs, &
       lupdraft, updraft, A1, latent_heat, cp_constant, &
       const1_qvs, const2_qvs, Rv, rhoa, gravity_acceleration, Rv_over_Rd_minus_one, &
@@ -415,7 +415,11 @@ module Ascalar
         radius_sum=0.
         condensation_rate_Cd=4.*pi*f(l1:l2,m,n,issat)*p%condensationRate
         df(l1:l2,m,n,iacc)=df(l1:l2,m,n,iacc)-condensation_rate_Cd
-        if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+condensation_rate_Cd/(p%cp*p%TT)
+       ! if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+condensation_rate_Cd/(p%cp*p%TT)
+        if (ltemperature) then
+          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+condensation_rate_Cd/(p%cp*p%TT)
+          if (l_T_source) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-gravity_acceleration/p%cp*p%uu(:,3)
+        endif
       endif
 !
 ! 17-10-18: Xiang-Yu coded. Solve supersaturation by solving equations for the temperature, mixing ratio
