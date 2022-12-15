@@ -111,6 +111,12 @@ nprocx = dim.nprocx
 nprocy = dim.nprocy
 nprocz = dim.nprocz
 
+#Find out write precision (single or double)
+if dim.precision == "D":
+    precision = "d"
+else:
+    precision = "f"
+
 #Check if we have shear (needs to be known to write the snapshot)
 param = pc.read.param(datadir=dest_datadir)
 lshear = param.lshear
@@ -128,7 +134,7 @@ else:
     t_new = None
 
 #Write out f_new into snapshots
-pc.io.write_snapshot(f_new, file_name=dest_var, datadir=dest_datadir, nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, precision='d', nghost=3, t=t_new, x=x_new, y=y_new, z=z_new, lshear=lshear, dx=dx, dy=dy, dz=dz)
+pc.io.write_snapshot(f_new, file_name=dest_var, datadir=dest_datadir, nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, precision=precision, nghost=3, t=t_new, x=x_new, y=y_new, z=z_new, lshear=lshear, dx=dx, dy=dy, dz=dz)
 
 #Before exiting, tell the user what we did.
 print("Copied {} from {} to {}.".format(','.join(keys_to_copy), os.path.join(src_datadir, src_var), os.path.join(dest_datadir, dest_var)) )
