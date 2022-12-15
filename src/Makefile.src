@@ -2322,9 +2322,9 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FSTD_95=-std95 #(uan02*)
 #F90=$(FC) #(uan02*)
 #CC=cc #(uan02*)
-#FFLAGS=-O1 #-s integer64 #-march=native   #target-cpu=x86-milan #-fimplicit-none #(uan02*)
+#FFLAGS=-O1 -mcmodel=large #-s integer64 #-march=native   #target-cpu=x86-milan #-fimplicit-none #(uan02*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(uan02*)
-#FFLAGS_DOUBLE=-s real64 #(uan02*)
+##FFLAGS_DOUBLE=-s real64 #(uan02*)
 #CFLAGS=-DFUNDERSC=1 -O1 #-march=native #(uan02*)
 ##
 ## Parker: UFMG, BH, Brasil
@@ -2870,11 +2870,13 @@ ifneq ($(IO),io_wrapper)
 	if [ "$$?" == "0" ]; then \
 	  $(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/",$(IO_SRC)); \
 	fi
-endif
+	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OBJ) -c $(IO_SRC)
+else
 ifeq ($(IO),io_mpi2)
 	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(IO_OBJ) -c $(IO_SRC)
 else
 	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OBJ) -c $(IO_SRC)
+endif
 endif
 #
 ifneq ($(IO_IN),)
@@ -2883,14 +2885,22 @@ $(IO_IN_OBJ): $(IO_IN_SRC) Makefile.local
 	if [ "$$?" != "0" ]; then \
 	  $(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_in/",$(IO_IN_SRC)); \
 	fi
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $(IO_IN_OBJ) -c $(IO_IN_SRC) 
+ifeq ($(IO_IN),io_mpi2)
+	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) $(FSTD) -o $(IO_IN_OBJ) -c $(IO_IN_SRC) 
+else
+	$(FC) $(ALL_COMP_FLAGS) -o $(IO_IN_OBJ) -c $(IO_IN_SRC)
+endif
 	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_in/\1Io/",$(IO_IN_SRC))
 $(IO_OUT_OBJ): $(IO_OUT_SRC) Makefile.local
 	@grep '^ *[^!]*module  *[Ii][Oo]_out' $(IO_SRC) > /dev/null; \
 	if [ "$$?" != "0" ]; then \
 	  $(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_out/",$(IO_OUT_SRC)); \
 	fi
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
+ifeq ($(IO_OUT),io_mpi2)
+	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) $(FSTD) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
+else
+	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
+endif
 	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_out/\1Io/",$(IO_OUT_SRC))
 endif
 #
