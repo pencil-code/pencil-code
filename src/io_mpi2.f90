@@ -696,23 +696,23 @@ module Io
 !
 !  Back scan the existing slices.
 !
-      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, mpi_precision, mpi_precision, "native", io_info, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot set global view")
-!
-      tcut = dvid * real(nint(time / dvid))
-      dsize = dsize / size_of_real
-      offset = fsize / size_of_real
-      bscan: do while (offset > 0_MPI_OFFSET_KIND)
-        call MPI_FILE_READ_AT_ALL(handle, offset - int(nadd, KIND=MPI_OFFSET_KIND), tprev, 1, mpi_precision, status, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot read time")
-        if (tprev < tcut) exit
-        offset = offset - dsize
-      enddo bscan
+      master: if (lroot) then
+        tcut = dvid * real(nint(time / dvid))
+        offset = fsize - int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
+        bscan: do while (offset > 0_MPI_OFFSET_KIND)
+          call MPI_FILE_READ_AT(handle, offset, tprev, 1, mpi_precision, status, mpi_err)
+          if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot read time")
+          if (tprev < tcut) exit
+          offset = offset - dsize
+        enddo bscan
+        offset = offset + int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
+      endif master
+      call fatal_error_local_collect
+      call MPI_BCAST(offset, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "unable to broadcast offset")
 !
 !  Truncate the slices with later times.
 !
-      dsize = dsize * size_of_real
-      offset = offset * size_of_real
       trunc: if (fsize > offset) then
         k = int((fsize - offset) / dsize)
         fsize = offset
