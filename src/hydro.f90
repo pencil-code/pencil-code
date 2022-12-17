@@ -1678,7 +1678,7 @@ module Hydro
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
-      f(:,:,:,iux:iuz)=0.
+     
       do j=1,ninit
 !
         select case (inituu(j))
