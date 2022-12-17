@@ -519,10 +519,11 @@ module Io
 !
 !  Output 2D average to a file.
 !
-!  14-dec-2022/ccyang: in progress
+!  17-dec-2022/ccyang: in progress
 !
       use Cparam, only: root
       use General, only: keep_compiler_quiet
+      use Mpicomm, only: size_of_real
 !
       integer, intent(in) :: navg
       character(len=fmtlen), dimension(navg), intent(in) :: avgname
@@ -554,12 +555,13 @@ module Io
 !  Write time.
 !
       wtime: if (lroot) then
+        call MPI_FILE_GET_SIZE(handle, disp, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to get file size")
         call MPI_FILE_SEEK(handle, 0_MPI_OFFSET_KIND, MPI_SEEK_END, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to move handle")
-        call MPI_FILE_WRITE(handle, (/ time /), 1, mpi_precision, status, mpi_err)
+        call MPI_FILE_WRITE(handle, time, 1, mpi_precision, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
-        call MPI_FILE_GET_POSITION(handle, disp, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to get position")
+        disp = disp + size_of_real
       endif wtime
       call fatal_error_local_collect()
 !
