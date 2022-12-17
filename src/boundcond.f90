@@ -204,10 +204,10 @@ module Boundcond
 ! Set proper BC code for Yin-Yang grid
 !
       if (lyinyang) then
-        if (lroot) call information('read_all_run_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
+        if (lroot) call information('initialize_boundcond', 'all BCs for y and z ignored because of Yin-Yang grid')
         lperi(2:3) = .false.; lpole = .false.
         !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical
-        !components of vectors
+                               ! components of vectors
         bcy='nil'; bcz='nil'
       endif
 !

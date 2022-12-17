@@ -151,9 +151,12 @@ program run
 !
   call initialize_mpicomm
 !
-!  Initialise HDF5 communication.
+!  Initialise HDF5 library.
 !
   call init_hdf5
+!
+!  Initialize HDF_IO module.
+!
   call initialize_hdf5
 !
 !  Check whether quad precision is supported
@@ -281,7 +284,7 @@ program run
     else
       mvar_down=min(mvar,mvar_down)
     endif
-    if (lwrite_aux) then
+    if (lwrite_aux) then   !MR: perhaps maux_down should have precedence over lwrite_aux?
       if (maux_down<0) then
         maux_down=maux
       else
@@ -303,7 +306,7 @@ program run
   if (lread_aux) then
     mvar_in=mvar+maux
   else if (lread_less) then
-    mvar_in=4
+    mvar_in=4        !MR: strange - why 4?
   else
     mvar_in=mvar
   endif
@@ -579,8 +582,10 @@ program run
         if (lparticles) call particles_rprint_list(.false.) !MR: shouldn't this be called with lreset=.true.?
         call report_undefined_diagnostics
 
+        call initialize_hdf5
         call initialize_timestep
         call initialize_modules(f)
+        call initialize_boundcond
         if (lparticles) call particles_initialize_modules(f)
 
         call choose_pencils

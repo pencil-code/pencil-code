@@ -5,8 +5,8 @@
 !
 module HDF5_IO
 !
-  use Cdata
   use Cparam
+  use Cdata
   use General, only: loptest, itoa, numeric_precision, keep_compiler_quiet
   use HDF5
   use Messages, only: fatal_error, warning
@@ -66,6 +66,7 @@ module HDF5_IO
   integer(kind=8), dimension(n_dims+1) :: global_size, global_start
   logical :: lcollective = .false., lwrite = .false.
   character (len=fnlen) :: current
+  integer :: mvar_out, maux_out
 !
 ! Number of open/close retries if file is locked, waiting time in seconds.
 !
@@ -84,14 +85,17 @@ module HDF5_IO
 !
   contains
 !***********************************************************************
-    subroutine initialize_hdf5(nxyz,ngrid)
+    subroutine initialize_hdf5(nxyz,ngrid,mvar_,maux_)
 !
 !  Initialize the HDF IO.
 !
 !  28-Oct-2016/PABoudin: coded
 !
       use Cdata
+      use General, only: ioptest
+
       integer, dimension(3), optional :: nxyz,ngrid
+      integer, optional :: mvar_,maux_
 
       ! dimensions for local data portion without ghost layers
       if (present(nxyz)) then
@@ -143,6 +147,15 @@ module HDF5_IO
       if (lfirst_proc_y) global_start(2) = global_start(2) - nghost
       if (lfirst_proc_z) global_start(3) = global_start(3) - nghost
 !
+      mvar_out = ioptest(mvar_,mvar)
+      if (present(maux_)) then
+        maux_out=maux_
+      elseif (lwrite_aux) then
+        maux_out = maux
+      else
+        maux_out = 0
+      endif
+
     endsubroutine initialize_hdf5
 !***********************************************************************
     subroutine init_hdf5
@@ -151,7 +164,7 @@ module HDF5_IO
 
       ! initialize parallel HDF5 Fortran libaray
       call h5open_f (h5_err)
-      call check_error (h5_err, 'initialize parallel HDF5 library', caller='initialize_hdf5')
+      call check_error (h5_err, 'initialize parallel HDF5 library', caller='init_hdf5')
       h5_dptype = H5T_NATIVE_DOUBLE
       if (sizeof_real() < 8) then
         h5_ntype = H5T_NATIVE_REAL
@@ -768,7 +781,7 @@ module HDF5_IO
       use General, only: loptest
 
       character (len=*), intent(in) :: name
-      real, dimension (mx,my,mz), intent(out) :: data
+      real, dimension (:,:,:), intent(out) :: data
       logical, optional, intent(INOUT) :: lerrcont
 !
       integer(kind=8), dimension (n_dims) :: h5_stride, h5_count
@@ -828,7 +841,7 @@ module HDF5_IO
 
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(out) :: data
+      real, dimension (:,:,:,:), intent(out) :: data
       logical, optional, intent(INOUT) :: lerrcont
 !
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
@@ -1337,18 +1350,10 @@ module HDF5_IO
       if (.not. lcollective) &
         call check_error (1, '1D pencil output requires global file', name, caller='output_hdf5_pencil_1D')
 !
-      loc_dim(1) = nx
-      loc_dim(2) = 1
-      loc_dim(3) = 1
-      glob_dim(1) = nxgrid
-      glob_dim(2) = nygrid
-      glob_dim(3) = nzgrid
-      loc_start(1) = 0
-      loc_start(2) = 0
-      loc_start(3) = 0
-      glob_start(1) = ipx * nx
-      glob_start(2) = ipy * ny + py
-      glob_start(3) = ipz * nz + pz
+      loc_dim = (/nx,1,1/)
+      glob_dim = global_size(1:3) - 2*nghost
+      loc_start = 0
+      glob_start = global_start(1:3) - nghost + (/0,py,pz/)
 !
       ! define 'file-space' to indicate the data portion in the global file
       call h5screate_simple_f (n, glob_dim, h5_fspace, h5_err)
@@ -1709,7 +1714,7 @@ module HDF5_IO
 !  17-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: name
-      real, dimension (mx,my,mz), intent(in) :: data
+      real, dimension (:,:,:), intent(in) :: data
 !
       integer(kind=8), dimension (n_dims) :: h5_stride, h5_count
       integer, parameter :: n = n_dims
@@ -1780,7 +1785,7 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(in) :: data
+      real, dimension (:,:,:,:), intent(in) :: data
       logical, optional, intent(in) :: compress
 !
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
@@ -2052,8 +2057,7 @@ module HDF5_IO
 !  01-april-21/MR: coded
 !
       use File_IO, only: file_exists
-      use Mpicomm, only: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE,mpibarrier
-      use General, only: find_proc
+      use Mpicomm, only: mpibarrier
 
       character (len=*),                    intent(inout):: filename
       character (len=*), dimension(:),      intent(in)   :: variables
@@ -2955,5 +2959,102 @@ module HDF5_IO
       enddo
 !
     endsubroutine index_reset
+!***********************************************************************
+    subroutine output_settings(time, time_only)
+!
+!  Write additional settings and grid.
+!
+!  13-Nov-2018/PABourdin: moved from other functions
+!
+      use General, only: loptest
+      use Mpicomm, only: collect_grid
+      use Syscalls, only: sizeof_real
+!
+      real, optional, intent(in) :: time
+      logical, optional, intent(in) :: time_only
+!
+      real, dimension(:), allocatable :: gx, gy, gz
+      integer :: alloc_err, mxgrid_, mygrid_, mzgrid_
+!
+      if (lroot.and.present(time)) call output_hdf5 ('time', time)
+      if (loptest(time_only)) return
+!
+      mxgrid_=global_size(1); mygrid_=global_size(2); mzgrid_=global_size(3);
+!
+      if (lroot) then
+        allocate (gx(mxgrid_), gy(mygrid_), gz(mzgrid_), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('output_settings', 'allocate memory for gx,gy,gz', .true.)
+      endif
+!
+      call collect_grid (x(:local_size(1)), y(:local_size(2)), z(:local_size(3)), gx, gy, gz)
+      if (lroot) then
+        call create_group_hdf5 ('grid')
+        call output_hdf5 ('grid/x', gx, mxgrid_)
+        call output_hdf5 ('grid/y', gy, mygrid_)
+        call output_hdf5 ('grid/z', gz, mzgrid_)
+        call output_hdf5 ('grid/dx', dx)
+        call output_hdf5 ('grid/dy', dy)
+        call output_hdf5 ('grid/dz', dz)
+        call output_hdf5 ('grid/Lx', Lx)
+        call output_hdf5 ('grid/Ly', Ly)
+        call output_hdf5 ('grid/Lz', Lz)
+        call output_hdf5 ('grid/Ox', x0)
+        call output_hdf5 ('grid/Oy', y0)
+        call output_hdf5 ('grid/Oz', z0)
+      endif
+      call collect_grid (dx_1(:local_size(1)), dy_1(:local_size(2)), dz_1(:local_size(3)), gx, gy, gz)
+      if (lroot) then
+        call output_hdf5 ('grid/dx_1', gx, mxgrid_)
+        call output_hdf5 ('grid/dy_1', gy, mygrid_)
+        call output_hdf5 ('grid/dz_1', gz, mzgrid_)
+      endif
+      call collect_grid (dx_tilde(:local_size(1)), dy_tilde(:local_size(2)), dz_tilde(:local_size(3)), gx, gy, gz)
+      if (lroot) then
+        call output_hdf5 ('grid/dx_tilde', gx, mxgrid_)
+        call output_hdf5 ('grid/dy_tilde', gy, mygrid_)
+        call output_hdf5 ('grid/dz_tilde', gz, mzgrid_)
+        call create_group_hdf5 ('unit')
+        call output_hdf5 ('unit/system', unit_system)
+        call output_hdf5_double ('unit/density', unit_density)
+        call output_hdf5_double ('unit/length', unit_length)
+        call output_hdf5_double ('unit/velocity', unit_velocity)
+        call output_hdf5_double ('unit/magnetic', unit_magnetic)
+        call output_hdf5_double ('unit/temperature', unit_temperature)
+        call output_hdf5_double ('unit/mass', unit_mass)
+        call output_hdf5_double ('unit/energy', unit_energy)
+        call output_hdf5_double ('unit/time', unit_time)
+        call output_hdf5_double ('unit/flux', unit_flux)
+        call create_group_hdf5 ('settings')
+        call output_hdf5 ('settings/mx', mxgrid_)
+        call output_hdf5 ('settings/my', mygrid_)
+        call output_hdf5 ('settings/mz', mzgrid_)
+        call output_hdf5 ('settings/nx', mxgrid_-2*nghost)
+        call output_hdf5 ('settings/ny', mygrid_-2*nghost)
+        call output_hdf5 ('settings/nz', mzgrid_-2*nghost)
+        call output_hdf5 ('settings/l1', nghost)
+        call output_hdf5 ('settings/m1', nghost)
+        call output_hdf5 ('settings/n1', nghost)
+        call output_hdf5 ('settings/l2', mxgrid_-nghost-1)
+        call output_hdf5 ('settings/m2', mygrid_-nghost-1)
+        call output_hdf5 ('settings/n2', mzgrid_-nghost-1)
+        call output_hdf5 ('settings/nghost', nghost)
+        call output_hdf5 ('settings/mvar', mvar_out)
+        call output_hdf5 ('settings/maux', maux_out)
+        call output_hdf5 ('settings/mglobal', mglobal)
+        call output_hdf5 ('settings/nprocx', nprocx)
+        call output_hdf5 ('settings/nprocy', nprocy)
+        call output_hdf5 ('settings/nprocz', nprocz)
+        if (sizeof_real() < 8) then
+          call output_hdf5 ('settings/precision', 'S')
+        else
+          call output_hdf5 ('settings/precision', 'D')
+        endif
+        ! versions represent only non-compatible file formats
+        ! 0 : experimental
+        ! 1 : first public release
+        call output_hdf5 ('settings/version', 0)
+      endif
+!
+    endsubroutine output_settings
 !***********************************************************************
 endmodule HDF5_IO

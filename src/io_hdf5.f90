@@ -185,7 +185,7 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !  28-Oct-2016/PABourdin: redesigned
 !
-      use General, only: ioptest
+      use General, only: ioptest, itoa
       use File_io, only: parallel_file_exists
 !
       integer, optional, intent(in) :: nv1,nv2
@@ -197,7 +197,7 @@ module Io
 !
       integer :: pos,na,ne
       logical :: ltrunc, lexists, lwrite_add
-      character (len=fnlen) :: filename, dataset
+      character (len=fnlen) :: filename, dataset, group
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_hdf5')
       dataset = 'f'
@@ -228,8 +228,13 @@ module Io
         call create_group_hdf5 ('data')
         ! write components of f-array
         do pos=na,ne
-          if (index_get(pos) == '') cycle
-          call output_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
+          if (pos<=mvar) then
+            group=index_get(pos)
+          else
+            group='aux-'//trim(itoa(pos))
+          endif
+          if (group == '') cycle
+          call output_hdf5 ('data/'//trim(group), a(:,:,:,pos))
         enddo
       elseif (dataset == 'globals') then
         if (.not. present (nv1)) &
@@ -237,8 +242,9 @@ module Io
         call create_group_hdf5 ('data')
         ! write components of global array
         do pos=1,nv1
-          if (index_get(mvar_io + pos) == '') cycle
-          call output_hdf5 ('data/'//index_get(mvar_io + pos), a(:,:,:,pos))
+          group=index_get(mvar_io + pos)
+          if (group == '') cycle
+          call output_hdf5 ('data/'//trim(group), a(:,:,:,pos))
         enddo
       else
         ! write other type of data array
@@ -248,7 +254,7 @@ module Io
 !
       ! write additional settings
       call file_open_hdf5 (filename, global=.false., truncate=.false.)
-      call output_settings (real (t), time_only=((.not. lwrite_add) .or. lomit_add_data))
+      call output_settings (real(t), time_only=((.not. lwrite_add) .or. lomit_add_data))
       call file_close_hdf5
 !
       call file_open_hdf5 (filename, truncate=.false.)
@@ -409,101 +415,6 @@ module Io
       call file_close_hdf5
 !
     endsubroutine output_part_finalize
-!***********************************************************************
-    subroutine output_settings(time, time_only)
-!
-!  Write additional settings and grid.
-!
-!  13-Nov-2018/PABourdin: moved from other functions
-!
-      use General, only: loptest
-      use Mpicomm, only: collect_grid
-      use Syscalls, only: sizeof_real
-!
-      real, optional, intent(in) :: time
-      logical, optional, intent(in) :: time_only
-!
-      real, dimension(:), allocatable :: gx, gy, gz
-      integer :: alloc_err
-!
-      if (lroot.and.present(time)) call output_hdf5 ('time', time)
-      if (loptest(time_only)) return
-!
-      if (lroot) then
-        allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('output_settings', 'allocate memory for gx,gy,gz', .true.)
-      endif
-!
-      call collect_grid (x, y, z, gx, gy, gz)
-      if (lroot) then
-        call create_group_hdf5 ('grid')
-        call output_hdf5 ('grid/x', gx, mxgrid)
-        call output_hdf5 ('grid/y', gy, mygrid)
-        call output_hdf5 ('grid/z', gz, mzgrid)
-        call output_hdf5 ('grid/dx', dx)
-        call output_hdf5 ('grid/dy', dy)
-        call output_hdf5 ('grid/dz', dz)
-        call output_hdf5 ('grid/Lx', Lx)
-        call output_hdf5 ('grid/Ly', Ly)
-        call output_hdf5 ('grid/Lz', Lz)
-        call output_hdf5 ('grid/Ox', x0)
-        call output_hdf5 ('grid/Oy', y0)
-        call output_hdf5 ('grid/Oz', z0)
-      endif
-      call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-      if (lroot) then
-        call output_hdf5 ('grid/dx_1', gx, mxgrid)
-        call output_hdf5 ('grid/dy_1', gy, mygrid)
-        call output_hdf5 ('grid/dz_1', gz, mzgrid)
-      endif
-      call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-      if (lroot) then
-        call output_hdf5 ('grid/dx_tilde', gx, mxgrid)
-        call output_hdf5 ('grid/dy_tilde', gy, mygrid)
-        call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
-        call create_group_hdf5 ('unit')
-        call output_hdf5 ('unit/system', unit_system)
-        call output_hdf5_double ('unit/density', unit_density)
-        call output_hdf5_double ('unit/length', unit_length)
-        call output_hdf5_double ('unit/velocity', unit_velocity)
-        call output_hdf5_double ('unit/magnetic', unit_magnetic)
-        call output_hdf5_double ('unit/temperature', unit_temperature)
-        call output_hdf5_double ('unit/mass', unit_mass)
-        call output_hdf5_double ('unit/energy', unit_energy)
-        call output_hdf5_double ('unit/time', unit_time)
-        call output_hdf5_double ('unit/flux', unit_flux)
-        call create_group_hdf5 ('settings')
-        call output_hdf5 ('settings/mx', nxgrid+2*nghost)
-        call output_hdf5 ('settings/my', nygrid+2*nghost)
-        call output_hdf5 ('settings/mz', nzgrid+2*nghost)
-        call output_hdf5 ('settings/nx', nxgrid)
-        call output_hdf5 ('settings/ny', nygrid)
-        call output_hdf5 ('settings/nz', nzgrid)
-        call output_hdf5 ('settings/l1', nghost)
-        call output_hdf5 ('settings/m1', nghost)
-        call output_hdf5 ('settings/n1', nghost)
-        call output_hdf5 ('settings/l2', nghost+nxgrid-1)
-        call output_hdf5 ('settings/m2', nghost+nygrid-1)
-        call output_hdf5 ('settings/n2', nghost+nzgrid-1)
-        call output_hdf5 ('settings/nghost', nghost)
-        call output_hdf5 ('settings/mvar', mvar)
-        call output_hdf5 ('settings/maux', maux)
-        call output_hdf5 ('settings/mglobal', mglobal)
-        call output_hdf5 ('settings/nprocx', nprocx)
-        call output_hdf5 ('settings/nprocy', nprocy)
-        call output_hdf5 ('settings/nprocz', nprocz)
-        if (sizeof_real() < 8) then
-          call output_hdf5 ('settings/precision', 'S')
-        else
-          call output_hdf5 ('settings/precision', 'D')
-        endif
-        ! versions represent only non-compatible file formats
-        ! 0 : experimental
-        ! 1 : first public release
-        call output_hdf5 ('settings/version', 0)
-      endif
-!
-    endsubroutine output_settings
 !***********************************************************************
     subroutine output_pointmass(file, labels, fq, mv, nc)
 !

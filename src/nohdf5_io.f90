@@ -1129,4 +1129,16 @@ module HDF5_IO
 !
     endsubroutine trim_average
 !***********************************************************************
+    subroutine output_settings(time, time_only)
+!
+! Dummy.
+!
+      real, optional, intent(in) :: time
+      logical, optional, intent(in) :: time_only
+
+      call keep_compiler_quiet(time)
+      call keep_compiler_quiet(time_only)
+
+   endsubroutine output_settings
+!***********************************************************************
 endmodule HDF5_IO
