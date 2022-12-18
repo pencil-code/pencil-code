@@ -519,7 +519,7 @@ module Io
 !
 !  Output 2D average to a file.
 !
-!  17-dec-2022/ccyang: in progress
+!  18-dec-2022/ccyang: coded
 !
       use Cparam, only: root
       use General, only: keep_compiler_quiet
@@ -539,6 +539,7 @@ module Io
       integer(KIND=MPI_OFFSET_KIND) :: fsize, dsize, disp
       integer :: handle, dtype
       integer :: i, n
+      real :: tread
 !
       call keep_compiler_quiet(avgname)
       if (present(header)) call keep_compiler_quiet(header)
@@ -566,20 +567,45 @@ module Io
 !  Open average file.
 !
       fpath = trim(directory_snap) // '/' // trim(label) // "averages.dat"
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_RDWR), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
 !
 !  Get the file size.
 !
       call MPI_FILE_GET_SIZE(handle, fsize, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to get file size")
-      call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to set up barrier")
 !
       ckfsize: if (mod(fsize, dsize) /= 0) then
         if (lroot) print *, rname, ": fsize, dsize = ", fsize, dsize
         call fatal_error(rname, "file size is not a multiple of data size. ")
       endif ckfsize
+!
+!  Back scan.
+!
+      bscan: if (lroot) then
+        disp = fsize
+        tread = time
+        step: do while (tread >= time .and. disp > 0_MPI_OFFSET_KIND)
+          disp = disp - dsize
+          call MPI_FILE_READ_AT(handle, disp, tread, 1, mpi_precision, status, mpi_err)
+          if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to read time")
+        enddo step
+        if (tread < time) disp = disp + dsize
+      endif bscan
+      call fatal_error_local_collect()
+!
+!  Truncate file if needed.
+!
+      call MPI_BCAST(disp, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to broadcast displacement")
+!
+      trunc: if (disp < fsize) then
+        n = int((fsize - disp) / dsize)
+        fsize = disp
+        call MPI_FILE_SET_SIZE(handle, fsize, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to truncate file. ")
+        if (lroot) print *, rname, ": trunacted ", n, " chunks of 2D averages. "
+      endif trunc
 !
 !  Write time.
 !
@@ -588,14 +614,9 @@ module Io
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to move handle")
         call MPI_FILE_WRITE(handle, time, 1, mpi_precision, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
-        disp = fsize + size_of_real
       endif wtime
       call fatal_error_local_collect()
-!
-!  Broadcast the start position for the average data.
-!
-      call MPI_BCAST(disp, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to broadcast position")
+      disp = fsize + size_of_real
 !
 !  Decompose the write by processes.
 !
