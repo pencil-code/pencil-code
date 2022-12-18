@@ -536,41 +536,14 @@ module Io
       character(len=*), parameter :: rname = "output_average_2D"
       integer, dimension(2) :: asizes, asubs, astarts
       character(len=fnlen) :: fpath
-      integer(KIND=MPI_OFFSET_KIND) :: disp
+      integer(KIND=MPI_OFFSET_KIND) :: fsize, dsize, disp
       integer :: handle, dtype
       integer :: i, n
 !
-      call keep_compiler_quiet(navg)
       call keep_compiler_quiet(avgname)
-      call keep_compiler_quiet(avgdata)
-      call keep_compiler_quiet(lwrite)
       if (present(header)) call keep_compiler_quiet(header)
 !
-!  Open average file.
-!
-      fpath = trim(directory_snap) // '/' // trim(label) // "averages.dat"
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
-!
-!  Write time.
-!
-      wtime: if (lroot) then
-        call MPI_FILE_GET_SIZE(handle, disp, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to get file size")
-        call MPI_FILE_SEEK(handle, 0_MPI_OFFSET_KIND, MPI_SEEK_END, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to move handle")
-        call MPI_FILE_WRITE(handle, time, 1, mpi_precision, status, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
-        disp = disp + size_of_real
-      endif wtime
-      call fatal_error_local_collect()
-!
-!  Broadcast the start position for the average data.
-!
-      call MPI_BCAST(disp, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to broadcast position")
-!
-!  Decompose the write by processes.
+!  Find the data size.
 !
       dims: if (label == "x") then
         asizes = (/ nygrid, nzgrid /)
@@ -587,6 +560,44 @@ module Io
       else dims
         call fatal_error(rname, "unknown label " // trim(label))
       endif dims
+!
+      dsize = int(navg * product(asizes) + 1, kind=MPI_OFFSET_KIND) * size_of_real
+!
+!  Open average file.
+!
+      fpath = trim(directory_snap) // '/' // trim(label) // "averages.dat"
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
+!
+!  Get the file size.
+!
+      call MPI_FILE_GET_SIZE(handle, fsize, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to get file size")
+      call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to set up barrier")
+!
+      ckfsize: if (mod(fsize, dsize) /= 0) then
+        if (lroot) print *, rname, ": fsize, dsize = ", fsize, dsize
+        call fatal_error(rname, "file size is not a multiple of data size. ")
+      endif ckfsize
+!
+!  Write time.
+!
+      wtime: if (lroot) then
+        call MPI_FILE_SEEK(handle, 0_MPI_OFFSET_KIND, MPI_SEEK_END, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to move handle")
+        call MPI_FILE_WRITE(handle, time, 1, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
+        disp = fsize + size_of_real
+      endif wtime
+      call fatal_error_local_collect()
+!
+!  Broadcast the start position for the average data.
+!
+      call MPI_BCAST(disp, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to broadcast position")
+!
+!  Decompose the write by processes.
 !
       call MPI_TYPE_CREATE_SUBARRAY(2, asizes, asubs, astarts, order, mpi_precision, dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to create subarray")
