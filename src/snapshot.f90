@@ -55,7 +55,7 @@ module Snapshot
 
       integer :: ndx, ndy, ndz, isx, isy, isz, ifx, ify, ifz, iax, iay, iaz, &
                  iex, iey, iez, l2s, l2is, m2s, m2is, n2s, n2is, nv1, nv2
-      real, dimension(ndown(1)+2*nghost,ndown(2)+2*nghost,ndown(3)+2*nghost,mvar_down+maux_down) :: buffer
+      real, dimension(:,:,:,:), allocatable :: buffer
       integer, dimension(nghost) :: inds
       real, dimension(nghost) :: dxs_ghost, dys_ghost, dzs_ghost
 
@@ -77,7 +77,7 @@ module Snapshot
 !
 !  Set the range for the variable index.
 !  Not yet possible: both mvar_down and maux_down>0, but mvar_down<mvar,
-!  That is, two disjoint index ranges needed.
+!  that is, two disjoint index ranges needed.
 !
         if (mvar_down>0) then
           nv1=1
@@ -89,6 +89,7 @@ module Snapshot
         else
           nv1=mvar+1; nv2=mvar+maux_down
         endif
+        allocate(buffer(ndown(1)+2*nghost,ndown(2)+2*nghost,ndown(3)+2*nghost,nv1:nv2))
 
         if (maux_down>0) call update_auxiliaries(a)
 !
@@ -114,7 +115,7 @@ module Snapshot
 !
 !  Copy downsampled data from *inner* grid points
 !
-        buffer(iax:iex,iay:iey,iaz:iez,1:nv2-nv1+1) = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,nv1:nv2) 
+        buffer(iax:iex,iay:iey,iaz:iez,:) = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,nv1:nv2) 
 !
 !  Generate ghost zone data
 !  TBDone: periodic BC
@@ -186,25 +187,31 @@ module Snapshot
         if (lfirst_proc_x.or.llast_proc_x) then
           l2s=l2; l2is=l2i; l2=iex; l2i=l2-nghost+1
           call boundconds_x(buffer)
-          l2=l2s; l2i=l2is
         endif
         if (lfirst_proc_y.or.llast_proc_y) then
           m2s=m2; m2is=m2i; m2=iey; m2i=m2-nghost+1
           call boundconds_y(buffer)
-          m2=m2s; m2i=m2is
         endif
         if (lfirst_proc_z.or.llast_proc_z) then
           n2s=n2; n2is=n2i; n2=iez; n2i=n2-nghost+1
           call boundconds_z(buffer)
-          n2=n2s; n2i=n2is
         endif
 !
 !  Downsampled ouput in VARd<n> (n>0) snapshot
 !
-        call initialize_hdf5(ndown,ngrid_down)
+        call initialize_hdf5(ndown,ngrid_down,mvar_down,maux_down)
         call safe_character_assign(file,'VARd'//ch)
-        call output_snap(buffer,1,nv2-nv1+1,file)
+        call output_snap(buffer,nv1,nv2,file)
         close(lun_output)
+        if (lfirst_proc_x.or.llast_proc_x) then
+          l2=l2s; l2i=l2is
+        endif
+        if (lfirst_proc_y.or.llast_proc_y) then
+          m2=m2s; m2i=m2is
+        endif
+        if (lfirst_proc_z.or.llast_proc_z) then
+          n2=n2s; n2i=n2is
+        endif
 !
 !  Restore grid (including auxiliaries)
 !

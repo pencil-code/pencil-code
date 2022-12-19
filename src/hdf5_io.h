@@ -3,12 +3,11 @@
   public :: index_append, particle_index_append, pointmass_index_append, index_get, index_reset
   public :: input_profile, output_profile
   public :: hdf5_input_slice, hdf5_output_slice, hdf5_output_slice_position
-  public :: output_timeseries
+  public :: output_timeseries, output_settings
   public :: output_average, trim_average
 !
   interface output_average
     module procedure output_average_1D
-    module procedure output_average_2D
     module procedure output_average_1D_chunked
     module procedure output_average_phi
   endinterface

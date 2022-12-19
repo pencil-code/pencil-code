@@ -56,12 +56,16 @@ module HDF5_IO
 !
   contains
 !***********************************************************************
-    subroutine initialize_hdf5(nxyz,ngrid)
+    subroutine initialize_hdf5(nxyz,ngrid,mvar_,maux_)
 !
       integer, dimension(3), optional :: nxyz,ngrid
-      ! nothing to do
+      integer, optional :: mvar_,maux_
+
+! nothing to do
+
       call keep_compiler_quiet(nxyz)
       call keep_compiler_quiet(ngrid)
+      call keep_compiler_quiet(mvar_,maux_)
 !
     endsubroutine initialize_hdf5
 !***********************************************************************
@@ -194,6 +198,7 @@ module HDF5_IO
 !
       call fatal_error ('input_hdf5_profile_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
       call keep_compiler_quiet(ldim)
       call keep_compiler_quiet(gdim)
       call keep_compiler_quiet(np1)
@@ -450,6 +455,7 @@ module HDF5_IO
 !
       call fatal_error ('output_hdf5_double_0D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
+      call keep_compiler_quiet(real(data))
 !
     endsubroutine output_hdf5_double_0D
 !***********************************************************************
@@ -461,6 +467,7 @@ module HDF5_IO
 !
       call fatal_error ('output_hdf5_double_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
+      call keep_compiler_quiet(real(data))
       call keep_compiler_quiet(nv)
 !
     endsubroutine output_hdf5_double_1D
@@ -551,7 +558,8 @@ module HDF5_IO
 ! 
       real, dimension(2*nname), intent(in) :: data, data_im
 ! 
-      ! dummy routine   
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(data_im)
 !                       
     endsubroutine output_timeseries
 !***********************************************************************
@@ -681,6 +689,8 @@ module HDF5_IO
       real, intent(in) :: pos
       integer, intent(in) :: grid_pos
       real, dimension (:,:), pointer :: data
+!
+      call keep_compiler_quiet(grid_pos)
 !
       if (.not. lwrite .or. .not. associated(data)) return
 !
@@ -854,6 +864,8 @@ module HDF5_IO
 !
       integer :: pos, np
 !
+      call keep_compiler_quiet(lhas_ghost)
+!
 !  If within a loop, do this only for the first step (indicated by lwrite_prof).
 !
       if (lwrite_prof) then
@@ -891,6 +903,8 @@ module HDF5_IO
       integer :: pos
       real, dimension(np) :: coord
 !
+      call keep_compiler_quiet(lhas_ghost)
+!
       ! Read profile.
       open(lun_input,file=trim(directory)//type//'/prof_'//trim(fname)//'.dat')
       do pos=1, np
@@ -918,6 +932,8 @@ module HDF5_IO
 !
       character (len=fnlen) :: filename
 !
+      call keep_compiler_quiet(name)
+!
       if (.not. lwrite .or. (nc <= 0)) return
 !
       filename = trim(path) // '/' // trim(label) // 'averages.dat'
@@ -943,6 +959,7 @@ module HDF5_IO
 !   Output 1D chunked average to a file.
 !
 !   16-Nov-2018/PABourdin: coded
+!   07-nov-2022/ccyang: use output_average_1D instead of output_average_2D
 !
       character (len=*), intent(in) :: path, label
       integer, intent(in) :: nc
@@ -953,57 +970,28 @@ module HDF5_IO
       logical, intent(in) :: lbinary, lwrite
       real, dimension(:), optional, intent(in) :: header
 !
+      integer, dimension(3) :: dims
+      real, dimension(full,nc) :: raveled
+!
+!  Ravel the data to true 1D.
+!
+      dims = shape(data)
+      if (dims(1) * dims(2) /= full) then
+        if (lroot) print *, "output_average_1D_chunked: shape(data) = ", dims
+        if (lroot) print *, "output_average_1D_chunked: full = ", full
+        call fatal_error("output_average_1D_chunked", "inconsistent dimensions")
+      endif
+      raveled = reshape(data(:,:,1:nc), (/ full, nc /))
+!
+!  Call 1D writer.
+!
       if (present (header)) then
-        call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
+        call output_average_1D(path, label, nc, name, raveled, time, lbinary, lwrite, header)
       else
-        call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite)
+        call output_average_1D(path, label, nc, name, raveled, time, lbinary, lwrite)
       endif
 !
     endsubroutine output_average_1D_chunked
-!***********************************************************************
-    subroutine output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
-!
-!   Output average to a file.
-!
-!   16-Nov-2018/PABourdin: coded
-!
-      character (len=*), intent(in) :: path, label
-      integer, intent(in) :: nc
-      character (len=fmtlen), dimension(nc), intent(in) :: name
-      real, dimension(:,:,:), intent(in) :: data
-      real, intent(in) :: time
-      logical, intent(in) :: lbinary, lwrite
-      real, dimension(:), optional, intent(in) :: header
-!
-      character (len=fnlen) :: filename
-      integer :: ia
-!
-      if (.not. lwrite .or. (nc <= 0)) return
-!
-      filename = trim(path) // '/' // trim(label) // 'averages.dat'
-      if (lbinary) then
-        open(lun_output, file=filename, form='unformatted', position='append')
-        if (present (header)) write(lun_output) header
-        write(lun_output) time
-        if (label(1:1) == 'z') then
-          write(lun_output) ( data(ia,:,:), ia=1, nc )
-        else
-          write(lun_output) data(:,:,1:nc)
-        endif
-        close(lun_output)
-      else
-        open(lun_output, file=filename, position='append')
-        if (present (header)) write(lun_output,'(1p,8'//trim(fmt_avgs)//')') header
-        write(lun_output,'(1pe12.5)') time
-        if (label(1:1) == 'z') then
-          write(lun_output,'(1p,8'//trim(fmt_avgs)//')') ( data(ia,:,:), ia=1, nc )
-        else
-          write(lun_output,'(1p,8'//trim(fmt_avgs)//')') data(:,:,1:nc)
-        endif
-        close(lun_output)
-      endif
-!
-    endsubroutine output_average_2D
 !***********************************************************************
     subroutine output_average_phi(path, number, nr, nc, name, data, time, r, dr)
 !       
@@ -1128,5 +1116,17 @@ module HDF5_IO
       deallocate (tmp)
 !
     endsubroutine trim_average
+!***********************************************************************
+    subroutine output_settings(time, time_only)
+!
+! Dummy.
+!
+      real, optional, intent(in) :: time
+      logical, optional, intent(in) :: time_only
+
+      call keep_compiler_quiet(time)
+      call keep_compiler_quiet(time_only)
+
+   endsubroutine output_settings
 !***********************************************************************
 endmodule HDF5_IO

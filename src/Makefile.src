@@ -2870,8 +2870,6 @@ ifneq ($(IO),io_wrapper)
 	if [ "$$?" == "0" ]; then \
 	  $(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_.*$$/\1Io/",$(IO_SRC)); \
 	fi
-	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OBJ) -c $(IO_SRC)
-else
 ifeq ($(IO),io_mpi2)
 	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(IO_OBJ) -c $(IO_SRC)
 else

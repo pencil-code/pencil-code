@@ -24,13 +24,12 @@ module Io
 !
   use Cdata
   use Cparam, only: fnlen, max_int
-  use Messages, only: fatal_error, fatal_error_local, svn_id, warning
+  use Messages, only: fatal_error, fatal_error_local, fatal_error_local_collect, svn_id, warning
   use Mpicomm, only: mpi_precision
-  use MPI
 !
   implicit none
 !
-!  include "mpif.h"
+  include "mpif.h"
   include 'io.h'
   include 'record_types.h'
 !
@@ -49,8 +48,6 @@ module Io
   integer, parameter :: order=MPI_ORDER_FORTRAN, io_info=MPI_INFO_NULL
 !  integer, dimension(io_dims) :: local_size, local_start, global_size, global_start, subsize
   integer, dimension (:), allocatable :: local_size, local_start, global_size, global_start, subsize
-!
-  integer(kind=MPI_OFFSET_KIND) :: intsize = 0, realsize = 0
 !
   contains
 !***********************************************************************
@@ -169,14 +166,6 @@ module Io
 !
       if (lread_from_other_prec) &
         call warning('register_io','Reading from other precision not implemented')
-!
-!  Remeber the sizes of some MPI elementary types.
-!
-      call MPI_TYPE_SIZE_X(MPI_INTEGER, intsize, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("register_io", "could not find MPI_INTEGER size")
-!
-      call MPI_TYPE_SIZE_X(mpi_precision, realsize, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("register_io", "could not find MPI real size")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -401,9 +390,11 @@ module Io
 !
 !  12-nov-20/ccyang: coded
 !
+      use Mpicomm, only: size_of_int
+!
       integer, intent(in) :: npar_tot
 !
-      disp = int(1 + npar_tot, KIND=MPI_OFFSET_KIND) * intsize
+      disp = int(1 + npar_tot, KIND=MPI_OFFSET_KIND) * size_of_int
 !
     endfunction get_disp_to_par_real
 !***********************************************************************
@@ -524,6 +515,142 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
+    subroutine output_average_2D(label, navg, avgname, avgdata, time, lwrite, header)
+!
+!  Output 2D average to a file.
+!
+!  18-dec-2022/ccyang: coded
+!
+      use Cparam, only: root
+      use General, only: keep_compiler_quiet
+      use Mpicomm, only: size_of_real
+!
+      integer, intent(in) :: navg
+      character(len=fmtlen), dimension(navg), intent(in) :: avgname
+      character(len=*), intent(in) :: label
+      real, dimension(:,:,:), intent(in) :: avgdata
+      real, intent(in) :: time
+      logical, intent(in) :: lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character(len=*), parameter :: rname = "output_average_2D"
+      integer, dimension(2) :: asizes, asubs, astarts
+      character(len=fnlen) :: fpath
+      integer(KIND=MPI_OFFSET_KIND) :: fsize, dsize, disp
+      integer :: handle, dtype
+      integer :: i, n
+      real :: tread
+!
+      call keep_compiler_quiet(avgname)
+      if (present(header)) call keep_compiler_quiet(header)
+!
+!  Find the data size.
+!
+      dims: if (label == "x") then
+        asizes = (/ nygrid, nzgrid /)
+        asubs = (/ ny, nz /)
+        astarts = (/ ipy * ny, ipz * nz /)
+      elseif (label == "y") then dims
+        asizes = (/ nxgrid, nzgrid /)
+        asubs = (/ nx, nz /)
+        astarts = (/ ipx * nx, ipz * nz /)
+      elseif (label == "z") then dims
+        asizes = (/ nxgrid, nygrid /)
+        asubs = (/ nx, ny /)
+        astarts = (/ ipx * nx, ipy * ny /)
+      else dims
+        call fatal_error(rname, "unknown label " // trim(label))
+      endif dims
+!
+      dsize = int(navg * product(asizes) + 1, kind=MPI_OFFSET_KIND) * size_of_real
+!
+!  Open average file.
+!
+      fpath = trim(directory_snap) // '/' // trim(label) // "averages.dat"
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_RDWR), io_info, handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
+!
+!  Get the file size.
+!
+      call MPI_FILE_GET_SIZE(handle, fsize, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to get file size")
+!
+      ckfsize: if (mod(fsize, dsize) /= 0) then
+        if (lroot) print *, rname, ": fsize, dsize = ", fsize, dsize
+        call fatal_error(rname, "file size is not a multiple of data size. ")
+      endif ckfsize
+!
+!  Back scan.
+!
+      bscan: if (lroot) then
+        disp = fsize
+        tread = time
+        step: do while (tread >= time .and. disp > 0_MPI_OFFSET_KIND)
+          disp = disp - dsize
+          call MPI_FILE_READ_AT(handle, disp, tread, 1, mpi_precision, status, mpi_err)
+          if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to read time")
+        enddo step
+        if (tread < time) disp = disp + dsize
+      endif bscan
+      call fatal_error_local_collect()
+!
+!  Truncate file if needed.
+!
+      call MPI_BCAST(disp, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to broadcast displacement")
+!
+      trunc: if (disp < fsize) then
+        n = int((fsize - disp) / dsize)
+        fsize = disp
+        call MPI_FILE_SET_SIZE(handle, fsize, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to truncate file. ")
+        if (lroot) print *, rname, ": trunacted ", n, " chunks of 2D averages. "
+      endif trunc
+!
+!  Write time.
+!
+      wtime: if (lroot) then
+        call MPI_FILE_SEEK(handle, 0_MPI_OFFSET_KIND, MPI_SEEK_END, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to move handle")
+        call MPI_FILE_WRITE(handle, time, 1, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
+      endif wtime
+      call fatal_error_local_collect()
+      disp = fsize + size_of_real
+!
+!  Decompose the write by processes.
+!
+      call MPI_TYPE_CREATE_SUBARRAY(2, asizes, asubs, astarts, order, mpi_precision, dtype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to create subarray")
+!
+      call MPI_TYPE_COMMIT(dtype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to commit data type")
+!
+      call MPI_FILE_SET_VIEW(handle, disp, mpi_precision, dtype, "native", io_info, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to set local view")
+!
+!  Write the averages.
+!
+      n = merge(product(asubs), 0, lwrite)
+      comp: do i = 1, navg
+        if (label == "z") then
+          call MPI_FILE_WRITE_ALL(handle, avgdata(i,:,:), n, mpi_precision, status, mpi_err)
+        else
+          call MPI_FILE_WRITE_ALL(handle, avgdata(:,:,i), n, mpi_precision, status, mpi_err)
+        endif
+        if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to write average")
+      enddo comp
+!
+!  Clean up and close average file.
+!
+      call MPI_TYPE_FREE(dtype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to free data type")
+!
+      call MPI_FILE_CLOSE(handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to close file")
+!
+    endsubroutine output_average_2D
+!***********************************************************************
     subroutine output_slice_position()
 !
 !  Dummy subroutine; no need to record slice positions.
@@ -539,7 +666,7 @@ module Io
 !  15-nov-20/ccyang: coded
 !
       use General, only: keep_compiler_quiet
-      use Mpicomm, only: mpiallreduce_or
+      use Mpicomm, only: mpiallreduce_or, size_of_real
 !
       real, dimension(:,:), pointer :: data
       character(len=*), intent(in) :: label, suffix
@@ -580,10 +707,10 @@ module Io
       call MPI_TYPE_CREATE_SUBARRAY(2, sizes, subsizes, starts, order, mpi_precision, dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create subarray type")
 !
-      dsize = product(int(sizes, KIND=MPI_OFFSET_KIND)) * realsize
+      dsize = int(product(sizes), KIND=MPI_OFFSET_KIND) * size_of_real
       call MPI_TYPE_CREATE_STRUCT(2, (/ 1, nadd /), (/ 0_MPI_OFFSET_KIND, dsize /), (/ dtype, mpi_precision /), dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create struct type")
-      dsize = dsize + int(nadd, KIND=MPI_OFFSET_KIND) * realsize
+      dsize = dsize + int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
 !
 !  Open the slice file for write.
 !
@@ -603,23 +730,23 @@ module Io
 !
 !  Back scan the existing slices.
 !
-      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, mpi_precision, mpi_precision, "native", io_info, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot set global view")
-!
-      tcut = dvid * real(nint(time / dvid))
-      dsize = dsize / realsize
-      offset = fsize / realsize
-      bscan: do while (offset > 0_MPI_OFFSET_KIND)
-        call MPI_FILE_READ_AT_ALL(handle, offset - int(nadd, KIND=MPI_OFFSET_KIND), tprev, 1, mpi_precision, status, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot read time")
-        if (tprev < tcut) exit
-        offset = offset - dsize
-      enddo bscan
+      master: if (lroot) then
+        tcut = dvid * real(nint(time / dvid))
+        offset = fsize - int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
+        bscan: do while (offset > 0_MPI_OFFSET_KIND)
+          call MPI_FILE_READ_AT(handle, offset, tprev, 1, mpi_precision, status, mpi_err)
+          if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot read time")
+          if (tprev < tcut) exit
+          offset = offset - dsize
+        enddo bscan
+        offset = offset + int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
+      endif master
+      call fatal_error_local_collect
+      call MPI_BCAST(offset, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "unable to broadcast offset")
 !
 !  Truncate the slices with later times.
 !
-      dsize = dsize * realsize
-      offset = offset * realsize
       trunc: if (fsize > offset) then
         k = int((fsize - offset) / dsize)
         fsize = offset
@@ -672,7 +799,7 @@ module Io
 !  NOTE: The optional argument ltruncate is required by IO=io_hdf5.
 !
       use General, only: keep_compiler_quiet
-      use Mpicomm, only: mpiallreduce_sum_int
+      use Mpicomm, only: mpiallreduce_sum_int, size_of_int, size_of_real
 !
       integer, intent(in) :: mv, nv
       integer, dimension(mv), intent(in) :: ipar
@@ -719,7 +846,7 @@ module Io
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("output_part", "commit MPI data type")
 !
-      call MPI_FILE_SET_VIEW(handle, intsize, MPI_INTEGER, ftype, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, size_of_int, MPI_INTEGER, ftype, "native", io_info, mpi_err)
       call check_success("output_part", "set view of", fpath)
 !
       call MPI_FILE_WRITE_ALL(handle, ipar, nv, MPI_INTEGER, status, mpi_err)
@@ -749,7 +876,7 @@ module Io
 !
 !  Write additional data.
 !
-      offset = offset + int(npar_tot, KIND=MPI_OFFSET_KIND) * mparray * realsize
+      offset = offset + int(npar_tot * mparray, KIND=MPI_OFFSET_KIND) * size_of_real
       call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
       call check_success("output_part", "set global view of", fpath)
       if (lroot) then
@@ -990,6 +1117,7 @@ module Io
 !
       use General, only: keep_compiler_quiet
       use Particles_cdata, only: ixp, iyp, izp
+      use Mpicomm, only: size_of_int, size_of_real
 !
       integer, intent(in) :: mv
       integer, dimension(mv), intent(out) :: ipar
@@ -1078,7 +1206,7 @@ module Io
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("input_part", "commit MPI data type")
 !
-      call MPI_FILE_SET_VIEW(handle, intsize, MPI_INTEGER, ftype, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, size_of_int, MPI_INTEGER, ftype, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
 !
       call MPI_FILE_READ_ALL(handle, ipar, nv, MPI_INTEGER, status, mpi_err)
@@ -1092,7 +1220,7 @@ module Io
       call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, mpi_precision, ftype1, mpi_err)
       call check_success_local("input_part", "create MPI data type")
 !
-      call MPI_TYPE_CREATE_RESIZED(ftype1, 0_MPI_OFFSET_KIND, int(npar_tot, KIND=MPI_OFFSET_KIND) * realsize, ftype, mpi_err)
+      call MPI_TYPE_CREATE_RESIZED(ftype1, 0_MPI_OFFSET_KIND, int(npar_tot, KIND=MPI_OFFSET_KIND) * size_of_real, ftype, mpi_err)
       call check_success_local("input_part", "create MPI data type")
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
@@ -2040,8 +2168,6 @@ module Io
 !
 ! 12-nov-20/ccyang: coded
 !
-      use Mpicomm, only: mpi_precision
-!
       character(len=*), intent(in) :: file
 !
       integer :: handle
@@ -2078,8 +2204,6 @@ module Io
 ! Import processor boundaries from file.
 !
 ! 12-nov-20/ccyang: coded
-!
-      use Mpicomm, only: mpi_precision
 !
       character(len=*), intent(in) :: file
 !

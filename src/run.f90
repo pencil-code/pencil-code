@@ -151,9 +151,12 @@ program run
 !
   call initialize_mpicomm
 !
-!  Initialise HDF5 communication.
+!  Initialise HDF5 library.
 !
   call init_hdf5
+!
+!  Initialize HDF_IO module.
+!
   call initialize_hdf5
 !
 !  Check whether quad precision is supported
@@ -176,9 +179,12 @@ program run
     if (any(ndown==0)) &
       call fatal_error('run','zero points in processor ' &
                        //trim(itoa(iproc))//' for downsampling')
+      ! MR: better a warning and continue w. ldownsampl=.false.?
+
     call mpiallreduce_sum_int(ndown(1),ngrid_down(1),comm=MPI_COMM_XBEAM)
     call mpiallreduce_sum_int(ndown(2),ngrid_down(2),comm=MPI_COMM_YBEAM)
     call mpiallreduce_sum_int(ndown(3),ngrid_down(3),comm=MPI_COMM_ZBEAM)
+
   endif
 !
 !  Set up directory names.
@@ -277,15 +283,21 @@ program run
       mvar_down=mvar
     else
       mvar_down=min(mvar,mvar_down)
-    endif  
-    if (maux_down<0) then
-      maux_down=maux
+    endif
+    if (lwrite_aux) then   !MR: perhaps maux_down should have precedence over lwrite_aux?
+      if (maux_down<0) then
+        maux_down=maux
+      else
+        maux_down=min(maux,maux_down)
+      endif
     else
-      maux_down=min(maux,maux_down)
+      maux_down=0
     endif
     if (mvar_down+maux_down==0) ldownsampl=.false.
-    if (mvar_down<mvar.and.maux_down>0) &
-      call warning('run','mvar_down<mvar, so no downsampled auxiliaries are output')
+    if (mvar_down<mvar.and.maux_down>0) then
+      mvar_down=mvar
+      call warning('run','mvar_down<mvar and maux_down>0 -> to avoid gap in variable sequence, mvar_down is set to mvar')
+    endif
   endif
 !
 ! Shall we read also auxiliary variables or fewer variables (ex: turbulence
@@ -294,7 +306,7 @@ program run
   if (lread_aux) then
     mvar_in=mvar+maux
   else if (lread_less) then
-    mvar_in=4
+    mvar_in=4        !MR: strange - why 4?
   else
     mvar_in=mvar
   endif
@@ -570,8 +582,10 @@ program run
         if (lparticles) call particles_rprint_list(.false.) !MR: shouldn't this be called with lreset=.true.?
         call report_undefined_diagnostics
 
+        call initialize_hdf5
         call initialize_timestep
         call initialize_modules(f)
+        call initialize_boundcond
         if (lparticles) call particles_initialize_modules(f)
 
         call choose_pencils
@@ -952,9 +966,9 @@ program run
   if (lroot) then
     print'(1x,a,f9.3)', 'Maximum used memory per cpu [MBytes] = ', memcpu/1024.
     if (memory>1e6) then
-      print'(1x,a,f9.3)', 'Maximum used memory [GBytes] = ', memory/1024.**2
+      print'(1x,a,f10.3)', 'Maximum used memory [GBytes] = ', memory/1024.**2
     else
-      print'(1x,a,f9.3)', 'Maximum used memory [MBytes] = ', memory/1024.
+      print'(1x,a,f10.3)', 'Maximum used memory [MBytes] = ', memory/1024.
     endif
     print*
   endif
