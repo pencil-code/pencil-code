@@ -42,11 +42,12 @@ module Particles_radius
   real :: xi_accretion = 0., lambda = 1.
   real :: coeff_Kelvin = 0.,  coeff_kappa = 0.
   real :: n0 = 1., alpha = 1., b=1.
+  real :: r_CCN = 1.e-6, kappa_aerosol = 0.1, Rv=461.5, sigma_w = 7.2e-2     
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
-  logical :: lcondensation_rate=.false., lkohler=.false., ldt_evaporation=.false.
+  logical :: lcondensation_rate=.false., lkohler=.false., lkohler_simplified=.false., ldt_evaporation=.false.
   logical :: ldt_condensation=.false., ldt_condensation_off=.false.
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
@@ -77,7 +78,7 @@ module Particles_radius
       lconstant_radius_w_chem, &
       initap, lreinitialize_ap, ap0, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
-      lkohler, coeff_Kelvin, coeff_kappa, &
+      lkohler, lkohler_simplified, coeff_Kelvin, coeff_kappa, r_CCN, kappa_aerosol, &
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
       ldt_condensation, ldt_condensation_off, &
       ldust_condensation, xi_accretion, ldust_accretion, &
@@ -536,6 +537,7 @@ module Particles_radius
         if (lascalar) then
           lpenc_requested(i_acc) = .true.
           lpenc_requested(i_ssat) = .true.
+          lpenc_requested(i_ttc)=.true.
         endif
       endif
 !
@@ -818,7 +820,14 @@ module Particles_radius
               elseif (lascalar) then
                 if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
                 if (lcondensation_rate) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
-                if (lcondensation_rate .and. lkohler) dapdt = G_condensation*(f(ix,m,n,issat) - coeff_Kelvin/fp(k,iap) + coeff_kappa/fp(k,iap)**3)/fp(k,iap)
+                if (lcondensation_rate .and. lkohler) then
+                  if (lkohler_simplified) then
+                    dapdt = G_condensation*(f(ix,m,n,issat) - coeff_Kelvin/fp(k,iap) + coeff_kappa/fp(k,iap)**3)/fp(k,iap)
+                  else
+                    dapdt = G_condensation*(f(ix,m,n,issat) - (fp(k,iap)**3-r_CCN**3)/(fp(k,iap)**3-r_CCN**3*(1.-kappa_aerosol))* &
+                    exp(2.*sigma_w/(Rv*rhopmat*(f(ix,m,n,ittc)*fp(k,iap)))))/fp(k,iap)
+                  endif
+                endif
                 if (lcondensation_rate .and. ldust_condensation) dapdt = G_condensation*f(ix,m,n,issat)
               else
                 dapdt = 0.25*vth(ix)*rhopmat1* &
