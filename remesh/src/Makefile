@@ -42,7 +42,7 @@ include Makefile.inc  ## needed ?
 
 ## Default settings
 FC=mpiifort
-FFLAGS=-O1 -g -traceback
+FFLAGS=-O1 #-g -traceback #-mcmodel=large
 CFLAGS=-O3 -DFUNDERSC=1
 
 ## The following block (`Begin/End machine dependent') specifies compilers
@@ -76,7 +76,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 ## The -tpp7 flag leads to a 10% speedup on nl6
 #FC=f95
 #FC=mpiifort
-#FFLAGS=-O1 -g -traceback -check bounds
+#FFLAGS=-O1 #-g -traceback -check bounds #-mcmodel=large
 #F90FLAGS=-u -tpp7
 #F90FLAGS= # (fire)
 #F90FLAGS=
@@ -273,7 +273,7 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 .mod.o:
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) -c $*.f90
 .c.o:
-	$(CC) $(CFLAGS) -c $*.c
+	$(CC) $(CFLAGS) $(CFLAGS_DOUBLE) -c $*.c
 
 #####
 

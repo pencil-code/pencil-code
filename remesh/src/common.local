@@ -1,9 +1,14 @@
 !
-!  Local settings concerning remeshing variables
-!  The file in included in common.f90
+!  Local settings of remeshing parameters.
+!  This file is included in common.f90
 !
-!  muly and mulz are the factors by which processor numbers
-!  are increased in the y and z directions (often keep muly=1).
+!  mul[xyz] are the factors by which processor numbers
+!  are increased, div[xyz] ~ are decreased.
+!  Code checks for allowed combinations of mul and div. 
+!  Note: remesh.x needs to be run with
+!  nprocx_src/divx * nprocy_src/divy * nprocz_src/divz processors
+!  (is checked by code).
+!
 !  remesh_par is the remesh factor (e.g. 2 when doubling resolution).
 !
   integer, parameter :: mulx=1
@@ -23,7 +28,14 @@
 !
 ! integer, parameter :: mvec=3
 !
+!
+! For producing varfiles, which can be (distributedly) read by Astaroth, set lastaroth=.true.
+! "fields" needs to be set to a proper array of names (see examples).
+!
   logical, parameter :: lastaroth=.false.
   character(LEN=16), dimension(mvar), parameter :: fields = ''
-  !(/'VTXBUF_UUX','VTXBUF_UUY','VTXBUF_UUZ','VTXBUF_LNRHO','VTXBUF_SS'/)   !'VTXBUF_AX','VTXBUF_AY','VTXBUF_AZ'/)
+  !(/'VTXBUF_UUX','VTXBUF_UUY','VTXBUF_UUZ','VTXBUF_LNRHO','VTXBUF_SS'/)
+  ! if needed, additionally 
+  !'VTXBUF_AX','VTXBUF_AY','VTXBUF_AZ'/)
+  ! etc.
 

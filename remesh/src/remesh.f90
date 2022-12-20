@@ -57,9 +57,7 @@ program remesh
 
   real, dimension(mx,my,mz,mvar) :: a
   real, dimension(mxcoll,mycoll,mzcoll,mvar) :: acoll
-  real, dimension(:), allocatable :: xcoll     !mxcoll) :: xcoll
-  real, dimension(mycoll) :: ycoll
-  real, dimension(mzcoll) :: zcoll
+  real, dimension(:), allocatable :: xcoll,ycoll,zcoll
 
 ! SC: added axtra dimension in x direction to 'f' array
   real, dimension (mmx_grid,mmy_grid,mmz_grid,mvar) :: f
@@ -75,22 +73,41 @@ program remesh
   integer :: cpu_local,iyy,icpu,out_size,io_len
   integer :: counx, couny, counz, xstart,xstop, ystart,ystop, zstart, zstop
   integer :: nprocxx, nprocyy, nproczz
-  logical :: lexist, lshort
+  logical :: lexist, lshort, lstop=.false.
   integer :: idx, ifxa, ifxe, idy, ifya, ifye, idz, ifza, ifze, iv, icpu0, icpu1, nprocs_rem
   integer :: i1x, i2x, i1y, i2y, i1z, i2z, isx, isy, isz, srcproc, idpx, idpy, idpz
   character(LEN=128) :: clperi
   integer, dimension(3) :: layout_src, layout_dst, layout_rem
 
   call mpicomm_init
-  if (all((/mulx,muly,mulz/)==1) .and. all((/divx,divy,divz/)==1) .and. &
-      all((/remesh_parx,remesh_pary,remesh_parz/)==1 )) then
-    if (lroot) print*, 'No remeshing needed!'
+  if (any((/divx,divy,divz/)==0)) then
+    if (lroot) print*, 'div[xyz]=0 not allowed!'
     call mpifinalize
+    stop
   endif
 
-  if (any(min((/mulx,muly,mulz/),(/divx,divy,divz/))>1)) then
-    if (lroot) print*, 'mul[xyz] and div[xyz] must not both be >1!'
+  if (mod(mulx,divx) == 0 .and. mulx /= 1 ) then
+    if (lroot) print*, 'mulx divisible by divx! Redefine: mulx='//trim(itoa(mulx/divx))//', divx=1'
+    lstop=.true.
+  endif
+  if (mod(muly,divy) == 0 .and. muly /= 1) then
+    if (lroot) print*, 'muly divisible by divy! Redefine: muly='//trim(itoa(muly/divy))//', divy=1'
+    lstop=.true.
+  endif
+  if (mod(mulz,divz) == 0 .and. mulz /= 1 ) then
+    if (lroot) print*, 'mulz divisible by divz! Redefine: mulz='//trim(itoa(mulz/divz))//', divz=1'
+    lstop=.true.
+  endif
+
+  if ( (all((/mulx,muly,mulz/)==1) .and. all((/divx,divy,divz/)==1)) .and. &
+      all((/remesh_parx,remesh_pary,remesh_parz/)==1 )) then
+    if (lroot) print*, 'No remeshing needed!'
+    lstop=.true.
+  endif
+
+  if (lstop) then
     call mpifinalize
+    stop
   endif
 
   if (lroot) then 
@@ -194,17 +211,19 @@ program remesh
 !  Determine proc layouts
 !
    layout_src=(/nprocx,nprocy,nprocz/)
+   if (any(mod((/mulx*layout_src(1),muly*layout_src(2),mulz*layout_src(3)/),(/divx,divy,divz/)) /= 0)) then
+     if (lroot) print*, 'div[xyz] results in non-integer destination proc number!'
+     call mpibarrier
+     stop
+   endif
+
    layout_dst=(/mulx*layout_src(1)/divx,muly*layout_src(2)/divy,mulz*layout_src(3)/divz/)
-!if (lroot) &
-!print*, 'layout_src,dst=', layout_src, layout_dst
-   layout_rem=layout_src
-   if (divx>1) layout_rem(1)=layout_dst(1)
-   if (divy>1) layout_rem(2)=layout_dst(2)
-   if (divz>1) layout_rem(3)=layout_dst(3)
+   layout_rem=layout_src/(/divx,divy,divz/)
    nprocs_rem=product(layout_rem)
 
    if (nprocs/=nprocs_rem) then
-     if (lroot) print*, 'nprocs/=nprocs_rem', nprocs,nprocs_rem
+     if (lroot) print*, 'Inappropriate number of ranks: nprocs/=nprocs_rem', nprocs,nprocs_rem
+     call mpibarrier
      stop
    endif
 !
@@ -220,7 +239,7 @@ program remesh
     nprocyy=nprocy*muly/divy
     nproczz=nprocz*mulz/divz
 
-    allocate(xcoll(mxcoll))
+    allocate(xcoll(mxcoll),ycoll(mycoll),zcoll(mzcoll))
 !
 !  Write size of global array to destination/data/dim.dat
 !
@@ -279,7 +298,7 @@ program remesh
 !  Loop over number of CPU's in original run
 !
 yinyang_loop: &
-    do iyy=0,0   !ncpus,ncpus
+    do iyy=0,0   !ncpus,ncpus   !suppressed yinyang-loop for now
     do icpu=icpu0,icpu1
    
       call find_proc_coords_general(icpu,layout_rem(1),layout_rem(2),layout_rem(3),ipx,ipy,ipz)
@@ -616,6 +635,7 @@ yinyang_loop: &
 !
 ! SC: added 'i+addx' to 'f' array
 !
+!if (i+addx>mmx_grid .or. j+addy>mmy_grid .or. k+addz>mmz_grid) print*, 'cpu, itx,ity,itz=', cpu, itx,ity,itz
                   f(i+addx,j+addy,k+addz,:)=acoll(itx,ity,itz,:)
                 enddo
                 itz=itz+1
@@ -880,9 +900,9 @@ endprogram remesh
         if (nxgrid/=1) then
           if (igndx) then; fac=1.; else; fac=1./dx**6; endif
           df=fac*(-20.* f(lll1:lll2,m,n,k) &
-               +15.*(f(lll1+1:lll2+1,m,n,k)+f(lll1-1:lll2-1,m,n,k)) &
-               - 6.*(f(lll1+2:lll2+2,m,n,k)+f(lll1-2:lll2-2,m,n,k)) &
-               +    (f(lll1+3:lll2+3,m,n,k)+f(lll1-3:lll2-3,m,n,k)))
+                  +15.*(f(lll1+1:lll2+1,m,n,k)+f(lll1-1:lll2-1,m,n,k)) &
+                  - 6.*(f(lll1+2:lll2+2,m,n,k)+f(lll1-2:lll2-2,m,n,k)) &
+                  +    (f(lll1+3:lll2+3,m,n,k)+f(lll1-3:lll2-3,m,n,k)))
         else
           df=0.
         endif
@@ -890,9 +910,9 @@ endprogram remesh
         if (nygrid/=1) then
           if (igndx) then; fac=1.; else; fac=1./dy**6; endif
           df=fac*(-20.* f(lll1:lll2,m  ,n,k) &
-               +15.*(f(lll1:lll2,m+1,n,k)+f(lll1:lll2,m-1,n,k)) &
-               - 6.*(f(lll1:lll2,m+2,n,k)+f(lll1:lll2,m-2,n,k)) &
-               +    (f(lll1:lll2,m+3,n,k)+f(lll1:lll2,m-3,n,k)))
+                  +15.*(f(lll1:lll2,m+1,n,k)+f(lll1:lll2,m-1,n,k)) &
+                  - 6.*(f(lll1:lll2,m+2,n,k)+f(lll1:lll2,m-2,n,k)) &
+                  +    (f(lll1:lll2,m+3,n,k)+f(lll1:lll2,m-3,n,k)))
         else
           df=0.
         endif
@@ -900,9 +920,9 @@ endprogram remesh
         if (nzgrid/=1) then
           if (igndx) then; fac=1.; else; fac=1./dz**6; endif
           df=fac*(-20.* f(lll1:lll2,m,n  ,k) &
-               +15.*(f(lll1:lll2,m,n+1,k)+f(lll1:lll2,m,n-1,k)) &
-               - 6.*(f(lll1:lll2,m,n+2,k)+f(lll1:lll2,m,n-2,k)) &
-               +    (f(lll1:lll2,m,n+3,k)+f(lll1:lll2,m,n-3,k)))
+                  +15.*(f(lll1:lll2,m,n+1,k)+f(lll1:lll2,m,n-1,k)) &
+                  - 6.*(f(lll1:lll2,m,n+2,k)+f(lll1:lll2,m,n-2,k)) &
+                  +    (f(lll1:lll2,m,n+3,k)+f(lll1:lll2,m,n-3,k)))
         else
           df=0.
         endif

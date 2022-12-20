@@ -26,18 +26,18 @@ module Common
   integer, parameter :: mmy_grid=nny_grid+2*nghost
   integer, parameter :: mmz_grid=nnz_grid+2*nghost
   !
-  integer :: ll1=l1
-  integer :: ll2=nnx_grid+nghost
-  integer :: mm1=m1
-  integer :: mm2=nny_grid+nghost
-  integer :: nn1=n1
-  integer :: nn2=nnz_grid+nghost
+  integer, parameter :: ll1=l1
+  integer, parameter :: ll2=nnx_grid+nghost
+  integer, parameter :: mm1=m1
+  integer, parameter :: mm2=nny_grid+nghost
+  integer, parameter :: nn1=n1
+  integer, parameter :: nn2=nnz_grid+nghost
   !
-  integer :: lll1=l1
-  integer :: lll2=nnx+nghost
-  integer :: mmm1=m1
-  integer :: mmm2=nny+nghost
-  integer :: nnn1=n1
-  integer :: nnn2=nnz+nghost
+  integer, parameter :: lll1=l1
+  integer, parameter :: lll2=nnx+nghost
+  integer, parameter :: mmm1=m1
+  integer, parameter :: mmm2=nny+nghost
+  integer, parameter :: nnn1=n1
+  integer, parameter :: nnn2=nnz+nghost
 
 end module Common
