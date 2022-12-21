@@ -3881,7 +3881,7 @@ module Initcond
 !
     endsubroutine hfluxlayer
 !***********************************************************************
-    subroutine hfluxlayer_y(ampl,f,i,zflayer,width)
+    subroutine hfluxlayer_y(ampl,f,i,zflayer,width,ladd_bb)
 !
 !  Horizontal flux layer (for vector potential)
 !
@@ -3890,6 +3890,7 @@ module Initcond
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,zflayer,width
+      logical, intent(in), optional :: ladd_bb
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
@@ -3897,11 +3898,19 @@ module Initcond
       else
         if (lroot) print*,'hfluxlayer-y: horizontal flux layer; i=',i
         if ((ip<=16).and.lroot) print*,'hfluxlayer-y: ampl,width=',ampl,width
-        do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,i  )=ampl*tanh((z(n)-zflayer)/width)
-          f(l1:l2,m,n,i+1)=0.0
-          f(l1:l2,m,n,i+2)=0.0
-        enddo; enddo
+        if (ladd_bb) then
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,i  )=f(l1:l2,m,n,i  )+ampl*tanh((z(n)-zflayer)/width)
+            f(l1:l2,m,n,i+1)=f(l1:l2,m,n,i+1)
+            f(l1:l2,m,n,i+2)=f(l1:l2,m,n,i+2)
+          enddo; enddo
+        else
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,i  )=ampl*tanh((z(n)-zflayer)/width)
+            f(l1:l2,m,n,i+1)=0.0
+            f(l1:l2,m,n,i+2)=0.0
+          enddo; enddo
+        endif
       endif
 !
     endsubroutine hfluxlayer_y
