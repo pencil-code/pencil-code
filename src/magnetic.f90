@@ -181,7 +181,7 @@ module Magnetic
   logical :: lpress_equil_alt=.false., lset_AxAy_zero=.false.
   logical :: llorentzforce=.true., llorentz_rhoref=.false., linduction=.true.
   logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
-  logical :: ladd_global_field=.false. 
+  logical :: ladd_global_field=.false., ladd_bb_init=.false. 
   logical :: lresi_eta_const=.false.
   logical :: lresi_eta_tdep=.false., lresi_eta_ztdep=.false.
   logical :: lresi_eta_tdep_t0_norm=.false.
@@ -252,7 +252,7 @@ module Magnetic
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
       initaa, amplaa, amplaa2, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
       coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
-      lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, &
+      lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, ladd_bb_init, &
       mu_r, mu_ext_pot, lB_ext_pot, &
       alp_aniso, ljj_as_comaux, lsmooth_jj, &
       lforce_free_test, ampl_B0, N_modes_aa, &
@@ -2013,7 +2013,7 @@ module Magnetic
         case ('hor-tube_erf'); call htube_erf(amplaa(j),f,iax,iaz,radius,epsilonaa, &
                                      center1_x,center1_z,fluxtube_border_width)
         case ('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,z0aa,widthaa(1))
-        case ('hor-fluxlayer-y'); call hfluxlayer_y(amplaa(j),f,iaa,z0aa,widthaa(1))
+        case ('hor-fluxlayer-y'); call hfluxlayer_y(amplaa(j),f,iaa,z0aa,widthaa(1),ladd_bb_init)
         case ('hor-fluxlayer-y-theta'); call hfluxlayer_y_theta(amplaa(j),f,iaa)
         case ('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,x0aa,widthaa(1))
         case ('mag-support'); call magsupport(amplaa(j),f,gravz,cs0,rho0)
