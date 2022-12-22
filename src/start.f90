@@ -131,6 +131,7 @@ program start
 !
   allocate( f(mx,my,mz,mfarray),STAT=stat)
   if (stat>0) call fatal_error('start','Could not allocate memory for f')
+  f(:,:,:,:)=0.
   allocate(df(mx,my,mz,mvar)   ,STAT=stat)
   if (stat>0) call fatal_error('start','Could not allocate memory for df')
 !
