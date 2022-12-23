@@ -204,10 +204,11 @@ module Particles
 !
 !  Share friction time (but only if Epstein drag regime!).
 !
-      if (ldraglaw_epstein) then
-        call put_shared_variable( 'tausp_species', tausp_species)
-        call put_shared_variable('tausp1_species',tausp1_species)
-      endif
+      share: if (ldraglaw_epstein) then
+        call put_shared_variable("tausp", tausp, caller="register_particles")
+        call put_shared_variable("tausp_species", tausp_species, caller="register_particles")
+        call put_shared_variable("tausp1_species", tausp1_species, caller="register_particles")
+      endif share
 !
     endsubroutine register_particles
 !***********************************************************************

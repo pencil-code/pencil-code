@@ -65,7 +65,11 @@ module Particles_drag
 !
 !  14-dec-14/ccyang: coded.
 !
+      use SharedVariables, only: put_shared_variable
+!
       if (lroot) call svn_id("$Id$")
+!
+      call put_shared_variable("taus", taus)
 !
     endsubroutine register_particles_drag
 !***********************************************************************
