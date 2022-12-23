@@ -15,6 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED e2; el(3); a0; ga0(3)
+! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3), infl_a2
 !***************************************************************
 !
 module Special
@@ -312,7 +313,7 @@ module Special
 !
       if (lmagnetic) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
-        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*p%curlb
+        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj)
 !
 !  if particles, would add J=sum(qi*Vi*ni)
 !

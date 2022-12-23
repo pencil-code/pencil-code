@@ -1032,7 +1032,8 @@ module Magnetic
         write(15,*) 'aa = fltarr(mx,my,mz,3)*one'
       endif
 !
-! register EE as auxilliary array if asked for.
+!  Register EE as auxilliary array if asked for.
+!  This must not be involved when the displacement current is being solved for.
 !
       if (lee_as_aux) then
         call farray_register_auxiliary('ee',iee,vector=3)
@@ -2474,6 +2475,10 @@ module Magnetic
       lpenc_requested(i_bb)=.true.
       if (.not.ladvective_gauge) lpenc_requested(i_uxb)=.true.
 !
+!  We'd also need uxb when computing the displacement current, so:
+!
+      if (iex>0) lpenc_requested(i_uxb)=.true.
+!
 !  need uga always for advective gauge.
 !
       if (ladvective_gauge) then
@@ -3843,8 +3848,20 @@ module Magnetic
 ! jj
 !
       if (lpenc_loc(i_jj)) then
+!
+!  Here, p%jj is just curlb (so we could have just called it that),
+!  but when the displacement current is being computed, then p%jj
+!  should be computed from p%el using Ohm's law.
+!
         p%curlb=p%jj
-        p%jj=mu01*p%jj
+!
+!  Check whether or not the displacement current is being computed:
+!
+        if (iex>0) then
+          p%jj=(p%el+p%uxb)/eta
+        else
+          p%jj=mu01*p%jj
+        endif
 !
 !  Add external j-field.
 !
@@ -4367,6 +4384,12 @@ module Magnetic
           endif
         endif
       endif
+!
+!  The following is only needed when the displacement current is not being solved for.
+!  To check this, we can check whether lspecial=T and iex/=0.
+!  We therefore continue only when iex>0.
+!
+      if (iex==0) then
 !
 !  Restivivity term
 !
@@ -5501,9 +5524,10 @@ module Magnetic
         endif
       endif
 !
-! Electric field E = -dA/dt, store the Electric field in f-array if asked for.
+!  Electric field E = -dA/dt, store the Electric field in f-array if asked for.
+!  This line must not be used when the displacement current is being solved for.
 !
-      if (lee_as_aux ) f(l1:l2,m,n,iex:iez)= -dAdt
+      if (lee_as_aux) f(l1:l2,m,n,iex:iez)= -dAdt
 !
 !  Magnetic field in spherical coordinates from a Cartesian simulation
 !  for sphere-in-a-box setups
@@ -5514,16 +5538,20 @@ module Magnetic
         f(l1:l2,m,n,ibb_sphp) = p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
      endif
 !
-! Now add all the contribution to dAdt so far into df.
-! This is done here, such that contribution from mean-field models are not added to
-! the electric field. This may need review later.
+!  Now add all the contribution to dAdt so far into df.
+!  This is done here, such that contribution from mean-field models are not added to
+!  the electric field. This may need review later.
+!  All this is not executed when the displacement current is being computed.
 !
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+dAdt
-!
 !
 !  Call right-hand side for mean-field stuff (do this just before ldiagnos)
 !
       if (lmagn_mf) call daa_dt_meanfield(f,df,p)
+!
+!  This is the endif from iex>0.
+!
+      endif
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
@@ -5570,7 +5598,9 @@ module Magnetic
         maxdiffus3=max(maxdiffus3,diffus_eta3)
 !
       endif
-
+!
+!  Do diagnostics, which includes also slices.
+!
       call calc_diagnostics_magnetic(f,p)
 !
 !  Debug output.
@@ -5584,6 +5614,9 @@ module Magnetic
         call output_pencil('JxB.dat',p%jxb,3)
         call output_pencil('df.dat',df(l1:l2,m,n,:),mvar)
       endif
+!
+!  Timing of this subroutine.
+!
       call timing('daa_dt','finished',mnloop=.true.)
 !
     endsubroutine daa_dt
@@ -8253,6 +8286,7 @@ module Magnetic
         f(l1:l2,m,n,iuu+1 )=ampl_uy*sin(kx*x(l1:l2))
         ampl_Az=-ampl*sqrt(rho*mu0)/kx
         f(l1:l2,m,n,iaa+2 )=ampl_Az*cos(kx*x(l1:l2))
+        if (iez>0) f(l1:l2,m,n,iez)=-ampl_uy*sin(kx*x(l1:l2))*sqrt(B_ext2)
       enddo; enddo
       if (lroot) print*,'alfven_x: mu0, kx, ampl_Az(1)=',mu0, kx, ampl_Az(1)
 !

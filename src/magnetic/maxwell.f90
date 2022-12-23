@@ -411,7 +411,7 @@ module Magnetic
           f(:,:,:,iaak:iakzim)=0.
           if (lroot) f(l1+1,m1+1,n1+1,iaak)=1.
         case ('Beltrami-general')
-               call beltramik_general(amplaa,f,iaak,kx_aa,ky_aa,kz_aa,phase_aa)
+               !call beltramik_general(amplaa,f,iaak,kx_aa,ky_aa,kz_aa,phase_aa)
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplaa,initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iaak,iakz,relhel_aa,kgaussian_aa, &
@@ -1539,5 +1539,13 @@ module Magnetic
       if (lroot) print*,'alfven_x: kx, ampl=',kx, ampl
 !
     endsubroutine alfvenk_x
+!***********************************************************************
+    real function beltrami_phase()
+!
+!  Dummy routine
+!
+      use Mpicomm, only: mpibcast_real
+!
+    endfunction beltrami_phase
 !***********************************************************************
 endmodule Magnetic
