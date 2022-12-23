@@ -348,6 +348,10 @@ module Density
         lconservative=.false.
       endif
 !
+!  Some modules Density depends on may still need access.
+!
+      call put_shared_variable("beta_glnrho_global", beta_glnrho_global, caller="register_density")
+!
     endsubroutine register_density
 !***********************************************************************
     subroutine initialize_density(f)
