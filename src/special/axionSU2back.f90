@@ -42,17 +42,18 @@ module Special
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
   real :: Mpl2=1., Hdot=0., lamf
-  real, dimension (nx) :: grand, grant
-  real :: grand_sum, grant_sum, grant_sum_prev, dgrant_sum
-  real :: sbackreact_Q=1., sbackreact_chi=1.
-  logical :: lbackreact=.false., lgrant_sum_prev=.false., lwith_eps=.false.
+  real, dimension (nx) :: grand, grant, dgrant
+  real :: grand_sum, grant_sum, dgrant_sum
+  real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
+  logical :: lbackreact=.false., lwith_eps=.true.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H
 !
   ! run parameters
   namelist /special_run_pars/ &
-    k0, dk, fdecay, g, lam, mu, H, lbackreact, sbackreact_Q, sbackreact_chi, lwith_eps
+    k0, dk, fdecay, g, lam, mu, H, lwith_eps, &
+    lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -119,16 +120,6 @@ module Special
         k(ik)=k0+dk*(ik-1+iproc*nx)
       enddo
       lamf=lam/fdecay
-!
-!  Expect that grant_sum_prev=F, but this has an effect a bit later
-!  when dgrant is being computed.
-!
-      if (lgrant_sum_prev) then
-        print*,'lgrant_sum_prev=T in initialize_special NOT EXPECTED'
-      else
-        print*,'lgrant_sum_prev=F in initialize_special is OK'
-        grant_sum_prev=0.
-      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -247,6 +238,7 @@ module Special
       real, dimension (nx) :: Q, Qdot, chi, chidot
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: Uprime, mQ, xi, a, epsQE, epsQB
+      real :: fact
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -308,11 +300,22 @@ module Special
           +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
       endif
 !
-!  Optionally, include backreaction:
+!  Optionally, include backreaction
 !
       if (lbackreact) then
-        df(l1:l2,m,n,iaxi_Qdot)=df(l1:l2,m,n,iaxi_Qdot)-sbackreact_Q*grand_sum
-        df(l1:l2,m,n,iaxi_chidot)=df(l1:l2,m,n,iaxi_chidot)-sbackreact_chi*dgrant_sum
+!
+!  compute factor to switch on bachreaction gradually:
+!
+        if (tback/=0.) then
+          fact=.5*(1.+tanh((real(t)-tback)/dtback))
+        else
+          fact=1.
+        endif
+!
+!  apply factor to switch on bachreaction gradually:
+!
+        df(l1:l2,m,n,iaxi_Qdot)=df(l1:l2,m,n,iaxi_Qdot)-sbackreact_Q*fact*grand_sum
+        df(l1:l2,m,n,iaxi_chidot)=df(l1:l2,m,n,iaxi_chidot)-sbackreact_chi*fact*dgrant_sum
       endif
 !
 if (ip<10) print*,'xi,H,k,a,TR,g,a',xi,H,k,a,TR,g,a
@@ -325,8 +328,8 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call sum_mn_name(chi,idiag_chi)
         call sum_mn_name(psi,idiag_psi)
         call sum_mn_name(TR,idiag_TR)
-        call sum_mn_name(grand,idiag_grand)
-        call sum_mn_name(grant,idiag_grant)
+        call sum_mn_name(grand,idiag_grand)  !redundant
+        call sum_mn_name(grant,idiag_grant)  !redundant
         call save_name(grand_sum,idiag_grand2)
         call save_name(dgrant_sum,idiag_dgrant)
       endif
@@ -408,6 +411,7 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
       Qdot=f(l1:l2,m,n,iaxi_Qdot)
       chidot=f(l1:l2,m,n,iaxi_chidot)
       TR=f(l1:l2,m,n,iaxi_TR)
+      TRdot=f(l1:l2,m,n,iaxi_TRdot)
 !
       mQ=g*Q/H
       xi=lamf*chidot/(2.*H)
@@ -419,22 +423,13 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !
       grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TR**2*(+   g/(3.*a**2))/twopi**3
       grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TR**2*(-lamf/(2.*a**2))/twopi**3
+      dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+        (a*mQ*H**2+a*g*Qdot)*TR**2+(a*mQ*H-k)*2*TR*TRdot &
+        )/twopi**3
 !
       call mpiallreduce_sum(sum(grand),grand_sum,1)
       call mpiallreduce_sum(sum(grant),grant_sum,1)
-!
-!  Differentiate in time and update grant_sum_prev.
-!  lgrant_sum_prev=T means that grant_sum_prev exists
-!
-      if (lfirst) then
-        if (lgrant_sum_prev) then
-          dgrant_sum=(grant_sum-grant_sum_prev)/dt
-        else
-          dgrant_sum=0.
-          lgrant_sum_prev=.true.
-        endif
-        grant_sum_prev=grant_sum
-      endif
+      call mpiallreduce_sum(sum(dgrant),dgrant_sum,1)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
