@@ -438,8 +438,8 @@ module Particles
 !
       share: if (ldraglaw_epstein .or. ldraglaw_simple) then
         call put_shared_variable("tausp", tausp, caller="register_particles")
-        call put_shared_variable("tausp_species", tausp_species, caller="register_particles")
-        call put_shared_variable("tausp1_species", tausp1_species, caller="register_particles")
+        call put_shared_variable("tausp_species", tausp_species)
+        call put_shared_variable("tausp1_species", tausp1_species)
       endif share
 !
 !  Kill particles that spend enough time in birth ring
@@ -571,7 +571,7 @@ module Particles
 !  Check if shear advection is on and decide if it needs to be included in the timestep condition.
 !
       if (lshear) then
-        call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift, caller='initialize_particles')
+        call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift)
         lcdtp_shear = .not. lshearadvection_as_shift
         nullify(lshearadvection_as_shift)
       endif
