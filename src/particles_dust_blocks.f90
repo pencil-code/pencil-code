@@ -206,8 +206,8 @@ module Particles
 !
       share: if (ldraglaw_epstein) then
         call put_shared_variable("tausp", tausp, caller="register_particles")
-        call put_shared_variable("tausp_species", tausp_species, caller="register_particles")
-        call put_shared_variable("tausp1_species", tausp1_species, caller="register_particles")
+        call put_shared_variable("tausp_species", tausp_species)
+        call put_shared_variable("tausp1_species", tausp1_species)
       endif share
 !
     endsubroutine register_particles
@@ -371,7 +371,7 @@ module Particles
 !
 !  Share Keplerian gravity.
 !
-      call put_shared_variable('gravr',gravr,ierr)
+      call put_shared_variable('gravr',gravr,caller='initialize_particles')
       if (ierr/=0) call fatal_error('initialize_particles', &
           'there was a problem when sharing gravr')
 !
@@ -410,7 +410,7 @@ module Particles
 !
 !  Check if shear advection is on for time-step condition.
 !
-      if (lshear) call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift, caller='initialize_particles')
+      if (lshear) call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift)
 !
 !  Write constants to disk.
 !
