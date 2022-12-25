@@ -787,11 +787,15 @@ sub my_ok {
         print " ok      $timestr\n" unless ($quiet);
     } else {
         if ($errlink) {
-	  my $loglink = '<a href="'.($dir =~ s/^.*\/samples\/(.*$)/$errlink\/$1/r);
+	  my $linkhead = '<a href="'.($dir =~ s/^.*\/samples\/(.*$)/$errlink\/$1/r);
+          my $linktail = '" target="_blank">Error log</a>';
+	  my $loglink = $linkhead;
 	  if ($phase eq 'starting') {
 	    $loglink .= '/start.log';
 	  } else {
-	    if ($phase eq 'running' || $phase eq 'results') {$loglink .= '/run.log'}
+	    if ($phase eq 'running' || $phase eq 'results') 
+              {$loglink .= '/run.log'}
+	      if ($phase eq 'results') {$loglink .= $linktail.$linkhead.'/start.log'}
 	    else {
               if ($phase eq 'compilation') {
 		open(FH, '>', $dir.'/build.log') or die $!;
@@ -802,7 +806,7 @@ sub my_ok {
 	      else {$loglink = ''}
 	    }
 	  }
-	  if ($loglink) {$loglink .= '" target="_blank">Error log</a>'}
+	  if ($loglink) {$loglink .= $linktail}
 	  print " not ok: $timestr $loglink\n$mesg\n";
         } else {
 	  print " not ok: $timestr\n$mesg\n";
