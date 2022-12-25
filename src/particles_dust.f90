@@ -2373,7 +2373,6 @@ module Particles
               if (j == 1) print*, 'init_particles: No particle velocity set'
 !
             case ('Keplerian','keplerian')
-              call get_shared_variable('gravr',gravr,caller='insert_particles')
               if (lcartesian_coords) then
                 rr_tmp(npar_loc_old+1:npar_loc) = sqrt(fp(npar_loc_old+1:npar_loc,ixp)**2+ &
                     fp(npar_loc_old+1:npar_loc,iyp)**2+fp(npar_loc_old+1:npar_loc,izp)**2)
