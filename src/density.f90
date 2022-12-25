@@ -141,7 +141,8 @@ module Density
   character (len=labellen) :: cloud_mode='isothermal'
   logical :: ldensity_slope_limited=.false.
   real :: h_sld_dens=2.0, nlf_sld_dens=1.0
-  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
+  real, dimension(3), target :: beta_glnrho_global = 0.0
+  real, dimension(3) :: beta_glnrho_scaled = 0.0
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
