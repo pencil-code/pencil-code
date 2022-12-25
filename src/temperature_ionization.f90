@@ -127,8 +127,7 @@ module Energy
         call farray_register_pde('lnTT',ilnTT)
       endif
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='register_energy')
 !
 !  Identify version number.
 !
@@ -175,11 +174,10 @@ module Energy
 !  Check any module dependencies
 !
       if (.not.leos_temperature_ionization) then
-        if (.not.leos_chemistry)  then
-        call fatal_error('initialize_energy','EOS/=noeos but'//&
-                         'temperature_ionization already include'//&
-                         'an EQUATION OF STATE for the fluid')
-        endif
+        if (.not.leos_chemistry) &
+          call fatal_error('initialize_energy','EOS/=noeos but'//&
+                           'temperature_ionization already include'//&
+                           'an EQUATION OF STATE for the fluid')
       endif
 !
 !  Check whether we want heating/cooling
@@ -199,9 +197,7 @@ module Energy
 !
 !  put lviscosity_heat as shared variable for viscosity module
 !
-      call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call stop_it("initialize_energy: "//&
-           "there was a problem when putting lviscosity_heat")
+      call put_shared_variable('lviscosity_heat',lviscosity_heat,caller='initialize_energy')
       if (lsolid_cells) then
         call put_shared_variable('ladvection_temperature',ladvection_temperature)
         call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
@@ -245,17 +241,10 @@ module Energy
 !  Check if reduced sound speed is used
 !
       if (ldensity) then
-        call get_shared_variable('lreduced_sound_speed',&
-             lreduced_sound_speed,ierr)
-        if (ierr/=0) call fatal_error('initialize_energy:',&
-             'failed to get lreduced_sound_speed from density')
+        call get_shared_variable('lreduced_sound_speed',lreduced_sound_speed)
         if (lreduced_sound_speed) then
-          call get_shared_variable('reduce_cs2',reduce_cs2,ierr)
-          if (ierr/=0) call fatal_error('initialize_energy:',&
-               'failed to get reduce_cs2 from density')
-          call get_shared_variable('lscale_to_cs2top',lscale_to_cs2top,ierr)
-          if (ierr/=0) call fatal_error('initialize_energy:',&
-               'failed to get lscale_to_cs2top from density')
+          call get_shared_variable('reduce_cs2',reduce_cs2)
+          call get_shared_variable('lscale_to_cs2top',lscale_to_cs2top)
         endif
       endif
 !

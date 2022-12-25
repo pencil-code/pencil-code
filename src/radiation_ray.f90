@@ -1795,12 +1795,8 @@ module Radiation
 !
           if (z_cutoff==impossible .or. cool_wid==impossible) &
           call fatal_error("source_function:","z_cutoff or cool_wid is not set")
-          call put_shared_variable('z_cutoff',z_cutoff,ierr)
-          if (ierr/=0) call stop_it("source_function: "//&
-            "there was a problem when putting z_cutoff")
-          call put_shared_variable('cool_wid',cool_wid,ierr)
-          if (ierr/=0) call stop_it("source_function: "//&
-            "there was a problem when putting cool_wid")
+          call put_shared_variable('z_cutoff',z_cutoff,caller='source_function')
+          call put_shared_variable('cool_wid',cool_wid)
           z_cutoff1=z_cutoff
           if (.not. lcutoff_zconst) then
             do l=l1-radx,l2+radx 

@@ -126,9 +126,7 @@ module Energy
             'with beta_glnrho_global=', beta_glnrho_global
       endif
 !
-      call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call stop_it("initialize_energy: "//&
-           "there was a problem when putting lviscosity_heat")
+      call put_shared_variable('lviscosity_heat',lviscosity_heat,caller='initialize_energy')
 !
 !  Check that cs0 is set correctly when lrelativistic_eos=.true.
 !
@@ -144,9 +142,7 @@ module Energy
 ! AB: do be moved directly to register.
 !
       if (ldensity) then
-        call get_shared_variable('lffree',lffree,ierr)
-        if (ierr/=0) call fatal_error('initialize_energy:',&
-             'failed to get lffree from density')
+        call get_shared_variable('lffree',lffree)
         if (lffree) then
           call get_shared_variable('profx_ffree',profx_ffree,caller='initialize_energy')
           call get_shared_variable('profy_ffree',profy_ffree,caller='initialize_energy')

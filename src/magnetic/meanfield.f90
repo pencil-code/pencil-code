@@ -331,36 +331,20 @@ module Magnetic_meanfield
 !
       !if (lmagn_mf .and. lrun) then
       if (lrun) then
-        call put_shared_variable('meanfield_etat',meanfield_etat,ierr)
-        if (ierr/=0) call fatal_error('initialize_magn_mf', &
-            'there was a problem when putting meanfield_etat')
+        call put_shared_variable('meanfield_etat',meanfield_etat,caller='initialize_magn_mf')
 !
 !  Quenching parameters: lmeanfield_chitB and chi_t0.
 !
-        call put_shared_variable('lmeanfield_chitB',lmeanfield_chitB,ierr)
-        if (ierr/=0) call fatal_error('initialize_magn_mf', &
-            'there was a problem when putting lmeanfield_chitB')
-        if (lmeanfield_chitB) then
-        call put_shared_variable('chi_t0',chi_t0,ierr)
-        if (ierr/=0) call fatal_error('initialize_magn_mf', &
-            'there was a problem when putting chi_t0')
-        endif
+        call put_shared_variable('lmeanfield_chitB',lmeanfield_chitB)
+        if (lmeanfield_chitB) call put_shared_variable('chi_t0',chi_t0)
 !
 !  chit_quenching for flux boundary condition
 !
         !dummy=meanfield_Beq_profile
-        !call put_shared_variable('meanfield_Beq_profile',dummy,ierr)
-        !if (ierr/=0) call stop_it("meanfield_Beq_profile: "//&
-        !     "there was a problem when putting meanfield_Beq_profile")
-        call put_shared_variable('meanfield_Beq',meanfield_Beq,ierr)
-        if (ierr/=0) call stop_it("meanfield_Beq: "//&
-             "there was a problem when putting meanfield_Beq")
-        call put_shared_variable('chit_quenching',chit_quenching,ierr)
-        if (ierr/=0) call stop_it("chit_quenching: "//&
-             "there was a problem when putting chit_quenching")
-        call put_shared_variable('uturb',uturb,ierr)
-        if (ierr/=0) call stop_it("uturb: "//&
-             "there was a problem when putting uturb")
+        !call put_shared_variable('meanfield_Beq_profile',dummy)
+        call put_shared_variable('meanfield_Beq',meanfield_Beq)
+        call put_shared_variable('chit_quenching',chit_quenching)
+        call put_shared_variable('uturb',uturb)
 !
       endif
 !
@@ -490,12 +474,12 @@ module Magnetic_meanfield
 !  share etat profile with viscosity module
 !
         if (lviscosity) then
-          call put_shared_variable('etat_x',etat_x,ierr)
-          call put_shared_variable('etat_y',etat_y,ierr)
-          call put_shared_variable('etat_z',etat_z,ierr)
-          call put_shared_variable('detat_x',detat_x,ierr)
-          call put_shared_variable('detat_y',detat_y,ierr)
-          call put_shared_variable('detat_z',detat_z,ierr)
+          call put_shared_variable('etat_x',etat_x)
+          call put_shared_variable('etat_y',etat_y)
+          call put_shared_variable('etat_z',etat_z)
+          call put_shared_variable('detat_x',detat_x)
+          call put_shared_variable('detat_y',detat_y)
+          call put_shared_variable('detat_z',detat_z)
           print*,'ipz,z(n),etat_z(n),detat_z(n)'
           do n=n1,n2
             print*,ipz,z(n),etat_z(n),detat_z(n)
@@ -562,37 +546,27 @@ module Magnetic_meanfield
 !  wave speed of gauge potential
 !
       if (lrun) then
-        call get_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
-        if (ierr/=0) &
-            call fatal_error("initialize_special: ", "cannot get lweyl_gauge")
+        call get_shared_variable('lweyl_gauge',lweyl_gauge)
         if (lroot) print*,'initialize_magn_mf: lweyl_gauge=',lweyl_gauge
-!       if (.not.lweyl_gauge) then
-!         call get_shared_variable('eta',eta,ierr)
-!         if (ierr/=0) &
-!             call fatal_error("initialize_special: ", "cannot get shared eta")
-!       endif
+!       if (.not.lweyl_gauge) call get_shared_variable('eta',eta)
       endif
 !
 !  Initialize secondary mean-field modules:
 !
       if (lmagn_mf_demfdt .or. lalpm .or. lalpm_alternate ) then
-        call put_shared_variable('kf_x',kf_x,ierr)
-        call put_shared_variable('kf_y',kf_y,ierr)
-        call put_shared_variable('kf_z',kf_z,ierr)
-        call put_shared_variable('kf_x1',kf_x1,ierr)
-        call put_shared_variable('etat_x',etat_x,ierr)
-        call put_shared_variable('etat_y',etat_y,ierr)
-        call put_shared_variable('etat_z',etat_z,ierr)
-        if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'there was a problem when sharing etat_xyz')
+        call put_shared_variable('kf_x',kf_x)
+        call put_shared_variable('kf_y',kf_y)
+        call put_shared_variable('kf_z',kf_z)
+        call put_shared_variable('kf_x1',kf_x1)
+        call put_shared_variable('etat_x',etat_x)
+        call put_shared_variable('etat_y',etat_y)
+        call put_shared_variable('etat_z',etat_z)
         call initialize_magn_mf_demfdt(f)
       endif
 !
 !  Get B_ext2 from magnetic module.
 !
-      call get_shared_variable('B_ext2',B_ext2,ierr)
-      if (ierr/=0) &
-          call fatal_error("initialize_magn_mf:", "cannot get B_ext2")
+      call get_shared_variable('B_ext2',B_ext2)
 !
     endsubroutine initialize_magn_mf
 !***********************************************************************
