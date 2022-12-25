@@ -376,8 +376,6 @@ module Particles
 !  Share Keplerian gravity.
 !
       call put_shared_variable('gravr',gravr,caller='initialize_particles')
-      if (ierr/=0) call fatal_error('initialize_particles', &
-          'there was a problem when sharing gravr')
 !
 !  Gas density is needed for back-reaction friction force.
 !

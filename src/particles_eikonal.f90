@@ -362,7 +362,7 @@ module Particles
 !  Share friction time (but only if Epstein drag regime!).
 !
       if (ldraglaw_epstein .or. ldraglaw_simple) then
-        call put_shared_variable( 'tausp_species', tausp_species)
+        call put_shared_variable( 'tausp_species', tausp_species,caller='initialize_particles')
         call put_shared_variable('tausp1_species',tausp1_species)
       endif
 !
@@ -423,9 +423,7 @@ module Particles
 !
 !  Share Keplerian gravity.
 !
-      call put_shared_variable('gravr',gravr,ierr)
-      if (ierr/=0) call fatal_error('initialize_particles', &
-          'there was a problem when sharing gravr')
+      call put_shared_variable('gravr',gravr,caller='initialize_particles')
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -614,10 +612,10 @@ module Particles
 !
       if (l_shell) then
         if ( k_shell < 0) call fatal_error('initialize_particles','Set k_shell')
-        call put_shared_variable('uup_shared',uup_shared,ierr)
-        call put_shared_variable('vel_call',vel_call,ierr)
-        call put_shared_variable('turnover_call',turnover_call,ierr)
-        call put_shared_variable('turnover_shared',turnover_shared,ierr)
+        call put_shared_variable('uup_shared',uup_shared)
+        call put_shared_variable('vel_call',vel_call)
+        call put_shared_variable('turnover_call',turnover_call)
+        call put_shared_variable('turnover_shared',turnover_shared)
       endif
 !
 !  Write constants to disk.

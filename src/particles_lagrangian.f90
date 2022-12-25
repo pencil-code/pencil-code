@@ -416,7 +416,7 @@ module Particles
 !  Check if shear advection is on and decide if it needs to be included in the timestep condition.
 !
       shear: if (lshear) then
-        call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift)
+        call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift,caller='initialize_particles')
         lcdtp_shear = .not. lshearadvection_as_shift
         nullify(lshearadvection_as_shift)
       endif shear
@@ -481,7 +481,7 @@ module Particles
 !  Share friction time (but only if Epstein drag regime!).
 !
       if (ldraglaw_epstein .or. ldraglaw_simple) then
-        call put_shared_variable( 'tausp_species', tausp_species)
+        call put_shared_variable( 'tausp_species', tausp_species,caller='initialize_particles')
         call put_shared_variable('tausp1_species',tausp1_species)
       endif
 !
@@ -504,9 +504,7 @@ module Particles
 !
 !  Share Keplerian gravity.
 !
-      call put_shared_variable('gravr',gravr,ierr)
-      if (ierr/=0) call fatal_error('initialize_particles', &
-          'there was a problem when sharing gravr')
+      call put_shared_variable('gravr',gravr,caller='initialize_particles')
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -756,10 +754,10 @@ print*,'interp_default=',interp_default,particle_mesh
 !
       if (l_shell) then
         if ( k_shell < 0) call fatal_error('initialize_particles','Set k_shell')
-        call put_shared_variable('uup_shared',uup_shared,ierr)
-        call put_shared_variable('vel_call',vel_call,ierr)
-        call put_shared_variable('turnover_call',turnover_call,ierr)
-        call put_shared_variable('turnover_shared',turnover_shared,ierr)
+        call put_shared_variable('uup_shared',uup_shared)
+        call put_shared_variable('vel_call',vel_call)
+        call put_shared_variable('turnover_call',turnover_call)
+        call put_shared_variable('turnover_shared',turnover_shared)
       endif
 !
       call keep_compiler_quiet(f)
@@ -1871,7 +1869,6 @@ print*,'interp_default=',interp_default,particle_mesh
 !
       use General, only: random_number_wrapper, normal_deviate
       use Particles_diagnos_state, only: insert_particles_diagnos_state
-      use SharedVariables, only: get_shared_variable
       use Mpicomm, only: mpireduce_sum_int
       use Particles_number, only: set_particle_number
 !
@@ -2598,7 +2595,6 @@ print*,'interp_default=',interp_default,particle_mesh
 !  11-oct-12/dhruba: copied from dvvp_dt
 !
       use Diagnostics
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -3053,7 +3049,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  Get the passive scalar diffusion rate
 !
-            call get_shared_variable('pscalar_diff',pscalar_diff,ierr)
+            call get_shared_variable('pscalar_diff',pscalar_diff,caller='dvvp_dt_pencil')
 !
           endif
 
@@ -3069,7 +3065,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !  NILS: Could this be moved to calc_pencils_particles
               if (lpenc_requested(i_npvz) .or. lpenc_requested(i_npvz2) .or. &
                   lpenc_requested(i_np_rad) .or. lpenc_requested(i_npuz)) then
-                call get_shared_variable('ap0',ap0,ierr)
+                call get_shared_variable('ap0',ap0,caller='dvvp_dt_pencil')
                 do irad=1,npart_radii
                   if ((fp(k,iap) > ap0(irad)*0.99) .and. (fp(k,iap) < ap0(irad)*1.01)) then
                     p%npvz(ix0-nghost,irad)=p%npvz(ix0-nghost,irad)+fp(k,ivpz)
