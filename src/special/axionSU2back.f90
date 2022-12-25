@@ -403,7 +403,7 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: mQ, xi, a, epsQE, epsQB
-      real, dimension (nx) :: psi, psidot, TR, TRdot
+      real, dimension (nx) :: psi, psidot, TR, TRdot, TReff, TRdoteff
 !
 !  Set parameters
 !
@@ -421,10 +421,17 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !
 !  integrand (for diagnostics)
 !
-      grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TR**2*(+   g/(3.*a**2))/twopi**3
-      grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TR**2*(-lamf/(2.*a**2))/twopi**3
+      TReff=TR
+      TRdoteff=TRdot
+      where (TR<1./sqrt(2.*a*H))
+        TReff=0.
+        TRdoteff=0.
+      endwhere
+!
+      grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
+      grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
       dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
-        (a*mQ*H**2+a*g*Qdot)*TR**2+(a*mQ*H-k)*2*TR*TRdot &
+        (a*mQ*H**2+a*g*Qdot)*TReff**2+(a*mQ*H-k)*2*TReff*TRdoteff &
         )/twopi**3
 !
       call mpiallreduce_sum(sum(grand),grand_sum,1)
