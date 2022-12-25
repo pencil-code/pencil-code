@@ -27,14 +27,14 @@ module Particles_drag
 !
 !  Initialization parameters
 !
+  logical, target :: ldrag_on_gas = .false.      ! Turn on/off drag on gas
   logical :: ldrag_equilibrium_global = .false.  ! Set global/local drag equilibrium when lset_drag_equilibrium = .true.
-  logical :: ldrag_on_gas = .false.              ! Turn on/off drag on gas
   logical :: ldrag_on_par = .false.              ! Turn on/off drag on particles
   logical :: lset_drag_equilibrium = .false.     ! Initialize the velocities of the particles and the gas under equilibrium
-  real :: gx_gas = 0.0        ! Background acceleration of gas in x direction
-  real :: gz_par_coeff = 0.0  ! Coefficient for background acceleration of a particle in z direction
-  real :: taus = 0.0          ! Dimensionless stopping time: Omega * tdrag
-  real :: tdrag = 0.0         ! Drag timescale
+  real, target :: taus = 0.0   ! Dimensionless stopping time: Omega * tdrag
+  real, target :: gx_gas = 0.0 ! Background acceleration of gas in x direction
+  real :: gz_par_coeff = 0.0   ! Coefficient for background acceleration of a particle in z direction
+  real :: tdrag = 0.0          ! Drag timescale
 !
   namelist /particles_drag_init_pars/ &
       ldrag_equilibrium_global, ldrag_on_gas, ldrag_on_par, lset_drag_equilibrium, gx_gas, gz_par_coeff, taus, tdrag

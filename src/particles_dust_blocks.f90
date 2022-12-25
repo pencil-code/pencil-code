@@ -41,15 +41,16 @@ module Particles
   include 'particles_common.h'
 !
   real, dimension(mz) :: rho0z = 1.0
-  real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0
+  real, dimension(npar_species), target :: tausp_species = 0.0, tausp1_species = 0.0
   real, dimension (3) :: pos_sphere=(/0.0,0.0,0.0/)
   real, dimension (3) :: pos_ellipsoid=(/0.0,0.0,0.0/)
+  real, target :: tausp = 0.0
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
   real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
-  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, tausp01=0.0
+  real :: delta_vp0=1.0, tausp1=0.0, tausp01=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: epsp_friction_increase=0.0
@@ -71,7 +72,8 @@ module Particles
   real :: mean_free_path_gas=0.0
   real :: cs2_powerlaw
   logical, pointer :: lshearadvection_as_shift
-  logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
+  logical, target :: ldragforce_gas_par=.false.
+  logical :: ldragforce_dust_par=.false.
   logical :: lpar_spec=.false., learly_particle_map=.true.
   logical :: ldragforce_equi_global_eps=.false.
   logical :: ldraglaw_epstein=.true., ldraglaw_variable=.false.
@@ -208,8 +210,8 @@ module Particles
 !
       share: if (ldraglaw_epstein) then
         call put_shared_variable("tausp", tausp, caller="register_particles")
-        call put_shared_variable("tausp_species", tausp_species)
-        call put_shared_variable("tausp1_species", tausp1_species)
+        call put_shared_variable("tausp_species", tausp_species, caller="register_particles")
+        call put_shared_variable("tausp1_species", tausp1_species, caller="register_particles")
       endif share
 !
     endsubroutine register_particles

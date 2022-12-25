@@ -47,12 +47,13 @@ module Particles
   real, dimension(3) :: temp_grad0=(/0.0,0.0,0.0/)
   real, dimension(3) :: pos_sphere=(/0.0,0.0,0.0/)
   real, dimension(3) :: pos_ellipsoid=(/0.0,0.0,0.0/)
+  real, target :: tausp = 0.0
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
   real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
-  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, rpbeta=0.0
+  real :: delta_vp0=1.0, tausp1=0.0, rpbeta=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=100.0
@@ -97,7 +98,8 @@ module Particles
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3, istep_pass=3
-  logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
+  logical, target :: ldragforce_gas_par=.false.
+  logical :: ldragforce_dust_par=.false.
   logical :: ldragforce_stiff=.false., ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
   logical :: lpar_spec=.false., lcompensate_friction_increase=.false.
@@ -438,8 +440,8 @@ module Particles
 !
       share: if (ldraglaw_epstein .or. ldraglaw_simple) then
         call put_shared_variable("tausp", tausp, caller="register_particles")
-        call put_shared_variable("tausp_species", tausp_species)
-        call put_shared_variable("tausp1_species", tausp1_species)
+        call put_shared_variable("tausp_species", tausp_species, caller="register_particles")
+        call put_shared_variable("tausp1_species", tausp1_species, caller="register_particles")
       endif share
 !
 !  Kill particles that spend enough time in birth ring
