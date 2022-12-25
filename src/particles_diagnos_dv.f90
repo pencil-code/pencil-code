@@ -71,7 +71,6 @@ module Particles_diagnos_dv
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-      use SharedVariables, only: get_shared_variable
       use Mpicomm, only: mpibcast_real, stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -260,8 +259,8 @@ module Particles_diagnos_dv
 ! variables are put_shared_varaible by particles_dust
 !
       if (first_inc) then
-        call get_shared_variable('uup_shared',uup_shared,ierr)
-        call get_shared_variable('vel_call',vel_call,ierr)
+        call get_shared_variable('uup_shared',uup_shared,caller='increment_colv')
+        call get_shared_variable('vel_call',vel_call)
         first_inc=.false.
       endif
 !
@@ -379,8 +378,8 @@ module Particles_diagnos_dv
 ! are put by particles_dust.
 !
       if (first_inc) then
-        call get_shared_variable('turnover_shared',turnover_shared,ierr)
-        call get_shared_variable('turnover_call',turnover_call,ierr)
+        call get_shared_variable('turnover_shared',turnover_shared,caller='get_t_nextcol')
+        call get_shared_variable('turnover_call',turnover_call)
         first_inc=.false.
       endif
 !

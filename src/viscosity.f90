@@ -451,8 +451,7 @@ module Viscosity
         case ('hyper3-mesh-residual','hyper3_mesh-residual','hyper3-mesh_residual','hyper3_mesh_residual')
           if (lroot) print*,'viscous force: nu_hyper3_mesh/pi^5 *(Delta(v-<v>)^6/Deltaq'
           lvisc_hyper3_mesh_residual=.true.
-          call get_shared_variable('lcalc_uuavg',lcalc_uuavg,ierr)
-          if (ierr/=0) call fatal_error("initialize_viscosity","could not get lcalc_uuavg")
+          call get_shared_variable('lcalc_uuavg',lcalc_uuavg,caller='initialize_viscosity')
           lcalc_uuavg=.true.
        case ('hyper3-csmesh')
           if (lroot) print*,'viscous force: c_s*nu_hyper3_mesh/pi^5 *(Deltav)^6/Deltaq'

@@ -513,7 +513,7 @@ module Particles_surfspec
           allocate(ndot(k1:k2,N_surface_species))
           allocate(term(k1:k2,N_surface_reactants))
 !
-          call get_shared_variable('true_density_carbon',true_density_carbon,ierr)
+          call get_shared_variable('true_density_carbon',true_density_carbon,caller='dpsurf_dt_pencil')
 !
           call calc_mass_trans_reactants()
           call get_surface_chemistry(Cg_surf,ndot,mass_loss)

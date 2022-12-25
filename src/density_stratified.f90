@@ -130,8 +130,7 @@ module Density
 !
 !  Communicate lrelativistic_eos to entropy too.
 !
-      call put_shared_variable('lrelativistic_eos',lrelativistic_eos) 
-!
+      call put_shared_variable('lrelativistic_eos',lrelativistic_eos,caller='register_density') 
 !
 !  Identify version number.
 !
@@ -165,8 +164,7 @@ module Density
 !
 !  Disable the force-free considerations.
 !
-      call put_shared_variable('lffree', .false., ierr)
-      if (ierr /= 0) call fatal_error('initialize_density', 'cannot share variable lffree. ')
+      call put_shared_variable('lffree', .false., caller='initialize_density')
 !
 !  Check the switches.
 !

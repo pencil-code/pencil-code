@@ -120,7 +120,7 @@ module Particles_adsorbed
           call append_npvar('i'//adsorbed_species_names(i),iads)
         enddo
 !
-        call get_shared_variable('total_carbon_sites',total_carbon_sites,ierr)
+        call get_shared_variable('total_carbon_sites',total_carbon_sites,caller='register_indep_ads')
 !
 !  Increase of npvar according to N_adsorbed_species
 !  The -1 is there to account for Cf being in adsorbed_species_names

@@ -242,8 +242,7 @@ module Magnetic
 !
 !  Share it.
 !
-      call put_shared_variable('B_ext', B_ext, ierr)
-      if (ierr /= 0) call fatal_error('initialize_magnetic', 'unable to share variable B_ext')
+      call put_shared_variable('B_ext', B_ext, caller='initialize_magnetic')
 !
 !  Calculates variables required by Magnetic and possibly other module(s).
 !

@@ -1754,7 +1754,7 @@ module Particles_map
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, pointer :: ap0(:)
 !
-      call get_shared_variable('ap0',ap0,ierr)
+      call get_shared_variable('ap0',ap0,caller='map_xxp_grid__loop_ap')
       loop_ap__cic:do ik=1,ndustrad
         if ((fp(k,iap) > ap0(ik)*0.99) .and. (fp(k,iap) < ap0(ik)*1.01)) then
           index = iapn(ik)

@@ -181,21 +181,16 @@ module Particles_chemistry
       call register_indep_pchem()
       call register_dep_pchem()
 !
-      call put_shared_variable('total_carbon_sites',total_carbon_sites,ierr)
-      if (ierr /= 0) call fatal_error('register_particles_chem', 'unable to share total_carbon')
-      call put_shared_variable('true_density_carbon',true_density_carbon,ierr)
-      if (ierr /= 0) call fatal_error('register_particles_chem', 'unable to share true_density')
+      call put_shared_variable('total_carbon_sites',total_carbon_sites,caller='register_particles_chem')
+      call put_shared_variable('true_density_carbon',true_density_carbon)
 !
-      if (lbaum_and_street .and. .not. lsurface_nopores) then
+      if (lbaum_and_street .and. .not. lsurface_nopores) &
         call fatal_error('register_particles_chem', &
             'If lbaum_and_street, lsurface_nopores hast to be True!')
-      endif
 !
       if (lpchem_debug .and. lroot) call print_debug_info()
 !
-      if (lwrite) then
-        call write_outputfile()
-      endif
+      if (lwrite) call write_outputfile()
       lwrite = .false.
 !
     endsubroutine register_particles_chem
