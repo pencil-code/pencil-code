@@ -149,33 +149,16 @@ module Selfgravity
 !  Share the variable tstart_selfgrav so that it can be used by other
 !  self-gravity modules.
 !
-      call put_shared_variable('tstart_selfgrav',tstart_selfgrav,ierr)
-      if (ierr/=0) then
-        if (lroot) print*, 'initialize_selfgravity: there was a problem '// &
-            'when sharing tstart_selfgrav!'
-        call fatal_error('initialize_selfgravity','')
-      endif
+      call put_shared_variable('tstart_selfgrav',tstart_selfgrav,caller='initialize_selfgravity')
 !
 !  Share rhs_poisson_const and gravitational_const.
 !
-      call put_shared_variable('rhs_poisson_const',rhs_poisson_const,ierr)
-      if (ierr/=0) then
-        if (lroot) print*, 'initialize_selfgravity: there was a problem '// &
-            'when sharing rhs_poisson_const!'
-        call fatal_error('initialize_selfgravity','')
-      endif
-!
-      call put_shared_variable('gravitational_const',gravitational_const,ierr)
-      if (ierr/=0) then
-        if (lroot) print*, 'initialize_selfgravity: there was a problem '// &
-            'when sharing gravitational_const!'
-        call fatal_error('initialize_selfgravity','')
-      endif
+      call put_shared_variable('rhs_poisson_const',rhs_poisson_const)
+      call put_shared_variable('gravitational_const',gravitational_const)
 !
 !  Share tselfgrav_gentle.
 !
-      call put_shared_variable('tselfgrav_gentle', tselfgrav_gentle, ierr)
-      if (ierr /= 0) call fatal_error('initialize_selfgravity', 'unable to share tselfgrav_gentle')
+      call put_shared_variable('tselfgrav_gentle', tselfgrav_gentle)
 !
 !  Check that density and self-potential have consistent boundary conditions.
 !
