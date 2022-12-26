@@ -378,6 +378,7 @@ module Hydro
 !       
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
 !print*, 'Pencil successful', iproc
+!print*, 'PBARRIER',iproc
 !        call mpibarrier(MPI_COMM_UNIVERSE)
 !call mpifinalize
 !stop
