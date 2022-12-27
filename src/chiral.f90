@@ -49,7 +49,7 @@ module Chiral
 !
   real :: chiral_diffXX=impossible, chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
   real :: chiral_fishernu=0., chiral_fisherK=1. !fishers equation growth rate, carrying capac.
-  real :: chiral_fisherR=0. !(reinfection)
+  real :: chiral_fisherR=0., chiral_fisherR2=0. !(reinfections, second model corresponds to SIRS)
   real, dimension(3) :: gradX0=(/0.0,0.0,0.0/), gradY0=(/0.0,0.0,0.0/)
   character (len=labellen) :: chiral_reaction='BAHN_model'
   logical :: limposed_gradient=.false.
@@ -58,7 +58,7 @@ module Chiral
   namelist /chiral_run_pars/ &
        chiral_diffXX, chiral_diff, chiral_crossinhibition, chiral_fidelity, &
        chiral_reaction, limposed_gradient, gradX0, gradY0, &
-       chiral_fishernu, chiral_fisherK, chiral_fisherR, &
+       chiral_fishernu, chiral_fisherK, chiral_fisherR, chiral_fisherR2, &
        lupw_chiral, llorentzforceEP, &
        linitialize_aa_from_EP,tinitialize_aa_from_EP, &
        linitialize_aa_from_EP_alpgrad,linitialize_aa_from_EP_betgrad
@@ -388,7 +388,8 @@ module Chiral
       if (headtt) print*,"growth rate=", chiral_fishernu,"carrying capacity=",chiral_fisherK
       XX_chiral=f(l1:l2,m,n,iXX_chiral)
       YY_chiral=f(l1:l2,m,n,iYY_chiral)
-      dXX_chiral=-chiral_fishernu*XX_chiral*YY_chiral
+      dXX_chiral=-chiral_fishernu*XX_chiral*YY_chiral &
+        +chiral_fisherR2*(1.-(XX_chiral+YY_chiral))
       dYY_chiral=+chiral_fishernu*XX_chiral*YY_chiral-chiral_fisherK*YY_chiral &
         +chiral_fisherR*(1.-(XX_chiral+YY_chiral))
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
