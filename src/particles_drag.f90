@@ -762,6 +762,7 @@ module Particles_drag
 !  13-sep-15/ccyang: coded.
 !
       use EquationOfState, only: gamma, rho0, cs0
+      use Gravity, only: gravz_profile
 !
       real :: mp_swarm
       real, intent(in) :: eps_dtog
@@ -770,13 +771,18 @@ module Particles_drag
 !
 !  Find the total gas mass.
 !
-      gasmass: if (gz_par_coeff > 0.0) then
-!       For stratified gas
-        mass = sqrt(twopi / gamma) * (cs0 / Omega) * product(lxyz(1:2), lactive_dimension(1:2))
-      else gasmass
-!       For uniform gas
+      gasmass: select case (gravz_profile)
+      case ("zero") gasmass
+!       Uniform gas
         mass = product(lxyz, lactive_dimension)
-      endif gasmass
+      case ("linear") gasmass
+!       Stratified gas
+        mass = sqrt(twopi / gamma) * (cs0 / Omega) * product(lxyz(1:2), lactive_dimension(1:2))
+      case default gasmass
+!       Unsupported vertical stratification
+        mass = 0.0
+        call fatal_error("find_mp_swarm", "unsupported gravz_profile = '" // trim(gravz_profile) // "'")
+      endselect gasmass
       mass = rho0 * mass
 !
 !  Uniformly distribute the mass to the particles.
