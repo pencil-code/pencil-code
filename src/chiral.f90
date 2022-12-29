@@ -50,6 +50,7 @@ module Chiral
   real :: chiral_diffXX=impossible, chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
   real :: chiral_fishernu=0., chiral_fisherK=1. !fishers equation growth rate, carrying capac.
   real :: chiral_fisherR=0., chiral_fisherR2=0. !(reinfections, second model corresponds to SIRS)
+  real :: chiral_fisherR2_tau=0., chiral_fisherR2_tstart=0. !(second model, tau and start time)
   real, dimension(3) :: gradX0=(/0.0,0.0,0.0/), gradY0=(/0.0,0.0,0.0/)
   character (len=labellen) :: chiral_reaction='BAHN_model'
   logical :: limposed_gradient=.false.
@@ -61,7 +62,8 @@ module Chiral
        chiral_fishernu, chiral_fisherK, chiral_fisherR, chiral_fisherR2, &
        lupw_chiral, llorentzforceEP, &
        linitialize_aa_from_EP,tinitialize_aa_from_EP, &
-       linitialize_aa_from_EP_alpgrad,linitialize_aa_from_EP_betgrad
+       linitialize_aa_from_EP_alpgrad,linitialize_aa_from_EP_betgrad, &
+       chiral_fisherR2_tau, chiral_fisherR2_tstart
 !
   integer :: idiag_XX_chiralmax=0, idiag_XX_chiralm=0
   integer :: idiag_YY_chiralmax=0, idiag_YY_chiralm=0
@@ -69,6 +71,7 @@ module Chiral
   integer :: idiag_brmsEP=0, idiag_bmaxEP=0
   integer :: idiag_jrmsEP=0, idiag_jmaxEP=0
   integer :: idiag_jbmEP=0
+  integer :: idiag_R2tdep=0
 !
   contains
 !***********************************************************************
@@ -275,6 +278,7 @@ module Chiral
       real, dimension (nx) :: RR21_chiral
       real, dimension (nx) :: QQ_chiral,QQ21_chiral,QQ21QQ_chiral
       real, dimension (nx) :: diffus_chiral
+      real :: chiral_fisherR2_tdep
       real :: pp,qq,lamchiral
       integer :: j
 !
@@ -386,10 +390,15 @@ module Chiral
       case('SIR')
       if (headtt) print*,"chiral_reaction='SIR equation'"
       if (headtt) print*,"growth rate=", chiral_fishernu,"carrying capacity=",chiral_fisherK
+      if (chiral_fisherR2_tau==0.) then
+        chiral_fisherR2_tdep=chiral_fisherR2
+      else
+        chiral_fisherR2_tdep=chiral_fisherR2*chiral_fisherR2_tau/max(real(t),chiral_fisherR2_tstart)
+      endif
       XX_chiral=f(l1:l2,m,n,iXX_chiral)
       YY_chiral=f(l1:l2,m,n,iYY_chiral)
       dXX_chiral=-chiral_fishernu*XX_chiral*YY_chiral &
-        +chiral_fisherR2*(1.-(XX_chiral+YY_chiral))
+        +chiral_fisherR2_tdep*(1.-(XX_chiral+YY_chiral))
       dYY_chiral=+chiral_fishernu*XX_chiral*YY_chiral-chiral_fisherK*YY_chiral &
         +chiral_fisherR*(1.-(XX_chiral+YY_chiral))
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
@@ -426,6 +435,7 @@ module Chiral
             call max_mn_name(YY_chiral,idiag_YY_chiralmax)
         if (idiag_XX_chiralm/=0) call sum_mn_name(XX_chiral,idiag_XX_chiralm)
         if (idiag_YY_chiralm/=0) call sum_mn_name(YY_chiral,idiag_YY_chiralm)
+        if (idiag_R2tdep/=0) call save_name(chiral_fisherR2_tdep,idiag_R2tdep)
 !
 !  extra diagnostics
 !
@@ -591,7 +601,7 @@ module Chiral
         idiag_QQm_chiral=0; idiag_QQ21m_chiral=0; idiag_QQ21QQm_chiral=0
         idiag_brmsEP=0; idiag_bmaxEP=0
         idiag_jrmsEP=0; idiag_jmaxEP=0
-        idiag_jbmEP=0
+        idiag_jbmEP=0; idiag_R2tdep=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -621,6 +631,8 @@ module Chiral
             'jmaxEP',idiag_jmaxEP)
         call parse_name(iname,cname(iname),cform(iname),&
             'jbmEP',idiag_jbmEP)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'R2tdep',idiag_R2tdep)
       enddo
 !
 !  check for those quantities for which we want video slices
