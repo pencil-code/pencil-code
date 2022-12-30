@@ -50,7 +50,7 @@ module Chiral
   real :: chiral_diffXX=impossible, chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
   real :: chiral_fishernu=0., chiral_fisherK=1. !fishers equation growth rate, carrying capac.
   real :: chiral_fisherR=0., chiral_fisherR2=0. !(reinfections, second model corresponds to SIRS)
-  real :: chiral_fisherR2_tau=0., chiral_fisherR2_tstart=0. !(second model, tau and start time)
+  real :: chiral_fisherR2_tend=0., chiral_fisherR2_tstart=0. !(second model, tend and start time)
   real, dimension(3) :: gradX0=(/0.0,0.0,0.0/), gradY0=(/0.0,0.0,0.0/)
   character (len=labellen) :: chiral_reaction='BAHN_model'
   logical :: limposed_gradient=.false.
@@ -63,7 +63,7 @@ module Chiral
        lupw_chiral, llorentzforceEP, &
        linitialize_aa_from_EP,tinitialize_aa_from_EP, &
        linitialize_aa_from_EP_alpgrad,linitialize_aa_from_EP_betgrad, &
-       chiral_fisherR2_tau, chiral_fisherR2_tstart
+       chiral_fisherR2_tend, chiral_fisherR2_tstart
 !
   integer :: idiag_XX_chiralmax=0, idiag_XX_chiralm=0
   integer :: idiag_YY_chiralmax=0, idiag_YY_chiralm=0
@@ -390,10 +390,12 @@ module Chiral
       case('SIR')
       if (headtt) print*,"chiral_reaction='SIR equation'"
       if (headtt) print*,"growth rate=", chiral_fishernu,"carrying capacity=",chiral_fisherK
-      if (chiral_fisherR2_tau==0.) then
+      if (chiral_fisherR2_tend==0.) then
         chiral_fisherR2_tdep=chiral_fisherR2
       else
-        chiral_fisherR2_tdep=chiral_fisherR2*chiral_fisherR2_tau/max(real(t),chiral_fisherR2_tstart)
+        chiral_fisherR2_tdep=chiral_fisherR2*( &
+          max(0.,1.-(max(0.,real(t)-chiral_fisherR2_tstart)/ &
+          (chiral_fisherR2_tend-chiral_fisherR2_tstart))**2)**2)
       endif
       XX_chiral=f(l1:l2,m,n,iXX_chiral)
       YY_chiral=f(l1:l2,m,n,iYY_chiral)
