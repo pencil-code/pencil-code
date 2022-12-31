@@ -126,7 +126,8 @@ pcPlotStyle[]:=Module[{setOps},
     },{
       Plot,LogPlot,LogLogPlot,LogLinearPlot,DensityPlot,
       ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot,
-      ListDensityPlot,ListVectorPlot,ListStreamPlot
+      ListDensityPlot,ListVectorPlot,ListStreamPlot,
+      SmoothHistogram
     }];
   (*Options for 1D ListPlot's*)
   setOps[{
