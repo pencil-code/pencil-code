@@ -61,7 +61,9 @@ module Special
 ! other variables (needs to be consistent with reset list below)
 !
   integer :: idiag_Q   =0 ! DIAG_DOC: $Q$
+  integer :: idiag_Qdot=0 ! DIAG_DOC: $\dot{Q}$
   integer :: idiag_chi =0 ! DIAG_DOC: $\chi$
+  integer :: idiag_chidot =0 ! DIAG_DOC: $\dot{\chi}$
   integer :: idiag_psi =0 ! DIAG_DOC: $\psi$
   integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
   integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
@@ -325,7 +327,9 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !
       if (ldiagnos) then
         call sum_mn_name(Q,idiag_Q)
+        call sum_mn_name(Qdot,idiag_Qdot)
         call sum_mn_name(chi,idiag_chi)
+        call sum_mn_name(chidot,idiag_chidot)
         call sum_mn_name(psi,idiag_psi)
         call sum_mn_name(TR,idiag_TR)
         call sum_mn_name(grand,idiag_grand)  !redundant
@@ -463,14 +467,16 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Q=0; idiag_chi=0; idiag_psi=0; idiag_TR=0
+        idiag_Q=0; idiag_Qdot=0; idiag_chi=0; idiag_chidot=0; idiag_psi=0; idiag_TR=0
         idiag_grand=0; idiag_grant=0; idiag_grand2=0; idiag_dgrant=0
         idiag_grandxy=0; idiag_grantxy=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'Q' ,idiag_Q)
+        call parse_name(iname,cname(iname),cform(iname),'Qdot' ,idiag_Qdot)
         call parse_name(iname,cname(iname),cform(iname),'chi' ,idiag_chi)
+        call parse_name(iname,cname(iname),cform(iname),'chidot' ,idiag_chidot)
         call parse_name(iname,cname(iname),cform(iname),'psi' ,idiag_psi)
         call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
         call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
