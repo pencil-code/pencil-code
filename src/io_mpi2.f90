@@ -201,7 +201,7 @@ module Io
 !
 !  11-Feb-2012/PABourdin: coded
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_nonblock_real, mpirecv_real
 !
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
@@ -210,7 +210,7 @@ module Io
       real, dimension(nygrid+2*nghost), intent(in), optional :: gy
       real, dimension(nzgrid+2*nghost), intent(in), optional :: gz
 !
-      integer :: px, py, pz, partner
+      integer :: px, py, pz, partner, ireq
       integer, parameter :: tag_gx=680, tag_gy=681, tag_gz=682
 !
       if (lroot) then
@@ -218,19 +218,19 @@ module Io
         x = gx(1:mx)
         do px = 0, nprocx-1
           if (px == 0) cycle
-          call mpisend_real (gx(px*nx+1:px*nx+mx), mx, px, tag_gx)
+          call mpisend_nonblock_real (gx(px*nx+1:px*nx+mx), mx, px, tag_gx, ireq)
         enddo
         ! send local y-data to all leading xz-processors along the y-direction
         y = gy(1:my)
         do py = 0, nprocy-1
           if (py == 0) cycle
-          call mpisend_real (gy(py*ny+1:py*ny+my), my, py*nprocx, tag_gy)
+          call mpisend_nonblock_real (gy(py*ny+1:py*ny+my), my, py*nprocx, tag_gy, ireq)
         enddo
         ! send local z-data to all leading xy-processors along the z-direction
         z = gz(1:mz)
         do pz = 0, nprocz-1
           if (pz == 0) cycle
-          call mpisend_real (gz(pz*nz+1:pz*nz+mz), mz, pz*nprocxy, tag_gz)
+          call mpisend_nonblock_real (gz(pz*nz+1:pz*nz+mz), mz, pz*nprocxy, tag_gz, ireq)
         enddo
       endif
       if (lfirst_proc_yz) then
@@ -241,7 +241,7 @@ module Io
           do pz = 0, nprocz-1
             partner = ipx + py*nprocx + pz*nprocxy
             if (partner == iproc) cycle
-            call mpisend_real (x, mx, partner, tag_gx)
+            call mpisend_nonblock_real (x, mx, partner, tag_gx, ireq)
           enddo
         enddo
       else
@@ -256,7 +256,7 @@ module Io
           do pz = 0, nprocz-1
             partner = px + ipy*nprocx + pz*nprocxy
             if (partner == iproc) cycle
-            call mpisend_real (y, my, partner, tag_gy)
+            call mpisend_nonblock_real (y, my, partner, tag_gy, ireq)
           enddo
         enddo
       else
@@ -271,7 +271,7 @@ module Io
           do py = 0, nprocy-1
             partner = px + py*nprocx + ipz*nprocxy
             if (partner == iproc) cycle
-            call mpisend_real (z, mz, partner, tag_gz)
+            call mpisend_nonblock_real (z, mz, partner, tag_gz, ireq)
           enddo
         enddo
       else
