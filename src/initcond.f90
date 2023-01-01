@@ -1581,7 +1581,7 @@ module Initcond
 !
     endsubroutine beltrami_old
 !***********************************************************************
-    subroutine ABC_field(f,i,kx,ky,kz,ABC,x0,y0,z0,width)
+    subroutine ABC_field(f,i,kx,ky,kz,ABC,x0,y0,z0,width,sigma)
 !
 !  ABC field (as initial condition)
 !
@@ -1595,7 +1595,14 @@ module Initcond
       real, dimension (my) :: sfuncy,cfuncy,yprof
       real, dimension (mz) :: sfuncz,cfuncz,zprof
       real, dimension (3) :: ABC, width
-      real :: kx,ky,kz, x0,y0,z0, prof
+      real :: kx,ky,kz, x0,y0,z0, prof, sigma1
+      real, optional :: sigma
+!
+      if (present(sigma)) then
+        sigma1=sigma
+      else
+        sigma1=1.
+      endif
 !
 !  Envelope profile (can turn it off by setting x0=0.).
 !
@@ -1646,9 +1653,9 @@ module Initcond
       do m=m1,m2
       do l=l1,l2
         prof=xprof(l)*yprof(m)*zprof(n)
-        j=i  ; f(l,m,n,j)=f(l,m,n,j)+prof*(sfuncz(n)+cfuncy(m))
-        j=i+1; f(l,m,n,j)=f(l,m,n,j)+prof*(sfuncx(l)+cfuncz(n))
-        j=i+2; f(l,m,n,j)=f(l,m,n,j)+prof*(sfuncy(m)+cfuncx(l))
+        j=i  ; f(l,m,n,j)=f(l,m,n,j)+prof*(sigma1*sfuncz(n)+cfuncy(m))
+        j=i+1; f(l,m,n,j)=f(l,m,n,j)+prof*(sigma1*sfuncx(l)+cfuncz(n))
+        j=i+2; f(l,m,n,j)=f(l,m,n,j)+prof*(sigma1*sfuncy(m)+cfuncx(l))
       enddo
       enddo
       enddo
@@ -5068,7 +5075,7 @@ module Initcond
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
-      kpeak_log0,kbreak0,ldouble0,nfactd0,qirro)
+      kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,time,cs)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5100,11 +5107,11 @@ module Initcond
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
       logical, intent(in), optional :: llogbranch0,ldouble0
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
-      logical :: lskip_projection,lfactors,llogbranch,ldouble
+      logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
       real, intent(in), optional :: initpower_med0, kpeak_log0, kbreak0
-      real, intent(in), optional :: nfactd0, qirro
+      real, intent(in), optional :: nfactd0, qirro, time, cs
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r, r2
       real, dimension (:), allocatable :: kx, ky, kz
@@ -5115,7 +5122,7 @@ module Initcond
       real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, D3, compk
       real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
       real :: nfactd,nexp3,nexp4
-      real :: qirro1, p
+      real :: qirro1, p, time1, cs1, om
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5147,6 +5154,24 @@ module Initcond
        qirro1 = qirro     
      else
        qirro1 = 0.
+     endif 
+!
+!  time
+!
+     if (present(time)) then
+       time1 = time     
+       ltime=.true.
+     else
+       time1 = 0.
+       ltime=.false.
+     endif 
+!
+!  cs
+!
+     if (present(cs)) then
+       cs1 = cs     
+     else
+       cs1 = 1.
      endif 
 !
 !  alberto: added option to compesate spectral shape by a power of k
@@ -5666,6 +5691,13 @@ module Initcond
               do iky=1,ny
                 do ikx=1,nx
 !
+!  Possibility of a kinematic time dependence.
+!
+                  if (ltime) then
+                    om=cs1*sqrt(k2(ikx,iky,ikz))
+                    r(ikx,iky,ikz)=r(ikx,iky,ikz)*sin(om*time1)
+                  endif
+!
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, ==> vi = ui - ki kj uj, but now we write:
 !  (kk.uu)/k2, ==> vi = (1-q)*ui - (1-2q) ki kj uj
@@ -5694,6 +5726,13 @@ module Initcond
                 do iky=1,ny
                   do ikx=1,nx
 !
+!  Possibility of a kinematic time dependence.
+!
+                    if (ltime) then
+                      om=cs1*sqrt(k2(ikx,iky,ikz))
+                      r(ikx,iky,ikz)=r(ikx,iky,ikz)*sin(om*time1)
+                    endif
+!
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
@@ -5701,6 +5740,7 @@ module Initcond
                         (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
                         +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
                         +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+!
                     v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
                     v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
                     v_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
@@ -5822,7 +5862,7 @@ module Initcond
 !
 !  notification
 !
-        if (lroot) then
+        if (lroot.and..not.ltime) then
           if (cutoff==0) then
             print*,'power_randomphase_hel: k^',initpower,' spectrum : var  i=',i
           else

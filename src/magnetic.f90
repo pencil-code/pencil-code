@@ -1963,7 +1963,7 @@ module Magnetic
 !  ABC field (includes Beltrami fields when only one coefficient /= 0)
 !
         case ('ABC_field')
-          call ABC_field(f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),ABCaa,x0aa,y0aa,z0aa,widthaa)
+          call ABC_field(f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),amplaa(j)*ABCaa,x0aa,y0aa,z0aa,widthaa,sigma=relhel_aa)
 !
 !  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
 !
