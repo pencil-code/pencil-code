@@ -4152,7 +4152,7 @@ module Sub
       if (loptest(lgauss)) then
         call gaussian_kernel(weight)
       else
-        call binomial(b)
+        call binomial_coeffs(b)
         weight = real(b)
       endif
       k = 2 * nghost + 1
@@ -4165,9 +4165,9 @@ module Sub
 !
     endsubroutine get_smooth_kernel
 !***********************************************************************
-    subroutine binomial(b)
+    subroutine binomial_coeffs(b)
 !
-!  Finds the binomial coefficients.
+!  Finds all binomial coefficients for order n=size(b)-1.
 !
 !  23-jan-14/ccyang: coded.
 !
@@ -4183,7 +4183,7 @@ module Sub
       enddo
       b(n+1) = 1
 !
-    endsubroutine binomial
+    endsubroutine binomial_coeffs
 !***********************************************************************
     subroutine gaussian_kernel(weight)
 !
