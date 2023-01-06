@@ -70,6 +70,7 @@ module Special
   integer :: idiag_grant=0 ! DIAG_DOC: ${\cal T}^\chi$
   integer :: idiag_grand2=0 ! DIAG_DOC: ${\cal T}^Q$ (test)
   integer :: idiag_dgrant=0 ! DIAG_DOC: $\dot{\cal T}^\chi$
+  integer :: idiag_fact=0   ! DIAG_DOC: $\Theta(t)$
 !
 ! z averaged diagnostics given in zaver.in
 !
@@ -240,7 +241,7 @@ module Special
       real, dimension (nx) :: Q, Qdot, chi, chidot
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: Uprime, mQ, xi, a, epsQE, epsQB
-      real :: fact
+      real :: fact=1.
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -309,7 +310,7 @@ module Special
 !  compute factor to switch on bachreaction gradually:
 !
         if (tback/=0.) then
-          fact=.5*(1.+tanh((real(t)-tback)/dtback))
+          fact=cubic_step(real(t),tback,dtback)
         else
           fact=1.
         endif
@@ -336,6 +337,7 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call sum_mn_name(grant,idiag_grant)  !redundant
         call save_name(grand_sum,idiag_grand2)
         call save_name(dgrant_sum,idiag_dgrant)
+        call save_name(fact,idiag_fact)
       endif
 !
       if (l2davgfirst) then
@@ -468,7 +470,7 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !
       if (lreset) then
         idiag_Q=0; idiag_Qdot=0; idiag_chi=0; idiag_chidot=0; idiag_psi=0; idiag_TR=0
-        idiag_grand=0; idiag_grant=0; idiag_grand2=0; idiag_dgrant=0
+        idiag_grand=0; idiag_grant=0; idiag_grand2=0; idiag_dgrant=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0
       endif
 !
@@ -483,6 +485,7 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call parse_name(iname,cname(iname),cform(iname),'grant' ,idiag_grant)
         call parse_name(iname,cname(iname),cform(iname),'grand2' ,idiag_grand2)
         call parse_name(iname,cname(iname),cform(iname),'dgrant' ,idiag_dgrant)
+        call parse_name(iname,cname(iname),cform(iname),'fact' ,idiag_fact)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
