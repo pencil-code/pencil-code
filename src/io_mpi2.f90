@@ -201,7 +201,7 @@ module Io
 !
 !  11-Feb-2012/PABourdin: coded
 !
-      use Mpicomm, only: mpisend_nonblock_real, mpirecv_real
+      use Mpicomm, only: mpibarrier, mpirecv_real, mpisend_nonblock_real
 !
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
@@ -278,6 +278,10 @@ module Io
         ! receive local z-data from leading xy-processor
         call mpirecv_real (z, mz, ipz*nprocxy, tag_gz)
       endif
+!
+!  Prevent root from exiting before all processes have received.
+!
+      call mpibarrier
 !
     endsubroutine distribute_grid
 !***********************************************************************
