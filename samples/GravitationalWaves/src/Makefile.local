@@ -15,5 +15,4 @@ FOURIER  =   fourier_fftpack
 POWER    =   power_spectrum
 #SPECIAL  =   special/gravitational_waves_hij6
 SPECIAL  =   special/gravitational_waves_hTXk
-#DERIV    =   inactive/deriv_3sec_insteadof_14min_compiletime
 #REAL_PRECISION=double

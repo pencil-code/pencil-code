@@ -6,7 +6,7 @@
   cvsid='$Id: run.in,v 1.14 2018/06/09 23:39:28 brandenb Exp $',
   nt=10, it1=1, isave=1000, itorder=3
   dsnap=.01, dvid=.01, ialive=10
-  dspec=.01, ou_spec=T, ab_spec=T, GWs_spec=T, GWh_spec=T
+  dspec=.01, ou_spec=T, ab_spec=T, GWs_spec=T, GWh_spec=T, saffman_mag=T
   !cdt=.7
   !dt=.02  !(cCFL=0.05)
   !lpencil_check=F
