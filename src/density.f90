@@ -1053,7 +1053,6 @@ module Density
         case ('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
         case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
         case ('linear_lnrho'); f(:,:,:,ilnrho)=lnrho_const-spread(spread(z,1,mx),2,my)/Hrho
-        case ('z2_lnrho'); f(:,:,:,ilnrho)=lnrho_const-0.5*(spread(spread(z,1,mx),2,my)/Hrho)**2
         case ('exp_zbot'); f(:,:,:,ilnrho)=alog(rho_left(j))-spread(spread(z-zbot,1,mx),2,my)/Hrho
         case ('invsqr')
           do ix=1,mx
