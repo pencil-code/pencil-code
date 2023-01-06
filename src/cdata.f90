@@ -774,5 +774,10 @@ module Cdata
 !
   real :: tau_aver1 = 1.0
 !
+!  Define and initialize lambda5, so that it can be used to tell whether
+!  or not the chiral MHD special module is used.
+!
+  real :: lambda5 = 0.0
+!
 !***********************************************************************
 endmodule Cdata

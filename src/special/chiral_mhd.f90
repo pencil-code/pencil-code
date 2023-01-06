@@ -95,7 +95,7 @@ module Special
    real :: diffmu5=0., diffmuS=0., diffmuSmax=0.
    real :: diffmu5_hyper2=0., diffmuS_hyper2=0.
    real :: diffmu5_hyper3=0., diffmuS_hyper3=0.
-   real :: lambda5, mu5_const=0., gammaf5=0.
+   real :: mu5_const=0., gammaf5=0.
    real :: gammaf5_input=0., t1_gammaf5=0., t2_gammaf5=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
    real :: meanmu5=0., flucmu5=0., meanB2=0., Brms=0.
@@ -248,10 +248,12 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
+!  give eta out as shared_variable
+!
       if (lmagnetic.and.lrun) then
-          call get_shared_variable('eta',eta,ierr)
-          if (ierr/=0) call fatal_error("initialize_special: ", &
-              "cannot get shared var eta")
+        call get_shared_variable('eta',eta,ierr)
+        if (ierr/=0) call fatal_error("initialize_special: ", &
+            "cannot get shared var eta")
       endif
 !
     endsubroutine initialize_special

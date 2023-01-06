@@ -150,7 +150,7 @@ outer:  do ikz=1,nz
         call quick_sort(k2s(:nk_truebin),order)
 
       endif
-
+ 
     endsubroutine initialize_power_spectrum
 !***********************************************************************
     subroutine read_power_spectrum_run_pars(iostat)
@@ -5150,7 +5150,18 @@ endsubroutine pdf
         b_re(:,im,in)=bbi  !  magnetic field
       enddo; enddo
       a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
-      h_re=h_re+a_re*b_re  !  magnetic helicity density
+!
+!  For the Hosking integral with chiral chemical potential, we want to
+!  add the chiral chemical potential. Since it is a scalar, it is being
+!  added only when ivec=1. This is only done if lambda5/=0.
+!
+      if (lambda5/=0. .and. ivec==1) then
+        if (ip<14 .and. lroot) print*,'quadratic_invariants: lambda5=',lambda5
+        if (ispecialvar==0) call fatal_error('quadratic_invariants','ispecialvar=0')
+        h_re=h_re+a_re*b_re+f(l1:l2,m1:m2,n1:n2,ispecialvar)*2./lambda5
+      else
+        h_re=h_re+a_re*b_re  !  magnetic helicity density
+      endif
       h_im=0.
     elseif (sp=='saffman_mag_c') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
