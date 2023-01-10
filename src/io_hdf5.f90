@@ -913,7 +913,6 @@ contains
       call create_group_hdf5 ('persist')
 !
       init_write_persist = .false.
-      persist_initialized = .true.
 !
     endfunction init_write_persist
 !***********************************************************************

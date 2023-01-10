@@ -415,7 +415,6 @@ module Io
       if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
       write (lun_output) id_block_PERSISTENT
       init_write_persist = .false.
-      persist_initialized = .true.
 !
     endfunction init_write_persist
 !***********************************************************************
