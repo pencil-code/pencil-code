@@ -795,7 +795,7 @@ sub my_ok {
 	  } else {
 	    if ($phase eq 'running' || $phase eq 'results') 
               {$loglink .= '/run.log'}
-	      if ($phase eq 'results') {$loglink .= $linktail.$linkhead.'/start.log'}
+	      if ($phase eq 'results') {$loglink .= $linktail.' '.$linkhead.'/start.log'}
 	    else {
               if ($phase eq 'compilation') {
 		open(FH, '>', $dir.'/build.log') or die $!;
