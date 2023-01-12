@@ -867,7 +867,7 @@ else if (($hn =~ gcn* || $hn =~ bcn*) && ($USER =~ nipkapyl)) then
   module load intel
   module load impi
   module load hdf5-parallel/impi/intel/1.10.5
-  set mpirun = 'mpirun'
+  set mpirun = 'srun'
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
