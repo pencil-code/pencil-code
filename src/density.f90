@@ -217,10 +217,11 @@ module Density
   integer :: idiag_lnrhomphi=0  ! PHIAVG_DOC: $\left<\ln\varrho\right>_\varphi$
   integer :: idiag_rhomphi=0    ! PHIAVG_DOC: $\left<\varrho\right>_\varphi$
   integer :: idiag_dtd=0        ! DIAG_DOC:
-  integer :: idiag_dtd3=0        ! DIAG_DOC:
+  integer :: idiag_dtd3=0       ! DIAG_DOC:
   integer :: idiag_rhomr=0      ! DIAG_DOC:
   integer :: idiag_totmass=0    ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
+  integer :: idiag_sphmass=0    ! DIAG_DOC: $\int\varrho\,dV$ inside $r < 1$.
   integer :: idiag_inertiaxx=0  ! DIAG_DOC: $xx$ component of the inertia tensor (spherical coordinates)
   integer :: idiag_inertiayy=0  ! DIAG_DOC: $yy$ component of the inertia tensor (spherical coordinates)
   integer :: idiag_inertiazz=0  ! DIAG_DOC: $zz$ component of the inertia tensor (spherical coordinates)
@@ -2099,7 +2100,7 @@ module Density
            idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0 .or. &
            idiag_rhoupmz/=0 .or. idiag_rhodownmz/=0 .or. idiag_rho2upmz/=0 .or. &
            idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
-           idiag_rhof2downmz/=0) &
+           idiag_rhof2downmz/=0 .or. idiag_sphmass/=0) &
            lpenc_diagnos(i_rho)=.true.
       if (idiag_rhomxy/=0 .or. idiag_rho2mxy/=0) lpenc_diagnos2d(i_rho)=.true.
 !AB: idiag_rhof2mz, idiag_rhodownmz, etc, shouldn't be here, right?
@@ -2116,7 +2117,7 @@ module Density
       if (idiag_uygzlnrhomz/=0 .or. idiag_uzgylnrhomz/=0) lpenc_diagnos(i_glnrho)=.true.
       if (idiag_grhomax/=0) lpenc_diagnos(i_grho)=.true.
       if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
-          idiag_inertiazz_car/=0) lpenc_diagnos(i_r_mn)=.true.
+          idiag_inertiazz_car/=0 .or. idiag_sphmass/=0) lpenc_diagnos(i_r_mn)=.true.
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
@@ -2999,7 +3000,7 @@ module Density
         if (idiag_inertiayy/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*sin(z(n))**2,idiag_inertiayy)
         if (idiag_inertiazz/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*cos(y(m))**2,idiag_inertiazz)
         if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
-            idiag_inertiazz_car/=0) then
+            idiag_inertiazz_car/=0 .or. idiag_sphmass/=0) then
           where (p%r_mn <= 1.)
             rmask = 1.
           elsewhere
@@ -3008,6 +3009,7 @@ module Density
           if (idiag_inertiaxx_car/=0) call integrate_mn_name(rmask*p%rho*x(l1:l2)**2,idiag_inertiaxx_car)
           if (idiag_inertiayy_car/=0) call integrate_mn_name(rmask*p%rho*y(m)**2,idiag_inertiayy_car)
           if (idiag_inertiazz_car/=0) call integrate_mn_name(rmask*p%rho*z(n)**2,idiag_inertiazz_car)
+          if (idiag_sphmass/=0) call integrate_mn_name(rmask*p%rho,idiag_sphmass)
         endif
         call integrate_mn_name(unitpencil,idiag_vol)
         if (idiag_rhomin/=0)   call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
@@ -3569,7 +3571,7 @@ module Density
         idiag_rhomxz=0; idiag_grhomax=0; idiag_inertiaxx=0; idiag_inertiayy=0
         idiag_inertiazz=0; idiag_inertiaxx_car=0; idiag_inertiayy_car=0
         idiag_inertiazz_car=0; idiag_rhomxmask=0; idiag_rhomzmask=0
-        idiag_sigma=0; idiag_rho2mxy=0
+        idiag_sigma=0; idiag_rho2mxy=0; idiag_sphmass=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -3599,6 +3601,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'dtd3',idiag_dtd3)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
         call parse_name(iname,cname(iname),cform(iname),'mass',idiag_mass)
+        call parse_name(iname,cname(iname),cform(iname),'sphmass',idiag_sphmass)
         call parse_name(iname,cname(iname),cform(iname),'inertiaxx',idiag_inertiaxx)
         call parse_name(iname,cname(iname),cform(iname),'inertiayy',idiag_inertiayy)
         call parse_name(iname,cname(iname),cform(iname),'inertiazz',idiag_inertiazz)
