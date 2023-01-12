@@ -100,12 +100,12 @@ module Special
   real :: heat_vol=0.0,heat_LH=0.2783,heat_FS=9.74d-4
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
-           lset_boundary_emf,lupin,nlf,lslope_limited_special,&
-           lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau,&
-           lnTT_max,lnTT_max_tau,&
-           cool_RTV,cool_RTV_cutoff,x_cutoff,cool_type,&
+           lset_boundary_emf,lupin,nlf,lslope_limited_special, &
+           lnrho_min,lnrho_min_tau,alpha,lnTT_min,lnTT_min_tau, &
+           lnTT_max,lnTT_max_tau, &
+           cool_RTV,cool_RTV_cutoff,x_cutoff,cool_type, &
            lset_sponge_lnTT,TTsponge,lnTT_sponge_tau,border_width,&
-           lactivate_reservoir,cs0p,C_heatflux,tau_res,&
+           lactivate_reservoir,cs0p,C_heatflux,tau_res, &
            heat_LH,heat_FS,heat_vol
 ! Declare index of new variables in f array (if any).
 !
@@ -221,7 +221,6 @@ module Special
         lpenc_requested(i_cp1) = .true.
         lpenc_requested(i_cv1) = .true.
       endif
-
 
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -546,6 +545,7 @@ module Special
       endif
       if (cool_RTV /= 0.0) call calc_heat_cool_RTV(df,p)
       if (heat_vol /= 0.0) call calc_heat_volumetric(df,p)
+    
 !
     endsubroutine special_calc_energy
 !***********************************************************************
@@ -1776,15 +1776,17 @@ module Special
 !          ln(ne*ni) = ln( 1.17*rho^2/(1.34*mp)^2)
 !     lnneni = 2*p%lnrho + alog(1.17) - 2*alog(1.34)-2.*alog(real(m_p))
 !
+      lnneni = 2.*(p%lnrho+61.4412 +alog(real(unit_mass)))
+      lnneni = 2.*(p%lnrho+54.74 +alog(real(unit_mass)))
       lnneni = 2.*(p%lnrho-alog(m_p))
 !
       call get_lnQ(lnTT_SI, lnQ, delta_lnTT)
+!
       if (unit_system=='cgs') then
         rtv_cool = lnQ+29.933-unit_lnQ+lnneni-p%lnTT-p%lnrho
       else
         rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
       endif
-!
       rtv_cool = p%cv1*exp(rtv_cool)
 !
       rtv_cool = rtv_cool*cool_RTV
@@ -1817,6 +1819,7 @@ module Special
 !
       if (lfirst .and. ldt) then
         tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
+        print*,'rtv_cool',maxval(rtv_cool),54.74 +alog(real(unit_mass)),alog(real(m_p))
         dt1_max = max(dt1_max,tmp)
       endif
 !
@@ -1877,14 +1880,14 @@ module Special
           12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760, &
           14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273, &
           15.6576, 69.0776 /)
-       real, parameter, dimension(37) :: intlnQ=(/&
-            -119.34510,-115.43072,-111.66982,-108.06241,-104.60852,-100.15681,&
-            -96.779713,-93.939815,-91.767525,-90.639548,-89.465610,-86.956249,&
-            -84.355487,-81.748557,-79.822987,-79.234218,-79.488279,-79.478674,&
-            -79.347207,-79.293414,-79.515901,-79.661797,-79.477600,-79.377800,&
-            -79.400803,-79.515900,-79.746201,-80.198997,-80.905197,-81.319603,&
-            -81.987396,-82.202301,-82.509300,-82.547699,-82.417198,-82.263702,&
-            -82.263702 /)
+      real, parameter, dimension(37) :: intlnQ = (/ &
+          -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650, &
+          -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765, &
+          -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776, &
+          -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778, &
+          -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196, &
+          -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637, &
+          -0.66650 /)
 !
       ! 16 points extracted from Cook et al. (1989)
       real, parameter, dimension(16) :: intlnT1 = (/ &
