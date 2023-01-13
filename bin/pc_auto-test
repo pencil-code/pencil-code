@@ -1122,7 +1122,7 @@ sub test_start {
 
         # Check for missing MPI option "--oversubscribe".
         if ($res =~ /use the [\-]*oversubscribe option/is) {
-            my_ok(0, 1, "Not enough CPU cores! Try 'mpiexec' with the '--oversubscribe' option.", $dir, "running");
+            my_ok(0, 1, "Not enough CPU cores! Try 'mpiexec' with the '--oversubscribe' option.", $dir, "starting");
             return;
         }
 
