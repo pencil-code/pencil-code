@@ -1120,6 +1120,8 @@ sub test_start {
             );
         }
 
+        my $res = $out;
+
         # Check for missing MPI option "--oversubscribe".
         if ($res =~ /use the [\-]*oversubscribe option/is) {
             my_ok(0, 1, "Not enough CPU cores! Try 'mpiexec' with the '--oversubscribe' option.", $dir, "starting");
@@ -1127,7 +1129,6 @@ sub test_start {
         }
 
         # Check for broken pencil check or floating-point exception
-        my $res = $out;
         if ($res =~ /^\s*pencil_consistency_check:.*?\s+failed([\s,.]|$)/im) {
             my_ok(0, 1, "Pencil consistency check failed.", $dir, "starting");
             return;
