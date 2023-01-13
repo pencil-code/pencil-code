@@ -154,18 +154,15 @@ module Persist
       select case (id)
         case (id_record_RANDOM_SEEDS)
           call random_seed_wrapper (GET=seed,CHANNEL=1)
-          if (read_persist ('RANDOM_SEEDS', seed(1:nseed))) return
-          call random_seed_wrapper (PUT=seed,CHANNEL=1)
-          done = .true.
+          done=read_persist ('RANDOM_SEEDS', seed(1:nseed))
+          if (.not.done) call random_seed_wrapper (PUT=seed,CHANNEL=1)
         case (id_record_RANDOM_SEEDS2)
           call random_seed_wrapper (GET=seed2,CHANNEL=2)
-          if (read_persist ('RANDOM_SEEDS2', seed2(1:nseed))) return
-          call random_seed_wrapper (PUT=seed2,CHANNEL=2)
-          done = .true.
+          done=read_persist ('RANDOM_SEEDS2', seed2(1:nseed))
+          if (.not.done) call random_seed_wrapper (PUT=seed2,CHANNEL=2)
         case (id_record_SHEAR_DELTA_Y)
-          if (read_persist ('SHEAR_DELTA_Y', dely)) return
-          deltay=dely
-          done = .true.
+          done=read_persist ('SHEAR_DELTA_Y', dely)
+          if (.not.done) deltay=dely
       endselect
 !
     endsubroutine input_persist_general_by_id
@@ -194,10 +191,9 @@ module Persist
            call random_seed_wrapper(PUT=seed2,CHANNEL=2)
       endif
 !
-      if (lshear) &
-        if (persist_exists ('SHEAR_DELTA_Y')) then
-          if (.not.read_persist ('SHEAR_DELTA_Y', dely)) deltay=dely
-        endif
+      if (lshear.and.persist_exists ('SHEAR_DELTA_Y')) then
+        if (.not.read_persist ('SHEAR_DELTA_Y', dely)) deltay=dely
+      endif
 !
     endsubroutine input_persist_general_by_label
 !***********************************************************************
