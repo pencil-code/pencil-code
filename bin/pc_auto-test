@@ -795,7 +795,7 @@ sub my_ok {
     if ($arg1 eq $arg2) {
         print " ok      $timestr\n" unless ($quiet);
     } else {
-        $dir =~ s|^.*/samples/(.*$)|$1|s;
+        $dir =~ s|^.*/samples/||s;
         if ($log_dir) {
             my $log_link = "";
             if ($phase eq 'starting') {
