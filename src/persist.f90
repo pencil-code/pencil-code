@@ -142,21 +142,19 @@ module Persist
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Cdata, only: seed, nseed, ichannel1, ichannel2
+      use Cdata, only: seed, nseed
       use General, only: random_seed_wrapper
       use IO, only: read_persist
 !
       integer, intent(in) :: id
       logical, intent(inout) :: done
 !
-      integer :: ichannel
       real :: dely
 !
       select case (id)
         case (id_record_RANDOM_SEEDS)
           call random_seed_wrapper (GET=seed,CHANNEL=1)
           if (read_persist ('RANDOM_SEEDS', seed(1:nseed))) return
-!print*, 'persist-in: seed=', seed(1:nseed)
           call random_seed_wrapper (PUT=seed,CHANNEL=1)
           done = .true.
         case (id_record_RANDOM_SEEDS2)
@@ -172,35 +170,34 @@ module Persist
 !
     endsubroutine input_persist_general_by_id
 !***********************************************************************
-    subroutine input_persist_general_by_label()
+    subroutine input_persist_general_by_label
 !
 !  Reads seed from a snapshot.
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Cdata, only: seed, nseed, ichannel1, ichannel2
+      use Cdata, only: seed, nseed
       use General, only: random_seed_wrapper
       use IO, only: persist_exists, read_persist
 !
-      integer :: ichannel
-      logical :: error
       real :: dely
 !
       if (persist_exists ('RANDOM_SEEDS')) then
-        call random_seed_wrapper (GET=seed,CHANNEL=1)
-        error = read_persist ('RANDOM_SEEDS', seed(1:nseed))
-        if (.not. error) call random_seed_wrapper (PUT=seed)
-!if (.not. error) print*, 'persist-in: seed=', seed(1:nseed)
+        call random_seed_wrapper(GET=seed,CHANNEL=1)
+        if (.not. read_persist('RANDOM_SEEDS', seed(1:nseed))) &
+           call random_seed_wrapper(PUT=seed,CHANNEL=1)
       endif
 !
       if (persist_exists ('RANDOM_SEEDS2')) then
-        call random_seed_wrapper (GET=seed2,CHANNEL=2)
-        error = read_persist ('RANDOM_SEEDS2', seed2(1:nseed))
-        if (.not. error) call random_seed_wrapper (PUT=seed2)
+        call random_seed_wrapper(GET=seed2,CHANNEL=2)
+        if (.not. read_persist ('RANDOM_SEEDS2', seed2(1:nseed))) &
+           call random_seed_wrapper(PUT=seed2,CHANNEL=2)
       endif
 !
-      error = read_persist ('SHEAR_DELTA_Y', dely)
-      if (.not.error) deltay=dely
+      if (lshear) &
+        if (persist_exists ('SHEAR_DELTA_Y')) then
+          if (.not.read_persist ('SHEAR_DELTA_Y', dely)) deltay=dely
+        endif
 !
     endsubroutine input_persist_general_by_label
 !***********************************************************************
@@ -210,18 +207,15 @@ module Persist
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Cdata, only: seed, nseed, ichannel1, ichannel2, lshear, deltay
+      use Cdata, only: seed, nseed, lshear, deltay
       use General, only: random_seed_wrapper
       use IO, only: write_persist
-!
-      integer :: ichannel
 !
       output_persistent_general = .false.
 !
       ! Don't write the seeds, if they are unchanged from their default value.
       call random_seed_wrapper (GET=seed,CHANNEL=1)
       if (any (seed(1:nseed) /= seed0)) then
-!write(20+iproc,*) 'persist-out: seed=', seed(1:nseed)
         if (write_persist ('RANDOM_SEEDS', id_record_RANDOM_SEEDS, seed(1:nseed))) &
             output_persistent_general = .true.
       endif
