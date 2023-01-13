@@ -805,7 +805,7 @@ sub my_ok {
             } elsif ($phase eq 'results') {
                 $log_link = get_log_link($dir, 'start')." ".get_log_link($dir, 'run');
             } elsif ($phase eq 'compilation') {
-                open(FH, '>', $dir.'/build.log') or die $!;
+                open(FH, '>', $log_dir.'/'.$dir.'/build.log') or die $!;
                 print FH $mesg;
                 $mesg='';
                 $log_link = get_log_link($dir, 'build');
