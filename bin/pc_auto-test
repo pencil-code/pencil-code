@@ -1098,7 +1098,7 @@ sub test_start {
 
         # Start the initialization
         my $start_cmd = "@pc_run";
-        if ($log_dir) {
+        if ($log_dir && not( -l $log_dir )) {
             my $sub_dir = $dir;
             $sub_dir =~ s|^.*/samples/(.*)$|$1|s;
             $start_cmd .= ' --log-dir="'.$log_dir."/".$sub_dir.'"';
@@ -1159,7 +1159,7 @@ sub test_run {
 
         # Run the Code
         my $run_cmd = "@pc_run";
-        if ($log_dir) {
+        if ($log_dir && not( -l $log_dir )) {
             my $sub_dir = $dir;
             $sub_dir =~ s|^.*/samples/(.*)$|$1|s;
             $run_cmd .= ' --log-dir="'.$log_dir."/".$sub_dir.'"';
