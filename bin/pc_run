@@ -60,6 +60,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       --last      Return the dates+paths of the last runs by 'tailing'
 #                   the $PENCIL_HOME/.run_directories.log file.
 #   -l, --log       Writes stdout and stderr to start.log and run.log, respectively.
+#   --log-dir=<dir> Directory to store the logfiles (default: .)
 #
 # Examples:
 #   pc_run start              # just start
@@ -107,6 +108,8 @@ Pencil::Util::use_pencil_perl_modules(
     'Pencil::ConfigParser'
     ) or die;
 
+use File::Path qw(make_path remove_tree);
+
 use POSIX qw(strftime);
 use Cwd;
 use Getopt::Long;
@@ -126,7 +129,8 @@ GetOptions(\%opts,
                -q   --quiet
                -v   --version
                     --last
-               -l   --log            )
+               -l   --log
+                    --log-dir=s       )
           ) or die "Aborting.\n";
 
 my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
@@ -147,6 +151,7 @@ my $suppress_check = ($opts{'N'} || $opts{'no-pencil-check'} || '');
 my $notify         = (              $opts{'notify'}          || '');
 my $quiet          = ($opts{'q'} || $opts{'quiet'}           || '');
 my $log            = ($opts{'l'} || $opts{'log'}             || '');
+my $log_dir        = (              $opts{'log-dir'}         || '');
 
 my @config_files;
 if (defined $config_files) {
@@ -331,13 +336,20 @@ sub mpi_run_cmd {
 # Run the given command through mpiexec (if this is an MPI run).
 # This method is only called for start.x and run.x
     my @cmd_line = @_;
-    my $logfile = $_[0];
+    my $log_file = $_[0];
+    my $log_cmd = "";
     if ($log){
-      $logfile =~ s/\.x/.log/; $logfile =~ s/^.*\///;
-      if ($multiple_calls) { 
-        system('rm -f ' . $logfile); 
-        $logfile = '--append ' . $logfile
-      } 
+        $log_file =~ s/\.x/.log/; $log_file =~ s/^.*\///;
+        if ($log_dir) {
+            make_path ($log_dir);
+            $log_file = $log_dir.'/'.$log_file;
+        }
+        unlink_if_exist($log_file);
+        if ($multiple_calls) {
+            $log_cmd = 'tee --append "'.$log_file.'"'
+        } else {
+            $log_cmd = 'tee "'.$log_file.'"'
+        }
     }
     my $extra_opts   = $runtime_params{'extra_opts'  } || '';
     my @extra_opts = split('\s+', $extra_opts);
@@ -381,8 +393,7 @@ sub mpi_run_cmd {
         push @mpiexec_cmd_line, split('\s+', $mpiexec_opts2);
         push @mpiexec_cmd_line, @cmd_line;
         push @mpiexec_cmd_line, @extra_opts;
-        if ($log)
-        { push @mpiexec_cmd_line, '2>&1 |tee ' . $logfile; }
+        if ($log) { push @mpiexec_cmd_line, '2>&1 | '.$log_cmd; }
         dump_parameters(
             $mpiexec, $mpiexec_opts, $mpiexec_opts2, $extra_opts,
             $np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node
@@ -391,8 +402,7 @@ sub mpi_run_cmd {
     } else {
         $Ncpus = 1;
         $n_procs_per_node = 1;
-        if ($log)
-        { push @cmd_line, '2>&1 |tee ' . $logfile; }
+        if ($log) { push @cmd_line, '2>&1 | '.$log_cmd; }
         dump_parameters(undef, undef, 1, '') if $debug;
         time_system_cmd(@cmd_line, @extra_opts);
     }
@@ -1600,7 +1610,7 @@ END {
     clear_lock() if ($locked);
     unlink 'resubmit.log';
     unlink 'rs';
-    system('rm -rf "'.$runtime_dir.'"');
+    remove_tree($runtime_dir);
 
     system('env | sort') if ($debug);
 

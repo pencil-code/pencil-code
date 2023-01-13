@@ -316,7 +316,7 @@ Options:
        --no-lock           \tIgnore and don't write lock file
        --debug             \tPrint lots of debugging output
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
-       --errlink=linkpath  \tpath from HTML directory to a symbolic link to the samples dir where the autotest results dwell
+       --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
 Examples:
   pc_auto-test      # run standard program, recycling .o files
   pc_auto-test -C   # run standard program, compiling from scratch
@@ -384,7 +384,7 @@ GetOptions(\%opts,
                     --no-summary
                     --nolock      --no-lock
                     --fast 
-                    --errlink=s )
+                    --log-dir=s )
           ) or $help=1, die "Aborting.\n";
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
@@ -432,7 +432,7 @@ my $notify      = (              $opts{'notify'}          || ''   );
 my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'}
                                                              || 0 );
 my $fast        = (              $opts{'fast'}            || ''   );
-my $errlink     = (              $opts{'errlink'}         || ''   );
+my $log_dir     = (              $opts{'log-dir'}         || ''   );
 
 my %interpreter_map;
 if (defined($script_tests)) {
@@ -755,6 +755,15 @@ sub do_tests_in_parallel {
     }
 }
 # ---------------------------------------------------------------------- #
+sub get_log_link {
+# Create the HTML code for a link to a logfile.
+
+    my $dir = shift;
+    my $name = shift;
+
+    return ('<a href="'.$dir.'/'.$name.'.log">'.$name.'.log</a>');
+}
+# ---------------------------------------------------------------------- #
 sub my_ok {
 # Similar to Test's and Test::Harness' ok() function: consider success if
 # first two argumets are equal, otherwise report a problem and print the
@@ -786,30 +795,24 @@ sub my_ok {
     if ($arg1 eq $arg2) {
         print " ok      $timestr\n" unless ($quiet);
     } else {
-        if ($errlink) {
-	  my $linkhead = '<a href="'.($dir =~ s/^.*\/samples\/(.*$)/$errlink\/$1/r);
-          my $linktail = '" target="_blank">Error log</a>';
-	  my $loglink = $linkhead;
-	  if ($phase eq 'starting') {
-	    $loglink .= '/start.log';
-	  } else {
-	    if ($phase eq 'running' || $phase eq 'results') 
-              {$loglink .= '/run.log'}
-	      if ($phase eq 'results') {$loglink .= $linktail.' '.$linkhead.'/start.log'}
-	    else {
-              if ($phase eq 'compilation') {
-		open(FH, '>', $dir.'/build.log') or die $!;
-		print FH $mesg;
-		$mesg='';
-		$loglink .= '/build.log';
-              }
-	      else {$loglink = ''}
-	    }
-	  }
-	  if ($loglink) {$loglink .= $linktail}
-	  print " not ok: $timestr $loglink\n$mesg\n";
+        $dir =~ s|^.*/samples/(.*$)|$1|s;
+        if ($log_dir) {
+            my $log_link = "";
+            if ($phase eq 'starting') {
+                $log_link = get_log_link($dir, 'start');
+            } elsif ($phase eq 'running') {
+                $log_link = get_log_link($dir, 'run');
+            } elsif ($phase eq 'results') {
+                $log_link = get_log_link($dir, 'start')." ".get_log_link($dir, 'run');
+            } elsif ($phase eq 'compilation') {
+                open(FH, '>', $dir.'/build.log') or die $!;
+                print FH $mesg;
+                $mesg='';
+                $log_link = get_log_link($dir, 'build');
+            }
+            print " not ok: $timestr $log_link\n$mesg\n";
         } else {
-	  print " not ok: $timestr\n$mesg\n";
+            print " not ok: $timestr\n$mesg\n";
         }
         $test_status = 1;
         # report only first failure:
@@ -1094,7 +1097,13 @@ sub test_start {
         printf "$indi_fmt ", '';
 
         # Start the initialization
-        my $start_cmd = "@pc_run --log start";
+        my $start_cmd = "@pc_run";
+        if ($log_dir) {
+            my $sub_dir = $dir;
+            $sub_dir =~ s|^.*/samples/(.*)$|$1|s;
+            $start_cmd .= ' --log-dir="'.$log_dir."/".$sub_dir.'"';
+        }
+        $start_cmd .= " --log start";
         my $out = "";
         if ($time_limit) {
             $out = test_timelimited_shell_cmd(
@@ -1149,8 +1158,14 @@ sub test_run {
         }
 
         # Run the Code
-        my $run_cmd = "@pc_run --log run";
-        $run_cmd .= " --no-pencil-check" if ($suppress_check);
+        my $run_cmd = "@pc_run";
+        if ($log_dir) {
+            my $sub_dir = $dir;
+            $sub_dir =~ s|^.*/samples/(.*)$|$1|s;
+            $run_cmd .= ' --log-dir="'.$log_dir."/".$sub_dir.'"';
+        }
+        $run_cmd .= " --log run";
+        if ($suppress_check) { $run_cmd .= " --no-pencil-check"; }
         if ($time_limit) {
             $res = test_timelimited_shell_cmd(
                 $run_cmd,
