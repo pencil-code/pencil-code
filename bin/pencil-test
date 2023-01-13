@@ -486,7 +486,7 @@ sub notify_on_error {
 
     # Send mail
     foreach my $address (keys %sendmailto) {
-        send_mail($address,$mailer,$host,$nerrors,$blurb,$summary,$main);
+	send_mail($address,$mailer,$host,$nerrors,$blurb,$summary);  #,$main);
     }
 }
 # ---------------------------------------------------------------------- #
