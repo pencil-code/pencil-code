@@ -6129,17 +6129,14 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       select case (id)
         case (id_record_FORCING_LOCATION)
-          if (read_persist ('FORCING_LOCATION', location)) return
-          done = .true.
+          done=read_persist ('FORCING_LOCATION', location)
+          if (lroot.and..not.done) print *, 'input_persist_forcing: ', location
         case (id_record_FORCING_TSFORCE)
-          if (read_persist ('FORCING_TSFORCE', tsforce)) return
-          done = .true.
+          done=read_persist ('FORCING_TSFORCE', tsforce)
+          if (lroot.and..not.done) print *, 'input_persist_forcing: ', tsforce
         case (id_record_FORCING_TORUS)
-          if (read_persist ('FORCING_TORUS', torus)) return
-          done = .true.
+          done=read_persist ('FORCING_TORUS', torus)
       endselect
-!
-      if (lroot) print *, 'input_persist_forcing: ', location, tsforce
 !
     endsubroutine input_persist_forcing_id
 !***********************************************************************

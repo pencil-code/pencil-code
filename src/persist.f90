@@ -176,23 +176,31 @@ module Persist
       use Cdata, only: seed, nseed
       use General, only: random_seed_wrapper
       use IO, only: persist_exists, read_persist
+      use Messages, only: warning
 !
       real :: dely
 !
       if (persist_exists ('RANDOM_SEEDS')) then
         call random_seed_wrapper(GET=seed,CHANNEL=1)
-        if (.not. read_persist('RANDOM_SEEDS', seed(1:nseed))) &
+        if (.not. read_persist('RANDOM_SEEDS', seed(1:nseed))) then
            call random_seed_wrapper(PUT=seed,CHANNEL=1)
+        else
+          call warning('input_persist_general_by_label','no persistent value of seed1 found')
+        endif
       endif
 !
       if (persist_exists ('RANDOM_SEEDS2')) then
         call random_seed_wrapper(GET=seed2,CHANNEL=2)
-        if (.not. read_persist ('RANDOM_SEEDS2', seed2(1:nseed))) &
+        if (.not. read_persist ('RANDOM_SEEDS2', seed2(1:nseed))) then
            call random_seed_wrapper(PUT=seed2,CHANNEL=2)
+        else
+          call warning('input_persist_general_by_label','no persistent value of seed2 found')
+        endif
       endif
 !
-      if (lshear.and.persist_exists ('SHEAR_DELTA_Y')) then
-        if (.not.read_persist ('SHEAR_DELTA_Y', dely)) deltay=dely
+      if (lshear) then
+        if (read_persist ('SHEAR_DELTA_Y', deltay)) &
+          call warning('input_persist_general_by_label','no persistent value of deltay found')
       endif
 !
     endsubroutine input_persist_general_by_label
