@@ -246,7 +246,7 @@ sub run_tests_on {
 
         if ($html) {
             # Mark beginning of a test in HTML
-            if ($empty && ($line =~ /^\s*(?:[^:\/]+\/)*\/*(samples(?:\/[^:\/\s]+)+): \(\d+\/\d+\)\s*$/is)) {
+            if ($empty && ($line =~ /^\s*(?:[^:\/]+\/)*\/*samples(?:\/([^:\/\s][^:\s]*))+: \(\d+\/\d+\)\s*$/is)) {
                 print "</pre>\n".'<a name="'.$1.'"></a>'."\n<pre>";
             }
             if ($empty && ($line =~ /^\s*(?:All .*? tests? succeeded\.|\#*\s*auto-test failed\s*\#*)\s*$/is)) {
@@ -261,7 +261,7 @@ sub run_tests_on {
                     print "</pre>\n<ul>\n";
                     $failures = -$failures;
                 }
-                if ($line =~ /^\s+([^:\/\s][^:\s]+)\s+\(([^\(\)]+)\)\s*$/is) {
+                if ($line =~ /^\s+([^:\/\s][^:\s]*)\s+\(([^\(\)]+)\)\s*$/is) {
                     $result .= $line;
                     print '<li><a href="#'.$1.'"><code>'.$1.'</code></a> <code>('.$2.')</code>'."\n";
                     $failures--;
