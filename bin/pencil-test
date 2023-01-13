@@ -256,20 +256,16 @@ sub run_tests_on {
             if ($line =~ /^[\s\-]*$/s) { $empty = 1; }
 
             # Links on failures summary in HTML
-            if ($failures != 0) { 
+            if ($failures != 0) {
                 if ($failures < 0) {
                     print "</pre>\n<ul>\n";
                     $failures = -$failures;
                 }
-                if ($line =~ /^\s*(?:[^:\/]+\/)*\/*(samples(?:\/[^:\/\s]+)+) \([^\(\)]+\)\s*$/is) {
-                    print '<li><a href="#'.$1.'"><code>';
+                if ($line =~ /^\s+([^:\/\s][^:\s]+)\s+\(([^\(\)]+)\)\s*$/is) {
                     $result .= $line;
-                    $line =~ s/^\s+//s;
-                    $line =~ s/\s+$//s;
-                    $line =~ s/(\s\([^\(\)]+\))$/<\/code><\/a> <code>$1<\/code><\/li>/s;
-                    print $line."\n";
+                    print '<li><a href="#'.$1.'"><code>'.$1.'</code></a> <code>('.$2.')</code>'."\n";
                     $failures--;
-                    if ($failures <= 0) { print "</ul>\n<pre>"; }  
+                    if ($failures <= 0) { print "</ul>\n<pre>"; }
                     next;
                 }
                 else {
