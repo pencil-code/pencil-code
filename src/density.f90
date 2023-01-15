@@ -2716,7 +2716,7 @@ module Density
 !
 !  Improve energy and momentum conservation by compensating for mass diffusion
 !
-      if (lmassdiff_fix) then
+      if (lmassdiff_fix.and..not.lconservative) then
         if (ldensity_nolog) then
           tmp = fdiff*p%rho1
         else
