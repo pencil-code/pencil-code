@@ -761,7 +761,7 @@ sub get_log_link {
     my $dir = shift;
     my $name = shift;
 
-    return ('<a href="'.$dir.'/'.$name.'.log">'.$name.'.log</a>');
+    return ('<a href="'.$dir.'/'.$name.'.log" target="_blank">'.$name.'.log</a>');
 }
 # ---------------------------------------------------------------------- #
 sub my_ok {
