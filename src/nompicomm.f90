@@ -2927,7 +2927,7 @@ module Mpicomm
 
       dest=src
 
-    endfunction mpiscatterv_real_plain
+    endsubroutine mpiscatterv_real_plain
 !***********************************************************************
     function mpiscatterv_real(nlocal,src,dest) result (lerr)
 
