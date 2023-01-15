@@ -10170,6 +10170,20 @@ endif
 !      
     endsubroutine interpolate_yy
 !***********************************************************************
+    subroutine mpiscatterv_real_plain(src,counts,dspls,dest,nlocal,comm)
+
+      use General, only: ioptest
+
+      real, dimension(:) :: src, dest
+      integer, dimension(:) :: counts,dspls
+      integer :: nlocal
+      integer, optional :: comm
+
+      call MPI_SCATTERV(src,counts,dspls,MPI_REAL,dest,nlocal,MPI_REAL, &
+                        root,ioptest(comm,MPI_COMM_PENCIL),mpierr)
+
+    endsubroutine mpiscatterv_real_plain
+!***********************************************************************
     function mpiscatterv_real(nlocal,src,dest) result (lerr)
 
       integer :: nlocal

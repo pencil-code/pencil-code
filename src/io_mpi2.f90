@@ -201,7 +201,10 @@ module Io
 !
 !  11-Feb-2012/PABourdin: coded
 !
-      use Mpicomm, only: mpibarrier, mpirecv_real, mpisend_nonblock_real
+      use Mpicomm, only: mpiscatterv_real_plain, mpibcast_real, &
+                         MPI_COMM_XBEAM, MPI_COMM_YBEAM, MPI_COMM_ZBEAM, &
+                         MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE
+      use General, only: indgen
 !
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
@@ -210,78 +213,31 @@ module Io
       real, dimension(nygrid+2*nghost), intent(in), optional :: gy
       real, dimension(nzgrid+2*nghost), intent(in), optional :: gz
 !
-      integer :: px, py, pz, partner, ireq
-      integer, parameter :: tag_gx=680, tag_gy=681, tag_gz=682
-!
-      if (lroot) then
-        ! send local x-data to all leading yz-processors along the x-direction
-        x = gx(1:mx)
-        do px = 0, nprocx-1
-          if (px == 0) cycle
-          call mpisend_nonblock_real (gx(px*nx+1:px*nx+mx), mx, px, tag_gx, ireq)
-        enddo
-        ! send local y-data to all leading xz-processors along the y-direction
-        y = gy(1:my)
-        do py = 0, nprocy-1
-          if (py == 0) cycle
-          call mpisend_nonblock_real (gy(py*ny+1:py*ny+my), my, py*nprocx, tag_gy, ireq)
-        enddo
-        ! send local z-data to all leading xy-processors along the z-direction
-        z = gz(1:mz)
-        do pz = 0, nprocz-1
-          if (pz == 0) cycle
-          call mpisend_nonblock_real (gz(pz*nz+1:pz*nz+mz), mz, pz*nprocxy, tag_gz, ireq)
-        enddo
+      if (lfirst_proc_yz) then    ! x-beam through root
+        if (lroot) then
+          call mpiscatterv_real_plain(gx,spread(mx,1,nprocx),(indgen(nprocx)-1)*nx,x,mx,comm=MPI_COMM_XBEAM)
+        else
+          call mpiscatterv_real_plain(x,(/1/),(/1/),x,mx,comm=MPI_COMM_XBEAM)
+        endif
       endif
-      if (lfirst_proc_yz) then
-        ! receive local x-data from root processor
-        if (.not. lroot) call mpirecv_real (x, mx, 0, tag_gx)
-        ! send local x-data to all other processors in the same yz-plane
-        do py = 0, nprocy-1
-          do pz = 0, nprocz-1
-            partner = ipx + py*nprocx + pz*nprocxy
-            if (partner == iproc) cycle
-            call mpisend_nonblock_real (x, mx, partner, tag_gx, ireq)
-          enddo
-        enddo
-      else
-        ! receive local x-data from leading yz-processor
-        call mpirecv_real (x, mx, ipx, tag_gx)
+      if (lfirst_proc_xz) then    ! y-beam through root
+        if (lroot) then
+          call mpiscatterv_real_plain(gy,spread(my,1,nprocy),(indgen(nprocy)-1)*ny,y,my,comm=MPI_COMM_YBEAM)
+        else
+          call mpiscatterv_real_plain(y,(/1/),(/1/),y,my,comm=MPI_COMM_YBEAM)
+        endif
       endif
-      if (lfirst_proc_xz) then
-        ! receive local y-data from root processor
-        if (.not. lroot) call mpirecv_real (y, my, 0, tag_gy)
-        ! send local y-data to all other processors in the same xz-plane
-        do px = 0, nprocx-1
-          do pz = 0, nprocz-1
-            partner = px + ipy*nprocx + pz*nprocxy
-            if (partner == iproc) cycle
-            call mpisend_nonblock_real (y, my, partner, tag_gy, ireq)
-          enddo
-        enddo
-      else
-        ! receive local y-data from leading xz-processor
-        call mpirecv_real (y, my, ipy*nprocx, tag_gy)
+      if (lfirst_proc_xy) then    ! z-beam through root
+        if (lroot) then
+          call mpiscatterv_real_plain(gz,spread(mz,1,nprocz),(indgen(nprocz)-1)*nz,z,mz,comm=MPI_COMM_ZBEAM)
+        else
+          call mpiscatterv_real_plain(z,(/1/),(/1/),z,mz,comm=MPI_COMM_ZBEAM)
+        endif
       endif
-      if (lfirst_proc_xy) then
-        ! receive local z-data from root processor
-        if (.not. lroot) call mpirecv_real (z, mz, 0, tag_gz)
-        ! send local z-data to all other processors in the same xy-plane
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
-            if (partner == iproc) cycle
-            call mpisend_nonblock_real (z, mz, partner, tag_gz, ireq)
-          enddo
-        enddo
-      else
-        ! receive local z-data from leading xy-processor
-        call mpirecv_real (z, mz, ipz*nprocxy, tag_gz)
-      endif
-!
-!  Prevent root from exiting before all processes have received.
-!
-      call mpibarrier
+
+      call mpibcast_real(x,mx,comm=MPI_COMM_YZPLANE)
+      call mpibcast_real(y,my,comm=MPI_COMM_XZPLANE)
+      call mpibcast_real(z,mz,comm=MPI_COMM_XYPLANE)
 !
     endsubroutine distribute_grid
 !***********************************************************************

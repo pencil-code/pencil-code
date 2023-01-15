@@ -2916,6 +2916,19 @@ module Mpicomm
 !
     endfunction report_clean_output
 !***********************************************************************
+    subroutine mpiscatterv_real_plain(src,counts,dspls,dest,nlocal,comm)
+
+      use General, only: ioptest
+
+      real, dimension(:) :: src, dest
+      integer, dimension(:) :: counts,dspls
+      integer :: nlocal
+      integer, optional :: comm
+
+      dest=src
+
+    endfunction mpiscatterv_real_plain
+!***********************************************************************
     function mpiscatterv_real(nlocal,src,dest) result (lerr)
 
       integer :: nlocal
