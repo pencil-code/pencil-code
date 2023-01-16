@@ -668,6 +668,7 @@ module Diagnostics
 !
       imax_count=0
       isum_count=0
+      fweight_tmp=0.0
       lweight_comm=.false.
 
       lalways=.not.loptest(lcomplex)
