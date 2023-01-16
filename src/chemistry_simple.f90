@@ -4601,83 +4601,71 @@ module Chemistry
       enddo
 !
       if (dir == 1) then
-         allocate (TT_full(my,mz))  
-         allocate (cp_full(my,mz))  
-         allocate (cv_full(my,mz))  
-         cp_full = 0.
-         cv_full = 0.
-         TT_full = 0.
+         allocate (TT_full(ny,nz))  
+         allocate (cp_full(ny,nz))  
+         allocate (cv_full(ny,nz))  
          if (ltemperature_nolog) then
-           TT_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,iTT)
+           TT_full = f(index,m1:m2,n1:n2,iTT)
          else
-           TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
+           TT_full = exp(f(index,m1:m2,n1:n2,ilnTT))
          endif
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=m1,m2
                   do j3=n1,n2
-                     cp_full(j2,j3) = &
-                          cp_full(j2,j3)+cp_k(k)*f(index,j2,j3,ichemspec(k))
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(index,j2,j3,ichemspec(k))
+                     cp_full(j2-nghost,j3-nghost) = &
+                          cp_full(j2-nghost,j3-nghost)+cp_k(k)*f(index,j2,j3,ichemspec(k))
+                     cv_full(j2-nghost,j3-nghost) = &
+                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(index,j2,j3,ichemspec(k))
                   enddo
                enddo
             endif
          enddo
-         slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
-               * f(index,m1:m2,n1:n2,iRR)*TT_full(m1:m2,n1:n2)
+         slice = cp_full/cv_full * f(index,m1:m2,n1:n2,iRR)*TT_full
       elseif (dir == 2) then
-         allocate (TT_full(mx,mz))  
-         allocate (cp_full(mx,mz))  
-         allocate (cv_full(mx,mz))  
-         cp_full = 0.
-         cv_full = 0.
-         TT_full = 0.
+         allocate (TT_full(nx,nz))  
+         allocate (cp_full(nx,nz))  
+         allocate (cv_full(nx,nz))  
          if (ltemperature_nolog) then
-           TT_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,iTT)
+           TT_full = f(l1:l2,index,n1:n2,iTT)
          else
-           TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
+           TT_full = exp(f(l1:l2,index,n1:n2,ilnTT))
          endif
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=l1,l2
                   do j3=n1,n2
-                     cp_full(j2,j3) = &
-                          cp_full(j2,j3)+cp_k(k)*f(j2,index,j3,ichemspec(k))
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(j2,index,j3,ichemspec(k))
+                     cp_full(j2-nghost,j3-nghost) = &
+                          cp_full(j2-nghost,j3-nghost)+cp_k(k)*f(j2,index,j3,ichemspec(k))
+                     cv_full(j2-nghost,j3-nghost) = &
+                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(j2,index,j3,ichemspec(k))
                   enddo
                enddo
             endif
          enddo
-         slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
-               * f(l1:l2,index,n1:n2,iRR)*TT_full(l1:l2,n1:n2)
+         slice = cp_full/cv_full * f(l1:l2,index,n1:n2,iRR)*TT_full
       elseif (dir == 3) then
-         allocate (TT_full(mx,my))  
-         allocate (cp_full(mx,my))  
-         allocate (cv_full(mx,my))  
-         cp_full = 0.
-         cv_full = 0.
-         TT_full = 0.
+         allocate (TT_full(nx,ny))  
+         allocate (cp_full(nx,ny))  
+         allocate (cv_full(nx,ny))  
          if (ltemperature_nolog) then
-           TT_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,iTT)
+           TT_full = f(l1:l2,m1:m2,index,iTT)
          else
-           TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
+           TT_full = exp(f(l1:l2,m1:m2,index,ilnTT))
          endif
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=l1,l2
                   do j3=m1,m2
-                     cp_full(j2,j3) = &
-                          cp_full(j2,j3)+cp_k(k)*f(j2,j3,index,ichemspec(k))
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(j2,j3,index,ichemspec(k))
+                     cp_full(j2-nghost,j3-nghost) = &
+                          cp_full(j2-nghost,j3-nghost)+cp_k(k)*f(j2,j3,index,ichemspec(k))
+                     cv_full(j2-nghost,j3-nghost) = &
+                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(j2,j3,index,ichemspec(k))
                   enddo
                enddo
             endif
          enddo
-         slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
-               * f(l1:l2,m1:m2,index,iRR)*TT_full(l1:l2,m1:m2)
+         slice = cp_full/cv_full * f(l1:l2,m1:m2,index,iRR)*TT_full
       else
          call fatal_error('get_cs2_slice','No such dir!')
       endif
@@ -4689,44 +4677,41 @@ module Chemistry
       else
 !
       if (dir == 1) then
-         allocate (TT_full(my,mz))  
-         allocate (cp_full(my,mz))  
-         allocate (cv_full(my,mz))  
+         allocate (TT_full(ny,nz))  
+         allocate (cp_full(ny,nz))  
+         allocate (cv_full(ny,nz))  
          if (ltemperature_nolog) then
-           TT_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,iTT)
+           TT_full = f(index,m1:m2,n1:n2,iTT)
          else
-           TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
+           TT_full = exp(f(index,m1:m2,n1:n2,ilnTT))
          endif
-         cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
-         cv_full = cp_full - f(index,:,:,iRR)
-         slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
-               * f(index,m1:m2,n1:n2,iRR)*TT_full(m1:m2,n1:n2)
+         cp_full = f(index,m1:m2,n1:n2,icp)
+         cv_full = cp_full - f(index,m1:m2,n1:n2,iRR)
+         slice = cp_full/cv_full * f(index,m1:m2,n1:n2,iRR)*TT_full
       elseif (dir == 2) then
-         allocate (TT_full(mx,mz))  
-         allocate (cp_full(mx,mz))  
-         allocate (cv_full(mx,mz))  
+         allocate (TT_full(nx,nz))  
+         allocate (cp_full(nx,nz))  
+         allocate (cv_full(nx,nz))  
          if (ltemperature_nolog) then
-           TT_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,iTT)
+           TT_full = f(l1:l2,index,n1:n2,iTT)
          else
-           TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
+           TT_full = exp(f(l1:l2,index,n1:n2,ilnTT))
          endif
-         cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
-         cv_full = cp_full - f(:,index,:,iRR)
-         slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
-               * f(l1:l2,index,n1:n2,iRR)*TT_full(l1:l2,n1:n2)
+         cp_full = f(l1:l2,index,n1:n2,icp)
+         cv_full = cp_full - f(l1:l2,index,n1:n2,iRR)
+         slice = cp_full/cv_full * f(l1:l2,index,n1:n2,iRR)*TT_full
       elseif (dir == 3) then
-         allocate (TT_full(mx,my))  
-         allocate (cp_full(mx,my))  
-         allocate (cv_full(mx,my))  
+         allocate (TT_full(nx,ny))  
+         allocate (cp_full(nx,ny))  
+         allocate (cv_full(nx,ny))  
          if (ltemperature_nolog) then
-           TT_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,iTT)
+           TT_full = f(l1:l2,m1:m2,index,iTT)
          else
-           TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
+           TT_full = exp(f(l1:l2,m1:m2,index,ilnTT))
          endif
-         cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
-         cv_full = cp_full - f(:,:,index,iRR)
-         slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
-               * f(l1:l2,m1:m2,index,iRR)*TT_full(l1:l2,m1:m2)
+         cp_full = f(l1:l2,m1:m2,index,icp)
+         cv_full = cp_full - f(l1:l2,m1:m2,index,iRR)
+         slice = cp_full/cv_full * f(l1:l2,m1:m2,index,iRR)*TT_full
       else
          call fatal_error('get_cs2_slice','No such dir!')
       endif
@@ -4772,56 +4757,50 @@ module Chemistry
       enddo
 !
       if (dir == 1) then
-         allocate (cp_full(my,mz))  
-         allocate (cv_full(my,mz))  
-         cp_full = 0.
-         cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
-         cv_full = 0.
+         allocate (cp_full(ny,nz))  
+         allocate (cv_full(ny,nz))  
+         cp_full = f(index,m1:m2,n1:n2,icp)
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=m1,m2
                   do j3=n1,n2
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(index,j2,j3,ichemspec(k))
+                     cv_full(j2-nghost,j3-nghost) = &
+                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(index,j2,j3,ichemspec(k))
                   enddo
                enddo
             endif
          enddo
-        slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2)
+        slice = cp_full/cv_full
       elseif (dir == 2) then
-         allocate (cp_full(mx,mz))  
-         allocate (cv_full(mx,mz))  
-         cp_full = 0.
-         cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
-         cv_full = 0.
+         allocate (cp_full(nx,nz))  
+         allocate (cv_full(nx,nz))  
+         cp_full = f(l1:l2,index,n1:n2,icp)
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=l1,l2
                   do j3=n1,n2
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(j2,index,j3,ichemspec(k))
+                     cv_full(j2-nghost,j3-nghost) = &
+                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(j2,index,j3,ichemspec(k))
                   enddo
                enddo
             endif
          enddo
-        slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2)
+        slice = cp_full/cv_full
       elseif (dir == 3) then
-         allocate (cp_full(mx,my))  
-         allocate (cv_full(mx,my))  
-         cp_full = 0.
-         cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
-         cv_full = 0.
+         allocate (cp_full(nx,ny))  
+         allocate (cv_full(nx,ny))  
+         cp_full = f(l1:l2,m1:m2,index,icp)
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=l1,l2
                   do j3=m1,m2
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(j2,j3,index,ichemspec(k))
+                     cv_full(j2-nghost,j3-nghost) = &
+                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(j2,j3,index,ichemspec(k))
                   enddo
                enddo
             endif
          enddo
-        slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2)
+        slice = cp_full/cv_full
       else
         call fatal_error('get_gamma_slice','No such dir!')
       endif
@@ -4832,23 +4811,23 @@ module Chemistry
     else
 !
       if (dir == 1) then
-         allocate (cp_full(my,mz))  
-         allocate (cv_full(my,mz))  
-         cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
-         cv_full = cp_full - f(index,:,:,iRR)
-         slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2)
+         allocate (cp_full(ny,nz))  
+         allocate (cv_full(ny,nz))  
+         cp_full = f(index,m1:m2,n1:n2,icp)
+         cv_full = cp_full - f(index,m1:m2,n1:n2,iRR)
+         slice = cp_full/cv_full
       elseif (dir == 2) then
-         allocate (cp_full(mx,mz))  
-         allocate (cv_full(mx,mz))  
-         cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
-         cv_full = cp_full - f(:,index,:,iRR)
-         slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2)
+         allocate (cp_full(nx,nz))  
+         allocate (cv_full(nx,nz))  
+         cp_full = f(l1:l2,index,n1:n2,icp)
+         cv_full = cp_full - f(l1:l2,index,n1:n2,iRR)
+         slice = cp_full/cv_full
       elseif (dir == 3) then
-         allocate (cp_full(mx,my))  
-         allocate (cv_full(mx,my))  
-         cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
-         cv_full = cp_full - f(:,:,index,iRR)
-         slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2)
+         allocate (cp_full(nx,ny))  
+         allocate (cv_full(nx,ny))  
+         cp_full = f(l1:l2,m1:m2,index,icp)
+         cv_full = cp_full - f(l1:l2,m1:m2,index,iRR)
+         slice = cp_full/cv_full
       else
         call fatal_error('get_gamma_slice','No such dir!')
       endif
