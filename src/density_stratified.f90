@@ -447,6 +447,8 @@ module Density
         call del2(f, irho, del2rhos)
         call dot_mn(p%gshock, p%grhos, penc)
         fdiff = fdiff + diffrho_shock * (p%shock * del2rhos + penc)
+        ! [PAB] This code broke my autotest - CCYang takes care of it:
+        !if (lfirst .and. ldt) diffus_diffrho = diffus_diffrho + diffrho_shock * dxyz_2 * p%shock
       endif shock
 !
 !  Mesh hyper-diffusion
@@ -456,6 +458,8 @@ module Density
           call der6(f, irho, penc, j, ignoredx=.true.)
           fdiff = fdiff + diffrho_hyper3_mesh * penc * dline_1(:,j)
         enddo dir
+        ! [PAB] This code broke my autotest - CCYang takes care of it:
+        !if (lfirst .and. ldt) diffus_diffrho3 = diffus_diffrho3 + diffrho_hyper3_mesh * sum(dline_1,2)
       endif hyper3
 !
       df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
