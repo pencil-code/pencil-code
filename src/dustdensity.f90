@@ -1293,7 +1293,7 @@ module Dustdensity
 !
       real, dimension (nx) :: tmp, Imr, T_tmp
       real, dimension (nx,3) :: tmp_pencil_3
-      real, dimension (ndustspec) :: ttt
+      real, dimension (ndustspec) :: ttt, ff_tmp
       real, dimension (nx,ndustspec) :: Nd_rho, CoagS
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
