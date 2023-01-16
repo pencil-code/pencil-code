@@ -2946,14 +2946,14 @@ module Hydro
 !  it is the momentum, or T^{0i} in the relativistic case.
 !
       if (lpenc_loc(i_uu)) then
-        tmp3=f(l1:l2,m,n,iux:iuz)  !(in the conservative case, this becomes the velocity later!)
+        if (lconservative) then
+          tmp3=f(l1:l2,m,n,iux:iuz)
+          if (lrelativistic) then
 !
 !  In the relativistic case, which must also be conservative, cs201=4/3, if cs2=1/3.
 !  At this point, the Lorentz factor gamma^2 is already available.
 !  We solve here Eq. (39) of the notes.
 !
-        if (lconservative) then
-          if (lrelativistic) then
             cs201=cs20+1.
             if (lmagnetic) then
               tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
@@ -2967,8 +2967,10 @@ module Hydro
 !
           else
             p%rho1=1./f(l1:l2,m,n,irho)
-            call multsv_mn(p%rho1,p%uu,p%uu)
+            call multsv_mn(p%rho1,tmp3,p%uu)
           endif
+        else
+          p%uu=f(l1:l2,m,n,iux:iuz)
         endif
       endif
 ! u2
