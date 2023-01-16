@@ -634,6 +634,9 @@ module Solid_Cells
                     (0. - a2/rr2 + 2*orth_r**2*a2/rr2**2)*wall_smoothing
                 if ((ilnTT /= 0 .and. .not. lchemistry) .or. (lchemistry .and. .not. lflame_front_2D)) then
                   if (TT_square_fit .and. (sqrt(abs(rr2)) .le. r_gradT)) then
+                    ! [PAB] This condition is ambiguous!
+                    ! What should happen, if TT_square_fit=T and sqrt(abs(rr2))>r_gradT?
+                    ! Currently, this code goes into the else-clause, but is this correct!?
                     f(i,j,:,ilnTT) = coef2*rr2 + coef1*sqrt(abs(rr2)) + coef0
                   else
                     wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2)*Tgrad_stretch)**2)
