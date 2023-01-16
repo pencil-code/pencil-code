@@ -923,7 +923,8 @@ module Testfield
 !
           if (idiag_uzjx1z/=0.or.idiag_uzjy1z/=0.or.idiag_uzjz1z/=0.or. &
               idiag_uzjx2z/=0.or.idiag_uzjy2z/=0.or.idiag_uzjz2z/=0.or. &
-              idiag_uzjx3z/=0.or.idiag_uzjy3z/=0.or.idiag_uzjz3z/=0) then
+              idiag_uzjx3z/=0.or.idiag_uzjy3z/=0.or.idiag_uzjz3z/=0.or. &
+              idiag_uzjx4z/=0.or.idiag_uzjy4z/=0.or.idiag_uzjz4z/=0) then
 !
             call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
             call curl_mn(aijtest,bbtest,aatest)
@@ -991,18 +992,18 @@ module Testfield
         if (iE0>0) call xysum_mn_name_z(bpq(:,1,iE0),idiag_bx0mz)
         if (iE0>0) call xysum_mn_name_z(bpq(:,2,iE0),idiag_by0mz)
         if (iE0>0) call xysum_mn_name_z(bpq(:,3,iE0),idiag_bz0mz)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i1),idiag_uzjx1z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i1),idiag_uzjy1z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i1),idiag_uzjz1z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i2),idiag_uzjx2z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i2),idiag_uzjy2z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i2),idiag_uzjz2z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i3),idiag_uzjx3z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i3),idiag_uzjy3z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i3),idiag_uzjz3z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i4),idiag_uzjx4z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i4),idiag_uzjy4z)
-        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i4),idiag_uzjz4z)
+        if (idiag_uzjx1z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i1),idiag_uzjx1z)
+        if (idiag_uzjy1z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i1),idiag_uzjy1z)
+        if (idiag_uzjz1z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i1),idiag_uzjz1z)
+        if (idiag_uzjx2z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i2),idiag_uzjx2z)
+        if (idiag_uzjy2z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i2),idiag_uzjy2z)
+        if (idiag_uzjz2z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i2),idiag_uzjz2z)
+        if (idiag_uzjx3z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i3),idiag_uzjx3z)
+        if (idiag_uzjy3z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i3),idiag_uzjy3z)
+        if (idiag_uzjz3z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i3),idiag_uzjz3z)
+        if (idiag_uzjx4z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i4),idiag_uzjx4z)
+        if (idiag_uzjy4z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i4),idiag_uzjy4z)
+        if (idiag_uzjz4z>0) call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i4),idiag_uzjz4z)
         call xysum_mn_name_z(Eipq(1,:,1,i1),idiag_E111z)
         call xysum_mn_name_z(Eipq(1,:,2,i1),idiag_E211z)
         call xysum_mn_name_z(Eipq(1,:,3,i1),idiag_E311z)
