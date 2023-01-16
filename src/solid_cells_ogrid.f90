@@ -633,7 +633,7 @@ module Solid_Cells
                 f(i,j,:,iflow) = f(i,j,:,iflow)+init_uu* &
                     (0. - a2/rr2 + 2*orth_r**2*a2/rr2**2)*wall_smoothing
                 if ((ilnTT /= 0 .and. .not. lchemistry) .or. (lchemistry .and. .not. lflame_front_2D)) then
-                  if (TT_square_fit .and. sqrt(abs(rr2)) .le. r_gradT) then
+                  if (TT_square_fit .and. (sqrt(abs(rr2)) .le. r_gradT)) then
                     f(i,j,:,ilnTT) = coef2*rr2 + coef1*sqrt(abs(rr2)) + coef0
                   else
                     wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2)*Tgrad_stretch)**2)
