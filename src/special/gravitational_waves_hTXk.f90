@@ -2060,6 +2060,7 @@ module Special
               Pij(5)=0.
               Pij(6)=0.
               om=0.
+              om2=0.
             else
 !
 !  compute omega (but assume c=1), omega*t, etc.
