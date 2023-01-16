@@ -1819,7 +1819,7 @@ module Special
 !
       if (lfirst .and. ldt) then
         tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
-        print*,'rtv_cool',maxval(rtv_cool),54.74 +alog(real(unit_mass)),alog(real(m_p))
+!        print*,'rtv_cool',maxval(rtv_cool),54.74 +alog(real(unit_mass)),alog(real(m_p))
         dt1_max = max(dt1_max,tmp)
       endif
 !
@@ -1856,8 +1856,8 @@ module Special
       endif
 !
       if (lfirst .and. ldt) then
-        print*,'vol_heat',maxval(vol_heat),&
-        (heat_FS/heat_LH)*maxval(p%cv1*exp(-p%lnrho-p%lnTT)/x(l1:l2)**2*exp(-(x(l1:l2)-1.)/heat_LH))
+!        print*,'vol_heat',maxval(vol_heat),&
+!        (heat_FS/heat_LH)*maxval(p%cv1*exp(-p%lnrho-p%lnTT)/x(l1:l2)**2*exp(-(x(l1:l2)-1.)/heat_LH))
         tmp = max (vol_heat/cdts, abs (vol_heat/max (tini, max_real)))
         dt1_max = max(dt1_max,tmp)
       endif
