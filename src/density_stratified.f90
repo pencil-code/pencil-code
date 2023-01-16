@@ -418,7 +418,7 @@ module Density
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type(pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: fdiff, del2rhos, penc, src_density,diffus_diffrho,diffus_diffrho3
+      real, dimension(nx) :: fdiff, del2rhos, penc, src_density
       integer :: j
 !
 !  Start the clock for this procedure.
@@ -447,7 +447,6 @@ module Density
         call del2(f, irho, del2rhos)
         call dot_mn(p%gshock, p%grhos, penc)
         fdiff = fdiff + diffrho_shock * (p%shock * del2rhos + penc)
-        if (lfirst .and. ldt) diffus_diffrho = diffus_diffrho + diffrho_shock * dxyz_2 * p%shock
       endif shock
 !
 !  Mesh hyper-diffusion
@@ -457,8 +456,6 @@ module Density
           call der6(f, irho, penc, j, ignoredx=.true.)
           fdiff = fdiff + diffrho_hyper3_mesh * penc * dline_1(:,j)
         enddo dir
-        if (lfirst .and. ldt) diffus_diffrho3 = diffus_diffrho3 &
-                                              + diffrho_hyper3_mesh * sum(dline_1,2)
       endif hyper3
 !
       df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
