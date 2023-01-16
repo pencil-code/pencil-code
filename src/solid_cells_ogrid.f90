@@ -611,6 +611,8 @@ module Solid_Cells
                  (a2-2*r_gradT*xyz0_ogrid(1)+r_gradT**2)
          coef1 = -2*coef2*r_gradT
          coef0 = f(l2,m2,n2,ilnTT) + coef2*r_gradT**2
+      else
+         r_gradT = -1.0   ! [PAB] fill in a useful value - or fix the ambiguous if-condition below...
       endif
       if (unit_system=='cgs') then
          Rgas_unit_sys=k_B_cgs/m_u_cgs
@@ -637,6 +639,7 @@ module Solid_Cells
                     ! [PAB] This condition is ambiguous!
                     ! What should happen, if TT_square_fit=T and sqrt(abs(rr2))>r_gradT?
                     ! Currently, this code goes into the else-clause, but is this correct!?
+                    ! If resolved, please check if the above default for r_gradT on TT_square_fit=F is still needed.
                     f(i,j,:,ilnTT) = coef2*rr2 + coef1*sqrt(abs(rr2)) + coef0
                   else
                     wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2)*Tgrad_stretch)**2)
