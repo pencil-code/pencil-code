@@ -1293,7 +1293,7 @@ module Dustdensity
 !
       real, dimension (nx) :: tmp, Imr, T_tmp
       real, dimension (nx,3) :: tmp_pencil_3
-      real, dimension (ndustspec) :: ff_tmp,ttt
+      real, dimension (ndustspec) :: ttt
       real, dimension (nx,ndustspec) :: Nd_rho, CoagS
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
@@ -1514,26 +1514,21 @@ module Dustdensity
 !end loop over k=1,ndustspec
       enddo
 !  fcloud
-        if (lpencil(i_fcloud)) then
-          do i=1, nx
-           ff_tmp=p%nd(i,:)*dsize(:)**3
-           if (ndustspec>1) then
-             ttt=spline_integral(dsize,ff_tmp)
-           else
-             !ttt=     !fill me in
-           endif
-           p%fcloud(i)=4.0/3.0*pi*rho_w*ttt(ndustspec)
-          enddo
-!
-        endif
+      if (lpencil(i_fcloud)) then
+        do i=1,nx
+          ttt=p%nd(i,:)*dsize**3
+          if (ndustspec>1) ttt=spline_integral(dsize,ttt)
+          p%fcloud(i)=4.0/3.0*pi*rho_w*ttt(ndustspec)
+        enddo
+      endif
 !
 !  ppsat is a  saturation pressure in cgs units
 !
         if (lpencil(i_ppsat)) then
            T_tmp=p%TT-273.15
-           p%ppsat=(aa0 + aa1*T_tmp + aa2*T_tmp**2  &
-                  + aa3*T_tmp**3 + aa4*T_tmp**4  &
-                  + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
+           p%ppsat=(aa0 + aa1*T_tmp    + aa2*T_tmp**2  &
+                        + aa3*T_tmp**3 + aa4*T_tmp**4  &
+                        + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
 !           p%ppsat=6.035e12*exp(-5938.*p%TT1)
         endif
 !
