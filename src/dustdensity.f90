@@ -1601,7 +1601,7 @@ module Dustdensity
                 endif
               enddo
               if (any(dsize==0.0)) then
-                !ttt=         !fill me in
+                ttt=0.0         !fill me in
               else
                 ttt= spline_integral(dsize,ff_tmp)
               endif
