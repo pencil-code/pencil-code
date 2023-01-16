@@ -4610,16 +4610,10 @@ module Chemistry
            TT_full = exp(f(index,m1:m2,n1:n2,ilnTT))
          endif
          do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=m1,m2
-                  do j3=n1,n2
-                     cp_full(j2-nghost,j3-nghost) = &
-                          cp_full(j2-nghost,j3-nghost)+cp_k(k)*f(index,j2,j3,ichemspec(k))
-                     cv_full(j2-nghost,j3-nghost) = &
-                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(index,j2,j3,ichemspec(k))
-                  enddo
-               enddo
-            endif
+           if (species_constants(k,imass)>0.) then
+             cp_full = cp_full + cp_k(k)*f(index,m1:m2,n1:n2,ichemspec(k))
+             cv_full = cv_full + cv_k(k)*f(index,m1:m2,n1:n2,ichemspec(k))
+           endif
          enddo
          slice = cp_full/cv_full * f(index,m1:m2,n1:n2,iRR)*TT_full
       elseif (dir == 2) then
@@ -4632,16 +4626,10 @@ module Chemistry
            TT_full = exp(f(l1:l2,index,n1:n2,ilnTT))
          endif
          do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=n1,n2
-                     cp_full(j2-nghost,j3-nghost) = &
-                          cp_full(j2-nghost,j3-nghost)+cp_k(k)*f(j2,index,j3,ichemspec(k))
-                     cv_full(j2-nghost,j3-nghost) = &
-                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(j2,index,j3,ichemspec(k))
-                  enddo
-               enddo
-            endif
+           if (species_constants(k,imass)>0.) then
+             cp_full = cp_full + cp_k(k)*f(l1:l2,index,n1:n2,ichemspec(k))
+             cv_full = cv_full + cv_k(k)*f(l1:l2,index,n1:n2,ichemspec(k))
+           endif
          enddo
          slice = cp_full/cv_full * f(l1:l2,index,n1:n2,iRR)*TT_full
       elseif (dir == 3) then
@@ -4654,16 +4642,10 @@ module Chemistry
            TT_full = exp(f(l1:l2,m1:m2,index,ilnTT))
          endif
          do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=m1,m2
-                     cp_full(j2-nghost,j3-nghost) = &
-                          cp_full(j2-nghost,j3-nghost)+cp_k(k)*f(j2,j3,index,ichemspec(k))
-                     cv_full(j2-nghost,j3-nghost) = &
-                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(j2,j3,index,ichemspec(k))
-                  enddo
-               enddo
-            endif
+           if (species_constants(k,imass)>0.) then
+             cp_full = cp_full + cp_k(k)*f(l1:l2,m1:m2,index,ichemspec(k))
+             cv_full = cv_full + cv_k(k)*f(l1:l2,m1:m2,index,ichemspec(k))
+           endif
          enddo
          slice = cp_full/cv_full * f(l1:l2,m1:m2,index,iRR)*TT_full
       else
@@ -4761,14 +4743,9 @@ module Chemistry
          allocate (cv_full(ny,nz))  
          cp_full = f(index,m1:m2,n1:n2,icp)
          do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=m1,m2
-                  do j3=n1,n2
-                     cv_full(j2-nghost,j3-nghost) = &
-                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(index,j2,j3,ichemspec(k))
-                  enddo
-               enddo
-            endif
+           if (species_constants(k,imass)>0.) then
+             cv_full = cv_full + cv_k(k)*f(index,m1:m2,n1:n2,ichemspec(k))
+           endif
          enddo
         slice = cp_full/cv_full
       elseif (dir == 2) then
@@ -4776,14 +4753,9 @@ module Chemistry
          allocate (cv_full(nx,nz))  
          cp_full = f(l1:l2,index,n1:n2,icp)
          do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=n1,n2
-                     cv_full(j2-nghost,j3-nghost) = &
-                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(j2,index,j3,ichemspec(k))
-                  enddo
-               enddo
-            endif
+           if (species_constants(k,imass)>0.) then
+             cv_full = cv_full + cv_k(k)*f(l1:l2,index,n1:n2,ichemspec(k))
+           endif
          enddo
         slice = cp_full/cv_full
       elseif (dir == 3) then
@@ -4791,14 +4763,9 @@ module Chemistry
          allocate (cv_full(nx,ny))  
          cp_full = f(l1:l2,m1:m2,index,icp)
          do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=m1,m2
-                     cv_full(j2-nghost,j3-nghost) = &
-                          cv_full(j2-nghost,j3-nghost)+cv_k(k)*f(j2,j3,index,ichemspec(k))
-                  enddo
-               enddo
-            endif
+           if (species_constants(k,imass)>0.) then
+             cv_full = cv_full + cv_k(k)*f(l1:l2,m1:m2,index,ichemspec(k))
+           endif
          enddo
         slice = cp_full/cv_full
       else
