@@ -3256,7 +3256,11 @@ module Interstellar
         enddo
         SNR%feat%radius=radius_best
         call get_properties(f,SNR,rhom,ekintot,rhomin)
+      else
+        sol_mass_tot=solar_mass*N_mass
+        SNvol=fourthird*pi/sol_mass_tot
       endif
+
       if (present(ierr)) then
         call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
         if (ierr==iEXPLOSION_TOO_UNEVEN.and..not.lSN_list) return
