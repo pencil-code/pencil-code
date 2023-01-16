@@ -448,21 +448,20 @@ module Selfgravity
 !  Diagnostic averages.
 !
       if (ldiagnos) then
-        if (idiag_potselfm/=0) call sum_mn_name(p%potself,idiag_potselfm)
+        call sum_mn_name(p%potself,idiag_potselfm)
         if (idiag_potself2m/=0) call sum_mn_name(p%potself**2,idiag_potself2m)
         if (idiag_rpotselfm/=0) call sum_mn_name(p%potself*p%rho,idiag_rpotselfm)
-        if (idiag_rugpotselfm/=0) &
-            call dot_mn(p%uu,p%gpotself,ugpotself)
-            call sum_mn_name(-p%rho*ugpotself,idiag_rugpotselfm)
-        if (idiag_gpotself2m/=0) &
-            call dot2_mn(p%gpotself,gpotself2)
-            call sum_mn_name(gpotself2,idiag_gpotself2m)
-        if (idiag_gpotselfxm/=0) &
-            call sum_mn_name(p%gpotself(:,1),idiag_gpotselfxm)
-        if (idiag_gpotselfym/=0) &
-            call sum_mn_name(p%gpotself(:,2),idiag_gpotselfym)
-        if (idiag_gpotselfzm/=0) &
-            call sum_mn_name(p%gpotself(:,3),idiag_gpotselfzm)
+        if (idiag_rugpotselfm/=0) then
+          call dot_mn(p%uu,p%gpotself,ugpotself)
+          call sum_mn_name(-p%rho*ugpotself,idiag_rugpotselfm)
+        endif
+        if (idiag_gpotself2m/=0) then
+          call dot2_mn(p%gpotself,gpotself2)
+          call sum_mn_name(gpotself2,idiag_gpotself2m)
+        endif
+        call sum_mn_name(p%gpotself(:,1),idiag_gpotselfxm)
+        call sum_mn_name(p%gpotself(:,2),idiag_gpotselfym)
+        call sum_mn_name(p%gpotself(:,3),idiag_gpotselfzm)
         if (idiag_gpotselfx2m/=0) &
             call sum_mn_name(p%gpotself(:,1)**2,idiag_gpotselfx2m)
         if (idiag_gpotselfy2m/=0) &
