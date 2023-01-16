@@ -1992,7 +1992,9 @@ module Particles
 !
           if (ldragforce_equi_noback) eps = 0.0
 !
-          if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
+          if (lroot .and. (ldragforce_equi_global_eps .or. ldragforce_equi_noback)) &
+              print*, 'init_particles: average dust-to-gas ratio=', eps
+!
 !  Set gas velocity field.
           if (lhydro) then
             do l = l1,l2
