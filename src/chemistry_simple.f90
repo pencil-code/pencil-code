@@ -2,7 +2,7 @@
 !
 !  This modules addes chemical species and reactions.
 !  The units used in the chem.in files are cm3,mole,sec,kcal and K
-!  This was found out by comparing the mechanism found in 
+!  This was found out by comparing the mechanism found in
 !  samples/0D/chemistry_H2_ignition_delay
 !  with Flow Reactor Studies and Kinetic Modeling of the ReactionH/O22
 !  of  A. MUELLER, T. J. KIM, R. A. YETTER, F. L. DRYER
@@ -153,7 +153,7 @@ module Chemistry
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, intro_time, p_init, Y_H2O, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi, Pr_turb, lew_exist, Lewis_coef, lmech_simple 
+      reac_rate_method,global_phi, Pr_turb, lew_exist, Lewis_coef, lmech_simple
 !
 !
 ! run parameters
@@ -233,7 +233,7 @@ module Chemistry
         ichemspec(k) = ichemspec_tmp+k-1
       enddo
 !
-!  Register viscosity 
+!  Register viscosity
 !
       call farray_register_auxiliary('viscosity',iviscosity)
 !
@@ -249,7 +249,7 @@ module Chemistry
 !
       inquire (FILE='chem.inp', EXIST=lcheminp)
       if (.not. lcheminp) inquire (FILE='chem.in', EXIST=lcheminp)
-      
+
       inquire (FILE='chem.inp', EXIST=cheminp)
       inquire (FILE='chem.in', EXIST=chemin)
       if (cheminp .and. chemin) call fatal_error('chemistry', &
@@ -276,7 +276,7 @@ module Chemistry
 !
       if (lcheminp) then
         call read_thermodyn(input_file)
-      else 
+      else
         call read_thermodyn_simple()
       endif
 !
@@ -295,9 +295,9 @@ module Chemistry
 !   Hard-coded H2_flamespeed mechanism
 !   SPECIES:
 !   1-H2 2-O2 3-H2O 4-H 5-O 6-OH 7-HO2 8-H2O2 9-AR 10-N2 11-HE 12-CO 13-CO2
-!   
+!
 !   Mech_simple: 2CO+O2 = 2CO2
-!   1-CO2 2-CO 3-N2 4-O2 5-H2O 
+!   1-CO2 2-CO 3-N2 4-O2 5-H2O
 
     integer, dimension(7) :: iaa1,iaa2
     integer :: iTemp1=2,iTemp2=3,iTemp3=4
@@ -536,14 +536,14 @@ module Chemistry
         endif
       endif
 !
-      if (lew_exist) then 
+      if (lew_exist) then
         Lewis_coef1 = 1./Lewis_coef
       else
         print*,'Lewis numbers need to be read from start.in, no option to read from file'
         print*,'Set all Le = 1'
       endif
 !
-!  Needed by ogrid_chemistry 
+!  Needed by ogrid_chemistry
 !
    if (lsolid_cells) then
 !
@@ -596,7 +596,7 @@ module Chemistry
         call put_shared_variable('m_H2O',m_H2O)
       endif
 !
-   endif 
+   endif
 !
 !  write array dimension to chemistry diagnostics file
 !
@@ -1368,13 +1368,13 @@ module Chemistry
             if (Cp_const < impossible) then
 !
               f(:,:,:,icp) = Cp_const*mu1_full
-!            
+!
             else
 
 !
               do j3 = nn1,nn2
                 do j2 = mm1,mm2
-                  if (ltemperature_nolog) then 
+                  if (ltemperature_nolog) then
                     T_loc = (f(:,j2,j3,iTT))
                   else
                     T_loc = exp(f(:,j2,j3,ilnTT))
@@ -1555,7 +1555,7 @@ module Chemistry
 !
 !  Modify RHS of temperature equation
 !
-      if (ldensity) then 
+      if (ldensity) then
 !
           sum_DYDt = 0.
           sum_hhk_DYDt_reac = 0.
@@ -1819,7 +1819,7 @@ module Chemistry
         enddo
         call parse_name(iname,cname(iname),cform(iname),'dtchem',idiag_dtchem)
 !
-!   Sample for hard-coded heat capacity diagnostics 
+!   Sample for hard-coded heat capacity diagnostics
 !
 !        call parse_name(iname,cname(iname),cform(iname),'cp',idiag_cp)
         call parse_name(iname,cname(iname),cform(iname),'e_intm',idiag_e_intm)
@@ -2185,7 +2185,7 @@ module Chemistry
       integer :: file_id=123
       logical :: chemin,cheminp
 !
-! CO2 CO N2 O2 H2O 
+! CO2 CO N2 O2 H2O
 !
     if (lmech_simple) then
         ! O2
@@ -2326,7 +2326,7 @@ module Chemistry
 !
     if (lmech_simple) then
 !
-! CO2 CO N2 O2 H2O 
+! CO2 CO N2 O2 H2O
 !
       Sijp(1:4,1) = (/ &
         0.0000000000000000      ,&
@@ -4601,9 +4601,9 @@ module Chemistry
       enddo
 !
       if (dir == 1) then
-         allocate (TT_full(ny,nz))  
-         allocate (cp_full(ny,nz))  
-         allocate (cv_full(ny,nz))  
+         allocate (TT_full(ny,nz))
+         allocate (cp_full(ny,nz))
+         allocate (cv_full(ny,nz))
          if (ltemperature_nolog) then
            TT_full = f(index,m1:m2,n1:n2,iTT)
          else
@@ -4617,9 +4617,9 @@ module Chemistry
          enddo
          slice = cp_full/cv_full * f(index,m1:m2,n1:n2,iRR)*TT_full
       elseif (dir == 2) then
-         allocate (TT_full(nx,nz))  
-         allocate (cp_full(nx,nz))  
-         allocate (cv_full(nx,nz))  
+         allocate (TT_full(nx,nz))
+         allocate (cp_full(nx,nz))
+         allocate (cv_full(nx,nz))
          if (ltemperature_nolog) then
            TT_full = f(l1:l2,index,n1:n2,iTT)
          else
@@ -4633,9 +4633,9 @@ module Chemistry
          enddo
          slice = cp_full/cv_full * f(l1:l2,index,n1:n2,iRR)*TT_full
       elseif (dir == 3) then
-         allocate (TT_full(nx,ny))  
-         allocate (cp_full(nx,ny))  
-         allocate (cv_full(nx,ny))  
+         allocate (TT_full(nx,ny))
+         allocate (cp_full(nx,ny))
+         allocate (cv_full(nx,ny))
          if (ltemperature_nolog) then
            TT_full = f(l1:l2,m1:m2,index,iTT)
          else
@@ -4652,16 +4652,16 @@ module Chemistry
          call fatal_error('get_cs2_slice','No such dir!')
       endif
 !
-      deallocate (TT_full)  
-      deallocate (cp_full)  
-      deallocate (cv_full)  
+      deallocate (TT_full)
+      deallocate (cp_full)
+      deallocate (cv_full)
 !
       else
 !
       if (dir == 1) then
-         allocate (TT_full(ny,nz))  
-         allocate (cp_full(ny,nz))  
-         allocate (cv_full(ny,nz))  
+         allocate (TT_full(ny,nz))
+         allocate (cp_full(ny,nz))
+         allocate (cv_full(ny,nz))
          if (ltemperature_nolog) then
            TT_full = f(index,m1:m2,n1:n2,iTT)
          else
@@ -4671,9 +4671,9 @@ module Chemistry
          cv_full = cp_full - f(index,m1:m2,n1:n2,iRR)
          slice = cp_full/cv_full * f(index,m1:m2,n1:n2,iRR)*TT_full
       elseif (dir == 2) then
-         allocate (TT_full(nx,nz))  
-         allocate (cp_full(nx,nz))  
-         allocate (cv_full(nx,nz))  
+         allocate (TT_full(nx,nz))
+         allocate (cp_full(nx,nz))
+         allocate (cv_full(nx,nz))
          if (ltemperature_nolog) then
            TT_full = f(l1:l2,index,n1:n2,iTT)
          else
@@ -4683,9 +4683,9 @@ module Chemistry
          cv_full = cp_full - f(l1:l2,index,n1:n2,iRR)
          slice = cp_full/cv_full * f(l1:l2,index,n1:n2,iRR)*TT_full
       elseif (dir == 3) then
-         allocate (TT_full(nx,ny))  
-         allocate (cp_full(nx,ny))  
-         allocate (cv_full(nx,ny))  
+         allocate (TT_full(nx,ny))
+         allocate (cp_full(nx,ny))
+         allocate (cv_full(nx,ny))
          if (ltemperature_nolog) then
            TT_full = f(l1:l2,m1:m2,index,iTT)
          else
@@ -4698,11 +4698,11 @@ module Chemistry
          call fatal_error('get_cs2_slice','No such dir!')
       endif
 !
-      deallocate (TT_full)  
-      deallocate (cp_full)  
-      deallocate (cv_full)  
+      deallocate (TT_full)
+      deallocate (cp_full)
+      deallocate (cv_full)
 !
-    endif  
+    endif
 !
     endsubroutine get_cs2_slice
 !***********************************************************************
@@ -4739,8 +4739,8 @@ module Chemistry
       enddo
 !
       if (dir == 1) then
-         allocate (cp_full(ny,nz))  
-         allocate (cv_full(ny,nz))  
+         allocate (cp_full(ny,nz))
+         allocate (cv_full(ny,nz))
          cp_full = f(index,m1:m2,n1:n2,icp)
          do k=1,nchemspec
            if (species_constants(k,imass)>0.) then
@@ -4749,8 +4749,8 @@ module Chemistry
          enddo
         slice = cp_full/cv_full
       elseif (dir == 2) then
-         allocate (cp_full(nx,nz))  
-         allocate (cv_full(nx,nz))  
+         allocate (cp_full(nx,nz))
+         allocate (cv_full(nx,nz))
          cp_full = f(l1:l2,index,n1:n2,icp)
          do k=1,nchemspec
            if (species_constants(k,imass)>0.) then
@@ -4759,8 +4759,8 @@ module Chemistry
          enddo
         slice = cp_full/cv_full
       elseif (dir == 3) then
-         allocate (cp_full(nx,ny))  
-         allocate (cv_full(nx,ny))  
+         allocate (cp_full(nx,ny))
+         allocate (cv_full(nx,ny))
          cp_full = f(l1:l2,m1:m2,index,icp)
          do k=1,nchemspec
            if (species_constants(k,imass)>0.) then
@@ -4772,26 +4772,26 @@ module Chemistry
         call fatal_error('get_gamma_slice','No such dir!')
       endif
 !
-      deallocate (cp_full)  
-      deallocate (cv_full) 
+      deallocate (cp_full)
+      deallocate (cv_full)
 !
     else
 !
       if (dir == 1) then
-         allocate (cp_full(ny,nz))  
-         allocate (cv_full(ny,nz))  
+         allocate (cp_full(ny,nz))
+         allocate (cv_full(ny,nz))
          cp_full = f(index,m1:m2,n1:n2,icp)
          cv_full = cp_full - f(index,m1:m2,n1:n2,iRR)
          slice = cp_full/cv_full
       elseif (dir == 2) then
-         allocate (cp_full(nx,nz))  
-         allocate (cv_full(nx,nz))  
+         allocate (cp_full(nx,nz))
+         allocate (cv_full(nx,nz))
          cp_full = f(l1:l2,index,n1:n2,icp)
          cv_full = cp_full - f(l1:l2,index,n1:n2,iRR)
          slice = cp_full/cv_full
       elseif (dir == 3) then
-         allocate (cp_full(nx,ny))  
-         allocate (cv_full(nx,ny))  
+         allocate (cp_full(nx,ny))
+         allocate (cv_full(nx,ny))
          cp_full = f(l1:l2,m1:m2,index,icp)
          cv_full = cp_full - f(l1:l2,m1:m2,index,iRR)
          slice = cp_full/cv_full
@@ -4799,8 +4799,8 @@ module Chemistry
         call fatal_error('get_gamma_slice','No such dir!')
       endif
 !
-      deallocate (cp_full)  
-      deallocate (cv_full) 
+      deallocate (cp_full)
+      deallocate (cv_full)
 !
     endif
 !
@@ -5249,7 +5249,7 @@ module Chemistry
 !
 1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
 !
-      if (lroot) print*, 'the following species are found in tran.dat: end of the list:'                    
+      if (lroot) print*, 'the following species are found in tran.dat: end of the list:'
 !
       close(file_id)
 !
