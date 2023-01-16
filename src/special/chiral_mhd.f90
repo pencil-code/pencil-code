@@ -873,7 +873,7 @@ module Special
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: fact, meanmu5_tmp, nw1 !, meanB2_tmp
+      real :: meanmu5_tmp !, meanB2_tmp
       intent(inout) :: f
 !
 !  compute meanmu5 and meanB2
@@ -892,12 +892,12 @@ module Special
    !    call mpiallreduce_sum(meanmu5,meanmu5_tmp,(/nx,ny,nz/))
        call mpiallreduce_sum(meanmu5,meanmu5_tmp)
 !       call mpiallreduce_sum(meanB2,meanB2_tmp)
+     else
+       meanmu5_tmp=meanmu5
      endif
-!     fact=1./ncpus
 !
 ! number of grid points
-      nw1=1./(nxgrid*nygrid*nzgrid)
-      meanmu5=nw1*meanmu5_tmp
+      meanmu5=meanmu5_tmp/nwgrid
 !      meanB2=nw1*meanB2_tmp
 !      flucmu5=p%mu5-meanmu5
 !
