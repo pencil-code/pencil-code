@@ -783,7 +783,7 @@ module Shear
 !
       if (nxgrid > 1) call bcx_periodic(f, ivar1, ivar2)
 !
-      if (nygrid/=1) then
+      if ((nygrid /= 1) .and. (deltay /= 0.0)) then
         do ivar=ivar1,ivar2
           do i=1,3
             f_tmp_yz=f(l1-i,m1:m2,n1:n2,ivar)
