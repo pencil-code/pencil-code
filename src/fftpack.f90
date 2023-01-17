@@ -638,6 +638,8 @@ subroutine cffti ( n, wsave )
 !
   real wsave(4*n+15)
 !
+  wsave = 0.0
+
   if ( n <= 1 ) then
     return
   end if
