@@ -11,6 +11,12 @@ cache:
   directories:
   - $HOME/build/pencil-code/pencil-code/samples/no-modules/src
   - $HOME/build/pencil-code/pencil-code/samples/most-modules/src
+  - $HOME/build/pencil-code/pencil-code/samples/backwards-compatible/src
+  - $HOME/build/pencil-code/pencil-code/samples/1d-tests/implicit_diffusion/src
+  - $HOME/build/pencil-code/pencil-code/samples/2d-tests/chemistry_GrayScott/src
+  - $HOME/build/pencil-code/pencil-code/samples/2d-tests/shearwave-dust-par/src
+  - $HOME/build/pencil-code/pencil-code/samples/dust-vortex/src
+  - $HOME/build/pencil-code/pencil-code/samples/damped_alfven_waves/src
   - $HOME/build/pencil-code/pencil-code/samples/corona/src
 
 addons:
