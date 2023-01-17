@@ -185,12 +185,12 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !  28-Oct-2016/PABourdin: redesigned
 !
-      use General, only: ioptest, itoa
+      use General, only: coptest, ioptest, itoa
       use File_io, only: parallel_file_exists
 !
       integer, optional, intent(in) :: nv1,nv2
       real, dimension (:,:,:,:), intent(in) :: a
-      character (len=*), optional, intent(in) :: file
+      character (len=*), intent(in) :: file
       integer, optional, intent(in) :: mode
       logical, optional, intent(in) :: ltruncate
       character (len=*), optional, intent(in) :: label
@@ -199,9 +199,7 @@ module Io
       logical :: ltrunc, lexists, lwrite_add
       character (len=fnlen) :: filename, dataset, group
 !
-      if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_hdf5')
-      dataset = 'f'
-      if (present (label)) dataset = label
+      dataset = coptest(label,'f')
       if (dataset == 'globals') then
         filename = trim(datadir_snap)//'/'//trim(file)//'.h5'
       elseif (dataset == 'timeavg') then
