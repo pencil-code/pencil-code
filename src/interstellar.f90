@@ -3214,6 +3214,9 @@ module Interstellar
 !
       call get_properties(f,SNR,rhom,ekintot,rhomin)
       SNR%feat%rhom=rhom
+!
+!  Initialize SN volume
+!
       sol_mass_tot=solar_mass*N_mass
       SNvol=fourthird*pi/sol_mass_tot
 !
@@ -3256,9 +3259,6 @@ module Interstellar
         enddo
         SNR%feat%radius=radius_best
         call get_properties(f,SNR,rhom,ekintot,rhomin)
-      else
-        sol_mass_tot=solar_mass*N_mass
-        SNvol=fourthird*pi/sol_mass_tot
       endif
 
       if (present(ierr)) then
