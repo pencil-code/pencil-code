@@ -5,6 +5,7 @@ language: c
 git:
   depth: 3
   quiet: true
+  submodules: false
 
 cache:
   directories:
