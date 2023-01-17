@@ -3400,6 +3400,7 @@ module Interstellar
 !
       site_mass=0.0
       maxlnTT=-10.0
+      maxTT=exp(maxlnTT)
       max_cmass=0.
       SNR%feat%EE=0.
       SNR%feat%MM=0.
