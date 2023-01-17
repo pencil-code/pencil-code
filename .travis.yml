@@ -4,6 +4,7 @@ language: c
 
 git:
   depth: 3
+  quiet: true
 
 cache:
   directories:
