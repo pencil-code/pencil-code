@@ -4,6 +4,10 @@ sudo: required
 git:
   depth: 3
 
+cache:
+  directories:
+  - $HOME/pencil-code/samples
+
 before_install:
   - sudo apt-get update
   - sudo apt-get install gfortran
@@ -13,4 +17,4 @@ before_install:
 
 script:
   - source sourceme.sh
-  - pc_auto-test --host-id travis-ci -t --max-level 1 --script-tests=python
+  - pc_auto-test --host-id travis-ci -t --max-level 1 --script-tests=python --auto-clean
