@@ -21,7 +21,9 @@ before_install:
   - sudo apt-get install -y gfortran
   - sudo apt-get install -y libhdf5-openmpi-dev libopenmpi-dev openmpi-bin
   - sudo apt-get install -y python-matplotlib
+  - sudo apt-get install -y git-restore-mtime
   - gfortran --version
+  - cd $HOME/build/pencil-code/pencil-code/ && git restore-mtime src/
 
 script:
   - source sourceme.sh
