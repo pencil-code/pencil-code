@@ -912,23 +912,26 @@ module Magnetic_meanfield
           XXj=2.*Bk_Bki
           call multsv_mn_add(-mu01*p%rho1*p%b2,p%grho,XXj)
 !
+          if (qp_model=='rational') then
+!
 !  Do dqa/dB2 * Bz * (BiX3+z3B.X) term
 !
-          call dot(XXj,p%bb,XXj_BBj)
-          p%jxb_mf(:,3)=p%jxb_mf(:,3)+meanfield_qa_der*p%bb(:,3)*XXj_BBj
-          call multsv_mn_add(meanfield_qa_der*p%bb(:,3)*XXj(:,3),p%bb,p%jxb_mf)
+            call dot(XXj,p%bb,XXj_BBj)
+            p%jxb_mf(:,3)=p%jxb_mf(:,3)+meanfield_qa_der*p%bb(:,3)*XXj_BBj
+            call multsv_mn_add(meanfield_qa_der*p%bb(:,3)*XXj(:,3),p%bb,p%jxb_mf)
 !
 !  Do qa*[Bz,z*(Bi+Bj*Bz,j*zi)] term
 !
-          call dot(p%bb,p%bij(:,3,:),BjBzj)
-          p%jxb_mf(:,3)=p%jxb_mf(:,3)+mu01*meanfield_qa_func*p%bij(:,3,3)*BjBzj
-          call multsv_mn_add(mu01*meanfield_qa_func*p%bij(:,3,3),p%bb,p%jxb_mf)
+            call dot(p%bb,p%bij(:,3,:),BjBzj)
+            p%jxb_mf(:,3)=p%jxb_mf(:,3)+mu01*meanfield_qa_func*p%bij(:,3,3)*BjBzj
+            call multsv_mn_add(mu01*meanfield_qa_func*p%bij(:,3,3),p%bb,p%jxb_mf)
 !
 !  Do qa*Bz*B_i,z
 !
-          call multsv_mn_add(mu01*meanfield_qa_func*p%bb(:,3),p%bij(:,:,3),p%jxb_mf)
+            call multsv_mn_add(mu01*meanfield_qa_func*p%bb(:,3),p%bij(:,:,3),p%jxb_mf)
 !
-!        endif
+          endif
+!
         call multsv_mn(p%rho1,p%jxb_mf,p%jxbr_mf)
       endif
 !
