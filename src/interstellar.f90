@@ -3214,13 +3214,13 @@ module Interstellar
 !
       call get_properties(f,SNR,rhom,ekintot,rhomin)
       SNR%feat%rhom=rhom
+      sol_mass_tot=solar_mass*N_mass
+      SNvol=fourthird*pi/sol_mass_tot
 !
 !  Rescale injection radius to contain only N_mass solar masses or at least
 !  min radius. Iterate a few times to improve radius match to N_mass.
 !
       if (lSN_scale_rad) then
-        sol_mass_tot=solar_mass*N_mass
-        SNvol=fourthird*pi/sol_mass_tot
         Nsol_ratio=1.
         radius_min=rfactor_SN*SNR%feat%dr
         radius_max=200*pc_cgs/unit_length
