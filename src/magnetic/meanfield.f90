@@ -1246,7 +1246,7 @@ module Magnetic_meanfield
 !
 !  apply pumping effect: EMF=...-.5*grad(etat) x B
 !
-        if (lmeanfield_pumping) then
+        if (lmeanfield_pumping .and. (meanfield_etat /= 0.0)) then
           fact=.5*meanfield_pumping
           call cross_mn(meanfield_getat_tmp, p%bb, getat_cross_B_tmp)
           p%mf_EMF=p%mf_EMF-fact*getat_cross_B_tmp
@@ -1263,11 +1263,13 @@ module Magnetic_meanfield
 !  Apply diffusion term: simple in Weyl gauge, which is not the default!
 !  In diffusive gauge, add (divA) grad(etat) term.
 !
-        if (lweyl_gauge) then
-          call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
-        else
-          call multsv_mn_add(meanfield_etat_tmp,p%del2a,p%mf_EMF)
-          call multsv_mn_add(p%diva,meanfield_getat_tmp,p%mf_EMF)
+        if (meanfield_etat /= 0.0) then
+          if (lweyl_gauge) then
+            call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
+          else
+            call multsv_mn_add(meanfield_etat_tmp,p%del2a,p%mf_EMF)
+            call multsv_mn_add(p%diva,meanfield_getat_tmp,p%mf_EMF)
+          endif
         endif
 !
 !  Allow for possibility of variable etat from the f-array.
