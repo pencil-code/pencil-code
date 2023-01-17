@@ -98,6 +98,8 @@ module Density
   real, dimension(mz) :: rho0z = 0.0
   real, dimension(mz) :: dlnrho0dz = 0.0
   real :: mass0 = 0.0
+  real, dimension(nx) :: diffus_diffrho
+  real, dimension(nx) :: diffus_diffrho3
 !
 !  Dummy Variables
 !
@@ -440,6 +442,7 @@ module Density
       endif
 !
       fdiff = 0.0
+      diffus_diffrho=0.; diffus_diffrho3=0.
 !
 !  Shock mass diffusion
 !
@@ -447,8 +450,7 @@ module Density
         call del2(f, irho, del2rhos)
         call dot_mn(p%gshock, p%grhos, penc)
         fdiff = fdiff + diffrho_shock * (p%shock * del2rhos + penc)
-        ! [PAB] This code broke my autotest - CCYang takes care of it:
-        !if (lfirst .and. ldt) diffus_diffrho = diffus_diffrho + diffrho_shock * dxyz_2 * p%shock
+        if (lfirst .and. ldt) diffus_diffrho = diffus_diffrho + diffrho_shock * dxyz_2 * p%shock
       endif shock
 !
 !  Mesh hyper-diffusion
@@ -458,8 +460,7 @@ module Density
           call der6(f, irho, penc, j, ignoredx=.true.)
           fdiff = fdiff + diffrho_hyper3_mesh * penc * dline_1(:,j)
         enddo dir
-        ! [PAB] This code broke my autotest - CCYang takes care of it:
-        !if (lfirst .and. ldt) diffus_diffrho3 = diffus_diffrho3 + diffrho_hyper3_mesh * sum(dline_1,2)
+        if (lfirst .and. ldt) diffus_diffrho3 = diffus_diffrho3 + diffrho_hyper3_mesh * sum(dline_1,2)
       endif hyper3
 !
       df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
@@ -481,6 +482,9 @@ module Density
 !  Call optional user-defined calculations.
 !
       if (lspecial) call special_calc_density(f, df, p)
+
+      maxdiffus=max(maxdiffus,diffus_diffrho)
+      maxdiffus3=max(maxdiffus3,diffus_diffrho3)
 !
 !  2D averages
 !
