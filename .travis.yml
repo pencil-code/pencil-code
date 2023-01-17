@@ -7,15 +7,20 @@ git:
   quiet: true
   submodules: false
 
+addons:
+  apt:
+    sources:
+    - gfortran
+    - libhdf5-openmpi-dev
+    - libopenmpi-dev
+    - openmpi-bin
+    - python-matplotlib
+
 cache:
   directories:
   - $HOME/build/pencil-code/pencil-code/samples
 
 before_install:
-  - sudo apt-get update
-  - sudo apt-get install gfortran
-  - sudo apt-get install libopenmpi-dev openmpi-bin libhdf5-openmpi-dev
-  - sudo apt-get install python-matplotlib
   - gfortran --version
 
 script:
