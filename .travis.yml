@@ -6,7 +6,7 @@ git:
 
 cache:
   directories:
-  - $HOME/pencil-code/samples
+  - $HOME/build/pencil-code/pencil-code/samples
 
 before_install:
   - sudo apt-get update
