@@ -11,6 +11,7 @@ cache:
   directories:
   - $HOME/build/pencil-code/pencil-code/samples/no-modules/src
   - $HOME/build/pencil-code/pencil-code/samples/most-modules/src
+  - $HOME/build/pencil-code/pencil-code/samples/corona/src
 
 addons:
   apt:
