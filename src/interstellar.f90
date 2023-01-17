@@ -3265,7 +3265,7 @@ module Interstellar
           ierr=iEXPLOSION_TOO_RARIFIED
           if (.not.lSN_list) return
         endif
-      SNR%feat%rhom=rhom
+        SNR%feat%rhom=rhom
       endif
       radius2=SNR%feat%radius**2
       if (present(ierr)) then
