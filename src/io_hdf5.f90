@@ -640,8 +640,8 @@ module Io
             allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
             if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
           endif
-         
-          lerrcont=.false. 
+
+          lerrcont=.false.
           if (lroot) then
             call file_open_hdf5 (varfile_name, global=.false., read_only=.true.)
             lerrcont=.true.
@@ -706,9 +706,9 @@ module Io
           call mpibcast_logical(lerrcont, comm=MPI_COMM_WORLD)
           if (lerrcont) then
             call warning('input_snap_finalize','grid data corrupted, reading grid from grid.h5')
-            call rgrid('') 
+            call rgrid('')
           endif
-! 
+!
           if (snaplink/='') then
             call system_cmd('rm -f '//snaplink)
             snaplink=''
@@ -1384,7 +1384,7 @@ contains
       if (lroot) then
         allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
-        
+
         filename = trim (datadir)//'/grid.h5'
         call file_open_hdf5 (filename, global=.false., read_only=.true.)
         call input_hdf5 ('grid/x', gx, mxgrid)
