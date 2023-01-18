@@ -284,14 +284,13 @@ program run
     else
       mvar_down=min(mvar,mvar_down)
     endif
-    if (lwrite_aux) then   !MR: perhaps maux_down should have precedence over lwrite_aux?
-      if (maux_down<0) then
-        maux_down=maux
-      else
-        maux_down=min(maux,maux_down)
-      endif
+!    
+!  maux_down -1 default uses all maux, maux_down 0 no aux and maux_down > 0 use min(maux,maux_down)
+!
+    if (maux_down<0) then
+      maux_down=maux
     else
-      maux_down=0
+      maux_down=min(maux,maux_down)
     endif
     if (mvar_down+maux_down==0) ldownsampl=.false.
     if (mvar_down<mvar.and.maux_down>0) then
