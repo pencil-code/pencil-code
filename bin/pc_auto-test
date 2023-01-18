@@ -1451,6 +1451,13 @@ sub test_rundir {
         system("rm", "data");
         system("rm", "-r", "$tmpdir");
     }
+    system("rm", "-f", "pc_commands.log");
+    system("rm", "-f", "src/.build-history");
+    system("rm", "-f", "src/.buildinfo");
+    system("rm", "-f", "src/.buildtime");
+    system("rm", "-f", "src/revision.txt");
+    system("rm", "-f", "src/pre_and_post_processing/*.x");
+    # system("rm", "-f", "src/*.x"); # we want to have the final binaries in the Travis cache to save the linking stage, if possible.
 
     # Summarize timings in human-readable form
     my $t4 = get_time();
