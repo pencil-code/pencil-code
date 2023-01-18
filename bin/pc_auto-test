@@ -1371,7 +1371,7 @@ sub read_lines {
 # ---------------------------------------------------------------------- #
 sub test_rundir {
 # Full program for one run directory: Test compilation, starting, running,
-# results, and scripts
+# results, scripts, and cleanup
     my $dir      = shift;
     my $makeopts = shift;
     my $t0 = get_time();
