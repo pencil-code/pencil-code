@@ -219,13 +219,15 @@ module Equ
 !  2. communication
 !  3. y- and z-boundaries
 !
-      if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
-      call initiate_isendrcv_bdry(f)
-      if (early_finalize) then
-        call finalize_isendrcv_bdry(f)
-        if (lcoarse) call coarsegrid_interp(f)   ! after boundconds_x???
-        call boundconds_y(f)
-        call boundconds_z(f)
+      if (nghost>0) then
+        if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
+        call initiate_isendrcv_bdry(f)
+        if (early_finalize) then
+          call finalize_isendrcv_bdry(f)
+          if (lcoarse) call coarsegrid_interp(f)   ! after boundconds_x???
+          call boundconds_y(f)
+          call boundconds_z(f)
+        endif
       endif
 !
 !  Remove unphysical values of the mass fractions. This must be done
@@ -875,6 +877,7 @@ module Equ
 
         n=nn(imn)
         m=mm(imn)
+
         lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
         llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
 

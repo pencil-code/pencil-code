@@ -413,6 +413,9 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !
 !  Set parameters
 !
+      m=1
+      n=1
+!
       Q=f(l1:l2,m,n,iaxi_Q)
       Qdot=f(l1:l2,m,n,iaxi_Qdot)
       chidot=f(l1:l2,m,n,iaxi_chidot)

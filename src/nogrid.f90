@@ -63,6 +63,12 @@ module Grid
       real, dimension(mz) :: z
       real :: dx,dy,dz
 !
+!  set dummy values:
+!
+      dx_1=1.
+      dy_1=1.
+      dz_1=1.
+!
     endsubroutine construct_grid
 !***********************************************************************
     subroutine set_coorsys_dimmask

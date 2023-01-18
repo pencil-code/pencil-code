@@ -652,7 +652,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 
-      call boundconds_x(f,ivar1_opt,ivar2_opt)
+      if (nghost>0) call boundconds_x(f,ivar1_opt,ivar2_opt)
 
     endsubroutine boundconds_x_c
 !***********************************************************************
