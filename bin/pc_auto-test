@@ -1243,7 +1243,12 @@ sub test_results {
           my_ok(0, 1, join ("\n",$@), $dir, "results");
           return;
         }
-        my @message = $comparator->compare($ts_file);
+        my @message;
+        eval { @message = $comparator->compare($ts_file); };
+        if ($@) {
+          my_ok(0, 1, join ("\n",$@), $dir, "results");
+          return;
+        }
         if (@message) {
             my $msg = join(
                 "\n  ",
