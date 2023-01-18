@@ -217,6 +217,14 @@ module Io
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
+!  nv1 and nv2 must always be within the range of registered variables, which are
+!  eligible for storage in snapshots
+!
+      if (ioptest(nv1)>mvar+maux) &
+          call fatal_error ('output_snap', "nv1 outside legal range mvar+maux")
+      if (ioptest(nv2)>mvar+maux) &
+          call fatal_error ('output_snap', "nv2 outside legal range mvar+maux")
+!
       na=ioptest(nv1,1)
       ne=ioptest(nv2,mvar_io)
 !
@@ -226,11 +234,7 @@ module Io
         call create_group_hdf5 ('data')
         ! write components of f-array
         do pos=na,ne
-          if (pos<=mvar) then
-            group=index_get(pos)
-          else
-            group='aux-'//trim(itoa(pos))
-          endif
+          group=index_get(pos)
           if (group == '') cycle
           call output_hdf5 ('data/'//trim(group), a(:,:,:,pos))
         enddo
