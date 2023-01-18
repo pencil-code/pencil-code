@@ -995,14 +995,12 @@ module Special
         if (.not. ldensity_nolog) then
           call del6(f,ilnrho,fdiff,IGNOREDX=.true.)
         else
-          call fatal_error('special_calc_density', &
-              'not yet implemented for ldensity_nolog')
+          call not_implemented('special_calc_density', 'for ldensity_nolog')
         endif
 !
-! [PAB]: Matthias, what needs to be done/fixed here?:
-!        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
-!
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + diffrho_hyper3*fdiff
+!
+        if (lfirst.and.ldt) maxdiffus3=max(maxdiffus3,diffrho_hyper3*dxyz_6)
 !
         if (headtt) print*,'special_calc_density: diffrho_hyper3=', &
             diffrho_hyper3
