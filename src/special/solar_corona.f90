@@ -999,6 +999,7 @@ module Special
               'not yet implemented for ldensity_nolog')
         endif
 !
+! [PAB]: Matthias, what needs to be done/fixed here?:
 !        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
 !
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + diffrho_hyper3*fdiff
