@@ -187,7 +187,7 @@ if ($log_dir && $previous_dir) {
     system('rsync -auq --del "'.$log_dir.'/" "'.$previous_dir.'/"');
     # Move previous logfile in place
     if (-f "$previous_dir/index-last.html") {
-        system('mv "'.$previous_dir.'/index-last.html" "'.$previous_dir.'/index.html"');
+        system('mv -f "'.$previous_dir.'/index-last.html" "'.$previous_dir.'/index.html"');
     }
 }
 
@@ -210,7 +210,7 @@ print_footer();
 
 # Prepare previous logfile for next run...
 if ($log_dir && $previous_dir) {
-    system('cp -p "'.$log_dir.'/index.html" "'.$log_dir.'/index-last.html"');
+    system('cp -pf "'.$log_dir.'/index.html" "'.$log_dir.'/index-last.html"');
 }
 
 # ====================================================================== #
