@@ -486,7 +486,15 @@ my %time_summary;               # hash to accumulate timing summary
 
 # Make a backup of the previous logfile directory
 if ($log_dir && $previous_dir) {
-    system('rsync -auq --del "'.$log_dir.'/" "'.$previous_dir.'/"');
+    $log_dir =~ s|/+$||s;
+    $previous_dir =~ s|/+$||s;
+    my $exclude = "";
+    my $sub_dir = substr $previous_dir, 0, length($log_dir);
+    if ($sub_dir eq $log_dir) {
+        $sub_dir = substr $previous_dir, length($log_dir)+1;
+        $exclude = '--exclude "'.$sub_dir.'"';
+    }
+    system('rsync -auq --del '.$exclude.' "'.$log_dir.'/" "'.$previous_dir.'/"');
 }
 
 ## Debugging output:
