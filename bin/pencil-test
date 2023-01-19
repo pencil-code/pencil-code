@@ -63,6 +63,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #                             -- Pass <options> to pc_auto-test. If <options>
 #                                contains commas, it is split into multiple
 #                                options at the commas
+#       --log-dir=<dir>       -- Directory to store the logfiles (default: .)
+#       --previous-dir=<dir>  -- Directory for logfiles of the previous run (default: off)
 #
 # Email list syntax:
 #   -m '{-:fluxrings},defaulty@any.where,nosy@some.where{+:fluxrings,+:rad1},ignorant@else.where{-:hydro.*}'
@@ -111,6 +113,8 @@ GetOptions(\%opts,
                     --tag-stable
                -b   --use-pc_auto-test
                -W=s --auto-test-options=s
+                    --log-dir=s
+                    --previous-dir=s
                )) or die "Aborting.\n";
 die '$Id$ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
@@ -134,6 +138,8 @@ my $time_limit  = ($opts{'t'} || $opts{'time-limit'}  || '');
 my $timingsfile = ($opts{'T'} || $opts{'timings-file'}|| '');
 my $with_xml    = ($opts{'x'} || $opts{'xml'}         || '');
 my $use_build   = ($opts{'b'} || $opts{'use-pc_auto-test'} || '');
+my $log_dir     = (              $opts{'log-dir'}          || '');
+my $previous_dir = (             $opts{'previous-dir'}     || '');
 
 my @auto_test_options = ();
 if (defined $opts{'W'}) {
@@ -167,6 +173,11 @@ $ENV{PATH} = "$ENV{PATH}:/usr/sbin" unless ($ENV{PATH} =~ m{(^|:)/usr/sbin($|:)}
 my $instances_running = `ps aux | grep -v "grep" | grep "perl" | grep "$0" | wc -l`;
 $instances_running =~ s/\s+$//s;
 if ($instances_running > 1) { die ("ERROR: another 'pencil-test' is already running here!\n"); }
+
+# Make a backup of the previous logfile directory
+if ($log_dir && $previous_dir) {
+    system('rsync -auq --del "'.$log_dir.'/" "'.$previous_dir.'/"');
+}
 
 # Immediate flushing after "\n"
 $| = 1;
@@ -333,6 +344,7 @@ sub build_remote_cmd {
     if ($time_limit ne '')   { $remcmd .= "--time-limit=\"$time_limit\" " };
     if ($timingsfile ne '')  { $remcmd .= "--summarize-times " };
     if (@auto_test_options)  { $remcmd .= "@auto_test_options; "};
+    if ($log_dir)            { $remcmd .= "--log-dir=\"$log_dir\" " };
 
     return $remcmd;
 }
