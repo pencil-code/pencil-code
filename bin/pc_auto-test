@@ -484,6 +484,11 @@ my @testdirs;                   # full names of all dirs to run tests in
 my %time_summary;               # hash to accumulate timing summary
                                 # within each run
 
+# Make a backup of the previous logfile directory
+if ($log_dir && $previous_dir) {
+    system('rsync -auq --del "'.$log_dir.'/" "'.$previous_dir.'/"');
+}
+
 ## Debugging output:
 if ($debug) {
     my $dummy = $Test::ScriptTester::DEBUG;  # suppress 'used only once'
@@ -524,11 +529,6 @@ die "Need to set environment variable PENCIL_HOME\n"
 my $topdir = "$pencil_home";
 chdir $topdir;
 $ENV{PATH} .= ":$pencil_home/bin";
-
-# Make a backup of the previous logfile directory
-if ($log_dir && $previous_dir) {
-    system('rsync -auq --del "'.$log_dir.'/" "'.$previous_dir.'/"');
-}
 
 # Don't follow these boring subdirectories when recursing through whole tree:
 my $prunedirs = '^(data|src|CVS|RCS|_darcs|.hg|.svn)$';
