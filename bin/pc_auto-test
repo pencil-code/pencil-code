@@ -317,7 +317,7 @@ Options:
        --debug             \tPrint lots of debugging output
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
        --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
-       --previous-dir=<dir>\tDirectory to store logfiles of the previous run (default: ../previous)
+       --previous-dir=<dir>\tDirectory to store logfiles of the previous run (default: off)
 Examples:
   pc_auto-test      # run standard program, recycling .o files
   pc_auto-test -C   # run standard program, compiling from scratch
@@ -435,7 +435,7 @@ my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'}
                                                              || 0 );
 my $fast        = (              $opts{'fast'}            || ''   );
 my $log_dir     = (              $opts{'log-dir'}         || ''   );
-my $previous_dir = (             $opts{'previous-dir'}    || '../previous'   );
+my $previous_dir = (             $opts{'previous-dir'}    || ''   );
 
 my %interpreter_map;
 if (defined($script_tests)) {
