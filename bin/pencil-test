@@ -223,7 +223,7 @@ sub run_tests_on {
         open(TIMINGS, ">> $timingsfile")
           or warn "Couldn't open $timingsfile for writing\n";
     }
-    my ($line,$timings,$result,$update_error,$empty,$failures);            
+    my ($line,$timings,$result,$update_error,$empty,$failures);
     $empty = 0;
     $failures = 0;
     while (defined($line=<POUT>)) {
