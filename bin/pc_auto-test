@@ -317,10 +317,11 @@ Options:
        --debug             \tPrint lots of debugging output
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
        --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
-       --previous-dir=<dir>\tDirectory to store logfiles of the previous run (default: off)
+       --previous-dir=<dir>\tDirectory for logfiles of the previous run (default: off)
 Examples:
   pc_auto-test      # run standard program, recycling .o files
   pc_auto-test -C   # run standard program, compiling from scratch
+  pc_auto-test --auto-clean --log-dir=/my/test/ --previous-dir=/my/test-previous/ # run with logfiles, make clean on error
   pc_auto-test .    # run test in current directory
   pc_auto-test -l   # list dirs in standard program
   pc_auto-test --time-limit=2m   # run standard program, killing (for each test)
