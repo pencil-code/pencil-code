@@ -178,13 +178,13 @@ if ($instances_running > 1) { die ("ERROR: another 'pencil-test' is already runn
 if ($log_dir && $previous_dir) {
     $log_dir =~ s|/+$||s;
     $previous_dir =~ s|/+$||s;
-    my $exclude = "";
+    my $exclude = '--exclude "index.html"';
     my $sub_dir = substr $previous_dir, 0, length($log_dir);
     if ($sub_dir eq $log_dir) {
         $sub_dir = substr $previous_dir, length($log_dir)+1;
-        $exclude = '--exclude "'.$sub_dir.'"';
+        $exclude .= ' --exclude "'.$sub_dir.'"';
     }
-    system('rsync -auq --del "'.$log_dir.'/" "'.$previous_dir.'/"');
+    system('rsync -auq --del '.$exclude.' "'.$log_dir.'/" "'.$previous_dir.'/"');
     # Move previous logfile in place
     if (-f "$previous_dir/index-last.html") {
         system('mv -f "'.$previous_dir.'/index-last.html" "'.$previous_dir.'/index.html"');
