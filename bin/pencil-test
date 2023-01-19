@@ -194,7 +194,7 @@ sub run_tests_on {
 
     print STDERR "run_test_on($host)" if ($debug);
 
-    my ($shost) = ($host =~ /([^.]*)/); # host name sans domain
+    my ($shost) = ($host =~ /([^.]*)/); # host name without domain
     $shost = "\u$shost";
 
     if ($html) {
