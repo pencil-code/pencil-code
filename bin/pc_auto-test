@@ -525,6 +525,11 @@ my $topdir = "$pencil_home";
 chdir $topdir;
 $ENV{PATH} .= ":$pencil_home/bin";
 
+# Make a backup of the previous logfile directory
+if ($log_dir && $previous_dir) {
+    system('rsync -auq --del "'.$log_dir.'/" "'.$previous_dir.'/"');
+}
+
 # Don't follow these boring subdirectories when recursing through whole tree:
 my $prunedirs = '^(data|src|CVS|RCS|_darcs|.hg|.svn)$';
 
@@ -540,10 +545,6 @@ if ($list_only && ! $short) {
 
 if ($summarize_t) {
     write_timing_summary_header();
-}
-
-if ($log_dir && $previous_dir) {
-    system('rsync -auq --del "'.$log_dir.'/" "'.$previous_dir.'/"');
 }
 
 my %t_global = (
