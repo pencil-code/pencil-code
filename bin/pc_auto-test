@@ -317,6 +317,7 @@ Options:
        --debug             \tPrint lots of debugging output
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
        --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
+       --previous-dir=<dir>\tDirectory to store logfiles of the previous run (default: ../previous)
 Examples:
   pc_auto-test      # run standard program, recycling .o files
   pc_auto-test -C   # run standard program, compiling from scratch
@@ -383,8 +384,9 @@ GetOptions(\%opts,
                     --nodelist=s
                     --no-summary
                     --nolock      --no-lock
-                    --fast 
-                    --log-dir=s )
+                    --fast
+                    --log-dir=s
+                    --previous-dir=s )
           ) or $help=1, die "Aborting.\n";
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
@@ -433,6 +435,7 @@ my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'}
                                                              || 0 );
 my $fast        = (              $opts{'fast'}            || ''   );
 my $log_dir     = (              $opts{'log-dir'}         || ''   );
+my $previous_dir = (             $opts{'previous-dir'}    || '../previous'   );
 
 my %interpreter_map;
 if (defined($script_tests)) {
@@ -536,6 +539,10 @@ if ($list_only && ! $short) {
 
 if ($summarize_t) {
     write_timing_summary_header();
+}
+
+if ($log_dir && $previous_dir) {
+    system('rsync -auq --del "'.$log_dir.'/" "'.$previous_dir.'/"');
 }
 
 my %t_global = (
