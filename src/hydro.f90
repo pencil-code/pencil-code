@@ -146,7 +146,7 @@ module Hydro
   logical :: lconservative=.false., lrelativistic=.false.
   logical, pointer :: lrelativistic_eos
   logical :: lno_noise_uu=.false.
-  logical :: llorentz_limiter=.false.
+  logical :: llorentz_limiter=.false., full_3D=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real, pointer :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
@@ -2926,7 +2926,8 @@ module Hydro
       use Deriv, only: der6, der5i1j
       use Sub, only: multsv_mn, del2v_etc, gij_etc, u_dot_grad, del6v, &
         dot2_mn, gij, div_mn, traceless_strain, curl_mn, multm2_sym_mn, &
-        dot_mn, cross, del4v, del4graddiv, d2fi_dxj, del2fi_dxjk, h_dot_grad
+        dot_mn, cross, del4v, del4graddiv, d2fi_dxj, del2fi_dxjk, h_dot_grad, &
+        invmat_DB, multmv
       use WENO_transport, only: weno_transp
       use EquationOfState, only: cs20
 !
@@ -2934,8 +2935,9 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12
+      real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12, DD
       real, dimension (nx,3) :: tmp3
+      real, dimension (nx,3,3) :: tmp33
       real :: cs201
       integer :: i, j, ju, jj, kk, jk
 !
@@ -2956,11 +2958,18 @@ module Hydro
 !
             cs201=cs20+1.
             if (lmagnetic) then
-              tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
+              if (full_3D) then
+                DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
+                call invmat_DB(DD,p%bb,tmp33)
+                call multmv(tmp33,tmp3,p%uu)
+              else
+                tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
+                call multsv_mn(tmp,tmp3,p%uu)
+              endif
             else
               tmp=1./(f(l1:l2,m,n,irho)/(1.-.25/f(l1:l2,m,n,ilorentz)))
+              call multsv_mn(tmp,tmp3,p%uu)
             endif
-            call multsv_mn(tmp,tmp3,p%uu)
 !
 !  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
 !  so to get the velocity, we have to divide by it.

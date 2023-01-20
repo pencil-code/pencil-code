@@ -70,7 +70,7 @@ module Sub
   public :: multmm_sc, multsm_mn
   public :: multm2, multm2_mn, multm2_sym, multm2_sym_mn
   public :: multmv, multmv_mn, multmv_transp
-  public :: mult_matrix, mult_mat_vv
+  public :: mult_matrix, mult_mat_vv, invmat_DB
 !
   public :: read_line_from_file, control_file_exists
   public :: noform
@@ -1226,6 +1226,36 @@ module Sub
       enddo
 !
     endsubroutine multmv_mn
+!***********************************************************************
+    subroutine invmat_DB(d,b,mat)
+!
+!  Invert Mij = (delij*(D+B^2) - Bi*Bj
+!
+      real, dimension (nx,3,3) :: mat
+      real, dimension (nx,3) :: b
+      real, dimension (nx) :: d, bx, by, bz, bx2, by2, bz2, detM1
+!
+      bx=b(:,1)
+      by=b(:,2)
+      bz=b(:,3)
+      bx2=bx**2
+      by2=by**2
+      bz2=bz**2
+      detM1=1./(d**3-d**2*(bx2+by2+bz2)+4.*bx2*by2*bz2)
+!
+      mat(:,1,1)=detM1*d*(d-by2-bz2)
+      mat(:,2,2)=detM1*d*(d-bz2-bx2)
+      mat(:,3,3)=detM1*d*(d-bx2-by2)
+!
+      mat(:,1,2)=detM1*bx*by*(2.*bz2-d)
+      mat(:,2,3)=detM1*by*bz*(2.*bx2-d)
+      mat(:,3,1)=detM1*bz*bx*(2.*by2-d)
+!
+      mat(:,2,1)=mat(:,1,2)
+      mat(:,3,2)=mat(:,2,3)
+      mat(:,1,3)=mat(:,3,1)
+!
+    endsubroutine invmat_DB
 !***********************************************************************
     subroutine multmv_mn_transp(a,b,c,ladd)
 !
