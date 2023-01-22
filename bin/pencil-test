@@ -372,7 +372,7 @@ sub print_header {
     my $xml = "";
     my $testname = "Pencil Code auto-test";
 
-    $testname = $1." - ".$testname if ($commandline =~ /--pencil-home='[^\s]+?([^\/]+)'/is);
+    $testname = $1." - ".$testname if ($commandline =~ /--pencil-home=['"]?[^'"\s]+?([^\/]+)['"]?(\s|$)/is);
 
     if ($with_xml) {
         $xml=<<"END_XMLHEAD";
