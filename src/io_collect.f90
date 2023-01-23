@@ -107,29 +107,19 @@ module Io
       integer :: px, py, pz, partner
       integer, parameter :: tag_gx=680, tag_gy=681, tag_gz=682
 !
-      if (lroot) then
-        ! send local x-data to all leading yz-processors along the x-direction
-        x = gx(1:mx)
-        do px = 0, nprocx-1
-          if (px == 0) cycle
-          call mpisend_real (gx(px*nx+1:px*nx+mx), mx, px, tag_gx)
-        enddo
-        ! send local y-data to all leading xz-processors along the y-direction
-        y = gy(1:my)
-        do py = 0, nprocy-1
-          if (py == 0) cycle
-          call mpisend_real (gy(py*ny+1:py*ny+my), my, py*nprocx, tag_gy)
-        enddo
-        ! send local z-data to all leading xy-processors along the z-direction
-        z = gz(1:mz)
-        do pz = 0, nprocz-1
-          if (pz == 0) cycle
-          call mpisend_real (gz(pz*nz+1:pz*nz+mz), mz, pz*nprocxy, tag_gz)
-        enddo
-      endif
+      ! distribute x-grid
       if (lfirst_proc_yz) then
-        ! receive local x-data from root processor
-        if (.not. lroot) call mpirecv_real (x, mx, 0, tag_gx)
+        if (lroot) then
+          ! send local x-data to all leading yz-processors along the x-direction
+          x = gx(1:mx)
+          do px = 0, nprocx-1
+            if (px == 0) cycle
+            call mpisend_real (gx(px*nx+1:px*nx+mx), mx, px, tag_gx)
+          enddo
+        else
+          ! receive local x-data from root processor
+          call mpirecv_real (x, mx, 0, tag_gx)
+        endif
         ! send local x-data to all other processors in the same yz-plane
         do py = 0, nprocy-1
           do pz = 0, nprocz-1
@@ -142,9 +132,20 @@ module Io
         ! receive local x-data from leading yz-processor
         call mpirecv_real (x, mx, ipx, tag_gx)
       endif
+!
+      ! distribute y-grid
       if (lfirst_proc_xz) then
-        ! receive local y-data from root processor
-        if (.not. lroot) call mpirecv_real (y, my, 0, tag_gy)
+        if (lroot) then
+          ! send local y-data to all leading xz-processors along the y-direction
+          y = gy(1:my)
+          do py = 0, nprocy-1
+            if (py == 0) cycle
+            call mpisend_real (gy(py*ny+1:py*ny+my), my, py*nprocx, tag_gy)
+          enddo
+        else
+          ! receive local y-data from root processor
+          call mpirecv_real (y, my, 0, tag_gy)
+        endif
         ! send local y-data to all other processors in the same xz-plane
         do px = 0, nprocx-1
           do pz = 0, nprocz-1
@@ -157,9 +158,20 @@ module Io
         ! receive local y-data from leading xz-processor
         call mpirecv_real (y, my, ipy*nprocx, tag_gy)
       endif
+!
+      ! distribute z-grid
       if (lfirst_proc_xy) then
-        ! receive local z-data from root processor
-        if (.not. lroot) call mpirecv_real (z, mz, 0, tag_gz)
+        if (lroot) then
+          ! send local z-data to all leading xy-processors along the z-direction
+          z = gz(1:mz)
+          do pz = 0, nprocz-1
+            if (pz == 0) cycle
+            call mpisend_real (gz(pz*nz+1:pz*nz+mz), mz, pz*nprocxy, tag_gz)
+          enddo
+        else
+          ! receive local z-data from root processor
+          call mpirecv_real (z, mz, 0, tag_gz)
+        endif
         ! send local z-data to all other processors in the same xy-plane
         do px = 0, nprocx-1
           do py = 0, nprocy-1
