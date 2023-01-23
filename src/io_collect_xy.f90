@@ -91,85 +91,30 @@ module Io
 !
 !  This routine distributes the global grid to all processors.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  04-Sep-2015/PABourdin: coded
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
       real, dimension(mz), intent(out) :: z
-      real, dimension(nxgrid+2*nghost), intent(in), optional :: gx
-      real, dimension(nygrid+2*nghost), intent(in), optional :: gy
-      real, dimension(nzgrid+2*nghost), intent(in), optional :: gz
+      real, dimension(mxgrid), intent(in), optional :: gx
+      real, dimension(mygrid), intent(in), optional :: gy
+      real, dimension(mzgrid), intent(in), optional :: gz
 !
+      real, dimension(mxgrid+mygrid+mzgrid) :: tmp_grid
       integer :: px, py, pz, partner
       integer, parameter :: tag_gx=680, tag_gy=681, tag_gz=682
 !
       if (lroot) then
-        ! send local x-data to all leading yz-processors along the x-direction
-        x = gx(1:mx)
-        do px = 0, nprocx-1
-          if (px == 0) cycle
-          call mpisend_real (gx(px*nx+1:px*nx+mx), mx, px, tag_gx)
-        enddo
-        ! send local y-data to all leading xz-processors along the y-direction
-        y = gy(1:my)
-        do py = 0, nprocy-1
-          if (py == 0) cycle
-          call mpisend_real (gy(py*ny+1:py*ny+my), my, py*nprocx, tag_gy)
-        enddo
-        ! send local z-data to all leading xy-processors along the z-direction
-        z = gz(1:mz)
-        do pz = 0, nprocz-1
-          if (pz == 0) cycle
-          call mpisend_real (gz(pz*nz+1:pz*nz+mz), mz, pz*nprocxy, tag_gz)
-        enddo
+        tmp_grid(1:mxgrid) = gx
+        tmp_grid(mxgrid+1:mxgrid+mygrid) = gy
+        tmp_grid(mxgrid+mygrid+1:mxgrid+mygrid+mzgrid) = gz
       endif
-      if (lfirst_proc_yz) then
-        ! receive local x-data from root processor
-        if (.not. lroot) call mpirecv_real (x, mx, 0, tag_gx)
-        ! send local x-data to all other processors in the same yz-plane
-        do py = 0, nprocy-1
-          do pz = 0, nprocz-1
-            partner = ipx + py*nprocx + pz*nprocxy
-            if (partner == iproc) cycle
-            call mpisend_real (x, mx, partner, tag_gx)
-          enddo
-        enddo
-      else
-        ! receive local x-data from leading yz-processor
-        call mpirecv_real (x, mx, ipx, tag_gx)
-      endif
-      if (lfirst_proc_xz) then
-        ! receive local y-data from root processor
-        if (.not. lroot) call mpirecv_real (y, my, 0, tag_gy)
-        ! send local y-data to all other processors in the same xz-plane
-        do px = 0, nprocx-1
-          do pz = 0, nprocz-1
-            partner = px + ipy*nprocx + pz*nprocxy
-            if (partner == iproc) cycle
-            call mpisend_real (y, my, partner, tag_gy)
-          enddo
-        enddo
-      else
-        ! receive local y-data from leading xz-processor
-        call mpirecv_real (y, my, ipy*nprocx, tag_gy)
-      endif
-      if (lfirst_proc_xy) then
-        ! receive local z-data from root processor
-        if (.not. lroot) call mpirecv_real (z, mz, 0, tag_gz)
-        ! send local z-data to all other processors in the same xy-plane
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
-            if (partner == iproc) cycle
-            call mpisend_real (z, mz, partner, tag_gz)
-          enddo
-        enddo
-      else
-        ! receive local z-data from leading xy-processor
-        call mpirecv_real (z, mz, ipz*nprocxy, tag_gz)
-      endif
+      call mpibcast_real (tmp_grid, mxgrid+mygrid+mzgrid)
+      x = tmp_grid(ipx*nx+1:ipx*nx+mx)
+      y = tmp_grid(mxgrid+ipy*ny+1:mxgrid+ipy*ny+my)
+      z = tmp_grid(mxgrid+mygrid+ipz*nz+1:mxgrid+mygrid+ipz*nz+mz)
 !
     endsubroutine distribute_grid
 !***********************************************************************
