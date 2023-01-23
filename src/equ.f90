@@ -12,10 +12,10 @@ module Equ
 !
   implicit none
 !
-  private
-!
   public :: pde, debug_imn_arrays, initialize_pencils
   public :: impose_floors_ceilings
+!
+  private
 !
   contains
 !***********************************************************************
@@ -257,7 +257,7 @@ module Equ
 !  Calculate the characteristic velocity
 !  for slope limited diffusion
 !
-!      if (lslope_limit_diff.and.lfirst) then
+!      if (lslope_limit_diff.and.llast) then
 !        f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=0.
 !print*,'vor magnetic:', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
 !        call update_char_vel_energy(f)
@@ -473,8 +473,7 @@ module Equ
             endif
 !
             do iv=1,nvar
-              if (lfreeze_varint(iv)) &
-                  df(l1:l2,m,n,iv)=pfreeze_int*df(l1:l2,m,n,iv)
+              if (lfreeze_varint(iv)) df(l1:l2,m,n,iv)=pfreeze_int*df(l1:l2,m,n,iv)
             enddo
 !
           endif
@@ -509,8 +508,7 @@ module Equ
             endif
 !
             do iv=1,nvar
-              if (lfreeze_varext(iv)) &
-                  df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
+              if (lfreeze_varext(iv)) df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
             enddo
           endif
         endif
@@ -521,7 +519,7 @@ module Equ
           if (headtt) print*, 'pde: freezing variables inside square : ', &
               lfreeze_varsquare
           pfreeze=1.0-quintic_step(x(l1:l2),xfreeze_square,wfreeze,SHIFT=-1.0)*&
-                  quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
+                      quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
 !
           do iv=1,nvar
             if (lfreeze_varsquare(iv)) df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
@@ -679,6 +677,7 @@ module Equ
       use Energy, only: calc_diagnostics_energy
       use Hydro, only: calc_diagnostics_hydro
       use Magnetic, only: calc_diagnostics_magnetic
+      use Forcing, only: calc_diagnostics_forcing
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
@@ -707,6 +706,7 @@ module Equ
         call calc_diagnostics_energy(f,p)
         call calc_diagnostics_hydro(f,p)
         call calc_diagnostics_magnetic(f,p)
+        if (lforcing_cont) call calc_diagnostics_forcing(p)
 
       enddo
 
@@ -860,6 +860,7 @@ module Equ
       use Testflow
       use Testscalar
       use Viscosity, only: calc_pencils_viscosity
+!$    use omp_lib
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
@@ -869,17 +870,30 @@ module Equ
 
       integer :: nyz
       real, dimension (nx,3) :: df_iuu_pencil
+!$    integer :: num_omp_ranks, omp_rank
       real, dimension(nx) :: dt1_advec, dt1_diffus, dt1_src, dt1_reac
       real :: dt1_poly_relax, dt1_preac
-
+!
       nyz=ny*nz
+!
+!$    num_omp_ranks = OMP_get_num_procs()
+!$    !print*, 'NUM_OMP_RANKS=', num_omp_ranks
+!$    call OMP_set_num_threads(num_omp_ranks)
+!
+!$omp parallel copyin(headtt)
+!$omp do private(p,dt1_advec,dt1_diffus,dt1_src,dt1_reac,dt1_poly_relax,df_iuu_pencil)
+!
       mn_loop: do imn=1,nyz
-
+!
+!$      omp_rank=OMP_get_thread_num()
+!
         n=nn(imn)
         m=mm(imn)
 
         lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
         llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
+!$      headtt=headtt.and.lfirstpoint
+!!$ write(88,*)  'imn,threadnum=',imn,omp_rank,headtt,lfirstpoint,llastpoint
 
         !if (imn_array(m,n)==0) cycle
 !
@@ -904,12 +918,14 @@ module Equ
 !
 !  Make sure all ghost points are set.
 !
+!$      if (omp_rank==0) then
         if (.not.early_finalize.and.necessary(imn)) then
           call finalize_isendrcv_bdry(f)
           call boundconds_y(f)
           call boundconds_z(f)
         endif
         call timing('pde','finished boundconds_z',mnloop=.true.)
+!$      endif
 !
 !  For each pencil, accumulate through the different modules
 !  advec_XX and diffus_XX, which are essentially the inverse
@@ -1022,7 +1038,7 @@ module Equ
 !
         if (lheatflux) call dheatflux_dt(f,df,p)
 !
-!  Continuous forcing function (currently only for extra diagonstics)
+!  Continuous forcing diagonstics.
 !
         if (lforcing_cont) call calc_diagnostics_forcing(p)
 !
@@ -1093,22 +1109,20 @@ module Equ
 !
           advec2=advec2+advec_cs2
           if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
-              (ltestfield_z.and.iuutest>0)) &
-            maxadvec=maxadvec+sqrt(advec2)
+              (ltestfield_z.and.iuutest>0))  maxadvec=maxadvec+sqrt(advec2)
 
-          if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) &
-            maxadvec=maxadvec+sqrt(advec2_hypermesh)
+          if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) maxadvec=maxadvec+sqrt(advec2_hypermesh)
 !
 !  Time step constraints from each module.
 !  (At the moment, magnetic and testfield use the same variable.)
 !
 !if (n==n1 .and. m==m1) print*, 'equ:maxdiffus=', maxdiffus
 !
-!  Exclude the frozen zones from the time-step calculation.
+!  cdt, cdtv, and cdtc are empirical non-dimensional coefficients
 !
           if (any(lfreeze_varint)) then
             if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              where (p%rcyl_mn<=rfreeze_int)
+              where (p%rcyl_mn<=rfreeze_int) 
                 maxadvec=0.0
                 maxdiffus=0.0
               endwhere
@@ -1122,36 +1136,37 @@ module Equ
 !
           if (any(lfreeze_varext)) then
             if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              where (p%rcyl_mn>=rfreeze_ext)
+              where (p%rcyl_mn>=rfreeze_ext) 
                 maxadvec=0.0
                 maxdiffus=0.0
               endwhere
             else
-              where (p%r_mn>=rfreeze_ext)
+              where (p%r_mn>=rfreeze_ext) 
                 maxadvec=0.0
                 maxdiffus=0.0
               endwhere
             endif
           endif
-!
-!  cdt, cdtv, and cdtc are empirical non-dimensional coefficients
-!
-          dt1_advec  = maxadvec/cdt
+          dt1_advec = maxadvec/cdt
 !
 !  Check for NaNs in the advection time-step.
 !
-          if (notanumber(dt1_advec)) &
-            call fatal_error_local('pde','NaN in dt1_advec')
+          if (notanumber(dt1_advec)) then
+            print*, 'pde: dt1_advec contains a NaN at iproc=', iproc_world
+            if (lenergy) print*, 'advec_cs2  =',advec_cs2
+            call fatal_error_local('pde','')
+          endif
 !
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
 !
 !  Timestep constraint from source terms.
 !
-          dt1_src    = maxsrc/cdtsrc
+          dt1_src = maxsrc/cdtsrc
 !
 !  Timestep combination from advection and diffusion (and "source"). 
 !
-          dt1_max    = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
+          dt1_max = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
+!!$ write(88,*)  'imn,threadnum,dt1_max=',imn,omp_rank,dt1_max,dt1_advec + dt1_diffus + dt1_src
 !
 !  time step constraint from the coagulation kernel
 !
@@ -1175,26 +1190,37 @@ module Equ
             dt1_max = max(dt1_max,dt1_poly_relax)
           endif
 !
+!  Exclude the frozen zones from the time-step calculation.
+!
+          if (any(lfreeze_varint)) then
+            if (lcylinder_in_a_box.or.lcylindrical_coords) then
+              !where (p%rcyl_mn<=rfreeze_int) dt1_max=0.0
+            else
+              !where (p%r_mn<=rfreeze_int) dt1_max=0.0
+            endif
+          endif
+!
+          if (any(lfreeze_varext)) then
+            if (lcylinder_in_a_box.or.lcylindrical_coords) then
+              !where (p%rcyl_mn>=rfreeze_ext) dt1_max=0.0
+            else
+              !where (p%r_mn>=rfreeze_ext) dt1_max=0.0
+            endif
+          endif
+!
 !  Diagnostics showing how close to advective and diffusive time steps we are
 !
-          if (ldiagnos.and.idiag_dtv/=0) &
-               call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
-          if (ldiagnos.and.idiag_dtdiffus/=0) &
-               call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
-          if (ldiagnos.and.idiag_dtdiffus2/=0) &
-               call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
-          if (ldiagnos.and.idiag_dtdiffus3/=0) &
-               call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
+          if (ldiagnos) then
+            if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
+            if (idiag_dtdiffus/=0) call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
+            if (idiag_dtdiffus2/=0) call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
+            if (idiag_dtdiffus3/=0) call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
 !
 !  Regular and hyperdiffusive mesh Reynolds numbers
 !
-          if (ldiagnos) then
-            if (idiag_Rmesh/=0) &
-                call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
-            if (idiag_Rmesh3/=0) &
-                call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
-            if (idiag_maxadvec/=0) &
-                call max_mn_name(maxadvec,idiag_maxadvec)
+            if (idiag_Rmesh/=0) call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
+            if (idiag_Rmesh3/=0) call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
+            call max_mn_name(maxadvec,idiag_maxadvec)
           endif
         endif
 !
@@ -1237,7 +1263,11 @@ module Equ
 !  End of loops over m and n.
 !
         headtt=.false.
+!
       enddo mn_loop
+!
+!$omp end do
+!$omp end parallel
 !
     endsubroutine rhs_cpu
 !***********************************************************************
