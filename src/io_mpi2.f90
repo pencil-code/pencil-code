@@ -199,45 +199,30 @@ module Io
 !
 !  This routine distributes the global grid to all processors.
 !
-!  11-Feb-2012/PABourdin: coded
+!  04-Sep-2015/PABourdin: coded
 !
-      use Mpicomm, only: mpiscatterv_real_plain, mpibcast_real, &
-                         MPI_COMM_XBEAM, MPI_COMM_YBEAM, MPI_COMM_ZBEAM, &
-                         MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE
-      use General, only: indgen
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
       real, dimension(mz), intent(out) :: z
-      real, dimension(nxgrid+2*nghost), intent(in), optional :: gx
-      real, dimension(nygrid+2*nghost), intent(in), optional :: gy
-      real, dimension(nzgrid+2*nghost), intent(in), optional :: gz
+      real, dimension(mxgrid), intent(in), optional :: gx
+      real, dimension(mygrid), intent(in), optional :: gy
+      real, dimension(mzgrid), intent(in), optional :: gz
 !
-      if (lfirst_proc_yz) then    ! x-beam through root
-        if (lroot) then
-          call mpiscatterv_real_plain(gx,spread(mx,1,nprocx),(indgen(nprocx)-1)*nx,x,mx,comm=MPI_COMM_XBEAM)
-        else
-          call mpiscatterv_real_plain(x,(/1/),(/1/),x,mx,comm=MPI_COMM_XBEAM)
-        endif
+      real, dimension(mxgrid+mygrid+mzgrid) :: tmp_grid
+      integer :: px, py, pz, partner
+      integer, parameter :: tag_gx=680, tag_gy=681, tag_gz=682
+!
+      if (lroot) then
+        tmp_grid(1:mxgrid) = gx
+        tmp_grid(mxgrid+1:mxgrid+mygrid) = gy
+        tmp_grid(mxgrid+mygrid+1:mxgrid+mygrid+mzgrid) = gz
       endif
-      if (lfirst_proc_xz) then    ! y-beam through root
-        if (lroot) then
-          call mpiscatterv_real_plain(gy,spread(my,1,nprocy),(indgen(nprocy)-1)*ny,y,my,comm=MPI_COMM_YBEAM)
-        else
-          call mpiscatterv_real_plain(y,(/1/),(/1/),y,my,comm=MPI_COMM_YBEAM)
-        endif
-      endif
-      if (lfirst_proc_xy) then    ! z-beam through root
-        if (lroot) then
-          call mpiscatterv_real_plain(gz,spread(mz,1,nprocz),(indgen(nprocz)-1)*nz,z,mz,comm=MPI_COMM_ZBEAM)
-        else
-          call mpiscatterv_real_plain(z,(/1/),(/1/),z,mz,comm=MPI_COMM_ZBEAM)
-        endif
-      endif
-
-      call mpibcast_real(x,mx,comm=MPI_COMM_YZPLANE)
-      call mpibcast_real(y,my,comm=MPI_COMM_XZPLANE)
-      call mpibcast_real(z,mz,comm=MPI_COMM_XYPLANE)
+      call mpibcast_real (tmp_grid, mxgrid+mygrid+mzgrid)
+      x = tmp_grid(ipx*nx+1:ipx*nx+mx)
+      y = tmp_grid(mxgrid+ipy*ny+1:mxgrid+ipy*ny+my)
+      z = tmp_grid(mxgrid+mygrid+ipz*nz+1:mxgrid+mygrid+ipz*nz+mz)
 !
     endsubroutine distribute_grid
 !***********************************************************************
