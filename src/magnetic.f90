@@ -427,6 +427,10 @@ module Magnetic
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_jutm=0       ! DIAG_DOC: $\left<\jv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
+  integer :: idiag_ubtm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\bv(t')
+                                ! DIAG_DOC:   dt'\right>$
+  integer :: idiag_butm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\uv(t')
+                                ! DIAG_DOC:   dt'\right>$
   integer :: idiag_b2ruzm=0     ! DIAG_DOC: $\left<\Bv^2\rho u_z\right>$
   integer :: idiag_b2uzm=0      ! DIAG_DOC: $\left<\Bv^2u_z\right>$
   integer :: idiag_ubbzm=0      ! DIAG_DOC: $\left<(\uv\cdot\Bv)B_z\right>$
@@ -5730,7 +5734,7 @@ module Magnetic
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: aj, tmp, tmp1, fres2
       real, dimension (nx) :: B1dot_glnrhoxb,fb,fxbx
-      real, dimension (nx) :: b2t,bjt,jbt,ujt,jut
+      real, dimension (nx) :: b2t,bjt,jbt,ubt,but,ujt,jut
       real, dimension (nx) :: phi,dub,dob,jdel2a,epsAD
       real, dimension (nx) :: rmask, quench
 
@@ -5782,8 +5786,22 @@ module Magnetic
 !  Integrate velocity in time, to calculate correlation time later.
 !
         if (idiag_ujtm/=0) then
-          call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),ujt)
+          call dot(p%uu,f(l1:l2,m,n,ijxt:ijzt),ujt)
           call sum_mn_name(ujt,idiag_ujtm)
+        endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+        if (idiag_butm/=0) then
+          call dot(p%bb,f(l1:l2,m,n,iuxt:iuzt),but)
+          call sum_mn_name(but,idiag_butm)
+        endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+        if (idiag_ubtm/=0) then
+          call dot(p%uu,f(l1:l2,m,n,ibxt:ibzt),ubt)
+          call sum_mn_name(ubt,idiag_ubtm)
         endif
 
         if (idiag_Bresrms/=0 .or. idiag_Rmrms/=0) then
@@ -9591,7 +9609,7 @@ module Magnetic
       if (lreset) then
         idiag_eta_tdep=0
         idiag_ab_int=0; idiag_jb_int=0; idiag_b2tm=0; idiag_bjtm=0; idiag_jbtm=0
-        idiag_ujtm=0; idiag_jutm=0
+        idiag_ubtm=0; idiag_butm=0; idiag_ujtm=0; idiag_jutm=0
         idiag_b2uzm=0; idiag_b2ruzm=0; idiag_ubbzm=0
         idiag_b1m=0; idiag_b2m=0; idiag_EEM=0; idiag_b4m=0; idiag_b6m=0; idiag_b12m=0
         idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
@@ -9747,6 +9765,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jbtm',idiag_jbtm)
         call parse_name(iname,cname(iname),cform(iname),'ujtm',idiag_ujtm)
         call parse_name(iname,cname(iname),cform(iname),'jutm',idiag_jutm)
+        call parse_name(iname,cname(iname),cform(iname),'ubtm',idiag_ubtm)
+        call parse_name(iname,cname(iname),cform(iname),'butm',idiag_butm)
         call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
         call parse_name(iname,cname(iname),cform(iname),'gLamam',idiag_gLamam)
         call parse_name(iname,cname(iname),cform(iname),'gLambm',idiag_gLambm)
@@ -10027,11 +10047,15 @@ module Magnetic
       endif
       if (idiag_jutm/=0) then
         if (iuut==0) call stop_it("Cannot calculate jutm if iuut==0")
-        !idiag_jutm=0
       endif
       if (idiag_ujtm/=0) then
         if (ijjt==0) call stop_it("Cannot calculate ujtm if ijjt==0")
-        !idiag_ujtm=0
+      endif
+      if (idiag_butm/=0) then
+        if (iuut==0) call stop_it("Cannot calculate butm if iuut==0")
+      endif
+      if (idiag_ubtm/=0) then
+        if (ibbt==0) call stop_it("Cannot calculate ubtm if ibbt==0")
       endif
 !
 !  Quantities which are averaged over half (north-south) the box.
