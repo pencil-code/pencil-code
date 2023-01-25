@@ -43,7 +43,7 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0
-  integer :: ia0, idiva_name
+  integer :: ia0=0, idiva_name=0
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false.
@@ -268,10 +268,13 @@ module Special
       p%el=f(l1:l2,m,n,iex:iez)
 ! e2
       call dot2_mn(p%el,p%e2)
-! a0
-      p%a0=f(l1:l2,m,n,ia0)
-! ga0
-      call grad(f,ia0,p%ga0)
+!
+! a0 & ga0
+!
+      if (ia0>0) then
+        p%a0=f(l1:l2,m,n,ia0)
+        call grad(f,ia0,p%ga0)
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -351,8 +354,10 @@ module Special
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
         call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
-        call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
-        call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
+        if (idiva_name>0) then
+          call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
+          call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
+        endif
 !
         call xysum_mn_name_z(p%el(:,1),idiag_exmz)
         call xysum_mn_name_z(p%el(:,2),idiag_eymz)

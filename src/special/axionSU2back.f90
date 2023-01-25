@@ -62,8 +62,10 @@ module Special
 !
   integer :: idiag_Q   =0 ! DIAG_DOC: $Q$
   integer :: idiag_Qdot=0 ! DIAG_DOC: $\dot{Q}$
+  integer :: idiag_Qddot=0! DIAG_DOC: $\ddot{Q}$
   integer :: idiag_chi =0 ! DIAG_DOC: $\chi$
   integer :: idiag_chidot =0 ! DIAG_DOC: $\dot{\chi}$
+  integer :: idiag_chiddot =0 ! DIAG_DOC: $\ddot{\chi}$
   integer :: idiag_psi =0 ! DIAG_DOC: $\psi$
   integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
   integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
@@ -238,7 +240,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Q, Qdot, chi, chidot
+      real, dimension (nx) :: Q, Qdot, Qddot, chi, chidot, chiddot
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: Uprime, mQ, xi, a, epsQE, epsQB
       real :: fact=1.
@@ -264,6 +266,11 @@ module Special
       TR=f(l1:l2,m,n,iaxi_TR)
       TRdot=f(l1:l2,m,n,iaxi_TRdot)
 !
+!  initialize
+!
+      Qddot=0.
+      chiddot=0.
+!
 !  Set parameters
 !
       Uprime=-mu**4/fdecay*sin(chi/fdecay)
@@ -276,11 +283,9 @@ module Special
 !  background
 !
       df(l1:l2,m,n,iaxi_Q)=df(l1:l2,m,n,iaxi_Q)+Qdot
-      df(l1:l2,m,n,iaxi_Qdot)=df(l1:l2,m,n,iaxi_Qdot) &
-        +g*lamf*chidot*Q**2-3.*H*Qdot-(Hdot+2*H**2)*Q-2.*g**2*Q**3
       df(l1:l2,m,n,iaxi_chi)=df(l1:l2,m,n,iaxi_chi)+chidot
-      df(l1:l2,m,n,iaxi_chidot)=df(l1:l2,m,n,iaxi_chidot) &
-        -3.*g*lamf*Q**2*(Qdot+H*Q)-3.*H*chidot-Uprime
+      Qddot=g*lamf*chidot*Q**2-3.*H*Qdot-(Hdot+2*H**2)*Q-2.*g**2*Q**3
+      chiddot=-3.*g*lamf*Q**2*(Qdot+H*Q)-3.*H*chidot-Uprime
 !
 !  perturbation
 !
@@ -317,9 +322,11 @@ module Special
 !
 !  apply factor to switch on bachreaction gradually:
 !
-        df(l1:l2,m,n,iaxi_Qdot)=df(l1:l2,m,n,iaxi_Qdot)-sbackreact_Q*fact*grand_sum
-        df(l1:l2,m,n,iaxi_chidot)=df(l1:l2,m,n,iaxi_chidot)-sbackreact_chi*fact*dgrant_sum
+        Qddot=Qddot-sbackreact_Q*fact*grand_sum
+        chiddot=chiddot-sbackreact_chi*fact*dgrant_sum
       endif
+      df(l1:l2,m,n,iaxi_Qdot)  =df(l1:l2,m,n,iaxi_Qdot)  +Qddot
+      df(l1:l2,m,n,iaxi_chidot)=df(l1:l2,m,n,iaxi_chidot)+chiddot
 !
 if (ip<10) print*,'xi,H,k,a,TR,g,a',xi,H,k,a,TR,g,a
 if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))
@@ -329,8 +336,10 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
       if (ldiagnos) then
         call sum_mn_name(Q,idiag_Q)
         call sum_mn_name(Qdot,idiag_Qdot)
+        call sum_mn_name(Qddot,idiag_Qddot)
         call sum_mn_name(chi,idiag_chi)
         call sum_mn_name(chidot,idiag_chidot)
+        call sum_mn_name(chiddot,idiag_chiddot)
         call sum_mn_name(psi,idiag_psi)
         call sum_mn_name(TR,idiag_TR)
         call sum_mn_name(grand,idiag_grand)  !redundant
@@ -472,7 +481,8 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Q=0; idiag_Qdot=0; idiag_chi=0; idiag_chidot=0; idiag_psi=0; idiag_TR=0
+        idiag_Q=0; idiag_Qdot=0; idiag_Qddot=0; idiag_chi=0; idiag_chidot=0; idiag_chiddot=0
+        idiag_psi=0; idiag_TR=0
         idiag_grand=0; idiag_grant=0; idiag_grand2=0; idiag_dgrant=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0
       endif
@@ -480,8 +490,10 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'Q' ,idiag_Q)
         call parse_name(iname,cname(iname),cform(iname),'Qdot' ,idiag_Qdot)
+        call parse_name(iname,cname(iname),cform(iname),'Qddot' ,idiag_Qddot)
         call parse_name(iname,cname(iname),cform(iname),'chi' ,idiag_chi)
         call parse_name(iname,cname(iname),cform(iname),'chidot' ,idiag_chidot)
+        call parse_name(iname,cname(iname),cform(iname),'chiddot' ,idiag_chiddot)
         call parse_name(iname,cname(iname),cform(iname),'psi' ,idiag_psi)
         call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
         call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
