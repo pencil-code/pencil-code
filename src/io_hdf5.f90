@@ -259,7 +259,7 @@ module Io
       call output_settings (real(t), time_only=((.not. lwrite_add) .or. lomit_add_data))
       call file_close_hdf5
 !
-      call file_open_hdf5 (filename, truncate=.false.)
+!      call file_open_hdf5 (filename, truncate=.false.)
 !
     endsubroutine output_snap
 !***********************************************************************
