@@ -1115,32 +1115,7 @@ module Equ
 !
 !  Time step constraints from each module.
 !  (At the moment, magnetic and testfield use the same variable.)
-!
-!if (n==n1 .and. m==m1) print*, 'equ:maxdiffus=', maxdiffus
-          if (any(lfreeze_varint)) then
-            if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              where (p%rcyl_mn<=rfreeze_int)
-                maxadvec=0; maxdiffus=0; maxdiffus2=0; maxdiffus3=0
-              endwhere
-            else
-              where (p%r_mn<=rfreeze_int)
-                maxadvec=0; maxdiffus=0; maxdiffus2=0; maxdiffus3=0
-              endwhere
-            endif
-          endif
-          if (any(lfreeze_varext)) then
-            if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              where (p%rcyl_mn>=rfreeze_ext)
-                maxadvec=0; maxdiffus=0; maxdiffus2=0; maxdiffus3=0
-              endwhere
-            else
-              where (p%r_mn>=rfreeze_ext)
-                maxadvec=0; maxdiffus=0; maxdiffus2=0; maxdiffus3=0
-              endwhere
-            endif
-          endif
-!
-!  cdt, cdtv, and cdtc are empirical non-dimensional coefficients
+!  cdt, cdtv, and cdtc are empirical non-dimensional coefficients.
 !
 !  Timestep constraint from advective terms.
 !
@@ -1178,22 +1153,32 @@ module Equ
 !
           if (any(lfreeze_varint)) then
             if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              where (p%rcyl_mn<=rfreeze_int) dt1_max_loc=0.
+              where (p%rcyl_mn<=rfreeze_int) 
+                dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
+              endwhere
             else
-              where (p%r_mn<=rfreeze_int) dt1_max_loc=0.
+              where (p%r_mn<=rfreeze_int) 
+                dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
+              endwhere
             endif
           endif
 !
           if (any(lfreeze_varext)) then
             if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              where (p%rcyl_mn>=rfreeze_ext) dt1_max_loc=0.
+              where (p%rcyl_mn>=rfreeze_ext)
+                dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
+              endwhere
             else
-              where (p%r_mn>=rfreeze_ext) dt1_max_loc=0.
+              where (p%r_mn>=rfreeze_ext)
+                dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
+              endwhere
             endif
           endif
 !  MR: the next correct? freezes *outside* square
           if (any(lfreeze_varsquare).and.y(m)>yfreeze_square) then
-            where (x(l1:l2)>xfreeze_square)dt1_max_loc=0.
+            where (x(l1:l2)>xfreeze_square)
+              dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
+            endwhere
           endif
 
           dt1_max=max(dt1_max,dt1_max_loc)
