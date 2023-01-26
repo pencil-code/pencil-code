@@ -39,7 +39,7 @@
   public :: mpiallreduce_merge
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
-  public :: isendrcv_bdry_x
+  public :: isendrcv_bdry_x, periodic_bdry_x, periodic_bdry_y, periodic_bdry_z
   public :: initiate_shearing, finalize_shearing
 
   public :: transp, transp_xy, transp_xy_other, transp_other

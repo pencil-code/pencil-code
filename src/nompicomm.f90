@@ -152,6 +152,39 @@ module Mpicomm
 !
     endsubroutine isendrcv_bdry_x
 !***********************************************************************
+    subroutine periodic_bdry_x(f,ivar1_opt,ivar2_opt)
+!
+!  Dummy
+!
+      real, dimension(:,:,:,:), intent(in) :: f
+      integer, intent(in), optional :: ivar1_opt, ivar2_opt
+!
+      if (ALWAYS_FALSE) print *, f, ivar1_opt, ivar2_opt
+!
+    endsubroutine periodic_bdry_x
+!***********************************************************************
+    subroutine periodic_bdry_y(f,ivar1_opt,ivar2_opt)
+!
+!  Dummy
+!
+      real, dimension(:,:,:,:), intent(in) :: f
+      integer, intent(in), optional :: ivar1_opt, ivar2_opt
+!
+      if (ALWAYS_FALSE) print *, f, ivar1_opt, ivar2_opt
+!
+    endsubroutine periodic_bdry_y
+!***********************************************************************
+    subroutine periodic_bdry_z(f,ivar1_opt,ivar2_opt)
+!
+!  Dummy
+!
+      real, dimension(:,:,:,:), intent(in) :: f
+      integer, intent(in), optional :: ivar1_opt, ivar2_opt
+!
+      if (ALWAYS_FALSE) print *, f, ivar1_opt, ivar2_opt
+!
+    endsubroutine periodic_bdry_z
+!***********************************************************************
     subroutine initiate_shearing(f,ivar1_opt,ivar2_opt)
 !
       real, dimension (mx,my,mz,mfarray) :: f

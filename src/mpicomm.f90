@@ -2102,6 +2102,176 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine isendrcv_bdry_x
 !***********************************************************************
+    subroutine periodic_bdry_x(buffer,ivar1_opt,ivar2_opt)
+!
+!  Isend and Irecv boundary values for x-direction. Sends and receives
+!  before continuing to y and z boundaries, as this allows the edges
+!  of the grid to be set properly.
+!
+!   19-jan-23/fred: coded
+!
+      real, dimension(:,:,:,:), intent(inout) :: buffer
+      integer, intent(in), optional :: ivar1_opt, ivar2_opt
+!
+      integer :: ivar1, ivar2, nbuf, j, ny_loc, nz_loc, nvar_loc
+      integer :: isend_rq, irecv_rq
+      integer, dimension (MPI_STATUS_SIZE) :: irecv_stat, isend_stat
+      real, dimension(:,:,:,:), allocatable :: bufo,bufi
+!
+      if (.not.(lfirst_proc_x.or.llast_proc_x)) return
+!
+      if (nprocx>1) then
+!
+        ny_loc=size(buffer,2)-2*nghost
+        nz_loc=size(buffer,3)-2*nghost
+        ivar1=1; ivar2=min(mcom,size(buffer,4))
+        if (present(ivar1_opt)) ivar1=ivar1_opt
+        if (present(ivar2_opt)) ivar2=ivar2_opt
+        nvar_loc=ivar2-ivar1+1
+        allocate(bufo(nghost,ny_loc,nz_loc,nvar_loc),&
+                 bufi(nghost,ny_loc,nz_loc,nvar_loc))
+!
+        nbuf=ny_loc*nz_loc*nghost*nvar_loc
+        if (lfirst_proc_x) then
+          bufo=buffer(l1:l1i,m1:m1+ny_loc-1,n1:n1+nz_loc-1,ivar1:ivar2) !!(lower x-zone)
+          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+              xlneigh,tolowx,MPI_COMM_GRID,isend_rq,mpierr)
+          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+              xlneigh,touppx,MPI_COMM_GRID,irecv_rq,mpierr)
+          call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
+        else
+          bufo=buffer(l2i:l2,m1:m1+ny_loc-1,n1:n1+nz_loc-1,ivar1:ivar2) !!(upper x-zone)
+          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+              xuneigh,tolowx,MPI_COMM_GRID,irecv_rq,mpierr)
+          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+              xuneigh,touppx,MPI_COMM_GRID,isend_rq,mpierr)
+          call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
+        endif
+!
+!  Inner communication or (shear-)periodic boundary conditions in x
+!  MR: Communication should only happen under these conditions.
+!
+        do j=ivar1,ivar2
+          if (.not. lfirst_proc_x .or. bcx12(j,1)=='p' .or. &
+              (bcx12(j,1)=='she'.and.nygrid==1)) then
+            buffer(1:l1-1,m1:m1+ny_loc-1,n1:n1+nz_loc-1,j)=bufi(:,:,:,j)  !!(set lower buffer)
+          endif
+          if (.not. llast_proc_x .or. bcx12(j,2)=='p' .or. &
+              (bcx12(j,2)=='she'.and.nygrid==1)) then
+            buffer(l2+1: ,m1:m1+ny_loc-1,n1:n1+nz_loc-1,j)=bufi(:,:,:,j)  !!(set upper buffer)
+          endif
+        enddo
+
+        call MPI_WAIT(isend_rq,isend_stat,mpierr)
+
+      endif
+!
+    endsubroutine periodic_bdry_x
+!***********************************************************************
+    subroutine periodic_bdry_y(buffer,ivar1_opt,ivar2_opt)
+!
+!  Isend and Irecv boundary values for y-direction.
+!
+!   19-jan-23/fred: coded
+!
+      real, dimension(:,:,:,:), intent(inout) :: buffer
+      integer, intent(in), optional :: ivar1_opt, ivar2_opt
+!
+      integer :: ivar1, ivar2, nbuf, j, nx_loc, nz_loc, nvar_loc
+      integer :: isend_rq, irecv_rq
+      integer, dimension (MPI_STATUS_SIZE) :: irecv_stat, isend_stat
+      real, dimension(:,:,:,:), allocatable :: bufo,bufi
+!
+      if (.not.(lfirst_proc_y.or.llast_proc_y)) return
+!
+      if (nprocy>1) then
+!
+        nx_loc=size(buffer,1)-2*nghost
+        nz_loc=size(buffer,3)-2*nghost
+        ivar1=1; ivar2=min(mcom,size(buffer,4))
+        if (present(ivar1_opt)) ivar1=ivar1_opt
+        if (present(ivar2_opt)) ivar2=ivar2_opt
+        nvar_loc=ivar2-ivar1+1
+        allocate(bufo(nx_loc,nghost,nz_loc,nvar_loc),&
+                 bufi(nx_loc,nghost,nz_loc,nvar_loc))
+!
+        nbuf=nx_loc*nz_loc*nghost*nvar_loc
+        if (lfirst_proc_y) then
+          bufo=buffer(l1:l1+nx_loc-1,m1:m1i,n1:n1+nz_loc-1,ivar1:ivar2) !!(lower y-zone)
+          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+              ylneigh,tolowy,MPI_COMM_GRID,isend_rq,mpierr)
+          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+              ylneigh,touppy,MPI_COMM_GRID,irecv_rq,mpierr)
+          call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
+          buffer(l1:l1+nx_loc-1,1:m1-1,n1:n1+nz_loc-1,:)=bufi !!(set lower buffer)
+        else
+          bufo=buffer(l1:l1+nx_loc-1,m2i:m2,n1:n1+nz_loc-1,ivar1:ivar2) !!(upper y-zone)
+          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+              yuneigh,tolowy,MPI_COMM_GRID,irecv_rq,mpierr)
+          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+              yuneigh,touppy,MPI_COMM_GRID,isend_rq,mpierr)
+          call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
+          buffer(l1:l1+nx_loc-1,m2+1: ,n1:n1+nz_loc-1,:)=bufi  !!(set upper buffer)
+        endif
+!
+        call MPI_WAIT(isend_rq,isend_stat,mpierr)
+!
+      endif
+!
+    endsubroutine periodic_bdry_y
+!***********************************************************************
+    subroutine periodic_bdry_z(buffer,ivar1_opt,ivar2_opt)
+!
+!  Isend and Irecv boundary values for z-direction.
+!
+!   19-jan-23/fred: coded
+!
+      real, dimension(:,:,:,:), intent(inout) :: buffer
+      integer, intent(in), optional :: ivar1_opt, ivar2_opt
+!
+      integer :: ivar1, ivar2, nbuf, j, ny_loc, nx_loc, nvar_loc
+      integer :: isend_rq, irecv_rq
+      integer, dimension (MPI_STATUS_SIZE) :: irecv_stat, isend_stat
+      real, dimension(:,:,:,:), allocatable :: bufo,bufi
+!
+      if (.not.(lfirst_proc_z.or.llast_proc_z)) return
+!
+      if (nprocz>1) then
+!
+        nx_loc=size(buffer,1)-2*nghost
+        ny_loc=size(buffer,2)-2*nghost
+        ivar1=1; ivar2=min(mcom,size(buffer,4))
+        if (present(ivar1_opt)) ivar1=ivar1_opt
+        if (present(ivar2_opt)) ivar2=ivar2_opt
+        nvar_loc=ivar2-ivar1+1
+        allocate(bufo(nx_loc,ny_loc,nghost,nvar_loc),&
+                 bufi(nx_loc,ny_loc,nghost,nvar_loc))
+!
+        nbuf=nx_loc*ny_loc*nghost*nvar_loc
+        if (lfirst_proc_z) then
+          bufo=buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,n1:n1i,ivar1:ivar2) !!(lower z-zone)
+          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+              zlneigh,tolowz,MPI_COMM_GRID,isend_rq,mpierr)
+          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+              zlneigh,touppz,MPI_COMM_GRID,irecv_rq,mpierr)
+          call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
+          buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,1:n1-1,:)=bufi !!(set lower buffer)
+        else
+          bufo=buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,n2i:n2,ivar1:ivar2) !!(upper z-zone)
+          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+              zuneigh,tolowz,MPI_COMM_GRID,irecv_rq,mpierr)
+          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+              zuneigh,touppz,MPI_COMM_GRID,isend_rq,mpierr)
+          call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
+          buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,n2+1:,:)=bufi  !!(set upper buffer)
+        endif
+!
+        call MPI_WAIT(isend_rq,isend_stat,mpierr)
+!
+      endif
+!
+    endsubroutine periodic_bdry_z
+!***********************************************************************
    subroutine initiate_shearing(f,ivar1_opt,ivar2_opt)
 !
 !  Subroutine for shearing sheet boundary conditions
