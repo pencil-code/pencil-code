@@ -829,9 +829,9 @@ program run
 !  other hand, are indeed at the correct d+dt. Therefore,
 !  when lspec_first=T, we output spectra for both t and t+dt.
 !
-  if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) then
-    lspec=.true.
-  endif
+    if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) then
+      lspec=.true.
+    endif
 !
 !  Save spectrum snapshot.
 !
