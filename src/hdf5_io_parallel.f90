@@ -2077,6 +2077,7 @@ module HDF5_IO
           else
             call fatal_error('input_aver_2D','no "last" group in HDF5 file '//trim(filename))
           endif
+          call file_close_hdf5
         else
           call fatal_error('input_aver_2D','no HDF5 file '//trim(filename))
         endif
