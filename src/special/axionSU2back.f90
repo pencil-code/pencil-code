@@ -45,14 +45,14 @@ module Special
   real, dimension (nx) :: grand, grant, dgrant
   real :: grand_sum, grant_sum, dgrant_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
-  logical :: lbackreact=.false., lwith_eps=.true.
+  logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H
 !
   ! run parameters
   namelist /special_run_pars/ &
-    k0, dk, fdecay, g, lam, mu, H, lwith_eps, &
+    k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback
 !
   ! k array
@@ -282,8 +282,6 @@ module Special
 !
 !  background
 !
-      df(l1:l2,m,n,iaxi_Q)=df(l1:l2,m,n,iaxi_Q)+Qdot
-      df(l1:l2,m,n,iaxi_chi)=df(l1:l2,m,n,iaxi_chi)+chidot
       Qddot=g*lamf*chidot*Q**2-3.*H*Qdot-(Hdot+2*H**2)*Q-2.*g**2*Q**3
       chiddot=-3.*g*lamf*Q**2*(Qdot+H*Q)-3.*H*chidot-Uprime
 !
@@ -325,8 +323,15 @@ module Special
         Qddot=Qddot-sbackreact_Q*fact*grand_sum
         chiddot=chiddot-sbackreact_chi*fact*dgrant_sum
       endif
-      df(l1:l2,m,n,iaxi_Qdot)  =df(l1:l2,m,n,iaxi_Qdot)  +Qddot
-      df(l1:l2,m,n,iaxi_chidot)=df(l1:l2,m,n,iaxi_chidot)+chiddot
+!
+!  Choice whether or not we want to update the background
+!
+      if (lupdate_background) then
+        df(l1:l2,m,n,iaxi_Q)=df(l1:l2,m,n,iaxi_Q)+Qdot
+        df(l1:l2,m,n,iaxi_chi)=df(l1:l2,m,n,iaxi_chi)+chidot
+        df(l1:l2,m,n,iaxi_Qdot)  =df(l1:l2,m,n,iaxi_Qdot)  +Qddot
+        df(l1:l2,m,n,iaxi_chidot)=df(l1:l2,m,n,iaxi_chidot)+chiddot
+      endif
 !
 if (ip<10) print*,'xi,H,k,a,TR,g,a',xi,H,k,a,TR,g,a
 if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))
@@ -347,6 +352,10 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call save_name(grand_sum,idiag_grand2)
         call save_name(dgrant_sum,idiag_dgrant)
         call save_name(fact,idiag_fact)
+if (ip<10) then
+print*,'AXEL: iproc,t,Q=',iproc,t,Q
+print*,'AXEL: iproc,t,grand_sum=',iproc,t,grand_sum
+endif
       endif
 !
       if (l2davgfirst) then
@@ -455,6 +464,7 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
       call mpiallreduce_sum(sum(grand),grand_sum,1)
       call mpiallreduce_sum(sum(grant),grant_sum,1)
       call mpiallreduce_sum(sum(dgrant),dgrant_sum,1)
+print*,'AXEL2: iproc,t,dgrant, sum(dgrant),dgrant_sum=',iproc,t,dgrant, sum(dgrant),dgrant_sum
 !
     endsubroutine special_after_boundary
 !***********************************************************************
