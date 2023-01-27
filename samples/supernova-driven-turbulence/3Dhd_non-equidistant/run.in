@@ -45,7 +45,7 @@
 /
 &interstellar_run_pars
 !! adjust SN radius above rfactor_SN for diffuse ISM
-  lSN_scale_rad=T
+  lSN_scale_rad=F
   N_mass=100.0
   rfactor_SN=5.0
 !! override persistent variables read in from varfile
