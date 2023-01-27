@@ -26,7 +26,7 @@
 
     allocate(f(mx,my,mz,mfarray),STAT=stat)
     if (stat>0) call fatal_error('farray_alloc','Could not allocate memory for f')
-    if (nt>0) then
+    if (nt>0.and..not.lgpu) then
       allocate(df(mx,my,mz,mvar),STAT=stat)
       if (stat>0) call fatal_error('farray_alloc','Could not allocate memory for df')
     endif

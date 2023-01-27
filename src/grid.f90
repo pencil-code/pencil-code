@@ -1787,24 +1787,22 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
     endsubroutine pencil_interdep_grid
 !***********************************************************************
-    subroutine calc_pencils_grid_std(f,p)
+    subroutine calc_pencils_grid_std(p)
 !
 ! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
 ! lpenc_loc=lpencil
 !
 ! 10-oct-17/MR: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      intent(in) :: f
       intent(inout) :: p
 !
-      call calc_pencils_grid_pencpar(f,p,lpencil)
+      call calc_pencils_grid_pencpar(p,lpencil)
 !
     endsubroutine calc_pencils_grid_std
 !***********************************************************************
-    subroutine calc_pencils_grid_pencpar(f,p,lpenc_loc)
+    subroutine calc_pencils_grid_pencpar(p,lpenc_loc)
 !
 !  Calculate Grid/geometry related pencils. Uses arbitrary pencil mask lpenc_loc.
 !  Most basic pencils should come first, as others may depend on them.
@@ -1812,11 +1810,9 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !   15-nov-06/tony: coded
 !   27-aug-07/wlad: generalized for cyl. and sph. coordinates
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      intent(in) :: f
       intent(inout) :: p
       intent(in) :: lpenc_loc
 !
@@ -1912,8 +1908,6 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
               'non-cartesian coordinates')
         endif
       endif
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_grid_pencpar
 !***********************************************************************

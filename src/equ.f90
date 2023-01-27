@@ -65,8 +65,7 @@ module Equ
       use Selfgravity
       use Shear
       use Shock, only: calc_shock_profile, calc_shock_profile_simple
-      use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
-                             dsolid_dt_integrate
+      use Solid_Cells, only: update_solid_cells,dsolid_dt_integrate
       use Special, only: special_before_boundary,special_after_boundary
       use Sub
       use Testfield
@@ -84,10 +83,8 @@ module Equ
       intent(out)  :: df,p
 !
       logical :: early_finalize
-      real, dimension(nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)  :: mass_per_proc
       integer :: iv
-      logical, dimension(npencils) :: lpenc_loc
 !
 !  Print statements when they are first executed.
 !
@@ -329,7 +326,7 @@ module Equ
       !if (ltestfield)             call testfield_after_boundary(f,p)
       if (lpscalar)               call pscalar_after_boundary(f)
       if (ldensity)               call density_after_boundary(f)
-      if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
+      if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
       if (lspecial)               call special_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture
@@ -413,9 +410,7 @@ module Equ
           call fold_df(df,iux,mvar)
         endif
       endif
-      if (lfold_df_3points) then
-        call fold_df_3points(df,iux,mvar)
-      endif
+      if (lfold_df_3points) call fold_df_3points(df,iux,mvar)
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
@@ -424,173 +419,8 @@ module Equ
 !  Freezing must be done after the full (m,n) loop, as df may be modified
 !  outside of the considered pencil.
 !
-      do imn=1,ny*nz
+      call freeze(df,p)
 
-        n=nn(imn)
-        m=mm(imn)
-        !if (imn_array(m,n)==0) cycle
-!
-!  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
-!  in pencil_criteria_grid. Unfortunately we need to recalculate them here.
-!
-        if (any(lfreeze_varext).or.any(lfreeze_varint)) then
-
-          lpenc_loc=.false. 
-          if (lcylinder_in_a_box.or.lcylindrical_coords) then 
-            lpenc_loc(i_rcyl_mn)=.true.
-          else
-            lpenc_loc(i_r_mn)=.true.
-          endif
-          call calc_pencils_grid(f,p,lpenc_loc)
-!
-!  Set df=0 for r_mn<r_int.
-!
-          if (any(lfreeze_varint)) then
-            if (headtt) print*, 'pde: freezing variables for r < ', rfreeze_int, &
-                                ' : ', lfreeze_varint
-            if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              if (wfreeze_int==0.0) then
-                where (p%rcyl_mn<=rfreeze_int)
-                  pfreeze_int=0.0
-                elsewhere  
-                  pfreeze_int=1.0
-                endwhere  
-              else
-                pfreeze_int=quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int, &
-                                         SHIFT=fshift_int)
-              endif
-            else
-              if (wfreeze_int==0.0) then
-                where (p%r_mn<=rfreeze_int)
-                  pfreeze_int=0.0
-                elsewhere 
-                  pfreeze_int=1.0
-                endwhere  
-              else
-                pfreeze_int=quintic_step(p%r_mn,rfreeze_int,wfreeze_int, &
-                                         SHIFT=fshift_int)
-              endif
-            endif
-!
-            do iv=1,nvar
-              if (lfreeze_varint(iv)) df(l1:l2,m,n,iv)=pfreeze_int*df(l1:l2,m,n,iv)
-            enddo
-!
-          endif
-!
-!  Set df=0 for r_mn>r_ext.
-!
-          if (any(lfreeze_varext)) then
-            if (headtt) print*, 'pde: freezing variables for r > ', rfreeze_ext, &
-                                ' : ', lfreeze_varext
-            if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              if (wfreeze_ext==0.0) then
-                where (p%rcyl_mn>=rfreeze_ext)
-                  pfreeze_ext=0.0
-                elsewhere  
-                  pfreeze_ext=1.0
-                endwhere  
-              else
-                pfreeze_ext=1.0-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext, &
-                                             SHIFT=fshift_ext)
-              endif
-            else
-              if (wfreeze_ext==0.0) then
-                where (p%r_mn>=rfreeze_ext)
-                  pfreeze_ext=0.0
-                elsewhere 
-                  pfreeze_ext=1.0
-                endwhere  
-              else
-                pfreeze_ext=1.0-quintic_step(p%r_mn,rfreeze_ext,wfreeze_ext, &
-                                             SHIFT=fshift_ext)
-              endif
-            endif
-!
-            do iv=1,nvar
-              if (lfreeze_varext(iv)) df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
-            enddo
-          endif
-        endif
-!
-!  Set df=0 inside square.
-!
-        if (any(lfreeze_varsquare)) then
-          if (headtt) print*, 'pde: freezing variables inside square : ', &
-              lfreeze_varsquare
-          pfreeze=1.0-quintic_step(x(l1:l2),xfreeze_square,wfreeze,SHIFT=-1.0)*&
-                      quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
-!
-          do iv=1,nvar
-            if (lfreeze_varsquare(iv)) df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
-          enddo
-        endif
-!
-!  Freeze components of variables in boundary slice if specified by boundary
-!  condition 'f'
-!
-!  Freezing boundary conditions in x.
-!
-        if (lfrozen_bcs_x) then ! are there any frozen vars at all?
-!
-!  Only need to do this for nonperiodic x direction, on left/right-most
-!  processor and in left/right--most pencils
-!
-          if (.not. lperi(1)) then
-            if (lfirst_proc_x) where (lfrozen_bot_var_x(1:nvar)) df(l1,m,n,1:nvar) = 0.
-            if (llast_proc_x) where (lfrozen_top_var_x(1:nvar)) df(l2,m,n,1:nvar) = 0.
-          endif
-!
-        endif
-!
-!  Freezing boundary conditions in y.
-!
-        if (lfrozen_bcs_y) then ! are there any frozen vars at all?
-!
-!  Only need to do this for nonperiodic y direction, on bottom/top-most
-!  processor and in bottom/top-most pencils.
-!
-          if (.not. lperi(2)) then
-            if (lfirst_proc_y .and. (m == m1)) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_y .and. (m == m2)) then
-              do iv=1,nvar
-                if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-        endif
-!
-!  Freezing boundary conditions in z.
-!
-        if (lfrozen_bcs_z) then ! are there any frozen vars at all?
-!
-!  Only need to do this for nonperiodic z direction, on bottom/top-most
-!  processor and in bottom/top-most pencils.
-!
-          if (.not. lperi(3)) then
-            if (lfirst_proc_z .and. (n == n1)) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_z .and. (n == n2)) then
-              do iv=1,nvar
-                if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-        endif
-!
-!  Set df=0 for all solid cells.
-!
-        call freeze_solid_cells(df)
-!
-      enddo
-!
 !  Boundary treatment of the df-array.
 !
 !  This is a way to impose (time-
@@ -765,7 +595,7 @@ module Equ
 !
 !  Calculate grid/geometry related pencils.
 !
-        call calc_pencils_grid(f,p)
+        call calc_pencils_grid(p)
 !
 !  Calculate profile for phi-averages if needed.
 !
@@ -1358,5 +1188,190 @@ module Equ
       call impose_ecr_floor(f)
 !
     endsubroutine impose_floors_ceilings
+!***********************************************************************
+    subroutine freeze(df,p)
+!
+      use Sub, only: quintic_step
+      use Solid_Cells, only: freeze_solid_cells
+
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case) :: p
+
+      logical, dimension(npencils) :: lpenc_loc
+      real, dimension(nx) :: pfreeze
+      integer :: imn, iv
+!
+      !if (lgpu) call freeze_gpu
+
+!$omp parallel copyin(headtt)
+!$omp do private(p)
+!
+      do imn=1,ny*nz
+
+        n=nn(imn)
+        m=mm(imn)
+        !if (imn_array(m,n)==0) cycle
+!
+!  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
+!  in pencil_criteria_grid. Unfortunately we need to recalculate them here.
+!
+        if (any(lfreeze_varext).or.any(lfreeze_varint)) then
+
+          lpenc_loc=.false. 
+          if (lcylinder_in_a_box.or.lcylindrical_coords) then 
+            lpenc_loc(i_rcyl_mn)=.true.
+          else
+            lpenc_loc(i_r_mn)=.true.
+          endif
+          call calc_pencils_grid(p,lpenc_loc)
+!
+!  Set df=0 for r_mn<r_int.
+!
+          if (any(lfreeze_varint)) then
+            if (headtt) print*, 'pde: freezing variables for r < ', rfreeze_int, &
+                                ' : ', lfreeze_varint
+            if (lcylinder_in_a_box.or.lcylindrical_coords) then
+              if (wfreeze_int==0.0) then
+                where (p%rcyl_mn<=rfreeze_int)
+                  pfreeze=0.0
+                elsewhere  
+                  pfreeze=1.0
+                endwhere  
+              else
+                pfreeze=quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
+              endif
+            else
+              if (wfreeze_int==0.0) then
+                where (p%r_mn<=rfreeze_int)
+                  pfreeze=0.0
+                elsewhere 
+                  pfreeze=1.0
+                endwhere  
+              else
+                pfreeze=quintic_step(p%r_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
+              endif
+            endif
+!
+            do iv=1,nvar
+              if (lfreeze_varint(iv)) df(l1:l2,m,n,iv)=pfreeze*df(l1:l2,m,n,iv)
+            enddo
+!
+          endif
+!
+!  Set df=0 for r_mn>r_ext.
+!
+          if (any(lfreeze_varext)) then
+            if (headtt) print*, 'pde: freezing variables for r > ', rfreeze_ext, &
+                                ' : ', lfreeze_varext
+            if (lcylinder_in_a_box.or.lcylindrical_coords) then
+              if (wfreeze_ext==0.0) then
+                where (p%rcyl_mn>=rfreeze_ext)
+                  pfreeze=0.0
+                elsewhere  
+                  pfreeze=1.0
+                endwhere  
+              else
+                pfreeze=1.0-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
+              endif
+            else
+              if (wfreeze_ext==0.0) then
+                where (p%r_mn>=rfreeze_ext)
+                  pfreeze=0.0
+                elsewhere 
+                  pfreeze=1.0
+                endwhere  
+              else
+                pfreeze=1.0-quintic_step(p%r_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
+              endif
+            endif
+!
+            do iv=1,nvar
+              if (lfreeze_varext(iv)) df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
+            enddo
+          endif
+        endif
+!
+!  Set df=0 inside square.
+!
+        if (any(lfreeze_varsquare)) then
+          if (headtt) print*, 'pde: freezing variables inside square : ', &
+              lfreeze_varsquare
+          pfreeze=1.0-quintic_step(x(l1:l2),xfreeze_square,wfreeze,SHIFT=-1.0)*&
+                      quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
+!
+          do iv=1,nvar
+            if (lfreeze_varsquare(iv)) df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
+          enddo
+        endif
+!
+!  Freeze components of variables in boundary slice if specified by boundary
+!  condition 'f'
+!
+!  Freezing boundary conditions in x.
+!
+        if (lfrozen_bcs_x) then ! are there any frozen vars at all?
+!
+!  Only need to do this for nonperiodic x direction, on left/right-most
+!  processor and in left/right--most pencils
+!
+          if (.not. lperi(1)) then
+            if (lfirst_proc_x) where (lfrozen_bot_var_x(1:nvar)) df(l1,m,n,1:nvar) = 0.
+            if (llast_proc_x) where (lfrozen_top_var_x(1:nvar)) df(l2,m,n,1:nvar) = 0.
+          endif
+!
+        endif
+!
+!  Freezing boundary conditions in y.
+!
+        if (lfrozen_bcs_y) then ! are there any frozen vars at all?
+!
+!  Only need to do this for nonperiodic y direction, on bottom/top-most
+!  processor and in bottom/top-most pencils.
+!
+          if (.not. lperi(2)) then
+            if (lfirst_proc_y .and. (m == m1)) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+            if (llast_proc_y .and. (m == m2)) then
+              do iv=1,nvar
+                if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+          endif
+        endif
+!
+!  Freezing boundary conditions in z.
+!
+        if (lfrozen_bcs_z) then ! are there any frozen vars at all?
+!
+!  Only need to do this for nonperiodic z direction, on bottom/top-most
+!  processor and in bottom/top-most pencils.
+!
+          if (.not. lperi(3)) then
+            if (lfirst_proc_z .and. (n == n1)) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+            if (llast_proc_z .and. (n == n2)) then
+              do iv=1,nvar
+                if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+          endif
+        endif
+!
+!  Set df=0 for all solid cells.
+!
+        call freeze_solid_cells(df)
+!
+      enddo
+!
+!$omp end do
+!$omp end parallel
+
+    endsubroutine freeze
 !***********************************************************************
 endmodule Equ

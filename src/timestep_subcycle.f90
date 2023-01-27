@@ -358,7 +358,7 @@ module Timestep
 !
 !  Calculate grid/geometry related pencils.
 !
-       call calc_pencils_grid(f,p)
+       call calc_pencils_grid(p)
 !
 !  Calculate pencils for the pencil_case.
 !  Note: some no-modules (e.g. nohydro) also calculate some pencils,

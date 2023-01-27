@@ -128,24 +128,24 @@ module Grid
 !
     endsubroutine pencil_interdep_grid
 !***********************************************************************
-    subroutine calc_pencils_grid_std(f,p)
+    subroutine calc_pencils_grid_std(p)
 !
 !  Dummy routine.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_grid_std
 !***********************************************************************
-    subroutine calc_pencils_grid_pencpar(f,p,lpenc_loc)
+    subroutine calc_pencils_grid_pencpar(p,lpenc_loc)
 !
 !  Dummy routine.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_grid_pencpar
 !***********************************************************************
