@@ -180,7 +180,7 @@ module Mpicomm
       use Syscalls, only: sizeof_real
 !
       !integer(KIND=ikind8) :: iapp
-      integer :: iapp
+      integer :: iapp=0
       integer :: flag
 
       lmpicomm = .true.
@@ -207,7 +207,7 @@ module Mpicomm
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL, mpierr)
       call MPI_COMM_RANK(MPI_COMM_PENCIL, iproc, mpierr)
-!print*, 'Pencil1: iapp, MPI_COMM_PENCIL, MPI_COMM_WORLD=', iapp, nprocs, ncpus   !MPI_COMM_PENCIL, MPI_COMM_WORLD
+!print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MPI_COMM_PENCIL, MPI_COMM_WORLD
 !
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_PENCIL!
 !
