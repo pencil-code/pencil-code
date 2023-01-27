@@ -611,7 +611,7 @@ module Io
 !  15-nov-20/ccyang: coded
 !
       use General, only: keep_compiler_quiet
-      use Mpicomm, only: mpiallreduce_or, size_of_real
+      use Mpicomm, only: mpiallreduce_or, size_of_real, MPI_OFFSET
 !
       real, dimension(:,:), pointer :: data
       character(len=*), intent(in) :: label, suffix

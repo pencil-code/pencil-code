@@ -87,12 +87,7 @@ module Particles_selfgravity
 !
       f(:,:,:,igpotselfx:igpotselfz)=0.0
 !
-      call get_shared_variable('tstart_selfgrav',tstart_selfgrav,ierr)
-      if (ierr/=0) then
-        if (lroot) print*, 'initialize_particles_selfgrav: '// &
-            'there was a problem when getting tstart_selfgrav!'
-        call fatal_error('initialize_particles_selfgrav','')
-      endif
+      call get_shared_variable('tstart_selfgrav',tstart_selfgrav,caller='initialize_particles_selfgrav')
 !
 !  Boundary condition consistency.
 !

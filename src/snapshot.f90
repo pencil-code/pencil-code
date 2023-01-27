@@ -67,8 +67,7 @@ module Snapshot
 !  At first call, need to initialize tsnap.
 !  tsnap calculated in read_snaptime, but only available to root processor.
 !
-      if (lfirst_call) &
-        call read_snaptime(file,tsnap,nsnap,dsnap_down,t)
+      if (lfirst_call) call read_snaptime(file,tsnap,nsnap,dsnap_down,t)
 !
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently).

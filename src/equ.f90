@@ -1199,12 +1199,19 @@ module Equ
 
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx) :: pfreeze
-      integer :: imn, iv
+      integer :: imn,iv
 !
       !if (lgpu) call freeze_gpu
 
+       lpenc_loc=.false. 
+       if (lcylinder_in_a_box.or.lcylindrical_coords) then 
+         lpenc_loc(i_rcyl_mn)=.true.
+       else
+         lpenc_loc(i_r_mn)=.true.
+       endif
+!
 !$omp parallel copyin(headtt)
-!$omp do private(p)
+!$omp do private(p,pfreeze,iv,n,m)
 !
       do imn=1,ny*nz
 
@@ -1217,12 +1224,6 @@ module Equ
 !
         if (any(lfreeze_varext).or.any(lfreeze_varint)) then
 
-          lpenc_loc=.false. 
-          if (lcylinder_in_a_box.or.lcylindrical_coords) then 
-            lpenc_loc(i_rcyl_mn)=.true.
-          else
-            lpenc_loc(i_r_mn)=.true.
-          endif
           call calc_pencils_grid(p,lpenc_loc)
 !
 !  Set df=0 for r_mn<r_int.
