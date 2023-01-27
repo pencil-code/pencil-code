@@ -664,7 +664,6 @@ module Equ
       use Energy
       use EquationOfState
       use Forcing, only: calc_pencils_forcing, calc_diagnostics_forcing
-      use General, only: notanumber
       use GhostFold, only: fold_df, fold_df_3points
       use Gravity
       use Heatflux
@@ -701,8 +700,6 @@ module Equ
       integer :: nyz
       real, dimension (nx,3) :: df_iuu_pencil
 !$    integer :: num_omp_ranks, omp_rank
-      real, dimension(nx) :: dt1_advec, dt1_diffus, dt1_src, dt1_max_loc
-      real :: dt1_preac
 !
       nyz=ny*nz
 !
@@ -711,7 +708,7 @@ module Equ
 !$    call OMP_set_num_threads(num_omp_ranks)
 !
 !$omp parallel copyin(headtt)
-!$omp do private(p,dt1_advec,dt1_diffus,dt1_src,dt1_max_loc,df_iuu_pencil)
+!$omp do private(p,df_iuu_pencil)
 !
       mn_loop: do imn=1,nyz
 !
@@ -905,7 +902,7 @@ module Equ
         endif
 !
 !  General phiaverage quantities -- useful for debugging.
-!  MR: Result is constant in time, so why here?
+!  MR: Results are constant in time, so why here?
 !
         if (l2davgfirst) then
           call phisum_mn_name_rz(p%rcyl_mn,idiag_rcylmphi)
@@ -920,121 +917,22 @@ module Equ
           if (lhydro)    call time_integrals_hydro(f,p)
           if (lmagnetic) call time_integrals_magnetic(f,p)
         endif
-!
-!  In max_mn maximum values of u^2 (etc) are determined sucessively
-!  va2 is set in magnetic (or nomagnetic)
-!  In rms_mn sum of all u^2 (etc) is accumulated
-!  Calculate maximum advection speed for timestep; needs to be done at
-!  the first substep of each time step
-!  Note that we are (currently) accumulating the maximum value,
-!  not the maximum squared!
-!
-!  The dimension of the run ndim (=0, 1, 2, or 3) enters the viscous time step.
-!  This has to do with the term on the diagonal, cdtv depends on order of scheme
-!
-        if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
-!
-!  sum or maximum of the advection terms?
-!  (lmaxadvec_sum=.false. by default)
-!
-          advec2=advec2+advec_cs2
-          if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
-              (ltestfield_z.and.iuutest>0))  maxadvec=maxadvec+sqrt(advec2)
 
-          if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) maxadvec=maxadvec+sqrt(advec2_hypermesh)
-!
-!  Time step constraints from each module.
-!  (At the moment, magnetic and testfield use the same variable.)
-!  cdt, cdtv, and cdtc are empirical non-dimensional coefficients.
-!
-!  Timestep constraint from advective terms.
-!
-          dt1_advec = maxadvec/cdt
-!
-!  Timestep constraint from diffusive terms.
-!
-          dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
-!
-!  Timestep constraint from source terms.
-!
-          dt1_src = maxsrc/cdtsrc
-!
-!  Timestep combination from advection, diffusion and "source". 
-!
-          dt1_max_loc = sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2)
-!!$ write(88,*)  'imn,threadnum,dt1_max=',imn,omp_rank,dt1_max_loc,dt1_advec + dt1_diffus + dt1_src
-!
-!  time step constraint from the coagulation kernel
-!
-          if (ldustdensity) dt1_max_loc = max(dt1_max_loc,reac_dust/cdtc)
-!
-!  time step constraint from speed of chemical reactions
-!
-          if (lchemistry .and. .not.llsode) then
-!           dt1_preac= reac_pchem/cdtc
-            dt1_max_loc = max(dt1_max_loc,reac_chem/cdtc)
-          endif
-!
-!  time step constraint from relaxation time of polymer
-!
-          if (lpolymer) dt1_max_loc = max(dt1_max_loc,1./(trelax_poly*cdt_poly))
-!
-!  Exclude the frozen zones from the time-step calculation.
-!
-          if (any(lfreeze_varint)) then
-            if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              where (p%rcyl_mn<=rfreeze_int) 
-                dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
-              endwhere
-            else
-              where (p%r_mn<=rfreeze_int) 
-                dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
-              endwhere
-            endif
-          endif
-!
-          if (any(lfreeze_varext)) then
-            if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              where (p%rcyl_mn>=rfreeze_ext)
-                dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
-              endwhere
-            else
-              where (p%r_mn>=rfreeze_ext)
-                dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
-              endwhere
-            endif
-          endif
-!  MR: the next correct? freezes *outside* square
-          if (any(lfreeze_varsquare).and.y(m)>yfreeze_square) then
-            where (x(l1:l2)>xfreeze_square)
-              dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
-            endwhere
-          endif
-
-          dt1_max=max(dt1_max,dt1_max_loc)
-!
-!  Check for NaNs in the advection time-step.
-!
-          if (notanumber(maxadvec)) then
-            print*, 'pde: maxadvec contains a NaN at iproc=', iproc_world
-            if (lenergy) print*, 'advec_cs2  =',advec_cs2
-            call fatal_error_local('pde','')
-          endif
+        call set_dt1_max(p)
 !
 !  Diagnostics showing how close to advective and diffusive time steps we are
 !
-          if (ldiagnos) then
-            if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
-            if (idiag_dtdiffus/=0) call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
-            if (idiag_dtdiffus2/=0) call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
-            if (idiag_dtdiffus3/=0) call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
+        if (lfirst.and.ldt.and.(.not.ldt_paronly).and.ldiagnos) then
+          if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
+          if (idiag_dtdiffus/=0) call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
+          if (idiag_dtdiffus2/=0) call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
+          if (idiag_dtdiffus3/=0) call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
 !
 !  Regular and hyperdiffusive mesh Reynolds numbers
 !
-            if (idiag_Rmesh/=0) call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
-            if (idiag_Rmesh3/=0) call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
-            call max_mn_name(maxadvec,idiag_maxadvec)
-          endif
+          if (idiag_Rmesh/=0) call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
+          if (idiag_Rmesh3/=0) call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
+          call max_mn_name(maxadvec,idiag_maxadvec)
         endif
 !
 !  Display derivative info
@@ -1374,5 +1272,117 @@ module Equ
 !$omp end parallel
 
     endsubroutine freeze
+!***********************************************************************
+    subroutine set_dt1_max(p)
+!
+!  In max_mn maximum values of u^2 (etc) are determined sucessively
+!  va2 is set in magnetic (or nomagnetic)
+!  In rms_mn sum of all u^2 (etc) is accumulated
+!  Calculate maximum advection speed for timestep; needs to be done at
+!  the first substep of each time step
+!  Note that we are (currently) accumulating the maximum value,
+!  not the maximum squared!
+!
+!  The dimension of the run ndim (=0, 1, 2, or 3) enters the viscous time step.
+!  This has to do with the term on the diagonal, cdtv depends on order of scheme
+!
+      use General, only: notanumber
+
+      type (pencil_case), intent(IN) :: p
+
+      real, dimension(nx) :: dt1_max_loc, dt1_advec, dt1_diffus, dt1_src
+      real :: dt1_preac
+
+      if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
+!
+!  sum or maximum of the advection terms?
+!  (lmaxadvec_sum=.false. by default)
+!
+        advec2=advec2+advec_cs2
+        if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
+            (ltestfield_z.and.iuutest>0))  maxadvec=maxadvec+sqrt(advec2)
+
+        if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) maxadvec=maxadvec+sqrt(advec2_hypermesh)
+!
+!  Time step constraints from each module.
+!  (At the moment, magnetic and testfield use the same variable.)
+!  cdt, cdtv, and cdtc are empirical non-dimensional coefficients.
+!
+!  Timestep constraint from advective terms.
+!
+        dt1_advec = maxadvec/cdt
+!
+!  Timestep constraint from diffusive terms.
+!
+        dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
+!
+!  Timestep constraint from source terms.
+!
+        dt1_src = maxsrc/cdtsrc
+!
+!  Timestep combination from advection, diffusion and "source". 
+!
+        dt1_max_loc = sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2)
+!!$ write(88,*)  'imn,threadnum,dt1_max=',imn,omp_rank,dt1_max_loc,dt1_advec + dt1_diffus + dt1_src
+!
+!  time step constraint from the coagulation kernel
+!
+        if (ldustdensity) dt1_max_loc = max(dt1_max_loc,reac_dust/cdtc)
+!
+!  time step constraint from speed of chemical reactions
+!
+        if (lchemistry .and. .not.llsode) then
+!           dt1_preac= reac_pchem/cdtc
+          dt1_max_loc = max(dt1_max_loc,reac_chem/cdtc)
+        endif
+!
+!  time step constraint from relaxation time of polymer
+!
+        if (lpolymer) dt1_max_loc = max(dt1_max_loc,1./(trelax_poly*cdt_poly))
+!
+!  Exclude the frozen zones from the time-step calculation.
+!
+        if (any(lfreeze_varint)) then
+          if (lcylinder_in_a_box.or.lcylindrical_coords) then
+            where (p%rcyl_mn<=rfreeze_int) 
+              dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
+            endwhere
+          else
+            where (p%r_mn<=rfreeze_int) 
+              dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
+            endwhere
+          endif
+        endif
+!
+        if (any(lfreeze_varext)) then
+          if (lcylinder_in_a_box.or.lcylindrical_coords) then
+            where (p%rcyl_mn>=rfreeze_ext)
+              dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
+            endwhere
+          else
+            where (p%r_mn>=rfreeze_ext)
+              dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
+            endwhere
+          endif
+        endif
+!  MR: the next correct? freezes *outside* square
+        if (any(lfreeze_varsquare).and.y(m)>yfreeze_square) then
+          where (x(l1:l2)>xfreeze_square)
+            dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
+          endwhere
+        endif
+
+        dt1_max=max(dt1_max,dt1_max_loc)
+!
+!  Check for NaNs in the advection time-step.
+!
+        if (notanumber(maxadvec)) then
+          print*, 'pde: maxadvec contains a NaN at iproc=', iproc_world
+          if (lenergy) print*, 'advec_cs2  =',advec_cs2
+          call fatal_error_local('pde','')
+        endif
+      endif
+
+    endsubroutine set_dt1_max
 !***********************************************************************
 endmodule Equ
