@@ -6,8 +6,8 @@
   cvsid='$Id$'
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
   unit_density=1.6728e-24
-  xyz0=-0.048,-0.048,-0.048
-  xyz1=+0.048,+0.048,+0.048
+  xyz0=-0.050,-0.050,-0.050
+  xyz1=+0.046,+0.046,+0.046
   lperi=T,T,T
   lwrite_aux=T
   lfix_unit_std=T
