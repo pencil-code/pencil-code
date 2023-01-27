@@ -38,11 +38,12 @@ module Snapshot
       use General, only: get_range_no, indgen
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use General, only: safe_character_assign
-      use IO, only: output_snap, log_filename_to_file, lun_output, wgrid
+      use IO, only: output_snap, output_snap_finalize, log_filename_to_file, lun_output, wgrid
       use HDF5_IO, only: wdim, initialize_hdf5
       use Sub, only: read_snaptime, update_snaptime
       use Grid, only: save_grid, coords_aux
       use Messages, only: warning
+      use Persist, only: output_persistent
       use Mpicomm, only: periodic_bdry_x, periodic_bdry_y, &
                          periodic_bdry_z
 !
@@ -210,7 +211,9 @@ module Snapshot
         call initialize_hdf5(ndown,ngrid_down,mvar_down,maux_down)
         call safe_character_assign(file,'VARd'//ch)
         call output_snap(buffer,nv1,nv2,file)
-        close(lun_output)
+        if (lpersist) call output_persistent(file)
+        call output_snap_finalize
+        if (present(flist)) call log_filename_to_file(file,flist)
         if (lfirst_proc_x.or.llast_proc_x) then
           l2=l2s; l2i=l2is
         endif
