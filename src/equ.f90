@@ -707,7 +707,6 @@ module Equ
 !$    !print*, 'NUM_OMP_RANKS=', num_omp_ranks
 !$    call OMP_set_num_threads(num_omp_ranks)
 !
-!$omp parallel copyin(headtt)
 !$omp do private(p,df_iuu_pencil)
 !
       mn_loop: do imn=1,nyz
@@ -719,8 +718,6 @@ module Equ
 
         lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
         llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
-!$      headtt=headtt.and.lfirstpoint
-!!$ write(88,*)  'imn,threadnum=',imn,omp_rank,headtt,lfirstpoint,llastpoint
 
         !if (imn_array(m,n)==0) cycle
 !
@@ -1101,14 +1098,15 @@ module Equ
 !
       !if (lgpu) call freeze_gpu
 
-       lpenc_loc=.false. 
-       if (lcylinder_in_a_box.or.lcylindrical_coords) then 
-         lpenc_loc(i_rcyl_mn)=.true.
-       else
-         lpenc_loc(i_r_mn)=.true.
-       endif
+      lpenc_loc=.false. 
+      if (lcylinder_in_a_box.or.lcylindrical_coords) then 
+        lpenc_loc(i_rcyl_mn)=.true.
+      else
+        lpenc_loc(i_r_mn)=.true.
+      endif
 !
-!$omp parallel copyin(headtt)
+      headtt = headt .and. lfirst .and. lroot
+!
 !$omp do private(p,pfreeze,iv,n,m)
 !
       do imn=1,ny*nz
@@ -1193,8 +1191,7 @@ module Equ
 !  Set df=0 inside square.
 !
         if (any(lfreeze_varsquare)) then
-          if (headtt) print*, 'pde: freezing variables inside square : ', &
-              lfreeze_varsquare
+          if (headtt) print*, 'pde: freezing variables inside square : ',lfreeze_varsquare
           pfreeze=1.0-quintic_step(x(l1:l2),xfreeze_square,wfreeze,SHIFT=-1.0)*&
                       quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
 !
@@ -1210,13 +1207,11 @@ module Equ
 !
         if (lfrozen_bcs_x) then ! are there any frozen vars at all?
 !
-!  Only need to do this for nonperiodic x direction, on left/right-most
+!  Only need to do this on left/right-most
 !  processor and in left/right--most pencils
 !
-          if (.not. lperi(1)) then
-            if (lfirst_proc_x) where (lfrozen_bot_var_x(1:nvar)) df(l1,m,n,1:nvar) = 0.
-            if (llast_proc_x) where (lfrozen_top_var_x(1:nvar)) df(l2,m,n,1:nvar) = 0.
-          endif
+          if (lfirst_proc_x) where (lfrozen_bot_var_x(1:nvar)) df(l1,m,n,1:nvar) = 0.
+          if (llast_proc_x) where (lfrozen_top_var_x(1:nvar)) df(l2,m,n,1:nvar) = 0.
 !
         endif
 !
@@ -1224,20 +1219,18 @@ module Equ
 !
         if (lfrozen_bcs_y) then ! are there any frozen vars at all?
 !
-!  Only need to do this for nonperiodic y direction, on bottom/top-most
+!  Only need to do this on bottom/top-most
 !  processor and in bottom/top-most pencils.
 !
-          if (.not. lperi(2)) then
-            if (lfirst_proc_y .and. (m == m1)) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_y .and. (m == m2)) then
-              do iv=1,nvar
-                if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
+          if (lfirst_proc_y .and. (m == m1)) then
+            do iv=1,nvar
+              if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
+            enddo
+          endif
+          if (llast_proc_y .and. (m == m2)) then
+            do iv=1,nvar
+              if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
+            enddo
           endif
         endif
 !
@@ -1245,26 +1238,26 @@ module Equ
 !
         if (lfrozen_bcs_z) then ! are there any frozen vars at all?
 !
-!  Only need to do this for nonperiodic z direction, on bottom/top-most
+!  Only need to do this on bottom/top-most
 !  processor and in bottom/top-most pencils.
 !
-          if (.not. lperi(3)) then
-            if (lfirst_proc_z .and. (n == n1)) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_z .and. (n == n2)) then
-              do iv=1,nvar
-                if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
+          if (lfirst_proc_z .and. (n == n1)) then
+            do iv=1,nvar
+              if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+            enddo
+          endif
+          if (llast_proc_z .and. (n == n2)) then
+            do iv=1,nvar
+              if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+            enddo
           endif
         endif
 !
 !  Set df=0 for all solid cells.
 !
         call freeze_solid_cells(df)
+!
+        headtt=.false.
 !
       enddo
 !
