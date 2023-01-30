@@ -5691,13 +5691,6 @@ module Initcond
               do iky=1,ny
                 do ikx=1,nx
 !
-!  Possibility of a kinematic time dependence.
-!
-                  if (ltime) then
-                    om=cs1*sqrt(k2(ikx,iky,ikz))
-                    r(ikx,iky,ikz)=r(ikx,iky,ikz)*sin(om*time1)
-                  endif
-!
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, ==> vi = ui - ki kj uj, but now we write:
 !  (kk.uu)/k2, ==> vi = (1-q)*ui - (1-2q) ki kj uj
@@ -5726,13 +5719,6 @@ module Initcond
                 do iky=1,ny
                   do ikx=1,nx
 !
-!  Possibility of a kinematic time dependence.
-!
-                    if (ltime) then
-                      om=cs1*sqrt(k2(ikx,iky,ikz))
-                      r(ikx,iky,ikz)=r(ikx,iky,ikz)*sin(om*time1)
-                    endif
-!
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
@@ -5740,6 +5726,13 @@ module Initcond
                         (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
                         +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
                         +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+!
+!  Possibility of a kinematic time dependence.
+!
+                    if (ltime) then
+                      om=cs1*sqrt(k2(ikx,iky,ikz))
+                      r(ikx,iky,ikz)=r(ikx,iky,ikz)*sin(om*time1)
+                    endif
 !
                     v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
                     v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
@@ -5841,6 +5834,20 @@ module Initcond
                       -ky(iky+ipy*ny)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
                       +kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz)
 !
+                enddo
+              enddo
+            enddo
+          endif
+!
+!  Possibility of a kinematic time dependence.
+!
+          if (ltime) then
+            do ikz=1,nz
+              do iky=1,ny
+                do ikx=1,nx
+                  om=cs1*sqrt(k2(ikx,iky,ikz))
+                  u_re(ikx,iky,ikz,1:3)=+u_re(ikx,iky,ikz,1:3)*sin(om*time1)
+                  u_im(ikx,iky,ikz,1:3)=-u_im(ikx,iky,ikz,1:3)*cos(om*time1)
                 enddo
               enddo
             enddo

@@ -100,6 +100,7 @@ module Hydro
   real :: w_sldchar_hyd=1.0
   real :: sigma_uukin=1., tau_uukin=1., time_uukin=1., sigma1_uukin_scl_yz=1.
   real :: binary_radius=0., radius_kinflow=0., width_kinflow=0.
+  real :: power1_kinflow=4., power2_kinflow=-5./3., kgaussian_uu=0., kpeak_kinflow=3., cutoff=1e9
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100, smooth_width=3
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -126,7 +127,8 @@ module Hydro
       lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, &
       ll_sh, mm_sh, n_xprof, lrandom_ampl,smooth_width, &
       sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz, &
-      binary_radius, radius_kinflow, width_kinflow
+      binary_radius, radius_kinflow, width_kinflow, &
+      power1_kinflow, power2_kinflow, kpeak_kinflow
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -2484,6 +2486,10 @@ module Hydro
         if (lpenc_loc(i_uu)) &
           p%uu=f(l1:l2,m,n,iux:iuz)*cos(omega_kinflow*t)
         lupdate_aux=.false.
+      case('sound3D')
+        if (lpenc_loc(i_uu)) then
+          p%uu=f(l1:l2,m,n,iux:iuz)
+        endif
       case default
         call inevitably_fatal_error('hydro_kinematic', 'kinematic_flow not found')
       end select
@@ -2592,6 +2598,13 @@ module Hydro
         f(:,:,:,iux:iuz) = (1.-fac)*f(:,:,:,iux:iuz) + fac*uu_2
 !print*, 'PENCIL FMAX' , iproc, maxval(abs(f(:,:,:,iux:iuz)))
       endif
+!
+      select case (kinematic_flow)
+      case('sound3D')
+        call sound3D(f)
+      case default
+        call inevitably_fatal_error('hydro_kinematic', 'kinematic_flow not found')
+      end select
 !
     endsubroutine hydro_before_boundary
 !***********************************************************************
@@ -3716,5 +3729,34 @@ module Hydro
       endif
 
     endsubroutine update_char_vel_hydro
+!***********************************************************************
+    subroutine sound3D (f)
+!
+!  Call power_randomphase_hel with time dependence to emulate sound waves analytically.
+!
+!    5-dec-22/axel: added
+!
+      use Initcond
+      use General,         only: random_seed_wrapper
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: kgaussian=0., cutoff=1e9, relhel_kinflow=0., qirro_kinflow=1., ncutoff=1.
+      integer :: iux=1, iuz=3
+      logical :: lscale_tobox=.false., lskip_projection=.false., lvectorpotential=.false.
+!
+!  Call power_randomphase_hel with time dependence with qirro=1 for now.
+!
+! call get_nseed(nseed)
+!
+      seed(1)=-((seed0-1812+1)*10+iproc_world)
+      call random_seed_wrapper(PUT=seed,CHANNEL=1)
+!   call random_seed_wrapper(PUT=seed,CHANNEL=2)
+!
+      call power_randomphase_hel(ampl_kinflow,power1_kinflow,power2_kinflow, &
+          cutoff,ncutoff,kpeak_kinflow,f,iux,iuz,relhel_kinflow,kgaussian, &
+          lskip_projection, lvectorpotential, lscale_tobox, &
+          qirro=qirro_kinflow, time=real(t), cs=1.)
+!
+    endsubroutine sound3D
 !***********************************************************************
 endmodule Hydro
