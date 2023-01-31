@@ -910,7 +910,7 @@ module Equ
 !
 !  Do the time integrations here, before the pencils are overwritten.
 !
-        if (ltime_integrals.and.llast.and..not.lgpu) then
+        if (ltime_integrals.and.llast) then
           if (lhydro)    call time_integrals_hydro(f,p)
           if (lmagnetic) call time_integrals_magnetic(f,p)
         endif
@@ -976,6 +976,10 @@ module Equ
 !
 !$omp end do
 !$omp end parallel
+!
+      if (ltime_integrals.and.llast) then
+        if (lhydro) call update_for_time_integrals_hydro
+      endif
 !
     endsubroutine rhs_cpu
 !***********************************************************************

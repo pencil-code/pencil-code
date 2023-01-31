@@ -1457,6 +1457,17 @@ module Hydro
 !
       if (lmagnetic.and.lconservative) call get_shared_variable('B_ext2',B_ext2)
 !
+      if (ltime_integrals) then
+        if (lvart_in_shear_frame) &
+          call fatal_error('initialize_hydro', &
+               'lvart_in_shear_frame is no longer supported in hydro. uut etc. are always &
+                in lab frame. lshear_frame_correlation=T now transforms both uu and uut.')
+      endif
+
+      if (lfargo_advection.and..not.lfargoadvection_as_shift) then
+        if (lroot) call not_implemented("hydro_after_timestep","Fargo advection without Fourier shift")
+      endif
+
       endsubroutine initialize_hydro
 !***********************************************************************
       subroutine calc_means_hydro(f)
@@ -4869,15 +4880,13 @@ module Hydro
 !  11-dec-21/hongzhe: uut and oot are now always in lab frame, but their update time
 !                     is write to file for future shear-frame transformation.
 !
-      use SharedVariables, only: put_shared_variable
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(inout) :: f
       intent(in) :: p
 !
-      real :: fact_cos,fact_sin,t_cor=0.
+      real :: fact_cos,fact_sin
       logical :: lreset_vart=.false.
 !
       fact_cos=cos(omega_fourier*t)
@@ -4888,23 +4897,7 @@ module Hydro
       if (ltime_integrals_always .or. dtcor<=0.) then
         if (it==1) lreset_vart=.true.
       else
-        if (t>t_vart) then
-          lreset_vart=.true.
-          t_cor=t
-          call put_shared_variable('t_cor',t_cor,caller='time_integrals_hydro')
-!
-!  If uut and oot are updated, write t to file and advance t_var.
-!  These only happen at the last point in the mn loop.
-!
-          if (llastpoint) then
-            if (lroot) then
-              open(1,file=trim(datadir)//'/tvart.dat',status='unknown',position='append')
-              write(1,'(4f14.7)') t_cor
-              close (1)
-            endif
-            t_vart=t_vart+dtcor
-          endif
-        endif
+        if (t>t_vart) lreset_vart=.true.
       endif
 !
 !  assign values to uut etc.
@@ -4925,10 +4918,6 @@ module Hydro
         if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=0.
         if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=0.
         if (lreset_vart) then
-          if (lvart_in_shear_frame) &
-              call fatal_error('time_integrals_hydro',&
-                  'lvart_in_shear_frame is no longer supported in hydro. uut etc. are always &
-                   &in lab frame. lshear_frame_correlation=T now transforms both uu and uut.')
           if (iuxt/=0)              f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iux:iuz)
           if (ioxt/=0 .and. iox/=0) f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,iox:ioz)
         endif
@@ -4936,6 +4925,30 @@ module Hydro
       lreset_vart=.false.
 !
     endsubroutine time_integrals_hydro
+!***********************************************************************
+    subroutine update_for_time_integrals_hydro
+
+      use SharedVariables, only: put_shared_variable
+!
+      real :: t_cor=0.
+
+      if (.not.(ltime_integrals_always .or. dtcor<=0.)) then
+        if (t>t_vart) then
+          t_cor=t
+          call put_shared_variable('t_cor',t_cor,caller='update_for_time_integrals')
+!
+!  If uut and oot are updated, write t to file and advance t_var after leaving the mn-loop.
+!
+          if (lroot) then
+            open(1,file=trim(datadir)//'/tvart.dat',status='unknown',position='append')
+            write(1,'(4f14.7)') t_cor
+            close(1)
+          endif
+          t_vart=t_vart+dtcor
+        endif
+      endif
+
+    endsubroutine update_for_time_integrals_hydro
 !***********************************************************************
     subroutine hydro_after_boundary(f)
 !
@@ -6925,7 +6938,7 @@ module Hydro
 !  28-mar-17/MR: reinstated update_ghosts.
 !
       use Boundcond, only: update_ghosts
-      use Sub, only: div
+      use Sub, only: div, vecout_finalize
       use Poisson, only: inverse_laplacian, inverse_laplacian_fft_z    !, inverse_laplacian_z_2nd_neumann
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -6935,21 +6948,16 @@ module Hydro
       logical :: lwrite_debug=.false.
       integer :: iorder_z=2
 !
-      fargo: if (lfargo_advection) then
+      if (lfargo_advection) then
 !
 !  Call update ghosts as derivatives are needed.
 !
         call update_ghosts(f)
 !
-        fourier: if (lfargoadvection_as_shift) then
+        if (lfargoadvection_as_shift) then
           call fourier_shift_fargo(f,df,dt_sub)
         else
-          if (lroot) then
-            print*,'Fargo advection without Fourier shift'
-            print*,'is not functional.'
-            call fatal_error("hydro_after_timestep","")
-          endif
-        endif fourier
+        endif
 !
 !  To disable radial advection, intended for tests in cylindrical coordinates
 !
@@ -6958,7 +6966,7 @@ module Hydro
           df(:,:,:,iux) = 0.
         endif
 !
-      endif fargo
+      endif
 
       if (lhelmholtz_decomp) then 
 
@@ -6992,6 +7000,8 @@ module Hydro
 
         endif
       endif
+
+      if (othresh_per_orms/=0) call vecout_finalize(trim(directory)//'/ovec',41,novec)
 !
     endsubroutine hydro_after_timestep
 !***********************************************************************

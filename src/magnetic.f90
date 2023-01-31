@@ -1892,6 +1892,16 @@ module Magnetic
 !
       z_allprocs=reshape(zgrid,(/nz,nprocz/))
 
+      if (.not.ltime_integrals_always.and.lvart_in_shear_frame) then
+        if (.not. lshear) call fatal_error('time_integrals_magnetic',&
+            'lshear=F; cannot do frame transform')
+        ! 
+        !  Must have nprocy=1 because we shift in the y direction
+        ! 
+        if (nprocy/=1)    call fatal_error('time_integrals_magnetic',&
+            'nprocy=1 required for lvart_in_shear_frame')
+      endif
+
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -6795,28 +6805,21 @@ module Magnetic
           if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt)  =f(l1:l2,m,n,ibxt:ibzt)  +dt*p%bb
           if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt)  =f(l1:l2,m,n,ijxt:ijzt)  +dt*p%jj
         endif
-      else
-        if (lreset_vart) then
-          if (lvart_in_shear_frame) then
-            !
-            !  store ibbt etc. in the shear frame
-            !  Must have nprocy=1 because we shift in the y direction
-            !
-            if (.not. lshear) call fatal_error('time_integrals_magnetic',&
-                'lshear=F; cannot do frame transform')
-            if (nprocy/=1)    call fatal_error('time_integrals_magnetic',&
-                'nprocy=1 required for lvart_in_shear_frame')
-            do ikx=l1,l2
-              nshear=nint( deltay/dy * x(ikx)/Lx )
-              iky=mod(m-nshear,ny)
-              if (iky<=0) iky=iky+ny
-              if (ibxt/=0 .and. ibx/=0) f(ikx,m,n,ibxt:ibzt) = f(ikx,iky,n,ibx:ibz)
-              if (ijxt/=0 .and. ijx/=0) f(ikx,m,n,ijxt:ijzt) = f(ikx,iky,n,ijx:ijz)
-            enddo
-          else
-            if (ibxt/=0 .and. ibx/=0) f(l1:l2,m,n,ibxt:ibzt)  =f(l1:l2,m,n,ibx:ibz)
-            if (ijxt/=0 .and. ijx/=0) f(l1:l2,m,n,ijxt:ijzt)  =f(l1:l2,m,n,ijx:ijz)
-          endif
+      elseif (lreset_vart) then
+        if (lvart_in_shear_frame) then
+          !
+          !  store ibbt etc. in the shear frame
+          !
+          do ikx=l1,l2
+            nshear=nint( deltay/dy * x(ikx)/Lx )
+            iky=mod(m-nshear,ny)
+            if (iky<=0) iky=iky+ny
+            if (ibxt/=0 .and. ibx/=0) f(ikx,m,n,ibxt:ibzt) = f(ikx,iky,n,ibx:ibz)
+            if (ijxt/=0 .and. ijx/=0) f(ikx,m,n,ijxt:ijzt) = f(ikx,iky,n,ijx:ijz)
+          enddo
+        else
+          if (ibxt/=0 .and. ibx/=0) f(l1:l2,m,n,ibxt:ibzt)  =f(l1:l2,m,n,ibx:ibz)
+          if (ijxt/=0 .and. ijx/=0) f(l1:l2,m,n,ijxt:ijzt)  =f(l1:l2,m,n,ijx:ijz)
         endif
       endif
       lreset_vart=.false.
@@ -10439,7 +10442,8 @@ module Magnetic
 !***********************************************************************
    subroutine magnetic_after_timestep(f,df,dtsub)
 !
-      use Mpicomm , only: mpibcast_real
+      use Mpicomm, only: mpibcast_real
+      use Sub, only: vecout_finalize
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -10457,6 +10461,8 @@ module Magnetic
         call mpibcast_real(vArms)
       endif
 !
+      if (bthresh_per_brms/=0) call vecout_finalize(trim(directory)//'/bvec',41,nbvec)
+
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dtsub)
 !

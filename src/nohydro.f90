@@ -1058,6 +1058,10 @@ module Hydro
 
     endsubroutine update_char_vel_hydro
 !***********************************************************************
+    subroutine update_for_time_integrals_hydro
+
+    endsubroutine update_for_time_integrals_hydro
+!***********************************************************************
     subroutine calc_gradu(f)
 !
 ! Dummy 
