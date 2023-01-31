@@ -2686,6 +2686,10 @@ module Hydro
 !
     endsubroutine time_integrals_hydro
 !***********************************************************************
+    subroutine update_for_time_integrals_hydro
+
+    endsubroutine update_for_time_integrals_hydro
+!***********************************************************************
    subroutine coriolis_cartesian(df,uu,velind)
 !
 !  Coriolis terms for cartesian geometry.
