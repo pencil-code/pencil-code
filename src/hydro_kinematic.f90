@@ -2599,12 +2599,11 @@ module Hydro
 !print*, 'PENCIL FMAX' , iproc, maxval(abs(f(:,:,:,iux:iuz)))
       endif
 !
-      select case (kinematic_flow)
-      case('sound3D')
+!  Do global, time-dependent flows calculations here:
+!
+      if (kinematic_flow=='sound3D') then
         call sound3D(f)
-      case default
-        call inevitably_fatal_error('hydro_kinematic', 'kinematic_flow not found')
-      end select
+      endif
 !
     endsubroutine hydro_before_boundary
 !***********************************************************************
