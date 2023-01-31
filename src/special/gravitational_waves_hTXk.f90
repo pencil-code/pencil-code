@@ -1904,6 +1904,7 @@ module Special
              +2.*Tpq_re(:,m-m1+1,n-n1+1,4)**2 &
              +2.*Tpq_re(:,m-m1+1,n-n1+1,5)**2 &
              +2.*Tpq_re(:,m-m1+1,n-n1+1,6)**2)/nx,idiag_nlin0)
+            lfirstpoint=.false.
           enddo
           enddo
         endif
