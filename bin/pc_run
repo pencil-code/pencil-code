@@ -56,6 +56,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #                   Suppress pencil consistency check, irrespective of
 #                   &run_pars.lpencil_check.
 #   -q, --quiet     Be quiet.
+#   -o, --exec-opts User execution options.
 #   -v, --version   Print version number.
 #       --last      Return the dates+paths of the last runs by 'tailing'
 #                   the $PENCIL_HOME/.run_directories.log file.
@@ -127,6 +128,7 @@ GetOptions(\%opts,
                -N   --no-pencil-check
                     --notify
                -q   --quiet
+               -o=s --exec-opts=s
                -v   --version
                     --last
                -l   --log
@@ -150,6 +152,7 @@ my $host_id        = ($opts{'H'} || $opts{'host-id'}         || undef);
 my $suppress_check = ($opts{'N'} || $opts{'no-pencil-check'} || '');
 my $notify         = (              $opts{'notify'}          || '');
 my $quiet          = ($opts{'q'} || $opts{'quiet'}           || '');
+my $exec_opts      = ($opts{'o'} || $opts{'exec-opts'}       || '');
 my $log            = ($opts{'l'} || $opts{'log'}             || '');
 my $log_dir        = (              $opts{'log-dir'}         || '');
 
@@ -351,7 +354,7 @@ sub mpi_run_cmd {
             $log_cmd = 'tee "'.$log_file.'"'
         }
     }
-    my $extra_opts   = $runtime_params{'extra_opts'  } || '';
+    my $extra_opts = $runtime_params{'extra_opts'  } || '';
     my @extra_opts = split('\s+', $extra_opts);
 #
 # Set environment.
@@ -380,6 +383,7 @@ sub mpi_run_cmd {
             }
         }
         my $mpiexec_opts = $runtime_params{'mpiexec_opts'} || '';
+        $mpiexec_opts .= $exec_opts;
         my $mpiexec_opts2 = $runtime_params{'mpiexec_opts2'} || '';
 
         my ($np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node)
