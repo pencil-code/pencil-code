@@ -730,6 +730,10 @@ module Viscosity
 !
       if (lroot.and.ip<14) print*,'xmask_vis=',xmask_vis
 !
+      if (lvisc_nu_profx.and.lvisc_nu_profr.and.lroot) &
+        call fatal_error("calc_pencils_viscosity",'You are using both radial and horizontal '// &
+                         'profiles for a viscosity jump. Are you sure this is reasonable?' )
+!
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine initialize_lambda
@@ -1489,12 +1493,6 @@ module Viscosity
           else
             tmp3=p%rcyl_mn
           endif
-        endif
-        if (lvisc_nu_profx.and.lvisc_nu_profr) then
-          print*,'You are using both radial and horizontal '
-          print*,'profiles for a viscosity jump. Are you sure '
-          print*,'this is reasonable? Better stop and check.'
-          call fatal_error("calc_pencils_viscosity","")
         endif
         pnu = nu + (nu*(nu_jump-1.))*(step(tmp3,xnu ,widthnu) - step(tmp3,xnu2,widthnu))
         tmp4 = (nu*(nu_jump-1.))*(der_step(tmp3,xnu ,widthnu)-der_step(tmp3,xnu2,widthnu))

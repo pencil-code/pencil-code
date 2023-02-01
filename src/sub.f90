@@ -7497,7 +7497,7 @@ nameloop: do
 !
       real :: nlf, h_slope_limited, one_16, fdif_limit
       type (pencil_case), intent(in) :: p
-      integer :: j,k
+      integer :: j,k,ix
       logical :: ldiv_4th
 
 !

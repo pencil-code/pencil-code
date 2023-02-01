@@ -687,7 +687,7 @@ module Testfield
 !  dhruba+piyali:
 !
       use Cdata
-      integer :: ivec
+      integer :: ivec,ix
 !
       do ivec=1,3
 ! For the testfield (1,0,0)
@@ -721,7 +721,7 @@ module Testfield
 !  dhruba+piyali:
 !
       use Cdata
-      integer :: ivec
+      integer :: ivec,ix
 !
       do ivec=1,3
         atilde(:,ivec,1) = Eipq(:,ivec,i1)*cos(xtf)+&
@@ -777,7 +777,10 @@ module Testfield
     endsubroutine invert_bbtest_j0_P1
 !***********************************************************************
     subroutine get_ab_from_tildeab
+
       use Cdata
+
+      integer :: ix
 !
 ! Get the a and b (alpha and beta in our notation) from the tilde (a,b)
 ! Eq. (16) page 6, Schrinner 2007 (Arxiv version)

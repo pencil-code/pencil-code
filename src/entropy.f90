@@ -3436,9 +3436,11 @@ module Energy
 !
 !  Enforce maximum heating rate timestep constraint
 !
+      if (lthdiff_Hmax.and.((lfirst.and.ldt).or. &
+          ldiagnos.and.(idiag_dtH/=0.or.idiag_tauhmin/=0))) ss0 = abs(df(l1:l2,m,n,iss))
+
       if (lfirst.and.ldt) then
         if (lthdiff_Hmax) then 
-          ss0 = abs(df(l1:l2,m,n,iss))
           dt1_max=max(dt1_max,ss0*p%cv1/cdts)
         else
           dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
@@ -3586,7 +3588,7 @@ module Energy
           call surf_mn_name(TTtop,idiag_TTtop)
         endif
 !
-!  Calculate integrated temperature in in limited radial range.
+!  Calculate integrated temperature in limited radial range.
 !
         if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma1,idiag_TTp,p)
 
@@ -6424,8 +6426,7 @@ module Energy
 !
       endif
       heat = luminosity*prof
-      if (headt .and. lfirst .and. ip<=9) &
-          call output_pencil('heat.dat',heat,1)
+      if (headt .and. lfirst .and. ip<=9) call output_pencil('heat.dat',heat,1)
 !
 !  Surface cooling: entropy or temperature
 !  Cooling profile; maximum = 1
