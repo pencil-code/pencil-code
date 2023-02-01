@@ -3663,7 +3663,7 @@ module Hydro
       real, dimension (nx,3,3) :: puij_Schur
       integer :: i, j, ju
 !
-      Fmax=tini
+      Fmax=1./impossible
 !
 !  Identify module and boundary conditions.
 !
