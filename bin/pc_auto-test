@@ -274,6 +274,9 @@ Options:
   -v,  --version           \tPrint version number
   -C,  --clean             \tClean up (pc_build --cleanall) before compiling
   -c,  --compile-only      \tTest compilation only
+  -o,  --exec-opts=<opts>  \tPass cmd line options in quotes such as partition
+                           \tand/or billing account to execute mpi example:
+                           \t --exec-opts='--account=projectA -p test'
   -n,  --norun             \tTest compilation and starting only
   -f,  --results-from-file \tDon't run, read results from data/timeseries.dat
   -r,  --reload            \tKeep reloading parameters (using KEEP_RELOADING)
@@ -357,6 +360,7 @@ GetOptions(\%opts,
                -n   --norun
                -f   --results-from-file
                -r   --reload
+               -o   --exec-opts=s
                -l   --list
                -L   --list-all
                     --logfile=s
@@ -404,6 +408,7 @@ if ($res_from_file) { $t_comp=$t_start=$t_run=0 };
 my $debug       = (              $opts{'debug'}           || 0    );
 my $clean       = ($opts{'C'} || $opts{'clean'}           || 0    );
 my $reload      = ($opts{'r'} || $opts{'reload'}          || 0    );
+my $exec_opts   = ($opts{'o'} || $opts{'exec-opts'}       || ''   );
 my $list_only   = ($opts{'l'} || $opts{'list'}            || 0    );
 my $list_all    = ($opts{'L'} || $opts{'list-all'}        || 0    );
 my $logfile     = (              $opts{'logfile'}         || ''   );
@@ -465,6 +470,10 @@ if ($config_files) {
     push @pc_dump_config, "--config-files=$config_files";
     push @pc_build,       "--config-files=$config_files";
     push @pc_run,         "--config-files=$config_files";
+}
+if ($exec_opts) {
+    push @pc_dump_config, "--exec-opts='$exec_opts'";
+    push @pc_run,         "--exec-opts='$exec_opts'";
 }
 if ($host_id) {
     push @pc_dump_config, "--host-id=$host_id";
