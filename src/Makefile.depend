@@ -217,7 +217,7 @@ else ifeq ($(shell grep 'use [Pp]articles_cdata' $(SPECIAL_SRC)),)
 else
   $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(SLICES_METHODS_OBJ) $(SHARED_VARIABLES_OBJ)
 endif
-ifeq ($(shell grep 'use [Pp]articles_sub' $(SPECIAL_SRC)),)
+ifneq ($(shell grep 'use [Pp]articles_sub' $(SPECIAL_SRC)),)
   $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_SUB_OBJ) $(SLICES_METHODS_OBJ)
 endif
 $(SPECIAL_MODULES:=.o): special.h $(SPECIAL_MODULES:=.f90) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(SLICES_METHODS_OBJ)
