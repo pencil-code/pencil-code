@@ -8,6 +8,8 @@
 !
 ! CPARAM logical, parameter :: lhydro = .false.
 ! CPARAM logical, parameter :: lhydro_kinematic = .false.
+! CPARAM logical, parameter :: lhydro_potential = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -29,11 +31,10 @@ module Hydro
   include 'record_types.h'
   include 'hydro.h'
 !
-  real, dimension (mx,3) :: uumx=0.
+  real, dimension (nx,3) :: uumx=0.
   real, dimension (mz,3) :: uumz=0.
-  real, dimension (mz,3) :: uumzg=0.
-  real, dimension (mx,my,3) :: uumxy=0.
-  real, dimension (mx,mz,3) :: uumxz=0.
+  real, dimension (:,:,:), allocatable :: uumxy
+  real, dimension (:,:,:), allocatable :: uumxz
 !
   real :: u_out_kep=0.0
   logical, target :: lpressuregradient_gas=.false.
