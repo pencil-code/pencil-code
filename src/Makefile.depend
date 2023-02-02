@@ -75,7 +75,7 @@ $(INITCOND_OBJ): $(INITCOND_SRC) $(CDATA_OBJ) $(EOS_OBJ) $(FARRAY_OBJ) $(FOURIER
 #
 ifeq ($(INITIAL_CONDITION_OBJ),noinitial_condition.o)
   $(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) 
-else ifeq ($(shell grep 'use [Pp]articles_cdata' $(INITIAL_CONDITION_OBJ)),)
+else ifeq ($(shell grep -i '^ *use  *particles_cdata' $(INITIAL_CONDITION_OBJ)),)
   $(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) $(POISSON_OBJ) $(GRAVITY_OBJ) $(EOS_OBJ) $(BOUNDCOND_OBJ) $(STREAMLINES_OBJ) $(FIXED_POINT_OBJ) $(PARTICLES_CDATA_OBJ)
 else
   $(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) $(POISSON_OBJ) $(GRAVITY_OBJ) $(EOS_OBJ) $(BOUNDCOND_OBJ) $(STREAMLINES_OBJ) $(FIXED_POINT_OBJ)
@@ -212,12 +212,12 @@ else ifeq ($(filter-out pressure_bump,$(SPECIAL_OBJ)),)
   $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) $(COMMON_DEPS) $(EOS_OBJ) $(DENSITY_OBJ) $(FILE_IO_OBJ) $(SLICES_METHODS_OBJ)
 else ifeq ($(filter-out atmosphere chem_stream internal_flow jet,$(SPECIAL_OBJ)),)
   $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(SLICES_METHODS_OBJ)
-else ifeq ($(shell grep 'use [Pp]articles_cdata' $(SPECIAL_SRC)),)
+else ifeq ($(shell grep -i '^ *use  *particles_cdata' $(SPECIAL_SRC)),)
   $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ)
 else
   $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(SLICES_METHODS_OBJ) $(SHARED_VARIABLES_OBJ)
 endif
-ifneq ($(shell grep 'use [Pp]articles_sub' $(SPECIAL_SRC)),)
+ifneq ($(shell grep -i '^ *use  *particles_sub' $(SPECIAL_SRC)),)
   $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_SUB_OBJ) $(SLICES_METHODS_OBJ)
 endif
 $(SPECIAL_MODULES:=.o): special.h $(SPECIAL_MODULES:=.f90) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(SLICES_METHODS_OBJ)
