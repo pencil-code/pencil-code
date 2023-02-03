@@ -44,9 +44,10 @@ module Special
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0
   integer :: ia0=0, idiva_name=0
+!  integer :: ia0, idiva_name
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
-  logical :: lvectorpotential=.false.
+  logical :: lvectorpotential=.false., phi_inhom=.true.
   character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
     initee, inita0, alpf, &
@@ -56,7 +57,7 @@ module Special
     kz_ex, kz_ey, kz_ez, &
     kx_a0, ky_a0, kz_a0, &
     phase_ex, phase_ey, phase_ez, phase_a0, &
-    llorenz_gauge_disp, &
+    llorenz_gauge_disp, phi_inhom, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
     ampla0, initpower_a0, initpower2_a0, &
@@ -64,7 +65,7 @@ module Special
 !
   ! run parameters
   namelist /special_run_pars/ &
-    alpf, llorenz_gauge_disp
+    alpf, llorenz_gauge_disp, phi_inhom
 !
 ! Declare any index variables necessary for main or
 !
@@ -316,7 +317,8 @@ module Special
 !
       if (lmagnetic) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
-        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj)
+        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb)
+!        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj)
 !
 !  if particles, would add J=sum(qi*Vi*ni)
 !
@@ -328,17 +330,25 @@ module Special
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
 !
         if (alpf/=0.) then
-          call cross(p%gphi,p%el,gtmp)
-          call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
+          if (phi_inhom) then
+            call cross(p%gphi,p%el,gtmp)
+            call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
+          else
+            call multsv(p%infl_dphi,p%bb,gtmp)
+          endif
 !          print*,"p%infl_phi",p%infl_phi
 !          print*,"p%infl_dphi",p%infl_dphi
           df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
           if (llorenz_gauge_disp) then
             call del2(f,ia0,del2a0)
-            call dot_mn(p%gphi,p%bb,tmp)
+            if (phi_inhom) then
+              call dot_mn(p%gphi,p%bb,tmp)
+              df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp+del2a0
+            else
+              df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+del2a0
+            endif
             !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
             df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
-            df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp+del2a0
             df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
           endif
         endif

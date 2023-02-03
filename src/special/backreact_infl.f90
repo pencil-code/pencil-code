@@ -86,7 +86,7 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0
+  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
   real :: ncutoff_phi=1.
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0., eps=.01
@@ -97,8 +97,9 @@ module Special
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, ddotam_all
   real, pointer :: alpf
+  real, dimension (nx) :: dt1_special
   logical :: lbackreact_infl=.true., lzeroHubble=.false.
-  logical :: lscale_tobox=.true.
+  logical :: lscale_tobox=.true.,ldt_backreact_infl=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false.
 !
   character (len=labellen) :: Vprime_choice='quadratic'
@@ -115,7 +116,7 @@ module Special
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, c_light_axion, lambda_axion, Vprime_choice, &
-      lzeroHubble
+      lzeroHubble, ldt_backreact_infl, Ndiv
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -435,6 +436,14 @@ module Special
         call dot_mn(p%el,p%bb,tmp)
         df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*p%infl_a21*tmp
       endif
+!
+!  Total contribution to the timestep
+!
+      if (lfirst.and.ldt.and.ldt_backreact_infl) then
+        dt1_special = Ndiv*abs(Hscript)
+        dt1_max=max(dt1_max,dt1_special) 
+      endif
+
 !
 !  Diagnostics
 !
@@ -845,7 +854,7 @@ module Special
 !
 !  compute ddotam = a"/a (needed for GW module)
 !
-        ddota=-dphi**2-gphi2+2.5*a2*Vpotential
+        ddota=-dphi**2-gphi2+4*a2*Vpotential
         ddotam=ddotam+four_pi_over_three*sum(ddota)
       enddo
       enddo

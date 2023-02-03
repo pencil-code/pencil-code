@@ -39,7 +39,7 @@
 ! MAUX CONTRIBUTION 18
 !
 ! PENCILS PROVIDED stress_ij(6)
-! PENCILS PROVIDED gphi(3)
+! PENCILS PROVIDED gphi(3), infl_a2
 !
 !***************************************************************
 !
@@ -102,7 +102,7 @@ module Special
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
   logical :: lswitch_sign_e_X_boost=.false.
   logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
-  logical :: lelectmag=.false., lscalar=.false.
+  logical :: lelectmag=.false., lscalar=.false., lscalar_phi=.false.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lggTX_as_aux_boost=.false., lhhTX_as_aux_boost=.false.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
@@ -154,7 +154,7 @@ module Special
     initGW, amplGW, amplGW2, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
     lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
-    lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, lscalar, &
+    lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, lscalar, lscalar_phi, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lonly_mag, lread_scl_factor_file, t_ini, &
     lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW, &
@@ -169,7 +169,7 @@ module Special
     lswitch_sign_e_X_boost, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     t_equality, t_acceleration, &
-    lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, lscalar, &
+    lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, lscalar, lscalar_phi, &
     lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
     lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
@@ -754,6 +754,7 @@ module Special
 !
       if (lscalar) then
         lpenc_requested(i_gphi)=.true.
+        lpenc_requested(i_infl_a2)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -825,7 +826,7 @@ module Special
               if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
               if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
               if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
-              if (lscalar)   p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%gphi(:,i)*p%gphi(:,j)
+              if (lscalar_phi)   p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%infl_a2*p%gphi(:,i)*p%gphi(:,j)
             endif
 !
 !  Remove trace.
@@ -919,6 +920,8 @@ module Special
         scale_factor=t**2/t_equality
       elseif (ldark_energy_GW) then
         scale_factor=t_acceleration**3/(t*t_equality)
+      elseif (lscalar) then
+        scale_factor=sqrt(p%infl_a2(1))
       else
         if (t+tshift==0.) then
           scale_factor=1.
