@@ -4343,8 +4343,8 @@ module Magnetic
 ! set dAdt to zero at the beginning of each execution of this routine
 !
       dAdt=0.
-      Fmax=tini
-      dAmax=tini
+      Fmax=1./impossible
+      dAmax=1./impossible
 !
 !  Replace B_ext locally to accommodate its time dependence.
 !
