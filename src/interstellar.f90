@@ -1616,6 +1616,19 @@ module Interstellar
 !
     endsubroutine pencil_criteria_interstellar
 !***********************************************************************
+    subroutine interstellar_after_boundary(f)
+!
+!  This routine calculates and applies the optically thin cooling function
+!  together with UV heating.
+!
+!  01-aug-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (lfirst.and..not.lpencil_check_at_work) call check_SN(f)
+!
+    endsubroutine interstellar_after_boundary
+!***********************************************************************
     subroutine interstellar_before_boundary(f)
 !
 !  This routine calculates and applies the optically thin cooling function
@@ -3609,11 +3622,11 @@ module Interstellar
           deltarho=0.
           call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%feat%MM)
           rho_old=rho_old+deltarho
-        endif
-        if (ldensity_nolog) then
-          f(l1:l2,m,n,irho)=rho_old
-        else
-          f(l1:l2,m,n,ilnrho)=log(rho_old)
+          if (ldensity_nolog) then
+            f(l1:l2,m,n,irho)=rho_old
+          else
+            f(l1:l2,m,n,ilnrho)=log(rho_old)
+          endif
         endif
 !
 !  Get the unperturbed energy and then add thermal energy if lSN_eth.

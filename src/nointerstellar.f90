@@ -140,6 +140,19 @@ module Interstellar
 !
     endsubroutine pencil_criteria_interstellar
 !***********************************************************************
+    subroutine interstellar_after_boundary(f)
+!
+!  This routine calculates and applies the optically thin cooling function
+!  together with UV heating.
+!
+!  01-aug-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine interstellar_after_boundary
+!***********************************************************************
     subroutine interstellar_before_boundary(f)
 !
 !  This routine calculates and applies the optically thin cooling function

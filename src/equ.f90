@@ -51,7 +51,8 @@ module Equ
       use Gpu
       use Gravity
       use Hydro
-      use Interstellar, only: interstellar_before_boundary, check_SN
+      use Interstellar, only: interstellar_before_boundary, &
+                              interstellar_after_boundary
       use Magnetic
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
@@ -328,6 +329,7 @@ module Equ
       if (ldensity)               call density_after_boundary(f)
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
       if (lspecial)               call special_after_boundary(f)
+      if (linterstellar)          call interstellar_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture
 !
@@ -347,10 +349,6 @@ module Equ
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif
-!
-!  earliest call to check_SN that does not break the pencil chece!
-!
-      if (linterstellar) call check_SN(f)
 !
 !  Finish the job for the anelastic approximation
 !

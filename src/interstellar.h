@@ -16,8 +16,8 @@
   public :: pencil_criteria_interstellar
 
   public :: interstellar_before_boundary
+  public :: interstellar_after_boundary
 
   public :: calc_heat_cool_interstellar
   public :: input_persistent_interstellar
   public :: output_persistent_interstellar
-  public :: check_SN
