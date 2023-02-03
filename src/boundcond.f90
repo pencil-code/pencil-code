@@ -978,6 +978,9 @@ module Boundcond
                   call tayler_expansion(f,topbot,j,'x')
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
+                case ('exp')
+                  ! BCX_DOC: exponentiate x ghost zone of other variable
+                  call bc_expother_x(f,topbot,j,int(fbcx(j,k)))
                 case ('slc')
                   call set_from_slice_x(f,topbot,j)
                   call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
@@ -1245,6 +1248,9 @@ module Boundcond
                 ! BCY_DOC: do nothing; assume that everything is set
               case ('tay')
                 call tayler_expansion(f,topbot,j,'y')
+              case ('exp')
+                ! BCY_DOC: exponentiate y ghost zone of other variable
+                call bc_expother_y(f,topbot,j,int(fbcy(j,k)))
               case ('slc')
                 call set_from_slice_y(f,topbot,j)
                 call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
@@ -1660,6 +1666,9 @@ module Boundcond
                 ! BCZ_DOC: do nothing; assume that everything is set
               case ('tay')
                 call tayler_expansion(f,topbot,j,'z')
+              case ('exp')
+                ! BCZ_DOC: exponentiate z ghost zone of other variable
+                call bc_expother_z(f,topbot,j,int(fbcz(j,k)))
               case ('slc')
                 call set_from_slice_z(f,topbot,j)
                 !call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
@@ -7428,6 +7437,93 @@ module Boundcond
       endselect
 !
     endsubroutine bc_copy_z
+!***********************************************************************
+    subroutine bc_expother_x(f,topbot,j,jsrc)
+
+      character (len=bclen) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j,jsrc
+
+      integer :: i
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        f(1:nghost,:,:,j) = exp(f(1:nghost,:,:,jsrc))
+!
+!  Top boundary.
+!
+      case ('top')
+        f(l2+1:mx,:,:,j) = exp(f(l2+1:mx,:,:,jsrc))
+!
+!  Default.
+!
+      case default
+        print*, "bc_expother_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_expother_x
+!***********************************************************************
+    subroutine bc_expother_y(f,topbot,j,jsrc)
+
+      character (len=bclen) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j,jsrc
+
+      integer :: i
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        f(:,1:nghost,:,j) = exp(f(:,1:nghost,:,jsrc))
+!
+!  Top boundary.
+!
+      case ('top')
+        f(:,m2+1:my,:,j) = exp(f(:,m2+1:my,:,jsrc))
+!
+!  Default.
+!
+      case default
+        print*, "bc_expother_y: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_expother_y
+!***********************************************************************
+    subroutine bc_expother_z(f,topbot,j,jsrc)
+
+      character (len=bclen) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j,jsrc
+
+      integer :: i
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        f(:,:,1:nghost,j) = exp(f(:,:,1:nghost,jsrc))
+!
+!  Top boundary.
+!
+      case ('top')
+        f(:,:,n2+1:mz,j) = exp(f(:,:,n2+1:mz,jsrc))
+!
+!  Default.
+!
+      case default
+        print*, "bc_expother_z: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_expother_z
 !***********************************************************************
     subroutine bc_copy_z_noinflow(f,topbot,j)
 !
