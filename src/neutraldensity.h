@@ -10,4 +10,4 @@
   public :: pencil_criteria_neutraldensity, pencil_interdep_neutraldensity
   public :: calc_pencils_neutraldensity
   public :: lneutraldensity_nolog
-
+  public :: neutraldensity_after_boundary

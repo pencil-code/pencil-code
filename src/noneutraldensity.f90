@@ -101,6 +101,14 @@ module Neutraldensity
 !
     endsubroutine calc_pencils_neutraldensity
 !***********************************************************************
+    subroutine neutraldensity_after_boundary(f)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine neutraldensity_after_boundary
+!***********************************************************************
     subroutine dlnrhon_dt(f,df,p)
 !
 !  Continuity equation.

@@ -99,8 +99,7 @@ module NeutralVelocity
 !
       use FArrayManager, only: farray_register_pde
 !
-      if (.not.lcartesian_coords) call fatal_error('register_neutralvelocity','non cartesian '//&
-           'not yet implemented in the neutrals module')
+      if (.not.lcartesian_coords) call not_implemented('register_neutralvelocity','non-Cartesian')
 !
 !  Indices to access uun.
 !
@@ -134,13 +133,12 @@ module NeutralVelocity
 !  28-feb-07/wlad: adapted
 !
       use BorderProfiles, only: request_border_driving
-      use Mpicomm,        only: stop_it
 !
 ! Check any module dependencies
 !
-      if (.not. leos) then
-        call stop_it('initialize_neutralvelocity: EOS=noeos but neutralvelocity requires an EQUATION OF STATE for the fluid')
-      endif
+      if (.not.leos) &
+        call fatal_error('initialize_neutralvelocity', &
+                         'EOS=noeos but an EQUATION OF STATE for the fluid is required')
 !
 !  set freezing arrays
 !
@@ -151,18 +149,32 @@ module NeutralVelocity
 !
       csn20=csn0**2
 !
+!  Turn off advection for 0-D runs.
+!
+      if (dimensionality==0) then
+        ladvection_velocity=.false.
+        if (lroot) print*, 'initialize_neutralvelocity: 0-D run, '//&
+                           'turned off advection of velocity'
+      endif
+!
+      if (ladvection_velocity.and.lupw_uun) &
+        call warning('initialize_neutralvelocity','upwinding advection term not well tested')
+
+      select case (borderuun)
+      case ('zero','0','constant')
+!
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the modules can request the right pencils.
 !
-      if (borderuun/='nothing') call request_border_driving(borderuun)
-!
-!  Turn off advection for 0-D runs.
-!
-      if (nxgrid*nygrid*nzgrid==1) then
-        ladvection_velocity=.false.
-        print*, 'initialize_neutralvelocity: 0-D run, '//&
-            'turned off advection of velocity'
-      endif
+        call request_border_driving(borderuun)
+      case ('initial-condition')
+        call fatal_error("initialize_neutralvelocity","borderuu = 'initial-condition': set mcount/ncount")
+      case ('nothing')
+        if (lroot.and.ip<=5) print*,"initialize_neutralvelocity: borderuu='nothing'"
+      case default
+        call fatal_error('initialize_neutralvelocity', &
+                         'No such value for borderuun: '//trim(borderuun))
+      endselect
 !
 !  Turn off neutral viscosity if zero viscosity
 !
@@ -217,7 +229,6 @@ module NeutralVelocity
 !
       use Initcond
       use InitialCondition, only: initial_condition_uun
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,i
@@ -249,9 +260,7 @@ module NeutralVelocity
           !
           !  Catch unknown values
           !
-          if (lroot) print*, 'init_uu: No such value for inituu: ', &
-            trim(inituun(j))
-          call stop_it("")
+          call fatal_error("init_uun",'No such value for inituu: '//trim(inituun(j)))
 
         endselect
 !
@@ -407,12 +416,8 @@ module NeutralVelocity
 ! snij2
       if (lpencil(i_snij2)) call multm2_sym_mn(p%snij,p%snij2)
 ! ungun
-      if (lpencil(i_ungun)) then
-        if (headtt.and.lupw_uun) then
-          print *,'calc_pencils_neutralvelocity: upwinding advection term. '//&
-                  'Not well tested; use at own risk!'; endif
+      if (lpencil(i_ungun)) &
         call u_dot_grad(f,iuun,p%unij,p%uun,p%ungun,UPWIND=lupw_uun)
-      endif
 ! del6un
       if (lpencil(i_del6un)) call del6v(f,iuun,p%del6un)
 ! del2un
@@ -444,7 +449,6 @@ module NeutralVelocity
 !  28-feb-07/wlad: adapted
 !
       use Diagnostics
-      use Mpicomm, only: stop_it
       use Sub, only: identify_bcs, dot_mn
       use General, only: notanumber
 !
@@ -547,9 +551,8 @@ module NeutralVelocity
 ! and thus implies altogether a factor of 2, which is correct.
 !
           if (lelectron_pressure) &
-               df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji)+&
+               df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji)+ &
                electron_pressure*p%fpres(:,j)
-!
         endif
 !
      enddo
@@ -606,7 +609,7 @@ module NeutralVelocity
         call max_mn_name(p%uun(:,3),idiag_unzmax)
         call sum_mn_name(p%un2,idiag_un2m)
         call sum_mn_name(p%divun,idiag_divunm)
-        call sum_mn_name(csn20*p%rhon*p%divun,idiag_pndivunm)
+        if (idiag_pndivunm/=0) call sum_mn_name(csn20*p%rhon*p%divun,idiag_pndivunm)
         if (idiag_fricneut/=0) then
           call dot_mn(p%uu-p%uun,p%uun,udelu_neut)
           call sum_mn_name(cneut*p%rho*p%rhon*udelu_neut,idiag_fricneut)
@@ -715,37 +718,28 @@ module NeutralVelocity
       real, dimension(nx,3) :: f_target
       integer :: ju,j
 !
+! MR: this comment apparently belongs to somewhere else
 ! these tmps and where's are needed because these square roots
 ! go negative in the frozen inner disc if the sound speed is big enough
 ! (like a corona, no neutralvelocitystatic equilibrium)
 !
-
       select case (borderuun)
       case ('zero','0')
-         f_target=0.
-      case ('constant')
-         do j=1,3
-            f_target(:,j) = uun_const(j)
-         enddo
+        f_target=0.
       case ('initial-condition')
-        call fatal_error("set_border_neutralvelocity","please set mcount/ncount")
         !f_target=f(l1:l2,mcount,ncount,iunx:iunz)
+      case ('constant')
+        do j=1,3
+          f_target(:,j) = uun_const(j)
+        enddo
       case ('nothing')
-         if (lroot.and.ip<=5) &
-              print*,"set_border_neutralvelocity: borderuu='nothing'"
-      case default
-         write(unit=errormsg,fmt=*) &
-              'set_border_neutralvelocity: No such value for borderuu: ', &
-              trim(borderuun)
-         call fatal_error('set_border_neutralvelocity',errormsg)
+        return
       endselect
 !
-      if (borderuun /= 'nothing') then
-        do j=1,3
-          ju=j+iuun-1
-          call border_driving(f,df,p,f_target(:,j),ju)
-        enddo
-      endif
+      do j=1,3
+        ju=j+iuun-1
+        call border_driving(f,df,p,f_target(:,j),ju)
+      enddo
 !
     endsubroutine set_border_neutralvelocity
 !***********************************************************************
@@ -757,7 +751,7 @@ module NeutralVelocity
 !
       use Deriv, only: der6
       use Diagnostics
-      use Mpicomm, only: stop_it
+      use General, only: itoa
       use Sub, only: multmv
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -858,10 +852,11 @@ module NeutralVelocity
          case ('')
             ! do nothing
          case default
-            if (lroot) print*, 'No such value for iviscn(',i,'): ', trim(iviscn(i))
-            call stop_it('calc_viscous_forcing')
+            call fatal_error('calc_viscous_force_neutral','No such value for iviscn('// &
+                             trim(itoa(i))//'): '//trim(iviscn(i)))
          endselect
       enddo
+!
       if (lfirst.and.ldt) then
         maxdiffus=max(maxdiffus,diffus_nun)
         maxdiffus3=max(maxdiffus3,diffus_nun3)
@@ -872,8 +867,7 @@ module NeutralVelocity
      df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) + fvisc
 !
      if (ldiagnos) then
-        if (idiag_dtnun/=0) &
-             call max_mn_name(diffus_nun/cdtv,idiag_dtnun,l_dt=.true.)
+       if (idiag_dtnun/=0) call max_mn_name(diffus_nun/cdtv,idiag_dtnun,l_dt=.true.)
      endif
 !
     endsubroutine calc_viscous_force_neutral

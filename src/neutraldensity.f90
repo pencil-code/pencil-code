@@ -47,7 +47,6 @@ module NeutralDensity
   character (len=labellen), dimension(ndiff_max) :: idiffn=''
   character (len=labellen) :: borderlnrhon='nothing'
   character (len=intlen) :: iinit_str
-  integer :: iglobal_rhon=0
 !
   namelist /neutraldensity_init_pars/ &
        ampllnrhon,initlnrhon,    &
@@ -75,9 +74,13 @@ module NeutralDensity
   integer :: idiag_rhonmxy=0, idiag_rhonmr=0
   integer :: idiag_neutralmass=0
 !
+! Auxiliaries
+!
+  real :: alpha_time
+
   contains
 !***********************************************************************
-    subroutine register_neutraldensity()
+    subroutine register_neutraldensity
 !
 !  Initialise variables which should know that we solve the
 !  compressible hydro equations: ilnrhon; increase nvar accordingly.
@@ -87,8 +90,7 @@ module NeutralDensity
       use FArrayManager
 !
       if (.not.lcartesian_coords) &
-          call fatal_error('register_neutraldensity','non cartesian '//&
-           'not yet implemented in the neutrals module')
+        call not_implemented('register_neutraldensity','non-Cartesian coords')
 !
       if (lneutraldensity_nolog) then
         call farray_register_pde('rhon',irhon)
@@ -96,7 +98,6 @@ module NeutralDensity
       else
         call farray_register_pde('lnrhon',ilnrhon)
       endif
-
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -105,7 +106,7 @@ module NeutralDensity
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
-    subroutine initialize_neutraldensity()
+    subroutine initialize_neutraldensity
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -115,7 +116,7 @@ module NeutralDensity
 !
 !  28-feb-07/wlad: adapted
 !
-!
+      use General, only: itoa
       use BorderProfiles, only: request_border_driving
       use FArrayManager
 !
@@ -160,14 +161,12 @@ module NeutralDensity
         case ('shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiffn_shock=.true.
-          call fatal_error("shock diffusion assumes the ions velocity",&
-               "not yet implemented for neutrals")
+          call not_implemented("initialize_neutraldensity","shock diffusion assumes ions velocity for neutrals")
         case ('')
           if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing'
         case default
-          write(unit=errormsg,fmt=*) 'initialize_neutraldensity: ', &
-              'No such value for idiff(',i,'): ', trim(idiffn(i))
-          call fatal_error('initialize_neutraldensity',errormsg)
+          call fatal_error('initialize_neutraldensity', &
+               'No such value for idiff('//trim(itoa(i))//'): '//trim(idiffn(i)))
         endselect
         lnothing=.true.
       enddo
@@ -178,29 +177,58 @@ module NeutralDensity
       if (lrun) then
         if (ldiffn_normal.and.diffrhon==0.0) &
             call warning('initialize_neutraldensity', &
-            'Diffusion coefficient diffrhon is zero!')
-        if ( (ldiffn_hyper3 .or. ldiffn_hyper3lnrhon) &
-            .and. diffrhon_hyper3==0.0) &
+                         'Diffusion coefficient diffrhon is zero')
+        if ( (ldiffn_hyper3 .or. ldiffn_hyper3lnrhon) .and. diffrhon_hyper3==0.0) &
             call fatal_error('initialize_neutraldensity', &
-            'Diffusion coefficient diffrhon_hyper3 is zero!')
+                             'Diffusion coefficient diffrhon_hyper3 is zero')
         if ( (ldiffn_hyper3_aniso) .and.  &
              ((diffrhon_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
               (diffrhon_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
               (diffrhon_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
             call fatal_error('initialize_neutraldensity', &
-            'A diffusion coefficient of diffrhon_hyper3 is zero!')
+                             'A diffusion coefficient of diffrhon_hyper3 is zero')
         if (ldiffn_shock .and. diffrhon_shock==0.0) &
             call fatal_error('initialize_neutraldensity', &
-            'diffusion coefficient diffrhon_shock is zero!')
+                             'diffusion coefficient diffrhon_shock is zero')
       endif
+
+      if (lneutraldensity_nolog) then
+        if (ldiffn_shock.or.ldiffn_normal) &    !MR: can be resolved as in the case of del6rhon
+          call fatal_error('initialize_neutraldensity', &
+                           'del2lnrhon not available for non-logarithmic mass density')
+        if (ldiffn_hyper3lnrhon) &              !MR: can be resolved as in the case of del6rhon  
+          call fatal_error('initialize_neutraldensity', &
+                           'del6lnrhon not available for non-logarithmic mass density')
+      else   ! log density
+
+        if (ldiffn_hyper3.or.ldiffn_hyper3_aniso.or.ldiffn_shock.or.ldiffn_normal) then
 !
-!  Hyperdiffusion only works with (not log) density. One must either use
-!  ldensity_nolog=T or work with GLOBAL =   global_nolog_density.
+!  To obtain del[26]rhon with log density, one must work with a COMAUX slot in the f-array for linear density.
 !
-      if ((ldiffn_hyper3.or.ldiffn_hyper3_aniso) .and. (.not. lneutraldensity_nolog)) then
-        if (lroot) print*,"initialize_neutraldensity: Creating global array for rhon to use hyperdiffusion"
-        call farray_register_global('rhon',iglobal_rhon)
+          if (lroot) print*,"initialize_neutraldensity: Creating comm. aux variable rhon for del[26]rhon ", &
+                            "and setting exponentiation BC for rhon"
+          if (irhon==0) call farray_register_auxiliary('rhon',irhon,communicated=.true.)
+          if (.not.lperi(1)) then
+            bcx12(irhon,:)='exp'
+            fbcx(irhon,:) = float(ilnrhon)
+          endif
+          if (.not.lperi(2)) then
+            bcy12(irhon,:)='exp'
+            fbcy(irhon,:) = float(ilnrhon)
+          endif
+          if (.not.lperi(3)) then
+            bcz12(irhon,:)='exp'
+            fbcz(irhon,:) = float(ilnrhon)
+          endif
+
+        endif
+        if (ldiffn_hyper3_aniso) &      !MR: still true?
+          call not_implemented('initialize_neutraldensity',"anisotropic hyperdiffusion for lnrhon")
       endif
+
+      if (lpretend_star.and..not.lcylindrical_coords) &
+        call not_implemented('initialize_neutraldensity', &
+                             "lpretend_star for other than cylindrical coordinates")
 !
       if (lfreeze_lnrhonint) lfreeze_varint(ilnrhon) = .true.
       if (lfreeze_lnrhonext) lfreeze_varext(ilnrhon) = .true.
@@ -208,7 +236,16 @@ module NeutralDensity
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderlnrhon/='nothing') call request_border_driving(borderlnrhon)
+      select case (borderlnrhon)
+!
+      case ('zero','0','constant','stratification')
+         call request_border_driving(borderlnrhon)
+      case ('nothing')
+        if (lroot.and.ip<=5) print*,"initialize_neutraldensity: borderlnrhon='nothing'"
+      case default
+         call fatal_error('initialize_neutraldensity','No such value for borderlnrhon: '// &
+                          trim(borderlnrhon))
+      endselect
 !
     endsubroutine initialize_neutraldensity
 !***********************************************************************
@@ -311,9 +348,8 @@ module NeutralDensity
                !
                !  Catch unknown values
                !
-               write(unit=errormsg,fmt=*) 'No such value for initlnrhon(' &
-                    //trim(iinit_str)//'): ',trim(initlnrhon(j))
-               call fatal_error('init_lnrhon',errormsg)
+               call fatal_error('init_lnrhon','No such value for initlnrhon('// &
+                                trim(iinit_str)//'): '//trim(initlnrhon(j)))
 !
             endselect
 
@@ -337,13 +373,12 @@ module NeutralDensity
 !
 !  sanity check
 !
-      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrhon))) then
+      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrhon))) &
         call error('init_lnrhon', 'Imaginary density values')
-      endif
 !
     endsubroutine init_lnrhon
 !***********************************************************************
-    subroutine pencil_criteria_neutraldensity()
+    subroutine pencil_criteria_neutraldensity
 !
 !  All pencils that the NeutralDensity module depends on are specified here.
 !
@@ -467,7 +502,6 @@ module NeutralDensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: tmp,smooth_step_threshold
-      real :: alpha_time,ramping_period
       type (pencil_case) :: p
 !
       integer :: i, mm, nn
@@ -526,59 +560,17 @@ module NeutralDensity
 ! glnrhon2
       if (lpencil(i_glnrhon2)) call dot2(p%glnrhon,p%glnrhon2)
 ! del2lnrhon
-      if (lpencil(i_del2lnrhon)) then
-        if (lneutraldensity_nolog) then
-          if (headtt) then
-            call fatal_error('calc_pencils_neutraldensity', &
-                             'del2lnrhon not available for non-logarithmic mass density')
-          endif
-        else
-          call del2(f,ilnrhon,p%del2lnrhon)
-        endif
-      endif
+      if (lpencil(i_del2lnrhon)) call del2(f,ilnrhon,p%del2lnrhon)
+!
+! Note that irhon either points to the linear neutraldensity as a PDE variable
+! for lneutraldensity_nolog, or as a COMAUX variable otherwise.
+!
 ! del2rhon
-      if (lpencil(i_del2rhon)) then
-        if (lneutraldensity_nolog) then
-          call del2(f,ilnrhon,p%del2rhon)
-        else
-          if (headtt) then
-            call fatal_error('calc_pencils_neutraldensity', &
-                             'del2rhon not available for logarithmic mass density')
-          endif
-        endif
-      endif
+      if (lpencil(i_del2rhon)) call del2(f,irhon,p%del2rhon)
 ! del6rhon
-      if (lpencil(i_del6rhon)) then
-        if (lneutraldensity_nolog) then
-          call del6(f,ilnrhon,p%del6rhon)
-        else
-          if (lfirstpoint) then
-            !
-            ! Fill global rhon array using the ilnrhon data
-!ajwm This won't work unless earlt_finalize is used... ?
-            if (iglobal_rhon/=0) then
-              do mm=1,my; do nn=1,mz
-                f(:,mm,nn,iglobal_rhon) = exp(f(:,mm,nn,ilnrhon))
-              enddo; enddo
-            else
-              call fatal_error("calc_pencils_neutraldensity",&
-                       "A global rhon slot must be available for calculating del6rhon from lnrhon")
-            endif
-          endif
-          if (iglobal_rhon/=0) call del6(f,iglobal_rhon,p%del6rhon)
-        endif
-      endif
+      if (lpencil(i_del6rhon)) call del6(f,irhon,p%del6rhon)
 ! del6lnrhon
-      if (lpencil(i_del6lnrhon)) then
-        if (lneutraldensity_nolog) then
-          if (headtt) then
-            call fatal_error('calc_pencils_neutraldensity', &
-                             'del6lnrhon not available for non-logarithmic mass density')
-          endif
-        else
-          call del6(f,ilnrhon,p%del6lnrhon)
-        endif
-      endif
+      if (lpencil(i_del6lnrhon)) call del6(f,ilnrhon,p%del6lnrhon)
 ! snglnrhon
       if (lpencil(i_snglnrhon)) call multmv(p%snij,p%glnrhon,p%snglnrhon)
 !
@@ -586,11 +578,40 @@ module NeutralDensity
 !
       p%zeta=zeta
       if (lpretend_star) then
-        if (.not.lcylindrical_coords) &
-             call fatal_error("lpretend_star",&
-             "not implemented for other than cylindrical coordinates")
-        !smooth transition over a ramping period of 5 orbits
-        if (lramp_up) then
+!
+! Star formation rate
+! These lines below recover d/dt(rho_star)=sfr_const*omega*rho_gas**1.5
+!
+! There is a threshold that has to be smoothed. The star formation
+! rate falls drastically after the threshold of 5-10 solar masses
+! per cubic parsec. An arctan smoothing over a tenth of this value
+! is okay to avoid numerical disasters.
+!
+        tmp=(p%rho-star_form_threshold)/(.1*star_form_threshold)
+        smooth_step_threshold=.5*(1+atan(tmp)*2*pi_1)
+
+        !OO=p%uu(*,2)*p%rcyl_mn1
+        p%alpha=(alpha_time*smooth_step_threshold)* &
+                (p%uu(:,2)*p%rcyl_mn1)*p%rho1**(2-star_form_exponent)
+!
+      else
+        p%alpha=alpha
+      endif
+!
+    endsubroutine calc_pencils_neutraldensity
+!***********************************************************************
+    subroutine neutraldensity_after_boundary(f)
+
+      use General, only: keep_compiler_quiet
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ramping_period
+
+      if (lpretend_star) then
+!
+! Smooth transition over a ramping period of 5 orbits.
+!
+        if (lramp_up) then              ! MR: strange use of lpoint here!
           ramping_period=2*pi*x(lpoint) !omega=v/r; v=1; 1/omega=r
           if (t <= ramping_period) then
             alpha_time=alpha*(sin((.5*pi)*(t/ramping_period))**2)
@@ -600,27 +621,25 @@ module NeutralDensity
         else
           alpha_time=alpha
         endif
-!
-! Star formation rate
-! These lines below recover d/dt(rho_star)=sfr_const*omega*rho_gas**1.5
-!
-! There is threshold that has to be smoothed. The star formation
-! rate falls drastically after the threshold of 5-10 solar masses
-! per cubic parsec. A arctangent smoothing over a tenth of this value
-! is okay to avoid numerical disasters.
-!
-        tmp=(p%rho-star_form_threshold)/(.1*star_form_threshold)
-        smooth_step_threshold=.5*(1+atan(tmp)*2*pi_1)
 
-        !OO=p%uu(*,2)*p%rcyl_mn1
-        p%alpha=(alpha_time*smooth_step_threshold)*&
-             (p%uu(:,2)*p%rcyl_mn1)*p%rho1**(2-star_form_exponent)
-!
-      else
-        p%alpha=alpha
       endif
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine neutraldensity_after_boundary
+!***********************************************************************
+    subroutine neutraldensity_before_boundary(f)
+
+      use General, only: keep_compiler_quiet
+
+      real, dimension (mx,my,mz,mfarray) :: f
 !
-    endsubroutine calc_pencils_neutraldensity
+! Fill global rhon array using the ilnrhon data.
+!
+      if (.not.lneutraldensity_nolog.and.irhon/=0) &
+        f(:,:,:,irhon) = exp(f(:,:,:,ilnrhon))
+
+    endsubroutine neutraldensity_before_boundary
 !***********************************************************************
     subroutine dlnrhon_dt(f,df,p)
 !
@@ -631,7 +650,6 @@ module NeutralDensity
 !
       use Deriv, only: der6
       use Diagnostics
-      use Mpicomm, only: stop_it
       use Sub, only: identify_bcs, del6fj, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -700,15 +718,11 @@ module NeutralDensity
         if (lneutraldensity_nolog) then
           call del6fj(f,diffrhon_hyper3_aniso,ilnrhon,tmp)
           fdiff = fdiff + tmp
-          if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+ &
+          if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3 + &
                diffrhon_hyper3_aniso(1)*dline_1(:,1)**6 + &
                diffrhon_hyper3_aniso(2)*dline_1(:,2)**6 + &
                diffrhon_hyper3_aniso(3)*dline_1(:,3)**6
-          if (headtt) &
-               print*,'dlnrhon_dt: diffrhon_hyper3=(Dx,Dy,Dz)=',&
-               diffrhon_hyper3_aniso
-        else
-          call stop_it("anisotropic hyperdiffusion not implemented for lnrhon")
+          if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=(Dx,Dy,Dz)=',diffrhon_hyper3_aniso
         endif
       endif
 !
@@ -832,20 +846,11 @@ module NeutralDensity
          !f_target=lnrhon_const - 0.5*(theta/cs0)**2
          f_target=(p%rcyl_mn-p%r_mn)/(cs20*p%r_mn)
       case ('nothing')
-         if (lroot.and.ip<=5) &
-              print*,"set_border_neutraldensity: borderlnrhon='nothing'"
-      case default
-         write(unit=errormsg,fmt=*) &
-              'set_border_neutraldensity: No such value for borderlnrhon: ', &
-              trim(borderlnrhon)
-         call fatal_error('set_border_neutraldensity',errormsg)
+         return
       endselect
 !
       if (lneutraldensity_nolog) f_target=exp(f_target)
-!
-      if (borderlnrhon /= 'nothing') then
-        call border_driving(f,df,p,f_target,ilnrhon)
-      endif
+      call border_driving(f,df,p,f_target,ilnrhon)
 !
     endsubroutine set_border_neutraldensity
 !***********************************************************************
