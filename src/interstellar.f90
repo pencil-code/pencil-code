@@ -1601,9 +1601,8 @@ module Interstellar
 !  11-mar-06/axel: added idiag_nrhom
 !
       lpenc_requested(i_lnrho)=.true.
-      lpenc_requested(i_rho1)=.true.
+      lpenc_diagnos(i_rho1)=.true.
       lpenc_requested(i_cv1)=.true.
-      lpenc_requested(i_cv)=.true.
       lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_ee)=.true.
       lpenc_requested(i_TT1)=.true.
@@ -1750,7 +1749,7 @@ module Interstellar
 !
       if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
 !
-      if (leos_ionization) p%cv1=0.9     !typical value for ideal gas with default cgs values
+      if (any(p%cv1 == impossible)) p%cv1=0.9 !typical for ideal gas with cgs default
 !
 !  13-jul-15/fred
 !  Removed obsolete calls to spatial and temporal smoothing
