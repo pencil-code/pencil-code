@@ -85,6 +85,7 @@ my %tests = (
                          0d-tests/heating_ionize
                          0d-tests/heating_noionize
                          1d-tests/H2_flamespeed
+                         1d-tests/horndeski_choiceIII
                          chiral-diffusion
                          cosmicray
                          1d-tests/sod_10
