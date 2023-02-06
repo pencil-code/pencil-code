@@ -101,6 +101,7 @@ module Hydro
   real :: sigma_uukin=1., tau_uukin=1., time_uukin=1., sigma1_uukin_scl_yz=1.
   real :: binary_radius=0., radius_kinflow=0., width_kinflow=0.
   real :: power1_kinflow=4., power2_kinflow=-5./3., kgaussian_uu=0., kpeak_kinflow=3., cutoff=1e9
+  real :: cs21_kinflow=1.
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100, smooth_width=3
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -128,7 +129,8 @@ module Hydro
       ll_sh, mm_sh, n_xprof, lrandom_ampl,smooth_width, &
       sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz, &
       binary_radius, radius_kinflow, width_kinflow, &
-      power1_kinflow, power2_kinflow, kpeak_kinflow
+      power1_kinflow, power2_kinflow, kpeak_kinflow, &
+      cs21_kinflow
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -3758,7 +3760,7 @@ module Hydro
       call power_randomphase_hel(ampl_kinflow,power1_kinflow,power2_kinflow, &
           cutoff,ncutoff,kpeak_kinflow,f,iux,iuz,relhel_kinflow,kgaussian, &
           lskip_projection, lvectorpotential, lscale_tobox, &
-          qirro=qirro_kinflow, time=real(t), cs=1.)
+          qirro=qirro_kinflow, time=real(t), cs=1./sqrt(cs21_kinflow))
 !
     endsubroutine sound3D
 !***********************************************************************

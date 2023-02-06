@@ -5255,7 +5255,7 @@ module Initcond
 !
 !  Debug output
 !
-      if (lroot) then
+      if (lroot.and.ip<10) then
         print*,'i1,i2=',i1,i2
         print*,'ampl,initpower,initpower2=',ampl,initpower,initpower2
         print*,'cutoff,ncutoff,kpeak,i1,i2,relhel,kgaussian=',cutoff,ncutoff,kpeak,i1,i2,relhel,kgaussian
@@ -5557,7 +5557,7 @@ module Initcond
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
         endif
         r=fact*((k2*kpeak21)**mhalf)/(1.+D2*(k2*kpeak21)**nexp1)**nexp2
-        if (lroot) print*,'kpeak,mhalf,nexp1,nexp2=',kpeak,mhalf,nexp1,nexp2
+        if (lroot.and.ip<10) print*,'kpeak,mhalf,nexp1,nexp2=',kpeak,mhalf,nexp1,nexp2
 !
 !  Examples: for initpower=4., initpower2=-2., get mhalf,nexp1,nexp2 = 0.75, 6.0, 0.25
 !  while for Jani Dahl setup, we put: initpower=3., initpower2=-3., nfact_uu=.6666667
