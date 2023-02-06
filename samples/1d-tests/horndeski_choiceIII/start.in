@@ -1,0 +1,27 @@
+!  --f90--  (for Emacs)    vim:set filetype=fortran:  (for vim)
+! 
+! Initialisation parameters for forced helical MHD turbulence
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2022/11/02 12:57:33 yutong Exp $',
+  lwrite_aux=T
+  lread_aux=T
+  lwrite_ic=F
+  tstart=1.0034
+  wav1=1e-3
+/
+&special_init_pars
+  lno_noise_GW=T
+  lreal_space_hTX_as_aux=T
+  initGW='power_randomphase_hel'
+  kpeak_GW=10.
+  amplGW2=0.010363468777172929
+  amplGW2=2.5e-10
+  nfact_GW=4., cutoff_GW=1000
+  lfactors_GW=T, lcomp_GWh_k=T
+  kbreak_GW=1., kpeak_log_GW=1.
+  initpower_GW=2., initpower2_GW=-2.
+  initpower_med_GW=0.
+  ldouble_GW=T
+  !llogbranch_GW=T
+/

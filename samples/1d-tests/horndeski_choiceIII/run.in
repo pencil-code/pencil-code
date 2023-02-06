@@ -1,0 +1,25 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for forced helical MHD turbulence
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2022/11/02 12:57:33 yutong Exp $',
+  nt=3086, it1=1, isave=500, itorder=3
+  dsnap=1e99, dvid=1e99, ialive=900000
+  lspec_start=T, dspec=-1, GWs_spec=T, GWh_spec=T
+  !lpencil_check_small=F
+  !lfractional_tstep_advance=T, dt=-0.1,dtmin=-0.1
+  !lfractional_tstep_advance=T, lfractional_tstep_negative=F, dt=.1
+  lfractional_tstep_advance=T, dt_incr=0.01
+  !dt=1, ip=30
+/
+&special_run_pars
+  lhorndeski=T, horndeski_alpM=-0.5, horndeski_alpT=0.
+  ihorndeski_time='matter'
+  lstress=F
+  delk=0.
+  lread_scl_factor_file=T
+  itorder_GW=2
+/
+&power_spectrum_run_pars
+/
