@@ -16,7 +16,7 @@ module Diagnostics
   implicit none
 !
   public :: initialize_diagnostics, initialize_diagnostic_arrays, prints
-  public :: prep_finalize_thread_diagnostics
+  public :: prep_finalize_thread_diagnos
   public :: diagnostic, initialize_time_integrals, get_average_density
   public :: xyaverages_z, xzaverages_y, yzaverages_x
   public :: phizaverages_r, yaverages_xz, zaverages_xy
@@ -3584,7 +3584,7 @@ module Diagnostics
 !
     endfunction name_is_present
 !***********************************************************************
-    subroutine prep_finalize_thread_diagnostics
+    subroutine prep_finalize_thread_diagnos
 
       use General, only: allpos_in_array_int
 
@@ -3602,6 +3602,6 @@ module Diagnostics
 
       firstcall=.false.
 
-    endsubroutine prep_finalize_thread_diagnostics
+    endsubroutine prep_finalize_thread_diagnos
 !***********************************************************************
 endmodule Diagnostics

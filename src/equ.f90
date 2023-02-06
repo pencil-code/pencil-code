@@ -657,7 +657,7 @@ module Equ
       use Cosmicray
       use CosmicrayFlux
       use Density
-      use Diagnostics, only: initialize_diagnostic_arrays, prep_finalize_thread_diagnostics
+      use Diagnostics, only: initialize_diagnostic_arrays, prep_finalize_thread_diagnos
       use Dustvelocity
       use Dustdensity
       use Energy
@@ -977,7 +977,7 @@ module Equ
 !
 !$omp end do
 !$      if (omp_rank==0) then
-          call prep_finalize_thread_diagnostics
+          call prep_finalize_thread_diagnos
 !         thread reductions
 !$      endif
 !$omp end parallel
