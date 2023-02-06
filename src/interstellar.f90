@@ -674,9 +674,7 @@ module Interstellar
 !
       heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
 !
-      if (heating_select == 'thermal-hs') then
-        call heat_interstellar(f,heat_z)
-      endif
+      if (heating_select == 'thermal-hs') call heat_interstellar(f,heat_z)
 !
 !  Cooling cutoff in shocks
 !
@@ -805,6 +803,10 @@ module Interstellar
         enddo
         close(33)
       endif
+
+      if (leos_ionization) &
+        call warning('initialize_interstellar','using temporary value for cv1 '// &
+                     'assuming ideal gas. Not yet implemented for ionization')
 !
 !  Write unit_Lambda to pc_constants file
 !
@@ -1574,9 +1576,8 @@ module Interstellar
 !
 !  Catch unknown values
 !
-          write(unit=errormsg,fmt=*) 'No such value for initinterstellar(' &
-                           //trim(iinit_str)//'): ',trim(initinterstellar(j))
-          call fatal_error('init_interstellar',errormsg)
+        call fatal_error('init_interstellar','No such value for initinterstellar(' &
+                         //trim(iinit_str)//'): '//trim(initinterstellar(j)))
 !
       endselect
 !
@@ -1625,7 +1626,7 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (lfirst.and..not.lpencil_check_at_work) call check_SN(f)
+      call keep_compiler_quiet(f)
 !
     endsubroutine interstellar_after_boundary
 !***********************************************************************
@@ -1638,7 +1639,7 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call keep_compiler_quiet(f)
+      if (lfirst.and..not.lpencil_check_at_work) call check_SN(f)
 !
     endsubroutine interstellar_before_boundary
 !*****************************************************************************
@@ -1665,8 +1666,6 @@ module Interstellar
 !
 !  Identifier
 !
-      if (lroot.and.headtt.and.ip==1963) print*,'heat_interstellar: ENTER'
-!
       if (lroot.and.ip==1963) print*, &
          'heat_interstellar: calculating z-dependent uv-heating'// &
          'function for initial hydrostatic and thermal equilibrium'
@@ -1680,7 +1679,7 @@ module Interstellar
         z_S = z_S_cgs/unit_length
         H_z = H_z_cgs/unit_length
       else if (unit_system=='SI') then
-        call fatal_error('initialize_entopy', &
+        call fatal_error('heat_interstellar', &
             'SI unit conversions not inplemented')
       endif
 !
@@ -1751,11 +1750,7 @@ module Interstellar
 !
       if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
 !
-      if (leos_ionization) then
-        if (headtt) call warning('calc_heat_cool_interstellar','temporary value for cv1 '//&
-                                 'assumes ideal gas. Not yet implemented for ionization')
-        p%cv1=0.9     !typical value for ideal gas with default cgs values
-      endif
+      if (leos_ionization) p%cv1=0.9     !typical value for ideal gas with default cgs values
 !
 !  13-jul-15/fred
 !  Removed obsolete calls to spatial and temporal smoothing
@@ -1896,6 +1891,7 @@ module Interstellar
           cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
         endwhere
       enddo cool_loop
+
     endsubroutine calc_cool_func
 !*****************************************************************************
     subroutine calc_heat(heat,lnTT)
@@ -2408,7 +2404,7 @@ module Interstellar
 !
 !  Identifier
 !
-      if (lroot.and.headtt.and.ip==1963) print*,'check_SNII: ENTER'
+      if (headtt.and.ip==1963) print*,'check_SNII: ENTER'
 !
       if (l_SNI) return         ! Only do if no SNI this step.
 !
@@ -3135,8 +3131,8 @@ module Interstellar
 !
         SNR%feat%radius=width_SN
         if (lSN_scale_rad) then
-            SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**onethird
-            SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*SNR%feat%dr) ! minimum grid resolution
+          SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**onethird
+          SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*SNR%feat%dr) ! minimum grid resolution
         endif
 !
 !  Better initialise these to something on the other processors
