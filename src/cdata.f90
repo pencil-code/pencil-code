@@ -168,7 +168,6 @@ module Cdata
   logical :: lfractional_tstep_advance=.false.
   logical :: lfractional_tstep_negative=.true.
   logical :: lfirstpoint=.false., llastpoint=.false.
-!$omp THREADPRIVATE(lfirstpoint,llastpoint)
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_err'
@@ -407,7 +406,7 @@ module Cdata
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors = 0
   integer, dimension(26) :: iproc_comm = -1
   integer :: nproc_comm = 0
-  integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1  !MR: dangerous names
+  integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1  !MR: dangerous names  ix -> ix_slice
   integer :: ix_loc=1,iy_loc=1, iy2_loc=1
   integer :: iz_loc=1,iz2_loc=1, iz3_loc=1, iz4_loc=1
   integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0
@@ -478,8 +477,9 @@ module Cdata
   character (len=fmtlen), allocatable :: cname(:),cnamev(:),cname_sound(:), &
                                          cnamexy(:),cnamexz(:),cnamerz(:), &
                                          cnamez(:),cnamey(:),cnamex(:),cnamer(:)
+  integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
+
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.,lrmv=.false.
-!$omp THREADPRIVATE(headtt)
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: ltracers=.false.,lfixed_points=.false.
