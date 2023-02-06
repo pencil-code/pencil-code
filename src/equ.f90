@@ -51,11 +51,11 @@ module Equ
       use Gpu
       use Gravity
       use Hydro
-      use Interstellar, only: interstellar_before_boundary, &
-                              interstellar_after_boundary
+      use Interstellar, only: interstellar_before_boundary
       use Magnetic
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
+      use NeutralDensity, only: neutraldensity_after_boundary
       use NSCBC
       use Particles_main
       use Poisson
@@ -327,9 +327,9 @@ module Equ
       !if (ltestfield)             call testfield_after_boundary(f,p)
       if (lpscalar)               call pscalar_after_boundary(f)
       if (ldensity)               call density_after_boundary(f)
+      if (lneutraldensity)        call neutraldensity_after_boundary(f)
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
       if (lspecial)               call special_after_boundary(f)
-      if (linterstellar)          call interstellar_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture
 !
@@ -657,6 +657,7 @@ module Equ
       use Cosmicray
       use CosmicrayFlux
       use Density
+      use Diagnostics, only: initialize_diagnostic_arrays, prep_finalize_thread_diagnostics
       use Dustvelocity
       use Dustdensity
       use Energy
@@ -699,6 +700,9 @@ module Equ
       real, dimension (nx,3) :: df_iuu_pencil
 !$    integer :: num_omp_ranks, omp_rank
 !
+!$      call initialize_diagnostic_arrays
+!$      lfirstpoint=.false.
+
       nyz=ny*nz
 !
 !$    num_omp_ranks = OMP_get_num_procs()
@@ -714,6 +718,7 @@ module Equ
         n=nn(imn)
         m=mm(imn)
 
+!$      if (num_omp_ranks==0) &
         lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
         llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
 
@@ -740,14 +745,12 @@ module Equ
 !
 !  Make sure all ghost points are set.
 !
-!$      if (omp_rank==0) then
         if (.not.early_finalize.and.necessary(imn)) then
           call finalize_isendrcv_bdry(f)
           call boundconds_y(f)
           call boundconds_z(f)
         endif
         call timing('pde','finished boundconds_z',mnloop=.true.)
-!$      endif
 !
 !  For each pencil, accumulate through the different modules
 !  advec_XX and diffus_XX, which are essentially the inverse
@@ -973,6 +976,10 @@ module Equ
       enddo mn_loop
 !
 !$omp end do
+!$      if (omp_rank==0) then
+          call prep_finalize_thread_diagnostics
+!         thread reductions
+!$      endif
 !$omp end parallel
 !
       if (ltime_integrals.and.llast) then

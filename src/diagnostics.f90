@@ -15,7 +15,8 @@ module Diagnostics
 !
   implicit none
 !
-  public :: initialize_diagnostics, prints
+  public :: initialize_diagnostics, initialize_diagnostic_arrays, prints
+  public :: prep_finalize_thread_diagnostics
   public :: diagnostic, initialize_time_integrals,get_average_density
   public :: xyaverages_z, xzaverages_y, yzaverages_x
   public :: phizaverages_r, yaverages_xz, zaverages_xy
@@ -201,6 +202,27 @@ module Diagnostics
       if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
 
     endsubroutine initialize_diagnostics
+!***********************************************************************
+    subroutine initialize_diagnostic_arrays
+
+!l1dphiavg??
+      if (ldiagnos.and.allocated(fname)) fname  =0.
+      if (l2davgfirst) then
+        if (allocated(fnamer)) fnamer =0. 
+        if (allocated(fnamex)) fnamex =0. 
+        if (allocated(fnamey)) fnamey =0. 
+        if (allocated(fnamez)) fnamez =0. 
+      endif
+      if (l2davgfirst) then
+        if (allocated(fnamexy)) fnamexy=0. 
+        if (allocated(fnamexz)) fnamexz=0. 
+        if (allocated(fnamerz)) fnamerz=0. 
+      endif
+      if (allocated(fname_sound)) fname_sound=0.
+
+!     fname_keep???
+
+    endsubroutine initialize_diagnostic_arrays
 !***********************************************************************
     subroutine prints
 !
@@ -3561,5 +3583,25 @@ module Diagnostics
       enddo
 !
     endfunction name_is_present
+!***********************************************************************
+    subroutine prep_finalize_thread_diagnostics
+
+      use General, only: allpos_in_array_int
+
+      integer :: nmax, nsum 
+      logical :: firstcall=.true.
+
+      if (.not.firstcall) return
+
+      nmax = allpos_in_array_int((/-5,-1/),itype_name)
+      allocate(inds_max_diags(nmax))
+      nmax = allpos_in_array_int((/-5,-1/),itype_name,inds_max_diags)
+      nsum = allpos_in_array_int((/1,40/),itype_name)
+      allocate(inds_sum_diags(nsum))
+      nsum = allpos_in_array_int((/1,40/),itype_name,inds_sum_diags)
+
+      firstcall=.false.
+
+    endsubroutine prep_finalize_thread_diagnostics
 !***********************************************************************
 endmodule Diagnostics

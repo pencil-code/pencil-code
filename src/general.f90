@@ -20,7 +20,7 @@ module General
   public :: keep_compiler_quiet
 !
   public :: setup_mm_nn
-  public :: find_index_range, find_index, find_index_range_hill, pos_in_array
+  public :: find_index_range, find_index, find_index_range_hill, pos_in_array, allpos_in_array_int
   public :: find_proc, find_proc_general, find_proc_coords_general
 !
   public :: spline, tridag, pendag, complex_phase, erfcc
@@ -4036,6 +4036,29 @@ endfunction
     pos_in_array_int = 0
 
   endfunction pos_in_array_int
+!***********************************************************************
+  integer function allpos_in_array_int(needle, haystack, positions) result(j)
+!
+!  finds the position of a number in an array
+!  returns 0 if string is not found
+!
+!  28-May-2015/Bourdin.KIS: reworked
+!
+    integer, dimension(2), intent(in) :: needle
+    integer, dimension(:), intent(in) :: haystack
+    integer, dimension(size(haystack)), intent(out), optional :: positions
+
+    integer :: i
+    
+    j=0
+    do i = 1, size(haystack)
+      if (needle(1) <= haystack(i) .and. needle(2) <= haystack(i)) then
+        j=j+1
+        if (present(positions)) positions(j) = i
+      endif
+    enddo
+
+  endfunction allpos_in_array_int
 !***********************************************************************
   integer function pos_in_array_char(needle, haystack)
 !
