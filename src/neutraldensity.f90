@@ -682,7 +682,7 @@ module NeutralDensity
 !
 !  Normal mass diffusion
 !
-      if (lcontinuity_neutral) then
+      if (dimensionality>0) then
 
         fdiff=0.0
         diffus_diffrhon=0.; diffus_diffrhon3=0.

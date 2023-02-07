@@ -397,9 +397,7 @@ module NeutralVelocity
 ! uun
       if (lpencil(i_uun)) p%uun=f(l1:l2,m,n,iunx:iunz)
 ! un2
-      if (lpencil(i_un2)) then
-        call dot2_mn(p%uun,p%un2)
-      endif
+      if (lpencil(i_un2)) call dot2_mn(p%uun,p%un2)
 ! unij
       if (lpencil(i_unij)) call gij(f,iuun,p%unij,1)
 ! divun
@@ -456,14 +454,14 @@ module NeutralVelocity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
+      intent(in) :: f
+      intent(out) :: df
+      intent(inout) :: p
+!
       real, dimension (nx) :: ionization,recombination,cions,cneut,advec_csn2,advec_uun
       real, dimension (nx) :: udelu_neut, udelu_ions
       real :: c2,s2
       integer :: j,jn,ji
-!
-      intent(in) :: f
-      intent(out) :: df
-      intent(inout) :: p
 !
 !  identify module and boundary conditions
 !
@@ -487,105 +485,101 @@ module NeutralVelocity
 !  for example.
 !
       if (Omega/=0.) then
-         if (theta==0) then
-            if (lcoriolis_force) then
-               if (headtt) print*,'duun_dt: add Coriolis force; Omega=',Omega
-               c2=2*Omega
-               df(l1:l2,m,n,iunx)=df(l1:l2,m,n,iunx)+c2*p%uun(:,2)
-               df(l1:l2,m,n,iuny)=df(l1:l2,m,n,iuny)-c2*p%uun(:,1)
+        if (theta==0) then
+          if (lcoriolis_force) then
+            if (headtt) print*,'duun_dt: add Coriolis force; Omega=',Omega
+            c2=2*Omega
+            df(l1:l2,m,n,iunx)=df(l1:l2,m,n,iunx)+c2*p%uun(:,2)
+            df(l1:l2,m,n,iuny)=df(l1:l2,m,n,iuny)-c2*p%uun(:,1)
 !
 !  add centrifugal force (doing this with periodic boundary
 !  conditions in x and y would not be compatible, so it is
 !  therefore usually ignored in those cases!)
 !
-            endif
-            if (lcentrifugal_force) then
-               if (headtt) print*,'duun_dt: add Centrifugal force; Omega=',Omega
-               df(l1:l2,m,n,iunx)=df(l1:l2,m,n,iunx)+x(l1:l2)*Omega**2
-               df(l1:l2,m,n,iuny)=df(l1:l2,m,n,iuny)+y(  m  )*Omega**2
-            endif
-         else
+          endif
+          if (lcentrifugal_force) then
+            if (headtt) print*,'duun_dt: add Centrifugal force; Omega=',Omega
+            df(l1:l2,m,n,iunx)=df(l1:l2,m,n,iunx)+x(l1:l2)*Omega**2
+            df(l1:l2,m,n,iuny)=df(l1:l2,m,n,iuny)+y(  m  )*Omega**2
+          endif
+        else
 !
 !  add Coriolis force with an angle (defined such that theta=-60,
 !  for example, would correspond to 30 degrees latitude).
 !  Omega=(sin(theta), 0, cos(theta)).
 !
-            if (lcoriolis_force) then
-              if (headtt) &
-                  print*,'duun_dt: Coriolis force; Omega, theta=', Omega, theta
-              c2=2*Omega*cos(theta*pi/180.)
-              s2=2*Omega*sin(theta*pi/180.)
-              df(l1:l2,m,n,iunx)=df(l1:l2,m,n,iunx)+c2*p%uun(:,2)
-              df(l1:l2,m,n,iuny)=df(l1:l2,m,n,iuny)-c2*p%uun(:,1)+s2*p%uun(:,3)
-              df(l1:l2,m,n,iunz)=df(l1:l2,m,n,iunz)              -s2*p%uun(:,2)
-           endif
+          if (lcoriolis_force) then
+            if (headtt) &
+                print*,'duun_dt: Coriolis force; Omega, theta=', Omega, theta
+            c2=2*Omega*cos(theta*pi/180.)
+            s2=2*Omega*sin(theta*pi/180.)
+            df(l1:l2,m,n,iunx)=df(l1:l2,m,n,iunx)+c2*p%uun(:,2)
+            df(l1:l2,m,n,iuny)=df(l1:l2,m,n,iuny)-c2*p%uun(:,1)+s2*p%uun(:,3)
+            df(l1:l2,m,n,iunz)=df(l1:l2,m,n,iunz)              -s2*p%uun(:,2)
+          endif
         endif
-     endif
+      endif
 !
 !  Neutral-ion collision, ionization and recombination
 !  Remember that cneut*p%rho enters below, so another p%rho is factored out.
 !
-     ionization=p%zeta*p%rho1
-     recombination=p%alpha*p%rho*p%rhon1
-     cions=colldrag+ionization
-     cneut=colldrag+recombination
+      ionization=p%zeta*p%rho1
+      recombination=p%alpha*p%rho*p%rhon1
+      cions=colldrag+ionization
+      cneut=colldrag+recombination
 !
-     do j=1,3
+      do j=1,3
         jn=j+iuun-1
         ji=j+iuu -1
 !
 ! neutrals gain momentum by recombination
 !
         df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + &
-             cneut*p%rho *(p%uu(:,j)-p%uun(:,j))
+                        cneut*p%rho *(p%uu(:,j)-p%uun(:,j))
 !
 ! ions gain momentum by ionization and electron pressure
 !
         if (lhydro) then
-          df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - &
-               cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
+          df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
 !
 ! add electron pressure to the ions if needed
 ! This adds to the already entered contribution from noentropy.f90
 ! df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres
 ! and thus implies altogether a factor of 2, which is correct.
 !
-          if (lelectron_pressure) &
-               df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji)+ &
-               electron_pressure*p%fpres(:,j)
+          if (lelectron_pressure) df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji)+ &
+                                  electron_pressure*p%fpres(:,j)
         endif
 !
-     enddo
+      enddo
+
+      if (dimensionality>0) then
 !
 ! calculate viscous force on neutrals
 !
-      if (lviscneutral) call calc_viscous_force_neutral(f,df,p)
+        if (lviscneutral) call calc_viscous_force_neutral(f,df,p)
 !
 ! add pressure gradient on neutrals
 !
-      if (lpressuregradient) then
-         do j=1,3
-            jn=j+iuun-1
-            df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn)-csn20*p%glnrhon(:,j)
-         enddo
+        if (lpressuregradient) &
+            df(l1:l2,m,n,iunx:iunz)=df(l1:l2,m,n,iunx:iunz)-csn20*p%glnrhon
 !
+      endif
 ! csn2/dx^2 for timestep
 ! have to include a selection of equation of state...
 !
-      endif
-!
-      if (lfirst.and.ldt) then
+      if (lfirst.and.ldt.and.dimensionality>0) then
         advec_csn2=csn20*dxyz_2
         if (notanumber(advec_csn2)) print*, 'advec_csn2 =',advec_csn2
-        advec2=advec2+advec_csn2
         if (headtt.or.ldebug) print*,'duun_dt: max(advec_csn2) =',maxval(advec_csn2)
+        advec2=advec2+advec_csn2
 !
 !  ``uun/dx'' for timestep
 !
         advec_uun=sum(abs(p%uun)*dline_1,2)
         if (notanumber(advec_uun)) print*, 'advec_uun  =',advec_uun
-        maxadvec=maxadvec+advec_uun
         if (headtt.or.ldebug) print*,'duun_dt: max(advec_uun) =',maxval(advec_uun)
+        maxadvec=maxadvec+advec_uun
       endif
 !
 !  Apply border profiles
@@ -715,10 +709,11 @@ module NeutralVelocity
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
+
       real, dimension(nx,3) :: f_target
       integer :: ju,j
 !
-! MR: this comment apparently belongs to somewhere else
+! MR: the following comment apparently belongs to somewhere else:
 ! these tmps and where's are needed because these square roots
 ! go negative in the frozen inner disc if the sound speed is big enough
 ! (like a corona, no neutralvelocitystatic equilibrium)
@@ -756,13 +751,15 @@ module NeutralVelocity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      intent(in) :: f
+      intent(inout) :: p
+      intent(inout) :: df
+
       real, dimension(nx,3) :: fvisc,unij5glnrhon
       real, dimension(nx) :: munrhon1,tmp,diffus_nun,diffus_nun3
       integer :: i,j,jj,ju
-      type (pencil_case) :: p
-!
-      intent(inout) :: p
-      intent(inout) :: df
 !
       fvisc=0.
       diffus_nun=0.
