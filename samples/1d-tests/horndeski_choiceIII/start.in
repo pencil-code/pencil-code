@@ -8,7 +8,7 @@
   lread_aux=T
   lwrite_ic=F
   tstart=1.0034
-  wav1=1e-3
+  wav1=1e-2
 /
 &special_init_pars
   lno_noise_GW=T
