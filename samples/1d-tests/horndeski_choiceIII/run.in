@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.1 2022/11/02 12:57:33 yutong Exp $',
-  nt=3086, it1=1, isave=500, itorder=3
+  nt=5, it1=1, isave=500, itorder=3
   dsnap=1e99, dvid=1e99, ialive=900000
   lspec_start=T, dspec=-1, GWs_spec=T, GWh_spec=T
   !lpencil_check_small=F
