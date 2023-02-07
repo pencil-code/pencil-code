@@ -125,7 +125,7 @@ module NeutralDensity
 !
 !  Turn off continuity equation term for 0-D runs.
 !
-      if (nxgrid*nygrid*nzgrid==1) then
+      if (dimensionality==0) then
         lcontinuity_neutral=.false.
         print*, 'initialize_neutraldensity: 0-D run, turned off continuity equation'
       endif
@@ -150,9 +150,14 @@ module NeutralDensity
           if (lroot) print*,'diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)rhon'
           ldiffn_hyper3=.true.
         case ('hyper3lnrhon')
+          if (lneutraldensity_nolog) &
+            call fatal_error('initialize_neutraldensity', &
+                             "'hyper3lnrhon' diffusion not meaningful for linear density")
           if (lroot) print*,'diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)lnrhon'
           ldiffn_hyper3lnrhon=.true.
        case ('hyper3_aniso')
+          if (.not.lneutraldensity_nolog) &
+            call not_implemented('initialize_neutraldensity',"anisotropic hyperdiffusion for log density")
           if (lroot) print*,'diffusion: (Dx*d^6/dx^6 + Dy*d^6/dy^6 + Dz*d^6/dz^6)rhon'
           ldiffn_hyper3_aniso=.true.
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
@@ -192,22 +197,16 @@ module NeutralDensity
                              'diffusion coefficient diffrhon_shock is zero')
       endif
 
-      if (lneutraldensity_nolog) then
-        if (ldiffn_shock.or.ldiffn_normal) &    !MR: can be resolved as in the case of del6rhon
-          call fatal_error('initialize_neutraldensity', &
-                           'del2lnrhon not available for non-logarithmic mass density')
-        if (ldiffn_hyper3lnrhon) &              !MR: can be resolved as in the case of del6rhon  
-          call fatal_error('initialize_neutraldensity', &
-                           'del6lnrhon not available for non-logarithmic mass density')
-      else   ! log density
+      if (.not.lneutraldensity_nolog) then         ! for logarithmic density
 
-        if (ldiffn_hyper3.or.ldiffn_hyper3_aniso.or.ldiffn_shock.or.ldiffn_normal) then
+        if (ldiffn_hyper3.or.ldiffn_hyper3_aniso) then
 !
-!  To obtain del[26]rhon with log density, one must work with a COMAUX slot in the f-array for linear density.
+!  To obtain del6rhon with log density, one must work with a COMAUX slot in the f-array for linear density.
 !
-          if (lroot) print*,"initialize_neutraldensity: Creating comm. aux variable rhon for del[26]rhon ", &
+          if (lroot) print*,"initialize_neutraldensity: Creating comm. aux variable rhon for del6rhon ", &
                             "and setting exponentiation BC for rhon"
           if (irhon==0) call farray_register_auxiliary('rhon',irhon,communicated=.true.)
+
           if (.not.lperi(1)) then
             bcx12(irhon,:)='exp'
             fbcx(irhon,:) = float(ilnrhon)
@@ -222,8 +221,6 @@ module NeutralDensity
           endif
 
         endif
-        if (ldiffn_hyper3_aniso) &      !MR: still true?
-          call not_implemented('initialize_neutraldensity',"anisotropic hyperdiffusion for lnrhon")
       endif
 
       if (lpretend_star.and..not.lcylindrical_coords) &
@@ -299,14 +296,8 @@ module NeutralDensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real :: zbot, ztop
       logical :: lnothing
       integer :: j
-!
-!  define bottom and top height
-!
-      zbot=xyz0(3)
-      ztop=xyz0(3)+Lxyz(3)
 !
 !  Set default values for sound speed at top and bottom.
 !  These may be updated in one of the following initialization routines.
@@ -354,8 +345,7 @@ module NeutralDensity
             endselect
 
             if (lroot) print*,'init_lnrhon: initlnrhon(' &
-                 //trim(iinit_str)//') = ',trim(initlnrhon(j))
-
+                              //trim(iinit_str)//') = ',trim(initlnrhon(j))
          endif
 
       enddo
@@ -367,7 +357,7 @@ module NeutralDensity
       if (lnothing.and.lroot) print*,'init_lnrhon: nothing'
 !
 !  If unlogarithmic density considered, take exp of lnrhon resulting from
-!  initlnrhon
+!  initialisation above. (irhon=ilnrhon!)
 !
       if (lneutraldensity_nolog) f(:,:,:,irhon)=exp(f(:,:,:,ilnrhon))
 !
@@ -501,12 +491,12 @@ module NeutralDensity
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: tmp,smooth_step_threshold
       type (pencil_case) :: p
-!
-      integer :: i, mm, nn
-!
       intent(inout) :: f,p
+!
+      real, dimension (nx) :: tmp,smooth_step_threshold
+      integer :: i
+!
 ! lnrhon
       if (lpencil(i_lnrhon)) then
         if (lneutraldensity_nolog) then
@@ -611,7 +601,7 @@ module NeutralDensity
 !
 ! Smooth transition over a ramping period of 5 orbits.
 !
-        if (lramp_up) then              ! MR: strange use of lpoint here!
+        if (lramp_up) then              ! MR: strange use of lpoint!
           ramping_period=2*pi*x(lpoint) !omega=v/r; v=1; 1/omega=r
           if (t <= ramping_period) then
             alpha_time=alpha*(sin((.5*pi)*(t/ramping_period))**2)
@@ -637,7 +627,7 @@ module NeutralDensity
 ! Fill global rhon array using the ilnrhon data.
 !
       if (.not.lneutraldensity_nolog.and.irhon/=0) &
-        f(:,:,:,irhon) = exp(f(:,:,:,ilnrhon))
+        f(l1:l2,m1:m2,n1:n2,irhon) = exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
 
     endsubroutine neutraldensity_before_boundary
 !***********************************************************************
@@ -659,13 +649,16 @@ module NeutralDensity
       intent(in)  :: f,p
       intent(out) :: df
 !
-      real, dimension (nx) :: fdiff, gshockglnrhon, gshockgrhon, tmp, diffus_diffrhon, diffus_diffrhon3
+      real, dimension(nx) :: fdiff,gshockglnrhon,gshockgrhon,tmp, diffus_diffrhon,diffus_diffrhon3
       integer :: j
 !
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dlnrhon_dt: SOLVE dlnrhon_dt'
-      if (headtt) call identify_bcs('lnrhon',ilnrhon)
+      if (headtt) then
+        call identify_bcs('lnrhon',ilnrhon)
+        if (.not.lneutraldensity_nolog.and.irhon/=0) call identify_bcs('rhon',irhon)
+      endif
 !
 !  continuity equation
 !
@@ -687,95 +680,97 @@ module NeutralDensity
          df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + p%zeta*p%rhon*p%rho1 - p%alpha*p%rho
       endif
 !
-!  Mass diffusion
+!  Normal mass diffusion
 !
-      fdiff=0.0
-      diffus_diffrhon=0.; diffus_diffrhon3=0.
+      if (lcontinuity_neutral) then
+
+        fdiff=0.0
+        diffus_diffrhon=0.; diffus_diffrhon3=0.
 !
-      if (ldiffn_normal) then  ! Normal diffusion operator
-        if (lneutraldensity_nolog) then
-          fdiff = fdiff + diffrhon*p%del2rhon
-        else
-          fdiff = fdiff + diffrhon*(p%del2lnrhon+p%glnrhon2)
+        if (ldiffn_normal) then  ! Normal diffusion operator
+          if (lneutraldensity_nolog) then
+            fdiff = fdiff + diffrhon*p%del2rhon
+          else
+            fdiff = fdiff + diffrhon*(p%del2lnrhon+p%glnrhon2)
+          endif
+          if (lfirst.and.ldt) diffus_diffrhon=diffus_diffrhon+diffrhon*dxyz_2
+          if (headtt) print*,'dlnrhon_dt: diffrhon=', diffrhon
         endif
-        if (lfirst.and.ldt) diffus_diffrhon=diffus_diffrhon+diffrhon*dxyz_2
-        if (headtt) print*,'dlnrhon_dt: diffrhon=', diffrhon
-      endif
 !
 !  Hyper diffusion
 !
-      if (ldiffn_hyper3) then
-        if (lneutraldensity_nolog) then
-          fdiff = fdiff + diffrhon_hyper3*p%del6rhon
-        else
-          fdiff = fdiff + 1/p%rhon*diffrhon_hyper3*p%del6rhon
+        if (ldiffn_hyper3) then
+          if (lneutraldensity_nolog) then
+            fdiff = fdiff + diffrhon_hyper3*p%del6rhon
+          else
+            fdiff = fdiff + 1/p%rhon*diffrhon_hyper3*p%del6rhon
+          endif
+          if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
+          if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
         endif
-        if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
-        if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
-      endif
 !
-      if (ldiffn_hyper3_aniso) then
-        if (lneutraldensity_nolog) then
-          call del6fj(f,diffrhon_hyper3_aniso,ilnrhon,tmp)
-          fdiff = fdiff + tmp
-          if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3 + &
-               diffrhon_hyper3_aniso(1)*dline_1(:,1)**6 + &
-               diffrhon_hyper3_aniso(2)*dline_1(:,2)**6 + &
-               diffrhon_hyper3_aniso(3)*dline_1(:,3)**6
-          if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=(Dx,Dy,Dz)=',diffrhon_hyper3_aniso
+        if (ldiffn_hyper3_aniso) then
+          if (lneutraldensity_nolog) then
+            call del6fj(f,diffrhon_hyper3_aniso,ilnrhon,tmp)
+            fdiff = fdiff + tmp
+            if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3 + &
+                 diffrhon_hyper3_aniso(1)*dline_1(:,1)**6 + &
+                 diffrhon_hyper3_aniso(2)*dline_1(:,2)**6 + &
+                 diffrhon_hyper3_aniso(3)*dline_1(:,3)**6
+            if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=(Dx,Dy,Dz)=',diffrhon_hyper3_aniso
+          endif
         endif
-      endif
 !
-      if (ldiffn_hyper3_polar) then
-        do j=1,3
-          call der6(f,ilnrhon,tmp,j,IGNOREDX=.true.)
-          if (.not.lneutraldensity_nolog) tmp=tmp*p%rhon1
-          fdiff = fdiff + diffrhon_hyper3*pi4_1*tmp*dline_1(:,j)**2
-        enddo
-        if (lfirst.and.ldt) &
-             diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1*dxmin_pencil**4
-        if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
-      endif
-!
-      if (ldiffn_hyper3lnrhon) then
-        if (.not. lneutraldensity_nolog) then
-          fdiff = fdiff + diffrhon_hyper3*p%del6lnrhon
+        if (ldiffn_hyper3_polar) then
+          do j=1,3
+            call der6(f,ilnrhon,tmp,j,IGNOREDX=.true.)
+            if (.not.lneutraldensity_nolog) tmp=tmp*p%rhon1
+            fdiff = fdiff + diffrhon_hyper3*pi4_1*tmp*dline_1(:,j)**2
+          enddo
+          if (lfirst.and.ldt) &
+               diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1*dxmin_pencil**4
+          if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
         endif
-        if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
-        if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
-      endif
+!
+        if (ldiffn_hyper3lnrhon) then
+          if (.not. lneutraldensity_nolog) then
+            fdiff = fdiff + diffrhon_hyper3*p%del6lnrhon
+          endif
+          if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
+          if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
+        endif
 !
 !  Shock diffusion
 !
-      if (ldiffn_shock) then
-        if (lneutraldensity_nolog) then
-          call dot_mn(p%gshock,p%grhon,gshockgrhon)
-          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + &
-              diffrhon_shock*p%shock*p%del2rhon + diffrhon_shock*gshockgrhon
-        else
-          call dot_mn(p%gshock,p%glnrhon,gshockglnrhon)
-          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + &
-              diffrhon_shock*p%shock*(p%del2lnrhon+p%glnrhon2) + &
-              diffrhon_shock*gshockglnrhon
+        if (ldiffn_shock) then
+          if (lneutraldensity_nolog) then
+            call dot_mn(p%gshock,p%grhon,gshockgrhon)
+            df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + &
+                diffrhon_shock*p%shock*p%del2rhon + diffrhon_shock*gshockgrhon
+          else
+            call dot_mn(p%gshock,p%glnrhon,gshockglnrhon)
+            df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + &
+                diffrhon_shock*p%shock*(p%del2lnrhon+p%glnrhon2) + &
+                diffrhon_shock*gshockglnrhon
+          endif
+          if (lfirst.and.ldt) diffus_diffrhon=diffus_diffrhon+diffrhon_shock*p%shock*dxyz_2
+          if (headtt) print*,'dlnrhon_dt: diffrhon_shock=', diffrhon_shock
         endif
-        if (lfirst.and.ldt) &
-            diffus_diffrhon=diffus_diffrhon+diffrhon_shock*p%shock*dxyz_2
-        if (headtt) print*,'dlnrhon_dt: diffrhon_shock=', diffrhon_shock
-      endif
 !
 !  Add diffusion term to continuity equation
 !
-      if (lneutraldensity_nolog) then
-        df(l1:l2,m,n,irhon)   = df(l1:l2,m,n,irhon)   + fdiff
-      else
-        df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + fdiff
-      endif
+        if (lneutraldensity_nolog) then
+          df(l1:l2,m,n,irhon)   = df(l1:l2,m,n,irhon)   + fdiff
+        else
+          df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + fdiff
+        endif
 !
-      if (lfirst.and.ldt) then
-        if (headtt.or.ldebug) &
-          print*,'dlnrhon_dt: max(diffus_diffrhon) =', maxval(diffus_diffrhon)
-        maxdiffus=max(maxdiffus,diffus_diffrhon)
-        maxdiffus3=max(maxdiffus3,diffus_diffrhon3)
+        if (lfirst.and.ldt) then
+          if (headtt.or.ldebug) &
+            print*,'dlnrhon_dt: max(diffus_diffrhon) =', maxval(diffus_diffrhon)
+          maxdiffus=max(maxdiffus,diffus_diffrhon)
+          maxdiffus3=max(maxdiffus3,diffus_diffrhon3)
+        endif
       endif
 !
 !  Apply border profile
@@ -830,6 +825,7 @@ module NeutralDensity
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
+
       real, dimension(nx) :: f_target !,OO_sph,OO_cyl,cs,theta
 !      real :: r0_pot=0.1
 !
