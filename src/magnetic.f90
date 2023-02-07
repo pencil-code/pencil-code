@@ -244,7 +244,7 @@ module Magnetic
   logical :: lscale_tobox=.true.
   logical :: lbraginsky=.false.
   logical :: lcoulomb=.false.
-  logical :: lfactors_aa=.false. 
+  logical :: lfactors_aa=.false., lvacuum=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -273,7 +273,7 @@ module Magnetic
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
-      lcoulomb, qexp_aa, nfact_aa, lfactors_aa
+      lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum
 !
 ! Run parameters
 !
@@ -410,7 +410,7 @@ module Magnetic
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
-      lbraginsky, eta_jump0, eta_jump1, lcoulomb
+      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -3877,7 +3877,11 @@ module Magnetic
 !  Note that the previously calculated p%jj would now be overwritten.
 !
         if (iex>0) then
-          p%jj=(p%el+p%uxb)/eta
+          if (lvacuum) then
+            p%jj=0
+          else
+            p%jj=(p%el+p%uxb)/eta
+          endif
         else
           p%jj=mu01*p%jj
         endif
