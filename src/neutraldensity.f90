@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnrhon; rhon; rhon1; glnrhon(3); grhon(3);
-! PENCILS PROVIDED unglnrhon; ungrhon; del2lnrhon; del2rhon; glnrhon2
+! PENCILS PROVIDED unglnrhon; ungrhon; del2rhon; glnrhon2
 ! PENCILS PROVIDED del6lnrhon; del6rhon; snglnrhon(3); alpha; zeta
 !
 !***************************************************************
@@ -409,7 +409,6 @@ module NeutralDensity
         else
           lpenc_requested(i_glnrhon)=.true.
           lpenc_requested(i_glnrhon2)=.true.
-          lpenc_requested(i_del2lnrhon)=.true.
         endif
       endif
       if (ldiffn_normal) then
@@ -417,7 +416,6 @@ module NeutralDensity
           lpenc_requested(i_del2rhon)=.true.
         else
           lpenc_requested(i_glnrhon2)=.true.
-          lpenc_requested(i_del2lnrhon)=.true.
         endif
       endif
       if (ldiffn_hyper3.or.ldiffn_hyper3_aniso) &
@@ -549,16 +547,17 @@ module NeutralDensity
       endif
 ! glnrhon2
       if (lpencil(i_glnrhon2)) call dot2(p%glnrhon,p%glnrhon2)
-! del2lnrhon
-      if (lpencil(i_del2lnrhon)) call del2(f,ilnrhon,p%del2lnrhon)
+! del2rhon
+      if (lpencil(i_del2rhon)) then
+        call del2(f,ilnrhon,p%del2rhon)    ! can be either del2rhon or del2lnrhon
+        if (.not.lneutraldensity_nolog) p%del2rhon=p%del2rhon+p%glnrhon2  ! here del2rhon/rhon
+      endif
 !
+! del6rhon
 ! Note that irhon either points to the linear neutraldensity as a PDE variable
 ! for lneutraldensity_nolog, or as a COMAUX variable otherwise.
 !
-! del2rhon
-      if (lpencil(i_del2rhon)) call del2(f,irhon,p%del2rhon)
-! del6rhon
-      if (lpencil(i_del6rhon)) call del6(f,irhon,p%del6rhon)
+      if (lpencil(i_del6rhon).and.irhon>0) call del6(f,irhon,p%del6rhon)
 ! del6lnrhon
       if (lpencil(i_del6lnrhon)) call del6(f,ilnrhon,p%del6lnrhon)
 ! snglnrhon
@@ -688,11 +687,7 @@ module NeutralDensity
         diffus_diffrhon=0.; diffus_diffrhon3=0.
 !
         if (ldiffn_normal) then  ! Normal diffusion operator
-          if (lneutraldensity_nolog) then
-            fdiff = fdiff + diffrhon*p%del2rhon
-          else
-            fdiff = fdiff + diffrhon*(p%del2lnrhon+p%glnrhon2)
-          endif
+          fdiff = fdiff + diffrhon*p%del2rhon
           if (lfirst.and.ldt) diffus_diffrhon=diffus_diffrhon+diffrhon*dxyz_2
           if (headtt) print*,'dlnrhon_dt: diffrhon=', diffrhon
         endif
@@ -733,9 +728,7 @@ module NeutralDensity
         endif
 !
         if (ldiffn_hyper3lnrhon) then
-          if (.not. lneutraldensity_nolog) then
-            fdiff = fdiff + diffrhon_hyper3*p%del6lnrhon
-          endif
+          if (.not. lneutraldensity_nolog) fdiff = fdiff + diffrhon_hyper3*p%del6lnrhon
           if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
           if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
         endif
@@ -750,8 +743,7 @@ module NeutralDensity
           else
             call dot_mn(p%gshock,p%glnrhon,gshockglnrhon)
             df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + &
-                diffrhon_shock*p%shock*(p%del2lnrhon+p%glnrhon2) + &
-                diffrhon_shock*gshockglnrhon
+                diffrhon_shock*p%shock*p%del2rhon + diffrhon_shock*gshockglnrhon
           endif
           if (lfirst.and.ldt) diffus_diffrhon=diffus_diffrhon+diffrhon_shock*p%shock*dxyz_2
           if (headtt) print*,'dlnrhon_dt: diffrhon_shock=', diffrhon_shock
