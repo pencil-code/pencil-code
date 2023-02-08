@@ -39,7 +39,7 @@ module Magnetic
   use Cdata
   use General, only: keep_compiler_quiet, loptest
   use Magnetic_meanfield
-  use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
+  use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented
   use EquationOfState, only: gamma1
   use SharedVariables, only: get_shared_variable  
   use Mpicomm, only: stop_it
@@ -993,7 +993,7 @@ module Magnetic
   integer :: ivid_aps=0, ivid_bb=0, ivid_jj=0, ivid_b2=0, ivid_j2=0, ivid_ab=0, &
              ivid_jb=0, ivid_beta1=0, ivid_poynting=0, ivid_bb_sph=0
 !
-! Module Variables
+! Auxiliary module Variables
 !
   real, dimension(nx) :: etatotal=0.,eta_smag=0.,Fmax=0.,dAmax=0.,ss0=0., &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
@@ -1004,6 +1004,13 @@ module Magnetic
   real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kern_jjsmooth
 !
   real, dimension(nz,nprocz) :: z_allprocs
+!
+! for continuous forcing
+!
+  real, dimension (mx) :: phix,sinx,cosx
+  real, dimension (my) :: phiy,siny,cosy
+  real, dimension (mz) :: phiz,sinz,cosz
+  real :: R2,R12
 
   contains
 !***********************************************************************
@@ -1761,6 +1768,13 @@ module Magnetic
           call put_shared_variable('geta_xy',geta_xy)
         endif
       endif
+
+      if (.not.lweyl_gauge) then
+        if (lresi_magfield) &
+          call fatal_error('initialize_magnetic','set lweyl_gauge=T for lresi_magfield')
+        if (lresi_etava) &
+          call not_implemented('initialize_magnetic','eta_va for resistive gauge')
+      endif
 !
 !  Border profile backward compatibility. For a vector, if only the first
 !  borderaa is set, then the other components get the same value.
@@ -1777,7 +1791,16 @@ module Magnetic
 !  that the module can request the right pencils.
 !
       do j=1,3
-        if (borderaa(j)/='nothing') call request_border_driving(borderaa(j))
+!
+        select case (borderaa(j))
+        case ('zero','0','initial-condition')
+          call request_border_driving(borderaa(j))
+        case ('nothing')
+          if (lroot.and.ip<=5) print*,"set_border_magnetic: borderaa='nothing'"
+        case default
+          call fatal_error('initialize_magnetic','No such value for borderaa: '//trim(borderaa(j)))
+        end select
+
       enddo
 !
 !  Initialize individual modules, but need to do this only if
@@ -1788,7 +1811,7 @@ module Magnetic
       call put_shared_variable('lfrozen_bb_bot',lfrozen_bb_bot,caller='initialize_magnetic')
       call put_shared_variable('lfrozen_bb_top',lfrozen_bb_top)
 !
-!  Calculate cosz and sinz for calculating the phase of a Beltrami field
+!  Calculate coskz and sinkz for calculating the phase of a Beltrami field
 !  The choice to use k1_ff may not be optimal, but keep it for now.
 !
       if (idiag_bsinphz/=0 .or. idiag_bcosphz/=0 &
@@ -1806,7 +1829,7 @@ module Magnetic
       if (lread_oldsnap_nomag.and.lrun_initaa) then
         if (lroot) then
           print*,'Adding a magnetic field to a previously '//&
-              'non-magnetic simulation. The field is given by initaa=',initaa
+                 'non-magnetic simulation. The field is given by initaa=',initaa
         endif
         call init_aa(f)
       endif
@@ -1814,11 +1837,23 @@ module Magnetic
 !  Break if Galilean-invariant advection (fargo) is used without
 !  the advective gauge (only in run-time)
 !
-      if (lrun) then
-        if (lfargo_advection.and..not.ladvective_gauge) &
-             call fatal_error('initialize_magnetic',&
-             'For fargo advection you need the advective gauge. '//&
-             'You may want to switch ladvective_gauge=T in magnetic_run_pars')
+      if (lrun.and.lfargo_advection) then
+
+        if (ladvective_gauge) then
+          if (.not.lupw_aa.and.linduction) then
+            if (any(B_ext/=0.)) call fatal_error("initialize_magnetic", &
+                                                 "fargo advection with external field not tested")
+            if (lspherical_coords) &
+              call not_implemented('initialize_magnetic', &
+                                   "curvature terms on ajiuj for spherical coordinates and advective gauge")
+          endif
+        else
+          call fatal_error('initialize_magnetic', &
+                           'For fargo advection you need the advective gauge. '// &
+                           'You may want to switch ladvective_gauge=T in magnetic_run_pars')
+        endif
+
+
       endif
 !
 !  Write constants to disk. In future we may want to deal with this
@@ -1836,7 +1871,40 @@ module Magnetic
         if (iforcing_cont_aa==0) &
           call fatal_error('initialize_magnetic','no valid continuous forcing available')
       endif
+
+      if (lforcing_cont_aa_local) then
 !
+!  sin and cos functions are calculated for all
+!  x,y,z points for use in integration
+!
+        if (ip<=6) print*,'forcing_continuous: '//trim(iforcing_continuous_aa)
+        if (iforcing_continuous_aa=='fixed_swirl') then
+          if (lroot) print*,'forcing_continuous: fixed_swirl; swirl=',swirl
+          R2=radius**2
+          R12=1./R2
+          phix=exp(-R12*x**2)
+          phiy=exp(-R12*y**2)
+          phiz=exp(-R12*z**2)
+        elseif (iforcing_continuous_aa=='cosxcosz') then
+          cosx=cos(k1x_ff*x)
+          cosz=cos(k1z_ff*z)
+        elseif (iforcing_continuous_aa=='Azsinx') then
+          sinx=cos(k1z_ff*x)
+        elseif (iforcing_continuous_aa=='Aycosz') then
+          cosz=cos(k1z_ff*z)
+        elseif (iforcing_continuous_aa=='RobertsFlow') then
+          if (lroot) print*,'forcing_continuous: RobertsFlow'
+          sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+          siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        elseif (iforcing_continuous_aa=='Beltrami-z') then
+          if (lroot) print*,'forcing_continuous: Beltrami-z'
+          ampl_beltrami=ampl_ff
+          sinz=sin(k1_ff*z+phase_beltrami)
+          cosz=cos(k1_ff*z+phase_beltrami)
+        endif
+
+      endif
+
       lcalc_aameanz = lcalc_aameanz.or.lremove_meanaz
       if ((lspherical_coords.or.lcylindrical_coords).and.(lremove_meanax.or.lremove_meanaxy.or.lremove_meanaxz)) &
         call warning('initialize_magnetic','removing x or x[yz] average not precise for curvilinear coordinates')
@@ -1893,14 +1961,29 @@ module Magnetic
       z_allprocs=reshape(zgrid,(/nz,nprocz/))
 
       if (.not.ltime_integrals_always.and.lvart_in_shear_frame) then
-        if (.not. lshear) call fatal_error('time_integrals_magnetic',&
-            'lshear=F; cannot do frame transform')
-        ! 
-        !  Must have nprocy=1 because we shift in the y direction
-        ! 
-        if (nprocy/=1)    call fatal_error('time_integrals_magnetic',&
-            'nprocy=1 required for lvart_in_shear_frame')
+        if (.not. lshear) call fatal_error('initialize_magnetic', &
+                                           'lshear=F -> cannot do frame transform for time integrals')
+! 
+!  Must have nprocy=1 because we shift in the y direction
+! 
+        if (nprocy/=1) call fatal_error('initialize_magnetic', &
+                                        'nprocy=1 required for lvart_in_shear_frame')
       endif
+!
+!  give warning if brms is not set in prints.in
+!
+      if (bthresh_per_brms/=0.and.idiag_brms==0) &
+        call warning('initialize_magnetic','need to set brms in print.in to get bthresh')
+
+      if (lmean_friction.and.nprocxy/=1) &
+        call fatal_error("initialize_magnetic","lmean_friction works only for nprocxy=1")
+
+      if (dipole_moment /= 0. .and. ladd_global_field) &
+        call fatal_error("initialize_magnetic", &
+                         "Switch ladd_global_field=F if dipole_moment /= 0.")
+
+      if (lcoulomb.and..not.lpoisson) &
+        call fatal_error('magnetic_before_boundary', 'Coulomb gauge needs the Poisson module')
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -2488,8 +2571,6 @@ module Magnetic
 !
 !  19-nov-04/anders: coded
 !
-      use Mpicomm, only: stop_it
-!
       lpenc_requested(i_bb)=.true.
       if (.not.ladvective_gauge) lpenc_requested(i_uxb)=.true.
 !
@@ -3016,7 +3097,8 @@ module Magnetic
       if (idiag_brmsn/=0 .or. idiag_abmn/=0 .or. idiag_ambmzn/=0 &
           .or. idiag_jbmn/= 0 ) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
-          call stop_it("You have to set either of lequatory or lequatorz to true to calculate averages over half the box")
+          call fatal_error('pencil_criteria_magnetic', &
+          "You have to set either of lequator[y|z] to true to calculate averages over half the box")
         else
           if (lequatory) write(*,*) 'pencil-criteria_magnetic: box divided along y dirn'
           if (lequatorz) write(*,*) 'pencil-criteria_magnetic: box divided along z dirn'
@@ -3533,16 +3615,12 @@ module Magnetic
 !  Here, no minus sign has been included, so A_Coulomb = A_Weyl - gLambda, and
 !  <A.B>_C = <A.B>_W - gLambm, <A.A>_C = <A.A>_W - gLamam.
 !
-          if (lcoulomb) then
-            if (.not.lpoisson) call fatal_error('magnetic_before_boundary',&
-              'Coulomb gauge needs the Poisson module')
-            if (lfirst) then
-              if (.not.allocated(rhs_poisson)) allocate(rhs_poisson(nx,ny,nz))
-              rhs_poisson=f(l1:l2,m1:m2,n1:n2,idiva)
-              call inverse_laplacian(rhs_poisson)
-              f(l1:l2,m1:m2,n1:n2,iLam)=rhs_poisson
-            endif
-          endif
+      if (lcoulomb.and.lfirst) then
+        if (.not.allocated(rhs_poisson)) allocate(rhs_poisson(nx,ny,nz))
+        rhs_poisson=f(l1:l2,m1:m2,n1:n2,idiva)
+        call inverse_laplacian(rhs_poisson)
+        f(l1:l2,m1:m2,n1:n2,iLam)=rhs_poisson
+      endif
 !
 !  put u.a into auxiliary array
 !
@@ -3670,8 +3748,8 @@ module Magnetic
 !
 !  Add a uniform background field, optionally precessing. 
 !
-        addBext: if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. &
-                 (.not. ladd_global_field)) then
+        if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. &
+                  (.not. ladd_global_field)) then
           call get_bext(B_ext)
           if (any(B_ext/=0.)) then
             forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
@@ -3679,17 +3757,15 @@ module Magnetic
             if (headtt) print *, 'calc_pencils_magnetic_pencpar: logic = ', &
                         (lbb_as_comaux .and. lB_ext_in_comaux .and. ladd_global_field)
           endif
-        endif addBext
+        endif
 !
 !  Add a precessing dipole not in the Bext field
 !
-        if (dipole_moment .ne. 0) then
+        if (dipole_moment /= 0.) then
           c=cos(inclaa*pi/180); s=sin(inclaa*pi/180)
           p%bb(:,1) = p%bb(:,1) + dipole_moment * 2*(c*costh(m) + s*sinth(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
           p%bb(:,2) = p%bb(:,2) + dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
           p%bb(:,3) = p%bb(:,3) + dipole_moment *   (             s*         sin(z(n)-omega_Bz_ext*t))*p%r_mn1**3
-          if (ladd_global_field) call fatal_error("calc_pencils_magnetic_pencpar",&
-               "Switch ladd_global_field=F in magnetic_run_pars in run.in")
         endif
 !
 !  Add the external potential field.
@@ -3776,7 +3852,7 @@ module Magnetic
           p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)
           p%uuadvec_gaa(:,2) = p%uuadvec_gaa(:,2) + rcyl_mn1*p%uu(:,2)*p%aa(:,1)
         elseif (lspherical_coords) then
-          call fatal_error("uuadvec_gaa","not implemented yet for spherical coordinates")
+          call not_implemented('calc_pencils_magnetic_pencpar',"uuadvec_gaa for spherical coordinates")
         endif
       endif
 !
@@ -4225,11 +4301,8 @@ module Magnetic
       case('ionization-equilibrium'); p%nu_ni1=nu_ni1*sqrt(p%rho1)
       case('ionization-yH'); p%nu_ni1=nu_ni1*sqrt(p%rho1)*(1.-p%yH)/p%yH
       case default
-         write(unit=errormsg,fmt=*) &
-              'set_ambipolar_diffusion: No such value for ambipolar_diffusion: ', &
-              trim(ambipolar_diffusion)
-         call fatal_error('set_ambipolar_diffusion',errormsg)
-!
+        call fatal_error('set_ambipolar_diffusion','No such value for ambipolar_diffusion: ' &
+                         //trim(ambipolar_diffusion))
       endselect
 !
     endsubroutine set_ambipolar_diffusion
@@ -4291,7 +4364,6 @@ module Magnetic
 !
       use Debug_IO, only: output_pencil
       use Deriv, only: der6
-      use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic
       use Sub
       use General, only: transform_thph_yy, notanumber
@@ -4803,14 +4875,12 @@ module Magnetic
       if (lresi_etava) then
         if (lweyl_gauge) then
           forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
-        else
-          call fatal_error('daa_dt','eta_va not implemented for resistive gauge')
         endif
         if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etava
         etatotal = etatotal + p%etava
       endif
 !
-!  Generalised alfven speed dependent resistivity
+!  Generalised Alfven speed dependent resistivity
 !
       if (lresi_vAspeed) then
         etatotal = etatotal + p%etava
@@ -5011,8 +5081,6 @@ module Magnetic
           do i=1,3
             fres(:,i)=fres(:,i)-mu0*eta_BB(:)*p%jj(:,i)
           enddo
-        else
-          call fatal_error('daa_dt','lweyl_gauge=T for lresi_magfield')
         endif
         if (lfirst.and.ldt) then
           call max_mn(eta_BB,maxetaBB)
@@ -5059,14 +5127,10 @@ module Magnetic
 !  to to Ekman friction; see below.
 !
       if (lmean_friction) then
-        if (nprocxy==1) then
-          do j=1,3
-            aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
-          enddo
-          dAdt = dAdt-LLambda_aa*aa_xyaver
-        else
-          call stop_it("magnetic: lmean_friction works only for nprocxy=1")
-        endif
+        do j=1,3
+          aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
+        enddo
+        dAdt = dAdt-LLambda_aa*aa_xyaver
       elseif (llocal_friction) then
         dAdt = dAdt-LLambda_aa*p%aa
       endif
@@ -5078,9 +5142,9 @@ module Magnetic
 !SLD          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(etatotal*mu0)*p%rho1*p%TT1*phi
 !   Slope limited diffusion for magnetic field
 !
-        if (lmagnetic_slope_limited.and.llast) then
+      if (lmagnetic_slope_limited.and.llast) then
 !       if (lmagnetic_slope_limited) then
-          if (lsld_bb) then
+        if (lsld_bb) then
 !
 !   Using diffusive flux of B on A
 !   Idea: DA_i/dt  = ... - e_ikl Dsld_k B_l
@@ -5088,67 +5152,67 @@ module Magnetic
 !   normal way:  DA_i/dt = ... partial_j Dsld_j A_l
 !
 !
+          do j=1,3
+            call calc_slope_diff_flux(f,ibx+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn, &
+                                      FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
+          enddo
+!
+          tmp2(:,1)= (-d_sld_flux(:,2,3) + d_sld_flux(:,3,2))*fac_sld_magn
+          tmp2(:,2)= (-d_sld_flux(:,3,1) + d_sld_flux(:,1,3))*fac_sld_magn
+          tmp2(:,3)= (-d_sld_flux(:,1,2) + d_sld_flux(:,2,1))*fac_sld_magn
+!
+          fres=fres + tmp2
+        else
+!
+          if (lcylindrical_coords .or. lspherical_coords) then
             do j=1,3
-              call calc_slope_diff_flux(f,ibx+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn, &
+              call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn, &
                                         FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
             enddo
 !
-            tmp2(:,1)= (-d_sld_flux(:,2,3) + d_sld_flux(:,3,2))*fac_sld_magn
-            tmp2(:,2)= (-d_sld_flux(:,3,1) + d_sld_flux(:,1,3))*fac_sld_magn
-            tmp2(:,3)= (-d_sld_flux(:,1,2) + d_sld_flux(:,2,1))*fac_sld_magn
-!
-            fres=fres + tmp2
-          else
-!
-            if (lcylindrical_coords .or. lspherical_coords) then
-              do j=1,3
-                call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn, &
-                                          FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
-              enddo
-!
-              if (lcylindrical_coords) then
-                fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
-                fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
-                fres(:,3)=fres(:,3)+tmp2(:,3)
-              elseif(lspherical_coords) then
-                fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
-                fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
-                fres(:,3)=fres(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
-              endif
-            else
-              do j=1,3
-                call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn)
-              enddo
-                fres=fres+tmp2
+            if (lcylindrical_coords) then
+              fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
+              fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
+              fres(:,3)=fres(:,3)+tmp2(:,3)
+            elseif(lspherical_coords) then
+              fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
+              fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
+              fres(:,3)=fres(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
             endif
+          else
+            do j=1,3
+              call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn)
+            enddo
+              fres=fres+tmp2
           endif
+        endif
 !
 !     Heating is jj*divF_sld
 !     or Heating is just jj*(-e_ijk Dsld_k B_l) (for lsld_bb=T)
 !
-          if (lohmic_heat) then
-            call dot(tmp2,p%jj,tmp1)
-            if (lentropy) then
-              if (pretend_lnTT) then
-                df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
-                  p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
-              else
-                df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
-                        max(0.0,tmp1)*p%rho1*p%TT1
-              endif
-            else if (ltemperature) then
-              if (ltemperature_nolog) then
-                df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + &
-                        p%cv1*max(0.0,tmp1)*p%rho1
-              else
-                df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
-                        p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
-              endif
-            else if (lthermal_energy) then
-             df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + max(0.0,tmp1)
+        if (lohmic_heat) then
+          call dot(tmp2,p%jj,tmp1)
+          if (lentropy) then
+            if (pretend_lnTT) then
+              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
+                p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
+            else
+              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
+                      max(0.0,tmp1)*p%rho1*p%TT1
             endif
+          else if (ltemperature) then
+            if (ltemperature_nolog) then
+              df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + &
+                      p%cv1*max(0.0,tmp1)*p%rho1
+            else
+              df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
+                      p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
+            endif
+          else if (lthermal_energy) then
+           df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + max(0.0,tmp1)
           endif
         endif
+      endif
 !
 !  Special contributions to this module are called here.
 !
@@ -5206,7 +5270,6 @@ module Magnetic
 !  Take care of possibility of imposed field.
 !
             if (any(B_ext/=0.)) then
-              if (lfargo_advection) call fatal_error("daadt","fargo advection with external field not tested")
               call cross(p%uu,B_ext,ujiaj)
             else
               if (lfargo_advection) then
@@ -5238,8 +5301,6 @@ module Magnetic
               endif
 !
             else if (lspherical_coords) then
-              if (lfargo_advection) call fatal_error("daadt",&
-                   "curvature terms on ajiuj not added for spherical coordinates yet.")
               ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*r1_mn
               ujiaj(:,3) = ujiaj(:,3) + (p%uu(:,1)*p%aa(:,3)          - &
                                          p%uu(:,3)*p%aa(:,1)          + &
@@ -5304,9 +5365,7 @@ module Magnetic
 !  we only do upwinding for the advection-type terms on the
 !  left hand side.
 !
-        if (lupw_aa.and.headtt) then
-          print *,'daa_dt: use upwinding in advection term'
-        endif
+        if (lupw_aa.and.headtt) print *,'daa_dt: use upwinding in advection term'
 !
 !  Add Lorentz force that results from the external field.
 !  Note: For now, this only works for uniform external fields.
@@ -5628,7 +5687,7 @@ module Magnetic
 !
 !  Debug output.
 !
-      if (headtt .and. lfirst .and. ip<=4) then
+      if (headtt .and. ip<=4) then
         call output_pencil('aa.dat',p%aa,3)
         call output_pencil('bb.dat',p%bb,3)
         call output_pencil('jj.dat',p%jj,3)
@@ -5720,10 +5779,7 @@ module Magnetic
                             poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2,poynting_r)
         endif
 !
-        if (bthresh_per_brms/=0) then
-          call calc_bthresh
-          call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
-        endif
+        if (bthresh_per_brms/=0) call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
 !
       endif
 
@@ -6399,7 +6455,7 @@ module Magnetic
 !  current density components at one point (=pt).
 !
       if (lroot.and.m==mpoint.and.n==npoint) then  
-        !MR: i.e., only pointwise data from root proc domain can be obtained!
+        !MR: i.e., only pointwise data from root proc domain can be obtained! Intended?
         if (idiag_bxpt/=0) call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
         if (idiag_bypt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
         if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
@@ -6887,7 +6943,9 @@ module Magnetic
       use Sub, only: div, calc_all_diff_fluxes, dot2_mn
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+
       real, dimension(nx) :: tmp
+      real, save :: phase_beltrami_before=impossible
 !
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
@@ -6946,6 +7004,18 @@ module Magnetic
 !
 !     if (lmagn_mf) call magnetic_after_boundary
 !
+!  If phase_beltrami is finite,
+!  recalculate sinz and cosz for the phase correction of an
+!  imposed Beltrami field.
+!
+      if (lforcing_cont_aa_local.and.iforcing_continuous_aa=='Beltrami-z') then
+        if (phase_beltrami/=phase_beltrami_before) then
+          phase_beltrami_before=phase_beltrami
+          sinz=sin(k1_ff*z+phase_beltrami)
+          cosz=cos(k1_ff*z+phase_beltrami)
+        endif
+      endif
+
     endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine set_border_magnetic(f,df,p)
@@ -6956,7 +7026,6 @@ module Magnetic
 !  28-jul-06/wlad: coded
 !
       use BorderProfiles, only: border_driving,set_border_initcond
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -6978,23 +7047,14 @@ module Magnetic
           call set_border_initcond(f,ju,f_target(:,j))
 !
         case ('nothing')
-          if (lroot.and.ip<=5) &
-               print*,"set_border_magnetic: borderaa='nothing'"
-!
-        case default
-          write(unit=errormsg,fmt=*) &
-               'set_border_magnetic: No such value for borderaa: ', &
-               trim(borderaa(j))
-          call fatal_error('set_border_magnetic',errormsg)
+          cycle
 !
         endselect
 !
 !  apply border profile
 !
-        if (borderaa(j) /= 'nothing') then
-          ju=j+iaa-1
-          call border_driving(f,df,p,f_target(:,j),ju)
-        endif
+        ju=j+iaa-1
+        call border_driving(f,df,p,f_target(:,j),ju)
 !
       enddo
 !
@@ -7026,7 +7086,6 @@ module Magnetic
 !  23-jun-09/axel: generalized to lcylinder_in_a_box
 !
       use Sub, only: step, der_step
-      use Mpicomm, only: stop_it
 !
       type (pencil_case) :: p
       real, dimension (nx) :: eta_mn
@@ -7085,7 +7144,7 @@ module Magnetic
 !  (iii) other cases are not implemented yet
 !
       else
-        call stop_it("eta_shell works only for spheres or cylinders")
+        call fatal_error("eta_shell","works only for spheres or cylinders")
       endif
 !
     endsubroutine eta_shell
@@ -7096,19 +7155,11 @@ module Magnetic
 !
 !   6-aug-03/axel: coded
 !
-!  give warning if brms is not set in prints.in
-!
-      if (idiag_brms==0) then
-        if (lroot.and.lfirstpoint) then
-          print*,'calc_bthresh: need to set brms in print.in to get bthresh'
-        endif
-      endif
-!
 !  if nvec exceeds nbvecmax (=1/4) of points per processor, then begin to
 !  increase scaling factor on bthresh. These settings will stay in place
 !  until the next restart
 !
-      if (nbvec>nbvecmax.and.lfirstpoint) then
+      if (nbvec>nbvecmax) then
         print*,'calc_bthresh: processor ',iproc_world,': bthresh_scl,nbvec,nbvecmax=', &
                                           bthresh_scl,nbvec,nbvecmax
         bthresh_scl=bthresh_scl*1.2
@@ -7335,65 +7386,11 @@ module Magnetic
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+
       real, dimension (nx,3) :: forcing_rhs
       real, dimension (nx) :: jf,phi
-      real, dimension (mx), save :: phix,sinx,cosx
-      real, dimension (my), save :: phiy,siny,cosy
-      real, dimension (mz), save :: phiz,sinz,cosz
-      real, save :: phase_beltrami_before
-      real, save :: R2,R12
-      type (pencil_case) :: p
-      logical, save :: lfirst_call=.true.
-      integer :: j,jfff,ifff
       real :: fact
-!
-!  at the first step, the sin and cos functions are calculated for all
-!  x,y,z points and are then saved and used for all subsequent steps
-!  and pencils
-!
-      if (lfirst_call) then
-        if (ip<=6) print*,'forcing_continuous: lfirst_call=',lfirst_call
-        if (iforcing_continuous_aa=='fixed_swirl') then
-          if (lroot) print*,'forcing_continuous: fixed_swirl; swirl=',swirl
-          R2=radius**2
-          R12=1./R2
-          phix=exp(-R12*x**2)
-          phiy=exp(-R12*y**2)
-          phiz=exp(-R12*z**2)
-        elseif (iforcing_continuous_aa=='cosxcosz') then
-          cosx=cos(k1x_ff*x)
-          cosz=cos(k1z_ff*z)
-        elseif (iforcing_continuous_aa=='Azsinx') then
-          sinx=cos(k1z_ff*x)
-        elseif (iforcing_continuous_aa=='Aycosz') then
-          cosz=cos(k1z_ff*z)
-        elseif (iforcing_continuous_aa=='RobertsFlow') then
-          if (lroot) print*,'forcing_continuous: RobertsFlow'
-          sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-          siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-        elseif (iforcing_continuous_aa=='Beltrami-z') then
-          if (lroot) print*,'forcing_continuous: Beltrami-z'
-          ampl_beltrami=ampl_ff
-          sinz=sin(k1_ff*z+phase_beltrami)
-          cosz=cos(k1_ff*z+phase_beltrami)
-        endif
-        lfirst_call=.false.
-      endif
-      if (ip<=6) print*,'forcing_continuous: dt, lfirst_call=',dt,lfirst_call
-!
-!  at the first meshpoint, and if phase_beltrami is finite,
-!  recalculate sinz and cosz for the phase correction of an
-!  imposed Beltrami field.
-!
-      if (lfirstpoint) then
-        if (iforcing_continuous_aa=='Beltrami-z') then
-          if (phase_beltrami/=phase_beltrami_before) then
-            phase_beltrami_before=phase_beltrami
-            sinz=sin(k1_ff*z+phase_beltrami)
-            cosz=cos(k1_ff*z+phase_beltrami)
-          endif
-        endif
-      endif
 !
 !  calculate forcing
 !
@@ -7432,11 +7429,7 @@ module Magnetic
 !
 !  apply forcing in uncurled induction equation
 !
-      ifff=iax
-      do j=1,3
-        jfff=j+ifff-1
-        df(l1:l2,m,n,jfff)=df(l1:l2,m,n,jfff)+forcing_rhs(:,j)
-      enddo
+      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+forcing_rhs
 !
 !  diagnostics
 !
@@ -8158,7 +8151,7 @@ module Magnetic
       integer :: l
 !
       if (lcylindrical_coords) &
-          call stop_it("bmxy_rms not yet implemented for cylindrical")
+          call not_implemented('calc_bmxy_rms',"bmxy_rms for cylindrical coords")
 !
       if (.not. lfirst_proc_z) return
 !
@@ -8759,14 +8752,13 @@ module Magnetic
 !
 !  30-june-04/grs: coded
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: theta_mn,ar,atheta,aphi,r_mn,phi_mn
       real :: C_int,C_ext,A_int,A_ext
       integer :: j
 !
       do imn=1,ny*nz
+
         n=nn(imn)
         m=mm(imn)
         r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
@@ -8848,8 +8840,7 @@ module Magnetic
               exit
 !
            case default
-              if (lroot .and. imn==1) print*,'geo_benchmark_B: case not defined!'
-              call stop_it("")
+              call fatal_error("geo_benchmark_B",'case '//trim(initaa(j))//' not defined!')
            endselect
         enddo
         f(l1:l2,m,n,iax)=sin(theta_mn)*cos(phi_mn)*ar + cos(theta_mn)*cos(phi_mn)*atheta - sin(phi_mn)*aphi
@@ -10465,7 +10456,10 @@ module Magnetic
         call mpibcast_real(vArms)
       endif
 !
-      if (bthresh_per_brms/=0) call vecout_finalize(trim(directory)//'/bvec',41,nbvec)
+      if (bthresh_per_brms/=0) then
+        call vecout_finalize(trim(directory)//'/bvec',41,nbvec)
+        call calc_bthresh
+      endif
 
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dtsub)
@@ -10474,7 +10468,8 @@ module Magnetic
 !****************************************************************************
     subroutine braginsky
 !
-print*,'AXEL-not implemented yet'
+      call not_implemented('braginsky','')
+
     endsubroutine braginsky
 !***********************************************************************
     subroutine keplerian_gauge(f)
@@ -10616,13 +10611,13 @@ print*,'AXEL-not implemented yet'
 !
 !  z-dependent resistivity
 !
-      zdep: if (lresi_zdep) then
+      if (lresi_zdep) then
         if (present(iz)) then
           diffus_coeff = diffus_coeff + eta_zgrid(iz)
         else
           diffus_coeff = diffus_coeff + eta_zgrid
         endif
-      endif zdep
+      endif
 !
     endsubroutine get_resistivity_implicit
 !***********************************************************************
@@ -10683,7 +10678,7 @@ print*,'AXEL-not implemented yet'
             B_ext_out(2) = B_ext(1) * s + B_ext(2) * c
             B_ext_out(3) = B_ext(3)
           else coord1
-            call fatal_error('get_bext', 'precession of the external field not implemented for curvilinear coordinates')
+            call not_implemented('get_bext', 'precession of the external field for curvilinear coordinates')
           endif coord1
         else precess
 !
@@ -10733,7 +10728,7 @@ print*,'AXEL-not implemented yet'
           bsinphz=fname(idiag_bsinphz)
           beltrami_phase=atan2(bsinphz,bcosphz)
         else
-          call fatal_error('testfield_after_boundary', &
+          call fatal_error('beltrami_phase', &
                            'need bcosphz, bsinphz in print.in for beltrami_phase')
         endif
       endif
