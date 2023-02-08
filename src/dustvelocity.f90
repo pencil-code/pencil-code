@@ -31,7 +31,7 @@ module Dustvelocity
 !ajwm SHOULDN'T REALLY BE SHARED
 !ajwm but are used consistently with the Dustdensity module
 !ajwm - not good but for reasons of dust density / velocity interaction
-  public :: dust_geometry, dimd1, rhods, surfd, mdplus, mdminus
+  public :: rhods, surfd, mdplus, mdminus
   public :: ad, scolld, ustcst, tausd1, tausd
   public :: unit_md, dust_chemistry, mumon, mmon, mi, md
 !
@@ -197,12 +197,12 @@ module Dustvelocity
 !
 !  Grain chemistry
 !
-      if (lroot) &
-          print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
+      if (lroot) print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
 !
       select case (dust_chemistry)
 
       case ('nothing')
+
         gsurften   = 0.0
         Eyoung     = 1.0
         nu_Poisson = 0.0
@@ -232,8 +232,7 @@ module Dustvelocity
       case ('simplified')
 
       case default
-        call fatal_error &
-            ('initialize_dustvelocity','No valid dust chemistry specified.')
+        call fatal_error('initialize_dustvelocity','No valid dust chemistry specified.')
 
       endselect
 
@@ -278,7 +277,7 @@ module Dustvelocity
       if (lroot) print*,'initialize_dustvelocity: ad=',ad
 !
 !  Reinitialize dustvelocity
-!  'all_to_first' = reninitialize heavier particles to lightest one.
+!  'all_to_first' = reinitialize heavier particles to lightest one.
 !
       if (reinitialize_uud) then
         do j=1,ninit
@@ -307,15 +306,14 @@ module Dustvelocity
         elseif (mu_ext/=0) then
           betad=4.5*mu_ext/(rhods*ad**2)
         else
-          call fatal_error('initialize_dustvelocity','betad not calculated')
+          call fatal_error('initialize_dustvelocity','No betad calculation for draglaw='//trim(draglaw))
         endif
         if (lroot) print*,'initialize_dustvelocity: betad=',betad
 !
 !  Do nothing by default.
 !
       case default
-        if (lroot) print*, 'initialize_dustvelocity: '// &
-          'doing nothing'
+        if (lroot) print*, 'initialize_dustvelocity: No betad calculation for draglaw='//trim(draglaw)
       endselect
 !
 !  Grain geometry
@@ -330,9 +328,7 @@ module Dustvelocity
         surfmon = surfd(1)*(mmon/(md(1)*unit_md))**(1.-dimd1)
 
       case default
-        call fatal_error( &
-            'initialize_dustvelocity','No valid dust geometry specified.')
-
+        call fatal_error('initialize_dustvelocity','No such dust geometry: '//trim(dust_geometry))
       endselect
 !
 !  Auxiliary variables necessary for different drag laws
@@ -342,10 +338,16 @@ module Dustvelocity
 
         case ('epstein_var')
           rhodsad1 = 1./(rhods*ad)
+
         case ('epstein_cst')
           do k=1,ndustspec
             tausd1(:,k) = 1.0/tausd(k)
           enddo
+!
+!  Do nothing by default.
+!
+        case default
+          if (lroot) print*, 'initialize_dustvelocity: doing nothing for draglaw='//trim(draglaw)
 
         endselect
       endif
@@ -365,23 +367,20 @@ module Dustvelocity
         case ('ad_exponential')
           nud=nud_all*(ad/adref_nud)**viscd_exponent
         case default
-          if (lroot) print*, 'No such value for viscd_law: ', trim(viscd_law)
-          call fatal_error('initialize_dustvelocity','')
+          call fatal_error('initialize_dustvelocity','No such value for viscd_law: '//trim(viscd_law))
         endselect
         if (lroot) print*, 'initialize_dustvelocity: nud=',nud
       endif
 !
       if (betad_all /= 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustvelocity: betad_all=',betad_all
+        if (lroot .and. ip<6) print*, 'initialize_dustvelocity: betad_all=',betad_all
         do k=1,ndustspec
           if (betad(k) == 0.) betad(k) = betad_all
         enddo
       endif
 !
       if (tausd_all /= 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustvelocity: tausd_all=',tausd_all
+        if (lroot .and. ip<6) print*, 'initialize_dustvelocity: tausd_all=',tausd_all
         do k=1,ndustspec
           if (tausd(k) == 0.) tausd(k) = tausd_all
         enddo
@@ -390,7 +389,7 @@ module Dustvelocity
       if (beta_dPdr_dust/=0.0) then
         beta_dPdr_dust_scaled=beta_dPdr_dust*Omega/cs0
         if (lroot) print*, 'initialize_dustvelocity: Global pressure '// &
-            'gradient with beta_dPdr_dust=', beta_dPdr_dust
+                           'gradient with beta_dPdr_dust=', beta_dPdr_dust
       endif
 !
       do i=1,nvisc_max
@@ -423,8 +422,7 @@ module Dustvelocity
           if (lroot) print*,'viscous force: nud_hyper3_mesh/pi^5 *(Deltav)^6/Deltaq'
           lviscd_hyper3_mesh=.true.
         case default
-          if (lroot) print*, 'No such value for iviscd: ', trim(iviscd(i))
-          call fatal_error('initialize_dustvelocity','')
+          call fatal_error('initialize_dustvelocity','No such value for iviscd: '//trim(iviscd(i)))
         endselect
       enddo
 !
@@ -432,12 +430,25 @@ module Dustvelocity
 !
         if (ldustdensity) &
           call put_shared_variable('deltamd',deltamd,caller='initialize_dustvelocity')
-          call put_shared_variable('llin_radiusbins',llin_radiusbins)
+        call put_shared_variable('llin_radiusbins',llin_radiusbins,caller='initialize_dustvelocity')
+
+        if (ldust_pressure.and.dust_pressure_factor==0.0) &
+            call fatal_error('initialize_dustvelocity','dust_pressure_factor should not be 0')
+
+      select case (borderuud)
+      case ('zero','0','initial-condition')
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderuud/='nothing') call request_border_driving(borderuud)
+        call request_border_driving(borderuud)
+      case ('nothing')
+        if (lroot.and.ip<=5) &
+             print*,"initialize_dustvelocity: borderuud='nothing'"
+!
+      case default
+        call fatal_error('initialize_dustvelocity','No such value for borderuud: '//trim(borderuud))
+      endselect
 !
       call keep_compiler_quiet(f)
 !
@@ -812,8 +823,7 @@ module Dustvelocity
 !  Catch unknown values
 !
         case default
-          write (unit=errormsg,fmt=*) 'No such such value for inituu: ', trim(inituud(j))
-          call fatal_error('init_uud',errormsg)
+          call fatal_error('init_uud','No such such value for inituud: '//trim(inituud(j)))
 
         endselect
 !
@@ -834,72 +844,72 @@ module Dustvelocity
 !  20-11-04/anders: coded
 !
       if (.not. lchemistry) then
-      lpenc_requested(i_uud)=.true.
-      if (ladvection_dust.and..not.ldustvelocity_shorttausd) &
-          lpenc_requested(i_udgud)=.true.
-      if (ldustvelocity_shorttausd) then
-        if (lgrav) lpenc_requested(i_gg)=.true.
-        lpenc_requested(i_cs2)=.true.
-        lpenc_requested(i_jxbr)=.true.
-        lpenc_requested(i_glnrho)=.true.
-      endif
-      if (ldragforce_dust.and..not.ldustvelocity_shorttausd) &
-          lpenc_requested(i_rhod)=.true.
-      if (ldragforce_gas) lpenc_requested(i_rho1)=.true.
-      if (ldragforce_dust) then
-        lpenc_requested(i_uu)=.true.
-        if (draglaw=='epstein_var') then
+        lpenc_requested(i_uud)=.true.
+        if (ladvection_dust.and..not.ldustvelocity_shorttausd) &
+            lpenc_requested(i_udgud)=.true.
+        if (ldustvelocity_shorttausd) then
+          if (lgrav) lpenc_requested(i_gg)=.true.
           lpenc_requested(i_cs2)=.true.
-          lpenc_requested(i_rho)=.true.
+          lpenc_requested(i_jxbr)=.true.
+          lpenc_requested(i_glnrho)=.true.
         endif
-      endif
-      if (ldust_pressure) then
-        lpenc_requested(i_cs2)=.true.
-        lpenc_requested(i_glnnd)=.true.
-      endif
-      if (lviscd_nud_const .or. lviscd_hyper3_nud_const .and. &
-          ldustdensity) then
-        lpenc_requested(i_sdij)=.true.
-        lpenc_requested(i_glnnd)=.true.
-      endif
-      if (lviscd_simplified .or. lviscd_nud_const) &
-          lpenc_requested(i_del2ud)=.true.
-      if (lviscd_shock) then
-        lpenc_requested(i_divud)=.true.
-        lpenc_requested(i_glnrhod)=.true.
-        lpenc_requested(i_graddivud)=.true.
-        lpenc_requested(i_shock)=.true.
-        lpenc_requested(i_gshock)=.true.
-      endif
-      if (lviscd_shock_simplified) then
-        lpenc_requested(i_divud)=.true.
-        lpenc_requested(i_graddivud)=.true.
-        lpenc_requested(i_shock)=.true.
-        lpenc_requested(i_gshock)=.true.
-      endif
-      if (lviscd_hyper3_simplified .or. lviscd_hyper3_nud_const .or. &
-          lviscd_hyper3_rhod_nud_const) &
-          lpenc_requested(i_del6ud)=.true.
-      if (lviscd_nud_const .or. lviscd_hyper3_nud_const) &
-          lpenc_requested(i_sdglnnd)=.true.
-      if (lviscd_nud_const) lpenc_requested(i_graddivud)=.true.
-      if (lviscd_hyper3_rhod_nud_const) lpenc_requested(i_rhod)=.true.
-      if (beta_dPdr_dust/=0.) lpenc_requested(i_cs2)=.true.
-      if (lstokes_highspeed_corr) lpenc_requested(i_rho)=.true.
+        if (ldragforce_dust.and..not.ldustvelocity_shorttausd) &
+            lpenc_requested(i_rhod)=.true.
+        if (ldragforce_gas) lpenc_requested(i_rho1)=.true.
+        if (ldragforce_dust) then
+          lpenc_requested(i_uu)=.true.
+          if (draglaw=='epstein_var') then
+            lpenc_requested(i_cs2)=.true.
+            lpenc_requested(i_rho)=.true.
+          endif
+        endif
+        if (ldust_pressure) then
+          lpenc_requested(i_cs2)=.true.
+          lpenc_requested(i_glnnd)=.true.
+        endif
+        if (lviscd_nud_const .or. lviscd_hyper3_nud_const .and. &  !MR: logics?
+            ldustdensity) then
+          lpenc_requested(i_sdij)=.true.
+          lpenc_requested(i_glnnd)=.true.
+        endif
+        if (lviscd_simplified .or. lviscd_nud_const) &
+            lpenc_requested(i_del2ud)=.true.
+        if (lviscd_shock) then
+          lpenc_requested(i_divud)=.true.
+          lpenc_requested(i_glnrhod)=.true.
+          lpenc_requested(i_graddivud)=.true.
+          lpenc_requested(i_shock)=.true.
+          lpenc_requested(i_gshock)=.true.
+        endif
+        if (lviscd_shock_simplified) then
+          lpenc_requested(i_divud)=.true.
+          lpenc_requested(i_graddivud)=.true.
+          lpenc_requested(i_shock)=.true.
+          lpenc_requested(i_gshock)=.true.
+        endif
+        if (lviscd_hyper3_simplified .or. lviscd_hyper3_nud_const .or. &
+            lviscd_hyper3_rhod_nud_const) &
+            lpenc_requested(i_del6ud)=.true.
+        if (lviscd_nud_const .or. lviscd_hyper3_nud_const) &
+            lpenc_requested(i_sdglnnd)=.true.
+        if (lviscd_nud_const) lpenc_requested(i_graddivud)=.true.
+        if (lviscd_hyper3_rhod_nud_const) lpenc_requested(i_rhod)=.true.
+        if (beta_dPdr_dust/=0.) lpenc_requested(i_cs2)=.true.
+        if (lstokes_highspeed_corr) lpenc_requested(i_rho)=.true.
 !
-      lpenc_diagnos(i_uud)=.true.
-      if (maxval(idiag_divud2m)/=0) lpenc_diagnos(i_divud)=.true.
-      if (maxval(idiag_rdudmax)/=0 .or. maxval(idiag_rdudxm)/=0 .or. &
-          maxval(idiag_rdudym)/=0 .or. maxval(idiag_rdudzm)/=0 .or. &
-          maxval(idiag_rdudx2m)/=0) &
-          lpenc_diagnos(i_rhod)=.true.
-      if (maxval(idiag_udrms)/=0 .or. maxval(idiag_udmax)/=0 .or. &
-          maxval(idiag_rdudmax)/=0 .or. maxval(idiag_ud2m)/=0 .or. &
-          maxval(idiag_udm2)/=0 .or. idiag_ekintot_dust/=0) &
-          lpenc_diagnos(i_ud2)=.true.
-      if (maxval(idiag_odrms)/=0 .or. maxval(idiag_odmax)/=0 .or. &
-          maxval(idiag_od2m)/=0) lpenc_diagnos(i_od2)=.true.
-      if (maxval(idiag_oudm)/=0) lpenc_diagnos(i_oud)=.true.
+        lpenc_diagnos(i_uud)=.true.
+        if (maxval(idiag_divud2m)/=0) lpenc_diagnos(i_divud)=.true.
+        if (maxval(idiag_rdudmax)/=0 .or. maxval(idiag_rdudxm)/=0 .or. &
+            maxval(idiag_rdudym)/=0 .or. maxval(idiag_rdudzm)/=0 .or. &
+            maxval(idiag_rdudx2m)/=0) &
+            lpenc_diagnos(i_rhod)=.true.
+        if (maxval(idiag_udrms)/=0 .or. maxval(idiag_udmax)/=0 .or. &
+            maxval(idiag_rdudmax)/=0 .or. maxval(idiag_ud2m)/=0 .or. &
+            maxval(idiag_udm2)/=0 .or. idiag_ekintot_dust/=0) &
+            lpenc_diagnos(i_ud2)=.true.
+        if (maxval(idiag_odrms)/=0 .or. maxval(idiag_odmax)/=0 .or. &
+            maxval(idiag_od2m)/=0) lpenc_diagnos(i_od2)=.true.
+        if (maxval(idiag_oudm)/=0) lpenc_diagnos(i_oud)=.true.
 !
       endif
 !
@@ -1004,11 +1014,8 @@ module Dustvelocity
                 p%sdij(:,i,j,k)=tmp_pencil_3x3(:,i,j)
               enddo
             enddo
-          else
-            if (headtt) then
-              write (unit=errormsg,fmt=*) 'No rate-of-strain tensor matches iviscd=', iviscd
-              call warning('calc_pencils_dustvelocity',errormsg)
-            endif
+!          else
+!              call warning('calc_pencils_dustvelocity','No rate-of-strain tensor matches iviscd=', iviscd
           endif
         endif
 ! del2ud
@@ -1165,15 +1172,11 @@ module Dustvelocity
 !  Artificial pressure force
 !
           if (ldust_pressure) then
-            if (dust_pressure_factor==0.0) then
-              call fatal_error('duud_dt','dust_pressure_factor should not be 0')
-            else
-              do i=1,3
-                df(l1:l2,m,n,iudx(k)-1+i) = df(l1:l2,m,n,iudx(k)-1+i) - &
-                    dust_pressure_factor*p%cs2*p%glnrho(:,i)
-                    !dust_pressure_factor*p%cs2*p%glnnd(:,i,k)
-              enddo
-            endif
+            do i=1,3
+              df(l1:l2,m,n,iudx(k)-1+i) = df(l1:l2,m,n,iudx(k)-1+i) - &
+                  dust_pressure_factor*p%cs2*p%glnrho(:,i)
+                  !dust_pressure_factor*p%cs2*p%glnnd(:,i,k)
+            enddo
           endif
 !
 !  Add pseudo Coriolis force (to drive velocity difference between dust and gas)
@@ -1277,7 +1280,6 @@ module Dustvelocity
                advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uud**2
              endif
           endif
-
 !
 !  Viscous force: mud/rhod*del6ud
 !
@@ -1340,8 +1342,9 @@ module Dustvelocity
               print*, 'duud_dt: Calculate diagnostic values...'
           call sum_mn_name(p%ud2(:,k),idiag_udrms(k),lsqrt=.true.)
           call max_mn_name(p%ud2(:,k),idiag_udmax(k),lsqrt=.true.)
-          call max_mn_name(p%rhod(:,k)**2*p%ud2(:,k),idiag_rdudmax(k), &
-                           lsqrt=.true.)
+          if (idiag_rdudmax(k)/=0) &
+              call max_mn_name(p%rhod(:,k)**2*p%ud2(:,k),idiag_rdudmax(k), &
+                               lsqrt=.true.)
           call sum_mn_name(p%ud2(:,k),idiag_ud2m(k))
           call integrate_mn_name(p%ud2,idiag_ekintot_dust)
           call sum_mn_name(p%uud(:,1,k),idiag_udxm(k))
@@ -1363,7 +1366,7 @@ module Dustvelocity
           if (idiag_rdudzm(k)/=0) &
               call sum_mn_name(p%rhod(:,k)*p%uud(:,3,k),idiag_rdudzm(k))
           if (idiag_rdudx2m(k)/=0) &
-          call sum_mn_name((p%rhod(:,k)*p%uud(:,1,k))**2,idiag_rdudx2m(k))
+              call sum_mn_name((p%rhod(:,k)*p%uud(:,1,k))**2,idiag_rdudx2m(k))
           call sum_mn_name(p%od2(:,1),idiag_odrms(k),lsqrt=.true.)
           call max_mn_name(p%od2,idiag_odmax(k),lsqrt=.true.)
           call sum_mn_name(p%od2(:,1),idiag_od2m(k))
@@ -1426,22 +1429,13 @@ module Dustvelocity
         enddo
 !
       case ('nothing')
-        if (lroot.and.ip<=5) &
-             print*,"set_border_dustvelocity: borderuud='nothing'"
-!
-      case default
-         write(unit=errormsg,fmt=*) &
-              'set_border_hydro: No such value for borderuud: ', &
-              trim(borderuud)
-         call fatal_error('set_border_dustvelocity',errormsg)
+        return
       endselect
 !
-      if (borderuud/='nothing') then
-        do j=1,3
-          ju=j+iuud(k)-1
-          call border_driving(f,df,p,f_target(:,j),ju)
-        enddo
-      endif
+      do j=1,3
+        ju=j+iuud(k)-1
+        call border_driving(f,df,p,f_target(:,j),ju)
+      enddo
 !
     endsubroutine set_border_dustvelocity
 !***********************************************************************
@@ -1451,12 +1445,12 @@ module Dustvelocity
 !
     integer :: i
 !
-    ad(1)    = (0.75*md(1)*unit_md/(pi*rhods))**dimd1
-    surfd(1) = 4*pi*ad(1)**2
-    do i=2,ndustspec
-      ad(i)  = ad(1)*(md(i)/md(1))**dimd1
-      surfd(i) = surfd(1)*(md(i)/md(1))**(1.-dimd1)
-    enddo
+      ad(1)    = (0.75*md(1)*unit_md/(pi*rhods))**dimd1
+      surfd(1) = 4*pi*ad(1)**2
+      do i=2,ndustspec
+        ad(i)  = ad(1)*(md(i)/md(1))**dimd1
+        surfd(i) = surfd(1)*(md(i)/md(1))**(1.-dimd1)
+      enddo
 !
     endsubroutine get_dustsurface
 !***********************************************************************
@@ -1646,12 +1640,11 @@ module Dustvelocity
         tausd1(:,k) = csrho*rhodsad1(k)
       case ('epstein_gaussian_z')
         tausd1(:,k) = (1/tausd(k))*exp(-z(n)**2/(2*scaleHtaus**2))
-        if (z0taus/=0.0) then
+        if (z0taus/=0.0) &
           tausd1(:,k)=tausd1(:,k)/( &
             0.5*(tanh((z(n)+z0taus)/widthtaus)+tanh((-z(n)+z0taus)/widthtaus)))
-        endif
       case default
-        call fatal_error("get_stoppingtime","No valid drag law specified.")
+        call fatal_error("get_stoppingtime","No such drag law: "//trim(draglaw))
 
       endselect
 !
