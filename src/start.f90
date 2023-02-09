@@ -329,10 +329,6 @@ program start
 !
   if (lreport_undefined_diagnostics) call report_undefined_diagnostics
 !
-!  Set up limits of averaging if needed.
-!
-  if (lav_smallx) call init_xaver
-!
 !  Update the list of neighboring processes.
 !
   call update_neighbors
