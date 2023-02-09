@@ -50,7 +50,6 @@ module Diagnostics
   public :: trim_averages
   public :: fnames_clean_up, vnames_clean_up, diagnostics_clean_up
   public :: get_from_fname
-  public :: init_xaver
   public :: gen_form_legend
   public :: sign_masked_xyaver
   public :: report_undefined_diagnostics
@@ -97,6 +96,7 @@ module Diagnostics
   private
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
+  real, dimension (nrcyl) :: phiavg_profile_sum
   real :: dVol_rel1
 
   integer :: mnamer
@@ -200,6 +200,10 @@ module Diagnostics
       endif
 !
       if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
+!
+!  Limits to xaveraging.
+!
+      call init_xaver
 
     endsubroutine initialize_diagnostics
 !***********************************************************************
@@ -2242,7 +2246,7 @@ module Diagnostics
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: n,iname
 !
-      integer :: isum,lmax,nl
+      integer :: nl
 !
 !  Only do something if iname is not zero.
 !
@@ -2253,21 +2257,15 @@ module Diagnostics
 !
         if (lfirstpoint) fnamez(:,:,iname)=0.0
 !
-!  n starts with nghost+1=4, so the correct index is n-nghost
+!  n starts with nghost+1, so the correct index is n-nghost
 !
-        lmax=l2; nl=n-nghost
-        if (lav_smallx)  lmax=ixav_max
         if (.not.loutside_avg) then
+          nl=n-nghost
           if (lspherical_coords.or.lcylindrical_coords)then
-            do isum=l1,lmax
-              fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+ &
-                                     x(isum)*a(isum-nghost)
-            enddo
+            fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+ &
+                                   sum(x(l1:ixav_max)*a(:ixav_max-nghost))
           else
-            do isum=l1,lmax
-              fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+ &
-                                     a(isum-nghost)
-            enddo
+            fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+sum(a(:ixav_max-nghost))
           endif
         endif
       endif
@@ -2299,7 +2297,7 @@ module Diagnostics
       real, dimension (nx), intent(IN) :: a
       integer,              intent(IN) :: iname,m
 !
-      integer :: isum,lmax,ml
+      integer :: ml
 !
 !  Only do something if iname is not zero.
 !
@@ -2309,23 +2307,16 @@ module Diagnostics
 !  which are later merged with an mpi reduce command.
 !
         if (lfirstpoint) fnamey(:,:,iname)=0.0
-!
-!  m starts with mghost+1=4, so the correct index is m-nghost.
-!
-        lmax=l2; ml=m-nghost
-!
-        if (lav_smallx) lmax=ixav_max
         if (.not.loutside_avg) then
+!
+!  m starts with mghost=4, so the correct index is m-nghost.
+!
+          ml=m-nghost
           if (lspherical_coords.and.nxgrid>1)then
-            do isum=l1,lmax
-              fnamey(ml,ipy+1,iname)=fnamey(ml,ipy+1,iname)+ &
-                                     x(isum)*sinth(m)*a(isum-nghost)
-            enddo
+            fnamey(ml,ipy+1,iname)=fnamey(ml,ipy+1,iname)+ &
+                                   sinth(m)*sum(x(l1:ixav_max)*a(:ixav_max-nghost))
           else ! also correct for cylindrical
-            do isum=l1,lmax
-              fnamey(ml,ipy+1,iname)=fnamey(ml,ipy+1,iname)+ &
-                                     a(isum-nghost)
-            enddo
+            fnamey(ml,ipy+1,iname)=fnamey(ml,ipy+1,iname)+sum(a(:ixav_max-nghost))
           endif
         endif
       endif
@@ -2397,10 +2388,10 @@ module Diagnostics
 !
       if (lfirstpoint) fnamez(:,:,iname) = 0.0
 !
-      fac=1.0
+      fac=1.
 !
-      if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
-        if (.not.lperi(2)) fac = .5*fac
+      if (.not.lperi(2)) then
+        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) fac = .5
       endif
 !
       if (lperi(1)) then
@@ -2409,7 +2400,7 @@ module Diagnostics
         suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
       endif
 !
-!  n starts with nghost+1=4, so the correct index is n-nghost.
+!  n starts with nghost=4, so the correct index is n-nghost.
 !
       nl=n-nghost
       fnamez(nl,ipz+1,iname) = fnamez(nl,ipz+1,iname) + suma
@@ -2436,8 +2427,8 @@ module Diagnostics
 !
       fac = 1.
 !
-      if ((n==n1.and.lfirst_proc_z).or.(n==n2.and.llast_proc_z)) then
-        if (.not.lperi(3)) fac = .5*fac
+      if (.not.lperi(3)) then
+        if ((n==n1.and.lfirst_proc_z).or.(n==n2.and.llast_proc_z)) fac = .5
       endif
 !
       if (lperi(1)) then
@@ -2470,13 +2461,13 @@ module Diagnostics
       if (lfirstpoint) fnamex(:,:,iname) = 0.0
 !
       fac=1.0
-!
-      if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
-        if (.not.lperi(2)) fac = .5*fac
+! 
+      if (.not.lperi(2)) then
+        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) fac = .5*fac
       endif
 !
-      if ((n==n1.and.lfirst_proc_z).or.(n==n2.and.llast_proc_z)) then
-        if (.not.lperi(3)) fac = .5*fac
+      if (.not.lperi(3)) then
+        if ((n==n1.and.lfirst_proc_z).or.(n==n2.and.llast_proc_z)) fac = .5*fac
       endif
 !
       fnamex(:,ipx+1,iname) = fnamex(:,ipx+1,iname) + fac*a
@@ -2493,7 +2484,7 @@ module Diagnostics
 !  29-jan-07/wlad: adapted from yzsum_mn_name_x and phisum_mn_name
 !
       real, dimension (nx) :: a
-      integer :: iname,ir,nnghost
+      integer :: iname,ir
 !
       if (iname==0) return
 !
@@ -2507,15 +2498,13 @@ module Diagnostics
 !  Normalization factor, just needs to be done once.
 !  As is it a z-average, multiply by nz afterwards.
 !
-      nnghost=n-nghost
-      if ((iname==nnamer).and.(nnghost==1)) then
+      if ((iname==nnamer).and.(n==n1)) then
 !  Check if an extra slot is available on fnamer.
         if (nnamer==mnamer) call fatal_error('phizsum_mn_name_r', &
-            'no slot for phi-normalization. decrease nnamer')
+            'no slot for phi-normalization. decrease nnamer')   !tb improved
 !
         do ir=1,nrcyl
-          fnamer(ir,iname+1)= &
-              fnamer(ir,iname+1) + sum(1.*phiavg_profile(ir,:))*nz
+          fnamer(ir,iname+1)=fnamer(ir,iname+1) + phiavg_profile_sum(ir)*nz
         enddo
       endif
 !
@@ -2803,10 +2792,10 @@ module Diagnostics
 !   2-feb-03/wolf: coded
 !
       type (pencil_case) :: p
+      intent(in) :: p
+!
       real :: r0,width
       integer :: ir
-!
-      intent(in) :: p
 !
 !  We use a quartic-Gaussian profile ~ exp(-r^4)
 !
@@ -2816,12 +2805,8 @@ module Diagnostics
         r0 = rcyl(ir)
         phiavg_profile(ir,:) = exp(-0.5*((p%rcyl_mn-r0)/width)**4)
       enddo
-!
-      if (.not.(lcylinder_in_a_box.or.lsphere_in_a_box)) &
-          call warning('calc_phiavg_profile', &
-          'no reason to call it if you are '//&
-          'not using a cylinder or a sphere embedded in a '//&
-          'Cartesian grid')
+
+      phiavg_profile_sum=sum(phiavg_profile,2)
 !
     endsubroutine calc_phiavg_profile
 !***********************************************************************
@@ -2847,7 +2832,7 @@ module Diagnostics
 !      if (lfirstpoint) fnamerz(:,:,ipz+1,iname) = 0.
         if (lfirstpoint) fnamerz(:,:,:,iname) = 0.
 !
-!  n starts with nghost+1=4, so the correct index is n-nghost
+!  n starts with nghost+1, so the correct index is n-nghost
 !
         n_nghost=n-nghost
         do ir=1,nrcyl
@@ -2858,10 +2843,10 @@ module Diagnostics
 !  sum up ones for normalization; store result in fnamerz(:,0,:,1)
 !  Only do this for the first n, or we would sum up nz times too often
 !
-        if (iname==1 .and. n_nghost==1) then
+        if (iname==1 .and. n==n1) then
           do ir=1,nrcyl
             fnamerz(ir,0,ipz+1,iname) &
-                 = fnamerz(ir,0,ipz+1,iname) + sum(1.*phiavg_profile(ir,:))
+                 = fnamerz(ir,0,ipz+1,iname) + phiavg_profile_sum(ir)
           enddo
         endif
 !
@@ -3524,14 +3509,24 @@ module Diagnostics
 !  26-oct-09/dhruba: coded
 !
      integer :: lx
+
+     if (lav_smallx) then
 !
-     if (xav_max<x(l1)) loutside_avg=.true.
-!
-     ixav_max=l1
-!
-     do lx=l1,l2
-       if (x(lx)<xav_max) ixav_max=lx
-     enddo
+       loutside_avg = (xav_max<x(l1))
+       if (loutside_avg) return
+!  
+       do lx=l1+1,l2
+         if (x(lx)>xav_max) then
+           ixav_max=lx-1
+           return
+         endif
+       enddo
+       ixav_max=l2
+
+     else
+       loutside_avg=.false.
+       ixav_max=l2
+     endif
 !
    endsubroutine init_xaver
 !*******************************************************************
