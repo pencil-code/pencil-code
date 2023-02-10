@@ -4,10 +4,10 @@
 ###
 
 MPICOMM      = nompicomm
-IO           =   io_dist
+IO           =   io_hdf5
 
 HYDRO        =   hydro
-SHOCK        =   shock
+SHOCK        =   shock_highorder
 DENSITY      =   density
 ENTROPY      =   entropy
 MAGNETIC     = nomagnetic
@@ -21,4 +21,5 @@ FORCING      = noforcing
 SHEAR        =   shear
 
 POWER        = nopower_spectrum
+REAL_PRECISION = double
 

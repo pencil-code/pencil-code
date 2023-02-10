@@ -397,12 +397,12 @@ module Interstellar
 !
 !  Cooling time diagnostic
 !
-  integer :: idiag_taucmin=0
-  integer :: idiag_Hmax_ism=0
-  integer :: idiag_Lamm=0
-  integer :: idiag_nrhom=0
-  integer :: idiag_rhoLm=0
-  integer :: idiag_Gamm=0
+  integer :: idiag_taucmin=0  ! DIAG_DOC: $\min(\tau_{\rm cool})$
+  integer :: idiag_Hmax_ism=0 ! DIAG_DOC: $\max(\Gamma-\rho\Lambda)$
+  integer :: idiag_Lamm=0     ! DIAG_DOC: $\left<\Lambda\right>$
+  integer :: idiag_nrhom=0    ! DIAG_DOC: TBC
+  integer :: idiag_rhoLm=0    ! DIAG_DOC: $\left<\rho\Lambda\right>$
+  integer :: idiag_Gamm=0     ! DIAG_DOC: $\left<\Gamma\right>$
 !
 !  Heating function, cooling function and mass movement
 !  method selection.
@@ -519,7 +519,10 @@ module Interstellar
 !
 !  24-nov-02/tony: coded
 !
-!  read parameters from seed.dat and interstellar.dat
+!  10-feb-23/fred: timing and location of series of SNe shall be read
+!                  from formated file ./sn_series.in
+!                  containing same format as data/sn_series.dat typically
+!                  from previous run, if lSN_list.
 !
       use Mpicomm, only: stop_it
       use EquationOfState , only: getmu
@@ -574,7 +577,7 @@ module Interstellar
         r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
 !
-!  set SN parameters self-consistently
+!   set SN parameters self-consistently
 !
         if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
 !  dimensional norm for Sedov-Taylor relations
@@ -805,8 +808,8 @@ module Interstellar
       endif
 
       if (leos_ionization) &
-        call warning('initialize_interstellar','using temporary value for cv1 '// &
-                     'assuming ideal gas. Not yet implemented for ionization')
+        call warning('initialize_interstellar','using T/e instead of cv1 '// &
+                     'for diagnostics. Not yet implemented cv1 for ionization')
 !
 !  Write unit_Lambda to pc_constants file
 !
@@ -1601,13 +1604,14 @@ module Interstellar
 !  11-mar-06/axel: added idiag_nrhom
 !
       lpenc_requested(i_lnrho)=.true.
-      lpenc_diagnos(i_rho1)=.true.
-      lpenc_requested(i_cv1)=.true.
       lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_ee)=.true.
       lpenc_requested(i_TT1)=.true.
-!
+      lpenc_requested(i_TT)=.true.
+      lpenc_requested(i_cv1)=.true.
       if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
+!
+      lpenc_diagnos(i_rho1)=.true.
 !
 !  Diagnostic pencils
 !
@@ -1736,6 +1740,7 @@ module Interstellar
       use Diagnostics, only: max_mn_name, sum_mn_name
       use EquationOfState, only: gamma
       use Sub, only: dot2
+      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -1749,7 +1754,11 @@ module Interstellar
 !
       if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
 !
-      if (any(p%cv1 == impossible)) p%cv1=0.9 !typical for ideal gas with cgs default
+!  Not all eos define cv1, and this routine is called after
+!  calc_all_pencils, so p%cv1 cannot be modified here
+!
+      if (ltemperature_nolog.and.any(p%cv1 == impossible)) &
+        call fatal_error("calc_heat_cool_interstellar","p%cv1 not set by eos")
 !
 !  13-jul-15/fred
 !  Removed obsolete calls to spatial and temporal smoothing
@@ -1784,21 +1793,6 @@ module Interstellar
         endif
       endif
 !
-!  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt] so therefore
-!  we now need to multiply by TT1.
-!
-      if (ltemperature) then
-        if (ltemperature_nolog) then
-          heatcool=(heat-cool)*p%cv1
-        else
-          heatcool=(heat-cool)/p%ee
-        endif
-      elseif (pretend_lnTT) then
-        heatcool=p%TT1*(heat-cool)*gamma
-      else
-        heatcool=p%TT1*(heat-cool)
-      endif
-!
 !  Prevent unresolved heating/cooling in shocks. This is recommended as
 !  early cooling in the shock prematurely inhibits the strength of the
 !  shock wave and also drives down the timestep. Fred
@@ -1810,13 +1804,37 @@ module Interstellar
 !
         cool=cool*damp_profile
         heat=heat*damp_profile
-        heatcool=heatcool*damp_profile
+        !heatcool=heatcool*damp_profile
       endif
 !
-!  Save result in aux variables
-!  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
+!  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt] so therefore
+!  we now need to multiply by TT1.
 !
-      f(l1:l2,m,n,icooling) = p%TT1*cool
+      if (ltemperature) then
+        if (ltemperature_nolog) then
+          heat=heat*p%cv1
+          cool=cool*p%cv1
+          !heatcool=(heat-cool)*p%cv1
+        else
+          heat=heat/p%ee
+          cool=cool/p%ee
+          !heatcool=(heat-cool)/p%ee
+        endif
+      elseif (pretend_lnTT) then
+        heat=heat*gamma
+        cool=cool*gamma
+        !heatcool=p%TT1*(heat-cool)*gamma
+      else
+        heat=heat*p%TT1
+        cool=cool*p%TT1
+        !heatcool=p%TT1*(heat-cool)
+      endif
+      heatcool=heat-cool
+!
+!  Save result in aux variables
+!  cool=rho*Lambda/TT, heatcool=(Gamma-rho*Lambda)/TT
+!
+      f(l1:l2,m,n,icooling) = cool
       f(l1:l2,m,n,inetheat) = heatcool
 !
 !  Prepare diagnostic output
@@ -1827,28 +1845,40 @@ module Interstellar
         if (idiag_Hmax_ism/=0) then
           netheat=heatcool
           where (heatcool<0.0) netheat=0.0
-          call max_mn_name(netheat*p%cv1,idiag_Hmax_ism)
+          if (ltemperature.and.ltemperature_nolog) then
+            call max_mn_name(netheat*p%TT1,idiag_Hmax_ism)
+          elseif (pretend_lnTT) then
+            call max_mn_name(netheat,idiag_Hmax_ism)
+          else
+            call max_mn_name(netheat*p%TT/p%ee,idiag_Hmax_ism)
+          endif
         endif
         if (idiag_taucmin/=0) then
           netcool=-heatcool
           where (heatcool>=0.0) netcool=1.0e-6
-          call max_mn_name(netcool*p%cv1,idiag_taucmin,lreciprocal=.true.)
+          if (ltemperature.and.ltemperature_nolog) then
+            call max_mn_name(netcool*p%TT1,idiag_taucmin,lreciprocal=.true.)
+          elseif (pretend_lnTT) then
+            call max_mn_name(netcool,idiag_taucmin,lreciprocal=.true.)
+          else
+            call max_mn_name(netcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
+          endif
         endif
         if (idiag_Lamm/=0) &
-          call sum_mn_name(p%rho1*cool*p%TT1,idiag_Lamm)
+          call sum_mn_name(p%rho1*cool,idiag_Lamm)
         if (idiag_nrhom/=0) &
           call sum_mn_name(cool/p%ee,idiag_nrhom)
         if (idiag_rhoLm/=0) &
-          call sum_mn_name(p%TT1*cool,idiag_rhoLm)
+          call sum_mn_name(cool,idiag_rhoLm)
         if (idiag_Gamm/=0) &
-          call sum_mn_name(p%TT1*heat,idiag_Gamm)
+          call sum_mn_name(heat,idiag_Gamm)
       endif
 !
 !  Limit timestep by the cooling time (having subtracted any heating)
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
       if (lfirst.and.ldt) then
-        Hmax=Hmax+heat-cool
+        Hmax=Hmax+heatcool*p%TT
       endif
 !
 !  Apply heating/cooling to temperature/entropy variable

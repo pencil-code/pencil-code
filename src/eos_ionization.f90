@@ -11,6 +11,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 2
+!! COMMUNICATED AUXILIARIES 2
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3); del2TT; del6TT; del6lnTT
@@ -81,6 +82,8 @@ module EquationOfState
 !
 !  Set indices for auxiliary variables.
 !
+      !call farray_register_auxiliary('yH',iyH,communicated=.true.)
+      !if (ilnTT==0) call farray_register_auxiliary('lnTT',ilnTT,communicated=.true.)
       call farray_register_auxiliary('yH',iyH)
       if (ilnTT==0) call farray_register_auxiliary('lnTT',ilnTT)
 !
@@ -112,11 +115,12 @@ module EquationOfState
 !
       if (unit_temperature==impossible) then
         if (lfix_unit_std) then
-          unit_temperature=unit_density*unit_velocity**2/k_B_cgs
+          unit_temperature=0.754*eV_cgs/k_B_cgs
         else
           unit_temperature=1.
         endif
       endif
+      print*,'unit temperature',unit_temperature
 !
     endsubroutine units_eos
 !***********************************************************************
@@ -389,6 +393,12 @@ module EquationOfState
         if (.not.pretend_lnTT) lpencil_in(i_hlnrho)=.true.
       endif
 !
+      if (lpencil_in(i_cv).or.lpencil_in(i_cp).or.&
+          lpencil_in(i_cv1).or.lpencil_in(i_cp1)) then
+        lpencil_in(i_yH)=.true.
+        lpencil_in(i_TT)=.true.
+      endif
+!
     endsubroutine pencil_interdep_eos
 !***********************************************************************
     subroutine calc_pencils_eos_std(f,p)
@@ -491,18 +501,18 @@ module EquationOfState
 !
       if (lpenc_loc(i_glnmumol)) p%glnmumol(:,:)=0.
 !
+!  This routine does not yet compute cv or cv1, but since those pencils
+!  are supposed to be provided here, we better set them to impossible.
+!
+      if (lpenc_loc(i_cv))  p%cv=impossible
+      if (lpenc_loc(i_cp))  p%cp=impossible
+      if (lpenc_loc(i_cv1)) p%cv1=impossible
+      if (lpenc_loc(i_cp1)) p%cp1=impossible
+!
 !  pressure and cp as optional auxiliary pencils
 !
       if (lpp_as_aux) f(l1:l2,m,n,ipp)=p%pp
       if (lcp_as_aux) f(l1:l2,m,n,icp)=p%cp1tilde
-!
-!  This routine does not yet compute cv or cv1, but since those pencils
-!  are supposed to be provided here, we better set them to impossible.
-!
-      if (lpenc_loc(i_cv1)) p%cv1=impossible
-      if (lpenc_loc(i_cp1)) p%cp1=impossible
-      if (lpenc_loc(i_cv))  p%cv=impossible
-      if (lpenc_loc(i_cp))  p%cp=impossible
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
@@ -623,7 +633,7 @@ module EquationOfState
 !  just a single value of cp1, because it must depend on position.
 !  Therefore, return impossible, so one can reconsider this case.
 !
-      call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_ionization')
+      !call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_ionization')
       cp1_=impossible
 !
     endsubroutine get_cp1
@@ -640,7 +650,7 @@ module EquationOfState
 !  just a single value of cv1, because it must depend on position.
 !  Therefore, return impossible, so one can reconsider this case.
 !
-      call fatal_error('get_cv1','SHOULD NOT BE CALLED WITH eos_ionization')
+      !call fatal_error('get_cv1','SHOULD NOT BE CALLED WITH eos_ionization')
       cv1_=impossible
 !
     endsubroutine get_cv1
@@ -653,20 +663,23 @@ module EquationOfState
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
+      use General, only: ioptest
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,yH,lnTT
       real, dimension(nx) :: R,dlnTTdy,dRdy,temp
       real, dimension(nx) :: dlnPPdlnrho,fractions,fractions1
       real, dimension(nx) :: dlnPPdss,TT1
-!
+      
       lnrho=f(l1:l2,m,n,ilnrho)
       yH=f(l1:l2,m,n,iyH)
       lnTT=f(l1:l2,m,n,ilnTT)
+!
       TT1=exp(-lnTT)
       fractions=(1+yH+xHe)
       fractions1=1/fractions
-!
+!!
       R=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1-yH+epsi)-2*log(yH)
       dlnTTdy=(2*(-R-TT_ion*TT1)-3)/3*fractions1
       dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH+epsi)-2/yH
@@ -675,7 +688,7 @@ module EquationOfState
       dlnPPdss=ss_ion1*fractions1*(dlnPPdlnrho-temp-1)
       cs2=fractions*ss_ion*dlnPPdlnrho/TT1
       cp1tilde=dlnPPdss/dlnPPdlnrho
-!
+!!
     endsubroutine pressure_gradient_farray
 !***********************************************************************
     subroutine pressure_gradient_point(lnrho,ss,cs2,cp1tilde)
@@ -803,16 +816,91 @@ module EquationOfState
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
 !
+!  Set f(l1:l2,m,n,iss), depending on the values of ee and pp
+!
+!  20-jan-15/MR: changes for use of reference state
+!
+  use SharedVariables, only: get_shared_variable
+  use DensityMethods, only: getlnrho,getrho
+!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(in), optional :: ee,pp,ss
+      real, dimension(psize), intent(in), optional :: ee, pp, ss
 !
-      call not_implemented("eosperturb")
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(present(ee),present(pp),present(ss))
+      real, dimension(psize) :: lnrho_,ss_,rho_,TT_,lnTT_,yH_,fractions
+      real, dimension(:,:), pointer :: reference_state
+      integer :: i
+!
+      if (psize==nx) then
+        if (lreference_state) &
+          call get_shared_variable('reference_state',reference_state,caller='eosperturb')
+        if (ldensity_nolog) then
+          if (lreference_state) then
+            call getrho(f(:,m,n,irho),rho_)
+            lnrho_=log(rho_)+log(f(l1:l2,m,n,irho))
+          else
+            lnrho_=log(f(l1:l2,m,n,irho))
+          endif
+        else
+          if (lreference_state) then
+            call getlnrho(f(:,m,n,ilnrho),lnrho_)
+            lnrho_=lnrho_+log(f(l1:l2,m,n,ilnrho))
+          else
+            lnrho_=f(l1:l2,m,n,ilnrho)
+          endif
+        endif
+        if (present(ee)) then
+          call eoscalc(ilnrho_ee,lnrho_,ee,ss=ss_)
+        elseif (present(pp)) then
+          call eoscalc(ilnrho_pp,lnrho_,pp,ss=ss_)
+        elseif (present(ss)) then
+          ss_=ss
+        endif
+!
+        f(l1:l2,m,n,iss) = ss_
+        if (lreference_state) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - reference_state(:,iref_s)
+!
+      elseif (psize==mx) then
+!
+!  Reference state not yet considered in this branch as undefined in ghost zones.
+!
+        if (ldensity_nolog) then
+          lnrho_=log(f(:,m,n,irho))
+        else
+          lnrho_=f(:,m,n,ilnrho)
+        endif
+        if (present(ee)) then
+          yH_=yHmax
+          yH_=0.5*min(ee/ee_ion,yH_)
+          do i=1,nx
+            call rtsafe(ilnrho_ee,lnrho_(i),ee(i),yHmin,yHmax*min(ee(i)/ee_ion,1.0),yH_(i))
+          enddo
+          fractions=(1+yH_+xHe)
+          TT_=(ee-yH_*ee_ion)/(1.5*fractions*ss_ion)
+          lnTT_=log(TT_)
+          ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
+                      -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
+                      -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+        elseif (present(pp)) then
+          yH_=0.5*yHmax
+          do i=1,nx
+            call rtsafe(ilnrho_pp,lnrho_(i),pp(i),yHmin,yHmax,yH_(i))
+          enddo
+          fractions=(1+yH_+xHe)
+          rho_=exp(lnrho_)
+          TT_=pp/(fractions*ss_ion*rho_)
+          lnTT_=log(TT_)
+          ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
+                     -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
+                     -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+        elseif (present(ss)) then
+          ss_=ss
+        endif
+        f(:,m,n,iss) = ss_
+      endif
 !
     endsubroutine eosperturb
-!***********************************************************************
+!!***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,cs2,kapparho)
 !
 !   Calculate thermodynamical quantities
@@ -822,6 +910,7 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
 !                   subroutine pressure_gradient
+!   10-feb-23/fred: call to pressure_gradient to yield cs2
 !
       use Sub
       use Mpicomm, only: stop_it
@@ -833,6 +922,8 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
       real, dimension(psize), optional :: cs2
       real, dimension(psize) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions,exponent
+!copied from eos_idealgas
+      real, dimension(psize) :: rho, eth, cp1tilde_, cs2_
 !
       select case (psize)
 !
@@ -841,13 +932,19 @@ module EquationOfState
         ss_=f(l1:l2,m,n,iss)
         yH_=f(l1:l2,m,n,iyH)
         lnTT_=f(l1:l2,m,n,ilnTT)
+        if (present(cs2)) call pressure_gradient(f,cs2,cp1tilde_)
 !
       case (mx)
         lnrho_=f(:,m,n,ilnrho)
         ss_=f(:,m,n,iss)
         yH_=f(:,m,n,iyH)
         lnTT_=f(:,m,n,ilnTT)
-!
+        if (present(cs2)) then
+          cs2_=1.
+          call pressure_gradient(f,cs2_(l1:l2),cp1tilde_(l1:l2))
+          cs2=cs2_
+        endif
+!        
       case default
         call stop_it("eoscalc: no such pencil size")
 !
@@ -862,8 +959,6 @@ module EquationOfState
       if (present(lnTT)) lnTT=lnTT_
       if (present(ee)) ee=1.5*fractions*ss_ion*TT_+yH_*ee_ion
       if (present(pp)) pp=fractions*exp(lnrho_)*TT_*ss_ion
-      if (present(cs2)) &
-        call fatal_error('eoscalc_farray','calculation of cs2 not implemented')
 !
 !  Hminus opacity
 !
@@ -1126,7 +1221,7 @@ module EquationOfState
       real, dimension(mx), intent(in) :: lnrho,ss
       real, dimension(mx), intent(inout) :: yH
 !
-      real, dimension(mx) :: dyHold,dyH,yHlow,yHhigh,f,df
+      real, dimension(mx) :: dyHold,dyH,yHlow,yHhigh,ff,dff
       real, dimension(mx) :: lnTT_,dlnTT_,TT1_,fractions1
       logical, dimension(mx) :: found
       integer             :: i
@@ -1144,20 +1239,20 @@ module EquationOfState
                          +yH*(2*log(yH)-lnrho_e-lnrho_H) &
                          +xHe_term)*fractions1+lnrho-2.5)
       TT1_=exp(-lnTT_)
-      f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH+epsi)-2*log(yH)
-      dlnTT_=((2.0/3.0)*(-f-TT1_)-1)*fractions1
+      ff=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH+epsi)-2*log(yH)
+      dlnTT_=((2.0/3.0)*(-ff-TT1_)-1)*fractions1
 ! wd: Need to add epsi at the end, as otherwise (yH-yHlow)*df  will
 ! wd: eventually yield an overflow.
 ! wd: Something like  sqrt(tini)  would probably also do instead of epsi,
 ! wd: but even epsi does not affect the auto-tests so far.
 !      df=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/yH
-      df=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/(yH+epsi)
+      dff=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/(yH+epsi)
 !
       do i=1,maxit
         where (.not.found)
-          where (      sign(1.,((yH-yHlow)*df-f)) &
-                    == sign(1.,((yH-yHhigh)*df-f)) &
-                  .or. abs(2*f) > abs(dyHold*df) )
+          where (      sign(1.,((yH-yHlow)*dff-ff)) &
+                    == sign(1.,((yH-yHhigh)*dff-ff)) &
+                  .or. abs(2*ff) > abs(dyHold*dff) )
             !
             !  Bisection
             !
@@ -1169,7 +1264,7 @@ module EquationOfState
             !  Newton-Raphson
             !
             dyHold=dyH
-            dyH=f/df
+            dyH=ff/dff
             ! Apply floor to dyH (necessary to avoid negative yH in samples
             ! /0d-tests/heating_ionize)
             dyH=min(dyH,yH-yHmin)
@@ -1184,10 +1279,10 @@ module EquationOfState
                              +yH*(2*log(yH)-lnrho_e-lnrho_H) &
                              +xHe_term)*fractions1+lnrho-2.5)
           TT1_=exp(-lnTT_)
-          f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH+epsi)-2*log(yH)
-          dlnTT_=((2.0/3.0)*(-f-TT1_)-1)*fractions1
-          df=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/yH
-          where (f<0)
+          ff=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH+epsi)-2*log(yH)
+          dlnTT_=((2.0/3.0)*(-ff-TT1_)-1)*fractions1
+          dff=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/yH
+          where (ff<0)
             yHhigh=yH
           elsewhere
             yHlow=yH

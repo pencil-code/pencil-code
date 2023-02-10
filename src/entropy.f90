@@ -284,9 +284,8 @@ module Energy
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_Hmax=0       ! DIAG_DOC: $H_{\rm max}$\quad(net heat sources
                                 ! DIAG_DOC: summed see \S~\ref{time-step})
-  integer :: idiag_tauhmin=0    ! DIAG_DOC: $H_{\rm max}$\quad(net heat sources
-                                ! DIAG_DOC: summed see \S~\ref{time-step})
-  integer :: idiag_dtH=0       ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm s}}\, 
+  integer :: idiag_tauhmin=0    ! DIAG_DOC: $\min(\tau_{\rm heat})$ 
+  integer :: idiag_dtH=0        ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm s}}\, 
                                 ! DIAG_DOC:  c_{\rm v}T /H_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat sources;
@@ -2393,7 +2392,7 @@ module Energy
 !
       kpc = 3.086D21 / unit_length
       rhoscale = 1.36 * m_p * unit_length**3
-      print*, 'ferrier: kpc, rhoscale =', kpc, rhoscale
+      print*, 'ferriere: kpc, rhoscale =', kpc, rhoscale
       T_c=T_c_cgs/unit_temperature
       T_w=T_w_cgs/unit_temperature
       T_i=T_i_cgs/unit_temperature
@@ -2426,7 +2425,7 @@ module Energy
 !  Normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3).
 !
         rho=real((n_c+n_w+n_i+n_h)*rhoscale)
-        call putrho(f(:,m,n,ilnrho),rho)
+        call putrho(f(:,m,n,irho),rho)
 !
 !  Define entropy via pressure, assuming fixed T for each component.
 !
@@ -2436,7 +2435,7 @@ module Energy
 !
           pp=real(k_B*unit_length**3 * &
              (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h))
-!
+
           call eosperturb(f,nx,pp=pp)
 !
           fmpi1=cs2bot
@@ -2500,7 +2499,7 @@ module Energy
       do m=m1,m2
 
         rho=rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
-        call putrho(f(:,m,n,ilnrho),rho)
+        call putrho(f(:,m,n,irho),rho)
 
         if (lentropy) then
 !  Isothermal
@@ -2548,7 +2547,7 @@ module Energy
       do m=m1,m2
 !
         rho=rho0hs*exp(1 - sqrt(1 + (z(n)/H0hs)**2))
-        call putrho(f(:,m,n,ilnrho),rho)
+        call putrho(f(:,m,n,irho),rho)
 !
         if (lentropy) then
 !
