@@ -115,7 +115,8 @@ module EquationOfState
 !
       if (unit_temperature==impossible) then
         if (lfix_unit_std) then
-          unit_temperature=0.754*eV_cgs/k_B_cgs
+          !unit_temperature=0.754*eV_cgs/k_B_cgs
+          unit_temperature=unit_density*unit_velocity**2/k_B_cgs
         else
           unit_temperature=1.
         endif
