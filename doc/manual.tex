@@ -102,6 +102,7 @@
 \usepackage{graphicx}
 \graphicspath{{figs/}}
 
+
 \usepackage{parskip}%,vmargin}
 %\setmargrb{20mm}{25mm}{20mm}{15mm}
 \usepackage[inner=23mm,outer=17mm,top=25mm,bottom=15mm]{geometry}
@@ -437,6 +438,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   \includegraphics%
     [width=.99\textwidth,keepaspectratio]%
     {GitHub_ci}
+    %{GitHub-ci}
   \caption{GitHub check-in pattern since 2002; see\\
   \url{https://github.com/pencil-code/pencil-code/graphs/contributors}
   }
@@ -1752,6 +1754,11 @@ which will be used as \dfn{data directory},
 i.\,e.~the directory where all results are written.
 If \file{datadir.in} does not exist, the data directory is \file{data/}.
 
+\subsubsection{\file{sn_series.in}}
+Formatted file containing the times and locations at which future supernova
+events will occur, using same format as \file{sn_series.dat} when lSN\_list.
+(Only needed by the \name{interstellar} module.)
+
 \subsubsection{\file{reference.out}}
 If present, \file{reference.out} contains the output you should obtain in
 the given run directory, provided you have not changed any parameters.
@@ -1838,9 +1845,10 @@ are invoked.
 This is a temporary solution and the file may disappear in future
 releases.
 
-\paragraph{\file[interstellar.dat]{data/interstellar.dat}}
-Unformatted file containing the time at which the next supernova event will
-occur, under certain supernova schemes.
+\paragraph{\file[sn_series.dat]{data/sn_series.dat}}
+Time series of SN explosions locations and diagnostics. Can be plotted
+using same machinery as for \file{time_series.dat} and stored as
+\file{sn_series.in} to replicate series in subsequent experiments.
 (Only needed by the \name{interstellar} module.)
 
 \paragraph{\file[proc$N$]{data/proc0}, \file[proc1]{data/proc1}, \ldots}
@@ -8941,6 +8949,7 @@ meshes, the required RAM is still below 100 MB.
   \includegraphics%
     [width=0.8\textwidth,keepaspectratio]%
     {pdardel_strong}
+    %{pdardels-strong}
   \caption{Strong scaling on Dardel.
 The dotted and dashed lines corresponds to
 $1.02\mu{\rm s}/{\rm proc}/{\rm step}/{\rm point}$ and
@@ -8961,6 +8970,7 @@ of processors in the $x$ direction small.
 
 \begin{figure}[h!]\begin{center}
 \includegraphics[width=\columnwidth]{pdardel_strong}
+%\includegraphics[width=\columnwidth]{pdardel-strong}
 \end{center}\caption[]{
 Strong scaling on Dardel.
 The dotted and dashed lines corresponds to
@@ -11419,6 +11429,7 @@ should always be weaker than the advective Courant criterion.
 
 \begin{figure}[h!]\begin{center}
 \includegraphics[width=.7\columnwidth]{pspec_comp}
+%\includegraphics[width=.7\columnwidth]{pspec-comp}
 \end{center}\caption[]{
   Comparison of centered (solid lines) and upwinding (dashed lines)
   advection in a $512^3$ isothermal turbulence simulation forced with
