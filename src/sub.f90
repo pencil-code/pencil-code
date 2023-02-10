@@ -4080,7 +4080,7 @@ module Sub
 !
     endsubroutine smooth_kernel
 !***********************************************************************
-    subroutine smooth(f, ivar,lgauss)
+    subroutine smooth(f,ivar,ivar2_,lgauss,smooth_width_)
 !
 !  Smoothes the f-variable ivar with a polynomial kernel.  It assumes
 !  that the boundary conditions for ivar have been applied, and the
@@ -4089,48 +4089,43 @@ module Sub
 !  23-jan-14/ccyang: coded.
 !  05-jun-20/joenr: add gaussian kernels
 !
-      use General, only: loptest
+      use General, only: loptest, ioptest
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar
       logical, intent(in), optional :: lgauss
+      integer, intent(in), optional :: ivar2_,smooth_width_
 !
       real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kernel = 0.0
-      real, dimension(nx,ny,nz) :: work
+      real, dimension(:,:,:,:), allocatable :: work
       logical :: lfirstcall = .true.
-      integer :: i1 = 0, i2 = 0, j1 = 0, j2 = 0, k1 = 0, k2 = 0
-      integer :: i, j, k
+      integer, save :: ni,nj,nk
+      integer :: i, j, k, ivar2, smooth_width
 !
 !  Initialization at first call.
 !
-      init: if (lfirstcall) then
+      if (lfirstcall) then
         call get_smooth_kernel(kernel,loptest(lgauss))
-        xdim: if (nxgrid > 1) then
-          i1 = -nghost
-          i2 = nghost
-        endif xdim
-        ydim: if (nygrid > 1) then
-          j1 = -nghost
-          j2 = nghost
-        endif ydim
-        zdim: if (nzgrid > 1) then
-          k1 = -nghost
-          k2 = nghost
-        endif zdim
+        smooth_width=min(ioptest(smooth_width_,nghost),nghost)
+        ni = merge(smooth_width,0,nxgrid > 1)
+        nj = merge(smooth_width,0,nygrid > 1)
+        nk = merge(smooth_width,0,nzgrid > 1)
         lfirstcall = .false.
-      endif init
+      endif
 !
 !  Smooth the field (assuming boundary conditions for ivar has been applied).
 !
+      ivar2=ioptest(ivar2_,ivar)
+      allocate(work(nx,ny,nz,ivar:ivar2))
       work = 0.0
-      do k = k1, k2
-        do j = j1, j2
-          do i = i1, i2
-            work = work + kernel(i,j,k) * f(l1+i:l2+i,m1+j:m2+j,n1+k:n2+k,ivar)
+      do k = -nk,nk
+        do j = -nj,nj
+          do i = -ni,ni
+            work = work + kernel(i,j,k) * f(l1+i:l2+i,m1+j:m2+j,n1+k:n2+k,ivar:ivar2)
           enddo
         enddo
       enddo
-      f(l1:l2,m1:m2,n1:n2,ivar) = work
+      f(l1:l2,m1:m2,n1:n2,ivar:ivar2) = work
 !
     endsubroutine smooth
 !***********************************************************************
