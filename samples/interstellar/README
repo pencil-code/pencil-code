@@ -1,5 +1,5 @@
 Directory:
-    ${PENCIL_HOME}/samples/supernova-driven-turbulence/3Dhd_equidistant
+    ${PENCIL_HOME}/samples/interstellar
 SVN Id:
     $Id$
 Maintainer:
@@ -13,6 +13,8 @@ Status:
                          constant low diffusivities can be included, which no
                          longer affect code stability. Stability is now 
                          controlled by shock mass diffusion and shock viscosity
+    revised 09-Feb-2023: moved check_SN to before_boundary and only in first
+                         time substep, skipped check_SN during pencil checks 
 Recommended resolution:
     at least 16x16x1000 (maintain grid resolution <= 0.004 for larger Lx,Ly)
 Comments:
