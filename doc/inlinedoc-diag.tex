@@ -318,6 +318,7 @@
   \var{uglnrhom}  & $\left<\uv\cdot\nabla\ln\varrho\right>$ \\
   \var{totmass}   & $\int\varrho\,dV$ \\
   \var{mass}      & $\int\varrho\,dV$ \\
+  \var{sphmass}   & $\int\varrho\,dV$ inside $r < 1$. \\
   \var{inertiaxx} & $xx$ component of the inertia tensor (spherical coordinates) \\
   \var{inertiayy} & $yy$ component of the inertia tensor (spherical coordinates) \\
   \var{inertiazz} & $zz$ component of the inertia tensor (spherical coordinates) \\
@@ -398,6 +399,14 @@
   \var{bjtm}      & $\left<\bv(t)\cdot\int_0^t\jv(t')
                     dt'\right>$ \\
   \var{jbtm}      & $\left<\jv(t)\cdot\int_0^t\bv(t')
+                    dt'\right>$ \\
+  \var{ujtm}      & $\left<\uv(t)\cdot\int_0^t\jv(t')
+                    dt'\right>$ \\
+  \var{jutm}      & $\left<\jv(t)\cdot\int_0^t\uv(t')
+                    dt'\right>$ \\
+  \var{ubtm}      & $\left<\uv(t)\cdot\int_0^t\bv(t')
+                    dt'\right>$ \\
+  \var{butm}      & $\left<\bv(t)\cdot\int_0^t\uv(t')
                     dt'\right>$ \\
   \var{b2ruzm}    & $\left<\Bv^2\rho u_z\right>$ \\
   \var{b2uzm}     & $\left<\Bv^2u_z\right>$ \\
@@ -744,11 +753,18 @@
   \multicolumn{2}{c}{Module \file{axionSU2back.f90}} \\
 \midrule
   \var{Q}         & $Q$ \\
+  \var{Qdot}      & $\dot{Q}$ \\
+  \var{Qddot}     & $\ddot{Q}$ \\
   \var{chi}       & $\chi$ \\
+  \var{chidot}    & $\dot{\chi}$ \\
+  \var{chiddot}   & $\ddot{\chi}$ \\
   \var{psi}       & $\psi$ \\
   \var{TR}        & $T_R$ \\
   \var{grand}     & ${\cal T}^Q$ \\
   \var{grant}     & ${\cal T}^\chi$ \\
+  \var{grand2}    & ${\cal T}^Q$ (test) \\
+  \var{dgrant}    & $\dot{\cal T}^\chi$ \\
+  \var{fact}      & $\Theta(t)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{backreact_infl.f90}} \\
 \midrule

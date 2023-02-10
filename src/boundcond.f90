@@ -1512,7 +1512,7 @@ module Boundcond
                 ! BCZ_DOC: for interstellar runs limit rho
                 call bc_cdz(f,topbot,j)
               case ('ism')
-                ! BCZ_DOC: for interstellar runs limit rho
+                ! BCZ_DOC: exponential decay/growth in rho/T by scale height
                 call bc_ism(f,topbot,j)
               case ('asT')
                 ! BCZ_DOC: select entropy for uniform ghost temperature
@@ -1648,8 +1648,7 @@ module Boundcond
                 ! BCZ_DOC: creates outwards pointing or zero 1st derivative at boundary
                 call bc_outflow_outwards_deriv_z(f,topbot,j)
               case ('ubs')
-                ! BCZ_DOC: copy boundary outflow,
-                ! but limit inflow +ve inward gradient (experimental)
+                ! BCZ_DOC: copy boundary outflow, reduce inflow speed outside the boundary
                 call bc_steady_z(f,topbot,j)
               case ('win')
                 ! BCZ_DOC: forces massflux given as
