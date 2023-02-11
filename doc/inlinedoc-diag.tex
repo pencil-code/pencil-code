@@ -319,7 +319,6 @@
   \var{uglnrhom}  & $\left<\uv\cdot\nabla\ln\varrho\right>$ \\
   \var{totmass}   & $\int\varrho\,dV$ \\
   \var{mass}      & $\int\varrho\,dV$ \\
-  \var{sphmass}   & $\int\varrho\,dV$ inside $r < 1$. \\
   \var{inertiaxx} & $xx$ component of the inertia tensor (spherical coordinates) \\
   \var{inertiayy} & $yy$ component of the inertia tensor (spherical coordinates) \\
   \var{inertiazz} & $zz$ component of the inertia tensor (spherical coordinates) \\
@@ -364,8 +363,7 @@
                     see \S~\ref{time-step}) \\
   \var{Hmax}      & $H_{\rm max}$\quad(net heat sources
                     summed see \S~\ref{time-step}) \\
-  \var{tauhmin}   & $H_{\rm max}$\quad(net heat sources
-                    summed see \S~\ref{time-step}) \\
+  \var{tauhmin}   & $\min(\tau_{\rm heat})$ \\
   \var{dtH}       & $\delta t / [c_{\delta t,{\rm s}}\,
                     c_{\rm v}T /H_{\rm max}]$
                     \quad(time step relative to time
@@ -1260,6 +1258,7 @@
   \var{taucmin}   & $\min(\tau_{\rm cool})$ \\
   \var{Hmax_ism}  & $\max(\Gamma-\rho\Lambda)$ \\
   \var{Lamm}      & $\left<\Lambda\right>$ \\
+  \var{nrhom}     & TBC \\
   \var{rhoLm}     & $\left<\rho\Lambda\right>$ \\
   \var{Gamm}      & $\left<\Gamma\right>$ \\
 \midrule
