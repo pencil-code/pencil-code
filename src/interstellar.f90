@@ -543,7 +543,13 @@ module Interstellar
       if (lroot.and.luniform_zdist_SNI) then
         print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
-      call getmu(f,mu)
+      if (leos_idealgas) then
+        call getmu(f,mu)
+      else
+        mu = 0.62
+        if (lroot) print*, &
+           'initialize_interstellar: mu not set by eos:',mu
+      endif
 !
       if (unit_system=='cgs') then
 !
@@ -4543,54 +4549,4 @@ module Interstellar
 !
     endsubroutine set_next_OB
 !*****************************************************************************
-    subroutine addmassflux(f)
-!
-!  This routine calculates the mass flux through the vertical boundary.
-!  As no/reduced inflow boundary condition precludes galactic fountain this adds
-!  the mass flux proportionately throughout the volume to substitute mass
-!  which would otherwise be replaced over time by the galactic fountain.
-!
-!  23-Nov-11/fred: coded
-!
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
-!
-      real :: prec_factor=1.0E-7
-      real, dimension (nz) :: add_ratio
-      integer :: l
-!
-!  Skip this subroutine if not selected eg before turbulent pressure settles
-!
-      if (.not. ladd_massflux) return
-!
-!  Only add boundary mass at intervals to ensure flux replacements are large
-!  enough to reduce losses at the limit of machine accuracy. At same frequency
-!  as SNII.
-!
-      if (t >= t_next_mass) then
-!
-!  Determine multiplier required to restore mass to level before boundary
-!  losses. addrate=1.0 can be varied to regulate mass levels as required.
-!  Replaces previous MPI heavy algorithm to calculate and store actual boundary
-!  flux. Verified that mass loss matched boundary loss, rather than numerical,
-!  so sufficient to monitor rhom and adjust addrate to maintain mass.
-!
-        add_ratio=1.0+prec_factor*addrate*exp(-add_scale*(z(n1:n2)/h_SNII)**2)
-!
-!  Add mass proportionally to the existing density throughout the
-!  volume to replace that lost through boundary.
-!
-        do l=l1,l2; do m=m1,m2
-          if (ldensity_nolog) then
-            f(l,m,n1:n2,irho)= &
-                dble(f(l,m,n1:n2,irho))*add_ratio
-          else
-            f(l,m,n1:n2,ilnrho)= &
-                dble(f(l,m,n1:n2,ilnrho))+log(add_ratio)
-          endif
-        enddo;enddo
-        t_next_mass=t_next_SNII
-      endif
-!
-    endsubroutine addmassflux
-!!*****************************************************************************
  endmodule Interstellar

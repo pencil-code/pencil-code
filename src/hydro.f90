@@ -1460,12 +1460,13 @@ module Hydro
       if (ltime_integrals) then
         if (lvart_in_shear_frame) &
           call fatal_error('initialize_hydro', &
-               'lvart_in_shear_frame is no longer supported in hydro. uut etc. are always &
-                in lab frame. lshear_frame_correlation=T now transforms both uu and uut.')
+              'lvart_in_shear_frame is no longer supported in hydro. uut etc. are always'&
+              'in lab frame. lshear_frame_correlation=T now transforms both uu and uut.')
       endif
 
       if (lfargo_advection.and..not.lfargoadvection_as_shift) then
-        if (lroot) call not_implemented("hydro_after_timestep","Fargo advection without Fourier shift")
+        if (lroot) call not_implemented("hydro_after_timestep",&
+                                        "Fargo advection without Fourier shift")
       endif
 
       endsubroutine initialize_hydro

@@ -2490,7 +2490,13 @@ module Energy
 !  Uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !  at solar radius.  (for interstellar runs)
 !
-      call getmu(f,muhs)
+      if (leos_idealgas) then
+        call getmu(f,muhs)
+      else
+        muhs = 0.62
+        if (lroot) print*, &
+          'Ferriere-hs: mu not set by eos:',muhs
+      endif
 !
       if (lroot) print*, &
           'Ferriere-hs: hydrostatic equilibrium density and entropy profiles'
