@@ -37,7 +37,7 @@ module EquationOfState
 !  secondary parameters calculated in initialize
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
-  real :: lnrho_e,lnrho_e_,lnrho_H,lnrho_He
+  real :: lnrho_e,lnrho_e_,lnrho_H,lnrho_He,Rgas,mu1yHxHe
 !  integer :: icp,ics
   integer :: ics
 ! namelist parameters
@@ -113,10 +113,12 @@ module EquationOfState
 !
 !  24-jun-06/tobi: coded
 !
+!  11-feb-23/fred lfix_unit_std seeks to adopt a numerically stable value
+!                 as in ideal gas, yet to explore here
+!
       if (unit_temperature==impossible) then
         if (lfix_unit_std) then
-          !unit_temperature=0.754*eV_cgs/k_B_cgs
-          unit_temperature=unit_density*unit_velocity**2/k_B_cgs
+          unit_temperature=unit_density*unit_velocity**2/k_B_cgs*13.6
         else
           unit_temperature=1.
         endif
@@ -137,14 +139,13 @@ module EquationOfState
       use Sub, only: register_report_aux
       use SharedVariables,only: put_shared_variable
 !
-      real :: mu1yHxHe
-!
       if (lroot) print*,'initialize_eos: ENTER'
 !
 !  ionization parameters
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
+      Rgas=k_B/m_p
       mu1yHxHe=1+3.97153*xHe
       TT_ion=chiH/k_B
       lnTT_ion=log(TT_ion)
@@ -374,6 +375,12 @@ module EquationOfState
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if (lpencil_in(i_cv).or.lpencil_in(i_cp).or.&
+          lpencil_in(i_cv1).or.lpencil_in(i_cp1)) then
+        lpencil_in(i_yH)=.true.
+        lpencil_in(i_TT1)=.true.
+      endif
+!
       if (lpencil_in(i_gTT)) then
         lpencil_in(i_glnTT)=.true.
         lpencil_in(i_TT)=.true.
@@ -392,12 +399,6 @@ module EquationOfState
       if (lpencil_in(i_hlnTT)) then
         lpencil_in(i_hss)=.true.
         if (.not.pretend_lnTT) lpencil_in(i_hlnrho)=.true.
-      endif
-!
-      if (lpencil_in(i_cv).or.lpencil_in(i_cp).or.&
-          lpencil_in(i_cv1).or.lpencil_in(i_cp1)) then
-        lpencil_in(i_yH)=.true.
-        lpencil_in(i_TT)=.true.
       endif
 !
     endsubroutine pencil_interdep_eos
@@ -423,6 +424,7 @@ module EquationOfState
 !
 !  02-apr-06/tony: coded
 !  09-oct-15/MR: added mask parameter lpenc_loc
+!  13-feb-23/FG: added pencils for cp to cv1
 !
       use Sub
 !
@@ -502,13 +504,26 @@ module EquationOfState
 !
       if (lpenc_loc(i_glnmumol)) p%glnmumol(:,:)=0.
 !
-!  This routine does not yet compute cv or cv1, but since those pencils
-!  are supposed to be provided here, we better set them to impossible.
+!  cv/cp pencils are computed following A&A 587, A90 (2016)
+!  DOI: 10.1051/0004-6361/201425396
+!  TBD Helium single and double ionization states to be included
 !
-      if (lpenc_loc(i_cv))  p%cv=impossible
-      if (lpenc_loc(i_cp))  p%cp=impossible
-      if (lpenc_loc(i_cv1)) p%cv1=impossible
-      if (lpenc_loc(i_cp1)) p%cp1=impossible
+! cp
+      if (lpenc_loc(i_cp)) &
+          p%cp=(2.5+p%yH*(1-p%yH)/((2-p%yH)*xHe+2)*(2.5+p%TT1*TT_ion)**2)* &
+          Rgas*mu1yHxHe/(1+xHe+p%yH)
+! cv
+      if (lpenc_loc(i_cv)) &
+          p%cv=(1.5+p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))*(1.5+p%TT1*TT_ion)**2)* &
+          Rgas*mu1yHxHe/(1+xHe+p%yH)
+! cp1
+      if (lpenc_loc(i_cp1)) &
+          p%cp1=(1+xHe+p%yH)/((2.5+p%yH*(1-p%yH)/((2-p%yH)*xHe+2)* &
+          (2.5+p%TT1*TT_ion)**2)*Rgas*mu1yHxHe)
+! cv1
+      if (lpenc_loc(i_cv1)) &
+          p%cv1=(1+xHe+p%yH)/((1.5+p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))* &
+          (1.5+p%TT1*TT_ion)**2)*Rgas*mu1yHxHe)
 !
 !  pressure and cp as optional auxiliary pencils
 !
@@ -528,17 +543,22 @@ module EquationOfState
 !  per particle is M/N = (1.+3.97153*xHe)/(1 + yH + xHe).
 !
 !   12-aug-03/tony: implemented
+!   13-feb-23/fred: mu_tmp now included in pencils for cp, etc.
+!                   call fatal error for getmu
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
       real, optional, intent(out) :: mu_tmp
 !
-      mu_tmp=1.+3.97153*xHe
+!  for variable ionization, it doesn't make sense to calculate
+!  just a single value of mu, because it must depend on position.
+!  Therefore, call fatal error.
+!
+      call fatal_error('getmu',&
+          'SHOULD NOT BE CALLED WITH eos_ionization, see cp/cv pencils')
 !
 ! tobi: the real mean molecular weight would be:
 !
 ! mu_tmp=(1.+3.97153*xHe)/(1+yH+xHe)
-!
-      call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu
 !***********************************************************************
@@ -632,10 +652,10 @@ module EquationOfState
 !
 !  for variable ionization, it doesn't make sense to calculate
 !  just a single value of cp1, because it must depend on position.
-!  Therefore, return impossible, so one can reconsider this case.
+!  Therefore, return fatal_error.
 !
-      !call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_ionization')
-      cp1_=impossible
+      call fatal_error('get_cp1',&
+          'SHOULD NOT BE CALLED WITH eos_ionization, but pencil instead')
 !
     endsubroutine get_cp1
 !***********************************************************************
@@ -649,10 +669,10 @@ module EquationOfState
 !
 !  for variable ionization, it doesn't make sense to calculate
 !  just a single value of cv1, because it must depend on position.
-!  Therefore, return impossible, so one can reconsider this case.
+!  Therefore, return fatal_error.
 !
-      !call fatal_error('get_cv1','SHOULD NOT BE CALLED WITH eos_ionization')
-      cv1_=impossible
+      call fatal_error('get_cv1',&
+          'SHOULD NOT BE CALLED WITH eos_ionization, but pencil instead')
 !
     endsubroutine get_cv1
 !***********************************************************************
@@ -2105,6 +2125,108 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_hdss_z_iso
+!***********************************************************************
+    subroutine bc_ism(f,topbot,j)
+!
+!  30-nov-15/fred: Replaced bc_ctz and bc_cdz.
+!  Apply observed scale height locally from Reynolds 1991, Manchester & Taylor
+!  1981 for warm ionized gas - dominant scale height above 500 parsecs.
+!  Apply constant local temperature across boundary for entropy.
+!  Motivation to prevent numerical spikes in shock fronts, which cannot be
+!  absorbed in only three ghost cells, but boundary thermodynamics still
+!  responsive to interior dynamics.
+!  06-jun-22/fred update to allow setting scale height in start.in or run.in
+!  default is density_scale_factor=impossible so that scale_factor is 0.9, assuming
+!  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
+!  start_pars or run_pars density_scale_factor=... in dimensionless units
+!
+      character (len=bclen) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j,k
+      real :: density_scale1, density_scale
+      real, dimension (mx,my) :: cv,cp
+!
+      if (density_scale_factor==impossible) then
+        density_scale=density_scale_cgs/unit_length
+      else
+        density_scale=density_scale_factor
+      endif
+      density_scale1=1./density_scale
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do k=1,nghost
+          if (j==irho .or. j==ilnrho) then
+            if (ldensity_nolog) then
+              f(:,:,k,j)=f(:,:,n1,j)*exp(-(z(n1)-z(k))*density_scale1)
+            else
+              f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))*density_scale
+            endif
+          else if (j==iss) then
+            if (.not.ltemperature) then !case for entropy
+              cp=(2.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))*xHe+2)* &
+                  (2.5+TT_ion/exp(f(:,:,n1,ilnTT)))**2)* &
+                  Rgas*mu1yHxHe/(1+xHe+f(:,:,n1,iyH))
+              cv=(1.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))* &
+                  (1+f(:,:,n1,iyH)+xHe))*(1.5+TT_ion/exp(f(:,:,n1,ilnTT)))**2)* &
+                  Rgas*mu1yHxHe/(1+xHe+f(:,:,n1,iyH))
+              if (ldensity_nolog) then
+                f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv) * &
+                    (log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1))) + &
+                    cv*log((z(n1)-z(n1-k))*density_scale+1.)
+              else
+                f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*&
+                    (f(:,:,n1,j-1)-f(:,:,n1-k,j-1))+&
+                    cv*log((z(n1)-z(n1-k))*density_scale+1.)
+              endif
+            else !case for lnTT
+              f(:,:,n1-k,j)=f(:,:,n1,j)+log((z(n1)-z(n1-k))*density_scale+1.)
+            endif
+          else
+            call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
+          endif
+        enddo
+!
+      case ('top')               ! top boundary
+        do k=1,nghost
+          if (j==irho .or. j==ilnrho) then
+            if (ldensity_nolog) then
+              f(:,:,n2+k,j)=f(:,:,n2,j)*exp(-(z(n2+k)-z(n2))*density_scale1)
+            else
+              f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))*density_scale1
+            endif
+          else if (j==iss) then
+            if (.not.ltemperature) then !case for entropy
+              cp=(2.5+f(:,:,n2,iyH)*(1-f(:,:,n2,iyH))/((2-f(:,:,n2,iyH))*xHe+2)* &
+                  (2.5+TT_ion/exp(f(:,:,n2,ilnTT)))**2)* &
+                  Rgas*mu1yHxHe/(1+xHe+f(:,:,n2,iyH))
+              cv=(1.5+f(:,:,n2,iyH)*(1-f(:,:,n2,iyH))/((2-f(:,:,n2,iyH))* &
+                  (1+f(:,:,n2,iyH)+xHe))*(1.5+TT_ion/exp(f(:,:,n2,ilnTT)))**2)* &
+                  Rgas*mu1yHxHe/(1+xHe+f(:,:,n2,iyH))
+              if (ldensity_nolog) then
+                f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
+                    (log(f(:,:,n2,j-1))-log(f(:,:,n2+k,j-1)))+&
+                    cv*log((z(n2+k)-z(n2))*density_scale+1.)
+              else
+                f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
+                    (f(:,:,n2,j-1)-f(:,:,n2+k,j-1))+&
+                    cv*log((z(n2+k)-z(n2))*density_scale+1.)
+              endif
+            else !case for lnTT
+              f(:,:,n1-k,j)=f(:,:,n1,j)+log((z(n1)-z(n1-k))*density_scale+1.)
+            endif
+          else
+            call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
+          endif
+        enddo
+!
+      case default
+        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_ism
 !***********************************************************************
     subroutine write_thermodyn
 !

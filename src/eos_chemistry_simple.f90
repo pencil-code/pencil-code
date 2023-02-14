@@ -1653,6 +1653,104 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
+    subroutine bc_ism(f,topbot,j)
+!
+!  30-nov-15/fred: Replaced bc_ctz and bc_cdz.
+!  Apply observed scale height locally from Reynolds 1991, Manchester & Taylor
+!  1981 for warm ionized gas - dominant scale height above 500 parsecs.
+!  Apply constant local temperature across boundary for entropy.
+!  Motivation to prevent numerical spikes in shock fronts, which cannot be
+!  absorbed in only three ghost cells, but boundary thermodynamics still
+!  responsive to interior dynamics.
+!  06-jun-22/fred update to allow setting scale height in start.in or run.in
+!  default is density_scale_factor=impossible so that scale_factor is 0.9, assuming
+!  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
+!  start_pars or run_pars density_scale_factor=... in dimensionless units
+!  Copied from eos_ionization written for entropy - may need revision
+!
+      character (len=bclen) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j,k
+      real :: density_scale1, density_scale
+      real, dimension (mx,my) :: cv,cp
+!
+      if (density_scale_factor==impossible) then
+        density_scale=density_scale_cgs/unit_length
+      else
+        density_scale=density_scale_factor
+      endif
+      density_scale1=1./density_scale
+!
+!      call get_cv1(cv1); cv=1./cv1
+!      call get_cp1(cp1); cp=1./cp1
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do k=1,nghost
+          if (j==irho .or. j==ilnrho) then
+            if (ldensity_nolog) then
+              f(:,:,k,j)=f(:,:,n1,j)*exp(-(z(n1)-z(k))*density_scale1)
+            else
+              f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))*density_scale
+            endif
+          else if (j==iss) then
+            cp=(2.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))*xHe+2)* &
+                (2.5+TT_ion/exp(f(:,:,n1,ilnTT))))* &
+                Rgas*mu1yHxHe/(1+xHe+f(:,:,n1,iyH))
+            cv=(1.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))* &
+                (1+f(:,:,n1,iyH)+xHe))*(1.5+TT_ion/exp(f(:,:,n1,ilnTT))))* &
+                Rgas*mu1yHxHe/(1+xHe+f(:,:,n1,iyH))
+            if (ldensity_nolog) then
+              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv) * &
+                  (log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1))) + &
+                  cv*log((z(n1)-z(n1-k))*density_scale+1.)
+            else
+              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*&
+                  (f(:,:,n1,j-1)-f(:,:,n1-k,j-1))+&
+                  cv*log((z(n1)-z(n1-k))*density_scale+1.)
+            endif
+          else
+            call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
+          endif
+        enddo
+!
+      case ('top')               ! top boundary
+        do k=1,nghost
+          if (j==irho .or. j==ilnrho) then
+            if (ldensity_nolog) then
+              f(:,:,n2+k,j)=f(:,:,n2,j)*exp(-(z(n2+k)-z(n2))*density_scale1)
+            else
+              f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))*density_scale1
+            endif
+          else if (j==iss) then
+            cp=(2.5+f(:,:,n2,iyH)*(1-f(:,:,n2,iyH))/((2-f(:,:,n2,iyH))*xHe+2)* &
+                (2.5+TT_ion/exp(f(:,:,n2,ilnTT))))* &
+                Rgas*mu1yHxHe/(1+xHe+f(:,:,n2,iyH))
+            cv=(1.5+f(:,:,n2,iyH)*(1-f(:,:,n2,iyH))/((2-f(:,:,n2,iyH))* &
+                (1+f(:,:,n2,iyH)+xHe))*(1.5+TT_ion/exp(f(:,:,n2,ilnTT))))* &
+                Rgas*mu1yHxHe/(1+xHe+f(:,:,n2,iyH))
+            if (ldensity_nolog) then
+              f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
+                  (log(f(:,:,n2,j-1))-log(f(:,:,n2+k,j-1)))+&
+                  cv*log((z(n2+k)-z(n2))*density_scale+1.)
+            else
+              f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
+                  (f(:,:,n2,j-1)-f(:,:,n2+k,j-1))+&
+                  cv*log((z(n2+k)-z(n2))*density_scale+1.)
+            endif
+          else
+            call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
+          endif
+        enddo
+!
+      case default
+        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_ism
+!***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
 !  Get background stratification in z direction.
