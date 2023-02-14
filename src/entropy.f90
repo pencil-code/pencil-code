@@ -52,7 +52,7 @@ module Energy
   real :: ss_left=1.0, ss_right=1.0
   real :: khor_ss=1.0, ss_const=0.0
   real :: pp_const=0.0
-  real :: tau_ss_exterior=0.0, T0=0.0
+  real :: tau_ss_exterior=0.0, T0=0.0, T0_cgs=0.0
   real :: ampl_imp_ss=0.01
   real :: mixinglength_flux=0.0, entropy_flux=0.0
   real, dimension(ninit) :: center1_x=0.0, center1_y=0.0, center1_z=0.0
@@ -195,9 +195,9 @@ module Energy
       ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
 !      ss_const, mpoly0, mpoly1, mpoly2, khor_ss, &
       thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, &
-      center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, T0, &
+      center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
       ampl_TT, kx_ss, ky_ss, kz_ss, beta_glnrho_global, ladvection_entropy, &
-      lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
+      lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, T0, T0_cgs, &
       tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
       rho0hs, tau_cool2, lconvection_gravx, Fbot, cs2top_ini, dcs2top_ini, &
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
@@ -596,7 +596,7 @@ module Energy
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
-                                 select_eos_variable,gamma,gamma_m1
+                                 select_eos_variable
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
       use HDF5_IO, only: input_profile
@@ -646,6 +646,7 @@ module Energy
 !  Kbot and hcond0 are used interchangibly, so if one is
 !  =impossible, set it to the other's value.
 !
+      if (T0_cgs/=0.) T0=T0_cgs/unit_temperature
       if (hcond0==impossible) then
         if (Kbot==impossible) then
           hcond0=0.0
