@@ -39,7 +39,7 @@ module EquationOfState
 !  integer :: icp, icv, ics, idelta, igamma, inabad
   integer :: imass = 1
   !  secondary parameters calculated in initialize
-  real :: mu1_0,Rgas
+  real :: mu1_0,Rgas,mu1yHxHe
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,kappa0,pp_ion
   real :: rho_H,rho_e,rho_e_,rho_He
@@ -149,6 +149,7 @@ module EquationOfState
       if (lroot) print*,'initialize_eos: chiH_=',chiH_,chiH_/eV
 !
       mu1_0 = 1/(1 + 4*xHe)
+      mu1yHxHe=1.+3.97153*xHe
       Rgas = k_B/m_u
       TT_ion = chiH/k_B
       lnTT_ion = log(TT_ion)

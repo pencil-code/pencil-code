@@ -41,7 +41,7 @@ module EquationOfState
   real :: lnTTss,lnTTlnrho,lnTT0
 !
 ! secondary parameters calculated in initialize
-  real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
+  real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_,Rgas,mu1yHxHe
   real :: ss_ion,ee_ion,kappa0,Srad0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   real :: xHe_term,yH_term,one_yH_term
@@ -138,6 +138,7 @@ module EquationOfState
 !  it is better to divide m_e and chiH separately by hbar.
 !
       if (headtt) print*,'initialize_eos: assume cp is not 1, yH0=',yH0
+      Rgas=k_B/m_p
       mu1yHxHe=1.+3.97153*xHe
       TT_ion=chiH/k_B
       lnTT_ion=log(chiH/k_B)

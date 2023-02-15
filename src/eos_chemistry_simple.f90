@@ -1667,6 +1667,7 @@ module EquationOfState
 !  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !  Copied from eos_ionization written for entropy - may need revision
+!  cp and cv need to be defined
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
@@ -1695,21 +1696,21 @@ module EquationOfState
               f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))*density_scale1
             endif
           else if (j==iss) then
-            cp=(2.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))*xHe+2)* &
-                (2.5+TT_ion/exp(f(:,:,n1,ilnTT))))* &
-                Rgas*mu1yHxHe/(1+xHe+f(:,:,n1,iyH))
-            cv=(1.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))* &
-                (1+f(:,:,n1,iyH)+xHe))*(1.5+TT_ion/exp(f(:,:,n1,ilnTT))))* &
-                Rgas*mu1yHxHe/(1+xHe+f(:,:,n1,iyH))
-            if (ldensity_nolog) then
-              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv) * &
-                  (log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1))) + &
-                  cv*log((z(n1)-z(n1-k))*density_scale+1.)
-            else
-              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*&
-                  (f(:,:,n1,j-1)-f(:,:,n1-k,j-1))+&
-                  cv*log((z(n1)-z(n1-k))*density_scale+1.)
-            endif
+            !cp=(2.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))*xHe+2)* &
+            !    (2.5+TT_ion/exp(f(:,:,n1,ilnTT))))* &
+            !    Rgas*mu1yHxHe/(1+xHe+f(:,:,n1,iyH))
+            !cv=(1.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))* &
+            !    (1+f(:,:,n1,iyH)+xHe))*(1.5+TT_ion/exp(f(:,:,n1,ilnTT))))* &
+            !    Rgas*mu1yHxHe/(1+xHe+f(:,:,n1,iyH))
+            !if (ldensity_nolog) then
+            !  f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv) * &
+            !      (log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1))) + &
+            !      cv*log((z(n1)-z(n1-k))*density_scale+1.)
+            !else
+            !  f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*&
+            !      (f(:,:,n1,j-1)-f(:,:,n1-k,j-1))+&
+            !      cv*log((z(n1)-z(n1-k))*density_scale+1.)
+            !endif
           else
             call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
           endif
@@ -1724,21 +1725,21 @@ module EquationOfState
               f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))*density_scale1
             endif
           else if (j==iss) then
-            cp=(2.5+f(:,:,n2,iyH)*(1-f(:,:,n2,iyH))/((2-f(:,:,n2,iyH))*xHe+2)* &
-                (2.5+TT_ion/exp(f(:,:,n2,ilnTT))))* &
-                Rgas*mu1yHxHe/(1+xHe+f(:,:,n2,iyH))
-            cv=(1.5+f(:,:,n2,iyH)*(1-f(:,:,n2,iyH))/((2-f(:,:,n2,iyH))* &
-                (1+f(:,:,n2,iyH)+xHe))*(1.5+TT_ion/exp(f(:,:,n2,ilnTT))))* &
-                Rgas*mu1yHxHe/(1+xHe+f(:,:,n2,iyH))
-            if (ldensity_nolog) then
-              f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
-                  (log(f(:,:,n2,j-1))-log(f(:,:,n2+k,j-1)))+&
-                  cv*log((z(n2+k)-z(n2))*density_scale+1.)
-            else
-              f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
-                  (f(:,:,n2,j-1)-f(:,:,n2+k,j-1))+&
-                  cv*log((z(n2+k)-z(n2))*density_scale+1.)
-            endif
+            !cp=(2.5+f(:,:,n2,iyH)*(1-f(:,:,n2,iyH))/((2-f(:,:,n2,iyH))*xHe+2)* &
+            !    (2.5+TT_ion/exp(f(:,:,n2,ilnTT))))* &
+            !    Rgas*mu1yHxHe/(1+xHe+f(:,:,n2,iyH))
+            !cv=(1.5+f(:,:,n2,iyH)*(1-f(:,:,n2,iyH))/((2-f(:,:,n2,iyH))* &
+            !    (1+f(:,:,n2,iyH)+xHe))*(1.5+TT_ion/exp(f(:,:,n2,ilnTT))))* &
+            !    Rgas*mu1yHxHe/(1+xHe+f(:,:,n2,iyH))
+            !if (ldensity_nolog) then
+            !  f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
+            !      (log(f(:,:,n2,j-1))-log(f(:,:,n2+k,j-1)))+&
+            !      cv*log((z(n2+k)-z(n2))*density_scale+1.)
+            !else
+            !  f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
+            !      (f(:,:,n2,j-1)-f(:,:,n2+k,j-1))+&
+            !      cv*log((z(n2+k)-z(n2))*density_scale+1.)
+            !endif
           else
             call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
           endif
