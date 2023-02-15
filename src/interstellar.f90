@@ -3139,8 +3139,12 @@ module Interstellar
 !
         m=SNR%indx%m
         n=SNR%indx%n
-        call eoscalc(f,nx,lnTT=lnTT)
-        SNR%site%lnTT=lnTT(SNR%indx%l-l1+1)
+        if (leos_ionization.or.leos_temperature_ionization) then
+          SNR%site%lnTT=f(SNR%indx%l-l1+1,m,n,ilnTT)
+        else
+          call eoscalc(f,nx,lnTT=lnTT)
+          SNR%site%lnTT=lnTT(SNR%indx%l-l1+1)
+        endif
         SNR%feat%x=0.; SNR%feat%y=0.; SNR%feat%z=0.
         sndx=0.; sndy=0.; sndz=0.
         if (nxgrid/=1) then
@@ -3960,7 +3964,7 @@ module Interstellar
       use Sub
       use Mpicomm, only: mpiallreduce_sum
       use Grid, only: get_grid_mn
-      use EquationOfState, only: eoscalc, irho_ss
+      use EquationOfState, only: irho_ss
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(in) :: remnant
