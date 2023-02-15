@@ -3140,7 +3140,7 @@ module Interstellar
         m=SNR%indx%m
         n=SNR%indx%n
         if (leos_ionization.or.leos_temperature_ionization) then
-          SNR%site%lnTT=f(SNR%indx%l-l1+1,m,n,ilnTT)
+          SNR%site%lnTT=f(SNR%indx%l+1,m,n,ilnTT)
         else
           call eoscalc(f,nx,lnTT=lnTT)
           SNR%site%lnTT=lnTT(SNR%indx%l-l1+1)
