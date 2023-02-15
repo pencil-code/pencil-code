@@ -1830,6 +1830,67 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
+    subroutine bc_ism(f,topbot,j)
+!
+!  30-nov-15/fred: Replaced bc_ctz and bc_cdz.
+!  Apply observed scale height locally from Reynolds 1991, Manchester & Taylor
+!  1981 for warm ionized gas - dominant scale height above 500 parsecs.
+!  Apply constant local temperature across boundary for entropy.
+!  Motivation to prevent numerical spikes in shock fronts, which cannot be
+!  absorbed in only three ghost cells, but boundary thermodynamics still
+!  responsive to interior dynamics.
+!  06-jun-22/fred update to allow setting scale height in start.in or run.in
+!  default is density_scale_factor=impossible so that scale_factor is 0.9, assuming
+!  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
+!  start_pars or run_pars density_scale_factor=... in dimensionless units
+!
+      character (len=bclen) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j,k
+      real :: density_scale1, density_scale
+!
+      if (density_scale_factor==impossible) then
+        density_scale=density_scale_cgs/unit_length
+      else
+        density_scale=density_scale_factor
+      endif
+      density_scale1=1./density_scale
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do k=1,nghost
+          if (j==irho .or. j==ilnrho) then
+            if (ldensity_nolog) then
+              f(:,:,k,j)=f(:,:,n1,j)*exp(-(z(n1)-z(k))*density_scale1)
+            else
+              f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))*density_scale1
+            endif
+          else
+            call fatal_error('bc_ism','only for irho, ilnrho')
+          endif
+        enddo
+!
+      case ('top')               ! top boundary
+        do k=1,nghost
+          if (j==irho .or. j==ilnrho) then
+            if (ldensity_nolog) then
+              f(:,:,n2+k,j)=f(:,:,n2,j)*exp(-(z(n2+k)-z(n2))*density_scale1)
+            else
+              f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))*density_scale1
+            endif
+          else
+            call fatal_error('bc_ism','only for irho, ilnrho')
+          endif
+        enddo
+!
+      case default
+        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_ism
+!***********************************************************************
     subroutine write_thermodyn
 !
     endsubroutine write_thermodyn

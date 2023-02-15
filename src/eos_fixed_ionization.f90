@@ -1427,7 +1427,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
             if (ldensity_nolog) then
               f(:,:,k,j)=f(:,:,n1,j)*exp(-(z(n1)-z(k))*density_scale1)
             else
-              f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))*density_scale
+              f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))*density_scale1
             endif
           else if (j==iss) then
             cp=(2.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))*xHe+2)* &
