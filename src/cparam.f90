@@ -15,7 +15,7 @@ module Cparam
 !
   include 'cparam.local'
 !
-  integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz
+  integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz,nyz=ny*nz
   integer, parameter :: nxygrid=nxgrid*nygrid,nxzgrid=nxgrid*nzgrid,nyzgrid=nygrid*nzgrid
   integer, parameter :: nprocxy=nprocx*nprocy
   integer, parameter :: nprocyz=nprocy*nprocz
@@ -147,7 +147,7 @@ module Cparam
 !
   integer, parameter :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0
   integer, parameter :: ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
-  integer, parameter :: ilabel_sum_log10=10
+  integer, parameter :: ilabel_sum_log10=10, ilabel_sum_masked=11
   integer, parameter :: ilabel_max_dt=-3,ilabel_max_neg=-4
   integer, parameter :: ilabel_max_reciprocal=-5
   integer, parameter :: ilabel_integrate=3,ilabel_integrate_sqrt=30, ilabel_integrate_log10=40

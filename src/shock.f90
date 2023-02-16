@@ -268,9 +268,7 @@ module Shock
 !
 !  20-11-04/anders: coded
 !
-      if (idiag_shockmax/=0) then
-          lpenc_diagnos(i_shock)=.true.
-      endif
+      if (idiag_shockmax/=0) lpenc_diagnos(i_shock)=.true.
 !
     endsubroutine pencil_criteria_shock
 !***********************************************************************
@@ -310,6 +308,17 @@ module Shock
 !
     endsubroutine calc_pencils_shock
 !***********************************************************************
+    subroutine shock_before_boundary(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+     
+!  Initiate shock profile calculation and use asynchronous to handle
+!  communication along processor/periodic boundaries.
+!
+      call calc_shock_profile(f)
+ 
+    endsubroutine shock_before_boundary
+!***********************************************************************
     subroutine calc_shock_profile_simple(f)
 !
 !  Calculate divu based shock profile to be used in viscosity and
@@ -336,8 +345,7 @@ module Shock
      if (lwith_extreme_div) then
        where ((f(:,:,:,ishock) > 0.) .and. (f(:,:,:,ishock) < div_threshold)) &
            f(:,:,:,ishock)=0.
-       where (f(:,:,:,ishock) > 0.) &
-           f(:,:,:,ishock)=f(:,:,:,ishock)*div_scaling
+       where (f(:,:,:,ishock) > 0.) f(:,:,:,ishock)=f(:,:,:,ishock)*div_scaling
        f(:,:,:,ishock)=abs(f(:,:,:,ishock))
      else
        f(:,:,:,ishock)=max(0., -f(:,:,:,ishock))
@@ -367,6 +375,7 @@ module Shock
 !
 !debug only line:-
 ! if (ip==0) call output(trim(directory_dist)//'/shockvisc.dat',f(:,:,:,ishock),1)
+!
     endsubroutine calc_shock_profile_simple
 !***********************************************************************
     subroutine calc_shock_profile(f)
@@ -443,7 +452,8 @@ module Shock
 !  set indices and check whether communication must now be completed
 !  if test_nonblocking=.true., we communicate immediately as a test.
 !
-          do imn=1,ny*nz
+          do imn=1,nyz
+
             n=nn(imn)
             m=mm(imn)
 !
@@ -702,9 +712,7 @@ module Shock
 !  Scale with min(dx,dy,dz)**2
 !
           f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2
-          if (ldivu_perp) then
-            f(:,:,:,ishock_perp) = f(:,:,:,ishock_perp) * dxmin**2
-          endif
+          if (ldivu_perp) f(:,:,:,ishock_perp) = f(:,:,:,ishock_perp) * dxmin**2
 !
 !  allow for overall profile to turn off shock viscosity below z_shock with width_shock
 !
@@ -718,6 +726,7 @@ module Shock
 !
 !debug only line:-
 ! if (ip==0) call output(trim(directory_dist)//'/shockvisc.dat',f(:,:,:,ishock),1)
+!
     endsubroutine calc_shock_profile
 !***********************************************************************
 !Utility routines - poss need moving elsewhere
@@ -1031,7 +1040,7 @@ module Shock
       integer :: ii,jj,kk
 !
       maxf=0.
-      if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
+      if (dimensionality==3) then
         tmp_penc=f(:,m,n,j)
         do kk=-1,1
         do jj=-1,1
@@ -1041,11 +1050,10 @@ module Shock
         enddo
         enddo
       else
-        call fatal_error("shock_max3_pencil_interp", &
-         "Tony got lazy and only implemented the 3D case")
+        call not_implemented("shock_max3_pencil_interp","1D and 2D cases")
       endif
-      maxf(3:mx-2)=maxf(3:mx-2)+f(3:mx-2,m,n,j)
 !
+      maxf(3:mx-2)=maxf(3:mx-2)+f(3:mx-2,m,n,j)
 !
     endsubroutine shock_max3_pencil_interp
 !***********************************************************************
@@ -1411,7 +1419,7 @@ module Shock
 !
       df=0.
 !
-      if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
+      if (dimensionality==3) then
         do k=n1,n2
         do j=m1,m2
         do i=l1,l2
@@ -1470,7 +1478,7 @@ module Shock
         enddo
         enddo
       else
-        call fatal_error('shock_smooth_cube_diamond7','CASE NOT IMPLEMENTED')
+        call not_implemented('shock_smooth_cube_diamond7','2D cases XY and YZ')
       endif
 !
     endsubroutine shock_smooth_cube_diamond7
@@ -1585,7 +1593,7 @@ module Shock
 !
       df=0.
 !
-      if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
+      if (dimensionality==3) then
         do k=n1,n2
         do j=m1,m2
         do i=l1,l2
@@ -1697,7 +1705,7 @@ module Shock
         enddo
         enddo
       else
-        call fatal_error('shock_smooth_octagon7','CASE NOT IMPLEMENTED')
+        call not_implemented('shock_smooth_octagon7','2D cases XY and YZ')
       endif
 !
     endsubroutine shock_smooth_octagon7
