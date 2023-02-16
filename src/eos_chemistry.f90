@@ -1409,13 +1409,12 @@ module EquationOfState
 !  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !  Copied from eos_ionization written for entropy - may need revision
-!  cp and cv need to be defined?
+!  Currently not correct for energy variable
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
       real :: density_scale1, density_scale
-      real, dimension (mx,my) :: cv,cp
 !
       if (density_scale_factor==impossible) then
         density_scale=density_scale_cgs/unit_length
@@ -1423,9 +1422,6 @@ module EquationOfState
         density_scale=density_scale_factor
       endif
       density_scale1=1./density_scale
-!
-!      call get_cv1(cv1); cv=1./cv1
-!      call get_cp1(cp1); cp=1./cp1
 !
       select case (topbot)
 !
@@ -1438,12 +1434,7 @@ module EquationOfState
               f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))*density_scale1
             endif
           else if (j==iss) then
-            !cp=(2.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))*xHe+2)* &
-            !    (2.5+TT_ion/exp(f(:,:,n1,ilnTT))))* &
-            !    Rgas*mu1yHxHe/(1+xHe+f(:,:,n1,iyH))
-            !cv=(1.5+f(:,:,n1,iyH)*(1-f(:,:,n1,iyH))/((2-f(:,:,n1,iyH))* &
-            !    (1+f(:,:,n1,iyH)+xHe))*(1.5+TT_ion/exp(f(:,:,n1,ilnTT))))* &
-            !    Rgas*mu1yHxHe/(1+xHe+f(:,:,n1,iyH))
+            f(:,:,k,j)=f(:,:,n1,j) + (z(n1)-z(k))*density_scale1
             !if (ldensity_nolog) then
             !  f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv) * &
             !      (log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1))) + &
@@ -1454,7 +1445,7 @@ module EquationOfState
             !      cv*log((z(n1)-z(n1-k))*density_scale+1.)
             !endif
           else
-            call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
+            call fatal_error('bc_ism','only for irho, ilnrho or iss')
           endif
         enddo
 !
@@ -1467,12 +1458,7 @@ module EquationOfState
               f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))*density_scale1
             endif
           else if (j==iss) then
-            !cp=(2.5+f(:,:,n2,iyH)*(1-f(:,:,n2,iyH))/((2-f(:,:,n2,iyH))*xHe+2)* &
-            !    (2.5+TT_ion/exp(f(:,:,n2,ilnTT))))* &
-            !    Rgas*mu1yHxHe/(1+xHe+f(:,:,n2,iyH))
-            !cv=(1.5+f(:,:,n2,iyH)*(1-f(:,:,n2,iyH))/((2-f(:,:,n2,iyH))* &
-            !    (1+f(:,:,n2,iyH)+xHe))*(1.5+TT_ion/exp(f(:,:,n2,ilnTT))))* &
-            !    Rgas*mu1yHxHe/(1+xHe+f(:,:,n2,iyH))
+            f(:,:,n2+k,j)=f(:,:,n2,j) + (z(n2+k)-z(n2))*density_scale1
             !if (ldensity_nolog) then
             !  f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
             !      (log(f(:,:,n2,j-1))-log(f(:,:,n2+k,j-1)))+&
@@ -1483,7 +1469,7 @@ module EquationOfState
             !      cv*log((z(n2+k)-z(n2))*density_scale+1.)
             !endif
           else
-            call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
+            call fatal_error('bc_ism','only for irho, ilnrho or iss')
           endif
         enddo
 !

@@ -2326,9 +2326,6 @@ module EquationOfState
       endif
       density_scale1=1./density_scale
 !
-!      call get_cv1(cv1); cv=1./cv1
-!      call get_cp1(cp1); cp=1./cp1
-!
       select case (topbot)
 !
       case ('bot')               ! bottom boundary

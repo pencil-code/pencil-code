@@ -2144,7 +2144,7 @@ module EquationOfState
       real, dimension (:,:,:,:) :: f
       integer :: j,k
       real :: density_scale1, density_scale
-      real, dimension (mx,my) :: cv,cp
+      real, dimension (:,:), allocatable :: cv,cp
 !
       if (density_scale_factor==impossible) then
         density_scale=density_scale_cgs/unit_length
@@ -2152,6 +2152,15 @@ module EquationOfState
         density_scale=density_scale_factor
       endif
       density_scale1=1./density_scale
+!
+      if (j==iss.and..not.ltemperature) then
+        allocate(cp(size(f,1),size(f,2)),stat=stat)
+        if (stat>0) call fatal_error('bc_ism', &
+            'Could not allocate memory for cp')
+        allocate(cv(size(f,1),size(f,2)),stat=stat)
+        if (stat>0) call fatal_error('bc_ism', &
+            'Could not allocate memory for cv')
+      endif
 !
       select case (topbot)
 !
@@ -2225,6 +2234,9 @@ module EquationOfState
         print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
 !
       endselect
+!
+      if (allocated(cp)) deallocate(cp)
+      if (allocated(cv)) deallocate(cv)
 !
     endsubroutine bc_ism
 !***********************************************************************

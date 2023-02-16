@@ -4857,9 +4857,7 @@ module EquationOfState
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
-      !real, parameter :: density_scale_cgs=2.7774e21 !900pc Reynolds 91, etc
       real :: density_scale1, density_scale
-!      real :: cv1,cp1,cv,cp
 !
       if (density_scale_factor==impossible) then
         density_scale=density_scale_cgs/unit_length
@@ -4867,9 +4865,6 @@ module EquationOfState
         density_scale=density_scale_factor
       endif
       density_scale1=1./density_scale
-!
-!      call get_cv1(cv1); cv=1./cv1
-!      call get_cp1(cp1); cp=1./cp1
 !
       select case (topbot)
 !
@@ -4892,7 +4887,7 @@ module EquationOfState
                   cv*log((z(n1)-z(n1-k))*density_scale+1.)
             endif
           else
-            call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
+            call fatal_error('bc_ism','only for irho, ilnrho or iss')
           endif
         enddo
 !
@@ -4915,7 +4910,7 @@ module EquationOfState
                   cv*log((z(n2+k)-z(n2))*density_scale+1.)
             endif
           else
-            call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
+            call fatal_error('bc_ism','only for irho, ilnrho or iss')
           endif
         enddo
 !
