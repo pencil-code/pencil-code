@@ -104,7 +104,7 @@ module Shock
 !
 !  20-nov-02/tony: coded
 !
-      use Messages, only: fatal_error
+      use Messages, only: fatal_error, warning
       use Sub, only: register_report_aux, smoothing_kernel
 !
       real, dimension (mx,my,mz,mfarray) :: f
