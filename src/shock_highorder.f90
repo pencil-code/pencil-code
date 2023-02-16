@@ -110,7 +110,7 @@ module Shock
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (-3:3) :: weights
-      integer :: i,j,k
+      integer :: i,j,k,idum
 !
 !  Initialize shock profile to zero
 !
@@ -118,7 +118,7 @@ module Shock
       if (ldivu_perp) then
         call register_report_aux('shock_perp',ishock_perp,communicated=.true.)
         if (.not. lmagnetic) call fatal_error('initialize_shock', &
-                    'ldivu_perp requires magnetic field module for B_perp')
+                             'ldivu_perp requires magnetic module for B_perp')
         f(:,:,:,ishock_perp)=0.0
       endif
 !
@@ -163,9 +163,11 @@ module Shock
 !
 !  Check that smooth order is within bounds
 !
-      if (lroot) then
-        if (ishock_max < 1.or.ishock_max > nghost) &
-          call fatal_error('initialize_shock', 'ishock_max needs to be between 1 and nghost.')
+      if (ishock_max < 1.or.ishock_max > nghost) then
+        idum=ishock_max
+        ishock_max=max(min(ishock_max,nghost),1)
+        call warning('initialize_shock', 'ishock_max='//trim(itoa(idum))// &
+                       ' not between 1 and nghost. We set it to '//trim(itoa(ishock_max)))
       endif
 !
 !  Die if periodic boundary condition for shock viscosity, but not for
@@ -427,7 +429,7 @@ module Shock
 !
       if (lshock_linear) a1 = shock_linear / dxmax
 !
-      do imn=1,ny*nz
+      do imn=1,nyz
 !
         n = nn(imn)
         m = mm(imn)
@@ -480,7 +482,7 @@ module Shock
 !
       tmp = 0.0
 !
-      do imn=1,ny*nz
+      do imn=1,nyz
 !
         n = nn(imn)
         m = mm(imn)
@@ -527,7 +529,7 @@ module Shock
 !
       tmp = 0.0
 !
-      do imn=1,ny*nz
+      do imn=1,nyz
 !
         n = nn(imn)
         m = mm(imn)
@@ -564,18 +566,18 @@ module Shock
             scan_y: do m = m1, m2
               penc = 0.
               penc1 = 0.
-              xdir: if (nxgrid > 1) then
+              if (nxgrid > 1) then
                 penc = penc + abs(f(l1:l2,m,n,iux) * dx_1(l1:l2))
                 penc1 = penc1 + dx_1(l1:l2)**2
-              endif xdir
-              ydir: if (nygrid > 1) then
+              endif
+              if (nygrid > 1) then
                 penc = penc + abs(f(l1:l2,m,n,iuy) * dy_1(m))
                 penc1 = penc1 + dy_1(m)**2
-              endif ydir
-              zdir: if (nzgrid > 1) then
+              endif
+              if (nzgrid > 1) then
                 penc = penc + abs(f(l1:l2,m,n,iuz) * dz_1(n))
                 penc1 = penc1 + dz_1(n)**2
-              endif zdir
+              endif
               a1 = max(a1, maxval(penc / penc1))
             enddo scan_y
           enddo scan_z
@@ -605,7 +607,7 @@ module Shock
         call boundconds_x(f,ishock_perp,ishock_perp)
         call initiate_isendrcv_bdry(f,ishock_perp,ishock_perp)
 !
-        do imn=1,ny*nz
+        do imn=1,nyz
 !
           n = nn(imn)
           m = mm(imn)
@@ -623,7 +625,7 @@ module Shock
 !
         enddo
         tmp = 0.0
-        do imn=1,ny*nz
+        do imn=1,nyz
 !
           n = nn(imn)
           m = mm(imn)
@@ -784,24 +786,24 @@ module Shock
 !
       alfven: if (lmagnetic) then
 !
-        bfield: if (lbfield) then
+        if (lbfield) then
           bb = f(l1:l2,m,n,ibx:ibz)
-        else bfield
+        else
           call gij(f, iaa, aij, 1)
           call curl_mn(aij, bb, f(:,m,n,iax:iaz))
-        endif bfield
+        endif
         call get_bext(B_ext)
         b2 = sum((bb + spread(B_ext,1,nx))**2, dim=2)
 !
-        density: if (ldensity) then
+        if (ldensity) then
           if (ldensity_nolog) then
             speed = speed + mu01 * b2 / f(l1:l2,m,n,irho)
           else
             speed = speed + mu01 * b2 / exp(f(l1:l2,m,n,ilnrho))
           endif
-        else density
+        else
           speed = speed + mu01 / rho0 * b2
-        endif density
+        endif
 !
       endif alfven
 !
