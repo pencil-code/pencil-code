@@ -106,6 +106,7 @@ module Shock
 !
       use Messages, only: fatal_error, warning
       use Sub, only: register_report_aux, smoothing_kernel
+      use General, only: itoa
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
