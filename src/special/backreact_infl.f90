@@ -419,7 +419,6 @@ module Special
 !
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+f(l1:l2,m,n,iinfl_dphi)
         df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2scale*Vprime
-        !df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhop+Hscript**2
         df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+Hscript**2
         df(l1:l2,m,n,iinfl_lna)=df(l1:l2,m,n,iinfl_lna)+Hscript
 !
@@ -805,7 +804,7 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      use Mpicomm, only: mpireduce_sum
+      use Mpicomm, only: mpiallreduce_sum
       use Sub, only: dot2_mn, grad, curl
       use SharedVariables, only: put_shared_variable
 !
@@ -816,6 +815,7 @@ module Special
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !
+      ddotam=0.
       a2rhopm=0.
       do n=n1,n2
       do m=m1,m2
@@ -858,8 +858,8 @@ module Special
         ddotam=ddotam+four_pi_over_three*sum(ddota)
       enddo
       enddo
-      call mpireduce_sum(a2rhopm/nwgrid,a2rhopm_all)
-      call mpireduce_sum(ddotam/nwgrid,ddotam_all)
+      call mpiallreduce_sum(a2rhopm/nwgrid,a2rhopm_all,1)
+      call mpiallreduce_sum(ddotam/nwgrid,ddotam_all,1)
       call put_shared_variable('ddotam',ddotam_all)
 !
     endsubroutine special_after_boundary
