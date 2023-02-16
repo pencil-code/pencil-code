@@ -858,8 +858,8 @@ module Special
         ddotam=ddotam+four_pi_over_three*sum(ddota)
       enddo
       enddo
-      call mpiallreduce_sum(a2rhopm/nwgrid,a2rhopm_all,1)
-      call mpiallreduce_sum(ddotam/nwgrid,ddotam_all,1)
+      call mpiallreduce_sum(a2rhopm/nw,a2rhopm_all,1)
+      call mpiallreduce_sum(ddotam/nw,ddotam_all,1)
       call put_shared_variable('ddotam',ddotam_all)
 !
     endsubroutine special_after_boundary
