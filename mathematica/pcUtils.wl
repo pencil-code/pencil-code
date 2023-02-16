@@ -19,6 +19,14 @@ BeginPackage["pcUtils`","pcRead1D`"]
 pcAround::usage="pcAround[l] gives Around[l] if l={l1,l2,...},
 or {Around[x],Around[y],...} if l={{x1,y1,...},{x2,y2,...},...}."
 
+pcExtend::usage="pcExtend[{x,y},{fx,fy}] will enlarge the range [x,y]
+by 10% on both ends. fx and fy are optional, which specify how much
+the left and right ends are extended by fraction, e.g., {0.1,0.1}."
+
+pcRescale::usage="pcRescale[l,{fx,fy}] rescales the last element of each
+element of l (i.e. l[[;;,-1]]) to (0,1), with normalization
+l[[;;,-1]]//MinMax//pcExtend[#,{fx,fy}]&. fx and fy are optional."
+
 pcDivide::usage="pcDivide[l,n:3] partitions l into n pieces, with the
 length of each no larger than Length[l]/n. The rest elements in l are
 thrown away."
@@ -101,6 +109,27 @@ Begin["`Private`"]
 
 pcAround[l_]:=Around[l]/;Depth[l]==2
 pcAround[l_]:=Around/@Transpose[l]/;Depth[l]==3
+
+pcExtend[{x_,y_},f_List:{0.1,0.1}]:=List[
+  (* x *)
+  Switch[Sign[x],
+    -1, -Abs[x]*(1+f[[1]]),
+     0, -Abs[y]*f[[1]],
+     1,  Abs[x]*(1-f[[1]])
+  ],
+  (* y *)
+  Switch[Sign[y],
+    -1, -Abs[y]*(1-f[[2]]),
+     0,  Abs[x]*f[[2]],
+     1,  Abs[y]*(1+f[[2]])
+  ]
+]
+
+pcRescale[l_List,f_List:{0.1,0.1}]:=Module[{tmp},
+  tmp=Transpose[l];
+  tmp[[3]]=Rescale[tmp[[3]],tmp[[3]]//MinMax//pcExtend[#,f]&];
+  Transpose[tmp]
+]
 
 pcDivide[l_,n_Integer:3]:=Partition[l,UpTo@Floor[Length[l]/n]][[1;;n]]
 
@@ -260,7 +289,8 @@ End[]
 
 
 Protect[
-  pcAround,pcDivide,pcDifferences,pcFit,
+  pcAround,pcExtend,pcRescale,
+  pcDivide,pcDifferences,pcFit,
   pkgDir,
   pcNumberToTex,pcWriteTexTable,
   pcCombine, pcMergePower

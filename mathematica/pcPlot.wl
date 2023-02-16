@@ -138,7 +138,7 @@ pcPlotStyle[]:=Module[{setOps},
     }];
   (*Options for 2D plots*)
   setOps[{
-      PlotLegends->Automatic,ColorFunction->"Rainbow"
+      PlotLegends->Automatic,ColorFunction->pcColors["Rainbow"]
     },{
       DensityPlot,ListDensityPlot
     }];
@@ -167,7 +167,7 @@ pcInset[str_String,posx_,posy_]:=Inset[Style[str,pcLabelStyle],Scaled[{posx,posy
 
 
 pcLegend[l_List,opt:OptionsPattern[]]:=DensityPlot[y,{x,0,1},{y,Sequence@@MinMax[l]},opt,
-  ColorFunction->ColorData[{"Rainbow","Reversed"}],PlotLegends->None,
+  ColorFunction->pcColors["Rainbow"],PlotLegends->None,
   FrameTicks->{{None,All},{None,None}},PlotRangePadding->None,
   AspectRatio->12,ImagePadding->{{5,40},{5,5}},ImageSize->{80,240}
 ]
