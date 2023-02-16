@@ -2142,7 +2142,7 @@ module EquationOfState
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
-      integer :: j,k
+      integer :: j,k,stat
       real :: density_scale1, density_scale
       real, dimension (:,:), allocatable :: cv,cp
 !
