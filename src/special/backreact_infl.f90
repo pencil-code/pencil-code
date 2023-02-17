@@ -167,7 +167,7 @@ module Special
 !
       axionmass2=axionmass**2
 !
-      call put_shared_variable('ddotam_all',ddotam_all,caller='initialize_backreact_infl')
+      call put_shared_variable('ddotam',ddotam_all,caller='initialize_backreact_infl')
 !
       if (lmagnetic .and. lbackreact_infl) call get_shared_variable('alpf',alpf)
 !
