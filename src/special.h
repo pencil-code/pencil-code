@@ -2,7 +2,6 @@
   private
 
   public :: initialize_mult_special
-  public :: finalize_mult_special
 
   public :: register_special
   public :: register_particles_special

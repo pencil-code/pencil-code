@@ -148,12 +148,6 @@
 
   endsubroutine initialize_mult_special
 !***********************************************************************
-  subroutine finalize_mult_special
-
-    call dlclose_c(libhandle)
-
-  endsubroutine finalize_mult_special
-!***********************************************************************
     subroutine register_special
 !
 !  Set up indices for variables in special modules.
@@ -197,6 +191,8 @@
       do i=1,n_special_modules
         call caller1(special_sub_handles(i,I_FINALIZE_SPECIAL),f)
       enddo
+
+      call dlclose_c(libhandle)
 !
     endsubroutine finalize_special
 !***********************************************************************
