@@ -442,7 +442,6 @@ module Register
       use IO,             only: finalize_io
       use Particles_main, only: particles_finalize
       use Special,        only: finalize_special
-      use Special,        only: finalize_mult_special
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -450,7 +449,6 @@ module Register
       call finalize_special(f)
       call finalize_boundcond(f)
       call finalize_deriv
-      call finalize_mult_special
       call finalize_io
       call finalize_gpu
 !

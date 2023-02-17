@@ -100,12 +100,6 @@ module Special
 !
   endsubroutine initialize_mult_special
 !***********************************************************************
-  subroutine finalize_mult_special
-!
-! Dummy routine.
-!
-  endsubroutine finalize_mult_special
-!***********************************************************************
     subroutine register_special
 !
 !  Set up indices for variables in special modules.
