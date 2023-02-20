@@ -84,7 +84,7 @@ module Detonate
 !
 !  This module currently only works with thermal_energy.
 !
-      if (.not. lthermal_energy) call fatal_error('initialize_detonate', 'currently only works with thermal_energy. ')
+      if (.not. lthermal_energy) call fatal_error('initialize_detonate', 'currently only works with thermal_energy')
 !
 !  If called by start.f90: nothing to do.
 !
@@ -94,7 +94,7 @@ module Detonate
 !  stability.
 !
       if (nzgrid /= 1) then
-        call fatal_error('initialize_detonate', '3D Jeans stability criterion is under construction. ')
+        call fatal_error('initialize_detonate', '3D Jeans stability criterion is under construction')
       else
         jeans = real(det_njeans) * G_Newton * dxmax / (gamma * gamma_m1)
       endif
@@ -128,7 +128,7 @@ module Detonate
       case ('quadratic', 'binding') scale
         power = 2
         if (nzgrid > 1) then
-          call fatal_error('initialize_detonate', 'quadratic scaling for 3D is under construction. ')
+          call fatal_error('initialize_detonate', 'quadratic scaling for 3D is under construction')
         else
           deth0 = det_factor * (8.0 * pi / 3.0) * G_Newton * dxmax * det_radius**3
         endif

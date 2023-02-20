@@ -111,7 +111,7 @@ module Filter
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
 !
-      do imn=1,ny*nz
+      do imn=1,nyz
         n=nn(imn)
         m=mm(imn)
         if (necessary(imn)) then
@@ -201,7 +201,7 @@ module Filter
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
 !
-      do imn=1,ny*nz
+      do imn=1,nyz
         n=nn(imn)
         m=mm(imn)
         if (necessary(imn)) then

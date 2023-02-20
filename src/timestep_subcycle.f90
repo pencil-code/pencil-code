@@ -341,7 +341,6 @@ module Timestep
         n=nn(imn)
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
-        llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
 !
 !  Make sure all ghost points are set.
 !

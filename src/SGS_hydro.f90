@@ -272,7 +272,7 @@ print*, 'aasmooth=', iaasmooth
 !
         call initiate_isendrcv_bdry(f,iux,iuz)
 !
-        do imn=1,ny*nz
+        do imn=1,nyz
 !
           n = nn(imn)
           m = mm(imn)

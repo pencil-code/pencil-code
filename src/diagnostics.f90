@@ -2780,9 +2780,10 @@ print*, 'phizaverages_r: norm=', norm
 !  Normalization factor, just needs to be done once and only needed by root.
 !  As it is a z-average, multiply by nz when used.
 !
-      if (nfirst==0) nfirst=n  ! very first time - nfirst stays the same throughout the run
-      if (lfirstpoint) phiavg_norm=0.
-
+      if (lfirstpoint) then
+        phiavg_norm=0.
+        nfirst=n
+      endif
       if (n==nfirst) phiavg_norm=phiavg_norm+sum(phiavg_profile,2)
 !
     endsubroutine calc_phiavg_profile

@@ -16,7 +16,6 @@
 ;        t        FLOAT              ; time
 ;        rcyl     FLOAT Array[nr]    ; coordinate
 ;        z        FLOAT Array[nz]    ; coordinate (only for root proc)
-;        nprocz   LONG               ; number of processors in z
 ;        nvars    LONG               ; number of variables
 ;        <var1>   FLOAT Array[nr,nz] ; first averaged variable
 ;        <var2>   FLOAT Array[nr,nz] ; second averaged variable,
@@ -25,7 +24,7 @@
 ;     e.g. `b2mphi', etc.
 ; 
 ;   File format of PHIAVG files:
-;     3. nr_phiavg, nz_phiavg, nvars, nprocz
+;     3. nr_phiavg, nz_phiavg, nvars
 ;     2. t, r_phiavg, z_phiavg, dr, dz
 ;     1. data
 ;     4. len(labels),labels
@@ -124,9 +123,9 @@ function pc_read_phiavg, file, datadir=datadir, $
     return, single ? float(t) : t
   endif
 
-  nr=1L & nz=1L & nvars=1L & nprocz=1L
-  readu, lun, nr, nz, nvars, nprocz
-  if (debug) then print,'nr,nz,nvars,nprocz=',nr,nz,nvars,nprocz
+  nr=1L & nz=1L & nvars=1L
+  readu, lun, nr, nz, nvars
+  if (debug) then print,'nr,nz,nvars=',nr,nz,nvars
 
   rcyl = make_array(nr, type=type_idl)
   z    = make_array(nz, type=type_idl)

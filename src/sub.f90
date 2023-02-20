@@ -3958,13 +3958,13 @@ module Sub
       real, dimension(nx) :: v2
       real :: thresh,thresh2,dummy=0.
       integer :: l,lun,nvec
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
-      t_sp = t
+      real :: t_sp          ! t in single precision for backwards compatibility
 !
 !  Return if thresh=0 (default).
 !
       if (thresh==0.) return
+!
+      t_sp = t
 !
 !  Open files when first data point.
 !

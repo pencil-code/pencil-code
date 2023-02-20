@@ -38,11 +38,10 @@ module LsodeForChemistry
 !
 !  Do loop over m and n.
 !
-      mn_loop: do imn=1,ny*nz
+      mn_loop: do imn=1,nyz
         n=nn(imn)
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
-        llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
 !
         call calc_pencils_chemistry(f,p)
 !
