@@ -5883,8 +5883,8 @@ module Initcond
 !  Deallocate arrays.
 !
       if (allocated(k2))   deallocate(k2)
-      if (allocated(k2mkpeak)) deallocate(k2mkpeak)
       if (allocated(r))  deallocate(r)
+      if (allocated(r2))  deallocate(r2)
       if (allocated(u_re)) deallocate(u_re)
       if (allocated(u_im)) deallocate(u_im)
       if (allocated(v_re)) deallocate(v_re)
