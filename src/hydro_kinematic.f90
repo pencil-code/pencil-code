@@ -3755,8 +3755,11 @@ module Hydro
 !
       seed(1)=-((seed0-1812+1)*10+iproc_world)
       call random_seed_wrapper(PUT=seed,CHANNEL=1)
-!   call random_seed_wrapper(PUT=seed,CHANNEL=2)
 !
+!  Set velocity to zero, because power_randomphase_hel only *adds*
+!  to what was there previously.
+!
+      f(:,:,:,iux:iuz)=0.
       call power_randomphase_hel(ampl_kinflow,power1_kinflow,power2_kinflow, &
           cutoff,ncutoff,kpeak_kinflow,f,iux,iuz,relhel_kinflow,kgaussian, &
           lskip_projection, lvectorpotential, lscale_tobox, &

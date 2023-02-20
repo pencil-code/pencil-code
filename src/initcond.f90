@@ -5061,6 +5061,7 @@ module Initcond
 !  Deallocate arrays.
 !
       if (allocated(k2))   deallocate(k2)
+      if (allocated(k2mkpeak)) deallocate(k2mkpeak)
       if (allocated(u_re)) deallocate(u_re)
       if (allocated(u_im)) deallocate(u_im)
       if (allocated(r))  deallocate(r)
@@ -5309,8 +5310,6 @@ module Initcond
           'Could not allocate memory for kz')
 !
       if (ampl==0) then
-        !(should not be overwritten, I'd say/AB)
-        !f(:,:,:,i1:i2)=0
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
       else
 !
@@ -5650,7 +5649,8 @@ module Initcond
           enddo
         endif
 !
-!  scale with r: allow for special case with *scalars* here
+!  Scale with r: allow for special case with *scalars* here.
+!  Note that this adds to anything that was set previously.
 !
         if (i2==i1) then
           u_re(:,:,:,1)=r*u_re(:,:,:,1)
@@ -5883,6 +5883,7 @@ module Initcond
 !  Deallocate arrays.
 !
       if (allocated(k2))   deallocate(k2)
+      if (allocated(k2mkpeak)) deallocate(k2mkpeak)
       if (allocated(r))  deallocate(r)
       if (allocated(u_re)) deallocate(u_re)
       if (allocated(u_im)) deallocate(u_im)
