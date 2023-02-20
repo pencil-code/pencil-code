@@ -616,15 +616,14 @@ module Energy
 !
 !  Check any module dependencies.
 !
-      if (.not. leos) then
+      if (.not. leos) &
         call fatal_error('initialize_energy', &
             'EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
-      endif
 !
 !  Logical variable lpressuregradient_gas shared with hydro modules.
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
-                               caller='register_energy')
+                               caller='initialize_energy')
 !
 !  Tell the equation of state that we are here and what f variable we use.
 !
@@ -822,12 +821,20 @@ module Energy
 !
 !  Make sure all relevant parameters are set for spherical shell problems.
 !
+!MR: bug - only initss(1) considered!!!
+!
+      if ((initss(1)=='geo-kws'.or.initss(1)=='geo-benchmark') .and. lcylindrical_coords) &
+        call fatal_error('initialize_energy', "initial conditions 'geo-kws' and 'geo-benchmark'"// &
+        achar(10)//"not meaningful for cylindrical coords")
+
+      if (initss(1)=='shell_layers' .and. .not.lcartesian_coords) &
+        call fatal_error('initialize_energy', "initial condition 'shell_layers' only meaningful"// &
+                         "for Cartesian coordinates")
+
       select case (initss(1))
         case ('geo-kws','geo-benchmark','shell_layers')
-          if (lroot) then
-            print*, 'initialize_energy: '// &
-                'set boundary temperatures for spherical shell problem'
-          endif
+          if (lroot) &
+            print*, 'initialize_energy: set boundary temperatures for spherical shell problem'
 !
 !  Calculate temperature gradient from polytropic index.
 !
@@ -853,10 +860,6 @@ module Energy
               TT_ext=T0            ! T0 defined in start.in for geodynamo
             else
               TT_ext=cs20/gamma_m1 ! T0 defined from cs20
-            endif
-            if (coord_system=='spherical')then
-              r_ext=x(l2)
-              r_int=x(l1)
             endif
             TT_int=TT_ext+beta1*(1./r_int-1./r_ext)
           endif
@@ -1198,10 +1201,10 @@ module Energy
 
           if (chi_t/=0.) &
             call warning('initialize_energy', &
-                'certain combinations of hcond0 and chi_t can be unphysical')
+                         'certain combinations of hcond0 and chi_t can be unphysical')
           if (chit_aniso/=0.) &
             call warning('initialize_energy', &
-                'certain combinations of hcond0 and chit_aniso can be unphysical')
+                         'certain combinations of hcond0 and chit_aniso can be unphysical')
         endif
 
         if (chi_t/=0. .and. .not.lgravz) then
@@ -1362,8 +1365,7 @@ module Energy
 !
       if (rescale_TTmeanxy==1.) return
       if (rescale_TTmeanxy<=0.) &
-        call fatal_error('rescale_TT_in_ss', &
-                         'rescale_TTmeanxy<=0')
+        call fatal_error('rescale_TT_in_ss','rescale_TTmeanxy<=0')
 !
       call calc_ssmeanxy(f,ssmxy)
 !
@@ -1686,6 +1688,7 @@ module Energy
 !  Reset mpoly1, mpoly2 (unused) to make IDL routine `thermo.pro' work.
             mpoly1 = mpoly0
             mpoly2 = mpoly0
+
           case ('geo-kws')
 !
 !  Radial temperature profiles for spherical shell problem.
@@ -1846,8 +1849,7 @@ module Energy
 !
     endsubroutine blob_radeq
 !***********************************************************************
-    subroutine polytropic_ss_z( &
-         f,mpoly,zint,zbot,zblend,isoth,cs2int,ssint,fac_cs)
+    subroutine polytropic_ss_z(f,mpoly,zint,zbot,zblend,isoth,cs2int,ssint,fac_cs)
 !
 !  Implement a polytropic profile in ss above zbot. If this routine is
 !  called several times (for a piecewise polytropic atmosphere), on needs
@@ -1924,8 +1926,7 @@ module Energy
 !
     endsubroutine polytropic_ss_z
 !***********************************************************************
-    subroutine polytropic_ss_disc( &
-         f,mpoly,zint,zbot,zblend,isoth,cs2int,ssint)
+    subroutine polytropic_ss_disc(f,mpoly,zint,zbot,zblend,isoth,cs2int,ssint)
 !
 !  Implement a polytropic profile in ss for a disc. If this routine is
 !  called several times (for a piecewise polytropic atmosphere), on needs
@@ -2135,9 +2136,7 @@ module Energy
       character (len=120) :: wfile
 !
       if (headtt) print*,'init_energy : mixinglength stratification'
-      if (.not.lgravz) then
-        call fatal_error('mixinglength','works only for vertical gravity')
-      endif
+      if (.not.lgravz) call fatal_error('mixinglength','works only for vertical gravity')
 !
 !  Do the calculation on all processors, and then put the relevant piece
 !  into the f array.
@@ -2241,7 +2240,7 @@ module Energy
 !  Set initial condition.
 !
       if (lspherical_coords)then
-        do imn=1,ny*nz
+        do imn=1,nyz
           n=nn(imn)
           m=mm(imn)
           call shell_ss_perturb(pert_TT)
@@ -2259,7 +2258,7 @@ module Energy
       elseif (lcylindrical_coords) then
         call fatal_error('shell_ss','not valid in cylindrical coordinates')
       else
-        do imn=1,ny*nz
+        do imn=1,nyz
           n=nn(imn)
           m=mm(imn)
 !
@@ -3558,40 +3557,37 @@ module Energy
 !
 !  Radiative heat flux at the bottom (assume here that hcond=hcond0=const).
 !
-        if (idiag_fradbot/=0.and.lfirst_proc_z.and.n==n1) then
-          if (hcond0==0.) then
-            Ktmp=chi*p%rho*p%cp
-          else
-            Ktmp=hcond0
+        if (idiag_fradbot/=0.and.lfirst_proc_z) then
+          if (n==n1) then
+            if (hcond0==0.) then
+              Ktmp=chi*p%rho*p%cp
+            else
+              Ktmp=hcond0
+            endif
+            fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
           endif
-          fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
-          call surf_mn_name(fradz,idiag_fradbot)
+          call surf_mn_name(fradz,idiag_fradbot,n1)
         endif
 !
 !  Radiative heat flux at the top (assume here that hcond=hcond0=const).
 !
-! KG, 6 Sep 2022: BUG: The first call of surf_mn_name for this diagnostic (and
-! also the following one) will be when lfirstpoint=.false., so surf_mn_name will
-! not initialize the diagnostic properly. Pencil_check indeed complains that
-! 'diagnostics depend on pencil initialization'. I'm just leaving a comment here
-! since I am not sure what the cleanest way to fix it would be. Perhaps it is not
-! a good idea to depend on lfirstpoint in surf_mn_name.
-!
-        if (idiag_fradtop/=0.and.llast_proc_z.and.n==n2) then
-          if (hcond0==0.) then
-            Ktmp=chi*p%rho*p%cp
-          else
-            Ktmp=hcond0
+        if (idiag_fradtop/=0.and.llast_proc_z) then
+          if (n==n2) then
+            if (hcond0==0.) then
+              Ktmp=chi*p%rho*p%cp
+            else
+              Ktmp=hcond0
+            endif
+            fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
           endif
-          fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
-          call surf_mn_name(fradz,idiag_fradtop)
+          call surf_mn_name(fradz,idiag_fradtop,n2)
         endif
 !
 !  Mean temperature at the top.
 !
-        if (idiag_TTtop/=0.and.llast_proc_z.and.n==n2) then
-          TTtop=sum(p%TT*dsurfxy)
-          call surf_mn_name(TTtop,idiag_TTtop)
+        if (idiag_TTtop/=0.and.llast_proc_z) then
+          if (n==n2) TTtop=sum(p%TT*dsurfxy)
+          call surf_mn_name(TTtop,idiag_TTtop,n2)
         endif
 !
 !  Calculate integrated temperature in limited radial range.
@@ -3889,8 +3885,7 @@ module Energy
        do m=1,my
        do n=1,mz
          if (ldensity_nolog) then
-           cs2 = cs20*exp(gamma_m1*(alog(f(:,m,n,irho)) &
-                          -lnrho0)+cv1*f(:,m,n,iss))
+           cs2 = cs20*exp(gamma_m1*(alog(f(:,m,n,irho))-lnrho0)+cv1*f(:,m,n,iss))
 !
 !  apply density correction, to enhace sld_char in regions of low
 !  density
@@ -4884,9 +4879,7 @@ module Energy
         hcond=Kbot/tau_diff
       endif
 !
-      if (headtt) then
-        print*,'calc_heatcond_constK: hcond=', maxval(hcond)
-      endif
+      if (headtt) print*,'calc_heatcond_constK: hcond=', maxval(hcond)
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
@@ -5332,9 +5325,7 @@ module Energy
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss.
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+(gamma*chix)*dxyz_2
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+(gamma*chix)*dxyz_2
 !
     endsubroutine calc_heatcond_smagorinsky
 !***********************************************************************
@@ -5935,10 +5926,10 @@ module Energy
           Rgas=(1.0-gamma1)/cp1
           xi=(z(n)-z_cor)/(xyz1(3)-z_cor)
           profile_buffer=xi**2*(3-2*xi)
-          TT_drive=(cs0**2*(exp(gamma*cp1*p%initss+&
+          TT_drive=(cs0**2*(exp(gamma*cp1*p%initss+ &
                    gamma_m1*(p%initlnrho-lnrho0))))/(gamma*Rgas)
           if (z(n).gt.-1.0) &
-          heat=heat-cool_newton*p%cp*p%rho*profile_buffer*(p%TT-TT_drive)
+            heat=heat-cool_newton*p%cp*p%rho*profile_buffer*(p%TT-TT_drive)
         else
           heat=heat-cool_newton*p%TT**4
         endif
@@ -6415,8 +6406,7 @@ module Energy
 !
       intent(in) :: p
 !
-      r_ext=x(l2)
-      r_int=x(l1)
+      !!r_ext=x(l2) is not shell boundary
 !
 !  Normalised central heating profile so volume integral = 1.
 !
@@ -6567,8 +6557,7 @@ module Energy
 !
       intent(in) :: p
 !
-      r_ext=x(l2)
-      r_int=x(l1)
+      r_ext=x(l2)  !doesn't make sense as proc dependent
 !
 !  Normalised central heating profile so volume integral = 1.
 !
@@ -7778,7 +7767,7 @@ module Energy
 !
 !  Set initial condition.
 !
-      do imn=1,ny*nz
+      do imn=1,nyz
         n=nn(imn)
         m=mm(imn)
 !

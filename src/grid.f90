@@ -15,7 +15,6 @@ module Grid
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
   use Messages
 !
   implicit none
@@ -367,7 +366,7 @@ module Grid
           endif
 !
           if (coeff_grid(1) == 0.) &
-               call fatal_error('construct_grid:', 'Cannot create '//&
+               call fatal_error('construct_grid', 'Cannot create '//&
                'a grid for a power-law of zero. Use "log" instead.')
           c= coeff_grid(1)
           a= (xyz1(1)**c-xyz0(1)**c)/(xi1up-xi1lo)
@@ -438,7 +437,7 @@ module Grid
 !
         case default
           call fatal_error('construct_grid', &
-                           'No such x grid function - '//trim(grid_func(1)))
+                           'No such x grid function: '//trim(grid_func(1)))
         endselect
 !
 !  Fitting a polynomial function to the grid function to set the xprim2 zero at the boundary,
@@ -634,7 +633,7 @@ module Grid
 !
         case default
           call fatal_error('construct_grid', &
-                           'No such y grid function - '//trim(grid_func(2)))
+                           'No such y grid function: '//trim(grid_func(2)))
 !
         endselect
 !
@@ -747,7 +746,8 @@ module Grid
            dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
           call grid_profile(xi3lo,grid_func(3),g3lo, &
            dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
-          call grid_profile(xi3proc, grid_func(3), g3proc, dxyz=dxyz_step(3,:), xistep=xi_step(3,:), delta=xi_step_width(3,:))
+          call grid_profile(xi3proc, grid_func(3), g3proc, dxyz=dxyz_step(3,:), &
+                            xistep=xi_step(3,:), delta=xi_step_width(3,:))
 !
           z     = z00 + g3-g3lo
           zprim = g3der1
@@ -821,7 +821,7 @@ module Grid
 !
         case default
           call fatal_error('construct_grid', &
-                           'No such z grid function - '//trim(grid_func(3)))
+                           'No such z grid function: '//trim(grid_func(3)))
         endselect
 !
         dz2=zprim**2
@@ -1235,7 +1235,7 @@ module Grid
 !
         case default
           call fatal_error('initialize_grid', &
-                           'no such pipe function - '//trim(pipe_func))
+                           'no such pipe function: '//trim(pipe_func))
         endselect
 !
 !  Lobachevskii space
@@ -1273,15 +1273,16 @@ module Grid
 !
 !  Define inner and outer radii for non-cartesian coords.
 !  If the user did not specify them yet (in start.in),
-!  these are the first point of the first x-processor,
-!  and the last point of the last x-processor.
 !  r_int and r_ext can be taken from the domain's x-extent as periodic BC can't 
 !  appear for r.
 !
-        if (r_int == 0)         r_int=xyz0(1)
-        if (r_ext ==impossible) r_ext=xyz1(1)
+        if (r_int == 0)          r_int=xyz0(1)
+        if (r_ext == impossible) r_ext=xyz1(1)
         
         if (lroot.and.ip<14) print*,'initialize_grid, r_int,r_ext=',r_int,r_ext
+      else
+        if (r_ext==impossible) &
+          call warning('initialize_grid','Cartesian coords - no meaningful value of r_ext given')
       endif
 !
 !  For a non-periodic mesh, multiply boundary points by 1/2.
@@ -1862,9 +1863,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         if (lpenc_loc(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
         if (lpenc_loc(i_pomx).or.lpenc_loc(i_pomy).or.&
             lpenc_loc(i_phix).or.lpenc_loc(i_phiy)) &
-            call fatal_error('calc_pencils_grid', &
-                'pomx, pomy, phix and phix not implemented for '// &
-                'spherical polars')
+            call not_implemented('calc_pencils_grid', &
+                'pomx, pomy, phix and phiy for spherical polars')
       endif
 !
 !  set position vector
@@ -1875,9 +1875,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           p%rr(:,2)=p%y_mn
           p%rr(:,3)=p%z_mn
          else
-           call fatal_error('calc_pencils_grid', &
-               'position vector not implemented for '//&
-               'non-cartesian coordinates')
+           call not_implemented('calc_pencils_grid','position vector for '// &
+                                'non-cartesian coordinates')
          endif
       endif
 !
@@ -1889,9 +1888,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           p%evr(:,2) = p%rcyl_mn*p%r_mn1*p%pomy
           p%evr(:,3) = z(n)*p%r_mn1
         else
-          call fatal_error('calc_pencils_grid', &
-              'radial unit vector not implemented for '//&
-              'non-cartesian coordinates')
+          call not_implemented('calc_pencils_grid', &
+                               'radial unit vector for non-cartesian coordinates')
         endif
       endif
 !
@@ -1903,9 +1901,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           p%evth(:,2) = z(n)*p%r_mn1*p%pomy
           p%evth(:,3) = -p%rcyl_mn*p%r_mn1
         else
-          call fatal_error('calc_pencils_grid', &
-              'co-latitudinal unit vector not implemented for '//&
-              'non-cartesian coordinates')
+          call not_implemented('calc_pencils_grid','co-latitudinal unit vector for '// &
+                               'non-cartesian coordinates')
         endif
       endif
 !
@@ -1974,7 +1971,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         ! Cos grid:
         ! Approximately equidistant at the boundaries, linear in the middle
         if (.not. present (param)) &
-            call fatal_error ('grid_profile', "'cos' needs its parameter.")
+            call fatal_error ('grid_profile_1D', "'cos' needs its parameter.")
 !
         ! Transition goes from slope 1 (xi < pi/2) to slope param (xi > pi/2).
         m = 0.5 * (param - 1)
@@ -2006,7 +2003,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         ! Area sinh grid:
         ! Approximately equidistant at the boundaries, linear in the middle
         if (.not. present (param)) &
-            call fatal_error ('grid_profile', "'arsinh' needs its parameter.")
+            call fatal_error ('grid_profile_1D', "'arsinh' needs its parameter.")
 !
         ! ('asinh' is not available in F95, therefore it is replaced by 'ln'.)
         g = xi + param * (xi * log (xi + sqrt (xi**2 + 1)) - sqrt (xi**2 + 1))
@@ -2017,7 +2014,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         ! Tanh grid:
         ! Approximately equidistant at the boundaries, linear in the middle
         if (.not. present (param)) &
-            call fatal_error ('grid_profile', "'tanh' needs its parameter.")
+            call fatal_error ('grid_profile_1D', "'tanh' needs its parameter.")
 !
         ! Transition goes from slope 1 (xi -> -oo) to slope param (xi -> +oo).
         m = 0.5 * (param - 1)
@@ -2074,7 +2071,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       case ('power-law')
         ! Grid distance increases according to a power-law
         if (.not. present (param)) &
-            call fatal_error ('grid_profile', "'power-law' needs its parameter.")
+            call fatal_error ('grid_profile_1D', "'power-law' needs its parameter.")
         g=xi**(1./param)
         if (present(gder1)) gder1=1./param*              xi**(1/param-1)
         if (present(gder2)) gder2=1./param*(1./param-1.)*xi**(1/param-2)
@@ -2085,7 +2082,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         ! start.in. E.g.,for solar atmosphere can use delta=0.4,0.5, xistar=100,300,
         ! param=0.02 on a grid of mzgrid=646
         if (.not. present (param)) &
-          call fatal_error ('grid_profile', "'trough' needs its parameter.")
+          call fatal_error ('grid_profile_1D', "'trough' needs its parameter.")
         g=(-alog(exp(param*(xi-xistep(1)))+exp(-param*(xi-xistep(1))))/param+ &
             alog(exp(param*(xi-xistep(2)))+exp(-param*(xi-xistep(2))))/param+   &
             (2.+delta(1))*xi)/(2.+delta(1))
@@ -2124,7 +2121,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
       case ('step-linear')
         if (.not. (present(dxyz) .and. present(xistep) .and. present(delta))) &
-            call fatal_error('grid_profile',"'step-linear' needs its parameters.")
+            call fatal_error('grid_profile_1D',"'step-linear' needs its parameters.")
         if (xistep(1)/=0.0) then
           g=                                                                    &
            dxyz(1)*0.5*(xi-delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))) + &
@@ -2163,7 +2160,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         endif
 !
       case default
-        call fatal_error('grid_profile','grid function not implemented: '//trim(grid_func))
+        call not_implemented('grid_profile_1D',"grid function: '"//trim(grid_func)//"'")
 !
       endselect
 !
@@ -2252,7 +2249,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
 !  24-dec-14/ccyang: coded.
 !
-      use General, only: arcsinh
+      use General, only: arcsinh, itoa
 !
       integer, intent(in) :: dir
       real, dimension(:), intent(in) :: x
@@ -2268,7 +2265,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !  Sanity check.
 !
       if (any(lshift_origin) .or. any(lshift_origin_lower)) &
-          call fatal_error('inverse_grid', 'lshift_origin and lshift_origin_lower are not supported. ')
+        call fatal_error('inverse_grid', 'lshift_origin and lshift_origin_lower are not supported')
 !
 !  Global or local index space?
 !
@@ -2298,8 +2295,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         if (loc) shift = nz * ipz
         if (loc) inear_max = nghost + nz
       case default ckdir
-        write(msg,*) 'unknown direction dir = ', dir
-        call fatal_error('inverse_grid', trim(msg))
+        call fatal_error('inverse_grid','unknown direction dir: '//trim(itoa(dir))) 
       endselect ckdir
 !
 !  Make the inversion according to the grid function.
@@ -2323,7 +2319,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
       case default func
         call fatal_error('inverse_grid in grid.f90', &
-          'unknown grid function ' // trim(grid_func(dir)))
+                         'unknown grid function '//trim(grid_func(dir)))
 !
       endselect func
 !

@@ -1197,6 +1197,7 @@ module Register
         if (lroot .and. (IO_strategy /= "HDF5")) then
           ! output in phiavg.list the list of fields after taking into
           ! account of possible shorthands in phiaver.in
+          ! MR: Why needed? the names are anyway in the data files.
           open(11,file=trim(datadir)//'/averages/phiavg.list',status='unknown')
           do irz=1,nnamerz
             write(11,'(A30)') cnamerz(irz)

@@ -468,9 +468,10 @@ module Cdata
   integer, dimension(:)   , allocatable :: itype_name
   real, dimension(:)      , allocatable :: fname,fname_keep
   real, dimension(:,:)    , allocatable :: fnamer,fname_sound
-  real, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez,fnamexy, fnamexz
+  real, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez, fnamexy, fnamexz
   real, dimension(:,:,:,:), allocatable :: fnamerz
-  integer, dimension (:,:), allocatable :: sound_coords_list
+  integer, dimension(:,:) , allocatable :: sound_coords_list
+  integer, dimension(:,:) , allocatable :: ncountsz 
   character (len=fmtlen), allocatable :: cform(:),cformv(:),cform_sound(:), &
                                          cformxy(:),cformxz(:),cformrz(:), &
                                          cformz(:),cformy(:),cformx(:),cformr(:)

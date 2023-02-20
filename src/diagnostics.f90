@@ -96,10 +96,9 @@ module Diagnostics
   private
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
-  real, dimension (nrcyl) :: phiavg_profile_sum
+  real, dimension (nrcyl) :: phiavg_norm
   real :: dVol_rel1
 
-  integer :: mnamer
   character (len=intlen) :: ch1davg, ch2davg
 !
 ! Variables for Yin-Yang grid: z-averages.
@@ -126,7 +125,16 @@ module Diagnostics
 !  of doing it.
 !
       if (nrcyl/=0) then
-        drcyl=xyz1(1)/nrcyl
+        if ((lcylinder_in_a_box .or. lsphere_in_a_box) .and. &
+            .not.(xyz0(1)==-xyz1(1) .and. xyz0(2)==-xyz1(2) .and. xyz1(1)==xyz1(2))) then
+          call warning("initialize_diagnostics","box not centered at x,y=0,"// &
+                       achar(10)//"although this is assumed for [cylinder|star]-in-a-box."// &
+                       achar(10)//"We set rcyl range to maximum possible")
+          drcyl=minval((/xyz1(1),-xyz0(1),xyz0(2),-xyz1(2)/))/nrcyl
+          if (drcyl<=0.) call fatal_error("initialize_diagnostics","drcyl<0 not meaningful")
+        else 
+          drcyl=xyz1(1)/nrcyl
+        endif
         rcyl=(/ ((i-0.5)*drcyl, i=1,nrcyl) /)
       else
         drcyl=0.0
@@ -209,22 +217,18 @@ module Diagnostics
 !***********************************************************************
     subroutine initialize_diagnostic_arrays
 
-!l1dphiavg??
-      if (ldiagnos.and.allocated(fname)) fname  =0.
-      if (l2davgfirst) then
-        if (allocated(fnamer)) fnamer =0. 
-        if (allocated(fnamex)) fnamex =0. 
-        if (allocated(fnamey)) fnamey =0. 
-        if (allocated(fnamez)) fnamez =0. 
+      if (ldiagnos.and.allocated(fname)) fname=0.
+      if (l1davgfirst) then
+        if (allocated(fnamex)) fnamex=0. 
+        if (allocated(fnamey)) fnamey=0. 
+        if (allocated(fnamez)) fnamez=0. 
       endif
+      if (l1dphiavg.and.allocated(fnamer)) fnamer=0. 
       if (l2davgfirst) then
         if (allocated(fnamexy)) fnamexy=0. 
         if (allocated(fnamexz)) fnamexz=0. 
         if (allocated(fnamerz)) fnamerz=0. 
       endif
-      if (allocated(fname_sound)) fname_sound=0.
-
-!     fname_keep???
 
     endsubroutine initialize_diagnostic_arrays
 !***********************************************************************
@@ -874,18 +878,46 @@ module Diagnostics
 !  first in processors with the same ipz and different ipy, and then
 !  assemble result from the subset of ipz processors which have ipy=0
 !  back on the root processor.
+!MR: but wastes storage in fnamez
 !
 !   6-jun-02/axel: coded
 !
       real, dimension(nz,nprocz,nnamez) :: fsumz
+      integer, dimension(nz) :: nsum, ncount
+      integer :: idiag
+!
+      if (nnamez>0) then
+!
+!  Find total number of contributing points in xy-plane for masked averages.
+!
+        if (any(ncountsz(1,:)>=0)) then
+!
+!  If there are any sign-masked averages amongst the diagnostics of fnamez.
+!
+          do idiag=1,nnamez
+
+            ncount=ncountsz(:,idiag)
+            if (ncount(1)>=0) then
+!
+!  If diagnostic with index diag is sign-masked average over xy-planes.
+!
+              call mpiallreduce_sum_int(ncount,nsum,nz,IXYPLANE)
+!
+!  Form average by dividing by nsum. Multiplication with nxygrid
+!  necessary as below the average is divided by that.
+!
+              where (nsum>0) fnamez(:,ipz+1,idiag)=fnamez(:,ipz+1,idiag)*(nxygrid/nsum)
+              ncountsz(:,idiag)=0
+
+            endif
+          enddo
+        endif
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor
 !
-      if (nnamez>0) then
         call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,nnamez/))
-        if (lroot) &
-            fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/nxygrid
+        if (lroot) fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/nxygrid
       endif
 !
     endsubroutine xyaverages_z
@@ -903,8 +935,7 @@ module Diagnostics
 !
       if (nnamey>0) then
         call mpireduce_sum(fnamey,fsumy,(/ny,nprocy,nnamey/))
-        if (lroot) &
-            fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/nxzgrid
+        if (lroot) fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/nxzgrid
       endif
 !
     endsubroutine xzaverages_y
@@ -922,8 +953,7 @@ module Diagnostics
 !
       if (nnamex>0) then
         call mpireduce_sum(fnamex,fsumx,(/nx,nprocx,nnamex/))
-        if (lroot) &
-            fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)/nyzgrid
+        if (lroot) fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)/nyzgrid
       endif
 !
     endsubroutine yzaverages_x
@@ -935,20 +965,21 @@ module Diagnostics
 !  29-jan-07/wlad: adapted from yzaverages_x and phiaverages_rz
 !
       real, dimension (nrcyl,nnamer) :: fsumr
+      integer :: iname
       real, dimension (nrcyl) :: norm
-      integer :: in
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
+!  Finally, normalization is performed with phiavg_norm*nz
 !
       if (nnamer>0) then
-        !the extra slot is where the normalization is stored
         call mpireduce_sum(fnamer,fsumr,(/nrcyl,nnamer/))
+        call mpireduce_sum(phiavg_norm,norm,nrcyl)
         if (lroot) then
-           norm=fsumr(:,nnamer+1)
-           do in=1,nnamer
-             fnamer(:,in)=fsumr(:,in)/norm
-           enddo
+print*, 'phizaverages_r: norm=', norm
+          do iname=1,nnamer
+            fnamer(:,iname)=fsumr(:,iname)/(norm*nz)
+          enddo
         endif
       endif
 !
@@ -1021,7 +1052,8 @@ module Diagnostics
 !  9-dec-02/wolf: coded
 !
       integer :: i
-      real, dimension (nrcyl,0:nz,nprocz,nnamerz) :: fsumrz
+      real, dimension(nrcyl,0:nz,nprocz,nnamerz) :: fsumrz
+      real, dimension(nrcyl) :: norm
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor
@@ -1029,9 +1061,10 @@ module Diagnostics
 !
       if (nnamerz>0) then
         call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz+1,nprocz,nnamerz/))
+        call mpireduce_sum(phiavg_norm,norm,nrcyl)  ! avoid double comm!
         if (lroot) then
           do i=1,nnamerz
-            fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(fsumrz(:,0,:,1),2,nz)
+            fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(spread(norm,2,nz),3,nprocz)
           enddo
         endif
       endif
@@ -1058,34 +1091,34 @@ module Diagnostics
       taver = 0.0
       ltimer = ip <= 12 .and. lroot
 !
-      xya: if (nnamez > 0) then
+      if (nnamez > 0) then
         if (ltimer) taver = mpiwtime()
         call output_average(datadir, 'xy', nnamez, cnamez, fnamez, nzgrid, t1ddiagnos, lwrite_avg1d_binary, lroot)
         if (ltimer) print *, 'write_1daverages: write xy in ', mpiwtime() - taver, ' seconds'
-      endif xya
+      endif
 !
-      xza: if (nnamey > 0) then
+      if (nnamey > 0) then
         if (ltimer) taver = mpiwtime()
         call output_average(datadir, 'xz', nnamey, cnamey, fnamey, nygrid, t1ddiagnos, lwrite_avg1d_binary, lroot)
         if (ltimer) print *, 'write_1daverages: write xz in ', mpiwtime() - taver, ' seconds'
-      endif xza
+      endif
 !
-      yza: if (nnamex > 0) then
+      if (nnamex > 0) then
         if (ltimer) taver = mpiwtime()
         call output_average(datadir, 'yz', nnamex, cnamex, fnamex, nxgrid, t1ddiagnos, lwrite_avg1d_binary, lroot)
         if (ltimer) print *, 'write_1daverages: write yz in ', mpiwtime() - taver, ' seconds'
-      endif yza
+      endif
 !
-      phiz: if (nnamer > 0) then
+      if (nnamer > 0) then
         if (ltimer) taver = mpiwtime()
-        init: if (lfirst_call) then
+        if (lfirst_call) then
           call output_average(datadir, 'phi_z', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot, rcyl)
           lfirst_call = .false.
-        else init
+        else
           call output_average(datadir, 'phi_z', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot)
-        endif init
+        endif
         if (ltimer) print *, 'write_1daverages: write phi_z in ', mpiwtime() - taver, ' seconds'
-      endif phiz
+      endif 
 !
     endsubroutine write_1daverages
 !***********************************************************************
@@ -1218,8 +1251,8 @@ module Diagnostics
       if (IO_strategy == "HDF5") then
         call trim_average(datadir, 'y', nxgrid*nzgrid, nnamexz)
         call trim_average(datadir, 'z', nxgrid*nygrid, nnamexy)
-        call trim_average(datadir, 'phi', size (rcyl)*nzgrid, nnamerz)
-        call trim_average(datadir, 'phi_z', size (rcyl), nnamer)
+        call trim_average(datadir, 'phi', nrcyl*nzgrid, nnamerz)
+        call trim_average(datadir, 'phi_z', nrcyl, nnamer)
       endif
 !
     endsubroutine trim_averages
@@ -1596,8 +1629,7 @@ module Diagnostics
 !  Set corresponding entry in itype_name
 !  This routine is to be called only once per step
 !
-      fname_half(iname,1)=a(1)
-      fname_half(iname,2)=a(2)
+      if (iname/=0) fname_half(iname,:)=a(:)
 !
    endsubroutine save_name_halfz
 !***********************************************************************
@@ -1921,43 +1953,26 @@ module Diagnostics
 !  ??-???-??/dhruba: aped from sum_mn_name
 !
       real, dimension (nx) :: a
-      real :: sum_name
       integer :: iname
 !
+      real :: sum_name
+!
       if (iname /= 0) then
-        sum_name=0
 !
-        if (y(m)>=yequator)then
-          sum_name=fname_half(iname,2)
-        else
-          sum_name=fname_half(iname,1)
-        endif
+        if (lfirstpoint) fname_half(iname,:)=0
 !
-        if (lfirstpoint) then
-          fname_half(iname,1)=0
-          fname_half(iname,2)=0
-          sum_name=0
-          if (lspherical_coords) then
-            sum_name=sum(r2_weight*sinth_weight(m)*a)
-          elseif (lcylindrical_coords) then
-            sum_name=sum(rcyl_weight*a)
-          else
-            sum_name=sum(a)
-          endif
+        if (lspherical_coords) then
+          sum_name=sum(r2_weight*sinth_weight(m)*a)
+        elseif (lcylindrical_coords) then
+          sum_name=sum(rcyl_weight*a)
         else
-          if (lspherical_coords) then
-            sum_name=sum_name+sum(r2_weight*sinth_weight(m)*a)
-          elseif (lcylindrical_coords) then
-            sum_name=sum_name+sum(rcyl_weight*a)
-          else
-            sum_name=sum_name+sum(a)
-          endif
+          sum_name=sum(a)
         endif
 !
         if (y(m)>=yequator)then
-          fname_half(iname,2)=sum_name
+          fname_half(iname,2)=fname_half(iname,2)+sum_name
         else
-          fname_half(iname,1)=sum_name
+          fname_half(iname,1)=fname_half(iname,1)+sum_name
         endif
 !
       endif
@@ -1973,41 +1988,24 @@ module Diagnostics
 !  7-may-09/dhruba: aped from sum_mn_name_halfy
 !
       real, dimension (nx) :: a
-      real :: sum_name
       integer :: iname
 !
+      real :: sum_name
+!
       if (iname /= 0) then
-        sum_name=0
 !
 !  Note: north means 1 and south means 2.
 !  However, north corresponds to z < zequator,
 !  in analogy to theta < !pi/2 for north.
 !
-        if (z(n)>=zequator) then
-          sum_name=fname_half(iname,2)
+        if (lfirstpoint) fname_half(iname,:)=0.
+
+        if (lspherical_coords) then
+          sum_name=sum(r2_weight*sinth_weight(m)*a)
+        elseif (lcylindrical_coords) then
+          sum_name=sum(rcyl_weight*a)
         else
-          sum_name=fname_half(iname,1)
-        endif
-!
-        if (lfirstpoint) then
-          fname_half(iname,1)=0
-          fname_half(iname,2)=0
-          sum_name=0
-          if (lspherical_coords) then
-            sum_name=sum(r2_weight*sinth_weight(m)*a)
-          elseif (lcylindrical_coords) then
-            sum_name=sum(rcyl_weight*a)
-          else
-            sum_name=sum(a)
-          endif
-        else
-          if (lspherical_coords) then
-            sum_name=sum_name+sum(r2_weight*sinth_weight(m)*a)
-          elseif (lcylindrical_coords) then
-            sum_name=sum_name+sum(rcyl_weight*a)
-          else
-            sum_name=sum_name+sum(a)
-          endif
+          sum_name=sum(a)
         endif
 !
 !  North means 1 and south means 2.
@@ -2015,9 +2013,9 @@ module Diagnostics
 !  in analogy to theta < !pi/2 for north.
 !
         if (z(n)>=zequator) then
-          fname_half(iname,2)=sum_name
+          fname_half(iname,2)=fname_half(iname,2)+sum_name
         else
-          fname_half(iname,1)=sum_name
+          fname_half(iname,1)=fname_half(iname,1)+sum_name
         endif
 !
       endif
@@ -2083,52 +2081,43 @@ module Diagnostics
         elseif (lsphere_in_a_box) then
           rlim=p%r_mn
         else
-          call warning("sum_lim_mn_name","no reason to call it if you are "//&
-               "not using a cylinder or a sphere embedded in a "//&
-               "Cartesian grid")
+          call warning("sum_lim_mn_name","no reason to call it when "// &
+               "not using a cylinder or"//achar(10)// &
+               "a sphere embedded in a Cartesian grid")
         endif
 !
-         dv=1.
-         if (nxgrid/=1) dv=dv*dx
-         if (nygrid/=1) dv=dv*dy
-         if (nzgrid/=1) dv=dv*dz
+        dv=1.
+        if (nxgrid/=1) dv=dv*dx
+        if (nygrid/=1) dv=dv*dy
+        if (nzgrid/=1) dv=dv*dz
 !
-         do i=1,nx
-            if ((rlim(i) <= r_ext).and.(rlim(i) >= r_int)) then
-               aux(i) = a(i)
-            else
-               aux(i) = 0.
-            endif
-         enddo
+        where ((rlim <= r_ext).and.(rlim >= r_int))
+          aux = a
+        elsewhere
+          aux = 0.
+        endwhere
 !
-         if (lfirstpoint) then
-            if (lspherical_coords)then
-              fname(iname) = 0.
-              do isum=l1,l2
-                fname(iname)=fname(iname)+ &
-                        x(isum)*x(isum)*sinth(m)*aux(isum-nghost)*dv
-              enddo
-            else
-              fname(iname)=sum(aux)*dv
-            endif
-         else
-            if (lspherical_coords)then
-              do isum=l1,l2
-                fname(iname)=fname(iname)+ &
-                      x(isum)*x(isum)*sinth(isum)*aux(isum-nghost)*dv
-              enddo
-            else
-              fname(iname)=fname(iname)+sum(aux)*dv
-            endif
-         endif
+        if (lfirstpoint) then
+          if (lspherical_coords)then
+            fname(iname)=sinth(m)*sum(x(l1:l2)*x(l1:l2)*aux)*dv
+          else
+            fname(iname)=sum(aux)*dv
+          endif
+        else
+          if (lspherical_coords)then
+            fname(iname)=fname(iname)+sinth(m)*sum(x(l1:l2)*x(l1:l2)*aux)*dv
+          else
+            fname(iname)=fname(iname)+sum(aux)*dv
+          endif
+        endif
 !
-         itype_name(iname)=ilabel_sum_lim
+        itype_name(iname)=ilabel_sum_lim
 !
       endif
 !
     endsubroutine sum_lim_mn_name
 !*********************************************************
-    subroutine surf_mn_name(a,iname)
+    subroutine surf_mn_name(a,iname,ncontrib)
 !
 !  Successively calculate surface integral. This routine assumes
 !  that "a" contains the partial result for each pencil, so here
@@ -2139,15 +2128,12 @@ module Diagnostics
 !  15-feb-13/MR: test of iname incorporated
 !
       real, intent(in) :: a
-      integer, intent(in) :: iname
+      integer, intent(in) :: iname,ncontrib
 !
       if (iname>0) then
 !
-        if (lfirstpoint) then
-          fname(iname)=a
-        else
-          fname(iname)=fname(iname)+a
-        endif
+        if (lfirstpoint) fname(iname)=0.
+        if (n==ncontrib) fname(iname)=fname(iname)+a
 !
 !  Set corresponding entry in itype_name.
 !
@@ -2478,8 +2464,6 @@ module Diagnostics
 !
 !  Successively calculate sum over phi,z of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
-!  The fnamer array uses one of its slots in mnamer where we put ones and sum
-!  them up in order to get the normalization correct.
 !
 !  29-jan-07/wlad: adapted from yzsum_mn_name_x and phisum_mn_name
 !
@@ -2489,24 +2473,10 @@ module Diagnostics
       if (iname==0) return
 !
       if (lfirstpoint) fnamer(:,iname)=0.
-      if (lfirstpoint.and.iname==nnamer) fnamer(:,iname+1)=0.
 !
       do ir=1,nrcyl
         fnamer(ir,iname) = fnamer(ir,iname) + sum(a*phiavg_profile(ir,:))
       enddo
-!
-!  Normalization factor, just needs to be done once.
-!  As is it a z-average, multiply by nz afterwards.
-!
-      if ((iname==nnamer).and.(n==n1)) then
-!  Check if an extra slot is available on fnamer.
-        if (nnamer==mnamer) call fatal_error('phizsum_mn_name_r', &
-            'no slot for phi-normalization. decrease nnamer')   !tb improved
-!
-        do ir=1,nrcyl
-          fnamer(ir,iname+1)=fnamer(ir,iname+1) + phiavg_profile_sum(ir)*nz
-        enddo
-      endif
 !
     endsubroutine phizsum_mn_name_r
 !***********************************************************************
@@ -2796,6 +2766,7 @@ module Diagnostics
 !
       real :: r0,width
       integer :: ir
+      integer, save :: nfirst=0
 !
 !  We use a quartic-Gaussian profile ~ exp(-r^4)
 !
@@ -2805,8 +2776,14 @@ module Diagnostics
         r0 = rcyl(ir)
         phiavg_profile(ir,:) = exp(-0.5*((p%rcyl_mn-r0)/width)**4)
       enddo
+!
+!  Normalization factor, just needs to be done once and only needed by root.
+!  As it is a z-average, multiply by nz when used.
+!
+      if (nfirst==0) nfirst=n  ! very first time - nfirst stays the same throughout the run
+      if (lfirstpoint) phiavg_norm=0.
 
-      phiavg_profile_sum=sum(phiavg_profile,2)
+      if (n==nfirst) phiavg_norm=phiavg_norm+sum(phiavg_profile,2)
 !
     endsubroutine calc_phiavg_profile
 !***********************************************************************
@@ -2839,16 +2816,6 @@ module Diagnostics
           fnamerz(ir,n_nghost,ipz+1,iname) &
                = fnamerz(ir,n_nghost,ipz+1,iname) + sum(a*phiavg_profile(ir,:))
         enddo
-!
-!  sum up ones for normalization; store result in fnamerz(:,0,:,1)
-!  Only do this for the first n, or we would sum up nz times too often
-!
-        if (iname==1 .and. n==n1) then
-          do ir=1,nrcyl
-            fnamerz(ir,0,ipz+1,iname) &
-                 = fnamerz(ir,0,ipz+1,iname) + phiavg_profile_sum(ir)
-          enddo
-        endif
 !
       endif
 !
@@ -3095,6 +3062,13 @@ module Diagnostics
                           'cformz  with nnamez  =', nnamel
       cformz=''
 !
+      allocate(ncountsz(nz,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xyaverages', &
+                                   'Could not allocate memory for ncountsz')
+      if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
+                          'ncountsz  with nnamez  =', nnamel
+      ncountsz=-1
+!
     endsubroutine allocate_xyaverages
 !***********************************************************************
     subroutine allocate_xzaverages(nnamel)
@@ -3180,22 +3154,21 @@ module Diagnostics
       if (stat>0) call fatal_error('allocate_phizaverages', &
                                    'Could not allocate memory for cnamer')
       if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
-                          'cnamer  with nnamel =', nnamel
+                          'cnamer  with nnamer =', nnamel
       cnamer=''
 !
-      mnamer=nnamel+1
-      allocate(fnamer(nrcyl,mnamer),stat=stat)
+      allocate(fnamer(nrcyl,nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_phizaverages', &
                                    'Could not allocate memory for fnamer')
       if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
-                          'fnamer  with nnamer+1 =', mnamer
+                          'fnamer  with nnamer'
       fnamer=0.0
 !
       allocate(cformr(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_phizaverages', &
                                    'Could not allocate memory for cformr')
       if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
-                          'cformr  with nnamel =', nnamel
+                          'cformr  with nnamer =', nnamel
       cformr=''
 !
     endsubroutine allocate_phizaverages
@@ -3314,7 +3287,7 @@ module Diagnostics
                           'cnamerz with nnamerz =', nnamel
       cnamerz=''
 !
-      allocate(fnamerz(nrcyl,0:nz,nprocz,nnamel),stat=stat)
+      allocate(fnamerz(nrcyl,nz,nprocz,nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_phiaverages', &
                                    'Could not allocate memory for fnamerz')
       if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
@@ -3330,21 +3303,17 @@ module Diagnostics
 !
     endsubroutine allocate_phiaverages
 !***********************************************************************
-    subroutine sign_masked_xyaver(quan,idiag,ncount)
+    subroutine sign_masked_xyaver(quan,idiag)
 !
 !  Forms sign-masked averaging over xy-planes (only positive values count).
-!  ncount holds the number of points which contribute.
 !
 !  28-sep-16/MR: coded
 !
-      use Mpicomm, only: mpiallreduce_sum_int, IXYPLANE
-
-      real   ,dimension(nx),intent(IN)   :: quan
-      integer,              intent(IN)   :: idiag
-      integer,dimension(nz),intent(INOUT):: ncount
+      real   ,dimension(nx),intent(IN) :: quan
+      integer,              intent(IN) :: idiag
 
       real, dimension(nx) :: buf
-      integer, dimension(:), allocatable :: nsum
+      integer :: nl
 
       if (idiag>0) then
 
@@ -3353,24 +3322,16 @@ module Diagnostics
         elsewhere
           buf=0.
         endwhere
-
-        ncount(n-n1+1)=ncount(n-n1+1)+count(buf>0.)
+ 
         call xysum_mn_name_z(buf,idiag)
 
-        if (llastpoint) then
+        nl=n-nghost
 !
-!  Find total number of contributing points in xy-plane.
+!  Number of points which contribute in each z-layer is held ncountsz.
 !
-          allocate(nsum(nz))
-          call mpiallreduce_sum_int(ncount,nsum,nz,IXYPLANE)
-!
-!  Form average by dividing by this number. Multiplication with nxygrid
-!  necessary as later the average is divided by that.
-!
-          where (nsum>0) &
-            fnamez(:,ipz,idiag)=fnamez(:,ipz,idiag)/nsum*nxygrid
-          ncount=0
-        endif
+        if (lfirstpoint) ncountsz(:,idiag) = 0
+        ncountsz(nl,idiag) = ncountsz(nl,idiag)+count(buf>0.)
+
       endif
 
     endsubroutine sign_masked_xyaver
@@ -3426,6 +3387,7 @@ module Diagnostics
       if (allocated(fnamez)) deallocate(fnamez)
       if (allocated(cnamez)) deallocate(cnamez)
       if (allocated(cformz)) deallocate(cformz)
+      if (allocated(ncountsz)) deallocate(ncountsz)
 !
     endsubroutine xyaverages_clean_up
 !***********************************************************************

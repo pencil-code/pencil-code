@@ -2,7 +2,7 @@
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
-!  other modules my then request them by name.
+!  other modules may then request them by name.
 !
 !  This uses a linked list of pointers and is neither efficient
 !  nor easy to use.  THIS IS ON PURPOSE (a deterrent)!
@@ -15,16 +15,16 @@
 !  when needs must but tries to protect agains screw ups that
 !  can derive from shared quantities.
 !
-!  When used modules should call the get and put routines
-!  at initialize_ time for optimal performance.
+!  When used, modules should call the get and put routines
+!  at initialize_* time for optimal performance.
 !
 !  Variables to be added to the list must have the target property
 !  And a pointer must be provided when getting a variable from
 !  the list.
 !
-!  Currently only scalar, 1D, and 2D reals and integers may be used
-!  2D could perhaps be added but 3D almost certainly should not
-!  be shared this way.
+!  For a list of currently supported datatypes, see below in the interfaces
+!  section.
+!  It is not recommended to share 3D or 4D data this way.
 !
 !  19-jul-06/tony: coded
 !

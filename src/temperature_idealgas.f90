@@ -1670,24 +1670,28 @@ module Energy
           call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
         endif
 !
-        if (idiag_fradtop/=0.and.llast_proc_z.and.n==n2) then
-          if (lADI) then
-            call heatcond_TT(p%TT,hcond)
-          else
-            hcond=hcond0
+        if (idiag_fradtop/=0.and.llast_proc_z) then
+          if (n==n2) then
+            if (lADI) then
+              call heatcond_TT(p%TT,hcond)
+            else
+              hcond=hcond0
+            endif
+            fradtop=sum(-hcond*p%TT*p%glnTT(:,3)*dsurfxy)
           endif
-          fradtop=sum(-hcond*p%TT*p%glnTT(:,3)*dsurfxy)
-          call surf_mn_name(fradtop,idiag_fradtop)
+          call surf_mn_name(fradtop,idiag_fradtop,n2)
         endif
 !
-        if (idiag_fradbot/=0.and.lfirst_proc_z.and.n==n1) then
-          if (lADI) then
-            call heatcond_TT(p%TT,hcond)
-          else
-            hcond=hcond0
+        if (idiag_fradbot/=0.and.lfirst_proc_z) then
+          if (n==n1) then
+            if (lADI) then
+              call heatcond_TT(p%TT,hcond)
+            else
+              hcond=hcond0
+            endif
+            fradbot=sum(-hcond*p%TT*p%glnTT(:,3)*dsurfxy)
           endif
-          fradbot=sum(-hcond*p%TT*p%glnTT(:,3)*dsurfxy)
-          call surf_mn_name(fradbot,idiag_fradbot)
+          call surf_mn_name(fradbot,idiag_fradbot,n1)
         endif
 !
       endif
@@ -2701,9 +2705,6 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'csmax',idiag_csmax)
         call parse_name(iname,cname(iname),cform(iname),'thcool',idiag_thcool)
       enddo
-
-      if (idiag_fradbot/=0) call set_type(idiag_fradbot,lsurf=.true.)
-      if (idiag_fradtop/=0) call set_type(idiag_fradtop,lsurf=.true.)
 !
 !  Check for those quantities for which we want yz-averages.
 !

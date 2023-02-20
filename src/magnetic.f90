@@ -37,7 +37,7 @@ module Magnetic
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet, loptest
+  use General, only: keep_compiler_quiet, loptest, itoa
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented
   use EquationOfState, only: gamma1
@@ -314,7 +314,6 @@ module Magnetic
   real, dimension(nx) :: eta_r
   real, dimension(nx,3) :: geta_r
   real, dimension(nx) :: va2max_beta=1.
-  real, dimension(nz) :: clight2_zdep=1.
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
@@ -1206,7 +1205,7 @@ module Magnetic
 !
 !  Share lbb_as_comaux with gravitational wave module.
 !
-      call put_shared_variable('lbb_as_comaux', lbb_as_comaux, caller='initialize_magnetic')
+      call put_shared_variable('lbb_as_comaux',lbb_as_comaux, caller='initialize_magnetic')
 !
 !  Share several parameters for Alfven limiter with module Shock.
 !
@@ -1221,7 +1220,7 @@ module Magnetic
 !  Shear of B_ext,x is not implemented.
 !
       if (lshear .and. B_ext(1) /= 0.0) &
-        call warning('initialize_magnetic', 'B_ext,x /= 0 with shear is not implemented.')
+        call warning('initialize_magnetic','B_ext,x /= 0 with shear is not implemented.')
 !
 !  Compute mask for x-averaging where x is in magnetic_xaver_range.
 !  Normalize such that the average over the full domain
@@ -1572,14 +1571,11 @@ module Magnetic
             print*, 'resistivity: using ',trim(div_sld_magn),' order'
           endif
           lmagnetic_slope_limited=.true.
-        case ('none')
-          ! do nothing
-        case ('')
+        case ('none','')
           ! do nothing
         case default
-          if (lroot) print*, 'No such value for iresistivity(',i,'): ', &
-              trim(iresistivity(i))
-          call fatal_error('initialize_magnetic','')
+          call fatal_error('initialize_magnetic','No such iresistivity('// &
+                           trim(itoa(i))//'): '//trim(iresistivity(i)))
         endselect
       enddo
 !
@@ -1798,7 +1794,7 @@ module Magnetic
         case ('nothing')
           if (lroot.and.ip<=5) print*,"set_border_magnetic: borderaa='nothing'"
         case default
-          call fatal_error('initialize_magnetic','No such value for borderaa: '//trim(borderaa(j)))
+          call fatal_error('initialize_magnetic','No such borderaa: '//trim(borderaa(j)))
         end select
 
       enddo
@@ -1827,10 +1823,8 @@ module Magnetic
 !  field upon executing run.csh
 !
       if (lread_oldsnap_nomag.and.lrun_initaa) then
-        if (lroot) then
-          print*,'Adding a magnetic field to a previously '//&
-                 'non-magnetic simulation. The field is given by initaa=',initaa
-        endif
+        if (lroot) print*,'Adding a magnetic field to a previously '// &
+                   'non-magnetic simulation. The field is given by initaa=',initaa
         call init_aa(f)
       endif
 !
@@ -2428,12 +2422,12 @@ module Magnetic
 !
         case('spher-harm-poloidal')
           if (.not.lspherical_coords) call fatal_error("init_uu", &
-              "spher-harm-poloidal only meaningful for spherical coordinates"//trim(initaa(j)))
+              "'spher-harm-poloidal' only meaningful for spherical coordinates")
           tmpx=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))/x(l1:l2) + (xyz1(1) - 0.5*xyz0(1))         ! S/r
           prof=3.*(x(l1:l2)-xyz0(1))                                                            ! S' + S/r
           llp1=(ll_sh(j)+1)*ll_sh(j)
           if (lyang) then
-            allocate(yz(2,ny*nz))
+            allocate(yz(2,nyz))
             call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
             iyz=1
             do m=m1,m2
@@ -2467,8 +2461,7 @@ module Magnetic
 !
 !  Catch unknown values.
 !
-          call fatal_error('init_aa', &
-              'init_aa value "' // trim(initaa(j)) // '" not recognised')
+          call fatal_error('init_aa','no such init_aa value: "'//trim(initaa(j))//'"')
 !
         endselect
 !
@@ -2775,6 +2768,7 @@ module Magnetic
 !  case, although we should check this.
 !  del2a now computed directly in all spherical so not required
 !      if (lspherical_coords) lpenc_requested(i_graddiva)=.true.
+!
       if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
         lpenc_requested(i_j2)=.true.
       endif
@@ -3548,7 +3542,7 @@ module Magnetic
         call zero_ghosts(f, iax, iaz)       !MR: needed given the next statement?
         call update_ghosts(f, iax, iaz)     !MR: only the "real" BCs matter here
 
-        mn_loop: do imn = 1, ny*nz
+        mn_loop: do imn = 1, nyz
 
           m = mm(imn)
           n = nn(imn)
@@ -3994,7 +3988,7 @@ module Magnetic
 ! va2
       if (lpenc_loc(i_va2)) then
         p%va2=p%b2*mu01*p%rho1
-        if (lcheck_positive_va2 .and. minval(p%va2)<0.0) then
+        if (lcheck_positive_va2 .and. minval(p%va2)<0.0) then   !MR: better some tiny value for 0?
           print*, 'calc_pencils_magnetic: Alfven speed is imaginary!'
           print*, 'calc_pencils_magnetic: it, itsub, iproc=', it, itsub, iproc_world
           print*, 'calc_pencils_magnetic: m, y(m), n, z(n)=', m, y(m), n, z(n)
@@ -4075,7 +4069,7 @@ module Magnetic
           va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
           if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
           rho1_jxb = rho1_jxb &
-                   * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+                   * (1.+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
       endif
@@ -4252,10 +4246,9 @@ module Magnetic
          p%clight2=spread(va2max_boris,1,nx)
        else
          if (lcartesian_coords) then
-           clight2_zdep(n-n1+1) = max(dble(cmin)**2,c_light**2/(1.+max(z(n),0.0)**8)+max(25.0*maxval(p%u2),maxval(p%cs2)))
-           p%clight2=clight2_zdep(n-n1+1)
+           p%clight2 = max(dble(cmin)**2,c_light**2/(1.+max(z(n),0.0)**8)+max(25.0*maxval(p%u2),maxval(p%cs2)))
          else if (lspherical_coords) then
-           p%clight2=spread(max(cmin**2,25*maxval(p%u2),maxval(p%cs2)),1,nx)
+           p%clight2 = spread(max(cmin**2,25*maxval(p%u2),maxval(p%cs2)),1,nx)
          endif
        endif
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
@@ -4301,7 +4294,7 @@ module Magnetic
       case('ionization-equilibrium'); p%nu_ni1=nu_ni1*sqrt(p%rho1)
       case('ionization-yH'); p%nu_ni1=nu_ni1*sqrt(p%rho1)*(1.-p%yH)/p%yH
       case default
-        call fatal_error('set_ambipolar_diffusion','No such value for ambipolar_diffusion: ' &
+        call fatal_error('set_ambipolar_diffusion','No such ambipolar_diffusion: ' &
                          //trim(ambipolar_diffusion))
       endselect
 !
@@ -4988,9 +4981,7 @@ module Magnetic
             endif
           enddo
         else
-          if (lroot) print*, 'daa_dt: must have Weyl gauge for '// &
-              'anomalous resistivity'
-          call fatal_error('daa_dt','')
+          call fatal_error('daa_dt','must have Weyl gauge for anomalous resistivity')
         endif
         if (lfirst.and.ldt) then
           if (eta_anom_thresh/=0) then
@@ -5640,6 +5631,7 @@ module Magnetic
       if (lfirst.and.ldt) then
 !
         if (lpole(2) .and. lcoarse) then
+
           if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
             nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
           elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
@@ -6859,11 +6851,11 @@ module Magnetic
 !
       if (ltime_integrals_always) then
         if (lreset_vart) then
-          if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt)  =0.
-          if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt)  =0.
+          if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt) = 0.
+          if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt) = 0.
         else
-          if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt)  =f(l1:l2,m,n,ibxt:ibzt)  +dt*p%bb
-          if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt)  =f(l1:l2,m,n,ijxt:ijzt)  +dt*p%jj
+          if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt) = f(l1:l2,m,n,ibxt:ibzt)  +dt*p%bb
+          if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt) = f(l1:l2,m,n,ijxt:ijzt)  +dt*p%jj
         endif
       elseif (lreset_vart) then
         if (lvart_in_shear_frame) then
@@ -6878,8 +6870,8 @@ module Magnetic
             if (ijxt/=0 .and. ijx/=0) f(ikx,m,n,ijxt:ijzt) = f(ikx,iky,n,ijx:ijz)
           enddo
         else
-          if (ibxt/=0 .and. ibx/=0) f(l1:l2,m,n,ibxt:ibzt)  =f(l1:l2,m,n,ibx:ibz)
-          if (ijxt/=0 .and. ijx/=0) f(l1:l2,m,n,ijxt:ijzt)  =f(l1:l2,m,n,ijx:ijz)
+          if (ibxt/=0 .and. ibx/=0) f(l1:l2,m,n,ibxt:ibzt) = f(l1:l2,m,n,ibx:ibz)
+          if (ijxt/=0 .and. ijx/=0) f(l1:l2,m,n,ijxt:ijzt) = f(l1:l2,m,n,ijx:ijz)
         endif
       endif
       lreset_vart=.false.
@@ -7144,7 +7136,7 @@ module Magnetic
 !  (iii) other cases are not implemented yet
 !
       else
-        call fatal_error("eta_shell","works only for spheres or cylinders")
+        call not_implemented("eta_shell","for others than spheres or cylinders (possibly in a box)")
       endif
 !
     endsubroutine eta_shell
@@ -7152,6 +7144,7 @@ module Magnetic
     subroutine calc_bthresh
 !
 !  calculate bthresh from brms, give warnings if there are problems
+!  needs to be called after calc_mfield.
 !
 !   6-aug-03/axel: coded
 !
@@ -7161,13 +7154,11 @@ module Magnetic
 !
       if (nbvec>nbvecmax) then
         print*,'calc_bthresh: processor ',iproc_world,': bthresh_scl,nbvec,nbvecmax=', &
-                                          bthresh_scl,nbvec,nbvecmax
+               bthresh_scl,nbvec,nbvecmax
         bthresh_scl=bthresh_scl*1.2
       endif
 !
 !  calculate bthresh as a certain fraction of brms
-!  MR: can hardly be correct as at this moment the updated brms is not yet
-!      available.
 !
       bthresh=bthresh_scl*bthresh_per_brms*brms
 !
@@ -7263,9 +7254,15 @@ module Magnetic
 !  and then stuff result into surf_mn_name for summing up all processors.
 !
       FH=FHx(nx)-FHx(1)
-      if (lfirst_proc_z.and.n==n1) FH=FH-sum(FHz)
-      if (llast_proc_z .and.n==n2) FH=FH+sum(FHz)
-      call surf_mn_name(FH,idiag_exaym2)
+      if (lfirst_proc_z) then
+        if (n==n1) FH=FH-sum(FHz)
+        call surf_mn_name(FH,idiag_exaym2,n1)
+      endif
+
+      if (llast_proc_z) then
+        if (n==n2) FH=FH+sum(FHz)
+        call surf_mn_name(FH,idiag_exaym2,n2)
+      endif
 !
     endsubroutine helflux
 !***********************************************************************
@@ -7294,9 +7291,14 @@ module Magnetic
 !  and then stuff result into surf_mn_name for summing up all processors.
 !
       FC=FCx(nx)-FCx(1)
-      if (lfirst_proc_z.and.n==n1) FC=FC-sum(FCz)
-      if (llast_proc_z .and.n==n2) FC=FC+sum(FCz)
-      call surf_mn_name(FC,idiag_exjm2)
+      if (lfirst_proc_z) then
+        if (n==n1) FC=FC-sum(FCz)
+        call surf_mn_name(FC,idiag_exjm2,n1)
+      endif
+      if (llast_proc_z) then
+        if (n==n2) FC=FC+sum(FCz)
+        call surf_mn_name(FC,idiag_exjm2,n2)
+      endif
 !
     endsubroutine curflux_dS
 !***********************************************************************
@@ -7592,15 +7594,12 @@ module Magnetic
       real, dimension(nx,ny) :: fsumxy
       real :: bmx
 !
-!  This only works if bymxy and bzmxy are in zaver, so print warning if this is
-!  not ok.
+!  This only works if bymxy and bzmxy are in zaver.in, so warning if this is not ok.
 !
       if (idiag_bymxy==0.or.idiag_bzmxy==0) then
-        if (first) then
-          print*, 'calc_mfield: WARNING'
-          print*, 'NOTE: to get bmx, set bymxy and bzmxy in zaver'
-          print*, 'We proceed, but you will get bmx=0'
-        endif
+        if (first) &
+          call warning("calc_bmx","to get bmx, set bymxy and bzmxy in 'zaver.in'."// &
+                       achar(10)//'We proceed, but you will get bmx=0')
         bmx2=0.0
       else
         if (lfirst_proc_z) then
@@ -7646,11 +7645,9 @@ module Magnetic
 !  not ok.
 !
       if (idiag_bxmxy==0.or.idiag_bzmxy==0) then
-        if (first) then
-          print*, 'calc_mfield: WARNING'
-          print*, 'NOTE: to get bmy, set bxmxy and bzmxy in zaver'
-          print*, 'We proceed, but you will get bmy=0'
-        endif
+        if (first) &
+          call warning("calc_bmy","to get bmy, set bxmxy and bzmxy in 'zaver.in'."// &
+                       achar(10)//'We proceed, but you will get bmy=0')
         bmy2=0.0
       else
         if (lfirst_proc_z) then
@@ -7659,9 +7656,7 @@ module Magnetic
           call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
           bzmy=sum(fsumxy,dim=1)/nxgrid
         endif
-        if (lfirst_proc_xz) then
-          call mpireduce_sum(bxmy**2+bzmy**2,bmy2,ny,idir=2)
-        endif
+        if (lfirst_proc_xz) call mpireduce_sum(bxmy**2+bzmy**2,bmy2,ny,idir=2)
       endif
 !
 !  Save the name in the idiag_bmy slot and set first to false.
@@ -7692,11 +7687,9 @@ module Magnetic
 !  not ok.
 !
       if (idiag_bxmz==0.or.idiag_bymz==0) then
-        if (first) then
-          print*, 'calc_mfield: WARNING'
-          print*, 'NOTE: to get bmzS2, set bxmz and bymz in xyaver'
-          print*, 'We proceed, but you will get bmzS2=0'
-        endif
+        if (first) &
+          call warning("calc_bmzS2","to get bmzS2, set bxmz and bymz in 'xyaver.in'."// &
+                       achar(10)//'We proceed, but you will get bmzS2=0')
         bxmS=0.
         bymS=0.
       else
@@ -7734,11 +7727,9 @@ module Magnetic
 !  not ok.
 !
       if (idiag_bxmz==0.or.idiag_bymz==0) then
-        if (first) then
-          print*, 'calc_mfield: WARNING'
-          print*, 'NOTE: to get bmzA2, set bxmz and bymz in xyaver'
-          print*, 'We proceed, but you will get bmzA2=0'
-        endif
+        if (first) &
+          call warning("calc_bmzA2","to get bmzA2, set bxmz and bymz in 'xyaver.in'."// &
+                       achar(10)//'We proceed, but you will get bmzA2=0')
         bxmA=0.
         bymA=0.
       else
@@ -7767,7 +7758,6 @@ module Magnetic
 !   6-apr-08/axel: moved from calc_mfield to here
 !
       use Diagnostics
-      use Mpicomm
 !
       logical,save :: first=.true.
 !
@@ -7775,11 +7765,9 @@ module Magnetic
 !  not ok.
 !
       if (idiag_bxmz==0.or.idiag_bymz==0) then
-        if (first) then
-          print*, 'calc_mfield: WARNING'
-          print*, 'NOTE: to get bmz, set bxmz and bymz in xyaver'
-          print*, 'We proceed, but you will get bmz=0'
-        endif
+        if (first) &
+          call warning("calc_bmz","to get bmz, set bxmz and bymz in 'xyaver.in'."// &
+                       achar(10)//'We proceed, but you will get bmz=0')
         bmz=0.0
       else
         bmz=sqrt(sum(fnamez(:,:,idiag_bxmz)**2 &
@@ -7813,11 +7801,9 @@ module Magnetic
 !  not ok.
 !
       if (idiag_jymxy==0.or.idiag_jzmxy==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get jmx, set jymxy and jzmxy in zaver"
-          print*,"We proceed, jut you'll get jmx=0"
-        endif
+        if (first) &
+          call warning("calc_jmx","to get jmx, set jymxy and jzmxy in 'zaver.in'."// &
+                       achar(10)//"We proceed, jut you'll get jmx=0")
         jmx2=0.
       else
         if (lfirst_proc_z) then
@@ -7826,9 +7812,7 @@ module Magnetic
           call mpireduce_sum(fnamexy(idiag_jzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
           jzmx=sum(fsumxy,dim=2)/nygrid
         endif
-        if (lfirst_proc_yz) then
-          call mpireduce_sum(jymx**2+jzmx**2,jmx2,nx,idir=1)
-        endif
+        if (lfirst_proc_yz) call mpireduce_sum(jymx**2+jzmx**2,jmx2,nx,idir=1)
       endif
 !
 !  Save the name in the idiag_jmx slot and set first to false.
@@ -7862,11 +7846,9 @@ module Magnetic
 !  not ok.
 !
       if (idiag_jxmxy==0.or.idiag_jzmxy==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get jmy, set jxmxy and jzmxy in zaver"
-          print*,"We proceed, but you'll get jmy=0"
-        endif
+        if (first) &
+          call warning("calc_jmy","to get jmy, set jxmxy and jzmxy in 'zaver.in'."// &
+                       achar(10)//"We proceed, but you'll get jmy=0")
         jmy2=0.
       else
         if (lfirst_proc_z) then
@@ -7875,9 +7857,7 @@ module Magnetic
           call mpireduce_sum(fnamexy(idiag_jzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
           jzmy=sum(fsumxy,dim=1)/nxgrid
         endif
-        if (lfirst_proc_xz) then
-          call mpireduce_sum(jxmy**2+jzmy**2,jmy2,ny,idir=2)
-        endif
+        if (lfirst_proc_xz) call mpireduce_sum(jxmy**2+jzmy**2,jmy2,ny,idir=2)
       endif
 !
 !  Save the name in the idiag_jmy slot and set first to false.
@@ -7899,7 +7879,6 @@ module Magnetic
 !   6-apr-08/axel: moved from calc_mfield to here
 !
       use Diagnostics
-      use Mpicomm
 !
       logical,save :: first=.true.
       real :: jmz
@@ -7908,11 +7887,9 @@ module Magnetic
 !  not ok.
 !
       if (idiag_jxmz==0.or.idiag_jymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get jmz, set jxmz and jymz in xyaver"
-          print*,"We proceed, but you'll get jmz=0"
-        endif
+        if (first) &
+          call warning("calc_jmz","to get jmz, set jxmz and jymz in 'xyaver.in'."// &
+                       achar(10)//"We proceed, but you'll get jmz=0")
         jmz=0.
       else
         jmz=sqrt(sum(fnamez(:,:,idiag_jxmz)**2 &
@@ -7935,7 +7912,6 @@ module Magnetic
 !   6-apr-08/axel: moved from calc_mfield to here
 !
       use Diagnostics
-      use Mpicomm
 !
       logical,save :: first=.true.
       real :: embmz
@@ -7944,11 +7920,9 @@ module Magnetic
 !  not ok.
 !
       if (idiag_Exmz==0.or.idiag_Eymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get embmz, set bxmz, bymz, Exmz, and Eymz in xyaver"
-          print*,"We proceed, but you'll get embmz=0"
-        endif
+        if (first) &
+          call warning("calc_embmz","to get embmz, set bxmz, bymz, Exmz, and Eymz in 'xyaver.in'"// &
+                       achar(10)//"We proceed, but you'll get embmz=0")
         embmz=0.
       else
         embmz=sum(fnamez(:,:,idiag_bxmz)*fnamez(:,:,idiag_Exmz) &
@@ -7971,7 +7945,6 @@ module Magnetic
 !   6-apr-08/axel: moved from calc_mfield to here
 !
       use Diagnostics
-      use Mpicomm
 !
       logical,save :: first=.true.
       real :: emxamz3
@@ -7981,11 +7954,9 @@ module Magnetic
 !
       if (idiag_Exmz==0.or.idiag_Eymz==0.or. &
           idiag_axmz==0.or.idiag_aymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get emxamz3, set axmz, aymz, Exmz, and Eymz in xyaver"
-          print*,"We proceed, but you'll get emxamz3=0"
-        endif
+        if (first) &
+          call warning("calc_emxamz3","to get emxamz3, set axmz, aymz, Exmz, and Eymz in 'xyaver.in'."// &
+                       achar(10)//"We proceed, but you'll get emxamz3=0")
         emxamz3=0.
       else
         emxamz3=sum(fnamez(:,:,idiag_Exmz)*fnamez(:,:,idiag_aymz) &
@@ -8008,7 +7979,6 @@ module Magnetic
 !  16-may-09/axel: adapted from calc_jmbmz
 !
       use Diagnostics
-      use Mpicomm
 !
       logical,save :: first=.true.
       real :: ambmz
@@ -8017,11 +7987,9 @@ module Magnetic
 !  not ok.
 !
       if (idiag_axmz==0.or.idiag_aymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get ambmz, set bxmz, bymz, axmz, and aymz in xyaver"
-          print*,"We proceed, but you'll get ambmz=0"
-        endif
+        if (first) &
+          call warning("calc_ambmz","to get ambmz, set bxmz, bymz, axmz, and aymz in 'xyaver.in'."// &
+                       achar(10)//"We proceed, but you'll get ambmz=0")
         ambmz=0.
       else
         ambmz=sum(fnamez(:,:,idiag_bxmz)*fnamez(:,:,idiag_axmz) &
@@ -8044,7 +8012,6 @@ module Magnetic
 !  16-may-09/axel: adapted from calc_ambmz
 !
       use Diagnostics
-      use Mpicomm
 !
       logical,save :: first=.true.
       real, dimension(2) :: ambmzh
@@ -8062,11 +8029,9 @@ module Magnetic
 !  Loop over all processors, but don't use (overwrite) ipz for that
 !
       if (idiag_axmz==0.or.idiag_aymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get ambmzh, set bxmz, bymz, axmz, and aymz in xyaver"
-          print*,"We proceed, but you'll get ambmzh=0"
-        endif
+        if (first) &
+          call warning("calc_ambmzh","to get ambmzh, set bxmz, bymz, axmz, and aymz in 'xyaver.in'"// &
+                       achar(10)//"We proceed, but you'll get ambmzh=0")
       else
         fact=1./(nz*nprocz)
         do n=1,nz
@@ -8105,7 +8070,6 @@ module Magnetic
 !  21-apr-08/axel: adapted from calc_embmz
 !
       use Diagnostics
-      use Mpicomm
 !
       logical,save :: first=.true.
       real :: jmbmz
@@ -8114,11 +8078,9 @@ module Magnetic
 !  not ok.
 !
       if (idiag_jxmz==0.or.idiag_jymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get jmbmz, set bxmz, bymz, jxmz, and jymz in xyaver"
-          print*,"We proceed, but you'll get jmbmz=0"
-        endif
+        if (first) &
+          call warning("calc_jmbmz","to get jmbmz, set bxmz, bymz, jxmz, and jymz in 'xyaver.in'."// &
+                       achar(10)//"We proceed, but you'll get jmbmz=0")
         jmbmz=0.
       else
         jmbmz=sum(fnamez(:,:,idiag_bxmz)*fnamez(:,:,idiag_jxmz) &
@@ -8150,8 +8112,7 @@ module Magnetic
       real :: bmxy_rms, nVol2d_local, btemp
       integer :: l
 !
-      if (lcylindrical_coords) &
-          call not_implemented('calc_bmxy_rms',"bmxy_rms for cylindrical coords")
+      if (lcylindrical_coords) call not_implemented('calc_bmxy_rms',"bmxy_rms for cylindrical coords")
 !
       if (.not. lfirst_proc_z) return
 !
@@ -8159,11 +8120,9 @@ module Magnetic
 !
       bmxy_rms = 0.0
       if ((idiag_bxmxy == 0) .or. (idiag_bymxy == 0) .or. (idiag_bzmxy == 0)) then
-        if (first) then
-          print*,"calc_bmxy_rms: WARNING"
-          print*,"NOTE: to get bmxy_rms, set bxmxy, bymxy and bzmxy in 'zaver.in'"
-          print*,"We proceed, but you'll get bmxy_rms=0"
-        endif
+        if (first) &
+          call warning("calc_bmxy_rms","to get bmxy_rms, set bxmxy, bymxy and bzmxy in 'zaver.in'."// &
+                       achar(10)//"We proceed, but you'll get bmxy_rms=0")
       else
         b2mxy_local = 0.0
         do l=1, nx
@@ -8204,7 +8163,6 @@ module Magnetic
 !   6-apr-08/axel: moved from calc_mfield to here
 !
       use Diagnostics
-      use Mpicomm
 !
       logical,save :: first=.true.
       real :: bmz_belphase1,bmz_belphase2
@@ -8219,11 +8177,9 @@ module Magnetic
 !  print warning if bxmz and bymz are not calculated
 !
       if (idiag_bxmz==0.or.idiag_bymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"to get bmz_beltrami_phase, set bxmz, bymz in zaver"
-          print*,"We proceed, but you'll get Beltrami phase bmzpb=0"
-        endif
+        if (first) &
+          call warning("calc_bmz_beltrami_phase","to get bmz_beltrami_phase, set bxmz, bymz in 'zaver.in'."// &
+                       achar(10)//"We proceed, but you'll get Beltrami phase bmzpb=0")
         bmz_beltrami_phase=0.
 !
 !  add up c = <B_x> cos(kz) and s = <B_x> sin(kz)
@@ -8510,8 +8466,7 @@ module Magnetic
 !
 !  ux, uy, Ax and Ay
 !
-      if (lroot) print*,'alfvenz_rot_shear: '// &
-          'Alfven wave with rotation and shear; OO,kz=',OO,kz
+      if (lroot) print*,'alfvenz_rot_shear: Alfven wave with rotation and shear; OO,kz=',OO,kz
       fac=cmplx(OO-sqrt(16*kz**2+OO**2),0.)
       do n=n1,n2; do m=m1,m2
         f(l1:l2,m,n,iuu+0)=f(l1:l2,m,n,iuu+0)+ampl*fac/(4*kz)*sin(kz*z(n))
@@ -8710,7 +8665,7 @@ module Magnetic
       real, dimension(2,3) :: a(0:1,1:3),b(0:1,1:3)
       integer :: ivar
 !
-      do imn=1,ny*nz
+      do imn=1,nyz
         n=nn(imn)
         m=mm(imn)
         r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
@@ -8757,7 +8712,7 @@ module Magnetic
       real :: C_int,C_ext,A_int,A_ext
       integer :: j
 !
-      do imn=1,ny*nz
+      do imn=1,nyz
 
         n=nn(imn)
         m=mm(imn)
@@ -9154,13 +9109,15 @@ module Magnetic
       use General, only: erfcc
       use Sub, only: step, der_step
 !
-      real, dimension(mx) :: eta_x,x2
+      real, dimension(mx) :: eta_x
       real, dimension(mx) :: geta_x
       character (len=labellen) :: xdep_profile
       integer :: l
 !
       intent(out) :: eta_x,geta_x
 !
+      real, dimension(mx) :: x2
+
       select case (xdep_profile)
         case ('fs')
           x2 = x**2.
@@ -9305,13 +9262,15 @@ module Magnetic
 !
       use Sub, only: step, der_step
 !
-      real, dimension(nx) :: eta_r,tmp1,tmp2,prof0,prof1,derprof0,derprof1
+      real, dimension(nx) :: eta_r
       real, dimension(nx,3) :: geta_r
-      type (pencil_case) :: p
       character (len=labellen), intent(in) :: rdep_profile
-      integer :: l
-!
+      type (pencil_case) :: p
+
       intent(out) :: eta_r,geta_r
+!
+      integer :: l
+      real, dimension(nx) :: tmp1,tmp2,prof0,prof1,derprof0,derprof1
 !
       select case (rdep_profile)
 !
@@ -9403,8 +9362,8 @@ module Magnetic
       if (lroot.and.ldebug) then
         print*
         print*,'p%r_mn, eta_r, geta_r'
-        do l=l1,l2
-          write(*,'(1p,3e11.3)') p%r_mn(l),eta_r(l),geta_r(l,1),geta_r(l,2),geta_r(l,3)
+        do l=1,nx
+          write(*,'(1p,5e11.3)') p%r_mn(l),eta_r(l),geta_r(l,:)
         enddo
       endif
 !
@@ -9568,9 +9527,8 @@ module Magnetic
 !
       use IO, only: write_persist
 !
-      if (lroot .and. (ip < 14) .and. lforcing_cont_aa_local) then
+      if (lroot .and. (ip < 14) .and. lforcing_cont_aa_local) &
         print *, 'output_persistent_magnetic: ', phase_beltrami, ampl_beltrami
-      endif
 !
 !  write details
 !
@@ -9593,13 +9551,12 @@ module Magnetic
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
-      use Messages, only: warning
+      use Messages, only: warning, fatal_error
 !
-      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half,iname_sound,inamev
       logical :: lreset
       logical, intent(in), optional :: lwrite
 !
-      integer :: idum
+      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half,iname_sound,inamev,idum
 !
 !  Reset everything in case of RELOAD.
 !  (this needs to be consistent with what is defined above!)
@@ -10032,28 +9989,28 @@ module Magnetic
 !
       if (lactive_dimension(3)) idiag_bij_cov_diffmax=0
       if (idiag_b2tm/=0) then
-        if (ibbt==0) call stop_it("Cannot calculate b2tm if ibbt==0")
+        if (ibbt==0) call fatal_error('rprint_magnetic',"Cannot calculate b2tm if ibbt==0")
         !idiag_b2tm=0
       endif
       if (idiag_jbtm/=0) then
-        if (ibbt==0) call stop_it("Cannot calculate jbtm if ibbt==0")
+        if (ibbt==0) call fatal_error('rprint_magnetic',"Cannot calculate jbtm if ibbt==0")
         !idiag_jbtm=0
       endif
       if (idiag_bjtm/=0) then
-        if (ijjt==0) call stop_it("Cannot calculate bjtm if ijjt==0")
+        if (ijjt==0) call fatal_error('rprint_magnetic',"Cannot calculate bjtm if ijjt==0")
         !idiag_bjtm=0
       endif
       if (idiag_jutm/=0) then
-        if (iuut==0) call stop_it("Cannot calculate jutm if iuut==0")
+        if (iuut==0) call fatal_error('rprint_magnetic',"Cannot calculate jutm if iuut==0")
       endif
       if (idiag_ujtm/=0) then
-        if (ijjt==0) call stop_it("Cannot calculate ujtm if ijjt==0")
+        if (ijjt==0) call fatal_error('rprint_magnetic',"Cannot calculate ujtm if ijjt==0")
       endif
       if (idiag_butm/=0) then
-        if (iuut==0) call stop_it("Cannot calculate butm if iuut==0")
+        if (iuut==0) call fatal_error('rprint_magnetic',"Cannot calculate butm if iuut==0")
       endif
       if (idiag_ubtm/=0) then
-        if (ibbt==0) call stop_it("Cannot calculate ubtm if ibbt==0")
+        if (ibbt==0) call fatal_error('rprint_magnetic',"Cannot calculate ubtm if ibbt==0")
       endif
 !
 !  Quantities which are averaged over half (north-south) the box.
@@ -10384,9 +10341,8 @@ module Magnetic
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'jb',ivid_jb)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'beta',ivid_beta1)
         if (ivid_beta1/=0) then
-          if (lroot) call warning('rprint_magnetic', &
-                                  "The 'beta' slice was renamed to 'beta1'. Please " // &
-                                  "update the label in your video.in file.")
+          call warning('rprint_magnetic',"The 'beta' slice was renamed to 'beta1'. "// &
+                       achar(10)//"Update the label in your video.in file.")
         else
           call parse_name(inamev,cnamev(inamev),cformv(inamev),'beta1',ivid_beta1)
         endif
@@ -10431,7 +10387,7 @@ module Magnetic
 !
 !  Implicitly solve the resistive term.
 !
-      if (limplicit_resistivity) call integrate_diffusion(get_resistivity_implicit, f, iax, iaz)
+      if (limplicit_resistivity) call integrate_diffusion(get_resistivity_implicit,f,iax,iaz)
 !
     endsubroutine split_update_magnetic
 !***********************************************************************
@@ -10678,7 +10634,7 @@ module Magnetic
             B_ext_out(2) = B_ext(1) * s + B_ext(2) * c
             B_ext_out(3) = B_ext(3)
           else coord1
-            call not_implemented('get_bext', 'precession of the external field for curvilinear coordinates')
+            call not_implemented('get_bext','precession of the external field for curvilinear coordinates')
           endif coord1
         else precess
 !
@@ -10728,8 +10684,7 @@ module Magnetic
           bsinphz=fname(idiag_bsinphz)
           beltrami_phase=atan2(bsinphz,bcosphz)
         else
-          call fatal_error('beltrami_phase', &
-                           'need bcosphz, bsinphz in print.in for beltrami_phase')
+          call fatal_error('beltrami_phase','needs bcosphz, bsinphz in print.in')
         endif
       endif
       call mpibcast_real(beltrami_phase)

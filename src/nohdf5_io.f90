@@ -976,11 +976,9 @@ module HDF5_IO
 !  Ravel the data to true 1D.
 !
       dims = shape(data)
-      if (dims(1) * dims(2) /= full) then
-        if (lroot) print *, "output_average_1D_chunked: shape(data) = ", dims
-        if (lroot) print *, "output_average_1D_chunked: full = ", full
-        call fatal_error("output_average_1D_chunked", "inconsistent dimensions")
-      endif
+      if (dims(1) * dims(2) /= full) &
+        call fatal_error("output_average_1D_chunked", "inconsistent dimensions: shape(data)=("// &
+                         trim(itoa(dims(1)))//","//trim(itoa(dims(2)))//"), full="//trim(itoa(full)))
       raveled = reshape(data(:,:,1:nc), (/ full, nc /))
 !
 !  Call 1D writer.
@@ -1022,14 +1020,9 @@ module HDF5_IO
 !
       filename = 'PHIAVG' // trim(number)
       open(lun_output, file=trim(path)//'/averages/'//trim(filename), form='unformatted', position='append')
-      write(lun_output) nr, nzgrid, nc, nprocz
-      write(lun_output) time, r, z(n1)+(/(pos*dz, pos=0, nzgrid-1)/), dr, dz
-      ! note: due to passing data as implicit-size array,
-      ! the indices (0:nz) are shifted to (1:nz+1),
-      ! so that we have to write only the portion (2:nz+1).
-      ! data has to be repacked to avoid writing an array temporary
-      ! ngrs: writing an array temporary outputs corrupted data on copson
-      write(lun_output) pack(data(:,2:nz+1,:,1:nc), .true.)
+      write(lun_output) nr, nzgrid, nc
+      write(lun_output) time, r, zgrid, dr, dz
+      write(lun_output) data(:,:,:,1:nc)
       labels = trim(name(1))
       if (nc >= 2) then
         do pos = 2, nc

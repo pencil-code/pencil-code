@@ -171,6 +171,7 @@ module Pencil_check
         else
           lpencil=.true.
         endif
+
         call pde(f_other,df,p)
         lfound_nan=.false.
         do iv=1,mvar; do n=n1,n2; do m=m1,m2

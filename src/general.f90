@@ -259,7 +259,7 @@ module General
       if (ncpus==1) then
         imn=1
         necessary(1)=.true.
-        necessary_imn=ny*nz+1
+        necessary_imn=nyz+1
         do n=n1,n2
           do m=m1,m2
             mm(imn)=m
@@ -358,7 +358,7 @@ module General
 !
       if (ip<=6) then
         if (lroot) then
-          do imn=1,ny*nz
+          do imn=1,nyz
             if (necessary(imn)) write(*,'(A)') '==MM==NN==> Necessary'
             write(*,'(A,I5,I5)') '==MM==NN==> m,n= ', mm(imn), nn(imn)
           enddo

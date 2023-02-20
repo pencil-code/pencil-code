@@ -762,9 +762,8 @@ module Hydro
 !
 !  give warning if orms is not set in print.in
 !
-      if (othresh_per_orms/=0..and.idiag_orms==0) then
-        if (lroot) print*,'calc_othresh: need to set orms in print.in to get othresh.'
-      endif
+      if (othresh_per_orms/=0..and.idiag_orms==0) &
+        call warning('initialize_hydro','need to set orms in print.in to get othresh.')
 !
       call keep_compiler_quiet(f)
 !
@@ -1682,7 +1681,6 @@ module Hydro
       real, dimension (nx) :: uus,ftot,Fmax,advec_uu
       real :: kx
       integer :: j, ju, k
-      integer, dimension(nz), save :: nuzup=0, nuzdown=0, nruzup=0, nruzdown=0
 !
       Fmax=tini
 !
@@ -1747,10 +1745,7 @@ module Hydro
 
         if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
         if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
-        if (othresh_per_orms/=0) then
-          call calc_othresh
-          call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
-        endif
+        if (othresh_per_orms/=0) call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
         if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
       endif
 !
@@ -2046,10 +2041,10 @@ module Hydro
         call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
         call xysum_mn_name_z(p%divu,idiag_divumz)
         if (idiag_uzdivumz/=0) call xysum_mn_name_z(p%uu(:,3)*p%divu,idiag_uzdivumz)
-        call sign_masked_xyaver(p%uu(:,3),idiag_uzupmz,nuzup)
-        call sign_masked_xyaver(-p%uu(:,3),idiag_uzdownmz,nuzdown)
-        if (idiag_ruzupmz>0) call sign_masked_xyaver(p%rho*p%uu(:,3),idiag_ruzupmz,nruzup)
-        if (idiag_ruzdownmz>0) call sign_masked_xyaver(-p%rho*p%uu(:,3),idiag_ruzdownmz,nruzdown)
+        call sign_masked_xyaver(p%uu(:,3),idiag_uzupmz)
+        if (idiag_uzdownmz/=0) call sign_masked_xyaver(-p%uu(:,3),idiag_uzdownmz)
+        if (idiag_ruzupmz /=0) call sign_masked_xyaver(p%rho*p%uu(:,3),idiag_ruzupmz)
+        if (idiag_ruzdownmz>0) call sign_masked_xyaver(-p%rho*p%uu(:,3),idiag_ruzdownmz)
         call xysum_mn_name_z(p%oo(:,1),idiag_oxmz)
         call xysum_mn_name_z(p%oo(:,2),idiag_oymz)
         call xysum_mn_name_z(p%oo(:,3),idiag_ozmz)
@@ -2359,7 +2354,7 @@ module Hydro
 !  increase scaling factor on othresh. These settings will stay in place
 !  until the next restart
 !
-      if (novec>novecmax.and.lfirstpoint) then
+      if (novec>novecmax) then
         print*,'calc_othresh: processor ',iproc_world,': othresh_scl,novec,novecmax=', &
                                           othresh_scl,novec,novecmax
         othresh_scl=othresh_scl*1.2
@@ -3223,7 +3218,6 @@ module Hydro
 !  timestep is performed.
 !
 !  12-mar-17/wlyra: coded.
-!  28-mar-17/MR: reinstated update_ghosts.
 !
       use Sub, only: vecout_finalize
 !
@@ -3231,7 +3225,10 @@ module Hydro
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_sub
 !
-      if (othresh_per_orms/=0) call vecout_finalize(trim(directory)//'/ovec',41,novec)
+      if (othresh_per_orms/=0) then
+        call vecout_finalize(trim(directory)//'/ovec',41,novec)
+        call calc_othresh
+      endif
 
     endsubroutine hydro_after_timestep
 !***********************************************************************
@@ -3973,7 +3970,7 @@ module Hydro
 ! Calculated gradu and stores it as an auxiliary. This is expected to be called
 ! only once either during initialization or post-processing. 
 !
-    do imn=1,ny*nz
+    do imn=1,nyz
       n=nn(imn)
       m=mm(imn)
       call gij(f,iuu,gradu,1)

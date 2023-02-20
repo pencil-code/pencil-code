@@ -462,7 +462,7 @@ module Magnetic
 !
 !  Find the current density J.
 !
-      mn_loop: do imn = 1, ny * nz
+      mn_loop: do imn = 1, nyz
         n = nn(imn)
         m = mm(imn)
         call gij(f, ibb, bij, 1)
@@ -1313,7 +1313,7 @@ module Magnetic
 !
 !  Calculate the fourth-order mesh derivative of J.
 !
-      getd4jj: do imn = 1, ny * nz
+      getd4jj: do imn = 1, nyz
         m = mm(imn)
         n = nn(imn)
         comp: do j = 1, 3

@@ -115,6 +115,8 @@ module Timestep
         lfirst=(itsub==1)
         llast=(itsub==itorder)
 
+        headtt = headt .and. lfirst .and. lroot
+
         if (lfirst) then
           if (.not.lgpu) df=0.0
           ds=0.0
