@@ -38,22 +38,24 @@ module Special
   integer :: iaxi_psi=0, iaxi_psidot=0, iaxi_TR=0, iaxi_TRdot=0
 !
   ! input parameters
-  real :: a, k0=1e-2, dk=1e-2
+  real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
-  real :: Mpl2=1., Hdot=0., lamf
+  real :: Mpl2=1., Hdot=0., lamf, Hscript
   real, dimension (nx) :: grand, grant, dgrant
   real :: grand_sum, grant_sum, dgrant_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
+  logical :: lconf_time=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
-    k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H
+    k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
+    lconf_time
 !
   ! run parameters
   namelist /special_run_pars/ &
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
-    lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback
+    lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -150,13 +152,24 @@ module Special
       select case (init_axionSU2back)
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
-          print*,'k=',k
-          a=exp(H*t)
-          psi=(a/sqrt(2.*k))
-          psidot=psi*k
-          TR=(a/sqrt(2.*k))
-          TRdot=TR*k
-          chi0=chi_prefactor*pi*fdecay
+          if (lconf_time) then
+            tstart=-1./(ascale_ini*H)
+            t=tstart
+            print*,'k=',k
+            psi=(1./sqrt(2.*k))*cos(-k*t)
+            psidot=(k/sqrt(2.*k))*sin(-k*t)
+            TR=(1./sqrt(2.*k))*cos(-k*t)
+            TRdot=(k/sqrt(2.*k))*sin(-k*t)
+            chi0=chi_prefactor*pi*fdecay
+          else
+            print*,'k=',k
+            a=exp(H*t)
+            psi=(a/sqrt(2.*k))
+            psidot=psi*k
+            TR=(a/sqrt(2.*k))
+            TRdot=TR*k
+            chi0=chi_prefactor*pi*fdecay
+          endif
           do n=n1,n2
           do m=m1,m2
             f(l1:l2,m,n,iaxi_Q)=Q0
@@ -168,7 +181,7 @@ module Special
             f(l1:l2,m,n,iaxi_TR)=TR
             f(l1:l2,m,n,iaxi_TRdot)=TRdot
           enddo
-          enddo
+          enddo 
 !
         case default
           !
@@ -242,7 +255,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: Q, Qdot, Qddot, chi, chidot, chiddot
       real, dimension (nx) :: psi, psidot, TR, TRdot
-      real, dimension (nx) :: Uprime, mQ, xi, a, epsQE, epsQB
+      real, dimension (nx) :: Uprime, mQ, xi, epsQE, epsQB
       real :: fact=1.
       type (pencil_case) :: p
 !
@@ -275,35 +288,56 @@ module Special
 !
       Uprime=-mu**4/fdecay*sin(chi/fdecay)
       mQ=g*Q/H
-      xi=lamf*chidot/(2.*H)
-      a=exp(H*t)
+      if (lconf_time) then
+        a=-1./(H*t)
+        Hscript=a*H
+        xi=lamf*chidot*(-0.5*t)
+      else
+        a=exp(H*t)
+        xi=lamf*chidot/(2.*H)
+      endif
       epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
       epsQB=g**2*Q**4/(Mpl2*H**2)
 !
 !  background
 !
-      Qddot=g*lamf*chidot*Q**2-3.*H*Qdot-(Hdot+2*H**2)*Q-2.*g**2*Q**3
-      chiddot=-3.*g*lamf*Q**2*(Qdot+H*Q)-3.*H*chidot-Uprime
+      if (lconf_time) then
+        Qddot=g*lamf*a*chidot*Q**2-2.*Hscript*Qdot-(Hdot*a**2+2*Hscript**2)*Q-2.*g**2*a**2*Q**3
+        chiddot=-3.*g*lamf*a*Q**2*(Qdot+Hscript*Q)-2.*Hscript*chidot-a**2*Uprime
+      else
+        Qddot=g*lamf*chidot*Q**2-3.*H*Qdot-(Hdot+2*H**2)*Q-2.*g**2*Q**3
+        chiddot=-3.*g*lamf*Q**2*(Qdot+H*Q)-3.*H*chidot-Uprime
+      endif
 !
 !  perturbation
 !
-      df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
-      if (lwith_eps) then
+      if (lconf_time) then
+        df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
         df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-          -H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
-      else
-        df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-          -H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
-      endif
-      df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
-      if (lwith_eps) then
+          -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi+2.*Q*TRdot+(2.*mQ*Q*(mQ+k*t))/t*TR
+        df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
         df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
-          -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
-          +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
+          -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
+          +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
       else
+        df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+        if (lwith_eps) then
+          df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
+            -H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
+        else
+          df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
+            -H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
+        endif
+        df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
+        if (lwith_eps) then
+          df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
+            -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
+            +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
+        else
         df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
           -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
           +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
+        endif
       endif
 !
 !  Optionally, include backreaction
@@ -457,14 +491,20 @@ endif
 !
       grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
       grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
-      dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+      if (lconf_time) then
+        dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+        (a*mQ*H**2+g*Qdot)*TReff**2+(mQ*H-k/a)*2*TReff*TRdoteff &
+        )/twopi**3
+      else 
+        dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
         (a*mQ*H**2+a*g*Qdot)*TReff**2+(a*mQ*H-k)*2*TReff*TRdoteff &
         )/twopi**3
+      endif
 !
       call mpiallreduce_sum(sum(grand),grand_sum,1)
       call mpiallreduce_sum(sum(grant),grant_sum,1)
       call mpiallreduce_sum(sum(dgrant),dgrant_sum,1)
-print*,'AXEL2: iproc,t,dgrant, sum(dgrant),dgrant_sum=',iproc,t,dgrant, sum(dgrant),dgrant_sum
+!print*,'AXEL2: iproc,t,dgrant, sum(dgrant),dgrant_sum=',iproc,t,dgrant, sum(dgrant),dgrant_sum
 !
     endsubroutine special_after_boundary
 !***********************************************************************
