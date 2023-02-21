@@ -1955,8 +1955,10 @@ module Special
           case ('exp')
             horndeski_alpT_eff=horndeski_alpT*exp(-(scale_factor/scale_factor0)**horndeski_alpT_exp)
           case ('scale_factor_power')
+            horndeski_alpT_eff=horndeski_alpT
             horndeski_alpM_eff=horndeski_alpM*(scale_factor*a_ini/scale_factor0)**horndeski_alpM_exp
           case ('matter')
+            horndeski_alpT_eff=horndeski_alpT
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
               Om_rat_matt=(scale_factor*a_ini/scale_factor0)**(-3)*OmM0
               Om_rat_tot1=(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
@@ -1968,6 +1970,7 @@ module Special
               call fatal_error('dspecial_dt',"we need the file a_vs_eta.dat")
             endif
           case ('dark_energy')
+            horndeski_alpT_eff=horndeski_alpT
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
               !Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
               Om_rat_tot1=(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
