@@ -113,7 +113,7 @@ module Magnetic
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen), dimension(3) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
-  character (len=labellen) :: ihall_term='const'
+  character (len=labellen) :: ihall_term='const', tdep_eta_type='standard'
 !
 ! Input parameters
 !
@@ -136,7 +136,7 @@ module Magnetic
   real :: eta1_aniso_r=0.0, eta1_aniso_d=0.0
   real :: eta_shock=0.0, eta_shock2=0.0, alp_aniso=0.0, eta_aniso_BB=0.0
   real :: quench_aniso=impossible
-  real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., &
+  real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., eta_max=0., &
           etaj20=0., va_min=0., vArms=1.
   real :: rhomin_jxb=0.0, va2max_jxb=0.0, va2max_boris=0.0,cmin=0.0
   real :: omega_Bz_ext=0.0
@@ -366,7 +366,7 @@ module Magnetic
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, Hhall, battery_term, &
       ihall_term, hall_tdep_t0, hall_tdep_exponent, hall_zdep_exponent, &
       eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, &
-      eta_tdep_toffset, lresi_eta_tdep_t0_norm, &
+      tdep_eta_type, eta_tdep_toffset, lresi_eta_tdep_t0_norm, &
       tau_aa_exterior, tauAD, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
@@ -375,7 +375,7 @@ module Magnetic
       lmean_friction, llocal_friction, LLambda_aa, bthresh, bthresh_per_brms, &
       iresistivity, lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
-      eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, va2max_boris, &
+      eta_min, eta_max, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, va2max_boris, &
       va_min, cmin,va2power_jxb, llorentzforce, linduction, ldiamagnetism, &
       B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
@@ -3950,7 +3950,11 @@ module Magnetic
           if (lvacuum) then
             p%jj=0
           else
-            p%jj=(p%el+p%uxb)/eta
+            if (lresi_eta_tdep) then
+              p%jj=(p%el+p%uxb)/eta_tdep
+            else
+              p%jj=(p%el+p%uxb)/eta
+            endif
           endif
         else
           p%jj=mu01*p%jj
@@ -6982,11 +6986,18 @@ module Magnetic
 !  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
 !
       if (lresi_eta_tdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
-        if (lresi_eta_tdep_t0_norm) then
-          eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
-        else
-          eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
-        endif
+        select case (tdep_eta_type)
+          case ('standard')
+            if (lresi_eta_tdep_t0_norm) then
+              eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
+            else
+              eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
+            endif
+          case ('log-switch-on')
+            eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
+                *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
+          case default
+          endselect
         if (lroot.and.ldiagnos) call save_name(eta_tdep,idiag_eta_tdep)
       endif
 !
