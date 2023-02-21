@@ -47,6 +47,7 @@ module Forcing
   real :: wff2_ampl=0., xff2_ampl=0., yff2_ampl=0., zff2_ampl=0.
   real :: zff_hel=0.,max_force=impossible
   real :: dtforce=0., dtforce_ampl=.5, dtforce_duration=-1.0, force_strength=0.
+  real :: b0_mode=0.
   double precision :: tforce_ramp_down=1.1, tauforce_ramp_down=1.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(3,2) :: location_fixed=0.
@@ -3393,14 +3394,20 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real :: fact
+      real :: fact, om
       integer :: m,n
 !
       fact=force*sqrt(dt)
       do n=n1,n2
         do m=m1,m2
-          f(:,m,n,iuy)=f(:,m,n,iuy)+fact*sin(k1_ff*x)
-          f(:,m,n,iAy)=f(:,m,n,iAy)+fact*sin(k1_ff*x)
+          !f(:,m,n,iuy)=f(:,m,n,iuy)+fact*sin(k1_ff*x)
+          !f(:,m,n,iAz)=f(:,m,n,iAz)+fact*sin(k1_ff*x)
+!
+!  fast mode
+!
+          om=k1_ff*sqrt(b0_mode**2+1.)
+          f(:,m,n,iuy)=f(:,m,n,iuy)+fact*b0_mode*sin(k1_ff*x)/om
+          f(:,m,n,iAz)=f(:,m,n,iAz)+fact*b0_mode*sin(k1_ff*x)*(k1_ff/om)**2
         enddo
       enddo
       !
