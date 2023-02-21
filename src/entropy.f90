@@ -6012,11 +6012,12 @@ module Energy
 !  Relax horizontally averaged entropy toward a cos(kz) profile
 !
       if (tau_relax_ss/=0.) then
-        prof=spread(cos(kz_ss*z(n)), 1, l2-l1+1)
+!       prof=spread(cos(kz_ss*z(n)), 1, l2-l1+1)
+        prof=exp(-.5*(x(l1:l2)/radius_ss_x(1))**2)
         if (lcalc_ssmean) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(ssmz(n)-ss_const-ampl_imp_ss*prof)/tau_relax_ss
         else
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_const-ampl_imp_ss*prof)/tau_relax_ss
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_const-ampl_imp_ss*prof)*prof/tau_relax_ss
         endif
       endif
 !
