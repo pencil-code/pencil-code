@@ -1280,7 +1280,7 @@ module Grid
         if (r_ext == impossible) r_ext=xyz1(1)
         
         if (lroot.and.ip<14) print*,'initialize_grid, r_int,r_ext=',r_int,r_ext
-      elseif
+      elseif (r_ext == impossible) then
         call warning('initialize_grid','Cartesian coords - no meaningful r_ext given.'// &
                      achar(10)//'We set it to minval(xyz1)')
         r_ext=minval(xyz1)
