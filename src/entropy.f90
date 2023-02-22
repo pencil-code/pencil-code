@@ -6407,8 +6407,6 @@ module Energy
 !
       intent(in) :: p
 !
-      !!r_ext=x(l2) is not shell boundary
-!
 !  Normalised central heating profile so volume integral = 1.
 !
       if (nzgrid==1) then
@@ -6557,8 +6555,6 @@ module Energy
       real, dimension (nx) :: heat,prof
 !
       intent(in) :: p
-!
-      r_ext=x(l2)  !doesn't make sense as proc dependent
 !
 !  Normalised central heating profile so volume integral = 1.
 !
