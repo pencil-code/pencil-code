@@ -2044,7 +2044,7 @@ module Hydro
         call sign_masked_xyaver(p%uu(:,3),idiag_uzupmz)
         if (idiag_uzdownmz/=0) call sign_masked_xyaver(-p%uu(:,3),idiag_uzdownmz)
         if (idiag_ruzupmz /=0) call sign_masked_xyaver(p%rho*p%uu(:,3),idiag_ruzupmz)
-        if (idiag_ruzdownmz>0) call sign_masked_xyaver(-p%rho*p%uu(:,3),idiag_ruzdownmz)
+        if (idiag_ruzdownmz/=0) call sign_masked_xyaver(-p%rho*p%uu(:,3),idiag_ruzdownmz)
         call xysum_mn_name_z(p%oo(:,1),idiag_oxmz)
         call xysum_mn_name_z(p%oo(:,2),idiag_oymz)
         call xysum_mn_name_z(p%oo(:,3),idiag_ozmz)
@@ -2155,19 +2155,17 @@ module Hydro
 !
 !  phi-z averages
 !
-        if (idiag_u2mr/=0)   call phizsum_mn_name_r(p%u2,idiag_u2mr)
+        call phizsum_mn_name_r(p%u2,idiag_u2mr)
         if (idiag_urmr/=0) &
             call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmr)
         if (idiag_upmr/=0) &
             call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmr)
-        if (idiag_uzmr/=0) &
-             call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
+        call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
         if (idiag_ormr/=0) &
             call phizsum_mn_name_r(p%oo(:,1)*p%pomx+p%oo(:,2)*p%pomy,idiag_ormr)
         if (idiag_opmr/=0) &
             call phizsum_mn_name_r(p%oo(:,1)*p%phix+p%oo(:,2)*p%phiy,idiag_opmr)
-        if (idiag_ozmr/=0) &
-             call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
+        call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
         endif
 !
 !  2-D averages.

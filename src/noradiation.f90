@@ -55,8 +55,6 @@ module Radiation
 !
 !  24-nov-02/tony: coded
 !
-!  do nothing
-!
     endsubroutine initialize_radiation
 !***********************************************************************
     subroutine radiative_cooling(f,df,p)

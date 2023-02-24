@@ -1008,8 +1008,13 @@ module Register
       nnamer = max(0,parallel_count_lines(phizaver_in_file))
 !
       if (nnamer>0) then
-        call allocate_phizaverages(nnamer)
-        lwrite_phizaverages = read_name_format(phizaver_in_file,cnamer,nnamer)
+        if (lcylinder_in_a_box.or.lsphere_in_a_box) then
+          call allocate_phizaverages(nnamer)
+          lwrite_phizaverages = read_name_format(phizaver_in_file,cnamer,nnamer)
+        else
+          nnamer=0
+          call warning('rprint_list','phi-z averages suppressed as l[cylinder&star]_in_a_box=F')
+        endif
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamer=', nnamer
 !
@@ -1043,25 +1048,31 @@ module Register
       nnamerz = parallel_count_lines(phiaver_in_file)
 !
       if (nnamerz>0) then
+        if (lcylinder_in_a_box.or.lsphere_in_a_box) then
 !
-        allocate(ctmp(nnamerz))
-        lwrite_phiaverages = read_name_format(phiaver_in_file,ctmp,nnamerz)
-        
-        if (lwrite_phiaverages) then
+          allocate(ctmp(nnamerz))
+          lwrite_phiaverages = read_name_format(phiaver_in_file,ctmp,nnamerz)
+          
+          if (lwrite_phiaverages) then
 
-          iadd=0
-          do i=1,nnamerz
-            cname_tmp=ctmp(i)
-            if ( cname_tmp=='uumphi' .or. cname_tmp=='uusphmphi' .or.  &
-                 cname_tmp=='bbmphi' .or. cname_tmp=='bbsphmphi' .or.  &
-                 cname_tmp=='uxbmphi'.or. cname_tmp=='jxbmphi'       ) &
-              iadd=iadd+2
-          enddo
+            iadd=0
+            do i=1,nnamerz
+              cname_tmp=ctmp(i)
+              if ( cname_tmp=='uumphi' .or. cname_tmp=='uusphmphi' .or.  &
+                   cname_tmp=='bbmphi' .or. cname_tmp=='bbsphmphi' .or.  &
+                   cname_tmp=='uxbmphi'.or. cname_tmp=='jxbmphi'       ) &
+                iadd=iadd+2
+            enddo
 
-          call allocate_phiaverages(nnamerz+iadd)
-          cnamerz(1:nnamerz)=ctmp(1:nnamerz)
+            call allocate_phiaverages(nnamerz+iadd)
+            cnamerz(1:nnamerz)=ctmp(1:nnamerz)
+          endif
+          deallocate(ctmp)
+!
+        else
+          nnamerz=0
+          call warning('rprint_list','phi averages suppressed as l[cylinder&star]_in_a_box=F')
         endif
-        deallocate(ctmp)
 !
       endif
 !

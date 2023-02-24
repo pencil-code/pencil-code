@@ -47,8 +47,6 @@ module Neutraldensity
 !
 !  18-mar-03/axel: adapted from neutraldensity
 !
-!  do nothing
-!
     endsubroutine initialize_neutraldensity
 !***********************************************************************
     subroutine init_lnrhon(f)
