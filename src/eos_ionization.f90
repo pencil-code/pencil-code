@@ -145,6 +145,10 @@ module EquationOfState
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
+      if (pretend_lnTT) then
+        call warning('initialize_eos','pretend_lnTT is not used with ionization')
+        pretend_lnTT=.false.
+      endif
       Rgas=k_B/m_p
       mu1yHxHe=1+3.97153*xHe
       TT_ion=chiH/k_B

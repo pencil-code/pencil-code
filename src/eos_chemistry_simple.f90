@@ -158,6 +158,10 @@ module EquationOfState
 !  write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
 !
+      if (pretend_lnTT) then
+        call warning('initialize_eos','pretend_lnTT is not used with ionization')
+        pretend_lnTT=.false.
+      endif
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
         write (1,'(a,1pd26.16)') 'k_B=',k_B

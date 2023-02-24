@@ -148,6 +148,10 @@ module EquationOfState
       if (lroot) print*,'initialize_eos: chiH=',chiH,chiH/eV
       if (lroot) print*,'initialize_eos: chiH_=',chiH_,chiH_/eV
 !
+      if (pretend_lnTT) then
+        call warning('initialize_eos','pretend_lnTT is not used with ionization')
+        pretend_lnTT=.false.
+      endif
       mu1_0 = 1/(1 + 4*xHe)
       mu1yHxHe=1.+3.97153*xHe
       Rgas = k_B/m_u

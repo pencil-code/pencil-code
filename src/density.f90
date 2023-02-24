@@ -852,6 +852,8 @@ module Density
         call put_shared_variable('reduce_cs2',reduce_cs2)
 !
         if (lscale_to_cs2top) then
+          if (.not.leos_idealgas.and.lroot) &
+            call warning('initialize density','lscale_to_cs2top not implemented for this eos')
           if (lgravx) reduce_cs2_profx=1./(rss_coef1*((x0+Lxyz(1))/x(l1:l2)-rss_coef2))
           if (lgravz) reduce_cs2_profz(n1:n2)=cs2top/(rss_coef1-rss_coef2*(z(n1:n2)-z0))
         else
