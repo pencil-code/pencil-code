@@ -100,6 +100,7 @@ module Diagnostics
   real :: dVol_rel1
 
   character (len=intlen) :: ch1davg, ch2davg
+  integer :: ixav_max
 !
 ! Variables for Yin-Yang grid: z-averages.
 !
@@ -2073,6 +2074,7 @@ print*, 'phizaverages_r: norm=', norm
       type (pencil_case) :: p
       real :: dv
       integer :: iname,i,isum
+      logical, save :: lfirsttime=.true.
 !
       if (iname /= 0) then
 !
@@ -2080,10 +2082,11 @@ print*, 'phizaverages_r: norm=', norm
           rlim=p%rcyl_mn
         elseif (lsphere_in_a_box) then
           rlim=p%r_mn
-        else
+        elseif (lfirsttime) then
           call warning("sum_lim_mn_name","no reason to call it when "// &
                "not using a cylinder or"//achar(10)// &
                "a sphere embedded in a Cartesian grid")
+          lfirsttime=.false.
         endif
 !
         dv=1.
@@ -2243,9 +2246,10 @@ print*, 'phizaverages_r: norm=', norm
 !
         if (lfirstpoint) fnamez(:,:,iname)=0.0
 !
+        if (.not.loutside_avg) then
+!
 !  n starts with nghost+1, so the correct index is n-nghost
 !
-        if (.not.loutside_avg) then
           nl=n-nghost
           if (lspherical_coords.or.lcylindrical_coords)then
             fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+ &
@@ -2254,6 +2258,7 @@ print*, 'phizaverages_r: norm=', norm
             fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+sum(a(:ixav_max-nghost))
           endif
         endif
+!
       endif
 !
     endsubroutine xysum_mn_name_z_npar
@@ -2293,9 +2298,10 @@ print*, 'phizaverages_r: norm=', norm
 !  which are later merged with an mpi reduce command.
 !
         if (lfirstpoint) fnamey(:,:,iname)=0.0
+!
         if (.not.loutside_avg) then
 !
-!  m starts with mghost=4, so the correct index is m-nghost.
+!  m starts with mghost+1, so the correct index is m-nghost.
 !
           ml=m-nghost
           if (lspherical_coords.and.nxgrid>1)then
@@ -2305,6 +2311,7 @@ print*, 'phizaverages_r: norm=', norm
             fnamey(ml,ipy+1,iname)=fnamey(ml,ipy+1,iname)+sum(a(:ixav_max-nghost))
           endif
         endif
+!
       endif
 !
     endsubroutine xzsum_mn_name_y_mpar
@@ -2777,13 +2784,14 @@ print*, 'phizaverages_r: norm=', norm
         phiavg_profile(ir,:) = exp(-0.5*((p%rcyl_mn-r0)/width)**4)
       enddo
 !
-!  Normalization factor, just needs to be done once and only needed by root.
-!  As it is a z-average, multiply by nz when used.
-!
       if (lfirstpoint) then
         phiavg_norm=0.
         nfirst=n
       endif
+!
+!  Normalization factor, not depending on n, so only done for n=nfirst.
+!  As it is a z-average, multiply by nz when used.
+!
       if (n==nfirst) phiavg_norm=phiavg_norm+sum(phiavg_profile,2)
 !
     endsubroutine calc_phiavg_profile
@@ -3475,7 +3483,7 @@ print*, 'phizaverages_r: norm=', norm
 
      if (lav_smallx) then
 !
-       loutside_avg = (xav_max<x(l1))
+       loutside_avg = xav_max<x(l1)
        if (loutside_avg) return
 !  
        do lx=l1+1,l2
