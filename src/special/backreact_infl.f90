@@ -109,8 +109,8 @@ module Special
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       c_light_axion, lambda_axion, amplphi, ampldphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
-      initpower_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
-      initpower_dphi, cutoff_dphi, kpeak_dphi, &
+      initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
+      initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox
 !
   namelist /special_run_pars/ &
@@ -129,6 +129,7 @@ module Special
   integer :: idiag_Hubblem=0   ! DIAG_DOC: $\left<{\cal H}\right>$
   integer :: idiag_lnam=0      ! DIAG_DOC: $\left<\ln a\right>$
   integer :: idiag_ddotam=0    ! DIAG_DOC: $a''/a$
+  integer :: idiag_a2rhopm=0   ! DIAG_DOC: $a^2 rho$
 !
   contains
 !****************************************************************************
@@ -231,7 +232,7 @@ module Special
               lscale_tobox, lpower_profile_file=.false.)
           case ('dphi_power_randomphase')
             call power_randomphase_hel(ampldphi,initpower_dphi,initpower2_dphi, &
-              cutoff_phi,ncutoff_phi,kpeak_dphi,f,iinfl_dphi,iinfl_dphi, &
+              cutoff_dphi,ncutoff_phi,kpeak_dphi,f,iinfl_dphi,iinfl_dphi, &
               relhel_phi,kgaussian_phi, lskip_projection_phi, lvectorpotential, &
               lscale_tobox, lpower_profile_file=.false.)
   
@@ -402,6 +403,7 @@ module Special
         call sum_mn_name(Hscript,idiag_Hubblem)
         call sum_mn_name(lnascale,idiag_lnam)
         call save_name(ddotam_all,idiag_ddotam)
+        call save_name(a2rhopm_all,idiag_a2rhopm)
       endif
 
     endsubroutine dspecial_dt
@@ -460,6 +462,7 @@ module Special
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
         idiag_Hubblem=0; idiag_lnam=0; idiag_ddotam=0
+        idiag_a2rhopm=0
       endif
 !
       do iname=1,nname
@@ -472,6 +475,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'Hubblem',idiag_Hubblem)
         call parse_name(iname,cname(iname),cform(iname),'lnam',idiag_lnam)
         call parse_name(iname,cname(iname),cform(iname),'ddotam',idiag_ddotam)
+        call parse_name(iname,cname(iname),cform(iname),'a2rhopm',idiag_a2rhopm)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
