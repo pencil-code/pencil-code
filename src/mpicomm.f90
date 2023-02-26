@@ -226,7 +226,7 @@ module Mpicomm
         mpi_precision = MPI_DOUBLE_PRECISION
       endif
 
-      call MPI_COMM_DUP(MPI_COMM_PENCIL, MPI_COMM_GRID,mpierr)
+      call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID,mpierr)
       iproc_world=iproc
 !
 !  Remeber the sizes of some MPI elementary types.
@@ -9401,6 +9401,55 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine collect_grid
 !***********************************************************************
+    subroutine distribute_grid(x, y, z, gx, gy, gz)
+!
+!  This routine distributes the global grid to all processors
+!  (concurrent communications).
+!
+!  16-jan-2023/MR: coded
+!
+      use Mpicomm, only: mpiscatterv_real_plain, mpibcast_real, &
+                         MPI_COMM_XBEAM, MPI_COMM_YBEAM, MPI_COMM_ZBEAM, &
+                         MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE
+      use General, only: indgen
+!
+      real, dimension(mx), intent(out) :: x
+      real, dimension(my), intent(out) :: y
+      real, dimension(mz), intent(out) :: z
+      real, dimension(mxgrid), intent(in), optional :: gx
+      real, dimension(mygrid), intent(in), optional :: gy
+      real, dimension(mzgrid), intent(in), optional :: gz
+!
+      if (lfirst_proc_yz) then    ! x-beam through root
+        if (lroot) then
+          call mpiscatterv_real_plain(gx,spread(mx,1,nprocx),(indgen(nprocx)-1)*nx,x,mx,comm=MPI_COMM_XBEAM)
+        else
+          call mpiscatterv_real_plain(x,(/1/),(/1/),x,mx,comm=MPI_COMM_XBEAM)
+        endif
+      endif
+!
+      if (lfirst_proc_xz) then    ! y-beam through root
+        if (lroot) then
+          call mpiscatterv_real_plain(gy,spread(my,1,nprocy),(indgen(nprocy)-1)*ny,y,my,comm=MPI_COMM_YBEAM)
+        else
+          call mpiscatterv_real_plain(y,(/1/),(/1/),y,my,comm=MPI_COMM_YBEAM)
+        endif
+      endif
+!
+      if (lfirst_proc_xy) then    ! z-beam through root
+        if (lroot) then
+          call mpiscatterv_real_plain(gz,spread(mz,1,nprocz),(indgen(nprocz)-1)*nz,z,mz,comm=MPI_COMM_ZBEAM)
+        else
+          call mpiscatterv_real_plain(z,(/1/),(/1/),z,mz,comm=MPI_COMM_ZBEAM)
+        endif
+      endif
+
+      call mpibcast_real(x,mx,comm=MPI_COMM_YZPLANE)
+      call mpibcast_real(y,my,comm=MPI_COMM_XZPLANE)
+      call mpibcast_real(z,mz,comm=MPI_COMM_XYPLANE)
+!
+    endsubroutine distribute_grid
+!***********************************************************************
     subroutine y2x(a,xi,zj,zproc_no,ay)
 !
 !  Load the y dimension of an array in a 1-d array.
@@ -10446,11 +10495,11 @@ endif
 !  Send communication tag to foreign code.
 !
          call mpisend_int(tag_foreign,frgn_setup%root,0,MPI_COMM_WORLD)
-!print*, 'PENCIL: tag=', tag_foreign
 !
 !  Receive length of name of foreign code.
 !
           call mpirecv_int(name_len,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+
           if (name_len<=0) then
             call stop_it('initialize_foreign_comm: length of foreign name <=0 or >')
           elseif (name_len>labellen) then
