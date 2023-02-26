@@ -9408,9 +9408,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  16-jan-2023/MR: coded
 !
-      use Mpicomm, only: mpiscatterv_real_plain, mpibcast_real, &
-                         MPI_COMM_XBEAM, MPI_COMM_YBEAM, MPI_COMM_ZBEAM, &
-                         MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE
       use General, only: indgen
 !
       real, dimension(mx), intent(out) :: x
