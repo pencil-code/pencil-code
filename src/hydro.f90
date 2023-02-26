@@ -233,7 +233,7 @@ module Hydro
   logical :: lSchur_3D3D1D_uu=.false.
   logical :: lSchur_2D2D3D_uu=.false.
   logical :: lSchur_2D2D1D_uu=.false.
-  real :: dtcor=0.
+  real :: dtcor=0., t_cor=0.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -4930,8 +4930,6 @@ module Hydro
 !***********************************************************************
     subroutine update_for_time_integrals_hydro
 !
-      real :: t_cor=0.
-
       if (.not.(ltime_integrals_always .or. dtcor<=0.)) then
         if (t>t_vart) then
           t_cor=t
