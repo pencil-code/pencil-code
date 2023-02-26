@@ -1458,10 +1458,11 @@ module Hydro
       if (lmagnetic.and.lconservative) call get_shared_variable('B_ext2',B_ext2)
 !
       if (ltime_integrals) then
+        if (.not.(ltime_integrals_always .or. dtcor<=0.)) call put_shared_variable('t_cor',t_cor)
         if (lvart_in_shear_frame) &
           call fatal_error('initialize_hydro', &
-              'lvart_in_shear_frame is no longer supported in hydro. uut etc. are always'&
-              'in lab frame. lshear_frame_correlation=T now transforms both uu and uut.')
+              'lvart_in_shear_frame is no longer supported.'//achar(10)//'uut etc. are always'// &
+              ' in lab frame. lshear_frame_correlation=T now transforms both uu and uut')
       endif
 
       if (lfargo_advection.and..not.lfargoadvection_as_shift) then
@@ -4928,15 +4929,12 @@ module Hydro
     endsubroutine time_integrals_hydro
 !***********************************************************************
     subroutine update_for_time_integrals_hydro
-
-      use SharedVariables, only: put_shared_variable
 !
       real :: t_cor=0.
 
       if (.not.(ltime_integrals_always .or. dtcor<=0.)) then
         if (t>t_vart) then
           t_cor=t
-          call put_shared_variable('t_cor',t_cor,caller='update_for_time_integrals')
 !
 !  If uut and oot are updated, write t to file and advance t_var after leaving the mn-loop.
 !
