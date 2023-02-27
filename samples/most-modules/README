@@ -43,3 +43,7 @@ Comments:
     `some-modules-1' and maybe `some-modules-2' to have a close-to-complete
     set of four tests.
 
+    Fred: added non-zero entropy to start.in such that the ISM temperature is
+    10^4 K instead of 10^{-1} K. The timestep therefore increases to ~1e-4 from
+    ~1e-20, without crashing. Increased the number of iterations to 5 rather
+    than 1 to allow sensitivity to more changes to the code. 
