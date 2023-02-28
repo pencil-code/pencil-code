@@ -104,6 +104,9 @@ module Cosmicray
       use SharedVariables, only: put_shared_variable
       real, dimension (mx,my,mz,mfarray) :: f
 !
+     if (K_para==0. .and. K_perp==0. .and. luse_diff_constants) &
+       call fatal_error("initialize_cosmicray","K_para,K_perp=0 for tensor diffusion")
+!
 !  initialize gammacr1
 !
       gammacr1=gammacr-1.
@@ -124,7 +127,6 @@ module Cosmicray
 !
 !   09-oct-03/tony: coded
 !
-      use Mpicomm
       use Sub
       use Initcond
       use InitialCondition, only: initial_condition_ecr
@@ -155,7 +157,7 @@ module Cosmicray
             f(l1:l2,m,n,iecr)=-1.+2.*0.5*(1.+tanh(z(n)/widthecr))
           enddo; enddo
         case ('hor-tube'); call htube2(amplecr,f,iecr,iecr,radius_ecr,epsilon_ecr)
-        case default; call stop_it('init_ecr: bad initecr='//trim(initecr))
+        case default; call fatal_error('init_ecr','no such initecr: '//trim(initecr))
       endselect
 !
 !  superimpose something else
@@ -244,9 +246,8 @@ module Cosmicray
 ! gecr
       if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
 ! ugecr
-      if (lpencil(i_ugecr)) then
+      if (lpencil(i_ugecr)) &
         call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr)
-      endif
 ! bgecr
       if (lpencil(i_bgecr)) call dot_mn(p%bb,p%gecr,p%bgecr)
 ! bglnrho
@@ -285,26 +286,26 @@ module Cosmicray
 !  Evolution equation of cosmic ray energy density
 !
 !  Alfv\'en advection? (with w, an alternative to u for now)
-      if (lalfven_advect)then
+      if (lalfven_advect) then
 !
 !  simple model for w depending on the sign of bgecr
 !
-          tmp = sqrt(mu01*p%rho1)
-          where(p%bgecr > 0.)
-             divw  =  tmp*0.5*p%bglnrho
-             wgecr = -tmp*p%bgecr
-          elsewhere
-             divw  = -tmp*0.5*p%bglnrho
-             wgecr =  tmp*p%bgecr
-          endwhere
-!          where(abs(p%bgecr) < some_cutoff )
-!             divw = 0.
-!             wgecr =0.
-!          endwhere
+        tmp = sqrt(mu01*p%rho1)
+        where(p%bgecr > 0.)
+           divw  =  tmp*0.5*p%bglnrho
+           wgecr = -tmp*p%bgecr
+        elsewhere
+           divw  = -tmp*0.5*p%bglnrho
+           wgecr =  tmp*p%bgecr
+        endwhere
+!        where(abs(p%bgecr) < some_cutoff )
+!           divw = 0.
+!           wgecr =0.
+!        endwhere
 !
-          df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - wgecr - gammacr*p%ecr*divw
+        df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - wgecr - gammacr*p%ecr*divw
       else
-          df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - p%ugecr - gammacr*p%ecr*p%divu
+        df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - p%ugecr - gammacr*p%ecr*p%divu
       endif
 !
 !  effect on the momentum equation, (1/rho)*grad(pcr)
@@ -312,16 +313,13 @@ module Cosmicray
 !
       if (.not.lnegl .and. lhydro) then
         do j=0,2
-          df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - &
-              gammacr1*p%rho1*p%gecr(:,1+j)
+          df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - gammacr1*p%rho1*p%gecr(:,1+j)
         enddo
       endif
 !
 !  constant source term added at every time step; constant for now.
 !
       if (ampl_Qcr/=0.) df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) + ampl_Qcr
-!
-!
 !
 !  another source term added at every time step; blowout runs
 !
@@ -372,11 +370,11 @@ module Cosmicray
 !
       if (ldiagnos) then
         if (idiag_ecrdivum/=0) call sum_mn_name(p%ecr*p%divu,idiag_ecrdivum)
-        if (idiag_ecrm/=0) call sum_mn_name(p%ecr,idiag_ecrm)
+        call sum_mn_name(p%ecr,idiag_ecrm)
         if (idiag_ecrmin/=0)   call max_mn_name(-p%ecr,idiag_ecrmin,lneg=.true.)
-        if (idiag_ecrmax/=0) call max_mn_name(p%ecr,idiag_ecrmax)
-        if (idiag_ecrpt/=0) call save_name(p%ecr(lpoint-nghost),idiag_ecrpt)
-        if (idiag_kmax/=0) call max_mn_name(vKperp,idiag_kmax)
+        call max_mn_name(p%ecr,idiag_ecrmax)
+        call save_name(p%ecr(lpoint-nghost),idiag_ecrpt)
+        call max_mn_name(vKperp,idiag_kmax)
       endif
 !
     endsubroutine decr_dt
@@ -441,8 +439,7 @@ module Cosmicray
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ecrm',idiag_ecrm)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'ecrdivum',idiag_ecrdivum)
+        call parse_name(iname,cname(iname),cform(iname),'ecrdivum',idiag_ecrdivum)
         call parse_name(iname,cname(iname),cform(iname),'ecrmin',idiag_ecrmin)
         call parse_name(iname,cname(iname),cform(iname),'ecrmax',idiag_ecrmax)
         call parse_name(iname,cname(iname),cform(iname),'ecrpt',idiag_ecrpt)
@@ -514,18 +511,7 @@ module Cosmicray
       real, dimension (nx) :: hhh2,quenchfactor,dquenchfactor
       real :: blimiter_cr2
 !
-!  use global K_perp, K_para ?
-!
-!      real :: K_perp,K_para
-!
       integer :: i,j,k
-!
-!
-      if (K_para==(0.0).and.K_perp==(0.0).and.luse_diff_constants) then
-          print *,"cosmicray: no diffusion"
-          stop
-      endif
-
 !
 !  calculate unit vector of bb
 !,file='../cosmicrays/data/time_series.dat'
@@ -650,18 +636,15 @@ module Cosmicray
           enddo
         enddo
 !
-!
-!
-        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
-        + vKperp*del2ecr + (vKpara-vKperp)*tmp + tmpj
+        df(l1:l2,m,n,iecr) =  df(l1:l2,m,n,iecr) &
+                            + vKperp*del2ecr + (vKpara-vKperp)*tmp + tmpj
       else
 !
 !  for constant tensor (or otherwise), just add result into
 !  the decr/dt equation without tmpj
 !
-        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
-        + K_perp*del2ecr + (K_para-K_perp)*tmp
-
+        df(l1:l2,m,n,iecr) =  df(l1:l2,m,n,iecr) &
+                            + K_perp*del2ecr + (K_para-K_perp)*tmp
       endif
 !
     endsubroutine tensor_diffusion
@@ -674,6 +657,7 @@ module Cosmicray
 !  19-may-15/grsarson: adapted from impose_density_floor
 !
       use Sub, only: div
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: divfcr
 !
@@ -708,7 +692,7 @@ module Cosmicray
               enddo
             enddo
           enddo
-          call fatal_error_local('impose_ecr_floor', 'negative ecr detected')
+          call fatal_error_local('impose_ecr_floor','negative ecr detected')
         endif
       endif
 !

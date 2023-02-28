@@ -68,7 +68,6 @@ module Cosmicray
 !
 !  09-oct-03/tony: coded
 !
-      use Cdata
       use FArrayManager
 
       call farray_register_pde('ecr',iecr)
@@ -101,6 +100,9 @@ module Cosmicray
 
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      if (K_para==0. .and. K_perp==0. .and. luse_diff_constants) &
+        call fatal_error("cosmicray","K_para,K_perp=0 for tensor diffusion")
+!
 !  initialize gammacr1
 !
       gammacr1=gammacr-1.
@@ -121,15 +123,12 @@ module Cosmicray
 !
 !   09-oct-03/tony: coded
 !
-      use Cdata
-      use Mpicomm
       use Sub
       use Initcond
       use InitialCondition, only: initial_condition_ecr
 !
       real, dimension (mx,my,mz,mfarray) :: f
-print*,"init_ecr: ecr_const,ln(ecr_const) = ", ecr_const, alog(ecr_const)
-print*,"init_ecr: initecr = ", initecr
+!print*,"init_ecr: ecr_const,ln(ecr_const) = ", ecr_const, alog(ecr_const)
 !
       select case (initecr)
         case ('zero'); f(:,:,:,iecr)=0.
@@ -155,7 +154,7 @@ print*,"init_ecr: initecr = ", initecr
             f(l1:l2,m,n,iecr)=-1.0+2*.5*(1.+tanh(z(n)/widthecr))
           enddo; enddo
         case ('hor-tube'); call htube2(amplecr,f,iecr,iecr,radius_ecr,epsilon_ecr)
-        case default; call stop_it('init_ecr: bad initecr='//trim(initecr))
+        case default; call fatal_error('init_ecr','no such initecr: '//trim(initecr))
       endselect
 !
 !  superimpose something else
@@ -180,8 +179,6 @@ print*,"init_ecr: initecr = ", initecr
 !  All pencils that the Cosmicray module depends on are specified here.
 !
 !  20-11-04/anders: coded
-!
-      use Cdata
 !
       lpenc_requested(i_ecr)=.true.
       lpenc_requested(i_ugecr)=.true.
@@ -233,10 +230,8 @@ print*,"init_ecr: initecr = ", initecr
 ! gecr
       if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
 ! ugecr
-      if (lpencil(i_ugecr)) then
+      if (lpencil(i_ugecr)) &
         call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr)
-      endif
-
 !
     endsubroutine calc_pencils_cosmicray
 !***********************************************************************
@@ -326,9 +321,9 @@ print*,"init_ecr: initecr = ", initecr
 !  <u_k u_j d_j c> = <u_k c uu.gradecr>
 !
       if (ldiagnos) then
-        if (idiag_ecrm/=0) call sum_mn_name(p%ecr,idiag_ecrm)
-        if (idiag_ecrmax/=0) call max_mn_name(p%ecr,idiag_ecrmax)
-        if (idiag_kmax/=0) call max_mn_name(vKperp,idiag_kmax)
+        call sum_mn_name(p%ecr,idiag_ecrm)
+        call max_mn_name(p%ecr,idiag_ecrmax)
+        call max_mn_name(vKperp,idiag_kmax)
       endif
 !
     endsubroutine decr_dt
@@ -465,17 +460,7 @@ print*,"init_ecr: initecr = ", initecr
       real, dimension (nx) :: tmp,b2,b1,b21,del2ecr,tmpj,vKperp,vKpara,tmpi,gecr2
       real, dimension (nx) :: hhh2,quenchfactor
 !
-!  use global K_perp, K_para ?
-!
-!      real :: K_perp,K_para
-!
       integer :: i,j,k
-!
-!
-      if (K_para==(0.0).and.K_perp==(0.0).and.luse_diff_constants) then
-          print *,"cosmicray: no diffusion"
-          stop
-      endif
 !
 !  calculate unit vector of bb
 !
@@ -594,9 +579,10 @@ print*,"init_ecr: initecr = ", initecr
       real, save :: ecr_floor_log
       logical, save :: lfirstcall=.true.
 !
-!  Impose the density floor.
+!  Impose the cosmic energy density floor.
 !
       if (ecr_floor>0.) then
+
         if (lfirstcall) then
           ecr_floor_log=alog(ecr_floor)
           lfirstcall=.false.

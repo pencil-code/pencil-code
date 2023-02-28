@@ -13,6 +13,7 @@
 !
 !***************************************************************
 module Cosmicrayflux
+
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
@@ -45,8 +46,6 @@ module Cosmicrayflux
       subgrid_c1,subgrid_c2, &
       subgrid_s, subgrid_k, &
       ratio_kpara_kperp
-
-
 
   namelist /cosmicrayflux_run_pars/ &
       tau, lsubgrid_cr, &
@@ -96,12 +95,11 @@ module Cosmicrayflux
       if (tau /= 0.)  then
         tau1 = 1./tau
       else
-        call warning('initialize_cosmicrayflux', &
-            'parameter tau was set to zero!')
+        call warning('initialize_cosmicrayflux','parameter tau was set to zero')
       endif
 
       ! Reads shared diffusivities from the cosmicray module
-      call get_shared_variable('K_para',K_para)
+      call get_shared_variable('K_para',K_para,caller='initialize_cosmicrayflux')
       call get_shared_variable('K_perp',K_perp)
 
       kpara_t = K_para * tau1
@@ -119,10 +117,10 @@ module Cosmicrayflux
       !
       ! 7-nov-2001/wolf: coded
 
-      use Mpicomm
       use Sub
       use Initcond
       use InitialCondition, only: initial_condition_fcr
+      use Messages, only: fatal_error
 
       real, dimension(mx,my,mz,mfarray) :: f
 
@@ -132,14 +130,13 @@ module Cosmicrayflux
           ! probably no more cases needed for fcr
         case default
           !  Catch unknown values
-          if (lroot) print*, 'init_fcr: No such such value for initfcr: ', trim(initfcr)
-          call stop_it(" ")
+          call fatal_error('init_fcr','No such such initfcr: '//trim(initfcr))
       endselect
 
       ! Interface for user's own initial condition
       if (linitial_condition) call initial_condition_fcr(f)
-    endsubroutine init_fcr
 
+    endsubroutine init_fcr
 !*******************************************************************************
     subroutine pencil_criteria_cosmicrayflux()
       ! All pencils that the Magnetic module depends on are specified here.
@@ -148,12 +145,14 @@ module Cosmicrayflux
 
       lpenc_requested(i_gecr) = .true.
       lpenc_requested(i_bb) = .true.
+
     endsubroutine pencil_criteria_cosmicrayflux
 !*******************************************************************************
     subroutine pencil_interdep_cosmicrayflux(lpencil_in)
       logical, dimension(npencils) :: lpencil_in
 
       call keep_compiler_quiet(lpencil_in)
+
     endsubroutine pencil_interdep_cosmicrayflux
 !*******************************************************************************
     subroutine calc_pencils_cosmicrayflux(f,p)
@@ -232,13 +231,12 @@ module Cosmicrayflux
         vKpara(:) = kpara_t
 
         b_brms = sqrt(b2)/subgrid_brms
-        if (subgrid_c1 /= 0.0) then
-          vKpara(:) = vKpara(:) + kpara_t*subgrid_c1*b_brms**subgrid_s
-        endif
 
-        if (subgrid_c2 /= 0.0) then
+        if (subgrid_c1 /= 0.0) &
+          vKpara(:) = vKpara(:) + kpara_t*subgrid_c1*b_brms**subgrid_s
+
+        if (subgrid_c2 /= 0.0) &
           vKpara(:) = vKpara(:) + kpara_t*subgrid_c2*subgrid_brms*sqrt(b21)
-        endif
 
           ! Subgrid prescription for perpendicular diffusion:
         if (ratio_kpara_kperp /= 0.0) then
@@ -247,9 +245,7 @@ module Cosmicrayflux
           ! kperp = kpara/r * (B/Brms)^(-k)
           ! where r = ratio_kpara_kperp) and k = subgrid_k
           vKperp(:) = vKpara(:)/ratio_kpara_kperp
-          if (subgrid_k /= 0.0) then
-            vKperp(:) = vKperp(:) * (b_brms)**(-subgrid_k)
-          endif
+          if (subgrid_k /= 0.0) vKperp(:) = vKperp(:) * (b_brms)**(-subgrid_k)
         else
           ! Otherwise, use constant perpendicular diffusivity previously
           ! specified
@@ -268,8 +264,7 @@ module Cosmicrayflux
       if (ladvect_fcr) then
         call gij(f,ifcr,gfcr,1)
         call u_dot_grad(f,ifcr,gfcr,p%uu,ugfcr,UPWIND=lupw_fcr)
-        df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
-            - ugfcr(1:nx,1:3)
+        df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) - ugfcr(1:nx,1:3)
       endif
 
       ! For the timestep calculation, needs maximum diffusion or advection.
