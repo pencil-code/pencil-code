@@ -410,7 +410,7 @@ module Pscalar
       if (ldiagnos) then
         if (idiag_mcct/=0)   call integrate_mn_name(p%rho*p%cc,idiag_mcct)
         if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
-        if (idiag_ccmax/=0)  call max_mn_name(p%cc,idiag_ccmax)
+        call max_mn_name(p%cc,idiag_ccmax)
         if (idiag_ccmin/=0)  call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
         if (idiag_ucm/=0)    call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
         if (idiag_uudcm/=0)  &
@@ -575,17 +575,15 @@ module Pscalar
 !
     endsubroutine get_slices_pscalar
 !***********************************************************************
-    subroutine pscalar_after_boundary(f)
+    subroutine pscalar_before_boundary(f)
 !
-!  Removes overall means of passive scalars.
-!
-!  5-dec-11/MR: coded
+!  Dummy.
 !
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine pscalar_after_boundary
+    endsubroutine pscalar_before_boundary
 !***********************************************************************
     subroutine calc_mpscalar
 !

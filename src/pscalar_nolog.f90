@@ -105,6 +105,7 @@ module Pscalar
   integer :: idiag_cluz_uzlcm=0, idiag_gcguzm=0
 !
   real, dimension(:,:), allocatable :: spharm 
+  real, dimension(:,:,:,:), allocatable :: bunit,hhh
 
   contains
 !***********************************************************************
@@ -162,7 +163,21 @@ module Pscalar
 !
       if (lroot .and. diffcc_shock /= 0.) print*, 'initialize_pscalar: shock diffusion, diffcc_shock = ', diffcc_shock
 !
+      if (lmean_friction_cc.and.nprocxy/=1) &
+        call fatal_error('initialize_pscalar','lmean_friction works only for nprocxy=1')
+          
       if (lnotpassive) scalaracc=3./5./hoverr**2
+!
+      if (tensor_pscalar_diff/=0.) then
+        if (.not.allocated(bunit)) allocate(bunit(nx,ny,nz,3),hhh(nx,ny,nz,3))
+!
+!  read H and Bunit arrays and keep them in memory
+!
+        open(1,file=trim(directory)//'/bunit.dat',form='unformatted')
+        print*,'read bunit.dat with dimension: ',nx,ny,nz,3
+        read(1) bunit,hhh
+        close(1)
+      endif
 !
       if (lyinyang) then
         if (lpscalar_sink.and.Rpscalar_sink/=0) &
@@ -175,24 +190,24 @@ module Pscalar
 
       if (lpscalar_sink.and.pscalar_sink/=0..and.ll_sh>=0.and.mm_sh>=0) then
 
-          allocate(spharm(ny,nz))
-          if (lyang) then
-            allocate(yz(2,ny*nz))
-            call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
-            iyz=1
-            do m=m1,m2
-              do n=n1,n2
-                spharm(m-m1+1,n-n1+1)=ylm_other(yz(1,iyz),yz(2,iyz),ll_sh,mm_sh,sphder)
-                iyz=iyz+1
-              enddo
-            enddo
-          else
+        allocate(spharm(ny,nz))
+        if (lyang) then
+          allocate(yz(2,ny*nz))
+          call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
+          iyz=1
+          do m=m1,m2
             do n=n1,n2
-              do m=m1,m2
-                spharm(m-m1+1,n-n1+1)=ylm(ll_sh,mm_sh,sphder)
-              enddo
+              spharm(m-m1+1,n-n1+1)=ylm_other(yz(1,iyz),yz(2,iyz),ll_sh,mm_sh,sphder)
+              iyz=iyz+1
             enddo
-          endif
+          enddo
+        else
+          do n=n1,n2
+            do m=m1,m2
+              spharm(m-m1+1,n-n1+1)=ylm(ll_sh,mm_sh,sphder)
+            enddo
+          enddo
+        endif
  
       endif
 !
@@ -316,7 +331,7 @@ module Pscalar
             enddo
           endif
 
-        case default; call fatal_error('init_lncc','bad initcc='//trim(initcc))
+        case default; call fatal_error('init_lncc','no such initcc: '//trim(initcc))
       endselect
 !
 !  superimpose something else
@@ -543,7 +558,6 @@ module Pscalar
       real :: cc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer :: j, k
-      integer, parameter :: nxy=nxgrid*nygrid
 !
       intent(in)  :: f
       intent(out) :: df
@@ -608,8 +622,9 @@ module Pscalar
 !  use just kappa*del2c.
 !
         if (pscalar_diff/=0.) then
+
           if (headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
-          add_diff: do k = 1, npscalar
+          do k = 1, npscalar
             if (lpscalar_per_unitvolume) then
               if (lpscalar_per_unitvolume_diff) then
                 call dot_mn(p%glnrho,p%gcc(:,:,k),diff_op)
@@ -626,7 +641,8 @@ module Pscalar
               endif
             endif
             df(l1:l2,m,n,icc+k-1)=df(l1:l2,m,n,icc+k-1)+pscalar_diff*diff_op
-          enddo add_diff
+          enddo
+
         endif
 !
 !  Shock Diffusion
@@ -667,9 +683,7 @@ module Pscalar
 !
 !  Possibility of an additional z-profile on gradC_fact.
 !
-        if (lgradC_profile) then
-          gradC_fact=gradC_fact*cos(z(n))
-        endif
+        if (lgradC_profile) gradC_fact=gradC_fact*cos(z(n))
 !
 !  Add diffusion of imposed spatially constant gradient of c.
 !  This makes sense really only for periodic boundary conditions.
@@ -690,14 +704,10 @@ module Pscalar
 !  results are then comparable with the results of the test-field method.
 !
         if (lmean_friction_cc) then
-          if (nprocx*nprocy==1) then
-            do k = icc, icc2
-              cc_xyaver=sum(f(l1:l2,m1:m2,n,k))/nxy
-              df(l1:l2,m,n,k)=df(l1:l2,m,n,k)-LLambda_cc*cc_xyaver
-            enddo
-          else
-            call fatal_error('pscalar','lmean_friction works only for nprocxy=1')
-          endif
+          do k = icc, icc2
+            cc_xyaver=sum(f(l1:l2,m1:m2,n,k))/nxygrid   !only for nprocxy=1 - tb improved: calc cc_xyaver in before_boundary
+            df(l1:l2,m,n,k)=df(l1:l2,m,n,k)-LLambda_cc*cc_xyaver
+          enddo
         endif
 !
 !  For the timestep calculation, need maximum diffusion.
@@ -721,12 +731,12 @@ module Pscalar
 !  <u_k u_j d_j c> = <u_k c uu.gradcc>
 !
       if (ldiagnos) then
-        if (idiag_Qpsclm/=0)  call sum_mn_name(bump,idiag_Qpsclm)
+        call sum_mn_name(bump,idiag_Qpsclm)
         if (idiag_Qrhoccm/=0) call sum_mn_name(bump*p%rho*p%cc(:,1),idiag_Qrhoccm)
         if (idiag_mcct/=0)    call integrate_mn_name(p%rho*p%cc(:,1),idiag_mcct)
         if (idiag_rhoccm/=0)  call sum_mn_name(p%rho*p%cc(:,1),idiag_rhoccm)
         if (idiag_mrclncm/=0) call sum_mn_name(-p%rho*p%cc(:,1)*alog(p%cc(:,1)),idiag_mrclncm)
-        if (idiag_ccmax/=0)   call max_mn_name(p%cc(:,1),idiag_ccmax)
+        call max_mn_name(p%cc(:,1),idiag_ccmax)
         if (idiag_ccmin/=0)   call max_mn_name(-p%cc(:,1),idiag_ccmin,lneg=.true.)
         if (idiag_uxcm/=0)    call sum_mn_name(p%uu(:,1)*p%cc(:,1),idiag_uxcm)
         if (idiag_uycm/=0)    call sum_mn_name(p%uu(:,2)*p%cc(:,1),idiag_uycm)
@@ -743,7 +753,7 @@ module Pscalar
             call sum_mn_name((p%rho*p%cc(:,1))**2,idiag_Crmsm,lsqrt=.true.)
         if (idiag_ccrms/=0) &
             call sum_mn_name(p%cc(:,1)**2,idiag_ccrms,lsqrt=.true.)
-        if (idiag_cc1m/=0)    call sum_mn_name(p%cc1(:,1)   ,idiag_cc1m)
+        call sum_mn_name(p%cc1(:,1),idiag_cc1m)
         if (idiag_cc2m/=0)    call sum_mn_name(p%cc1(:,1)**2,idiag_cc2m)
         if (idiag_cc3m/=0)    call sum_mn_name(p%cc1(:,1)**3,idiag_cc3m)
         if (idiag_cc4m/=0)    call sum_mn_name(p%cc1(:,1)**4,idiag_cc4m)
@@ -753,7 +763,7 @@ module Pscalar
         if (idiag_cc8m/=0)    call sum_mn_name(p%cc1(:,1)**8,idiag_cc8m)
         if (idiag_cc9m/=0)    call sum_mn_name(p%cc1(:,1)**9,idiag_cc9m)
         if (idiag_cc10m/=0)   call sum_mn_name(p%cc1(:,1)**10,idiag_cc10m)
-        if (idiag_gcc1m/=0)   call sum_mn_name(p%gcc1(:,1)   ,idiag_gcc1m)
+        call sum_mn_name(p%gcc1(:,1),idiag_gcc1m)
         if (idiag_gcc2m/=0)   call sum_mn_name(p%gcc1(:,1)**2,idiag_gcc2m)
         if (idiag_gcc3m/=0)   call sum_mn_name(p%gcc1(:,1)**3,idiag_gcc3m)
         if (idiag_gcc4m/=0)   call sum_mn_name(p%gcc1(:,1)**4,idiag_gcc4m)
@@ -777,17 +787,17 @@ module Pscalar
 !
       if (l1davgfirst) then
         call xysum_mn_name_z(p%cc(:,1),idiag_ccmz)
-        call xysum_mn_name_z(p%cc(:,1)**2,idiag_cc2mz)
+        if (idiag_cc2mz/=0) call xysum_mn_name_z(p%cc(:,1)**2,idiag_cc2mz)
         call xzsum_mn_name_y(p%cc(:,1),idiag_ccmy)
         call yzsum_mn_name_x(p%cc(:,1),idiag_ccmx)
-        call xysum_mn_name_z(p%uu(:,1)*p%cc(:,1),idiag_uxcmz)
-        call xysum_mn_name_z(p%uu(:,2)*p%cc(:,1),idiag_uycmz)
-        call xysum_mn_name_z(p%uu(:,3)*p%cc(:,1),idiag_uzcmz)
+        if (idiag_uxcmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%cc(:,1),idiag_uxcmz)
+        if (idiag_uycmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%cc(:,1),idiag_uycmz)
+        if (idiag_uzcmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%cc(:,1),idiag_uzcmz)
       endif
 !
       if (l2davgfirst) then
-        if (idiag_ccmxy/=0)   call zsum_mn_name_xy(p%cc(:,1),idiag_ccmxy)
-        if (idiag_ccmxz/=0)   call ysum_mn_name_xz(p%cc(:,1),idiag_ccmxz)
+        call zsum_mn_name_xy(p%cc(:,1),idiag_ccmxy)
+        call ysum_mn_name_xz(p%cc(:,1),idiag_ccmxz)
       endif
 !
 ! AH: notpassive, an angular momentum+gravity workaround
@@ -797,8 +807,8 @@ module Pscalar
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+(p%cc(:,1) &
              +(-powerlr*hoverr**2+1.5*zoverh**2*hoverr**2)+ &
              (-1+3*powerlr*hoverr**2-4.5*zoverh**2*hoverr**2)*x(l1:l2))*scalaracc
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(-hoverr*zoverh &
-              -z(n)+3*hoverr*zoverh*x(l1:l2))*scalaracc
+          df(l1:l2,m,n,iuz)= df(l1:l2,m,n,iuz)+(-hoverr*zoverh &
+                            -z(n)+3*hoverr*zoverh*x(l1:l2))*scalaracc
         endif
       endif
 !
@@ -1005,7 +1015,7 @@ module Pscalar
 !
     endsubroutine get_slices_pscalar
 !***********************************************************************
-    subroutine pscalar_after_boundary(f)
+    subroutine pscalar_before_boundary(f) 
 !
 !  Removes overall means of passive scalars.
 !
@@ -1027,13 +1037,12 @@ module Pscalar
         call mpiallreduce_sum(ccm_tmp,ccm,npscalar)
 
         do i=1,npscalar
-          f(l1:l2,m1:m2,n1:n2,icc+i-1) =  f(l1:l2,m1:m2,n1:n2,icc+i-1) &
-                                        - ccm(i)/nwgrid
+          f(l1:l2,m1:m2,n1:n2,icc+i-1)=f(l1:l2,m1:m2,n1:n2,icc+i-1)-ccm(i)/nwgrid
         enddo
 
       endif
 
-    endsubroutine pscalar_after_boundary
+    endsubroutine pscalar_before_boundary
 !***********************************************************************
     subroutine calc_mpscalar
 !
@@ -1043,21 +1052,19 @@ module Pscalar
 !
       use Diagnostics
 !
-      logical,save :: first=.true.
       real :: ccm
 !
-!  Magnetic energy in horizontally averaged field
-!  The bxmz and bymz must have been calculated,
-!  so they are present on the root processor.
+!  RMS value of horizontally averaged concentration of 1st pscalar.
+!  ccmz must have been calculated, so it is present on the root processor.
 !
       if (idiag_ccm/=0) then
         if (idiag_ccmz==0) then
-          if (first) print*
-          if (first) print*,"NOTE: to get ccm, ccmz must also be set in xyaver"
-          if (first) print*,"      We proceed, but you'll get ccm=0"
+          if (headtt) call warning('calc_mpscalar', &
+                                   "to get ccm, ccmz must also be set in xyaver.in."// &
+                                   achar(10)//"We proceed, but you'll get ccm=0")
           ccm=0.
         else
-          ccm=sqrt(sum(fnamez(:,:,idiag_ccmz)**2)/(nz*nprocz))
+          ccm=sqrt(sum(fnamez(:,:,idiag_ccmz)**2)/nzgrid
         endif
         call save_name(ccm,idiag_ccm)
       endif
@@ -1077,27 +1084,15 @@ module Pscalar
       type (pencil_case) :: p
       real :: tensor_pscalar_diff
 !
-      real, save, dimension (nx,ny,nz,3) :: bunit,hhh
       real, dimension (nx) :: tmp,scr
       integer :: iy,iz,i,j,k
-      logical, save :: first=.true.
-!
-!  read H and Bunit arrays and keep them in memory
-!
-      if (first) then
-        open(1,file=trim(directory)//'/bunit.dat',form='unformatted')
-        print*,'read bunit.dat with dimension: ',nx,ny,nz,3
-        read(1) bunit,hhh
-        close(1)
-        print*,'read bunit.dat; bunit=',bunit
-      endif
 !
 !  tmp = (Bunit.G)^2 + H.G + Bi*Bj*Gij
 !  for details, see tex/mhd/thcond/tensor_der.tex
 !
       iy=m-m1+1
       iz=n-n1+1
-      loop: do k = 1, npscalar
+      do k = 1, npscalar
         call dot_mn(bunit(:,iy,iz,:),p%gcc(:,:,k),scr)
         call dot_mn(hhh(:,iy,iz,:),p%gcc(:,:,k),tmp)
         tmp=tmp+scr**2
@@ -1113,9 +1108,7 @@ module Pscalar
 !  and add result to the dcc/dt equation
 !
         df(l1:l2,m,n,icc+k-1)=df(l1:l2,m,n,icc+k-1)+tensor_pscalar_diff*tmp
-      enddo loop
-!
-      first=.false.
+      enddo
 !
     endsubroutine tensor_diff
 !***********************************************************************
