@@ -390,7 +390,7 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
 !
         if (mvar_in>0) then
           if (lonly_farray) then
-            call input_snap(filename,f,mvar_in,0)
+            call input_snap(filename,f,mvar_in,-1)
             call input_snap_finalize
           else
             call rsnap(filename, f, mvar_in, lread_nogrid)

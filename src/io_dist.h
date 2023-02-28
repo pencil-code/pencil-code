@@ -192,6 +192,7 @@ iloop:    do ii=iia,iie
                   endif
                 endif
               endif
+
               if (iosr/=0) then
                 close(lun_input)
                 l0=.false.
@@ -217,9 +218,10 @@ iloop:    do ii=iia,iie
                 if (ip <= 3) print *, 'read_snap: x=', x
                 if (ip <= 3) print *, 'read_snap: y=', y
                 if (ip <= 3) print *, 'read_snap: z=', z
-              else
+              elseif (mode==0) then
                 read (lun_input,iostat=iosr) t_sp
               endif
+
               if (iosr/=0) then
                 close(lun_input)
                 l0=.false.
