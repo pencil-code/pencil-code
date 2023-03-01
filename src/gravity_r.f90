@@ -338,7 +338,7 @@ module Gravity
                     ipotential(j) == 'newtonian') then
                   g_r=-g0/rr_mn**2
                 elseif (ipotential(j) == 'pseudo-Newtonian') then
-                  g_r=-g0/((rr_mn-rs)**2+(0.001*rs)^2) ! For non-rotating BH 
+                  g_r=-g0/((rr_mn-rs)**2+(0.001*rs)**2) ! For non-rotating BH 
                 elseif (ipotential(j) == 'varying-q') then
                   g_r=-g0/rr_mn**(2*qgshear-1)
                 elseif (ipotential(j) == 'varying-q-smooth') then
