@@ -111,9 +111,11 @@ module Hydro
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   real :: z1_uu=0., z2_uu=0.
   real :: ABC_A=1., ABC_B=1., ABC_C=1.
+  real :: vwall=.0, alpha_hless=.0
   integer :: nb_rings=0
   integer :: neddy=0
-  integer :: iTij=0, ilorentz=0
+  integer :: iTij=0, ilorentz=0, ihless=0, jhless=0, nhless=0
+  real, dimension(:), allocatable :: thless, xhless, yhless, zhless
 !
 ! variables for expansion into spherical harmonics
 !
@@ -147,6 +149,7 @@ module Hydro
   logical, pointer :: lrelativistic_eos
   logical :: lno_noise_uu=.false.
   logical :: llorentz_limiter=.false., full_3D=.false.
+  logical :: lhiggsless=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real, pointer :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
@@ -184,7 +187,8 @@ module Hydro
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
-      lfactors_uu, qirro_uu, lno_noise_uu, llorentz_limiter
+      lfactors_uu, qirro_uu, lno_noise_uu, llorentz_limiter, &
+      lhiggsless, vwall, alpha_hless
 !
 !  Run parameters.
 !
@@ -281,7 +285,8 @@ module Hydro
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
       limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
       ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, &
-      lSchur_2D2D3D_uu, lSchur_2D2D1D_uu
+      lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
+      lhiggsless, vwall, alpha_hless
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -864,6 +869,12 @@ module Hydro
           if (llorentz_as_aux) call warning('register_hydro', &
               'no Lorentz factor without lconservative or lrelativistic')
         endif
+      endif
+!
+!  Define the Higgs less field
+!
+      if (lhiggsless) then
+        call farray_register_auxiliary('hless',ihless,communicated=.true.)
       endif
 !
 !  To compute the added mass term for particle drag,
@@ -1468,6 +1479,18 @@ module Hydro
       if (lfargo_advection.and..not.lfargoadvection_as_shift) then
         if (lroot) call not_implemented("hydro_after_timestep",&
                                         "Fargo advection without Fourier shift")
+      endif
+
+      if (lhiggsless) then
+        open(1,file='higgsless.dat')
+        read(1,*) nhless
+        if (lroot.and.ip<14) print*,'initialize_hydro: nhless=',nhless
+        if (allocated(thless)) deallocate(thless, xhless, yhless, zhless)
+        allocate(thless(nhless), xhless(nhless), yhless(nhless), zhless(nhless))
+        do jhless=1,nhless
+          read(1,*) thless(jhless), xhless(jhless), yhless(jhless), zhless(jhless)
+        enddo
+        close(1)
       endif
 
       endsubroutine initialize_hydro
@@ -2578,6 +2601,12 @@ module Hydro
         if (llorentz_as_aux) then
           f(:,:,:,ilorentz)=0.
         endif
+!
+!  Initialize Higgsless field
+!
+        if (lhiggsless) then
+          f(:,:,:,ihless)=.75*alpha_hless
+        endif
       endif
 !
     endsubroutine init_uu
@@ -3408,7 +3437,7 @@ module Hydro
       real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2
       real :: nygrid1,nzgrid1
       real :: cs201, cs2011
-      integer :: i, j, iter_relB
+      integer :: i, j, iter_relB, l
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -3435,6 +3464,17 @@ module Hydro
 !  gamma for the nonmagnetic case.
 !
       if (lconservative) then
+        if (lhiggsless) then
+          do jhless=1,nhless
+            do n=1,mz
+            do m=1,my
+              where(sqrt((x-xhless(jhless))**2+(y(m)-yhless(jhless))**2+(z(n)-zhless(jhless))**2) &
+                  < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
+            enddo
+            enddo
+          enddo
+        endif
+ !       
         if (iTij==0) call fatal_error("hydro_before_boundary","must compute Tij for lconservative")
         cs201=cs20+1.
         cs2011=1./cs201
@@ -3450,6 +3490,13 @@ module Hydro
             else
               hydro_energy=f(:,m,n,irho)
             endif
+!
+!  Higgsless field
+!
+            if (lhiggsless) then
+              hydro_energy=hydro_energy-f(:,m,n,ihless)
+            endif
+!
             hydro_energy1=1./hydro_energy
           else
             hydro_energy=1.
@@ -3511,7 +3558,11 @@ module Hydro
 !  At the end, we put lorentz_gamma2 into the f array.
 !
           if (ilorentz /= 0) f(:,m,n,ilorentz)=lorentz_gamma2
-          press=rho*cs20
+          if (lhiggsless) then
+            press=rho*cs20-fourthird*f(:,m,n,ihless)
+          else
+            press=rho*cs20
+          endif
 !
 !  Now set the nonmagnetic stresses; begin with the diagonal components:
 !  Tii=(Ti0)^2/rho or Tii=(Ti0)^2/(4./3.*rho*gamma^2)
