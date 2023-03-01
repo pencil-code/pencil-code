@@ -137,6 +137,7 @@ module Gravity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.0
       real, dimension (nx)   :: g_r,rr_mn,rr_sph,rr_cyl,pot
+      real :: rs=0.0
       logical :: lpade=.true. ! set to false for 1/r potential
       integer :: j
 !
@@ -291,6 +292,9 @@ module Gravity
                  'Can be set in grav_r namelists.'
             lpade=.false.
             ! end geodynamo
+          case ('pseudo-Newtonian')      ! for BH set Schwarzchild radius
+            rs = 2*g0/c_light**2
+            lpade=.false.
 !
           case default
 !
@@ -333,6 +337,8 @@ module Gravity
                     ipotential(j) == 'newton'.or.&
                     ipotential(j) == 'newtonian') then
                   g_r=-g0/rr_mn**2
+                elseif (ipotential(j) == 'pseudo-Newtonian') then
+                  g_r=-g0/((rr_mn-rs)**2+(0.001*rs)^2) ! For non-rotating BH 
                 elseif (ipotential(j) == 'varying-q') then
                   g_r=-g0/rr_mn**(2*qgshear-1)
                 elseif (ipotential(j) == 'varying-q-smooth') then
