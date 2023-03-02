@@ -641,7 +641,8 @@ module Cdata
   real :: theta_upper_border=impossible,wborder_theta_upper=0.
   real :: fraction_tborder=1.
   logical :: lmeridional_border_drive=.false.
-  real, dimension(2) :: border_frac_x=0.0,border_frac_y=0.0,border_frac_z=0.0
+  real, dimension(2) :: border_frac_x=0.0,border_frac_y=0.0,border_frac_z=0.0, &
+                        border_frac_r=0.0
   logical :: lborder_hyper_diff=.true.
   logical :: lfrozen_bcs_x=.false.,lfrozen_bcs_y=.false.,lfrozen_bcs_z=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.

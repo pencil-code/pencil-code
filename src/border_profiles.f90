@@ -25,6 +25,7 @@ module BorderProfiles
   real, dimension(mx) :: border_prof_x=1.0
   real, dimension(my) :: border_prof_y=1.0
   real, dimension(mz) :: border_prof_z=1.0
+  real, dimension(mx, my, mz) :: border_prof_r=1.0
   real, dimension(nx) :: rborder_mn
   real                :: tborder1=impossible
   real                :: fraction_tborder1=impossible
@@ -130,6 +131,37 @@ module BorderProfiles
         border_prof_z(n1:n2)=min(border_prof_z(n1:n2),zeta**2*(3-2*zeta))
       endif
 !
+!  r-direction to mask a spherical object at center like inner absorbing BC
+!
+      border_prof_r(l1:l2,m1:m2,n1:n2)=1
+      if (border_frac_r(1)>0) then
+        if (lperi(3) .or. .not. lcartesian_coords) call fatal_error('initialize_border_profiles', &
+            'must have lperi(3)=F and lcartesian_coord=T for border profile in r')
+        border_width=border_frac_r(1)*maxval(Lxyz)/2
+        lborder=xyz0(3)+border_width
+        border_width=border_frac_r(1)*maxval(Lxyz)/60
+        do m=m1, m2
+          do n=n1, n2
+            border_prof_r(l1:l2,m,n)=0.5*(1+tanh(sqrt((x(l1:l2)**2+y(m)**2+z(n)**2)- &
+                                     lborder)/border_width))
+          enddo
+        enddo
+      endif
+!
+      if (border_frac_r(2)>0) then
+        if (lperi(3) .or. .not. lcartesian_coords) call fatal_error('initialize_border_profiles', &
+            'must have lperi(3)=F for border profile in z')
+        border_width=border_frac_r(2)*maxval(Lxyz)/2
+        uborder=xyz1(3)-border_width
+        border_width=border_frac_r(2)*maxval(Lxyz)/60
+        do m=m1, m2
+          do n=n1, n2
+            border_prof_r(l1:l2,m,n)=0.5*(1+tanh(sqrt((x(l1:l2)**2+y(m)**2+z(n)**2)- &
+                                     uborder)/border_width))
+          enddo
+        enddo
+      endif
+!
 !  Write border profiles to file.
 !
       if (lmonolithic_io) then
@@ -163,7 +195,8 @@ module BorderProfiles
 !
       if (any(border_frac_x/=0).or.&
           any(border_frac_y/=0).or.&
-          any(border_frac_z/=0)) &
+          any(border_frac_z/=0).or.&
+          any(border_frac_r/=0)) &
         lborder_quenching=.true.
 !
 !  Use a fixed timescale to drive the boundary, independently of radius.
@@ -495,7 +528,8 @@ module BorderProfiles
         do j = 1, mvar
           do n = n1, n2
             do m = m1, m2
-              border_prof_pencil=border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
+              border_prof_pencil=border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)* &
+                                 border_prof_r(l1:l2,m,n)
 !
               df(l1:l2,m,n,j) = df(l1:l2,m,n,j) * border_prof_pencil
 !

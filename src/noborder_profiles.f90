@@ -54,6 +54,14 @@ module BorderProfiles
         endif
         call fatal_error('initialize_border_profiles','')
       endif
+      if (border_frac_r(1)/=0.0.or.border_frac_r(2)/=0.0) then
+        if (lroot) then
+          print*, 'initialize_border_profiles: must use '// &
+              'BORDER_PROFILES =   border_profiles'
+          print*, '                            for border_frac_r'
+        endif
+        call fatal_error('initialize_border_profiles','')
+      endif
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
