@@ -74,6 +74,7 @@ module Special
 !
 ! other variables (needs to be consistent with reset list below)
 !
+  integer :: idiag_EEEM=0       ! DIAG_DOC: $\left<\Ev^2+\Bv^2\right>/2$
   integer :: idiag_erms=0       ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
   integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
   integer :: idiag_a0rms=0      ! DIAG_DOC: $\left<A_0^2\right>^{1/2}$
@@ -232,7 +233,7 @@ module Special
 
       if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
       if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
-      if (idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
+      if (idiag_EEEM/=0 .or. idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
       if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
 !
     endsubroutine pencil_criteria_special
@@ -360,6 +361,7 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
+        call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
         call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
@@ -435,7 +437,7 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_erms=0; idiag_emax=0
+        idiag_EEEM=0; idiag_erms=0; idiag_emax=0
         idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0
         cformv=''
       endif
@@ -443,6 +445,7 @@ module Special
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'EEEM',idiag_EEEM)
         call parse_name(iname,cname(iname),cform(iname),'erms',idiag_erms)
         call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
         call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)

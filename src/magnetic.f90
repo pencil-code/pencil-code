@@ -6996,6 +6996,9 @@ module Magnetic
           case ('log-switch-on')
             eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
                 *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
+          case ('linear-sigma')
+            eta_tdep=1./(1./eta_max+(1./eta-1./eta_max) &
+                *max(min(real(t-eta_tdep_toffset)/eta_tdep_t0,1.),0.))
           case default
           endselect
         if (lroot.and.ldiagnos) call save_name(eta_tdep,idiag_eta_tdep)
