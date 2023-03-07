@@ -258,13 +258,10 @@ module Shock
 !
       if (lroot.and.ip<14) print*,'rprint_shock: run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),&
-            'shockm',idiag_shockm)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'shockmin',idiag_shockmin)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'shockmax',idiag_shockmax)
-        call parse_name(iname, cname(iname), cform(iname), 'gshockmax', idiag_gshockmax)
+        call parse_name(iname,cname(iname),cform(iname),'shockm',idiag_shockm)
+        call parse_name(iname,cname(iname),cform(iname),'shockmin',idiag_shockmin)
+        call parse_name(iname,cname(iname),cform(iname),'shockmax',idiag_shockmax)
+        call parse_name(iname, cname(iname), cform(iname),'gshockmax', idiag_gshockmax)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -332,9 +329,8 @@ module Shock
 !  20-11-04/anders: coded
 !
       if (idiag_shockm/=0 .or. idiag_shockmin/=0 .or. idiag_shockmax/=0 .or. &
-          idiag_shockmx/=0 .or. idiag_shockmy/=0 .or. idiag_shockmz/=0) then
+          idiag_shockmx/=0 .or. idiag_shockmy/=0 .or. idiag_shockmz/=0) &
         lpenc_diagnos(i_shock)=.true.
-      endif
 !
       if (idiag_gshockmax /= 0) lpenc_diagnos(i_gshock) = .true.
 !
@@ -379,9 +375,9 @@ module Shock
       endif
 !
       if (ldiagnos) then
-        if (idiag_shockm/=0)   call sum_mn_name( p%shock,idiag_shockm)
+        call sum_mn_name( p%shock,idiag_shockm)
         if (idiag_shockmin/=0) call max_mn_name(-p%shock,idiag_shockmin,lneg=.true.)
-        if (idiag_shockmax/=0) call max_mn_name( p%shock,idiag_shockmax)
+        call max_mn_name( p%shock,idiag_shockmax)
         if (idiag_gshockmax /= 0) call max_mn_name(sqrt(sum(p%gshock**2, dim=2)), idiag_gshockmax)
       endif
 !
@@ -416,6 +412,7 @@ module Shock
       integer :: i,j,k
       integer :: ni,nj,nk
       real :: shock_max, a=0., a1
+      logical :: lcommunicate
 !
 !  Initialize shock to impossibly large number to force code crash in case of
 !  inconsistencies in boundary conditions.
@@ -430,15 +427,19 @@ module Shock
 !
       if (lshock_linear) a1 = shock_linear / dxmax
 !
+      lcommunicate=.true.
       do imn=1,nyz
 !
         n = nn(imn)
         m = mm(imn)
 !
-        if (necessary(imn)) then
-          call finalize_isendrcv_bdry(f,iux,iuz)
-          call boundconds_y(f,iuy,iuy)
-          call boundconds_z(f,iuz,iuz)
+        if (lcommunicate) then
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f,iux,iuz)
+            call boundconds_y(f,iuy,iuy)
+            call boundconds_z(f,iuz,iuz)
+            lcommunicate=.false.
+          endif
         endif
 !
 ! The following will calculate div u for any coordinate system.
@@ -483,15 +484,20 @@ module Shock
 !
       tmp = 0.0
 !
+      lcommunicate=.true.
+
       do imn=1,nyz
 !
         n = nn(imn)
         m = mm(imn)
 !
-        if (necessary(imn)) then
-          call finalize_isendrcv_bdry(f,ishock,ishock)
-          call boundconds_y(f,ishock,ishock)
-          call boundconds_z(f,ishock,ishock)
+        if (lcommunicate) then 
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f,ishock,ishock)
+            call boundconds_y(f,ishock,ishock)
+            call boundconds_z(f,ishock,ishock)
+            lcommunicate=.false.
+          endif
         endif
 !
         penc = 0.0
@@ -530,15 +536,20 @@ module Shock
 !
       tmp = 0.0
 !
+      lcommunicate=.true.
+
       do imn=1,nyz
 !
         n = nn(imn)
         m = mm(imn)
 !
-        if (necessary(imn)) then
-          call finalize_isendrcv_bdry(f,ishock,ishock)
-          call boundconds_y(f,ishock,ishock)
-          call boundconds_z(f,ishock,ishock)
+        if (lcommunicate) then
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f,ishock,ishock)
+            call boundconds_y(f,ishock,ishock)
+            call boundconds_z(f,ishock,ishock)
+            lcommunicate=.false.
+          endif
         endif
 !
         penc = 0.0
@@ -608,15 +619,20 @@ module Shock
         call boundconds_x(f,ishock_perp,ishock_perp)
         call initiate_isendrcv_bdry(f,ishock_perp,ishock_perp)
 !
+        lcommunicate=.true.
+
         do imn=1,nyz
 !
           n = nn(imn)
           m = mm(imn)
 !
-          if (necessary(imn)) then
-            call finalize_isendrcv_bdry(f,ishock_perp,ishock_perp)
-            call boundconds_y(f,ishock_perp,ishock_perp)
-            call boundconds_z(f,ishock_perp,ishock_perp)
+          if (lcommunicate) then
+            if (necessary(imn)) then
+              call finalize_isendrcv_bdry(f,ishock_perp,ishock_perp)
+              call boundconds_y(f,ishock_perp,ishock_perp)
+              call boundconds_z(f,ishock_perp,ishock_perp)
+              lcommunicate=.false.
+            endif
           endif
 !
           call div(f,iuu,penc)
@@ -626,15 +642,21 @@ module Shock
 !
         enddo
         tmp = 0.0
+
+        lcommunicate=.true.
+
         do imn=1,nyz
 !
           n = nn(imn)
           m = mm(imn)
 !
-          if (necessary(imn)) then
-            call finalize_isendrcv_bdry(f,ishock_perp,ishock_perp)
-            call boundconds_y(f,ishock_perp,ishock_perp)
-            call boundconds_z(f,ishock_perp,ishock_perp)
+          if (lcommunicate) then
+            if (necessary(imn)) then
+              call finalize_isendrcv_bdry(f,ishock_perp,ishock_perp)
+              call boundconds_y(f,ishock_perp,ishock_perp)
+              call boundconds_z(f,ishock_perp,ishock_perp)
+              lcommunicate=.false.
+            endif
           endif
 !
           penc = 0.0
@@ -680,7 +702,7 @@ module Shock
       if (nxgrid/=1) then
          fac=bb_hat(l1:l2,1)/(60*dx)
          divu_perp(:) = divu_perp(:)                          &
-           - fac*(bb_hat(l1:l2,1)*( f(l1+3:l2+3,m  ,n  ,iux)   &
+                  - fac*(bb_hat(l1:l2,1)*( f(l1+3:l2+3,m  ,n  ,iux)   &
                                    + 45.0*(f(l1+1:l2+1,m  ,n  ,iux)   &
                                          - f(l1-1:l2-1,m  ,n  ,iux))  &
                                    -  9.0*(f(l1+2:l2+2,m  ,n  ,iux)   &
@@ -703,7 +725,7 @@ module Shock
       if (nygrid/=1) then
          fac=bb_hat(l1:l2,2)/(60*dy)
          divu_perp(:) = divu_perp(:)                          &
-           - fac*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m+3,n  ,iux)   &
+                  - fac*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m+3,n  ,iux)   &
                                    + 45.0*(f(  l1:l2  ,m+1,n  ,iux)   &
                                          - f(  l1:l2  ,m-1,n  ,iux))  &
                                    -  9.0*(f(  l1:l2  ,m+2,n  ,iux)   &
@@ -726,7 +748,7 @@ module Shock
       if (nzgrid/=1) then
          fac=bb_hat(l1:l2,3)/(60*dz)
          divu_perp(:) = divu_perp(:)                          &
-           - fac*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m  ,n+3,iux)   &
+                  - fac*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m  ,n+3,iux)   &
                                    + 45.0*(f(  l1:l2  ,m,  n+1,iux)   &
                                          - f(  l1:l2  ,m,  n-1,iux))  &
                                    -  9.0*(f(  l1:l2  ,m,  n+2,iux)   &
