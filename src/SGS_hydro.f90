@@ -263,6 +263,7 @@ print*, 'aasmooth=', iaasmooth
       real, dimension(nx) :: mij2, penc, sij2
       real, dimension(nx,3) :: uu
       real, dimension(nx,3,3) :: mij, uij, sij
+      logical :: lcommunicate
 !
 !  Requires communication to be finished!
 !
@@ -272,16 +273,22 @@ print*, 'aasmooth=', iaasmooth
 !
         call initiate_isendrcv_bdry(f,iux,iuz)
 !
+        lcommunicate=.true.
+
         do imn=1,nyz
 !
           n = nn(imn)
           m = mm(imn)
 !
-          if (necessary(imn)) then
-            call finalize_isendrcv_bdry(f,iux,iuz)
-            call boundconds_y(f,iuy,iuy)
-            call boundconds_z(f,iuz,iuz)
+          if (lcommunicate) then
+            if (necessary(imn)) then
+              call finalize_isendrcv_bdry(f,iux,iuz)
+              call boundconds_y(f,iuy,iuy)
+              call boundconds_z(f,iuz,iuz)
+              lcommunicate=.false.
+            endif
           endif
+
           do j=iux,iuz
             call smooth_kernel(f,j,f(l1:l2,m,n,iuusmooth+j-iux),smth_kernel)
           enddo

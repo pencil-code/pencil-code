@@ -258,15 +258,16 @@ module Timestep
       use Special
       use Sub
 !
-      logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_in
       type (pencil_case) :: p
 !
-      intent(inout)  :: f       ! inout due to  lshift_datacube_x,
-                                ! density floor, or velocity ceiling
       intent(out)    :: df, p
+      intent(inout)  :: f       ! inout due to  lshift_datacube_x,
+
+      logical :: lcommunicate
+      logical :: early_finalize
 !
 !  Print statements when they are first executed.
 !
@@ -337,6 +338,8 @@ module Timestep
 !------------------------------------------------------------------------------
 !  Do loop over m and n.
 !
+      lcommunicate=.not.early_finalize
+
       mn_loop: do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
@@ -344,11 +347,14 @@ module Timestep
 !
 !  Make sure all ghost points are set.
 !
-       if (.not.early_finalize.and.necessary(imn)) then
-         call finalize_isendrcv_bdry(f,ilnTT,ilnTT)
-         call boundconds_y(f,ilnTT,ilnTT)
-         call boundconds_z(f,ilnTT,ilnTT)
-       endif
+        if (lcommunicate) then
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f,ilnTT,ilnTT)
+            call boundconds_y(f,ilnTT,ilnTT)
+            call boundconds_z(f,ilnTT,ilnTT)
+            lcommunicate=.false.
+          endif
+        endif
 !
 !  Grid spacing. In case of equidistant grid and cartesian coordinates
 !  this is calculated before the (m,n) loop.

@@ -334,7 +334,7 @@ module Shock
 !  Exit if were're not using the "simple" shock profile code or it's the wrong time.
 !
      if (lgauss_integral.or.lgauss_integral_comm_uu.or. &
-          lcommunicate_uu.or.(lshock_first.and.(.not.lfirst))) return
+         lcommunicate_uu.or.(lshock_first.and.(.not.lfirst))) return
 !
 !  calculate shock viscosity only when nu_shock /=0
 !
@@ -397,6 +397,7 @@ module Shock
       real, dimension (mx) :: penc,penc_perp
       real, dimension (mx,3) :: bb_hat
       integer :: jj,kk
+      logical :: lcommunicate
 !
       if ((.not.lshock_first).or.lfirst) then
         if (lgauss_integral) then
@@ -452,6 +453,7 @@ module Shock
 !  set indices and check whether communication must now be completed
 !  if test_nonblocking=.true., we communicate immediately as a test.
 !
+          lcommunicate=.not.early_finalize
           do imn=1,nyz
 
             n=nn(imn)
@@ -459,10 +461,13 @@ module Shock
 !
 ! make sure all ghost points are set
 !
-            if (.not.early_finalize.and.necessary(imn)) then
-              call finalize_isendrcv_bdry(f,iux,iuz)
-              call boundconds_y(f,iux,iuz)
-              call boundconds_z(f,iux,iuz)
+            if (lcommunicate) then
+              if (necessary(imn)) then
+                call finalize_isendrcv_bdry(f,iux,iuz)
+                call boundconds_y(f,iux,iuz)
+                call boundconds_z(f,iux,iuz)
+                lcommunicate=.false.
+              endif
             endif
 !
 ! Calculate all local shock profile contributions

@@ -100,6 +100,7 @@ module Filter
       real, dimension (nx) :: tmp
       real :: awigg
       integer :: ivar,ivar1,ivar2,idir
+      logical :: lcommunicate
 !
 !  Initiate communication of ghost zones
 !  At the moment we communicate all variables, even though we only
@@ -111,12 +112,18 @@ module Filter
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
 !
+      lcommunicate=.true.
+
       do imn=1,nyz
         n=nn(imn)
         m=mm(imn)
-        if (necessary(imn)) then
-          call finalize_isendrcv_bdry(f)
+        if (lcommunicate) then
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f)
+            lcommunicate=.false.
+          endif
         endif
+
         do ivar=ivar1,ivar2
           call der6(f,ivar,tmp,idir,IGNOREDX=.true.)
 !
@@ -171,6 +178,7 @@ module Filter
       real, dimension (nx) :: tmp
       logical, optional :: explog
       integer :: ivar
+      logical :: lcommunicate
 !
       if (lroot.and.ip<14) then
         if (ivar == ilnrho) then
@@ -201,11 +209,16 @@ module Filter
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
 !
+      lcommunicate=.true.
+
       do imn=1,nyz
         n=nn(imn)
         m=mm(imn)
-        if (necessary(imn)) then
-          call finalize_isendrcv_bdry(f)
+        if (lcommunicate) then
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f)
+            lcommunicate=.false.
+          endif
         endif
         call del6(f,ivar,tmp,ignoredx=.true.)
 ! 1/64 would be fine for 1d runs, but in 3d we have higher wave numbers
