@@ -278,7 +278,7 @@ module Forcing
         endif
         if (.not.(lmagnetic_forcing.or.lhydro_forcing.or.lneutral_forcing.or. &
                   ltestfield_forcing.or.ltestflow_forcing)) &
-          call stop_it("initialize_forcing: No forcing function set")
+          call fatal_error("initialize_forcing","No forcing function set")
         
         if (ldebug) print*,'initialize_forcing: ifff=',ifff
 !
@@ -364,7 +364,7 @@ module Forcing
 !  sign change of helicity about z=0
 !
       elseif (iforce_profile=='equator_hel=z') then
-        call fatal_error("initialize_forcing","use equator_hel=z/L instead")
+        call fatal_error("initialize_forcing","use 'equator_hel=z/L' instead of 'equator_hel=z'")
 !
 !  Linear profile of helicity, normalized by ztop (or -zbot, if it is bigger)
 !
@@ -447,7 +447,7 @@ module Forcing
           zstar=xyz1(3)
         else
           zstar=impossible
-          call fatal_error('must have height_ff/=0','forcing')
+          call fatal_error('initialize_forcing',"must have height_ff/=0 for iforce_profile=='1+(z-z0)^n'")
         endif
         profz_ampl=(1.+(z-zstar)/height_ff)**nexp_ff
         profz_hel=1.
@@ -464,7 +464,7 @@ module Forcing
           zstar=xyz1(3)
         else
           zstar=impossible
-          call fatal_error('must have height_ff/=0','forcing')
+          call fatal_error('initialize_forcing',"must have height_ff/=0 for iforce_profile=='1+(z-z0)^n_prof'")
         endif
         profz_ampl=((1.+(z-zstar)/height_ff)**nexp_ff)*.5*(1.+tanh(20.*cos(.55*z)))
         profz_hel=1.
@@ -887,6 +887,8 @@ module Forcing
           enddo
 
         endif 
+      elseif (iforce=='twist') then
+        if (r_ff==0.) call fatal_error('initialize_forcing',"for iforce='twist', r_ff=0 impossible")
       endif
 
       if (lff_as_aux) call register_report_aux('ff', iff, ifx, ify, ifz)
@@ -907,7 +909,7 @@ module Forcing
       if (cs0eff==impossible) then
         if (cs0==impossible) then
           cs0eff=1.
-          if (headt) print*,'initialize_forcing: for normalization, use cs0eff=',cs0eff
+          if (lroot) print*,'initialize_forcing: for normalization, use cs0eff=',cs0eff
         else
           cs0eff=cs0
         endif
@@ -1117,7 +1119,7 @@ module Forcing
         case ('tidal');           call forcing_tidal(f,force)
         case ('zero'); if (headt.and.ip<10) print*,'addforce: No forcing'
         case default
-          if (lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
+          if (lroot) call warning('addforce','No such iforce: '//trim(iforce))
         endselect
       endif
 !
@@ -3580,7 +3582,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
       elseif (iforce_tprofile=='sin^2') then
         force_tmp=force_ampl*sin(pi*(tsforce-t)/dtforce)**2
       else
-        call  fatal_error('forcing_gaussianpot','iforce_tprofile not good')
+        call fatal_error('forcing_gaussianpot','no such iforce_tprofile: '//trim(iforce_tprofile))
       endif
 !
 !  Possibility of outputting data at each time step (for testing).
@@ -3816,7 +3818,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
         endif
         fact=force_tmp
       else
-        call  fatal_error('forcing_hillrain','iforce_tprofile not good')
+        call fatal_error('forcing_hillrain','no such iforce_tprofile: '//trim(iforce_tprofile))
       endif
 !
 !  Let explosion last dtforce_duration or, by default, until next explosion.
@@ -4503,9 +4505,6 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
       xx=spread(x(l1:l2),2,nz)
       zz=spread(z(n1:n2),1,nx)
-      if (r_ff==0.) then
-        if (lroot) print*,'forcing_twist: division by r_ff=0!!'
-      endif
       r2=(xx**2+zz**2)/r_ff**2
       tmp=exp(-r2/max(1.-r2,1e-5))*ffnorm
       fx=-zz*tmp
@@ -4612,9 +4611,8 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !  Check whether we want to do forcing at this time.
 !
       call update_snaptime(file,tforce,nforce,dtforce,t,lforce,ch)
-      if (lforce) then
+      if (lforce) &
         call blob(force,f,iss,radius_ff,location(1),location(2),location(3))
-      endif
 !
     endsubroutine forcing_blobs
 !***********************************************************************
@@ -4643,7 +4641,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       if (headt) print*,'forcing_blobHS_random: ENTER'
 !
       if (lfirst_call) then
-        t_next_blob=t+1.
+        t_next_blob=t+1.      !MR: why +1?
         lfirst_call=.false.
       endif
 !
@@ -5170,7 +5168,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       sinzt(:,i)=0.
       coszt(:,i)=0.
 !
-      if (nk_GP>100) call fatal_error('calc_GP_TC13','large nk_GP not implemented')
+      if (nk_GP>100) call not_implemented('calc_GP_TC13','for nk_GP>100')
       do ii=1,nk_GP
         if (nk_GP==1) then
           k = kmin_GP
@@ -5215,7 +5213,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
           cosxt(:,i) = sinxt(:,i) + k*( knorm**(-beta_GP) ) * &
               cos( k * ( x-eta + sin(omega*t) ) )
         case default
-          call fatal_error('calc_GP_TC13','no valid iforcing_cont specified')
+          call fatal_error('calc_GP_TC13','no such sp: '//trim(sp))
         endselect
       enddo
 !
@@ -5281,7 +5279,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
           sinyt(:,i)=sin(kf_fcont(i)*y+ecoyt); cosyt(:,i)=cos(kf_fcont(i)*y+ecoyt)
           sinzt(:,i)=sin(kf_fcont(i)*z+ecozt); coszt(:,i)=cos(kf_fcont(i)*z+ecozt)
         elseif (iforcing_cont(i)=='TG-random-nonhel' .or. &
-            iforcing_cont(i)=='TG-random-hel') then
+                iforcing_cont(i)=='TG-random-hel') then
           call calc_TG_random(i)
         endif
       enddo
@@ -5333,7 +5331,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  calculate forcing
 !
       if (lpencil(i_fcont)) then
-        if (headtt .and. lroot) print*,'forcing: add continuous forcing'
+        if (headtt) print*,'forcing: add continuous forcing'
 
         do i=1,n_forcing_cont
           call forcing_cont(i,p%fcont(:,:,i),rho1=p%rho1)

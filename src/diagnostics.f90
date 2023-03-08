@@ -117,9 +117,9 @@ module Diagnostics
 !  26-aug-13/MR: removed switch first; moved calculation of dVol_rel1 from diagnostic
 !  31-mar-15/MR: added switch for proper volume averaging
 !
-      integer :: i
       real :: dxeff,dyeff,dzeff
       real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel
+      integer :: i
 ! 
 !  Initialize rcyl for the phi-averages grid. Does not need to be
 !  done after each reload of run.in, but this is the easiest way
@@ -127,8 +127,8 @@ module Diagnostics
 !
       if (nrcyl/=0) then
         if ((lcylinder_in_a_box .or. lsphere_in_a_box) .and. &
-            .not.(xyz0(1)==-xyz1(1) .and. xyz0(2)==-xyz1(2) .and. xyz1(1)==xyz1(2))) then
-          call warning("initialize_diagnostics","box not centered at x,y=0,"// &
+            .not.(xyz0(1)==-xyz1(1) .and. xyz0(2)==-xyz1(2) .and. Lxyz(1)==Lxyz(2))) then
+          call warning("initialize_diagnostics","box not centered at x,y=0 or box not isotropic in x,y,"// &
                        achar(10)//"although this is assumed for [cylinder|star]-in-a-box."// &
                        achar(10)//"We set rcyl range to maximum possible")
           drcyl=minval((/xyz1(1),-xyz0(1),xyz0(2),-xyz1(2)/))/nrcyl

@@ -20,12 +20,12 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Started:   18-Jul-2006
 # CVS: $Id$
 # Usage:
-#   mkdummy -d default_case.f90 -s special_file.f90 [-o dummies.inc]
+#   mkdummyinc -d default_case.f90 -s special_file.f90 [-o dummies.inc]
 # Description:
 #   Output is written as a Fortran program and supposed to end up in the
 #   local file src/$(XXXXXX_MODULE)_dummies.inc .
 # Example:
-#     mkdummy -d nospecial.f90 -s special/neutron_star.f90 -o special_dummies.inc
+#     mkdummyinc -d nospecial.f90 -s special/neutron_star.f90 -o special_dummies.inc
 #
 # History:
 #   17-jul-06/tony: Created

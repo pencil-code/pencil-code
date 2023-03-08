@@ -3420,13 +3420,11 @@ module Sub
 !  Spherical and cylindrical coordinates are not
 !  implemented for this subroutine.
 !
-      if (lspherical_coords) then
-        call fatal_error('u_dot_grad_mat','not implemented in sph-coordinates')
-      endif
+      if (lspherical_coords) &
+        call not_implemented('u_dot_grad_mat','in spherical coordinates')
 !
-      if (lcylindrical_coords) then
-        call fatal_error('u_dot_grad_mat','not implemented in cyl-coordinates')
-      endif
+      if (lcylindrical_coords) &
+        call not_implemented('u_dot_grad_mat','in cylindrical coordinates')
 !
     endsubroutine u_dot_grad_mat
 !***********************************************************************
@@ -6917,8 +6915,7 @@ nameloop: do
 !
       call dot2(bb_hat,a2)
 !
-      if (maxval(a2) > 1.+1e-6) &
-          call fatal_error('unit_vector:','has not the length 1')
+      if (maxval(a2) > 1.+1e-6) call fatal_error('unit_vector','has not length 1')
 !
     endsubroutine unit_vector
 !***********************************************************************
@@ -6961,8 +6958,7 @@ nameloop: do
         endif
       enddo
 !
-      if (lcylindrical_coords) &
-        del6f(:,2) = rcyl_mn1*del6f(:,2)
+      if (lcylindrical_coords) del6f(:,2) = rcyl_mn1*del6f(:,2)
 !
       if (lspherical_coords) then
         del6f(:,2) = r1_mn*del6f(:,2)
@@ -6982,13 +6978,14 @@ nameloop: do
 !  12-apr-12/MR: optional parameter modified
 !   8-apr-17/wlyra: encapsulated the calculation of del6     
 !
-      real, dimension (mx,my,mz,mfarray), intent(IN)    :: f
-      integer                                           :: k
-      real, dimension (nx,3),             intent(IN)    :: uu
-      real, dimension (nx),               intent(INOUT) :: ugradf
-      integer,                            intent(IN), optional :: mask
-      real, dimension (nx) :: del6f_upwind
-      integer                :: msk
+      real, dimension(mx,my,mz,mfarray),intent(IN)          :: f
+      integer                                               :: k
+      real, dimension(nx,3),            intent(IN)          :: uu
+      real, dimension(nx),              intent(INOUT)       :: ugradf
+      integer,                          intent(IN),optional :: mask
+
+      real, dimension(nx) :: del6f_upwind
+      integer :: msk
 !
       msk=0
       if (present(mask)) then
