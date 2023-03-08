@@ -682,6 +682,16 @@ module Shock
 !
     endsubroutine calc_shock_profile
 !***********************************************************************
+    subroutine shock_before_boundary(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!     
+!  Shock profile calculation.
+!
+      call calc_shock_profile(f)
+
+    endsubroutine shock_before_boundary
+!***********************************************************************
     subroutine shock_divu_perp_pencil(f,bb_hat,divu,divu_perp)
 !
 !  Calculate `perpendicular divergence' of u.

@@ -135,7 +135,7 @@ module Shock
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_shock
-!!***********************************************************************
+!***********************************************************************
     subroutine calc_shock_profile_simple(f)
 !
 !  calculate viscous heating term for right hand side of entropy equation
@@ -148,7 +148,7 @@ module Shock
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_shock_profile_simple
-!!***********************************************************************
+!***********************************************************************
     subroutine calc_shock_profile(f)
 !
 !  calculate viscous heating term for right hand side of entropy equation
@@ -161,5 +161,15 @@ module Shock
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_shock_profile
+!***********************************************************************
+    subroutine shock_before_boundary(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!     
+!  Shock profile calculation.
+!
+      call calc_shock_profile(f)
+
+    endsubroutine shock_before_boundary
 !***********************************************************************
 endmodule Shock

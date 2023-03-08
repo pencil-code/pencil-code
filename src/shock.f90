@@ -311,9 +311,8 @@ module Shock
     subroutine shock_before_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-     
-!  Initiate shock profile calculation and use asynchronous to handle
-!  communication along processor/periodic boundaries.
+!     
+!  Shock profile calculation.
 !
       call calc_shock_profile(f)
  

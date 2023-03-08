@@ -258,8 +258,8 @@ module General
       imn_array=0
       if (ncpus==1) then
         imn=1
-        necessary(1)=.true.
-        necessary_imn=nyz+1
+        necessary=.true.
+        necessary_imn=1
         do n=n1,n2
           do m=m1,m2
             mm(imn)=m
@@ -284,7 +284,7 @@ module General
             endif
           enddo
         enddo
-        necessary(imn)=.true.
+        necessary(imn:)=.true.
         necessary_imn=imn
 !
 !  Do the upper stripe in the n-direction.

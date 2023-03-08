@@ -498,7 +498,7 @@ module Cdata
 ! averaging over smaller box
   logical :: lav_smallx=.false.,loutside_avg=.false.
   real :: xav_max=impossible
-  real :: nVol,nVol1  !  For calculating averages in non-cartesian coordinates
+  real :: nVol,nVol1  !  For calculating averages in non-Cartesian coordinates
 !
 ! Averages of half the computational box:
 ! fname_half has two indices, the first contains the quantity averaged

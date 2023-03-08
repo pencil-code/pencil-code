@@ -65,7 +65,7 @@ module Equ
       use Radiation
       use Selfgravity
       use Shear
-      use Shock, only: calc_shock_profile, calc_shock_profile_simple
+      use Shock, only: shock_before_boundary, calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells,dsolid_dt_integrate
       use Special, only: special_before_boundary,special_after_boundary
       use Sub
@@ -112,8 +112,8 @@ module Equ
 !
 !  Record times for diagnostic and 2d average output.
 !
-      if (ldiagnos   ) tdiagnos   =t ! (diagnostics are for THIS time)
-      if (l1davgfirst) t1ddiagnos =t ! (1-D averages are for THIS time)
+      if (ldiagnos   ) tdiagnos  =t ! (diagnostics are for THIS time)
+      if (l1davgfirst) t1ddiagnos=t ! (1-D averages are for THIS time)
       if (l2davgfirst)  then
         t2davgfirst=t ! (2-D averages are for THIS time)
 !
@@ -159,7 +159,7 @@ module Equ
 !
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
-      call impose_floors_ceilings(f)
+      call impose_floors_ceilings(f)   !MR: too early, f modifications come below
 !
 !  Apply global boundary conditions to particle positions and communicate
 !  migrating particles between the processors.
@@ -194,18 +194,12 @@ module Equ
       if (lspecial)      call special_before_boundary(f)
       if (ltestflow)     call testflow_before_boundary(f)
       if (ltestfield)    call testfield_before_boundary(f)
-      if (lpscalar)      call pscalar_before_boundary(f)      
       if (lparticles)    call particles_before_boundary(f)
+      if (lpscalar)      call pscalar_before_boundary(f)
       if (ldetonate)     call detonate_before_boundary(f)
-!
-!  Fetch fp to the special module.
-!
+      !if (lchemistry)    call chemistry_before_boundary(f)
       if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
-!
-!  Initiate shock profile calculation and use asynchronous to handle
-!  communication along processor/periodic boundaries.
-!
-      if (lshock) call calc_shock_profile(f)
+      if (lshock)        call shock_before_boundary(f)
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
@@ -233,8 +227,7 @@ module Equ
 !  before the call to update_solid_cells in order to avoid corrections
 !  within the solid structure.
 !
-      if (lsolid_cells .and. lchemistry) &
-        call chemspec_normalization_N2(f)
+      if (lsolid_cells .and. lchemistry) call chemspec_normalization_N2(f)
 !
 ! update solid cell "ghost points". This must be done in order to get the
 ! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
@@ -313,7 +306,7 @@ module Equ
 !  Use early_finalize in this case.
 !  MR+joern+axel, 8.10.2015
 !
-      call timing('pde','before hydro_after_boundary')
+      call timing('pde','before "after_boundary" calls')
 !
       if (lhydro)                 call hydro_after_boundary(f)
       if (lviscosity)             call viscosity_after_boundary(f)
@@ -331,12 +324,15 @@ module Equ
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
       if (lspecial)               call special_after_boundary(f)
 !
-!  Calculate quantities for a chemical mixture
+      call timing('pde','after "after_boundary" calls')
 !
       if (lchemistry .and. ldustdensity) then
         call chemspec_normalization(f)
 !        call dustspec_normalization(f)
       endif
+!
+!  Calculate quantities for a chemical mixture
+!
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
       call timing('pde','after calc_for_chem_mixture')
 !
@@ -354,7 +350,7 @@ module Equ
 !
       if (lanelastic) call anelastic_after_mn(f,p,df,mass_per_proc)
 !
-      call timing('pde','at the end of the mn_loop')
+      call timing('pde','after the end of the mn_loop')
 !
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
 !
@@ -510,9 +506,9 @@ module Equ
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
 
-      integer :: nyz, imn
+      integer :: imn
 
-      nyz=ny*nz
+      lfirstpoint=.true.
       do imn=1,nyz
 
         n=nn(imn)
@@ -526,15 +522,14 @@ module Equ
           if (ninds(0,m,n)<=0) cycle
         endif
 
-        lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
-        llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
-
         call calc_all_pencils(f,p)
         call calc_diagnostics_density(f,p)
         call calc_diagnostics_energy(f,p)
         call calc_diagnostics_hydro(f,p)
         call calc_diagnostics_magnetic(f,p)
         if (lforcing_cont) call calc_diagnostics_forcing(p)
+
+        lfirstpoint=.false.
 
       enddo
 
@@ -597,9 +592,9 @@ module Equ
 !
 !  Calculate profile for phi-averages if needed.
 !
-        if ((l2davgfirst.and.lwrite_phiaverages )  .or. &
-            (l1dphiavg  .and.lwrite_phizaverages))  &
-            call calc_phiavg_profile(p)
+        if (((l2davgfirst.and.lwrite_phiaverages )  .or. &
+             (l1dphiavg  .and.lwrite_phizaverages)) .and. &
+            (lcylinder_in_a_box.or.lsphere_in_a_box)) call calc_phiavg_profile(p)
 !
 !  Calculate pencils for the pencil_case.
 !  Note: some no-modules (e.g. nohydro) also calculate some pencils,
@@ -657,7 +652,7 @@ module Equ
       use Cosmicray
       use CosmicrayFlux
       use Density
-      use Diagnostics, only: initialize_diagnostic_arrays, prep_finalize_thread_diagnos
+      use Diagnostics, only: prep_finalize_thread_diagnos
       use Dustvelocity
       use Dustdensity
       use Energy
@@ -688,7 +683,7 @@ module Equ
       use Testflow
       use Testscalar
       use Viscosity, only: calc_pencils_viscosity
-!$    use omp_lib
+!$    use Omp_lib
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
@@ -696,31 +691,22 @@ module Equ
       real, dimension(1)                ,intent(INOUT) :: mass_per_proc
       logical                           ,intent(IN   ) :: early_finalize
 
-      integer :: nyz
       real, dimension (nx,3) :: df_iuu_pencil
+      logical :: lcommunicate
 !$    integer :: num_omp_ranks, omp_rank
 !
-!$      call initialize_diagnostic_arrays
-!$      lfirstpoint=.false.
-
-      nyz=ny*nz
-!
 !$    num_omp_ranks = OMP_get_num_procs()
-!$    !print*, 'NUM_OMP_RANKS=', num_omp_ranks
 !$    call OMP_set_num_threads(num_omp_ranks)
 !
 !$omp do private(p,df_iuu_pencil)
 !
+      lfirstpoint=.true.
+      lcommunicate=.not.early_finalize
+
       mn_loop: do imn=1,nyz
-!
-!$      omp_rank=OMP_get_thread_num()
 !
         n=nn(imn)
         m=mm(imn)
-
-!$      if (num_omp_ranks==0) &
-        lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
-        llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
 
         !if (imn_array(m,n)==0) cycle
 !
@@ -735,27 +721,32 @@ module Equ
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
 !
+!$      if (.not.lopenmp) &
         call timing('pde','before lanelastic',mnloop=.true.)
         if (lanelastic) then
-          df_iuu_pencil = df(l1:l2,m,n,iuu:iuu+2)
-          df(l1:l2,m,n,iuu:iuu+2)=0.0
+          df_iuu_pencil = df(l1:l2,m,n,iux:iuz)
+          df(l1:l2,m,n,iux:iuz)=0.0
         endif
 !
 !        if (loptimise_ders) der_call_count=0 !DERCOUNT
 !
 !  Make sure all ghost points are set.
 !
-        if (.not.early_finalize.and.necessary(imn)) then
-          call finalize_isendrcv_bdry(f)
-          call boundconds_y(f)
-          call boundconds_z(f)
+        if (lcommunicate) then
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f)
+            call boundconds_y(f)
+            call boundconds_z(f)
+            lcommunicate=.false.
+          endif
         endif
+!$      if (.not.lopenmp) &
         call timing('pde','finished boundconds_z',mnloop=.true.)
 !
 !  For each pencil, accumulate through the different modules
 !  advec_XX and diffus_XX, which are essentially the inverse
 !  advective and diffusive timestep for that module.
-!  (note: advec2 is an inverse _squared_ timesteps)
+!  (note: advec2 is an inverse _squared_ timestep)
 !  Note that advec_cs2 should always be initialized when leos.
 !
         if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
@@ -960,26 +951,24 @@ module Equ
 !
         if (lanelastic) then
 !          call calc_pencils_density(f,p)
-          f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
+          f(l1:l2,m,n,irhs)   = p%rho*df(l1:l2,m,n,iuu)
           f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
           f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
-          df(l1:l2,m,n,iuu:iuu+2) = df_iuu_pencil(1:nx,1:3) +&
-                                    df(l1:l2,m,n,iuu:iuu+2)
+          df(l1:l2,m,n,iux:iuz) = df_iuu_pencil + df(l1:l2,m,n,iux:iuz)
           call sum_mn(p%rho,mass_per_proc(1))
         endif
+!$      if (.not.lopenmp) &
         call timing('pde','end of mn loop',mnloop=.true.)
 !
 !  End of loops over m and n.
 !
         headtt=.false.
+        lfirstpoint=.false.
 !
       enddo mn_loop
 !
 !$omp end do
-!$      if (omp_rank==0) then
-          call prep_finalize_thread_diagnos
-!         thread reductions
-!$      endif
+!$     call prep_finalize_thread_diagnos
 !$omp end parallel
 !
       if (ltime_integrals.and.llast) then
@@ -995,7 +984,7 @@ module Equ
 !  23-nov-02/axel: coded
 !
       open(1,file=trim(directory)//'/imn_arrays.dat')
-      do imn=1,ny*nz
+      do imn=1,nyz
         if (necessary(imn)) write(1,'(a)') '----necessary=.true.----'
         write(1,'(4i6)') imn,mm(imn),nn(imn)
       enddo
@@ -1116,9 +1105,9 @@ module Equ
 !
       headtt = headt .and. lfirst .and. lroot
 !
-!$omp do private(p,pfreeze,iv,n,m)
+!$omp do private(p,pfreeze,iv,imn,n,m)
 !
-      do imn=1,ny*nz
+      do imn=1,nyz
 
         n=nn(imn)
         m=mm(imn)
@@ -1131,7 +1120,7 @@ module Equ
 
           call calc_pencils_grid(p,lpenc_loc)
 !
-!  Set df=0 for r_mn<r_int.
+!  Set df=0 for r_mn<rfreeze_int.
 !
           if (any(lfreeze_varint)) then
             if (headtt) print*, 'pde: freezing variables for r < ', rfreeze_int, &
@@ -1302,7 +1291,7 @@ module Equ
 !
         advec2=advec2+advec_cs2
         if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
-            (ltestfield_z.and.iuutest>0))  maxadvec=maxadvec+sqrt(advec2)
+            (ltestfield_z.and.iuutest>0)) maxadvec=maxadvec+sqrt(advec2)
 
         if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) maxadvec=maxadvec+sqrt(advec2_hypermesh)
 !
