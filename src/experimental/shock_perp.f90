@@ -421,9 +421,10 @@ module Shock
       use Mpicomm
       use Sub
 !
-      logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: tmp
+!
+      real, dimension(mx,my,mz) :: tmp
+      logical :: early_finalize,lcommunicate
 !
       if ((.not.lshock_first).or.lfirst) then
         if (lgauss_integral) then
@@ -479,6 +480,8 @@ module Shock
 !  set indices and check whether communication must now be completed
 !  if test_nonblocking=.true., we communicate immediately as a test.
 !
+          lcommunicate=.not.early_finalize
+
           do imn=1,ny*nz
             n=nn(imn)
             m=mm(imn)
@@ -487,10 +490,13 @@ module Shock
 !
 ! make sure all ghost points are set
 !
-            if (.not.early_finalize.and.necessary(imn)) then
-              call finalize_isendrcv_bdry(f,iux,iuz)
-              call boundconds_y(f,iux,iuz)
-              call boundconds_z(f,iux,iuz)
+            if (lcommunicate) then
+              if (necessary(imn)) then
+                call finalize_isendrcv_bdry(f,iux,iuz)
+                call boundconds_y(f,iux,iuz)
+                call boundconds_z(f,iux,iuz)
+                lcommunicate=.false.
+              endif
             endif
 !
 ! Calculate all local shock profile contributions

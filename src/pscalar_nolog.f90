@@ -1064,7 +1064,7 @@ module Pscalar
                                    achar(10)//"We proceed, but you'll get ccm=0")
           ccm=0.
         else
-          ccm=sqrt(sum(fnamez(:,:,idiag_ccmz)**2)/nzgrid
+          ccm=sqrt(sum(fnamez(:,:,idiag_ccmz)**2)/nzgrid)
         endif
         call save_name(ccm,idiag_ccm)
       endif
