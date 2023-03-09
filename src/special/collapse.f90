@@ -37,7 +37,7 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 4
+! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED rrr, drrr, d2rrr, bet, mass, drho, grav
@@ -155,18 +155,48 @@ module Special
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, Hubble_ini, lnascale
-      integer :: j
+      real, dimension(:), allocatable :: m13_file, r_file
+      real :: dm13_file, m13, m13a, m13b, r, r1, r2
+      integer :: j, im13_file, nm13_file, l
 !
       intent(inout) :: f
 !
-!  SAMPLE IMPLEMENTATION
+!  Initial condition.
 !
       do j=1,ninit
-
         select case (initspecial(j))
           case ('nothing'); if (lroot) print*,'init_special: nothing'
-          case default
+          case ('r_vs_m13')
+            open(1,file='r_vs_m13.dat',status='old')
+            read(1,*) nm13_file, dm13_file
+          if (allocated(m13_file)) deallocate(m13_file, r_file)
+          allocate(m13_file(nm13_file), r_file(nm13_file))
+          do im13_file=1,nm13_file
+            read(1,*) m13_file(im13_file), r_file(im13_file)
+          enddo
+          close(1)
+          do l=l1,l2
+            m13=x(l)**onethird
+            im13_file=1+int(m13/dm13_file)
+!
+!  Check upper limit:
+!
+            if (im13_file+1 >= nm13_file) then
+              print*,x(l)**onethird,im13_file
+              call fatal_error("init_special","im13_file too large")
+            endif
+!
+!  Linear interpolation:
+!
+            r1=r_file(im13_file)
+            r2=r_file(im13_file+1)
+            m13a=m13_file(im13_file)
+            m13b=m13_file(im13_file+1)
+            r=r1+(r2-r1)*(m13-m13a)/(m13b-m13a)
+            if (mod(l,100)==0) print*,'interpol(sampled): ',m13a, m13, m13b, r1, r, r2
+            f(l,m1,n1,irrr)=f(l,m1,n1,irrr)+r
+          enddo
+        case default
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))
         endselect
       enddo
@@ -179,11 +209,15 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-!  pencil for ...
+!  Request pencils.
 !
+      lpenc_requested(i_mass)=.true.
+      lpenc_requested(i_bet)=.true.
       lpenc_requested(i_rrr)=.true.
       lpenc_requested(i_drrr)=.true.
       lpenc_requested(i_d2rrr)=.true.
+      lpenc_requested(i_drho)=.true.
+      lpenc_requested(i_grav)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -194,10 +228,9 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Deriv, only: der
+      use Deriv, only: der, der2
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: cs2=onethird
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -212,9 +245,9 @@ module Special
 ! drrr
       if (lpencil(i_drrr)) call der(f,irrr,p%drrr,1)
 ! d2rrr
-      if (lpencil(i_d2rrr)) call der(f,irrr,p%drrr,2)
+      if (lpencil(i_d2rrr)) call der2(f,irrr,p%d2rrr,1)
 ! drho
-      if (lpencil(i_drho)) p%drho=-cs2*(p%d2rrr/(p%rrr*p%drrr)**2+2./p%rrr**3)/(4.*pi*p%drrr)
+      if (lpencil(i_drho)) p%drho=-(p%d2rrr/(p%rrr*p%drrr)**2+2./p%rrr**3)/(4.*pi*p%drrr)
 ! drho
       if (lpencil(i_grav)) p%grav=-p%mass/abs(p%rrr*(p%rrr-2.*p%mass))
 
@@ -245,12 +278,14 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
+      real :: cs2=onethird
+!
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
       df(l1:l2,m,n,irrr)=df(l1:l2,m,n,irrr)+p%bet/sqrt(1.+p%bet**2)
-      df(l1:l2,m,n,ibet)=df(l1:l2,m,n,ibet)+p%grav-p%drho
+      df(l1:l2,m,n,ibet)=df(l1:l2,m,n,ibet)+p%grav-cs2*p%drho
 !
 !  Diagnostics
 !
