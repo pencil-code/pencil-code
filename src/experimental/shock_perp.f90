@@ -481,12 +481,12 @@ module Shock
 !  if test_nonblocking=.true., we communicate immediately as a test.
 !
           lcommunicate=.not.early_finalize
+          lfirstpoint=.true.
 
           do imn=1,ny*nz
+
             n=nn(imn)
             m=mm(imn)
-            lfirstpoint=(imn==1)      ! true for very first m-n loop
-            llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
 !
 ! make sure all ghost points are set
 !
@@ -502,6 +502,8 @@ module Shock
 ! Calculate all local shock profile contributions
 !
             call shock_calc_body(f)
+            lfirstpoint=.false.
+
           enddo
 !
 ! Scale and chop the shock profile, as needed

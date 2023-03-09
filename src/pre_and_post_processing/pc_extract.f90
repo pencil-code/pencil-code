@@ -324,11 +324,12 @@ program pc_extract
 !!!        call pde (f,df,p)
 !
         global_output = impossible
+        lfirstpoint=.true.
+
         do imn = 1, ny*nz
+
           n = nn (imn)
           m = mm (imn)
-          lfirstpoint = (imn == 1)      ! true for very first m-n loop
-          llastpoint = (imn == (ny*nz)) ! true for very last m-n loop
           do pos = 1, num_quantities
             select case (output_names(pos))
               case ("curl_a")
@@ -348,6 +349,8 @@ program pc_extract
             global_output(1+ipx*nx:nx+ipx*nx,m-nghost,n-nghost,global_start(pos):global_start(pos)-1+global_size(pos)) &
                 = tmp(:,1:global_size(pos))
           enddo
+          lfirstpoint=.false.
+
         enddo
 !
         ! collect x coordinates:

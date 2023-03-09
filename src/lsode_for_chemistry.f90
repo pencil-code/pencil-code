@@ -38,10 +38,11 @@ module LsodeForChemistry
 !
 !  Do loop over m and n.
 !
+      lfirstpoint=.true.
       mn_loop: do imn=1,nyz
+!
         n=nn(imn)
         m=mm(imn)
-        lfirstpoint=(imn==1)      ! true for very first m-n loop
 !
         call calc_pencils_chemistry(f,p)
 !
@@ -52,10 +53,13 @@ module LsodeForChemistry
 !  Evolution of chemical species
 !
         call dchemistry_dt(f,df,p)
+!$      if (.not.lopenmp) &
         call timing('pde_chemistry','end of mn loop',mnloop=.true.)
 !
 !  End of loops over m and n.
 !
+        lfirstpoint=.false.
+
       enddo mn_loop
       call timing('pde','at the end of the mn_loop')
 !

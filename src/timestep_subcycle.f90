@@ -339,11 +339,11 @@ module Timestep
 !  Do loop over m and n.
 !
       lcommunicate=.not.early_finalize
+      lfirstpoint=.true.
 
       mn_loop: do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-        lfirstpoint=(imn==1)      ! true for very first m-n loop
 !
 !  Make sure all ghost points are set.
 !
@@ -389,9 +389,9 @@ module Timestep
         if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
         if (lfilter_farray)       call filter_lnTT(f,df,dt_in)
 !
-!  End of loops over m and n.
-!
         headtt=.false.
+        lfirstpoint=.false.
+
       enddo mn_loop
 !
 !

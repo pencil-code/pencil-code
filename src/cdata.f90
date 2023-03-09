@@ -167,7 +167,7 @@ module Cdata
   real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfractional_tstep_advance=.false.
   logical :: lfractional_tstep_negative=.true.
-  logical :: lfirstpoint=.false., llastpoint=.false.
+  logical :: lfirstpoint=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_err'
