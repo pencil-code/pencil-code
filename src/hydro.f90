@@ -8142,24 +8142,26 @@ module Hydro
 !
     use Sub, only : gij
     real, dimension (mx,my,mz,mfarray) :: f
-    integer :: imn,jk,jj,kk,nyz
+    integer :: imn,jk,jj,kk
     real, dimension(nx,3,3) :: gradu
 !
 ! Calculates gradu and stores it as an auxiliary. This is expected to be called
 ! only once either during initialization or post-processing. 
 !
-    nyz=ny*nz
+    lfirstpoint=.true.       ! true for very first iteration of m-n loop
+
     do imn=1,nyz
+    
        n=nn(imn)
        m=mm(imn)
-       lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
-       llastpoint=(imn==nyz) 
        call gij(f,iuu,gradu,1)
        jk=0
        do jj=1,3; do kk=1,3
          f(l1:l2,m,n,iguij+jk) = gradu(:,jj,kk)
          jk=jk+1
        enddo;enddo
+       lfirstpoint=.false.
+       
     enddo
 !
     endsubroutine calc_gradu
