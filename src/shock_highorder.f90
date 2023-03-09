@@ -616,9 +616,9 @@ module Shock
       endif fix_Re
 !
       if (ldivu_perp) then
+!
         call boundconds_x(f,ishock_perp,ishock_perp)
         call initiate_isendrcv_bdry(f,ishock_perp,ishock_perp)
-!
         lcommunicate=.true.
 
         do imn=1,nyz
@@ -641,8 +641,11 @@ module Shock
           f(l1:l2,m,n,ishock_perp)=max(0.,-penc_perp)
 !
         enddo
+!
         tmp = 0.0
 
+        call boundconds_x(f,ishock_perp,ishock_perp)
+        call initiate_isendrcv_bdry(f,ishock_perp,ishock_perp)
         lcommunicate=.true.
 
         do imn=1,nyz
