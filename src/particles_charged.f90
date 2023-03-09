@@ -1369,10 +1369,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of charged particle velocity.
-!
 !
       use Diagnostics
       use EquationOfState, only: cs20
@@ -1382,7 +1381,6 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
-      type (pencil_case) :: p
 !
       real :: Omega2
       integer :: npar_found
@@ -1667,6 +1665,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+
       real :: vsqr,mass,radius,qbym,one_by_tau
       real, dimension (3) :: EEp,bbp,accn,velocity,fmagnetic,&
                              drag_accn,uup

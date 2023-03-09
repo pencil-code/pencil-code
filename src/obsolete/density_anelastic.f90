@@ -904,13 +904,13 @@ module Density
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
         case ('anelastic')
 !            f(l1:l2,m,n,ilnrho)=-0.1*z(n)
+        lfirstpoint=.true.      ! true for very first m-n loop
         do imn=1,ny*nz
           n=nn(imn)
           m=mm(imn)
-          lfirstpoint=(imn==1)      ! true for very first m-n loop
-          llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
           f(l1:l2,m,n,ilnrho)=-0.0*z(n)/cs20
           call sum_mn(exp(f(l1:l2,m,n,ilnrho)),pres_per_proc(1))
+          lfirstpoint=.false.
         enddo
           call get_average_density(pres_per_proc(1),average_density)
         write(*,*) 'PC:anelastic:den',average_density

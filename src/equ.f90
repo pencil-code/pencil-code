@@ -371,7 +371,7 @@ module Equ
 !
       if (lparticles) then
         call particles_pde_blocks(f,df)
-        call particles_pde(f,df,p)
+        call particles_pde(f,df)
       endif
 !
       if (lpointmasses) call pointmasses_pde(f,df)
@@ -723,6 +723,7 @@ module Equ
 !
 !$      if (.not.lopenmp) &
         call timing('pde','before lanelastic',mnloop=.true.)
+
         if (lanelastic) then
           df_iuu_pencil = df(l1:l2,m,n,iux:iuz)
           df(l1:l2,m,n,iux:iuz)=0.0

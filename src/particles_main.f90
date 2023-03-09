@@ -772,7 +772,7 @@ module Particles_main
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
-    subroutine particles_pde(f,df,p)
+    subroutine particles_pde(f,df)
 !
 !  Dynamical evolution of particle variables.
 !
@@ -783,11 +783,9 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
 !
       intent (inout)  :: f
       intent (out) :: df
-      intent (in) :: p
 !
 !  Write information about local particle environment to file.
 !
@@ -797,7 +795,7 @@ module Particles_main
 !  Dynamical equations.
 !
       if (lparticles)             call dxxp_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles)             call dvvp_dt(f,df,p,fp,dfp,ineargrid)
+      if (lparticles)             call dvvp_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_lyapunov)    call dlyapunov_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_spin)        call dps_dt(f,df,fp,dfp,ineargrid)

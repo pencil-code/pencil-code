@@ -501,7 +501,7 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
@@ -512,7 +512,6 @@ module Particles
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
-      type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)

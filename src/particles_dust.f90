@@ -3202,7 +3202,7 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
@@ -3219,7 +3219,6 @@ module Particles
       real, dimension(mpar_loc,mparray), intent(inout) :: fp
       real, dimension(mpar_loc,mpvar), intent(inout) :: dfp
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
-      type (pencil_case) :: p
 !
       real :: Omega2
       integer :: npar_found
