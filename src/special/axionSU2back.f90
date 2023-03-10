@@ -71,6 +71,8 @@ module Special
   integer :: idiag_chiddot =0 ! DIAG_DOC: $\ddot{\chi}$
   integer :: idiag_psi =0 ! DIAG_DOC: $\psi$
   integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
+  integer :: idiag_psi_anal =0 ! DIAG_DOC: $\psi^{\rm anal}$
+  integer :: idiag_TR_anal  =0 ! DIAG_DOC: $T_R^{\rm anal}$
   integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
   integer :: idiag_grant=0 ! DIAG_DOC: ${\cal T}^\chi$
   integer :: idiag_grand2=0 ! DIAG_DOC: ${\cal T}^Q$ (test)
@@ -256,11 +258,13 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: Q, Qdot, Qddot, chi, chidot, chiddot
       real, dimension (nx) :: psi, psidot, TR, TRdot
+      real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
       real, dimension (nx) :: Uprime, mQ, xi, epsQE, epsQB
       real :: fact=1.
       type (pencil_case) :: p
 !
-      intent(in) :: f,p
+      intent(in) :: p
+      intent(inout) :: f
       intent(inout) :: df
 !
       call keep_compiler_quiet(p)
@@ -310,16 +314,41 @@ module Special
         chiddot=-3.*g*lamf*Q**2*(Qdot+H*Q)-3.*H*chidot-Uprime
       endif
 !
+!  analytical solution
+!
+!       case ('standard')
+!         if (lconf_time) then
+!           tstart=-1./(ascale_ini*H)
+!           t=tstart
+!           print*,'k=',k
+            psi_anal=(1./sqrt(2.*k))*cos(-k*t)
+            psidot_anal=(k/sqrt(2.*k))*sin(-k*t)
+            TR_anal=(1./sqrt(2.*k))*cos(-k*t)
+            TRdot_anal=(k/sqrt(2.*k))*sin(-k*t)
+!         else
+!
 !  perturbation
 !
       if (lconf_time) then
-        df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
-        df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-          -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi+(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
-        df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
-        df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
-          -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
-          +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
+        where (k>(a*H*2.7))
+          df(l1:l2,m,n,iaxi_psi)=0.
+          df(l1:l2,m,n,iaxi_psidot)=0.
+          df(l1:l2,m,n,iaxi_TR)=0.
+          df(l1:l2,m,n,iaxi_TRdot)=0.
+          f(l1:l2,m,n,iaxi_psi)=psi_anal
+          f(l1:l2,m,n,iaxi_psidot)=psidot_anal
+          f(l1:l2,m,n,iaxi_TR)=TR_anal
+          f(l1:l2,m,n,iaxi_TRdot)=TRdot_anal
+        elsewhere
+!
+          df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+          df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
+            -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi+(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
+          df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
+          df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
+            -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
+            +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
+        endwhere
       else
         df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
         if (lwith_eps) then
@@ -389,6 +418,8 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call sum_mn_name(chi,idiag_chi)
         call sum_mn_name(chidot,idiag_chidot)
         call sum_mn_name(chiddot,idiag_chiddot)
+        call sum_mn_name(psi_anal,idiag_psi_anal)
+        call sum_mn_name(TR_anal,idiag_TR_anal)
         call sum_mn_name(psi,idiag_psi)
         call sum_mn_name(TR,idiag_TR)
         call sum_mn_name(grand,idiag_grand)  !redundant
@@ -499,13 +530,17 @@ endif
 !
       TReff=TR
       TRdoteff=TRdot
-      where (TR<1./sqrt(2.*a*H))
-        TReff=0.
-        TRdoteff=0.
+      !where (TR<1./sqrt(2.*a*H))
+      where (k>(a*H*2.7))
+        !TReff=0.
+        !TRdoteff=0.
+        TReff=(1./sqrt(2.*k))*cos(-k*t)
+        TRdoteff=(k/sqrt(2.*k))*sin(-k*t)
       endwhere
 !
       grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
       grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
+!
       if (lconf_time) then
         dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
         (a*mQ*H**2+g*Qdot)*TReff**2+(mQ*H-k/a)*2*TReff*TRdoteff &
@@ -547,7 +582,7 @@ endif
 !
       if (lreset) then
         idiag_Q=0; idiag_Qdot=0; idiag_Qddot=0; idiag_chi=0; idiag_chidot=0; idiag_chiddot=0
-        idiag_psi=0; idiag_TR=0
+        idiag_psi=0; idiag_TR=0; idiag_psi_anal=0; idiag_TR_anal=0
         idiag_grand=0; idiag_grant=0; idiag_grand2=0; idiag_dgrant=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0
       endif
@@ -561,6 +596,8 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'chiddot' ,idiag_chiddot)
         call parse_name(iname,cname(iname),cform(iname),'psi' ,idiag_psi)
         call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
+        call parse_name(iname,cname(iname),cform(iname),'psi_anal' ,idiag_psi_anal)
+        call parse_name(iname,cname(iname),cform(iname),'TR_anal' ,idiag_TR_anal)
         call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
         call parse_name(iname,cname(iname),cform(iname),'grant' ,idiag_grant)
         call parse_name(iname,cname(iname),cform(iname),'grand2' ,idiag_grand2)
