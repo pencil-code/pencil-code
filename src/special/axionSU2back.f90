@@ -34,7 +34,7 @@ module Special
 !
 ! Declare index of variables
 !
-  integer :: iaxi_Q=0, iaxi_Qdot=0, iaxi_chi=0, iaxi_chidot=0
+  integer :: iaxi_Q=0, iaxi_Qdot=0, iaxi_chi=0, iaxi_chidot=0, Ndivt=100
   integer :: iaxi_psi=0, iaxi_psidot=0, iaxi_TR=0, iaxi_TRdot=0
 !
   ! input parameters
@@ -45,17 +45,18 @@ module Special
   real, dimension (nx) :: grand, grant, dgrant
   real :: grand_sum, grant_sum, dgrant_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
+  real, dimension (nx) :: dt1_special
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: lconf_time=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
-    lconf_time
+    lconf_time, Ndivt
 !
   ! run parameters
   namelist /special_run_pars/ &
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
-    lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time
+    lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, Ndivt
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -164,10 +165,10 @@ module Special
           else
             print*,'k=',k
             a=exp(H*t)
-            psi=(a/sqrt(2.*k))
-            psidot=psi*k
-            TR=(a/sqrt(2.*k))
-            TRdot=TR*k
+            psi=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
+            psidot=(-k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+            TR=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
+            TRdot=(-k/sqrt(2.*k))*sin(k/(ascale_ini*H))
             chi0=chi_prefactor*pi*fdecay
           endif
           do n=n1,n2
@@ -314,7 +315,7 @@ module Special
       if (lconf_time) then
         df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
         df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-          -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi+2.*Q*TRdot+(2.*mQ*Q*(mQ+k*t))/t*TR
+          -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi+(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
         df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
         df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
           -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
@@ -354,8 +355,13 @@ module Special
 !
 !  apply factor to switch on bachreaction gradually:
 !
-        Qddot=Qddot-sbackreact_Q*fact*grand_sum
-        chiddot=chiddot-sbackreact_chi*fact*dgrant_sum
+        if (lconf_time) then
+          Qddot=Qddot-sbackreact_Q*fact*a**2*grand_sum
+          chiddot=chiddot-sbackreact_chi*fact*a**2*dgrant_sum
+        else
+          Qddot=Qddot-sbackreact_Q*fact*grand_sum
+          chiddot=chiddot-sbackreact_chi*fact*dgrant_sum
+        endif
       endif
 !
 !  Choice whether or not we want to update the background
@@ -370,6 +376,10 @@ module Special
 if (ip<10) print*,'xi,H,k,a,TR,g,a',xi,H,k,a,TR,g,a
 if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))
 !
+      if (lfirst.and.ldt.and.lconf_time) then
+        dt1_special = Ndivt*abs(Hscript)
+        dt1_max=max(dt1_max,dt1_special)
+      endif
 !  diagnostics
 !
       if (ldiagnos) then
@@ -475,8 +485,13 @@ endif
       TRdot=f(l1:l2,m,n,iaxi_TRdot)
 !
       mQ=g*Q/H
-      xi=lamf*chidot/(2.*H)
-      a=exp(H*t)
+      if (lconf_time) then
+        a=-1./(H*t)
+        xi=lamf*chidot*(-0.5*t)
+      else
+        a=exp(H*t)
+        xi=lamf*chidot/(2.*H)
+      endif
       epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
       epsQB=g**2*Q**4/(Mpl2*H**2)
 !
