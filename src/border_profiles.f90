@@ -156,7 +156,7 @@ module BorderProfiles
         border_width=border_frac_r(2)*maxval(Lxyz)/60
         do m=m1, m2
           do n=n1, n2
-            border_prof_r(l1:l2,m,n)=0.5*(1+tanh(sqrt((x(l1:l2)**2+y(m)**2+z(n)**2)- &
+            border_prof_r(l1:l2,m,n)=0.5*(1-tanh(sqrt((x(l1:l2)**2+y(m)**2+z(n)**2)- &
                                      uborder)/border_width))
           enddo
         enddo
