@@ -30,7 +30,7 @@ module Chemistry
   use Cdata
   use General, only: keep_compiler_quiet
   use EquationOfState
-  use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error
+  use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error, not_implemented
   use Mpicomm, only: stop_it
 !
   implicit none
@@ -193,7 +193,7 @@ module Chemistry
   contains
 !
 !***********************************************************************
-    subroutine register_chemistry()
+    subroutine register_chemistry
 !
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
@@ -276,13 +276,13 @@ module Chemistry
 !
       if (lcheminp) then
         call read_thermodyn(input_file)
-      else
-        call read_thermodyn_simple()
-      endif
 !
 !  Write all data on species and their thermodynamics to file.
 !
-      if (lcheminp) call write_thermodyn()
+        call write_thermodyn
+      else
+        call read_thermodyn_simple
+      endif
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -290,7 +290,7 @@ module Chemistry
 !
     endsubroutine register_chemistry
 !***********************************************************************
-    subroutine read_thermodyn_simple()
+    subroutine read_thermodyn_simple
 
 !   Hard-coded H2_flamespeed mechanism
 !   SPECIES:
@@ -709,7 +709,7 @@ module Chemistry
 !
     endsubroutine init_chemistry
 !***********************************************************************
-    subroutine pencil_criteria_chemistry()
+    subroutine pencil_criteria_chemistry
 !
 !  All pencils that this chemistry module depends on are specified here.
 !
@@ -1711,6 +1711,27 @@ module Chemistry
 !
     endsubroutine dchemistry_dt
 !***********************************************************************
+    subroutine chemistry_before_boundary(f)
+!
+!  Calculate quantities for a chemical mixture
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+
+      if (ldustdensity) then
+        call chemspec_normalization(f)
+!        call dustspec_normalization(f)
+      endif
+
+      if (ldensity) call calc_for_chem_mixture(f)
+!
+!  Remove unphysical values of the mass fractions. This must be done
+!  before the call to update_solid_cells in order to avoid corrections
+!  within the solid structure.
+!
+      if (lsolid_cells) call chemspec_normalization_N2(f)
+
+    endsubroutine chemistry_before_boundary
+!***********************************************************************
     subroutine read_chemistry_init_pars(iostat)
 !
       use File_io, only: parallel_unit
@@ -1953,7 +1974,7 @@ module Chemistry
 !
     endsubroutine build_stoich_matrix
 !***********************************************************************
-    subroutine write_reactions()
+    subroutine write_reactions
 !
 !  write reaction coefficient in the output file
 !
@@ -2141,7 +2162,7 @@ module Chemistry
 !  read chemistry data
 !
       call read_reactions(input_file)
-      call write_reactions()
+      call write_reactions
 !
 !  calculate stoichio and nreactions
 !
@@ -3729,7 +3750,7 @@ module Chemistry
 !
     endif
 !
-      call write_reactions()
+      call write_reactions
 !
 !  calculate stoichio and nreactions
 !
@@ -5081,7 +5102,7 @@ module Chemistry
 !
     endsubroutine get_reac_rate
 !***********************************************************************
-    subroutine chemistry_clean_up()
+    subroutine chemistry_clean_up
 !
       if (allocated(stoichio))       deallocate(stoichio)
       if (allocated(Sijm))           deallocate(Sijm)
@@ -5262,8 +5283,7 @@ module Chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,nchemspec,nchemspec) :: jacob
 !
-          call fatal_error('jacobn', &
-              'this does not work for simplified chemistry!')
+      call not_implemented('jacobn', 'for simplified chemistry')
 !
 !      call keep_compiler_quiet(jacob)
       call keep_compiler_quiet(f)

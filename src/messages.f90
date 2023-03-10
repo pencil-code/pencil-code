@@ -102,7 +102,7 @@ module Messages
           write (*,'(A18)',ADVANCE='NO') "NOT IMPLEMENTED: "
           call terminal_defaultcolor()
           if (present(message)) then
-            write(*,*) trim(scaller) // ": " // trim(message)
+            write(*,*) trim(scaller) // ": " // trim(message)//'!'
           else
             write(*,*) trim(scaller) // ": " // &
                 "Some feature waits to get implemented -- by you?"
@@ -137,9 +137,9 @@ module Messages
           write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
           call terminal_defaultcolor()
           if (scaller=='') then
-            write (*,*) trim(message)
+            write (*,*) trim(message)//'!!!'
           else
-            write (*,*) trim(scaller) // ": " // trim(message)
+            write (*,*) trim(scaller) // ": " // trim(message)//'!!!'
           endif
         endif
 !
@@ -176,7 +176,7 @@ module Messages
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(scaller) // ": " // trim(message)
+        write (*,*) trim(scaller) // ": " // trim(message)//'!!!'
       endif
 !
       if (fatal) call die_immediately()
@@ -204,7 +204,7 @@ module Messages
           call terminal_highlight_fatal_error()
           write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
           call terminal_defaultcolor()
-          write (*,*) trim(scaller)//": "//trim(message)
+          write (*,*) trim(scaller)//": "//trim(message)//'!!!'
         endif
 !
       endif
@@ -298,7 +298,7 @@ module Messages
           call terminal_highlight_error()
           write (*,'(A7)',ADVANCE='NO') "ERROR: "
           call terminal_defaultcolor()
-          write (*,*) trim(scaller) // ": " // trim(message)
+          write (*,*) trim(scaller) // ": " // trim(message)//'!!!'
         endif
 !
         if (ldie_onerror) call die_gracefully
@@ -327,7 +327,7 @@ module Messages
           call terminal_highlight_warning()
           write (*,'(A9)',ADVANCE='NO') "WARNING: "
           call terminal_defaultcolor()
-          write (*,*) trim(scaller) // ": " // trim(message)
+          write (*,*) trim(scaller) // ": " // trim(message)//'!'
 !          call flush(6) ! has to wait until F2003
         endif
 !
@@ -356,7 +356,7 @@ module Messages
       if (present(level)) level_=level
 !
       if ((iproc_world == ioptest(ipr,0)) .and. (message /= '')) then
-        if (ip<=level_) write (*,*) trim(scaller) // ": " // trim(message)
+        if (ip<=level_) write (*,*) trim(scaller) // ": " // trim(message)//'.'
       endif
 !
     endsubroutine information
@@ -383,6 +383,7 @@ module Messages
 !  Write string to screen and to 'svnid.dat' file.
 !
       if (lfirstcall) then
+        !if (.not. file_exists (datadir)) call fatal_error ('svn_id','missing data directory "'//trim(datadir)//'"')
         if (.not. directory_exists (datadir)) &
           call fatal_error ('svn_id','missing data directory: "'//trim(datadir)//'"')
         if (lstart) then
@@ -518,7 +519,7 @@ module Messages
           if ((present(mnloop) .and. lfirstpoint) .or. .not. present(mnloop)) then
             time = mpiwtime() - time_initial
             if (present(mnloop)) then
-              mul_fac = ny*nz
+              mul_fac = nyz
             else
               mul_fac = 1
             endif
@@ -526,7 +527,7 @@ module Messages
               open(lun, file=trim(datadir)//'/timing.dat', position='append')
               opened = .true.
             endif
-            write(lun,*) time, mul_fac, trim(scaller)//": "//trim(message)
+            write(lun,*) time, mul_fac, trim(scaller)//": "//trim(message)//'.'
           endif
         endif
 !

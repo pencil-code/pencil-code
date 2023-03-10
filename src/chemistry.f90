@@ -32,7 +32,7 @@ module Chemistry
   use Cdata
   use General, only: keep_compiler_quiet
   use EquationOfState
-  use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error
+  use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error, warning
   use Mpicomm, only: stop_it
 !
   implicit none
@@ -224,7 +224,6 @@ module Chemistry
   integer, dimension(nchemspec) :: idiag_Ymz=0     ! DIAG_DOC: $\left<Y_x\right>_{xy}(z)$
   integer :: idiag_dtchem=0     ! DIAG_DOC: $dt_{chem}$
 !
-!
   integer :: idiag_cpfull=0
   integer :: idiag_cvfull=0
   integer :: idiag_e_intm=0
@@ -346,10 +345,9 @@ module Chemistry
 !  initialize chemistry
 !
       if (lcheminp) then
-        if (unit_temperature /= 1) then
+        if (unit_temperature /= 1) &
           call fatal_error('initialize_chemistry', &
-              'unit_temperature must be unity when using chemistry!')
-        endif
+                           'unit_temperature must be unity for chemistry')
 !
 !  calculate universal gas constant based on Boltzmann constant
 !  and the proton mass
@@ -412,29 +410,28 @@ module Chemistry
             call fatal_error('initialize_chemistry', 'no H2O has been found')
           endif
         endif
+
+        if (lfix_Sc .and. any(idiag_diffm/=0)) then
+          call warning('initialize_chemistry', &
+                       'diagnostic diffm not available for lfix_Sc=T - switched off')
+          idiag_diffm=0
+        endif
       endif
 !
 !  Alternatively, read in stoichiometric matrices in explicit format.
 !  For historical reasons this is referred to as "astrobiology_data"
 !
-      if (exist1 .and. exist2) then
-        call astrobiology_data(f)
-        data_file_exit = .true.
-      endif
-!
-      if (exist) then
-        call astrobiology_data(f)
+      if (exist1.and.exist2 .or. exist) then
+        call astrobiology_data
         data_file_exit = .true.
       endif
 !
 ! check the existence of a data file
 !
-      if (.not. data_file_exit) then
-        call stop_it('initialize_chemistry: there is no chemistry data file')
-      endif
+      if (.not. data_file_exit) &
+        call fatal_error('initialize_chemistry','there is no chemistry data file')
 !
-!
-      if ((nxgrid == 1) .and. (nygrid == 1) .and. (nzgrid == 1)) then
+      if (dimensionality==0) then
         ll1 = 1
         ll2 = mx
         mm1 = m1
@@ -482,10 +479,10 @@ module Chemistry
 
       if (lchemistry_diag .and. .not. lreloading) then
         allocate(net_react_p(nchemspec,nreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for net_react_p")
+        if (stat > 0) call fatal_error("initialize_chemistry","Couldn't allocate net_react_p")
         net_react_p = 0.
         allocate(net_react_m(nchemspec,nreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for net_react_m")
+        if (stat > 0) call fatal_error("initialize_chemistry","Couldn't allocate net_react_m")
         net_react_m = 0.
       endif
 !
@@ -595,13 +592,11 @@ module Chemistry
         case ('air')
           if (lroot ) print*, 'init_chem: air '
           inquire (file='air.dat',exist=air_exist)
-          if (.not. air_exist) then
-            inquire (file='air.in',exist=air_exist)
-          endif
+          if (.not. air_exist) inquire (file='air.in',exist=air_exist)
           if (air_exist) then
             call air_field(f,PP)
           else
-            call stop_it('there is no air.in/dat file')
+            call fatal_error('init_chemistry','there is no air.in or air.dat file')
           endif
         case ('flame_front')
           call flame_front(f)
@@ -630,10 +625,7 @@ module Chemistry
 !
 !  Catch unknown values
 !
-          if (lroot) print*, 'initchem: No such value for initchem: ', &
-              trim(initchem(j))
-          call stop_it('')
-!
+          call fatal_error('init_chemistry','No such initchem: '//trim(initchem(j)))
         endselect
       enddo
 !
@@ -762,7 +754,7 @@ module Chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nx,3) :: gXX_tmp, glncp_tmp!, ghhk_tmp
+      real, dimension(nx,3) :: glncp_tmp
 !
       intent(in) :: f
       intent(inout) :: p
@@ -776,19 +768,13 @@ module Chemistry
 !
       if (lpencil(i_gYYk)) then
         do k = 1,nchemspec
-          call grad(f(:,:,:,ichemspec(k)),gXX_tmp)
-          do i = 1,3
-            p%gYYk(:,i,k) = gXX_tmp(:,i)
-          enddo
+          call grad(f,ichemspec(k),p%gYYk(:,:,k))
         enddo
       endif
 !
       if (lpencil(i_gXXk)) then
         do k = 1,nchemspec
-          call grad(XX_full(:,:,:,k),gXX_tmp)
-          do i = 1,3
-            p%gXXk(:,i,k) = gXX_tmp(:,i)
-          enddo
+          call grad(XX_full(:,:,:,k),p%gXXk(:,:,k))
         enddo
       endif
 !
@@ -860,18 +846,18 @@ module Chemistry
             T_loc = p%TT
             where (T_loc <= T_mid)
               p%H0_RT(:,k) = species_constants(k,iaa2(ii1)) &
-                  +species_constants(k,iaa2(ii2))*T_loc/2 &
-                  +species_constants(k,iaa2(ii3))*TT_2/3 &
-                  +species_constants(k,iaa2(ii4))*TT_3/4 &
-                  +species_constants(k,iaa2(ii5))*TT_4/5 &
-                  +species_constants(k,iaa2(ii6))/T_loc
+                            +species_constants(k,iaa2(ii2))*T_loc/2 &
+                            +species_constants(k,iaa2(ii3))*TT_2/3 &
+                            +species_constants(k,iaa2(ii4))*TT_3/4 &
+                            +species_constants(k,iaa2(ii5))*TT_4/5 &
+                            +species_constants(k,iaa2(ii6))/T_loc
             elsewhere
               p%H0_RT(:,k) = species_constants(k,iaa1(ii1)) &
-                  +species_constants(k,iaa1(ii2))*T_loc/2 &
-                  +species_constants(k,iaa1(ii3))*TT_2/3 &
-                  +species_constants(k,iaa1(ii4))*TT_3/4 &
-                  +species_constants(k,iaa1(ii5))*TT_4/5 &
-                  +species_constants(k,iaa1(ii6))/T_loc
+                            +species_constants(k,iaa1(ii2))*T_loc/2 &
+                            +species_constants(k,iaa1(ii3))*TT_2/3 &
+                            +species_constants(k,iaa1(ii4))*TT_3/4 &
+                            +species_constants(k,iaa1(ii5))*TT_4/5 &
+                            +species_constants(k,iaa1(ii6))/T_loc
             endwhere
           enddo
 !
@@ -924,18 +910,18 @@ module Chemistry
 !T_loc= exp(f(l1:l2,m,n,ilnTT))
             where (T_loc <= T_mid .and. T_low <= T_loc)
               p%S0_R(:,k) = species_constants(k,iaa2(ii1))*p%lnTT &
-                  +species_constants(k,iaa2(ii2))*T_loc &
-                  +species_constants(k,iaa2(ii3))*TT_2/2 &
-                  +species_constants(k,iaa2(ii4))*TT_3/3 &
-                  +species_constants(k,iaa2(ii5))*TT_4/4 &
-                  +species_constants(k,iaa2(ii7))
+                           +species_constants(k,iaa2(ii2))*T_loc &
+                           +species_constants(k,iaa2(ii3))*TT_2/2 &
+                           +species_constants(k,iaa2(ii4))*TT_3/3 &
+                           +species_constants(k,iaa2(ii5))*TT_4/4 &
+                           +species_constants(k,iaa2(ii7))
             elsewhere (T_mid <= T_loc .and. T_loc <= T_up)
               p%S0_R(:,k) = species_constants(k,iaa1(ii1))*p%lnTT &
-                  +species_constants(k,iaa1(ii2))*T_loc &
-                  +species_constants(k,iaa1(ii3))*TT_2/2 &
-                  +species_constants(k,iaa1(ii4))*TT_3/3 &
-                  +species_constants(k,iaa1(ii5))*TT_4/4 &
-                  +species_constants(k,iaa1(ii7))
+                           +species_constants(k,iaa1(ii2))*T_loc &
+                           +species_constants(k,iaa1(ii3))*TT_2/2 &
+                           +species_constants(k,iaa1(ii4))*TT_3/3 &
+                           +species_constants(k,iaa1(ii5))*TT_4/4 &
+                           +species_constants(k,iaa1(ii7))
             endwhere
           enddo
         endif
@@ -1091,14 +1077,11 @@ module Chemistry
       endif
 !
       if (lpencil(i_ppwater) .and. .not. lchemonly) then
-        if (index_H2O > 0) then
-          p%ppwater = p%rho*Rgas*p%TT/18.*f(l1:l2,m,n,ichemspec(index_H2O))
-        endif
+        if (index_H2O > 0) p%ppwater = p%rho*Rgas*p%TT/18.*f(l1:l2,m,n,ichemspec(index_H2O))
       endif
+
       if (lpencil(i_Ywater) .and. .not. lchemonly) then
-        if (index_H2O > 0) then
-          p%Ywater = f(l1:l2,m,n,ichemspec(index_H2O))
-        endif
+        if (index_H2O > 0) p%Ywater = f(l1:l2,m,n,ichemspec(index_H2O))
       endif
 !
 !  Energy per unit mass
@@ -1229,7 +1212,7 @@ module Chemistry
                 *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
           endif
           if (lCH4) then
-            if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
+            if (k==1) call warning('flame_front','No tanh initial function available for CH4 combustion')
           endif
 !
         else
@@ -1267,7 +1250,7 @@ module Chemistry
                 *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
           endif
           if (lCH4) then
-            if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
+            if (k==1) call warning('flame_front','No tanh initial function available for CH4 combustion')
           endif
         enddo
 !
@@ -1683,7 +1666,7 @@ module Chemistry
                 *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
           endif
           if (lCH4) then
-            if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
+            if (k==1) call warning('flame_front','No tanh initial function available for CH4 combustion')
           endif
 !
         else
@@ -1726,7 +1709,7 @@ module Chemistry
                 *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
           endif
           if (lCH4) then
-            if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
+            if (k==1) call warning('flame_front','No tanh initial function available for CH4 combustion')
           endif
         enddo
       else
@@ -2099,29 +2082,23 @@ module Chemistry
           do j1 = 1,mx
 !
             Rad = 0.
-            if (nxgrid > 1) then
-              Rad = x(j1)*x(j1)
-            endif
-            if (nygrid > 1) then
-              Rad = Rad+y(j2)*y(j2)
-            endif
-            if (nzgrid > 1) then
-              Rad = Rad+z(j3)*z(j3)
-            endif
+            if (nxgrid > 1) Rad =     x(j1)*x(j1)
+            if (nygrid > 1) Rad = Rad+y(j2)*y(j2)
+            if (nzgrid > 1) Rad = Rad+z(j3)*z(j3)
 !
             Rad = sqrt(Rad)
 !
             f(j1,j2,j3,ilnTT) = log((init_TT2-init_TT1)*exp(-(Rad/init_x2)**2)+init_TT1)
             mu1_full(j1,j2,j3) = f(j1,j2,j3,i_H2)/(mH2)+f(j1,j2,j3,i_O2)/(mO2) &
-                +f(j1,j2,j3,i_H2O)/(mH2O)+f(j1,j2,j3,i_N2)/(mN2)
+                                +f(j1,j2,j3,i_H2O)/(mH2O)+f(j1,j2,j3,i_N2)/(mN2)
 !
             f(j1,j2,j3,ilnrho) = log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
-                -log(mu1_full(j1,j2,j3))
+                                -log(mu1_full(j1,j2,j3))
 !
 !  Initialize velocity
 !
             f(j1,j2,j3,iux) = f(j1,j2,j3,iux)  &
-                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+                             +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
             f(j1,j2,j3,iuy) = f(j1,j2,j3,iuy)+ init_uy
             f(j1,j2,j3,iuz) = f(j1,j2,j3,iuz)+ init_uz
 !
@@ -2258,15 +2235,13 @@ module Chemistry
 !
 !  Find mean molecular weight and density
 !
-            mu1 &
-                = f(j1,j2,j3,i_O2 )/mO2 &
-                +f(j1,j2,j3,i_H2O)/mH2O &
-                +f(j1,j2,j3,i_N2 )/mN2
+            mu1 = f(j1,j2,j3,i_O2 )/mO2 &
+                 +f(j1,j2,j3,i_H2O)/mH2O &
+                 +f(j1,j2,j3,i_N2 )/mN2
             if (lH2)   mu1 = mu1+f(j1,j2,j3,i_H2  )/mH2
             if (lCO2)  mu1 = mu1+f(j1,j2,j3,i_CO2 )/mCO2
             if (lC3H8) mu1 = mu1+f(j1,j2,j3,i_C3H8)/mC3H8
-            f(j1,j2,j3,ilnrho) = log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
-                -log(mu1)
+            f(j1,j2,j3,ilnrho) = log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)-log(mu1)
           enddo
         enddo
       enddo
@@ -2390,14 +2365,9 @@ module Chemistry
 !  Mole fraction XX
 !
           do k = 1,nchemspec
-            if (species_constants(k,imass) > 0.) then
-              do j2 = mm1,mm2
-                do j3 = nn1,nn2
-                  XX_full(:,j2,j3,k) = f(:,j2,j3,ichemspec(k))*unit_mass &
-                      /(species_constants(k,imass)*mu1_full(:,j2,j3))
-                enddo
-              enddo
-            endif
+            if (species_constants(k,imass) > 0.) &
+              XX_full(:,mm1:mm2,nn1:nn2,k) = f(:,mm1:mm2,nn1:nn2,ichemspec(k))*unit_mass &
+                      /(species_constants(k,imass)*mu1_full(:,mm1:mm2,nn1:nn2))
           enddo
 !
 !          do m=m1,m2
@@ -2478,11 +2448,11 @@ module Chemistry
 ! Find cp and cv for the mixture for the full domain
 !
                     cp_full(:,j2,j3) = cp_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
-                        *cp_R_spec/species_constants(k,imass)*Rgas
+                                      *cp_R_spec/species_constants(k,imass)*Rgas
                     cv_full(:,j2,j3) = cv_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
-                        *cv_R_spec_full(:,j2,j3,k)/species_constants(k,imass)*Rgas
+                                      *cv_R_spec_full(:,j2,j3,k)/species_constants(k,imass)*Rgas
 
-cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
+                    cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 
                   endif
                 enddo
@@ -2497,9 +2467,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
 !  Viscosity of a mixture
 !
-            if (tran_exist) then
-              call calc_diff_visc_coef(f)
-            endif
+            if (tran_exist) call calc_diff_visc_coef(f)
 !
             if (visc_const == impossible) then
               do j3 = nn1,nn2
@@ -2540,10 +2508,9 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
                     if (lfix_Sc) then
                       do k = 1,nchemspec
-                        if (species_constants(k,imass) > 0.) then
+                        if (species_constants(k,imass) > 0.) &
                           Diff_full(:,j2,j3,k) = species_viscosity(:,j2,j3,k) &
-                              /rho_full(:,j2,j3)/Sc_number
-                        endif
+                                                /rho_full(:,j2,j3)/Sc_number
                       enddo
                     elseif (ldiffusion) then
 !
@@ -2557,11 +2524,8 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
                         do j = 1,nchemspec
                           if (species_constants(k,imass) > 0.) then
                             if (j /= k) then
-                              tmp_sum = tmp_sum &
-                                  +XX_full(:,j2,j3,j)/Bin_Diff_coef(:,j2,j3,j,k)
-                              tmp_sum2 = tmp_sum2 &
-                                  +XX_full(:,j2,j3,j)*species_constants(j,imass)
-!
+                              tmp_sum = tmp_sum + XX_full(:,j2,j3,j)/Bin_Diff_coef(:,j2,j3,j,k)
+                              tmp_sum2 = tmp_sum2 + XX_full(:,j2,j3,j)*species_constants(j,imass)
                             endif
                           endif
                         enddo
@@ -2575,13 +2539,11 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
 !  Thermal diffusivity
 !
-            if (lheatc_chemistry .and. (.not. lThCond_simple)) then
-              call calc_therm_diffus_coef(f)
-            endif
-          endif
+            if (lheatc_chemistry .and. (.not. lThCond_simple)) call calc_therm_diffus_coef
 !
+          endif
         else
-          call stop_it('This case works only for cgs units system!')
+          call fatal_error('calc_for_chem_mixture','lcheminp=T works only for cgs units')
         endif
       endif
 !
@@ -2659,6 +2621,27 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
     endsubroutine calc_for_chem_mixture
 !***********************************************************************
+    subroutine chemistry_before_boundary(f)
+!
+!  Calculate quantities for a chemical mixture
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+
+      if (ldustdensity) then
+        call chemspec_normalization(f)
+!        call dustspec_normalization(f)
+      endif
+
+      if (ldensity) call calc_for_chem_mixture(f)
+!
+!  Remove unphysical values of the mass fractions. This must be done
+!  before the call to update_solid_cells in order to avoid corrections
+!  within the solid structure.
+!
+      if (lsolid_cells) call chemspec_normalization_N2(f)
+
+    endsubroutine chemistry_before_boundary
+!***********************************************************************
     subroutine chemspec_normalization(f)
 !
 !   20-sep-10/Natalia: coded
@@ -2672,13 +2655,14 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       do k = 1,nchemspec
         sum_Y = sum_Y+f(:,:,:,ichemspec(k))
       enddo
+
       do k = 1,nchemspec
         f(:,:,:,ichemspec(k)) = f(:,:,:,ichemspec(k))/sum_Y
       enddo
 !
     endsubroutine chemspec_normalization
 !***********************************************************************
-    subroutine astrobiology_data(f)
+    subroutine astrobiology_data
 !
 !  Proceedure to read in stoichiometric matrices in explicit format for
 !  forward and backward reations. For historical reasons this is referred
@@ -2690,7 +2674,6 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       ! Careful, limits the absolut size of the input matrix !!!
       character(len=15) :: file1='chemistry_m.dat', file2='chemistry_p.dat'
 !      character (len=fnlen) :: input_file='chem.inp'
-      real, dimension(mx,my,mz,mfarray) :: f
       real :: dummy
       logical :: exist, exist1, exist2
       integer :: i, j, stat
@@ -2731,34 +2714,34 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       if (inside) nchemspectemp = nchemspectemp-1
       close (19)
       if (lroot) print*,'Number of compounds=',nchemspectemp
-      if (nchemspectemp > nchemspec) call &
-          stop_it("Too many chemicals! Change NCHEMSPEC in src/cparam.local")
+      if (nchemspectemp > nchemspec) call fatal_error("astrobiology_data", &
+        "Too many chemicals! Change NCHEMSPEC in src/cparam.local")
 !
 !  Allocate reaction arrays (but not during reloading!)
 !
       if (.not. lreloading) then
         allocate(stoichio(nchemspec,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for stoichio")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate stoichio")
         allocate(Sijm(nchemspec,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for Sijm")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate Sijm")
         allocate(Sijp(nchemspec,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for Sijp")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate Sijp")
         allocate(kreactions_z(mz,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_z")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate kreactions_z")
         allocate(kreactions_p(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_p")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate kreactions_p")
         allocate(kreactions_m(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_m")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate kreactions_m")
         allocate(reaction_name(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for reaction_name")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate reaction_name")
         allocate(kreactions_profile(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_profile")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate kreactions_profile")
         allocate(kreactions_profile_width(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_profile_width")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate kreactions_profile_width")
         allocate(kreactions_alpha(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_alpha")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate kreactions_alpha")
         allocate(back(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for back")
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate back")
       endif
 !
 !  Initialize data
@@ -2818,9 +2801,9 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
           nreactions = nreactions1
           stoichio = Sijp-Sijm
         else
-          call stop_it('nreactions1/=nreactions2')
+          call fatal_error("astrobiology_data",'nreactions1/=nreactions2')
         endif
-        if (nreactions /= mreactions) call stop_it('nreactions/=mreactions')
+        if (nreactions /= mreactions) call fatal_error("astrobiology_data",'nreactions/=mreactions')
 !
       else
 !
@@ -2909,8 +2892,6 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
           endif
         enddo
       endif
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine astrobiology_data
 !***********************************************************************
@@ -3129,7 +3110,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       endif
 !
       if (lreactions .and. ireac /= 0 .and. ((.not. llsode).or. lchemonly)) then
-        if (llast) call get_reac_rate(sum_hhk_DYDt_reac,f,p)
+        if (llast) call get_reac_rate(sum_hhk_DYDt_reac,f,p)   ! updates f!!!
       endif
 !
 !  Atmosphere case
@@ -3210,9 +3191,8 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       call timing('dchemistry_dt','before ldiagnos',mnloop=.true.)
       if (ldiagnos) then
-        if (idiag_dtchem /= 0) then
+        if (idiag_dtchem /= 0) &
           call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
-        endif
 !
 !  WL: instead of hardcoding Y1-Y9, wouldn't it be possible
 !      to have them all in the same array? The nbody
@@ -3222,7 +3202,6 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !  RP: Totally agree... I still have to expand manually these hard-coded
 !      Y1-Y9 and chemspec-chemspec9 when needed, but this is just work-around...
 !  AB: I also agree!
-!
 !
         do ii = 1,nchemspec
           call sum_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ym(ii))
@@ -3239,12 +3218,11 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
         call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
 !
         call sum_mn_name(lambda_full(l1:l2,m,n),idiag_lambdam) 
-        call sum_mn_name(f(l1:l2,m,n,iviscosity), idiag_num)
+        call sum_mn_name(f(l1:l2,m,n,iviscosity),idiag_num)
 !
 !  Sample for hard coded diffusion diagnostics
 !
-!        if (idiag_diff1m /= 0) call sum_mn_name(diff_full(l1:l2,m,n,i1), &
-!            idiag_diff1m)
+!        call sum_mn_name(Diff_full(l1:l2,m,n,i1),idiag_diff1m)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -3470,7 +3448,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
           print*,'ind_glob,ind_chem=',ind_glob,ind_chem
 !          if (.not. lpencil_check_small) then
 !          if (.not. lpencil_check) then
-          call stop_it("build_stoich_matrix: Did not find species!")
+           call fatal_error("build_stoich_matrix","Did not find species!")
 !          endif
 !          endif
         endif
@@ -3601,9 +3579,8 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       if (chemin) input_file='chem.in'
 !
       inquire (file='tran.dat',exist=tran_exist)
-      if (.not. tran_exist) then
-        inquire (file='tran.in',exist=tran_exist)
-      endif
+      if (.not. tran_exist) inquire (file='tran.in',exist=tran_exist)
+
       inquire (file='lewis.dat',exist=lew_exist)
 !
 !  Allocate binary diffusion coefficient array
@@ -3617,22 +3594,23 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !NILS: required to define it for the full domain!!!!!!
           if (.not. lreloading) then
             allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
-            if (stat > 0) call stop_it("Couldn't allocate memory "// &
-                "for binary diffusion coefficients")
+            if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate "// &
+                                           "binary diffusion coefficients")
 !
             allocate(Diff_full(mx,my,mz,nchemspec),STAT=stat)
+            if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate "// &
+                                           "diffusion coefficients Diff_full")
+
             allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
-            if (stat > 0) call stop_it("Couldn't allocate memory "// &
-                "for binary diffusion coefficients")
+            if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate "// &
+                                           "diffusion coefficients Diff_full_add")
           endif
 !
         endif
 !      endif
 !
       if (tran_exist) then
-        if (lroot) then
-          print*,'tran.in/dat file with transport data is found.'
-        endif
+        if (lroot) print*,'tran.in/dat file with transport data is found.'
         call read_transport_data
       endif
 !
@@ -3657,15 +3635,14 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       if (lroot .and. .not. tran_exist .and. .not. lew_exist) then
         if (chem_diff == 0.) &
-            call inevitably_fatal_error('chemkin data', 'chem_diff = 0.')
+            call inevitably_fatal_error('chemkin data', 'chem_diff = 0')
         print*,'tran.dat file with transport data is not found.'
         print*,'lewis.dat file with Lewis numbers is not found.'
         print*,'Now diffusion coefficients is ',chem_diff
         print*,'Now species viscosity is ',nu_spec
         Bin_Diff_coef = chem_diff/(unit_length*unit_length/unit_time)
         do k = 1,nchemspec
-          species_viscosity(:,:,:,k) = nu_spec(k)/ &
-              (unit_mass/unit_length/unit_time)
+          species_viscosity(:,:,:,k) = nu_spec(k)/(unit_mass/unit_length/unit_time)
         enddo
       endif
 !
@@ -3680,42 +3657,43 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       if (.not. lreloading) then
         allocate(stoichio(nchemspec,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for stoichio")
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate stoichio")
         allocate(Sijm(nchemspec,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for Sijm")
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijm")
         allocate(Sijp(nchemspec,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for Sijp")
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijp")
         allocate(reaction_name(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for reaction_name")
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate reaction_name")
         allocate(back(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for back")
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate back")
         allocate(B_n(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for B_n")
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate B_n")
         B_n = 0.
         allocate(alpha_n(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for alpha_n")
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate alpha_n")
         alpha_n = 0.
         allocate(E_an(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for E_an")
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate E_an")
         E_an = 0.
 !
         allocate(low_coeff(3,nreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate low_coeff")
         low_coeff = 0.
-        if (stat > 0) call stop_it("Couldn't allocate memory for low_coeff")
         allocate(high_coeff(3,nreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate high_coeff")
         high_coeff = 0.
-        if (stat > 0) call stop_it("Couldn't allocate memory for high_coeff")
         allocate(troe_coeff(3,nreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate troe_coeff")
         troe_coeff = 0.
-        if (stat > 0) call stop_it("Couldn't allocate memory for troe_coeff")
         allocate(a_k4(nchemspec,nreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate a_k4")
         a_k4 = impossible
-        if (stat > 0) call stop_it("Couldn't allocate memory for troe_coeff")
         allocate(Mplus_case (nreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Mplus_case")
         Mplus_case = .false.
         allocate(photochem_case (nreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate photochem_case")
         photochem_case = .false.
-        if (stat > 0) call stop_it("Couldn't allocate memory for photochem_case")
       endif
 !
 !  Initialize data
@@ -4029,7 +4007,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
                                     ChemInpLine_add(StartInd_add:StopInd_add)
                                 print*,'StartInd_add,StopInd_add=',&
                                     StartInd_add,StopInd_add
-                                call stop_it("read_reactions: Did not find specie!")
+                                call fatal_error("read_reactions","Did not find specie!")
                               endif
                             endif
                             StartInd_add=StopInd_add+2
@@ -4379,8 +4357,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
         call roux(f,p,vreact_p,vreact_m)
       endif
 !
-      if (lwrite_first .and. lroot) &
-          print*,'get_reaction_rate: writing react.out file'
+      if (lwrite_first .and. lroot) print*,'get_reaction_rate: writing react.out file'
       lwrite_first = .false.
 !
     endsubroutine get_reaction_rate
@@ -4406,7 +4383,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       real, dimension(nx) :: activation_energy, pre_exp, term1, term2
 !
       if (nreactions /= 1) &
-          call fatal_error('roux','nreactions should always be 1.')
+          call fatal_error('roux','nreactions should always be 1')
 !
 !  Check that a global equivalence ratio is given at input
 !
@@ -4594,16 +4571,10 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       if (ldiagnos) then
         do ii=1,nchemspec
-          if (idiag_dYm(ii) /= 0) then
-            call sum_mn_name(p%DYDt_reac(:,ii),idiag_dYm(ii))
-          endif
-          if (idiag_dYmax(ii) /= 0) then
-            call max_mn_name(abs(p%DYDt_reac(:,ii)),idiag_dYmax(ii))
-          endif
-          if (idiag_hm(ii) /= 0) then
-            call sum_mn_name(p%H0_RT(:,ii)*Rgas* &
-                p%TT(:)/species_constants(ii,imass),idiag_hm(ii))
-          endif
+          call sum_mn_name(p%DYDt_reac(:,ii),idiag_dYm(ii))
+          if (idiag_dYmax(ii) /= 0) call max_mn_name(abs(p%DYDt_reac(:,ii)),idiag_dYmax(ii))
+          if (idiag_hm(ii)    /= 0) call sum_mn_name(p%H0_RT(:,ii)*Rgas* &
+                                         p%TT(:)/species_constants(ii,imass),idiag_hm(ii))
         enddo
       endif
 !
@@ -4631,6 +4602,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       character(len=*), intent(in) :: omega
       real, dimension(mx,my,mz), intent(in) :: lnTst
       real, dimension(mx,my,mz), intent(out) :: Omega_kl
+
       integer :: i
       real, dimension(8) :: aa
 !
@@ -4654,7 +4626,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
         aa(7) = -3.82733808E-4
         aa(8) = 2.97208112E-5
       case default
-        call stop_it('Insert Omega_kl')
+        call fatal_error('calc_collision_integral','no such omega: '//trim(omega))
       endselect
 !
       Omega_kl = 0.
@@ -4683,12 +4655,8 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !  Find binary diffusion coefficients
 !
       tmp_local = 3./16.*sqrt(2.*k_B_cgs**3/pi)
-      do j3 = nn1,nn2
-        do j2 = mm1,mm2
-          prefactor(ll1:ll2,j2,j3) = tmp_local*sqrt(TT_full(ll1:ll2,j2,j3)) &
-              *unit_length**3/(Rgas_unit_sys*rho_full(ll1:ll2,j2,j3))
-        enddo
-      enddo
+      prefactor(ll1:ll2,mm1:mm2,nn1:nn2) = tmp_local*sqrt(TT_full(ll1:ll2,mm1:mm2,nn1:nn2)) &
+          *unit_length**3/(Rgas_unit_sys*rho_full(ll1:ll2,mm1:mm2,nn1:nn2))
 !
       omega = 'Omega11'
 !
@@ -4755,13 +4723,9 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
             enddo
           enddo
 !
-          do j3 = nn1,nn2
-            do j2 = mm1,mm2
-              do k = 1,nchemspec
-                do j = 1,k-1
-                  Bin_Diff_coef(ll1:ll2,j2,j3,k,j) = Bin_Diff_coef(ll1:ll2,j2,j3,j,k)
-                enddo
-              enddo
+          do k = 1,nchemspec
+            do j = 1,k-1
+              Bin_Diff_coef(ll1:ll2,mm1:mm2,nn1:nn2,k,j) = Bin_Diff_coef(ll1:ll2,mm1:mm2,nn1:nn2,j,k)
             enddo
           enddo
 !
@@ -4794,33 +4758,26 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
         endif
         call calc_collision_integral(omega,lnTk_array,Omega_kl)
 !
-        do j3 = nn1,nn2
-          do j2 = mm1,mm2
-            species_viscosity(ll1:ll2,j2,j3,k) = sqrt(TT_full(ll1:ll2,j2,j3)) &
-                /(Omega_kl(ll1:ll2,j2,j3) &
-                +0.2*delta_st*delta_st/(TT_full(ll1:ll2,j2,j3)  &
-                /tran_data(k,2)))*tmp_local2 &
-                /(unit_mass/unit_length/unit_time)
-          enddo
-        enddo
+        species_viscosity(ll1:ll2,mm1:mm2,nn1:nn2,k) = &
+             sqrt(TT_full(ll1:ll2,mm1:mm2,nn1:nn2))/(Omega_kl(ll1:ll2,mm1:mm2,nn1:nn2) &
+            +0.2*delta_st*delta_st/(TT_full(ll1:ll2,mm1:mm2,nn1:nn2)/tran_data(k,2)))*tmp_local2 &
+            /(unit_mass/unit_length/unit_time)
       enddo
 !      endif
 !
     endsubroutine calc_diff_visc_coef
 !***********************************************************************
-    subroutine calc_therm_diffus_coef(f)
+    subroutine calc_therm_diffus_coef
 !
 !  Calculate the thermal diffusion coefficient based on equation 5-17 in
 !  the Chemkin theory manual
 !
-      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,nchemspec) :: species_cond
       real, dimension(mx) :: tmp_val, ZZ, FF, tmp_sum, tmp_sum2
       real, dimension(mx) :: AA, BB, f_tran, f_rot, f_vib
       real, dimension(mx) :: Cv_vib_R, T_st, pi_1_5, pi_2
       real :: Cv_rot_R, Cv_tran_R
-      intent(in) :: f
-      integer :: j2, j3,k
+      integer :: j2,j3,k
 !
 !        call timing('calc_therm_diffus_coef','just entered')
 !
@@ -4843,53 +4800,53 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
 ! Check if the molecule is a single atom (0), linear (1) or non-linear (2).
 !
-            if (tran_data(k,1) == 0.) then
-              Cv_tran_R = 1.5
-              Cv_rot_R = 0.
-              Cv_vib_R = 0.
-            elseif (tran_data(k,1) == 1.) then
-              Cv_tran_R = 1.5
-              Cv_rot_R = 1.
-              Cv_vib_R = cv_R_spec_full(:,j2,j3,k)-2.5
-            elseif (tran_data(k,1) == 2.) then
-              Cv_tran_R = 1.5
-              Cv_rot_R = 1.5
-              Cv_vib_R = cv_R_spec_full(:,j2,j3,k)-3.
-            else
-              Cv_tran_R = 0
-              Cv_rot_R = 0
-              Cv_vib_R = 0
-              call fatal_error('calc_therm_diffus_coef','No such tran_data!')
-            endif
+              if (tran_data(k,1) == 0.) then
+                Cv_tran_R = 1.5
+                Cv_rot_R = 0.
+                Cv_vib_R = 0.
+              elseif (tran_data(k,1) == 1.) then
+                Cv_tran_R = 1.5
+                Cv_rot_R = 1.
+                Cv_vib_R = cv_R_spec_full(:,j2,j3,k)-2.5
+              elseif (tran_data(k,1) == 2.) then
+                Cv_tran_R = 1.5
+                Cv_rot_R = 1.5
+                Cv_vib_R = cv_R_spec_full(:,j2,j3,k)-3.
+              else
+                Cv_tran_R = 0
+                Cv_rot_R = 0
+                Cv_vib_R = 0
+                call fatal_error('calc_therm_diffus_coef','No such tran_data')
+              endif
 !
 ! The rotational and vibrational contributions are zero for the single
 ! atom molecules but not for the linear or non-linear molecules
 !
-            if (tran_data(k,1) > 0. .and. (.not. lfix_Sc)) then
-              tmp_val = Bin_Diff_coef(:,j2,j3,k,k)*rho_full(:,j2,j3) &
-                  /species_viscosity(:,j2,j3,k)
-              AA = 2.5-tmp_val
-              T_st = tran_data(k,2)/298.
-              FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
-                  *(T_st)+pi_1_5*(T_st)**1.5
-              ZZ = tran_data(k,6)*FF
-              T_st = tran_data(k,2)/TT_full(:,j2,j3)
-              FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
-                  *(T_st)+pi_1_5*(T_st)**1.5
-              ZZ = ZZ/FF
-              BB = ZZ+2./pi*(5./3.*Cv_rot_R+tmp_val)
-              f_tran = 2.5*(1.- 2./pi*Cv_rot_R/Cv_tran_R*AA/BB)
-              f_rot = tmp_val*(1+2./pi*AA/BB)
-              f_vib = tmp_val
-            else
-              f_tran = 2.5
-              f_rot = 0.0
-              f_vib = 0.0
-            endif
-            species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k)) &
-                /(species_constants(k,imass)/unit_mass)*Rgas* &
-                (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
-                +f_vib*Cv_vib_R)
+              if (tran_data(k,1) > 0. .and. (.not. lfix_Sc)) then
+                tmp_val = Bin_Diff_coef(:,j2,j3,k,k)*rho_full(:,j2,j3) &
+                    /species_viscosity(:,j2,j3,k)
+                AA = 2.5-tmp_val
+                T_st = tran_data(k,2)/298.
+                FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
+                    *(T_st)+pi_1_5*(T_st)**1.5
+                ZZ = tran_data(k,6)*FF
+                T_st = tran_data(k,2)/TT_full(:,j2,j3)
+                FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
+                    *(T_st)+pi_1_5*(T_st)**1.5
+                ZZ = ZZ/FF
+                BB = ZZ+2./pi*(5./3.*Cv_rot_R+tmp_val)
+                f_tran = 2.5*(1.- 2./pi*Cv_rot_R/Cv_tran_R*AA/BB)
+                f_rot = tmp_val*(1+2./pi*AA/BB)
+                f_vib = tmp_val
+              else
+                f_tran = 2.5
+                f_rot = 0.0
+                f_vib = 0.0
+              endif
+              species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k)) &
+                  /(species_constants(k,imass)/unit_mass)*Rgas* &
+                  (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
+                  +f_vib*Cv_vib_R)
             endif
 
 !
@@ -4910,10 +4867,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
         enddo
       enddo
 !
-      call keep_compiler_quiet(f)
       call timing('calc_therm_diffus_coef','just finished')
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine calc_therm_diffus_coef
 !***********************************************************************
@@ -4928,6 +4882,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+
       real, dimension(nx) :: Xk_Yk
       real, dimension(nx,3) :: gDiff_full_add, gchemspec, gXk_Yk
       real, dimension(nx) :: del2chemspec
@@ -5037,15 +4992,13 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !  flux formulation and not on the diffusive properties of each species.
 !
             if (lDiff_fick) then
-              p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*(del2chemspec+diff_op1) &
-                  +diff_op2
+              p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*(del2chemspec+diff_op1) + diff_op2
               do i = 1,3
                 dk_D(:,i) = p%Diff_penc_add(:,k)*gchemspec(:,i)
               enddo
             elseif (lFlux_simple) then
               p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*p%mukmu1(:,k) &
-                  *(del2XX+diff_op1-diff_op3)+ &
-                  p%mukmu1(:,k)*diff_op2
+                  *(del2XX+diff_op1-diff_op3) + p%mukmu1(:,k)*diff_op2
               do i = 1,3
                 dk_D(:,i) = p%Diff_penc_add(:,k)*p%mukmu1(:,k)*p%gXXk(:,i,k)
               enddo
@@ -5058,8 +5011,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
                   Xk_Yk(:)*p%mukmu1(:,k)*gD_glnpp+p%Diff_penc_add(:,k) &
                   *p%mukmu1(:,k)*glnpp_gXkYk
               do i = 1,3
-                dk_D(:,i) = p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(p%gXXk(:,i,k)+ &
-                    Xk_Yk(:)*p%glnpp(:,i))
+                dk_D(:,i) = p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(p%gXXk(:,i,k) + Xk_Yk(:)*p%glnpp(:,i))
               enddo
             endif
 !
@@ -5079,8 +5031,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
         do k = 1,nchemspec
           call grad(f,ichemspec(k),gchemspec)
           call dot_mn(gchemspec(:,:),sum_diff,gY_sumdiff)
-          p%DYDt_diff(:,k) = p%DYDt_diff(:,k)-   &
-              (gY_sumdiff+f(l1:l2,m,n,ichemspec(k))*sum_gdiff(:))
+          p%DYDt_diff(:,k) = p%DYDt_diff(:,k) - (gY_sumdiff+f(l1:l2,m,n,ichemspec(k))*sum_gdiff(:))
         enddo
       endif
 !
@@ -5148,7 +5099,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
             cs2_full(:,j,k) = 0.
           else
             cs2_full(:,j,k) = cp_full(:,j,k)/cv_full(:,j,k)*mu1_full(:,j,k) &
-                *TT_full(:,j,k)*Rgas
+                             *TT_full(:,j,k)*Rgas
           endif
         enddo
       enddo
@@ -5195,6 +5146,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
           endif
         enddo
       enddo
+!
     endsubroutine get_gamma_full
 !***********************************************************************
     subroutine get_gamma_slice(f,slice,dir,index)
@@ -5247,10 +5199,10 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       inquire (file='air.dat',exist=airdat)
       inquire (file='air.in',exist=airin)
-      if (airdat .and. airin) then
-        call fatal_error('chemistry',&
-            'air.in and air.dat found. Please decide for one')
-      endif
+      if (airdat .and. airin) &
+        call fatal_error('chemistry', &
+            'both air.in and air.dat found. Please decide for one')
+      
       if (airdat) open(file_id,file='air.dat')
       if (airin) open(file_id,file='air.in')
 !
@@ -5330,7 +5282,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
 ! Stop if air.dat is empty
 !
-      if (emptyFile)  call stop_it('The input file air.dat was empty!')
+      if (emptyFile) call fatal_error("air_field",'Input file air.dat was empty')
       air_mass=1./air_mass
 
       do j=1,k-1
@@ -5347,32 +5299,30 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
         initial_massfractions(j)=f(l1,m1,n1,ichemspec(j))
       enddo
 
-      if (mvar < 5) then
-        call fatal_error("air_field", "I can only set existing fields")
-      endif
+      if (mvar < 5) call fatal_error("air_field","can only set existing fields")
 
       if (.not. reinitialize_chemistry) then
-      if (.not.lflame_front .and. .not.ltriple_flame .and. .not.lFlameMaster)  then
-        if (ltemperature_nolog) then
-          f(:,:,:,iTT)=TT
-        else
-          f(:,:,:,ilnTT)=alog(TT)!+f(:,:,:,ilnTT)
+        if (.not.lflame_front .and. .not.ltriple_flame .and. .not.lFlameMaster)  then
+          if (ltemperature_nolog) then
+            f(:,:,:,iTT)=TT
+          else
+            f(:,:,:,ilnTT)=alog(TT)!+f(:,:,:,ilnTT)
+          endif
+          if (ldensity_nolog) then
+            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
+              air_mass/TT)/unit_mass*unit_length**3
+          else
+            tmp=(PP/(k_B_cgs/m_u_cgs)*&
+              air_mass/TT)/unit_mass*unit_length**3
+              f(:,:,:,ilnrho)=alog(tmp)
+          endif
+          if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
         endif
-        if (ldensity_nolog) then
-          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/TT)/unit_mass*unit_length**3
-        else
-          tmp=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/TT)/unit_mass*unit_length**3
-            f(:,:,:,ilnrho)=alog(tmp)
-        endif
-        if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
-      endif
       endif
 
       if (init_from_file) then
-        if (lroot) print*, 'Velocity field read from file, initialization' //&
-            'of density and temperature'
+        if (lroot) print*, 'Velocity field read from file, initialization' // &
+                           'of density and temperature'
         if (ldensity_nolog) then
           f(:,:,:,ilnrho)=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3
@@ -5432,17 +5382,16 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
         endif
       endif
 
-      if (nxgrid>1) then
-        f(:,:,:,iux)=f(:,:,:,iux)+velx
+      if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+velx
+
+      if (lroot) then
+        print*, 'Air temperature, K', TT
+        print*, 'Air pressure, dyn', PP
+        print*, 'Air density, g/cm^3:'
+        print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*air_mass/TT
+        print*, 'Air mean weight, g/mol', air_mass
+        print*, 'R', k_B_cgs/m_u_cgs
       endif
-
-
-      if (lroot) print*, 'Air temperature, K', TT
-      if (lroot) print*, 'Air pressure, dyn', PP
-      if (lroot) print*, 'Air density, g/cm^3:'
-      if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*air_mass/TT
-      if (lroot) print*, 'Air mean weight, g/mol', air_mass
-      if (lroot) print*, 'R', k_B_cgs/m_u_cgs
 
       close(file_id)
 !
@@ -5678,7 +5627,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !***********************************************************************
     subroutine get_mu1_slice(f,slice,grad_slice,index,sgn,direction)
 !
-! For the NSCBC boudary conditions the slice of mu1 at the boundary, and
+! For the NSCBC boundary conditions the slice of mu1 at the boundary, and
 ! its gradient, is required.
 !
 !  10-dez-09/Nils Erland L. Haugen: coded
@@ -5741,15 +5690,14 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
             + 1.90D-33*X_M*KMT06*EXP(980.*p%TT1(i))
       case ('OH+HNO3=NO3')
         X_O2N2 = f(l1+i-1,mm,nn,ichemspec(index_O2N2))*unit_mass &
-            /species_constants(index_O2N2,imass)*p%rho(i)
-        K1        =  2.4E-14 * EXP(460.*p%TT1(i))
-        K3        =  6.5E-34 * EXP(1335.*p%TT1(i))
-        K4        =  2.7E-17 * EXP(2199.*p%TT1(i))
-        K2        =  (K3 * X_O2N2) / (1 + (K3*X_O2N2/K4))
+                 /species_constants(index_O2N2,imass)*p%rho(i)
+        K1     =  2.4E-14 * EXP(460.*p%TT1(i))
+        K3     =  6.5E-34 * EXP(1335.*p%TT1(i))
+        K4     =  2.7E-17 * EXP(2199.*p%TT1(i))
+        K2     =  (K3 * X_O2N2) / (1 + (K3*X_O2N2/K4))
         kf_loc = K1 + K2
       case default
-        if (lroot) print*,'reaction_name=', reaction_name(reac)
-        call stop_it('calc_extra_react: Element not found!')
+        call fatal_error('calc_extra_react','no such reaction_name:  "'//trim(reaction_name(reac))//'"')
       endselect
 !
     endsubroutine calc_extra_react
@@ -5971,9 +5919,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
 !  Set the y and z velocities to zero in order to avoid random noise
 !
-!      if (.not. reinitialize_chemistry) then
-!        f(:,:,:,iuy:iuz)=0
-!      endif
+!      if (.not. reinitialize_chemistry) f(:,:,:,iuy:iuz)=0
 !
       deallocate(a,grid)
 !
@@ -6127,9 +6073,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
 !  Set the y and z velocities to zero in order to avoid random noise
 !
-!      if (.not. reinitialize_chemistry) then
-!        f(:,:,:,iuy:iuz)=0
-!      endif
+!      if (.not. reinitialize_chemistry) f(:,:,:,iuy:iuz)=0
 !
       deallocate(a,grid,name_sp)
 !
@@ -6201,7 +6145,8 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       integer :: k ,isN2, ichemsN2
       logical :: lsN2
 !
-      call find_species_index('N2', isN2, ichemsN2, lsN2 )
+      call find_species_index('N2', isN2, ichemsN2, lsN2)
+
       sum_Y=0.0 !; sum_Y2=0.0
       do k=1,nchemspec
         if (k/=ichemsN2) then
@@ -6221,21 +6166,17 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: mu1_full
-      integer :: k,j2,j3
+!
+      integer :: k
 !
 !  Mean molecular weight
 !
       mu1_full=0.
       do k=1,nchemspec
-        if (species_constants(k,imass)>0.) then
-          do j2=mm1,mm2
-            do j3=nn1,nn2
-              mu1_full(:,j2,j3)= &
-                  mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
-                  /species_constants(k,imass)
-            enddo
-          enddo
-        endif
+        if (species_constants(k,imass)>0.) &
+          mu1_full(:,mm1:mm2,nn1:nn2)= &
+              mu1_full(:,mm1:mm2,nn1:nn2)+unit_mass*f(:,mm1:mm2,nn1:nn2,ichemspec(k)) &
+              /species_constants(k,imass)
       enddo
 !
     endsubroutine getmu_array
@@ -6247,7 +6188,6 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !  21-jun-10/julien: coded
 !  30-jun-17/MR: moved here from eos_chemistry.
 !
-     use Mpicomm, only: stop_it
 !
       logical :: emptyfile
       logical :: found_specie
@@ -6259,10 +6199,8 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       open(file_id,file="lewis.dat")
 !
-      if (lroot) print*, 'lewis.dat: beginning of the list:'
-!
       i=0
-      dataloop: do
+      do
         read(file_id,*,end=1000) specie_string, lewisk
         emptyFile=.false.
 !
@@ -6274,17 +6212,14 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
           Lewis_coef1(ind_chem) = 1./lewisk
           i=i+1
         endif
-      enddo dataloop
+
+      enddo
 !
 ! Stop if lewis.dat is empty
 !
-1000  if (emptyFile)  call stop_it('End of the file!')
+1000  if (emptyFile)  call fatal_error('read_Lewis','end of file "lewis.dat"')
 !
-      if (lroot) then
-        print*, 'lewis.dat: end of the list:'
-        if (i == 0) &
-            print*, 'File lewis.dat empty ===> Lewis numbers set to unity'
-      endif
+      if (i == 0) call warning('read_Lewis','File "lewis.dat" empty => Lewis numbers set to unity')
 !
       close(file_id)
 !
@@ -6296,8 +6231,6 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
 !  01-apr-08/natalia: coded
 !  30-jun-17/MR: moved here from eos_chemistry.
-!
-     use Mpicomm, only: stop_it
 !
       logical :: emptyfile
       logical :: found_specie
@@ -6311,20 +6244,18 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       emptyFile=.true.
 !
-      StartInd_1=1; StopInd_1 =0
+      StartInd_1=1; StopInd_1=0
 
       inquire (file='tran.dat',exist=trandat)
       inquire (file='tran.in',exist=tranin)
-      if (tranin .and. trandat) then
-        call fatal_error('eos_chemistry',&
-            'tran.in and tran.dat found. Please decide which one to use.')
-      endif
+      if (tranin .and. trandat) &
+        call fatal_error('read_transport_data', &
+            'both tran.in and tran.dat found. Please decide which to use.')
 
       if (tranin) open(file_id,file='tran.in')
       if (trandat) open(file_id,file='tran.dat')
 !
-      if (lroot) print*, 'the following species are found '//&
-          'in tran.in/dat: beginning of the list:'
+      if (lroot) print*, 'the following species are found in tran.in/dat:'
 !
       dataloop: do
 !
@@ -6383,9 +6314,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 ! Stop if tran.dat is empty
 !
 !
-1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
-!
-      if (lroot) print*, 'the following species are found in tran.dat: end of the list:'                    
+1000  if (emptyFile) call fatal_error('read_transport_data','input file tran.dat was empty')
 !
       close(file_id)
 !

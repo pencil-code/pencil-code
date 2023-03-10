@@ -15,6 +15,7 @@
 
   public :: calc_for_chem_mixture
   public :: chemspec_normalization, chemspec_normalization_N2
+  public :: chemistry_before_boundary
 !  public :: bc_nscbc_nref_subout_x
 !  public :: bc_nscbc_nref_subout_y
 !  public :: bc_nscbc_nref_subout_z
@@ -43,7 +44,6 @@
 ! public :: chemistry_calc_entropy
 ! public :: chemistry_calc_magnetic
 
-! public :: chemistry_before_boundary
   public :: write_net_reaction
   public :: lchemistry_diag
   public :: lreactions
