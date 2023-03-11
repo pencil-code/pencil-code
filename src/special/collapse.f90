@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED rrr, drrr, d2rrr, bet, mass, drho, grav
+! PENCILS PROVIDED rrr, drrr, d2rrr, bet, mass, dlnrho, grav
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -86,34 +86,20 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
   integer :: irrr=0, ibet=0
-  real :: ncutoff_phi=1.
-  real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
-  real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0., eps=.01
-  real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
-  real :: initpower_phi=0.,  cutoff_phi=0.,  initpower2_phi=0.
-  real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
-  real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
-  real :: relhel_phi=0.
-  real :: ddotam, a2rhopm, a2rhopm_all
-  real, target :: ddotam_all
-  real, pointer :: alpf
-  real, dimension (nx) :: dt1_special
-  logical :: lbackreact_infl=.true., lzeroHubble=.false.
-  logical :: lscale_tobox=.true.,ldt_backreact_infl=.true.
-  logical :: lskip_projection_phi=.false., lvectorpotential=.false.
+  real :: mass_blackhole=0., cs2=onethird
 !
-  character (len=labellen) :: Vprime_choice='quadratic'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
-      initspecial
+      initspecial, mass_blackhole, cs2
 !
   namelist /special_run_pars/ &
-      initspecial
+      initspecial, mass_blackhole, cs2
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
   integer :: idiag_betm=0      ! DIAG_DOC: $\left<\beta\right>$
+  integer :: idiag_massm=0      ! DIAG_DOC: $\left<m\right>$
 !
   contains
 !****************************************************************************
@@ -216,7 +202,7 @@ module Special
       lpenc_requested(i_rrr)=.true.
       lpenc_requested(i_drrr)=.true.
       lpenc_requested(i_d2rrr)=.true.
-      lpenc_requested(i_drho)=.true.
+      lpenc_requested(i_dlnrho)=.true.
       lpenc_requested(i_grav)=.true.
 !
     endsubroutine pencil_criteria_special
@@ -237,7 +223,7 @@ module Special
       intent(inout) :: p
 !
 ! mass
-      if (lpencil(i_mass)) p%mass=x(l1:l2)
+      if (lpencil(i_mass)) p%mass=x(l1:l2)+mass_blackhole
 ! bet
       if (lpencil(i_bet)) p%bet=f(l1:l2,m,n,ibet)
 ! rrr
@@ -246,9 +232,9 @@ module Special
       if (lpencil(i_drrr)) call der(f,irrr,p%drrr,1)
 ! d2rrr
       if (lpencil(i_d2rrr)) call der2(f,irrr,p%d2rrr,1)
-! drho
-      if (lpencil(i_drho)) p%drho=-(p%d2rrr/(p%rrr*p%drrr)**2+2./p%rrr**3)/(4.*pi*p%drrr)
-! drho
+! dlnrho
+      if (lpencil(i_dlnrho)) p%dlnrho=-(p%d2rrr/p%drrr**2+2./p%rrr)
+! grav
       if (lpencil(i_grav)) p%grav=-p%mass/abs(p%rrr*(p%rrr-2.*p%mass))
 
     endsubroutine calc_pencils_special
@@ -278,22 +264,32 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real :: cs2=onethird
-!
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
       df(l1:l2,m,n,irrr)=df(l1:l2,m,n,irrr)+p%bet/sqrt(1.+p%bet**2)
-      df(l1:l2,m,n,ibet)=df(l1:l2,m,n,ibet)+p%grav-cs2*p%drho
+      df(l1:l2,m,n,ibet)=df(l1:l2,m,n,ibet)+p%grav-cs2*p%dlnrho
 !
 !  Diagnostics
 !
       if (ldiagnos) then
         call sum_mn_name(p%bet,idiag_betm)
+        call sum_mn_name(p%mass,idiag_massm)
       endif
 
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine special_after_boundary(f)
+!
+!  Possibility to modify the f array after the boundaries are
+!  communicated.
+!
+!  06-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
@@ -340,36 +336,57 @@ module Special
       use Diagnostics, only: parse_name
 !
       integer :: iname
-      logical :: lreset,lwrite
+      logical :: lreset,lwr,lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_betm=0
+        idiag_betm=0; idiag_massm=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'betm',idiag_betm)
+        call parse_name(iname,cname(iname),cform(iname),'massm',idiag_massm)
       enddo
 !!
-!!!  write column where which magnetic variable is stored
-!!      if (lwr) then
-!!        call farray_index_append('idiag_SPECIAL_DIAGNOSTIC',idiag_SPECIAL_DIAGNOSTIC)
-!!      endif
-!!
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='rrr') cformv='DEFINED'
+      endif
+!
+!  write column where which magnetic variable is stored
+!
+      if (lwr) then
+      endif
+!
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine special_after_boundary(f)
+    subroutine get_slices_special(f,slices)
 !
-!  Possibility to modify the f array after the boundaries are
-!  communicated.
+!  Write slices for animation of electric potential
 !
-!  06-jul-06/tony: coded
+!  26-feb-07/axel: adapted from gross_pitaevskii
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      use Slices_methods, only: assign_slices_scal
 !
-    endsubroutine special_after_boundary
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      integer :: inamev
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Electric field.
+!
+      case ('rrr'); call assign_slices_scal(slices,f,irrr)
+!
+      endselect
+!
+    endsubroutine get_slices_special
 !********************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING        *************
