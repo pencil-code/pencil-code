@@ -164,28 +164,35 @@ touch pc_commands.log
 echo "" >> pc_commands.log
 date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
 if ( $#argv >= 1 ) then
-  if ( $mpirun == 'mpirun' || $mpirun == 'mpiexec' ) then
+  if ( $mpirun == 'mpirun' || $mpirun == 'mpiexec' || $mpirun == 'orterun' || $mpirun == 'srun' ) then
+    if ( $mpirun == 'srun' ) then 
+      echo Warning: launching an additional executable with $mpirun requires manipulation in that executable!
+    endif
     if ( $#argv == 1 ) then
+#
 # launch a second executable simultaneously with PC with same number of procs
-
-      echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" 
-      echo "$mpirun $mpirunops $npops $run_x $x_ops : $npops $*" >> pc_commands.log
-      time $mpirun $mpirunops $npops $run_x $x_ops : $npops $*
+#
+      echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops : $npops $*" 
+      echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops : $npops $*" >> pc_commands.log
+      time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops : $npops $*
     else
+#
 # launch a second executable simultaneously with PC; number of procs to be specified in arguments to run.csh, e.g. '-np <number> <second executable>'
-
-      echo "$mpirun $mpirunops $npops $run_x $x_ops : $*" 
-      echo "$mpirun $mpirunops $npops $run_x $x_ops : $*" >> pc_commands.log
-      time $mpirun $mpirunops $npops $run_x $x_ops : $*
+#
+      echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops : $*" 
+      echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops : $*" >> pc_commands.log
+      #time $mpirun --bind-to core:overload-allowed $mpirunops $npops $run_x $x_ops : $*
+      time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops : $*
     endif
   else
-    echo Error: launching an additional executable requires mpirun or mpiexec instead of $mpirun !
+    echo Error: launching an additional executable requires mpirun or srun instead of $mpirun !
     exit
   endif
 else
   echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
   echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops" >> pc_commands.log
   time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
+  #time $mpirun --multi-prog job.conf
   #time $mpirun --bind-to core:overload-allowed $mpirunops $npops $mpirunops2 $run_x $x_ops
   #time $mpirun -x LD_LIBRARY_PATH -x PATH $mpirunops $npops $mpirunops2 $run_x $x_ops
 endif
