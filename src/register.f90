@@ -1288,8 +1288,8 @@ module Register
 !  Check that l,m,npoint and l,m,npoint2 are in permissible range
 !
       if (lpoint<1.or.lpoint>mx .or. lpoint2<1.or.lpoint2>mx .or. &
-          mpoint<1.or.mpoint>mx .or. mpoint2<1.or.mpoint2>mx .or. &
-          npoint<1.or.npoint>mx .or. npoint2<1.or.npoint2>mx) then
+          mpoint<1.or.mpoint>my .or. mpoint2<1.or.mpoint2>my .or. &
+          npoint<1.or.npoint>mz .or. npoint2<1.or.npoint2>mz) then
         print*,'lpoint,lpoint2=',lpoint,lpoint2
         print*,'mpoint,mpoint2=',mpoint,mpoint2
         print*,'npoint,npoint2=',npoint,npoint2
