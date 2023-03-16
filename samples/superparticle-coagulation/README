@@ -1,0 +1,16 @@
+Directory:
+    ${PENCIL_HOME}/samples/superparticle-coagulation
+SVN Id:
+    79647
+Maintainer:
+    Xiangyu Li <xiang.yu.li.phy@gmail.com>
+Added:
+    Sep-2018
+Status:
+    has been working in this form since 27-Aug-2014
+Recommended resolution:
+    at least 128^3
+Comments:
+    This sample is for simulating the coagulation of particles using the superparticle algorithm. 
+References:
+    https://doi.org/10.1002/2017MS000930
