@@ -2283,7 +2283,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      double precision :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
+      real(KIND=rkind8) :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
       integer :: ivar1, ivar2, ystep, nbufx_gh
       integer :: tolastya=11, tolastyb=12, tonextya=13, tonextyb=14
       integer :: tolastlastya=15, tolastlastyb=16, tonextnextya=17, tonextnextyb=18
@@ -2497,7 +2497,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tnnb, isend_stat_tllb
       integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tnb,  isend_stat_tlb
       integer :: ivar1, ivar2, m2long
-      double precision :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
+      real(KIND=rkind8) :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
 !
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
@@ -5296,21 +5296,19 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !***********************************************************************
     function mpiwtime()
 !
-      double precision :: mpiwtime
-      double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
+      real(KIND=rkind8) :: mpiwtime
+      real(KIND=rkind8) :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
       mpiwtime = MPI_WTIME()
-      !mpiwtime = 0.
 !
     endfunction mpiwtime
 !***********************************************************************
     function mpiwtick()
 !
-      double precision :: mpiwtick
-      double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
+      real(KIND=rkind8) :: mpiwtick
+      real(KIND=rkind8) :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
       mpiwtick = MPI_WTICK()
-      !mpiwtick = 0.
 !
     endfunction mpiwtick
 !***********************************************************************
