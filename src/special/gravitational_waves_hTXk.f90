@@ -98,6 +98,7 @@ module Special
   real :: t_equality=3.789E11, t_acceleration=1.9215E13, t_0=1.3725E13
   real :: k1hel=0., k2hel=1., kgaussian_GW=0., ncutoff_GW=2., relhel_GW=0.
   real, pointer :: ddotam
+  logical, pointer :: lconservative
   logical :: lno_transverse_part=.false., lgamma_factor=.false.
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
   logical :: lswitch_sign_e_X_boost=.false.
@@ -132,7 +133,7 @@ module Special
   real :: t_ini=60549
 !
   logical :: lread_scl_factor_file_exists
-  integer :: nt_file, it_file
+  integer :: nt_file, it_file, iTij=0
   real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf
   real :: scl_factor_target, Hp_target, app_target, OmM_target, OmT_target, lgt_current
@@ -275,6 +276,7 @@ module Special
 !
       use Sub, only: register_report_aux
       use FArrayManager
+      use SharedVariables, only: get_shared_variable
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -348,6 +350,19 @@ module Special
         call farray_register_auxiliary('ggT_realspace_boost',iggT_realspace_boost)
         call farray_register_auxiliary('ggX_realspace_boost',iggX_realspace_boost)
       endif
+!
+!  Check if we are solving for relativistic bulk motions, not just EoS.
+!
+      if (lhydro) then
+        call get_shared_variable('lconservative', lconservative, caller='register_magnetic')
+      else
+        allocate(lconservative)
+        lconservative=.false.
+      endif
+!
+!  Get base indix for Tij, if different from zero.
+!
+      iTij=farray_index_by_name('Tij')
 !
     endsubroutine register_special
 !***********************************************************************
@@ -823,7 +838,11 @@ module Special
             if (lonly_mag) then
               if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
             else
-              if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
+              if (lconservative) then
+                p%stress_ij(:,ij)=p%stress_ij(:,ij)+f(l1:l2,m,n,iTij-1+ij)
+              else
+                if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
+              endif
               if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
               if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
               if (lscalar_phi)   p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%infl_a2*p%gphi(:,i)*p%gphi(:,j)
