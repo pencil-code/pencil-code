@@ -4195,6 +4195,8 @@ module Fourier
       endif
 !
       ! perform FFT on all participating procesors
+      ! [PAB]: Anders please check - can we uncomment this if condition?
+      !if (ipy<nprocy_used) then
       a_im_new=0.0
       cmplx_shift=exp(cmplx(0.0,-ky_fft*shift_y))
 !
@@ -4213,6 +4215,8 @@ module Fourier
       do n=1,nz_new
         call fourier_transform_other(a_re_new(:,n),a_im_new(:,n),linv=.true.)
       enddo
+      ! [PAB]: Anders please check - can we uncomment this if condition?
+      !endif
 !
 !  Reinstate original division of yz-plane.
 !
