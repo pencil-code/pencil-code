@@ -4195,28 +4195,26 @@ module Fourier
       endif
 !
       ! perform FFT on all participating procesors
-      ! [PAB]: Anders please check - can we uncomment this if condition?
-      !if (ipy<nprocy_used) then
-      a_im_new=0.0
-      cmplx_shift=exp(cmplx(0.0,-ky_fft*shift_y))
+      if (ipy < nprocy_used) then
+        a_im_new=0.0
+        cmplx_shift=exp(cmplx(0.0,-ky_fft*shift_y))
 !
 !  Transform to Fourier space.
 !
-      do n=1,nz_new
-        call fourier_transform_other(a_re_new(:,n),a_im_new(:,n))
-        a_cmplx=cmplx(a_re_new(:,n),a_im_new(:,n))
-        a_cmplx=a_cmplx*cmplx_shift
-        a_re_new(:,n)=real(a_cmplx)
-        a_im_new(:,n)=aimag(a_cmplx)
-      enddo
+        do n=1,nz_new
+          call fourier_transform_other(a_re_new(:,n),a_im_new(:,n))
+          a_cmplx=cmplx(a_re_new(:,n),a_im_new(:,n))
+          a_cmplx=a_cmplx*cmplx_shift
+          a_re_new(:,n)=real(a_cmplx)
+          a_im_new(:,n)=aimag(a_cmplx)
+        enddo
 !
 !  Back to real space.
 !
-      do n=1,nz_new
-        call fourier_transform_other(a_re_new(:,n),a_im_new(:,n),linv=.true.)
-      enddo
-      ! [PAB]: Anders please check - can we uncomment this if condition?
-      !endif
+        do n=1,nz_new
+          call fourier_transform_other(a_re_new(:,n),a_im_new(:,n),linv=.true.)
+        enddo
+      endif
 !
 !  Reinstate original division of yz-plane.
 !
