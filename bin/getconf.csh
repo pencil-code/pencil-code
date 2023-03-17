@@ -802,7 +802,7 @@ else if (($hn =~ r*c*.bullx)) then
   endif
   #set mpirun = 'orterun'
   set mpirun = 'srun'
-  set npops = "-np $ncpus"
+  set npops = "-n $ncpus"
   #set npops = "-display-devel-map -map-by slot -n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
@@ -2185,7 +2185,7 @@ if ($mpi) then
     set mpirunops = "$mpirunops"
   else if ("$mpirun" =~ *srun*) then
     set mpirun = 'srun'
-    set npops = ''
+    #set npops = ''
   else if ("$mpirun" =~ *orterun*) then
     set npops = "-np $ncpus"
   else if ("$mpirun" =~ *ccc_mprun*) then

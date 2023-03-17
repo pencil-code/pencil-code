@@ -25,7 +25,7 @@ module Density
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, itoa
   use Messages
   use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
                              gamma, gamma1, gamma_m1
@@ -64,7 +64,7 @@ module Density
 !
 !  Schur flow quantities
 !
-  real :: Schur_dlnrho_RHS_xyzaver
+  real, dimension(1) :: Schur_dlnrho_RHS_xyzaver
   real, dimension (mz) :: Schur_dlnrho_RHS_xyaver_z
   real, dimension (mx,my) :: Schur_dlnrho_RHS_zaver_xy
 ! 
@@ -301,7 +301,7 @@ module Density
       endif
 
       if (any(idiff=='density-slope-limited')) then
-        if (dimensionality<3)lisotropic_advection=.true.
+        if (dimensionality<3) lisotropic_advection=.true.
         lslope_limit_diff = .true.
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
@@ -352,7 +352,7 @@ module Density
 !
 !  Some modules Density depends on may still need access.
 !
-      call put_shared_variable("beta_glnrho_global", beta_glnrho_global, caller="register_density")
+      call put_shared_variable("beta_glnrho_global", beta_glnrho_global)
 !
     endsubroutine register_density
 !***********************************************************************
@@ -394,24 +394,22 @@ module Density
 !
 !  Prevent this module when background stratification is on.
 !
-      if (lstratz) call fatal_error('initialize_density', 'lstratz = .true.; use density_stratified instead')
+      if (lstratz) call fatal_error('initialize_density','lstratz=.true. -> use density_stratified instead')
 !
 !  Check the switches.
 !
       if (ldensity_nolog.and.lupw_lnrho) then
         lupw_rho=.true.
-        if (lroot) &
-          call warning('initialize_density','enabled upwinding for linear density')
+        call warning('initialize_density','enabled upwinding for linear density')
       elseif (.not.ldensity_nolog.and.lupw_rho) then
         lupw_lnrho=.true.
-        if (lroot) &
-          call warning('initialize_density','enabled upwinding for log density')
+        call warning('initialize_density','enabled upwinding for log density')
       endif
 !
       if (.not.ldensity_nolog.and.lweno_transport) then
         lweno_transport=.false.
         !call warning('initialize_density','disabled WENO transport for logarithmic density')
-        call fatal_error('initialize_density','can not do WENO transport for logarithmic density!')
+        call fatal_error('initialize_density','cannot do WENO transport for logarithmic density!')
       endif
 
       lreference_state = ireference_state/='nothing'
@@ -444,9 +442,7 @@ module Density
 !
 !  Made to work by adding diffrho + cdiffrho to the rprint reset list.
 !
-      if (diffrho==0.0) then
-        diffrho=cdiffrho*dxmin*cs0
-      endif
+      if (diffrho==0.0) diffrho=cdiffrho*dxmin*cs0
 !
 !  Define stratification Gamma (upper case, as in the manual).
 !  Set mpoly to default value, unless ggamma is set.
@@ -462,16 +458,14 @@ module Density
 !
       if (.not.lhydro .and. .not.lhydro_kinematic) then
         lcontinuity_gas=.false.
-        if (lroot) print*, &
-             'initialize_density: no hydro, turned off continuity equation'
+        if (lroot) print*, 'initialize_density: no hydro, turned off continuity equation'
       endif
 !
 !  Turn off continuity equation term for 0-D runs.
 !
       if (nwgrid==1) then
         lcontinuity_gas=.false.
-        if (lroot) print*, &
-             'initialize_density: 0-D run, turned off continuity equation'
+        if (lroot) print*, 'initialize_density: 0-D run, turned off continuity equation'
       endif
 !
 !  Rescale density by a factor rescale_rho.
@@ -552,8 +546,7 @@ module Density
           xmask_den = xmask_den * (xyz1(1)**2 - xyz0(1)**2) &
               / (density_xaver_range(2)**2 - density_xaver_range(1)**2)
         else
-          xmask_den = xmask_den * Lxyz(1) &
-              / (density_xaver_range(2) - density_xaver_range(1))
+          xmask_den = xmask_den * Lxyz(1) / (density_xaver_range(2) - density_xaver_range(1))
         endif
       endif
 !
@@ -642,12 +635,9 @@ module Density
             ldensity_slope_limited=.true.
             lmassdiff_fix=.true.
         case ('','none')
-          if (lroot .and. (.not. lnothing)) &
-              print*,'diffusion: nothing (i.e. no mass diffusion)'
+          if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing (i.e. no mass diffusion)'
         case default
-          write(unit=errormsg,fmt=*) 'initialize_density: ', &
-              'No such value for idiff(',i,'): ', trim(idiff(i))
-          call fatal_error('initialize_density',errormsg)
+          call fatal_error('initialize_density','No such idiff('//trim(itoa(i))//'): '//trim(idiff(i)))
         endselect
         lnothing=.true.
       enddo
@@ -657,39 +647,32 @@ module Density
 !
       if (lrun) then
         if ((ldiff_normal.or.ldiff_cspeed).and.diffrho==0.0) &
-            call warning('initialize_density', &
-            'Diffusion coefficient diffrho is zero!', 0)
+            call warning('initialize_density','Diffusion coefficient diffrho is zero!', 0)
         if (ldiff_cspeed.and..not.(lentropy.or.ltemperature)) &
-            call warning('initialize_density', &
-            'Diffusion with cspeed can only be used with lenergy!', 0)
+            call warning('initialize_density','Diffusion with cspeed can only be used with lenergy!', 0)
         if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho .or. ldiff_hyper3_strict .or. &
               ldiff_hyper3lnrho_strict) .and. diffrho_hyper3==0.0) &
-            call fatal_error('initialize_density', &
-            'Diffusion coefficient diffrho_hyper3 is zero!')
+            call fatal_error('initialize_density','Diffusion coefficient diffrho_hyper3 is zero!')
         if ( (ldiff_hyper3_aniso) .and.  &
              ((diffrho_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
               (diffrho_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
               (diffrho_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
-            call fatal_error('initialize_density', &
-            'A diffusion coefficient of diffrho_hyper3 is zero!')
+            call fatal_error('initialize_density','A diffusion coefficient of diffrho_hyper3 is zero!')
         if (ldiff_shock .and. diffrho_shock==0.0) &
-            call fatal_error('initialize_density', &
-            'diffusion coefficient diffrho_shock is zero!')
+            call fatal_error('initialize_density','diffusion coefficient diffrho_shock is zero!')
         if (ldiff_normal.or.ldiff_cspeed.or.ldiff_shock) then
-          !lmassdiff_fix=.true.
-          call warning('initialize_density', &
-            'For diffusion energy/momentum correction should use lmassdiff_fix!', 0)
+          if (.not.lmassdiff_fix) call warning('initialize_density', &
+            'For diffusion energy/momentum correction should use lmassdiff_fix=T', 0)
         endif
         if (lmassdiff_fixkin.or.lmassdiff_fixmom) then
           lmassdiff_fix=.true.
-          call warning('initialize_density', &
-              'Deprecated: lmassdiff_fix now the default!', 0)
+          call information('initialize_density','lmassdiff_fix=T now the default', 0)
         endif
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
 !
         if (ldynamical_diffusion.and..not.ldiff_hyper3_mesh) then
-          call fatal_error("initialize_density",&
+          call fatal_error("initialize_density", &
                "Dynamical diffusion requires mesh hyper-diffusion, switch idiff='hyper3-mesh'")
         endif
 !
@@ -713,8 +696,8 @@ module Density
 !
       if (rho0/=rho_const .and. rho0/=impossible) then
         if (any(initlnrho=='const_lnrho') .or. any(initlnrho=='const_rho')) then
+          call warning("initialize_density","are rho_const or lnrho_const ok?")
           if (lroot) then
-            call warning("initialize_density","are rho_const or lnrho_const ok?")
             print*,"inconsistency between the density constants from eos  "
             print*,"(rho0 or lnrho0) and the ones from the density module "
             print*,"(rho_const or lnrho_const). It may damage your        "
@@ -736,11 +719,8 @@ module Density
         if (lroot) print*, 'initialize_density: reading original stratification from stratification.dat'
         open(19,file=trim(directory_dist)//'/stratification.dat')
           if (ldensity_nolog) then
-            if (lroot) then
-              print*, 'initialize_density: currently only possible to read'
-              print*, '                    *logarithmic* stratification from file'
-            endif
-            call fatal_error('initialize_density','')
+            call fatal_error('initialize_density', &
+              'currently only possible to read *logarithmic* stratification from file')
           else
             read(19,*) lnrho_init_z_nz
           endif
@@ -758,18 +738,16 @@ module Density
 !  Must write stratification to file to counteract the shock diffusion of the
 !  mean stratification.
 !
-      if (lanti_shockdiffusion .and. .not. lwrite_stratification) then
-        if (lroot) print*, 'initialize_density: must have lwrite_stratification for anti shock diffusion'
-        call fatal_error('','')
-      endif
+      if (lanti_shockdiffusion .and. .not. lwrite_stratification) &
+        call fatal_error('initialize_density','must have lwrite_stratification for anti shock diffusion')
 !
 !  Possible to store non log rho as auxiliary variable.
 !
       if (lrho_as_aux) then
         if (ldensity_nolog) then
-          if (lroot) print*, 'initialize_density: makes no sense to have '// &
-              'lrho_as_aux=T if already evolving non log rho'
-          call fatal_error('initialize_density','')
+          call warning('initialize_density', &
+            'makes no sense to have lrho_as_aux=T if evolving linear rho - ignored')
+          lrho_as_aux=.false.
         else
           call farray_register_auxiliary('rho',irho,communicated=.true.)
         endif
@@ -793,7 +771,15 @@ module Density
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderlnrho/='nothing') call request_border_driving(borderlnrho)
+      select case (borderlnrho)
+!
+      case ('zero','0','constant','initial-condition')
+        call request_border_driving(borderlnrho)
+      case ('nothing')
+        if (headtt.and.ip<=5) print*,"initialize_density: borderlnrho='nothing'"
+      case default
+        call fatal_error('set_border_density',"No such borderlnrho: '"//trim(borderlnrho)//"'")
+      end select
 !
 !  Check if we are solving partially force-free equations.
 !
@@ -832,8 +818,7 @@ module Density
           dprofy_ffree=0.
           dprofz_ffree=0.
         case default
-          call fatal_error('initialize_density', &
-              'you have chosen lffree=T but did not select a profile!')
+          call fatal_error('initialize_density', 'lffree=T but no profile selected')
         endselect
 !
 !  Put the profiles to entropy and hydro too.
@@ -873,14 +858,14 @@ module Density
         if (mass_source_profile(1:4)=='bump') fnorm=(2.*pi*mass_source_sigma**2)**1.5
         select case (mass_source_profile)
           case ('nothing')
-            call fatal_error('initialize_density','mass source with no profile not coded')
+            call not_implemented('initialize_density','mass source with no profile')
           case('bump2')
             fprofile_z=(mass_source_Mdot/fnorm)*exp(-.5*(z(n1:n2)/mass_source_sigma)**2)
           case('bumpx')
             fprofile_x=(mass_source_Mdot/fnorm)*exp(-.5*((x(l1:l2)-mass_source_offset)/mass_source_sigma)**2)
           case ('sph-step-down')
             if (.not.lspherical_coords) call fatal_error('initialize_density', &
-                'you have chosen mass-source profiles "sph-step-down", but coordinate system is not spherical!')
+                'you have chosen mass-source profiles "sph-step-down",'//achar(10)//' but coordinate system is not spherical!')
             fprofile_x=mass_source_Mdot*stepdown(r1_mn,rmax_mass_source,wdamp)
           case ('exponential','const','cylindric','bump')
 !
@@ -931,8 +916,7 @@ module Density
           call read_reference_state
 !
         case default
-          call fatal_error('initialize_density', &
-              'type of reference state "'//trim(ireference_state)//'" not implemented')
+          call not_implemented('initialize_density','type of reference state "'//trim(ireference_state)//'"')
         end select
 !
 !  Fetch gravity pencil. Requires that the gravity module is initialized before the density module
@@ -969,6 +953,14 @@ module Density
         total_mass = mean_density(f) * box_volume
         if (lreference_state) total_mass = total_mass + reference_state_mass
       endif
+
+      if (lcontinuity_gas.and..not.lweno_transport.and.ldensity_nolog.and.lconservative.and..not.lhydro) &
+        call fatal_error_local('initialize_density','divss not available without hydro')
+!
+      if ((idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. idiag_rhof2downmz/=0) &
+          .and..not. lrho_flucz_as_aux) &
+         call fatal_error('initialize_density','Need to set lrho_flucz_as_aux=T'// &
+                          ' in density_run_pars for some density fluctuation diagnostics')
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -1007,7 +999,8 @@ module Density
 !  Sanity check.
 !
       if (lread_oldsnap .and. ldensity_nolog .and. .not. all(initlnrho == 'nothing')) &
-          call fatal_error('init_lnrho', 'cannot add initial conditions to the old snapshot. ')
+        call fatal_error('init_lnrho', 'cannot add initial conditions to the old snapshot')
+        !MR: Why? should just be possible for linear density.
 !
 !  Define bottom and top height.
 !
@@ -1033,7 +1026,7 @@ module Density
         call get_shared_variable('mpoly2', mpoly2)
       elseif ( any(initlnrho=='piecew-poly') .or. any(initlnrho=='piecew-disc') .or. any(initlnrho=='polytropic') .or. &
                any(initlnrho(:)(1:1)=='4') .or. any(initlnrho=='5') ) then
-        if (lroot) call warning('init_lnrho','mpoly[0-2] not provided by entropy, take default 1.5')
+        call warning('init_lnrho','mpoly[0-2] not provided by entropy, take default 1.5')
         allocate(mpoly0,mpoly1,mpoly2)
         mpoly0=1.5; mpoly1=1.5; mpoly2=1.5
       endif
@@ -1086,8 +1079,8 @@ module Density
           call blob(ampllnrho(j)/(sqrt2pi*radius_lnrho(j))**3,f,ilnrho, &
               radius_lnrho(j)*sqrt2,xblob(j),yblob(j),zblob(j))
         case ('blob_hs')
-          print*, 'init_lnrho: put a blob in hydrostatic equilibrium:'// &
-          'radius_lnrho, ampllnrho, position=',radius_lnrho(j), &
+          if (lroot) print*, 'init_lnrho: put a blob in hydrostatic equilibrium: '// &
+                             'radius_lnrho, ampllnrho, position=',radius_lnrho(j), &
           ampllnrho(j), xblob(j), yblob(j), zblob(j)
           call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob(j),yblob(j),zblob(j))
           call blob(-ampllnrho(j),f,iss,radius_lnrho(j),xblob(j),yblob(j),zblob(j))
@@ -1103,7 +1096,7 @@ module Density
         case ('stratification_tsallis'); call stratification_tsallis(f)
         case ('hydrostatic_TT'); call temp_hydrostatic(f,rho_const)
         case ('hydrostatic-z', '1')
-          print*, 'init_lnrho: use polytropic_simple instead!'
+          if (lroot) print*, 'init_lnrho: use polytropic_simple instead!'
         case ('xjump')
           call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'x')
         case ('yjump')
@@ -1270,8 +1263,7 @@ module Density
               call warning('init_lnrho','cs2cool not provided by entropy, set zero')
               allocate(cs2cool); cs2cool=0.
             endif
-            if (lroot) print*, &
-                 'init_lnrho: isentropic star with isothermal atmosphere'
+            if (lroot) print*, 'init_lnrho: isentropic star with isothermal atmosphere'
             do n=n1,n2; do m=m1,m2
               r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
               call potential(POT=pot,POT0=pot0,RMN=r_mn) ! gravity potential
@@ -1324,8 +1316,7 @@ module Density
 !
 !  Piecewise polytropic for stellar convection models.
 !
-          if (lroot) print*, &
-             'init_lnrho: piecewise polytropic vertical stratification (lnrho)'
+          if (lroot) print*, 'init_lnrho: piecewise polytropic vertical stratification (lnrho)'
 !  Top region.
           cs2int = cs0**2
           lnrhoint = lnrho0
@@ -1359,8 +1350,7 @@ module Density
 !
 !  Piecewise polytropic for accretion discs.
 !
-          if (lroot) print*, &
-               'init_lnrho: piecewise polytropic disc stratification (lnrho)'
+          if (lroot) print*, 'init_lnrho: piecewise polytropic disc stratification (lnrho)'
 !  Bottom region.
           cs2int = cs0**2
           lnrhoint = lnrho0
@@ -1389,8 +1379,7 @@ module Density
 !  Polytropic stratification.
 !  cs0, rho0 and ss0=0 refer to height z=zref
 !
-          if (lroot) print*, &
-                    'init_lnrho: polytropic vertical stratification (lnrho)'
+          if (lroot) print*, 'init_lnrho: polytropic vertical stratification (lnrho)'
 !
           cs2int = cs20
           lnrhoint = lnrho0
@@ -1530,7 +1519,7 @@ module Density
           call shell_lnrho(f)
         case ('step_xz')
           call fatal_error('init_lnrho','neutron_star initial condition '// &
-              'is now in the special/neutron_star.f90 code')
+              'is now in special/neutron_star.f90')
         case ('jeans-wave-x')
 !
 !  Soundwave + self gravity.
@@ -1564,7 +1553,7 @@ module Density
           k_j2 = kx_lnrho(j)**2 + ky_lnrho(j)**2 + kz_lnrho(j)**2
           omega_jeans = sqrt(cmplx(cs20*k_j2 - rhs_poisson_const*rho0,0.))/ &
               (rho0*sqrt(k_j2))
-          print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
+          if (lroot) print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
               real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 !
           do n=n1,n2; do m=m1,m2
@@ -1594,7 +1583,7 @@ module Density
           omega_jeans = sqrt(cmplx(cs20*kx_lnrho(j)**2 + &
               Omega**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(j))
 !
-          print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
+          if (lroot) print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
               real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 !
           do n=n1,n2; do m=m1,m2
@@ -1625,14 +1614,11 @@ module Density
 !
 !  Catch unknown values
 !
-          write(unit=errormsg,fmt=*) 'No such value for initlnrho(' &
-                            //trim(iinit_str)//'): ',trim(initlnrho(j))
-          call fatal_error('init_lnrho',errormsg)
+          call fatal_error('init_lnrho','No such initlnrho('//trim(iinit_str)//'): '//trim(initlnrho(j)))
 !
         endselect
 !
-        if (lroot) print*,'init_lnrho: initlnrho('//trim(iinit_str)//') = ', &
-            trim(initlnrho(j))
+        if (lroot) print*,'init_lnrho: initlnrho('//trim(iinit_str)//') = '//trim(initlnrho(j))
 !
       enddo  ! End loop over initial conditions.
 !
@@ -1774,13 +1760,11 @@ module Density
 !
       real, parameter :: weight=.0
 !
-      if (lslope_limit_diff) &
-        call staggered_mean_scal(f,ilnrho,iFF_char_c,weight)
+      if (lslope_limit_diff) call staggered_mean_scal(f,ilnrho,iFF_char_c,weight)
 !
     endsubroutine update_char_vel_density
 !***********************************************************************
-    subroutine polytropic_lnrho_z( &
-         f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint,fac_cs)
+    subroutine polytropic_lnrho_z(f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint,fac_cs)
 !
 !  Implement a polytropic profile in ss above zbot. If this routine is
 !  called several times (for a piecewise polytropic atmosphere), on needs
@@ -1820,7 +1804,7 @@ module Density
 ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
             call fatal_error_local('polytropic_lnrho_z', &
-                'Imaginary density values -- your z_inf is too low.')
+                'Imaginary density values -- z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
           tmp = lnrhoint + mpoly*log(tmp)
@@ -1846,8 +1830,7 @@ module Density
 !
     endsubroutine polytropic_lnrho_z
 !***********************************************************************
-    subroutine polytropic_lnrho_disc( &
-         f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint)
+    subroutine polytropic_lnrho_disc(f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint)
 !
 !  Implement a polytropic profile in a disc. If this routine is
 !  called several times (for a piecewise polytropic atmosphere), on needs
@@ -1885,7 +1868,7 @@ module Density
 ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
             call fatal_error_local('polytropic_lnrho_disc', &
-                'Imaginary density values -- your z_inf is too low.')
+                'Imaginary density values -- z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
           tmp = lnrhoint + mpoly*log(tmp)
@@ -1918,7 +1901,6 @@ module Density
 !  21-aug-08/dhruba -- added spherical coordinates
 !
       use Gravity, only: g0,potential
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: pot, r_mn
@@ -1932,7 +1914,7 @@ module Density
         lnrho_ext=lnrho0
 !
 ! always inside the fluid shell
-        do imn=1,ny*nz
+        do imn=1,nyz
           n=nn(imn)
           m=mm(imn)
           f(l1:l2-1,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(x(l2)/x(l1:l2-1)-1.))
@@ -1940,13 +1922,13 @@ module Density
         enddo
 !
       elseif (lcylindrical_coords) then
-        call stop_it('shell_lnrho: this is not consistent with cylindrical coords')
+        call fatal_error('shell_lnrho','not consistent with cylindrical coords')
       else
 !     densities at shell boundaries
         lnrho_int=lnrho0+mpoly*log(1+beta1*(r_ext/r_int-1.))
         lnrho_ext=lnrho0
 !
-        do imn=1,ny*nz
+        do imn=1,nyz
           n=nn(imn)
           m=mm(imn)
 !
@@ -1986,8 +1968,7 @@ module Density
       real, dimension (nx,3) :: gg_mn
       integer :: j
 !
-      if (ldensity_nolog) &
-        call fatal_error('numerical_equilibrium','not implemented for linear density')
+      if (ldensity_nolog) call not_implemented('numerical_equilibrium','for linear density')
 !
       do m=m1,m2
         do n=n1,n2
@@ -2019,7 +2000,7 @@ module Density
           if (.not.lconservative) lpenc_requested(i_divu)=.true.
           if (ldensity_nolog) then
             if (lconservative) then
-              lpenc_requested(i_divss)=.true.
+              if (lhydro) lpenc_requested(i_divss)=.true.
             else
               lpenc_requested(i_ugrho)=.true.
 !            lpenc_requested(i_uglnrho)=.false.
@@ -2198,10 +2179,8 @@ module Density
 !
 !  Dummy pencils.
 !
-      if (lpenc_loc(i_rhos1)) &
-        call fatal_error('calc_pencils_density_pnc', 'rhos1 is no implemented')
-      if (lpenc_loc(i_glnrhos)) &
-        call fatal_error('calc_pencils_density_pnc', 'glnrhos is no implemented')
+      if (lpenc_loc(i_rhos1)) call not_implemented('calc_pencils_density_pnc','rhos1')
+      if (lpenc_loc(i_glnrhos)) call not_implemented('calc_pencils_density_pnc','glnrhos')
 !
     endsubroutine calc_pencils_density_pnc
 !***********************************************************************
@@ -2302,16 +2281,14 @@ module Density
 ! del6lnrho
       if (lpenc_loc(i_del6lnrho)) then
         if (ldiff_hyper3lnrho) then
-          call fatal_error('calc_pencils_density', &
-               'del6lnrho not available for linear mass density') 
+          call not_implemented('calc_pencils_density','del6lnrho for linear mass density') 
         elseif (ldiff_hyper3lnrho_strict) then 
-          call fatal_error('calc_pencils_density', &
-               'del6lnrho_strict not available for linear mass density')
+          call not_implemented('calc_pencils_density','del6lnrho_strict for linear mass density')
         endif
       endif
 ! hlnrho
-      if (lpenc_loc(i_hlnrho)) call fatal_error('calc_pencils_density', &
-          'hlnrho not available for linear mass density')
+      if (lpenc_loc(i_hlnrho)) call not_implemented('calc_pencils_density', &
+          'hlnrho linear mass density')
 ! sglnrho
       if (lpenc_loc(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 ! uij5glnrho
@@ -2336,13 +2313,7 @@ module Density
 !
 ! divS, needed for relativistic calculations
 !
-      if (lpenc_loc(i_divss)) then
-        if (lhydro) then
-          call div(f,iux,p%divss)
-        else
-          call fatal_error_local('calc_pencils_linear_density_pnc','divss not allowed')
-        endif
-      endif
+      if (lpenc_loc(i_divss)) call div(f,iux,p%divss)
 !
     endsubroutine calc_pencils_linear_density_pnc
 !***********************************************************************
@@ -2396,18 +2367,18 @@ module Density
         endif
       endif
 ! ugrho
-      if (lpenc_loc(i_ugrho)) call fatal_error('calc_pencils_density', &
-          'ugrho not available for logarithmic mass density')
+      if (lpenc_loc(i_ugrho)) call not_implemented('calc_pencils_density', &
+          'ugrho for logarithmic mass density')
 ! glnrho2
       if (lpenc_loc(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
-      if (lpenc_loc(i_del2rho)) call fatal_error('calc_pencils_density', &
-          'del2rho not available for logarithmic mass density')
+      if (lpenc_loc(i_del2rho)) call not_implemented('calc_pencils_density', &
+          'del2rho for logarithmic mass density')
 ! del2lnrho
       if (lpenc_loc(i_del2lnrho)) call del2(f,ilnrho,p%del2lnrho)
 ! del6rho
-      if (lpenc_loc(i_del6rho)) call fatal_error('calc_pencils_density', &
-          'del6rho not available for logarithmic mass density')
+      if (lpenc_loc(i_del6rho)) call not_implemented('calc_pencils_density', &
+          'del6rho for logarithmic mass density')
 ! del6lnrho
       if (lpenc_loc(i_del6lnrho)) then
         if (ldiff_hyper3lnrho) then
@@ -2435,12 +2406,10 @@ module Density
 !   2-apr-08/anders: coded
 !
       use Sub, only: div, grad, dot_mn, finalize_aver
-      use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx,3) :: glnrho, uu
       real, dimension (nx) :: divu, uglnrho, Schur_dlnrho_RHS
-      real :: tmp
 !
       if (lSchur_3D3D1D) then
 !
@@ -2457,22 +2426,21 @@ module Density
           call div(f,iux,divu)
           call dot_mn(uu,glnrho,uglnrho)
           Schur_dlnrho_RHS=uglnrho+divu
-          Schur_dlnrho_RHS_xyaver_z(n) = Schur_dlnrho_RHS_xyaver_z(n)+sum(Schur_dlnrho_RHS)/nxgrid/nygrid
+          Schur_dlnrho_RHS_xyaver_z(n) = Schur_dlnrho_RHS_xyaver_z(n)+sum(Schur_dlnrho_RHS)/nxygrid
           Schur_dlnrho_RHS_zaver_xy(l1:l2,m) = Schur_dlnrho_RHS_zaver_xy(l1:l2,m)+Schur_dlnrho_RHS/nzgrid
-          Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(Schur_dlnrho_RHS)/nxgrid/nygrid/nzgrid
+          Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(Schur_dlnrho_RHS)/nwgrid
         enddo
         enddo
         !
         call finalize_aver(nprocxy,12,Schur_dlnrho_RHS_xyaver_z)
         call finalize_aver(nprocz,3,Schur_dlnrho_RHS_zaver_xy)
-        if (ncpus>1) then
-          call mpiallreduce_sum(Schur_dlnrho_RHS_xyzaver,tmp)
-          Schur_dlnrho_RHS_xyzaver=tmp
-        endif
-        !Schur_dlnrho_RHS_xyzaver = sum(Schur_dlnrho_RHS_xyaver_z)/nzgrid
+        call finalize_aver(ncpus,123,Schur_dlnrho_RHS_xyzaver)    !MR: ???
+        !if (ncpus>1) then
+        !  call mpiallreduce_sum(Schur_dlnrho_RHS_xyzaver,tmp)
+        !  Schur_dlnrho_RHS_xyzaver=tmp
+        !endif
         !call finalize_aver(nprocz,3,Schur_dlnrho_RHS_xyzaver)
-        !call finalize_aver(ncpus,123,Schur_dlnrho_RHS_xyzaver)
-        !
+        
       endif
 !
       call keep_compiler_quiet(f)
@@ -2484,7 +2452,7 @@ module Density
 !  Continuity equation.
 !  Calculate dlnrho/dt = - u.gradlnrho - divu
 !
-!   7-jun-02/axel: incoporated from subroutine pde
+!   7-jun-02/axel: incorporated from subroutine pde
 !  21-oct-15/MR: changes for slope-limited diffusion
 !   4-aug-17/axel: implemented terms for ultrarelativistic EoS
 !  25-may-18/fred: updated mass diffusion correction and set default
@@ -2520,10 +2488,10 @@ module Density
 !  continuity equation.
 !
       if (lSchur_3D3D1D) then
-        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-            +Schur_dlnrho_RHS_xyzaver &
-            -Schur_dlnrho_RHS_xyaver_z(n) &
-            -Schur_dlnrho_RHS_zaver_xy(l1:l2,m)
+        df(l1:l2,m,n,ilnrho)= df(l1:l2,m,n,ilnrho) &
+                             +Schur_dlnrho_RHS_xyzaver(1)  &
+                             -Schur_dlnrho_RHS_xyaver_z(n) &
+                             -Schur_dlnrho_RHS_zaver_xy(l1:l2,m)
       else
 !
 !  Continuity equation.
@@ -2915,7 +2883,6 @@ module Density
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       use Diagnostics
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
@@ -2923,11 +2890,6 @@ module Density
       real, dimension (nx) :: uzmask
 !
       if (l1davgfirst) then
-        if ((idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. idiag_rhof2downmz/=0) &
-            .and..not. lrho_flucz_as_aux) then
-            call stop_it('calc_1d_diagnostics_density: Need to set lrho_flucz_as_aux=T'// &
-                         ' in density_run_pars for density fluctuation diagnostics.')
-        endif
 !
         call phizsum_mn_name_r(p%rho,idiag_rhomr)
         call xysum_mn_name_z(p%rho,idiag_rhomz)
@@ -3068,8 +3030,7 @@ module Density
 !
 !  28-jul-06/wlad: coded
 !
-      use BorderProfiles,  only: border_driving,set_border_initcond
-      use Mpicomm,         only: stop_it
+      use BorderProfiles, only: border_driving,set_border_initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3096,19 +3057,11 @@ module Density
         call set_border_initcond(f,ilnrho,f_target)
 !
       case ('nothing')
-        if (lroot.and.ip<=5) &
-            print*,"set_border_density: borderlnrho='nothing'"
+        return
 !
-      case default
-        write(unit=errormsg,fmt=*) &
-             'set_border_density: No such value for borderlnrho: ', &
-             trim(borderlnrho)
-        call fatal_error('set_border_density',errormsg)
       endselect
 !
-      if (borderlnrho/='nothing') then
-        call border_driving(f,df,p,f_target,ilnrho)
-      endif
+      call border_driving(f,df,p,f_target,ilnrho)
 !
     endsubroutine set_border_density
 !***********************************************************************
@@ -3219,14 +3172,11 @@ module Density
             f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) + &
                 (1/cp1)*(f(l1:l2,m,n,ilnrho)-lnrho0)*(ggamma/gamma-1.)
           elseif (lentropy.and.pretend_lnTT) then
-            call fatal_error("stratification_tsallis", &
-                "not implemented for pretend_lnTT")
+            call not_implemented("stratification_tsallis","for pretend_lnTT=T")
           elseif (ltemperature.and..not.ltemperature_nolog) then
-            call fatal_error("stratification_tsallis", &
-                "not implemented for ltemperature")
+            call not_implemented("stratification_tsallis","for ltemperature=T")
           elseif (ltemperature.and.ltemperature_nolog) then
-            call fatal_error("stratification_tsallis", &
-                "not implemented for ltemperature_nolog")
+            call not_implemented("stratification_tsallis","for ltemperature_nolog=T")
           endif
         enddo
       enddo
@@ -3398,7 +3348,7 @@ module Density
 !
       select case (mass_source_profile)
         case ('nothing')
-          call fatal_error('mass_source','mass source with no profile not coded')
+          call not_implemented('mass_source','mass source with no profile')
         case ('exponential')
           dlnrhodt=mass_source_Mdot
         case('bump')
@@ -3434,7 +3384,7 @@ module Density
 ! default to catch unknown values
 !
         case default
-          call fatal_error('mass_source','no such mass_source_profile')
+          call fatal_error('mass_source','no such mass_source_profile: '//trim(mass_source_profile))
         endselect
 !
 !  Add mass source.
@@ -3863,8 +3813,8 @@ module Density
 !
 !  Hyper-diffusion coefficient
 !
-      if (diffrho_hyper3 /= 0.0) diffrho_hyper3 = pi5_1 * uc * dxmax**5 / re_mesh
-      if (diffrho_hyper3_mesh /= 0.0) diffrho_hyper3_mesh = pi5_1 * uc / re_mesh / sqrt(real(dimensionality))
+      if (diffrho_hyper3 /= 0.0) diffrho_hyper3 = pi5_1 * uc * dxmax**5/re_mesh
+      if (diffrho_hyper3_mesh /= 0.0) diffrho_hyper3_mesh = pi5_1 * uc/re_mesh/sqrt(real(dimensionality))
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************

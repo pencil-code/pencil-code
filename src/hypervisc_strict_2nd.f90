@@ -73,7 +73,6 @@ module Hypervisc_strict
 !
       use SharedVariables, only: get_shared_variable
       use Sub
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -109,9 +108,7 @@ module Hypervisc_strict
 !
       if (lfirstcall) then
         call get_shared_variable('lvisc_hyper3_nu_const_strict', &
-            lvisc_hyper3_nu_const_strict,ierr)
-        if (ierr/=0) call stop_it("hyperviscosity_strict: "//&
-            "problem getting shared varable lvisc_hyper3_nu_const_strict")
+            lvisc_hyper3_nu_const_strict,caller='hyperviscosity_strict')
         if (ip<10) &
             print*, 'hyperviscosity_strict: lvisc_hyper3_nu_const_strict=', &
             lvisc_hyper3_nu_const_strict

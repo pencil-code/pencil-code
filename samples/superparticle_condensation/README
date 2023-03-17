@@ -1,0 +1,16 @@
+Directory:
+    ${PENCIL_HOME}/samples/superparticle_condensation
+SVN Id:
+    79636
+Maintainer:
+    Xiangyu Li <xiang.yu.li.phy@gmail.com>
+Added:
+    2020-05-03
+Status:
+    has been working in this form since 27-Aug-2014
+Recommended resolution:
+    at least 128^3
+Comments:
+    This sample is for simulating the condensation of particles using the superparticle algorithm. 
+References:
+    https://doi.org/10.5194/acp-2018-644

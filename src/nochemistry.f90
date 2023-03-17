@@ -61,6 +61,14 @@ module Chemistry
 !
     endsubroutine pencil_interdep_chemistry
 !***********************************************************************
+    subroutine chemistry_before_boundary(f)
+
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+
+    endsubroutine chemistry_before_boundary
+!***********************************************************************
     subroutine calc_pencils_chemistry(f,p)
 !
       real, dimension (mx,my,mz,mfarray) :: f

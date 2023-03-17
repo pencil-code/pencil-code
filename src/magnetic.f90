@@ -173,6 +173,7 @@ module Magnetic
   real :: Pm_smag1=1., k1hel=0., k2hel=max_real, qexp_aa=0.
   real :: nfact_aa=4.
   real :: r_inner=0., r_outer=0.
+  real :: eta_tdep_loverride_ee=0.
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
@@ -245,6 +246,7 @@ module Magnetic
   logical :: lbraginsky=.false.
   logical :: lcoulomb=.false.
   logical :: lfactors_aa=.false., lvacuum=.false.
+  logical :: loverride_ee=.false., loverride_ee_decide=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -273,7 +275,8 @@ module Magnetic
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
-      lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum
+      lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, &
+      loverride_ee_decide, eta_tdep_loverride_ee
 !
 ! Run parameters
 !
@@ -409,7 +412,8 @@ module Magnetic
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
-      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum
+      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
+      loverride_ee_decide, eta_tdep_loverride_ee
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -4481,7 +4485,7 @@ module Magnetic
 !  To check this, we can check whether lspecial=T and iex/=0.
 !  We therefore continue only when iex>0.
 !
-      if (iex==0) then
+      if (iex==0.or.loverride_ee) then
 !
 !  Restivivity term
 !
@@ -6937,6 +6941,7 @@ module Magnetic
       use Boundcond, only: update_ghosts
       use Diagnostics, only: save_name
       use Sub, only: div, calc_all_diff_fluxes, dot2_mn
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
@@ -7002,6 +7007,17 @@ module Magnetic
           case default
           endselect
         if (lroot.and.ldiagnos) call save_name(eta_tdep,idiag_eta_tdep)
+      endif
+!
+!  Decide whether 
+!
+      if (loverride_ee_decide) then
+        if (eta_tdep<eta_tdep_loverride_ee) then
+          loverride_ee=.true.
+          call put_shared_variable('loverride_ee', loverride_ee, caller='magnetic_after_boundary')
+        else
+          loverride_ee=.false.
+        endif
       endif
 !
 !  Output kx_aa for calculating k_effective.

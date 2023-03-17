@@ -48,6 +48,7 @@ module Special
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., phi_inhom=.true.
+  logical, pointer :: loverride_ee
   character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
     initee, inita0, alpf, &
@@ -471,6 +472,24 @@ module Special
       endif
 !
     endsubroutine rprint_special
+!***********************************************************************
+    subroutine special_after_boundary(f)
+!
+!  Possibility to modify the f array after the boundaries are
+!  communicated.
+!
+!  06-jul-06/tony: coded
+!
+      use SharedVariables, only: get_shared_variable
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      if (lmagnetic) call get_shared_variable('loverride_ee',loverride_ee)
+print*,'AXEL9: loverride_ee=',loverride_ee
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine get_slices_special(f,slices)
 !

@@ -150,6 +150,8 @@ indices = [ $
   { name:'ihhXim_boost', label:'hhXim_boost', dims:1 }, $
   { name:'ihij', label:'hij', dims:6 }, $
   { name:'igij', label:'gij', dims:6 }, $
+  { name:'irrr', label:'Collapse radius', dims:1 }, $
+  { name:'ibet', label:'Collapse speed', dims:1 }, $
   { name:'ip11', label:'Polymer Tensor 11', dims:1 }, $
   { name:'ip12', label:'Polymer Tensor 12', dims:1 }, $
   { name:'ip13', label:'Polymer Tensor 13', dims:1 }, $
