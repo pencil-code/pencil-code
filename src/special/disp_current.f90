@@ -127,6 +127,7 @@ module Special
 !  20-mar-21/axel: coded
 !
       use FArrayManager
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -139,6 +140,8 @@ module Special
 !
       iinfl_phi=farray_index_by_name('infl_phi')
       iinfl_dphi=farray_index_by_name('infl_dphi')
+!
+      if (lmagnetic) call get_shared_variable('loverride_ee',loverride_ee)
 !
       call keep_compiler_quiet(f)
 !
@@ -481,11 +484,7 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      use SharedVariables, only: get_shared_variable
-!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      if (lmagnetic) call get_shared_variable('loverride_ee',loverride_ee)
 !
 !  Annoucement that we switched:
 !
