@@ -80,12 +80,13 @@ module InitialCondition
 !
   implicit none
 !
-  include 'initial_condition.h'
-  real :: fring=1e-3,r0=0.2,Iring=0.0,rho0,tilt=0.0,width=0.02
-  real :: scale_aa=1.0
-  logical :: luse_only_botbdry=.false.,ld2rho0_global=.false.,&
+  include '../initial_condition.h'
+  real :: l0_d, l_d, l_d1, psipn, psipn0, psipn1, psi, psi0, psi1, lnrho0_c
+  real :: gc, m0, r0_d, rs, apara, h_d, dsteep, ngamma, gmm, rho0_d, Tc, mgas, rg
+  logical :: luse_only_botbdry=.false.
 !
-  namelist /initial_condition_pars/ fring, r0
+  namelist /initial_condition_pars/ gc, m0, r0_d, rs, apara, h_d, &
+  dsteep, ngamma, gmm, rho0_d, Tc, mgas, rg
 !
   contains
 !***********************************************************************
@@ -140,12 +141,33 @@ module InitialCondition
 !  Initialize the velocity field.
 !
 !  07-may-09/wlad: coded
-!
+
+!  /mayank
+
+      use Sub,            only: get_radial_distance
+      
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
+      real, dimension (mx) :: rr_sph,rr_cyl,g_r
+      real, dimension (mx) :: vphi_d
+
+      l0_d=sqrt(gc*m0*r0_d**3.0)/(r0_d-rs)
+
+      do m=1,my;do n=1,mz
+          call get_radial_distance(rr_sph,rr_cyl) 
+
+! Specific angular momentum
+
+      l_d=l0_d*((rr_cyl)/r0_d)**apara
+
+! azimuthal velocity. The value of loop variable 'n' has been used as the z coordinate.
+      
+      vphi_d=(1.0-tanh(abs(n/h_d))**dsteep)*tanh(abs(rr_sph/rs)**dsteep)*l_d/(rr_cyl)
+      f(:,m,n,iuz) = f(:,m,n,iuz) + vphi_d     
+      enddo;enddo
+
 !  SAMPLE IMPLEMENTATION
 !
-      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_uu
 !***********************************************************************
@@ -155,12 +177,64 @@ module InitialCondition
 !  converting it to linear density if you use ldensity_nolog.
 !
 !  07-may-09/wlad: coded
-!
+
+!/mayank
+
+      use EquationOfState
+      use FArrayManager,   only: farray_use_global
+      use Sub,             only: get_radial_distance
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
+      real, dimension (mx) :: rr_sph,rr_cyl
+      real, dimension (mx) :: lnrho_d, lnrho_c
+      real, dimension (mx) :: vsd
+      real :: lnrho0_d
+
+!Some constants
+
+      lnrho0_d=log(rho0_d)
+      l0_d=sqrt(gc*m0*r0_d**3.0)/(r0_d-rs)
+      l_d1=l0_d*(2.0*rs/r0_d)**apara
+      psipn0=-gc*m0/(r0_d-rs)
+      psipn1=-gc*m0/(2.0*rs-rs)
+      psi0=psipn0+1.0/(2.0-2.0*apara)*(l0_d/(r0_d))**2.0
+      psi1=psipn1+1.0/(2.0-2.0*apara)*(l_d1/(2.0*rs))**2.0
+      lnrho0_c=ngamma*log(abs(1.0-gmm*(psi1-psi0)/(vsd*(ngamma+1.0))))+lnrho0_d
+     
+       do n=1,mz
+        do m=1,my
+        call get_radial_distance(rr_sph,rr_cyl)
+!sound speed in the disk
+
+        vsd=f(:,m,n,ilnTT)
+
+! Specific angular momentum
+        
+        l_d=l0_d*((rr_cyl)/r0_d)**apara
+       
+!Pseudo-Newtonian potential
+        
+        psipn=-gc*m0/(rr_sph-rs)
+
+!Gravitational Potential for the system
+        
+        psi=psipn+1.0/(2.0-2.0*apara)*(l_d/(rr_cyl))**2.0
+
+!  Disk Density
+        
+        lnrho_d=ngamma*log(abs(1.0-gmm*(psi-psi0)/(vsd*(ngamma+1.0))))+lnrho0_d
+        f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+lnrho_d
+
+! Corona Density
+        
+        lnrho_c=lnrho0_c-(psipn-psipn1)*gmm/vsc
+        
+        enddo
+      enddo
+
 !  SAMPLE IMPLEMENTATION
 !
-      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
@@ -169,12 +243,34 @@ module InitialCondition
 !  Initialize entropy.
 !
 !  07-may-09/wlad: coded
-!
+
+!/mayank
+
+      use FArrayManager,   only: farray_use_global
+      
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
+      real, dimension (mx) :: lnT_d, lnT_c
+      real, dimension (mx) :: lnrho_d
+      real :: lnrho0_d
+
+      lnrho0_d=log(rho0_d)
+
+      do n=1,mz
+        do m=1,my
+        lnrho_d= f(:,m,n,ilnrho)
+
+!Disk Temperature
+
+      lnT_d=(lnrho_d-lnrho0_d)/ngamma+log(vsd*mgas/(gmm*rg))
+      f(:,m,n,ilnTT) = f(:,m,n,ilnTT)+lnT_d
+      
+      end do
+     end do
+!Corona Temperature is constant. Defined in initial_condition_pars as 'Tc'.
+
 !  SAMPLE IMPLEMENTATION
 !
-      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_ss
 !***********************************************************************
