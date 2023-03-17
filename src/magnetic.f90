@@ -1210,6 +1210,7 @@ module Magnetic
 !  Share lbb_as_comaux with gravitational wave module.
 !
       call put_shared_variable('lbb_as_comaux',lbb_as_comaux, caller='initialize_magnetic')
+      call put_shared_variable('loverride_ee', loverride_ee)
 !
 !  Share several parameters for Alfven limiter with module Shock.
 !
@@ -1981,7 +1982,7 @@ module Magnetic
                          "Switch ladd_global_field=F if dipole_moment /= 0.")
 
       if (lcoulomb.and..not.lpoisson) &
-        call fatal_error('magnetic_before_boundary', 'Coulomb gauge needs the Poisson module')
+        call fatal_error('initialize_magnetic', 'Coulomb gauge needs the Poisson module')
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -7018,7 +7019,6 @@ module Magnetic
           loverride_ee=.false.
         endif
       endif
-      call put_shared_variable('loverride_ee', loverride_ee, caller='magnetic_after_boundary')
 !
 !  Output kx_aa for calculating k_effective.
 !
