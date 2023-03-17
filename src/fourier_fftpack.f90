@@ -4083,7 +4083,8 @@ module Fourier
 !
 !  Performs a periodic shift in the y-direction of an entire y-z plane by
 !  the amount shift_y. The shift is done in Fourier space for maximum
-!  interpolation accuracy.
+!  interpolation accuracy. Data is re-distributed in elongated shape,
+!  so that the FFT will be performed in parallel on all processors.
 !
 !  19-jul-06/anders: coded
 !
@@ -4163,6 +4164,9 @@ module Fourier
             nprocy_used=nz
           endif
 !
+          ! re-distribute data in elongated pencil shape
+          ! all processors need to send their data portion
+          ! each participating processor receives data
           allocate (buffer(ny,nz_new))
           do ipy_from=0,nprocy-1
             iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
@@ -4190,6 +4194,7 @@ module Fourier
         a_re_new(1:ny,1:nz_new)=a_re(1:ny,1:nz_new)
       endif
 !
+      ! perform FFT on all participating procesors
       a_im_new=0.0
       cmplx_shift=exp(cmplx(0.0,-ky_fft*shift_y))
 !
@@ -4226,6 +4231,9 @@ module Fourier
           if (lfirst_proc_y) a_re(:,1)=a_re_new(1:ny,1)
         else
 !  Present z-direction.
+          ! distribute data back to their regular subdomains
+          ! each participating processor needs to send data
+          ! all processors receive their data portion
           do ipy_from=0,nprocy_used-1
             iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
