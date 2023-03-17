@@ -433,20 +433,11 @@ else
   GPU_INTERFACE=
 endif
 #
-ifneq ($(FIXED_POINT),nofixed_point)
-    MPICOMM = mpicomm$(PREC_EXT)
-endif
-#
-ifneq ($(STREAMLINES),nostreamlines)
-    MPICOMM = mpicomm$(PREC_EXT)
-endif
-#
 ifneq ($(filter $(IO) $(IO_IN), io_hdf5),)
   # HDF5 IO requires to select an HDF5-IO strategy module (not nohdf5_io).
   ifeq ($(HDF5_IO),nohdf5_io)
     # choose default HDF5 IO strategy (parallel)
     HDF5_IO = hdf5_io_parallel
-    MPICOMM = mpicomm$(PREC_EXT)
   endif
 endif
 #

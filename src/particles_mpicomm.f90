@@ -761,6 +761,7 @@ module Particles_mpicomm
     subroutine communicate_fpbuf(to_neigh,from_neigh,her_npbuf,my_npbuf)
 
       use Mpicomm
+
       integer, intent(in) :: to_neigh,from_neigh
       integer, intent(in) :: her_npbuf,my_npbuf
       integer :: comm,mpierr
@@ -780,9 +781,9 @@ module Particles_mpicomm
       call MPI_WAIT(irecv_rq_fromlow,irecv_stat_fl,mpierr)
       call MPI_WAIT(isend_rq_toupp,isend_stat_tu,mpierr)
 !
-      call MPI_IRECV(fp_buffer_in,mparray*nslab,MPI_REAL, &
+      call MPI_IRECV(fp_buffer_in,mparray*nslab,MPI_FLOAT, &
            from_neigh,toup,comm,irecv_rq_fromlow,mpierr)
-      call MPI_ISEND(fp_buffer_out,mparray*nslab,MPI_REAL, &
+      call MPI_ISEND(fp_buffer_out,mparray*nslab,MPI_FLOAT, &
            to_neigh,toup,comm,isend_rq_toupp,mpierr)
       call MPI_WAIT(irecv_rq_fromlow,irecv_stat_fl,mpierr)
       call MPI_WAIT(isend_rq_toupp,isend_stat_tu,mpierr)
