@@ -81,12 +81,12 @@ module InitialCondition
   implicit none
 !
   include '../initial_condition.h'
-  real :: l0_d, l_d, l_d1, psipn, psipn0, psipn1, psi, psi0, psi1, lnrho0_c
-  real :: gc, m0, r0_d, rs, apara, h_d, dsteep, ngamma, gmm, rho0_d, Tc, mgas, rg
+  real :: l0_d, l_d1, psipn0, psipn1, psi0, psi1, lnrho0_c
+  real :: m0, r0_d=40.0, rs=1.0, apara, h_d, dsteep, ngamma, rho0_c, cs0_c, Tc
   logical :: luse_only_botbdry=.false.
 !
-  namelist /initial_condition_pars/ gc, m0, r0_d, rs, apara, h_d, &
-  dsteep, ngamma, gmm, rho0_d, Tc, mgas, rg
+  namelist /initial_condition_pars/ m0, r0_d, rs, apara, h_d, &
+  dsteep, ngamma, rho0_c, cs0_c, Tc
 !
   contains
 !***********************************************************************
@@ -145,14 +145,19 @@ module InitialCondition
 !  /mayank
 
       use Sub,            only: get_radial_distance
+      use SharedVariables, only: get_shared_variable
       
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl,g_r
-      real, dimension (mx) :: vphi_d
+      real, dimension (mx) :: vphi_d, l_d
+      real :: m00
+      real, pointer :: g0
 
-      l0_d=sqrt(gc*m0*r0_d**3.0)/(r0_d-rs)
+      call get_shared_variable('g0',g0)
+      m00=(g0/G_Newton)
+      l0_d=sqrt(g0*r0_d**3.0)/(r0_d-rs)
 
-      do m=1,my;do n=1,mz
+      do m=m1, m2;do n=n1, n2
           call get_radial_distance(rr_sph,rr_cyl) 
 
 ! Specific angular momentum
@@ -161,8 +166,8 @@ module InitialCondition
 
 ! azimuthal velocity. The value of loop variable 'n' has been used as the z coordinate.
       
-      vphi_d=(1.0-tanh(abs(n/h_d))**dsteep)*tanh(abs(rr_sph/rs)**dsteep)*l_d/(rr_cyl)
-      f(:,m,n,iuz) = f(:,m,n,iuz) + vphi_d     
+      vphi_d=(1.0-tanh(abs(z(n)/h_d))**dsteep)*tanh(abs(rr_sph/rs)**dsteep)*l_d/(rr_cyl)
+      f(:,m,n,iuz) =  vphi_d     
       enddo;enddo
 
 !  SAMPLE IMPLEMENTATION
@@ -180,54 +185,56 @@ module InitialCondition
 
 !/mayank
 
-      use EquationOfState
+      use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
+                             gamma, gamma1, gamma_m1
       use FArrayManager,   only: farray_use_global
       use Sub,             only: get_radial_distance
+      use SharedVariables, only: get_shared_variable
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl
-      real, dimension (mx) :: lnrho_d, lnrho_c
-      real, dimension (mx) :: vsd
-      real :: lnrho0_d
+      real, dimension (mx) :: lnrho_d, lnrho_c, psipn, psi, l_d
+      real, pointer :: g0
+      real :: cp1, m00
 
 !Some constants
 
-      lnrho0_d=log(rho0_d)
-      l0_d=sqrt(gc*m0*r0_d**3.0)/(r0_d-rs)
+      lnrho0_c=log(rho0_c)
+      l0_d=sqrt(G_Newton*m0*r0_d**3.0)/(r0_d-rs)
       l_d1=l0_d*(2.0*rs/r0_d)**apara
-      psipn0=-gc*m0/(r0_d-rs)
-      psipn1=-gc*m0/(2.0*rs-rs)
+      psipn0=-(G_Newton*m0)/(r0_d-rs)
+      psipn1=-G_Newton*m0/rs
       psi0=psipn0+1.0/(2.0-2.0*apara)*(l0_d/(r0_d))**2.0
       psi1=psipn1+1.0/(2.0-2.0*apara)*(l_d1/(2.0*rs))**2.0
-      lnrho0_c=ngamma*log(abs(1.0-gmm*(psi1-psi0)/(vsd*(ngamma+1.0))))+lnrho0_d
-     
-       do n=1,mz
-        do m=1,my
-        call get_radial_distance(rr_sph,rr_cyl)
-!sound speed in the disk
-
-        vsd=f(:,m,n,ilnTT)
-
+!    
+      call get_cp1(cp1) 
+      call get_shared_variable('g0',g0)
+      m00=(g0/G_Newton)
+      do n=n1,n2
+        do m=m1,m2
+          call get_radial_distance(rr_sph,rr_cyl)
+!
 ! Specific angular momentum
-        
-        l_d=l0_d*((rr_cyl)/r0_d)**apara
-       
+!        
+          l_d=l0_d*((rr_cyl)/r0_d)**apara
+!       
 !Pseudo-Newtonian potential
-        
-        psipn=-gc*m0/(rr_sph-rs)
+!        
+        psipn=-g0/sqrt((rr_sph-rs)**2+(1e-3*rs)**2)
 
-!Gravitational Potential for the system
+! Gravitational Potential for the system
         
         psi=psipn+1.0/(2.0-2.0*apara)*(l_d/(rr_cyl))**2.0
 
 !  Disk Density
         
-        lnrho_d=ngamma*log(abs(1.0-gmm*(psi-psi0)/(vsd*(ngamma+1.0))))+lnrho0_d
-        f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+lnrho_d
+        lnrho_d=ngamma*log(abs(1.0-gamma*(psi-psi0)/(cs0*(ngamma+1.0))))+lnrho0
+          print*, psi0, g0, psi
 
 ! Corona Density
         
-        lnrho_c=lnrho0_c-(psipn-psipn1)*gmm/vsc
+        lnrho_c=lnrho0_c-(psipn-psipn1)*gamma/cs0_c
+        f(:,m,n,ilnrho) = lnrho_d+lnrho_c
         
         enddo
       enddo
@@ -247,22 +254,23 @@ module InitialCondition
 !/mayank
 
       use FArrayManager,   only: farray_use_global
+      use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
+                             gamma, gamma1, gamma_m1
       
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: lnT_d, lnT_c
       real, dimension (mx) :: lnrho_d
-      real :: lnrho0_d
+      real :: cp1
 
-      lnrho0_d=log(rho0_d)
-
-      do n=1,mz
-        do m=1,my
+      call get_cp1(cp1)
+      do n=n1,n2
+        do m=m1,m2
         lnrho_d= f(:,m,n,ilnrho)
 
-!Disk Temperature
+! Disk Temperature
 
-      lnT_d=(lnrho_d-lnrho0_d)/ngamma+log(vsd*mgas/(gmm*rg))
-      f(:,m,n,ilnTT) = f(:,m,n,ilnTT)+lnT_d
+      lnT_d=(lnrho_d-lnrho0)/ngamma+log(cs0/(gamma_m1/cp1))
+      f(:,m,n,ilnTT) = lnT_d
       
       end do
      end do
