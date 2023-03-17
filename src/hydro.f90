@@ -3431,11 +3431,11 @@ module Hydro
 !
       real, dimension (mx,mz) :: fsum_tmp_cyl
       real, dimension (mx,my) :: fsum_tmp_sph
-      real, dimension (mx) :: uphi
+      real, dimension (mx) :: uphi, delx
       real, dimension (mx,3) :: ss
       real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
       real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2
-      real :: nygrid1,nzgrid1
+      real :: nygrid1,nzgrid1, dely, delz
       real :: cs201, cs2011
       integer :: i, j, iter_relB, l
 !
@@ -3468,7 +3468,10 @@ module Hydro
           do jhless=1,nhless
             do n=1,mz
             do m=1,my
-              where(sqrt((x-xhless(jhless))**2+(y(m)-yhless(jhless))**2+(z(n)-zhless(jhless))**2) &
+              delx=2.*atan(tan(.5*(x   -xhless(jhless))))
+              dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
+              delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
+              where(sqrt(delx**2+dely**2+delz**2) &
                   < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
             enddo
             enddo
