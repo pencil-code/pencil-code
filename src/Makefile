@@ -203,9 +203,6 @@ ifneq ($(PARTICLES),noparticles)
   ifeq ($(MPICOMM),mpicomm)
     PARTICLES_MPICOMM =   particles_mpicomm
   endif
-  ifeq ($(MPICOMM),mpicomm_double)
-    PARTICLES_MPICOMM =   particles_mpicomm
-  endif
 endif
 ifeq ($(PARTICLES_DRAG), particles_drag)
   PARTICLES_MAP = particles_map_index
@@ -213,10 +210,6 @@ endif
 ifeq ($(PARTICLES_MAP),particles_map_blocks)
   PARTICLES_MPICOMM = noparticles_mpicomm
   ifeq ($(MPICOMM),mpicomm)
-    PARTICLES_MPICOMM = particles_mpicomm_blocks
-#    PARTICLES_MPICOMM = experimental/particles_mpicomm_blocks_partition
-  endif
-  ifeq ($(MPICOMM),mpicomm_double)
     PARTICLES_MPICOMM = particles_mpicomm_blocks
 #    PARTICLES_MPICOMM = experimental/particles_mpicomm_blocks_partition
   endif
@@ -2834,9 +2827,6 @@ initial_condition_dummies.inc:  Makefile.local noinitial_condition.f90 $(INITIAL
 file_io_common.inc:  Makefile.local $(FILE_IO).f90 file_io_common.f90
 	scripts/mkdummyinc -d file_io_common.f90 -s $(FILE_IO).f90 -o file_io_common.inc
 #
-mpicomm_double.f90: mpicomm.f90
-	sed -e 's/REAL/DOUBLE_PRECISION/g' -e 's/MPI_COMPLEX/MPI_DOUBLE_COMPLEX/g' mpicomm.f90 > mpicomm_double.f90
-#
 ghostfold_mpicomm_double.f90: ghostfold_mpicomm.f90
 	ln -s ghostfold_mpicomm.f90 ghostfold_mpicomm_double.f90
 #
@@ -2987,7 +2977,7 @@ clean:  slender
 #  (there should be no Makefile_inc; but if there is, `make' just does nothing)
 #
 cleann: clean
-	rm -f Makefile src/Makefile Makefile_inc TAGS  *mpicomm_.f90 mpicomm_double*.f90
+	rm -f Makefile src/Makefile Makefile_inc TAGS  *mpicomm_.f90 
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
 	rm -f *.inc && touch Makefile.inc Makefile-standard.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile

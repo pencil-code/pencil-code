@@ -58,7 +58,7 @@ module Particles_mpicomm
 !
 !  31-oct-09/anders: coded
 !
-      use Mpicomm, only: mpi_precision, mpibcast_real
+      use Mpicomm, only: MPI_FLOAT, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
 !
@@ -2305,7 +2305,7 @@ module Particles_mpicomm
 !
 !  01-nov-22/ccyang: coded
 !
-      use Mpicomm, only: mpi_precision, size_of_int, size_of_real, size_of_double
+      use Mpicomm, only: MPI_FLOAT, size_of_int, size_of_real, size_of_double
 !
       character(len=*), intent(in) :: filename
 !
@@ -2347,7 +2347,7 @@ module Particles_mpicomm
              + size_of_real * (3 * (mxb + myb + mzb) * nblock_cum)
       call MPI_TYPE_CREATE_STRUCT(3, (/ 3, n, 3 * (mxb + myb + mzb) * nblock_loc /), &
                                      int((/ iproc * 3 * size_of_int, offset, offset + n * size_of_int /), kind=MPI_ADDRESS_KIND), &
-                                     (/ MPI_INTEGER, MPI_INTEGER, mpi_precision /), mpi_type, ierr)
+                                     (/ MPI_INTEGER, MPI_INTEGER, MPI_FLOAT /), mpi_type, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
 !
       call MPI_TYPE_COMMIT(mpi_type, ierr)
@@ -2379,31 +2379,31 @@ module Particles_mpicomm
 !
 !  Write real data.
 !
-      call MPI_FILE_WRITE_ALL(handle, xb(:,0:nblock_loc-1), mxb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_WRITE_ALL(handle, xb(:,0:nblock_loc-1), mxb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write xb")
 !
-      call MPI_FILE_WRITE_ALL(handle, yb(:,0:nblock_loc-1), myb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_WRITE_ALL(handle, yb(:,0:nblock_loc-1), myb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write yb")
 !
-      call MPI_FILE_WRITE_ALL(handle, zb(:,0:nblock_loc-1), mzb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_WRITE_ALL(handle, zb(:,0:nblock_loc-1), mzb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write zb")
 !
-      call MPI_FILE_WRITE_ALL(handle, dx1b(:,0:nblock_loc-1), mxb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_WRITE_ALL(handle, dx1b(:,0:nblock_loc-1), mxb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dx1b")
 !
-      call MPI_FILE_WRITE_ALL(handle, dy1b(:,0:nblock_loc-1), myb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_WRITE_ALL(handle, dy1b(:,0:nblock_loc-1), myb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dy1b")
 !
-      call MPI_FILE_WRITE_ALL(handle, dz1b(:,0:nblock_loc-1), mzb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_WRITE_ALL(handle, dz1b(:,0:nblock_loc-1), mzb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dz1b")
 !
-      call MPI_FILE_WRITE_ALL(handle, dVol1xb(:,0:nblock_loc-1), mxb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_WRITE_ALL(handle, dVol1xb(:,0:nblock_loc-1), mxb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dVol1xb")
 !
-      call MPI_FILE_WRITE_ALL(handle, dVol1yb(:,0:nblock_loc-1), myb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_WRITE_ALL(handle, dVol1yb(:,0:nblock_loc-1), myb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dVol1yb")
 !
-      call MPI_FILE_WRITE_ALL(handle, dVol1zb(:,0:nblock_loc-1), mzb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_WRITE_ALL(handle, dVol1zb(:,0:nblock_loc-1), mzb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write dVol1zb")
 !
 !  Clean up and close the file.
@@ -2505,7 +2505,7 @@ module Particles_mpicomm
 !
 !  01-nov-22/ccyang: coded
 !
-      use Mpicomm, only: mpi_precision, size_of_int, size_of_real, size_of_double
+      use Mpicomm, only: MPI_FLOAT, size_of_int, size_of_real, size_of_double
 !
       character(len=*), intent(in) :: filename
 !
@@ -2572,7 +2572,7 @@ module Particles_mpicomm
              + size_of_real * (3 * (mxb + myb + mzb) * nblock_cum)
       call MPI_TYPE_CREATE_STRUCT(2, (/ n, 3 * (mxb + myb + mzb) * nblock_loc /), &
                                      int((/ offset, offset + size_of_int * n /), kind=MPI_ADDRESS_KIND), &
-                                     (/ MPI_INTEGER, mpi_precision /), mpi_type, ierr)
+                                     (/ MPI_INTEGER, MPI_FLOAT /), mpi_type, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error_local(rname, "unable to create MPI struct type")
 !
       call MPI_TYPE_COMMIT(mpi_type, ierr)
@@ -2601,31 +2601,31 @@ module Particles_mpicomm
 !
 !  Read real data.
 !
-      call MPI_FILE_READ_ALL(handle, xb, mxb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_READ_ALL(handle, xb, mxb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read xb")
 !
-      call MPI_FILE_READ_ALL(handle, yb, myb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_READ_ALL(handle, yb, myb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read yb")
 !
-      call MPI_FILE_READ_ALL(handle, zb, mzb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_READ_ALL(handle, zb, mzb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read zb")
 !
-      call MPI_FILE_READ_ALL(handle, dx1b, mxb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_READ_ALL(handle, dx1b, mxb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dx1b")
 !
-      call MPI_FILE_READ_ALL(handle, dy1b, myb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_READ_ALL(handle, dy1b, myb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dy1b")
 !
-      call MPI_FILE_READ_ALL(handle, dz1b, mzb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_READ_ALL(handle, dz1b, mzb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dz1b")
 !
-      call MPI_FILE_READ_ALL(handle, dVol1xb, mxb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_READ_ALL(handle, dVol1xb, mxb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dVol1xb")
 !
-      call MPI_FILE_READ_ALL(handle, dVol1yb, myb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_READ_ALL(handle, dVol1yb, myb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dVol1yb")
 !
-      call MPI_FILE_READ_ALL(handle, dVol1zb, mzb * nblock_loc, mpi_precision, istat, ierr)
+      call MPI_FILE_READ_ALL(handle, dVol1zb, mzb * nblock_loc, MPI_FLOAT, istat, ierr)
       if (ierr /= MPI_SUCCESS) call fatal_error(rname, "unable to read dVol1zb")
 !
 !  Clean up and close file.

@@ -214,7 +214,8 @@ module Mpicomm
       if (iapp>0) call stop_it('in MPMD mode, Pencil must be the first application')
 
       if (sizeof_real() < 8) then
-        mpi_precision = MPI_REAL
+        MPI_FLOAT = MPI_REAL
+        MPI_CMPLX = MPI_COMPLEX
         if (lroot) then
           write (*,*) ""
           write (*,*) "====================================================================="
@@ -223,7 +224,8 @@ module Mpicomm
           write (*,*) ""
         endif
       else
-        mpi_precision = MPI_DOUBLE_PRECISION
+        MPI_FLOAT = MPI_DOUBLE_PRECISION
+        MPI_CMPLX = MPI_DOUBLE_COMPLEX
       endif
 
       call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID,mpierr)
@@ -234,7 +236,7 @@ module Mpicomm
       call MPI_TYPE_SIZE(MPI_INTEGER, size_of_int, mpierr)
       call stop_it_if_any(mpierr /= MPI_SUCCESS, "unable to find MPI_INTEGER size")
 !
-      call MPI_TYPE_SIZE(mpi_precision, size_of_real, mpierr)
+      call MPI_TYPE_SIZE(MPI_FLOAT, size_of_real, mpierr)
       call stop_it_if_any(mpierr /= MPI_SUCCESS, "unable to find MPI real size")
 !
       call MPI_TYPE_SIZE(MPI_DOUBLE_PRECISION, size_of_double, mpierr)
@@ -277,7 +279,7 @@ module Mpicomm
       if ((nz<nghost) .and. (nzgrid/=1)) &
            call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
 !
-      call MPI_TYPE_CONTIGUOUS(max_int, MPI_REAL, REAL_ARR_MAXSIZE, mpierr)
+      call MPI_TYPE_CONTIGUOUS(max_int, MPI_FLOAT, REAL_ARR_MAXSIZE, mpierr)
 
     endsubroutine mpicomm_init
 !***********************************************************************
@@ -853,20 +855,20 @@ print*, '-----------------'
 endif
 !          size(thphprime_strip_z,2), size(thphprime_strip_z,3), sum(thphprime_strip_z(:,:,:57))
 
-          call MPI_IRECV(gridbuf_midy,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
+          call MPI_IRECV(gridbuf_midy,2*nghost*yy_buflens(MID),MPI_FLOAT, &         ! receive strip from ~
                          zlneigh,zlneigh,MPI_COMM_PENCIL,irecv_rq_fromlowz,mpierr)
                                 !MPI_ANY_TAG
-          call MPI_ISEND(thphprime_strip_z,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
+          call MPI_ISEND(thphprime_strip_z,size_neigh,MPI_FLOAT, &                   ! send strip to direct neighbor
                          zlneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_tolowz,mpierr)
                                 !tolowz
           if (llcorn>=0) then
 !
-            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_FLOAT, &    ! receive strip from ~
                            llcorn,llcorn,MPI_COMM_PENCIL,irecv_rq_FRll,mpierr)
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', llcorn
 !if (.not.lyang) write(iproc+200,*) iproc, 'sends', size_corn/(2*nghost), 'to ', llcorn
-            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              
+            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_FLOAT, &              
 !  send strip (without corner part) to right corner neighbor
                            llcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOll,mpierr)
                                   !TOll
@@ -874,11 +876,11 @@ endif
 
           if (ulcorn>=0) then
 !
-            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~ 
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_FLOAT, &      ! receive strip from ~ 
                            ulcorn,ulcorn,MPI_COMM_PENCIL,irecv_rq_FRul,mpierr)
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', ulcorn
-            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              
+            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_FLOAT, &              
 !  send strip (without corner part) to left corner neighbor
                            ulcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOul,mpierr)
                                   !TOul
@@ -931,19 +933,19 @@ endif
 
 !if (lcorner_yz) print*, 'proc ',iproc_world,', sends thphprime_strip to ', zuneigh, &
 !size(thphprime_strip_z,2), size(thphprime_strip_z,3), sum(thphprime_strip_z(:,:,:57))
-          call MPI_IRECV(gridbuf_midy,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
+          call MPI_IRECV(gridbuf_midy,2*nghost*yy_buflens(MID),MPI_FLOAT, &         ! receive strip from ~
                          zuneigh,zuneigh,MPI_COMM_PENCIL,irecv_rq_fromuppz,mpierr)
                                 !MPI_ANY_TAG
-          call MPI_ISEND(thphprime_strip_z,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
+          call MPI_ISEND(thphprime_strip_z,size_neigh,MPI_FLOAT, &                   ! send strip to direct neighbor
                          zuneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_touppz,mpierr)
                                 !touppz
           if (lucorn>=0) then
 
-            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_FLOAT, &      ! receive strip from ~
                            lucorn,lucorn,MPI_COMM_PENCIL,irecv_rq_FRlu,mpierr)
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', lucorn
-            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              
+            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_FLOAT, &              
 !  send strip (without corner part) to left corner neighbor
                            lucorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOlu,mpierr)
                                   !TOlu
@@ -951,11 +953,11 @@ endif
 
           if (uucorn>=0) then
 !
-            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_FLOAT, &    ! receive strip from ~
                            uucorn,uucorn,MPI_COMM_PENCIL,irecv_rq_FRuu,mpierr)
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', uucorn
-            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_REAL, &              ! send strip to right corner neighbor
+            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,MPI_FLOAT, &              ! send strip to right corner neighbor
                            uucorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOuu,mpierr)
                                   !TOuu
           endif
@@ -1043,29 +1045,29 @@ endif
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(MID), 'from ', yuneigh
 
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(MID), 'from ', ylneigh
-          call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
+          call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_FLOAT, &         ! receive strip from ~
                          ylneigh,ylneigh,MPI_COMM_PENCIL,irecv_rq_fromlowy,mpierr)
                                 !MPI_ANY_TAG
-          call MPI_ISEND(thphprime_strip_y,size_neigh,MPI_REAL, &                   ! send strip to direct neighbor
+          call MPI_ISEND(thphprime_strip_y,size_neigh,MPI_FLOAT, &                   ! send strip to direct neighbor
                          ylneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_tolowy,mpierr)
                                 !tolowy
           if (llcorn>=0) then
 !
-            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_FLOAT, &      ! receive strip from ~
                            llcorn,llcorn,MPI_COMM_PENCIL,irecv_rq_FRll,mpierr)
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', llcorn
-            call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                       ! send strip to left corner neighbor
+            call MPI_ISEND(thphprime_strip_y,size_corn,MPI_FLOAT, &                       ! send strip to left corner neighbor
                            llcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOll,mpierr)
                                   !TOll
           endif
 
           if (lucorn>=0) then
 !
-            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~ 
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_FLOAT, &    ! receive strip from ~ 
                            lucorn,lucorn,MPI_COMM_PENCIL,irecv_rq_FRlu,mpierr)
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', lucorn
-            call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                       ! send strip to right corner neighbor
+            call MPI_ISEND(thphprime_strip_y,size_corn,MPI_FLOAT, &                       ! send strip to right corner neighbor
                            lucorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOlu,mpierr)
                                   !TOlu
                                   !MPI_ANY_TAG
@@ -1127,33 +1129,33 @@ endif
             deallocate(tmp)
           endif
 !print*, 'at IRECV: proc ,',iproc_world,',  from ', yuneigh, size(gridbuf_midz,1), size(gridbuf_midz,2), size(gridbuf_midz,3)
-          call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_REAL, &          ! receive strip from ~
+          call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_FLOAT, &          ! receive strip from ~
                          yuneigh,yuneigh,MPI_COMM_PENCIL,irecv_rq_fromuppy,mpierr)
                                 !MPI_ANY_TAG
 
 !print*, 'proc ',iproc_world,', sends thphprime_strip to ', yuneigh, &
 !size(thphprime_strip_y,1), size(thphprime_strip_y,2), size(thphprime_strip_y,3)
 
-          call MPI_ISEND(thphprime_strip_y,size_neigh,MPI_REAL, &                    ! send strip to direct neighbor
+          call MPI_ISEND(thphprime_strip_y,size_neigh,MPI_FLOAT, &                    ! send strip to direct neighbor
                          yuneigh,iproc_world,MPI_COMM_PENCIL,isend_rq_touppy,mpierr)
                                 !touppy
           if (ulcorn>=0) then
 ! send strip to right corner neighbor
 
-            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &     ! receive strip from ~
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_FLOAT, &     ! receive strip from ~
                            ulcorn,ulcorn,MPI_COMM_PENCIL,irecv_rq_FRul,mpierr)
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', ulcorn
-            call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                        
+            call MPI_ISEND(thphprime_strip_y,size_corn,MPI_FLOAT, &                        
                            ulcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOul,mpierr)
                                   !TOul
           endif
           if (uucorn>=0) then
-            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &       ! receive strip from ~
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_FLOAT, &       ! receive strip from ~
                            uucorn,uucorn,MPI_COMM_PENCIL,irecv_rq_FRuu,mpierr)
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', uucorn
-            call MPI_ISEND(thphprime_strip_y,size_corn,MPI_REAL, &                        ! send strip to left corner neighbor
+            call MPI_ISEND(thphprime_strip_y,size_corn,MPI_FLOAT, &                        ! send strip to left corner neighbor
                            uucorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOuu,mpierr)
                                   !TOuu
           endif
@@ -1404,11 +1406,11 @@ if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
 
         nbufy=bufact*bufsizes_yz(INYL,IRCV)
 !if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INYL,IRCV), ' from', ylneigh
-        call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
+        call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,MPI_FLOAT, &
                        ylneigh,touppyr,comm,irecv_rq_fromlowy,mpierr)
 
         nbufy=bufact*bufsizes_yz(INYL,ISND)
-        call MPI_ISEND(lbufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
+        call MPI_ISEND(lbufyo(:,:,:,ivar1:ivar2),nbufy,MPI_FLOAT, &
                        ylneigh,tolowys,comm,isend_rq_tolowy,mpierr)
 
         if (lyinyang.and.llast_proc_y) then
@@ -1434,11 +1436,11 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         endif
 !
         nbufy=bufact*bufsizes_yz(INYU,IRCV)
-        call MPI_IRECV(ubufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
+        call MPI_IRECV(ubufyi(:,:,:,ivar1:ivar2),nbufy,MPI_FLOAT, &
                        yuneigh,tolowyr,comm,irecv_rq_fromuppy,mpierr)
 
         nbufy=bufact*bufsizes_yz(INYU,ISND)
-        call MPI_ISEND(ubufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
+        call MPI_ISEND(ubufyo(:,:,:,ivar1:ivar2),nbufy,MPI_FLOAT, &
                        yuneigh,touppys,comm,isend_rq_touppy,mpierr)
       endif
 !
@@ -1470,11 +1472,11 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 
         nbufz=bufact*bufsizes_yz(INZL,IRCV)
 !if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INZL,IRCV), ' from', zlneigh
-        call MPI_IRECV(lbufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
+        call MPI_IRECV(lbufzi(:,:,:,ivar1:ivar2),nbufz,MPI_FLOAT, &
                        zlneigh,touppzr,comm,irecv_rq_fromlowz,mpierr)
 
         nbufz=bufact*bufsizes_yz(INZL,ISND)
-        call MPI_ISEND(lbufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
+        call MPI_ISEND(lbufzo(:,:,:,ivar1:ivar2),nbufz,MPI_FLOAT, &
                        zlneigh,tolowzs,comm,isend_rq_tolowz,mpierr)
 !
         if (lyinyang.and.llast_proc_z) then
@@ -1500,11 +1502,11 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         endif
 
         nbufz=bufact*bufsizes_yz(INZU,IRCV)
-        call MPI_IRECV(ubufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
+        call MPI_IRECV(ubufzi(:,:,:,ivar1:ivar2),nbufz,MPI_FLOAT, &
                        zuneigh,tolowzr,comm,irecv_rq_fromuppz,mpierr)
 
         nbufz=bufact*bufsizes_yz(INZU,ISND)
-        call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
+        call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_FLOAT, &
                        zuneigh,touppzs,comm,isend_rq_touppz,mpierr)
 !do j=ivar1,ivar2
 !if (notanumber(ubufzo(:,:,:,j))) print*, 'ubufzo: iproc,j=', iproc,j
@@ -1590,11 +1592,11 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         endif
 
         nbufyz=bufact*product(bufsizes_yz_corn(:,INLL,IRCV))
-        if (llcornr>=0) call MPI_IRECV(llbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+        if (llcornr>=0) call MPI_IRECV(llbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_FLOAT, &
                                        llcornr,TOuur,comm,irecv_rq_FRll,mpierr)
 
         nbufyz=bufact*product(bufsizes_yz_corn(:,INLL,ISND))
-        if (llcorns>=0) call MPI_ISEND(llbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+        if (llcorns>=0) call MPI_ISEND(llbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_FLOAT, &
                                        llcorns,TOlls,comm,isend_rq_TOll,mpierr)
 !
 !  Upper y, lower z.
@@ -1623,11 +1625,11 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         nbufyz=bufact*product(bufsizes_yz_corn(:,INUL,IRCV))
 ! if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INUL,IRCV), &
 !' from', ulcornr
-        if (ulcornr>=0) call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+        if (ulcornr>=0) call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_FLOAT, &
                                        ulcornr,TOlur,comm,irecv_rq_FRul,mpierr)
 
         nbufyz=bufact*product(bufsizes_yz_corn(:,INUL,ISND))
-        if (ulcorns>=0) call MPI_ISEND(ulbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+        if (ulcorns>=0) call MPI_ISEND(ulbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_FLOAT, &
                                        ulcorns,TOuls,comm,isend_rq_TOul,mpierr)
 !
 !  Upper y, upper z.
@@ -1652,11 +1654,11 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         endif
 
         nbufyz=bufact*product(bufsizes_yz_corn(:,INUU,IRCV))
-        if (uucornr>=0) call MPI_IRECV(uubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+        if (uucornr>=0) call MPI_IRECV(uubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_FLOAT, &
                                        uucornr,TOllr,comm,irecv_rq_FRuu,mpierr)
 
         nbufyz=bufact*product(bufsizes_yz_corn(:,INUU,ISND))
-        if (uucorns>=0) call MPI_ISEND(uubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+        if (uucorns>=0) call MPI_ISEND(uubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_FLOAT, &
                                        uucorns,TOuus,comm,isend_rq_TOuu,mpierr)
 !
 !  Lower y, upper z.
@@ -1683,11 +1685,11 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         nbufyz=bufact*product(bufsizes_yz_corn(:,INLU,IRCV))
 !if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INLU,IRCV), &
 !' from', lucornr
-        if (lucornr>=0) call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+        if (lucornr>=0) call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_FLOAT, &
                                        lucornr,TOulr,comm,irecv_rq_FRlu,mpierr)
 
         nbufyz=bufact*product(bufsizes_yz_corn(:,INLU,ISND))
-        if (lucorns>=0) call MPI_ISEND(lubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+        if (lucorns>=0) call MPI_ISEND(lubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_FLOAT, &
                                        lucorns,TOlus,comm,isend_rq_TOlu,mpierr)
 !
       endif
@@ -2070,13 +2072,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         ubufxo(:,:,:,ivar1:ivar2)=f(l2i:l2,m1:m2,n1:n2,ivar1:ivar2) !!(upper x-zone)
         nbufx=ny*nz*nghost*(ivar2-ivar1+1)
 
-        call MPI_IRECV(ubufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
+        call MPI_IRECV(ubufxi(:,:,:,ivar1:ivar2),nbufx,MPI_FLOAT, &
             xuneigh,tolowx,MPI_COMM_GRID,irecv_rq_fromuppx,mpierr)
-        call MPI_IRECV(lbufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
+        call MPI_IRECV(lbufxi(:,:,:,ivar1:ivar2),nbufx,MPI_FLOAT, &
             xlneigh,touppx,MPI_COMM_GRID,irecv_rq_fromlowx,mpierr)
-        call MPI_ISEND(lbufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
+        call MPI_ISEND(lbufxo(:,:,:,ivar1:ivar2),nbufx,MPI_FLOAT, &
             xlneigh,tolowx,MPI_COMM_GRID,isend_rq_tolowx,mpierr)
-        call MPI_ISEND(ubufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
+        call MPI_ISEND(ubufxo(:,:,:,ivar1:ivar2),nbufx,MPI_FLOAT, &
             xuneigh,touppx,MPI_COMM_GRID,isend_rq_touppx,mpierr)
         call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
@@ -2134,16 +2136,16 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         nbuf=ny_loc*nz_loc*nghost*nvar_loc
         if (lfirst_proc_x) then
           bufo=buffer(l1:l1i,m1:m1+ny_loc-1,n1:n1+nz_loc-1,ivar1:ivar2) !!(lower x-zone)
-          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+          call MPI_ISEND(bufo,nbuf,MPI_FLOAT, &
               xlneigh,tolowx,MPI_COMM_GRID,isend_rq,mpierr)
-          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+          call MPI_IRECV(bufi,nbuf,MPI_FLOAT, &
               xlneigh,touppx,MPI_COMM_GRID,irecv_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
         else
           bufo=buffer(l2i:l2,m1:m1+ny_loc-1,n1:n1+nz_loc-1,ivar1:ivar2) !!(upper x-zone)
-          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+          call MPI_IRECV(bufi,nbuf,MPI_FLOAT, &
               xuneigh,tolowx,MPI_COMM_GRID,irecv_rq,mpierr)
-          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+          call MPI_ISEND(bufo,nbuf,MPI_FLOAT, &
               xuneigh,touppx,MPI_COMM_GRID,isend_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
         endif
@@ -2198,17 +2200,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         nbuf=nx_loc*nz_loc*nghost*nvar_loc
         if (lfirst_proc_y) then
           bufo=buffer(l1:l1+nx_loc-1,m1:m1i,n1:n1+nz_loc-1,ivar1:ivar2) !!(lower y-zone)
-          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+          call MPI_ISEND(bufo,nbuf,MPI_FLOAT, &
               ylneigh,tolowy,MPI_COMM_GRID,isend_rq,mpierr)
-          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+          call MPI_IRECV(bufi,nbuf,MPI_FLOAT, &
               ylneigh,touppy,MPI_COMM_GRID,irecv_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
           buffer(l1:l1+nx_loc-1,1:m1-1,n1:n1+nz_loc-1,:)=bufi !!(set lower buffer)
         else
           bufo=buffer(l1:l1+nx_loc-1,m2i:m2,n1:n1+nz_loc-1,ivar1:ivar2) !!(upper y-zone)
-          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+          call MPI_IRECV(bufi,nbuf,MPI_FLOAT, &
               yuneigh,tolowy,MPI_COMM_GRID,irecv_rq,mpierr)
-          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+          call MPI_ISEND(bufo,nbuf,MPI_FLOAT, &
               yuneigh,touppy,MPI_COMM_GRID,isend_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
           buffer(l1:l1+nx_loc-1,m2+1: ,n1:n1+nz_loc-1,:)=bufi  !!(set upper buffer)
@@ -2250,17 +2252,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         nbuf=nx_loc*ny_loc*nghost*nvar_loc
         if (lfirst_proc_z) then
           bufo=buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,n1:n1i,ivar1:ivar2) !!(lower z-zone)
-          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+          call MPI_ISEND(bufo,nbuf,MPI_FLOAT, &
               zlneigh,tolowz,MPI_COMM_GRID,isend_rq,mpierr)
-          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+          call MPI_IRECV(bufi,nbuf,MPI_FLOAT, &
               zlneigh,touppz,MPI_COMM_GRID,irecv_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
           buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,1:n1-1,:)=bufi !!(set lower buffer)
         else
           bufo=buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,n2i:n2,ivar1:ivar2) !!(upper z-zone)
-          call MPI_IRECV(bufi,nbuf,MPI_REAL, &
+          call MPI_IRECV(bufi,nbuf,MPI_FLOAT, &
               zuneigh,tolowz,MPI_COMM_GRID,irecv_rq,mpierr)
-          call MPI_ISEND(bufo,nbuf,MPI_REAL, &
+          call MPI_ISEND(bufo,nbuf,MPI_FLOAT, &
               zuneigh,touppz,MPI_COMM_GRID,isend_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
           buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,n2+1:,:)=bufi  !!(set upper buffer)
@@ -2382,90 +2384,90 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !         Calls to fill the b-side recieve buffers
           if (lastlastya/=iproc) then
-            call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastlastya, &
+            call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,lastlastya, &
                 tonextnextyb,MPI_COMM_GRID,isend_rq_tolastlastya,mpierr)
           endif
           if (nextnextyb==iproc) then
             fbhihi(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
           else
-            call MPI_IRECV(fbhihi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextnextyb, &
+            call MPI_IRECV(fbhihi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,nextnextyb, &
                 tonextnextyb,MPI_COMM_GRID,irecv_rq_fromnextnextyb,mpierr)
           endif
 ! 
           if (lastya/=iproc) then
-            call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
+            call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,lastya, &
                 tonextyb,MPI_COMM_GRID,isend_rq_tolastya,mpierr)
           endif
           if (nextyb==iproc) then
             fbhi(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
           else
-            call MPI_IRECV(fbhi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
+            call MPI_IRECV(fbhi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,nextyb, &
                 tonextyb,MPI_COMM_GRID,irecv_rq_fromnextyb,mpierr)
           endif
 ! 
          if (nextya/=iproc) then
-            call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
+            call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,nextya, &
                 tolastyb,MPI_COMM_GRID,isend_rq_tonextya,mpierr)
           endif
           if (lastyb==iproc) then
             fblo(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
           else
-            call MPI_IRECV(fblo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
+            call MPI_IRECV(fblo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,lastyb, &
                 tolastyb,MPI_COMM_GRID,irecv_rq_fromlastyb,mpierr)
           endif
 !
           if (nextnextya/=iproc) then
-            call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextnextya, &
+            call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,nextnextya, &
                 tolastlastyb,MPI_COMM_GRID,isend_rq_tonextnextya,mpierr)
           endif
           if (lastlastyb==iproc) then
             fblolo(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
           else
-            call MPI_IRECV(fblolo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastlastyb, &
+            call MPI_IRECV(fblolo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,lastlastyb, &
                 tolastlastyb,MPI_COMM_GRID,irecv_rq_fromlastlastyb,mpierr)
           endif
 !         Now fill a-side recieve buffers
           if (lastlastyb/=iproc) then
-            call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastlastyb, &
+            call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,lastlastyb, &
                 tonextnextya,MPI_COMM_GRID,isend_rq_tolastlastyb,mpierr)
           endif
           if (nextnextya==iproc) then
             fahihi(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
           else
-            call MPI_IRECV(fahihi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextnextya, &
+            call MPI_IRECV(fahihi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,nextnextya, &
                 tonextnextya,MPI_COMM_GRID,irecv_rq_fromnextnextya,mpierr)
           endif
 !
           if (lastyb/=iproc) then
-            call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
+            call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,lastyb, &
                 tonextya,MPI_COMM_GRID,isend_rq_tolastyb,mpierr)
           endif
           if (nextya==iproc) then
             fahi(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
           else
-            call MPI_IRECV(fahi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
+            call MPI_IRECV(fahi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,nextya, &
                 tonextya,MPI_COMM_GRID,irecv_rq_fromnextya,mpierr)
           endif
 !
           if (nextyb/=iproc) then
-            call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
+            call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,nextyb, &
                 tolastya,MPI_COMM_GRID,isend_rq_tonextyb,mpierr)
           endif
           if (lastya==iproc) then
             falo(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
           else
-            call MPI_IRECV(falo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
+            call MPI_IRECV(falo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,lastya, &
                 tolastya,MPI_COMM_GRID,irecv_rq_fromlastya,mpierr)
           endif
 !
           if (nextnextyb/=iproc) then
-            call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextnextyb, &
+            call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,nextnextyb, &
                 tolastlastya,MPI_COMM_GRID,isend_rq_tonextnextyb,mpierr)
           endif
           if (lastlastya==iproc) then
             falolo(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
           else
-            call MPI_IRECV(falolo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastlastya, &
+            call MPI_IRECV(falolo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_FLOAT,lastlastya, &
                 tolastlastya,MPI_COMM_GRID,irecv_rq_fromlastlastya,mpierr)
           endif
 !
@@ -2615,7 +2617,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI call
 !
-      call MPI_RECV(Qrecv_zx,mx*mz,MPI_REAL,isource,Qtag_zx+idir, &
+      call MPI_RECV(Qrecv_zx,mx*mz,MPI_FLOAT,isource,Qtag_zx+idir, &
                     MPI_COMM_GRID,irecv_zx,mpierr)
 !
     endsubroutine radboundary_zx_recv
@@ -2643,7 +2645,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI call
 !
-      call MPI_RECV(Qrecv_xy,mx*my,MPI_REAL,isource,Qtag_xy+idir, &
+      call MPI_RECV(Qrecv_xy,mx*my,MPI_FLOAT,isource,Qtag_xy+idir, &
                     MPI_COMM_GRID,irecv_xy,mpierr)
 !
     endsubroutine radboundary_xy_recv
@@ -2673,7 +2675,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI call
 !
-      call MPI_RECV(Qrecv_yz,my*mz,MPI_REAL,isource,Qtag_yz+idir, &
+      call MPI_RECV(Qrecv_yz,my*mz,MPI_FLOAT,isource,Qtag_yz+idir, &
                     MPI_COMM_GRID,irecv_yz,mpierr)
 !
     endsubroutine radboundary_yz_recv
@@ -2702,7 +2704,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI call
 !
-      call MPI_SEND(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
+      call MPI_SEND(Qsend_zx,mx*mz,MPI_FLOAT,idest,Qtag_zx+idir, &
                     MPI_COMM_GRID,mpierr)
 !
     endsubroutine radboundary_zx_send
@@ -2730,7 +2732,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI call
 !
-      call MPI_SEND(Qsend_xy,mx*my,MPI_REAL,idest,Qtag_xy+idir, &
+      call MPI_SEND(Qsend_xy,mx*my,MPI_FLOAT,idest,Qtag_xy+idir, &
                     MPI_COMM_GRID,mpierr)
 !
     endsubroutine radboundary_xy_send
@@ -2761,7 +2763,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI call
 !
-      call MPI_SEND(Qsend_yz,my*mz,MPI_REAL,idest,Qtag_yz+idir, &
+      call MPI_SEND(Qsend_yz,my*mz,MPI_FLOAT,idest,Qtag_yz+idir, &
                     MPI_COMM_GRID,mpierr)
 !
     endsubroutine radboundary_yz_send
@@ -2789,8 +2791,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI call
 !
-      call MPI_SENDRECV(Qsend_yz,my*mz,MPI_REAL,idest,Qtag_yz+idir, &
-                        Qrecv_yz,my*mz,MPI_REAL,isource,Qtag_yz+idir, &
+      call MPI_SENDRECV(Qsend_yz,my*mz,MPI_FLOAT,idest,Qtag_yz+idir, &
+                        Qrecv_yz,my*mz,MPI_FLOAT,isource,Qtag_yz+idir, &
                         MPI_COMM_GRID,isendrecv_yz,mpierr)
 !
     endsubroutine radboundary_yz_sendrecv
@@ -2817,8 +2819,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI call
 !
-      call MPI_SENDRECV(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
-                        Qrecv_zx,mx*mz,MPI_REAL,isource,Qtag_zx+idir, &
+      call MPI_SENDRECV(Qsend_zx,mx*mz,MPI_FLOAT,idest,Qtag_zx+idir, &
+                        Qrecv_zx,mx*mz,MPI_FLOAT,isource,Qtag_zx+idir, &
                         MPI_COMM_GRID,isendrecv_zx,mpierr)
 !
     endsubroutine radboundary_zx_sendrecv
@@ -2840,10 +2842,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI calls
 !
-      call MPI_ALLGATHER(tau_yz,ny*nz,MPI_REAL,tau_yz_all,ny*nz,MPI_REAL, &
+      call MPI_ALLGATHER(tau_yz,ny*nz,MPI_FLOAT,tau_yz_all,ny*nz,MPI_FLOAT, &
                          MPI_COMM_XBEAM,mpierr)
 !
-      call MPI_ALLGATHER(Qrad_yz,ny*nz,MPI_REAL,Qrad_yz_all,ny*nz,MPI_REAL, &
+      call MPI_ALLGATHER(Qrad_yz,ny*nz,MPI_FLOAT,Qrad_yz_all,ny*nz,MPI_FLOAT, &
                          MPI_COMM_XBEAM,mpierr)
 !
     endsubroutine radboundary_yz_periodic_ray
@@ -2865,10 +2867,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI calls
 !
-      call MPI_ALLGATHER(tau_zx,nx*nz,MPI_REAL,tau_zx_all,nx*nz,MPI_REAL, &
+      call MPI_ALLGATHER(tau_zx,nx*nz,MPI_FLOAT,tau_zx_all,nx*nz,MPI_FLOAT, &
           MPI_COMM_YBEAM,mpierr)
 !
-      call MPI_ALLGATHER(Qrad_zx,nx*nz,MPI_REAL,Qrad_zx_all,nx*nz,MPI_REAL, &
+      call MPI_ALLGATHER(Qrad_zx,nx*nz,MPI_FLOAT,Qrad_zx_all,nx*nz,MPI_FLOAT, &
           MPI_COMM_YBEAM,mpierr)
 !
     endsubroutine radboundary_zx_periodic_ray
@@ -2963,10 +2965,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm, nonblock
 
       if (present(nonblock)) then
-        call MPI_IRECV(bcast_array, 1, MPI_REAL, proc_src, &
+        call MPI_IRECV(bcast_array, 1, MPI_FLOAT, proc_src, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), stat, nonblock, mpierr)
       else
-        call MPI_RECV(bcast_array, 1, MPI_REAL, proc_src, &
+        call MPI_RECV(bcast_array, 1, MPI_FLOAT, proc_src, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
  !
@@ -2992,10 +2994,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (nbcast_array == 0) return
 !
       if (present(nonblock)) then
-        call MPI_IRECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
+        call MPI_IRECV(bcast_array, nbcast_array, MPI_FLOAT, proc_src, &
                        tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
       else
-        call MPI_RECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
+        call MPI_RECV(bcast_array, nbcast_array, MPI_FLOAT, proc_src, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
@@ -3020,7 +3022,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+      call MPI_RECV(bcast_array, num_elements, MPI_FLOAT, proc_src, &
                     tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
 !
     endsubroutine mpirecv_real_arr2
@@ -3046,10 +3048,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       num_elements = product(nbcast_array)
       if (present(nonblock)) then
-        call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+        call MPI_IRECV(bcast_array, num_elements, MPI_FLOAT, proc_src, &
                        tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
       else
-        call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+        call MPI_RECV(bcast_array, num_elements, MPI_FLOAT, proc_src, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
@@ -3076,10 +3078,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       num_elements = product(nbcast_array)
       if (present(nonblock)) then
-        call MPI_IRECV(bcast_array, num_elements, MPI_COMPLEX, proc_src, &
+        call MPI_IRECV(bcast_array, num_elements, MPI_CMPLX, proc_src, &
                        tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
       else
-        call MPI_RECV(bcast_array, num_elements, MPI_COMPLEX, proc_src, &
+        call MPI_RECV(bcast_array, num_elements, MPI_CMPLX, proc_src, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
@@ -3106,10 +3108,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       num_elements = product(nbcast_array)
       if (present(nonblock)) then
-        call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+        call MPI_IRECV(bcast_array, num_elements, MPI_FLOAT, proc_src, &
                        tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
       else
-        call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+        call MPI_RECV(bcast_array, num_elements, MPI_FLOAT, proc_src, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
@@ -3131,7 +3133,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+      call MPI_RECV(bcast_array, num_elements, MPI_FLOAT, proc_src, &
                     tag_id, MPI_COMM_GRID, stat, mpierr)
 !
     endsubroutine mpirecv_real_arr5
@@ -3254,7 +3256,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: proc_rec, tag_id
       integer, optional :: comm
 !
-      call MPI_SEND(bcast_array, 1, MPI_REAL, proc_rec, &
+      call MPI_SEND(bcast_array, 1, MPI_FLOAT, proc_rec, &
                     tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpisend_real_scl
@@ -3274,7 +3276,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (nbcast_array == 0) return
 !
-      call MPI_SEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
+      call MPI_SEND(bcast_array, nbcast_array, MPI_FLOAT, proc_rec, &
                     tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpisend_real_arr
@@ -3295,7 +3297,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (nbcast_array == 0) return
 !
-      call MPI_SEND(bcast_array(offset), nbcast_array, MPI_REAL, proc_rec, &
+      call MPI_SEND(bcast_array(offset), nbcast_array, MPI_FLOAT, proc_rec, &
                     tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpisend_real_arr_assumed
@@ -3322,7 +3324,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (mult>0) &
         call MPI_SEND (array, mult, REAL_ARR_MAXSIZE, partner, tag, MPI_COMM_GRID, mpierr)
       if (res>0) &
-        call MPI_SEND(array(len_array-res+1), res, MPI_REAL, partner, tag+1, &
+        call MPI_SEND(array(len_array-res+1), res, MPI_FLOAT, partner, tag+1, &
                      ioptest(comm,MPI_COMM_GRID), mpierr)
 
     endsubroutine mpisend_real_arr_huge
@@ -3350,7 +3352,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (mult>0) &
         call MPI_RECV(array, mult, REAL_ARR_MAXSIZE, partner, tag, MPI_COMM_GRID, stat, mpierr)
       if (res>0) &
-        call MPI_RECV(array(len_array-res+1), res, MPI_REAL, partner, tag+1, &
+        call MPI_RECV(array(len_array-res+1), res, MPI_FLOAT, partner, tag+1, &
                      ioptest(comm,MPI_COMM_GRID),stat,mpierr)
 
     endsubroutine mpirecv_real_arr_huge
@@ -3373,7 +3375,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (nbcast_array == 0) return
 !
-      call MPI_RECV(bcast_array(offset), nbcast_array, MPI_REAL, proc_rec, &
+      call MPI_RECV(bcast_array(offset), nbcast_array, MPI_FLOAT, proc_rec, &
                     tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
 !
     endsubroutine mpirecv_real_arr_assumed
@@ -3394,7 +3396,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_SEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+      call MPI_SEND(bcast_array, num_elements, MPI_FLOAT, proc_rec, &
                     tag_id, ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpisend_real_arr2
@@ -3417,10 +3419,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       num_elements = product(nbcast_array)
       if (present(nonblock)) then
-        call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+        call MPI_ISEND(bcast_array, num_elements, MPI_FLOAT, proc_rec, &
                        tag_id,ioptest(comm,MPI_COMM_GRID),nonblock, mpierr)
       else
-        call MPI_SEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+        call MPI_SEND(bcast_array, num_elements, MPI_FLOAT, proc_rec, &
                       tag_id,ioptest(comm,MPI_COMM_GRID),mpierr)
       endif
 !
@@ -3444,10 +3446,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       num_elements = product(nbcast_array)
       if (present(nonblock)) then
-        call MPI_ISEND(bcast_array, num_elements, MPI_COMPLEX, proc_rec, &
+        call MPI_ISEND(bcast_array, num_elements, MPI_CMPLX, proc_rec, &
                        tag_id,ioptest(comm,MPI_COMM_GRID),nonblock, mpierr)
       else
-        call MPI_SEND(bcast_array, num_elements, MPI_COMPLEX, proc_rec, &
+        call MPI_SEND(bcast_array, num_elements, MPI_CMPLX, proc_rec, &
                       tag_id,ioptest(comm,MPI_COMM_GRID),mpierr)
       endif
 !
@@ -3469,7 +3471,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_SEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+      call MPI_SEND(bcast_array, num_elements, MPI_FLOAT, proc_rec, &
                     tag_id, ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpisend_real_arr4
@@ -3487,7 +3489,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_SEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+      call MPI_SEND(bcast_array, num_elements, MPI_FLOAT, proc_rec, &
                     tag_id, MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpisend_real_arr5
@@ -3521,8 +3523,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 
       intent(out) :: recv_array
 
-      call MPI_SENDRECV(send_array,1,MPI_REAL,proc_dest,sendtag, &
-                        recv_array,1,MPI_REAL,proc_src,recvtag, &
+      call MPI_SENDRECV(send_array,1,MPI_FLOAT,proc_dest,sendtag, &
+                        recv_array,1,MPI_FLOAT,proc_src,recvtag, &
                         MPI_COMM_GRID,stat,mpierr)
 
     endsubroutine mpisendrecv_real_scl
@@ -3544,8 +3546,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (sendcnt==0) return
 
-      call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
-                        recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
+      call MPI_SENDRECV(send_array,sendcnt,MPI_FLOAT,proc_dest,sendtag, &
+                        recv_array,sendcnt,MPI_FLOAT,proc_src,recvtag, &
                         mpigetcomm(ioptest(idir)),stat,mpierr)
 !
     endsubroutine mpisendrecv_real_arr
@@ -3566,8 +3568,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 
       num_elements = product(nbcast_array)
-      call MPI_SENDRECV(send_array,num_elements,MPI_REAL,proc_dest,sendtag, &
-                        recv_array,num_elements,MPI_REAL,proc_src,recvtag, &
+      call MPI_SENDRECV(send_array,num_elements,MPI_FLOAT,proc_dest,sendtag, &
+                        recv_array,num_elements,MPI_FLOAT,proc_src,recvtag, &
                         mpigetcomm(ioptest(idir)),stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr2
@@ -3585,8 +3587,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 
       num_elements = product(nbcast_array)
-      call MPI_SENDRECV(send_array,num_elements,MPI_REAL,proc_dest,sendtag, &
-                        recv_array,num_elements,MPI_REAL,proc_src,recvtag, &
+      call MPI_SENDRECV(send_array,num_elements,MPI_FLOAT,proc_dest,sendtag, &
+                        recv_array,num_elements,MPI_FLOAT,proc_src,recvtag, &
                         MPI_COMM_GRID,stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr3
@@ -3604,8 +3606,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
  
       num_elements = product(nbcast_array)
-      call MPI_SENDRECV(send_array,num_elements,MPI_REAL,proc_dest,sendtag, &
-                        recv_array,num_elements,MPI_REAL,proc_src,recvtag, &
+      call MPI_SENDRECV(send_array,num_elements,MPI_FLOAT,proc_dest,sendtag, &
+                        recv_array,num_elements,MPI_FLOAT,proc_src,recvtag, &
                         MPI_COMM_GRID,stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr4
@@ -3693,7 +3695,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (nbcast_array == 0) return
 !
-      call MPI_IRECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
+      call MPI_IRECV(bcast_array, nbcast_array, MPI_FLOAT, proc_src, &
                      tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr
@@ -3713,7 +3715,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+      call MPI_IRECV(bcast_array, num_elements, MPI_FLOAT, proc_src, &
                      tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr2
@@ -3736,7 +3738,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+      call MPI_IRECV(bcast_array, num_elements, MPI_FLOAT, proc_src, &
                      tag_id, ioptest(comm,MPI_COMM_GRID), ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr3
@@ -3759,7 +3761,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+      call MPI_IRECV(bcast_array, num_elements, MPI_FLOAT, proc_src, &
                      tag_id, ioptest(comm,MPI_COMM_GRID), ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr4
@@ -3779,7 +3781,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+      call MPI_IRECV(bcast_array, num_elements, MPI_FLOAT, proc_src, &
                      tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr5
@@ -3796,7 +3798,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (nbcast_array == 0) return
 !
-      call MPI_ISEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
+      call MPI_ISEND(bcast_array, nbcast_array, MPI_FLOAT, proc_rec, &
                      tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr
@@ -3814,7 +3816,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+      call MPI_ISEND(bcast_array, num_elements, MPI_FLOAT, proc_rec, &
                      tag_id, MPI_COMM_GRID,ireq,mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr2
@@ -3832,7 +3834,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+      call MPI_ISEND(bcast_array, num_elements, MPI_FLOAT, proc_rec, &
                      tag_id, MPI_COMM_GRID,ireq,mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr3
@@ -3850,7 +3852,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+      call MPI_ISEND(bcast_array, num_elements, MPI_FLOAT, proc_rec, &
                      tag_id, MPI_COMM_GRID,ireq,mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr4
@@ -3868,7 +3870,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+      call MPI_ISEND(bcast_array, num_elements, MPI_FLOAT, proc_rec, &
                      tag_id, MPI_COMM_GRID,ireq,mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr5
@@ -4077,7 +4079,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real :: bcast_array
       integer, optional :: proc, comm
 
-      call MPI_BCAST(bcast_array,1,MPI_REAL,ioptest(proc,root), &
+      call MPI_BCAST(bcast_array,1,MPI_FLOAT,ioptest(proc,root), &
                      ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_real_scl
@@ -4094,7 +4096,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (nbcast_array == 0) return
 !
-      call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ioptest(proc,root), &
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_FLOAT,ioptest(proc,root), &
                      ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_real_arr
@@ -4123,7 +4125,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       num_elements = product(nbcast_array)
-      call MPI_BCAST(bcast_array, num_elements, MPI_REAL, ibcast_proc, &
+      call MPI_BCAST(bcast_array, num_elements, MPI_FLOAT, ibcast_proc, &
                      ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_real_arr2
@@ -4150,7 +4152,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       num_elements = product(nbcast_array)
-      call MPI_BCAST(bcast_array, num_elements, MPI_REAL, ibcast_proc, &
+      call MPI_BCAST(bcast_array, num_elements, MPI_FLOAT, ibcast_proc, &
                      MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_real_arr3
@@ -4175,7 +4177,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       num_elements = product(nbcast_array)
-      call MPI_BCAST(bcast_array, num_elements, MPI_REAL, ibcast_proc, &
+      call MPI_BCAST(bcast_array, num_elements, MPI_FLOAT, ibcast_proc, &
                      MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_real_arr4
@@ -4287,7 +4289,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(bcast_array,nbcast_array,MPI_COMPLEX,ibcast_proc, &
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_CMPLX,ibcast_proc, &
                      MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_cmplx_arr_sgl
@@ -4311,7 +4313,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         call stop_fatal('mpiscatter_real_arr:'// &
                         'ERROR - sizes of source/destination arrays/number of processors not compatibel')
 
-      call MPI_SCATTER(src_array,count,MPI_REAL,dest_array,count,MPI_REAL,ioptest(proc,root),comm_,mpierr)
+      call MPI_SCATTER(src_array,count,MPI_FLOAT,dest_array,count,MPI_FLOAT,ioptest(proc,root),comm_,mpierr)
 
     endsubroutine mpiscatter_real_arr
 !***********************************************************************
@@ -4359,14 +4361,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 
       call MPI_TYPE_CREATE_SUBARRAY(2, (/src_sz1,src_sz2/), (/dest_sz1,dest_sz2/), (/0,0/), &
-                                    MPI_ORDER_FORTRAN, MPI_REAL, block, mpierr)
+                                    MPI_ORDER_FORTRAN, MPI_FLOAT, block, mpierr)
 
-      call MPI_TYPE_SIZE(MPI_REAL, sizeofreal, mpierr)
+      call MPI_TYPE_SIZE(MPI_FLOAT, sizeofreal, mpierr)
       call MPI_TYPE_CREATE_RESIZED(block, 0, dest_sz1*sizeofreal, segment, mpierr)
       call MPI_TYPE_COMMIT(segment,mpierr)
 
       call MPI_SCATTERV(src_array,sendcounts,displs,segment,dest_array,dest_sz1*dest_sz2, &
-                        MPI_REAL,ioptest(proc,root),comm_,mpierr)
+                        MPI_FLOAT,ioptest(proc,root),comm_,mpierr)
       call MPI_TYPE_FREE(segment,mpierr)
 
     endsubroutine mpiscatter_real_arr2
@@ -4393,7 +4395,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         mpiprocs=ioptest(comm,MPI_COMM_GRID)
       endif
 !
-      call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, mpiprocs, mpierr)
+      call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_FLOAT, MPI_SUM, mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
@@ -4417,7 +4419,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         mpiprocs=MPI_COMM_GRID
       endif
 !
-      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
+      call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_FLOAT, MPI_SUM, &
                          mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr
@@ -4443,7 +4445,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       num_elements = product(nreduce)
-      call MPI_ALLREDUCE(fsum_tmp, fsum, num_elements, MPI_REAL, MPI_SUM, &
+      call MPI_ALLREDUCE(fsum_tmp, fsum, num_elements, MPI_FLOAT, MPI_SUM, &
                          mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr2
@@ -4469,7 +4471,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       num_elements = product(nreduce)
-      call MPI_ALLREDUCE(fsum_tmp, fsum, num_elements, MPI_REAL, MPI_SUM, &
+      call MPI_ALLREDUCE(fsum_tmp, fsum, num_elements, MPI_FLOAT, MPI_SUM, &
                          mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr3
@@ -4495,7 +4497,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       num_elements = product(nreduce)
-      call MPI_ALLREDUCE(fsum_tmp, fsum, num_elements, MPI_REAL, MPI_SUM, &
+      call MPI_ALLREDUCE(fsum_tmp, fsum, num_elements, MPI_FLOAT, MPI_SUM, &
                          mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr4
@@ -4521,7 +4523,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       num_elements = product(nreduce)
-      call MPI_ALLREDUCE(fsum_tmp, fsum, num_elements, MPI_REAL, MPI_SUM, &
+      call MPI_ALLREDUCE(fsum_tmp, fsum, num_elements, MPI_FLOAT, MPI_SUM, &
                          mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr5
@@ -4537,7 +4539,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, intent(in) :: n
 !
       if (n <= 0) return
-      call MPI_ALLREDUCE(MPI_IN_PLACE, fsum, n, mpi_precision, MPI_SUM, MPI_COMM_GRID, mpierr)
+      call MPI_ALLREDUCE(MPI_IN_PLACE, fsum, n, MPI_FLOAT, MPI_SUM, MPI_COMM_GRID, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr_inplace
 !***********************************************************************
@@ -4618,7 +4620,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real(KIND=rkind4) :: fmax_tmp,fmax
       integer, optional :: comm
 !
-      call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, &
+      call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_FLOAT, MPI_MAX, &
                          ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpiallreduce_max_scl_sgl
@@ -4660,7 +4662,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real(KIND=rkind4) :: fmin_tmp,fmin
       integer, optional :: comm
 !
-      call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, &
+      call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_FLOAT, MPI_MIN, &
                          ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpiallreduce_min_scl_sgl
@@ -4705,7 +4707,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (nreduce==0) return
 !
-      call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, &
+      call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_FLOAT, MPI_MAX, &
                          ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpiallreduce_max_arr
@@ -4777,7 +4779,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real :: fmax_tmp,fmax
       integer, intent(in), optional :: comm
 !
-      call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, root, &
+      call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_FLOAT, MPI_MAX, root, &
                       ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpireduce_max_scl
@@ -4825,7 +4827,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (nreduce==0) return
 !
-      call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, root, &
+      call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_FLOAT, MPI_MAX, root, &
                       ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpireduce_max_arr
@@ -4839,7 +4841,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real :: fmin_tmp,fmin
       integer, optional :: comm
 !
-      call MPI_REDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, root, &
+      call MPI_REDUCE(fmin_tmp, fmin, 1, MPI_FLOAT, MPI_MIN, root, &
                       ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpireduce_min_scl
@@ -4856,7 +4858,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (nreduce==0) return
 !
-      call MPI_REDUCE(fmin_tmp, fmin, nreduce, MPI_REAL, MPI_MIN, root, &
+      call MPI_REDUCE(fmin_tmp, fmin, nreduce, MPI_FLOAT, MPI_MIN, root, &
                       ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpireduce_min_arr
@@ -4986,7 +4988,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           mpiprocs=MPI_COMM_GRID
         endif
-        call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, root, &
+        call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_FLOAT, MPI_SUM, root, &
                         mpiprocs, mpierr)
       endif
 !
@@ -5017,7 +5019,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           mpiprocs=ioptest(comm,MPI_COMM_GRID)
         endif
-        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
+        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_FLOAT, MPI_SUM, root, &
                         mpiprocs, mpierr)
       endif
 !
@@ -5056,10 +5058,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
         num_elements = product(nreduce)
         if (inplace_opt) then
-          call MPI_REDUCE(MPI_IN_PLACE, fsum, num_elements, MPI_REAL, &
+          call MPI_REDUCE(MPI_IN_PLACE, fsum, num_elements, MPI_FLOAT, &
                           MPI_SUM, root, mpiprocs, mpierr)
         else
-          call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_REAL, MPI_SUM, &
+          call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_FLOAT, MPI_SUM, &
                           root, mpiprocs, mpierr)
         endif
       endif
@@ -5090,7 +5092,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           mpiprocs=MPI_COMM_GRID
         endif
         num_elements = product(nreduce)
-        call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_REAL, MPI_SUM, &
+        call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_FLOAT, MPI_SUM, &
                         root, mpiprocs, mpierr)
       endif
 !
@@ -5120,7 +5122,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           mpiprocs=MPI_COMM_GRID
         endif
         num_elements = product(nreduce)
-        call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_REAL, MPI_SUM, &
+        call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_FLOAT, MPI_SUM, &
                         root, mpiprocs, mpierr)
       endif
 !
@@ -5554,11 +5556,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               ix=ibox*nprocy*ny+px*ny
               send_buf_y=a(ix+1:ix+ny,:,:)
               if (px<ipy) then      ! above diagonal: send first, receive then
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ystag,MPI_COMM_GRID,mpierr)
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,yrtag,MPI_COMM_GRID,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_FLOAT,partner,ystag,MPI_COMM_GRID,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_FLOAT,partner,yrtag,MPI_COMM_GRID,stat,mpierr)
               elseif (px>ipy) then  ! below diagonal: receive first, send then
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ystag,MPI_COMM_GRID,stat,mpierr)
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,yrtag,MPI_COMM_GRID,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_FLOAT,partner,ystag,MPI_COMM_GRID,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_FLOAT,partner,yrtag,MPI_COMM_GRID,mpierr)
               endif
               a(ix+1:ix+ny,:,:)=recv_buf_y
             endif
@@ -5614,11 +5616,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
             send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
             if (px<ipz) then      ! above diagonal: send first, receive then
-              call MPI_SEND (send_buf_z,sendc_z,MPI_REAL,partner,zstag,MPI_COMM_GRID,mpierr)
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,zrtag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND (send_buf_z,sendc_z,MPI_FLOAT,partner,zstag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_FLOAT,partner,zrtag,MPI_COMM_GRID,stat,mpierr)
             elseif (px>ipz) then  ! below diagonal: receive first, send then
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,zstag,MPI_COMM_GRID,stat,mpierr)
-              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,zrtag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_FLOAT,partner,zstag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_z,sendc_z,MPI_FLOAT,partner,zrtag,MPI_COMM_GRID,mpierr)
             endif
             a(px*nz+1:(px+1)*nz,:,:)=recv_buf_z
           endif
@@ -5718,11 +5720,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             iy=(ibox*nprocy+px)*ny
             send_buf_y=a(iy+1:iy+ny,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,stat,mpierr)
             elseif (px>ipy) then  ! below diagonal: receive first, send then
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,mpierr)
             endif
             a(iy+1:iy+ny,:)=recv_buf_y
           endif
@@ -5828,11 +5830,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             iy=(ibox*nprocy+px)*ny_other
             send_buf_y=a(iy+1:iy+ny_other,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,stat,mpierr)
             elseif (px>ipy) then  ! below diagonal: receive first, send then
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,mpierr)
             endif
             a(iy+1:iy+ny_other,:)=recv_buf_y
           endif
@@ -5948,11 +5950,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               ix=(ibox*nprocy+px)*ny_other
               send_buf_y=a(ix+1:ix+ny_other,:,:)
               if (px<ipy) then      ! above diagonal: send first, receive then
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,stat,mpierr)
               elseif (px>ipy) then  ! below diagonal: receive first, send then
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_FLOAT,partner,ytag,MPI_COMM_GRID,mpierr)
               endif
               a(ix+1:ix+ny_other,:,:)=recv_buf_y
             endif
@@ -6009,11 +6011,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
             send_buf_z=a(px*nz_other+1:(px+1)*nz_other,:,:)
             if (px<ipz) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_GRID,mpierr)
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_z,sendc_z,MPI_FLOAT,partner,ztag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_FLOAT,partner,ztag,MPI_COMM_GRID,stat,mpierr)
             elseif (px>ipz) then  ! below diagonal: receive first, send then
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_GRID,stat,mpierr)
-              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_FLOAT,partner,ztag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_z,sendc_z,MPI_FLOAT,partner,ztag,MPI_COMM_GRID,mpierr)
             endif
             a(px*nz_other+1:(px+1)*nz_other,:,:)=recv_buf_z
           endif
@@ -6068,7 +6070,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (px/=ipz) then
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
           buf=a(px*nxt+1:(px+1)*nxt,:)
-          call MPI_SENDRECV_REPLACE(buf,sendc,MPI_REAL,partner,ztag,partner,ztag,MPI_COMM_GRID,stat,mpierr)
+          call MPI_SENDRECV_REPLACE(buf,sendc,MPI_FLOAT,partner,ztag,partner,ztag,MPI_COMM_GRID,stat,mpierr)
           b(px*nz+1:(px+1)*nz,:)=transpose(buf)
         endif
       enddo
@@ -6108,7 +6110,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (px/=ipz) then
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
           buf=a(px*nz+1:(px+1)*nz,:)
-          call MPI_SENDRECV_REPLACE(buf,sendc,MPI_REAL,partner,ztag,partner,ztag,MPI_COMM_GRID,stat,mpierr)
+          call MPI_SENDRECV_REPLACE(buf,sendc,MPI_FLOAT,partner,ztag,partner,ztag,MPI_COMM_GRID,stat,mpierr)
           b(px*nxt+1:(px+1)*nxt,:)=transpose(buf)
         endif
       enddo
@@ -6153,13 +6155,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         nbufy=nx*nghost*(nghost+1)*3
 !
-        call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy, &
+        call MPI_IRECV(ubufyi,nbufy,MPI_FLOAT,yuneigh,tolowy, &
                        MPI_COMM_GRID,irecv_rq_fromuppy,mpierr)
-        call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy, &
+        call MPI_IRECV(lbufyi,nbufy,MPI_FLOAT,ylneigh,touppy, &
                        MPI_COMM_GRID,irecv_rq_fromlowy,mpierr)
-        call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy, &
+        call MPI_ISEND(lbufyo,nbufy,MPI_FLOAT,ylneigh,tolowy, &
                        MPI_COMM_GRID,isend_rq_tolowy,mpierr)
-        call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy, &
+        call MPI_ISEND(ubufyo,nbufy,MPI_FLOAT,yuneigh,touppy, &
                        MPI_COMM_GRID,isend_rq_touppy,mpierr)
 !
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
@@ -6187,13 +6189,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         nbufx=nghost*size(f,2)*(nghost+1)*3
 !
-        call MPI_IRECV(ubufxi,nbufx,MPI_REAL,xuneigh,tolowx, &
+        call MPI_IRECV(ubufxi,nbufx,MPI_FLOAT,xuneigh,tolowx, &
                        MPI_COMM_GRID,irecv_rq_fromuppx,mpierr)
-        call MPI_IRECV(lbufxi,nbufx,MPI_REAL,xlneigh,touppx, &
+        call MPI_IRECV(lbufxi,nbufx,MPI_FLOAT,xlneigh,touppx, &
                        MPI_COMM_GRID,irecv_rq_fromlowx,mpierr)
-        call MPI_ISEND(lbufxo,nbufx,MPI_REAL,xlneigh,tolowx, &
+        call MPI_ISEND(lbufxo,nbufx,MPI_FLOAT,xlneigh,tolowx, &
                        MPI_COMM_GRID,isend_rq_tolowx,mpierr)
-        call MPI_ISEND(ubufxo,nbufx,MPI_REAL,xuneigh,touppx, &
+        call MPI_ISEND(ubufxo,nbufx,MPI_FLOAT,xuneigh,touppx, &
                        MPI_COMM_GRID,isend_rq_touppx,mpierr)
 !
         call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
@@ -6235,13 +6237,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         nbufy = nx * nghost
 !
-        call MPI_IRECV (ubufyi, nbufy, MPI_REAL, yuneigh, tolowy, &
+        call MPI_IRECV (ubufyi, nbufy, MPI_FLOAT, yuneigh, tolowy, &
                        MPI_COMM_GRID, irecv_rq_fromuppy, mpierr)
-        call MPI_IRECV (lbufyi, nbufy, MPI_REAL, ylneigh, touppy, &
+        call MPI_IRECV (lbufyi, nbufy, MPI_FLOAT, ylneigh, touppy, &
                        MPI_COMM_GRID, irecv_rq_fromlowy, mpierr)
-        call MPI_ISEND (lbufyo, nbufy, MPI_REAL, ylneigh, tolowy, &
+        call MPI_ISEND (lbufyo, nbufy, MPI_FLOAT, ylneigh, tolowy, &
                        MPI_COMM_GRID, isend_rq_tolowy, mpierr)
-        call MPI_ISEND (ubufyo, nbufy, MPI_REAL, yuneigh, touppy, &
+        call MPI_ISEND (ubufyo, nbufy, MPI_FLOAT, yuneigh, touppy, &
                        MPI_COMM_GRID, isend_rq_touppy, mpierr)
 !
         call MPI_WAIT (irecv_rq_fromuppy, irecv_stat_fu, mpierr)
@@ -6269,13 +6271,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         nbufx = nghost * size(data,2)
 !
-        call MPI_IRECV (ubufxi, nbufx, MPI_REAL, xuneigh, tolowx, &
+        call MPI_IRECV (ubufxi, nbufx, MPI_FLOAT, xuneigh, tolowx, &
                        MPI_COMM_GRID, irecv_rq_fromuppx, mpierr)
-        call MPI_IRECV (lbufxi, nbufx, MPI_REAL, xlneigh, touppx, &
+        call MPI_IRECV (lbufxi, nbufx, MPI_FLOAT, xlneigh, touppx, &
                        MPI_COMM_GRID, irecv_rq_fromlowx, mpierr)
-        call MPI_ISEND (lbufxo, nbufx, MPI_REAL, xlneigh, tolowx, &
+        call MPI_ISEND (lbufxo, nbufx, MPI_FLOAT, xlneigh, tolowx, &
                        MPI_COMM_GRID, isend_rq_tolowx, mpierr)
-        call MPI_ISEND (ubufxo, nbufx, MPI_REAL, xuneigh, touppx, &
+        call MPI_ISEND (ubufxo, nbufx, MPI_FLOAT, xuneigh, touppx, &
                        MPI_COMM_GRID, isend_rq_touppx, mpierr)
 !
         call MPI_WAIT (irecv_rq_fromuppx, irecv_stat_fu, mpierr)
@@ -6320,14 +6322,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         nbuf=nghost*3
 !
-        call MPI_IRECV(ubufi,nbuf,MPI_REAL, &
+        call MPI_IRECV(ubufi,nbuf,MPI_FLOAT, &
                        zuneigh,tolowz,MPI_COMM_GRID,irecv_rq_fromuppz,mpierr)
-        call MPI_IRECV(lbufi,nbuf,MPI_REAL, &
+        call MPI_IRECV(lbufi,nbuf,MPI_FLOAT, &
                        zlneigh,touppz,MPI_COMM_GRID,irecv_rq_fromlowz,mpierr)
 !
-        call MPI_ISEND(lbufo,nbuf,MPI_REAL, &
+        call MPI_ISEND(lbufo,nbuf,MPI_FLOAT, &
                        zlneigh,tolowz,MPI_COMM_GRID,isend_rq_tolowz,mpierr)
-        call MPI_ISEND(ubufo,nbuf,MPI_REAL, &
+        call MPI_ISEND(ubufo,nbuf,MPI_FLOAT, &
                        zuneigh,touppz,MPI_COMM_GRID,isend_rq_touppz,mpierr)
 !
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
@@ -6432,13 +6434,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               out = in
             else
               ! send to partner
-              call MPI_SEND (in, 1, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+              call MPI_SEND (in, 1, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, 1, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, 1, MPI_FLOAT, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_0D
@@ -6482,7 +6484,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             if (iproc /= partner) then
               ! send to partner
               out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny)
-              call MPI_SEND (out, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+              call MPI_SEND (out, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
             endif
           enddo
         enddo
@@ -6490,7 +6492,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in(ipx*bnx+1:(ipx+1)*bnx,ipy*bny+1:(ipy+1)*bny)
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_FLOAT, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_2D
@@ -6539,13 +6541,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             else
               ! send to partner
               out = in(:,py*bny+1:(py+1)*bny,pz*bnz+1:(pz+1)*bnz)
-              call MPI_SEND (out, nbox, MPI_REAL, partner, ytag, MPI_COMM_YZPLANE, mpierr)
+              call MPI_SEND (out, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_YZPLANE, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, 0, ytag, MPI_COMM_YZPLANE, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_FLOAT, 0, ytag, MPI_COMM_YZPLANE, stat, mpierr)
       endif
 !
     endsubroutine distribute_yz_3D
@@ -6597,13 +6599,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             else
               ! send to partner
               out = in(:,py*bny+1:(py+1)*bny,pz*bnz+1:(pz+1)*bnz,:)
-              call MPI_SEND (out, nbox, MPI_REAL, partner, ytag, MPI_COMM_YZPLANE, mpierr)
+              call MPI_SEND (out, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_YZPLANE, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, 0, ytag, MPI_COMM_YZPLANE, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_FLOAT, 0, ytag, MPI_COMM_YZPLANE, stat, mpierr)
       endif
 !
     endsubroutine distribute_yz_4D
@@ -6653,13 +6655,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             else
               ! send to partner
               call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:), &
-                  nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+                  nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_FLOAT, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_3D
@@ -6712,13 +6714,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             else
               ! send to partner
               call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:), &
-                  nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+                  nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_FLOAT, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_4D
@@ -6760,14 +6762,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               out(px+1,py+1) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, 1, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+              call MPI_RECV (buffer, 1, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
               out(px+1,py+1) = buffer
             endif
           enddo
         enddo
       else
         ! send to collector
-        call MPI_SEND (in, 1, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, 1, MPI_FLOAT, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_xy_0D
@@ -6818,7 +6820,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+              call MPI_RECV (buffer, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny) = buffer
             endif
           enddo
@@ -6827,7 +6829,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, nbox, MPI_FLOAT, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_xy_2D
@@ -6879,7 +6881,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+              call MPI_RECV (buffer, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:) = buffer
             endif
           enddo
@@ -6888,7 +6890,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, nbox, MPI_FLOAT, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_xy_3D
@@ -6945,7 +6947,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+              call MPI_RECV (buffer, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:) = buffer
             endif
           enddo
@@ -6954,7 +6956,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, nbox, MPI_FLOAT, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_xy_4D
@@ -7002,12 +7004,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out = in(:,:,pz*bnz+1:(pz+1)*bnz)
           else
             ! send to partner
-            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz), nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz), nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_FLOAT, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_z_3D
@@ -7058,12 +7060,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out = in(:,:,pz*bnz+1:(pz+1)*bnz,:)
           else
             ! send to partner
-            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz,:), nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz,:), nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_FLOAT, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_z_4D
@@ -7116,7 +7118,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out(:,:,pz*bnz+1:(pz+1)*bnz) = in
           else
             ! receive from partner
-            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_RECV (buffer, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             out(:,:,pz*bnz+1:(pz+1)*bnz) = buffer
           endif
         enddo
@@ -7124,7 +7126,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, nbox, MPI_FLOAT, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_z_3D
@@ -7180,7 +7182,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out(:,:,pz*bnz+1:(pz+1)*bnz,:) = in
           else
             ! receive from partner
-            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_RECV (buffer, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             out(:,:,pz*bnz+1:(pz+1)*bnz,:) = buffer
           endif
         enddo
@@ -7188,7 +7190,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, nbox, MPI_FLOAT, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_z_4D
@@ -7263,7 +7265,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           else
             ! receive from y-row partner
             call mpirecv_real_arr_huge(buffer,nbox,partner,ytag)
-            ! old version: call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            ! old version: call MPI_RECV (buffer, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             y_row(:,py*cny+1+y_add:py*cny+my-y_sub,:,:) = buffer(:,1+y_add:my-y_sub,:,:)
           endif
         enddo
@@ -7273,7 +7275,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (iproc /= collector) then
           ! send to collector
           call mpisend_real_arr_huge(y_row,nrow,collector,xtag)
-          ! old version: call MPI_SEND (y_row, nrow, MPI_REAL, collector, xtag, MPI_COMM_GRID, mpierr)
+          ! old version: call MPI_SEND (y_row, nrow, MPI_FLOAT, collector, xtag, MPI_COMM_GRID, mpierr)
           deallocate (y_row)
         endif
 !
@@ -7281,7 +7283,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         ! send to collector of the y-row (lfirst_proc_y)
         partner = ipx + ipz*nprocxy
         call mpisend_real_arr_huge(in,nbox,partner,ytag)
-        ! old version: call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+        ! old version: call MPI_SEND (in, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
       if (iproc == collector) then
@@ -7302,7 +7304,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           else
             ! receive from partner
             call mpirecv_real_arr_huge(buffer,nrow,partner,xtag)
-            ! old version: call MPI_RECV (buffer, nrow, MPI_REAL, partner, xtag, MPI_COMM_GRID, stat, mpierr)
+            ! old version: call MPI_RECV (buffer, nrow, MPI_FLOAT, partner, xtag, MPI_COMM_GRID, stat, mpierr)
             out(px*cnx+1+x_add:px*cnx+mx-x_sub,:,:,:) = buffer(1+x_add:mx-x_sub,:,:,:)
           endif
         enddo
@@ -7410,7 +7412,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             buffer = in(px*cnx+1:px*cnx+mx,:,:,:)
             
             call mpisend_real_arr_huge(buffer,nrow,partner,xtag)
-            !old version: call MPI_SEND (buffer, int(nrow), MPI_REAL, partner, xtag, MPI_COMM_GRID, mpierr)
+            !old version: call MPI_SEND (buffer, int(nrow), MPI_FLOAT, partner, xtag, MPI_COMM_GRID, mpierr)
           endif
         enddo
         deallocate (buffer)
@@ -7421,7 +7423,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! receive y-row from broadcaster
 
           call mpirecv_real_arr_huge(y_row,nrow,broadcaster,xtag)
-          !old version: call MPI_RECV (y_row, int(nrow), MPI_REAL, broadcaster, xtag, MPI_COMM_GRID, stat, mpierr)
+          !old version: call MPI_RECV (y_row, int(nrow), MPI_FLOAT, broadcaster, xtag, MPI_COMM_GRID, stat, mpierr)
         endif
 !
         allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
@@ -7437,7 +7439,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             buffer = y_row(:,py*cny+1:py*cny+my,:,:)
 
             call mpisend_real_arr_huge(buffer,nbox,partner,ytag)
-            !old version: call MPI_SEND (buffer, int(nbox), MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            !old version: call MPI_SEND (buffer, int(nbox), MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
         deallocate (buffer)
@@ -7446,7 +7448,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         partner = ipx + ipz*nprocxy
 
         call mpirecv_real_arr_huge(out,nbox,partner,ytag)
-        !old version: call MPI_RECV (out, int(nbox), MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+        !old version: call MPI_RECV (out, int(nbox), MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
       if (ipz == pz) deallocate (y_row)
@@ -7490,7 +7492,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out(pz*nz+1+z_add:pz*nz+mz) = in(1+z_add:mz)
           else
             ! receive from partner
-            call MPI_RECV (buffer, mz, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_RECV (buffer, mz, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             out(pz*nz+1+z_add:pz*nz+mz) = buffer(1+z_add:mz)
           endif
         enddo
@@ -7498,7 +7500,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, mz, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, mz, MPI_FLOAT, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine globalize_z
@@ -7533,12 +7535,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out = in(pz*nz+1:pz*nz+mz)
           else
             ! send to partner
-            call MPI_SEND (in(pz*nz+1:pz*nz+mz), mz, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_SEND (in(pz*nz+1:pz*nz+mz), mz, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, mz, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, mz, MPI_FLOAT, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine localize_z
@@ -7589,12 +7591,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           else
             ! send to partner
             buffer = in(:,bny*ibox+1:bny*(ibox+1))
-            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_SEND (buffer, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (buffer, nbox, MPI_FLOAT, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
         out = buffer
       endif
 !
@@ -7647,14 +7649,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out(:,bny*ibox+1:bny*(ibox+1)) = in
           else
             ! receive from partner
-            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_RECV (buffer, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             out(:,bny*ibox+1:bny*(ibox+1)) = buffer
           endif
         enddo
       else
         ! send to collector
         buffer = in
-        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (buffer, nbox, MPI_FLOAT, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
       deallocate (buffer)
@@ -7685,11 +7687,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nx, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nx, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nx, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nx, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nx, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nx, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(nx*ibox+1:nx*(ibox+1)) = recv_buf
         endif
@@ -7736,11 +7738,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, ny, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, ny, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, ny, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, ny, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, ny, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, ny, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(ny*ibox+1:ny*(ibox+1)) = recv_buf
         endif
@@ -7774,11 +7776,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1)) = recv_buf
         endif
@@ -7828,11 +7830,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1),:) = recv_buf
         endif
@@ -7887,11 +7889,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1),:,:) = recv_buf
         endif
@@ -7985,11 +7987,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nz, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nz, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nz, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nz, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nz, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nz, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nz, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nz, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(nz*ibox+1:nz*(ibox+1)) = recv_buf
         endif
@@ -8036,11 +8038,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(nz*ibox+1:nz*(ibox+1),:) = recv_buf
         endif
@@ -8092,11 +8094,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,:,nz*ibox+1:nz*(ibox+1)) = recv_buf
         endif
@@ -8151,11 +8153,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,:,nz*ibox+1:nz*(ibox+1),:) = recv_buf
         endif
@@ -8274,11 +8276,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -8340,11 +8342,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -8423,11 +8425,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else local                         ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1)+2*ngc,:)
           commun: if (iproc > partner) then  ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else commun                        ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif commun
         endif local
         out(ngc+bnx*ibox+1:ngc+bnx*(ibox+1),:,:) = recv_buf(ngc+1:ngc+bnx,:,:)
@@ -8501,11 +8503,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:,:,:) = recv_buf
         endif
@@ -8564,11 +8566,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1)) = recv_buf
         endif
@@ -8633,11 +8635,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1)) = recv_buf
         endif
@@ -8717,11 +8719,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else local                         ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
           commun: if (iproc > partner) then  ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else commun                        ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif commun
         endif local
         out(:,ngc+bny*ibox+1:ngc+bny*(ibox+1),:) = recv_buf(:,ngc+1:ngc+bny,:)
@@ -8795,11 +8797,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:,:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:,:) = recv_buf
         endif
@@ -8866,11 +8868,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = transpose (in(bny*ibox+1:bny*(ibox+1),:))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -8944,11 +8946,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else local                        ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
           if (iproc > partner) then  ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
         endif local
         do iz = 1, inz
@@ -9039,11 +9041,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             enddo
           enddo
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:,:,:) = recv_buf
         endif
@@ -9107,11 +9109,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
 !
           out(:,:,bnz*ibox+1:bnz*(ibox+1)) = recv_buf
@@ -9180,11 +9182,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
           out(:,:,bnz*ibox+1:bnz*(ibox+1),:) = recv_buf
         endif
@@ -9248,11 +9250,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,:,bnz*ibox+1:bnz*(ibox+1))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:) = recv_buf
         endif
@@ -9320,11 +9322,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,:,bnz*ibox+1:bnz*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_FLOAT, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:,:) = recv_buf
         endif
@@ -9517,7 +9519,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       ncnt = nxgrid*ny
 !
       if (cond) &
-        call MPI_GATHER(sendbuf, ncnt, MPI_REAL, recvbuf, ncnt, MPI_REAL, root, MPI_COMM_XYPLANE, mpierr)
+        call MPI_GATHER(sendbuf, ncnt, MPI_FLOAT, recvbuf, ncnt, MPI_FLOAT, root, MPI_COMM_XYPLANE, mpierr)
 !
     endsubroutine mpigather_xy
 !***********************************************************************
@@ -9543,7 +9545,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       if ( ipx==lpx .and. ipy==lpy ) &
-        call MPI_GATHER(sendbuf, n1*nz, MPI_REAL, recvbuf, n1*nz, MPI_REAL, root, MPI_COMM_ZBEAM, mpierr)
+        call MPI_GATHER(sendbuf, n1*nz, MPI_FLOAT, recvbuf, n1*nz, MPI_FLOAT, root, MPI_COMM_ZBEAM, mpierr)
 !
     endsubroutine mpigather_z
 !***********************************************************************
@@ -9593,8 +9595,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       do i=1,nz
-        call MPI_GATHERV(sendbuf(1,1,i), ncnt, MPI_REAL, recvbuf(1,1,i), counts, int(shifts), &
-                         MPI_REAL, root, MPI_COMM_GRID, mpierr)
+        call MPI_GATHERV(sendbuf(1,1,i), ncnt, MPI_FLOAT, recvbuf(1,1,i), counts, int(shifts), &
+                         MPI_FLOAT, root, MPI_COMM_GRID, mpierr)
       enddo
 !
     endsubroutine mpigather
@@ -9805,10 +9807,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
                               endif
                             else
                               if (lcomplex) then
-                                call MPI_RECV(rowbuf_cmplx, nsend, MPI_COMPLEX, ig, tag, MPI_COMM_GRID, status, mpierr)
+                                call MPI_RECV(rowbuf_cmplx, nsend, MPI_CMPLX, ig, tag, MPI_COMM_GRID, status, mpierr)
                                 !print*, 'iy,irx,ixa:ixe:ixs,kxrangel(:,irx)=', iy,irx,ixa,ixe,ixs , kxrangel(:,irx)
                               else
-                                call MPI_RECV(rowbuf, nsend, MPI_REAL, ig, tag, MPI_COMM_GRID, status, mpierr)
+                                call MPI_RECV(rowbuf, nsend, MPI_FLOAT, ig, tag, MPI_COMM_GRID, status, mpierr)
                               endif
                             endif
                             if (lcomplex) then
@@ -9821,18 +9823,18 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
                             if (lcomplex) then
                               if (ltrans) then
                                 call MPI_SEND(sendbuf_cmplx(iy,ixa:ixe:ixs,iz,ic), &
-                                              nsend, MPI_COMPLEX, root, tag, MPI_COMM_GRID, mpierr)
+                                              nsend, MPI_CMPLX, root, tag, MPI_COMM_GRID, mpierr)
                               else
                                 call MPI_SEND(sendbuf_cmplx(ixa:ixe:ixs,iy,iz,ic), &
-                                              nsend, MPI_COMPLEX, root, tag, MPI_COMM_GRID, mpierr)
+                                              nsend, MPI_CMPLX, root, tag, MPI_COMM_GRID, mpierr)
                               endif
                             else
                               if (ltrans) then
                                 call MPI_SEND(sendbuf(iy,ixa:ixe:ixs,iz), &
-                                              nsend, MPI_REAL, root, tag, MPI_COMM_GRID, mpierr)
+                                              nsend, MPI_FLOAT, root, tag, MPI_COMM_GRID, mpierr)
                               else
                                 call MPI_SEND(sendbuf(ixa:ixe:ixs,iy,iz), &
-                                              nsend, MPI_REAL, root, tag, MPI_COMM_GRID, mpierr)
+                                              nsend, MPI_FLOAT, root, tag, MPI_COMM_GRID, mpierr)
                               endif
                             endif
 !
@@ -9909,7 +9911,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       call MPI_OP_CREATE( merge_1d, .false., merge, mpierr )
-      call MPI_REDUCE(vector, recvbuf, nk, MPI_REAL, merge, root, mpiprocs, mpierr)
+      call MPI_REDUCE(vector, recvbuf, nk, MPI_FLOAT, merge, root, mpiprocs, mpierr)
       vector = recvbuf
 !
     endsubroutine mpimerge_1d
@@ -10393,7 +10395,7 @@ endif
       integer :: nlocal
       integer, optional :: comm
 
-      call MPI_SCATTERV(src,counts,dspls,MPI_REAL,dest,nlocal,MPI_REAL, &
+      call MPI_SCATTERV(src,counts,dspls,MPI_FLOAT,dest,nlocal,MPI_FLOAT, &
                         root,ioptest(comm,MPI_COMM_PENCIL),mpierr)
 
     endsubroutine mpiscatterv_real_plain
@@ -10423,7 +10425,7 @@ endif
       if (lerr) then
         return
       else
-        call MPI_SCATTERV(src,counts,dspls,MPI_REAL,dest,nlocal,MPI_REAL,root,MPI_COMM_PENCIL,mpierr)
+        call MPI_SCATTERV(src,counts,dspls,MPI_FLOAT,dest,nlocal,MPI_FLOAT,root,MPI_COMM_PENCIL,mpierr)
       endif
 
     endfunction mpiscatterv_real

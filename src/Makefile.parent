@@ -130,11 +130,6 @@ Makefile_inc:
 	    echo 'FFLAGS_GENERAL=$$(FFLAGS_DOUBLE)' >> src/Makefile.inc; \
 	    echo 'CFLAGS_GENERAL=$$(CFLAGS_DOUBLE)' >> src/Makefile.inc; \
 	    echo 'PREC_EXT=_double' >> src/Makefile.inc; \
-	    case '$(MPICOMM)' in \
-	    mpicomm) \
-	        echo 'MPICOMM=mpicomm_double' >> src/Makefile.inc; \
-	        ;; \
-	    esac; \
 	    ;; \
 	*) \
 	    echo "What is REAL_PRECISION=$(REAL_PRECISION) supposed to mean?"; \
