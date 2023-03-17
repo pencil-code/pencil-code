@@ -48,6 +48,7 @@ module Special
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., phi_inhom=.true.
+  logical :: loverride_ee_prev=.false.
   logical, pointer :: loverride_ee
   character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
@@ -485,7 +486,15 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       if (lmagnetic) call get_shared_variable('loverride_ee',loverride_ee)
-print*,'AXEL9: loverride_ee=',loverride_ee
+!
+!  Annoucement that we switched:
+!
+      if (lroot) then
+        if (loverride_ee.neqv.loverride_ee_prev) then
+          print*,'loverride_ee has CHANGED: now loverride_ee=',loverride_ee
+          loverride_ee_prev=loverride_ee
+        endif
+      endif
 !
       call keep_compiler_quiet(f)
 !
