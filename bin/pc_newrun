@@ -132,6 +132,8 @@ echo "Use *.in files from:" `pwd`; ls -l *.in
 cp *.in $targetdir
 [ -f k.dat ] && cp k.dat $targetdir
 [ -f k_double.dat ] && cp k_double.dat $targetdir
+[ -f higgsless.dat ] && cp higgsless.dat $targetdir
+[ -f r_vs_m13.dat ] && cp r_vs_m13.dat $targetdir
 [ -f kvect.dat ] && cp kvect.dat $targetdir
 [ -f chemistry.dat ] && cp chemistry.dat $targetdir
 [ -f chemistry_m.dat ] && cp chemistry_m.dat $targetdir
