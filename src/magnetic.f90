@@ -7009,16 +7009,16 @@ module Magnetic
         if (lroot.and.ldiagnos) call save_name(eta_tdep,idiag_eta_tdep)
       endif
 !
-!  Decide whether 
+!  Decide whether or not we want to override the use of the displacement current.
 !
       if (loverride_ee_decide) then
         if (eta_tdep<eta_tdep_loverride_ee) then
           loverride_ee=.true.
-          call put_shared_variable('loverride_ee', loverride_ee, caller='magnetic_after_boundary')
         else
           loverride_ee=.false.
         endif
       endif
+      call put_shared_variable('loverride_ee', loverride_ee, caller='magnetic_after_boundary')
 !
 !  Output kx_aa for calculating k_effective.
 !
