@@ -7395,7 +7395,7 @@ nameloop: do
           allocate(temp(sz(1),sz(2),sz(3),sz(4)))
           call mpiallreduce_sum(arrm,temp,sz,idir=idir)
 !
-          !!call MPI_BCAST(temp, product(sz), MPI_FLOAT, iprocx+nprocx*ipy, &
+          !!call MPI_BCAST(temp, product(sz), mpi_precision, iprocx+nprocx*ipy, &
           !!mpicomm(idir),mpierr)
           arrm=temp
 !

@@ -25,7 +25,7 @@ module Io
   use Cdata
   use Cparam, only: fnlen, max_int
   use Messages, only: fatal_error, fatal_error_local, fatal_error_local_collect, svn_id, warning
-  use Mpicomm, only: MPI_FLOAT
+  use Mpicomm, only: mpi_precision
 !
   implicit none
 !
@@ -378,14 +378,14 @@ module Io
 !
 ! Create 'local_type' to be the local data portion that is being saved.
 !
-      call MPI_TYPE_CREATE_SUBARRAY (io_dims, local_size, subsize, local_start, order, MPI_FLOAT, local_type, mpi_err)
+      call MPI_TYPE_CREATE_SUBARRAY (io_dims, local_size, subsize, local_start, order, mpi_precision, local_type, mpi_err)
       call check_success ('output', 'create local subarray', file)
       call MPI_TYPE_COMMIT (local_type, mpi_err)
       call check_success ('output', 'commit local type', file)
 !
 ! Create 'global_type' to indicate the local data portion in the global file.
 !
-      call MPI_TYPE_CREATE_SUBARRAY (io_dims, global_size, subsize, global_start, order, MPI_FLOAT, global_type, mpi_err)
+      call MPI_TYPE_CREATE_SUBARRAY (io_dims, global_size, subsize, global_start, order, mpi_precision, global_type, mpi_err)
       call check_success ('output', 'create global subarray', file)
       call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('output', 'commit global type', file)
@@ -402,7 +402,7 @@ module Io
 !
 ! Setting file view and write raw binary data, ie. 'native'.
 !
-      call MPI_FILE_SET_VIEW (handle, displacement, MPI_FLOAT, global_type, 'native', io_info, mpi_err)
+      call MPI_FILE_SET_VIEW (handle, displacement, mpi_precision, global_type, 'native', io_info, mpi_err)
       call check_success ('output', 'create view', file)
 !
       if (lwrite_2D) then
@@ -532,7 +532,7 @@ module Io
         tread = time
         step: do while (tread >= time .and. disp > 0_MPI_OFFSET_KIND)
           disp = disp - dsize
-          call MPI_FILE_READ_AT(handle, disp, tread, 1, MPI_FLOAT, status, mpi_err)
+          call MPI_FILE_READ_AT(handle, disp, tread, 1, mpi_precision, status, mpi_err)
           if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to read time")
         enddo step
         if (tread < time) disp = disp + dsize
@@ -557,7 +557,7 @@ module Io
       wtime: if (lroot) then
         call MPI_FILE_SEEK(handle, 0_MPI_OFFSET_KIND, MPI_SEEK_END, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to move handle")
-        call MPI_FILE_WRITE(handle, time, 1, MPI_FLOAT, status, mpi_err)
+        call MPI_FILE_WRITE(handle, time, 1, mpi_precision, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
       endif wtime
       call fatal_error_local_collect()
@@ -565,13 +565,13 @@ module Io
 !
 !  Decompose the write by processes.
 !
-      call MPI_TYPE_CREATE_SUBARRAY(2, asizes, asubs, astarts, order, MPI_FLOAT, dtype, mpi_err)
+      call MPI_TYPE_CREATE_SUBARRAY(2, asizes, asubs, astarts, order, mpi_precision, dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to create subarray")
 !
       call MPI_TYPE_COMMIT(dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to commit data type")
 !
-      call MPI_FILE_SET_VIEW(handle, disp, MPI_FLOAT, dtype, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, disp, mpi_precision, dtype, "native", io_info, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to set local view")
 !
 !  Write the averages.
@@ -579,9 +579,9 @@ module Io
       n = merge(product(asubs), 0, lwrite)
       comp: do i = 1, navg
         if (label == "z") then
-          call MPI_FILE_WRITE_ALL(handle, avgdata(i,:,:), n, MPI_FLOAT, status, mpi_err)
+          call MPI_FILE_WRITE_ALL(handle, avgdata(i,:,:), n, mpi_precision, status, mpi_err)
         else
-          call MPI_FILE_WRITE_ALL(handle, avgdata(:,:,i), n, MPI_FLOAT, status, mpi_err)
+          call MPI_FILE_WRITE_ALL(handle, avgdata(:,:,i), n, mpi_precision, status, mpi_err)
         endif
         if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to write average")
       enddo comp
@@ -649,11 +649,11 @@ module Io
       enddo
       starts = starts * subsizes
 !
-      call MPI_TYPE_CREATE_SUBARRAY(2, sizes, subsizes, starts, order, MPI_FLOAT, dtype, mpi_err)
+      call MPI_TYPE_CREATE_SUBARRAY(2, sizes, subsizes, starts, order, mpi_precision, dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create subarray type")
 !
       dsize = int(product(sizes), KIND=MPI_OFFSET_KIND) * size_of_real
-      call MPI_TYPE_CREATE_STRUCT(2, (/ 1, nadd /), (/ 0_MPI_OFFSET_KIND, dsize /), (/ dtype, MPI_FLOAT /), dtype, mpi_err)
+      call MPI_TYPE_CREATE_STRUCT(2, (/ 1, nadd /), (/ 0_MPI_OFFSET_KIND, dsize /), (/ dtype, mpi_precision /), dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create struct type")
       dsize = dsize + int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
 !
@@ -679,7 +679,7 @@ module Io
         tcut = dvid * real(nint(time / dvid))
         offset = fsize - int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
         bscan: do while (offset > 0_MPI_OFFSET_KIND)
-          call MPI_FILE_READ_AT(handle, offset, tprev, 1, MPI_FLOAT, status, mpi_err)
+          call MPI_FILE_READ_AT(handle, offset, tprev, 1, mpi_precision, status, mpi_err)
           if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot read time")
           if (tprev < tcut) exit
           offset = offset - dsize
@@ -705,13 +705,13 @@ module Io
       call MPI_TYPE_COMMIT(dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot commit data type")
 !
-      call MPI_FILE_SET_VIEW(handle, fsize, MPI_FLOAT, dtype, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, fsize, mpi_precision, dtype, "native", io_info, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot set local view")
 !
       if (lwrite) then
-        call MPI_FILE_WRITE_ALL(handle, data, product(subsizes), MPI_FLOAT, status, mpi_err)
+        call MPI_FILE_WRITE_ALL(handle, data, product(subsizes), mpi_precision, status, mpi_err)
       else
-        call MPI_FILE_WRITE_ALL(handle, huge(0.0), 0, MPI_FLOAT, status, mpi_err)
+        call MPI_FILE_WRITE_ALL(handle, huge(0.0), 0, mpi_precision, status, mpi_err)
       endif
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot write data")
 !
@@ -721,9 +721,9 @@ module Io
 !  Write time and slice position.
 !
       if (lwrite) then
-        call MPI_FILE_WRITE_ALL(handle, (/ time, pos /), nadd, MPI_FLOAT, status, mpi_err)
+        call MPI_FILE_WRITE_ALL(handle, (/ time, pos /), nadd, mpi_precision, status, mpi_err)
       else
-        call MPI_FILE_WRITE_ALL(handle, huge(0.0), 0, MPI_FLOAT, status, mpi_err)
+        call MPI_FILE_WRITE_ALL(handle, huge(0.0), 0, mpi_precision, status, mpi_err)
       endif
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot write additional data")
 !
@@ -803,17 +803,17 @@ module Io
 !  Write particle data.
 !
       call MPI_TYPE_CREATE_SUBARRAY(2, (/ npar_tot, mparray /), (/ nv1, mparray /), (/ ip0, 0 /), &
-                                    order, MPI_FLOAT, ftype, mpi_err)
+                                    order, mpi_precision, ftype, mpi_err)
       call check_success_local("output_part", "create MPI subarray")
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("output_part", "commit MPI data type")
 !
       offset = get_disp_to_par_real(npar_tot)
-      call MPI_FILE_SET_VIEW(handle, offset, MPI_FLOAT, ftype, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
       call check_success("output_part", "set global view of", fpath)
 !
-      call MPI_FILE_WRITE_ALL(handle, a(1:nv,:), nv * mparray, MPI_FLOAT, status, mpi_err)
+      call MPI_FILE_WRITE_ALL(handle, a(1:nv,:), nv * mparray, mpi_precision, status, mpi_err)
       call check_success("output_part", "write particle data at", fpath)
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
@@ -822,12 +822,12 @@ module Io
 !  Write additional data.
 !
       offset = offset + int(npar_tot * mparray, KIND=MPI_OFFSET_KIND) * size_of_real
-      call MPI_FILE_SET_VIEW(handle, offset, MPI_FLOAT, MPI_FLOAT, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
       call check_success("output_part", "set global view of", fpath)
       if (lroot) then
-        call MPI_FILE_WRITE_ALL(handle, real(t), 1, MPI_FLOAT, status, mpi_err)
+        call MPI_FILE_WRITE_ALL(handle, real(t), 1, mpi_precision, status, mpi_err)
       else
-        call MPI_FILE_WRITE_ALL(handle, huge(0.0), 0, MPI_FLOAT, status, mpi_err)
+        call MPI_FILE_WRITE_ALL(handle, huge(0.0), 0, mpi_precision, status, mpi_err)
       endif
       call check_success("output_part", "write additional data", fpath)
 !
@@ -936,14 +936,14 @@ module Io
 !
 ! Create 'local_type' to be the local data portion that is being saved.
 !
-      call MPI_TYPE_CREATE_SUBARRAY (io_dims, local_size, subsize, local_start, order, MPI_FLOAT, local_type, mpi_err)
+      call MPI_TYPE_CREATE_SUBARRAY (io_dims, local_size, subsize, local_start, order, mpi_precision, local_type, mpi_err)
       call check_success ('input', 'create local subarray', file)
       call MPI_TYPE_COMMIT (local_type, mpi_err)
       call check_success ('input', 'commit local subarray', file)
 !
 ! Create 'global_type' to indicate the local data portion in the global file.
 !
-      call MPI_TYPE_CREATE_SUBARRAY (io_dims, global_size, subsize, global_start, order, MPI_FLOAT, global_type, mpi_err)
+      call MPI_TYPE_CREATE_SUBARRAY (io_dims, global_size, subsize, global_start, order, mpi_precision, global_type, mpi_err)
       call check_success ('input', 'create global subarray', file)
       call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('input', 'commit global subarray', file)
@@ -953,7 +953,7 @@ module Io
 !
 ! Setting file view and read raw binary data, ie. 'native'.
 !
-      call MPI_FILE_SET_VIEW (handle, displacement, MPI_FLOAT, global_type, 'native', io_info, mpi_err)
+      call MPI_FILE_SET_VIEW (handle, displacement, mpi_precision, global_type, 'native', io_info, mpi_err)
       call check_success ('input', 'create view', file)
 !
       if (lwrite_2D) then
@@ -1103,7 +1103,7 @@ module Io
 !  Identify local particles.
 !
       offset = get_disp_to_par_real(npar_tot)
-      call MPI_FILE_SET_VIEW(handle, offset, MPI_FLOAT, MPI_FLOAT, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
 !
       allocate(lpar_loc(npar_tot), stat=mpi_err)
@@ -1112,21 +1112,21 @@ module Io
 !
       inx: if (lactive_dimension(1)) then
         call MPI_FILE_READ_AT_ALL(handle, (ixp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
-                                  rbuf, npar_tot, MPI_FLOAT, status, mpi_err)
+                                  rbuf, npar_tot, mpi_precision, status, mpi_err)
         call check_success("input_part", "read xp of", fpath)
         lpar_loc = lpar_loc .and. procx_bounds(ipx) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procx_bounds(ipx+1)
       endif inx
 !
       iny: if (lactive_dimension(2)) then
         call MPI_FILE_READ_AT_ALL(handle, (iyp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
-                                  rbuf, npar_tot, MPI_FLOAT, status, mpi_err)
+                                  rbuf, npar_tot, mpi_precision, status, mpi_err)
         call check_success("input_part", "read yp of", fpath)
         lpar_loc = lpar_loc .and. procy_bounds(ipy) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procy_bounds(ipy+1)
       endif iny
 !
       inz: if (lactive_dimension(3)) then
         call MPI_FILE_READ_AT_ALL(handle, (izp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
-                                  rbuf, npar_tot, MPI_FLOAT, status, mpi_err)
+                                  rbuf, npar_tot, mpi_precision, status, mpi_err)
         call check_success("input_part", "read zp of", fpath)
         lpar_loc = lpar_loc .and. procz_bounds(ipz) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procz_bounds(ipz+1)
       endif inz
@@ -1162,7 +1162,7 @@ module Io
 !
 !  Decompose the real data domain and read.
 !
-      call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, MPI_FLOAT, ftype1, mpi_err)
+      call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, mpi_precision, ftype1, mpi_err)
       call check_success_local("input_part", "create MPI data type")
 !
       call MPI_TYPE_CREATE_RESIZED(ftype1, 0_MPI_OFFSET_KIND, int(npar_tot, KIND=MPI_OFFSET_KIND) * size_of_real, ftype, mpi_err)
@@ -1171,10 +1171,10 @@ module Io
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("input_part", "commit MPI data type")
 !
-      call MPI_FILE_SET_VIEW(handle, offset, MPI_FLOAT, ftype, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
 !
-      call MPI_FILE_READ_ALL(handle, ap(1:nv,1:mparray), nv * mparray, MPI_FLOAT, status, mpi_err)
+      call MPI_FILE_READ_ALL(handle, ap(1:nv,1:mparray), nv * mparray, mpi_precision, status, mpi_err)
       call check_success("input_part", "read particle data", fpath)
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
@@ -2126,13 +2126,13 @@ module Io
 !
       wproc: if (lroot) then
 !
-        call MPI_FILE_WRITE(handle, procx_bounds, nprocx + 1, MPI_FLOAT, status, mpi_err)
+        call MPI_FILE_WRITE(handle, procx_bounds, nprocx + 1, mpi_precision, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds", "could not write procx_bounds")
 !
-        call MPI_FILE_WRITE(handle, procy_bounds, nprocy + 1, MPI_FLOAT, status, mpi_err)
+        call MPI_FILE_WRITE(handle, procy_bounds, nprocy + 1, mpi_precision, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds", "could not write procy_bounds")
 !
-        call MPI_FILE_WRITE(handle, procz_bounds, nprocz + 1, MPI_FLOAT, status, mpi_err)
+        call MPI_FILE_WRITE(handle, procz_bounds, nprocz + 1, mpi_precision, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds", "could not write procz_bounds")
 !
       endif wproc
@@ -2159,18 +2159,18 @@ module Io
       call MPI_FILE_OPEN(MPI_COMM_WORLD, trim(file), MPI_MODE_RDONLY, io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not open file " // trim(file))
 !
-      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, MPI_FLOAT, MPI_FLOAT, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, mpi_precision, mpi_precision, "native", io_info, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not set view")
 !
 ! Read proc[xyz]_bounds.
 !
-      call MPI_FILE_READ_ALL(handle, procx_bounds, nprocx + 1, MPI_FLOAT, status, mpi_err)
+      call MPI_FILE_READ_ALL(handle, procx_bounds, nprocx + 1, mpi_precision, status, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not read procx_bounds")
 !
-      call MPI_FILE_READ_ALL(handle, procy_bounds, nprocy + 1, MPI_FLOAT, status, mpi_err)
+      call MPI_FILE_READ_ALL(handle, procy_bounds, nprocy + 1, mpi_precision, status, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not read procy_bounds")
 !
-      call MPI_FILE_READ_ALL(handle, procz_bounds, nprocz + 1, MPI_FLOAT, status, mpi_err)
+      call MPI_FILE_READ_ALL(handle, procz_bounds, nprocz + 1, mpi_precision, status, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not read procz_bounds")
 !
 ! Close file.

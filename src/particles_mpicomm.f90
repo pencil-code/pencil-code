@@ -781,9 +781,9 @@ module Particles_mpicomm
       call MPI_WAIT(irecv_rq_fromlow,irecv_stat_fl,mpierr)
       call MPI_WAIT(isend_rq_toupp,isend_stat_tu,mpierr)
 !
-      call MPI_IRECV(fp_buffer_in,mparray*nslab,MPI_FLOAT, &
+      call MPI_IRECV(fp_buffer_in,mparray*nslab,mpi_precision, &
            from_neigh,toup,comm,irecv_rq_fromlow,mpierr)
-      call MPI_ISEND(fp_buffer_out,mparray*nslab,MPI_FLOAT, &
+      call MPI_ISEND(fp_buffer_out,mparray*nslab,mpi_precision, &
            to_neigh,toup,comm,isend_rq_toupp,mpierr)
       call MPI_WAIT(irecv_rq_fromlow,irecv_stat_fl,mpierr)
       call MPI_WAIT(isend_rq_toupp,isend_stat_tu,mpierr)

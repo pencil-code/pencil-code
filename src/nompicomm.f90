@@ -41,7 +41,7 @@ module Mpicomm
       if (ncpus>1 .or. nprocx>1 .or. nprocy>1 .or. nprocz>1) &
         call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus>=2 or nproc[xyz]>=2')
 !
-      MPI_FLOAT = -1; MPI_CMPLX=-1
+      mpi_precision = -1; mpi_precision_complex=-1
 !
       lmpicomm = .false.
 

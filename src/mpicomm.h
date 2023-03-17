@@ -75,7 +75,7 @@
 ! Foreign application routines.
   public :: initialize_foreign_comm, get_foreign_snap_initiate, get_foreign_snap_finalize, update_foreign_data
 ! Variables
-  public :: ipx, ipy, ipz, lroot, iproc, MPI_FLOAT, MPI_CMPLX, nprocs
+  public :: ipx, ipy, ipz, lroot, iproc, mpi_precision, mpi_precision_complex, nprocs
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
   public :: llast_proc_x, llast_proc_y, llast_proc_z, llast_proc_xy, llast_proc_yz, llast_proc_xz, llast_proc_xyz
   public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, &
@@ -422,4 +422,4 @@
 
   character(LEN=4), public :: cyinyang=' '
 
-  integer :: MPI_FLOAT, MPI_CMPLX
+  integer :: mpi_precision, mpi_precision_complex
