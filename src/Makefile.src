@@ -2629,8 +2629,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS=-O3 #(giuseppe)
 #CFLAGS=-DFUNDERSC=1 #(giuseppe)
 ##
-
-
 ##
 ## SunOS:
 ## Solaris
@@ -3160,9 +3158,6 @@ file_io_common.inc:  Makefile.local $(FILE_IO).f90 file_io_common.f90
 #
 energy_common.inc:  Makefile.local $(ENERGY).f90
 	scripts/mkdummyinc -d noenergy.f90 -s $(ENERGY).f90 -o energy_common.inc
-#
-ghostfold_mpicomm_double.f90: ghostfold_mpicomm.f90
-	ln -s ghostfold_mpicomm.f90 ghostfold_mpicomm_double.f90
 #
 MAIN_EXECUTABLES=start.x run.x
 HELPER_EXECS_MIN=combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
