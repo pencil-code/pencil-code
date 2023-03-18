@@ -322,6 +322,12 @@ sub run_tests_on {
         tag_stable_on_success($result,$host) if ($tag_stable);
     }
     else {
+        # Output last fully successful auto-test
+        my $last = "LAST_SUCCESS";
+        if ($log_dir) { $last = $log_dir."/".$last; }
+        print "\nLast fully successful auto-test was:\n";
+        system ('cat "'.$last.'"');
+        print "\n----------------------------------------------------------------------\n";
         # Some tests had errors => send emails
         notify_on_error($result,$shost,$update_error);
     }
