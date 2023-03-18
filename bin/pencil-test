@@ -484,7 +484,7 @@ sub tag_stable_on_success {
 
     return if ($result =~ /^Failed ([0-9]+) test/m);
 
-    my $cmd;
+    my $cmd = "";
     if (-d "$pencil_home/.svn") {
       # SVN tagging
       $cmd = "svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
@@ -495,7 +495,7 @@ sub tag_stable_on_success {
       return;
     }
     else {
-      warn "Stable tagging not possible without SVN or!\n";
+      warn "Stable tagging not possible without SVN or GIT!\n";
       return;
     }
 
