@@ -443,8 +443,20 @@ sub tag_stable_on_success {
 
     return if ($result =~ /^Failed ([0-9]+) test/m);
 
-    # SVN tagging
-    my $cmd = "svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
+    my $cmd;
+    if (-d "$pencil_home/.svn") {
+      # SVN tagging
+      $cmd = "svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
+    }
+    elsif (-e "$pencil_home/.git") {
+      # GIT tagging
+      warn ("Stable tagging not implemented yet for GIT!")
+      return;
+    }
+    else {
+      warn ("Stable tagging not possible without SVN or GIT!")
+      return;
+    }
 
     # execute on remote host, if requested
     if ($host) { $cmd = "ssh -x -n $host 'cd \$PENCIL_HOME;".$cmd."'"; }
