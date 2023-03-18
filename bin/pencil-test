@@ -325,7 +325,7 @@ sub run_tests_on {
         # Output last fully successful auto-test
         my $last = "LAST_SUCCESS";
         if ($log_dir) { $last = $log_dir."/".$last; }
-        print "\n----------------------------------------------------------------------\n\n";
+        print "----------------------------------------------------------------------\n\n";
         print "Last fully successful auto-test was:\n";
         system ('cat "'.$last.'"');
         print scalar localtime `stat -L --format="%Y" "$last"`;
