@@ -443,7 +443,7 @@ sub usage {
 sub mark_all_succeeded {
 ## Save revision of last fully successful auto-test
     my $host   = (shift || '');
-    my $date = strftime ("%Y-%m-%d", localtime);
+    my $date = strftime ("%Y-%m-%d %H:%M:%S", localtime);
 
     my $result;
     my $revision = "";
