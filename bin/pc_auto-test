@@ -416,8 +416,7 @@ my $logfile     = (              $opts{'logfile'}         || ''   );
 my $infofile    = ($opts{'i'} || $opts{'infofile'}        || ''   );
 my $time        = ($opts{'t'} || $opts{'time'}            || 0    );
 my $summarize_t = ($opts{'T'} || $opts{'summarize-times'} || 0    );
-my $pencil_home = ($opts{'D'} || $opts{'pencil-home'}     || "$ENV{PENCIL_HOME}"
-                                                             || '');
+my $pencil_home = ($opts{'D'} || $opts{'pencil-home'}     || $ENV{PENCIL_HOME});
 my $niceval     = ($opts{'N'} || $opts{'nice'}            || 0    );
 my $makejobs    = ($opts{'j'} || $opts{'jobs'}            || 0    );
 my $mkdatadir   = ($opts{'d'} || $opts{'datadir'}         || 0    );
@@ -443,6 +442,8 @@ my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'}
 my $fast        = (              $opts{'fast'}            || ''   );
 my $log_dir     = (              $opts{'log-dir'}         || ''   );
 my $previous_dir = (             $opts{'previous-dir'}    || ''   );
+
+if (!$pencil_home) { die "ERROR: PENCIL_HOME unknown, please use -D or environment variable!\n"; }
 
 my %interpreter_map;
 if (defined($script_tests)) {
@@ -539,11 +540,9 @@ unless ($nolock or $list_only) {
 my $cwd = `pwd`; chomp($cwd);
 
 # pc_update_autotest
-system("$ENV{PENCIL_HOME}/bin/pc_update_autotest.sh &");
+system("$pencil_home/bin/pc_update_autotest.sh &");
 
 # Make sure we are in the top directory and have the right PATH
-die "Need to set environment variable PENCIL_HOME\n"
-    unless (defined($pencil_home));
 my $topdir = "$pencil_home";
 chdir $topdir;
 $ENV{PATH} .= ":$pencil_home/bin";
