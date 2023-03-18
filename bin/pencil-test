@@ -445,6 +445,8 @@ sub mark_all_succeeded {
     my $host   = (shift || '');
     my $date = strftime ("%Y-%m-%d %H:%M:%S", localtime);
 
+    if ($host) { die "Not yet implemented to determine revision number of remote host!\n"; }
+
     my $result;
     my $revision = "";
     my $hash = "";
