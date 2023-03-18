@@ -1618,7 +1618,7 @@ sub quote {
 }
 # ---------------------------------------------------------------------- #
 sub compactify {
-# Remove uninteresting parts from a rund directory's file name
+# Remove uninteresting parts from a run directory
     my ($text) = @_;
     $text =~ s{/+\\\.$}{};      # drop trailing '/.' from path names
     $text =~ s|.*$ENV{PENCIL_HOME}/||;
