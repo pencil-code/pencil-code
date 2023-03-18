@@ -468,6 +468,10 @@ sub mark_all_succeeded {
     }
     chomp ($revision, $hash);
 
+    # Output information on last fully successful auto-test
+    print "\nSVN: ".$revision."\n";
+    print "GIT: ".$hash."\n\n";
+
     # Save information on last fully successful auto-test
     my $last = "LAST_SUCCESS";
     if ($log_dir) { $last = $log_dir."/".$last; }
