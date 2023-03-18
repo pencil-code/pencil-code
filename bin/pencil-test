@@ -466,6 +466,7 @@ sub mark_all_succeeded {
         warn "Marking of last fully successful auto-test not possible without SVN or GIT!\n";
         return;
     }
+    chomp ($revision, $hash);
 
     # Save information on last fully successful auto-test
     my $last = "LAST_SUCCESS";
