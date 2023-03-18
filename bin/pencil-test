@@ -450,11 +450,11 @@ sub tag_stable_on_success {
     }
     elsif (-e "$pencil_home/.git") {
       # GIT tagging
-      warn "Stable tagging not implemented yet for GIT!\n"
+      warn "Stable tagging not implemented yet for GIT!\n";
       return;
     }
     else {
-      warn "Stable tagging not possible without SVN or!\n"
+      warn "Stable tagging not possible without SVN or!\n";
       return;
     }
 
