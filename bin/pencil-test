@@ -445,7 +445,7 @@ sub mark_all_succeeded {
     my $host   = (shift || '');
     my $date = strftime ("%Y-%m-%d", localtime);
 
-    my ($result, $cmd);
+    my $result;
     my $revision = "";
     my $hash = "";
     if (-d "$pencil_home/.svn") {
@@ -461,19 +461,12 @@ sub mark_all_succeeded {
     }
     elsif (-e "$pencil_home/.git") {
       # GIT hash
-      warn "Saving of hash of last fully successful auto-test not implemented yet for GIT!\n";
-      return;
+      $hash = `git log -1 --format=format:"%H"`;
     }
     else {
       warn "Saving of hash of last fully successful auto-test not possible without SVN or GIT!\n";
       return;
     }
-
-    # execute on remote host, if requested
-    if ($host) { $cmd = "ssh -x -n $host 'cd \$PENCIL_HOME;".$cmd."'"; }
-
-    # execute tagging command
-    system ($cmd);
 }
 # ---------------------------------------------------------------------- #
 sub tag_stable_on_success {
