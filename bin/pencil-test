@@ -468,7 +468,9 @@ sub mark_all_succeeded {
     }
 
     # Save information on last fully successful auto-test
-    open (LAST,"> LAST_SUCCESS") or die "Error while writing LAST_SUCCESS file: $!\n";
+    my $last = "LAST_SUCCESS";
+    if ($log_dir) { $last = $log_dir."/".$last; }
+    open (LAST, "> $log_dir/LAST_SUCCESS") or die "Error while writing LAST_SUCCESS file: $!\n";
     print LAST "SVN: ".$revision."\n";
     print LAST "GIT: ".$hash."\n";
     close (LAST) or die "Error while closing LAST_SUCCESS file: $!\n"
