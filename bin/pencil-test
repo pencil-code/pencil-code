@@ -456,6 +456,7 @@ sub mark_all_succeeded {
       # GIT hash
       $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
       if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $hash = $1; }
+      if (!$hash) { $hash = "No network connection to github!"; }
     }
     elsif (-e "$pencil_home/.git") {
       # GIT hash
