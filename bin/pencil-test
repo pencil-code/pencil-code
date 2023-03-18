@@ -316,14 +316,14 @@ sub run_tests_on {
     }
 
     if ($result =~ /^(?:Test|All [0-9]+ tests) succeeded\./m) {
-      # All performed tests were successful
-      mark_all_succeeded($host);
-      # Create a stable tag, if requested
-      tag_stable_on_success($result,$host) if ($tag_stable);
+        # All performed tests were successful
+        mark_all_succeeded($host);
+        # Create a stable tag, if requested
+        tag_stable_on_success($result,$host) if ($tag_stable);
     }
     else {
-      # Some tests had errors => send emails
-      notify_on_error($result,$shost,$update_error);
+        # Some tests had errors => send emails
+        notify_on_error($result,$shost,$update_error);
     }
 
     $first = 0;
