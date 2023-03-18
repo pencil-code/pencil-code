@@ -372,7 +372,8 @@ GetOptions(\%opts,
                -N=s --nice=s
                     --no-pencil-check
                     --notify
-               -j=n --jobs=n
+                    --parallel
+               -j   --jobs=n
                -d   --datadir
                -s   --short
                -p=s --postproc=s
@@ -418,7 +419,8 @@ my $time        = ($opts{'t'} || $opts{'time'}            || 0    );
 my $summarize_t = ($opts{'T'} || $opts{'summarize-times'} || 0    );
 my $pencil_home = ($opts{'D'} || $opts{'pencil-home'}     || $ENV{PENCIL_HOME});
 my $niceval     = ($opts{'N'} || $opts{'nice'}            || 0    );
-my $makejobs    = ($opts{'j'} || $opts{'jobs'}            || 0    );
+my $parallel    = (              $opts{'parallel'}        || 0    );
+my $makejobs    = ($opts{'j'} || $opts{'jobs'}            || ''   );
 my $mkdatadir   = ($opts{'d'} || $opts{'datadir'}         || 0    );
 my $short       = ($opts{'s'} || $opts{'short'}           || 0    );
 my $file        = ($opts{'F'} || $opts{'file'}            || ''   );
@@ -437,8 +439,7 @@ my $nodelist    = (              $opts{'nodelist'}        || 0    );
 my $nosummary   = (              $opts{'no-summary'}      || 0    );
 my $suppress_check = (           $opts{'no-pencil-check'} || 0    );
 my $notify      = (              $opts{'notify'}          || ''   );
-my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'}
-                                                             || 0 );
+my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'} || 0 );
 my $fast        = (              $opts{'fast'}            || ''   );
 my $log_dir     = (              $opts{'log-dir'}         || ''   );
 my $previous_dir = (             $opts{'previous-dir'}    || ''   );
@@ -463,7 +464,7 @@ my @exit_status=('setting up directory',
 $list_only = 1 if ($list_all);
 
 my $makeopts  = '';
-#if ($makejobs) { $makeopts = "-j $makejobs"; }
+if ($parallel || $makejobs) { $makeopts = "-j $makejobs"; }
 
 my @pc_dump_config = qw/pc_dump_config/;
 my @pc_build = qw/pc_build/;
