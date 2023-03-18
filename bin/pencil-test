@@ -452,21 +452,17 @@ sub mark_all_succeeded {
     my $hash = "";
     if (-d "$pencil_home/.svn") {
       # SVN revision
+      $revision = `svn info --show-item revision`;
       $result = `svn log -l 1 --with-revprop git-commit --xml $pencil_home`;
-      if ($result =~ /revision\s*=\s*"(\d+)"/is) { $revision = $1; }
       if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $hash = $1; }
-      if (!$revision) {
-        $result = `svn info --xml $pencil_home`;
-        $result =~ s/^.*?<entry\s+(.*?)>.*$/$1/is;
-        if ($result =~ /revision\s*=\s*"(\d+)"/is) { $revision = $1; }
-      }
     }
     elsif (-e "$pencil_home/.git") {
       # GIT hash
       $hash = `git log -1 --format=format:"%H"`;
+      $revision = "please use SVN checkout!";
     }
     else {
-      warn "Saving of hash of last fully successful auto-test not possible without SVN or GIT!\n";
+      warn "Marking of last fully successful auto-test not possible without SVN or GIT!\n";
       return;
     }
 }
