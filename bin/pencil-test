@@ -443,7 +443,6 @@ sub usage {
 sub mark_all_succeeded {
 ## Save revision of last fully successful auto-test
     my $host   = (shift || '');
-    my $date = strftime ("%Y-%m-%d %H:%M:%S", localtime);
 
     if ($host) { die "Not yet implemented to determine revision number on remote host!\n"; }
 
@@ -467,6 +466,12 @@ sub mark_all_succeeded {
       warn "Marking of last fully successful auto-test not possible without SVN or GIT!\n";
       return;
     }
+
+    # Save information on last fully successful auto-test
+    open(OUT,"> LAST_SUCCESS") or die "Error while writing LAST_SUCCESS file: $!\n";
+    print OUT "SVN: ".$revision."\n";
+    print OUT "GIT: ".$hash."\n";
+    close(OUT) or die "Error while closing LAST_SUCCESS file: $!\n"
 }
 # ---------------------------------------------------------------------- #
 sub tag_stable_on_success {
