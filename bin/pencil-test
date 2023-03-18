@@ -444,7 +444,7 @@ sub mark_all_succeeded {
 ## Save revision of last fully successful auto-test
     my $host = (shift || '');
 
-    if ($host) { die "Not yet implemented to determine revision number on remote host:\n$host\n"; }
+    if (!$local) { die "Not yet implemented to determine revision number on remote host:\n$host\n"; }
 
     my $result;
     my $revision = "";
@@ -500,7 +500,7 @@ sub tag_stable_on_success {
     }
 
     # execute on remote host, if requested
-    if ($host) { $cmd = "ssh -x -n $host 'cd \$PENCIL_HOME;".$cmd."'"; }
+    if (!$local) { $cmd = "ssh -x -n $host 'cd \$PENCIL_HOME;".$cmd."'"; }
 
     # execute tagging command
     system ($cmd);
