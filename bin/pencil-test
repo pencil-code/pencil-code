@@ -315,13 +315,17 @@ sub run_tests_on {
         close TIMINGS;
     }
 
-    # Create a stable tag if auto-test was successful
-    tag_stable_on_success($result,$host) if ($tag_stable);
+    if ($result =~ /^(?:Test|All [0-9]+ tests) succeeded\./m) {
+      # All performed tests were successful
+      # Create a stable tag, if requested
+      tag_stable_on_success($result,$host) if ($tag_stable);
+    }
+    else {
+      # Some tests had errors => send emails
+      notify_on_error($result,$shost,$update_error);
+    }
 
-    # Send emails if necessary
-    notify_on_error($result,$shost,$update_error);
-
-   $first = 0;
+    $first = 0;
 }
 # ---------------------------------------------------------------------- #
 sub build_remote_cmd {
