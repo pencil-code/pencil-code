@@ -442,9 +442,9 @@ sub usage {
 # ---------------------------------------------------------------------- #
 sub mark_all_succeeded {
 ## Save revision of last fully successful auto-test
-    my $host   = (shift || '');
+    my $host = (shift || '');
 
-    if ($host) { die "Not yet implemented to determine revision number on remote host!\n"; }
+    if ($host) { die "Not yet implemented to determine revision number on remote host '$host'!\n"; }
 
     my $result;
     my $revision = "";
