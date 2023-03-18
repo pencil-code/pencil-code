@@ -317,7 +317,7 @@ sub run_tests_on {
 
     if ($result =~ /^(?:Test|All [0-9]+ tests) succeeded\./m) {
       # All performed tests were successful
-      mark_all_succeeded($result,$host);
+      mark_all_succeeded($host);
       # Create a stable tag, if requested
       tag_stable_on_success($result,$host) if ($tag_stable);
     }
