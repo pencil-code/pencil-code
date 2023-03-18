@@ -1621,7 +1621,7 @@ sub compactify {
 # Remove uninteresting parts from a run directory
     my ($text) = @_;
     $text =~ s{/+\\\.$}{};      # drop trailing '/.' from path names
-    $text =~ s|.*$ENV{PENCIL_HOME}/||;
+    $text =~ s|.*$pencil_home/||;
     $text =~ s{.*/pencil-(code|auto-test)/}{};
     return $text;
 }
@@ -1737,7 +1737,7 @@ sub write_to_file {
 # ---------------------------------------------------------------------- #
 sub git_version {
 # Return the current version of the code.
-    my $rev = `$ENV{PENCIL_HOME}/utils/pc_identify_revision --one-line`;
+    my $rev = `$pencil_home/utils/pc_identify_revision --one-line`;
     chomp $rev;
     return $rev;
 }
@@ -1813,7 +1813,7 @@ END {
             } elsif ($ntests > 1) {
                 print "All $ntests tests succeeded.\n";
                 # pc_update_validated
-                system("$ENV{PENCIL_HOME}/bin/pc_update_validated.sh &");
+                system("$pencil_home/bin/pc_update_validated.sh &");
             }
             elsif (($ntests < 1) && ! $failed) {
                 print "There was no test to run???\n";
