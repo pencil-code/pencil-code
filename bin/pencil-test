@@ -454,7 +454,7 @@ sub mark_all_succeeded {
       # SVN revision
       $revision = `svn info --show-item revision`;
       # GIT hash
-      $result = `svn log -l 1 --with-revprop git-commit --xml $pencil_home`;
+      $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
       if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $hash = $1; }
     }
     elsif (-e "$pencil_home/.git") {
