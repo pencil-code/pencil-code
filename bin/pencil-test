@@ -450,21 +450,21 @@ sub mark_all_succeeded {
     my $revision = "";
     my $hash = "";
     if (-d "$pencil_home/.svn") {
-      # SVN revision
-      $revision = `svn info --show-item revision`;
-      # GIT hash
-      $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
-      if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $hash = $1; }
-      if (!$hash) { $hash = "No network connection to github!"; }
+        # SVN revision
+        $revision = `svn info --show-item revision`;
+        # GIT hash
+        $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
+        if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $hash = $1; }
+        if (!$hash) { $hash = "No network connection to github!"; }
     }
     elsif (-e "$pencil_home/.git") {
-      # GIT hash
-      $hash = `git log -1 --format=format:"%H"`;
-      $revision = "please use SVN checkout!";
+        # GIT hash
+        $hash = `git log -1 --format=format:"%H"`;
+        $revision = "please use SVN checkout!";
     }
     else {
-      warn "Marking of last fully successful auto-test not possible without SVN or GIT!\n";
-      return;
+        warn "Marking of last fully successful auto-test not possible without SVN or GIT!\n";
+        return;
     }
 
     # Save information on last fully successful auto-test
@@ -484,17 +484,17 @@ sub tag_stable_on_success {
 
     my $cmd = "";
     if (-d "$pencil_home/.svn") {
-      # SVN tagging
-      $cmd = "svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
+        # SVN tagging
+        $cmd = "svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
     }
     elsif (-e "$pencil_home/.git") {
-      # GIT tagging
-      warn "Stable tagging not implemented yet for GIT!\n";
-      return;
+        # GIT tagging
+        warn "Stable tagging not implemented yet for GIT!\n";
+        return;
     }
     else {
-      warn "Stable tagging not possible without SVN or GIT!\n";
-      return;
+        warn "Stable tagging not possible without SVN or GIT!\n";
+        return;
     }
 
     # execute on remote host, if requested
@@ -569,7 +569,7 @@ sub notify_on_error {
 
     # Send mail
     foreach my $address (keys %sendmailto) {
-	send_mail($address,$mailer,$host,$nerrors,$blurb,$summary);  #,$main);
+        send_mail($address,$mailer,$host,$nerrors,$blurb,$summary);  #,$main);
     }
 }
 # ---------------------------------------------------------------------- #
