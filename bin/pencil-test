@@ -317,6 +317,7 @@ sub run_tests_on {
 
     if ($result =~ /^(?:Test|All [0-9]+ tests) succeeded\./m) {
       # All performed tests were successful
+      mark_all_succeeded($result,$host);
       # Create a stable tag, if requested
       tag_stable_on_success($result,$host) if ($tag_stable);
     }
@@ -437,6 +438,42 @@ sub usage {
         last;
     }
     $_;
+}
+# ---------------------------------------------------------------------- #
+sub mark_all_succeeded {
+## Save revision of last fully successful auto-test
+    my $host   = (shift || '');
+    my $date = strftime ("%Y-%m-%d", localtime);
+
+    my ($result, $cmd);
+    my $revision = "";
+    my $hash = "";
+    if (-d "$pencil_home/.svn") {
+      # SVN revision
+      $result = `svn log -l 1 --with-revprop git-commit --xml $pencil_home`;
+      if ($result =~ /revision\s*=\s*"(\d+)"/is) { $revision = $1; }
+      if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $hash = $1; }
+      if (!$revision) {
+        $result = `svn info --xml $pencil_home`;
+        $result =~ s/^.*?<entry\s+(.*?)>.*$/$1/is;
+        if ($result =~ /revision\s*=\s*"(\d+)"/is) { $revision = $1; }
+      }
+    }
+    elsif (-e "$pencil_home/.git") {
+      # GIT hash
+      warn "Saving of hash of last fully successful auto-test not implemented yet for GIT!\n";
+      return;
+    }
+    else {
+      warn "Saving of hash of last fully successful auto-test not possible without SVN or GIT!\n";
+      return;
+    }
+
+    # execute on remote host, if requested
+    if ($host) { $cmd = "ssh -x -n $host 'cd \$PENCIL_HOME;".$cmd."'"; }
+
+    # execute tagging command
+    system ($cmd);
 }
 # ---------------------------------------------------------------------- #
 sub tag_stable_on_success {
