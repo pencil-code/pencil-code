@@ -440,14 +440,17 @@ sub tag_stable_on_success {
     my $result = (shift || '');
     my $host   = (shift || '');
     my $date = strftime ("%Y-%m-%d", localtime);
-    my $svncmd;
 
     return if ($result =~ /^Failed ([0-9]+) test/m);
 
-    $svncmd=        "ssh -x -n $host 'cd \$PENCIL_HOME;";
-    $svncmd=$svncmd."svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
-    $svncmd=$svncmd."'";
-    system($svncmd);
+    # SVN tagging
+    my $cmd = "svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
+
+    # execute on remote host, if requested
+    if ($host) { $cmd = "ssh -x -n $host 'cd \$PENCIL_HOME;".$cmd."'"; }
+
+    # execute tagging command
+    system ($cmd);
 }
 # ---------------------------------------------------------------------- #
 sub notify_on_error {
