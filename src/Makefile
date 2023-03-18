@@ -2818,9 +2818,6 @@ initial_condition_dummies.inc:  Makefile.local noinitial_condition.f90 $(INITIAL
 file_io_common.inc:  Makefile.local $(FILE_IO).f90 file_io_common.f90
 	scripts/mkdummyinc -d file_io_common.f90 -s $(FILE_IO).f90 -o file_io_common.inc
 #
-ghostfold_mpicomm_double.f90: ghostfold_mpicomm.f90
-	ln -s ghostfold_mpicomm.f90 ghostfold_mpicomm_double.f90
-#
 MAIN_EXECUTABLES=start.x run.x
 HELPER_EXECUTABLES= \
 	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x \
