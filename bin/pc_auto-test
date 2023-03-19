@@ -292,6 +292,7 @@ Options:
        --no-pencil-check   \tSuppress pencil consistency check, irrespective
                            \tof &run_pars.lpencil_check
        --notify            \tTell us (audibly and visually) when test is done.
+       --parallel          \tAllow parallel compilation (passes -j to make)
   -j,  --jobs=<n>          \tPass through -j option to make
   -d,  --datadir           \tUse mkdir if data/ is needed, don't ln -s /tmp
   -s,  --short             \tPrint short directory names only
