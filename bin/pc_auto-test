@@ -796,7 +796,7 @@ sub get_log_link {
     elsif ($name eq 'compilation') { $name = 'build'; }
     else { return (''); }
 
-    return (' [<a href="'.$dir.'/'.$name.'.log">log</a>]');
+    return ('   [<a href="'.$dir.'/'.$name.'.log">log</a>]');
 }
 # ---------------------------------------------------------------------- #
 sub my_ok {
