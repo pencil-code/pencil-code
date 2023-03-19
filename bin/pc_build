@@ -38,12 +38,14 @@
 #                   environment variables, and 'host-ID' files.
 #   -I              Show all matching host IDs, in the order in which they
 #                   are tried, and exit.
+#   -j, --jobs=<N>  Use make with a maximum of N parallelization jobs.
+#       --parallel  Use make with unlimited parallelization.
 #   -D, --debug-config
 #                   Show the config files (existing or not) that would be
 #                   read, then exit
 #       --notify    Tell us (audibly and visually) when compilation is done.
 #       --fast      Shortcut for the option FFLAGS+='-O0'.
-#   -l, --last-config 
+#   -l, --last-config
 #                   Build with the same config files as before.
 #   -p, --previous-flags
 #                   Build with the same flags as the previous time.
@@ -125,6 +127,8 @@ GetOptions(\%opts,
                -f=s --config-files=s
                -H=s --host-id=s
                -i
+               -j=n --jobs=n
+                    --parallel
                -I
                -D   --debug-config
                     --notify
@@ -153,6 +157,8 @@ my $host_id      = ($opts{'H'} || $opts{'host-id'}        || undef);
 my $debug_config = ($opts{'D'} || $opts{'debug-config'}   || '');
 my $show_system_host_id = ($opts{'i'}                     || '');
 my $show_host_ids = ($opts{'I'}                           || '');
+my $jobs         = ($opts{'j'} || $opts{'jobs'}           || undef);
+my $parallel     = (              $opts{'parallel'}       || 0);
 my $notify       = (              $opts{'notify'}         || '');
 my $fast         = (              $opts{'fast'}           || '');
 my $last_config  = ($opts{'l'} || $opts{'last-config'}    || '');
@@ -277,11 +283,13 @@ map { s/^\s*MAKE_VAR\d*\s*=\s*// } @make_args;
 if ($serial) {
     my $ind;
     for( $ind = 0; $ind < scalar @make_args; $ind +=1 ) {
-        if ($make_args[$ind] =~ ' *-j *'){
+        if ($make_args[$ind] =~ ' *(?:-j|--jobs=\d*) *'){
              splice(@make_args, $ind, 1); last;
         }
     }
 }
+if ($parallel) { push @make_args, "-j"; }
+if (defined ($jobs)) { push @make_args, "--jobs=".$jobs; }
 
 if ($target eq "ALL") { $target = 'fast'; }
 
