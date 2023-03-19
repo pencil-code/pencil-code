@@ -374,7 +374,7 @@ GetOptions(\%opts,
                     --no-pencil-check
                     --notify
                     --parallel
-               -j   --jobs=n
+               -j=n --jobs=n
                -d   --datadir
                -s   --short
                -p=s --postproc=s
@@ -465,7 +465,8 @@ my @exit_status=('setting up directory',
 $list_only = 1 if ($list_all);
 
 my $makeopts  = '';
-if ($parallel || $makejobs) { $makeopts = "-j $makejobs"; }
+if ($makejobs) { $makeopts = "--jobs=$makejobs"; }
+if ($parallel) { $makeopts = "--parallel"; }
 
 my @pc_dump_config = qw/pc_dump_config/;
 my @pc_build = qw/pc_build/;
@@ -635,7 +636,8 @@ if (@ARGV) {
         my @nodes=split /,/ , $nodelist;
         my $passthru_opts = '';
         if ($clean)    { $passthru_opts .= '-C '; }
-        if ($makejobs) { $passthru_opts .= " -j $makejobs"; }
+        if ($makejobs) { $passthru_opts .= " --jobs=$makejobs"; }
+        if ($parallel) { $passthru_opts .= " --parallel"; }
         if ($opts{'c'} || $opts{'compile-only'}) { $passthru_opts .= ' -c'; }
         do_tests_in_parallel(\@testdirs, \@nodes, $passthru_opts);
     } else {
