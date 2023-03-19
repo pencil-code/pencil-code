@@ -1761,13 +1761,18 @@ sub mark_failed {
     if (!-e $last) { write_revision ($last); }
 
     my $last_succeeded = get_path ($dir, "LAST_SUCCEEDED");
-    print "The last succeeding run was:\n";
-    system ('cat "'.$last_succeeded.'"');
-    print scalar localtime `stat -L --format="%Y" "$last_succeeded"`;
-    print "\nThis auto-test fails since:\n";
-    system ('cat "'.$last.'"');
-    print scalar localtime `stat -L --format="%Y" "$last"`;
-    print "\n";
+    if (-e $last_succeeded) {
+        print "The last succeeding run was:\n";
+        system ('cat "'.$last_succeeded.'"');
+        print scalar localtime `stat -L --format="%Y" "$last_succeeded"`;
+        print "\n";
+    }
+    if (-e $last) {
+        print "This auto-test fails since:\n";
+        system ('cat "'.$last.'"');
+        print scalar localtime `stat -L --format="%Y" "$last"`;
+        print "\n";
+    }
 }
 # ---------------------------------------------------------------------- #
 sub mark_success {
