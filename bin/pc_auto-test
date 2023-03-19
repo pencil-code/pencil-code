@@ -842,11 +842,13 @@ sub my_ok {
     }
     if ($arg1 eq $arg2) {
         print " ok      $timestr$log_link\n" unless ($quiet);
+        if ($phase eq 'results') { mark_success ($dir); }
     } else {
         print " not ok: $timestr$log_link\n$mesg\n";
         $test_status = 1;
         # report only first failure:
         $failed{$dir} = $phase unless defined($failed{$dir});
+        mark_failed ($dir);
     }
 
     # Record time usage in an easily greppable format
@@ -1739,9 +1741,39 @@ sub write_to_file {
     }
 }
 # ---------------------------------------------------------------------- #
-sub mark_success {
-# Save revision of last success
+sub get_path {
+# Generate path for marking files
+    my $dir = shift;
+    my $file = shift;
 
+    my $path = "";
+    if ($dir) { $path = $dir."/".$path; }
+    if ($log_dir) { $path = $log_dir."/".$path; }
+    return $path.$file;
+}
+# ---------------------------------------------------------------------- #
+sub mark_failed {
+# Save revision of first failed auto-test
+    my $dir = shift;
+
+    my $last = get_path ($dir, "FIRST_FAILED");
+    # Mark failure only if not previously failed!
+    if (!-e $last) { write_revision ($last); }
+}
+# ---------------------------------------------------------------------- #
+sub mark_success {
+# Save revision of last succeeded auto-test
+    my $dir = shift;
+
+    unlink get_path ($dir, "FIRST_FAILED");
+    write_revision (get_path ($dir, "LAST_SUCCEEDED"));
+}
+# ---------------------------------------------------------------------- #
+sub write_revision {
+# Write revision information of auto-test
+    my $file = shift;
+
+    # Get current SVN revision and GIT hash
     my $result;
     my $revision = "";
     my $hash = "";
@@ -1759,18 +1791,16 @@ sub mark_success {
         $revision = "please use SVN checkout!";
     }
     else {
-        warn "Marking of last fully successful auto-test not possible without SVN or GIT!\n";
+        warn "Marking of succeeded or failed auto-tests not possible without SVN or GIT!\n";
         return;
     }
     chomp ($revision, $hash);
 
-    # Save information on last fully successful auto-test
-    my $last = "LAST_SUCCEEDED";
-    if ($log_dir) { $last = $log_dir."/".$last; }
-    open (LAST, ">$last") or die "Error while writing '$last' file: $!\n";
+    # Write revision information to file
+    open (LAST, ">$file") or die "Error while writing '$file' file: $!\n";
     print LAST "SVN: ".$revision."\n";
     print LAST "GIT: ".$hash."\n";
-    close (LAST) or die "Error while closing '$last' file: $!\n"
+    close (LAST) or die "Error while closing '$file' file: $!\n"
 }
 # ---------------------------------------------------------------------- #
 sub git_version {
