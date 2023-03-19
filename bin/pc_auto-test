@@ -789,7 +789,12 @@ sub get_log_link {
     my $dir = shift;
     my $name = shift;
 
-    return ('<a href="'.$dir.'/'.$name.'.log" target="_blank">'.$name.'.log</a>');
+    if ($name eq 'running') { $name = 'run'; }
+    elsif ($name eq 'starting') { $name = 'start'; }
+    elsif ($name eq 'compilation') { $name = 'build'; }
+    else { return (''); }
+
+    return (' [<a href="'.$dir.'/'.$name.'.log">log</a>]');
 }
 # ---------------------------------------------------------------------- #
 sub my_ok {
@@ -816,32 +821,27 @@ sub my_ok {
         $timestr = '';
     }
 
+    $dir =~ s|^.*/samples/||s;
+
+    my $log_link = '';
+    if ($log_dir) {
+        if ($phase eq 'compilation') {
+            open (FH, '>', $log_dir.'/'.$dir.'/build.log') or die "\n".$!."\n on '".$log_dir."/".$dir."/build.log'\n";
+            print FH $mesg;
+            $mesg = '';
+            close (FH);
+        }
+        $log_link = get_log_link($dir, $phase);
+    }
+
     # Allow for calls like 'ok(0)' or 'ok(1)':
     if (!defined($arg2)) {
         $arg2 = $arg1 ? $arg1 : 1;
     }
     if ($arg1 eq $arg2) {
-        print " ok      $timestr\n" unless ($quiet);
+        print " ok      $timestr$log_link\n" unless ($quiet);
     } else {
-        $dir =~ s|^.*/samples/||s;
-        if ($log_dir) {
-            my $log_link = "";
-            if ($phase eq 'starting') {
-                $log_link = get_log_link($dir, 'start');
-            } elsif ($phase eq 'running') {
-                $log_link = get_log_link($dir, 'run');
-            } elsif ($phase eq 'results') {
-                $log_link = get_log_link($dir, 'start')." ".get_log_link($dir, 'run');
-            } elsif ($phase eq 'compilation') {
-                open(FH, '>', $log_dir.'/'.$dir.'/build.log') or die $!;
-                print FH $mesg;
-                $mesg='';
-                $log_link = get_log_link($dir, 'build');
-            }
-            print " not ok: $timestr $log_link\n$mesg\n";
-        } else {
-            print " not ok: $timestr\n$mesg\n";
-        }
+        print " not ok: $timestr$log_link\n$mesg\n";
         $test_status = 1;
         # report only first failure:
         $failed{$dir} = $phase unless defined($failed{$dir});
