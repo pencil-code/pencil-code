@@ -1749,6 +1749,7 @@ sub get_path {
     my $path = "";
     if ($dir) { $path = $dir."/".$path; }
     if ($log_dir) { $path = $log_dir."/".$path; }
+    elsif ($pencil_home) { $path = $pencil_home."/samples/".$path; }
     return $path.$file;
 }
 # ---------------------------------------------------------------------- #
