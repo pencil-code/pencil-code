@@ -1737,6 +1737,44 @@ sub write_to_file {
     }
 }
 # ---------------------------------------------------------------------- #
+sub mark_success {
+# Save revision of last success
+
+    my $result;
+    my $revision = "";
+    my $hash = "";
+    if (-d "$pencil_home/.svn") {
+        # SVN revision
+        $revision = `svn info --show-item revision`;
+        # GIT hash
+        $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
+        if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $hash = $1; }
+        if (!$hash) { $hash = "No network connection to github!"; }
+    }
+    elsif (-e "$pencil_home/.git") {
+        # GIT hash
+        $hash = `git log -1 --format=format:"%H"`;
+        $revision = "please use SVN checkout!";
+    }
+    else {
+        warn "Marking of last fully successful auto-test not possible without SVN or GIT!\n";
+        return;
+    }
+    chomp ($revision, $hash);
+
+    # Output information on last fully successful auto-test
+    print "\nSVN: ".$revision."\n";
+    print "GIT: ".$hash."\n\n";
+
+    # Save information on last fully successful auto-test
+    my $last = "LAST_SUCCEEDED";
+    if ($log_dir) { $last = $log_dir."/".$last; }
+    open (LAST, ">$last") or die "Error while writing '$last' file: $!\n";
+    print LAST "SVN: ".$revision."\n";
+    print LAST "GIT: ".$hash."\n";
+    close (LAST) or die "Error while closing '$last' file: $!\n"
+}
+# ---------------------------------------------------------------------- #
 sub git_version {
 # Return the current version of the code.
     my $rev = `$pencil_home/utils/pc_identify_revision --one-line`;
