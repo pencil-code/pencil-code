@@ -281,7 +281,6 @@ if ($serial) {
              splice(@make_args, $ind, 1); last;
         }
     }
-    
 }
 
 if ($target eq "ALL") { $target = 'fast'; }
