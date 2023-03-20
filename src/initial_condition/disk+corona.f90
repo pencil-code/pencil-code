@@ -126,7 +126,7 @@ module InitialCondition
       
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl,g_r
-      real, dimension (mx) :: vphi_d, l_d
+      real, dimension (nx) :: vphi_d, l_d
       real :: m00
       real, pointer :: g0
 
@@ -143,8 +143,8 @@ module InitialCondition
 
 ! azimuthal velocity. The value of loop variable 'n' has been used as the z coordinate.
       
-      vphi_d=(1.0-tanh(abs(z(n)/h_d))**dsteep)*tanh(abs(rr_sph/rs)**dsteep)*l_d/(rr_cyl)
-      f(:,m,n,iuz) =  vphi_d     
+      vphi_d=(1.0-tanh(abs(z(n)/h_d))**dsteep)*tanh(abs(rr_sph(l1:l2)/rs)**dsteep)*l_d/sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)
+      f(l1:l2,m,n,iuz) =  vphi_d     
       enddo;enddo
 
 !
