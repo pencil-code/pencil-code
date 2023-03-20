@@ -82,11 +82,11 @@ module InitialCondition
 !
   include '../initial_condition.h'
   real :: l0_d, l_d1, psipn0, psipn1, psi0, psi1, lnrho0_c
-  real :: m0, r0_d=40.0, rs=1.0, apara, h_d, dsteep, ngamma, rho0_c, cs0_c, Tc
-  logical :: luse_only_botbdry=.false.
+  real :: m0, r0_d=40.0, rs=1.0, apara, h_d, dsteep, ngamma, &
+          rho0_c=1.0e-5, cs0_c=1.0, Tc
 !
-  namelist /initial_condition_pars/ m0, r0_d, rs, apara, h_d, &
-  dsteep, ngamma, rho0_c, cs0_c, Tc
+  namelist /initial_condition_pars/ m0, r0_d, rs, apara, & 
+  h_d, rho0_c, dsteep, ngamma, cs0_c, Tc, l0_d
 !
   contains
 !***********************************************************************
@@ -97,7 +97,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-         "$Id$")
+          "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -112,29 +112,6 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
-!***********************************************************************
-    subroutine initial_condition_all(f,profiles)
-!
-!  Initializes all the f arrays in one call.  This subroutine is called last.
-!
-!  21-dec-10/ccyang: coded
-!  15-feb-15/MR: optional parameter 'profiles' added
-!
-      use Messages, only: fatal_error
-!
-      real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
-      real, dimension (:,:),              optional, intent(out)  :: profiles
-!
-!  SAMPLE IMPLEMENTATION
-!
-      call keep_compiler_quiet(f)
-      if (present(profiles)) then
-        call fatal_error('initial_condition_all', &
-          'If profiles are asked for, a real initial condition must be specified')
-        call keep_compiler_quiet(profiles)
-      endif
-!
-    endsubroutine initial_condition_all
 !***********************************************************************
     subroutine initial_condition_uu(f)
 !
@@ -162,7 +139,7 @@ module InitialCondition
 
 ! Specific angular momentum
 
-      l_d=l0_d*((rr_cyl)/r0_d)**apara
+      l_d=l0_d*((rr_cyl(l1:l2))/r0_d)**apara
 
 ! azimuthal velocity. The value of loop variable 'n' has been used as the z coordinate.
       
@@ -170,9 +147,6 @@ module InitialCondition
       f(:,m,n,iuz) =  vphi_d     
       enddo;enddo
 
-!  SAMPLE IMPLEMENTATION
-!
-!      call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_uu
 !***********************************************************************
@@ -193,11 +167,11 @@ module InitialCondition
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl
-      real, dimension (mx) :: lnrho_d, lnrho_c, psipn, psi, l_d
+      real, dimension (nx) :: lnrho_d, lnrho_c, psipn, psi, l_d
       real, pointer :: g0
       real :: cp1, m00
 
-!Some constants
+! Some constants
 
       lnrho0_c=log(rho0_c)
       l0_d=sqrt(G_Newton*m0*r0_d**3.0)/(r0_d-rs)
@@ -216,32 +190,29 @@ module InitialCondition
 !
 ! Specific angular momentum
 !        
-          l_d=l0_d*((rr_cyl)/r0_d)**apara
+          l_d=l0_d*((rr_cyl(l1:l2))/r0_d)**apara
 !       
 !Pseudo-Newtonian potential
 !        
-        psipn=-g0/sqrt((rr_sph-rs)**2+(1e-3*rs)**2)
+        psipn=-g0/sqrt((rr_sph(l1:l2)-rs)**2+(1e-3*rs)**2)
 
 ! Gravitational Potential for the system
         
-        psi=psipn+1.0/(2.0-2.0*apara)*(l_d/(rr_cyl))**2.0
+        psi=psipn+1.0/(2.0-2.0*apara)*(l_d/(sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)))**2.0
 
 !  Disk Density
         
         lnrho_d=ngamma*log(abs(1.0-gamma*(psi-psi0)/(cs0*(ngamma+1.0))))+lnrho0
-          print*, psi0, g0, psi
+          print*, m, n, minval(-gamma*(psi-psi0)/(cs0*(ngamma+1.))),maxval(-gamma*(psi-psi0)/(cs0*(ngamma+1.)))
 
 ! Corona Density
         
-        lnrho_c=lnrho0_c-(psipn-psipn1)*gamma/cs0_c
-        f(:,m,n,ilnrho) = lnrho_d+lnrho_c
+        lnrho_c=lnrho0_c-(psipn-psipn1)*gamma/cs0_c**2
+        f(l1:l2,m,n,ilnrho) = lnrho_d+lnrho_c
         
         enddo
       enddo
 
-!  SAMPLE IMPLEMENTATION
-!
-!      call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
@@ -274,11 +245,8 @@ module InitialCondition
       
       end do
      end do
-!Corona Temperature is constant. Defined in initial_condition_pars as 'Tc'.
+! Corona Temperature is constant. Defined in initial_condition_pars as 'Tc'.
 
-!  SAMPLE IMPLEMENTATION
-!
-!      call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_ss
 !***********************************************************************
@@ -296,201 +264,13 @@ module InitialCondition
 !
     endsubroutine initial_condition_aa
 !***********************************************************************
-    subroutine initial_condition_aatest(f)
-!
-!  Initialize testfield.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_aatest
-!***********************************************************************
-    subroutine initial_condition_uutest(f)
-!
-!  Initialize testflow.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_uutest
-!***********************************************************************
-    subroutine initial_condition_lncc(f)
-!
-!  Initialize passive scalar.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_lncc
-!***********************************************************************
-    subroutine initial_condition_chiral(f)
-!
-!  Initialize chiral.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_chiral
-!***********************************************************************
-    subroutine initial_condition_chemistry(f)
-!
-!  Initialize chemistry.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_chemistry
-!***********************************************************************
-    subroutine initial_condition_uud(f)
-!
-!  Initialize dust fluid velocity.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_uud
-!***********************************************************************
-    subroutine initial_condition_nd(f)
-!
-!  Initialize dust fluid density.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_nd
-!***********************************************************************
-    subroutine initial_condition_uun(f)
-!
-!  Initialize neutral fluid velocity.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_uun
-!***********************************************************************
-    subroutine initial_condition_lnrhon(f)
-!
-!  Initialize neutral fluid density.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_lnrhon
-!***********************************************************************
-    subroutine initial_condition_ecr(f)
-!
-!  Initialize cosmic rays.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_ecr
-!***********************************************************************
-    subroutine initial_condition_fcr(f)
-!
-!  Initialize cosmic ray flux.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_fcr
-!***********************************************************************
-    subroutine initial_condition_solid_cells(f)
-!
-!  Initialize solid cells.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_solid_cells
-!***********************************************************************
-    subroutine initial_condition_cctest(f)
-!
-!  Initialize testscalar.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_cctest
-!***********************************************************************
-    subroutine initial_condition_xxp(f,fp)
-!
-!  Initialize particles' positions.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (:,:), intent(inout) :: fp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-!
-    endsubroutine initial_condition_xxp
-!***********************************************************************
-    subroutine initial_condition_vvp(f,fp)
-!
-!  Initialize particles' velocities.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (:,:), intent(inout) :: fp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-!
-    endsubroutine initial_condition_vvp
-!***********************************************************************
     subroutine read_initial_condition_pars(iostat)
 !
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
 !
-      iostat = 0
-!
-      ! *** IMPORTANT: ***
-      ! If you use this as template, please uncomment the following line:
-      !read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************
@@ -498,19 +278,18 @@ module InitialCondition
 !
       integer, intent(in) :: unit
 !
-      call keep_compiler_quiet(unit)
-!
-      ! *** IMPORTANT: ***
-      ! If you use this as template, please uncomment the following line:
-      !write(unit, NML=initial_condition_pars)
+      write(unit, NML=initial_condition_pars)
 !
     endsubroutine write_initial_condition_pars
 !***********************************************************************
-    subroutine initial_condition_clean_up
 !
-!  04-may-11/dhruba: coded
-! dummy
-!
-    endsubroutine initial_condition_clean_up
 !********************************************************************
+!************        DO NOT DELETE THE FOLLOWING       **************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from noinitial_condition.f90 for any    **
+!**  InitialCondition routines not implemented in this file        **
+!**                                                                **
+    include '../initial_condition_dummies.inc'
+!********************************************************************!
 endmodule InitialCondition
