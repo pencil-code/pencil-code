@@ -1,8 +1,7 @@
 #!/bin/csh
 ./start.csh
 #cd src
-#sed -e 's/REAL/DOUBLE_PRECISION/g' -e 's/MPI_COMPLEX/MPI_DOUBLE_COMPLEX/g' mpicomm.f90 > mpicomm_double.f90
-#make mpicomm_double.o
+#make mpicomm.o
 #make hydro_kinematic.o
 #make linkonly
 #cd ..
