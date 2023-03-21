@@ -143,8 +143,9 @@ module InitialCondition
 
 ! azimuthal velocity. The value of loop variable 'n' has been used as the z coordinate.
       
-      vphi_d=(1.0-tanh(abs(z(n)/h_d))**dsteep)*tanh(abs(rr_sph(l1:l2)/rs)**dsteep)*l_d/sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)
-      f(l1:l2,m,n,iuz) =  vphi_d     
+!      vphi_d=(1.0-tanh(abs(z(n)/h_d))**dsteep)*tanh(abs(rr_sph(l1:l2)/rs)**dsteep)*l_d/sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)
+      vphi_d=l_d*x(l1:l2)/(rr_cyl(l1:l2)**2+(1e-3*rs)**2)*(1-(tanh(abs(z(n)/h_d)))**dsteep)*(tanh(rr_cyl(l1:l2)/h_d))**dsteep
+      f(l1:l2,m,n,iuy) =  vphi_d     
       enddo;enddo
 
 !
