@@ -238,6 +238,7 @@ my $failed      = 0;
 my $created_datadir = 0;
 my $remove_lock = 0;
 my $failure_message = '';
+my ($current_revision, $current_hash);
 my $reference_out = 'reference.out'; # automatically changed to
                                      # reference.out.double below for
                                      # double precision runs
@@ -1784,37 +1785,41 @@ sub mark_success {
     write_revision (get_path ($dir, "LAST_SUCCEEDED"));
 }
 # ---------------------------------------------------------------------- #
+sub get_current_revision {
+# Get current revision only if not previously obtained
+    if (!defined ($current_revision)) {
+        # Get current SVN revision and GIT hash
+        if (-d "$pencil_home/.svn") {
+            # SVN revision
+            $current_revision = `svn info --show-item revision`;
+            # GIT hash
+            my $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
+            if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $current_hash = $1; }
+            if (!$current_hash) { $current_hash = "No network connection to github!"; }
+        }
+        elsif (-e "$pencil_home/.git") {
+            # GIT hash
+            $current_hash = `git log -1 --format=format:"%H"`;
+            $current_revision = "please use SVN checkout!";
+        }
+        else {
+            warn "Marking of succeeded or failed auto-tests not possible without SVN or GIT!\n";
+            return;
+        }
+        chomp ($current_revision, $current_hash);
+    }
+}
+# ---------------------------------------------------------------------- #
 sub write_revision {
 # Write revision information of auto-test
     my $file = shift;
 
-    # Get current SVN revision and GIT hash
-    my $result;
-    my $revision = "";
-    my $hash = "";
-    if (-d "$pencil_home/.svn") {
-        # SVN revision
-        $revision = `svn info --show-item revision`;
-        # GIT hash
-        $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
-        if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $hash = $1; }
-        if (!$hash) { $hash = "No network connection to github!"; }
-    }
-    elsif (-e "$pencil_home/.git") {
-        # GIT hash
-        $hash = `git log -1 --format=format:"%H"`;
-        $revision = "please use SVN checkout!";
-    }
-    else {
-        warn "Marking of succeeded or failed auto-tests not possible without SVN or GIT!\n";
-        return;
-    }
-    chomp ($revision, $hash);
+    get_current_revision();
 
     # Write revision information to file
     open (LAST, ">$file") or die "Error while writing '$file' file: $!\n";
-    print LAST "SVN: ".$revision."\n";
-    print LAST "GIT: ".$hash."\n";
+    print LAST "SVN: ".$current_revision."\n";
+    print LAST "GIT: ".$current_hash."\n";
     close (LAST) or die "Error while closing '$file' file: $!\n"
 }
 # ---------------------------------------------------------------------- #
