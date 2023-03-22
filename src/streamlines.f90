@@ -240,7 +240,7 @@ module Streamlines
 !
 !     start non-blocking receive and blocking send
       if (receiving == 0) then
-        call MPI_IRECV(vvb,3+mfarray,MPI_REAL,proc_id,VV_RCV,MPI_comm_world,request_rcv,ierr)
+        call MPI_IRECV(vvb,3+mfarray,mpi_precision,proc_id,VV_RCV,MPI_comm_world,request_rcv,ierr)
         if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
         receiving = 1
@@ -546,7 +546,7 @@ module Streamlines
 !             receive completed, send the vector field
               vvb(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
               vvb(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
-              call MPI_SEND(vvb,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
+              call MPI_SEND(vvb,3+mfarray,mpi_precision,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
               if (ierr /= MPI_SUCCESS) then
                 call fatal_error("streamlines", "MPI_SEND could not send")
                 exit
