@@ -204,6 +204,8 @@ module Streamlines
 !
 ! 20-feb-12/simon: coded
 !
+    use Mpicomm
+
     integer :: grid_pos(3), grid_pos_send(3)
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension(3+mfarray) :: vvb, vvb_send
@@ -520,6 +522,8 @@ module Streamlines
 !
 !   20-mar-14/simon: coded
 !
+    use Mpicomm
+
     real, pointer, dimension (:,:,:,:) :: vv   ! vector field which is beaing traced
     real, dimension (mx,my,mz,mfarray) :: f
 !   borrowed position on the grid
