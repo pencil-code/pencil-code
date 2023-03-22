@@ -483,13 +483,6 @@ else
   GPU_INTERFACE=
 endif
 #
-# For coupling with foreign code
-#
-FOREIGN := $(shell (grep -i '^[^!]*tag_foreign *= *[1-9][0-9]*' ../run.in))
-ifneq ($(FOREIGN),)
-  FPPFLAGS += -fpp -DMPI_COMM_WORLD=MPI_COMM_PENCIL
-endif
-#
 ifneq ($(filter $(IO) $(IO_IN), io_hdf5),)
   # HDF5 IO requires to select an HDF5-IO strategy module (not nohdf5_io).
   ifeq ($(HDF5_IO),nohdf5_io)
@@ -2715,6 +2708,18 @@ ifneq (,$(shell $(FC) --version | grep -i GNU))
   IS_CRAY =
 else
   IS_CRAY = $(shell $(FC) --version | grep -i Cray)
+endif
+#
+# For coupling with foreign code
+#
+FOREIGN := $(shell (grep -i '^[^!]*tag_foreign *= *[1-9][0-9]*' ../run.in))
+ifneq ($(FOREIGN),)
+  ifneq ($(GCC_VERSION),)
+    FPPFLAGS += -cpp
+  else
+    FPPFLAGS += -fpp
+  endif
+  FPPFLAGS += -DMPI_COMM_WORLD=MPI_COMM_PENCIL
 endif
 #
 #  Default linker to compiler settings, if unset.
