@@ -82,11 +82,11 @@ module InitialCondition
 !
   include '../initial_condition.h'
   real :: l0_d, l_d1, psipn0, psipn1, psi0, psi1, lnrho0_c
-  real :: m0, r0_d=40.0, rs=1.0, apara, h_d, dsteep, ngamma, &
-          rho0_c=1.0e-5, cs0_c=1.0, Tc
+  real :: m0, r0_d=30.0, rs=1.0, apara, h_d, dsteep, ngamma, &
+          rho0_c=1.0e-5, cs0_c=1.0, Tc, rpos
 !
-  namelist /initial_condition_pars/ m0, r0_d, rs, apara, & 
-  h_d, rho0_c, dsteep, ngamma, cs0_c, Tc, l0_d
+  namelist /initial_condition_pars/ r0_d, apara, & 
+  h_d, rho0_c, dsteep, ngamma, cs0_c, Tc, rpos
 !
   contains
 !***********************************************************************
@@ -132,6 +132,7 @@ module InitialCondition
 
       call get_shared_variable('g0',g0)
       m00=(g0/G_Newton)
+      rs=g0/c_light**2
       l0_d=sqrt(g0*r0_d**3.0)/(r0_d-rs)
 
       do m=m1, m2;do n=n1, n2
@@ -163,27 +164,30 @@ module InitialCondition
       use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
                              gamma, gamma1, gamma_m1
       use FArrayManager,   only: farray_use_global
-      use Sub,             only: get_radial_distance
+      use Sub,             only: get_radial_distance, location_in_proc
       use SharedVariables, only: get_shared_variable
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx, my, mz) :: psi, masked
       real, dimension (mx) :: rr_sph,rr_cyl
-      real, dimension (nx) :: lnrho_d, lnrho_c, psipn, psi, l_d
+      real, dimension (nx) :: lnrho_d, lnrho_c, psipn, l_d
       real, pointer :: g0
       real :: cp1, m00
+      integer :: lpos, mpos, npos
 
 ! Some constants
 
+      call get_shared_variable('g0',g0)
       lnrho0_c=log(rho0_c)
-      l0_d=sqrt(G_Newton*m0*r0_d**3.0)/(r0_d-rs)
+      rs=g0/c_light**2
+      l0_d=sqrt(g0*r0_d**3.0)/(r0_d-rs)
       l_d1=l0_d*(2.0*rs/r0_d)**apara
-      psipn0=-(G_Newton*m0)/(r0_d-rs)
-      psipn1=-G_Newton*m0/rs
-      psi0=psipn0+1.0/(2.0-2.0*apara)*(l0_d/(r0_d))**2.0
+      psipn0=-g0/(r0_d-rs)
+      psipn1=-g0/rs
+!      psi0=psipn0+1.0/(2.0-2.0*apara)*(l0_d/r0_d)**2.0
       psi1=psipn1+1.0/(2.0-2.0*apara)*(l_d1/(2.0*rs))**2.0
 !    
       call get_cp1(cp1) 
-      call get_shared_variable('g0',g0)
       m00=(g0/G_Newton)
       do n=n1,n2
         do m=m1,m2
@@ -199,17 +203,29 @@ module InitialCondition
 
 ! Gravitational Potential for the system
         
-        psi=psipn+1.0/(2.0-2.0*apara)*(l_d/(sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)))**2.0
+        psi(l1:l2,m,n)=psipn+1.0/(2.0-2.0*apara)*(l_d/(sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)))**2.0
+        enddo
+      enddo
+      if (location_in_proc((/rpos,xyz0(2),xyz0(3)/),lpos,mpos,npos)) then
+        psi0=psi(lpos,mpos,npos)
+        print*, psi0, x(lpos)
+      endif
+      mask: where (-(psi-psi0) .gt. 0.0)
+               masked=1
+             elsewhere
+               masked=0.0
+             end where mask
+        
+      do n=n1,n2
+        do m=m1,m2
 
 !  Disk Density
         
-        lnrho_d=ngamma*log(abs(1.0-gamma*(psi-psi0)/(cs0*(ngamma+1.0))))+lnrho0
-          print*, m, n, minval(-gamma*(psi-psi0)/(cs0*(ngamma+1.))),maxval(-gamma*(psi-psi0)/(cs0*(ngamma+1.)))
+        lnrho_d=ngamma*log((1.0-gamma*masked(l1:l2,m,n)*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0))))+lnrho0
 
 ! Corona Density
-        
         lnrho_c=lnrho0_c-(psipn-psipn1)*gamma/cs0_c**2
-        f(l1:l2,m,n,ilnrho) = lnrho_d+lnrho_c
+        f(l1:l2,m,n,ilnrho) = alog(exp(lnrho_d)+exp(lnrho_c))
         
         enddo
       enddo
