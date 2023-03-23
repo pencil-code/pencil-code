@@ -140,7 +140,7 @@ module Hydro
   integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0,idiag_oumphi=0
   integer :: idiag_ruxm=0,idiag_ruym=0,idiag_ruzm=0,idiag_rumax=0
   integer :: idiag_uxmz=0,idiag_uymz=0,idiag_uzmz=0,idiag_umx=0
-  integer :: idiag_umy=0,idiag_umz=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
+  integer :: idiag_umy=0,idiag_umz=0
   integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divu2m=0,idiag_epsK=0
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
   integer :: idiag_phase1=0,idiag_phase2=0
@@ -3363,7 +3363,7 @@ module Hydro
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
         idiag_EEK=0; idiag_ekin=0; idiag_ekintot=0
         idiag_divum=0
-        idiag_oumxy=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
+        idiag_oumxy=0;idiag_uxmxy=0;idiag_uymxy=0;idiag_uzmxy=0
         ivid_uu=0
       endif
 !
