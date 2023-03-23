@@ -446,7 +446,7 @@ module Streamlines
 !   13-feb-12/simon: coded
 !   20-mar-14/simon: moved the bulk of it into 'trace_single' routine
 !
-    use Mpicomm, only: mpibarrier
+    use Mpicomm
 !
     real, dimension (mx,my,mz,mfarray) :: f
     real, pointer, dimension (:,:) :: tracers
