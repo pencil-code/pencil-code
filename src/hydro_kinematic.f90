@@ -150,7 +150,7 @@ module Hydro
   integer :: idiag_oxurms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$
   integer :: idiag_EEK=0        ! DIAG_DOC: $\left<\varrho\uv^2\right>/2$
 !  
-  integer :: idiag_oumxy=0
+  integer :: idiag_oumxy=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
 !
 !  Video data.
 !
@@ -2662,6 +2662,9 @@ module Hydro
       endif
       if (l2davgfirst) then     
         call zsum_mn_name_xy(p%ou,idiag_oumxy)
+        call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
+        call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
+        call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
       endif
 !  store slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
@@ -3360,7 +3363,7 @@ module Hydro
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
         idiag_EEK=0; idiag_ekin=0; idiag_ekintot=0
         idiag_divum=0
-        idiag_oumxy=0
+        idiag_oumxy=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
         ivid_uu=0
       endif
 !
@@ -3409,8 +3412,11 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'phase2',idiag_phase2)
       enddo
       do ixy=1,nnamexy
-      call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oumxy',idiag_oumxy)
-      enddo
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oumxy',idiag_oumxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',idiag_uxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',idiag_uymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',idiag_uzmxy)
+     enddo
 !
 !  check for those quantities for which we want video slices
 !
