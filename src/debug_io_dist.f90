@@ -246,7 +246,7 @@ contains
            'output_pencil_scal: Writing to ', trim(filename), &
            ' for debugging -- this may slow things down'
 !
-      call output_penciled_scal_c(filename, a, ndim, &
+      call output_penciled_scal_c(filename, a, 1, &
                                   imn, mm(imn), nn(imn), t_sp, &
                                   nx, ny, nz, nghost, len(filename))
 !
