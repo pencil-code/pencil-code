@@ -13,7 +13,7 @@
 ! CPARAM logical, parameter :: lchemistry = .true.
 !
 ! MVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 3
 !
 ! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3)
 ! PENCILS PROVIDED nu; gradnu(3)
