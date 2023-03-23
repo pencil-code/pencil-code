@@ -2726,6 +2726,7 @@ module Energy
         if (cooltype=='rho_cs2') lpenc_requested(i_rho)=.true.
         if (cooltype=='pressure') lpenc_requested(i_pp)=.true.
         if (cooltype=='two-layer') lpenc_requested(i_rho)=.true.
+        if (cooltype=='square-well') lpenc_requested(i_rho)=.true.
         if (cooltype=='corona') then
           lpenc_requested(i_cv)=.true.
            lpenc_requested(i_rho)=.true.
@@ -6103,6 +6104,7 @@ module Energy
 !  17-may-10/dhruba: coded
 !  16-nov-13/nishant: two-layer (jumps) at arb heights and arb temperatures
 !  31-dec-14/axel: added cubic_step (as in corona of temperature_ionization)
+!  23-mar-23/nishant: added square-well to model hot corona above accretion
 !
       use Sub, only: erfunc, cubic_step
 !
@@ -6140,6 +6142,12 @@ module Energy
       case ('two-layer')
         prof=spread(.5*(1.+erfunc((z(n)-zcool)/wcool)),1,l2-l1+1)
         prof2=spread(.5*(1.+erfunc((z(n)-zcool2)/wcool2)),1,l2-l1+1)
+!
+! useful for accretion disc with hot corona; symmetric about z=0 
+!
+      case ('square-well')
+        prof=spread((1.+.5*(erfunc((z(n)-zcool)/wcool)- &
+                           erfunc((z(n)+zcool)/wcool))),1,l2-l1+1)
 !
 !  add "coronal" heating (to simulate a hot corona; see temperature_ionization)
 !
@@ -6185,6 +6193,8 @@ module Energy
      case ('two-layer')
        heat = heat - cool *prof *p%rho*(p%cs2-cs2cool) &
                    - cool2*prof2*p%rho*(p%cs2-cs2cool2)
+     case ('square-well')
+       heat = heat - cool *prof *p%rho*(p%cs2-cs2cool)
      case('plain')
        heat=heat-cool*prof
      case default
