@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# Simple script for checking in a Pencil Code run directory to a Git
+# repository.
+#
+#  25/02/2020 Pete: Coded
+#
+# Store working directory
+rundir="$PWD"
+
+# Tell which run is checked in
+echo 'Checking in run '${rundir}''
+
+# Check in all .in files
+git add -f $rundir/*.in
+
+# Check in all .local files and .build-history from src
+git add -f $rundir/src/*.local
+git add -f $rundir/src/.build-history
+git add -f $rundir/src/revision.txt
+
+# Stuff from ${rundir}/data
+git add -f $rundir/data/time_series.dat
+git add -f $rundir/data/*.nml
+git add -f $rundir/data/def_var.pro
+git add -f $rundir/data/index.pro
+git add -f $rundir/data/variables.pro
+git add -f $rundir/data/dim.dat
+
+# Check in certain .dat files [if they exist]
+if [ -f $rundir/k.dat ]; then
+  git add -f $rundir/k.dat
+fi
+
+if [ -f $rundir/cooling_profile.dat ]; then
+  git add -f $rundir/cooling_profile.dat
+fi
+
+if [ -f $rundir/hcond_glhc.dat ]; then
+  git add -f $rundir/hcond_glhc.dat
+fi
+
+if [ -f $rundir/stratification.dat ]; then
+  git add -f $rundir/stratification.dat
+fi
+
+# parameters.py if it exists
+if [ -f $rundir/parameters.py ];  then
+  git add -f $rundir/parameters.py
+fi
+
+# Commit and push everything
+git commit -m 'Added run '$PWD''
+git push
+
