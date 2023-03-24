@@ -58,7 +58,7 @@ module General
   public :: reduce_grad_dim
   public :: meshgrid
   public :: linspace
-  public :: linear_interpolate_2d, linear_interpolate_1d
+  public :: linear_interpolate_2d, linear_interpolate_1d, get_linterp_weights_1D
   public :: chk_time
   public :: get_species_nr
   public :: get_from_nml_str,get_from_nml_log,get_from_nml_real,get_from_nml_int,convert_nml
