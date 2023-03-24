@@ -120,38 +120,13 @@ module InitialCondition
 !  07-may-09/wlad: coded
 
 !  /mayank
-
-      use Sub,            only: get_radial_distance
-      use SharedVariables, only: get_shared_variable
-      
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: rr_sph,rr_cyl,g_r
-      real, dimension (nx) :: vphi_d, l_d
-      real :: m00
-      real, pointer :: g0
-
-      call get_shared_variable('g0',g0)
-      m00=(g0/G_Newton)
-      rs=2*g0/c_light**2
-      l0_d=sqrt(g0*r0_d**3.0)/(r0_d-rs)
-
-      do m=m1, m2;do n=n1, n2
-          call get_radial_distance(rr_sph,rr_cyl) 
-
-! Specific angular momentum
-
-      l_d=l0_d*((rr_cyl(l1:l2))/r0_d)**apara
-
-! azimuthal velocity. The value of loop variable 'n' has been used as the z coordinate.
-      
-!      vphi_d=(1.0-tanh(abs(z(n)/h_d))**dsteep)*tanh(abs(rr_sph(l1:l2)/rs)**dsteep)*l_d/sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)
-      vphi_d=l_d*x(l1:l2)/(rr_cyl(l1:l2)**2+(1e-3*rs)**2)*(1-(tanh(abs(z(n)/h_d)))**dsteep)*(tanh(rr_cyl(l1:l2)/h_d))**dsteep
-      f(l1:l2,m,n,iuy) =  vphi_d     
-      enddo;enddo
-
+!      
+      call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_uu
 !***********************************************************************
+
     subroutine initial_condition_lnrho(f)
 !
 !  Initialize logarithmic density. init_lnrho will take care of
@@ -161,6 +136,7 @@ module InitialCondition
 
 !/mayank
 
+      use Mpicomm, only: mpibcast
       use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
                              gamma, gamma1, gamma_m1
       use FArrayManager,   only: farray_use_global
@@ -170,7 +146,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx, my, mz) :: psi, masked,xmesh
       real, dimension (mx) :: rr_sph,rr_cyl
-      real, dimension (nx) :: rho_d, lnrho_c, psipn, l_d
+      real, dimension (nx) :: rho_d, lnrho_c, psipn, l_d,vphi_d
       real, pointer :: g0
       real :: cp1, m00
       integer :: lpos, mpos, npos
@@ -198,7 +174,7 @@ module InitialCondition
 !        
           l_d=l0_d*(rr_cyl(l1:l2)/r0_d)**apara
 !       
-!Pseudo-Newtonian potential
+! Pseudo-Newtonian potential
 !        
         psipn=-g0/sqrt((rr_sph(l1:l2)-rs)**2+(1e-3*rs)**2)
 
@@ -207,19 +183,22 @@ module InitialCondition
         psi(l1:l2,m,n)=psipn+1.0/(2.0-2.0*apara)*(l_d/(sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)))**2.0
         enddo
       enddo
-      if (location_in_proc((/rpos,xyz0(2),xyz0(3)/),lpos,mpos,npos)) then
-        psi0=psi(lpos,mpos,npos)
-        print*, psi0, x(lpos)
+      if (lfirst_proc_z) then 
+        if (location_in_proc((/rpos,xyz0(2), xyz0(3)/),lpos,mpos,npos)) then
+          psi0=psi(lpos,mpos,npos)
+          print*, psi0, x(lpos)
+        endif
       endif
+      call mpibcast(psi0)
       mask: where ((-(psi-psi0) .gt. 0.0) .and. (xmesh .gt. rpos))
                masked=1.0
              elsewhere
                masked=0.0
              end where mask
 ! 
-      f(:,:,:,ilnrho)=masked
-      call smooth(f,ilnrho)
-      masked=f(:,:,:,ilnrho)
+!      f(:,:,:,ilnrho)=masked
+!      call smooth(f,ilnrho)
+!      masked=f(:,:,:,ilnrho)
 !
       do n=n1,n2
         do m=m1,m2
@@ -230,9 +209,12 @@ module InitialCondition
 
 ! Corona Density
         lnrho_c=lnrho0_c-0*(psipn-psipn1)*gamma/cs0_c**2
-        f(l1:l2,m,n,ilnrho) = log(rho_d(l1:l2)+exp(lnrho_c(l1:l2)))
+        f(l1:l2,m,n,ilnrho) = log(rho_d+exp(lnrho_c))
+        vphi_d=l_d*x(l1:l2)/(rr_cyl(l1:l2)**2+(1e-3*rs)**2)*masked(l1:l2,m,n) 
+        f(l1:l2,m,n,iuy) = vphi_d
         enddo
       enddo
+!      call smooth(f,ilnrho)
 
 !
     endsubroutine initial_condition_lnrho
