@@ -41,7 +41,7 @@ module Mpicomm
       if (ncpus>1 .or. nprocx>1 .or. nprocy>1 .or. nprocz>1) &
         call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus>=2 or nproc[xyz]>=2')
 !
-      mpi_precision = -1; mpi_precision_complex=-1
+      mpi_precision = -1; MPI_CMPLX=-1
 !
       lmpicomm = .false.
 
@@ -998,6 +998,18 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, cbcast_array, nbcast_array, proc,comm
 !
     endsubroutine mpibcast_char_arr
+!***********************************************************************
+    subroutine mpibcast_cmplx_arr(bcast_array,nbcast_array,proc)
+!
+!  Communicate real array between processors.
+!
+      integer :: nbcast_array
+      complex, dimension(nbcast_array) :: bcast_array
+      integer, optional :: proc
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
+!
+    endsubroutine mpibcast_cmplx_arr
 !***********************************************************************
     subroutine mpibcast_cmplx_arr_dbl(bcast_array,nbcast_array,proc)
 !

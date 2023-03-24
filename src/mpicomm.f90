@@ -215,7 +215,7 @@ module Mpicomm
 
       if (sizeof_real() < 8) then
         mpi_precision = MPI_REAL
-        mpi_precision_complex = MPI_COMPLEX
+        MPI_CMPLX = MPI_COMPLEX
         if (lroot) then
           write (*,*) ""
           write (*,*) "====================================================================="
@@ -225,7 +225,7 @@ module Mpicomm
         endif
       else
         mpi_precision = MPI_DOUBLE_PRECISION
-        mpi_precision_complex = MPI_DOUBLE_COMPLEX
+        MPI_CMPLX = MPI_DOUBLE_COMPLEX
       endif
 
       call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID,mpierr)
@@ -3078,10 +3078,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       num_elements = product(nbcast_array)
       if (present(nonblock)) then
-        call MPI_IRECV(bcast_array, num_elements, mpi_precision_complex, proc_src, &
+        call MPI_IRECV(bcast_array, num_elements, MPI_CMPLX, proc_src, &
                        tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
       else
-        call MPI_RECV(bcast_array, num_elements, mpi_precision_complex, proc_src, &
+        call MPI_RECV(bcast_array, num_elements, MPI_CMPLX, proc_src, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
@@ -3446,10 +3446,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       num_elements = product(nbcast_array)
       if (present(nonblock)) then
-        call MPI_ISEND(bcast_array, num_elements, mpi_precision_complex, proc_rec, &
+        call MPI_ISEND(bcast_array, num_elements, MPI_CMPLX, proc_rec, &
                        tag_id,ioptest(comm,MPI_COMM_GRID),nonblock, mpierr)
       else
-        call MPI_SEND(bcast_array, num_elements, mpi_precision_complex, proc_rec, &
+        call MPI_SEND(bcast_array, num_elements, MPI_CMPLX, proc_rec, &
                       tag_id,ioptest(comm,MPI_COMM_GRID),mpierr)
       endif
 !
@@ -4250,6 +4250,28 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
+    subroutine mpibcast_cmplx_arr(bcast_array,nbcast_array,proc)
+!
+!  Communicate real array between processors.
+!
+      integer :: nbcast_array
+      complex, dimension(nbcast_array) :: bcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (nbcast_array == 0) return
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_CMPLX,ibcast_proc, &
+                     MPI_COMM_GRID,mpierr)
+!
+    endsubroutine mpibcast_cmplx_arr
+!***********************************************************************
     subroutine mpibcast_cmplx_arr_dbl(bcast_array,nbcast_array,proc)
 !
 !  Communicate real array between processors.
@@ -4289,7 +4311,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         ibcast_proc=root
       endif
 !
-      call MPI_BCAST(bcast_array,nbcast_array,mpi_precision_complex,ibcast_proc, &
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_COMPLEX,ibcast_proc, &
                      MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_cmplx_arr_sgl
@@ -9807,7 +9829,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
                               endif
                             else
                               if (lcomplex) then
-                                call MPI_RECV(rowbuf_cmplx, nsend, mpi_precision_complex, ig, tag, MPI_COMM_GRID, status, mpierr)
+                                call MPI_RECV(rowbuf_cmplx, nsend, MPI_CMPLX, ig, tag, MPI_COMM_GRID, status, mpierr)
                                 !print*, 'iy,irx,ixa:ixe:ixs,kxrangel(:,irx)=', iy,irx,ixa,ixe,ixs , kxrangel(:,irx)
                               else
                                 call MPI_RECV(rowbuf, nsend, mpi_precision, ig, tag, MPI_COMM_GRID, status, mpierr)
@@ -9823,10 +9845,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
                             if (lcomplex) then
                               if (ltrans) then
                                 call MPI_SEND(sendbuf_cmplx(iy,ixa:ixe:ixs,iz,ic), &
-                                              nsend, mpi_precision_complex, root, tag, MPI_COMM_GRID, mpierr)
+                                              nsend, MPI_CMPLX, root, tag, MPI_COMM_GRID, mpierr)
                               else
                                 call MPI_SEND(sendbuf_cmplx(ixa:ixe:ixs,iy,iz,ic), &
-                                              nsend, mpi_precision_complex, root, tag, MPI_COMM_GRID, mpierr)
+                                              nsend, MPI_CMPLX, root, tag, MPI_COMM_GRID, mpierr)
                               endif
                             else
                               if (ltrans) then

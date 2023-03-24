@@ -24,7 +24,7 @@
   public :: mpiallreduce_or, mpiallreduce_and
   public :: mpireduce_or, mpireduce_and
   public :: mpibcast, mpibcast_real, mpibcast_logical
-  public :: mpibcast_real_arr, mpibcast_cmplx_arr_dbl, mpibcast_cmplx
+  public :: mpibcast_real_arr, mpibcast_cmplx_arr_dbl, mpibcast_cmplx_arr_sgl, mpibcast_cmplx
   public :: mpibcast_double
   public :: mpibcast_int, mpibcast_char, mpireduce_max_scl_int
   public :: mpiscatter
@@ -75,7 +75,7 @@
 ! Foreign application routines.
   public :: initialize_foreign_comm, get_foreign_snap_initiate, get_foreign_snap_finalize, update_foreign_data
 ! Variables
-  public :: ipx, ipy, ipz, lroot, iproc, mpi_precision, mpi_precision_complex, nprocs
+  public :: ipx, ipy, ipz, lroot, iproc, mpi_precision, MPI_CMPLX, nprocs
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
   public :: llast_proc_x, llast_proc_y, llast_proc_z, llast_proc_xy, llast_proc_yz, llast_proc_xz, llast_proc_xyz
   public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, &
@@ -155,7 +155,7 @@
     module procedure mpibcast_real_arr2
     module procedure mpibcast_real_arr3
     module procedure mpibcast_real_arr4
-    module procedure mpibcast_cmplx_arr_sgl
+    module procedure mpibcast_cmplx_arr
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
   endinterface
@@ -186,7 +186,7 @@
   endinterface
 !
   interface mpibcast_cmplx
-    module procedure mpibcast_cmplx_arr_sgl
+    module procedure mpibcast_cmplx_arr
   endinterface
 !
   interface mpibcast_char
@@ -422,4 +422,4 @@
 
   character(LEN=4), public :: cyinyang=' '
 
-  integer :: mpi_precision, mpi_precision_complex
+  integer :: mpi_precision, MPI_CMPLX
