@@ -147,6 +147,7 @@ module Mpicomm
 !  Data for communication with foreign code.
 !
   type foreign_setup
+
     character(LEN=labellen) :: name
     integer :: ncpus,tag,root
     integer, dimension(:), allocatable :: recv_req
@@ -162,6 +163,11 @@ module Mpicomm
     character(LEN=5) :: unit_system
     real :: unit_length, unit_time, unit_BB, unit_T, &
             renorm_UU, renorm_t, renorm_L
+    real, dimension(mx,2) :: xweights
+    real, dimension(my,2) :: yweights
+    integer, dimension(mx) :: xinds
+    integer, dimension(my) :: yinds
+
   endtype foreign_setup
 ! 
   type(foreign_setup) :: frgn_setup
@@ -198,6 +204,7 @@ module Mpicomm
 ! iapp=0 if there is only one application or Pencil is the first one.
 !
       call MPI_COMM_GET_ATTR(MPI_COMM_WORLD, MPI_APPNUM, iapp, flag, mpierr)
+      iapp=0   !!!
 !
 ! New comm MPI_COMM_PENCIL which comprises only the procs of the Pencil
 ! application. iproc becomes rank in MPI_COMM_PENCIL.
@@ -207,7 +214,7 @@ module Mpicomm
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL, mpierr)
       call MPI_COMM_RANK(MPI_COMM_PENCIL, iproc, mpierr)
-!print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MPI_COMM_PENCIL, MPI_COMM_WORLD
+if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MPI_COMM_PENCIL, MPI_COMM_WORLD
 !
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_PENCIL!
 !
@@ -10489,7 +10496,7 @@ endif
 !
 ! 20-oct-21/MR: coded
 !
-      use General, only: itoa, find_index_range, find_proc_general
+      use General, only: itoa, find_index_range, find_proc_general, get_linterp_weights_1D
 
       real, dimension(:,:,:,:), allocatable :: frgn_buffer
 !
@@ -10509,6 +10516,7 @@ endif
 !print*, 'iproc, iproc_world, MPI_COMM_UNIVERSE, MPI_COMM_WORLD=', iproc, &
 !        iproc_world, MPI_COMM_UNIVERSE, MPI_COMM_WORLD
         if (lroot) then
+!
           lok=.true.; messg=''
 !
 !  Send communication tag to foreign code.
@@ -10530,6 +10538,7 @@ endif
 !      
           call mpirecv_char(frgn_setup%name(1:name_len),frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           frgn_setup%name=frgn_setup%name(1:name_len)
+
           if (.not.(trim(frgn_setup%name)=='MagIC'.or.trim(frgn_setup%name)=='EULAG')) &
             call stop_it('initialize_foreign_comm: communication with foreign code "'// &
                          trim(frgn_setup%name)//'" not supported')
@@ -10595,12 +10604,12 @@ endif
               floatbuf(1)=floatbuf(1)/floatbuf(2)*xyz1(1)     ! renormalize r-range for spherical coordinates
               floatbuf(2)=xyz1(1)
             endif
+!print*, 'floatbuf=', floatbuf(ind:ind+1), xyz0(j),xyz1(j)
             if (any(abs(floatbuf(ind:ind+1)-(/xyz0(j),xyz1(j)/))>1.e-6)) then
-               !print*, "FLOAT BUFFERS", floatbuf(1), floatbuf(2)
-               if (j==1.or.j==3) then
-                 messg=trim(messg)//"foreign "//trim(coornames(j))//" domain extent doesn't match;"
+               if (j==3) then
+                 messg=trim(messg)//"foreign "//trim(coornames(j))//" domain extents don't match;"
                else
-                 print*, "initialize_foreign_comm: Warning -- foreign "//trim(coornames(j))//" domain extent doesn't match;"
+                 print*, "initialize_foreign_comm: Warning -- foreign "//trim(coornames(j))//" domain extents don't match;"
                endif
             endif
             ind=ind+2
@@ -10644,6 +10653,7 @@ endif
 !  Renormalize X-coord to Pencil domain.
 !
           frgn_setup%xgrid = frgn_setup%xgrid/frgn_setup%xgrid(nxgrid_foreign)*xyz1(1)       
+!print*, 'frgn_setup%xgrid=', frgn_setup%xgrid
 !
 !  Receive vector of foreign global y(theta)-grid points.
 !
@@ -10693,10 +10703,10 @@ endif
 !
         allocate(frgn_setup%xind_rng(-1:frgn_setup%procnums(1)-1,2)); frgn_setup%xind_rng=0
         allocate(frgn_setup%yind_rng(-1:frgn_setup%procnums(2)-1,2)); frgn_setup%yind_rng=0
-!
-        if (lfirst_proc_xz) then             ! on processors of first YBEAM
 !                              
-!  Broadcast foreign ygrid to all procs with iprocx=iprocz=0.
+        if (lfirst_proc_xz) then             ! on processors of first YBEAM
+!
+!  Broadcast foreign ygrid to all procs with ipx=ipz=0.
 !                              
           call mpibcast_real(frgn_setup%ygrid,nygrid_foreign,comm=MPI_COMM_YBEAM)
 !
@@ -10731,23 +10741,25 @@ endif
           enddo
           if (frgn_setup%ypeer_rng(2)<0) frgn_setup%ypeer_rng(2)=py-1
 
-print*,'PENCIL ypeer', iproc,frgn_setup%ypeer_rng
+!print*,'PENCIL ypeer', iproc,frgn_setup%ypeer_rng
 !
-        endif   !lfirst_proc_xz
+          call get_linterp_weights_1D(frgn_setup%ygrid,frgn_setup%yind_rng(-1,:),y,frgn_setup%yinds,frgn_setup%yweights)
+!print*, 'frgn_setup%yinds=', frgn_setup%yinds, sum(frgn_setup%yweights,2)
 
-        if (lfirst_proc_yz) then             ! on processors of first XBEAM
+        endif   !lfirst_proc_xz
 !                              
-!  Broadcast frgn_setup%xgrid to all procs with iprocy=iprocz=0.
+        if (lfirst_proc_yz) then             ! on processors of first XBEAM, i.e., ipy=ipz=0
+!
+!  Broadcast frgn_setup%xgrid to all procs of first x-beam.
 !                              
           call mpibcast_real(frgn_setup%xgrid,nxgrid_foreign,comm=MPI_COMM_XBEAM)
 
-!
 !  Determine index range frgn_setup%xind_rng in frgn_setup%xgrid which is needed for individual
 !  processors in x direction.
 !
           call find_index_range(frgn_setup%xgrid,nxgrid_foreign,x(1),x(mx),il1,il2,lextend=.true.)
-!print*,'PENCIL: frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2=', &
-!frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2
+!print*,'PENCIL: frgn_setup%xgrid,nxgrid_foreign,x(l1),x(l2),il1,il2=',frgn_setup%xgrid(1), &
+!frgn_setup%xgrid(nxgrid_foreign),x(l1),x(l2),il1,il2
 !!! GM: PROBABLE INCONSISTENCY IN THE FOLLOWING COMMAND
 !!!          if (.not.lfirst_proc_x) il1=il1-1
 !!!          if (.not.llast_proc_x) il2=il2+1
@@ -10788,14 +10800,20 @@ print*,'PENCIL ypeer', iproc,frgn_setup%ypeer_rng
           enddo
           if (frgn_setup%xpeer_rng(2)<0) frgn_setup%xpeer_rng(2)=px-1
 
+          call get_linterp_weights_1D(frgn_setup%xgrid,frgn_setup%xind_rng(-1,:),x,frgn_setup%xinds,frgn_setup%xweights)
+!print*, 'frgn_setup%xinds=', frgn_setup%xinds, sum(frgn_setup%xweights,2)
         endif  ! lfirst_proc_yz
 !
         call mpibcast_int_arr2(frgn_setup%xind_rng,(/frgn_setup%procnums(1)+1,2/),comm=MPI_COMM_YZPLANE)
         call mpibcast_int_arr(frgn_setup%xpeer_rng,2,comm=MPI_COMM_YZPLANE)
+        call mpibcast_int(frgn_setup%xinds,mx,comm=MPI_COMM_YZPLANE)
+        call mpibcast_real(frgn_setup%xweights,(/mx,2/),comm=MPI_COMM_YZPLANE)
         lenx=frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1
 
         call mpibcast_int_arr2(frgn_setup%yind_rng,(/frgn_setup%procnums(2)+1,2/),comm=MPI_COMM_XZPLANE)
         call mpibcast_int_arr(frgn_setup%ypeer_rng,2,comm=MPI_COMM_XZPLANE)
+        call mpibcast_int(frgn_setup%yinds,my,comm=MPI_COMM_XZPLANE)
+        call mpibcast_real(frgn_setup%yweights,(/my,2/),comm=MPI_COMM_XZPLANE)
         leny=frgn_setup%yind_rng(-1,2)-frgn_setup%yind_rng(-1,1)+1
 
         if (allocated(frgn_buffer)) deallocate(frgn_buffer)
@@ -10806,8 +10824,8 @@ print*,'PENCIL ypeer', iproc,frgn_setup%ypeer_rng
 
       endif    ! if (lforeign)
 
-!print*, 'PBARRIER', iproc      
-!call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+print*, 'Pencil: after barrier'
 !call MPI_FINALIZE(mpierr)
 !stop
 
@@ -10841,23 +10859,24 @@ print*,'PENCIL ypeer', iproc,frgn_setup%ypeer_rng
           leny_loc=frgn_setup%yind_rng(py,2)-frgn_setup%yind_rng(py,1)+1!+2*nghost
 
           do iv=1,nvars
-            if (loptest(lnonblock)) then
+            if (loptest(lnonblock)) then      ! non-blocking
               call mpirecv_real(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv), &
                                (/lenx_loc,leny_loc,mz/),peer+ncpus,iproc+tag_foreign,MPI_COMM_WORLD,frgn_setup%recv_req(px))
-            else !Blocking segment
+            else                              ! blocking 
+print*, 'PENCIL: before receive data receiver, sender, dims=', iproc,peer+ncpus,lenx_loc,leny_loc,mz    
               call mpirecv_real(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv), &
                                (/lenx_loc,leny_loc,mz/),peer+ncpus,iproc+tag_foreign,MPI_COMM_WORLD)
-            endif !Non-block/Block loop
+            endif 
 !
           enddo
         enddo
       enddo
-!
-!print*, 'PBARRIER', iproc    
-!call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
-!call MPI_FINALIZE(mpierr)
-!stop
       return !END new version
+!
+print*, 'PENCIL-BARRIER', iproc    
+call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+call MPI_FINALIZE(mpierr)
+stop
 !
 ! Below old version.
 !
@@ -10929,12 +10948,18 @@ print*,'PENCIL ypeer', iproc,frgn_setup%ypeer_rng
 ! Interpolate/scatter data to array f
 !
       if (trim(frgn_setup%name)=='EULAG') then           
+
         if (loptest(lnonblock)) call mpiwait(frgn_setup%recv_req(px))
         if(size(frgn_buffer,1) > size(f,1)) lf1 = 2
-        f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+        !!!f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
         !!!f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,my::-1,:,:)/frgn_setup%renorm_UU  !For invertion of theta
-       
-      else if (lfirst_proc_yz) then 
+!
+!print*, 'iproc, weights=', iproc, maxval(frgn_setup%xweights), maxval(frgn_setup%yweights)
+        call interpolate_2d(frgn_buffer(lf1:,:,:,:),f(:,:,:,ivar1:ivar2),frgn_setup%xinds,frgn_setup%yinds, &
+                            frgn_setup%xweights,frgn_setup%yweights,1./frgn_setup%renorm_UU)
+! 
+      elseif (lfirst_proc_yz) then 
+
         if (frgn_setup%proc_multis(1)>1) then
           nvars=ivar2-ivar1+1
 
@@ -10955,7 +10980,7 @@ print*,'PENCIL ypeer', iproc,frgn_setup%ypeer_rng
                                            frgn_setup%xgrid(frgn_setup%xind_rng(-1,1):frgn_setup%xind_rng(-1,2)), &
                                            x(ll),interp_buffer(ll,:,:,:),.true.)
               enddo
-              interp_buffer=frgn_setup%renorm_UU*interp_buffer
+              interp_buffer=interp_buffer/frgn_setup%renorm_UU
               call mpisend_real(interp_buffer,(/nx,ny,nz,nvars/),partner,ytag,MPI_COMM_YZPLANE)
 
               if (size(f,1)==mx) then     ! f has ghosts
@@ -10970,6 +10995,37 @@ print*,'PENCIL ypeer', iproc,frgn_setup%ypeer_rng
       endif     ! if (name==EULAG)
 
     endsubroutine get_foreign_snap_finalize
+!***********************************************************************
+    subroutine interpolate_2d(inbuffer,outbuffer,xinds,yinds,xweights,yweights,scal_)
+
+      use General, only: roptest
+
+      real, dimension(:,:,:,:) :: inbuffer,outbuffer
+      !real, dimension(mx,my,mz,mvar) :: outbuffer
+      integer, dimension(:) :: xinds,yinds
+      real, dimension(:,:) :: xweights,yweights
+      real, optional :: scal_
+
+      real :: yw1,yw2,scal
+      integer :: ll,mm,xind1,xind2,yind1,yind2
+
+      scal=roptest(scal_,1.)
+
+      do mm=1,size(outbuffer,2)
+
+        yw1=yweights(mm,1)*scal; yw2=yweights(mm,2)*scal
+        yind1=yinds(mm); yind2=yind1+1
+
+        do ll=1,size(outbuffer,1)
+          xind1=xinds(ll); xind2=xind1+1
+          outbuffer(ll,mm,:,:) =  (xweights(ll,1)*yw1)*inbuffer(xind1,yind1,:,:) &
+                                + (xweights(ll,2)*yw1)*inbuffer(xind2,yind1,:,:) &
+                                + (xweights(ll,1)*yw2)*inbuffer(xind1,yind2,:,:) &
+                                + (xweights(ll,2)*yw2)*inbuffer(xind2,yind2,:,:)
+        enddo
+      enddo
+
+    endsubroutine interpolate_2d
 !***********************************************************************
     logical function update_foreign_data(t,t_foreign)
 !

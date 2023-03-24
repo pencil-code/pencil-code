@@ -102,7 +102,7 @@ module Hydro
   real :: binary_radius=0., radius_kinflow=0., width_kinflow=0.
   real :: power1_kinflow=4., power2_kinflow=-5./3., kgaussian_uu=0., kpeak_kinflow=3., cutoff=1e9
   real :: cs21_kinflow=1.
-  integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100, smooth_width=3
+  integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100, smooth_width=0   !nghost
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
   logical :: lkinflow_as_comaux=.false.
@@ -199,7 +199,7 @@ module Hydro
 !                  also oscillating with omega_kinflow
 !
       use FArrayManager
-      use Sub, only: erfunc, ylm, ylm_other, smoothing_kernel
+      use Sub, only: erfunc, ylm, ylm_other, smoothing_kernel, smooth
       use Boundcond, only: update_ghosts
       use General
       use Mpicomm
@@ -357,9 +357,9 @@ module Hydro
           if (.not.lreloading) then
             call initialize_foreign_comm(frgn_buffer) 
             if (smooth_width>0) then 
-              smooth_width = min(smooth_width, nghost)
-              allocate(smooth_factor(-smooth_width:smooth_width,-smooth_width:smooth_width,-smooth_width:smooth_width))
-              call smoothing_kernel(smooth_factor,lgaussian=.true., smth_wid=smooth_width)
+             ! smooth_width = min(smooth_width, nghost)
+             ! allocate(smooth_factor(-smooth_width:smooth_width,-smooth_width:smooth_width,-smooth_width:smooth_width))
+             ! call smoothing_kernel(smooth_factor,lgaussian=.true., smth_wid=smooth_width)
             endif
 !
 !  Initially, take two snapshots.
@@ -369,25 +369,26 @@ module Hydro
             if (.not.allocated(uu_2)) allocate(uu_2(mx,my,mz,3))
 !print *, 'PENCIL UU2EVAL', iproc,nx, ny, ny,  size(uu_2, 1)
             call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer)   !,lnonblock=.true.)
-            if (smooth_width > 0) call smooth_velocity(f,iux,iuz)
+            !if (smooth_width > 0) call smooth_velocity(f,iux,iuz,smooth_factor)
+            if (smooth_width > 0) call smooth(f,iux,iuz,smooth_width_=smooth_width)
 !print*, 'Pencil successful get_foreign_snap_finalize 1', iproc
 !if (lroot) print*, 'PENCIL FMAX INIT' , maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
 !print*, 'PENCIL FMAX INIT' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
-            call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
-            if (smooth_width > 0) call smooth_velocity(uu_2, 1,3)  
+            call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer)  !,lnonblock=.true.)
+            if (smooth_width > 0) call smooth(uu_2,1,3,smooth_width_=smooth_width)
 !print*, 'Pencil successful get_foreign_snap_finalize 2', iproc
 !        
 ! prepare receiving next snapshot
 !       
-            call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
+            call get_foreign_snap_initiate(3,frgn_buffer)    !,lnonblock=.true.)
 !print*, 'Pencil successful', iproc
 !print*, 'PBARRIER',iproc
 !        call mpibarrier(MPI_COMM_UNIVERSE)
 !call mpifinalize
 !stop
           endif
-       else
+        else
           call fatal_error("initialize_hydro", "No foreign code available")
         endif
       endif
@@ -395,19 +396,21 @@ module Hydro
 !
     endsubroutine initialize_hydro
 !***********************************************************************
-    subroutine smooth_velocity(f,iu1, iu2)
+    subroutine smooth_velocity(f,iu1,iu2,smooth_factor)
 
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       
       real, dimension(:,:,:,:) :: f
+      real, dimension(:,:,:) :: smooth_factor
       integer :: iu1, iu2
 
       real, dimension(mx,my,mz,3) :: tmp
       real, dimension(nx, 3) :: penc
-      integer :: ni, nj, nk, imn, i, j, k
+      integer :: ni, nj, nk, imn, i, j, k, smooth_width
 !
 !  Smooth with a Gaussian profile
 !
+      smooth_width=(size(smooth_factor,1)-1)/2
       ni = merge(smooth_width,0,nxgrid > 1)
       nj = merge(smooth_width,0,nygrid > 1)
       nk = merge(smooth_width,0,nzgrid > 1)
@@ -447,9 +450,7 @@ module Hydro
         enddo
         enddo
 !
-        do j=1,3
-          tmp(l1:l2,m,n,j) = penc(:,j)
-        enddo
+        tmp(l1:l2,m,n,:) = penc
 !
       enddo
       f(:,:,:,iu1:iu2) = tmp
@@ -503,14 +504,10 @@ module Hydro
 !
         headtt=headtt_save
 
-        if (lcalc_uumeanz ) &
-          call finalize_aver(nprocxy,12,uumz)
-        if (lcalc_uumeanx ) &
-          call finalize_aver(nprocyz,23,uumx)
-        if (lcalc_uumeanxy) &
-          call finalize_aver(nprocz,3,uumxy)
-        if (lcalc_uumeanxz) &
-          call finalize_aver(nprocy,2,uumxz)
+        if (lcalc_uumeanz ) call finalize_aver(nprocxy,12,uumz)
+        if (lcalc_uumeanx ) call finalize_aver(nprocyz,23,uumx)
+        if (lcalc_uumeanxy) call finalize_aver(nprocz,3,uumxy)
+        if (lcalc_uumeanxz) call finalize_aver(nprocy,2,uumxz)
 !
       endif
 !
@@ -2575,11 +2572,14 @@ module Hydro
 !   16-dec-10/bing: coded
 !
       use Mpicomm, only: update_foreign_data
+      use Sub, only: smooth
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real :: fac
       real, save :: t_foreign=0.
+!
+!  Do global, time-dependent flow calculations here:
 !
       if (kinematic_flow=='from-foreign-snap') then
         if (lfirst) then
@@ -2587,7 +2587,7 @@ module Hydro
           if (update_foreign_data(t,t_foreign)) then
             f(:,:,:,iux:iuz) = uu_2
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
-            if (smooth_width > 0) call smooth_velocity(uu_2,1,3)
+            if (smooth_width > 0) call smooth(f,iux,iuz,smooth_width_=smooth_width)
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
           endif
         endif
@@ -2599,11 +2599,8 @@ module Hydro
         endif
         f(:,:,:,iux:iuz) = (1.-fac)*f(:,:,:,iux:iuz) + fac*uu_2
 !print*, 'PENCIL FMAX' , iproc, maxval(abs(f(:,:,:,iux:iuz)))
-      endif
 !
-!  Do global, time-dependent flows calculations here:
-!
-      if (kinematic_flow=='sound3D') then
+      elseif (kinematic_flow=='sound3D') then
         call sound3D(f)
       endif
 !
