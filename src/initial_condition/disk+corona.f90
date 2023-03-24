@@ -132,7 +132,7 @@ module InitialCondition
 
       call get_shared_variable('g0',g0)
       m00=(g0/G_Newton)
-      rs=g0/c_light**2
+      rs=2*g0/c_light**2
       l0_d=sqrt(g0*r0_d**3.0)/(r0_d-rs)
 
       do m=m1, m2;do n=n1, n2
@@ -164,13 +164,13 @@ module InitialCondition
       use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
                              gamma, gamma1, gamma_m1
       use FArrayManager,   only: farray_use_global
-      use Sub,             only: get_radial_distance, location_in_proc
+      use Sub,             only: get_radial_distance, location_in_proc, smooth
       use SharedVariables, only: get_shared_variable
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx, my, mz) :: psi, masked
+      real, dimension (mx, my, mz) :: psi, masked,xmesh
       real, dimension (mx) :: rr_sph,rr_cyl
-      real, dimension (nx) :: lnrho_d, lnrho_c, psipn, l_d
+      real, dimension (nx) :: rho_d, lnrho_c, psipn, l_d
       real, pointer :: g0
       real :: cp1, m00
       integer :: lpos, mpos, npos
@@ -179,7 +179,7 @@ module InitialCondition
 
       call get_shared_variable('g0',g0)
       lnrho0_c=log(rho0_c)
-      rs=g0/c_light**2
+      rs=2*g0/c_light**2
       l0_d=sqrt(g0*r0_d**3.0)/(r0_d-rs)
       l_d1=l0_d*(2.0*rs/r0_d)**apara
       psipn0=-g0/(r0_d-rs)
@@ -191,11 +191,12 @@ module InitialCondition
       m00=(g0/G_Newton)
       do n=n1,n2
         do m=m1,m2
+          xmesh(:,m,n)=x
           call get_radial_distance(rr_sph,rr_cyl)
 !
 ! Specific angular momentum
 !        
-          l_d=l0_d*((rr_cyl(l1:l2))/r0_d)**apara
+          l_d=l0_d*(rr_cyl(l1:l2)/r0_d)**apara
 !       
 !Pseudo-Newtonian potential
 !        
@@ -210,23 +211,26 @@ module InitialCondition
         psi0=psi(lpos,mpos,npos)
         print*, psi0, x(lpos)
       endif
-      mask: where (-(psi-psi0) .gt. 0.0)
-               masked=1
+      mask: where ((-(psi-psi0) .gt. 0.0) .and. (xmesh .gt. rpos))
+               masked=1.0
              elsewhere
                masked=0.0
              end where mask
-        
+! 
+      f(:,:,:,ilnrho)=masked
+      call smooth(f,ilnrho)
+      masked=f(:,:,:,ilnrho)
+!
       do n=n1,n2
         do m=m1,m2
 
 !  Disk Density
         
-        lnrho_d=ngamma*log((1.0-gamma*masked(l1:l2,m,n)*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0))))+lnrho0
+        rho_d=exp(lnrho0)*(1.0-gamma*masked(l1:l2,m,n)*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0)))**ngamma
 
 ! Corona Density
-        lnrho_c=lnrho0_c-(psipn-psipn1)*gamma/cs0_c**2
-        f(l1:l2,m,n,ilnrho) = alog(exp(lnrho_d)+exp(lnrho_c))
-        
+        lnrho_c=lnrho0_c-0*(psipn-psipn1)*gamma/cs0_c**2
+        f(l1:l2,m,n,ilnrho) = log(rho_d(l1:l2)+exp(lnrho_c(l1:l2)))
         enddo
       enddo
 
