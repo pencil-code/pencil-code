@@ -197,7 +197,7 @@ module Equ
       if (lparticles)    call particles_before_boundary(f)
       if (lpscalar)      call pscalar_before_boundary(f)
       if (ldetonate)     call detonate_before_boundary(f)
-      !if (lchemistry)    call chemistry_before_boundary(f)
+      if (lchemistry)    call chemistry_before_boundary(f)
       if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
       if (lshock)        call shock_before_boundary(f)
 !
@@ -222,12 +222,6 @@ module Equ
           call boundconds_z(f)
         endif
       endif
-!
-!  Remove unphysical values of the mass fractions. This must be done
-!  before the call to update_solid_cells in order to avoid corrections
-!  within the solid structure.
-!
-      if (lsolid_cells .and. lchemistry) call chemspec_normalization_N2(f)
 !
 ! update solid cell "ghost points". This must be done in order to get the
 ! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
@@ -326,12 +320,9 @@ module Equ
 !
       call timing('pde','after "after_boundary" calls')
 !
-      if (lchemistry .and. ldustdensity) then
-        call chemspec_normalization(f)
-!        call dustspec_normalization(f)
-      endif
-!
-!  Calculate quantities for a chemical mixture
+!  Calculate quantities for a chemical mixture. This is done after
+!  communication has finalized since many of the arrays set up here
+!  are not communicated, and in this subroutine also ghost zones are calculated.
 !
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
       call timing('pde','after calc_for_chem_mixture')

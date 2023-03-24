@@ -2629,14 +2629,13 @@ module Chemistry
 
       if (ldustdensity) then
         call chemspec_normalization(f)
-!        call dustspec_normalization(f)
       endif
-
-      if (ldensity) call calc_for_chem_mixture(f)
 !
 !  Remove unphysical values of the mass fractions. This must be done
 !  before the call to update_solid_cells in order to avoid corrections
 !  within the solid structure.
+!  There is no reason why this call should only be active in the
+!  combination with solid cells....
 !
       if (lsolid_cells) call chemspec_normalization_N2(f)
 
