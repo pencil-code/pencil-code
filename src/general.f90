@@ -6031,6 +6031,36 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
 
     endsubroutine compress_nvidia
 !***********************************************************************
+    subroutine get_linterp_weights_1D(basegrid,baserange,targetgrid,inds,weights)
+!
+!  For each element i of targetgrid, determine the index inds(i) of its nearest left neighbor
+!  in basegrid(baserange(1):baserange(2)) and the two corresponding integration weights weights(i,:).
+!
+      use Cdata, only: iproc
+
+      real, dimension(:) :: basegrid, targetgrid
+      integer, dimension(2) :: baserange
+      real, dimension(:,:) :: weights
+      integer, dimension(:) :: inds
+
+      real, parameter :: eps=1e-6
+      integer :: i,j
+      real :: x
+
+      weights=0.
+      do i=1,size(targetgrid)
+        x=targetgrid(i)
+        do j=baserange(1),baserange(2)
+          if (basegrid(j)>=x+eps) then
+            weights(i,:)=(/basegrid(j)-x,x-basegrid(j-1)/)/(basegrid(j)-basegrid(j-1))
+            inds(i) = j-1-(baserange(1)-1)
+            exit
+          endif
+        enddo
+      enddo
+
+    endsubroutine get_linterp_weights_1D
+!***********************************************************************
     function qualify_position_biquin(ind,nl,nu,lrestr_par_low,lrestr_par_up,lrestr_perp) result (qual)
 !
 ! Qualifies the position of a point w.r.t the neighboring processors for quintic
