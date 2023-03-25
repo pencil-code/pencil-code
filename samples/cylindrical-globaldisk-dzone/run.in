@@ -6,7 +6,7 @@
   cvsid='$Id: run.in,v 1.1 2012-10-04 16:04:16 wlyra Exp $',
   ip=14,
 !  nt=1000000, it1=250, isave=5000, itorder=3, ialive=0
-  nt=50, it1=5, isave=5000, itorder=3, ialive=0
+  nt=46, it1=5, isave=5000, itorder=3, ialive=0
   cdt=0.4, 
   cdtv=0.4, 
   cdtv3=0.1
