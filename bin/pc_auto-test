@@ -1762,6 +1762,7 @@ sub get_SVN_revision {
 
     my $revision = `head -1 "$file"`;
     $revision =~ s/^SVN: +//is;
+    chomp $revision;
     return $revision;
 }
 # ---------------------------------------------------------------------- #
@@ -1771,6 +1772,7 @@ sub get_GIT_commit {
 
     my $commit = `tail -1 "$file"`;
     $commit =~ s/^GIT: +//is;
+    chomp $commit;
     return $commit;
 }
 # ---------------------------------------------------------------------- #
@@ -1809,6 +1811,7 @@ sub mark_failed {
             my $fails = get_SVN_revision ($last);
             if ($works == $fails - 1) {
                 my $author = `svn info "$pencil_home" --revision $fails --show-item last-changed-author`;
+                chomp $author;
                 print "===> This is the offending commit from: $author\n";
             }
             else {
