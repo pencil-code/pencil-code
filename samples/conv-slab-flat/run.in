@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=20, it1=5, isave=100
+  nt=16, it1=5, isave=100
   cdt=0.4, cdtv=0.2, dtmin=1e-6,
   dsnap=20., dvid=0.2,
   bcx = 'p','p','p', 'p',    'p'
