@@ -1939,8 +1939,8 @@ END {
         if (%failed) {
             print "Failed ", scalar(keys %failed),
               " test(s) out of $ntests:\n";
-            while (my ($dir,$phase) = each %failed) {
-                print "  $dir ($phase)\n";
+            foreach my $dir (sort (keys %failed)) {
+                print "  $dir (".$failed{$dir}.")\n";
             }
         } else {
             if ($ntests == 1) {
