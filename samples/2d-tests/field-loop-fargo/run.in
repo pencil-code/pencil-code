@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.1 2008-11-30 03:16:24 wlyra Exp $'
-  nt=25, it1=5, cdt=0.4, cdtv=0.4, isave=500, itorder=3
+  nt=21, it1=5, cdt=0.4, cdtv=0.4, isave=500, itorder=3
   dsnap=10.0
   lpencil_check=T
   ip=16
