@@ -1088,7 +1088,7 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
-!  z-dependent Roberts flow (positive helicity)
+!  z-dependent Roberts flow I (positive helicity)
 !
       case ('zdep-roberts')
         if (headtt) print*,'z-dependent Roberts flow; kx,ky=',kx_uukin,ky_uukin
@@ -1106,6 +1106,27 @@ module Hydro
           p%uu(:,2)=+sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m)) &
               -dfpara*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*sqrt21k1
           p%uu(:,3)=+fpara*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt2
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  z-dependent Roberts flow II (positive helicity)
+!
+      case ('zdep-roberts-II')
+        if (headtt) print*,'z-dependent Roberts flow; kx,ky=',kx_uukin,ky_uukin
+        fpara=ampl_kinflow*(quintic_step(z(n),-1.+eps_kinflow,eps_kinflow) &
+            -quintic_step(z(n),+1.-eps_kinflow,eps_kinflow))
+        dfpara=ampl_kinflow*(quintic_der_step(z(n),-1.+eps_kinflow,eps_kinflow)&
+            -quintic_der_step(z(n),+1.-eps_kinflow,eps_kinflow))
+!
+        sqrt2=sqrt(2.)
+        sqrt21k1=1./(sqrt2*kx_uukin)
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=-fpara*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m)) &
+                   +dfpara*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*sqrt21k1
+          p%uu(:,2)=+fpara*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m)) &
+                   +dfpara*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt21k1
+          p%uu(:,3)=+fpara*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*sqrt2
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
