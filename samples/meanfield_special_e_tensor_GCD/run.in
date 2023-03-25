@@ -3,9 +3,9 @@
 ! Convection in a spherical wedge
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2021/04/01 11:33:46 joern Exp $',
-  nt=19, it1=1, isave=5000, itorder=3
-  dsnap=10, dvid=0, ialive=0, dtmin=1e-8
+  cvsid='$Id: run.in,v 1.1 2021/04/01 11:33:46 joern Exp $'
+  nt=19, it1=2, isave=5000, itorder=3
+  dsnap=10, dvid=0.01, dtmin=1e-8
   cdtv=0.3, d2davg=1, cdt=0.9
   lpencil_check=T, lpencil_check_small=T
 /
