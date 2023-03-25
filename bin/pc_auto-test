@@ -1754,6 +1754,24 @@ sub get_path {
     return $path.$file;
 }
 # ---------------------------------------------------------------------- #
+sub get_SVN_revision {
+# Extract SVN revision from file
+    my $file = shift;
+
+    my $revision = `head -1 "$file"`;
+    $revision =~ s/^SVN: +//is;
+    return $revision;
+}
+# ---------------------------------------------------------------------- #
+sub get_GIT_commit {
+# Extract GIT commit from file
+    my $file = shift;
+
+    my $commit = `tail -1 "$file"`;
+    $commit =~ s/^GIT: +//is;
+    return $commit;
+}
+# ---------------------------------------------------------------------- #
 sub mark_failed {
 # Save revision of first failed auto-test
     my $dir = shift;
@@ -1765,32 +1783,24 @@ sub mark_failed {
     my $last_succeeded = get_path ($dir, "LAST_SUCCEEDED");
     if (-e $last_succeeded) {
         print "===> Test still succeeded with revision:\n";
-        my $SVN_revision = `head -1 "$last_succeeded"`;
-        $SVN_revision =~ s/^SVN: +//is;
-        my $GIT_commit = `tail -1 "$last_succeeded"`;
-        $GIT_commit =~ s/^GIT: +//is;
-        print "SVN: $SVN_revision\n";
-        print "GIT: $GIT_commit\n";
+        print "SVN: ".get_SVN_revision ($last_succeeded)."\n";
+        print "GIT: ".get_GIT_commit ($last_succeeded)."\n";
         print scalar localtime `stat -L --format="%Y" "$last_succeeded"`;
         print "\n";
     }
     if (-e $last) {
         print "===> Test failed at latest with revision:\n";
-        my $SVN_revision = `head -1 "$last"`;
-        $SVN_revision =~ s/^SVN: +//is;
-        my $GIT_commit = `tail -1 "$last"`;
-        $GIT_commit =~ s/^GIT: +//is;
-        print "SVN: $SVN_revision\n";
-        print "GIT: $GIT_commit\n";
+        print "SVN: ".get_SVN_revision ($last)."\n";
+        print "GIT: ".get_GIT_commit ($last)."\n";
         print scalar localtime `stat -L --format="%Y" "$last"`;
         print "\n";
     }
     if ((-e $last_succeeded) && (-e $last)) {
         if (defined ($current_revision)) {
-            my $previous_revision = `head -1 "$last_succeeded"`;
-            $previous_revision =~ s/^SVN: +//is;
-            if ($previous_revision == $current_revision - 1) {
-                my $author = `svn info --show-item last-changed-author`;
+            my $works = get_SVN_revision ($last_succeeded);
+            my $fails = get_SVN_revision ($last);
+            if ($works == $fails - 1) {
+                my $author = `svn info --revision $fails --show-item last-changed-author`;
                 print "===> This is the offending commit from: $author\n";
             }
             else {
