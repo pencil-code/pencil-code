@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.3 2020/02/20 12:35:53 joern Exp $'
-  nt=19, it1=1, isave=2000, itorder=3
+  nt=19, it1=2, isave=2000, itorder=3
   cdt=0.99
 /
 &eos_run_pars
