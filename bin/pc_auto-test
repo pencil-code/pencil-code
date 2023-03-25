@@ -1764,16 +1764,31 @@ sub mark_failed {
 
     my $last_succeeded = get_path ($dir, "LAST_SUCCEEDED");
     if (-e $last_succeeded) {
-        print "=> Test still succeeded with revision:\n";
+        print "===> Test still succeeded with revision:\n";
         system ('cat "'.$last_succeeded.'"');
         print scalar localtime `stat -L --format="%Y" "$last_succeeded"`;
         print "\n";
     }
     if (-e $last) {
-        print "=> Test failed at latest with revision:\n";
+        print "===> Test failed at latest with revision:\n";
         system ('cat "'.$last.'"');
         print scalar localtime `stat -L --format="%Y" "$last"`;
         print "\n";
+    }
+    if ((-e $last_succeeded) && (-e $last)) {
+        if (defined ($current_revision)) {
+            my $previous_revision = `head -1 "$last"`;
+            if ($previous_revision == $current_revision - 1) {
+                my $author = `svn info --show-item last-changed-author`;
+                print "===> This is the offending commit from: $author\n";
+            }
+            else {
+                print "===> Need to bisect manually to find the offending commit.:\n";
+            }
+        }
+        else {
+            print "===> Plese use SVN checkout for an automatic analysis!\n";
+        }
     }
 }
 # ---------------------------------------------------------------------- #
