@@ -4,8 +4,8 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.1 2017/03/12 13:48:44 jennifer Exp $'
-  nt=200, it1=10, isave=10, itorder=3
-  dsnap=10, dvid=10
+  nt=191, it1=10, isave=200, itorder=3
+  dsnap=40, dvid=10
   random_gen='nr_f90'
   lpencil_check_small=T
   lpencil_check=T
