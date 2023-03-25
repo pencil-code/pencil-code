@@ -233,6 +233,8 @@ my %tests = (
             );
 # ---------------------------------------------------------------------- #
 
+my $base_URL = 'https://github.com/pencil-code/pencil-code/'; # repository URL
+
 my $ntests      = 0;                 # total number of tests run
 my $failed      = 0;
 my $created_datadir = 0;
@@ -1791,7 +1793,13 @@ sub mark_failed {
     if (-e $last) {
         print "===> Test failed at latest with revision:\n";
         print "SVN: ".get_SVN_revision ($last)."\n";
-        print "GIT: ".get_GIT_commit ($last)."\n";
+        my $commit = get_GIT_commit ($last);
+        if ($log_dir) {
+            print 'GIT: <a href="'.$base_URL.'commit/'.$commit.'">'.$commit."</a>\n";
+        }
+        else {
+            print "GIT: ".$commit."\n";
+        }
         print scalar localtime `stat -L --format="%Y" "$last"`;
         print "\n";
     }
@@ -1800,7 +1808,7 @@ sub mark_failed {
             my $works = get_SVN_revision ($last_succeeded);
             my $fails = get_SVN_revision ($last);
             if ($works == $fails - 1) {
-                my $author = `svn info --revision $fails --show-item last-changed-author`;
+                my $author = `svn info "$pencil_home" --revision $fails --show-item last-changed-author`;
                 print "===> This is the offending commit from: $author\n";
             }
             else {
@@ -1827,7 +1835,7 @@ sub get_current_revision {
         # Get current SVN revision and GIT hash
         if (-d "$pencil_home/.svn") {
             # SVN revision
-            $current_revision = `svn info --show-item revision`;
+            $current_revision = `svn info "$pencil_home" --show-item revision`;
             # GIT hash
             my $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
             if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $current_hash = $1; }
