@@ -3,8 +3,8 @@
 !  Run parameters for coagulation run.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2018/06/08 07:14:05 xiangyu Exp $',
-  nt=100, it1=20, isave=10, itorder=3
+  cvsid='$Id: run.in,v 1.1 2018/06/08 07:14:05 xiangyu Exp $'
+  nt=81, it1=20, isave=100, itorder=3
   dsnap=1., dvid=500.
   dspec=1., ou_spec=T
   lsfu=T
