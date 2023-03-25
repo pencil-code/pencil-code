@@ -5,7 +5,7 @@
 &run_pars
   cvsid='$Id: run.in,v 1.2 2019/02/11 21:08:12 wlyra Exp $',
   ip=14,
-  nt=100, it1=10, isave=5000, itorder=3
+  nt=91, it1=10, isave=5000, itorder=3
   cdt=0.4,
   cdtv=0.4,
   cdtv3=0.4
