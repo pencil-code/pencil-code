@@ -4,8 +4,8 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=20, it1=2, cdt=0.4, cdtv=0.25, old_cdtv=F, isave=10, itorder=3,
-  dsnap=50, dvid=0.5,
+  nt=19, it1=2, cdt=0.4, cdtv=0.25, old_cdtv=F, isave=50, itorder=3
+  dsnap=50, dvid=0.5
   lpencil_check=T
 /
 &chiral_run_pars
