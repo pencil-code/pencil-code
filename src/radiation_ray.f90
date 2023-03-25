@@ -1743,6 +1743,10 @@ module Radiation
         enddo
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
       endif
+!--     call multmv_sym(PP,uu,PPuu)
+!--     df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure-uu*4*pi*Srad-PPuu
+!--     alpha=16*!pi/3*Srad*kappa
+!--     nu=kappa*rho
 !
 !  Diagnostics. Here we divide again by kapparho, so we get actual Frad.
 !
