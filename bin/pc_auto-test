@@ -1815,7 +1815,7 @@ sub mark_failed {
                 print "===> This is the offending commit from: $author\n";
             }
             else {
-                print "===> Need to bisect manually to find the offending commit.:\n";
+                print "===> Need to bisect manually to find the offending commit...\n";
             }
         }
         else {
