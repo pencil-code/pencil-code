@@ -5,15 +5,15 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=50, it1=10, isave=200, itorder=3,
-  dsnap=20., dvid=0.2,
+  nt=41, it1=10, isave=200, itorder=3
+  dsnap=20., dvid=0.2
 !! uncomment the following block to see the free evolution of the system:
-!  nt=4000, it1=50, isave=2000, itorder=3,
-!  dsnap=0.2, dvid=0.2,
+!  nt=4000, it1=50, isave=2000, itorder=3
+!  dsnap=0.2, dvid=0.2
   bcx = 'p','p','p', 'p',    'p'
   bcy = 'p','p','p', 'p',    'p'
   bcz = 's','s','a','a2','c1:cT'
-  cdtv=0.30, cdt=0.4,
+  cdtv=0.30, cdt=0.4
   lpencil_check=T
 /
 &eos_run_pars
