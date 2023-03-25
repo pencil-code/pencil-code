@@ -5,7 +5,7 @@
 &run_pars
   cvsid='$Id: run.in,v 1.2 2013-03-22 03:42:03 wlyra Exp $',
   ip=14,
-  nt=100, it1=25, isave=100, itorder=3
+  nt=76, it1=25, isave=100, itorder=3
   cdt=0.4,
   cdtv=0.4,
   cdtv3=0.1
