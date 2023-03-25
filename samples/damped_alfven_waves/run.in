@@ -6,7 +6,7 @@
   nt = 51, it1 = 10
   tmax = 10.1, dsnap = 10.0
   cdt = 0.4
-  lpencil_check = .true.
+  lpencil_check = T
 /
 &eos_run_pars
 /
@@ -14,11 +14,11 @@
 /
 &magnetic_run_pars
   B_ext = 1., 1., 0.5
-  limplicit_resistivity = .true.
+  limplicit_resistivity = T
   eta = 0.1
 /
 &viscosity_run_pars
-  limplicit_viscosity = .true.
+  limplicit_viscosity = T
   ivisc = 'simplified', nu = 0.1
 /
 &implicit_diffusion_run_pars
