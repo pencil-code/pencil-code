@@ -3,8 +3,8 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=501, it1=50, cdtv=0.25, isave=200, itorder=3
-  dsnap=1000., dvid=20., dtmin=1e-6
+  nt=501, it1=50, cdtv=0.25, isave=1000, itorder=3
+  dsnap=1000., dvid=500., dtmin=1e-6
 /
 &chemistry_run_pars
   chem_diff=5e-5, chem_diff_prefactor=2.,1.
