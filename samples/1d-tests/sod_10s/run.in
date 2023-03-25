@@ -4,8 +4,8 @@
 !
 &run_pars
   cvsid='$Id$'
-  nt=200000, it1=100, cdt=0.4, cdtv=0.25, isave=50, itorder=3,
-  dsnap=20.0, dvid=0.02, tmax=2.4,
+  nt=601, it1=100, cdt=0.4, cdtv=0.25, isave=50, itorder=3
+  dsnap=20.0, dvid=0.02
   bcx = 'a','s','s','s','s','s'
   lpencil_check=F
 /
