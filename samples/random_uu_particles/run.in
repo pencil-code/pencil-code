@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=50, it1=10, cdt=0.4, cdtv=0.25, isave=100, itorder=3
+  nt=31, it1=10, cdt=0.4, cdtv=0.25, isave=100, itorder=3
   dsnap=1.0, dvid=0.1, ip=20
   lbidiagonal_derij=F
   lpencil_check=T
