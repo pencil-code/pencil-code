@@ -4,8 +4,9 @@
 !
 &run_pars
   cvsid = '$Id$'
-  nt = 1000000, it1 = 10
-  tmax = 1., dtmax = 0.01
+  nt = 101
+  it1 = 10
+  dtmax = 0.01
 /
 &magnetic_run_pars
   iresistivity = 'eta-const', eta = .1
