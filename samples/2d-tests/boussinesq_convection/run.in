@@ -4,8 +4,8 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.5 2012/05/07 10:00:00 dintrans Exp $'
-  nt=100, it1=10, itorder=3,
-  dsnap=1.e-2,
+  nt=91, it1=10, itorder=3
+  dsnap=1.e-2
   lpencil_check_small=F
 /
 &eos_run_pars
