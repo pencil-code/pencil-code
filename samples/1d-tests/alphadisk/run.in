@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.5 2009/04/26 16:08:32 dintrans Exp $',
-  nt=500, it1=50, isave=10000, itorder=3, cdtv=0.07
+  nt=451, it1=50, isave=10000, itorder=3, cdtv=0.07
   dsnap=3.7d12
   tmax=3.15688e+13
   dtmin=1e-10
