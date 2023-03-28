@@ -290,7 +290,7 @@ module Interstellar
   logical :: lSN_list=.false.
   real, dimension(:,:), allocatable :: SN_list
   integer, dimension(:), allocatable :: SN_type
-  integer :: type_list, nlist
+  integer :: type_list, nlist, SNfirst
 !
 !  Parameters for 'averaged'-SN heating
 !
@@ -403,6 +403,7 @@ module Interstellar
   integer :: idiag_nrhom=0    ! DIAG_DOC: TBC
   integer :: idiag_rhoLm=0    ! DIAG_DOC: $\left<\rho\Lambda\right>$
   integer :: idiag_Gamm=0     ! DIAG_DOC: $\left<\Gamma\right>$
+  integer :: idiag_rhoHCmz=0  ! XYAVG_DOC: $\left<\rho\Gamma-\rho^2\Lambda\right>_{xy}$
 !
 !  Heating function, cooling function and mass movement
 !  method selection.
@@ -787,8 +788,9 @@ module Interstellar
         nlist=-1
         read(33,*,iostat=stat)
         do while(1==1)
-          read(33,*,iostat=stat)
-          nlist=nlist+1
+          read(33,*,iostat=stat) &
+              int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
+          if (t >= t_list) nlist=nlist+1
           if (stat<0) exit
         enddo
         close(33)
@@ -800,17 +802,23 @@ module Interstellar
 !
         open(33,file='sn_series.in')
         read(33,*,iostat=stat)
-        do  i=1,nlist
+        i=1
+        do  while(i<=nlist)
           read(33,*,iostat=stat) &
               int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
           if (stat<0) exit
-          SN_list(1,i)=t_list
-          SN_list(2,i)=x_list
-          SN_list(3,i)=y_list
-          SN_list(4,i)=z_list
-          SN_type(  i)=type_list
+          if (t_list>=t) then
+            SN_list(1,i)=t_list
+            SN_list(2,i)=x_list
+            SN_list(3,i)=y_list
+            SN_list(4,i)=z_list
+            SN_type(  i)=type_list
+            if (lroot) print*,i,t_list,t
+            i=i+1
+          endif
         enddo
         close(33)
+        SNfirst=1
       endif
 
       if (leos_ionization) &
@@ -1372,7 +1380,7 @@ module Interstellar
 !
       use Diagnostics, only: parse_name
 !
-      integer :: iname
+      integer :: iname,inamez
       logical :: lreset
       logical, intent(in), optional :: lwrite
 !
@@ -1386,6 +1394,7 @@ module Interstellar
         idiag_nrhom=0
         idiag_rhoLm=0
         idiag_Gamm=0
+        idiag_rhoHCmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1397,6 +1406,10 @@ module Interstellar
         call parse_name(iname,cname(iname),cform(iname),'nrhom',idiag_nrhom)
         call parse_name(iname,cname(iname),cform(iname),'rhoLm',idiag_rhoLm)
         call parse_name(iname,cname(iname),cform(iname),'Gamm',idiag_Gamm)
+      enddo
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhoHCmz',idiag_rhoHCmz)
       enddo
 !
 !  check for those quantities for which we want video slices
@@ -1743,7 +1756,7 @@ module Interstellar
 !  10-aug-03/axel: TT is used as input
 !   3-apr-06/axel: add ltemperature switch
 !
-      use Diagnostics, only: max_mn_name, sum_mn_name
+      use Diagnostics, only: max_mn_name, sum_mn_name, xysum_mn_name_z
       use EquationOfState, only: gamma
       use Sub, only: dot2
       use Messages, only: fatal_error
@@ -1879,6 +1892,10 @@ module Interstellar
         if (idiag_Gamm/=0) &
           call sum_mn_name(heat,idiag_Gamm)
       endif
+      if (l1davgfirst) then
+        if (idiag_rhoHCmz/=0) &
+          call xysum_mn_name_z(heatcool,idiag_rhoHCmz)
+      endif
 !
 !  Limit timestep by the cooling time (having subtracted any heating)
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
@@ -1989,7 +2006,7 @@ module Interstellar
       if (lSN_list) then
         if (t>=t_next_SNI) then
           call tidy_SNRs
-          do i=1,nlist-1
+          do i=SNfirst,nlist-1
             if (SN_list(1,i)>=t_next_SNI) then
               center_SN_x=SN_list(2,i)
               center_SN_y=SN_list(3,i)
@@ -2003,6 +2020,9 @@ module Interstellar
               t_next_SNI=SN_list(1,i+1)
               if (lroot) print &
                   "(1x,'check_SN: t_next_SNI on list =',e16.8)",t_next_SNI
+              SNfirst=i+1
+              if (lroot) print &
+                  "(1x,'check_SN: SNfirst at t =',i7,e16.8)",SNfirst,t
               exit
             endif
           enddo
