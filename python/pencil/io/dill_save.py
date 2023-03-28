@@ -23,6 +23,6 @@ def dill_save(obj, name, folder="pc"):
         remove(full_path)
 
     with open(join(folder, name), "wb") as f:
-        dill.dump(obj, f)
+        dill.dump(obj, f, recurse=True)
 
     return True
