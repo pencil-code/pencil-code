@@ -14,7 +14,7 @@ def get(path=".", quiet=False):
         Switches out the output of the function. Default: False.
     """
 
-    from os.path import isdir, join, exists, basename
+    from os.path import isdir, join, exists, basename, abspath
 
     from pencil.io import load
     from pencil.sim.simulation import simulation
@@ -25,7 +25,7 @@ def get(path=".", quiet=False):
             sim = load("sim", folder=join(path, "pc"))
             sim.update(quiet=quiet)
 
-            if sim.path != path:
+            if sim.path != abspath(path):
                 # The name of the directory containing the simulation has somehow changed (maybe the user renamed it). Better to just try to reload the sim from scratch.
                 raise RuntimeError
 
