@@ -163,6 +163,7 @@ class Averages(object):
         (134, 134, 134)
         """
 
+
         #check iter_list type is integer(s) if present
         if iter_list:
             if isinstance(iter_list, list):
@@ -175,7 +176,9 @@ class Averages(object):
                     exit()
 
         import os
-        from os.path import join
+        from os.path import join, abspath
+
+        simdir = abspath(simdir)
 
         lh5 = False
         if isinstance(param, list):
@@ -344,6 +347,7 @@ class Averages(object):
 
         else:
             #Reading averages from hdf5 files
+                # Get the averaged quantities.
             dim = read.dim()
             av_files = glob.glob(join(datadir,"averages","*"))
             if len(av_files) > 0:
@@ -417,6 +421,7 @@ class Averages(object):
                         iter_step,
                         time_range,
                         proc,
+                        simdir,
                         precision=precision,
                     )
 
@@ -441,6 +446,7 @@ class Averages(object):
         iter_step,
         time_range,
         proc,
+        simdir,
         precision="f",
     ):
         """
@@ -455,6 +461,12 @@ class Averages(object):
         import h5py
 
         print(av_file)
+        file_id = open(os.path.join(simdir, plane+"aver.in"))
+        variables = file_id.readlines()
+        file_id.close()
+        variables = [
+            v.strip("\n") for v in variables if v[0] != "#" and not v.isspace()
+        ]  # Ignore commented variables and blank lines in the .in file.
         sys.stdout.flush()
         with h5py.File(av_file, "r") as tmp:
             n_times = len(tmp.keys()) - 1
@@ -510,13 +522,16 @@ class Averages(object):
                 else:
                     var_names = [var_names]
                 for var_name in var_names:
-                    if not var_name in tmp[str(itlist[0])].keys():
+                    #if not var_name in tmp[str(itlist[0])].keys():
+                    if not var_name in variables:
                         var_names.remove(var_name)
                 if len(var_names) < 1:
                     print("Warning read.aver: var_names has no match in {} keys - reading all variables instead".format(av_file))
-                    var_names = list(tmp[str(itlist[0])].keys())
+                    #var_names = list(tmp[str(itlist[0])].keys())
+                    var_names = variables
             else:
-                var_names = list(tmp[str(itlist[0])].keys())
+                #var_names = list(tmp[str(itlist[0])].keys())
+                var_names = variables
             if "time" in var_names:
                 var_names.remove('time')
 
@@ -529,12 +544,15 @@ class Averages(object):
             else:
                 ext_object = self.__getattribute__(plane)
 
+            data_shape = None
             for var in var_names:
-                data_shape = list()
-                data_shape.append(len(itlist))
-                dshape = tmp[str(itlist[0])+ "/" + var.strip()].shape
-                for dsh in dshape:
-                    data_shape.append(dsh)
+                if not data_shape:
+                    data_shape = list()
+                    data_shape.append(len(itlist))
+                    if var.strip() in tmp[str(itlist[0])].keys():
+                        dshape = tmp[str(itlist[0])+ "/" + var.strip()].shape
+                    for dsh in dshape:
+                        data_shape.append(dsh)
                 raw_data = np.zeros(data_shape, dtype=precision)
                 t = np.zeros(data_shape[0], dtype=precision)
                 for t_idx, tmp_idx in zip(range(len(itlist)),itlist):
