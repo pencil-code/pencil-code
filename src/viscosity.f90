@@ -150,7 +150,7 @@ module Viscosity
   integer :: idiag_nusmagm=0    ! DIAG_DOC: Mean value of Smagorinsky viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
-  integer :: idiag_nu_LES=0     ! DIAG_DOC: Mean value of Smagorinsky viscosity 
+  integer :: idiag_nu_LES=0     ! DIAG_DOC: Mean value of Smagorinsky viscosity
   integer :: idiag_visc_heatm=0 ! DIAG_DOC: Mean value of viscous heating
   integer :: idiag_qfviscm=0    ! DIAG_DOC: $\left<\qv\cdot
                                 ! DIAG_DOC: \fv_{\rm visc}\right>$
@@ -181,8 +181,13 @@ module Viscosity
   integer :: idiag_fviscsmmz=0  ! XYAVG_DOC: $\left<2\nu_{\rm Smag}\varrho u_i
                                 ! XYAVG_DOC: \mathcal{S}_{iz} \right>_{xy}$
                                 ! XYAVG_DOC: ($z$-component of viscous flux)
-  integer :: idiag_epsKmz=0     ! XYAVG_DOC: $\left<2\nu\varrho\Strain^2
-                                ! XYAVG_DOC: \right>_{xy}$
+  integer :: idiag_epsKmz=0     ! XYAVG_DOC: $\left<2\nu\varrho\Strain^2 \right>_{xy}$
+  integer :: idiag_sijxxmz=0    ! XYAVG_DOC: $\left<\Strain_{xx} \right>_{xy}$
+  integer :: idiag_sijxymz=0    ! XYAVG_DOC: $\left<\Strain_{xy} \right>_{xy}$
+  integer :: idiag_sijxzmz=0    ! XYAVG_DOC: $\left<\Strain_{xz} \right>_{xy}$
+  integer :: idiag_sijyymz=0    ! XYAVG_DOC: $\left<\Strain_{yy} \right>_{xy}$
+  integer :: idiag_sijyzmz=0    ! XYAVG_DOC: $\left<\Strain_{yz} \right>_{xy}$
+  integer :: idiag_sijzzmz=0    ! XYAVG_DOC: $\left<\Strain_{zz} \right>_{xy}$
   integer :: idiag_viscforcezmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy}$
   integer :: idiag_viscforcezupmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy+}$
   integer :: idiag_viscforcezdownmz=0 ! XYAVG_DOC: $\left<(\varrho\fv_{\rm visc})_z\right>_{xy-}$
@@ -410,15 +415,15 @@ module Viscosity
           if (PrM_turb/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nut_from_magnetic=.true.
         case ('nu-shock','shock')
-          if (.not.lshock) call fatal_error('initialize_viscosity','a SHOCK module is required for "nu-shock"') 
+          if (.not.lshock) call fatal_error('initialize_viscosity','a SHOCK module is required for "nu-shock"')
           if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)'
           lvisc_nu_shock=.true.
         case ('nu-shock-profz')
-          if (.not.lshock) call fatal_error('initialize_viscosity','a SHOCK module is required for "nu-shock-profz"') 
+          if (.not.lshock) call fatal_error('initialize_viscosity','a SHOCK module is required for "nu-shock-profz"')
           if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)  with a vertical profile'
           lvisc_nu_shock_profz=.true.
           case ('nu-shock-profr')
-          if (.not.lshock) call fatal_error('initialize_viscosity','a SHOCK module is required for "nu-shock-profr"') 
+          if (.not.lshock) call fatal_error('initialize_viscosity','a SHOCK module is required for "nu-shock-profr"')
           if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)  with a radial profile'
           lvisc_nu_shock_profr=.true.
         case ('shock_simple', 'shock-simple')
@@ -848,6 +853,8 @@ module Viscosity
         idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
+        idiag_sijxxmz=0; idiag_sijxymz=0; idiag_sijxzmz=0
+        idiag_sijyymz=0; idiag_sijyzmz=0; idiag_sijzzmz=0;
         idiag_fviscsmmz=0; idiag_fviscsmmxy=0; idiag_ufviscm=0
         idiag_fviscmax=0; idiag_fviscmin=0; idiag_fviscrsphmphi=0
         idiag_viscforcezmz=0; idiag_viscforcezupmz=0; idiag_viscforcezdownmz=0
@@ -887,6 +894,12 @@ module Viscosity
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fviscmz',idiag_fviscmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fviscsmmz',idiag_fviscsmmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epsKmz',idiag_epsKmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'sijxxmz',idiag_sijxxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'sijxymz',idiag_sijxymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'sijxzmz',idiag_sijxzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'sijyymz',idiag_sijyymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'sijyzmz',idiag_sijyzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'sijzzmz',idiag_sijzzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'viscforcezmz',idiag_viscforcezmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'viscforcezupmz',idiag_viscforcezupmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'viscforcezdownmz',idiag_viscforcezdownmz)
@@ -942,7 +955,7 @@ module Viscosity
           lvisc_nu_profr_twosteps .or. lvisc_nu_profy_bound .or. &
           lvisc_nut_from_magnetic.or.lvisc_mu_cspeed.or. &
           (lvisc_simplified.and.lboussinesq) ) then
-        if ((lenergy.and.lviscosity_heat) .or. & 
+        if ((lenergy.and.lviscosity_heat) .or. &
              idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsK_LES/=0 .or. &
              idiag_epsKmz/=0 .or. &
              idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) &
@@ -1020,7 +1033,7 @@ module Viscosity
          if (lviscosity_heat) lpenc_requested(i_rho)=.true.
       endif
 !
-      if (lvisc_hyper3_cmu_const_strt_otf) then 
+      if (lvisc_hyper3_cmu_const_strt_otf) then
         lpenc_requested(i_del6u_strict)=.true.
         lpenc_requested(i_del4graddivu)=.true.
       endif
@@ -1107,6 +1120,10 @@ module Viscosity
       if (idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsKmz/=0 .or. idiag_epsK_LES/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_uu)=.true.
+      endif
+      if (idiag_sijxxmz/=0.or.idiag_sijxymz/=0.or.idiag_sijxzmz/=0.or. &
+          idiag_sijyymz/=0.or.idiag_sijyzmz/=0.or.idiag_sijzzmz/=0) then
+        lpenc_diagnos(i_sij)=.true.
       endif
       if (lvisc_nu_shock.and.(idiag_epsK/=0 .or. idiag_epsKint/=0)) then
         lpenc_diagnos(i_fvisc)=.true.
@@ -1856,7 +1873,7 @@ module Viscosity
           endif
           advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uu**2
         endif
-      endif     
+      endif
 !
       if (lvisc_hyper3_csmesh) then
         do j=1,3
@@ -1984,7 +2001,7 @@ module Viscosity
         endif
 !
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+&
-             (nu_aniso_hyper3(1)*dline_1(:,1)**6 + & 
+             (nu_aniso_hyper3(1)*dline_1(:,1)**6 + &
               nu_aniso_hyper3(2)*dline_1(:,2)**6 + &
               nu_aniso_hyper3(3)*dline_1(:,3)**6)/ dxyz_6
 !
@@ -2026,7 +2043,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*p%del6u_bulk(:,i)
         enddo
-        if (lpencil(i_visc_heat)) then  
+        if (lpencil(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_rho_nu_const_bulk')
         endif
@@ -2037,7 +2054,7 @@ module Viscosity
 !
       if (lvisc_hyper3_nu_const) then
         p%fvisc=p%fvisc+nu_hyper3*(p%del6u+p%uij5glnrho)
-        if (lpencil(i_visc_heat)) then  
+        if (lpencil(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_nu_const')
         endif
@@ -2250,10 +2267,10 @@ module Viscosity
     subroutine viscosity_after_boundary(f)
 !
 !  19-dec-16/MR: fixed bug: m,n must be from Cdata. Added precalculation of nu_smag in f array.
-!                Rewritten viscous heating from slope-limited diffusion.  
+!                Rewritten viscous heating from slope-limited diffusion.
 !  18-may-17/MR: corrected wrong order of loops for viscous heating by slope-limited diffusion.
-!  16-jun-18/axel: reverted "severe bug..." of r74487; see "!AB_REM:" and "!AB_ADD" 
-!  16-aug-18/MR: replaced Joerns implementation of linear interpolation from staggered to normal 
+!  16-jun-18/axel: reverted "severe bug..." of r74487; see "!AB_REM:" and "!AB_ADD"
+!  16-aug-18/MR: replaced Joerns implementation of linear interpolation from staggered to normal
 !                grid as it was not bi-/trilinear in 2D/3D;
 !                added 3rd order interpolation (default)
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion, SLD commented out here.
@@ -2294,7 +2311,7 @@ module Viscosity
           if (gamma_smag/=0.) tmp=tmp/sqrt(1.+gamma_smag*rho)
 !
 !  Put nu_smag into the f-array.
-!          
+!
           f(l1:l2,m,n,inusmag)=tmp
 !
         enddo; enddo
@@ -2399,7 +2416,7 @@ module Viscosity
 !
 !              f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)
 !            endif
- 
+
 !          enddo; enddo
 !        enddo
 !maxh=maxval(abs(f(l1:l2,m1:m2,n1:n2,iFF_heat)))
@@ -2561,7 +2578,7 @@ module Viscosity
         maxdiffus=max(maxdiffus,diffus_nu)
         maxdiffus2=max(maxdiffus2,diffus_nu2)
         maxdiffus3=max(maxdiffus3,diffus_nu3)
-        
+
         if (ldiagnos) then
           if (idiag_dtnu/=0) call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
           if (idiag_dtnu3/=0) call max_mn_name(diffus_nu3/cdtv3,idiag_dtnu3,l_dt=.true.)
@@ -2656,9 +2673,18 @@ module Viscosity
             p%uu(:,2)*p%sij(:,2,3)+ &
             p%uu(:,3)*p%sij(:,3,3)),idiag_fviscsmmz)
 
-        if (idiag_epsKmz/=0) call xysum_mn_name_z(p%visc_heat*p%rho,idiag_epsKmz)
+        if (idiag_sijxxmz/=0) call xysum_mn_name_z(p%sij(:,1,1),idiag_sijxxmz)
+        if (idiag_sijxymz/=0) call xysum_mn_name_z(p%sij(:,1,2),idiag_sijxymz)
+        if (idiag_sijxzmz/=0) call xysum_mn_name_z(p%sij(:,1,3),idiag_sijxzmz)
+        if (idiag_sijyymz/=0) call xysum_mn_name_z(p%sij(:,2,2),idiag_sijyymz)
+        if (idiag_sijyzmz/=0) call xysum_mn_name_z(p%sij(:,2,3),idiag_sijyzmz)
+        if (idiag_sijzzmz/=0) call xysum_mn_name_z(p%sij(:,3,3),idiag_sijzzmz)
 
-        if (idiag_fviscmx/=0) call yzsum_mn_name_x(-2.*p%rho*nu*( &
+        if (idiag_epsKmz/=0) &
+            call xysum_mn_name_z(p%visc_heat*p%rho,idiag_epsKmz)
+
+        if (idiag_fviscmx/=0) &
+            call yzsum_mn_name_x(-2.*p%rho*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+ &
             p%uu(:,2)*p%sij(:,2,1)+ &
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmx)
@@ -2789,7 +2815,7 @@ module Viscosity
       if (present(nu_pencil)) then
         if (.not. present(p)) call fatal_error('getnu', &
               'p must be present when nu_pencil is present!')
- 
+
         if (lvisc_simplified) then
           nu_pencil=nu
         elseif(lvisc_mixture) then

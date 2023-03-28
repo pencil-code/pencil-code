@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglnTT(3); transprhos !,dsdr
-! PENCILS PROVIDED initss; initlnrho, uuadvec_gss 
+! PENCILS PROVIDED initss; initlnrho, uuadvec_gss
 !
 !***************************************************************
 module Energy
@@ -170,7 +170,7 @@ module Energy
   character (len=labellen) :: ichit='nothing'
   character (len=intlen) :: iinit_str
   real, dimension (mz)  :: ss_mz
-  real, dimension (nx) :: chit_aniso_prof, dchit_aniso_prof 
+  real, dimension (nx) :: chit_aniso_prof, dchit_aniso_prof
   real, dimension (:), allocatable :: hcond_prof,dlnhcond_prof
   real, dimension (:), allocatable :: chit_prof_stored,chit_prof_fluct_stored
   real, dimension (:), allocatable :: dchit_prof_stored,dchit_prof_fluct_stored
@@ -284,8 +284,8 @@ module Energy
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_Hmax=0       ! DIAG_DOC: $H_{\rm max}$\quad(net heat sources
                                 ! DIAG_DOC: summed see \S~\ref{time-step})
-  integer :: idiag_tauhmin=0    ! DIAG_DOC: $\min(\tau_{\rm heat})$ 
-  integer :: idiag_dtH=0        ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm s}}\, 
+  integer :: idiag_tauhmin=0    ! DIAG_DOC: $\min(\tau_{\rm heat})$
+  integer :: idiag_dtH=0        ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm s}}\,
                                 ! DIAG_DOC:  c_{\rm v}T /H_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat sources;
@@ -352,6 +352,11 @@ module Energy
   integer :: idiag_TTf2mz=0     ! XYAVG_DOC: $\left< T'^2 \right>_{xy}$
   integer :: idiag_TTf2upmz=0   ! XYAVG_DOC: $\left< T'^2_\uparrow \right>_{xy}$
   integer :: idiag_TTf2downmz=0 ! XYAVG_DOC: $\left< T'^2_\downarrow \right>_{xy}$
+  integer :: idiag_ugradpmz=0   ! XYAVG_DOC: $\left< u \cdot\nabla p \right>_{xy}$
+  integer :: idiag_gradpxmz=0   ! XYAVG_DOC: $\left< \nabla p_x \right>_{xy}$
+  integer :: idiag_gradpymz=0   ! XYAVG_DOC: $\left< \nabla p_y \right>_{xy}$
+  integer :: idiag_gradpzmz=0   ! XYAVG_DOC: $\left< \nabla p_z \right>_{xy}$
+  integer :: idiag_pdivumz=0    ! XYAVG_DOC: $\left<p\nabla\cdot\uv\right>_{xy}$
   integer :: idiag_uxTTmz=0     ! XYAVG_DOC: $\left< u_x T \right>_{xy}$
   integer :: idiag_uyTTmz=0     ! XYAVG_DOC: $\left< u_y T \right>_{xy}$
   integer :: idiag_uzTTmz=0     ! XYAVG_DOC: $\left< u_z T \right>_{xy}$
@@ -374,7 +379,7 @@ module Energy
                                 ! XYAVG_DOC: s\right>_{xy}$ \quad(turbulent
                                 ! XYAVG_DOC: heat flux)
   integer :: idiag_fturbmz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t0 \nabla_z
-                                ! XYAVG_DOC: \overline{s}\right>_{xy}$ 
+                                ! XYAVG_DOC: \overline{s}\right>_{xy}$
                                 ! XYAVG_DOC: \quad(turbulent heat flux)
   integer :: idiag_fturbfz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t0 \nabla_z
                                 ! XYAVG_DOC: s'\right>_{xy}$ \quad(turbulent
@@ -508,7 +513,7 @@ module Energy
 !  this behaviour off.
 !
       if (lfpres_from_pressure) then
-        if (ippaux==0) & 
+        if (ippaux==0) &
           call farray_register_auxiliary('ppaux',ippaux)
         test_nonblocking=.true.
       endif
@@ -516,9 +521,9 @@ module Energy
 !  Heat conductivity and its gradient.
 !
       if (lhcond_global) then
-        if (iglobal_hcond==0) & 
+        if (iglobal_hcond==0) &
           call farray_register_auxiliary('hcond',iglobal_hcond)
-        if (iglobal_glhc==0) & 
+        if (iglobal_glhc==0) &
           call farray_register_auxiliary('glhc',iglobal_glhc,vector=3)
       endif
 !
@@ -1158,7 +1163,7 @@ module Energy
       if (lheatc_Kprof) then
 !
 !  For backwards compatibility!
-! 
+!
         if (.not.lread_hcond) then
           if (lhcond_global) then
             if (file_exists('hcond_glhc.dat').or.file_exists('hcond_glhc.ascii')) then
@@ -1167,7 +1172,7 @@ module Energy
               lhcond_global=.false.; lread_hcond=.true.
             endif
           endif
-    
+
           if (lroot.and.hcond0==0..and..not.lread_hcond) &
             call warning('initialize_energy', 'hcond0 is zero and no profile read in')
         endif
@@ -1267,10 +1272,10 @@ module Energy
       if (.not.(lheatc_Kprof.or.lheatc_kramers)) idiag_fturbxy=0
       if (.not.(lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers.or.lheatc_smagorinsky)) &
         idiag_fturbz=0
-      if (.not.lheatc_chiconst) then 
+      if (.not.lheatc_chiconst) then
         idiag_fradz_constchi=0
         idiag_fradr_constchixy=0
-      endif       
+      endif
       if (.not.(lheatc_Kprof.or.lheatc_Kconst)) idiag_fradmx=0
 
       if (.not.lheatc_Kprof) then
@@ -2941,11 +2946,11 @@ module Energy
 !
 ! To be used to make the radiative cooling term propto exp(-P/P0), where P is the gas pressure
 !
-      if (Pres_cutoff/=impossible) then 
+      if (Pres_cutoff/=impossible) then
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_cs2)=.true.
       endif
-        
+
       if (cool_newton/=0.0) then
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_rho)=.true.
@@ -2963,7 +2968,7 @@ module Energy
         lpenc_requested(i_gss)=.true.
         lpenc_requested(i_uuadvec_gss)=.true.
       endif
-!      
+!
       if (borderss == 'initial-temperature') lpenc_requested(i_lnrho)=.true.
 !
       lpenc_diagnos2d(i_ss)=.true.
@@ -2981,17 +2986,17 @@ module Energy
       if (idiag_csm/=0 .or. idiag_csmax/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
-      if (idiag_pdivum/=0) then
+      if (idiag_pdivum/=0.or.idiag_pdivumz/=0) then
         lpenc_diagnos(i_pp)=.true.
         lpenc_diagnos(i_divu)=.true.
       endif
       if (idiag_ssruzm/=0 .or. idiag_ssuzm/=0 .or. idiag_ssm/=0 .or. &
-          idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. idiag_ss2mz/=0 .or. & 
+          idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. idiag_ss2mz/=0 .or. &
           idiag_ssupmz/=0 .or. idiag_ssdownmz/=0 .or. &
-          idiag_ss2upmz/=0 .or. idiag_ss2downmz/=0 .or. & 
-          idiag_ssf2mz/=0 .or. idiag_ssf2upmz/=0 .or. idiag_ssf2downmz/=0 .or. & 
-          idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ss2mx/=0 .or. & 
-          idiag_ssmr/=0) & 
+          idiag_ss2upmz/=0 .or. idiag_ss2downmz/=0 .or. &
+          idiag_ssf2mz/=0 .or. idiag_ssf2upmz/=0 .or. idiag_ssf2downmz/=0 .or. &
+          idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ss2mx/=0 .or. &
+          idiag_ssmr/=0) &
           lpenc_diagnos(i_ss)=.true.
       if (idiag_fpreszmz/=0) lpenc_diagnos(i_fpres)=.true.
       if (idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. idiag_ppmz/=0) &
@@ -3003,6 +3008,21 @@ module Energy
           idiag_ethmz/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_ee)=.true.
+      endif
+      if (idiag_ugradpm/=0.or.idiag_ugradpmz/=0) then
+        lpenc_diagnos(i_cs2)=.true.
+        lpenc_diagnos(i_ugss)=.true.
+        if (ldensity_nolog) then
+          lpenc_diagnos(i_ugrho)=.true.
+          lpenc_diagnos(i_rho1)=.true.
+        else
+          lpenc_diagnos(i_uglnrho)=.true.
+        endif
+      endif
+      if (idiag_gradpxmz/=0.or.idiag_gradpymz/=0.or.idiag_gradpzmz/=0) then
+        lpenc_diagnos(i_cs2)=.true.
+        lpenc_diagnos(i_glnrho)=.true.
+        lpenc_diagnos(i_gss)=.true.
       endif
       if (idiag_ssuzm/=0) lpenc_diagnos(i_uu)=.true.
       if (idiag_ssruzm/=0 .or. idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. &
@@ -3253,7 +3273,7 @@ module Energy
 !  17-sep-01/axel: coded
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !   2-feb-03/axel: added possibility of ionization
-! 
+!
       use Diagnostics
       use Interstellar, only: calc_heat_cool_interstellar
       use Special, only: special_calc_energy
@@ -3367,7 +3387,7 @@ module Energy
 !  Calculate viscous contribution to entropy.
 !
       diffus_chi=0.; diffus_chi3=0.
- 
+
       if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(df,p,Hmax)
 !
 !  Entry possibility for "personal" entries.
@@ -3446,7 +3466,7 @@ module Energy
           ldiagnos.and.(idiag_dtH/=0.or.idiag_tauhmin/=0))) ss0 = abs(df(l1:l2,m,n,iss))
 
       if (lfirst.and.ldt) then
-        if (lthdiff_Hmax) then 
+        if (lthdiff_Hmax) then
           dt1_max=max(dt1_max,ss0*p%cv1/cdts)
         else
           dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
@@ -3478,7 +3498,7 @@ module Energy
 
         !uT=unit_temperature !(define shorthand to avoid long lines below)
         uT=1. !(AB: for the time being; to keep compatible with auto-test
-        
+
         if (.not.lgpu) then
           if (idiag_dtchi/=0) &
               call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
@@ -3525,8 +3545,13 @@ module Energy
         call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         call max_mn_name(p%cs2,idiag_csmax,lsqrt=.true.)
         if (idiag_cgam/=0) call sum_mn_name(16.*real(sigmaSB)*p%TT**3*p%cp1*p%rho1,idiag_cgam)
-        if (idiag_ugradpm/=0) &
+        if (idiag_ugradpm/=0) then
+          if (ldensity_nolog) then
+            call sum_mn_name(p%cs2*(p%rho1*p%ugrho+p%ugss),idiag_ugradpm)
+          else
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
+          endif
+        endif
         if (idiag_fconvm/=0) &
             call sum_mn_name(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvm)
         if (idiag_ufpresm/=0) then
@@ -3633,6 +3658,17 @@ module Energy
         if (idiag_fradz_constchi/=0) call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_constchi)
         if (idiag_TT2mx/=0) call yzsum_mn_name_x(p%TT**2,idiag_TT2mx)
         if (idiag_TT2mz/=0) call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
+        if (idiag_ugradpmz/=0) then
+          if (ldensity_nolog) then
+            call xysum_mn_name_z(p%cs2*(p%rho1*p%ugrho+p%ugss),idiag_ugradpmz)
+          else
+            call xysum_mn_name_z(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpmz)
+          endif
+        endif
+        if (idiag_gradpxmz/=0) call xysum_mn_name_z(p%cs2*(p%glnrho(:,1)+p%gss(:,1)),idiag_gradpxmz)
+        if (idiag_gradpymz/=0) call xysum_mn_name_z(p%cs2*(p%glnrho(:,2)+p%gss(:,2)),idiag_gradpymz)
+        if (idiag_gradpzmz/=0) call xysum_mn_name_z(p%cs2*(p%glnrho(:,3)+p%gss(:,3)),idiag_gradpzmz)
+        if (idiag_pdivumz/=0) call xysum_mn_name_z(p%pp*p%divu,idiag_pdivumz)
         if (idiag_uxTTmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
         if (idiag_uxTTmx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%TT,idiag_uxTTmx)
         if (idiag_uyTTmx/=0) call yzsum_mn_name_x(p%uu(:,2)*p%TT,idiag_uyTTmx)
@@ -4019,7 +4055,7 @@ module Energy
             if (ldensity_nolog) then
               if (lreference_state) then
                 cs2mx(l)= fact*sum(cs20*exp(gamma_m1*(alog(f(lf,m1:m2,n1:n2,irho)+reference_state(l,iref_rho)) &
-                         -lnrho0)+cv1*(f(lf,m1:m2,n1:n2,iss)+reference_state(l,iref_s)))) 
+                         -lnrho0)+cv1*(f(lf,m1:m2,n1:n2,iss)+reference_state(l,iref_s))))
               else
                 cs2mx(l)= fact*sum(cs20*exp(gamma_m1*(alog(f(lf,m1:m2,n1:n2,irho)) &
                          -lnrho0)+cv1*f(lf,m1:m2,n1:n2,iss)))
@@ -4226,16 +4262,16 @@ module Energy
 !
 !  This boundary condition drives the entropy back not to the initial entropy,
 !  but to the initial _temperature_. It is useful for situations when the density
-!  in the boundary goes very low and the initial entropy corresponds to a very high         
-!  temperature, making the simulation break. The sounds speed is 
+!  in the boundary goes very low and the initial entropy corresponds to a very high
+!  temperature, making the simulation break. The sounds speed is
 !
 !    cs2=cs20*exp(ss/cv+gamma_m1*(lnrho-lnrho0))
 !
-!  So the entropy it corresponds to is 
+!  So the entropy it corresponds to is
 !
 !    ss = cv*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
-!         
-!  Keep the density and replace cs2 by the initial cs2 to drive ss to the initial temperature. 
+!
+!  Keep the density and replace cs2 by the initial cs2 to drive ss to the initial temperature.
 !
         call set_border_initcond(f,iss,ss_init)
         call get_cp1(cp1)
@@ -4248,8 +4284,8 @@ module Energy
         !cs2_init = cs20*exp(gamma*cp1*ss_init+gamma_m1*(lnrho_init-lnrho0))
         !f_target = 1./(gamma*cp1)*(log(cs2_init/cs20)-gamma_m1*(p%lnrho-lnrho0))
 !
-!  The two lines above reduce to the one below        
-!        
+!  The two lines above reduce to the one below
+!
         f_target = ss_init - gamma_m1/(gamma*cp1)*(p%lnrho-lnrho_init)
 !
       case ('nothing')
@@ -5160,7 +5196,7 @@ module Energy
 !  and for some diagnostics
 !
       chix = p%cp1*Krho1
-    
+
       if (ldiagnos.or.l1davgfirst.or.l2davgfirst) Krho1 = Krho1*p%rho      ! now Krho1=K
 
       if (ldiagnos) then
@@ -5431,7 +5467,7 @@ module Energy
                              stored_prof=chit_prof_stored,stored_dprof=dchit_prof_stored)
 !
 !  'Standard' formulation where the flux contains temperature:
-! 
+!
 !  ... + div(rho*T*chi_t*grads) = ... + chi_t*[del2s + (glnrho+glnTT+glnchi).grads]
 !
 !  Alternative (correct?) formulation where temperature is absent from the flux:
@@ -5448,7 +5484,7 @@ module Energy
             do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
             del2ss1=p%del2ss-del2ssmx
           endif
-!  
+!
           if (lchit_noT) then
             call dot(p%glnrho,gss1,g2)
           else
@@ -5690,10 +5726,10 @@ module Energy
           call get_prof_pencil(chit_prof,gradchit_prof,lsphere_in_a_box,1.,chit_prof1,chit_prof2,xbot,xtop,p,f, &
                                stored_prof=chit_prof_stored,stored_dprof=dchit_prof_stored)
 !
-!  chi_t acts on the total entropy 
-!      
+!  chi_t acts on the total entropy
+!
         if (lchit_total) then
-          if (lchit_noT) then 
+          if (lchit_noT) then
             call dot(p%glnrho,p%gss,g2)
           else
             call dot(p%glnrho+p%glnTT,p%gss,g2)
@@ -5714,7 +5750,7 @@ module Energy
             do j=1,3; gss0(:,j)=gssmx(:,j); enddo
             del2ss0=del2ssmx
           endif
-          if (lchit_noT) then 
+          if (lchit_noT) then
             call dot(p%glnrho,gss0,g2)
           else
             call dot(p%glnrho+p%glnTT,gss0,g2)
@@ -5729,7 +5765,7 @@ module Energy
         endif
       endif
 !
-!  chi_t acts on fluctuations of entropy, again need to have either 
+!  chi_t acts on fluctuations of entropy, again need to have either
 !  lcalc_ssmean=T or lcalc_ssmeanxy=T
 !
       if (lchit_fluct.and.chi_t1/=0.) then
@@ -5743,7 +5779,7 @@ module Energy
         endif
 
         if (lcalc_ssmean .or. lcalc_ssmeanxy) then
-          
+
           if (lcalc_ssmean) then
             do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
             del2ss1=p%del2ss-del2ssmz(n-n1+1)
@@ -5751,7 +5787,7 @@ module Energy
             do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
             del2ss1=p%del2ss-del2ssmx
           endif
-          if (lchit_noT) then 
+          if (lchit_noT) then
             call dot(p%glnrho,gss1,g2)
           else
             call dot(p%glnrho+p%glnTT,gss1,g2)
@@ -5795,7 +5831,7 @@ module Energy
           enddo
           call del2(f(:,:,:,iss_run_aver),del2ss1)
           del2ss0=p%del2ss-del2ss1
-          if (lchit_noT) then 
+          if (lchit_noT) then
             call dot(p%glnrho,gss0,g2)
           else
             call dot(p%glnrho+p%glnTT,gss0,g2)
@@ -6278,7 +6314,7 @@ module Energy
 !
       if (lcalc_cs2mz_mean .and..not. lheat_cool_gravz) then
         heat = heat - cool*prof*(cs2mz(n)-cs2cool)/cs2cool
-      else 
+      else
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
       endif
 !
@@ -6840,7 +6876,7 @@ module Energy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0
+        idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0; idiag_pdivumz=0
         idiag_ssruzm=0; idiag_ssuzm=0; idiag_ssm=0; idiag_ss2m=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_cgam=0; idiag_pdivum=0; idiag_heatm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0; idiag_ss2mphi=0
@@ -6857,9 +6893,9 @@ module Energy
         idiag_ssf2mz=0; idiag_ssf2upmz=0; idiag_ssf2downmz=0
         idiag_ssmr=0; idiag_TTmr=0; idiag_TTmphi=0; idiag_ppmphi=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
-        idiag_TTupmz=0; idiag_TTdownmz=0
+        idiag_TTupmz=0; idiag_TTdownmz=0; idiag_uzTTupmz=0; idiag_uzTTdownmz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
-        idiag_uzTTupmz=0; idiag_uzTTdownmz=0
+        idiag_ugradpmz=0; idiag_gradpxmz=0; idiag_gradpymz=0; idiag_gradpzmz=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
         idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mx=0; idiag_TT2mz=0
         idiag_TT2upmz=0; idiag_TT2downmz=0
@@ -6997,6 +7033,11 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTf2upmz',idiag_TTf2upmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTf2downmz',idiag_TTf2downmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_ppmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ugradpmz',idiag_ugradpmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gradpxmz',idiag_gradpxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gradpymz',idiag_gradpymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gradpzmz',idiag_gradpzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'pdivumz',idiag_pdivumz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTTmz',idiag_uxTTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTTmz',idiag_uyTTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTTmz',idiag_uzTTmz)
@@ -7077,7 +7118,7 @@ module Energy
 !
 !  check for those quantities for which we want video slices
 !
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         where(cnamev=='pp'.or.cnamev=='ss'.or.cnamev=='TT'.or.cnamev=='lnTT') cformv='DEFINED'
       endif
 !
@@ -7133,7 +7174,7 @@ module Energy
             enddo; enddo
           endif
 
-          do l=l1,l2 
+          do l=l1,l2
 !
             if (lreference_state) ssadd=reference_state(l-l1+1,iref_s)
 
@@ -7159,7 +7200,7 @@ module Energy
               if (lwrite_slice_xy4) &
                 call eoscalc(irho_ss,getrho_s(f(l,m,iz4_loc,ilnrho),l), &
                              f(l,m,iz4_loc,iss)+ssadd,pp=slices%xy4(l-l1+1,m-m1+1))
-            enddo 
+            enddo
           enddo
           slices%ready=.true.
 !
@@ -7382,7 +7423,7 @@ module Energy
     subroutine get_prof_pencil(prof,dprof,l2D3D,amp,amp1,amp2,pos1,pos2,p,f,stored_prof,stored_dprof,llog)
 !
 !  Provides pencils for an either x or z dependent profile and its (optionally logarithmic) gradient:
-!  prof and dprof. If 
+!  prof and dprof. If
 !  lmultilayer=T there are real profiles, otherwise prof=amp is constant and dprof=0.
 !  If the pencil case is provided (present(p)) and lhcond_global=T, these data are fetched from
 !  the f-array, otherwise, for l2D3D=F fetched from stored_prof and stored_dprof.
@@ -7390,7 +7431,7 @@ module Energy
 !  In the latter case, the radial coordinate is calculated from x,y,z or taken from the pencil case,
 !  if present.
 !  If llog=T the logarithmic gradient is provided, otherwise the normal one.
-! 
+!
 !  20-jan-20/MR: coded
 !
       use Sub, only: step, der_step
@@ -7399,7 +7440,7 @@ module Energy
       real, dimension(nx)  , intent(out) :: prof
       real, dimension(nx,3), intent(out) :: dprof
       logical,               intent(in ) :: l2D3D
-      real, optional,        intent(in ) :: amp,amp1,amp2,pos1,pos2 
+      real, optional,        intent(in ) :: amp,amp1,amp2,pos1,pos2
       logical, optional,     intent(in ) :: llog
       type(pencil_case),                 optional, intent(in) :: p
       real, dimension(mx,my,mz,mfarray), optional, intent(in) :: f
@@ -7455,7 +7496,7 @@ module Energy
 
         endif
 
-      else  ! covers also lgravr=T 
+      else  ! covers also lgravr=T
         prof=stored_prof
         dprof(:,1)=stored_dprof; dprof(:,2:3)=0.
       endif
@@ -7519,7 +7560,7 @@ module Energy
 !
 !  Calculates the chit_aniso profile and its derivative.
 !  Scaled with chi_t*chit_aniso.
-!  
+!
 !  27-apr-2011/pete: adapted from gradlogchit_profile
 !
       use Sub, only: step, der_step
@@ -7809,7 +7850,7 @@ module Energy
 !
       enddo
 !
-      if (ldensity_nolog) then 
+      if (ldensity_nolog) then
         f(:,:,:,irho) = exp(f(:,:,:,irho))
         if (lreference_state) &
           f(l1:l2,:,:,irho) = f(l1:l2,:,:,irho)-spread(spread(reference_state(:,iref_rho),2,my),3,mz)
@@ -7872,7 +7913,7 @@ module Energy
       enddo
       enddo
 !
-    endsubroutine piecew_poly_cylind 
+    endsubroutine piecew_poly_cylind
 !***********************************************************************
     subroutine single_polytrope(f)
 !
@@ -7972,8 +8013,8 @@ module Energy
 !
       close(31)
       if (rescale_hcond>0.) then
-        tmp1=tmp1*rescale_hcond 
-        tmp2=tmp2*rescale_hcond 
+        tmp1=tmp1*rescale_hcond
+        tmp2=tmp2*rescale_hcond
       endif
 !
 !  Assuming no ghost zones in hcond_glhc.dat.
