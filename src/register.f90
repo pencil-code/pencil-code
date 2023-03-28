@@ -498,7 +498,7 @@ module Register
 !  Set unit_magnetic=3.5449077018110318=sqrt(4*pi), unless it was set already.
 !  Note that unit_magnetic determines the value of mu_0 in the rest of the code.
 !  Fred: lfix_unit_std ensures mu0=1 and avoids very small or large coefficient
-!        in Ohmic heating and Lorentz forces 
+!        in Ohmic heating and Lorentz forces
 !
       if (unit_magnetic == impossible) then
         if (lfix_unit_std) then
@@ -1052,9 +1052,8 @@ module Register
 !
           allocate(ctmp(nnamerz))
           lwrite_phiaverages = read_name_format(phiaver_in_file,ctmp,nnamerz)
-          
-          if (lwrite_phiaverages) then
 
+          if (lwrite_phiaverages) then
             iadd=0
             do i=1,nnamerz
               cname_tmp=ctmp(i)
