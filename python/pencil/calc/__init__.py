@@ -22,10 +22,11 @@ from .part_to_grid import *  # bin particle quantities to a grid
 from .fill_gaps_in_grid import *
 from .accuracy import *
 from .draglift import *
+from .gravity import grav_profile
 from .tensors import *
 from .Reynolds import *
 from .shocktube import sod
-from .Gaussian_averages import kernel_smooth, gauss_3Dsmooth 
+from .Gaussian_averages import kernel_smooth, gauss_3Dsmooth
 
 try:
     from .aver2h5 import *
