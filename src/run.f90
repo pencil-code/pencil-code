@@ -162,7 +162,7 @@ program run
 !  Check whether quad precision is supported
 !
   if (rkind16<0) &
-    call warning('run','quad precision not supported, switch to double')    
+    call warning('run','quad precision not supported, switch to double')
 !
   if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !
@@ -229,7 +229,7 @@ program run
   if (lparticles) call particles_register_modules
   call initialize
 !
-  call register_gpu(f) 
+  call register_gpu(f)
 !
 !  Inform about verbose level.
 !
@@ -280,7 +280,7 @@ program run
     else
       mvar_down=min(mvar,mvar_down)
     endif
-!    
+!
 !  maux_down -1 default uses all maux, maux_down 0 no aux and maux_down > 0 use min(maux,maux_down)
 !
     if (maux_down<0) then
@@ -695,8 +695,8 @@ program run
     call time_step(f,df,p)
 !
 !  If overlapping grids are used to get body-confined grid around the solids
-!  in the flow, call time step on these grids. 
-! 
+!  in the flow, call time step on these grids.
+!
     if (lsolid_cells) call time_step_ogrid(f)
 !
     lrmv=.false.
@@ -961,9 +961,9 @@ program run
   if (lroot) then
     print'(1x,a,f9.3)', 'Maximum used memory per cpu [MBytes] = ', memcpu/1024.
     if (memory>1e6) then
-      print'(1x,a,f10.3)', 'Maximum used memory [GBytes] = ', memory/1024.**2
+      print'(1x,a,f12.3)', 'Maximum used memory [GBytes] = ', memory/1024.**2
     else
-      print'(1x,a,f10.3)', 'Maximum used memory [MBytes] = ', memory/1024.
+      print'(1x,a,f12.3)', 'Maximum used memory [MBytes] = ', memory/1024.
     endif
     print*
   endif
@@ -990,7 +990,7 @@ program run
   call chemistry_clean_up
   call NSCBC_clean_up
   if (lparticles) call particles_cleanup
-  call finalize 
+  call finalize
 !
 endprogram run
 !**************************************************************************
