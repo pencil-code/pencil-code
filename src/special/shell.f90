@@ -20,7 +20,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
@@ -36,27 +35,27 @@ module Special
 !
 ! run parameters
 !
-  integer :: nshell=20                                        !number of shells
-  real    :: lambda=2.                                        !shell separation
-  real    :: visc=1e-7                                        !viscosity
-  real    :: f_amp=1.0                                        !forcing amplitude
-  real    :: deltG=1e-5                                       !internal time step
-  real    :: k_amp=1.                                         !k normalization
-  real    :: u_amp=1.                                         !u normalization
-  real    :: nstability1=1e6,nstability2=1e6,nstability3=1e6  !timesteps during start
+  integer :: nshell=20                                       !number of shells
+  real    :: lambda=2.                                       !shell separation
+  real    :: visc=1e-7                                       !viscosity
+  real    :: f_amp=1.0                                       !forcing amplitude
+  real    :: deltG=1e-5                                      !internal time step
+  real    :: k_amp=1.                                        !k normalization
+  real    :: u_amp=1.                                        !u normalization
+  real    :: nstability1=1e6,nstability2=1e6,nstability3=1e6 !timesteps during start
   complex :: zforce
   integer :: stability_output=100000
 !
 ! output parameters
 !
-  logical :: lstructure=.true.                                !output structure functions
-  integer :: nord=1                                           !order of structure function output
+  logical :: lstructure=.true.                               !output structure functions
+  integer :: nord=1                                          !order of structure function output
   logical :: l_altu=.false.                                  !removes a 3cycle from the GOY model
 !
 ! real-space parameters
 !
-  logical :: l_needspecialuu=.false.                          !Need real-space velocity
-  logical :: l_quenched=.true., l_qphase=.true.                                !NOT update real-space velocity vectors
+  logical :: l_needspecialuu=.false.                         !Need real-space velocity
+  logical :: l_quenched=.true., l_qphase=.true.              !NOT update real-space velocity vectors
   real    :: div_phase=1.  !divisor for phase changes
   logical :: l_nogoy=.false.
 !
@@ -64,12 +63,12 @@ module Special
 !
 ! aval,bval,cval= k_n*a_n, k_n*b_n/k, k_n*c_n/k^2 from Jensen 1999
 !
-  real, allocatable, dimension(:) :: aval, bval, cval       !evolution equation coefficients
-  real, allocatable, dimension(:) :: exfac, exrat           !evolution equation variables
-  real, allocatable, dimension(:) :: umod, umalt,eddy_time  !velocity magnitude and turnover times
+  real, allocatable, dimension(:) :: aval, bval, cval        !evolution equation coefficients
+  real, allocatable, dimension(:) :: exfac, exrat            !evolution equation variables
+  real, allocatable, dimension(:) :: umod, umalt,eddy_time   !velocity magnitude and turnover times
   real, allocatable, dimension(:) :: uav
-  real, allocatable, dimension(:) :: kval, ksquare          !k vectors
-  complex, allocatable, dimension(:) :: zu, zgprev         !fourier space velocities
+  real, allocatable, dimension(:) :: kval, ksquare           !k vectors
+  complex, allocatable, dimension(:) :: zu, zgprev           !fourier space velocities
 !
 ! real-space variables
 !
@@ -81,9 +80,9 @@ module Special
   integer :: minshell=-1, maxshell=-1, minshell2=-1           !bounds of physically relevant
                                                               !shell (time-step contraints)
 !
-  real, dimension(:),pointer:: uup_shared                            !shared variable (gas velocity)
-  real,pointer :: turnover_shared
-  logical,pointer :: vel_call, turnover_call
+  real, dimension(:),pointer:: uup_shared                     !shared variable (gas velocity)
+  real, pointer :: turnover_shared
+  logical, pointer :: vel_call, turnover_call
 !
   integer :: size_plane=0
 !
@@ -96,13 +95,13 @@ module Special
   namelist /special_run_pars/ &
       lstructure, nord,time_step_type, size_plane
 !
-!! Diagnostic variables (needs to be consistent with reset list below).
+!  Diagnostic variables (needs to be consistent with reset list below).
 !
    integer :: idiag_uuGOY=0, idiag_deltM=0, idiag_eddy_time=0
 !
   contains
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_special
 !
 !  Set up indices for variables in special modules.
 !
@@ -130,7 +129,7 @@ module Special
 !
 ! allocate arrays (init_special calls initialize_special)
 !
-      if(.not.allocated(zu)) then
+      if (.not.allocated(zu)) then
         allocate(zu(nshell),    zgprev(nshell), eddy_time(nshell))
         allocate(kval(nshell),  umod(nshell),   aval(nshell), bval(nshell))
         allocate(cval(nshell),  exfac(nshell),  exrat(nshell),ksquare(nshell))
@@ -169,15 +168,23 @@ module Special
 !
       if (minshell2 < 0) minshell2=minshell
 !
-   !  if (l_needspecialuu) call initialize_k_vectors()
+   !  if (l_needspecialuu) call initialize_k_vectors
 !
 !  read goydata, bcast etc... (if not starting)
 !
-      call GOY_read_snapshot(trim(directory_snap)//'/goyvar.dat')
-      call calc_eddy_time()
-      call GOY_write_snapshot(trim(directory_snap)//'/GOYVAR',ENUM=.true., &
-          FLIST='goyvarN.list',snapnum=0)
-      call GOY_write_snapshot(trim(directory_snap)//'/goyvar.dat',ENUM=.false.)
+      if (.not.lstart) then
+        call GOY_read_snapshot(trim(directory_snap)//'/goyvar.dat')
+        call calc_eddy_time
+        call GOY_write_snapshot(trim(directory_snap)//'/GOYVAR',ENUM=.true.,FLIST='goyvarN.list',snapnum=0)
+        call GOY_write_snapshot(trim(directory_snap)//'/goyvar.dat',ENUM=.false.)
+!
+        if (l_needspecialuu) then
+          call get_shared_variable('uup_shared',uup_shared,caller='initialize_special')
+          call get_shared_variable('vel_call',vel_call)
+          call get_shared_variable('turnover_call',turnover_call)
+          call get_shared_variable('turnover_shared',turnover_shared)
+        endif
+      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -192,7 +199,7 @@ module Special
       integer :: ns, ik, ncount, nk, nk2
 !
       if ((maxshell < 0) .or. (minshell < 0)) &
-          call fatal_error ('initialize_k_vectors', 'Set maxshell and minshell if you want l_needspecialuu')
+        call fatal_error('initialize_k_vectors','set maxshell and minshell if you want l_needspecialuu')
 !
       if (allocated(kvec)) return
 !
@@ -273,15 +280,14 @@ module Special
 !  set up initial velocity (k^-1/3 powerlaw); only on root
 !
       if (lroot) then
-   !    call initialize_k_vectors()
+        call initialize_k_vectors
         do ns=1,nshell
           umod(ns)=u_amp*kval(ns)**noneoverthree
-          zu(ns)=cmplx(umod(ns)*dcos(randomd(ns)), &
-              umod(ns)*dsin(randomd(ns)))
+          zu(ns)=cmplx(umod(ns)*dcos(randomd(ns)),umod(ns)*dsin(randomd(ns)))
           zgprev=cmplx(0.,0.)
         enddo
         umod=abs(zu)
-        if (l_altu) call calc_altu()
+        if (l_altu) call calc_altu
         uav=0
         eddy_time=0
 !
@@ -296,7 +302,7 @@ module Special
 !
         ncount=0
         do while (ncount < nstability1)
-          call GOY_advance_timestep()
+          call GOY_advance_timestep
           ncount=ncount+1
         enddo
 !
@@ -304,10 +310,10 @@ module Special
 !
         ncount=0
         do while (ncount < nstability2)
-          call GOY_advance_timestep()
+          call GOY_advance_timestep
           if (mod(ncount, stability_output)==0) then
-            if (l_altu) call calc_altu()
-            call calc_eddy_time()
+            if (l_altu) call calc_altu
+            call calc_eddy_time
           endif
           ncount=ncount+1
         enddo
@@ -316,14 +322,14 @@ module Special
 !
         ncount=0
         do while (ncount < nstability3)
-          call GOY_advance_timestep()
+          call GOY_advance_timestep
           if (.not. l_quenched) call update_vec(vec_split,sngl(deltG))
           if (.not. l_qphase) call update_phase(phase_time, sngl(deltG))
           ncount=ncount+1
           if (mod(ncount, stability_output)==0) then
-            print*, 'stabilizing, ncount=',ncount
-            if (l_altu) call calc_altu()
-            call calc_eddy_time()
+            if (lroot) print*, 'stabilizing, ncount=',ncount
+            if (l_altu) call calc_altu
+            call calc_eddy_time
             tstarting=deltG*ncount
             call write_structure(tstarting=tstarting)
           endif
@@ -337,44 +343,6 @@ module Special
       call keep_compiler_quiet(f)
 !
     endsubroutine init_special
-!***********************************************************************
-    subroutine pencil_criteria_special()
-!
-!  All pencils that this special module depends on are specified here.
-!
-!  18-07-06/tony: coded
-!
-    endsubroutine pencil_criteria_special
-!***********************************************************************
-    subroutine pencil_interdep_special(lpencil_in)
-!
-!  Interdependency among pencils provided by this module are specified here.
-!
-!  18-07-06/tony: coded
-!
-      logical, dimension(npencils) :: lpencil_in
-!
-      call keep_compiler_quiet(lpencil_in)
-!
-    endsubroutine pencil_interdep_special
-!***********************************************************************
-    subroutine calc_pencils_special(f,p)
-!
-!  Calculate Special pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
-!  24-nov-04/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      intent(in) :: f
-      intent(inout) :: p
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
@@ -420,12 +388,12 @@ module Special
 !
 ! output structure functions to file
 !
-        if (lstructure.and.lfirstpoint.and.lroot) call write_structure()
+        if (lstructure.and.lfirstpoint.and.lroot) call write_structure
         if (size_plane /=0 .and. lfirstpoint .and. lroot) call write_plane
 !
 ! standard diagnostics
 !
-        if (idiag_deltM/=0)     call max_name(deltmbase,idiag_deltM)
+        call max_name(deltmbase,idiag_deltM)
         if (idiag_uuGOY/=0) then
           if (l_altu) then
             call save_name(sngl(umalt(maxshell)),idiag_uuGOY)
@@ -433,7 +401,6 @@ module Special
             call save_name(sngl(umod(maxshell)),idiag_uuGOY)
           endif
         endif
-        if (idiag_deltM/=0)     call max_name(deltmbase,idiag_deltM)
         if (idiag_eddy_time/=0) call save_name(sngl(eddy_time(minshell)),idiag_eddy_time)
       endif
 !
@@ -494,34 +461,33 @@ module Special
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!!!
-!!!  reset everything in case of reset
-!!!  (this needs to be consistent with what is defined above!)
-!!!
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
       if (lreset) then
         idiag_uuGOY=0
         idiag_deltM=0
         idiag_eddy_time=0
       endif
-!!
+!
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'uuGOY',idiag_uuGOY)
         call parse_name(iname,cname(iname),cform(iname),'deltM',idiag_deltM)
         call parse_name(iname,cname(iname),cform(iname),'eddy_time',idiag_eddy_time)
       enddo
-!!
-!!!  write column where which magnetic variable is stored
+!
+!  write column where which magnetic variable is stored  !MR: needed?
+!
       if (lwr) then
         call farray_index_append('i_uuGOY',idiag_uuGOY)
         call farray_index_append('i_deltM',idiag_deltM)
         call farray_index_append('i_eddy_time',idiag_eddy_time)
       endif
-!!
+!
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine special_calc_particles(fp)
-!
-      use SharedVariables, only: get_shared_variable
+    subroutine special_calc_particles(f,df,fp,dfp,ineargrid)
 !
 !  Called before the loop, in case some particle value is needed
 !  for the special density/hydro/magnetic/entropy.
@@ -529,19 +495,12 @@ module Special
 !  Also hijacked to get gas velocity using shared variable.
 !  shared logical vel_call triggers the hijack
 !
-      real, dimension (:,:), intent(in) :: fp
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(in) :: df
+      real, dimension (:,:), intent(in) :: fp,dfp
+      integer, dimension(:,:) :: ineargrid
 !
       real, dimension(3) :: xpos
-      logical, save :: first_call=.true.
-      integer :: ierr
-!
-      if (first_call .and. l_needspecialuu) then
-        call get_shared_variable('uup_shared',uup_shared,ierr)
-        call get_shared_variable('vel_call',vel_call,ierr)
-        call get_shared_variable('turnover_call',turnover_call,ierr)
-        call get_shared_variable('turnover_shared',turnover_shared,ierr)
-        first_call=.false.
-      endif
 !
       if (vel_call) then
         xpos=uup_shared
@@ -554,25 +513,11 @@ module Special
         turnover_call=.false.
       endif
 !
-      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(fp,dfp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine special_calc_particles
-!***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!  Possibility to modify the f array before the boundaries are
-!  communicated.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
 !***********************************************************************
     subroutine special_after_timestep(f,df,dt_,llast)
 !
@@ -580,7 +525,7 @@ module Special
 !  Advance the shell model, with dt<deltm
 !  The physical system is advancing dt_
 !
-      Use Mpicomm, only: mpibcast_cmplx_arr, mpibcast_real
+      Use Mpicomm, only: mpibcast_cmplx, mpibcast_real
 !
       logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray) :: f
@@ -593,33 +538,32 @@ module Special
 !  Is the physical system advancing too slowly?
 !
       if ((minshell /= -1) .and. (dt_ > eddy_time(minshell))) then
-        print *, 'dt_=', dt_,' tturnover(minshell)=', eddy_time(minshell)
-        call fatal_error ('shell', 'Shell turn-over times unresolved (dt_>turnover)')
+        if (lroot) print *, 'dt_=', dt_,' tturnover(minshell)=', eddy_time(minshell)
+        call fatal_error ('special_after_timestep','Shell turn-over times unresolved (dt_>turnover)')
       endif
 !
 !  Number of advances to call
 !
       ncount=floor(dt_/deltG)
       if (ncount <= 5) then
-        print *, 'dt_/deltaG=',ncount
-        call fatal_error ('shell', 'Shell timestepping too long (decrease deltaG)')
+        if (lroot) print *, 'dt_/deltaG=',ncount
+        call fatal_error ('special_after_timestep','Shell timestepping too long (decrease deltaG)')
       endif
 !
 !  Call advances
 !
       if (lroot) then
         do advances=1,ncount
-          if (.not. l_nogoy) &
-              call GOY_advance_timestep()
+          if (.not. l_nogoy) call GOY_advance_timestep
           if (.not. l_quenched) call update_vec(vec_split, sngl(deltG))
           if (.not. l_qphase) call update_phase(phase_time, sngl(deltG))
         enddo
       endif
 !
-      call mpibcast_cmplx_arr(zu,nshell)
-      call mpibcast_cmplx_arr(zgprev,nshell)
-      umod=abs(zu); if (l_altu) call calc_altu()
-      call calc_eddy_time()
+      call mpibcast_cmplx(zu,nshell)
+      call mpibcast_cmplx(zgprev,nshell)
+      umod=abs(zu); if (l_altu) call calc_altu
+      call calc_eddy_time
       if (l_needspecialuu) then
         call mpibcast_real(vec_split, (/nshell,3/))
         if (.not. l_quenched) call mpibcast_real(vec_split0, (/nshell,3/))
@@ -627,8 +571,7 @@ module Special
         do ns=maxshell, minshell2
           do trip=1,3
             if (l_altu) then
-              uvec_split(trip,ns,:)=vec_split(ns,trip)*uvec(trip, ns,:)*sqrt2*&
-                                    umalt(ns)/umod(ns)
+              uvec_split(trip,ns,:)=vec_split(ns,trip)*uvec(trip, ns,:)*sqrt2*umalt(ns)/umod(ns)
             else
               uvec_split(trip,ns,:)=vec_split(ns,trip)*uvec(trip, ns,:)*sqrt2
             endif
@@ -641,11 +584,9 @@ module Special
       if (llast) then
 !
         if (lout) call &
-            GOY_write_snapshot(trim(directory_snap)//'/GOYVAR',ENUM=.true., &
-                FLIST='goyvarN.list')
+            GOY_write_snapshot(trim(directory_snap)//'/GOYVAR',ENUM=.true.,FLIST='goyvarN.list')
 !
-        if (mod(it,isave)==0) call &
-            GOY_write_snapshot(trim(directory_snap)//'/goyvar.dat',ENUM=.false.)
+        if (mod(it,isave)==0) call GOY_write_snapshot(trim(directory_snap)//'/goyvar.dat',ENUM=.false.)
       endif
 !
       call keep_compiler_quiet(f,df)
@@ -653,7 +594,7 @@ module Special
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
-    subroutine GOY_advance_timestep()
+    subroutine GOY_advance_timestep
 !
 !  advances the shell model 1 internal timestep
 !
@@ -680,8 +621,7 @@ module Special
       do ns=3,nshell-2
         zt1 = exfac(ns)*zu(ns)
         zt2 =  aval(ns)*zu(ns+1)*zu(ns+2) + &
-                  bval(ns)*zu(ns-1)*zu(ns+1) + &
-                  cval(ns)*zu(ns-1)*zu(ns-2)
+                  bval(ns)*zu(ns-1)*zu(ns+1) + cval(ns)*zu(ns-1)*zu(ns-2)
         zgt = zi*conjg(zt2)
         zt3 = 0.50d0*(3.0D0*zgt - zgprev(ns))
         zu(ns) = zt1 + exrat(ns)*zt3
@@ -690,8 +630,7 @@ module Special
       enddo
 !!        (NSHELL-1)TH SHELL
       zt1 = exfac(nshell-1)*zu(nshell-1)
-      zt2 = bval(nshell-1)*zu(nshell-2)*zu(nshell) + &
-               cval(nshell-1)*zu(nshell-2)*zu(nshell-3)
+      zt2 = bval(nshell-1)*zu(nshell-2)*zu(nshell) + cval(nshell-1)*zu(nshell-2)*zu(nshell-3)
       zgt = zi*conjg(zt2)
       zt3 = 0.50d0*(3.0D0*zgt - zgprev(nshell-1))
       zu(nshell-1) = zt1 + exrat(nshell-1)*zt3
@@ -770,9 +709,9 @@ module Special
          lsnap=.true.
        else
          if (ifirst==0) then
-            call safe_character_assign(fgoy,trim(datadir)//'/tsnap.dat')
-            call read_snaptime(fgoy,tsnap,nsnap,dsnap,t)
-            ifirst=1
+           call safe_character_assign(fgoy,trim(datadir)//'/tsnap.dat')
+           call read_snaptime(fgoy,tsnap,nsnap,dsnap,t)
+           ifirst=1
          endif
 !
          call update_snaptime(fgoy,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
@@ -781,15 +720,13 @@ module Special
        if (lsnap) then
          snapname=trim(snapbase)//trim(nsnap_ch)
          call output_GOY(snapname)
-         if (ip<=10 .and. lroot) &
-             print*,'wsnap_GOY: written snapshot ', snapname
+         if (ip<=10 .and. lroot) print*,'wsnap_GOY: written snapshot ', snapname
          if (present(flist)) call log_filename_to_file(snapname,flist)
        endif
      else
        snapname=snapbase
        call output_GOY(snapname)
-       if (ip<=10 .and. lroot) &
-            print*,'wsnap_GOY: written snapshot ', snapname
+       if (ip<=10 .and. lroot) print*,'wsnap_GOY: written snapshot ', snapname
        if (present(flist)) call log_filename_to_file(snapname,flist)
      endif
 !
@@ -797,7 +734,7 @@ module Special
 !***********************************************************************
     subroutine rsnap_GOY(filename)
 !
-      Use Mpicomm, only: mpibcast_cmplx_arr, mpibcast_real
+      Use Mpicomm, only: mpibcast_cmplx, mpibcast_real
 !
       character (len=*) :: filename
       real :: t_goy
@@ -805,9 +742,9 @@ module Special
 !
       if (lroot) call input_GOY(filename,t_goy)
 !
-      call mpibcast_cmplx_arr(zu,nshell)
-      umod=abs(zu); if (l_altu) call calc_altu()
-      call mpibcast_cmplx_arr(zgprev,nshell)
+      call mpibcast_cmplx(zu,nshell)
+      umod=abs(zu); if (l_altu) call calc_altu
+      call mpibcast_cmplx(zgprev,nshell)
       call mpibcast_real(uav, nshell+1)
       if (l_needspecialuu) then
         call mpibcast_real(kvec, (/3,nshell,3/))
@@ -818,8 +755,7 @@ module Special
         do ns=maxshell, minshell2
           do trip=1,3
             if (l_altu) then
-              uvec_split(trip,ns,:)=vec_split(ns,trip)*uvec(trip, ns,:)*sqrt2*&
-                                    umalt(ns)/umod(ns)
+              uvec_split(trip,ns,:)=vec_split(ns,trip)*uvec(trip, ns,:)*sqrt2*umalt(ns)/umod(ns)
             else
               uvec_split(trip,ns,:)=vec_split(ns,trip)*uvec(trip, ns,:)*sqrt2
             endif
@@ -903,8 +839,7 @@ module Special
         t_goy=t
         if (present(tstarting)) t_goy=tstarting
         call get_structure_filenames(filename,iord)
-        open(UNIT=lun_input,FILE=trim(filename),&
-            POSITION='append',FORM='unformatted')
+        open(UNIT=lun_input,FILE=trim(filename),POSITION='append',FORM='unformatted')
         if (.not. l_quenched) then
           write(UNIT=lun_input) t_goy, sf(1,:), phase(:),vecdot(:), eddy_time(:)
         else
@@ -914,8 +849,7 @@ module Special
         if (nord > 1) then
           do iord=2,nord
             call get_structure_filenames(filename,iord)
-            open(UNIT=lun_input,FILE=trim(filename),&
-                POSITION='append',FORM='unformatted')
+            open(UNIT=lun_input,FILE=trim(filename),POSITION='append',FORM='unformatted')
             write(UNIT=lun_input) t_goy, sf(iord,:)
             close(UNIT=lun_input)
           enddo
@@ -945,8 +879,7 @@ module Special
         t_goy=t
 !
         call get_plane_filename(filename)
-        open(UNIT=lun_input,FILE=trim(filename),&
-            POSITION='append',FORM='unformatted')
+        open(UNIT=lun_input,FILE=trim(filename),POSITION='append',FORM='unformatted')
 !
         do i_plane=1,128
           do j_plane=1,128
@@ -1000,8 +933,7 @@ module Special
       character (len=*) :: filename
       integer :: iord
 !
-      call safe_character_assign(filename,trim(datadir)//&
-          '/t_structure_'//trim(itoa(iord))//'.dat')
+      call safe_character_assign(filename,trim(datadir)//'/t_structure_'//trim(itoa(iord))//'.dat')
 !
     endsubroutine get_structure_filenames
 !***********************************************************************
@@ -1012,8 +944,7 @@ module Special
       character (len=*) :: filename
       integer :: iord
 !
-      call safe_character_assign(filename,trim(datadir)//&
-          '/vel_plane.dat')
+      call safe_character_assign(filename,trim(datadir)//'/vel_plane.dat')
 !
     endsubroutine get_plane_filename
 !***********************************************************************
@@ -1048,11 +979,11 @@ module Special
 !
       do
         call random_number_wrapper(vec1)
-        vec1=vec1-0.5                        !generate random vector in unit cube
+        vec1=vec1-0.5                              !generate random vector in unit cube
         norm=sum(vec1**2)
         if ((norm <= 0.25).and.(norm > 0.01)) exit !if in half-unit sphere, keep
-      enddo                                                  !otherwise try again
-      vec1=vec1/(norm**(0.5)) !normalize
+      enddo                                        !otherwise try again
+      vec1=vec1/(norm**(0.5))                      !normalize
 !
     endsubroutine get_unit_vector
 !***********************************************************************
@@ -1161,24 +1092,24 @@ module Special
       real :: t_largestturnover
 !
       if (maxshell == -1) &
-          call fatal_error ('shell', 'get_largest_turnover called without maxshell set')
+        call fatal_error ('get_largest_turnover','called without maxshell set')
 !
       t_largestturnover=maxval(eddy_time(maxshell:minshell))
 !
     endsubroutine get_largest_turnover
 !***********************************************************************
-    subroutine calc_altu()
+    subroutine calc_altu
 !
       integer :: ns
 !
       umalt(1)=umod(1); umalt(nshell-1:nshell)=umod(nshell-1:nshell)
       do ns=2,nshell-2
         umalt(ns)=abs(aimag(zu(ns+2)*zu(ns+1)*zu(ns)-(1./4.)* &
-            zu(ns-1)*zu(ns)*zu(ns+1)))**(1./3.)
+                  zu(ns-1)*zu(ns)*zu(ns+1)))**(1./3.)
       enddo
     endsubroutine calc_altu
 !***********************************************************************
-    subroutine calc_eddy_time()
+    subroutine calc_eddy_time
 !
       integer :: ns
 !
@@ -1192,7 +1123,7 @@ module Special
 !
     endsubroutine calc_eddy_time
 !***********************************************************************
-    subroutine special_clean_up()
+    subroutine special_clean_up
 !
       call GOY_write_snapshot(trim(directory_snap)//'/goyvar.dat',ENUM=.false.)
 !
