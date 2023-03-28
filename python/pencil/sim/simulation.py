@@ -676,10 +676,11 @@ class __Simulation__(object):
             save(self, name="sim", folder=self.pc_dir)
             # restore self.tmp_dict
             self.tmp_dict = tmp_dict
-        except:
+        except Exception as e:
             if rank == 0:
-                print("Warning: Could not import save from io.dill*. Try:")
+                print("Warning: pencil.io.save failed. If dill is not installed, try:")
                 print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
+                print(f"The raised error was: {e}")
 
     def started(self):
         """Returns whether simulation has already started.
