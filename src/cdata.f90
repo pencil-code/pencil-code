@@ -436,7 +436,6 @@ module Cdata
 !
   integer :: imn
   integer, target :: lglob=1,m,n
-!$omp THREADPRIVATE(m,n)
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
   integer :: necessary_imn=0

@@ -66,7 +66,7 @@ module Equ
       use Selfgravity
       use Shear
       use Shock, only: shock_before_boundary, calc_shock_profile_simple
-      use Solid_Cells, only: update_solid_cells,dsolid_dt_integrate
+      use Solid_Cells, only: update_solid_cells, dsolid_dt_integrate
       use Special, only: special_before_boundary,special_after_boundary
       use Sub
       use Testfield
@@ -318,14 +318,13 @@ module Equ
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
       if (lspecial)               call special_after_boundary(f)
 !
-      call timing('pde','after "after_boundary" calls')
-!
 !  Calculate quantities for a chemical mixture. This is done after
 !  communication has finalized since many of the arrays set up here
 !  are not communicated, and in this subroutine also ghost zones are calculated.
 !
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
-      call timing('pde','after calc_for_chem_mixture')
+!
+      call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
         call rhs_gpu(f,itsub,early_finalize)
@@ -674,7 +673,7 @@ module Equ
       use Testflow
       use Testscalar
       use Viscosity, only: calc_pencils_viscosity
-!$    use Omp_lib
+!!$    use Omp_lib
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
@@ -688,8 +687,6 @@ module Equ
 !
 !$    num_omp_ranks = OMP_get_num_procs()
 !$    call OMP_set_num_threads(num_omp_ranks)
-!
-!$omp do private(p,df_iuu_pencil)
 !
       lfirstpoint=.true.
       lcommunicate=.not.early_finalize
@@ -712,7 +709,7 @@ module Equ
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
 !
-!$      if (.not.lopenmp) &
+!$      if (.false.) &
         call timing('pde','before lanelastic',mnloop=.true.)
 
         if (lanelastic) then
@@ -732,7 +729,7 @@ module Equ
             lcommunicate=.false.
           endif
         endif
-!$      if (.not.lopenmp) &
+!$      if (.false.) &
         call timing('pde','finished boundconds_z',mnloop=.true.)
 !
 !  For each pencil, accumulate through the different modules
@@ -949,7 +946,7 @@ module Equ
           df(l1:l2,m,n,iux:iuz) = df_iuu_pencil + df(l1:l2,m,n,iux:iuz)
           call sum_mn(p%rho,mass_per_proc(1))
         endif
-!$      if (.not.lopenmp) &
+!$      if (.false.) &
         call timing('pde','end of mn loop',mnloop=.true.)
 !
 !  End of loops over m and n.
@@ -959,9 +956,7 @@ module Equ
 !
       enddo mn_loop
 !
-!$omp end do
-!$     call prep_finalize_thread_diagnos
-!$omp end parallel
+!!$     call prep_finalize_thread_diagnos
 !
       if (ltime_integrals.and.llast) then
         if (lhydro) call update_for_time_integrals_hydro
@@ -1306,7 +1301,6 @@ module Equ
 !  Timestep combination from advection, diffusion and "source". 
 !
         dt1_max_loc = sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2)
-!!$ write(88,*)  'imn,threadnum,dt1_max=',imn,omp_rank,dt1_max_loc,dt1_advec + dt1_diffus + dt1_src
 !
 !  time step constraint from the coagulation kernel
 !
