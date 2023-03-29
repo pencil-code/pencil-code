@@ -5300,8 +5300,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       integer, optional, intent(IN) :: comm
 !
-!$omp barrier
-!
       call MPI_BARRIER(ioptest(comm,MPI_COMM_PENCIL), mpierr)
 !
     endsubroutine mpibarrier
