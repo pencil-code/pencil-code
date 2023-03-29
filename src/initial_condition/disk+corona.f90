@@ -82,8 +82,8 @@ module InitialCondition
 !
   include '../initial_condition.h'
   real :: l0_d, l_d1, psipn0, psipn1, psi0, psi1, lnrho0_c
-  real :: m0, r0_d=30.0, rs=1.0, apara, h_d, dsteep, ngamma, &
-          rho0_c=1.0e-5, cs0_c=1.0, Tc, rpos
+  real :: m0, r0_d, rs=1.0, apara, h_d, dsteep, ngamma, &
+          rho0_c, cs0_c, Tc, rpos
 !
   namelist /initial_condition_pars/ r0_d, apara, & 
   h_d, rho0_c, dsteep, ngamma, cs0_c, Tc, rpos
@@ -127,7 +127,7 @@ module InitialCondition
     endsubroutine initial_condition_uu
 !***********************************************************************
 
-    subroutine initial_condition_lnrho(f)
+    subroutine initial_condition_all(f,profiles)
 !
 !  Initialize logarithmic density. init_lnrho will take care of
 !  converting it to linear density if you use ldensity_nolog.
@@ -143,10 +143,11 @@ module InitialCondition
       use Sub,             only: get_radial_distance, location_in_proc, smooth
       use SharedVariables, only: get_shared_variable
 
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx, my, mz) :: psi, masked,xmesh
-      real, dimension (mx) :: rr_sph,rr_cyl
-      real, dimension (nx) :: rho_d, lnrho_c, psipn, l_d,vphi_d
+      real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
+      real, dimension (:,:),              optional, intent(out)  :: profiles
+      real, dimension (mx, my, mz) :: psi, masked, xmesh, tmasked
+      real, dimension (mx) :: rr_sph, rr_cyl
+      real, dimension (nx) :: rho_d, lnrho_c, psipn, l_d, vphi_d, lnT_d
       real, pointer :: g0
       real :: cp1, m00
       integer :: lpos, mpos, npos
@@ -194,9 +195,12 @@ module InitialCondition
                masked=1.0
              elsewhere
                masked=0.0
-             end where mask
-! 
-!      f(:,:,:,ilnrho)=masked
+            end where mask
+      mask2: where ((-(psi-psi0) .gt. 0.0) .and. (xmesh .gt. rpos))
+               tmasked=0.0
+             elsewhere
+               tmasked=1.0
+            end where mask2
 !      call smooth(f,ilnrho)
 !      masked=f(:,:,:,ilnrho)
 !
@@ -206,18 +210,22 @@ module InitialCondition
 !  Disk Density
         
         rho_d=exp(lnrho0)*(1.0-gamma*masked(l1:l2,m,n)*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0)))**ngamma
-
+        
 ! Corona Density
-        lnrho_c=lnrho0_c-0*(psipn-psipn1)*gamma/cs0_c**2
+        lnrho_c=lnrho0_c-(psipn-psipn1)*gamma/cs0_c**2
         f(l1:l2,m,n,ilnrho) = log(rho_d+exp(lnrho_c))
         vphi_d=l_d*x(l1:l2)/(rr_cyl(l1:l2)**2+(1e-3*rs)**2)*masked(l1:l2,m,n) 
-        f(l1:l2,m,n,iuy) = vphi_d
+        f(l1:l2,m,n,iuy) = vphi_d  
+        lnT_d=(log(rho_d)-lnrho0)/ngamma+log(cs0**2.0/(gamma_m1/cp1))
+        f(l1:l2,m,n,ilnTT)=log(exp(lnT_d)+Tc*tmasked(l1:l2,m,n))
         enddo
       enddo
-!      call smooth(f,ilnrho)
+!
+
+!      call smooth(f,iuy,ilntt)
 
 !
-    endsubroutine initial_condition_lnrho
+    endsubroutine initial_condition_all
 !***********************************************************************
     subroutine initial_condition_ss(f)
 !
@@ -226,31 +234,35 @@ module InitialCondition
 !  07-may-09/wlad: coded
 
 !/mayank
+      !use Mpicomm, only: mpibcast
+      !use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
+                             !gamma, gamma1, gamma_m1
+!      use FArrayManager,   only: farray_use_global
+!      use Sub,             only: get_radial_distance, location_in_proc, smooth
+!      use SharedVariables, only: get_shared_variable
 
-      use FArrayManager,   only: farray_use_global
-      use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
-                             gamma, gamma1, gamma_m1
-      
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: lnT_d, lnT_c
-      real, dimension (mx) :: lnrho_d
-      real :: cp1
+ !     real, dimension (mx, my, mz) :: psi, xmesh, masked, tmasked
+  !    real, dimension (mx) :: rr_sph, rr_cyl
+   !   real, dimension (nx) :: rho_d, psipn, l_d, lnT_d
+    !  real, pointer :: g0
+     ! real :: cp1
+      !integer :: lpos, mpos, npos
 
-      call get_cp1(cp1)
-      do n=n1,n2
-        do m=m1,m2
-        lnrho_d= f(:,m,n,ilnrho)
+      !call get_shared_variable('g0',g0)
+      !lnrho0_c=log(rho0_c)
+      !rs=2*g0/c_light**2
+      !l0_d=sqrt(g0*r0_d**3.0)/(r0_d-rs)
+!      l_d1=l0_d*(2.0*rs/r0_d)**aparan=n1,n2
+        !do m=m1,m2
 
-! Disk Temperature
+        !rho_d=exp(lnrho0)*(1.0-gamma*masked(l1:l2,m,n)*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0)))**ngamma
+        !lnT_d=(log(rho_d)-lnrho0)/ngamma+log(cs0**2.0/(gamma_m1/cp1))
+        !f(l1:l2,m,n,ilnTT)=log(exp(lnT_d)+Tc*tmasked(l1:l2,m,n))
 
-      lnT_d=(lnrho_d-lnrho0)/ngamma+log(cs0/(gamma_m1/cp1))
-      f(:,m,n,ilnTT) = lnT_d
-      
-      end do
-     end do
-! Corona Temperature is constant. Defined in initial_condition_pars as 'Tc'.
-
-!
+       ! enddo
+      !enddo
+         call keep_compiler_quiet(f)
     endsubroutine initial_condition_ss
 !***********************************************************************
     subroutine initial_condition_aa(f)
