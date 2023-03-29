@@ -614,7 +614,7 @@ module Energy
 !
       real, dimension (nzgrid) :: tmpz
       real, dimension (nx) :: tmpz_penc
-      real :: beta1, cp1, beta0, TT_bcz, star_cte
+      real :: beta1, cp1, beta0, TT_bcz, star_cte, cs2top_from_cool
       integer :: i, j, n, m, stat
       logical :: lnothing, exist
       real, pointer :: gravx
@@ -688,16 +688,22 @@ module Energy
       if (lfreeze_sext) lfreeze_varext(iss) = .true.
 !
 !  Make sure the top boundary condition for temperature (if cT is used)
-!  knows about the cooling function or vice versa (cs2cool will take over
-!  if /=0).
+!  knows about the cooling function or vice versa. For the most general
+!  cooling profiles, cs2 at the top needs to be a weighted sum of
+!  cs2cool and cs2cool2; this will take over if either cs2cool or
+!  cs2cool2 are nonzero.
+!  NOTE: this is still not correct for the cooling profile 'shell3'; a
+!  workaround when using that profile may be to set the unused cool2
+!  such that cool2>>cool
 !
       if (lgravz .and. lrun) then
-        if (cs2top/=cs2cool) then
-          if (lroot) print*,'initialize_energy: cs2top,cs2cool=',cs2top,cs2cool
-          if (cs2cool /= 0.) then ! cs2cool is the value to go for
-            if (lroot) print*,'initialize_energy: now set cs2top=cs2cool'
-            cs2top=cs2cool
-          else                  ! cs2cool=0, so go for cs2top
+        cs2top_from_cool = (cool*cs2cool + cool2*cs2cool2)/(cool+cool2)
+        if (cs2top/=cs2top_from_cool) then
+          if (lroot) print*,'initialize_energy: cs2top,cs2cool,cs2cool2=',cs2top,cs2cool,cs2cool2
+          if (cs2top_from_cool /= 0.) then ! cs2top_from_cool is the value to go for
+            if (lroot) print*,'initialize_energy: now set cs2top=(cool*cs2cool + cool2*cs2cool2)/(cool+cool2)'
+            cs2top=cs2top_from_cool
+          else                  ! cs2cool,cs2cool2=0, so go for cs2top
             if (lroot) print*,'initialize_energy: now set cs2cool=cs2top'
             cs2cool=cs2top
           endif
