@@ -247,7 +247,7 @@ my $reference_out = 'reference.out'; # automatically changed to
 my $user        = $ENV{USER} || $ENV{LOGNAME} || 'unknown';
 my $tmpdir      = "/tmp/pencil-tmp-$user-$$";
 my $lockdir     = '/tmp';     # put / check for lock file here
-my $lockfile    = "$lockdir/pencil-auto-test-$user.pid";
+my $lockfile    = "pencil-auto-test-$user.pid";
 my $headerpat   = '^-*\s*(-+\s*[A-Za-z0-9_]+)+-*\s*$'; # regexp for header line
 my $noheader    = "Couldn't find header line";
 my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
@@ -322,6 +322,7 @@ Options:
        --nodelist=NODE1,.. \tUse a forked remote shell to parallelize
        --no-summary        \tDo not summarize at the end
        --no-lock           \tIgnore and don't write lock file
+       --local-lock        \tLet multiple auto-tests run in different working copies (default: off)
        --debug             \tPrint lots of debugging output
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
        --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
@@ -395,6 +396,7 @@ GetOptions(\%opts,
                     --nodelist=s
                     --no-summary
                     --nolock      --no-lock
+                    --local-lock
                     --fast
                     --log-dir=s
                     --previous-dir=s )
@@ -444,6 +446,7 @@ my $nosummary   = (              $opts{'no-summary'}      || 0    );
 my $suppress_check = (           $opts{'no-pencil-check'} || 0    );
 my $notify      = (              $opts{'notify'}          || ''   );
 my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'} || 0 );
+my $local_lock  = (              $opts{'local-lock'}      || 0    );
 my $fast        = (              $opts{'fast'}            || ''   );
 my $log_dir     = (              $opts{'log-dir'}         || ''   );
 my $previous_dir = (             $opts{'previous-dir'}    || ''   );
@@ -466,6 +469,9 @@ my @exit_status=('setting up directory',
                  'results');
 
 $list_only = 1 if ($list_all);
+
+if ($local_lock) { $lockdir = $pencil_home; }
+$lockfile = $lockdir."/pencil-auto-test-$user.pid";
 
 my $makeopts  = '';
 if ($makejobs) { $makeopts = "--jobs=$makejobs"; }
@@ -710,7 +716,7 @@ sub get_lock {
             return 1;
         }
 
-        open(LOCK,"< $lockfile") or die "Cannot read <$lockfile>";
+        open(LOCK, "<", $lockfile) or die "Cannot read <$lockfile>";
         my $pid = <LOCK>;
         close LOCK;
         $pid =~ s/^\s*([0-9]+)\s*$/$1/
