@@ -99,6 +99,7 @@ module Magnetic
   integer, parameter :: nresi_max=4
 !
   real, dimension (ninit) :: amplaa=0.0, amplaa2=0.0, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
+  real, dimension (ninit) :: z0_gaussian, width_gaussian
   real, dimension (ninit) :: ampl_ax=0.0, ampl_ay=0.0, ampl_az=0.0
   real, dimension (ninit) :: kx_ax=0.0, kx_ay=0.0, kx_az=0.0
   real, dimension (ninit) :: ky_ax=0.0, ky_ay=0.0, ky_az=0.0
@@ -276,7 +277,7 @@ module Magnetic
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
       lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, &
-      loverride_ee_decide, eta_tdep_loverride_ee
+      loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian
 !
 ! Run parameters
 !
@@ -2139,6 +2140,7 @@ module Magnetic
         case ('x-point_xy'); call xpoint(amplaa(j),f,iaz,center1_x,center1_y)
         case ('x-point_xy2'); call xpoint2(amplaa(j),f,iaz,center1_x,center1_y)
         case ('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+        case ('Gaussian_By_z'); call Gaussian_By_z(amplaa(j),f,iaa,z0_gaussian(j),width_gaussian(j))
         case ('bhyperz'); call bhyperz(amplaa(j),f,iaa,kz_aa(j),non_ffree_factor)
         case ('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))
         case ('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)

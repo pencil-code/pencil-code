@@ -42,6 +42,7 @@ module Initcond
   public :: htanh, vtube, vtube_peri, htube, htube2, htube_x, hat, hat3d
   public :: htube_erf, xpoint, xpoint2
   public :: htube2_x
+  public :: Gaussian_By_z
   public :: wave_uu, wave, parabola, linprof
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
   public :: x_siny_cosz, x1_siny_cosz, x1_cosy_cosz, lnx_cosy_cosz
@@ -4163,6 +4164,33 @@ module Initcond
       endif
 !
     endsubroutine uniform_phi
+!***********************************************************************
+    subroutine Gaussian_By_z(ampl,f,i,z0_gaussian,width_gaussian)
+!
+!  Gaussian B_y field (for vector potential)
+!
+!  29-mar-23/nishant+rajesh: coded
+!
+      use Sub, only: erfunc
+
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl, z0_gaussian, width_gaussian
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'uniform_y: set variable to zero; i=',i
+      else
+        print*,'uniform_y: uniform y-field ; i=',i
+        if ((ip<=16).and.lroot) print*,'uniform_y: ampl=',ampl
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=ampl*erfunc((z(n)-z0_gaussian)/width_gaussian)
+          f(l1:l2,m,n,i+1)=0.0
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
+      endif
+!
+    endsubroutine Gaussian_By_z
 !***********************************************************************
     subroutine phi_comp_over_r(ampl,f,i)
 !
