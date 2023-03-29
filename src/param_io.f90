@@ -132,7 +132,8 @@ module Param_IO
       sigmaSB_set, c_light_set, cp_set, k_B_set, m_u_set, &
       lnoghost_strati, ichannel1, ichannel2, tag_foreign, &
       lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
-      lfatal_num_vector_369, density_scale_factor
+      lfatal_num_vector_369, density_scale_factor, &
+      lsmooth_farray
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &

@@ -508,6 +508,12 @@ program start
 !  Final update of ghost cells, after that 'f' must not be altered, anymore.
 !
   call update_ghosts(f)
+  if (lsmooth_farray) then
+    if (iux .eq. 0) call fatal_error('start','cannot use smooth if iux is zero')
+    if (iaz .eq. 0) call fatal_error('start','cannot use smooth if iaz is zero')
+    call smooth(f,iux,iaz)
+    call update_ghosts(f)
+  endif
 !
 !  Write initial condition to disk.
 !

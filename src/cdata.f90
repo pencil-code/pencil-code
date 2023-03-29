@@ -229,6 +229,7 @@ module Cdata
   integer, dimension(2) :: ivar_omit=(/0,0/)
   logical :: lzaver_on_input=.false.
   logical :: lfatal_num_vector_369=.true.
+  logical :: lsmooth_farray=.false.
 !
 ! Debugging
 !

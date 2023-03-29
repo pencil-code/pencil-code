@@ -140,7 +140,7 @@ module InitialCondition
       use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
                              gamma, gamma1, gamma_m1
       use FArrayManager,   only: farray_use_global
-      use Sub,             only: get_radial_distance, location_in_proc, smooth
+      use Sub,             only: get_radial_distance, location_in_proc
       use SharedVariables, only: get_shared_variable
 
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
@@ -150,7 +150,7 @@ module InitialCondition
       real, dimension (nx) :: rho_d, lnrho_c, psipn, l_d, vphi_d, lnT_d
       real, pointer :: g0
       real :: cp1, m00
-      integer :: lpos, mpos, npos
+      integer :: lpos, mpos, npos, procno,procnomax
 
 ! Some constants
 
@@ -184,28 +184,42 @@ module InitialCondition
         psi(l1:l2,m,n)=psipn+1.0/(2.0-2.0*apara)*(l_d/(sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)))**2.0
         enddo
       enddo
-      if (lfirst_proc_z) then 
-        if (location_in_proc((/rpos,xyz0(2), xyz0(3)/),lpos,mpos,npos)) then
+      if (location_in_proc((/rpos,xyz0(2), 0.0/),lpos,mpos,npos)) then
           psi0=psi(lpos,mpos,npos)
-          print*, psi0, x(lpos)
-        endif
+          procno=iproc
+          print*, psi0, x(lpos),procno
+      else
+          procno=-100 
       endif
-      call mpibcast(psi0)
-      mask: where ((-(psi-psi0) .gt. 0.0) .and. (xmesh .gt. rpos))
+!
+! The following is a hack as procno is not set for other processors
+!
+      call find_procno(procno,procnomax)
+      call mpibcast(psi0,procnomax)
+      print*, iproc, procnomax, psi0
+      mask: where ((-(psi-psi0) .gt. 0.0) .and. (abs(xmesh) .gt. rpos))
                masked=1.0
              elsewhere
                masked=0.0
             end where mask
-      mask2: where ((-(psi-psi0) .gt. 0.0) .and. (xmesh .gt. rpos))
+!
+      mask2: where ((-(psi-psi0) .gt. 0.0) .and. (abs(xmesh) .gt. rpos))
                tmasked=0.0
              elsewhere
                tmasked=1.0
             end where mask2
-!      call smooth(f,ilnrho)
-!      masked=f(:,:,:,ilnrho)
 !
       do n=n1,n2
         do m=m1,m2
+          call get_radial_distance(rr_sph,rr_cyl)
+!
+! Specific angular momentum
+!
+          l_d=l0_d*(rr_cyl(l1:l2)/r0_d)**apara
+!
+! Pseudo-Newtonian potential
+!
+        psipn=-g0/sqrt((rr_sph(l1:l2)-rs)**2+(1e-3*rs)**2)
 
 !  Disk Density
         
@@ -221,11 +235,28 @@ module InitialCondition
         enddo
       enddo
 !
-
-!      call smooth(f,iuy,ilntt)
-
 !
     endsubroutine initial_condition_all
+!***********************************************************************
+    subroutine find_procno(procno,procnomax)
+!
+!  Find the absolute maximum of the velocity.
+!
+!  13-sep-2023/piyali: adapted from find_umax
+!
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
+!
+      integer, intent(in) :: procno
+      integer, intent(out) :: procnomax
+!
+      integer :: procno1
+!
+!  Find the maximum.
+!
+      procno1 = procno
+      call mpiallreduce_max(procno1, procnomax, comm=MPI_COMM_WORLD)
+!
+    endsubroutine find_procno
 !***********************************************************************
     subroutine initial_condition_ss(f)
 !
