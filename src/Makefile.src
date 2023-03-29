@@ -137,6 +137,10 @@ PARTICLES_MASS        = noparticles_mass
 #
 REAL_PRECISION = default
 #
+# Multithreading.
+#
+MULTITHREAD = 
+#
 # Default compiler settings.
 #
 AR           = ar
@@ -2958,6 +2962,22 @@ endif
 
 #	    echo FIELDNAME=$$fieldname; \
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
+#
+#  Compiler setting for OpenMP (gfortran only at the moment).
+#
+ifeq ($(MULTITHREAD),OpenMP)
+# tb improved: use config file for setting OMPFLAGS
+  ifneq ($(GCC_VERSION),)
+    OMPFLAGS = -fopenmp
+  else
+    ifneq ($(INTEL),)
+      OMPFLAGS = -qopenmp
+    else
+      $(error OpenMP only usable with gfortran. - Exit!)
+    endif
+  endif
+  FFLAGS += $(OMPFLAGS)
+endif
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
