@@ -10,9 +10,11 @@
 ;-
 ; MODIFICATION HISTORY:
 ;     Written by: Anders Johansen (johansen@mpia.de) on 13.07.2007
+;     Updated by: Urs Dannenberg (urs.schafer@sund.ku.dk) on 23.11.2022
 ;
 pro pc_read_pstalk, object=object, datadir=datadir, it0=it0, it1=it1, $
-    swap_endian=swap_endian, quiet=quiet, noutmax=noutmax, single=single, help=help
+    swap_endian=swap_endian, quiet=quiet, noutmax=noutmax, single=single, $
+    nstalk=nstalk, help=help
 COMPILE_OPT IDL2,HIDDEN
 ;
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
@@ -71,6 +73,7 @@ pc_read_dim, obj=dim, datadir=datadir, /quiet
   end
 ;
 pc_read_pdim, obj=pdim, datadir=datadir, /quiet
+default, nstalk, pdim.npar_stalk
 ;
 ; Read parameters from file.
 ;
@@ -123,17 +126,17 @@ endif
 ; Initialize data arrays.
 ;
 t=make_array(nout, type=single ? 4 : type_idl)
-array=make_array(nfields,pdim.npar_stalk,nout, type=single ? 4 : type_idl)
+array=make_array(nfields,nstalk,nout, type=single ? 4 : type_idl)
 ;
 ; Sink particles have random particle indices, so we need to keep track of the
 ; particle index for later sorting.
 ;
 if (lstalk_sink_particles) then begin
-  ipar_stalk=lonarr(pdim.npar_stalk,nout)
+  ipar_stalk=lonarr(nstalk,nout)
   ipar_stalk[*,*]=-1
   npar_stalk_read=lonarr(nout)
 endif else begin
-  ipar_stalk=indgen(pdim.npar_stalk)
+  ipar_stalk=indgen(nstalk)
 endelse
 ;
 ; Go through all processor directories.
@@ -156,6 +159,18 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
 ;
   openr, lun, datadir+'/proc'+strtrim(iproc,2)+'/particles_stalker.dat', /f77, /get_lun, swap_endian=swap_endian
   while (ntread lt nout and not eof(lun)) do begin
+;
+; Handle broken data
+;
+    catch, error
+    if error ne 0 then begin
+      print, 'Broken data at iproc '+strtrim(iproc,2)+' from it '+strtrim(it,2)
+      print, 'Error index: ', error
+      print, 'Error message: ', !ERROR_STATE.MSG
+      catch, /cancel
+      break
+    endif
+;
     readu, lun, t_loc, npar_stalk_loc
 ;
     if (it ge it0) then begin
@@ -174,6 +189,21 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
         if (not lstalk_sink_particles) then begin
           array[*,ipar_loc-1,it-it0]=array_loc
         endif else begin ; Sink particles are sorted by index later
+;
+; The number of stalked particles may be greater than nstalk.
+;
+          if npar_stalk_read[it-it0]+npar_stalk_loc gt nstalk then begin
+            nstalk2=npar_stalk_read[it-it0]+npar_stalk_loc
+            array2=array
+            ipar_stalk2=ipar_stalk
+            array=make_array(nfields,nstalk2,nout, type=single ? 4 : type_idl)
+            ipar_stalk=lonarr(nstalk2,nout)
+            ipar_stalk[*,*]=-1
+            array[*,0:nstalk-1,*]=array2
+            ipar_stalk[0:nstalk-1,*]=ipar_stalk2
+            nstalk=nstalk2
+          endif
+;
           array[*,npar_stalk_read[it-it0]: $
               npar_stalk_read[it-it0]+npar_stalk_loc-1,it-it0]=array_loc
           ipar_stalk[npar_stalk_read[it-it0]:npar_stalk_read[it-it0]+ $
@@ -211,9 +241,24 @@ if (lstalk_sink_particles) then begin
   kuniq=ipar_stalk[uniq(ipar_stalk)]
   if (n_elements(kuniq) gt 1) then begin
     kuniq=kuniq[1:n_elements(kuniq)-1]
+;
+; There may be more than nstalk unique particle indices.
+;
+    if n_elements(kuniq) gt nstalk then $
+        array=make_array(nfields,n_elements(kuniq),nout, type=single ? 4 : type_idl)
+;
     for k=0,n_elements(kuniq)-1 do begin
       for it=1,nout-1 do begin
         kk=where(ipar_stalk2[*,it] eq kuniq[k])
+;
+; Skip over particle indices that are not unique, these might result from broken
+; data.
+;
+        if n_elements(kk) gt 1 then begin
+          array[*,k,*]=zero
+          break
+        endif
+;
         if (kk[0] ne -1) then array[*,k,it]=array2[*,kk,it] $
         else array[*,k,it]=zero
       endfor
