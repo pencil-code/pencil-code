@@ -30,7 +30,9 @@
 #include "../boundcond_c.h"             // provides boundconds[xyz] etc.
 #include "../mpicomm_c.h"               // provides finalize_sendrcv_bdry
 //#include "diagnostics/diagnostics.h"
-#include "loadStore.h"
+#ifdef PACKED_DATA_TRANSFERS 
+  #include "loadStore.h"
+#endif
 #if LFORCING
   #include "forcing.h"
 #endif
@@ -41,6 +43,7 @@ static AcMesh mesh;
 Node node;
 DeviceConfiguration devConfig;
 int halo_xy_size=0, halo_xz_size=0, halo_yz_size=0;
+static int l0=1;
 #if LFORCING
 static ForcingParams forcing_params;
 #include "../forcing_c.h"
@@ -91,14 +94,10 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
 
     //Integrate on the GPUs in this node
     //NOTE: In Astaroth, isubstep is {0,1,2}, in PC it is {1,2,3}
-
+//printf("isubstep,full,early_finalize= %d %d %d \n",isubstep,full,early_finalize);
     if (early_finalize) {
-    //if (true) {
     // MPI communication has already finished, hence the full domain can be advanced.
-      if (full)
-      {
-          acLoad(mesh);
-      } else {
+      if (!full) {
 #ifdef PACKED_DATA_TRANSFERS 
           loadOuterHalos(mesh);
 #else
@@ -145,10 +144,10 @@ float minux=1e30, minuy=1e30, minuz=1e30, minlnrho=1e30;
       }
       acSynchronize();
 printf("isubstep= %d\n", isubstep);
+      //acSynchronizeMesh();
       acIntegrateStep(isubstep-1, dt);
       acSynchronize();
       acNodeSwapBuffers(node); 
-      acSynchronizeMesh();
 #ifdef PACKED_DATA_TRANSFERS 
       storeInnerHalos(mesh);
 #else
@@ -161,7 +160,7 @@ printf("isubstep= %d\n", isubstep);
     // MPI communication has not yet finished, hence only the inner domain can be advanced.
       int3 start=(int3){l1i+2,m1i+2,n1i+2}-1, end=(int3){l2i-2,m2i-2,n2i-2}-1+1;   // -1 shift because of C indexing convention
       if (start.x<end.x && start.y<end.y && start.z<end.z) {
-        printf("start,end= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);
+        if (l0) {printf("start,end= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);}
         acIntegrateStepWithOffset(isubstep-1,dt,start,end);                          // +1 shift because end is exclusive
       }
 #ifdef PACKED_DATA_TRANSFERS 
@@ -176,37 +175,43 @@ printf("isubstep= %d\n", isubstep);
       loadOuterBot(mesh,STREAM_2);
       loadOuterTop(mesh,STREAM_3);
       loadOuterBack(mesh,STREAM_1);
+      acSynchronize();
+      //acSynchronizeMesh();  // only for peer-to-peer
 
       start=(int3){l1,m1i+2,n1i+2}-1; end=(int3){l1i+1,m2i-2,n2i-2}-1+1;   // integrate inner left plate
       if (start.x<end.x && start.y<end.y && start.z<end.z) {
-      printf("start,end inner left= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);
+      if (l0) {printf("start,end inner left= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);}
       acNodeIntegrateSubstep(node, STREAM_4, isubstep-1, start, end, dt);
       }
+
       start=(int3){l2i-1,m1i+2,n1i+2}-1; end=(int3){l2,m2i-2,n2i-2}-1+1;   // integrate inner right plate
       if (start.x<end.x && start.y<end.y && start.z<end.z) {
-      printf("start,end inner right= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);
+      if (l0) {printf("start,end inner right= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);}
       acNodeIntegrateSubstep(node, STREAM_5, isubstep-1, start, end, dt);
       }
       start=(int3){l1,m1,n1i+2}-1; end=(int3){l2,m1i+1,n2i-2}-1+1;         // integrate inner bottom plate
       if (start.x<end.x && start.y<end.y && start.z<end.z) {
-      printf("start,end inner bottom= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);
+      if (l0) {printf("start,end inner bottom= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);}
       acNodeIntegrateSubstep(node, STREAM_2, isubstep-1, start, end, dt);
       }
       start=(int3){l1,m2i-1,n1i+2}-1; end=(int3){l2,m2,n2i-2}-1+1;         // integrate inner top plate
       if (start.x<end.x && start.y<end.y && start.z<end.z) {
-      printf("start,end inner top= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);
+      if (l0) {printf("start,end inner top= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);}
       acNodeIntegrateSubstep(node, STREAM_3, isubstep-1, start, end, dt);
       }
       start=(int3){l1,m1,n1}-1; end=(int3){l2,m2,n1i+1}-1+1;               // integrate inner front plate
       if (start.x<end.x && start.y<end.y && start.z<end.z) {
-      printf("start,end inner front= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);
+      if (l0) {printf("start,end inner front= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);}
       acNodeIntegrateSubstep(node, STREAM_6, isubstep-1, start, end, dt);
       }
       start=(int3){l1,m1,n2i-1}-1; end=(int3){l2,m2,n2}-1+1;               // integrate inner back plate
       if (start.x<end.x && start.y<end.y && start.z<end.z) {
-      printf("start,end inner back= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);
+      if (l0) {printf("start,end inner back= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z); l0=0;}
       acNodeIntegrateSubstep(node, STREAM_1, isubstep-1, start, end, dt);
       }
+      ERRCHK_CUDA_KERNEL_ALWAYS();
+      acNodeSwapBuffers(node);
+      acSynchronize();
       storeInnerLeft(mesh,STREAM_4);
       storeInnerRight(mesh,STREAM_5);
       storeInnerBot(mesh,STREAM_2);
@@ -215,8 +220,6 @@ printf("isubstep= %d\n", isubstep);
       storeInnerBack(mesh,STREAM_1);
 #endif
       acSynchronize();
-      acNodeSwapBuffers(node);
-      acSynchronizeMesh();
 
     }  // end not early_finalize
 }
@@ -285,27 +288,27 @@ printf("lxyz etc. %f %f %f %f %f %f \n",lxyz[0],lxyz[1],lxyz[2],xyz0[0],xyz0[1],
 
 #include "PC_modulepars.h"
 #if LVISCOSITY
-//     config.real_params[AC_nu]=nu;
-//     config.real_params[AC_zeta]=zeta;
+     //config.real_params[AC_nu]=nu;
+     //config.real_params[AC_zeta]=zeta;
 printf("nu etc. %f %f \n", nu, zeta);
 #endif
 #if LMAGNETIC
-//     config.real_params[AC_eta]=eta;
+     //config.real_params[AC_eta]=eta;
 printf("eta etc. %f \n", config.real_params[AC_eta]);
 #endif
-//     config.real_params[AC_mu0]=mu0;
-//     config.real_params[AC_cs]=sqrt(cs20);
-//     config.real_params[AC_cs2]=cs20;
-//     config.real_params[AC_gamma]=gamma;
-//     config.real_params[AC_cv]=cv;
-//     config.real_params[AC_cp]=cp;
-//     config.real_params[AC_lnT0]=lnTT0;
-//     config.real_params[AC_lnrho0]=lnrho0;
+     //config.real_params[AC_mu0]=mu0;
+     //config.real_params[AC_cs]=sqrt(cs20);
+     //config.real_params[AC_cs2]=cs20;
+     //config.real_params[AC_gamma]=gamma;
+     //config.real_params[AC_cv]=cv;
+     //config.real_params[AC_cp]=cp;
+     //config.real_params[AC_lnT0]=lnTT0;
+     //config.real_params[AC_lnrho0]=lnrho0;
 printf("eos etc. %f %f %f %f %f %f \n",sqrt(cs20),gamma,cv,cp,lnTT0,lnrho0);
 printf("eos etc. %f %f %f %f %f \n",config.real_params[AC_cs],config.real_params[AC_gamma],
                                     config.real_params[AC_cv],config.real_params[AC_cp],config.real_params[AC_lnrho0]);
 #if LENTROPY
-//     config.real_params[AC_chi]=chi;
+     //config.real_params[AC_chi]=chi;
 printf("chi %f \n", chi);
 #endif
 #if LFORCING
@@ -330,7 +333,7 @@ void loadProfiles(AcMeshInfo & config){
 #endif
 }
 /***********************************************************************************************/
-extern "C" void initializeGPU()
+extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
 {
     //Setup configurations used for initializing and running the GPU code
 #ifdef PACKED_DATA_TRANSFERS 
@@ -343,14 +346,24 @@ extern "C" void initializeGPU()
         acNodeQueryDeviceConfiguration(node, &devConfig);
         loadProfiles(mesh.info);
 
+        AcReal *p[2];
+        if (acNodeGetVBApointer(&node, p)==AC_SUCCESS) {
+          *farr_GPU_in=p[0];
+          *farr_GPU_out=p[1];
+printf("Node. vbapointer= %p %p \n", *farr_GPU_in, *farr_GPU_out);
+        } else {
+          *farr_GPU_in=NULL;
+          *farr_GPU_out=NULL;
+        }
+
     // initialize diagnostics
        //init_diagnostics();
 }
 /***********************************************************************************************/
 extern "C" void copyFarray() 
 {
-//printf("store all \n"); fflush(stdout);
        AcResult res=acStore(&mesh);
+printf("store all %d \n",res); fflush(stdout);
 }
 /***********************************************************************************************/
 extern "C" void finalizeGPU()

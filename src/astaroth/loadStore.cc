@@ -35,18 +35,18 @@ void initLoadStore()
 //printf("lperi= %d %d %d \n", lperi[0],lperi[1],lperi[2]);
         // halo widths for undivided data cube
         if (!lperi[0]){
-                if (lfirst_proc_x) halo_widths_x[BOT]=nghost+1;
-                if (llast_proc_x) halo_widths_x[TOP]=nghost+1;
+            if (lfirst_proc_x) halo_widths_x[BOT]=nghost+1;
+            if (llast_proc_x) halo_widths_x[TOP]=nghost+1;
         }
         if (!lyinyang) {
-                if (!lperi[1]){
-                        if (lfirst_proc_y) halo_widths_y[BOT]=nghost+1;
-                        if (llast_proc_y) halo_widths_y[TOP]=nghost+1;
-                }
-                if (!lperi[2]){
-                        if (lfirst_proc_z) halo_widths_z[BOT]=nghost+1;
-                        if (llast_proc_z) halo_widths_z[TOP]=nghost+1;
-                }
+            if (!lperi[1]){
+                if (lfirst_proc_y) halo_widths_y[BOT]=nghost+1;
+                if (llast_proc_y) halo_widths_y[TOP]=nghost+1;
+            }
+            if (!lperi[2]){
+                if (lfirst_proc_z) halo_widths_z[BOT]=nghost+1;
+                if (llast_proc_z) halo_widths_z[TOP]=nghost+1;
+            }
         }
         halo_widths_x[TOT]=halo_widths_x[BOT]+halo_widths_x[TOP];
         halo_widths_y[TOT]=halo_widths_y[BOT]+halo_widths_y[TOP];
@@ -94,32 +94,32 @@ void loadOuterBack(AcMesh& mesh, Stream stream)
  
 void loadOuterBot(AcMesh& mesh, Stream stream)
 {
-        int3 start={0,0,halo_widths_z[BOT]};
-        int3 end={mx,halo_widths_y[BOT],mz-halo_widths_z[TOP]};  //end is exclusive
+        int3 start={0, 0,                    halo_widths_z[BOT]};
+        int3 end  ={mx,halo_widths_y[BOT],mz-halo_widths_z[TOP]};  //end is exclusive
 
         acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
 }
 
 void loadOuterTop(AcMesh& mesh, Stream stream)
 {
-        int3 start={0,my-halo_widths_y[TOP],halo_widths_z[BOT]};
-        int3 end={mx,my,mz-halo_widths_z[TOP]};  //end is exclusive
+        int3 start={0, my-halo_widths_y[TOP],   halo_widths_z[BOT]};
+        int3 end  ={mx,my,                   mz-halo_widths_z[TOP]};  //end is exclusive
 //printf("loadOuterTop: %d %d %d %d %d %d \n", start.x,end.x,start.y,end.y,start.z,end.z);
         acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
 }
 
 void loadOuterLeft(AcMesh& mesh, Stream stream)
 {
-    int3 start=      {0,                      halo_widths_y[BOT],     halo_widths_z[BOT]  };
-    int3 end  =(int3){halo_widths_x[BOT]-1,my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1;  //end is exclusive
+    int3 start={0,                      halo_widths_y[BOT],     halo_widths_z[BOT]};
+    int3 end  ={halo_widths_x[BOT]-1,my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1;  //end is exclusive
 
     acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
 }
 
 void loadOuterRight(AcMesh& mesh, Stream stream)
 {
-    int3 start=      {mx-halo_widths_x[TOP],   halo_widths_y[BOT],     halo_widths_z[BOT]  };
-    int3 end  =(int3){mx-1,                 my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1; //end is exclusive
+    int3 start={mx-halo_widths_x[TOP],   halo_widths_y[BOT],     halo_widths_z[BOT]};
+    int3 end  ={mx-1,                 my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1; //end is exclusive
 
     acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
 }
@@ -137,7 +137,7 @@ void loadOuterHalos(AcMesh& mesh)
 void storeInnerFront(AcMesh& mesh, Stream stream)
 {
         int3 start=(int3){l1,m1,n1}-1;
-        int3 end=(int3){l2,m2,n1+halo_widths_z[BOT]-1}-1+1;   //end is exclusive
+        int3 end  =(int3){l2,m2,n1+halo_widths_z[BOT]-1}-1+1;   //end is exclusive
 
 //printf("storeInnerFront: start,end= %d %d %d %d %d %d \n",start.x, end.x,start.y, end.y,start.z, end.z);
         acNodeStoreIXYPlate(node, stream, start, end, &mesh, AC_FRONT);
@@ -147,7 +147,7 @@ void storeInnerFront(AcMesh& mesh, Stream stream)
 void storeInnerBack(AcMesh& mesh, Stream stream)
 {
         int3 start=(int3){l1,m1,n2-halo_widths_z[TOP]+1}-1;
-        int3 end=(int3){l2,m2,n2}-1+1;    //end is exclusive
+        int3 end  =(int3){l2,m2,n2                     }-1+1;    //end is exclusive
 //printf("storeInnerBack: start,end= %d %d %d %d %d %d \n",start.x, end.x,start.y, end.y,start.z, end.z);
         acNodeStoreIXYPlate(node, stream, start, end, &mesh, AC_BACK);
         //acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer, AC_XY);

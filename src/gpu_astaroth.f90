@@ -21,6 +21,8 @@ module GPU
 
   include 'gpu.h'
 
+  integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
+  
 contains
 
 !***********************************************************************
@@ -67,11 +69,10 @@ contains
       if (lpower_spectrum) str=trim(str)//', '//'power_spectrum'
       if (lparticles) str=trim(str)//', '//'particles'
 
-      if (str/='') &
-        call stop_it('No GPU implementation for module(s) "'//trim(str(3:))//'"')
+      if (str/='') call stop_it('No GPU implementation for module(s) "'//trim(str(3:))//'"')
 !
-      call initialize_gpu_c
-
+      call initialize_gpu_c(pFarr_GPU_in,pFarr_GPU_out)
+!print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
     endsubroutine initialize_GPU
 !**************************************************************************
     subroutine gpu_init

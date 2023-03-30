@@ -1,8 +1,12 @@
-SOURCES = gpu_astaroth.cc loadStore.cc 
+SOURCES = gpu_astaroth.cc
+# for packed data transfer:
+SOURCES += loadStore.cc
+
 OBJECTS = $(SOURCES:.cc=.o) 
 
 # Settings for taito-gpu
-CUFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 
+CUFLAGS = 
+#-gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 
 #-gencode arch=compute_60,code=sm_60 --expt-relaxed-constexpr
 OPTFLAGS = -O1 
 #-funroll-loops -march=native 
@@ -20,6 +24,7 @@ OPTFLAGS = -O1
 
 #Importing environ variables into preprocessor
 ENVIRON = -DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX}
+###-DCMAKE_BUILD_TYPE=Debug    make VERBOSE=1
 
 PRECISION =
 include PC_modulesources.h
@@ -34,14 +39,15 @@ else
   CMAKE_PREC = 'DOUBLE_PRECISION=OFF'
 endif
 ENVIRON += -DPACKED_DATA_TRANSFERS=ON
+#ENVIRON += -DPACKED_DATA_TRANSFERS=OFF
 
 CCFLAGS = $(OPTFLAGS) -std=c++11 -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -g -G -lm
 #CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
-CCFLAGS = $(OPTFLAGS) -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm
+CCFLAGS = $(OPTFLAGS) -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm
 
 PCHEADER_DIR=.
-DSL_MODULE_DIR=Pencil
-#DSL_MODULE_DIR=samples/mhd
+#DSL_MODULE_DIR=Pencil
+DSL_MODULE_DIR=samples/mhd
 
 include Makefile.depend
 include Makefile.extern
@@ -50,13 +56,14 @@ include Makefile.extern
 #export CUDA_NVCC_FLAGS='-shared -fPIC'
 
 astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
-	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) -L submodule/build/src/core -L submodule/build/src/core/kernels -L submodule/build/src/utils -lastaroth_core -lkernels -lastaroth_utils -Isubmodule/include
+	nvcc $(CCFLAGS) $(CUFLAGS) -shared -o astaroth_$(PREC).so $(OBJECTS) -L submodule/build/src/core -L submodule/build/src/core/kernels -L submodule/build/src/utils -lastaroth_core -lkernels -lastaroth_utils -Isubmodule/include
 
 astaroth_libs: $(PC_HEADERS)
 	mkdir -p submodule/build && cd submodule/build && \
 	export DSL_MODULE=$(DSL_MODULE_DIR); cmake -DMULTIGPU_ENABLED=OFF -DBUILD_SHARED=ON -DSINGLEPASS_INTEGRATION=OFF \
-              -DPACKED_DATA_TRANSFERS=ON -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF .. \
+              -DPACKED_DATA_TRANSFERS=ON -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=DEBUG -DADJACENT_VERTEX_BUFFERS=ON .. \
 	&& make -I../../.. VERBOSE=0 # Build the core Astaroth library
+	echo PRECISION=$(CMAKE_PREC)
 
 #-DCMAKE_CXX_COMPILER=/appl/spack/install-tree/gcc-4.8.5/gcc-8.3.0-qzmzn5/bin/c++ .. \
 #export DSL_MODULE=pc_mhd_solver && \

@@ -148,7 +148,7 @@ module Equ
                      lchemistry.or.lweno_transport .or. lbfield .or. & 
 !                     lslope_limit_diff .or. lvisc_smag .or. &
                      lvisc_smag .or. &
-                     lyinyang .or. & !!!.or.lgpu &
+                     lyinyang .or. lgpu .or. &   !!!
                      ncoarse>1
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
@@ -1282,8 +1282,7 @@ module Equ
 
         if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) maxadvec=maxadvec+sqrt(advec2_hypermesh)
 !
-!  Time step constraints from each module.
-!  (At the moment, magnetic and testfield use the same variable.)
+!  Time step constraints from each module. (At the moment, magnetic and testfield use the same variable.)
 !  cdt, cdtv, and cdtc are empirical non-dimensional coefficients.
 !
 !  Timestep constraint from advective terms.

@@ -34,7 +34,7 @@ extern REAL __cdata_MOD_dx, __cdata_MOD_dy, __cdata_MOD_dz;
 extern FINT __cdata_MOD_llast_proc_x;
 extern FINT __hydro_MOD_idiag_umax;
 // ----------------------------------------------------------------------
-void FTNIZE(initialize_gpu_c)()
+void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out)
 /* Initializes GPU.
 */
 {
@@ -54,7 +54,7 @@ void FTNIZE(initialize_gpu_c)()
   //printf("llast_proc_x = %d\n", __cdata_MOD_llast_proc_x);
   //printf("ldiagnos = %d\n", ldiagnos);
 
-  initializeGPU();
+  initializeGPU(farr_GPU_in,farr_GPU_out);
 
 /*
   printf("xmin = %e\n", x[4]);

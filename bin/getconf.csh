@@ -790,7 +790,7 @@ else if ($hn =~ clogin*) then
   set one_local_disc = 0
   set remote_top     = 0
   set local_binary = 0
-else if (($hn =~ r*c*.bullx)) then
+else if (($hn =~ r*[cg]*.bullx)) then
   echo "Puhti - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
