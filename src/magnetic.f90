@@ -998,7 +998,7 @@ module Magnetic
   integer :: ivid_aps=0, ivid_bb=0, ivid_jj=0, ivid_b2=0, ivid_j2=0, ivid_ab=0, &
              ivid_jb=0, ivid_beta1=0, ivid_poynting=0, ivid_bb_sph=0
 !
-! Auxiliary module Variables
+! Auxiliary module variables
 !
   real, dimension(nx) :: etatotal=0.,eta_smag=0.,Fmax=0.,dAmax=0.,ss0=0., &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
@@ -1251,8 +1251,7 @@ module Magnetic
           xmask_mag = xmask_mag * (xyz1(1)**2 - xyz0(1)**2)&
               / (magnetic_xaver_range(2)**2 - magnetic_xaver_range(1)**2)
         else
-          xmask_mag = xmask_mag*Lxyz(1) &
-              / (magnetic_xaver_range(2) - magnetic_xaver_range(1))
+          xmask_mag = xmask_mag*Lxyz(1)/(magnetic_xaver_range(2) - magnetic_xaver_range(1))
         endif
       endif
 !
@@ -1287,9 +1286,25 @@ module Magnetic
 !
 !  Precalculate eta if 1/eta (==eta1) is given instead
 !
-      if (eta1/=0.0) then
-        eta=1./eta1
-      endif
+      if (eta1/=0.) eta=1./eta1
+!
+!  default to spread gradient over ~5 grid cells.
+!
+      if (eta_rwidth == 0.) eta_rwidth = 5.*dx
+!
+!  For two-step profiles, allow each step to have separate width. If not specified, take eta_rwidth.
+!
+      if (eta_rwidth0==0.) eta_rwidth0 = eta_rwidth
+      if (eta_rwidth1==0.) eta_rwidth1 = eta_rwidth
+!
+!  default to spread gradient over ~5 grid cells.
+!
+      if (eta_xwidth == 0.) eta_xwidth = 5.*dx
+!
+!  For two-step profiles, allow each step to have separate width. If not specified, take eta_xwidth.
+!
+      if (eta_xwidth0==0.) eta_xwidth0 = eta_xwidth
+      if (eta_xwidth1==0.) eta_xwidth1 = eta_xwidth
 !
 !  Precalculate 1/inertial_length^2
 !
@@ -1773,10 +1788,8 @@ module Magnetic
       endif
 
       if (.not.lweyl_gauge) then
-        if (lresi_magfield) &
-          call fatal_error('initialize_magnetic','set lweyl_gauge=T for lresi_magfield')
-        if (lresi_etava) &
-          call not_implemented('initialize_magnetic','eta_va for resistive gauge')
+        if (lresi_magfield) call fatal_error('initialize_magnetic','set lweyl_gauge=T for lresi_magfield')
+        if (lresi_etava) call not_implemented('initialize_magnetic','eta_va for resistive gauge')
       endif
 !
 !  Border profile backward compatibility. For a vector, if only the first
@@ -1967,8 +1980,7 @@ module Magnetic
 !
 !  Must have nprocy=1 because we shift in the y direction
 !
-        if (nprocy/=1) call fatal_error('initialize_magnetic', &
-                                        'nprocy=1 required for lvart_in_shear_frame')
+        if (nprocy/=1) call fatal_error('initialize_magnetic','nprocy=1 required for lvart_in_shear_frame')
       endif
 !
 !  give warning if brms is not set in prints.in
@@ -1980,8 +1992,7 @@ module Magnetic
         call fatal_error("initialize_magnetic","lmean_friction works only for nprocxy=1")
 
       if (dipole_moment /= 0. .and. ladd_global_field) &
-        call fatal_error("initialize_magnetic", &
-                         "Switch ladd_global_field=F if dipole_moment /= 0.")
+        call fatal_error("initialize_magnetic","Switch ladd_global_field=F if dipole_moment /= 0.")
 
       if (lcoulomb.and..not.lpoisson) &
         call fatal_error('initialize_magnetic', 'Coulomb gauge needs the Poisson module')
@@ -4074,14 +4085,12 @@ module Magnetic
 !
         if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
         if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) then
-          rho1_jxb = rho1_jxb &
-                   * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+          rho1_jxb = rho1_jxb*(1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
         if (betamin_jxb>0) then
           va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
           if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
-          rho1_jxb = rho1_jxb &
-                   * (1.+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+          rho1_jxb = rho1_jxb*(1.+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
       endif
@@ -4393,7 +4402,7 @@ module Magnetic
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
       real, dimension(nx) :: eta_BB, prof
       real, dimension(3) :: B_ext
-      real :: tmp, eta_out1, maxetaBB=0., cosalp, sinalp, hall_term_
+      real :: tmp, eta_out1, cosalp, sinalp, hall_term_
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix,nphi
       integer, parameter :: nxy=nxgrid*nygrid
@@ -4514,8 +4523,8 @@ module Magnetic
 !
 !  Uniform resistivity
 !
-      eta_const: if (lresi_eta_const) then
-        exp_const: if (.not. limplicit_resistivity) then
+      if (lresi_eta_const) then
+        if (.not. limplicit_resistivity) then
           if (lweyl_gauge) then
             fres = fres - eta * mu0 * p%jj
           else
@@ -4530,9 +4539,9 @@ module Magnetic
              fres(:,3) = fres(:,3) - eta*mu0*del2aa_ini
           endif
           if (lfirst .and. ldt) diffus_eta = diffus_eta + eta
-        end if exp_const
+        endif
         etatotal = etatotal + eta
-      endif eta_const
+      endif
 !
 !  Time-dependent resistivity
 !  If both z and t dependent, then use eta_tdep for del2 (in non-Weyl),
@@ -4558,8 +4567,8 @@ module Magnetic
 !
 !  z-dependent resistivity
 !
-      eta_zdep: if (lresi_zdep) then
-        exp_zdep: if (.not. limplicit_resistivity) then
+      if (lresi_zdep) then
+        if (.not. limplicit_resistivity) then
           if (lweyl_gauge) then
             fres = fres - eta_z(n) * mu0 * p%jj
           else
@@ -4567,13 +4576,13 @@ module Magnetic
             fres(:,3) = fres(:,3) + geta_z(n) * p%diva
           endif
           if (lfirst .and. ldt) diffus_eta = diffus_eta + eta_z(n)
-        else exp_zdep   !MR: What about Weyl gauge here?
+        else    !MR: What about Weyl gauge here?
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
           fres(:,3) = fres(:,3) + geta_z(n) * p%diva
           if (lfirst .and. ldt) maxadvec = maxadvec + abs(geta_z(n)) * dz_1(n)
-        endif exp_zdep
+        endif 
         etatotal = etatotal + eta_z(n)
-      endif eta_zdep
+      endif
 !
       if (lresi_sqrtrhoeta_const) then
         if (lweyl_gauge) then
@@ -5079,16 +5088,13 @@ module Magnetic
 ! Magnetic field dependent resistivity
 !
       if (lresi_magfield) then
-        eta_BB(:)=eta/(1.+etaB*p%bb(:,2)**2)
+        eta_BB=eta/(1.+etaB*p%bb(:,2)**2)
         if (lweyl_gauge) then
           do i=1,3
-            fres(:,i)=fres(:,i)-mu0*eta_BB(:)*p%jj(:,i)
+            fres(:,i)=fres(:,i)-mu0*eta_BB*p%jj(:,i)
           enddo
         endif
-        if (lfirst.and.ldt) then
-          call max_mn(eta_BB,maxetaBB)
-          diffus_eta=diffus_eta+maxetaBB
-        endif
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_BB
       endif
 !
 !  anisotropic B-dependent diffusivity
@@ -5527,18 +5533,15 @@ module Magnetic
           rho1_jxb=p%rho1
           if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
           if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) then
-            rho1_jxb = rho1_jxb &
-                     * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+            rho1_jxb = rho1_jxb*(1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
           if (betamin_jxb>0) then
             va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
             if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
-            rho1_jxb = rho1_jxb &
-                     * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+            rho1_jxb = rho1_jxb*(1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
           if (lboris_correction .and. va2max_boris>0) then
-            rho1_jxb = rho1_jxb &
-                     * (1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
+            rho1_jxb = rho1_jxb*(1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
           endif
           if (lboris_correction .and. cmin>0) &
             rho1_jxb = rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
@@ -9168,16 +9171,12 @@ module Magnetic
 !
         case ('tanh')
 !
-!  default to spread gradient over ~5 grid cells.
-!
-           if (eta_xwidth == 0.) eta_xwidth = 5.*dx
-           eta_x = eta*0.5*(tanh((x + eta_x0)/eta_xwidth) &
-             - tanh((x - eta_x0)/eta_xwidth))
+           eta_x = eta*0.5*(tanh((x + eta_x0)/eta_xwidth) - tanh((x - eta_x0)/eta_xwidth))
 !
 ! its gradient:
 !
            geta_x = -eta/(2.*eta_xwidth) * ((tanh((x + eta_x0)/eta_xwidth))**2. &
-             - (tanh((x - eta_x0)/eta_xwidth))**2.)
+                    -(tanh((x - eta_x0)/eta_xwidth))**2.)
 !
 !  linear profile
 !
@@ -9185,8 +9184,7 @@ module Magnetic
 !
 !  default to spread gradient over ~5 grid cells.
 !
-           if (eta_xwidth == 0.) eta_xwidth = Lxyz(1)
-           eta_x = eta*(1.+(x-xyz1(1))/eta_xwidth)
+           eta_x = eta*(1.+(x-xyz1(1)))/merge(Lxyz(1),eta_xwidth,eta_xwidth==0.)
 !
 ! its gradient:
 !
@@ -9221,23 +9219,9 @@ module Magnetic
 !
            geta_x = 2*eta*(1+9*(x/radRFP)**30)*270*(x/radRFP)**29/radRFP
 !
-!
 !  Two-step function
 !
         case ('two_step','two-step')
-!
-!  Allow for the each step to have its width. If they are
-!  not specified, then eta_xwidth takes precedence.
-!
-           if (eta_xwidth .ne. 0.) then
-             eta_xwidth0 =eta_xwidth
-             eta_xwidth1 =eta_xwidth
-           endif
-!
-!  Default to spread gradient over ~5 grid cells,
-!
-           if (eta_xwidth0 == 0.) eta_xwidth0 = 5.*dx
-           if (eta_xwidth1 == 0.) eta_xwidth1 = 5.*dx
 !
            eta_x = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
              (step(x,eta_x0,eta_xwidth0)-step(x,eta_x1,eta_xwidth1))
@@ -9247,7 +9231,7 @@ module Magnetic
 !  Note that geta_x points then only in the x direction.
 !
            geta_x = eta*(eta_jump-two_step_factor)*( &
-             der_step(x,eta_x0,-eta_xwidth0)+der_step(x,eta_x1,eta_xwidth1))
+                    der_step(x,eta_x0,-eta_xwidth0)+der_step(x,eta_x1,eta_xwidth1))
 !
 !  Powerlaw-x
 !
@@ -9313,9 +9297,6 @@ module Magnetic
 !
         case ('step')
 !
-!  default to spread gradient over ~5 grid cells.
-!
-           if (eta_rwidth == 0.) eta_rwidth = 5.*dx
            tmp1=p%r_mn
 !           tmp1=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
            eta_r = eta + eta*(eta_jump-1.)*step(tmp1,eta_r0,-eta_rwidth)
@@ -9330,19 +9311,6 @@ module Magnetic
 !  Two-step function
 !
         case ('two_step','two-step')
-!
-!  Allow for the each step to have separate width. If eta_rwidth
-!  is non-zero, it takes precedence.
-!
-           if (eta_rwidth .ne. 0.) then
-             eta_rwidth0 = eta_rwidth
-             eta_rwidth1 = eta_rwidth
-           endif
-!
-!  Default to spread gradient over ~5 grid cells,
-!
-           if (eta_rwidth0 == 0.) eta_rwidth0 = 5.*dx
-           if (eta_rwidth1 == 0.) eta_rwidth1 = 5.*dx
 !
            eta_r = eta + eta*(eta_jump - 1.)* &
              (step(p%r_mn,eta_r0,eta_rwidth0) - step(p%r_mn,eta_r1,eta_rwidth1))
@@ -9362,18 +9330,6 @@ module Magnetic
 !  Allow for the each step to have separate width and height.
 !  Here eta_jump0 and eta_jump1 are ratios with respect to eta.
 !
-!  If eta_rwidth is non-zero, it takes precedence.
-!
-           if (eta_rwidth .ne. 0.) then
-             eta_rwidth0 = eta_rwidth
-             eta_rwidth1 = eta_rwidth
-           endif
-!
-!  Default to spread gradient over ~5 grid cells,
-!
-           if (eta_rwidth0 == 0.) eta_rwidth0 = 5.*dx
-           if (eta_rwidth1 == 0.) eta_rwidth1 = 5.*dx
-!
 !  Compute eta-profile
 !
            prof1    = step(p%r_mn,eta_r1,eta_rwidth1)
@@ -9381,7 +9337,7 @@ module Magnetic
            derprof1 = der_step(p%r_mn,eta_r1,eta_rwidth1)
            derprof0 = der_step(p%r_mn,eta_r0,eta_rwidth0) - derprof1
 !
-           eta_r = eta + (eta*(eta_jump0-1.))*prof0    + (eta*(eta_jump1-1.))*prof1
+           eta_r = eta + (eta*(eta_jump0-1.))*prof0 + (eta*(eta_jump1-1.))*prof1
 !
 !  ... and its gradient.
 !
@@ -9389,6 +9345,7 @@ module Magnetic
            geta_r(:,1)=tmp1*x(l1:l2)*p%r_mn1(l1:l2)
            geta_r(:,2)=tmp1*y(  m  )*p%r_mn1(l1:l2)
            geta_r(:,3)=tmp1*z(  n  )*p%r_mn1(l1:l2)
+!
       endselect
 !
 !  Debug output (currently only on root processor)
