@@ -1844,9 +1844,13 @@ sub get_current_revision {
         # Get current SVN revision and GIT hash
         if (-d "$pencil_home/.svn") {
             # SVN revision
-            $current_revision = `svn info "$pencil_home" --show-item revision`;
+            # The following line fails on Norlx51 (ubuntu 12.04) with old SVN client:
+            #$current_revision = `svn info "$pencil_home" --show-item revision`;
+            my $result = `svn info "$pencil_home" --xml`;
+            if ($result =~ /revision\s*=\s*"(\d+)"/is) { $current_revision = $1; }
+            if (!$current_revision) { $current_revision = "Problem obtaining SVN revision!"; }
             # GIT hash
-            my $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
+            $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
             if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $current_hash = $1; }
             if (!$current_hash) { $current_hash = "No network connection to github!"; }
         }
