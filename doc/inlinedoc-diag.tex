@@ -18,6 +18,7 @@
 %%   chemistry.f90
 %%   chemistry_simple.f90
 %%   chiral_mhd.f90
+%%   collapse.f90
 %%   coronae.f90
 %%   cosmicray_current.f90
 %%   density_stratified.f90
@@ -319,7 +320,6 @@
   \var{uglnrhom}  & $\left<\uv\cdot\nabla\ln\varrho\right>$ \\
   \var{totmass}   & $\int\varrho\,dV$ \\
   \var{mass}      & $\int\varrho\,dV$ \\
-  \var{sphmass}   & $\int\varrho\,dV$ inside $r < 1$. \\
   \var{inertiaxx} & $xx$ component of the inertia tensor (spherical coordinates) \\
   \var{inertiayy} & $yy$ component of the inertia tensor (spherical coordinates) \\
   \var{inertiazz} & $zz$ component of the inertia tensor (spherical coordinates) \\
@@ -760,6 +760,8 @@
   \var{chiddot}   & $\ddot{\chi}$ \\
   \var{psi}       & $\psi$ \\
   \var{TR}        & $T_R$ \\
+  \var{psi_anal}  & $\psi^{\rm anal}$ \\
+  \var{TR_anal}   & $T_R^{\rm anal}$ \\
   \var{grand}     & ${\cal T}^Q$ \\
   \var{grant}     & ${\cal T}^\chi$ \\
   \var{grand2}    & ${\cal T}^Q$ (test) \\
@@ -777,6 +779,7 @@
   \var{Hubblem}   & $\left<{\cal H}\right>$ \\
   \var{lnam}      & $\left<\ln a\right>$ \\
   \var{ddotam}    & $a''/a$ \\
+  \var{a2rhopm}   & $a^2 rho$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{bfield.f90}} \\
 \midrule
@@ -873,6 +876,11 @@
   \var{jxm}       & $\langle J_x\rangle$ \\
   \var{Dmu5_tdep} & $D(t)$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{collapse.f90}} \\
+\midrule
+  \var{betm}      & $\left<\beta\right>$ \\
+  \var{massm}     & $\left<m\right>$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule
   \var{dtchi2}    & $\delta t / [c_{\delta t,{\rm v}}\,
@@ -905,6 +913,7 @@
 \midrule
   \multicolumn{2}{c}{Module \file{disp_current.f90}} \\
 \midrule
+  \var{EEEM}      & $\left<\Ev^2+\Bv^2\right>/2$ \\
   \var{erms}      & $\left<\Ev^2\right>^{1/2}$ \\
   \var{emax}      & $\max(|\Ev|)$ \\
   \var{a0rms}     & $\left<A_0^2\right>^{1/2}$ \\

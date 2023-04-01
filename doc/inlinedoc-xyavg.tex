@@ -12,6 +12,7 @@
 %%   disp_current.f90
 %%   gravity_simple.f90
 %%   hydro_potential.f90
+%%   interstellar.f90
 %%   magnetic_shearboxJ.f90
 %%   meanfield.f90
 %%   shock_highorder.f90
@@ -171,6 +172,11 @@
   \var{TTf2mz}    & $\left< T'^2 \right>_{xy}$ \\
   \var{TTf2upmz}  & $\left< T'^2_\uparrow \right>_{xy}$ \\
   \var{TTf2downmz} & $\left< T'^2_\downarrow \right>_{xy}$ \\
+  \var{ugradpmz}  & $\left< u \cdot\nabla p \right>_{xy}$ \\
+  \var{gradpxmz}  & $\left< \nabla p_x \right>_{xy}$ \\
+  \var{gradpymz}  & $\left< \nabla p_y \right>_{xy}$ \\
+  \var{gradpzmz}  & $\left< \nabla p_z \right>_{xy}$ \\
+  \var{pdivumz}   & $\left<p\nabla\cdot\uv\right>_{xy}$ \\
   \var{uxTTmz}    & $\left< u_x T \right>_{xy}$ \\
   \var{uyTTmz}    & $\left< u_y T \right>_{xy}$ \\
   \var{uzTTmz}    & $\left< u_z T \right>_{xy}$ \\
@@ -259,6 +265,7 @@
   \var{uxbzmz}    & $\left<u_x b_z\right>|_{xy}$ \\
   \var{uybzmz}    & $\left<u_y b_z\right>|_{xy}$ \\
   \var{uzbzmz}    & $\left<u_z b_z\right>|_{xy}$ \\
+  \var{ujxbmz}    & $\left<\uv\cdot(\Jv\times\Bv)\right>_{xy}$ \\
   \var{examz1}    & $\left<\Ev\times\Av\right>_{xy}|_x$ \\
   \var{examz2}    & $\left<\Ev\times\Av\right>_{xy}|_y$ \\
   \var{examz3}    & $\left<\Ev\times\Av\right>_{xy}|_z$ \\
@@ -394,6 +401,10 @@
   \var{accpowzdownmz} & $\left<(u_z Du_z/Dt)^2\right>_{xy-}$ \\
   \var{fkinxmx}   & $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{interstellar.f90}} \\
+\midrule
+  \var{rhoHCmz}   & $\left<\rho\Gamma-\rho^2\Lambda\right>_{xy}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{magnetic_shearboxJ.f90}} \\
 \midrule
   \var{axmz}      & $\left<{\cal A}_x\right>_{xy}$ \\
@@ -507,8 +518,13 @@
   \var{fviscsmmz} & $\left<2\nu_{\rm Smag}\varrho u_i
                     \mathcal{S}_{iz} \right>_{xy}$
                     ($z$-component of viscous flux) \\
-  \var{epsKmz}    & $\left<2\nu\varrho\Strain^2
-                    \right>_{xy}$ \\
+  \var{epsKmz}    & $\left<2\nu\varrho\Strain^2 \right>_{xy}$ \\
+  \var{sijxxmz}   & $\left<\Strain_{xx} \right>_{xy}$ \\
+  \var{sijxymz}   & $\left<\Strain_{xy} \right>_{xy}$ \\
+  \var{sijxzmz}   & $\left<\Strain_{xz} \right>_{xy}$ \\
+  \var{sijyymz}   & $\left<\Strain_{yy} \right>_{xy}$ \\
+  \var{sijyzmz}   & $\left<\Strain_{yz} \right>_{xy}$ \\
+  \var{sijzzmz}   & $\left<\Strain_{zz} \right>_{xy}$ \\
   \var{viscforcezmz} & $\left<(\varrho\fv_{\rm visc})_z\right>_{xy}$ \\
   \var{viscforcezupmz} & $\left<(\varrho\fv_{\rm visc})_z\right>_{xy+}$ \\
   \var{viscforcezdownmz} & $\left<(\varrho\fv_{\rm visc})_z\right>_{xy-}$ \\
