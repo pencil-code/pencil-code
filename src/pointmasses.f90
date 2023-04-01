@@ -2304,6 +2304,14 @@ module PointMasses
         call mpireduce_sum(sum_loc(j),accg(j))
       enddo
 !
+!  Since this is part of the mn loop, the final outcome
+!  of this type of communication should depend on the processor layout.
+!  At the moment, no auto-test seems to use this though.
+!  For further questions, please email Matthias Rheinhardt <matthias.rheinhardt@aalto.fi>
+!  or Axel Brandenburg <brandenb@nordita.org>.
+!
+      call fatal_error_local('pointmasses: integrate_gasgravity', 'incorrect communication')
+!
 !  Broadcast particle acceleration
 !
       call mpibcast_real(accg,3)
