@@ -837,6 +837,7 @@ sub my_ok {
     my $log_link = '';
     if ($log_dir) {
         if ($phase eq 'compilation') {
+            # store full output of the build
             open (FH, '>', $log_dir.'/'.$dir.'/build.log') or die "\n".$!."\n on '".$log_dir."/".$dir."/build.log'\n";
             print FH $mesg;
             close (FH);
