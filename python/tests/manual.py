@@ -132,7 +132,7 @@ def get_data_dir() -> str:
     if not os.path.exists(os.path.join(datadir, "time_series.dat")):
         #TODO: Is it a good idea to print stuff like this during a test? Is this information needed at all?
         print("Compiling and running {}. This may take some time.".format(sim.path))
-        sim.compile(bashrc=False, cleanall=False)
+        sim.compile(bashrc=False)
         sim.run(bashrc=False)
     return datadir
 
@@ -143,7 +143,7 @@ def get_data_dir2() -> str:
     if not os.path.exists(os.path.join(datadir, "time_series.dat")):
         #TODO: Is it a good idea to print stuff like this during a test? Is this information needed at all?
         print("Compiling and running {}. This may take some time.".format(sim.path))
-        sim.compile(bashrc=False, cleanall=False)
+        sim.compile(bashrc=False)
         sim.run(bashrc=False)
     if not os.path.exists(os.path.join(datadir, "slice_position.dat")):
         sim.bash("pc_build -t read_all_videofiles", bashrc=False, verbose=False)
