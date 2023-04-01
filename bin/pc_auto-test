@@ -842,9 +842,11 @@ sub my_ok {
             print FH $mesg;
             close (FH);
         }
-        # suppress error output because we have a logfile
-        $mesg = '';
         $log_link = get_log_link($dir, $phase);
+        if ($log_link) {
+          # suppress error output if we have a logfile
+          $mesg = '';
+        }
     }
 
     # Allow for calls like 'ok(0)' or 'ok(1)':
