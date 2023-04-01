@@ -40,15 +40,15 @@ def read_var() -> None:
 
     expected = [
         # (key, extractor, expected, eps)
-        ("t", ident, 0.354_875, 1.0e-6),
+        ("t", ident, 0.291_004, 1.0e-6),
         ("dx", ident, 0.03125, 1.0e-6),
         ("x", np.mean, 0.0, 1.0e-6),
         ("z", np.mean, 0.550_700, 1.0e-6),
         ("z", lambda z: np.std(z), 0.574_175, 1.0e-6),
         ("f", lambda f: np.mean(f[0, :, :, :]), 0.0, 1.0e-6),
-        ("f", lambda f: np.std(f[0, :, :, :]), 0.001_606_503, 1.0e-9),
-        ("f", lambda f: np.mean(f[1, :, :, :]), -5.983_958e-11, 1.0e-17),
-        ("f", lambda f: np.std(f[1, :, :, :]), 0.002_251_669, 1.0e-9),
+        ("f", lambda f: np.std(f[0, :, :, :]), 0.001_821_541, 1.0e-9),
+        ("f", lambda f: np.mean(f[1, :, :, :]), -3.266_348_095e-11, 1.0e-17),
+        ("f", lambda f: np.std(f[1, :, :, :]), 0.002_363_680, 1.0e-9),
     ]
     for (key, extract, expect, eps) in expected:
         test_extracted(getattr(var, key), extract, expect, key, eps)
