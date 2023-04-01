@@ -736,7 +736,7 @@ contains
     lin_inpol = (f2-f1)/(x2-x1)*(yn-x1) + f1
 !
   endfunction lin_inpol
-!***********************************************************************\
+!***********************************************************************
   subroutine setup_tanh(f)
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
