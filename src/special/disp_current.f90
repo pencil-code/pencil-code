@@ -322,7 +322,7 @@ module Special
 !  Calculate curlB as -del2a, because curlB leads to instability.
 !
       if (lmagnetic) then
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
+        if (.not.loverride_ee) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj)
 !
 !  if particles, would add J=sum(qi*Vi*ni)
@@ -488,7 +488,7 @@ module Special
 !
 !  Annoucement that we switched:
 !
-      if (lroot) then
+      if (lroot.and.lmagnetic) then
         if (loverride_ee.neqv.loverride_ee_prev) then
           print*,'loverride_ee has CHANGED: now loverride_ee=',loverride_ee
           loverride_ee_prev=loverride_ee
