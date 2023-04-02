@@ -3987,7 +3987,7 @@ module Sub
       write(lun) 0,0,0,real(t),0.,0.  !(marking first line)
       nvec=0
 !
-    endsubroutine vecout_finalize
+    endsubroutine vecout_initialize
 !***********************************************************************
     subroutine vecout_finalize(file,lun,nvec)
 !
