@@ -1820,7 +1820,12 @@ sub mark_failed {
             my $works = get_SVN_revision ($last_succeeded);
             my $fails = get_SVN_revision ($last);
             if ($works == $fails - 1) {
-                my $author = `svn info "$pencil_home" --revision $fails --show-item last-changed-author`;
+                # The following line does not work on Norlx51 (ubuntu 12.04) because of its outdated SVN client:
+                #my $author = `svn info "$pencil_home" --revision $fails --show-item last-changed-author`;
+                # This is the temporary replacement code
+                my $author = `svn info "$pencil_home" --revision $fails --xml`;
+                if ($author =~ /<author>\s*(.*)<\/author>/is) { $author = $1; }
+                else { $author = "problem obtaining author information"; }
                 chomp $author;
                 print "===> This is the offending commit from: $author\n";
             }
