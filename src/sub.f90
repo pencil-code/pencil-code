@@ -28,7 +28,7 @@ module Sub
   public :: inverse_parse_bc
 !
   public :: poly
-  public :: blob, blobs, vecout, vecout_finalize
+  public :: blob, blobs, vecout, vecout_finalize, vecout_initialize
   public :: cubic_step, cubic_der_step, quintic_step, quintic_der_step, erfunc
   public :: sine_step, interp1
   public :: hypergeometric2F1
@@ -3954,28 +3954,17 @@ module Sub
       character (len=*) :: file
       real, dimension(nx,3) :: vv
       real, dimension(nx) :: v2
-      real :: thresh,thresh2,dummy=0.
+      real :: thresh,thresh2
       integer :: l,lun,nvec
-      real :: t_sp          ! t in single precision for backwards compatibility
 !
 !  Return if thresh=0 (default).
 !
       if (thresh==0.) return
 !
-      t_sp = t
-!
-!  Open files when first data point.
-!
-      if (lfirstpoint) then
-        open(lun,FILE=trim(file)//'.dat',form='unformatted',position='append')
-        write(lun) 0,0,0,t_sp,dummy,dummy  !(marking first line)
-        nvec=0
-      endif
-!
 !  Write data.
 !
       thresh2=thresh**2
-      v2=vv(:,1)**2+vv(:,2)**2+vv(:,3)**2
+      v2=sum(vv**2,2)
       do l=1,nx
         if (v2(l)>=thresh2) then
           write(lun) l,m-nghost,n-nghost,vv(l,:)
@@ -3985,21 +3974,33 @@ module Sub
 
     endsubroutine vecout
 !***********************************************************************
+    subroutine vecout_initialize(file,lun,nvec)
+!
+!  Close file, and write number of vectors to a separate file.
+!
+      character (len=*) :: file
+      integer :: lun, nvec
+!
+!  Open file.  !!!MR: all processes open the same file?
+!
+      open(lun,FILE=trim(file)//'.dat',form='unformatted',position='append')
+      write(lun) 0,0,0,real(t),0.,0.  !(marking first line)
+      nvec=0
+!
+    endsubroutine vecout_finalize
+!***********************************************************************
     subroutine vecout_finalize(file,lun,nvec)
 !
 !  Close file, and write number of vectors to a separate file.
 !
       character (len=*) :: file
       integer :: lun,nvec
-      real :: t_sp   ! t in single precision for backwards compatibility
-
-      t_sp=t
 !
 !  Close file, and write number of vectors to a separate file.
 !
       close(lun)
       open(lun,FILE=trim(file)//'.num',position='append')
-      write(lun,*) t_sp,nvec
+      write(lun,*) real(t),nvec
       close(lun)
 !
     endsubroutine vecout_finalize
