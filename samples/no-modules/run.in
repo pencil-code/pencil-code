@@ -1,7 +1,6 @@
 &run_pars
   cvsid='$Id$'
-  nt=10
-  it1=2
+  nt=5
+  it1=1
   dtmax=1.
-  ! unharmful change 6
 /
