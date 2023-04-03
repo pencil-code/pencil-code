@@ -63,7 +63,7 @@ astaroth_libs: $(PC_HEADERS)
 	export DSL_MODULE=$(DSL_MODULE_DIR); cmake -DMULTIGPU_ENABLED=OFF -DBUILD_SHARED=ON -DSINGLEPASS_INTEGRATION=OFF \
               -DPACKED_DATA_TRANSFERS=ON -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=DEBUG -DADJACENT_VERTEX_BUFFERS=ON .. \
 	&& make -I../../.. VERBOSE=0 # Build the core Astaroth library
-	echo PRECISION=$(CMAKE_PREC)
+	@echo PRECISION=$(CMAKE_PREC)
 
 #-DCMAKE_CXX_COMPILER=/appl/spack/install-tree/gcc-4.8.5/gcc-8.3.0-qzmzn5/bin/c++ .. \
 #export DSL_MODULE=pc_mhd_solver && \
