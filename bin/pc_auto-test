@@ -328,6 +328,7 @@ Options:
        --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
        --previous-dir=<dir>\tDirectory for logfiles of the previous run (default: off)
        --keep-fail-info    \tDo not delete failure information on successful test
+       --no-bisect         \tDo not try to bisect, even if we could (useful for Travis)
 Examples:
   pc_auto-test      # run standard program, recycling .o files
   pc_auto-test -C   # run standard program, compiling from scratch
@@ -401,7 +402,8 @@ GetOptions(\%opts,
                     --fast
                     --log-dir=s
                     --previous-dir=s
-                    --keep-fail-info )
+                    --keep-fail-info
+                    --no-bisect )
           ) or $help=1, die "Aborting.\n";
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
@@ -452,7 +454,8 @@ my $local_lock  = (              $opts{'local-lock'}      || 0    );
 my $fast        = (              $opts{'fast'}            || ''   );
 my $log_dir     = (              $opts{'log-dir'}         || ''   );
 my $previous_dir = (             $opts{'previous-dir'}    || ''   );
-my $keep_fail   = (              $opts{'keep-fail-info'}  || 0   );
+my $keep_fail   = (              $opts{'keep-fail-info'}  || 0    );
+my $no_bisect   = (              $opts{'no-bisect'}       || 0    );
 
 if (!$pencil_home) { die "ERROR: PENCIL_HOME unknown, please use -D or environment variable!\n"; }
 
@@ -1850,10 +1853,14 @@ sub mark_failed {
             my $works = get_SVN_revision ($last_succeeded);
             my $fails = get_SVN_revision ($last);
             if ($works < $fails - 1) {
-                print "===> Bisecting automatically to find the offending commit...\n";
-                my $result = `@pc_bisect`;
-                $works = get_SVN_revision ($last_succeeded);
-                $fails = get_SVN_revision ($last);
+                if ($no_bisect) {
+                    print "===> Need to bisect manually to find the offending commit!\n";
+                } else {
+                    print "===> Bisecting automatically to find the offending commit...\n";
+                    my $result = `@pc_bisect`;
+                    $works = get_SVN_revision ($last_succeeded);
+                    $fails = get_SVN_revision ($last);
+                }
             }
             if ($works == $fails - 1) {
                 # The following line does not work on Norlx51 (ubuntu 12.04) because of its outdated SVN client:
