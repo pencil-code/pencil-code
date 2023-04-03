@@ -112,8 +112,8 @@ if ($config_files) { push @pc_auto_test, "--config-files=$config_files"; }
 if ($host_id) { push @pc_auto_test, "--host-id=$host_id"; }
 if ($makejobs) { push @pc_auto_test, "--jobs=$makejobs"; }
 if ($parallel) { push @pc_auto_test, "--parallel"; }
-if ($nolock) { push @pc_auto_test, "--no-lock"; }
 if ($local_lock) { push @pc_auto_test, "--local-lock"; }
+else { push @pc_auto_test, "--no-lock"; }
 if ($fast) { push @pc_auto_test, "--fast"; }
 if ($log_dir) { push @pc_auto_test, "--log-dir='$log_dir'"; }
 
@@ -152,8 +152,8 @@ chomp $current_revision;
 
 # bisect
 #will activate this new feature after all auto-tests have bisected without this new feature
-#my $test_command = "@pc_auto_test --no-lock --keep-fail-info --auto-clean 'samples/$test'";
-my $test_command = "@pc_auto_test --no-lock --auto-clean 'samples/$test'";
+#my $test_command = "@pc_auto_test --keep-fail-info --auto-clean 'samples/$test'";
+my $test_command = "@pc_auto_test --auto-clean 'samples/$test'";
 if ($debug) { print "Test command: |$test_command|\n"; }
 my $check;
 do {
