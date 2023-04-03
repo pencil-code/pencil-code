@@ -189,7 +189,7 @@ module PointMasses
 !  27-aug-06/wlad: adapted
 !
       use FArrayManager
-      use SharedVariables
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lxpresent,lypresent,lzpresent,l2Dcyl,l2Dsph
@@ -202,8 +202,7 @@ module PointMasses
         if (pmass(ks)/=0.0) then
           fq(ks,imass)=pmass(ks)
         else
-          call fatal_error("initialize_pointmasses",&
-                "one of the bodies has zero mass")  
+          call fatal_error("initialize_pointmasses","one of the bodies has zero mass")  
         endif
       enddo
 !
@@ -787,7 +786,7 @@ module PointMasses
 !
       use Diagnostics
       use Sub
-      use Mpicomm, only: mpireduce_sum
+      use Mpicomm, only: mpireduce_sum  !not needed
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2310,7 +2309,7 @@ module PointMasses
 !  For further questions, please email Matthias Rheinhardt <matthias.rheinhardt@aalto.fi>
 !  or Axel Brandenburg <brandenb@nordita.org>.
 !
-      call fatal_error_local('pointmasses: integrate_gasgravity', 'incorrect communication')
+      call fatal_error('pointmasses: integrate_gasgravity', 'incorrect communication')
 !
 !  Broadcast particle acceleration
 !
@@ -2519,7 +2518,6 @@ module PointMasses
 !
       use Mpicomm
       use General, only: random_number_wrapper
-      use SharedVariables, only: get_shared_variable
 !
       integer :: k
       character (len=2*bclen+1) :: boundx, boundy, boundz
