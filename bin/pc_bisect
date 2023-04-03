@@ -192,7 +192,7 @@ sub set_revision {
 	$? = 0;
 	$! = 0;
 
-	my $result = `svn up --accept tc -r $revision src samples 2>&1`;
+	my $result = `svn up --accept tc -r $revision 2>&1`;
 	if ($?) { die "Could not get SVN revision $revision:\n$!\n$result\n"; }
 }
 
