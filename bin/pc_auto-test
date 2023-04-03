@@ -1851,10 +1851,10 @@ sub mark_failed {
                     print "===> Need to bisect manually to find the offending commit!\n";
                 } else {
                     print "===> Bisecting automatically to find the offending commit...\n";
- print "@pc_bisect --no-lock '$dir' $works $fails\n";
-                    my $result = `@pc_bisect --no-lock '$dir' $works $fails 2>&1`;
- # temporary debug code:
- print "RESULT:\n$result\n$?:$!\n\n";
+                    my $bisect_command = "@pc_bisect --no-lock '$dir' $works $fails";
+                    if ($debug) { print "$bisect_command\n"; }
+                    my $result = `$bisect_command`;
+                    if ($debug) { print "RESULT:\n$result\n$?:$!\n\n"; }
                     $works = get_SVN_revision ($last_succeeded);
                     $fails = get_SVN_revision ($last);
                 }

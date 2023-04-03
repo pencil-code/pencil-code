@@ -154,7 +154,7 @@ chomp $current_revision;
 #will activate this new feature after all auto-tests have bisected without this new feature
 #my $test_command = "@pc_auto_test --no-lock --keep-fail-info --auto-clean 'samples/$test'";
 my $test_command = "@pc_auto_test --no-lock --auto-clean 'samples/$test'";
-print "DEBUG: |$test_command|\n";
+if ($debug) { print "Test command: |$test_command|\n"; }
 my $check;
 do {
 	my $num = $bad - $good + 1;
