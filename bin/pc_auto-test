@@ -1857,7 +1857,7 @@ sub mark_failed {
                     print "===> Need to bisect manually to find the offending commit!\n";
                 } else {
                     print "===> Bisecting automatically to find the offending commit...\n";
-                    my $result = `@pc_bisect`;
+                    my $result = `@pc_bisect '$dir' $works $fails`;
                     $works = get_SVN_revision ($last_succeeded);
                     $fails = get_SVN_revision ($last);
                 }
