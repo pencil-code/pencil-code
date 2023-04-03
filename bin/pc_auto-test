@@ -481,10 +481,12 @@ if ($makejobs) { $makeopts = "--jobs=$makejobs"; }
 if ($parallel) { $makeopts = "--parallel"; }
 
 my @pc_dump_config = qw/pc_dump_config/;
+my @pc_bisect = qw/pc_bisect/;
 my @pc_build = qw/pc_build/;
 my @pc_run   = qw/pc_run/;
 if ($config_files) {
     push @pc_dump_config, "--config-files=$config_files";
+    push @pc_bisect,      "--config-files=$config_files";
     push @pc_build,       "--config-files=$config_files";
     push @pc_run,         "--config-files=$config_files";
 }
@@ -494,8 +496,33 @@ if ($exec_opts) {
 }
 if ($host_id) {
     push @pc_dump_config, "--host-id=$host_id";
+    push @pc_bisect,      "--host-id=$host_id";
     push @pc_build,       "--host-id=$host_id";
     push @pc_run,         "--host-id=$host_id";
+}
+if ($pencil_home) {
+    push @pc_bisect,      "--pencil-home='$pencil_home'";
+}
+if ($makejobs) {
+    push @pc_bisect,      "--jobs=$makejobs";
+}
+if ($parallel) {
+    push @pc_bisect,      "--parallel";
+}
+if ($log_dir) {
+    push @pc_bisect,      "--log_dir='$log_dir'";
+}
+if ($fast) {
+    push @pc_bisect,      "--fast";
+}
+if ($nolock) {
+    push @pc_bisect,      "--no-lock";
+}
+if ($local_lock) {
+    push @pc_bisect,      "--local_lock";
+}
+if ($debug) {
+    push @pc_bisect,      "--debug";
 }
 
 my $host = `hostname`;
@@ -1822,6 +1849,12 @@ sub mark_failed {
         if (defined ($current_revision)) {
             my $works = get_SVN_revision ($last_succeeded);
             my $fails = get_SVN_revision ($last);
+            if ($works < $fails - 1) {
+                print "===> Bisecting automatically to find the offending commit...\n";
+                my $result = `@pc_bisect`;
+                $works = get_SVN_revision ($last_succeeded);
+                $fails = get_SVN_revision ($last);
+            }
             if ($works == $fails - 1) {
                 # The following line does not work on Norlx51 (ubuntu 12.04) because of its outdated SVN client:
                 #my $author = `svn info "$pencil_home" --revision $fails --show-item last-changed-author`;
@@ -1831,9 +1864,6 @@ sub mark_failed {
                 else { $author = "problem obtaining author information"; }
                 chomp $author;
                 print "===> This is the offending commit from: $author\n";
-            }
-            else {
-                print "===> Need to bisect manually to find the offending commit...\n";
             }
         }
         else {
