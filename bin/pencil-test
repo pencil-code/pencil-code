@@ -169,7 +169,7 @@ if ($local) {
 # Make sure we have /usr/sbin in path (which is where sendmail is often located)
 $ENV{PATH} = "$ENV{PATH}:/usr/sbin" unless ($ENV{PATH} =~ m{(^|:)/usr/sbin($|:)});
 
-# Do not make a mess if another pencil-test is already running in this directory!
+# Do not make a mess if another pencil-test is already running on this machine!
 my $instances_running = `ps aux | grep -v "grep" | grep "perl" | grep "$0" | wc -l`;
 $instances_running =~ s/\s+$//s;
 if ($instances_running > 1) { die ("ERROR: another 'pencil-test' is already running here!\n"); }
