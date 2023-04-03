@@ -15,7 +15,7 @@ MAGNETIC  =   magnetic
 ENTROPY   =   entropy
 EOS       =   eos_idealgas
 
-FORCING   =   forcing
+#FORCING   =   forcing
 SHEAR     = noshear
 
 #REAL_PRECISION = double
