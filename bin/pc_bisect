@@ -1,0 +1,215 @@
+#/bin/sh
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+# line 17
+
+# Name:   pc_bisect
+# Description:
+#   Performs a binary search between two SVN revisions
+#   to find the offending change that broke an auto-test.
+#   Works in one scecified auto-test directory.
+
+use strict;
+
+BEGIN {
+    # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
+    if (-d "$ENV{PENCIL_HOME}/lib/perl") {
+        unshift @INC, "$ENV{PENCIL_HOME}/lib/perl";
+    } else {
+        if ($0 =~ m!(.*[/\\])!) { unshift @INC, "$1../lib/perl"; }
+    }
+}
+
+use Cwd;
+use POSIX qw(floor strftime);
+use Getopt::Long;
+
+# ---------------------------------------------------------------------- #
+my $base_URL = 'https://github.com/pencil-code/pencil-code/'; # repository URL
+
+(my $cmdname = $0) =~ s{.*/}{};
+my $usage =
+"Usage:  $cmdname [options] <dir> <start_rev> <end_rev>
+  Performs a binary search between the two SVN revisions
+  <start_rev> and <end_rev>
+  to find the offending change that broke an auto-test.
+  Works in the scecified auto-test directory <dir>.
+Options:
+  -h,  --help              \tShow usage overview
+  -D,  --pencil-home=<dir> \tSet PENCIL_HOME directory to <dir>
+       --config-files=<files>
+                           \tUse the given <files> (a comma-separated list) as
+                           \tconfiguration files, rather than trying to find a
+                           \tconfig file based on a host ID.
+       --host-id=<id>      \tUse the given <id> as host ID.
+       --parallel          \tAllow parallel compilation (passes -j to make)
+  -j,  --jobs=<n>          \tPass through -j option to make
+       --no-lock           \tIgnore and don't write lock file
+       --local-lock        \tLet multiple auto-tests run in different working copies (default: off)
+       --debug             \tPrint lots of debugging output
+       --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
+       --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
+Examples:
+  pc_bisect --no-lock . 82000 82010
+      # bisect in current directory, without locking for pc_auto-test
+  pc_bisect --auto-clean --log-dir=/my/test/ samples/corona 82000 82010
+      # bisect in samples/corona with logfiles, make clean on error
+";
+
+## Process command line options
+my (%opts);
+my $help = 0;
+eval {
+    Getopt::Long::config("bundling"); # make single-letter opts. case-sensitive
+};
+GetOptions(\%opts,
+           qw( -h   --help
+                    --debug
+               -D=s --pencil-home=s
+                    --config-files=s
+                    --host-id=s
+                    --parallel
+               -j=n --jobs=n
+                    --no-lock
+                    --local-lock
+                    --fast
+                    --log-dir=s )
+          ) or $help=1, die "Aborting.\n";
+
+if ($opts{'h'} || $opts{'help'}) { $help = 1; die "$usage\n"; }
+
+my $debug       = (              $opts{'debug'}           || 0    );
+my $pencil_home = ($opts{'D'} || $opts{'pencil-home'}     || $ENV{PENCIL_HOME});
+my $config_files = (             $opts{'config-files'}    || ''   );
+my $host_id     = (              $opts{'host-id'}         || ''   );
+my $parallel    = (              $opts{'parallel'}        || 0    );
+my $makejobs    = ($opts{'j'} || $opts{'jobs'}            || ''   );
+my $nolock      = (              $opts{'no-lock'}         || 0    );
+my $local_lock  = (              $opts{'local-lock'}      || 0    );
+my $fast        = (              $opts{'fast'}            || ''   );
+my $log_dir     = (              $opts{'log-dir'}         || ''   );
+
+my $num_args = @ARGV;
+if ($num_args != 3) { die "Wrong number of arguments!\n$usage\n"; }
+if (!$pencil_home) { die "ERROR: PENCIL_HOME unknown, please use -D or environment variable!\n"; }
+
+my @pc_auto_test = qw/pc_auto-test/;
+if ($debug) { push @pc_auto_test, "--debug"; }
+if ($pencil_home) { push @pc_auto_test, "--pencil-home='$pencil_home'"; }
+if ($config_files) { push @pc_auto_test, "--config-files=$config_files"; }
+if ($host_id) { push @pc_auto_test, "--host-id=$host_id"; }
+if ($makejobs) { push @pc_auto_test, "--jobs=$makejobs"; }
+if ($parallel) { push @pc_auto_test, "--parallel"; }
+if ($nolock) { push @pc_auto_test, "--no-lock"; }
+if ($local_lock) { push @pc_auto_test, "--local-lock"; }
+if ($fast) { push @pc_auto_test, "--fast"; }
+if ($log_dir) { push @pc_auto_test, "--log_dir='$log_dir'"; }
+
+my $test = shift @ARGV;
+my $good = shift @ARGV;
+my $bad = shift @ARGV;
+
+# consistency checks
+my $test_dir = "$pencil_home/samples/$test";
+if (!-e "$test_dir/reference.out") { die "Not an auto-test directory: \"$test_dir\"\n"; }
+if ($good < 1) { die "Invalid start revision number: $good\n"; }
+if ($bad < 2) { die "Invalid end revision number: $bad\n"; }
+if ($good > $bad) { ($good, $bad) = ($bad, $good); }
+
+# Autoflush stdout:
+$| = 1;
+
+# Remember current directory
+my $cwd = `pwd`;
+chomp $cwd;
+
+# Make sure we are in the top directory and have the right PATH
+chdir $pencil_home;
+$ENV{PATH} .= ":$pencil_home/bin";
+
+# store current revision
+my $current_revision;
+if (!-d "$pencil_home/.svn") { die "Bisecting works only on SVN checkouts!\n"; }
+# SVN revision
+# The following line fails on Norlx51 (ubuntu 12.04) with old SVN client:
+#$current_revision = `svn info "$pencil_home" --show-item revision`;
+my $result = `svn info "$pencil_home" --xml`;
+if ($result =~ /revision\s*=\s*"(\d+)"/is) { $current_revision = $1; }
+if (!$current_revision) { $current_revision = "Problem obtaining SVN revision!"; }
+chomp $current_revision;
+
+# bisect
+#will activate this new feature after all auto-tests have bisected without this new feature
+#my $test_command = "@pc_auto_test --no-lock --keep-fail-info --auto-clean 'samples/$test'";
+my $test_command = "@pc_auto_test --no-lock --auto-clean 'samples/$test'";
+my $check;
+do {
+	my $num = $bad - $good + 1;
+	my $skip = floor (($num - 1) / 2);
+	#my $check = $good + $skip;
+	$check = $good + $skip;
+	print "Checking: $good < $check < $bad with $test_command\n";
+	if (test_revision ($check, $test_command)) {
+		# test successful
+		print "   => good!\n";
+		$good = $check;
+	} else {
+		# test failed
+		print "   => bad!\n";
+		$bad = $check;
+	}
+} until ($good >= $bad - 1);
+
+# temporary workaround to bisect older checkouts, will be removed for future tests:
+if ($good == $check) { test_revision ($bad, $test_command) }
+
+set_revision ($current_revision);
+
+chdir $cwd;
+exit (0);
+
+# ----------------------------------------------------------------------
+
+sub set_revision {
+	my $revision = shift || 0;
+
+	if ($revision < 1) { die "Invalid SVN revision number!\n"; }
+
+	# reset
+	$? = 0;
+	$! = 0;
+
+	my $result = `svn up --accept tf -r $revision 2>&1`;
+	if ($?) { die "Could not get SVN revision $revision:\n$!\n$result\n"; }
+}
+
+sub test_revision {
+	my $revision = shift;
+	my $command = shift;
+
+	# get desired revision
+	set_revision ($revision);
+
+	# reset
+	$? = 0;
+	$! = 0;
+
+	# execute auto-test
+	my $result = `nice $command 2>&1`;
+
+	# $? = 0 means success
+	return ($? == 0);
+}
+
