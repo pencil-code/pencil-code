@@ -179,7 +179,7 @@ if ($good == $check) { test_revision ($bad, $test_command) }
 set_revision ($current_revision);
 
 chdir $cwd;
-exit (0);
+exit 0;
 
 # ----------------------------------------------------------------------
 
