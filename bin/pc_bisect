@@ -162,6 +162,7 @@ do {
 	#my $check = $good + $skip;
 	$check = $good + $skip;
 	print "Checking: $good < $check < $bad with $test_command\n";
+unlink "$test_dir/FIRST_FAILED";
 	if (test_revision ($check, $test_command)) {
 		# test successful
 		print "   => good!\n";
