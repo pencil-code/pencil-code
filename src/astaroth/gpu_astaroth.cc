@@ -16,7 +16,7 @@
 
 #define CUDA_ERRCHK(X)
 
-//#include "submodule/acc-runtime/api/math_utils.h"
+#include "submodule/acc-runtime/api/math_utils.h"
 #include "submodule/include/astaroth.h"
 #define real AcReal
 #define EXTERN 
@@ -347,7 +347,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
         loadProfiles(mesh.info);
 
         AcReal *p[2];
-        if (acNodeGetVBApointer(&node, p)==AC_SUCCESS) {
+        if (acNodeGetVBApointers(&node, p)==AC_SUCCESS) {
           *farr_GPU_in=p[0];
           *farr_GPU_out=p[1];
 printf("Node. vbapointer= %p %p \n", *farr_GPU_in, *farr_GPU_out);

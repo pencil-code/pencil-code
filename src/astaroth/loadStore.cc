@@ -94,32 +94,32 @@ void loadOuterBack(AcMesh& mesh, Stream stream)
  
 void loadOuterBot(AcMesh& mesh, Stream stream)
 {
-        int3 start={0, 0,                    halo_widths_z[BOT]};
-        int3 end  ={mx,halo_widths_y[BOT],mz-halo_widths_z[TOP]};  //end is exclusive
+        int3 start=(int3){0, 0,                    halo_widths_z[BOT]};
+        int3 end  =(int3){mx,halo_widths_y[BOT],mz-halo_widths_z[TOP]};  //end is exclusive
 
         acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
 }
 
 void loadOuterTop(AcMesh& mesh, Stream stream)
 {
-        int3 start={0, my-halo_widths_y[TOP],   halo_widths_z[BOT]};
-        int3 end  ={mx,my,                   mz-halo_widths_z[TOP]};  //end is exclusive
+        int3 start=(int3){0, my-halo_widths_y[TOP],   halo_widths_z[BOT]};
+        int3 end  =(int3){mx,my,                   mz-halo_widths_z[TOP]};  //end is exclusive
 //printf("loadOuterTop: %d %d %d %d %d %d \n", start.x,end.x,start.y,end.y,start.z,end.z);
         acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
 }
 
 void loadOuterLeft(AcMesh& mesh, Stream stream)
 {
-    int3 start={0,                      halo_widths_y[BOT],     halo_widths_z[BOT]};
-    int3 end  ={halo_widths_x[BOT]-1,my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1;  //end is exclusive
+    int3 start=(int3){0,                      halo_widths_y[BOT],     halo_widths_z[BOT]};
+    int3 end  =(int3){halo_widths_x[BOT]-1,my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1;  //end is exclusive
 
     acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
 }
 
 void loadOuterRight(AcMesh& mesh, Stream stream)
 {
-    int3 start={mx-halo_widths_x[TOP],   halo_widths_y[BOT],     halo_widths_z[BOT]};
-    int3 end  ={mx-1,                 my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1; //end is exclusive
+    int3 start=(int3){mx-halo_widths_x[TOP],   halo_widths_y[BOT],     halo_widths_z[BOT]};
+    int3 end  =(int3){mx-1,                 my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1; //end is exclusive
 
     acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
 }
