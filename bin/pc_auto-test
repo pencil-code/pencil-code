@@ -1857,6 +1857,14 @@ sub mark_failed {
                     if ($debug) { print "RESULT:\n$result\n$?:$!\n\n"; }
                     $works = get_SVN_revision ($last_succeeded);
                     $fails = get_SVN_revision ($last);
+                    my $offending = get_GIT_revision ($last);
+                    print "===> Found the offending commit:\n";
+                    print "SVN: $fails\n";
+                    if ($log_dir) {
+                         print 'GIT: <a href="'.$base_URL.'commit/'.$offending.'">'.$offending."</a>\n";
+                    } else {
+                        print "GIT: ".$offending."\n";
+                    }
                 }
             }
             if ($works == $fails - 1) {
