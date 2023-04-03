@@ -170,6 +170,7 @@ do {
 		# test failed
 		print "   => bad!\n";
 		$bad = $check;
+print `ls -la FIRST_FAILED && cat FIRST_FAILED`;
 	}
 } until ($good >= $bad - 1);
 
@@ -192,7 +193,7 @@ sub set_revision {
 	$? = 0;
 	$! = 0;
 
-	my $result = `svn up --accept tc -r $revision 2>&1`;
+	my $result = `svn up --force --accept tc -r $revision 2>&1`;
 	if ($?) { die "Could not get SVN revision $revision:\n$!\n$result\n"; }
 }
 
