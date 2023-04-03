@@ -115,7 +115,7 @@ if ($parallel) { push @pc_auto_test, "--parallel"; }
 if ($nolock) { push @pc_auto_test, "--no-lock"; }
 if ($local_lock) { push @pc_auto_test, "--local-lock"; }
 if ($fast) { push @pc_auto_test, "--fast"; }
-if ($log_dir) { push @pc_auto_test, "--log_dir='$log_dir'"; }
+if ($log_dir) { push @pc_auto_test, "--log-dir='$log_dir'"; }
 
 my $test = shift @ARGV;
 my $good = shift @ARGV;

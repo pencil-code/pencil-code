@@ -513,7 +513,7 @@ if ($parallel) {
     push @pc_bisect,      "--parallel";
 }
 if ($log_dir) {
-    push @pc_bisect,      "--log_dir='$log_dir'";
+    push @pc_bisect,      "--log-dir='$log_dir'";
 }
 if ($fast) {
     push @pc_bisect,      "--fast";
