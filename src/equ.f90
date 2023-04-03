@@ -636,13 +636,12 @@ module Equ
 !  21-feb-17/MR: Moved all module-specific estimators of the (inverse) possible timestep 
 !                to the individual modules.
 !
-      use Diagnostics
       use Chiral
       use Chemistry
       use Cosmicray
       use CosmicrayFlux
       use Density
-      use Diagnostics, only: prep_finalize_thread_diagnos
+      use Diagnostics
       use Dustvelocity
       use Dustdensity
       use Energy
@@ -709,7 +708,6 @@ module Equ
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
 !
-!$      if (.false.) &
         call timing('pde','before lanelastic',mnloop=.true.)
 
         if (lanelastic) then
@@ -729,7 +727,6 @@ module Equ
             lcommunicate=.false.
           endif
         endif
-!$      if (.false.) &
         call timing('pde','finished boundconds_z',mnloop=.true.)
 !
 !  For each pencil, accumulate through the different modules
@@ -946,7 +943,6 @@ module Equ
           df(l1:l2,m,n,iux:iuz) = df_iuu_pencil + df(l1:l2,m,n,iux:iuz)
           call sum_mn(p%rho,mass_per_proc(1))
         endif
-!$      if (.false.) &
         call timing('pde','end of mn loop',mnloop=.true.)
 !
 !  End of loops over m and n.

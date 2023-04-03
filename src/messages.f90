@@ -495,6 +495,8 @@ module Messages
       integer :: mul_fac
       logical, save :: opened = .false.
 !
+!$ if (omp_in_parallel()) return
+!
       if (present(location)) scaller=location
 !
 !  work on the timing only when it == it_timing
