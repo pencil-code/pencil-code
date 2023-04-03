@@ -25,6 +25,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Options:
 #   -h, --help                -- Help
 #   -l, --local               -- Run on the local host
+#   -L, --lock                -- Run at maximum one instance per host
 #   -H, --html                -- Write output as elementary HTML (mostly <pre>)
 #   -X, --xml                 -- Write output as XML
 #   -u, --update              -- Update everything before compiling
@@ -94,6 +95,7 @@ GetOptions(\%opts,
                     --debug
                -v   --version
                -l   --local
+               -L   --lock
                -H   --html
                -X   --xml
                -u   --update
@@ -122,6 +124,7 @@ die usage() if    ($opts{'h'} || $opts{'help'});
 my $debug       = (              $opts{'debug'}       || 0 );
 my $html        = ($opts{'H'} || $opts{'html'}        || 0 );
 my $local       = ($opts{'l'} || $opts{'local'}       || 0 );
+my $lock        = ($opts{'L'} || $opts{'lock'}        || 0 );
 my $clean       = ($opts{'c'} || $opts{'clean'}       || 0 );
 my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || '$PENCIL_HOME' || `pwd`);
 my $nice        = ($opts{'N'} || $opts{'nice'}        || 0 );
@@ -169,10 +172,12 @@ if ($local) {
 # Make sure we have /usr/sbin in path (which is where sendmail is often located)
 $ENV{PATH} = "$ENV{PATH}:/usr/sbin" unless ($ENV{PATH} =~ m{(^|:)/usr/sbin($|:)});
 
-# Do not make a mess if another pencil-test is already running on this machine!
-my $instances_running = `ps aux | grep -v "grep" | grep "perl" | grep "$0" | wc -l`;
-$instances_running =~ s/\s+$//s;
-if ($instances_running > 1) { die ("ERROR: another 'pencil-test' is already running here!\n"); }
+if ($lock) {
+    # Do not make a mess if another pencil-test is already running on this machine!
+    my $instances_running = `ps aux | grep -v "grep" | grep "perl" | grep "$0" | wc -l`;
+    $instances_running =~ s/\s+$//s;
+    if ($instances_running > 1) { die ("ERROR: another 'pencil-test' is already running here!\n"); }
+}
 
 # Make a backup of the previous logfile directory
 if ($log_dir && $previous_dir) {
