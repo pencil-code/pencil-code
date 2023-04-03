@@ -327,7 +327,8 @@ Options:
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
        --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
        --previous-dir=<dir>\tDirectory for logfiles of the previous run (default: off)
-       --keep-fail-info    \tDo not delete failure information on successful test
+       --keep-fail-info-on-success \tDo not delete failure information on successful test (for bisecting)
+       --overwrite-fail-info \tUpdate failure information even if it already exists (for bisecting)
        --no-bisect         \tDo not try to bisect, even if we could (useful for Travis)
 Examples:
   pc_auto-test      # run standard program, recycling .o files
@@ -402,7 +403,8 @@ GetOptions(\%opts,
                     --fast
                     --log-dir=s
                     --previous-dir=s
-                    --keep-fail-info
+                    --keep-fail-info-on-success
+                    --overwrite-fail-info
                     --no-bisect )
           ) or $help=1, die "Aborting.\n";
 
@@ -454,7 +456,8 @@ my $local_lock  = (              $opts{'local-lock'}      || 0    );
 my $fast        = (              $opts{'fast'}            || ''   );
 my $log_dir     = (              $opts{'log-dir'}         || ''   );
 my $previous_dir = (             $opts{'previous-dir'}    || ''   );
-my $keep_fail   = (              $opts{'keep-fail-info'}  || 0    );
+my $keep_fail   = (              $opts{'keep-fail-info-on-success'}  || 0    );
+my $overwrite_fail = (           $opts{'overwrite-fail-info'}  || 0    );
 my $no_bisect   = (              $opts{'no-bisect'}       || 0    );
 
 if (!$pencil_home) { die "ERROR: PENCIL_HOME unknown, please use -D or environment variable!\n"; }
@@ -1818,8 +1821,8 @@ sub mark_failed {
     my $dir = shift;
 
     my $last = get_path ($dir, "FIRST_FAILED");
-    # Mark failure only if not previously failed!
-    if (!-e $last) { write_revision ($last); }
+    # Mark failure only if not previously failed - or if explicity requested!
+    if (!-e $last || $overwrite_fail) { write_revision ($last); }
 
     my $last_succeeded = get_path ($dir, "LAST_SUCCEEDED");
     if (-e $last_succeeded) {
@@ -1852,7 +1855,7 @@ sub mark_failed {
                     print "===> Need to bisect manually to find the offending commit!\n";
                 } else {
                     print "===> Bisecting automatically to find the offending commit...\n";
-                    my $bisect_command = "@pc_bisect --debug --no-lock '$dir' $works $fails";
+                    my $bisect_command = "@pc_bisect --no-lock '$dir' $works $fails";
                     if ($debug) { print "$bisect_command\n"; }
                     my $result = `$bisect_command`;
                     if ($?) { print "ERROR: $?\n$!\n"; }
