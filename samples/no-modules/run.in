@@ -2,5 +2,7 @@
   cvsid='$Id$'
   nt=5
   it1=1
+!  nt=5
+!  it1=1
   dtmax=1.
 /
