@@ -327,6 +327,7 @@ Options:
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
        --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
        --previous-dir=<dir>\tDirectory for logfiles of the previous run (default: off)
+       --keep-fail-info    \tDo not delete failure information on successful test
 Examples:
   pc_auto-test      # run standard program, recycling .o files
   pc_auto-test -C   # run standard program, compiling from scratch
@@ -399,7 +400,8 @@ GetOptions(\%opts,
                     --local-lock
                     --fast
                     --log-dir=s
-                    --previous-dir=s )
+                    --previous-dir=s
+                    --keep-fail-info )
           ) or $help=1, die "Aborting.\n";
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
@@ -450,6 +452,7 @@ my $local_lock  = (              $opts{'local-lock'}      || 0    );
 my $fast        = (              $opts{'fast'}            || ''   );
 my $log_dir     = (              $opts{'log-dir'}         || ''   );
 my $previous_dir = (             $opts{'previous-dir'}    || ''   );
+my $keep_fail   = (              $opts{'keep-fail-info'}  || 0   );
 
 if (!$pencil_home) { die "ERROR: PENCIL_HOME unknown, please use -D or environment variable!\n"; }
 
@@ -1843,7 +1846,7 @@ sub mark_success {
 # Save revision of last succeeded auto-test
     my $dir = shift;
 
-    unlink get_path ($dir, "FIRST_FAILED");
+    if (!$keep_fail) { unlink get_path ($dir, "FIRST_FAILED"); }
     write_revision (get_path ($dir, "LAST_SUCCEEDED"));
 }
 # ---------------------------------------------------------------------- #
