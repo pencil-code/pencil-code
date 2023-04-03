@@ -1860,7 +1860,7 @@ sub mark_failed {
  print "@pc_bisect '$dir' $works $fails\n";
                     my $result = `@pc_bisect '$dir' $works $fails`;
  # temporary debug code:
- print "RESULT:\n$result\n\n";
+ print "RESULT:\n$result\n$!\n\n";
                     $works = get_SVN_revision ($last_succeeded);
                     $fails = get_SVN_revision ($last);
                 }
