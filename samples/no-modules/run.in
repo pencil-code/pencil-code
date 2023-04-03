@@ -1,8 +1,8 @@
 &run_pars
   cvsid='$Id$'
-  nt=5
-  it1=1
-!  nt=10
-!  it1=2
+!  nt=5
+!  it1=1
+  nt=10
+  it1=2
   dtmax=1.
 /
