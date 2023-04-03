@@ -171,8 +171,7 @@ CFLAGS_GENERAL =
 #
 # Preprocessing flags.
 #
-#FPPFLAGS = -cpp
-FPPFLAGS = 
+PPFLAGS = -cpp
 #
 # Default double flags (can be overwritten in machine-specific section).
 #
@@ -2326,7 +2325,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpiicc #(parker)
 #FFLAGS=-O1 #(parker)
 #FFLAGS_DOUBLE=-r8 #(parker)
-#FPPFLAGS=-fpp -DMPI_COMM_WORLD=MPI_COMM_PENCIL#(parker)
+##PPFLAGS=-fpp -DMPI_COMM_WORLD=MPI_COMM_PENCIL#(parker)
 #CFLAGS=-DFUNDERSC=1 -O1 #(parker)
 ##
 ## Triton.aalto.fi: FGI cluster at Aalto
@@ -2717,11 +2716,16 @@ else
   IS_CRAY = $(shell $(FC) --version | grep -i Cray)
 endif
 #
+#
+MOST_COMP_FLAGS = $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS)
+ALL_COMP_FLAGS = $(MOST_COMP_FLAGS)
+#
 # For coupling with foreign code
 #
 FOREIGN := $(shell (grep -i '^[^!]*tag_foreign *= *[1-9][0-9]*' ../run.in))
 ifneq ($(FOREIGN),)
-  FPPFLAGS += -DMPI_COMM_WORLD=MPI_COMM_PENCIL
+  PPFLAGS += -DMPI_COMM_WORLD=MPI_COMM_PENCIL
+  ALL_COMP_FLAGS += $(PPFLAGS)
 endif
 #
 #  Default linker to compiler settings, if unset.
@@ -2730,11 +2734,7 @@ endif
 # LD?=$(FC)
 LD=$(FC)
 #
-#
-MOST_COMP_FLAGS = $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS)
-ALL_COMP_FLAGS = $(MOST_COMP_FLAGS) $(FPPFLAGS)
-#
-#  Don't change $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FPPFLAGS) below this point!
+#  Don't change FFLAGS, FFLAGS_GENERAL, FFLAGS_FOURIER, F90FLAGS, MOST_COMP_FLAGS, ALL_COMP_FLAGS below this point!
 #
 ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
 	# set HDF5 Fortran compiler and Fortran linker
