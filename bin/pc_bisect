@@ -33,7 +33,7 @@ BEGIN {
 }
 
 use Cwd;
-use POSIX qw(floor strftime);
+use POSIX qw(floor);
 use Getopt::Long;
 
 # ---------------------------------------------------------------------- #

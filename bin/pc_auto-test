@@ -1852,9 +1852,9 @@ sub mark_failed {
                 } else {
                     print "===> Bisecting automatically to find the offending commit...\n";
  print "@pc_bisect --no-lock '$dir' $works $fails\n";
-                    my $result = `@pc_bisect --no-lock '$dir' $works $fails`;
+                    my $result = `@pc_bisect --no-lock '$dir' $works $fails 2>&1`;
  # temporary debug code:
- print "RESULT:\n$result\n$!\n\n";
+ print "RESULT:\n$result\n$?:$!\n\n";
                     $works = get_SVN_revision ($last_succeeded);
                     $fails = get_SVN_revision ($last);
                 }
