@@ -147,7 +147,7 @@ if (!-d "$pencil_home/.svn") { die "Bisecting works only on SVN checkouts!\n"; }
 #$current_revision = `svn info "$pencil_home" --show-item revision`;
 my $result = `svn info "$pencil_home" --xml`;
 if ($result =~ /revision\s*=\s*"(\d+)"/is) { $current_revision = $1; }
-if (!$current_revision) { $current_revision = "Problem obtaining SVN revision!"; }
+if (!$current_revision) { die "Problem obtaining current SVN revision!\n"; }
 chomp $current_revision;
 
 # bisect
