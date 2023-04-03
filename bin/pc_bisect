@@ -151,18 +151,13 @@ if (!$current_revision) { die "Problem obtaining current SVN revision!\n"; }
 chomp $current_revision;
 
 # bisect
-#will activate this new feature after all auto-tests have bisected without this new feature
-#my $test_command = "@pc_auto_test --keep-fail-info --auto-clean 'samples/$test'";
-my $test_command = "@pc_auto_test --auto-clean 'samples/$test'";
+my $test_command = "@pc_auto_test --keep-fail-info-on-success --overwrite-fail-info --auto-clean 'samples/$test'";
 if ($debug) { print "Test command: |$test_command|\n"; }
-my $check;
 do {
 	my $num = $bad - $good + 1;
 	my $skip = floor (($num - 1) / 2);
-	#my $check = $good + $skip;
-	$check = $good + $skip;
+	my $check = $good + $skip;
 	print "Checking: $good < $check < $bad with $test_command\n";
-unlink "$test_dir/FIRST_FAILED";
 	if (test_revision ($check, $test_command)) {
 		# test successful
 		print "   => good!\n";
@@ -171,12 +166,8 @@ unlink "$test_dir/FIRST_FAILED";
 		# test failed
 		print "   => bad!\n";
 		$bad = $check;
-print `ls -la '$test_dir/FIRST_FAILED' && cat '$test_dir/FIRST_FAILED'`;
 	}
 } until ($good >= $bad - 1);
-
-# temporary workaround to bisect older checkouts, will be removed for future tests:
-if ($good == $check) { test_revision ($bad, $test_command) }
 
 set_revision ($current_revision);
 
