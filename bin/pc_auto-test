@@ -518,12 +518,6 @@ if ($log_dir) {
 if ($fast) {
     push @pc_bisect,      "--fast";
 }
-if ($nolock) {
-    push @pc_bisect,      "--no-lock";
-}
-if ($local_lock) {
-    push @pc_bisect,      "--local_lock";
-}
 if ($debug) {
     push @pc_bisect,      "--debug";
 }
@@ -1857,8 +1851,8 @@ sub mark_failed {
                     print "===> Need to bisect manually to find the offending commit!\n";
                 } else {
                     print "===> Bisecting automatically to find the offending commit...\n";
- print "@pc_bisect '$dir' $works $fails\n";
-                    my $result = `@pc_bisect '$dir' $works $fails`;
+ print "@pc_bisect --no-lock '$dir' $works $fails\n";
+                    my $result = `@pc_bisect --no-lock '$dir' $works $fails`;
  # temporary debug code:
  print "RESULT:\n$result\n$!\n\n";
                     $works = get_SVN_revision ($last_succeeded);
