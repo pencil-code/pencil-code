@@ -1843,6 +1843,7 @@ sub mark_failed {
         print "\n";
     }
     if ((-e $last_succeeded) && (-e $last)) {
+        get_current_revision();
         if (defined ($current_revision)) {
             my $works = get_SVN_revision ($last_succeeded);
             my $fails = get_SVN_revision ($last);
@@ -1880,7 +1881,7 @@ sub mark_failed {
             }
         }
         else {
-            print "===> Plese use SVN checkout for an automatic analysis!\n";
+            print "===> Please use SVN checkout for an automatic analysis!\n";
         }
     }
 }
