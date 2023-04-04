@@ -167,6 +167,7 @@ module Mpicomm
     real, dimension(my,2) :: yweights
     integer, dimension(mx) :: xinds
     integer, dimension(my) :: yinds
+    logical, dimension(3) :: linterpol
 
   endtype foreign_setup
 ! 
@@ -10552,7 +10553,7 @@ endif
 !
 !	Calculate the multiplicity of processors
 !
-          frgn_setup%proc_multis = (/nprocx,nprocy,nprocz/)/frgn_setup%procnums
+          frgn_setup%proc_multis = (/nprocx,nprocy,nprocz/)/intbuf
           if ( any(mod((/nprocx,nprocy,nprocz/),intbuf)/=0 ) ) then
             messg="foreign proc numbers don't match;"
             lok=.false.
@@ -10562,6 +10563,7 @@ endif
 !      
           call mpirecv_int(frgn_setup%dims,3,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !print*, 'Pencil: received frgn_setup%dims=', frgn_setup%dims
+          frgn_setup%linterpol = (frgn_setup%dims/=(/nxgrid,nygrid,nzgrid/))
 !
 !  Receive units of foreign code.
 !      
@@ -10605,9 +10607,11 @@ endif
 !print*, 'floatbuf=', floatbuf(ind:ind+1), xyz0(j),xyz1(j)
             if (any(abs(floatbuf(ind:ind+1)-(/xyz0(j),xyz1(j)/))>1.e-6)) then
                if (j==3) then
-                 messg=trim(messg)//"foreign "//trim(coornames(j))//" domain extents don't match;"
+                 messg=trim(messg)//"foreign "//trim(coornames(j))//" z-domain extents doesn't match;"
+                 lok=.false.
                else
-                 print*, "initialize_foreign_comm: Warning -- foreign "//trim(coornames(j))//" domain extents don't match;"
+                 frgn_setup%linterpol(j)=.true.
+                 print*, "initialize_foreign_comm: Warning -- foreign "//trim(coornames(j))//" domain extent doesn't match"
                endif
             endif
             ind=ind+2
@@ -10673,6 +10677,7 @@ endif
           call mpisend_int(nprocy,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           call mpisend_int(nprocz,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !
+!print*, 'frgn_setup%linterpol=', frgn_setup%linterpol
         endif
 
         call mpibcast_real(frgn_setup%renorm_L,comm=MPI_COMM_PENCIL)
@@ -10682,6 +10687,7 @@ endif
 !       
         call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_PENCIL)
         call mpibcast_int(frgn_setup%proc_multis,3,comm=MPI_COMM_PENCIL)
+        call mpibcast(frgn_setup%linterpol,3,comm=MPI_COMM_PENCIL)
 !
 !        if (frgn_setup%procnums(1)==1) then   !EULAG case
 !print*, 'PENCIL: frgn_setup%proc_multis=', frgn_setup%proc_multis
@@ -10741,8 +10747,9 @@ endif
 
 !print*,'PENCIL ypeer', iproc,frgn_setup%ypeer_rng
 !
-          call get_linterp_weights_1D(frgn_setup%ygrid,frgn_setup%yind_rng(-1,:),y,frgn_setup%yinds,frgn_setup%yweights)
-!print*, 'frgn_setup%yinds=', frgn_setup%yinds, sum(frgn_setup%yweights,2)
+          if (frgn_setup%linterpol(2)) &
+            call get_linterp_weights_1D(frgn_setup%ygrid,frgn_setup%yind_rng(-1,:),y,frgn_setup%yinds,frgn_setup%yweights)
+print*, 'iproc, frgn_setup%yinds=', iproc, frgn_setup%yinds   !, sum(frgn_setup%yweights,2)
 
         endif   !lfirst_proc_xz
 !                              
@@ -10798,21 +10805,28 @@ endif
           enddo
           if (frgn_setup%xpeer_rng(2)<0) frgn_setup%xpeer_rng(2)=px-1
 
-          call get_linterp_weights_1D(frgn_setup%xgrid,frgn_setup%xind_rng(-1,:),x,frgn_setup%xinds,frgn_setup%xweights)
-!print*, 'frgn_setup%xinds=', frgn_setup%xinds, sum(frgn_setup%xweights,2)
+          if (frgn_setup%linterpol(1)) &
+            call get_linterp_weights_1D(frgn_setup%xgrid,frgn_setup%xind_rng(-1,:),x,frgn_setup%xinds,frgn_setup%xweights)
+!print*, 'iproc, frgn_setup%xinds=', iproc, frgn_setup%xinds   !, sum(frgn_setup%xweights,2)
         endif  ! lfirst_proc_yz
 !
         call mpibcast_int_arr2(frgn_setup%xind_rng,(/frgn_setup%procnums(1)+1,2/),comm=MPI_COMM_YZPLANE)
         call mpibcast_int_arr(frgn_setup%xpeer_rng,2,comm=MPI_COMM_YZPLANE)
-        call mpibcast_int(frgn_setup%xinds,mx,comm=MPI_COMM_YZPLANE)
-        call mpibcast_real(frgn_setup%xweights,(/mx,2/),comm=MPI_COMM_YZPLANE)
         lenx=frgn_setup%xind_rng(-1,2)-frgn_setup%xind_rng(-1,1)+1
+
+        if (frgn_setup%linterpol(1)) then
+          call mpibcast_int(frgn_setup%xinds,mx,comm=MPI_COMM_YZPLANE)
+          call mpibcast_real(frgn_setup%xweights,(/mx,2/),comm=MPI_COMM_YZPLANE)
+        endif
 
         call mpibcast_int_arr2(frgn_setup%yind_rng,(/frgn_setup%procnums(2)+1,2/),comm=MPI_COMM_XZPLANE)
         call mpibcast_int_arr(frgn_setup%ypeer_rng,2,comm=MPI_COMM_XZPLANE)
-        call mpibcast_int(frgn_setup%yinds,my,comm=MPI_COMM_XZPLANE)
-        call mpibcast_real(frgn_setup%yweights,(/my,2/),comm=MPI_COMM_XZPLANE)
         leny=frgn_setup%yind_rng(-1,2)-frgn_setup%yind_rng(-1,1)+1
+
+        if (frgn_setup%linterpol(2)) then
+          call mpibcast_int(frgn_setup%yinds,my,comm=MPI_COMM_XZPLANE)
+          call mpibcast_real(frgn_setup%yweights,(/my,2/),comm=MPI_COMM_XZPLANE)
+        endif
 
         if (allocated(frgn_buffer)) deallocate(frgn_buffer)
         allocate(frgn_buffer(lenx,leny,mz,3))
@@ -10953,8 +10967,33 @@ stop
         !!!f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,my::-1,:,:)/frgn_setup%renorm_UU  !For invertion of theta
 !
 !print*, 'iproc, weights=', iproc, maxval(frgn_setup%xweights), maxval(frgn_setup%yweights)
-        call interpolate_2d(frgn_buffer(lf1:,:,:,:),f(:,:,:,ivar1:ivar2),frgn_setup%xinds,frgn_setup%yinds, &
-                            frgn_setup%xweights,frgn_setup%yweights,1./frgn_setup%renorm_UU)
+        if (all(frgn_setup%linterpol)) then
+! XYZ-interpolation
+        elseif (all(frgn_setup%linterpol(1:2))) then
+!
+! XY-Interpolation
+!
+          call interpolate_2d(frgn_buffer(lf1:,:,:,:),f(:,:,:,ivar1:ivar2),frgn_setup%xinds,frgn_setup%yinds, &
+                              frgn_setup%xweights,frgn_setup%yweights,1./frgn_setup%renorm_UU)
+        elseif (all(frgn_setup%linterpol(2:3))) then
+! YZ-Interpolation
+        elseif (all(frgn_setup%linterpol((/1,3/)))) then
+! XZ-Interpolation
+        elseif (frgn_setup%linterpol(1)) then
+!
+! X-Interpolation
+!
+          call interpolate_1d(frgn_buffer(lf1:,:,:,:),f(:,:,:,ivar1:ivar2),1,frgn_setup%xinds, &
+                              frgn_setup%xweights,1./frgn_setup%renorm_UU)
+        elseif (frgn_setup%linterpol(2)) then
+!
+! Y-Interpolation
+!
+          call interpolate_1d(frgn_buffer(lf1:,:,:,:),f(:,:,:,ivar1:ivar2),2,frgn_setup%yinds, &
+                              frgn_setup%yweights,1./frgn_setup%renorm_UU)
+        elseif (frgn_setup%linterpol(3)) then
+! Z-Interpolation
+        endif
 ! 
       elseif (lfirst_proc_yz) then 
 
@@ -10995,7 +11034,9 @@ stop
     endsubroutine get_foreign_snap_finalize
 !***********************************************************************
     subroutine interpolate_2d(inbuffer,outbuffer,xinds,yinds,xweights,yweights,scal_)
-
+!
+! At the moment only for first two dimensions.
+!
       use General, only: roptest
 
       real, dimension(:,:,:,:) :: inbuffer,outbuffer
@@ -11024,6 +11065,38 @@ stop
       enddo
 
     endsubroutine interpolate_2d
+!***********************************************************************
+    subroutine interpolate_1d(inbuffer,outbuffer,dim,inds,weights,scal_)
+!
+! At the moment only for first two dimensions.
+!
+      use General, only: roptest
+
+      real, dimension(:,:,:,:) :: inbuffer,outbuffer
+      !real, dimension(mx,my,mz,mvar) :: outbuffer
+      integer :: dim
+      integer, dimension(:) :: inds
+      real, dimension(:,:) :: weights
+      real, optional :: scal_
+
+      real :: w1,w2,scal
+      integer :: ii,ind1,ind2
+
+      scal=roptest(scal_,1.)
+
+      do ii=1,size(outbuffer,dim)
+
+        w1=weights(ii,1)*scal; w2=weights(ii,2)*scal
+        ind1=inds(ii); ind2=ind1+1
+        select case (dim)
+        case (1); outbuffer(ii,:,:,:) = w1*inbuffer(ind1,:,:,:) + w2*inbuffer(ind2,:,:,:)
+        case (2); outbuffer(:,ii,:,:) = w1*inbuffer(:,ind1,:,:) + w2*inbuffer(:,ind2,:,:)
+        case (3); outbuffer(:,:,ii,:) = w1*inbuffer(:,:,ind1,:) + w2*inbuffer(:,:,ind2,:)
+        end select
+
+      enddo
+
+    endsubroutine interpolate_1d
 !***********************************************************************
     logical function update_foreign_data(t,t_foreign)
 !
