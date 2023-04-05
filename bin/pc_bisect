@@ -187,6 +187,7 @@ sub set_revision {
 	$! = 0;
 
 	my $result = `svn up --force --accept tc -r $revision 2>&1`;
+print "svn up --force --accept tc -r $revision 2>&1\nRESULT: ".$?." - ".$!."\n\n";
 	if ($?) { die "Could not get SVN revision $revision:\n$!\n$result\n"; }
 }
 
@@ -203,7 +204,7 @@ sub test_revision {
 
 	# execute auto-test
 	my $result = `nice $command 2>&1`;
-print "RESULT: ".$?." - ".$!."\n\n";
+print "$command\nRESULT: ".$?." - ".$!."\n\n";
 
 	# $? = 0 means success
 	return ($? == 0);
