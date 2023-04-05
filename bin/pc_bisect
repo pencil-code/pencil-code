@@ -64,7 +64,7 @@ Options:
 Examples:
   pc_bisect --no-lock . 82000 82010
       # bisect in current directory, without locking for pc_auto-test
-  pc_bisect --auto-clean --log-dir=/my/test/ samples/corona 82000 82010
+  pc_bisect --log-dir=/my/test/ samples/corona 82000 82010
       # bisect in samples/corona with logfiles, make clean on error
 ";
 
@@ -203,6 +203,7 @@ sub test_revision {
 
 	# execute auto-test
 	my $result = `nice $command 2>&1`;
+print "RESULT: ".$?." - ".$!."\n\n";
 
 	# $? = 0 means success
 	return ($? == 0);
