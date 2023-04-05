@@ -203,7 +203,7 @@ sub test_revision {
 
 	# execute auto-test
 	my $result = `nice $command 2>&1`;
-	###print "$command\nRESULT: ".$?." - ".$!."\n\n";
+	if ($? && $debug) { print "$command\nRESULT: ".$!."\n\n"; }
 
 	# $? = 0 means success
 	return ($? == 0);
