@@ -157,14 +157,15 @@ do {
 	my $num = $bad - $good + 1;
 	my $skip = floor (($num - 1) / 2);
 	my $check = $good + $skip;
-	print "Checking: $good < $check < $bad with $test_command\n";
+	print "Bisecting interval [ $good | $bad ] at: $check ";
+	if ($debug) { print "\nwith $test_command\n "; }
 	if (test_revision ($check, $test_command)) {
 		# test successful
-		print "   => good!\n";
+		print "=> good!\n";
 		$good = $check;
 	} else {
 		# test failed
-		print "   => bad!\n";
+		print "=> bad!\n";
 		$bad = $check;
 	}
 } until ($good >= $bad - 1);
