@@ -1858,8 +1858,7 @@ sub mark_failed {
                     my $bisect_command = "@pc_bisect --no-lock '$dir' $works $fails";
                     if ($debug) { print "$bisect_command\n"; }
                     system ($bisect_command);
-                    if ($?) { print "ERROR: $? - $!\n"; }
-                    if ($? || $debug) { print "RESULT: $result\n\n"; }
+                    if ($?) { die "ERROR while bisecting: $? - $!\n"; }
                     $works = get_SVN_revision ($last_succeeded);
                     $fails = get_SVN_revision ($last);
                     my $offending = get_GIT_commit ($last);
