@@ -69,7 +69,7 @@ prune_dir()
   this=$1
   clean_objects="*.o *.a *.mod *.x *.inc .build-history .buildinfo .buildtime tmp"
   clean_links="start.csh start_run.csh run.csh getconf.csh Makefile src/.cvsignore"
-  clean_files="pc_commands.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/mpicomm_double.f90 src/revision.txt src/.current-precision"
+  clean_files="pc_commands.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/mpicomm_double.f90 src/revision.txt src/.current-precision src/.config-files"
   src_dir="src"
 
   if [ -d $src_dir ] || [ `ls -1 $clean_links $clean_files 2>/dev/null | wc -l` -ge 1 ]; then
