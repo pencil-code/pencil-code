@@ -135,17 +135,14 @@ module BorderProfiles
 !
       border_prof_r(l1:l2,m1:m2,n1:n2)=1
       if (border_frac_r(1)>0) then
-        if (lperi(3) .or. .not. lcartesian_coords) call fatal_error('initialize_border_profiles', &
-            'must have lperi(3)=F and lcartesian_coord=T for border profile in r')
-        border_width=border_frac_r(1)*maxval(Lxyz)/2
-        lborder=xyz0(3)+border_width ! -2*rs
-        uborder=xyz1(3)-border_width ! +2*rs
-        border_width=border_frac_r(1)*maxval(Lxyz)/60
+        if (.not. lcartesian_coords) call fatal_error('initialize_border_profiles', &
+            'must have lcartesian_coord=T for border profile in r')
+        border_width=border_frac_r(1)
+        lborder=3.0+border_width ! 3*rs
         do m=m1, m2
           do n=n1, n2
             border_prof_r(l1:l2,m,n)=0.5*(1+tanh(sqrt((x(l1:l2)**2+y(m)**2+z(n)**2)- &
-                                     lborder)/border_width))*(1-tanh(sqrt((x(l1:l2)**2+y(m)**2+z(n)**2)- &
-                                     uborder)/border_width))
+                                     lborder)/border_width))
           enddo
         enddo
       endif
