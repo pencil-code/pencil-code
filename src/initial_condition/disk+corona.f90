@@ -83,10 +83,11 @@ module InitialCondition
   include '../initial_condition.h'
   real :: l0_d, l_d1, psipn0, psipn1, psi0, psi1, lnrho0_c
   real :: m0, r0_d, rs=1.0, apara, h_d, dsteep, ngamma, &
-          rho0_c, cs0_c, Tc, rpos,psi0d,pbeta,amplaa
+          rho0_c, cs0_c, Tc, rpos,psi0d,pbeta,amplaa=1.0
+  character (len=labellen) :: initaa_dc='nothing'
 !
   namelist /initial_condition_pars/ r0_d, apara,amplaa, & 
-  h_d, rho0_c, dsteep, ngamma, cs0_c, Tc, rpos, pbeta
+  h_d, rho0_c, dsteep, ngamma, cs0_c, Tc, rpos, pbeta,initaa_dc
 !
   contains
 !***********************************************************************
@@ -230,37 +231,13 @@ module InitialCondition
 !  Disk Density
                   
         rho_d=exp(lnrho0)*(1.0-gamma*masked(l1:l2,m,n)*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0)))**ngamma
-!        rho_d=exp(lnrho0)*(1.0-gamma*(psi(l1:l2,m,n)-psi0d)/(cs0**2.0*(ngamma+1.0)))**ngamma
+!
 ! Corona Density
         lnrho_c=lnrho0_c-masked3(l1:l2,m,n)*(psipn-psipn1)*gamma/cs0_c**2
-!        print *, minval(psipn-psipn1), maxval(psipn-psipn1)
         
-       ! dzphi_d=g0/((rr_sph(l1:l2)-rs)**2+(1e-3*rs)**2)*z(n)/sqrt(rr_sph(l1:l2)**2.0+(1e-3*rs)**2.0)
-        
-        !drphi_d=g0/((rr_sph(l1:l2)-rs)**2+(1e-3*rs)**2)*rr_cyl(l1:l2)/sqrt(rr_sph(l1:l2)**2.0+&
-         !     (1e-3*rs)**2)-l_d**2.0/((1-apara)*sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)**3.0)
         
         pg=exp(lnrho0)**(-1.0/ngamma)*cs0**2.0/gamma*(rho_d)**(1.0+1.0/ngamma)
         pg_c=exp(lnrho_c)*cs0_c**2.0/gamma
-       ! dzrho_d=-gamma*dzphi_d/(cs0**2.0*(ngamma+1.0))*exp(lnrho0)*ngamma*(1.0-&
-       !         gamma*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0)))**(ngamma-1.0)
-        
-       ! drrho_d=-gamma*drphi_d/(cs0**2.0*(ngamma+1.0))*exp(lnrho0)*ngamma*(1.0-&
-        !        gamma*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0)))**(ngamma-1.0)
-        
-        !drphi_d0=g0/((r0_d*rs-rs)**2+(1e-3*rs)**2)*40.0*rs/sqrt((r0_d*rs)**2.0+&
-         !     (1e-3*rs)**2)-l0_d**2.0/((1-apara)*sqrt((r0_d*rs)**2+(1e-3*rs)**2)**3.0)
-
-        !pg0=exp(lnrho0)**(-1.0/ngamma)*cs0**2.0/gamma*(exp(lnrho0))**(1.0+1.0/ngamma)
-
-        !drrho_d0=-gamma*drphi_d0/(cs0**2.0*(ngamma+1.0))*exp(lnrho0)*ngamma*(1.0/&
-        !        (cs0**2*(ngamma+1.0)))**(ngamma-1.0)
-        aphi=amplaa*rpos**2.0/(rpos**2.0+(x(l1:l2)**2.0+z(n)**2.0))**1.5*(1+15.0*rpos**2.0*&
-                x(l1:l2)**2.0/(8.0*(rpos**2.0+(x(l1:l2)**2.0+z(n)**2.0))**2.0))
-        
-        !kphi=sqrt(2.0*5.08e-20*pg0/(pbeta*(drrho_d0)**2.0))
-        !f(l1:l2,m,n,iay)=kphi*x(l1:l2)*rho_d*masked(l1:l2,m,n)
-        f(l1:l2,m,n,iay)=aphi*x(l1:l2)*masked(l1:l2,m,n)
         f(l1:l2,m,n,ilnrho) = log(rho_d+exp(lnrho_c))
         vphi_d=l_d*x(l1:l2)/(rr_cyl(l1:l2)**2+(1e-3*rs)**2)*masked(l1:l2,m,n) 
         f(l1:l2,m,n,iuy) = vphi_d  
@@ -268,6 +245,38 @@ module InitialCondition
         f(l1:l2,m,n,ilnTT)=log(exp(lnT_d)+Tc*tmasked(l1:l2,m,n))
         enddo
       enddo
+      select case (initaa_dc)
+        case ('kato')
+          do n=n1,n2
+            do m=m1,m2
+              call get_radial_distance(rr_sph,rr_cyl)
+        
+              drphi_d0=g0/((r0_d*rs-rs)**2+(1e-3*rs)**2)*40.0*rs/sqrt((r0_d*rs)**2.0+&
+                     (1e-3*rs)**2)-l0_d**2.0/((1-apara)*sqrt((r0_d*rs)**2+(1e-3*rs)**2)**3.0)
+!
+              pg0=exp(lnrho0)**(-1.0/ngamma)*cs0**2.0/gamma*(exp(lnrho0))**(1.0+1.0/ngamma)
+!
+              drrho_d0=-gamma*drphi_d0/(cs0**2.0*(ngamma+1.0))*exp(lnrho0)*ngamma*(1.0/ &
+                  (cs0**2*(ngamma+1.0)))**(ngamma-1.0)
+!        
+              kphi=sqrt(2.0*mu0*pg0/(pbeta*(drrho_d0)**2.0))
+              f(l1:l2,m,n,iay)=amplaa*x(l1:l2)*exp(f(l1:l2,m,n,ilnrho)) !*masked(l1:l2,m,n)
+            enddo
+          enddo
+        case ('loop')
+          do n=n1,n2
+            do m=m1,m2
+              call get_radial_distance(rr_sph,rr_cyl)
+              aphi=amplaa*rpos**2.0/(rpos**2.0+rr_sph(l1:l2)**2)**1.5*(1+15.0*rpos**2.0*&
+                x(l1:l2)**2.0/(8.0*(rpos**2.0+rr_sph(l1:l2)**2)**2.0))
+              f(l1:l2,m,n,iay)=aphi*x(l1:l2)*masked(l1:l2,m,n)
+            enddo
+          enddo
+        case ('nothing')
+!         Do nothing
+        case default
+          call fatal_error('initialize_magnetic','No such initaa_dc')
+      endselect 
 !
 !
     endsubroutine initial_condition_all

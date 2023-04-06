@@ -195,7 +195,7 @@ module Param_IO
       lenforce_maux_check, nv1_capitalvar, mskipvar, lread_oldsnap_mskipvar, &
       oned, twod, lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
       iproc_pt, iproc_p2, &
-      border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
+      border_frac_x, border_frac_y, border_frac_z, border_frac_r, lborder_hyper_diff, &
       lcylinder_in_a_box, lsphere_in_a_box, ipencil_swap, &
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
       lpencil_check_small, lpencil_check_no_zeros, lpencil_check_diagnos_opti, &
