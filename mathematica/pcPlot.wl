@@ -15,6 +15,7 @@ BeginPackage["pcPlot`","pcReadBasic`","pcRead1D`","pcRead2D`"]
 (*Usage messages*)
 
 
+pcHexColor::usage="Takes in a Hex color code and outputs the color."
 pcColors::usage="Some self-defined colors."
 pcLabelStyle::usage="Font and size.";
 pcPlotStyle::usage="Set some plot styles.";
@@ -102,6 +103,8 @@ Begin["`Private`"]
 (* ::Section:: *)
 (*Self-defined colors*)
 
+
+pcHexColor[hex_]:=RGBColor@@(IntegerDigits[ToExpression@StringReplace[hex,"#"->"16^^"],256,3]/255.)
 
 pcColors=Association[
   "Red"->RGBColor[{166,42,23}/255],
@@ -326,7 +329,7 @@ End[]
 
 
 Protect[
-  pcColors,
+  pcHexColor,pcColors,
   pcLabelStyle,pcPlotStyle,pcPopup,pcTicks,pcInset,
   pcLegend,
   spaceTimeDiag,

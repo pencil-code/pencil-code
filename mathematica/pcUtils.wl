@@ -27,6 +27,9 @@ pcRescale::usage="pcRescale[l,{fx,fy}] rescales the last element of each
 element of l (i.e. l[[;;,-1]]) to (0,1), with normalization
 l[[;;,-1]]//MinMax//pcExtend[#,{fx,fy}]&. fx and fy are optional."
 
+pcRescaleSigned::usage="Same as pcRescale, but preserving signs. The
+data is rescaled to around (-1,1) but keeping 0 as 0."
+
 pcDivide::usage="pcDivide[l,n:3] partitions l into n pieces, with the
 length of each no larger than Length[l]/n. The rest elements in l are
 thrown away."
@@ -128,6 +131,19 @@ pcExtend[{x_,y_},f_List:{0.1,0.1}]:=List[
 pcRescale[l_List,f_List:{0.1,0.1}]:=Module[{tmp},
   tmp=Transpose[l];
   tmp[[3]]=Rescale[tmp[[3]],tmp[[3]]//MinMax//pcExtend[#,f]&];
+  Transpose[tmp]
+]
+pcRescaleSigned[l_List,f_Real:0.1]:=Module[{tmp,max,pos,neg},
+  tmp=Transpose[l];
+  max=(1+f)*Max[Abs[tmp[[3]]]];
+  
+  pos=(tmp[[3]]+Abs[tmp[[3]]])/2;
+  pos=Rescale[pos,{0,max},{0,1}];
+  
+  neg=(tmp[[3]]-Abs[tmp[[3]]])/2;
+  neg=Rescale[neg,{-max,0},{-1,0}];
+  
+  tmp[[3]]=pos+neg;
   Transpose[tmp]
 ]
 
@@ -289,7 +305,7 @@ End[]
 
 
 Protect[
-  pcAround,pcExtend,pcRescale,
+  pcAround,pcExtend,pcRescale,pcRescaleSigned,
   pcDivide,pcDifferences,pcFit,
   pkgDir,
   pcNumberToTex,pcWriteTexTable,
