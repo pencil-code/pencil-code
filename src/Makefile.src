@@ -289,7 +289,6 @@ ifeq ($(SOLID_CELLS),solid_cells_ogrid)
 else
   solid_cells_objects = $(SOLID_CELLS_MPICOMM_OBJ) $(SOLID_CELLS_OBJ)
 endif
-
 #
 # Check for inconsistent settings in Makefile.local.
 #
@@ -308,6 +307,16 @@ ifeq ($(HYDRO),nohydro)
 nohydro_shock_message:
 	@echo ";;; You are using HYDRO = nohydro, but SHOCK is not noshock."
 	@echo ";;; One can only use shock in connection with the hydro module."
+	@echo ";;; Please adapt the settings in Makefile.local."
+	exit 1
+
+  endif
+endif
+ifeq ($(ENERGY),entropy)
+  ifeq ($(EOS),noeos)
+noeos_entropy_message:
+	@echo ";;; You are using ENERGY = entropy, but EOS is noeos."
+	@echo ";;; One can only use entropy in connection with an eos module."
 	@echo ";;; Please adapt the settings in Makefile.local."
 	exit 1
 
