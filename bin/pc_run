@@ -1397,7 +1397,6 @@ sub log_rundirectory {
 }
 # ---------------------------------------------------------------------- #
 sub get_lock {
-    
     if (-e $lockfile) {
         print "\n";
         print "pc_run: found LOCK file\n";
