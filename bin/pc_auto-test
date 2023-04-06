@@ -956,6 +956,45 @@ sub FF_wanted {
     }
 }
 # ---------------------------------------------------------------------- #
+sub check_cmd_result {
+# Check result of command
+    my $error = shift;
+    my $arg   = shift;
+    my $msg   = shift;
+    my $dir   = (shift || "<Unknown directory>");
+    my $phase = (shift || "<Unknown phase>");
+    my $quiet = (shift || 0);   # flag for suppressing the 'ok'
+    my $dt    = shift;
+
+    if (($phase eq 'starting') || ($phase eq 'running')) {
+        # Check for missing MPI option "--oversubscribe".
+        if ($msg =~ /use the [\-]*oversubscribe option/is) {
+            my_ok(0, 1, "Not enough CPU cores! Try 'mpiexec' with the '--oversubscribe' option.", $dir, "starting");
+            return;
+        }
+
+        # Check for broken pencil check or floating-point exception
+        if ($msg =~ /^\s*pencil_consistency_check:.*?\s+failed([\s,.]|$)/im) {
+            my_ok(0, 1, "Pencil consistency check failed.", $dir, "starting");
+            return;
+        }
+        if ($msg =~ /floating[\s\-]point exception([\s:.]|$)/is) {
+            my_ok(0, 1, "Floating-point exception.", $dir, "starting");
+            return;
+        }
+    }
+
+    my_ok($error, $arg, $msg, $dir, $phase, $quiet, $dt);
+
+    # Give information on floating-point exceptions
+    if ($msg =~ /floating[\s\-]point exceptions recorded:[^\n]*\n+(.*?)(?=\n\S)/is) {
+        my $exceptions = $1;
+        # $exceptions =~ s/\s+share_SN_parameters:.*$//is; # temporal workaround, uncomment only if needed
+        $exceptions =~ s/^\s+/\t* /gm;
+        print "\tFloating-point exceptions:\n".$exceptions."\n";
+    }
+}
+# ---------------------------------------------------------------------- #
 sub test_shell_cmd {
 # As the name says...
     my $cmd   = shift;
@@ -994,7 +1033,7 @@ sub test_shell_cmd {
     my $dt;
     $dt = get_time()-$t_ref if (defined($t_ref));  # otherwise leave undefined
 
-    my_ok($cmdstatus, 0, $res, $dir, $phase, $quiet, $dt);
+    check_cmd_result($cmdstatus, 0, $res, $dir, $phase, $quiet, $dt);
     # $? = 0 means success
     return $res;           # Return output so we can analyze it if desired
 }
@@ -1179,41 +1218,19 @@ sub test_start {
             $start_cmd .= ' --log-dir="'.$log_dir."/".$sub_dir.'"';
         }
         $start_cmd .= " --log start";
-        my $out = "";
         if ($time_limit) {
-            $out = test_timelimited_shell_cmd(
+            $res = test_timelimited_shell_cmd(
                 $start_cmd,
                 $time_limit, 'start.x',
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
         } else {
-            $out = test_shell_cmd(
+            $res = test_shell_cmd(
                 $start_cmd,
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
-        }
-
-        my $res = $out;
-
-        # Check for missing MPI option "--oversubscribe".
-        if ($res =~ /use the [\-]*oversubscribe option/is) {
-            my_ok(0, 1, "Not enough CPU cores! Try 'mpiexec' with the '--oversubscribe' option.", $dir, "starting");
-            return;
-        }
-
-        # Check for broken pencil check or floating-point exception
-        if ($res =~ /^\s*pencil_consistency_check:.*?\s+failed([\s,.]|$)/im) {
-            my_ok(0, 1, "Pencil consistency check failed.", $dir, "starting");
-            return;
-        }
-        if ($res =~ /floating[\s\-]point exception([\s:.]|$)/is) {
-            my_ok(0, 1, "Floating-point exception.", $dir, "starting");
-            return;
-        }
-        if ($res =~ /floating[\s\-]point exceptions recorded:[^\n]*\n+(.*?)(?=\n\S)/is) {
-            print "\t(Floating-point exceptions recorded.)\n";
         }
     }
 }
@@ -1261,28 +1278,6 @@ sub test_run {
                 $dir, "running",
                 NOQUIET, $t_ref
             );
-        }
-
-        # Check for missing MPI option "--oversubscribe".
-        if ($res =~ /use the [\-]*oversubscribe option/is) {
-            my_ok(0, 1, "Not enough CPU cores! Try 'mpiexec' with the '--oversubscribe' option.", $dir, "running");
-            return;
-        }
-
-        # Check for broken pencil check or floating-point exception
-        if ($res =~ /^\s*pencil_consistency_check:.*?\s+failed([\s,.]|$)/im) {
-            my_ok(0, 1, "Pencil consistency check failed.", $dir, "running");
-            return;
-        }
-        if ($res =~ /floating[\s\-]point exception([\s:.]|$)/is) {
-            my_ok(0, 1, "Floating-point exception.", $dir, "running");
-            return;
-        }
-        if ($res =~ /floating[\s\-]point exceptions recorded:[^\n]*\n+(.*?)(?=\n\S)/is) {
-            my $exceptions = $1;
-            # $exceptions =~ s/\s+share_SN_parameters:.*$//is; # temporal workaround, uncomment only if needed
-            $exceptions =~ s/^\s+/\t* /gm;
-            print "\tFloating-point exceptions:\n".$exceptions."\n";
         }
 
         # Clean up
