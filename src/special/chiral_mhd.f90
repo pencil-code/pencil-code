@@ -120,7 +120,8 @@ module Special
    logical :: ldiffmu5_hyper3_simplified=.false.
    logical :: ldiffmuS_hyper3_simplified=.false.
    logical :: lremove_mean_mu5=.false., lremove_mean_muS=.false.
-   logical :: lmu5adv=.true., lmuSadv=.true., lmu5divu_term=.false.
+   logical :: lmu5adv=.true., lmuSadv=.true.
+   logical :: lmu5divu_term=.false., lmuSdivu_term=.false.
    logical :: ldt_chiral_mhd=.true., ldiffmu5_tdep=.false.
    logical :: reinitialize_mu5=.false.
 !
@@ -145,7 +146,8 @@ module Special
       ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
       diffmu5_hyper3, diffmuS_hyper3, &
       ldiffmu5_hyper3_simplified, ldiffmuS_hyper3_simplified, &
-      coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, lmu5divu_term, &
+      coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, &
+      lmu5divu_term, lmuSdivu_term, &
       reinitialize_mu5, rescale_mu5, gammaf5_tdep, t1_gammaf5, t2_gammaf5, &
       ldiffmu5_tdep, diffmu5_tdep_toffset, &
       diffmu5_tdep_t0, diffmu5_tdep_exponent
@@ -396,6 +398,7 @@ module Special
          if (lCVE) lpenc_requested(i_oo)=.true.
       endif
       if (lmu5divu_term) lpenc_requested(i_divu)=.true.
+      if (lmuSdivu_term) lpenc_requested(i_divu)=.true.
       if (lmagnetic) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_b2)=.true.
@@ -550,6 +553,10 @@ module Special
         df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
            -coef_muS*bdotgmu5
 ! 
+        if (lmuSdivu_term) then
+          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%muS*p%divu
+        endif
+!
         if (ldiffmuS_hyper2_simplified) then
            df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
               -diffmuS_hyper2*p%del4muS
