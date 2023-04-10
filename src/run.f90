@@ -426,7 +426,7 @@ program run
 !
 !  Read global variables (if any).
 !
-  if (mglobal/=0) call input_globals('global.dat', &
+  if (mglobal/=0 .and. lread_global .eq. .true.) call input_globals('global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Initialize ionization array.
