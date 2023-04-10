@@ -169,7 +169,7 @@ module InitialCondition
       call get_cp1(cp1) 
       m00=(g0/G_Newton)
       do n=n1,n2
-        do m=m1,m2
+        do m=1,my
           xmesh(:,m,n)=x
           call get_radial_distance(rr_sph,rr_cyl)
           rcut(:,m,n)=rr_sph          
