@@ -193,7 +193,7 @@ module Cdata
   real :: dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
-  real :: farray_smooth_width=6
+  integer :: farray_smooth_width=6
   integer :: isave=100, ialive=0, isaveglobal=0, nv1_capitalvar=1
   logical :: lwrite_ts_hdf5=.true., lsave=.false.
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
