@@ -3974,14 +3974,14 @@ module Sub
 
     endsubroutine vecout
 !***********************************************************************
-    subroutine vecout_initialize(file,lun,nvec)
+    subroutine vecout_initialize(lun,file,nvec)
 !
 !  Close file, and write number of vectors to a separate file.
 !
       character (len=*) :: file
       integer :: lun, nvec
 !
-!  Open file.  !!!MR: all processes open the same file?
+!  Open file.
 !
       open(lun,FILE=trim(file)//'.dat',form='unformatted',position='append')
       write(lun) 0,0,0,real(t),0.,0.  !(marking first line)
@@ -3989,7 +3989,7 @@ module Sub
 !
     endsubroutine vecout_initialize
 !***********************************************************************
-    subroutine vecout_finalize(file,lun,nvec)
+    subroutine vecout_finalize(lun,file,nvec)
 !
 !  Close file, and write number of vectors to a separate file.
 !
@@ -3999,6 +3999,8 @@ module Sub
 !  Close file, and write number of vectors to a separate file.
 !
       close(lun)
+      if (nvec==0) return
+
       open(lun,FILE=trim(file)//'.num',position='append')
       write(lun,*) real(t),nvec
       close(lun)

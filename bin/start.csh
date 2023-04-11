@@ -94,7 +94,7 @@ foreach dir ($procdirs $subdirs)
     if ($dir == "allprocs" || $dir == "reduced") then
       rm -f $ddir/VAR[0-9]* $ddir/VARd[0-9]* $ddir/PERS[0-9]* $ddir/grid.dat $ddir/dim.dat $ddir/varN.list $ddir/varN_down.list >& /dev/null
     else
-      rm -f $ddir/VAR[0-9]* $ddir/VARd[0-9]* $ddir/PERS[0-9]* $ddir/TAVG[0-9]* $ddir/*.info $ddir/slice* $ddir/PVAR[0-9]* $ddir/SPVAR[0-9]* $ddir/varN.list $ddir/varN_down.list >& /dev/null
+      rm -f $ddir/VAR[0-9]* $ddir/VARd[0-9]* $ddir/PERS[0-9]* $ddir/TAVG[0-9]* $ddir/*.info $ddir/slice* $ddir/PVAR[0-9]* $ddir/SPVAR[0-9]* $ddir/varN.list $ddir/varN_down.list $ddir/[ob]vec.* >& /dev/null
       # in some cases var.dat needs to be conserved (eg. lnowrite=T)
       set list = `/bin/ls $ddir/*.dat`
       foreach rmfile ($list)

@@ -132,7 +132,7 @@ module Magnetic
   real :: radius=0.1, epsilonaa=0.01, x0aa=0.0, y0aa=0.0, z0aa=0.0
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1.
-  real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
+  real :: bthresh=0.0, bthresh_per_brms=0.0, bthresh_scl=1.0
   real :: eta1_aniso_ratio=impossible, eta1_aniso=impossible
   real :: eta1_aniso_r=0.0, eta1_aniso_d=0.0
   real :: eta_shock=0.0, eta_shock2=0.0, alp_aniso=0.0, eta_aniso_BB=0.0
@@ -376,7 +376,7 @@ module Magnetic
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
       ampl_ff, swirl, radius, epsilonaa, k1x_ff, k1y_ff, k1z_ff, &
       center1_x, center1_y, center1_z, lcheck_positive_va2, &
-      lmean_friction, llocal_friction, LLambda_aa, bthresh, bthresh_per_brms, &
+      lmean_friction, llocal_friction, LLambda_aa, bthresh_per_brms, &
       iresistivity, lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
       eta_min, eta_max, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, va2max_boris, &
@@ -1135,9 +1135,8 @@ module Magnetic
 !  Check if we are solving the relativistic eos equations.
 !  In that case we'd need to get lrelativistic_eos from density.
 !
-      if (ldensity) &
-        call get_shared_variable('lrelativistic_eos', &
-            lrelativistic_eos, caller='register_magnetic')
+      if (ldensity) call get_shared_variable('lrelativistic_eos', &
+                         lrelativistic_eos, caller='register_magnetic')
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
@@ -1227,7 +1226,7 @@ module Magnetic
 !  Shear of B_ext,x is not implemented.
 !
       if (lshear .and. B_ext(1) /= 0.0) &
-        call warning('initialize_magnetic','B_ext,x /= 0 with shear is not implemented.')
+        call warning('initialize_magnetic','B_ext,x /= 0 with shear is not implemented')
 !
 !  Compute mask for x-averaging where x is in magnetic_xaver_range.
 !  Normalize such that the average over the full domain
@@ -1356,8 +1355,7 @@ module Magnetic
           select case (initaa(j))
           case ('rescale'); f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
           case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
-          case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa, &
-              center1_x,center1_z)
+          case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa,center1_x,center1_z)
           case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),kz_aa(j))
           case ('coswave-Ay-kx'); call coswave(amplaa(j),f,iay,kx=kx_aa(j))
           case ('sinwave-Ax-kz'); call sinwave(amplaa(j),f,iax,kz=kz_aa(j))
@@ -1377,21 +1375,15 @@ module Magnetic
 !
 !     Store spatially dependent external field in a global array
 !
-      if (lbx_ext_global) &
-        call farray_register_global("global_bx_ext",iglobal_bx_ext)
-      if (lby_ext_global) &
-        call farray_register_global("global_by_ext",iglobal_by_ext)
-      if (lbz_ext_global) &
-        call farray_register_global("global_bz_ext",iglobal_bz_ext)
+      if (lbx_ext_global) call farray_register_global("global_bx_ext",iglobal_bx_ext)
+      if (lby_ext_global) call farray_register_global("global_by_ext",iglobal_by_ext)
+      if (lbz_ext_global) call farray_register_global("global_bz_ext",iglobal_bz_ext)
 !
 !     Store spatially dependent external potential field in a global array
 !
-      if (lax_ext_global) &
-        call farray_register_global("global_ax_ext",iglobal_ax_ext)
-      if (lay_ext_global) &
-        call farray_register_global("global_ay_ext",iglobal_ay_ext)
-      if (laz_ext_global) &
-        call farray_register_global("global_az_ext",iglobal_az_ext)
+      if (lax_ext_global) call farray_register_global("global_ax_ext",iglobal_ax_ext)
+      if (lay_ext_global) call farray_register_global("global_ay_ext",iglobal_ay_ext)
+      if (laz_ext_global) call farray_register_global("global_az_ext",iglobal_az_ext)
 !
 !  Initialize resistivity.
 !
@@ -1510,36 +1502,25 @@ module Magnetic
         case ('shock','eta-shock')
           if (lroot) print*, 'resistivity: shock'
           lresi_eta_shock=.true.
-          if (.not. lshock) &
-              call fatal_error('initialize_magnetic', &
-              'shock resistivity, but module setting SHOCK=noshock')
+          if (.not.lshock) call fatal_error('initialize_magnetic','shock resistivity, but SHOCK=noshock')
         case ('eta-shock2')
           if (lroot) print*, 'resistivity: shock'
           lresi_eta_shock2=.true.
-          if (.not. lshock) &
-              call fatal_error('initialize_magnetic', &
-              'shock resistivity, but module setting SHOCK=noshock')
+          if (.not.lshock) call fatal_error('initialize_magnetic','shock resistivity, but SHOCK=noshock')
         case ('eta-shock-profz')
           if (lroot) print*, 'resistivity: shock with a vertical profile'
           lresi_eta_shock_profz=.true.
-          if (.not. lshock) &
-              call fatal_error('initialize_magnetic', &
-              'shock resistivity, but module setting SHOCK=noshock')
+          if (.not.lshock) call fatal_error('initialize_magnetic','shock resistivity, but SHOCK=noshock')
         case ('eta-shock-profr')
           if (lroot) print*, 'resistivity: shock with a radial profile'
           lresi_eta_shock_profr=.true.
-          if (.not. lshock) &
-              call fatal_error('initialize_magnetic', &
-              'shock resistivity, but module setting SHOCK=noshock')
+          if (.not.lshock) call fatal_error('initialize_magnetic','shock resistivity, but SHOCK=noshock')
         case ('shock-perp')
           if (lroot) print*, 'resistivity: shock perpendicular to B'
           lresi_eta_shock_perp=.true.
-          if (.not. lshock) &
-              call fatal_error('initialize_magnetic', &
-              'shock-perp resistivity, but module setting SHOCK=noshock')
-          if (.not. ldivu_perp) &
-              call fatal_error('initialize_magnetic', &
-              'shock-perp resistivity, but not ldivu_perp=.true.')
+          if (.not.lshock) call fatal_error('initialize_magnetic','shock-perp resistivity, but SHOCK=noshock')
+          if (.not.ldivu_perp) &
+            call fatal_error('initialize_magnetic','shock-perp resistivity, but not ldivu_perp=.true.')
         case ('eta_va')
           if (lroot) print*, 'resistivity: eta_va'
           lresi_etava=.true.
@@ -1573,8 +1554,7 @@ module Magnetic
           lresi_cspeed=.true.
         case ('eta-vAspeed')
           if (lroot) print*, 'resistivity: Alfven speed dependent e.g. SN driven ISM'
-          if (.not. lalfven_as_aux) &
-              call fatal_error('initialize_magnetic', &
+          if (.not. lalfven_as_aux) call fatal_error('initialize_magnetic', &
               'Alfven speed dependent resistivity, but not lalfven_as_aux=.true.')
           lresi_vAspeed=.true.
         case ('magfield')
@@ -1596,8 +1576,8 @@ module Magnetic
         case ('none','')
           ! do nothing
         case default
-          call fatal_error('initialize_magnetic','No such iresistivity('// &
-                           trim(itoa(i))//'): '//trim(iresistivity(i)))
+          call fatal_error('initialize_magnetic','No such iresistivity('//trim(itoa(i))//'): '// &
+                           trim(iresistivity(i)))
         endselect
       enddo
 !
@@ -1606,14 +1586,14 @@ module Magnetic
 !  eta_zdep_exponent = (2/3)*hall_zdep_exponent; see Gourgouliatos+20.
 !
       if (lresi_eta_ztdep) then
-        if (Hhall==0.) call fatal_error('initialize_magnetic','Hhall=0 not allowed.')
+        if (Hhall==0.) call fatal_error('initialize_magnetic','Hhall=0 not allowed for lresi_eta_ztdep=T')
         eta_zdep_exponent=(2./3.)*hall_zdep_exponent
         feta_ztdep=1./(1.-(z-xyz1(3))/Hhall)**eta_zdep_exponent
       endif
 !
       if (lyinyang) then
         if (lresi_eta_shock_profz.or.lresi_xydep.or.lresi_ydep.or.lresi_zdep) &
-          call fatal_error('initialize_magnetic','y or z dependent profiles not implemented on Yin-Yang grid.')
+          call not_implemented('initialize_magnetic','y or z dependent profiles on Yin-Yang grid')
       endif
       if (lresi_eta_shock_profz .or. lresi_eta_shock_profr) then
         eta_shock_jump1 = eta_shock*(eta_jump_shock-1.)
@@ -1631,75 +1611,54 @@ module Magnetic
       if (lrun) then
         if (lroot) then
           if ((lresi_eta_const.or.lresi_eta_tdep).and.(eta==0.0)) &
-              call warning('initialize_magnetic', &
-              'Resistivity coefficient eta is zero!')
+              call warning('initialize_magnetic','Resistivity coefficient eta is zero')
           if (lresi_sqrtrhoeta_const.and.(eta==0.0)) &
-              call warning('initialize_magnetic', &
-              'Resistivity coefficient eta is zero!')
+              call warning('initialize_magnetic','Resistivity coefficient eta is zero')
           if (lresi_hyper2.and.eta_hyper2==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_hyper2 is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_hyper2 is zero')
           if (lresi_hyper3.and.eta_hyper3==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_hyper3 is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_hyper3 is zero')
           if (lresi_hyper3_polar.and.eta_hyper3==0.0) &
-               call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_hyper3 is zero!')
+               call fatal_error('initialize_magnetic','Resistivity coefficient eta_hyper3 is zero')
           if (lresi_hyper3_mesh.and.eta_hyper3_mesh==0.0) &
-               call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_hyper3_mesh is zero!')
+               call fatal_error('initialize_magnetic','Resistivity coefficient eta_hyper3_mesh is zero')
           if (lresi_hyper3_csmesh.and.eta_hyper3_mesh==0.0) &
-               call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_hyper3_mesh is zero!')
+               call fatal_error('initialize_magnetic','Resistivity coefficient eta_hyper3_mesh is zero')
           if (lresi_hyper3_strict.and.eta_hyper3==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_hyper3 is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_hyper3 is zero')
           if ( (lresi_hyper3_aniso) .and.  &
                ((eta_aniso_hyper3(1)==0.0 .and. nxgrid/=1 ).or. &
                 (eta_aniso_hyper3(2)==0.0 .and. nygrid/=1 ).or. &
                 (eta_aniso_hyper3(3)==0.0 .and. nzgrid/=1 )) ) &
-              call fatal_error('initialize_magnetic', &
-              'A resistivity coefficient of eta_aniso_hyper3 is zero!')
+              call fatal_error('initialize_magnetic','A resistivity coefficient of eta_aniso_hyper3 is zero')
           if (lresi_eta_shock.and.eta_shock==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_shock is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_shock is zero')
           if (lresi_eta_shock2.and.eta_shock2==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_shock is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_shock is zero')
           if (lresi_eta_shock_profz.and.eta_shock==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_shock is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_shock is zero')
            if (lresi_eta_shock_profr.and.eta_shock==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_shock is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_shock is zero')
           if (lresi_eta_shock_perp.and.eta_shock==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_shock is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_shock is zero')
           if ((lresi_etava.or.lresi_vAspeed).and.eta_va==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_va is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_va is zero')
           if (lresi_vAspeed.and.idiag_vArms==0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity requires vArms be included in print.in!')
+              call fatal_error('initialize_magnetic','Resistivity requires vArms in print.in')
           if (lresi_etaj .and. eta_j==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_j is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_j is zero')
           if (lresi_etaj2 .and. eta_j2==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_j2 is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_j2 is zero')
           if (lresi_etajrho .and. eta_jrho==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_jrho is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_jrho is zero')
           if (lresi_anomalous.and.eta_anom==0.0) &
-              call fatal_error('initialize_magnetic', &
-              'Resistivity coefficient eta_anom is zero!')
+              call fatal_error('initialize_magnetic','Resistivity coefficient eta_anom is zero')
 !          if (lentropy .and. lohmic_heat .and. .not. lresi_eta_const) &
 !              call fatal_error('initialize_magnetic', &
-!            'Resistivity heating only works with regular resistivity!')
+!            'Resistivity heating only works with regular resistivity')
           if (lresi_hyper2.and.lresi_hyper3) &
-              call warning('initialize_magnetic', &
-              '4th & 6th order hyperdiffusion are both set. ' // &
-              'Timestep is currently only sensitive to fourth order.')
+              call warning('initialize_magnetic','4th & 6th order hyperdiffusion are both set. '// &
+                           'Timestep is currently only sensitive to fourth order')
         endif
 !
 !  if meanfield theory is invoked, we need to tell the other routines
@@ -1723,8 +1682,8 @@ module Magnetic
 
         if (lyinyang) then
           if (A_relaxprofile/='') &
-            call fatal_error('initialize_magnetic', &
-            'z dependent relaxation profiles for A not implemented on Yin-Yang grid.')
+            call not_implemented('initialize_magnetic', &
+            'z dependent relaxation profiles for A on Yin-Yang grid')
         endif
 
         tau_relprof1=1./tau_relprof
@@ -1746,8 +1705,7 @@ module Magnetic
           enddo
           A_relprof(:,:,:,3)=0.
         case('aa_from_global')
-        if (lroot) print*, &
-             'initialize_mag: Set A_relaxprofile to: ', A_relaxprofile
+        if (lroot) print*, 'initialize_mag: Set A_relaxprofile to: ', A_relaxprofile
           if (iglobal_ax_ext/=0 .or. iglobal_ay_ext/=0 .or. iglobal_az_ext/=0) &
           A_relprof(:,:,:,1:3)=amp_relprof*f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext:iglobal_az_ext)
         endselect
@@ -1857,17 +1815,13 @@ module Magnetic
           if (.not.lupw_aa.and.linduction) then
             if (any(B_ext/=0.)) call fatal_error("initialize_magnetic", &
                                                  "fargo advection with external field not tested")
-            if (lspherical_coords) &
-              call not_implemented('initialize_magnetic', &
+            if (lspherical_coords) call not_implemented('initialize_magnetic', &
                                    "curvature terms on ajiuj for spherical coordinates and advective gauge")
           endif
         else
-          call fatal_error('initialize_magnetic', &
-                           'For fargo advection you need the advective gauge. '// &
-                           'You may want to switch ladvective_gauge=T in magnetic_run_pars')
+          call fatal_error('initialize_magnetic','For fargo advection you need advective gauge. '// &
+                           'Switch ladvective_gauge=T in magnetic_run_pars')
         endif
-
-
       endif
 !
 !  Write constants to disk. In future we may want to deal with this
@@ -1929,7 +1883,7 @@ module Magnetic
       if (lremove_meanaxy) then
         nyl=ny
         if (lyinyang) then
-          call fatal_error('initialize_magnetic','Removal of z average not implemented for Yin-Yang')
+          call not_implemented('initialize_magnetic','Removal of z average for Yin-Yang')
           call initialize_zaver_yy(nyl,nycap)
         endif
         if (.not.allocated(aamxy)) allocate(aamxy(nx,nyl))
@@ -1951,20 +1905,14 @@ module Magnetic
         if (lwrite_slice_xz2.and..not.allocated(aps_xz2) ) allocate(aps_xz2(nx,nz))
       endif
 
-      if (ivid_bb/=0) &
-        call alloc_slice_buffers(bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
-      if (ivid_jj/=0) &
-        call alloc_slice_buffers(jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2,jj_r)
-      if (ivid_b2/=0) &
-        call alloc_slice_buffers(b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2,b2_r)
-      if (ivid_j2/=0) &
-        call alloc_slice_buffers(j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2,j2_r)
+      if (ivid_bb/=0) call alloc_slice_buffers(bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
+      if (ivid_jj/=0) call alloc_slice_buffers(jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2,jj_r)
+      if (ivid_b2/=0) call alloc_slice_buffers(b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2,b2_r)
+      if (ivid_j2/=0) call alloc_slice_buffers(j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2,j2_r)
       if (ivid_bb_sph/=0) &
         call alloc_slice_buffers(bb_sph_xy,bb_sph_xz,bb_sph_yz,bb_sph_xy2,bb_sph_xy3,bb_sph_xy4,bb_sph_xz2,bb_sph_r)
-      if (ivid_ab/=0) &
-        call alloc_slice_buffers(ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2,ab_r)
-      if (ivid_jb/=0) &
-        call alloc_slice_buffers(jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2,jb_r)
+      if (ivid_ab/=0) call alloc_slice_buffers(ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2,ab_r)
+      if (ivid_jb/=0) call alloc_slice_buffers(jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2,jb_r)
       if (ivid_beta1/=0) &
         call alloc_slice_buffers(beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
                                  beta1_xy3,beta1_xy4,beta1_xz2,beta1_r)
@@ -1975,24 +1923,25 @@ module Magnetic
       z_allprocs=reshape(zgrid,(/nz,nprocz/))
 
       if (.not.ltime_integrals_always.and.lvart_in_shear_frame) then
-        if (.not. lshear) call fatal_error('initialize_magnetic', &
-                                           'lshear=F -> cannot do frame transform for time integrals')
+        if (.not. lshear) &
+          call fatal_error('initialize_magnetic','lshear=F -> cannot do frame transform for time integrals')
 !
 !  Must have nprocy=1 because we shift in the y direction
-!
+! 
         if (nprocy/=1) call fatal_error('initialize_magnetic','nprocy=1 required for lvart_in_shear_frame')
       endif
 !
 !  give warning if brms is not set in prints.in
 !
-      if (bthresh_per_brms/=0.and.idiag_brms==0) &
-        call warning('initialize_magnetic','need to set brms in print.in to get bthresh')
-
+      if (bthresh_per_brms/=0.and.idiag_brms==0) then
+        call warning('initialize_magnetic','need to set brms in print.in to get bthresh. Disabled bthresh')
+        bthresh_per_brms=0.
+      endif
       if (lmean_friction.and.nprocxy/=1) &
         call fatal_error("initialize_magnetic","lmean_friction works only for nprocxy=1")
 
       if (dipole_moment /= 0. .and. ladd_global_field) &
-        call fatal_error("initialize_magnetic","Switch ladd_global_field=F if dipole_moment /= 0.")
+        call fatal_error("initialize_magnetic", "Switch ladd_global_field=F if dipole_moment /= 0")
 
       if (lcoulomb.and..not.lpoisson) &
         call fatal_error('initialize_magnetic', 'Coulomb gauge needs the Poisson module')
@@ -2120,10 +2069,8 @@ module Magnetic
         case ('ver-tube'); call vtube(amplaa(j),f,iax,iaz,radius)
         case ('ver-tube-peri'); call vtube_peri(amplaa(j),f,iax,iaz,radius)
         case ('hor-tanh'); call htanh(amplaa(j),f,iaz,epsilonaa)
-        case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa, &
-                                     center1_x,center1_z)
-        case ('hor-tube-x'); call htube_x(amplaa(j),f,iax,iaz,radius,epsilonaa, &
-                                     center1_y,center1_z)
+        case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa,center1_x,center1_z)
+        case ('hor-tube-x'); call htube_x(amplaa(j),f,iax,iaz,radius,epsilonaa,center1_y,center1_z)
         case ('hor-tube_erf'); call htube_erf(amplaa(j),f,iax,iaz,radius,epsilonaa, &
                                      center1_x,center1_z,fluxtube_border_width)
         case ('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,z0aa,widthaa(1))
@@ -2393,11 +2340,9 @@ module Magnetic
 !  runtime). Works only for spherical coordinates, and needs global external storing of fields.
 !
           if (.not.(lbx_ext_global.and.lby_ext_global.and.lbz_ext_global)) &
-               call fatal_error("init_aa",&
-               "inclined-dipole: switch lb[xyz]_ext_global=T in magnetic_start_pars")
+            call fatal_error("init_aa","inclined-dipole: switch lb[xyz]_ext_global=T in magnetic_start_pars")
           if (.not.lspherical_coords) &
-               call fatal_error("init_aa",&
-               "inclined-dipole: so far only implemented for spherical coordinates")
+            call not_implemented("init_aa","inclined-dipole for other than spherical coordinates")
 !
           c=cos(inclaa*pi/180); s=sin(inclaa*pi/180)
           do n=n1,n2; do m=m1,m2
@@ -2480,7 +2425,7 @@ module Magnetic
 !
 !  Catch unknown values.
 !
-          call fatal_error('init_aa','no such init_aa value: "'//trim(initaa(j))//'"')
+          call fatal_error('init_aa','no such init_aa: "'//trim(initaa(j))//'"')
 !
         endselect
 !
@@ -2501,14 +2446,14 @@ module Magnetic
 !
       if (idiva/=0) f(:,:,:,idiva)=0.
 !
-!  In 2-D with nz=1, setting Ax=Ay=0 makes sense, but shouldn't
+!  In 2-D with nzgrid=1, setting Ax=Ay=0 makes sense, but shouldn't
 !  be compulsory, so allow for this possibility in 2-D.
 !
       if (lset_AxAy_zero) then
-        if (nz==1) then
+        if (nzgrid==1) then
           f(:,:,:,iax:iay)=0.0
         else
-          call fatal_error("init_aa","lset_AxAy_zero=T only allowed with nz=1")
+          call fatal_error("init_aa","lset_AxAy_zero=T only allowed with nzgrid=1")
         endif
       endif
 !
@@ -2671,12 +2616,9 @@ module Magnetic
          lpenc_requested(i_r_mn1)=.true.
       endif
       if (lresi_ydep .and. lspherical_coords) lpenc_requested(i_r_mn1)=.true.
-      if ((.not.lweyl_gauge).and.(lresi_eta_proptouz)) &
-         lpenc_requested(i_diva)=.true.
-         lpenc_requested(i_uij)=.true.
-      if (lresi_eta_proptouz) then
-         lpenc_requested(i_uu)=.true.
-      endif
+      if ((.not.lweyl_gauge).and.(lresi_eta_proptouz)) lpenc_requested(i_diva)=.true.
+      lpenc_requested(i_uij)=.true.
+      if (lresi_eta_proptouz) lpenc_requested(i_uu)=.true.
       if (lresi_sqrtrhoeta_const) then
         lpenc_requested(i_jj)=.true.
         lpenc_requested(i_rho1)=.true.
@@ -2685,8 +2627,7 @@ module Magnetic
           lpenc_requested(i_glnrho)=.true.
         endif
       endif
-      if (lresi_eta_shock.or.lresi_eta_shock_profz.or. &
-          lresi_eta_shock2.or.lresi_eta_shock_profr) then
+      if (lresi_eta_shock.or.lresi_eta_shock_profz.or.lresi_eta_shock2.or.lresi_eta_shock_profr) then
         lpenc_requested(i_shock)=.true.
         if (.not.lweyl_gauge) then
           lpenc_requested(i_gshock)=.true.
@@ -2771,12 +2712,9 @@ module Magnetic
         lpenc_requested(i_uij)=.true.
       endif
       if (lresi_shell.or.lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
-          lresi_rdep.or.lresi_smagorinsky.or.lresi_smagorinsky_nusmag) then
+          lresi_rdep.or.lresi_smagorinsky.or.lresi_smagorinsky_nusmag) &
            lpenc_requested(i_diva)=.true.
-      endif
-      if (lresi_smagorinsky_nusmag) then
-         lpenc_requested(i_nu_smag)=.true.
-      endif
+      if (lresi_smagorinsky_nusmag) lpenc_requested(i_nu_smag)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2 .or. lresi_hyper2_tdep) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3 .or. lresi_hyper3_tdep) lpenc_requested(i_del6a)=.true.
@@ -2820,11 +2758,11 @@ module Magnetic
         lpenc_requested(i_jxbrxb)=.true.
         lpenc_requested(i_jxbr2)=.true.
         lpenc_requested(i_jxbr)=.true.
-        if (ambipolar_diffusion=="ionization-equilibrium") &
-          lpenc_requested(i_rho1)=.true.
-        if (ambipolar_diffusion=="ionization-yH") &
+        if (ambipolar_diffusion=="ionization-equilibrium") lpenc_requested(i_rho1)=.true.
+        if (ambipolar_diffusion=="ionization-yH") then
           lpenc_requested(i_yH)=.true.
           lpenc_requested(i_rho1)=.true.
+        endif
       endif
 !
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
@@ -3107,8 +3045,7 @@ module Magnetic
 !
 !  Check whether right variables are set for half-box calculations.
 !
-      if (idiag_brmsn/=0 .or. idiag_abmn/=0 .or. idiag_ambmzn/=0 &
-          .or. idiag_jbmn/= 0 ) then
+      if (idiag_brmsn/=0 .or. idiag_abmn/=0 .or. idiag_ambmzn/=0 .or. idiag_jbmn/= 0 ) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
           call fatal_error('pencil_criteria_magnetic', &
           "You have to set either of lequator[y|z] to true to calculate averages over half the box")
@@ -3561,7 +3498,7 @@ module Magnetic
         call zero_ghosts(f, iax, iaz)       !MR: needed given the next statement?
         call update_ghosts(f, iax, iaz)     !MR: only the "real" BCs matter here
 
-        mn_loop: do imn = 1, nyz
+        do imn = 1, nyz
 
           m = mm(imn)
           n = nn(imn)
@@ -3621,7 +3558,7 @@ module Magnetic
               endif
            endif
           endif
-        enddo mn_loop
+        enddo  ! mn_loop
       endif getbb
 !
 !  Possibility of calculating the magnetic helicity correction for the Coulomb gauge.
@@ -3761,8 +3698,7 @@ module Magnetic
 !
 !  Add a uniform background field, optionally precessing.
 !
-        if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. &
-                  (.not. ladd_global_field)) then
+        if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. (.not. ladd_global_field)) then
           call get_bext(B_ext)
           if (any(B_ext/=0.)) then
             forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
@@ -3776,9 +3712,9 @@ module Magnetic
 !
         if (dipole_moment /= 0.) then
           c=cos(inclaa*pi/180); s=sin(inclaa*pi/180)
-          p%bb(:,1) = p%bb(:,1) + dipole_moment * 2*(c*costh(m) + s*sinth(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
-          p%bb(:,2) = p%bb(:,2) + dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
-          p%bb(:,3) = p%bb(:,3) + dipole_moment *   (             s*         sin(z(n)-omega_Bz_ext*t))*p%r_mn1**3
+          p%bb(:,1) = p%bb(:,1) + dipole_moment*2*(c*costh(m) + s*sinth(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
+          p%bb(:,2) = p%bb(:,2) + dipole_moment*  (c*sinth(m) - s*costh(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
+          p%bb(:,3) = p%bb(:,3) + dipole_moment*  (             s*         sin(z(n)-omega_Bz_ext*t))*p%r_mn1**3
         endif
 !
 !  Add the external potential field.
@@ -3910,8 +3846,7 @@ module Magnetic
           call gij_etc(f,iaa,BIJ=p%bij)
           if (lpenc_loc(i_jj).and. .not. ljj_as_comaux) call curl_mn(p%bij,p%jj)
         else
-          call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,&
-                       LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+          call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
           if (lpenc_loc(i_jj).and. .not. ljj_as_comaux) &
               call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
         endif
@@ -3919,8 +3854,7 @@ module Magnetic
         if (lcartesian_coords) then
           call gij_etc(f,iaa,DEL2=p%del2a)
         else
-          call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,DEL2=p%del2a,&
-                       LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+          call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,DEL2=p%del2a,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
         endif
       endif
       if (lpenc_loc(i_bijtilde)) then
@@ -4085,12 +4019,12 @@ module Magnetic
 !
         if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
         if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) then
-          rho1_jxb = rho1_jxb*(1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+          rho1_jxb = rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
         if (betamin_jxb>0) then
           va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
           if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
-          rho1_jxb = rho1_jxb*(1.+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+          rho1_jxb = rho1_jxb * (1.+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
       endif
@@ -4315,8 +4249,7 @@ module Magnetic
       case('ionization-equilibrium'); p%nu_ni1=nu_ni1*sqrt(p%rho1)
       case('ionization-yH'); p%nu_ni1=nu_ni1*sqrt(p%rho1)*(1.-p%yH)/p%yH
       case default
-        call fatal_error('set_ambipolar_diffusion','No such ambipolar_diffusion: ' &
-                         //trim(ambipolar_diffusion))
+        call fatal_error('set_ambipolar_diffusion','no such ambipolar_diffusion: '//trim(ambipolar_diffusion))
       endselect
 !
     endsubroutine set_ambipolar_diffusion
@@ -4591,8 +4524,7 @@ module Magnetic
           enddo
         else
           do j=1,3
-            fres(:,j)=fres(:,j)+eta*sqrt(p%rho1)*&
-                      (p%del2a(:,j)-0.5*p%diva*p%glnrho(:,j))
+            fres(:,j)=fres(:,j)+eta*sqrt(p%rho1) * (p%del2a(:,j)-0.5*p%diva*p%glnrho(:,j))
           enddo
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta*sqrt(p%rho1)
@@ -4712,8 +4644,7 @@ module Magnetic
             fres(:,j)=fres(:,j)+eta_hyper3*pi4_1*tmp1*dline_1(:,i)**2
           enddo
         enddo
-        if (lfirst.and.ldt) &
-             diffus_eta3=diffus_eta3+eta_hyper3*pi4_1*dxmin_pencil**4
+        if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3*pi4_1*dxmin_pencil**4
       endif
 !
       if (lresi_hyper3_mesh) then
@@ -4745,11 +4676,9 @@ module Magnetic
           do i=1,3
             call der6(f,ju,tmp1,i,IGNOREDX=.true.)
             if (ldynamical_diffusion) then
-              fres(:,j)=fres(:,j)+eta_hyper3_mesh*sqrt(p%cs2) &
-                       *tmp1*dline_1(:,i)
+              fres(:,j)=fres(:,j)+eta_hyper3_mesh*sqrt(p%cs2) * tmp1*dline_1(:,i)
             else
-              fres(:,j)=fres(:,j)+eta_hyper3_mesh*sqrt(p%cs2) &
-                       *pi5_1/60.*tmp1*dline_1(:,i)
+              fres(:,j)=fres(:,j)+eta_hyper3_mesh*sqrt(p%cs2) * pi5_1/60.*tmp1*dline_1(:,i)
             endif
           enddo
         enddo
@@ -4795,8 +4724,7 @@ module Magnetic
           enddo
         else
           do i=1,3
-            fres(:,i)=fres(:,i)+ &
-                eta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
+            fres(:,i)=fres(:,i)+eta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
           enddo
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_shock*p%shock
@@ -4835,8 +4763,7 @@ module Magnetic
         else
           do i=1,3
             fres(:,i)=fres(:,i)+ &
-                peta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))+ &
-                p%diva*p%shock*gradeta_shock(:,i)
+                peta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))+p%diva*p%shock*gradeta_shock(:,i)
           enddo
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+peta_shock*p%shock
@@ -4862,9 +4789,8 @@ module Magnetic
           enddo
         else
           do i=1,3
-            fres(:,i)=fres(:,i)+ &
-                peta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))+ &
-                p%diva*p%shock*gradeta_shock(:,i)
+            fres(:,i)=fres(:,i) + peta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))+ &
+                                  p%diva*p%shock*gradeta_shock(:,i)
           enddo
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+peta_shock*p%shock
@@ -4878,8 +4804,7 @@ module Magnetic
           enddo
         else
           do i=1,3
-            fres(:,i)=fres(:,i)+ &
-                eta_shock*(p%shock_perp*p%del2a(:,i)+p%diva*p%gshock_perp(:,i))
+            fres(:,i)=fres(:,i)+ eta_shock*(p%shock_perp*p%del2a(:,i)+p%diva*p%gshock_perp(:,i))
           enddo
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_shock*p%shock_perp
@@ -4902,8 +4827,7 @@ module Magnetic
           forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
         else
           do i=1,3
-            fres(:,i) = fres(:,i) + mu0 * p%etava * p%del2a(:,i) + &
-                        eta_va/vArms * p%diva * p%gva(:,i)
+            fres(:,i) = fres(:,i) + mu0 * p%etava * p%del2a(:,i) + eta_va/vArms * p%diva * p%gva(:,i)
           enddo
         endif
         if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etava
@@ -4997,8 +4921,7 @@ module Magnetic
                 fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
               endwhere
             else
-              where (vdrift>vcrit_anom) &
-                fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
+              where (vdrift>vcrit_anom) fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
             endif
           enddo
         else
@@ -5012,8 +4935,7 @@ module Magnetic
               diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
             endwhere
           else
-            where (vdrift>vcrit_anom) &
-              diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
+            where (vdrift>vcrit_anom) diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
             endif
         endif
         if (eta_anom_thresh/=0) then
@@ -5037,8 +4959,7 @@ module Magnetic
           enddo
         else
           do i=1,3
-            fres(:,i)=fres(:,i)+eta_spitzer*exp(-1.5*p%lnTT)* &
-                (p%del2a(:,i)-1.5*p%diva*p%glnTT(:,i))
+            fres(:,i)=fres(:,i)+eta_spitzer*exp(-1.5*p%lnTT)*(p%del2a(:,i)-1.5*p%diva*p%glnTT(:,i))
           enddo
         endif
         if (lfirst.and.ldt) then
@@ -5057,8 +4978,7 @@ module Magnetic
           enddo
         else
           do i=1,3
-            fres(:,i)=fres(:,i)+eta*exp(eta_cspeed*p%lnTT)* &
-                (p%del2a(:,i)+0.5*p%diva*p%glnTT(:,i))
+            fres(:,i)=fres(:,i)+eta*exp(eta_cspeed*p%lnTT)*(p%del2a(:,i)+0.5*p%diva*p%glnTT(:,i))
           enddo
         endif
         if (lfirst.and.ldt) then
@@ -5076,8 +4996,7 @@ module Magnetic
           enddo
         else
           do i=1,3
-            fres(:,i)=fres(:,i)+eta*ampl_eta_uz* &
-                 (p%uu(:,3)*p%del2a(:,i)+p%uij(:,3,i)*p%diva)
+            fres(:,i)=fres(:,i)+eta*ampl_eta_uz*(p%uu(:,3)*p%del2a(:,i)+p%uij(:,3,i)*p%diva)
           enddo
         endif
         if (lfirst.and.ldt) then
@@ -5160,7 +5079,6 @@ module Magnetic
 !     where Dsld is the SLD operator
 !   normal way:  DA_i/dt = ... partial_j Dsld_j A_l
 !
-!
           do j=1,3
             call calc_slope_diff_flux(f,ibx+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn, &
                                       FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
@@ -5203,19 +5121,15 @@ module Magnetic
           call dot(tmp2,p%jj,tmp1)
           if (lentropy) then
             if (pretend_lnTT) then
-              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
-                p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
+              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
             else
-              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
-                      max(0.0,tmp1)*p%rho1*p%TT1
+              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + max(0.0,tmp1)*p%rho1*p%TT1
             endif
           else if (ltemperature) then
             if (ltemperature_nolog) then
-              df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + &
-                      p%cv1*max(0.0,tmp1)*p%rho1
+              df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*max(0.0,tmp1)*p%rho1
             else
-              df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
-                      p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
+              df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
             endif
           else if (lthermal_energy) then
            df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + max(0.0,tmp1)
@@ -5241,19 +5155,15 @@ module Magnetic
       if (.not.lkinematic.and.lohmic_heat) then
         if (lentropy) then
           if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
-                p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
           else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
-                      etatotal*mu0*p%j2*p%rho1*p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + etatotal*mu0*p%j2*p%rho1*p%TT1
           endif
         else if (ltemperature) then
           if (ltemperature_nolog) then
-            df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + &
-                 p%cv1*etatotal*mu0*p%j2*p%rho1
+            df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*etatotal*mu0*p%j2*p%rho1
           else
-            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
-                 p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
           endif
         else if (lthermal_energy) then
           df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + etatotal*mu0*p%j2
@@ -5491,8 +5401,7 @@ module Magnetic
 !
 !  Ekman Friction, used only in two dimensional runs.
 !
-      if (ekman_friction_aa/=0) &
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-ekman_friction_aa*p%aa
+      if (ekman_friction_aa/=0) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-ekman_friction_aa*p%aa
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
@@ -5533,16 +5442,15 @@ module Magnetic
           rho1_jxb=p%rho1
           if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
           if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) then
-            rho1_jxb = rho1_jxb*(1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
           if (betamin_jxb>0) then
             va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
             if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
-            rho1_jxb = rho1_jxb*(1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
-          if (lboris_correction .and. va2max_boris>0) then
-            rho1_jxb = rho1_jxb*(1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
-          endif
+          if (lboris_correction .and. va2max_boris>0) &
+            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
           if (lboris_correction .and. cmin>0) &
             rho1_jxb = rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
 
@@ -5576,7 +5484,6 @@ module Magnetic
                         hall_term*pi*dline_1(:,3)*mu01 &
                         +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,3)*mu01)**2 ) ))**2 &
                       )
-
         endif
         if (notanumber(advec_va2)) print*, 'advec_va2  =',advec_va2
         advec2=advec2+advec_va2
@@ -5714,7 +5621,7 @@ module Magnetic
 
       use Diagnostics, only: save_name_sound
       use Slices_methods, only: store_slices
-      use Sub, only: cross,vecout
+      use Sub, only: cross
 
       real, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
@@ -5786,8 +5693,6 @@ module Magnetic
                             poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2,poynting_r)
         endif
 !
-        if (bthresh_per_brms/=0) call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
-!
       endif
 
     endsubroutine calc_diagnostics_magnetic
@@ -5799,7 +5704,7 @@ module Magnetic
       use Diagnostics
       use Sub, only: dot, dot2, multvs, cross_mn, multmv_transp, dot2_mn, &
         cross_mn, dot2_mn, dot_mn_sv, dot_mn_vm_trans, grad, &
-        multsm_mn, multvv_smat_add, multm2_mn, mult_mat_vv
+        multsm_mn, multvv_smat_add, multm2_mn, mult_mat_vv,vecout
 
       real, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
@@ -5884,8 +5789,7 @@ module Magnetic
         if (idiag_Bresrms/=0 .or. idiag_Rmrms/=0) then
           call dot2_mn(fres,fres2)
           call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
-          if (idiag_Rmrms/=0) &
-              call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
+          if (idiag_Rmrms/=0) call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
         endif
       endif
 !
@@ -5934,8 +5838,7 @@ module Magnetic
       call max_mn_name(abs(p%jj(:,1)),idiag_jxmax)
       call max_mn_name(abs(p%jj(:,2)),idiag_jymax)
       call max_mn_name(abs(p%jj(:,3)),idiag_jzmax)
-      if (idiag_aybym2/=0) &
-          call sum_mn_name(2.*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
+      if (idiag_aybym2/=0) call sum_mn_name(2.*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
       call sum_mn_name(p%ab,idiag_abm)
       if (idiag_gLamam/=0) then
         call grad(f,iLam,gLam)
@@ -6105,8 +6008,7 @@ module Magnetic
       call sum_mn_name(p%va2,idiag_vArms,lsqrt=.true.)
       call max_mn_name(p%va2,idiag_vAmax,lsqrt=.true.)
       if (.not.lgpu) then
-        if (idiag_dtb/=0) &
-          call max_mn_name(sqrt(advec_va2)/cdt,idiag_dtb,l_dt=.true.)
+        if (idiag_dtb/=0) call max_mn_name(sqrt(advec_va2)/cdt,idiag_dtb,l_dt=.true.)
       endif
 !
 !  Lorentz force.
@@ -6485,6 +6387,8 @@ module Magnetic
         if (idiag_jzp2/=0) call save_name(p%jj(lpoint2-nghost,3),idiag_jzp2)
       endif
 !
+      if (bthresh_per_brms/=0) call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
+!
     endsubroutine calc_0d_diagnostics_magnetic
 !******************************************************************************
     subroutine calc_1d_diagnostics_magnetic(p)
@@ -6621,15 +6525,11 @@ module Magnetic
             (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmz)
         endif
         call phizsum_mn_name_r(p%b2,idiag_b2mr)
-        if (idiag_brmr/=0)   &
-             call phizsum_mn_name_r(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmr)
-        if (idiag_bpmr/=0)   &
-             call phizsum_mn_name_r(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmr)
+        if (idiag_brmr/=0) call phizsum_mn_name_r(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmr)
+        if (idiag_bpmr/=0) call phizsum_mn_name_r(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmr)
         call phizsum_mn_name_r(p%bb(:,3),idiag_bzmr)
-        if (idiag_armr/=0)   &
-             call phizsum_mn_name_r(p%aa(:,1)*p%pomx+p%aa(:,2)*p%pomy,idiag_armr)
-        if (idiag_apmr/=0)   &
-             call phizsum_mn_name_r(p%aa(:,1)*p%phix+p%aa(:,2)*p%phiy,idiag_apmr)
+        if (idiag_armr/=0) call phizsum_mn_name_r(p%aa(:,1)*p%pomx+p%aa(:,2)*p%pomy,idiag_armr)
+        if (idiag_apmr/=0) call phizsum_mn_name_r(p%aa(:,1)*p%phix+p%aa(:,2)*p%phiy,idiag_apmr)
         call phizsum_mn_name_r(p%aa(:,3),idiag_azmr)
         call yzintegrate_mn_name_x(p%bb(:,1),idiag_mflux_x)
         call xzintegrate_mn_name_y(p%bb(:,2),idiag_mflux_y)
@@ -6662,18 +6562,14 @@ module Magnetic
       real, dimension(nx,3) :: tmp2
 
       if (l2davgfirst) then
-        if (idiag_brmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,&
-                                                    idiag_brmphi)
-        if (idiag_br2mphi/=0) call phisum_mn_name_rz((p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy)**2,&
-                                                    idiag_br2mphi)
+        if (idiag_brmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmphi)
+        if (idiag_br2mphi/=0) call phisum_mn_name_rz((p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy)**2,idiag_br2mphi)
         if (idiag_brsphmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%evr(:,1)+&
             p%bb(:,2)*p%evr(:,2)+p%bb(:,3)*p%evr(:,3),idiag_brsphmphi)
         if (idiag_bthmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%evth(:,1)+&
             p%bb(:,2)*p%evth(:,2)+p%bb(:,3)*p%evth(:,3),idiag_bthmphi)
-        if (idiag_bpmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,&
-                                                    idiag_bpmphi)
-        if (idiag_bp2mphi/=0) call phisum_mn_name_rz((p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy)**2,&
-                                                    idiag_bp2mphi)
+        if (idiag_bpmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmphi)
+        if (idiag_bp2mphi/=0) call phisum_mn_name_rz((p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy)**2,idiag_bp2mphi)
         if (idiag_bzmphi/=0) call phisum_mn_name_rz(p%bb(:,3),idiag_bzmphi)
         if (idiag_bz2mphi/=0) call phisum_mn_name_rz(p%bb(:,3)**2,idiag_bz2mphi)
         if (idiag_b2mphi/=0) call phisum_mn_name_rz(p%b2,idiag_b2mphi)
@@ -6801,16 +6697,11 @@ module Magnetic
         call zsum_mn_name_xy(p%bb,idiag_bxbzmxy,(/1,0,1/))
         call zsum_mn_name_xy(p%bb,idiag_bybzmxy,(/0,1,1/))
 !
-        if (idiag_bxbymxz/=0) &
-            call ysum_mn_name_xz(p%bb(:,1)*p%bb(:,2),idiag_bxbymxz)
-        if (idiag_bxbzmxz/=0) &
-            call ysum_mn_name_xz(p%bb(:,1)*p%bb(:,3),idiag_bxbzmxz)
-        if (idiag_bybzmxz/=0) &
-            call ysum_mn_name_xz(p%bb(:,2)*p%bb(:,3),idiag_bybzmxz)
-        if (idiag_uybxmxz/=0) &
-            call ysum_mn_name_xz(p%uu(:,2)*p%bb(:,1),idiag_uybxmxz)
-        if (idiag_uybzmxz/=0) &
-            call ysum_mn_name_xz(p%uu(:,2)*p%bb(:,3),idiag_uybzmxz)
+        if (idiag_bxbymxz/=0) call ysum_mn_name_xz(p%bb(:,1)*p%bb(:,2),idiag_bxbymxz)
+        if (idiag_bxbzmxz/=0) call ysum_mn_name_xz(p%bb(:,1)*p%bb(:,3),idiag_bxbzmxz)
+        if (idiag_bybzmxz/=0) call ysum_mn_name_xz(p%bb(:,2)*p%bb(:,3),idiag_bybzmxz)
+        if (idiag_uybxmxz/=0) call ysum_mn_name_xz(p%uu(:,2)*p%bb(:,1),idiag_uybxmxz)
+        if (idiag_uybzmxz/=0) call ysum_mn_name_xz(p%uu(:,2)*p%bb(:,3),idiag_uybzmxz)
         call ysum_mn_name_xz(p%uxb(:,1),idiag_Exmxz)
         call ysum_mn_name_xz(p%uxb(:,2),idiag_Eymxz)
         call ysum_mn_name_xz(p%uxb(:,3),idiag_Ezmxz)
@@ -6948,7 +6839,7 @@ module Magnetic
 !
       use Boundcond, only: update_ghosts
       use Diagnostics, only: save_name
-      use Sub, only: div, calc_all_diff_fluxes, dot2_mn
+      use Sub, only: div, calc_all_diff_fluxes, dot2_mn, vecout_initialize
       use SharedVariables, only: put_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -7044,6 +6935,8 @@ module Magnetic
           cosz=cos(k1_ff*z+phase_beltrami)
         endif
       endif
+!
+      if (ldiagnos.and.bthresh_per_brms/=0) call vecout_initialize(41,trim(directory)//'/bvec',nbvec)
 
     endsubroutine magnetic_after_boundary
 !***********************************************************************
@@ -7184,6 +7077,16 @@ module Magnetic
 !  needs to be called after calc_mfield.
 !
 !   6-aug-03/axel: coded
+!
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+
+      real :: brms
+!
+!  fetch brms (this requires that brms is set in print.in)
+!  broadcast result to other processors
+!
+      if (lroot) brms=fname(idiag_brms)
+      call mpibcast_real(brms,comm=MPI_COMM_WORLD)
 !
 !  if nvec exceeds nbvecmax (=1/4) of points per processor, then begin to
 !  increase scaling factor on bthresh. These settings will stay in place
@@ -7567,23 +7470,10 @@ module Magnetic
 !  19-jun-02/axel: moved from print to here
 !   9-nov-02/axel: corrected bxmy(m,j); it used bzmy instead!
 !
-      use Mpicomm
-      use Sub
-!
-!  For vector output (of bb vectors) we need brms
-!  on all processors. It suffices to have this for times when lout=.true.,
-!  but we need to broadcast the result to all procs.
-!
-!  calculate brms (this requires that brms is set in print.in)
-!  broadcast result to other processors
-!
-      if (idiag_brms/=0) then
-        if (iproc==0) brms=fname(idiag_brms)
-        call mpibcast_real(brms)
-      endif
-!
 !  The following calculation involving spatial averages
 !
+      use Mpicomm, only: mpibcast_real,MPI_COMM_WORLD
+
       if (idiag_bmx/=0) call calc_bmx
       if (idiag_bmy/=0) call calc_bmy
       if (idiag_bmz/=0) call calc_bmz
@@ -8073,9 +7963,8 @@ module Magnetic
         fact=1./(nz*nprocz)
         do n=1,nz
         do iprocz=1,nprocz
-          ambmz_tmp=fact*( &
-             fnamez(n,iprocz,idiag_bxmz)*fnamez(n,iprocz,idiag_axmz)&
-            +fnamez(n,iprocz,idiag_bymz)*fnamez(n,iprocz,idiag_aymz))
+          ambmz_tmp=fact*( fnamez(n,iprocz,idiag_bxmz)*fnamez(n,iprocz,idiag_axmz) &
+                          +fnamez(n,iprocz,idiag_bymz)*fnamez(n,iprocz,idiag_aymz))
           if (z_allprocs(n,iprocz)>=zequator) then
             ambmzh(2)=ambmzh(2)+ambmz_tmp
           else
@@ -8252,8 +8141,7 @@ module Magnetic
 !  Finally, set first to false
 !
       call save_name(bmz_beltrami_phase,idiag_bmzph)
-      if (idiag_bmzphe/=0) &
-          call save_name(abs(bmz_belphase1-bmz_belphase2),idiag_bmzphe)
+      if (idiag_bmzphe/=0) call save_name(abs(bmz_belphase1-bmz_belphase2),idiag_bmzphe)
       first=.false.
 !
     endsubroutine calc_bmz_beltrami_phase
@@ -8643,8 +8531,7 @@ module Magnetic
         do l=1,mx; do m=1,my; do n=1,mz
           r2=x(l)**2+y(m)**2
           xi2=r2/(r2+z(n)**2)
-          A_phi=hypergeometric2F1((1-mu)/2,(2+mu)/2,2.0,xi2,tol) &
-               *sqrt(xi2)*sqrt(r2+z(n)**2)**mu/B1
+          A_phi=hypergeometric2F1((1-mu)/2,(2+mu)/2,2.0,xi2,tol)*sqrt(xi2)*sqrt(r2+z(n)**2)**mu/B1
 !
           Ax_ext(l,m,n)=-y(m)*A_phi/sqrt(r2)
           Ay_ext(l,m,n)= x(l)*A_phi/sqrt(r2)
@@ -8654,8 +8541,7 @@ module Magnetic
 !
 !  calculate external magnetic field
 !
-      if (lroot.and.ip<=5) &
-        print*,'FORCE_FREE_JET: calculating the external magnetic field'
+      if (lroot.and.ip<=5) print*,'FORCE_FREE_JET: calculating the external magnetic field'
 !
       do n=n1,n2
       do m=m1,m2
@@ -8804,24 +8690,18 @@ module Magnetic
           ! debug checks -- look at a pencil near the centre...
               if (ip<=4 .and. imn==(ny+1)*nz/2) then
                  print*,'r_int,r_ext',r_int,r_ext
-                 write(*,'(a45,2i6,2f15.7)') &
-                      'geo_benchmark_B: minmax(r_mn), imn, iproc:', &
+                 write(*,'(a45,2i6,2f15.7)') 'geo_benchmark_B: minmax(r_mn), imn, iproc:', &
                       iproc, imn, minval(r_mn), maxval(r_mn)
-                 write(*,'(a45,2i6,2f15.7)') &
-                      'geo_benchmark_B: minmax(theta_mn), imn, iproc:', &
+                 write(*,'(a45,2i6,2f15.7)') 'geo_benchmark_B: minmax(theta_mn), imn, iproc:', &
                       iproc, imn, minval(theta_mn), maxval(theta_mn)
-                 write(*,'(a45,2i6,2f15.7)') &
-                      'geo_benchmark_B: minmax(phi_mn), imn, iproc:', &
+                 write(*,'(a45,2i6,2f15.7)') 'geo_benchmark_B: minmax(phi_mn), imn, iproc:', &
                       iproc, imn, minval(phi_mn), maxval(phi_mn)
-                 write(*,'(a45,2i6,2f15.7)') &
-                      'geo_benchmark_B: minmax(ar), imn, iproc:', &
+                 write(*,'(a45,2i6,2f15.7)') 'geo_benchmark_B: minmax(ar), imn, iproc:', &
                       iproc, imn, minval(ar), maxval(ar)
                  write(*,'(a45,2i6,2f15.7)') &
-                      'geo_benchmark_B: minmax(atheta), imn, iproc:', &
-                      iproc, imn, minval(atheta), maxval(atheta)
+                      'geo_benchmark_B: minmax(atheta), imn, iproc:', iproc, imn, minval(atheta), maxval(atheta)
                  write(*,'(a45,2i6,2f15.7)') &
-                      'geo_benchmark_B: minmax(aphi), imn, iproc:', &
-                      iproc, imn, minval(aphi), maxval(aphi)
+                      'geo_benchmark_B: minmax(aphi), imn, iproc:', iproc, imn, minval(aphi), maxval(aphi)
               endif
 !
            case ('geo-benchmark-case2')
@@ -8832,7 +8712,7 @@ module Magnetic
               exit
 !
            case default
-              call fatal_error("geo_benchmark_B",'case '//trim(initaa(j))//' not defined!')
+              call fatal_error("geo_benchmark_B",'no such initaa: '//trim(initaa(j)))
            endselect
         enddo
         f(l1:l2,m,n,iax)=sin(theta_mn)*cos(phi_mn)*ar + cos(theta_mn)*cos(phi_mn)*atheta - sin(phi_mn)*aphi
@@ -8842,9 +8722,9 @@ module Magnetic
 !
 !
      if (ip<=14) then
-        print*,'geo_benchmark_B: minmax(ax) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iax)),maxval(f(l1:l2,m1:m2,n1:n2,iax))
-        print*,'geo_benchmark_B: minmax(ay) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iay)),maxval(f(l1:l2,m1:m2,n1:n2,iay))
-        print*,'geo_benchmark_B: minmax(az) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iaz)),maxval(f(l1:l2,m1:m2,n1:n2,iaz))
+        print*,'geo_benchmark_B: minmax(ax) on iproc: ',iproc,minval(f(l1:l2,m1:m2,n1:n2,iax)),maxval(f(l1:l2,m1:m2,n1:n2,iax))
+        print*,'geo_benchmark_B: minmax(ay) on iproc: ',iproc,minval(f(l1:l2,m1:m2,n1:n2,iay)),maxval(f(l1:l2,m1:m2,n1:n2,iay))
+        print*,'geo_benchmark_B: minmax(az) on iproc: ',iproc,minval(f(l1:l2,m1:m2,n1:n2,iaz)),maxval(f(l1:l2,m1:m2,n1:n2,iaz))
      endif
 !
     endsubroutine geo_benchmark_B
@@ -8966,11 +8846,9 @@ module Magnetic
                 - tanh((z - eta_z0)/eta_zwidth))
 !
 ! its gradient:
-          if (present(geta_z)) then
-             geta_z = -eta/(2.*eta_zwidth) * &
+          if (present(geta_z)) geta_z = -eta/(2.*eta_zwidth) * &
                ((tanh((z + eta_z0)/eta_zwidth))**2. &
                -(tanh((z - eta_z0)/eta_zwidth))**2.)
-          endif
 !
 !  Single tanh step function
 !
@@ -9501,10 +9379,10 @@ module Magnetic
       logical :: error
 !
       error = read_persist ('MAGNETIC_PHASE', phase_beltrami)
-      if (lroot .and. .not. error) print *, 'input_persist_magnetic: phase_beltrami = ', phase_beltrami
+      if (lroot .and. .not. error) print *,'input_persist_magnetic: phase_beltrami = ',phase_beltrami
 !
       error = read_persist ('MAGNETIC_AMPL', ampl_beltrami)
-      if (lroot .and. .not. error) print *, 'input_persist_magnetic: ampl_beltrami = ', ampl_beltrami
+      if (lroot .and. .not. error) print *,'input_persist_magnetic: ampl_beltrami = ',ampl_beltrami
 !
     endsubroutine input_persist_magnetic
 !***********************************************************************
@@ -9862,10 +9740,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jxbmx',idiag_jxbmx)
         call parse_name(iname,cname(iname),cform(iname),'jxbmy',idiag_jxbmy)
         call parse_name(iname,cname(iname),cform(iname),'jxbmz',idiag_jxbmz)
-        call parse_name(iname,cname(iname),cform(iname),'vmagfricmax',&
-                       idiag_vmagfricmax)
-        call parse_name(iname,cname(iname),cform(iname),'vmagfricrms',&
-                       idiag_vmagfricrms)
+        call parse_name(iname,cname(iname),cform(iname),'vmagfricmax',idiag_vmagfricmax)
+        call parse_name(iname,cname(iname),cform(iname),'vmagfricrms',idiag_vmagfricrms)
         call parse_name(iname,cname(iname),cform(iname),'uxbcmx',idiag_uxbcmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbcmy',idiag_uxbcmy)
         call parse_name(iname,cname(iname),cform(iname),'uxbsmx',idiag_uxbsmx)
@@ -10060,16 +9936,11 @@ module Magnetic
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bybzmx',idiag_bybzmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'betamx',idiag_betamx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'beta2mx',idiag_beta2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'jxbrxmx',idiag_jxbrxmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'jxbrymx',idiag_jxbrymx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'jxbrzmx',idiag_jxbrzmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'mflux_x',idiag_mflux_x)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'etatotalmx',idiag_etatotalmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'jxbrxmx',idiag_jxbrxmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'jxbrymx',idiag_jxbrymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'jxbrzmx',idiag_jxbrzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'mflux_x',idiag_mflux_x)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'etatotalmx',idiag_etatotalmx)
      enddo
 !
 !  Check for those quantities for which we want xz-averages.
@@ -10078,26 +9949,16 @@ module Magnetic
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'bxmy',idiag_bxmy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'bymy',idiag_bymy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'bzmy',idiag_bzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'bx2my',idiag_bx2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'by2my',idiag_by2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'bz2my',idiag_bz2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'bxbymy',idiag_bxbymy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'bxbzmy',idiag_bxbzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'bybzmy',idiag_bybzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'jxbrxmy',idiag_jxbrxmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'jxbrymy',idiag_jxbrymy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'jxbrzmy',idiag_jxbrzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'mflux_y',idiag_mflux_y)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bx2my',idiag_bx2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'by2my',idiag_by2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bz2my',idiag_bz2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bxbymy',idiag_bxbymy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bxbzmy',idiag_bxbzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'bybzmy',idiag_bybzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'jxbrxmy',idiag_jxbrxmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'jxbrymy',idiag_jxbrymy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'jxbrzmy',idiag_jxbrzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'mflux_y',idiag_mflux_y)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
@@ -10173,8 +10034,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'e3xamz1',idiag_e3xamz1)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'e3xamz2',idiag_e3xamz2)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'e3xamz3',idiag_e3xamz3)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'etatotalmz',idiag_etatotalmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'etatotalmz',idiag_etatotalmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epsMmz',idiag_epsMmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Rmmz',idiag_Rmmz)
       enddo
@@ -10333,8 +10193,8 @@ module Magnetic
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'jb',ivid_jb)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'beta',ivid_beta1)
         if (ivid_beta1/=0) then
-          call warning('rprint_magnetic',"The 'beta' slice was renamed to 'beta1'. "// &
-                       achar(10)//"Update the label in your video.in file.")
+          call warning('rprint_magnetic',"'beta' slice was renamed to 'beta1'. "// &
+                       achar(10)//"Update the label in your video.in.")
         else
           call parse_name(inamev,cnamev(inamev),cformv(inamev),'beta1',ivid_beta1)
         endif
@@ -10404,8 +10264,8 @@ module Magnetic
         call mpibcast_real(vArms)
       endif
 !
-      if (bthresh_per_brms/=0) then
-        call vecout_finalize(trim(directory)//'/bvec',41,nbvec)
+      if (ldiagnos.and.bthresh_per_brms/=0) then
+        call vecout_finalize(41,trim(directory)//'/bvec',nbvec)
         call calc_bthresh
       endif
 
@@ -10626,7 +10486,7 @@ module Magnetic
             B_ext_out(2) = B_ext(1) * s + B_ext(2) * c
             B_ext_out(3) = B_ext(3)
           else coord1
-            call not_implemented('get_bext','precession of the external field for curvilinear coordinates')
+            call not_implemented('get_bext','precession of external field for curvilinear coordinates')
           endif coord1
         else precess
 !
@@ -10722,5 +10582,3 @@ module Magnetic
     endsubroutine pushdiags2c
 !***********************************************************************
 endmodule Magnetic
-
-
