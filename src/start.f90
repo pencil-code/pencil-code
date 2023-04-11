@@ -511,7 +511,7 @@ program start
   if (lsmooth_farray) then
     if (iux .eq. 0) call fatal_error('start','cannot use smooth if iux is zero')
     if (iaz .eq. 0) call fatal_error('start','cannot use smooth if iaz is zero')
-    call smooth(f,iux,iaz)
+    call smooth(f,iux,iaz,.true.,farray_smooth_width)
     call update_ghosts(f)
   endif
 !
