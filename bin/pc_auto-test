@@ -969,17 +969,17 @@ sub check_cmd_result {
     if (($phase eq 'starting') || ($phase eq 'running')) {
         # Check for missing MPI option "--oversubscribe".
         if ($msg =~ /use the [\-]*oversubscribe option/is) {
-            my_ok(0, 1, "Not enough CPU cores! Try 'mpiexec' with the '--oversubscribe' option.", $dir, "starting");
+            my_ok(0, 1, "Not enough CPU cores! Try 'mpiexec' with the '--oversubscribe' option.", $dir, $phase);
             return;
         }
 
         # Check for broken pencil check or floating-point exception
         if ($msg =~ /^\s*pencil_consistency_check:.*?\s+failed([\s,.]|$)/im) {
-            my_ok(0, 1, "Pencil consistency check failed.", $dir, "starting");
+            my_ok(0, 1, "Pencil consistency check failed.", $dir, $phase);
             return;
         }
         if ($msg =~ /floating[\s\-]point exception([\s:.]|$)/is) {
-            my_ok(0, 1, "Floating-point exception.", $dir, "starting");
+            my_ok(0, 1, "Floating-point exception.", $dir, $phase);
             return;
         }
     }
