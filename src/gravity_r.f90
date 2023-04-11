@@ -406,6 +406,12 @@ module Gravity
 !
       endselect
 !
+!  Share g_r, cpot, and cpot2
+!
+      call put_shared_variable('g_r',g_r)
+      call put_shared_variable('cpot',cpot)
+      call put_shared_variable('cpot2',cpot2)
+!
     endsubroutine initialize_gravity
 !***********************************************************************
     subroutine read_gravity_init_pars(iostat)
