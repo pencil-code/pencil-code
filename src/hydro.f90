@@ -1122,7 +1122,16 @@ module Hydro
 !  that the module can request the right pencils.
 !
       do j=1,3
-        if (borderuu(j)/='nothing') call request_border_driving(borderuu(j))
+!
+        select case (borderuu(j))
+        case ('zero','0','constant','initial-condition')
+          call request_border_driving(borderuu(j))
+        case ('nothing')
+          if (lroot.and.ip<=5) print*,"set_border_hydro: borderuu='nothing'"
+        case default
+          call fatal_error('initialize_hydro','No such borderuu: '//trim(borderuu(j)))
+        end select
+
       enddo
 !
 !  Hand over Coriolis force to Particles_drag.
@@ -5162,16 +5171,12 @@ module Hydro
           call set_border_initcond(f,ju,f_target(:,j))
 !
         case ('nothing')
-          if (lroot.and.ip<=5) print*,"set_border_hydro: borderuu='nothing'"
+          cycle
 !
-        case default
-          call fatal_error('set_border_hydro','no such borderuu: '//trim(borderuu(j)))
         endselect
 
-        if (borderuu(j)/='nothing') then
-          ju=j+iuu-1
-          call border_driving(f,df,p,f_target(:,j),ju)
-        endif
+        ju=j+iuu-1
+        call border_driving(f,df,p,f_target(:,j),ju)
 !
       enddo
 !

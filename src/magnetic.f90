@@ -2029,10 +2029,8 @@ module Magnetic
 !
 !  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
 !
-        case ('Beltrami-general')
-               call beltrami_general(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),phase_aa(j))
-        case ('Beltrami-x')
-               call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
+        case ('Beltrami-general'); call beltrami_general(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),phase_aa(j))
+        case ('Beltrami-x'); call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
         case ('Beltrami-xy-samehel')
                call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
                call beltrami(amplaa(j),f,iaa,KY=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
@@ -2045,15 +2043,11 @@ module Magnetic
         case ('Beltrami-yy')
                call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
                call beltrami(amplaa(j),f,iaa,KX=2*kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
-        case ('Beltrami-y')
-               call beltrami(amplaa(j),f,iaa,KY=ky_aa(j),phase=phasey_aa(j),sigma=relhel_aa)
-        case ('Beltrami-z')
-               call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j), &
-                   sigma=relhel_aa,z0=z0aa,width=widthaa(1))
-        case ('bihelical-z')
-               call bihelical(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j))
-        case ('bihelical-z-sym')
-               call bihelical(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j),sym=.true.)
+        case ('Beltrami-y'); call beltrami(amplaa(j),f,iaa,KY=ky_aa(j),phase=phasey_aa(j),sigma=relhel_aa)
+        case ('Beltrami-z'); call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j), &
+                                           sigma=relhel_aa,z0=z0aa,width=widthaa(1))
+        case ('bihelical-z'); call bihelical(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j))
+        case ('bihelical-z-sym'); call bihelical(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j),sym=.true.)
         case ('Beltrami-z-old'); call beltrami_old(amplaa(j),f,iaa,KZ=-kz_aa(j),phase=phasez_aa(j))
         case ('Beltrami-z-complex'); call beltrami_complex(amplaa(j),f,iaa,KZ=-kz_aa(j),phase=phasez_aa(j))
         case ('Beltrami-x-equ'); call beltrami(amplaa(j),f,iaa,KZ=-kz_aa(j),phase=phasez_aa(j),KX2=2*pi/Lxyz(1))
@@ -2422,11 +2416,7 @@ module Magnetic
         case('from-zaverage')
           call read_zaver(f,iax,iaz,source_zav,nzav,indzav)
         case default
-!
-!  Catch unknown values.
-!
           call fatal_error('init_aa','no such init_aa: "'//trim(initaa(j))//'"')
-!
         endselect
 !
 !  End loop over initial conditions.
