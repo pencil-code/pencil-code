@@ -30,7 +30,7 @@
 #include "../boundcond_c.h"             // provides boundconds[xyz] etc.
 #include "../mpicomm_c.h"               // provides finalize_sendrcv_bdry
 //#include "diagnostics/diagnostics.h"
-#ifdef PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS 
   #include "loadStore.h"
 #endif
 #if LFORCING
@@ -98,7 +98,7 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
     if (early_finalize) {
     // MPI communication has already finished, hence the full domain can be advanced.
       if (!full) {
-#ifdef PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS 
           loadOuterHalos(mesh);
 #else
           acLoad(mesh);
@@ -148,7 +148,7 @@ printf("isubstep= %d\n", isubstep);
       acIntegrateStep(isubstep-1, dt);
       acSynchronize();
       acNodeSwapBuffers(node); 
-#ifdef PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS 
       storeInnerHalos(mesh);
 #else
       acStore(&mesh);
@@ -163,7 +163,7 @@ printf("isubstep= %d\n", isubstep);
         if (l0) {printf("start,end= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);}
         acIntegrateStepWithOffset(isubstep-1,dt,start,end);                          // +1 shift because end is exclusive
       }
-#ifdef PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS 
       int iarg1=1, iarg2=NUM_VTXBUF_HANDLES; 
       finalize_isendrcv_bdry((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
       boundconds_y_c((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
@@ -336,7 +336,7 @@ void loadProfiles(AcMeshInfo & config){
 extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
 {
     //Setup configurations used for initializing and running the GPU code
-#ifdef PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS 
         initLoadStore();
 #endif
     	setupConfig(mesh.info);
@@ -368,7 +368,7 @@ printf("store all %d \n",res); fflush(stdout);
 /***********************************************************************************************/
 extern "C" void finalizeGPU()
 {
-#ifdef PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS 
        finalLoadStore();
 #endif
     // Deallocate everything on the GPUs and reset
