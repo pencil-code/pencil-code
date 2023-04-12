@@ -432,8 +432,8 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule/src
   adddir $src/astaroth/submodule/src/core
   adddir $src/astaroth/submodule/src/core/kernels
-  adddir $src/astaroth/submodule/src/standalone
-  adddir $src/astaroth/submodule/src/standalone/model
+#  adddir $src/astaroth/submodule/src/standalone
+#  adddir $src/astaroth/submodule/src/standalone/model
   adddir $src/astaroth/submodule/src/utils
 #  adddir $src/astaroth/submodule/scripts
 #  adddir $src/astaroth/submodule/acc
@@ -481,9 +481,9 @@ $srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \
 $srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cc \
 $srcdir/astaroth/submodule/src/utils/*.h $srcdir/astaroth/submodule/src/utils/*.c $srcdir/astaroth/submodule/src/utils/CMakeLists.txt \
 $srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/src/core/kernels/* \
-$srcdir/astaroth/submodule/src/standalone/*.h $srcdir/astaroth/submodule/src/standalone/*.cc \
-$srcdir/astaroth/submodule/src/standalone/CMakeLists.txt \
-$srcdir/astaroth/submodule/src/standalone/model/*.cc $srcdir/astaroth/submodule/src/standalone/model/*.h \
+#$srcdir/astaroth/submodule/src/standalone/*.h $srcdir/astaroth/submodule/src/standalone/*.cc \
+#$srcdir/astaroth/submodule/src/standalone/CMakeLists.txt \
+#$srcdir/astaroth/submodule/src/standalone/model/*.cc $srcdir/astaroth/submodule/src/standalone/model/*.h \
 $srcdir/astaroth/submodule/acc/*.sh $srcdir/astaroth/submodule/acc/src/* $srcdir/astaroth/submodule/acc/pc_mhd_solver/* \
 $srcdir/astaroth/submodule/acc/pencil/*.h $srcdir/astaroth/submodule/acc/stdlib/*.h
   do
