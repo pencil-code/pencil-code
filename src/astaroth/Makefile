@@ -1,9 +1,3 @@
-SOURCES = gpu_astaroth.cc
-# for packed data transfer:
-SOURCES += loadStore.cc
-
-OBJECTS = $(SOURCES:.cc=.o) 
-
 # Settings for taito-gpu
 CUFLAGS = 
 #-gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 
@@ -38,8 +32,14 @@ else
   PREC=sgl
   CMAKE_PREC = 'DOUBLE_PRECISION=OFF'
 endif
-ENVIRON += -DPACKED_DATA_TRANSFERS=ON
-#ENVIRON += -DPACKED_DATA_TRANSFERS=OFF
+ENVIRON += -DPACKED_DATA_TRANSFERS=1
+#ENVIRON += -DPACKED_DATA_TRANSFERS=0
+
+SOURCES = gpu_astaroth.cc
+# for packed data transfer (otherwise comment out):
+SOURCES += loadStore.cc
+
+OBJECTS = $(SOURCES:.cc=.o) 
 
 CCFLAGS = $(OPTFLAGS) -std=c++11 -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -g -G -lm
 #CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
@@ -61,7 +61,7 @@ astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_modu
 astaroth_libs: $(PC_HEADERS)
 	mkdir -p submodule/build && cd submodule/build && \
 	export DSL_MODULE=$(DSL_MODULE_DIR); cmake -DMULTIGPU_ENABLED=OFF -DBUILD_SHARED=ON -DSINGLEPASS_INTEGRATION=OFF \
-              -DPACKED_DATA_TRANSFERS=ON -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=DEBUG -DADJACENT_VERTEX_BUFFERS=ON .. \
+              -DPACKED_DATA_TRANSFERS=ON -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=DEBUG -DADJACENT_VERTEX_BUFFERS=OFF .. \
 	&& make -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
 
