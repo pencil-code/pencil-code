@@ -787,7 +787,7 @@ module Hydro
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: Omegav=0.
   real, dimension(nx) :: Fmax,advec_uu=0.
-  real :: t_vart=0.
+  real :: t_vart=0., fade_fact
 !$omp THREADPRIVATE(advec_uu)
 !
   real, dimension (nx) :: prof_amp1, prof_amp2
@@ -1025,25 +1025,16 @@ module Hydro
         enddo
       endif
 !
-      ! Default value of 'tfade_start' is tdamp/2 for faded damping
+! Default value of 'tfade_start' is tdamp/2 for faded damping.
+!
       if (.not. ldamp_fade .and. (tfade_start >= 0.0) .and. (tdamp > 0.0)) ldamp_fade = .true.
       if (ldamp_fade .and. (tfade_start == -1.0)) tfade_start = 0.5 * tdamp
       if (ldamp_fade .and. (tfade_start >= tdamp) .and. (tdamp > 0.0)) &
           call fatal_error ('initialize_hydro', 'Please set tfade_start < tdamp')
-      call put_shared_variable ('dampu', dampu, caller='initialize_hydro')
+
       call put_shared_variable ('tdamp', tdamp)
       call put_shared_variable ('ldamp_fade', ldamp_fade)
       call put_shared_variable ('tfade_start', tfade_start)
-!
-!  r_int and r_ext override rdampint and rdampext if both are set
-!
-      if (dampuint /= 0.) then
-        if (r_int > epsi) then
-          rdampint = r_int
-        elseif (rdampint <= epsi) then
-          write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
-        endif
-      endif
 
       if (Omega/=0.) then
 !
@@ -1069,6 +1060,16 @@ module Hydro
 !
 !  damping parameters for damping velocities outside an embedded sphere
 !  04-feb-2008/dintrans: corrected because otherwise rdampext=r_ext all the time
+!
+!  r_int and r_ext override rdampint and rdampext if both are set
+!
+      if (dampuint /= 0.) then
+        if (r_int > epsi) then
+          rdampint = r_int
+        elseif (rdampint <= epsi) then
+          write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
+        endif
+      endif
 !
       if (dampuext /= 0.0) then
 !       if (r_ext < impossible) then
@@ -2579,15 +2580,11 @@ module Hydro
 !
       if (lconservative) then
         f(:,:,:,iTij:iTij+5)=0.
-        if (llorentz_as_aux) then
-          f(:,:,:,ilorentz)=0.
-        endif
+        if (llorentz_as_aux) f(:,:,:,ilorentz)=0.
 !
 !  Initialize Higgsless field
 !
-        if (lhiggsless) then
-          f(:,:,:,ihless)=.75*alpha_hless
-        endif
+        if (lhiggsless) f(:,:,:,ihless)=.75*alpha_hless
       endif
 !
     endsubroutine init_uu
@@ -3113,7 +3110,7 @@ module Hydro
 ! der6u_res
       if (lpenc_loc(i_der6u_res)) then
         if (lcartesian_coords) call not_implemented("calc_pencils_hydro_nonlinear", &
-                  "pencil der6u_res for Cartesian coordinates")
+                                                    "pencil der6u_res for Cartesian coordinates")
         do j=1,3
           ju=j+iuu-1
           do i=1,3
@@ -4055,9 +4052,9 @@ module Hydro
         endif
         if (idiag_divrhourms/=0) call sum_mn_name((p%rho*p%divu+p%ugrho)**2,idiag_divrhourms,lsqrt=.true.)
         if (idiag_divrhoumax/=0) call max_mn_name(p%rho*p%divu+p%ugrho,idiag_divrhoumax)
-        if (idiag_uxm/=0)     call sum_mn_name(p%uu(:,1),idiag_uxm)
-        if (idiag_uym/=0)     call sum_mn_name(p%uu(:,2),idiag_uym)
-        if (idiag_uzm/=0)     call sum_mn_name(p%uu(:,3),idiag_uzm)
+        call sum_mn_name(p%uu(:,1),idiag_uxm)
+        call sum_mn_name(p%uu(:,2),idiag_uym)
+        call sum_mn_name(p%uu(:,3),idiag_uzm)
         if (idiag_uzcx10m/=0) call sum_mn_name(p%uu(:,3)*cx10*zmask_hyd(n-n1+1),idiag_uzcx10m)
         if (idiag_uzsx10m/=0) call sum_mn_name(p%uu(:,3)*sx10*zmask_hyd(n-n1+1),idiag_uzsx10m)
         if (idiag_ux2m/=0)    call sum_mn_name(p%uu(:,1)**2,idiag_ux2m)
@@ -4095,9 +4092,9 @@ module Hydro
         if (idiag_rux2m/=0) call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
-        if (idiag_ekin/=0) call sum_mn_name(p%ekin,idiag_ekin)
-        if (idiag_EEK/=0) call sum_mn_name(p%ekin,idiag_EEK)
-        if (idiag_ekintot/=0) call integrate_mn_name(p%ekin,idiag_ekintot)
+        call sum_mn_name(p%ekin,idiag_ekin)
+        call sum_mn_name(p%ekin,idiag_EEK)
+        call integrate_mn_name(p%ekin,idiag_ekintot)
         if (idiag_totangmom/=0) call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
                                                      idiag_totangmom,p)
         if (idiag_uxglnrym/=0) call sum_mn_name(p%uu(:,1)*p%glnrho(:,2),idiag_uxglnrym)
@@ -4151,8 +4148,8 @@ module Hydro
 !
         if (ilorentz/=0) then
           if (idiag_gamm/=0) call sum_mn_name(sqrt(abs(f(l1:l2,m,n,ilorentz))),idiag_gamm)
-          if (idiag_gamrms/=0) call sum_mn_name(f(l1:l2,m,n,ilorentz),idiag_gamrms,lsqrt=.true.)
-          if (idiag_gammax/=0) call max_mn_name(f(l1:l2,m,n,ilorentz),idiag_gammax,lsqrt=.true.)
+          call sum_mn_name(f(l1:l2,m,n,ilorentz),idiag_gamrms,lsqrt=.true.)
+          call max_mn_name(f(l1:l2,m,n,ilorentz),idiag_gammax,lsqrt=.true.)
         endif
 !
 !  Total angular momentum in spherical coordinates
@@ -4176,11 +4173,11 @@ module Hydro
 !
 !  Things related to kinetic helicity.
 !
-        if (idiag_ou_int/=0) call integrate_mn_name(p%ou,idiag_ou_int)
-        if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
-        if (idiag_oxum/=0) call sum_mn_name(p%oxu(:,1),idiag_oxum)
+        call integrate_mn_name(p%ou,idiag_ou_int)
+        call sum_mn_name(p%ou,idiag_oum)
+        call sum_mn_name(p%oxu(:,1),idiag_oxum)
         if (idiag_ourms/=0) call sum_mn_name(p%ou**2,idiag_ourms,lsqrt=.true.)
-        if (idiag_oxurms/=0) call sum_mn_name(p%oxu2,idiag_oxurms,lsqrt=.true.)
+        call sum_mn_name(p%oxu2,idiag_oxurms,lsqrt=.true.)
 !
 !  Things related to vorticity.
 !
@@ -4211,8 +4208,8 @@ module Hydro
 !
 !  various vorticity diagnostics
 !
-        if (idiag_omax/=0) call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
-        if (idiag_o2m/=0)  call sum_mn_name(p%o2,idiag_o2m)
+        call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
+        call sum_mn_name(p%o2,idiag_o2m)
         if (idiag_o2u2m/=0)call sum_mn_name(p%o2*p%u2,idiag_o2u2m)
         if (idiag_ox2m/=0) call sum_mn_name(p%oo(:,1)**2,idiag_ox2m)
         if (idiag_oy2m/=0) call sum_mn_name(p%oo(:,2)**2,idiag_oy2m)
@@ -5138,6 +5135,10 @@ module Hydro
       if (lSGS_hydro) call SGS_hydro_after_boundary(f)
 !
       if (ldiagnos.and.othresh_per_orms/=0) call vecout_initialize(41,trim(directory)//'/ovec',novec)
+!
+!  Prepare damping motions in some regions for some time spans if desired.
+!
+      if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) call update_fade_fact
 
     endsubroutine hydro_after_boundary
 !***********************************************************************
@@ -5172,7 +5173,6 @@ module Hydro
 !
         case ('nothing')
           cycle
-!
         endselect
 
         ju=j+iuu-1
@@ -5299,8 +5299,8 @@ module Hydro
 !
 !  Note the minus sign in front of the sin_theta term!
 !
-          c2= 2*Omega*cos(theta*pi/180.)
-          s2=-2*Omega*sin(theta*pi/180.)
+          c2= 2*Omega*cos(theta*dtor)
+          s2=-2*Omega*sin(theta*dtor)
 !
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)+s2*uu(:,3)
@@ -5592,28 +5592,21 @@ module Hydro
 !
     endsubroutine coriolis_xdep
 !***********************************************************************
-    subroutine udamping(f,df,p)
-!
-!  damping terms (artificial, but sometimes useful):
-!
-!  20-nov-04/axel: added cylindrical Couette flow
-!
-      use Diagnostics, only: sum_mn_name
-      use Sub, only: step
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
-      real, dimension (nx) :: pdamp,fint_work,fext_work
-      real, dimension (nx,3) :: fint,fext
-      real, save :: last_t = -1.0, fade_fact
+    subroutine update_fade_fact
+
+      real, save :: last_t = -1.0
       real :: tau
-      integer :: i,j
 !
-!  warn about the damping term
+!  damp motion during time interval 0<t<tdamp.
+!  Damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0).
+!  With ldamp_fade=T, damping coefficient is smoothly fading out
 !
-        if (headtt .and. (dampu /= 0.) .and. (t < tdamp)) then
+      if ((dampu /= 0.) .and. (t < tdamp)) then
+!
+        if (headtt) then
+!
+!  inform about the damping term
+!
           if (ldamp_fade) then
             print*, 'udamping: Damping velocities until time ', tdamp
             print*, 'udamping: with a smooth fade starting at ', tfade_start
@@ -5621,23 +5614,17 @@ module Hydro
             print*, 'udamping: Damping velocities constantly until time ', tdamp
           endif
         endif
-!
-!  1. damp motion during time interval 0<t<tdamp.
-!  Damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0).
-!  With ldamp_fade=T, damping coefficient is smoothly fading out
-!
-        if ((dampu /= 0.) .and. (t < tdamp)) then
-!
-          if (.not. ldamp_fade) then
-            ! no fading => full damping:
-            fade_fact = 1.
-          elseif (t <= tfade_start) then
-            ! before transition => full damping:
-            fade_fact = 1.
-          else
-            ! inside transition => smooth fading:
-            if (last_t /= t) then
-              last_t = t
+
+        if (.not. ldamp_fade) then
+          ! no fading => full damping:
+          fade_fact = 1.
+        elseif (t <= tfade_start) then
+          ! before transition => full damping:
+          fade_fact = 1.
+        else
+          ! inside transition => smooth fading:
+          if (last_t /= t) then
+            last_t = t
 !
 !  smoothly fade out damping according to the following
 !  function of time:
@@ -5658,18 +5645,44 @@ module Hydro
 !  In the interval Tfade_start < t < Tdamp, damping goes smoothly to zero
 !  with continuous derivatives. (The default value for Tfade_start is Tdamp/2.)
 !
-              ! tau is a normalized t, the transition interval is [-0.5, 0.5]:
-              tau = (t-tfade_start) / (tdamp-tfade_start) - 0.5
-              if (tau <= -0.5) then
-                fade_fact = 1.
-              elseif (tau <= 0.5) then
-                fade_fact = 0.5 - tau * (1.5 - 2.0*tau**2)
-              else
-                call fatal_error("udamping","tau is invalid as > 0.5)")
-              endif
+            ! tau is a normalized t, the transition interval is [-0.5, 0.5]:
+            tau = (t-tfade_start) / (tdamp-tfade_start) - 0.5
+            if (tau <= -0.5) then
+              fade_fact = 1.
+            elseif (tau <= 0.5) then
+              fade_fact = 0.5 - tau * (1.5 - 2.0*tau**2)
+            else
+              call fatal_error("udamping","tau is invalid as > 0.5)")
             endif
           endif
+
+        endif
+      endif
+
+    endsubroutine update_fade_fact
+!***********************************************************************
+    subroutine udamping(f,df,p)
 !
+!  damping terms (artificial, but sometimes useful):
+!
+!  20-nov-04/axel: added cylindrical Couette flow
+!
+      use Diagnostics, only: sum_mn_name
+      use Sub, only: step
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: pdamp,fint_work,fext_work
+      real, dimension (nx,3) :: fint,fext
+      integer :: i,j
+!
+!  1. damp motion during time interval 0<t<tdamp.
+!  Damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0).
+!  With ldamp_fade=T, damping coefficient is smoothly fading out
+!
+        if ((dampu /= 0.) .and. (t < tdamp)) then
           if (dampu > 0.0) then
             ! absolute damping per time unit
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - fade_fact*dampu*f(l1:l2,m,n,iux:iuz)
@@ -5708,7 +5721,6 @@ module Hydro
 !  relax outer angular velocity to zero, and
 !  calculate work done to sustain zero rotation on outer cylinder/sphere
 !
-!
           if (lcylinder_in_a_box) then
             pdamp = step(p%rcyl_mn,rdampext,wdamp) ! outer damping profile
           else
@@ -5743,6 +5755,7 @@ module Hydro
               call sum_mn_name(fint_work,idiag_fintm)
             endif
           endif
+!
         endif
 !
     endsubroutine udamping
@@ -6791,7 +6804,6 @@ module Hydro
         case ('uu_sph')
           call assign_slices_vec(slices,uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2, &
                                         uu_sph_xy3,uu_sph_xy4,uu_sph_xz2,uu_sph_r)
-!
       endselect
 !
     endsubroutine get_slices_hydro
@@ -7498,10 +7510,9 @@ module Hydro
 !
       case ('nothing')
 !
-!  no profile matches
-!
       case default
-        if (lroot) print*,'interior_bc_hydro: No such profile ',interior_bc_hydro_profile
+        call fatal_error('interior_bc_hydro','No such interior_bc_hydro_profile: '// &
+                         trim(interior_bc_hydro_profile))
       endselect
 !
     endsubroutine interior_bc_hydro
@@ -7631,18 +7642,16 @@ module Hydro
 !  set u_phi=0 below given radius, i.e. enforce a tachocline in
 !  spherical convection setup
 !
-      case ('tachocline')
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*f(l1:l2,m,n,iuz)
+      case ('tachocline'); df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*f(l1:l2,m,n,iuz)
 !
 !  write differential rotation in terms of Gegenbauer polynomials
 !  Omega = Omega0 + Omega2*P31(costh)/sinth + Omega4*P51(costh)/sinth + ...
 !  Note that P31(theta)/sin(theta) = (3/2) * [1 - 5*cos(theta)^2 ]
 !
       case ('solar_simple')
-      if (lspherical_coords.or.lcartesian_coords) then
+      if (lspherical_coords.or.lcartesian_coords) &
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp1*prof_amp4(m))
 !            -prof_amp1*cos(20.*x(llx))*cos(20.*y(m)) )
-      endif
       if (ldiffrot_test) then
         f(l1:l2,m,n,iux:iuy) = 0.
         if (lspherical_coords.or.lcartesian_coords) f(l1:l2,m,n,iuz) = prof_amp1*prof_amp4(m)
