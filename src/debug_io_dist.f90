@@ -203,14 +203,14 @@ contains
       real :: t_sp   ! t in single precision for backwards compatibility
       character (len=fnlen) :: filename
 !
+!$ if (omp_in_parallel()) return
+!
       filename = trim (datadir_snap)//'/'//trim (file)
       t_sp = t
-      if (ip<9.and.lroot.and.imn==1) &
-           print*,'output_pencil_vect('//filename//'): ndim=',ndim
+      if (ip<9.and.lroot.and.imn==1) print*,'output_pencil_vect('//filename//'): ndim=',ndim
 !
-      if (headt .and. (imn==1)) write(*,'(A)') &
-           'output_pencil: Writing to ' // trim(filename) // &
-           ' for debugging -- this may slow things down'
+      if (headtt) write(*,'(A)') 'output_pencil: Writing to ' // trim(filename) // &
+                                               ' for debugging -- this may slow things down'
 !
        call output_penciled_vect_c(filename, a, ndim, &
                                    imn, mm(imn), nn(imn), t_sp, &
@@ -234,20 +234,19 @@ contains
       real :: t_sp   ! t in single precision for backwards compatibility
       character (len=fnlen) :: filename
 !
+!$ if (omp_in_parallel()) return
+!
       t_sp = t
       filename = trim (datadir_snap)//'/'//trim (file)
       if ((ip<=8) .and. lroot .and. imn==1) &
            print*,'output_pencil_scal('//trim(filename)//')'
 !
-      if (ndim /= 1) &
-           call stop_it("output_pencil_scal: called with scalar field, but ndim/=1")
+      if (ndim /= 1) call stop_it("output_pencil_scal: called with scalar field, but ndim/=1")
 !
-      if (headt .and. (imn==1)) print*, &
-           'output_pencil_scal: Writing to ', trim(filename), &
-           ' for debugging -- this may slow things down'
+      if (headtt) print*, 'output_pencil_scal: Writing to ', trim(filename), &
+                          ' for debugging -- this may slow things down'
 !
-      call output_penciled_scal_c(filename, a, ndim, &
-                                  imn, mm(imn), nn(imn), t_sp, &
+      call output_penciled_scal_c(filename, a, ndim, imn, mm(imn), nn(imn), t_sp, &
                                   nx, ny, nz, nghost, len(filename))
 !
     endsubroutine output_pencil_scal
