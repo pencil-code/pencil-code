@@ -80,22 +80,29 @@ program remesh
   integer, dimension(3) :: layout_src, layout_dst, layout_rem
 
   call mpicomm_init
-  if (any((/divx,divy,divz/)==0)) then
-    if (lroot) print*, 'div[xyz]=0 not allowed!'
-    call mpifinalize
-    stop
+  if (divx<=0) then
+    if (lroot) print*, 'Error: divx<=0 not allowed, set it to 1!'
+    lstop=.true.
+  endif
+  if (divy<=0) then
+    if (lroot) print*, 'Error: divy<=0 not allowed, set it to 1!'
+    lstop=.true.
+  endif
+  if (divz<=0) then
+    if (lroot) print*, 'Error: divz<=0 not allowed, set it to 1!'
+    lstop=.true.
   endif
 
-  if (mod(mulx,divx) == 0 .and. mulx /= 1 ) then
-    if (lroot) print*, 'mulx divisible by divx! Redefine: mulx='//trim(itoa(mulx/divx))//', divx=1'
+  if (mod(mulx,divx) == 0 .and. divx /= 1 ) then
+    if (lroot) print*, 'mulx divisible by divx! Redefine mulx='//trim(itoa(mulx/divx))//', divx=1!'
     lstop=.true.
   endif
-  if (mod(muly,divy) == 0 .and. muly /= 1) then
-    if (lroot) print*, 'muly divisible by divy! Redefine: muly='//trim(itoa(muly/divy))//', divy=1'
+  if (mod(muly,divy) == 0 .and. divy /= 1) then
+    if (lroot) print*, 'muly divisible by divy! Redefine muly='//trim(itoa(muly/divy))//', divy=1!'
     lstop=.true.
   endif
-  if (mod(mulz,divz) == 0 .and. mulz /= 1 ) then
-    if (lroot) print*, 'mulz divisible by divz! Redefine: mulz='//trim(itoa(mulz/divz))//', divz=1'
+  if (mod(mulz,divz) == 0 .and. divz /= 1 ) then
+    if (lroot) print*, 'mulz divisible by divz! Redefine mulz='//trim(itoa(mulz/divz))//', divz=1!'
     lstop=.true.
   endif
 
@@ -176,9 +183,9 @@ program remesh
 !
 !  Print out parameters of conversion
 !
-    print*,'increase processor numbers in [xyz] by mul[xyz]=',mulx,muly,mulz
-    print*,'decrease processor numbers in [xyz] by div[xyz]=',divx,divy,divz
-    print*,'remesh by factor remesh_par[xyz]=',remesh_parx,remesh_pary,remesh_parz
+    print*,'Will increase processor numbers in [xyz] by mul[xyz]=',mulx,muly,mulz
+    print*,'Will decrease processor numbers in [xyz] by div[xyz]=',divx,divy,divz
+    print*,'Will remesh by factor remesh_par[xyz]=',remesh_parx,remesh_pary,remesh_parz
     print*,'destination='//destination
     print*,'varfile='//varfile
 !

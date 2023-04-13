@@ -28,7 +28,7 @@
 !
 ! integer, parameter :: mvec=3
 !
-!
+!--------------------------------------------------------------------------------------------
 ! For producing varfiles, which can be (distributedly) read by Astaroth, set lastaroth=.true.
 ! "fields" needs to be set to a proper array of names (see examples).
 !
@@ -38,4 +38,4 @@
   ! if needed, additionally 
   !'VTXBUF_AX','VTXBUF_AY','VTXBUF_AZ'/)
   ! etc.
-
+!--------------------------------------------------------------------------------------------
