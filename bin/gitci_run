@@ -49,6 +49,16 @@ if [ -f $rundir/parameters.py ];  then
   git add -f $rundir/parameters.py
 fi
 
+# parameters.pro if it exists
+if [ -f $rundir/parameters.pro ];  then
+  git add -f $rundir/parameters.pro
+fi
+
+# power-spectrum data if those exist
+if [ -f $rundir/data/power_kin.dat ];  then
+  git add -f $rundir/data/power*.dat
+fi
+
 # Commit and push everything
 git commit -m 'Added run '$PWD''
 git push
