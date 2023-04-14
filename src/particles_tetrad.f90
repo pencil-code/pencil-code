@@ -34,7 +34,7 @@ module Particles_tetrad
   real :: rsmall = 1e-6
 !
   namelist /particles_tetrad_init_pars/ &
-  rsmall
+       rsmall
 !
   namelist /particles_tetrad_run_pars/ &
        rsmall
@@ -48,6 +48,7 @@ module Particles_tetrad
   integer :: idiag_VelVolpm           ! DIAG_DOC: Mean of positive volume of the tetrads in velocity space
   integer :: idiag_VelVolnm           ! DIAG_DOC: Mean of negative volume of the tetrads in velocity space.
   integer :: idiag_pspaceVolm         !DIAG_DOC : mean of the phase-space volume always positive.
+      
 contains
 !***********************************************************************
     subroutine register_particles_tetrad()
@@ -62,7 +63,6 @@ contains
 !
 !  Indices for first particle
 !
-      
       call append_npvar('idR11',idR11)
       call append_npvar('idR12',idR12)
       call append_npvar('idR13',idR13)
@@ -72,7 +72,6 @@ contains
 !
 !  Indices for second particle
 !
-      
       call append_npvar('idR21',idR21)
       call append_npvar('idR22',idR22)
       call append_npvar('idR23',idR23)
@@ -82,7 +81,6 @@ contains
 !
 !  Indices for third particle
 !
-      
       call append_npvar('idR31',idR31)
       call append_npvar('idR32',idR32)
       call append_npvar('idR33',idR33)
@@ -103,6 +101,7 @@ contains
 !  Set indices for velocity gradient matrix at grid points
 !
       call farray_register_auxiliary('guij',iguij,communicated=.true.,array=9)
+!
       igu11=iguij; igu12=iguij+1; igu13=iguij+2
       igu21=iguij+3; igu22=iguij+4; igu23=iguij+5
       igu31=iguij+6; igu32=iguij+7; igu33=iguij+8
@@ -114,9 +113,7 @@ contains
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!
       use General, only: keep_compiler_quiet
-      use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -131,24 +128,22 @@ contains
 !***********************************************************************
     subroutine init_particles_tetrad(f,fp,ineargrid)
 !
-      use General, only: keep_compiler_quiet,random_number_wrapper
-      use Mpicomm, only:  mpiallreduce_sum_int
-      use Hydro, only: calc_gradu
+      use General, only: keep_compiler_quiet
+!
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
-!
-      if (lroot) then
-         print*, 'init_particles_tetrad: setting init. cond.'
-      endif
+      if (lroot) print*, 'init_particles_tetrad: setting init. cond.'
       call reinitialize_tetrad(fp)
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine init_particles_tetrad
 !***********************************************************************
     subroutine dtetrad_dt(f,df,fp,dfp,ineargrid)
 !
-      use Particles_radius, only: get_stbin
       use Sub, only: ScalarTripleProduct
       use Diagnostics
 !
@@ -158,7 +153,7 @@ contains
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
       logical :: lheader, lfirstcall=.true.
-      integer :: ip,iStbin,k
+      integer :: ip,k
       real :: Vol,VelVol
       real,dimension(3) :: dR1,dR2,dR3,dV1,dV2,dV3
 !
@@ -189,13 +184,11 @@ contains
          fp(ip,iVelVolp) = VelVol
       enddo
 !      
-        if (ldiagnos) then
-           if (idiag_TVolm/=0) &
-                call sum_par_name(abs(fp(1:npar_loc,iVolp)),idiag_TVolm)
-                call sum_par_name(abs(fp(1:npar_loc,iVelVolp)),idiag_VelVolm)
-                call sum_par_name(&
-                  abs(fp(1:npar_loc,iVelVolp)*fp(1:npar_loc,iVolp)),idiag_pspaceVolm)
-        endif
+      if (ldiagnos) then
+        if (idiag_TVolm/=0) call sum_par_name(abs(fp(1:npar_loc,iVolp)),idiag_TVolm)
+        call sum_par_name(abs(fp(1:npar_loc,iVelVolp)),idiag_VelVolm)
+        call sum_par_name(abs(fp(1:npar_loc,iVelVolp)*fp(1:npar_loc,iVolp)),idiag_pspaceVolm)
+      endif
 !
       if (lfirstcall) lfirstcall=.false.
 !
@@ -213,7 +206,6 @@ contains
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
       real :: taup1
-      logical :: lheader,lfirstcall=.true.
       intent (inout) :: df, dfp,ineargrid
       intent (in) :: k,taup1
       real, dimension(9) :: Sij_lin
@@ -222,11 +214,9 @@ contains
 !
 !  Identify module.
 !
-      lheader=lfirstcall .and. lroot
-      if (lheader) then
+      if (headtt) then
         print*,'dtetrad_dt_pencil: Calculate dtetrad_dt_pencil'
         print*,'called from dvvp_dt_pencil in the particles_dust module'
-        lfirstcall=.false.
       endif
 !
       dR1=fp(k,idR11:idR13)
@@ -238,8 +228,7 @@ contains
 !
 !  interpolate the gradu matrix to particle positions
 !
-      call interpolate_linear(f,igu11,igu33,fp(k,ixp:izp),Sij_lin,ineargrid(k,:), &
-            0,ipar(k))
+      call interpolate_linear(f,igu11,igu33,fp(k,ixp:izp),Sij_lin,ineargrid(k,:),0,ipar(k))
       call linarray2matrix(Sij_lin,Sijp)
 !
 ! solve dynamical equation
@@ -251,7 +240,6 @@ contains
       dfp(k,idV11:idV13) = taup1*(matmul(Sijp,dR1)-dV1)
       dfp(k,idV21:idV23) = taup1*(matmul(Sijp,dR2)-dV2)
       dfp(k,idV31:idV33) = taup1*(matmul(Sijp,dR3)-dV3)
-!
 ! 
     endsubroutine dtetrad_dt_pencil
 !***********************************************************************
@@ -298,7 +286,6 @@ contains
 !  may-2016/dhruba+akshay: coded
 !
       use Diagnostics
-      use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -329,14 +316,12 @@ contains
     endsubroutine rprint_particles_tetrad
 !***********************************************************************
     subroutine reinitialize_tetrad(fp)
+! 
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer :: ip
-      if (lroot) then
-         print*, 'The tetrads are always reinitialized,'
-         print*, 'even when we restart from earlier runs.'
-      endif
-!
-! 
+
+      if (lroot) &
+         print*, 'The tetrads are always reinitialized even when we restart from earlier runs.'
 !
       do ip=1,npar_loc
          fp(ip,idR11:idR13) = 0.
@@ -350,7 +335,6 @@ contains
          fp(ip,idR31:idR33) = 0.
          fp(ip,idR33) = rsmall
          fp(ip,idV31:idV33) = 0.
-         
 !
          fp(ip,iVolp) = rsmall**3
      enddo

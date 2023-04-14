@@ -53,6 +53,7 @@ module Messages
 !
   character(LEN=2*labellen) :: scaller=''
   character(LEN=linelen) :: message_stored=''
+!
   contains
 !***********************************************************************
     subroutine initialize_messages
@@ -102,10 +103,9 @@ module Messages
           write (*,'(A18)',ADVANCE='NO') "NOT IMPLEMENTED: "
           call terminal_defaultcolor()
           if (present(message)) then
-            write(*,*) trim(scaller) // ": " // trim(message)//'!'
+            write(*,*) trim(scaller)//": "//trim(message)//'!'
           else
-            write(*,*) trim(scaller) // ": " // &
-                "Some feature waits to get implemented -- by you?"
+            write(*,*) trim(scaller)//": "//"Some feature waits to get implemented -- by you?"
           endif
         endif
 !
@@ -134,13 +134,12 @@ module Messages
 !
         if (lroot .or. (ncpus<=16 .and. (message/='')) .or. fatal) then
           call terminal_highlight_fatal_error()
-          write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
-          call terminal_defaultcolor()
           if (scaller=='') then
-            write (*,*) trim(message)//'!!!'
+            write (*,*) "FATAL ERROR: "//trim(message)//'!!!'
           else
-            write (*,*) trim(scaller) // ": " // trim(message)//'!!!'
+            write (*,*) "FATAL ERROR: "//trim(scaller)//": "//trim(message)//'!!!'
           endif
+          call terminal_defaultcolor()
         endif
 !
         if (ldie_onfatalerror) then
@@ -226,7 +225,6 @@ module Messages
 !  17-may-2006/anders: coded
 !
       use General, only: itoa
-      use Mpicomm, only: mpigather_scl_str
 
       character(LEN=linelen), dimension(ncpus) :: messages
       character(LEN=linelen) :: preceding
@@ -600,9 +598,7 @@ module Messages
 !
       integer :: col
 !
-      if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I2,A1)',ADVANCE='no') CHAR(27), '[', col, 'm'
-      endif
+      if (ltermcap_color) write(*,fmt='(A1,A1,I2,A1)',ADVANCE='no') CHAR(27), '[', col, 'm'
 !
     endsubroutine terminal_setfgcolor
 !***********************************************************************
@@ -614,10 +610,8 @@ module Messages
 !
       integer :: col
 !
-      if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_BRIGHT, ';', col, 'm'
-      endif
+      if (ltermcap_color) &
+        write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') CHAR(27), '[', iterm_BRIGHT, ';', col, 'm'
 !
     endsubroutine terminal_setfgbrightcolor
 !***********************************************************************
@@ -627,10 +621,8 @@ module Messages
 !
 !  08-jun-05/tony: coded
 !
-      if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I1,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_DEFAULT, 'm'
-      endif
+      if (ltermcap_color) &
+        write(*,fmt='(A1,A1,I1,A1)',ADVANCE='no') CHAR(27), '[', iterm_DEFAULT, 'm'
 !
     endsubroutine terminal_defaultcolor
 !***********************************************************************
@@ -640,10 +632,8 @@ module Messages
 !
 !  08-jun-05/tony: coded
 !
-      if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_MAGENTA, 'm'
-      endif
+      if (ltermcap_color) write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
+                                  CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_MAGENTA, 'm'
 !
     endsubroutine terminal_highlight_warning
 !***********************************************************************
@@ -653,10 +643,8 @@ module Messages
 !
 !  08-jun-05/tony: coded
 !
-      if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_RED, 'm'
-      endif
+      if (ltermcap_color) write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
+                                  CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_RED, 'm'
 !
     endsubroutine terminal_highlight_error
 !***********************************************************************
@@ -666,10 +654,8 @@ module Messages
 !
 !  08-jun-05/tony: coded
 !
-      if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_RED, 'm'
-      endif
+      if (ltermcap_color) write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
+                                  CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_RED, 'm'
 !
     endsubroutine terminal_highlight_fatal_error
 !***********************************************************************

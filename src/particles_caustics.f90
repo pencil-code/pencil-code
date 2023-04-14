@@ -36,7 +36,7 @@ module Particles_caustics
   real :: TrSigma_Cutoff=-1e10
 !
   namelist /particles_caustics_init_pars/ &
-  dummy
+       dummy
 !
   namelist /particles_caustics_run_pars/ &
        TrSigma_Cutoff
@@ -47,9 +47,10 @@ module Particles_caustics
   integer :: idiag_blowupm=0        ! DIAG_DOC: Mean no. of times $\sigma$ falls below cutoff
   integer :: idiag_lnVpm=0          ! DIAG_DOC: Mean of (logarithm of) Volume around an inertial particle
   integer, dimension(ndustrad)  :: idiag_ncaustics=0
+
 contains
 !***********************************************************************
-    subroutine register_particles_caustics()
+    subroutine register_particles_caustics
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -106,7 +107,7 @@ contains
 !  Stop if there is no velocity to calculate derivatives
 !
       if (.not. (lhydro.or.lhydro_kinematic)) &
-        call fatal_error('initialize_particles_caustics','you must select either hydro or hydro_kinematic')
+        call fatal_error('initialize_particles_caustics','you must select a hydro module')
 !
       call keep_compiler_quiet(f)
 !
@@ -121,10 +122,7 @@ contains
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
-!
-      if (lroot) then
-         print*, 'init_particles_caustics: setting init. cond.'
-      endif
+      if (lroot) print*, 'init_particles_caustics: setting init. cond.'
       call reinitialize_caustics(fp)
 !
     endsubroutine init_particles_caustics
@@ -178,16 +176,12 @@ contains
       enddo
 !      
         if (ldiagnos) then
-           if (idiag_TrSigmapm/=0) &
-                call sum_par_name(fp(1:npar_loc,iPPp),idiag_TrSigmapm)
-           if (idiag_blowupm/=0) &
-                call sum_par_name(fp(1:npar_loc,iblowup),idiag_blowupm)
-           if (idiag_lnVpm/=0) &
-                call sum_par_name(fp(1:npar_loc,ilnVp),idiag_lnVpm)
-           do k=1,ndustrad
-              if (idiag_ncaustics(k)/=0) &
-                   fname(idiag_ncaustics(k))=blowup_Stdep(k)/np_Stdep(k)
-           enddo
+          call sum_par_name(fp(1:npar_loc,iPPp),idiag_TrSigmapm)
+          call sum_par_name(fp(1:npar_loc,iblowup),idiag_blowupm)
+          call sum_par_name(fp(1:npar_loc,ilnVp),idiag_lnVpm)
+          do k=1,ndustrad
+            if (idiag_ncaustics(k)/=0) fname(idiag_ncaustics(k))=blowup_Stdep(k)/np_Stdep(k)
+          enddo
         endif
 !
       if (lfirstcall) lfirstcall=.false.
@@ -206,7 +200,6 @@ contains
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
       real :: taup1
-      logical :: lheader,lfirstcall=.true.
       intent (inout) :: df, dfp,ineargrid
       intent (in) :: k,taup1
       real, dimension(9) :: Sij_lin,Sigma_lin,dSigmap_lin
@@ -214,24 +207,19 @@ contains
 !
 !  Identify module.
 !
-      lheader=lfirstcall .and. lroot
-      if (lheader) then
+      if (headtt) then
         print*,'dcaustics_dt_pencil: Calculate dcaustics_dt_pencil'
         print*,'called from dvvp_dt_pencil in the particles_dust module'
-        lfirstcall=.false.
       endif
 !
-!
 !  Loop over all particles in current pencil.
-!
 !
       Sigma_lin = fp(k,isigmap11:isigmap33)
       call linarray2matrix(Sigma_lin,Sigmap)
 !
 !  interpolate the gradu matrix to particle positions
 !
-      call interpolate_linear(f,igu11,igu33,fp(k,ixp:izp),Sij_lin,ineargrid(k,:), &
-            0,ipar(k))
+      call interpolate_linear(f,igu11,igu33,fp(k,ixp:izp),Sij_lin,ineargrid(k,:),0,ipar(k))
       call linarray2matrix(Sij_lin,Sijp)
 !
 ! solve dynamical equation
@@ -244,7 +232,6 @@ contains
 !
       dfp(k,ilnVp) = Sigmap(1,1)+Sigmap(2,2)+Sigmap(3,3)
 !
-! 
     endsubroutine dcaustics_dt_pencil
 !***********************************************************************
     subroutine read_pcaustics_init_pars(iostat)
@@ -349,8 +336,10 @@ contains
     endsubroutine rprint_particles_caustics
 !***********************************************************************
     subroutine reinitialize_caustics(fp)
+!
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer :: ip
+
       if (lroot) then
          print*, 'The sigmap matrix always starts from zero,'
          print*, 'even when we restart from earlier runs.'
@@ -370,6 +359,7 @@ contains
    endsubroutine reinitialize_caustics
 !***********************************************************************
     subroutine reset_caustics(fp)
+!
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer :: ip
       real :: TrSigma, QSigma, RSigma
@@ -382,6 +372,7 @@ contains
             fp(ip,isigmap11:isigmap33) = 0.
          endif
       enddo
+!
     endsubroutine reset_caustics
 !***********************************************************************
 endmodule Particles_caustics

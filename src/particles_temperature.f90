@@ -44,13 +44,11 @@ module Particles_temperature
   character(len=labellen), dimension(ninit) :: init_particle_temperature='nothing'
 !
   namelist /particles_TT_init_pars/ &
-      init_particle_temperature, init_part_temp, emissivity, cp_part, &
-       ldiffuse_backtemp,ldiffTT
+      init_particle_temperature, init_part_temp, emissivity, cp_part, ldiffuse_backtemp,ldiffTT
 !
   namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
       lrad_part,Twall, lpart_nuss_const,lstefan_flow,lconv_heating, &
-       ldiffuse_backtemp,ldiffTT,rdiffconstTT, &
-       ndiffstepTT,lconst_part_temp
+       ldiffuse_backtemp,ldiffTT,rdiffconstTT, ndiffstepTT,lconst_part_temp
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -76,7 +74,7 @@ module Particles_temperature
       if (lpart_temp_backreac .and. ldiffuse_backtemp) then
         call farray_register_auxiliary('dmpt',idmpt,communicated=.true.)
       elseif (ldiffuse_backtemp .and. .not. lpart_temp_backreac) then
-        call fatal_error('particles_temp:','diffusion of the temperate transfer needs lpart_temp_backreac')
+        call fatal_error('register_particles_TT','diffusion of temperate transfer needs lpart_temp_backreac')
       endif
 !
     endsubroutine register_particles_TT
@@ -91,10 +89,13 @@ module Particles_temperature
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: ndimx,ndimy,ndimz
 ! 
+      if (lpart_temp_backreac .and. ldiffuse_backtemp .and. ldensity_nolog .and. ltemperature_nolog) &
+        call not_implemented('initialize_particles_TT', 'for ldensity_nolog=T, ltemperature_nolog=T')
+!
       call find_weight_array_dims(ndimx,ndimy,ndimz)
 !
       if (allocated(weight_array)) deallocate(weight_array)
-      if (.not. allocated(weight_array)) allocate(weight_array(ndimx,ndimy,ndimz))
+      allocate(weight_array(ndimx,ndimy,ndimz))
       call precalc_weights(weight_array)
 !
       call keep_compiler_quiet(f)
@@ -106,9 +107,6 @@ module Particles_temperature
 !  Initial particle temperature
 !
 !  28-aug-14/jonas+nils: coded
-!
-      use General, only: random_number_wrapper
-      use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mparray) :: fp
@@ -126,14 +124,11 @@ module Particles_temperature
         case ('nothing')
           if (lroot .and. j == 1) print*, 'init_particles: nothing'
         case ('constant')
-          if (lroot) print*, 'init_particles_temp: Constant temperature'
+          if (lroot) print*, 'init_particles_TT: Constant temperature'
           fp(1:npar_loc,iTp) = fp(1:npar_loc,iTp)+init_part_temp
         case default
-          if (lroot) &
-              print*, 'init_particles_temp: No such such value for init_particle_temperature: ', &
-              trim(init_particle_temperature(j))
-          call fatal_error('init_particles_temp','')
-!
+          call fatal_error('init_particles_TT','no such init_particle_temperature: '// &
+                           trim(init_particle_temperature(j)))
         endselect
 !
       enddo
@@ -166,8 +161,6 @@ module Particles_temperature
 !
       if (lpart_temp_backreac .and. ldiffuse_backtemp) then
 
-        if (ldensity_nolog .and. ltemperature_nolog) &
-            call fatal_error('particles_mass', 'not implemented for ldensity_nolog')
         do i = 1, ndiffstepTT
           call boundconds_x(f,idmpt,idmpt)
           call initiate_isendrcv_bdry(f,idmpt,idmpt)
@@ -178,10 +171,8 @@ module Particles_temperature
           call diffuse_interaction(f(:,:,:,idmpt),ldiffTT,.False.,rdiffconstTT)
 !
         enddo
-        df(l1:l2,m1:m2,n1:n2,ilnTT) =  df(l1:l2,m1:m2,n1:n2,ilnTT) + &
-            f(l1:l2,m1:m2,n1:n2,idmpt)
+        df(l1:l2,m1:m2,n1:n2,ilnTT) = df(l1:l2,m1:m2,n1:n2,ilnTT) + f(l1:l2,m1:m2,n1:n2,idmpt)
       endif
-!
 !
 !  Diagnostic output
 !
@@ -189,8 +180,7 @@ module Particles_temperature
         if (idiag_Tpm /= 0)  call sum_par_name(fp(1:npar_loc,iTp),idiag_Tpm)
         if (idiag_etpm /= 0) then
           if (imp /= 0) then
-            call sum_par_name(fp(1:npar_loc,iTp)*cp_part* &
-                fp(1:npar_loc,imp),idiag_etpm)
+            call sum_par_name(fp(1:npar_loc,iTp)*cp_part*fp(1:npar_loc,imp),idiag_etpm)
           else
             call sum_par_name(fp(1:npar_loc,iTp)*cp_part* &
                 4.*3.14*fp(1:npar_loc,iap)**3/3.*rhopmat,idiag_etpm)
@@ -211,7 +201,6 @@ module Particles_temperature
 !  28-aug-14/jonas+nils: coded
 !
       use Viscosity, only: getnu
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -232,7 +221,6 @@ module Particles_temperature
       intent(in) ::  fp, ineargrid
       intent(inout) :: f,dfp, df
 !
-!
       feed_back = 0.
       if (ldiffuse_backtemp) f(l1:l2,m,n,idmpt) = 0.0
 !
@@ -243,16 +231,13 @@ module Particles_temperature
 !
         volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nxgrid*nygrid*nzgrid)
 !
-!
 !  The Ranz-Marshall correlation for the Sherwood number needs the particle Reynolds number
 !  Precalculate partrticle Reynolds numbers.
 !
         allocate(rep(k1_imn(imn):k2_imn(imn)))
-        if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', &
-            'unable to allocate sufficient memory for rep', .true.)
+        if (.not. allocated(rep)) call fatal_error('dpTT_dt_pencil','unable to allocate rep', .true.)
         allocate(nu(k1_imn(imn):k2_imn(imn)))
-        if (.not. allocated(nu)) call fatal_error('dvvp_dt_pencil', &
-            'unable to allocate sufficient memory for nu', .true.)
+        if (.not. allocated(nu)) call fatal_error('dpTT_dt_pencil','unable to allocate nu', .true.)
         call calc_pencil_rep_nu(fp, rep,nu)
 !
         k1 = k1_imn(imn)
@@ -327,8 +312,7 @@ module Particles_temperature
 !
           if (lconv_heating) then
             if (lstefan_flow .and. lparticles_chemistry) then
-              stefan_b = mass_loss(k)*p%cv(inx0)/&
-                  (2*pi*fp(k,iap)*Nuss_p(k)*cond)
+              stefan_b = mass_loss(k)*p%cv(inx0)/(2*pi*fp(k,iap)*Nuss_p(k)*cond)
             else
               stefan_b=0.0
             endif
@@ -337,8 +321,7 @@ module Particles_temperature
 !
 !  Convective heat transfer including the Stefan Flow
 !
-              heat_trans_coef = Nuss_p(k)*cond/(2*fp(k,iap))*&
-                  (stefan_b/(exp(stefan_b)-1.0))
+              heat_trans_coef = Nuss_p(k)*cond/(2*fp(k,iap))*(stefan_b/(exp(stefan_b)-1.0))
 !
 !  Convective heat transfer without the Stefan Flow
 !
@@ -374,8 +357,7 @@ module Particles_temperature
 !NILS: All this interpolation should be streamlined and made more efficient.
 !NILS: Is it possible to calculate it only once, and then re-use it later?
             if (.not. ldiffuse_backtemp) then
-              call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
-                  fp,k,ix0,iy0,iz0)
+              call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,fp,k,ix0,iy0,iz0)
 !
 !  Add the source to the df-array
 !  NILS: The values of cv and Tg are currently found from the nearest grid
@@ -389,32 +371,28 @@ module Particles_temperature
                 if (ltemperature_nolog) then
 ! TT, rho
                   df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
-                      +Qc*p%cv1(inx0)*weight_array/&
-                      (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+                      +Qc*p%cv1(inx0)*weight_array/(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
                 else
                   df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
                       +Qc*p%cv1(inx0)/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT)) &
-                      *weight_array/&
-                      (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+                      *weight_array/(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
                 endif
               else
                 if (ltemperature_nolog) then
                   df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
-                      +Qc*p%cv1(inx0)*weight_array/&
-                      (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+                      +Qc*p%cv1(inx0)*weight_array/(exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
                 else
 !     lnTT, lnrho
                   df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
                       +Qc*p%cv1(inx0)/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT)) &
-                      *weight_array/&
-                      (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+                      *weight_array/(exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
                 endif
               endif
             else
               if (ldensity_nolog) then
                 if (ltemperature_nolog) then
 ! TT, rho
-                  f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt)   &
+                  f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt) &
                       +Qc*p%cv1(inx0)/(f(ix0,iy0,iz0,irho)*volume_cell)
                 else
                   f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt) &
@@ -547,13 +525,12 @@ module Particles_temperature
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
       elseif (ivis=='mu-therm') then
-        nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))&
-            /interp_rho(k1_imn(imn):k2_imn(imn))
+        nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))/interp_rho(k1_imn(imn):k2_imn(imn))
       else
-        call fatal_error('calc_pencil_rep','No such ivis!')
+        call fatal_error('calc_pencil_rep_nu','no such ivis: '//trim(ivis))
       endif
 !
-      if (maxval(nu) == 0.0) call fatal_error('calc_pencil_rep', 'nu (kinematic visc.) must be non-zero!')
+      if (maxval(nu) == 0.0) call fatal_error('calc_pencil_rep','nu (kinematic visc.) must be non-zero')
 !
       do k=k1_imn(imn),k2_imn(imn)
         rep(k) = 2.0 * sqrt(sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2)) / nu(k)
@@ -564,8 +541,8 @@ module Particles_temperature
       elseif (particle_radius > 0.0) then
         rep = rep * particle_radius
       else
-        call fatal_error('calc_pencil_rep', &
-            'unable to calculate the particle Reynolds number without a particle radius. ')
+        call fatal_error('calc_pencil_rep_nu', &
+                         'unable to calculate particle Reynolds number without particle radius')
       endif
 !
     endsubroutine calc_pencil_rep_nu

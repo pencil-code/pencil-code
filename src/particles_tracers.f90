@@ -107,29 +107,24 @@ module Particles
       real :: rhom
 !
       if (rhop_swarm==0.0 .or. mp_swarm==0.0) then
+!
 ! For stratification, take into account gas present outside the simulation box.
+!
         if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear' ) then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
           rhom=1.0
         endif
-        if (rhop_swarm==0.0) &
-             rhop_swarm = eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
-        if (mp_swarm==0.0) &
-             mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
-        if (lroot) print*, 'initialize_particles: '// &
-            'dust-to-gas ratio eps_dtog=', eps_dtog
+        if (rhop_swarm==0.0) rhop_swarm = eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+        if (mp_swarm==0.0) mp_swarm = eps_dtog*rhom*box_volume/(real(npar))
+        if (lroot) print*, 'initialize_particles: dust-to-gas ratio eps_dtog=', eps_dtog
       endif
 !
       if (lroot) then
-        print*, 'initialize_particles: '// &
-            'mass per constituent particle mpmat=', mpmat
-        print*, 'initialize_particles: '// &
-            'mass per superparticle mp_swarm =', mp_swarm
-        print*, 'initialize_particles: '// &
-            'number density per superparticle np_swarm=', np_swarm
-        print*, 'initialize_particles: '// &
-            'mass density per superparticle rhop_swarm=', rhop_swarm
+        print*, 'initialize_particles: mass per constituent particle mpmat=', mpmat
+        print*, 'initialize_particles: mass per superparticle mp_swarm =', mp_swarm
+        print*, 'initialize_particles: number density per superparticle np_swarm=', np_swarm
+        print*, 'initialize_particles: mass density per superparticle rhop_swarm=',rhop_swarm
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.
@@ -200,8 +195,7 @@ module Particles
           fp(1:npar_loc,ixp:izp)=0.
 !
         case ('constant')
-          if (lroot) &
-              print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
+          if (lroot) print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
           fp(1:npar_loc,ixp)=xp0
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
@@ -213,12 +207,9 @@ module Particles
             if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
-          if (nzgrid/=1) &
-              fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+          if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
 !
         case ('random-xy')
           if (lroot) print*, 'init_particles: Random particle positions'
@@ -226,10 +217,8 @@ module Particles
             if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
             if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
           fp(1:npar_loc,izp)=zp0
 !
         case ('random-xz')
@@ -238,10 +227,8 @@ module Particles
             if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-          if (nzgrid/=1) &
-              fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+          if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
           fp(1:npar_loc,iyp)=yp0
 !
        case ('random-cylindrical','random-cyl')
@@ -270,13 +257,11 @@ module Particles
                if (nxgrid/=1) fp(k,ixp)=rad
                if (nygrid/=1) fp(k,iyp)=phi
              elseif (lspherical_coords) then
-               call stop_it("init_particles: random-cylindrical not implemented "//&
-                    "for spherical coordinates")
+               call not_implemented("init_particles','random-cylindrical for spherical coordinates")
              endif
 !
              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-             if (nzgrid/=1) &
-                 fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
+             if (nzgrid/=1) fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
 !
           enddo
 !
@@ -294,10 +279,8 @@ module Particles
               fp(k,izp)=zp0*sqrt(-2*alog(r))*cos(2*pi*p)
             endif
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
 !
         case ('dragforce_equilibrium')
 !
@@ -310,21 +293,17 @@ module Particles
           endif
 !
           if (.not.(lcartesian_coords.and.(all(lequidist)))) &
-               call fatal_error("init_particles","dragforce_equilibrium " //&
-               "initial condition not implemented for polar or " //&
-               "non-equidistant grids")
+               call not_implemented("init_particles","dragforce_equilibrium " // &
+               "initial condition for polar or non-equidistant grids")
 !  Calculate average dust-to-gas ratio in box.
 
           if (ldensity_nolog) then
-            eps = rhop_swarm*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
-                sum(f(l1:l2,m1:m2,n1:n2,irho))
+            eps = rhop_swarm*sum(f(l1:l2,m1:m2,n1:n2,inp))/sum(f(l1:l2,m1:m2,n1:n2,irho))
           else
-            eps = rhop_swarm*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
-                sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+            eps = rhop_swarm*sum(f(l1:l2,m1:m2,n1:n2,inp))/sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
           endif
 !
-          if (lroot) &
-              print*, 'init_particles: average dust-to-gas ratio=', eps(1)
+          if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps(1)
 !  Set gas velocity field.
           do m=m1,m2; do n=n1,n2
             cs=sqrt(cs20)
@@ -337,16 +316,12 @@ module Particles
               endif
             endif
 !
-            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-                beta_glnrho_global(1)/(2*(1.0+eps))*cs
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + beta_glnrho_global(1)/(2*(1.0+eps))*cs
 !
           enddo; enddo
 !
         case default
-          if (lroot) &
-              print*, 'init_particles: No such such value for initxxp: ', &
-              trim(initxxp(j))
-          call stop_it("")
+          call fatal_error("init_particles",'no such initxxp: '//trim(initxxp(j)))
 !
         endselect
 !
@@ -396,8 +371,7 @@ module Particles
 !
       lpenc_diagnos(i_np)=.true.
 !
-      if (idiag_epsmin/=0.or.idiag_epsmax/=0) &
-           lpenc_diagnos(i_epsp)=.true.
+      if (idiag_epsmin/=0.or.idiag_epsmax/=0) lpenc_diagnos(i_epsp)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -470,14 +444,11 @@ module Particles
       select case (gravz_profile)
 !
         case ('zero')
-          if (lheader) &
-              print*, 'dxxp_dt_pencil: No gravity in z-direction.'
+          if (lheader) print*, 'dxxp_dt: No gravity in z-direction.'
 !
         case ('linear')
-          if (lheader) &
-              print*, 'dxxp_dt_pencil: Linear gravity field in z-direction.'
-          dfp(1:npar_loc,izp)=dfp(1:npar_loc,izp) - &
-              tausp*nu_epicycle2*fp(1:npar_loc,izp)
+          if (lheader) print*, 'dxxp_dt: Linear gravity field in z-direction.'
+          dfp(1:npar_loc,izp)=dfp(1:npar_loc,izp) - tausp*nu_epicycle2*fp(1:npar_loc,izp)
 !
       endselect
 !
@@ -538,21 +509,18 @@ module Particles
 !
       real, dimension (3) :: uu
       integer :: k
-      logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, ineargrid
       intent (inout) :: df, dfp, fp
 !
 !  Identify module and boundary conditions.
 !
-      lheader=lfirstcall .and. lroot
-      if (lheader) then
+      if (headtt) then
         print*, 'dxxp_dt: Calculate dxxp_dt'
         print*, 'dxxp_dt: Particles boundary condition bcpx=', bcpx
         print*, 'dxxp_dt: Particles boundary condition bcpy=', bcpy
         print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
-        print*, 'dxxp_dt: Set rate of change of particle '// &
-           'position equal to gas velocity.'
+        print*, 'dxxp_dt: Set rate of change of particle position equal to gas velocity.'
       endif
 !
 !  Interpolate gas velocity to position of particles.
@@ -562,19 +530,15 @@ module Particles
         do k=k1_imn(imn),k2_imn(imn)
           if (lparticlemesh_tsc) then
             if (ltrace_dust) then
-              call interpolate_quadratic_spline(f,iudx(1),iudz(1), &
-                  fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
+              call interpolate_quadratic_spline(f,iudx(1),iudz(1),fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
             else
-              call interpolate_quadratic_spline(f,iux,iuz, &
-                  fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
+              call interpolate_quadratic_spline(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
             endif
           else
             if (ltrace_dust) then
-              call interpolate_linear(f,iudx(1),iudz(1), &
-                  fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
+              call interpolate_linear(f,iudx(1),iudz(1),fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
             else
-              call interpolate_linear(f,iux,iuz, &
-                  fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
+              call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
             endif
           endif
 !
@@ -597,16 +561,15 @@ module Particles
 !
 !  With shear there is an extra term due to the background shear flow.
 !
-          if (lshear.and.nygrid/=1)&
-              dfp(k,iyp) = dfp(k,iyp) - qshear*Omega*fp(k,ixp)
+          if (lshear.and.nygrid/=1) dfp(k,iyp) = dfp(k,iyp) - qshear*Omega*fp(k,ixp)
 !
         enddo
       endif
 !
       if (ldiagnos) then
-        if (idiag_npmax/=0) call max_mn_name(p%np,idiag_npmax)
+        call max_mn_name(p%np,idiag_npmax)
         if (idiag_npmin/=0) call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
-        if (idiag_epsmax/=0) call max_mn_name(p%epsp,idiag_epsmax)
+        call max_mn_name(p%epsp,idiag_epsmax)
         if (idiag_epsmin/=0) call max_mn_name(-p%epsp,idiag_epsmin,lneg=.true.)
       endif
 !
@@ -618,8 +581,6 @@ module Particles
         call xysum_mn_name_z(p%rhop,idiag_rhopmz)
         call xysum_mn_name_z(p%epsp,idiag_epspmz)
       endif
-!
-      if (lfirstcall) lfirstcall=.false.
 !
       call keep_compiler_quiet(df)
 !
@@ -674,10 +635,10 @@ module Particles
 !  29-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar)    :: df
       real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mpar_loc,mpvar)   :: dfp
+      integer, dimension (mpar_loc,3)    :: ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -689,10 +650,10 @@ module Particles
 !***********************************************************************
     subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
 !
-      real,    dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3)       :: ineargrid
+      real, dimension (mpar_loc,mpvar)   :: dfp
+      integer, dimension (mpar_loc,3)    :: ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
@@ -703,10 +664,10 @@ module Particles
 !***********************************************************************
     subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
 !
-      real,    dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3)       :: ineargrid
+      real, dimension (mpar_loc,mpvar)   :: dfp
+      integer, dimension (mpar_loc,3)    :: ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
@@ -810,10 +771,11 @@ module Particles
       if (lroot) then
         avg_n_insert=particles_insert_rate*dt
         n_insert=int(avg_n_insert + remaining_particles)
+!
 ! Remaining particles saved for subsequent timestep:
+!
         remaining_particles=avg_n_insert + remaining_particles - n_insert
-        if ((n_insert+npar_total <= mpar_loc) &
-            .and. (t<max_particle_insert_time)) then
+        if ((n_insert+npar_total <= mpar_loc) .and. (t<max_particle_insert_time)) then
           linsertmore=.true.
         else
           linsertmore=.false.
@@ -840,17 +802,12 @@ module Particles
                 if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
                 if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
               enddo
-              if (nxgrid/=1) &
-                  fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-              if (nygrid/=1) &
-                  fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+              if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+              if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
               fp(1:npar_loc,izp)=zp0
               !
             case default
-              if (lroot) &
-                  print*, 'insert_particles: No such such value for initxxp: ', &
-                  trim(initxxp(j))
-              call fatal_error("particles_tracers","No such insert condition")
+              call fatal_error("particles_tracers","No such insertxxp: "//trim(insertxxp(j)))
               !
             endselect
 !
@@ -945,15 +902,12 @@ module Particles
 !***********************************************************************
     subroutine particles_final_clean_up
 !
-!  cleanup (dummy)
-!
-      print*,'particles_tracer: Nothing to clean up'
-
     endsubroutine particles_final_clean_up
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
 !
 ! dummy
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
