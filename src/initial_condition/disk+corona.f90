@@ -179,11 +179,11 @@ module InitialCondition
 !       
 ! Pseudo-Newtonian potential
 !        
-        psipn=-g0/sqrt((rr_sph(l1:l2)-rs)**2+(1e-3*rs)**2)
+        psipn=-g0/(rr_sph(l1:l2)-rs)
 
 ! Gravitational Potential for the system
         
-        psi(l1:l2,m,n)=psipn+1.0/(2.0-2.0*apara)*(l_d/(sqrt(rr_cyl(l1:l2)**2+(1e-3*rs)**2)))**2.0
+        psi(l1:l2,m,n)=psipn+1.0/(2.0-2.0*apara)*(l_d/rr_cyl(l1:l2))**2.0
         enddo
       enddo
       if (location_in_proc((/rpos,xyz0(2), 0.0/),lpos,mpos,npos)) then
@@ -226,11 +226,11 @@ module InitialCondition
 !
 ! Pseudo-Newtonian potential
 !
-        psipn=-g0/sqrt((rr_sph(l1:l2)-rs)**2+(1e-3*rs)**2)
+        psipn=-g0/(rr_sph(l1:l2)-rs)
         
 !  Disk Density
                   
-        rho_d=exp(lnrho0)*(1.0-gamma*masked(l1:l2,m,n)*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0)))**ngamma
+        rho_d=masked(l1:l2,m,n)*exp(lnrho0)*(1.0-gamma*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0)))**ngamma
 !
 ! Corona Density
         lnrho_c=lnrho0_c-masked3(l1:l2,m,n)*(psipn-psipn1)*gamma/cs0_c**2
@@ -239,7 +239,7 @@ module InitialCondition
         pg=exp(lnrho0)**(-1.0/ngamma)*cs0**2.0/gamma*(rho_d)**(1.0+1.0/ngamma)
         pg_c=exp(lnrho_c)*cs0_c**2.0/gamma
         f(l1:l2,m,n,ilnrho) = log(rho_d+exp(lnrho_c))
-        vphi_d=l_d*x(l1:l2)/(rr_cyl(l1:l2)**2+(1e-3*rs)**2)*masked(l1:l2,m,n) 
+        vphi_d=l_d*x(l1:l2)/rr_cyl(l1:l2)**2*masked(l1:l2,m,n)
         f(l1:l2,m,n,iuy) = vphi_d  
         lnT_d=(log(rho_d)-lnrho0)/ngamma+log(cs0**2.0/(gamma_m1/cp1))
         f(l1:l2,m,n,ilnTT)=log(exp(lnT_d)+Tc*tmasked(l1:l2,m,n))
