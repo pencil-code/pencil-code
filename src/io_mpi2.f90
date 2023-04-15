@@ -1076,8 +1076,8 @@ module Io
 !
       real, dimension(mv*ncpus) :: rbuf
       character(len=fnlen) :: fpath
-      integer(KIND=MPI_OFFSET_KIND) :: offset
-      integer :: handle, ftype, ftype1, i
+      integer(KIND=MPI_OFFSET_KIND) :: offset, dsize
+      integer :: handle, ftype, i
 !
       if (present(label)) call warning("input_part_snap", "The argument label has no effects. ")
 !
@@ -1162,20 +1162,23 @@ module Io
 !
 !  Decompose the real data domain and read.
 !
-      call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, mpi_precision, ftype1, mpi_err)
-      call check_success_local("input_part", "create MPI data type")
-!
-      call MPI_TYPE_CREATE_RESIZED(ftype1, 0_MPI_OFFSET_KIND, int(npar_tot, KIND=MPI_OFFSET_KIND) * size_of_real, ftype, mpi_err)
+      call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, mpi_precision, ftype, mpi_err)
       call check_success_local("input_part", "create MPI data type")
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("input_part", "commit MPI data type")
 !
-      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
-      call check_success("input_part", "set view of", fpath)
+      dsize = int(npar_tot, KIND=MPI_OFFSET_KIND) * size_of_real
+      real1: do i = 1, mparray
+        call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
+        call check_success("input_part", "set view of", fpath)
 !
-      call MPI_FILE_READ_ALL(handle, ap(1:nv,1:mparray), nv * mparray, mpi_precision, status, mpi_err)
-      call check_success("input_part", "read particle data", fpath)
+        call MPI_FILE_READ_ALL(handle, rbuf, nv, mpi_precision, status, mpi_err)
+        call check_success("input_part", "read particle data", fpath)
+!
+        ap(1:nv,i) = rbuf(1:nv)
+        offset = offset + dsize
+      enddo real1
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("input_part", "free MPI data type")
