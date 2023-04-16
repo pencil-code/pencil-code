@@ -2084,8 +2084,7 @@ print*, 'phizaverages_r: norm=', norm
           rlim=p%r_mn
         elseif (lfirsttime) then
           call warning("sum_lim_mn_name","no reason to call it when "// &
-               "not using a cylinder or"//achar(10)// &
-               "a sphere embedded in a Cartesian grid")
+               "not using a cylinder or"//achar(10)//"a sphere embedded in a Cartesian grid")
           lfirsttime=.false.
         endif
 !

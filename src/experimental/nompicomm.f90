@@ -291,7 +291,7 @@ module Mpicomm
 !    module procedure mpigather_and_out_cmplx
 !  endinterface
 !
-  integer :: mpi_precision
+  integer :: mpi_precision,MPI_CMPLX
 !
   contains
 !***********************************************************************
@@ -299,7 +299,7 @@ module Mpicomm
 !
 !  29-jul-2010/anders: dummy
 !
-      mpi_precision = -1
+      mpi_precision = -1; MPI_CMPLX=-1
 !
     endsubroutine mpicomm_init
 !***********************************************************************

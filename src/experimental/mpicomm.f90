@@ -416,6 +416,7 @@ module Mpicomm
 !
       if (sizeof_real() < 8) then
         mpi_precision = MPI_REAL
+        MPI_CMPLX = MPI_COMPLEX
         if (lroot) then
           write (*,*) ""
           write (*,*) "==============================================================="
@@ -425,6 +426,7 @@ module Mpicomm
         endif
       else
         mpi_precision = MPI_DOUBLE_PRECISION
+        MPI_CMPLX = MPI_DOUBLE_COMPLEX
       endif
 !
     endsubroutine mpicomm_init
@@ -7546,7 +7548,7 @@ module Mpicomm
                               endif
                             else
                               if (lcomplex) then
-                                call MPI_RECV(rowbuf_cmplx, nsend, MPI_COMPLEX, ig, tag, MPI_COMM_WORLD, status, mpierr)
+                                call MPI_RECV(rowbuf_cmplx, nsend, MPI_CMPLX, ig, tag, MPI_COMM_WORLD, status, mpierr)
                                 !print*, 'iy,irx,ixa:ixe:ixs,kxrangel(:,irx)=', iy,irx,ixa,ixe,ixs , kxrangel(:,irx)
                               else
                                 call MPI_RECV(rowbuf, nsend, MPI_REAL, ig, tag, MPI_COMM_WORLD, status, mpierr)
@@ -7564,10 +7566,10 @@ module Mpicomm
                             if (lcomplex) then
                               if (ltrans) then
                                 call MPI_SEND(sendbuf_cmplx(iy,ixa:ixe:ixs,iz,ic), &
-                                              nsend, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
+                                              nsend, MPI_CMPLX, root, tag, MPI_COMM_WORLD, mpierr)
                               else
                                 call MPI_SEND(sendbuf_cmplx(ixa:ixe:ixs,iy,iz,ic), &
-                                              nsend, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
+                                              nsend, MPI_CMPLX, root, tag, MPI_COMM_WORLD, mpierr)
                               endif
                             else
                               if (ltrans) then

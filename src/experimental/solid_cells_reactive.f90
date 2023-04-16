@@ -21,7 +21,7 @@ module Solid_Cells
 !
   implicit none
 !
-  include 'solid_cells.h'
+  include '../solid_cells.h'
 !
   integer, parameter            :: max_items=5
   integer                       :: ncylinders=0,nspheres=0,dummy

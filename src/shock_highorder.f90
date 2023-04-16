@@ -168,7 +168,7 @@ module Shock
         idum=ishock_max
         ishock_max=max(min(ishock_max,nghost),1)
         call warning('initialize_shock', 'ishock_max='//trim(itoa(idum))// &
-                       ' not between 1 and nghost. We set it to '//trim(itoa(ishock_max)))
+                     ' not between 1 and nghost. We set it to '//trim(itoa(ishock_max)))
       endif
 !
 !  Die if periodic boundary condition for shock viscosity, but not for
@@ -460,8 +460,7 @@ module Shock
 !
 !  Cut off small divergence if requested.
 !
-      if (div_threshold > 0.0) &
-        where(abs(f(:,:,:,ishock)) < div_threshold) f(:,:,:,ishock) = 0.0
+      if (div_threshold > 0.0) where(abs(f(:,:,:,ishock)) < div_threshold) f(:,:,:,ishock) = 0.0
 !
 !  Take maximum over a number of grid cells
 !

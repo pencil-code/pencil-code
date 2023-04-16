@@ -481,7 +481,6 @@ module Shock
 !  if test_nonblocking=.true., we communicate immediately as a test.
 !
           lcommunicate=.not.early_finalize
-          lfirstpoint=.true.
 
           do imn=1,ny*nz
 
@@ -502,7 +501,6 @@ module Shock
 ! Calculate all local shock profile contributions
 !
             call shock_calc_body(f)
-            lfirstpoint=.false.
 
           enddo
 !
