@@ -2584,7 +2584,7 @@ module Hydro
 !
 !  Initialize Higgsless field
 !
-        if (lhiggsless) f(:,:,:,ihless)=.75*alpha_hless
+        if (lhiggsless) f(:,:,:,ihless)=alpha_hless/(1.+alpha_hless)
       endif
 !
     endsubroutine init_uu
@@ -3533,7 +3533,7 @@ module Hydro
 !
           if (ilorentz /= 0) f(:,m,n,ilorentz)=lorentz_gamma2
           if (lhiggsless) then
-            press=rho*cs20-fourthird*f(:,m,n,ihless)
+            press=rho*cs20-f(:,m,n,ihless)
           else
             press=rho*cs20
           endif
