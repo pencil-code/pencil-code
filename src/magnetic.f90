@@ -2244,11 +2244,11 @@ module Magnetic
             f(l1:l2,m,n,iaz)=-.25*amplaaJ(j)*x2*(1.-.25*x2*RFPradJ12)
           enddo; enddo
 !
-        case ('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j))
+        case ('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j),mu0)
         case ('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,ky_aa(j),mu0)
         case ('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,kz_aa(j),mu0)
-        case ('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,kx_aa(j),ky_aa(j))
-        case ('Alfven-xz'); call alfven_xz(amplaa(j),f,iuu,iaa,kx_aa(j),kz_aa(j))
+        case ('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,kx_aa(j),ky_aa(j),mu0)
+        case ('Alfven-xz'); call alfven_xz(amplaa(j),f,iuu,iaa,kx_aa(j),kz_aa(j),mu0)
         case ('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
         case ('Alfvenz-bell'); call alfvenz_bell(amplaa(j),f,iuu,iaa,kz_aa(j),B_ext(3),J_ext(3))
         case ('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
@@ -8136,7 +8136,7 @@ module Magnetic
 !
     endsubroutine calc_bmz_beltrami_phase
 !***********************************************************************
-    subroutine alfven_x(ampl,f,iuu,iaa,ilnrho,kx)
+    subroutine alfven_x(ampl,f,iuu,iaa,ilnrho,kx,mu0)
 !
 !  Alfven wave propagating in the x-direction
 !
@@ -8157,9 +8157,11 @@ module Magnetic
 !   7-aug-17/axel: added sqrt(.75) for lrelativistic_eos=T
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: rho,ampl_Az
-      real :: ampl,kx,ampl_lr,ampl_ux,ampl_uy
       integer :: iuu,iaa,ilnrho
+      real :: ampl,kx,mu0
+
+      real :: ampl_lr,ampl_ux,ampl_uy
+      real, dimension (nx) :: rho,ampl_Az
 !
 !  Amplitude factors
 !
@@ -8253,7 +8255,7 @@ module Magnetic
 !
     endsubroutine alfven_z
 !***********************************************************************
-    subroutine alfven_xy(ampl,f,iuu,iaa,kx,ky)
+    subroutine alfven_xy(ampl,f,iuu,iaa,kx,ky,mu0)
 !
 !  Alfven wave propagating in the xy-direction; can be used in 2-d runs.
 !  uz = cos(kx*x+ky*y-ot), for B0=(1,1,0) and rho=1.
@@ -8263,9 +8265,10 @@ module Magnetic
 !  16-jun-07/axel: adapted from alfven_y
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kx,ky,om
-      real, parameter :: mu0=1.
+      real :: ampl,kx,ky,mu0
       integer :: iuu,iaa
+
+      real :: om
 !
 !  set ux, Ax, and Ay
 !
@@ -8278,7 +8281,7 @@ module Magnetic
 !
     endsubroutine alfven_xy
 !***********************************************************************
-    subroutine alfven_xz(ampl,f,iuu,iaa,kx,kz)
+    subroutine alfven_xz(ampl,f,iuu,iaa,kx,kz,mu0)
 !
 !  Alfven wave propagating in the xz-direction; can be used in 2-d runs.
 !  uz = cos(kx*x+kz*z-ot), for B0=(1,1,0) and rho=1.
@@ -8288,9 +8291,10 @@ module Magnetic
 !  16-jun-07/axel: adapted from alfven_xy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kx,kz,om
-      real, parameter :: mu0=1.
+      real :: ampl,kx,kz,mu0
       integer :: iuu,iaa
+
+      real :: om
 !
 !  set ux, Ax, and Az
 !

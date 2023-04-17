@@ -30,7 +30,7 @@
 #include "../boundcond_c.h"             // provides boundconds[xyz] etc.
 #include "../mpicomm_c.h"               // provides finalize_sendrcv_bdry
 //#include "diagnostics/diagnostics.h"
-#if PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS
   #include "loadStore.h"
 #endif
 #if LFORCING
@@ -98,7 +98,7 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
     if (early_finalize) {
     // MPI communication has already finished, hence the full domain can be advanced.
       if (!full) {
-#if PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS
           loadOuterHalos(mesh);
 #else
           acLoad(mesh);
@@ -148,7 +148,7 @@ printf("isubstep= %d\n", isubstep);
       acIntegrateStep(isubstep-1, dt);
       acSynchronize();
       acNodeSwapBuffers(node); 
-#if PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS
       storeInnerHalos(mesh);
 #else
       acStore(&mesh);
@@ -163,7 +163,7 @@ printf("isubstep= %d\n", isubstep);
         if (l0) {printf("start,end= %d %d %d %d %d %d \n",start.x,start.y,start.z,end.x,end.y,end.z);}
         acIntegrateStepWithOffset(isubstep-1,dt,start,end);                          // +1 shift because end is exclusive
       }
-#if PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS
       int iarg1=1, iarg2=NUM_VTXBUF_HANDLES; 
       finalize_isendrcv_bdry((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
       boundconds_y_c((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
@@ -269,7 +269,6 @@ printf("nx etc. %d %d %d %.14f %.14f %.14f \n",nx,ny,nz,dx,dy,dz);
      config.real_params[AC_dsy]=dy;
      config.real_params[AC_dsz]=dz;
 printf("l1i etc. %d %d %d %d %d %d \n", l1i,l2i,n1i,n2i,m1i,m2i);
-//printf("dxmin, dxmax= %f %f \n", dxmin,dxmax); //it, isubstep);
      //config.real_params[AC_inv_dsx] = 1./dx;
      //config.real_params[AC_inv_dsy] = 1./dy;
      //config.real_params[AC_inv_dsz] = 1./dz;
@@ -284,39 +283,42 @@ printf("lxyz etc. %f %f %f %f %f %f \n",lxyz[0],lxyz[1],lxyz[2],xyz0[0],xyz0[1],
      config.real_params[AC_unit_density]=unit_density;
      config.real_params[AC_unit_velocity]=unit_velocity;
      config.real_params[AC_unit_length]=unit_length;
+     config.real_params[AC_mu0]=mu0;
 //printf("units etc. %lf %lf %lf \n", unit_density, unit_velocity, unit_length);
 
 #include "PC_modulepars.h"
+
+}
+/***********************************************************************************************/
+void checkConfig(AcMeshInfo & config){
+//printf("setupConfig:mesh.info.real_params[AC_k1_ff]= %f \n",config.real_params[AC_k1_ff]);
+#if LENTROPY
+     printf("lpressuregradientgas= %d %d \n", lpressuregradient_gas, config.int_params[AC_lpressuregradient_gas]);
+#endif
+#if LENTROPY
+     printf("chi= %f %f \n", chi, config.real_params[AC_chi]);
+#endif
 #if LVISCOSITY
-     //config.real_params[AC_nu]=nu;
-     //config.real_params[AC_zeta]=zeta;
-printf("nu etc. %f %f \n", nu, zeta);
+     printf("nu= %f %f \n", nu, config.real_params[AC_nu]);
+     printf("zeta= %f %f \n", zeta, config.real_params[AC_zeta]);
 #endif
 #if LMAGNETIC
-     //config.real_params[AC_eta]=eta;
-printf("eta etc. %f \n", config.real_params[AC_eta]);
+     printf("eta= %f %f \n", eta, config.real_params[AC_eta]);
 #endif
-     //config.real_params[AC_mu0]=mu0;
-     //config.real_params[AC_cs]=sqrt(cs20);
-     //config.real_params[AC_cs2]=cs20;
-     //config.real_params[AC_gamma]=gamma;
-     //config.real_params[AC_cv]=cv;
-     //config.real_params[AC_cp]=cp;
-     //config.real_params[AC_lnT0]=lnTT0;
-     //config.real_params[AC_lnrho0]=lnrho0;
-printf("eos etc. %f %f %f %f %f %f \n",sqrt(cs20),gamma,cv,cp,lnTT0,lnrho0);
-printf("eos etc. %f %f %f %f %f \n",config.real_params[AC_cs],config.real_params[AC_gamma],
-                                    config.real_params[AC_cv],config.real_params[AC_cp],config.real_params[AC_lnrho0]);
-#if LENTROPY
-     //config.real_params[AC_chi]=chi;
-printf("chi %f \n", chi);
+#if LEOS
+     printf("cs20= %f %f \n", cs20, config.real_params[AC_cs20]);
+     printf("gamma= %f %f \n", gamma, config.real_params[AC_gamma]);
+     printf("cv= %f %f \n", cv, config.real_params[AC_cv]);
+     printf("cp= %f %f \n", cp, config.real_params[AC_cp]);
+     printf("lnTT0= %f %f \n", lnTT0, config.real_params[AC_lnTT0]);
+     printf("lnrho0= %f %f \n", lnrho0, config.real_params[AC_lnrho0]);
 #endif
 #if LFORCING
-     config.int_params[AC_iforcing_zsym]=iforcing_zsym;
-     config.real_params[AC_k1_ff]=k1_ff;
-     printf("k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
+     printf("iforcing_zsym= %f %f \n", iforcing_zsym, config.int_params[AC_iforcing_zsym]);
+     printf("k1_ff= %f %f \n", k1_ff, config.real_params[AC_k1_ff]);
+     printf("tforce_stop= %f %f \n", tforce_stop, config.real_params[AC_tforce_stop]);
+     //printf("k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
 #endif
-//printf("setupConfig:mesh.info.real_params[AC_k1_ff]= %f \n",config.real_params[AC_k1_ff]);
 }
 /***********************************************************************************************/
 #define PUT(ptr,n_x,n_y,n_z) \
@@ -336,10 +338,11 @@ void loadProfiles(AcMeshInfo & config){
 extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
 {
     //Setup configurations used for initializing and running the GPU code
-#if PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS
         initLoadStore();
 #endif
-    	setupConfig(mesh.info);
+        setupConfig(mesh.info);
+        checkConfig(mesh.info);
 //printf("mesh.info.real_params[AC_k1_ff]= %f \n",mesh.info.real_params[AC_k1_ff]);
         AcResult res=acInit(mesh.info,iproc);
         node=acGetNode();
@@ -350,7 +353,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
         if (acNodeGetVBApointers(&node, p)==AC_SUCCESS) {
           *farr_GPU_in=p[0];
           *farr_GPU_out=p[1];
-printf("Node. vbapointer= %p %p \n", *farr_GPU_in, *farr_GPU_out);
+printf("From node layer: vbapointer= %p %p \n", *farr_GPU_in, *farr_GPU_out);
         } else {
           *farr_GPU_in=NULL;
           *farr_GPU_out=NULL;
@@ -368,7 +371,7 @@ printf("store all %d \n",res); fflush(stdout);
 /***********************************************************************************************/
 extern "C" void finalizeGPU()
 {
-#if PACKED_DATA_TRANSFERS 
+#if PACKED_DATA_TRANSFERS
        finalLoadStore();
 #endif
     // Deallocate everything on the GPUs and reset

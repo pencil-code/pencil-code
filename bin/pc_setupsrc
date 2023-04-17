@@ -427,7 +427,6 @@ make_astaroth_dir()
   [ -h $src/astaroth/submodule ] && rm $src/astaroth/submodule
   adddir $src/astaroth/submodule
 ## subdirectories of submodule
-  #adddir $src/astaroth/submodule/3rdparty
   adddir $src/astaroth/submodule/include
   adddir $src/astaroth/submodule/src
   adddir $src/astaroth/submodule/src/core
