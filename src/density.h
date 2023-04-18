@@ -18,6 +18,7 @@
   public :: density_after_timestep
   public :: pushpars2c, pushdiags2c
   public :: calc_diagnostics_density
+  public :: write_z_stratification
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !

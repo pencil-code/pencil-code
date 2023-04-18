@@ -52,7 +52,7 @@ program start
   use Chiral,           only: init_chiral
   use Cosmicrayflux,    only: init_fcr
   use Cosmicray,        only: init_ecr
-  use Density,          only: init_lnrho
+  use Density,          only: init_lnrho, write_z_stratification
   use Diagnostics
 
   use Dustdensity,      only: init_nd
@@ -319,8 +319,12 @@ program start
 !  Generate grid and initialize specific grid variables.
 !
   call construct_grid(x,y,z,dx,dy,dz)
+!
+!  Write grid.dat file.
+!
   call wgrid('grid.dat',lwrite=.true.)
   call wproc_bounds(trim(datadir) // "/proc_bounds.dat")
+  !if (lparticles.or.lpointmasses.or.lshear) call wproc_bounds(trim(directory)//'/proc_bounds.dat')
 !
 !  Call rprint_list to initialize diagnostics and write indices to file.
 !
@@ -450,12 +454,7 @@ program start
 !
 !  If requested, write original (z-dependent) stratification to file.
 !
-  if (lwrite_stratification) then
-    call update_ghosts(f,ilnrho)
-    open(19,file=trim(directory_dist)//'/stratification.dat')
-      write(19,*) f(l1,m1,:,ilnrho)
-    close(19)
-  endif
+  call write_z_stratification(f)
 !
 !  Check whether we want ionization.
 !

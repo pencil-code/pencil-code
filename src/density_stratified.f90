@@ -109,7 +109,7 @@ module Density
 !
   contains
 !***********************************************************************
-    subroutine register_density()
+    subroutine register_density
 !
 !  Register Density module.
 !
@@ -213,7 +213,7 @@ module Density
           call gaunoise(amplrho(j), f, irho, irho)
 !
         case default init_cond
-          call fatal_error('init_lnrho', 'unknown initial condition ' // trim(initrho(j)))
+          call fatal_error('init_lnrho', 'no such initial condition '// trim(initrho(j)))
 !
         endselect init_cond
 !
@@ -221,7 +221,7 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine pencil_criteria_density()
+    subroutine pencil_criteria_density
 !
 !  All pencils that the Density module depends on are specified here.
 !
@@ -353,52 +353,52 @@ module Density
 !  Currently not required pencils.
 !
       lnrho: if (lpencil(i_lnrho)) then
-        call fatal_error('calc_pencils_density', 'lnrho is not available. ')
+        call fatal_error('calc_pencils_density', 'lnrho is not available')
         p%lnrho = 0.0
       endif lnrho
 !
       ugrho: if (lpencil(i_ugrho)) then
-        call fatal_error('calc_pencils_density', 'ugrho is not available. ')
+        call fatal_error('calc_pencils_density', 'ugrho is not available')
         p%ugrho = 0.0
       endif ugrho
 !
       uglnrho: if (lpencil(i_uglnrho)) then
-        call fatal_error('calc_pencils_density', 'uglnrho is not available. ')
+        call fatal_error('calc_pencils_density', 'uglnrho is not available')
         p%uglnrho = 0.0
       endif uglnrho
 !
       transprho: if (lpencil(i_transprho)) then
-        call fatal_error('calc_pencils_density', 'transprho is not available. ')
+        call fatal_error('calc_pencils_density', 'transprho is not available')
         p%transprho = 0.0
       endif transprho
 !
       del2rho: if (lpencil(i_del2rho)) then
-        call fatal_error('calc_pencils_density', 'del2rho is not available. ')
+        call fatal_error('calc_pencils_density', 'del2rho is not available')
         p%del2rho = 0.0
       endif del2rho
 !
       del2lnrho: if (lpencil(i_del2lnrho)) then
-        call fatal_error('calc_pencils_density', 'del2lnrho is not available. ')
+        call fatal_error('calc_pencils_density', 'del2lnrho is not available')
         p%del2lnrho = 0.0
       endif del2lnrho
 !
       del6lnrho: if (lpencil(i_del6lnrho)) then
-        call fatal_error('calc_pencils_density', 'del6lnrho is not available. ')
+        call fatal_error('calc_pencils_density', 'del6lnrho is not available')
         p%del6lnrho = 0.0
       endif del6lnrho
 !
       hlnrho: if (lpencil(i_hlnrho)) then
-        call fatal_error('calc_pencils_density', 'hlnrho is not available. ')
+        call fatal_error('calc_pencils_density', 'hlnrho is not available')
         p%hlnrho = 0.0
       endif hlnrho
 !
       uij5glnrho: if (lpencil(i_uij5glnrho)) then
-        call fatal_error('calc_pencils_density', 'uij5glnrho is not available. ')
+        call fatal_error('calc_pencils_density', 'uij5glnrho is not available')
         p%uij5glnrho = 0.0
       endif uij5glnrho
 !
       sglnrho: if (lpencil(i_sglnrho)) then
-        call fatal_error('calc_pencils_density', 'sglnrho is not available. ')
+        call fatal_error('calc_pencils_density', 'sglnrho is not available')
         p%sglnrho = 0.0
       endif sglnrho
 !
@@ -475,7 +475,7 @@ module Density
         energy: if (lthermal_energy) then
           df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - 0.5 * rho0z(n) * fdiff * p%u2
         elseif (lenergy) then energy
-          call fatal_error('dlnrho_dt', 'mass diffusion correction for this energy equation is not implemented. ')
+          call not_implmented('dlnrho_dt', 'mass diffusion correction for this energy equation')
         endif energy
       endif massdiff
 !
@@ -490,11 +490,11 @@ module Density
 !
       avg_2d: if (l2davgfirst) then
         penc = f(l1:l2,m,n,irho)
-        if (idiag_drhomxz /= 0) call ysum_mn_name_xz(penc, idiag_drhomxz)
+        call ysum_mn_name_xz(penc, idiag_drhomxz)
         if (idiag_drho2mxz /= 0) call ysum_mn_name_xz(penc**2, idiag_drho2mxz)
-        if (idiag_drhomxy /= 0) call zsum_mn_name_xy(penc, idiag_drhomxy)
+        call zsum_mn_name_xy(penc, idiag_drhomxy)
         if (idiag_drho2mxy /= 0) call zsum_mn_name_xy(penc**2, idiag_drho2mxy)
-        if (idiag_sigma /= 0) call zsum_mn_name_xy(p%rho, idiag_sigma, lint=.true.)
+        call zsum_mn_name_xy(p%rho, idiag_sigma, lint=.true.)
       endif avg_2d
 !
 !  1D averages
@@ -502,13 +502,13 @@ module Density
       avg_1d: if (l1davgfirst) then
         penc = f(l1:l2,m,n,irho)
 !       xy-averages
-        if (idiag_drhomz /= 0) call xysum_mn_name_z(penc, idiag_drhomz)
+        call xysum_mn_name_z(penc, idiag_drhomz)
         if (idiag_drho2mz /= 0) call xysum_mn_name_z(penc**2, idiag_drho2mz)
 !       xz-averages
-        if (idiag_drhomy /= 0) call xzsum_mn_name_y(penc, idiag_drhomy)
+        call xzsum_mn_name_y(penc, idiag_drhomy)
         if (idiag_drho2my /= 0) call xzsum_mn_name_y(penc**2, idiag_drho2my)
 !       yz-averages
-        if (idiag_drhomx /= 0) call yzsum_mn_name_x(penc, idiag_drhomx)
+        call yzsum_mn_name_x(penc, idiag_drhomx)
         if (idiag_drho2mx /= 0) call yzsum_mn_name_x(penc**2, idiag_drho2mx)
       endif avg_1d
 !
@@ -518,14 +518,14 @@ module Density
 !
         rho: if (idiag_mass /= 0 .or. idiag_rhomin /= 0 .or. idiag_rhomax /= 0) then
           penc = p%rho
-          if (idiag_mass /= 0) call integrate_mn_name(penc, idiag_mass)
+          call integrate_mn_name(penc, idiag_mass)
           if (idiag_rhomin /= 0) call max_mn_name(-penc, idiag_rhomin, lneg=.true.)
-          if (idiag_rhomax /= 0) call max_mn_name(penc, idiag_rhomax)
+          call max_mn_name(penc, idiag_rhomax)
         endif rho
 !
         drho: if (idiag_drhom /= 0 .or. idiag_drho2m /= 0 .or. idiag_drhorms /= 0 .or. idiag_drhomax /= 0) then
           penc = f(l1:l2,m,n,irho)
-          if (idiag_drhom /= 0) call sum_mn_name(penc, idiag_drhom)
+          call sum_mn_name(penc, idiag_drhom)
           if (idiag_drho2m /= 0) call sum_mn_name(penc**2, idiag_drho2m)
           if (idiag_drhorms /= 0) call sum_mn_name(penc**2, idiag_drhorms, lsqrt=.true.)
           if (idiag_drhomax /= 0) call max_mn_name(abs(penc), idiag_drhomax)
@@ -606,7 +606,7 @@ module Density
               enddo scan2x
             enddo scan2y
           enddo scan2z
-          call fatal_error_local('impose_density_floor', 'detected negative density. ')
+          call fatal_error_local('impose_density_floor','detected negative density')
         endif neg_dens
 !
       endif dens_floor
@@ -944,7 +944,7 @@ module Density
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      if (lslope_limit_diff) call fatal_error('update_char_vel_density', 'not implemented')
+      if (lslope_limit_diff) call not_implemented('update_char_vel_density','for density_stratified')
 !
     endsubroutine update_char_vel_density
 !***********************************************************************
@@ -957,6 +957,21 @@ module Density
       call keep_compiler_quiet(f)
 
     endsubroutine impose_density_ceiling
+!***********************************************************************s
+    subroutine write_z_stratification(f)
+
+      use Boundcond, only: update_ghosts
+
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      if (lwrite_stratification) then
+        call update_ghosts(f,ilnrho)
+        open(19,file=trim(directory_dist)//'/stratification.dat')
+        write(19,*) f(l1,m1,:,ilnrho)
+        close(19)
+      endif
+
+    endsubroutine write_z_stratification
 !***********************************************************************
     subroutine density_after_timestep(f,df,dtsub)
 !

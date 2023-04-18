@@ -367,6 +367,13 @@ module Density
                             =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + rho0**2
 !
     endsubroutine update_char_vel_density
+!***********************************************************************s
+    subroutine write_z_stratification(f)
+
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      call keep_compiler_quiet(f)
+!
+    endsubroutine write_z_stratification
 !***********************************************************************
     subroutine impose_density_ceiling(f)
 !
