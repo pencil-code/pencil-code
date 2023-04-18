@@ -31,7 +31,7 @@ module General
   public :: bessj, cyclic
   public :: plegendre
   public :: spline_derivative_double, spline_integral, linear_interpolate
-  public :: itoa, atoi, log2str, count_bits, parser, write_full_columns
+  public :: itoa, rtoa, atoi, log2str, count_bits, parser, write_full_columns
   public :: read_range, merge_ranges, add_merge_range, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
@@ -1163,6 +1163,16 @@ module General
       itoa = adjustl(itoa)
 !
     endfunction itoa
+ !***********************************************************************
+    character (len=intlen) function rtoa(r)
+!
+!  Convert real to ASCII
+!
+      real :: r
+      write (rtoa, '(E12.5)') r 
+      rtoa = adjustl(rtoa)
+!
+    endfunction rtoa
 !***********************************************************************
     integer function atoi(str)
 !
