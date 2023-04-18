@@ -94,7 +94,7 @@ module Special
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
-  real :: ddotam, a2rhopm, a2rhopm_all
+  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
   real, target :: ddotam_all
   real, pointer :: alpf
   real, dimension (nx) :: dt1_special
@@ -129,7 +129,8 @@ module Special
   integer :: idiag_Hubblem=0   ! DIAG_DOC: $\left<{\cal H}\right>$
   integer :: idiag_lnam=0      ! DIAG_DOC: $\left<\ln a\right>$
   integer :: idiag_ddotam=0    ! DIAG_DOC: $a''/a$
-  integer :: idiag_a2rhopm=0   ! DIAG_DOC: $a^2 rho$
+  integer :: idiag_a2rhopm=0   ! DIAG_DOC: $a^2 (rho+p)$
+  integer :: idiag_a2rhom=0   ! DIAG_DOC: $a^2 rho$
 !
   contains
 !****************************************************************************
@@ -341,7 +342,7 @@ module Special
       ascale=exp(lnascale)
       a2scale=ascale**2
 !     a2rhop=dphi**2
-!     a2rhopm=<dphi**2+gphi**2+(4./3.)*a^*(E^2+B^2)
+!     a2rhopm=<dphi**2+gphi**2+(4./3.)*a^(-2)*(E^2+B^2)/2
 !
 !  Possibility of turning off evolution of scale factor and Hubble parameter
 !  By default, lzeroHubble=F, so we use the calculation from above.
@@ -404,6 +405,7 @@ module Special
         call sum_mn_name(lnascale,idiag_lnam)
         call save_name(ddotam_all,idiag_ddotam)
         call save_name(a2rhopm_all,idiag_a2rhopm)
+        call save_name(a2rhom_all,idiag_a2rhom)
       endif
 
     endsubroutine dspecial_dt
@@ -462,7 +464,7 @@ module Special
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
         idiag_Hubblem=0; idiag_lnam=0; idiag_ddotam=0
-        idiag_a2rhopm=0
+        idiag_a2rhopm=0; idiag_a2rhom=0
       endif
 !
       do iname=1,nname
@@ -476,6 +478,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'lnam',idiag_lnam)
         call parse_name(iname,cname(iname),cform(iname),'ddotam',idiag_ddotam)
         call parse_name(iname,cname(iname),cform(iname),'a2rhopm',idiag_a2rhopm)
+        call parse_name(iname,cname(iname),cform(iname),'a2rhom',idiag_a2rhom)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
@@ -497,12 +500,12 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,3) :: el, bb, gphi
-      real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop
+      real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, a2rho
       real, dimension (nx) :: ddota, phi, a2, Vpotential
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !
-      ddotam=0.; a2rhopm=0.
+      ddotam=0.; a2rhopm=0.; a2rhom=0.
 
       do n=n1,n2
       do m=m1,m2
@@ -512,6 +515,7 @@ module Special
         call grad(f,iinfl_phi,gphi)    !MR: the ghost zones are not necessarily updated!!!
         call dot2_mn(gphi,gphi2)
         a2rhop=dphi**2+gphi2
+        a2rho=0.5*(dphi**2+gphi2)
 
         if (iex/=0.and.lbackreact_infl) then
           a2=exp(2.*f(l1:l2,m,n,iinfl_lna))
@@ -521,6 +525,7 @@ module Special
           call dot2_mn(bb,b2)
           call dot2_mn(el,e2)
           a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
+          a2rho=a2rho+.5*(e2+b2)*a21
         endif
 
         a2rhopm=a2rhopm+sum(a2rhop)
@@ -539,13 +544,17 @@ module Special
 !
         ddota=-dphi**2-gphi2+4.*a2*Vpotential
         ddotam=ddotam+sum(ddota)
+        a2rho=a2rho+a2*Vpotential
+        a2rhom=a2rhom+sum(a2rho)
       enddo
       enddo
      
       a2rhopm=a2rhopm/nwgrid
+      a2rhom=a2rhom/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
 
       call mpiallreduce_sum(a2rhopm,a2rhopm_all)
+      call mpiallreduce_sum(a2rhom,a2rhom_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
 !
     endsubroutine special_after_boundary
