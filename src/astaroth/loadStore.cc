@@ -21,8 +21,8 @@
 #include "../cdata_c.h"
 
 const int mxy=mx*my, nxy=nx*ny;
-extern int halo_xy_size, halo_xz_size, halo_yz_size;
-static AcReal *halo_xy_buffer, *halo_xz_buffer, *halo_yz_buffer; 
+extern int halo_xz_size[2], halo_yz_size[2];
+static AcReal *halo_xz_buffer[2], *halo_yz_buffer[2]; 
 extern Node node;
 
 const int BOT=0, TOP=1, TOT=2;
@@ -57,19 +57,21 @@ void initLoadStore()
 //printf("halo_widths_z= %d %d %d\n",halo_widths_z[BOT],halo_widths_z[TOP],halo_widths_x[TOT]);
 
         // buffer for xz and yz halos in host
-        halo_xz_size = mx*nz*max(halo_widths_y[BOT],halo_widths_y[TOP])*NUM_VTXBUF_HANDLES;
-        if (halo_xz_buffer==NULL) halo_xz_buffer=(AcReal*) malloc(halo_xz_size*sizeof(AcReal));
 
-        halo_yz_size = ny*nz*max(halo_widths_x[BOT],halo_widths_x[TOP])*NUM_VTXBUF_HANDLES;
-        if (halo_yz_buffer==NULL) halo_yz_buffer=(AcReal*) malloc(halo_yz_size*sizeof(AcReal));
-
-        halo_xy_size = nx*ny*max(halo_widths_z[BOT],halo_widths_z[TOP])*NUM_VTXBUF_HANDLES;
-        if (halo_xy_buffer==NULL) halo_xy_buffer=(AcReal*) malloc(halo_xy_size*sizeof(AcReal));
+        for (int i=BOT; i<=TOP; i++){
+            halo_xz_size[i] = mx*nz*halo_widths_y[i]*NUM_VTXBUF_HANDLES;
+            halo_yz_size[i] = ny*nz*halo_widths_x[i]*NUM_VTXBUF_HANDLES;
+            if (halo_xz_buffer[i]==NULL) halo_xz_buffer[i]=(AcReal*) malloc(halo_xz_size[i]*sizeof(AcReal));
+            if (halo_yz_buffer[i]==NULL) halo_yz_buffer[i]=(AcReal*) malloc(halo_yz_size[i]*sizeof(AcReal));
+        }
 }
 /****************************************************************************************************************/
 void finalLoadStore()
 {
-        free(halo_yz_buffer);
+        for (int i=BOT; i<=TOP; i++){
+          free(halo_xz_buffer[i]);
+          free(halo_yz_buffer[i]);
+        }
 }
 /****************************************************************************************************************/
 void loadOuterFront(AcMesh& mesh, Stream stream)
@@ -97,7 +99,7 @@ void loadOuterBot(AcMesh& mesh, Stream stream)
         int3 start=(int3){0, 0,                    halo_widths_z[BOT]};
         int3 end  =(int3){mx,halo_widths_y[BOT],mz-halo_widths_z[TOP]};  //end is exclusive
 
-        acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
+        acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer[BOT], AC_XZ);
 }
 
 void loadOuterTop(AcMesh& mesh, Stream stream)
@@ -105,7 +107,7 @@ void loadOuterTop(AcMesh& mesh, Stream stream)
         int3 start=(int3){0, my-halo_widths_y[TOP],   halo_widths_z[BOT]};
         int3 end  =(int3){mx,my,                   mz-halo_widths_z[TOP]};  //end is exclusive
 //printf("loadOuterTop: %d %d %d %d %d %d \n", start.x,end.x,start.y,end.y,start.z,end.z);
-        acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
+        acNodeLoadPlateXcomp(node, stream, start, end, &mesh, halo_xz_buffer[TOP], AC_XZ);
 }
 
 void loadOuterLeft(AcMesh& mesh, Stream stream)
@@ -113,7 +115,7 @@ void loadOuterLeft(AcMesh& mesh, Stream stream)
     int3 start=(int3){0,                      halo_widths_y[BOT],     halo_widths_z[BOT]};
     int3 end  =(int3){halo_widths_x[BOT]-1,my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1;  //end is exclusive
 
-    acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
+    acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer[BOT], AC_YZ);
 }
 
 void loadOuterRight(AcMesh& mesh, Stream stream)
@@ -121,7 +123,7 @@ void loadOuterRight(AcMesh& mesh, Stream stream)
     int3 start=(int3){mx-halo_widths_x[TOP],   halo_widths_y[BOT],     halo_widths_z[BOT]};
     int3 end  =(int3){mx-1,                 my-halo_widths_y[TOP]-1,mz-halo_widths_z[TOP]-1}+1; //end is exclusive
 
-    acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
+    acNodeLoadPlate(node, stream, start, end, &mesh, halo_yz_buffer[TOP], AC_YZ);
 }
 
 void loadOuterHalos(AcMesh& mesh)
@@ -158,7 +160,7 @@ void storeInnerBot(AcMesh& mesh, Stream stream)
         int3 start=(int3){l1,m1,n1+halo_widths_z[BOT]}-1;
         int3 end=(int3){l2,m1+halo_widths_y[BOT]-1,n2-halo_widths_z[TOP]}-1+1;   //end is exclusive
 
-        acNodeStorePlate(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
+        acNodeStorePlate(node, stream, start, end, &mesh, halo_xz_buffer[BOT], AC_XZ);
 }
 
 void storeInnerTop(AcMesh& mesh, Stream stream)
@@ -166,7 +168,7 @@ void storeInnerTop(AcMesh& mesh, Stream stream)
         int3 start=(int3){l1,m2-halo_widths_y[TOP]+1,n1+halo_widths_z[BOT]}-1;
         int3 end=(int3){l2,m2,n2-halo_widths_z[TOP]}-1+1;    //end is exclusive
 
-        acNodeStorePlate(node, stream, start, end, &mesh, halo_xz_buffer, AC_XZ);
+        acNodeStorePlate(node, stream, start, end, &mesh, halo_xz_buffer[TOP], AC_XZ);
 }
 
 void storeInnerLeft(AcMesh& mesh, Stream stream)
@@ -174,7 +176,7 @@ void storeInnerLeft(AcMesh& mesh, Stream stream)
     int3 start=(int3){l1,                     m1+halo_widths_y[BOT],n1+halo_widths_z[BOT]}-1;
     int3 end  =(int3){l1+halo_widths_x[BOT]-1,m2-halo_widths_y[TOP],n2-halo_widths_z[TOP]}-1+1;  //end is exclusive
 
-    acNodeStorePlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
+    acNodeStorePlate(node, stream, start, end, &mesh, halo_yz_buffer[BOT], AC_YZ);
 }
 
 void storeInnerRight(AcMesh& mesh, Stream stream)
@@ -182,7 +184,7 @@ void storeInnerRight(AcMesh& mesh, Stream stream)
     int3 start=(int3){l2-halo_widths_x[TOP]+1,m1+halo_widths_y[BOT],n1+halo_widths_z[BOT]}-1;
     int3 end  =(int3){l2,                     m2-halo_widths_y[TOP],n2-halo_widths_z[TOP]}-1+1; //end is exclusive
 
-    acNodeStorePlate(node, stream, start, end, &mesh, halo_yz_buffer, AC_YZ);
+    acNodeStorePlate(node, stream, start, end, &mesh, halo_yz_buffer[TOP], AC_YZ);
 }
 
 void storeInnerHalos(AcMesh& mesh)

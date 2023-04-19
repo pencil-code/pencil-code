@@ -42,7 +42,7 @@
 static AcMesh mesh;
 Node node;
 DeviceConfiguration devConfig;
-int halo_xy_size=0, halo_xz_size=0, halo_yz_size=0;
+int halo_xz_size[2]={0,0}, halo_yz_size[2]={0,0};
 static int l0=1;
 #if LFORCING
 static ForcingParams forcing_params;
@@ -261,9 +261,9 @@ printf("nx etc. %d %d %d %.14f %.14f %.14f \n",nx,ny,nz,dx,dy,dz);
      config.int_params[AC_mxy]  = mx*my;
      config.int_params[AC_nxy]  = nx*ny;
      config.int_params[AC_nxyz] = nw;
-     config.int_params[AC_xy_plate_bufsize] = halo_xy_size;
-     config.int_params[AC_xz_plate_bufsize] = halo_xz_size;
-     config.int_params[AC_yz_plate_bufsize] = halo_yz_size;
+     //config.int_params[AC_xy_plate_bufsize] = halo_xy_size;
+     config.int_params[AC_xz_plate_bufsize] = max(halo_xz_size[0],halo_xz_size[1]);
+     config.int_params[AC_yz_plate_bufsize] = max(halo_yz_size[0],halo_yz_size[1]);
 
      config.real_params[AC_dsx]=dx;
      config.real_params[AC_dsy]=dy;
