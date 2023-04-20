@@ -7593,11 +7593,12 @@ examples in name lists.
 ($==$, $/=$, $<$, $<=$, $>$, $>=$), {\it not} with characters
 (\code{.eq.}, \code{.ne.}, \code{.lt.}, \code{.le.}, \code{.gt.}, \code{.ge.}).
 \item In general all comments are placed on their own lines with the '!'
-appearing in the first column.
+appearing in the first column. It can be omitted in empty lines, but is yet recommended
+to be set in empty lines surrounding comments.
 \item All subroutine/functions begin with a standard comment block describing
 what they do, when and by whom they were created and when and by whom any
 non-trivial modifications were made.
-\item Lines longer that 78 characters should be explicitly wrapped using
+\item Lines longer that $\sim$ 100 characters should be explicitly wrapped using
   the \& character, unless there is a block of longer lines that can only
   be read easily when they are not wrapped. Always add one whitespace before
   the \& character.
