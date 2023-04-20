@@ -129,9 +129,19 @@ module Special
 !
 !  Initialize any module variables which are parameter dependent
 !
-      do ik=1,nx
-        k(ik)=k0+dk*(ik-1+iproc*nx)
-      enddo
+      if (llnk_spacing) then
+        lnkmax=alog(kmax)
+        dlnk=lnkmax/(ncpus*nx)
+        lnk0=dlnk
+        do ik=1,nx
+          lnk(ik)=lnk0+dlnk*(ik-1+iproc*nx)
+          k(ik)=exp(lnk(ik))
+        enddo
+      else
+        do ik=1,nx
+          k(ik)=k0+dk*(ik-1+iproc*nx)
+        enddo
+      endif
       lamf=lam/fdecay
 !
       call keep_compiler_quiet(f)
@@ -588,14 +598,27 @@ endif
       grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
       grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
 !
-      if (lconf_time) then
-        dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
-        (a*mQ*H**2+g*Qdot)*TReff**2+(mQ*H-k/a)*2*TReff*TRdoteff &
-        )/twopi**3
-      else 
-        dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
-        (a*mQ*H**2+a*g*Qdot)*TReff**2+(a*mQ*H-k)*2*TReff*TRdoteff &
-        )/twopi**3
+      if (llog_spacing) then
+        if (lconf_time) then
+          dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+          (a*mQ*H**2+g*Qdot)*TReff**2+(mQ*H-k/a)*2*TReff*TRdoteff &
+          )/twopi**3
+        else 
+          dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+          (a*mQ*H**2+a*g*Qdot)*TReff**2+(a*mQ*H-k)*2*TReff*TRdoteff &
+          )/twopi**3
+        endif
+      else
+XX
+        if (lconf_time) then
+          dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+          (a*mQ*H**2+g*Qdot)*TReff**2+(mQ*H-k/a)*2*TReff*TRdoteff &
+          )/twopi**3
+        else 
+          dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+          (a*mQ*H**2+a*g*Qdot)*TReff**2+(a*mQ*H-k)*2*TReff*TRdoteff &
+          )/twopi**3
+        endif
       endif
 !
       call mpiallreduce_sum(sum(grand),grand_sum,1)
