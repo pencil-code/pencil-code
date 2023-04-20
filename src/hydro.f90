@@ -1481,6 +1481,11 @@ module Hydro
       if (lfargo_advection.and..not.lfargoadvection_as_shift) &
         call not_implemented("initialize_hydro","Fargo advection without Fourier shift")
 
+      if (lconservative) then
+        f(:,:,:,iTij:iTij+5)=0.
+        if (llorentz_as_aux) f(:,:,:,ilorentz)=0.
+      endif
+
       if (lhiggsless) then
 
         open(1,file='higgsless.dat')
@@ -2519,7 +2524,7 @@ module Hydro
         do m=1,my
           ss=f(:,m,n,iux:iuz)
           call dot2_mx(ss,ss2)
-          do j=1,3
+          do j=iux,iuz
             f(:,m,n,j)=f(:,m,n,j)/sqrt(1.+ss2)
           enddo
         enddo
@@ -2579,8 +2584,6 @@ module Hydro
 !  Initialize auxiliaries to zero.
 !
       if (lconservative) then
-        f(:,:,:,iTij:iTij+5)=0.
-        if (llorentz_as_aux) f(:,:,:,ilorentz)=0.
 !
 !  Initialize Higgsless field
 !
