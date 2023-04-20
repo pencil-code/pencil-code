@@ -5308,7 +5308,7 @@ module Magnetic
               endif
             enddo
 !
-            call doupwind(f,iaa+j-1,p%uu,uxb_upw(1,j),mask=j)
+            call doupwind(f,iaa+j-1,p%uu,uxb_upw(:,j),mask=j)
 !
           enddo
 !
