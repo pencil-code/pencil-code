@@ -47,16 +47,17 @@ module Special
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
   real, dimension (nx) :: dt1_special
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
-  logical :: lconf_time=.false.
+  logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
-    lconf_time, Ndivt
+    lconf_time, Ndivt, lanalytic, lvariable_k
 !
   ! run parameters
   namelist /special_run_pars/ &
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
-    lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, Ndivt
+    lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
+    Ndivt, lanalytic, lvariable_k
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -78,6 +79,8 @@ module Special
   integer :: idiag_grand2=0 ! DIAG_DOC: ${\cal T}^Q$ (test)
   integer :: idiag_dgrant=0 ! DIAG_DOC: $\dot{\cal T}^\chi$
   integer :: idiag_fact=0   ! DIAG_DOC: $\Theta(t)$
+  integer :: idiag_k0=0   ! DIAG_DOC: $k0$
+  integer :: idiag_dk=0   ! DIAG_DOC: $dk$
 !
 ! z averaged diagnostics given in zaver.in
 !
@@ -168,9 +171,9 @@ module Special
             print*,'k=',k
             a=exp(H*t)
             psi=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
-            psidot=(-k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+            psidot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
             TR=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
-            TRdot=(-k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+            TRdot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
             chi0=chi_prefactor*pi*fdecay
           endif
           do n=n1,n2
@@ -261,6 +264,7 @@ module Special
       real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
       real, dimension (nx) :: Uprime, mQ, xi, epsQE, epsQB
       real :: fact=1.
+      integer :: ik
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -303,6 +307,13 @@ module Special
       endif
       epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
       epsQB=g**2*Q**4/(Mpl2*H**2)
+      if (lfirst.and.lvariable_k) then
+        k0=exp(-1.0)*a*H
+        dk=(k0*(exp(2*1.0)-1))/(ncpus*nx)
+        do ik=1,nx
+          k(ik)=k0+dk*(ik-1+iproc*nx)
+        enddo
+      endif
 !
 !  background
 !
@@ -316,31 +327,43 @@ module Special
 !
 !  analytical solution
 !
-!       case ('standard')
-!         if (lconf_time) then
-!           tstart=-1./(ascale_ini*H)
-!           t=tstart
-!           print*,'k=',k
-            psi_anal=(1./sqrt(2.*k))*cos(-k*t)
-            psidot_anal=(k/sqrt(2.*k))*sin(-k*t)
-            TR_anal=(1./sqrt(2.*k))*cos(-k*t)
-            TRdot_anal=(k/sqrt(2.*k))*sin(-k*t)
-!         else
+      if (lconf_time) then
+        psi_anal=(1./sqrt(2.*k))*cos(-k*t)
+        psidot_anal=(k/sqrt(2.*k))*sin(-k*t)
+        TR_anal=(1./sqrt(2.*k))*cos(-k*t)
+        TRdot_anal=(k/sqrt(2.*k))*sin(-k*t)
+      else
+        psi_anal=(1./sqrt(2.*k))*cos(k/(a*H))
+        psidot_anal=(k/sqrt(2.*k))*sin(k/(a*H))
+        TR_anal=(1./sqrt(2.*k))*cos(k/(a*H))
+        TRdot_anal=(k/sqrt(2.*k))*sin(k/(a*H))
+      endif
 !
 !  perturbation
 !
       if (lconf_time) then
-        where (k>(a*H*2.7))
-          df(l1:l2,m,n,iaxi_psi)=0.
-          df(l1:l2,m,n,iaxi_psidot)=0.
-          df(l1:l2,m,n,iaxi_TR)=0.
-          df(l1:l2,m,n,iaxi_TRdot)=0.
-          f(l1:l2,m,n,iaxi_psi)=psi_anal
-          f(l1:l2,m,n,iaxi_psidot)=psidot_anal
-          f(l1:l2,m,n,iaxi_TR)=TR_anal
-          f(l1:l2,m,n,iaxi_TRdot)=TRdot_anal
-        elsewhere
+        if (lanalytic) then
+!          where (k>(a*H*4.5))
+          where (k>(a*H*20.0))
+            df(l1:l2,m,n,iaxi_psi)=0.
+            df(l1:l2,m,n,iaxi_psidot)=0.
+            df(l1:l2,m,n,iaxi_TR)=0.
+            df(l1:l2,m,n,iaxi_TRdot)=0.
+            f(l1:l2,m,n,iaxi_psi)=psi_anal
+            f(l1:l2,m,n,iaxi_psidot)=psidot_anal
+            f(l1:l2,m,n,iaxi_TR)=TR_anal
+            f(l1:l2,m,n,iaxi_TRdot)=TRdot_anal
+          elsewhere
 !
+            df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+            df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
+              -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi+(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
+            df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
+            df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
+              -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
+              +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
+          endwhere
+        else
           df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
           df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
             -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi+(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
@@ -348,25 +371,47 @@ module Special
           df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
             -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
             +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
-        endwhere
-      else
-        df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
-        if (lwith_eps) then
-          df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-            -H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
-        else
-          df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-            -H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
         endif
-        df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
-        if (lwith_eps) then
-          df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
-            -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
-            +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
+      else
+        if (lanalytic) then
+!          where (k>(a*H*4.5))
+          where (k>(a*H*20.0))
+            df(l1:l2,m,n,iaxi_psi)=0.
+            df(l1:l2,m,n,iaxi_psidot)=0.
+            df(l1:l2,m,n,iaxi_TR)=0.
+            df(l1:l2,m,n,iaxi_TRdot)=0.
+            f(l1:l2,m,n,iaxi_psi)=psi_anal
+            f(l1:l2,m,n,iaxi_psidot)=psidot_anal
+            f(l1:l2,m,n,iaxi_TR)=TR_anal
+            f(l1:l2,m,n,iaxi_TRdot)=TRdot_anal
+          elsewhere
+            df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+            df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
+              -H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
+            df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
+            df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
+              -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
+              +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
+          endwhere
         else
-        df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
-          -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
-          +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
+          df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+          if (lwith_eps) then
+            df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
+              -H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
+          else
+            df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
+              -H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
+          endif
+            df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
+          if (lwith_eps) then
+            df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
+              -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
+              +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
+          else
+            df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
+              -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
+              +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
+          endif
         endif
       endif
 !
@@ -427,6 +472,8 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call save_name(grand_sum,idiag_grand2)
         call save_name(dgrant_sum,idiag_dgrant)
         call save_name(fact,idiag_fact)
+        call save_name(k0,idiag_k0)
+        call save_name(dk,idiag_dk)
 if (ip<10) then
 print*,'AXEL: iproc,t,Q=',iproc,t,Q
 print*,'AXEL: iproc,t,grand_sum=',iproc,t,grand_sum
@@ -530,12 +577,12 @@ endif
 !
       TReff=TR
       TRdoteff=TRdot
-      !where (TR<1./sqrt(2.*a*H))
-      where (k>(a*H*2.7))
-        !TReff=0.
-        !TRdoteff=0.
-        TReff=(1./sqrt(2.*k))*cos(-k*t)
-        TRdoteff=(k/sqrt(2.*k))*sin(-k*t)
+      where (abs(TR)<1./sqrt(2.*a*H))
+!      where (k>(a*H*2.7))
+        TReff=0.
+        TRdoteff=0.
+!        TReff=(1./sqrt(2.*k))*cos(-k*t)
+!        TRdoteff=(k/sqrt(2.*k))*sin(-k*t)
       endwhere
 !
       grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
@@ -584,7 +631,7 @@ endif
         idiag_Q=0; idiag_Qdot=0; idiag_Qddot=0; idiag_chi=0; idiag_chidot=0; idiag_chiddot=0
         idiag_psi=0; idiag_TR=0; idiag_psi_anal=0; idiag_TR_anal=0
         idiag_grand=0; idiag_grant=0; idiag_grand2=0; idiag_dgrant=0; idiag_fact=0
-        idiag_grandxy=0; idiag_grantxy=0
+        idiag_grandxy=0; idiag_grantxy=0; idiag_k0=0; idiag_dk=0
       endif
 !
       do iname=1,nname
@@ -603,6 +650,8 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'grand2' ,idiag_grand2)
         call parse_name(iname,cname(iname),cform(iname),'dgrant' ,idiag_dgrant)
         call parse_name(iname,cname(iname),cform(iname),'fact' ,idiag_fact)
+        call parse_name(iname,cname(iname),cform(iname),'k0' ,idiag_k0)
+        call parse_name(iname,cname(iname),cform(iname),'dk' ,idiag_dk)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
