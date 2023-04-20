@@ -312,6 +312,19 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
+    subroutine density_after_mn(f, p, df)
+!
+!  20-apr-23/hongzhe: adapted from anelastic_after_mn
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine density_after_mn
+!***********************************************************************
     subroutine dynamical_diffusion(uc)
 !
 !  dummy routine

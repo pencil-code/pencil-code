@@ -340,6 +340,11 @@ module Equ
 !
       if (lanelastic) call anelastic_after_mn(f,p,df,mass_per_proc)
 !
+!  Do things outside the mn loop for density.
+!  anelastic_after_mn can be moved inside here?
+!
+      call density_after_mn(f, p, df)
+!
       call timing('pde','after the end of the mn_loop')
 !
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
