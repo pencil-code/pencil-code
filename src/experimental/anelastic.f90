@@ -1067,7 +1067,7 @@ module Density
 !
     endsubroutine get_slices_pressure
 !***********************************************************************
-    subroutine anelastic_after_mn(f, p, df, mass_per_proc)
+    subroutine density_after_mn(f, df, mass_per_proc)
 !
       use Poisson, only: inverse_laplacian
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
@@ -1076,7 +1076,6 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !      real, dimension (nx,ny,nz) :: pold
-      type (pencil_case) :: p
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
       real, dimension (1)  :: mass_per_proc
@@ -1154,7 +1153,7 @@ module Density
         endif
       enddo; enddo
 !
-    endsubroutine anelastic_after_mn
+    endsubroutine density_after_mn
 !***********************************************************************
     subroutine inverse_laplacian_z(f,phi)
 !

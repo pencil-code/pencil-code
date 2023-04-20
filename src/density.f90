@@ -65,8 +65,8 @@ module Density
 !  Schur flow quantities
 !
   real, dimension(1) :: Schur_dlnrho_RHS_xyzaver
-  real, dimension (mz) :: Schur_dlnrho_RHS_xyaver_z
-  real, dimension (mx,my) :: Schur_dlnrho_RHS_zaver_xy
+  real, dimension (nz) :: Schur_dlnrho_RHS_xyaver_z
+  real, dimension (nx,ny) :: Schur_dlnrho_RHS_zaver_xy
 ! 
 ! reference state, components:  1       2          3              4            5      6     7         8            9        
 !                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
@@ -1951,6 +1951,10 @@ module Density
           endif
         endif
       endif
+      if (lSchur_3D3D1D) then
+        lpenc_requested(i_divu)=.true.
+        lpenc_requested(i_uglnrho)=.true.
+      endif
       if (ldiff_shock) then
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_gshock)=.true.
@@ -2369,7 +2373,6 @@ module Density
         !  Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(Schur_dlnrho_RHS)/nwgrid
         !enddo
         !enddo
-        !
 !
 !  The following part is moved into density_after_mn
 !
@@ -2420,13 +2423,17 @@ module Density
       if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE'
       if (headtt) call identify_bcs('lnrho',ilnrho)
 !
-!  The following part is moved into density_after_mn
+      if (lSchur_3D3D1D) then
 !
-      !if (lSchur_3D3D1D) then
-      !  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho)+Schur_dlnrho_RHS_xyzaver(1)  &
-      !                                             -Schur_dlnrho_RHS_xyaver_z(n) &
-      !                                             -Schur_dlnrho_RHS_zaver_xy(l1:l2,m)
-      !else
+!  Accumulatively calculate the RHS of Schur flow equations, but only finalize after the mn loop.
+!
+        density_rhs=p%uglnrho+p%divu
+
+        Schur_dlnrho_RHS_xyaver_z(n-nghost) = Schur_dlnrho_RHS_xyaver_z(n-nghost)+sum(density_rhs)/nxygrid
+        Schur_dlnrho_RHS_zaver_xy(:,m-nghost) = Schur_dlnrho_RHS_zaver_xy(:,m-nghost)+density_rhs/nzgrid
+        Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(density_rhs)/nwgrid
+
+      else
 !
 !  Continuity equation.
 !
@@ -2524,14 +2531,6 @@ module Density
 !  Add the continuity equation terms to the RHS of the density df.
 !
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + density_rhs
-!
-!  Accumulatively calculate the RHS of Schur flow equations, but only finalize after the mn loop
-!
-        if (lSchur_3D3D1D) then
-          Schur_dlnrho_RHS_xyaver_z(n) = Schur_dlnrho_RHS_xyaver_z(n)+sum(density_rhs)/nxygrid
-          Schur_dlnrho_RHS_zaver_xy(l1:l2,m) = Schur_dlnrho_RHS_zaver_xy(l1:l2,m)+density_rhs/nzgrid
-          Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(density_rhs)/nwgrid
-        endif
 !
       endif
 !
@@ -2764,7 +2763,7 @@ module Density
 !
       if (lborder_profiles) call set_border_density(f,df,p)
 !
-!      endif   !  if (lSchur_3D3D1D) then ... else
+      endif   !  if (lSchur_3D3D1D) then ... else
 !
       call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
       call calc_diagnostics_density(f,p)
@@ -3692,22 +3691,7 @@ module Density
 !
     endsubroutine get_init_average_density
 !***********************************************************************
-    subroutine anelastic_after_mn(f, p, df, mass_per_proc)
-!
-!  14-dec-09/dintrans: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(1) :: mass_per_proc
-      type (pencil_case) :: p
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-      call keep_compiler_quiet(mass_per_proc)
-!
-    endsubroutine anelastic_after_mn
-!***********************************************************************
-    subroutine density_after_mn(f, p, df)
+    subroutine density_after_mn(f,df,mass_per_proc)
 !
 !  20-apr-23/hongzhe: adapted from anelastic_after_mn
 !
@@ -3715,24 +3699,23 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, dimension (1) :: mass_per_proc
 !
       if (lSchur_3D3D1D) then
+
         call finalize_aver(nprocxy,12,Schur_dlnrho_RHS_xyaver_z)
         call finalize_aver(nprocz,3,Schur_dlnrho_RHS_zaver_xy)
         call finalize_aver(ncpus,123,Schur_dlnrho_RHS_xyzaver)
 !
-        do m=m1,m2
         do n=n1,n2
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho)+Schur_dlnrho_RHS_xyzaver(1)  &
-                                                   -Schur_dlnrho_RHS_xyaver_z(n) &
-                                                   -Schur_dlnrho_RHS_zaver_xy(l1:l2,m)
-        enddo
+          df(l1:l2,m1:m2,n,ilnrho) = df(l1:l2,m1:m2,n,ilnrho)+Schur_dlnrho_RHS_xyzaver(1)  &
+                                                             -Schur_dlnrho_RHS_xyaver_z(n-nghost) &
+                                                             -Schur_dlnrho_RHS_zaver_xy
         enddo
       endif
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(mass_per_proc)
 !
     endsubroutine density_after_mn
 !***********************************************************************

@@ -841,20 +841,18 @@ module Density
 !
 !***********************************************************************
 !***********************************************************************
-    subroutine anelastic_after_mn(f, p, df, mass_per_proc)
+    subroutine density_after_mn(f, df, mass_per_proc)
 !
 !  Dummy
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(in) :: df
-      real, dimension(1), intent(in) :: mass_per_proc
-      type(pencil_case), intent(in) :: p
+      real, dimension (1)  :: mass_per_proc
 !
       call keep_compiler_quiet(f, df)
-      call keep_compiler_quiet(p)
       call keep_compiler_quiet(mass_per_proc)
 !
-    endsubroutine anelastic_after_mn
+    endsubroutine density_after_mn
 !***********************************************************************
     subroutine boussinesq(f)
 !

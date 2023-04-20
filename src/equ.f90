@@ -336,14 +336,10 @@ module Equ
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif
 !
-!  Finish the job for the anelastic approximation
+!  Doing df-related work which cannot be finished inside the main mn-loop.
+!  (At the moment relevant for anelastic and Schur flows.)
 !
-      if (lanelastic) call anelastic_after_mn(f,p,df,mass_per_proc)
-!
-!  Do things outside the mn loop for density.
-!  anelastic_after_mn can be moved inside here?
-!
-      call density_after_mn(f, p, df)
+      call density_after_mn(f, df, mass_per_proc)
 !
       call timing('pde','after the end of the mn_loop')
 !
