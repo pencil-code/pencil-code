@@ -124,7 +124,7 @@ module Density
 !
 !  This module conflicts with Gravity module.
 !
-      if (lgrav) call fatal_error('register_density', 'conflicting with Gravity module. ')
+      if (lgrav) call fatal_error('register_density', 'conflicting with Gravity module')
 !
 !  This module does not consider logarithmic density.
 !
@@ -177,7 +177,8 @@ module Density
 !
       hyper3_mesh: if (diffrho_hyper3_mesh > 0.0) then
         ldiff_hyper3_mesh = .true.
-        if (lroot) print *, 'initialize_density: mesh hyper-diffusion; diffrho_hyper3_mesh = ', diffrho_hyper3_mesh
+        if (lroot) print *,'initialize_density: mesh hyper-diffusion; diffrho_hyper3_mesh = ', &
+            diffrho_hyper3_mesh
       endif hyper3_mesh
 !
 !  Get the total mass.
@@ -475,7 +476,7 @@ module Density
         energy: if (lthermal_energy) then
           df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - 0.5 * rho0z(n) * fdiff * p%u2
         elseif (lenergy) then energy
-          call not_implmented('dlnrho_dt', 'mass diffusion correction for this energy equation')
+          call not_implemented('dlnrho_dt','mass diffusion correction for this energy equation')
         endif energy
       endif massdiff
 !
@@ -516,20 +517,20 @@ module Density
 !
       diagnos: if (ldiagnos) then
 !
-        rho: if (idiag_mass /= 0 .or. idiag_rhomin /= 0 .or. idiag_rhomax /= 0) then
+        if (idiag_mass /= 0 .or. idiag_rhomin /= 0 .or. idiag_rhomax /= 0) then
           penc = p%rho
           call integrate_mn_name(penc, idiag_mass)
           if (idiag_rhomin /= 0) call max_mn_name(-penc, idiag_rhomin, lneg=.true.)
           call max_mn_name(penc, idiag_rhomax)
-        endif rho
+        endif
 !
-        drho: if (idiag_drhom /= 0 .or. idiag_drho2m /= 0 .or. idiag_drhorms /= 0 .or. idiag_drhomax /= 0) then
+        if (idiag_drhom /= 0 .or. idiag_drho2m /= 0 .or. idiag_drhorms /= 0 .or. idiag_drhomax /= 0) then
           penc = f(l1:l2,m,n,irho)
           call sum_mn_name(penc, idiag_drhom)
           if (idiag_drho2m /= 0) call sum_mn_name(penc**2, idiag_drho2m)
           if (idiag_drhorms /= 0) call sum_mn_name(penc**2, idiag_drhorms, lsqrt=.true.)
           if (idiag_drhomax /= 0) call max_mn_name(abs(penc), idiag_drhomax)
-        endif drho
+        endif
 !
       endif diagnos
 !
@@ -777,7 +778,7 @@ module Density
       case ('rho') var
         if (lwrite_slice_yz)  slices%yz  = (1.+f(ix_loc,m1:m2, n1:n2,  irho))*spread(rho0z(n1:n2),1,ny)
         if (lwrite_slice_xz)  slices%xz  = (1.+f(l1:l2, iy_loc,n1:n2,  irho))*spread(rho0z(n1:n2),1,nx)
-        if (lwrite_slice_xz2) slices%xz2 = (1.+f(l1:l2, iy2_loc,n1:n2,  irho))*spread(rho0z(n1:n2),1,nx)
+        if (lwrite_slice_xz2) slices%xz2 = (1.+f(l1:l2, iy2_loc,n1:n2, irho))*spread(rho0z(n1:n2),1,nx)
         if (lwrite_slice_xy)  slices%xy  = (1.+f(l1:l2, m1:m2, iz_loc, irho))*rho0z(iz_loc)
         if (lwrite_slice_xy2) slices%xy2 = (1.+f(l1:l2, m1:m2, iz2_loc,irho))*rho0z(iz2_loc)
         if (lwrite_slice_xy3) slices%xy3 = (1.+f(l1:l2, m1:m2, iz3_loc,irho))*rho0z(iz3_loc)
