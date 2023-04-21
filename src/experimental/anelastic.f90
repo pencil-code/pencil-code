@@ -1371,4 +1371,11 @@ module Density
 
     endsubroutine calc_diagnostics_density
 !***********************************************************************
+    subroutine write_z_stratification(f)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      call keep_compiler_quiet(f)
+
+    endsubroutine write_z_stratification
+!***********************************************************************s
 endmodule Density

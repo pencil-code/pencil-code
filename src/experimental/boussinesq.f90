@@ -45,7 +45,6 @@ module Density
   real, pointer :: chi
 !
   include '../density.h'
-  !integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   integer :: iorder_z=4
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
@@ -797,6 +796,13 @@ module Density
       call keep_compiler_quiet(p)
 
     endsubroutine calc_diagnostics_density
+!***********************************************************************s
+    subroutine write_z_stratification(f)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      call keep_compiler_quiet(f)
+
+    endsubroutine write_z_stratification
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
