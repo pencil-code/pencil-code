@@ -119,7 +119,7 @@ module Forcing
   real :: ampl_diffrot=1.0,omega_exponent=1.0
   real :: omega_tidal=1.0, R0_tidal=1.0, phi_tidal=1.0, Omega_vortex=0.
   real :: cs0eff=impossible
-  type(torus_rect) :: torus
+  type(torus_rect), save :: torus    ! save needed due to internal initialization
   ! GP_TC13 forcing
   real :: tcor_GP=1.,kmin_GP=1.,kmax_GP=2.,beta_GP=1.3333
   integer :: nk_GP=2
