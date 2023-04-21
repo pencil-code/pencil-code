@@ -99,7 +99,7 @@ module Magnetic
   integer, parameter :: nresi_max=4
 !
   real, dimension (ninit) :: amplaa=0.0, amplaa2=0.0, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
-  real, dimension (ninit) :: z0_gaussian, width_gaussian
+  real, dimension (ninit) :: z0_gaussian=0.0, width_gaussian=0.0
   real, dimension (ninit) :: ampl_ax=0.0, ampl_ay=0.0, ampl_az=0.0
   real, dimension (ninit) :: kx_ax=0.0, kx_ay=0.0, kx_az=0.0
   real, dimension (ninit) :: ky_ax=0.0, ky_ay=0.0, ky_az=0.0
