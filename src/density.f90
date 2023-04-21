@@ -2348,8 +2348,6 @@ module Density
       !use Sub, only: div, grad, dot_mn, finalize_aver
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!      real, dimension (nx,3) :: glnrho, uu
-!      real, dimension (nx) :: divu, uglnrho, Schur_dlnrho_RHS
 !
       if (lSchur_3D3D1D) then
 !
@@ -2358,28 +2356,6 @@ module Density
         Schur_dlnrho_RHS_xyzaver=0.
         Schur_dlnrho_RHS_xyaver_z=0.
         Schur_dlnrho_RHS_zaver_xy=0.
-!
-!  The following part is moved into dlnrho_dt
-!
-        !do n=n1,n2
-        !do m=m1,m2
-        !  uu=f(l1:l2,m,n,iux:iuz)
-        !  call grad(f,ilnrho,glnrho)
-        !  call div(f,iuu,divu)
-        !  call dot_mn(uu,glnrho,uglnrho)
-        !  Schur_dlnrho_RHS=uglnrho+divu
-        !  Schur_dlnrho_RHS_xyaver_z(n) = Schur_dlnrho_RHS_xyaver_z(n)+sum(Schur_dlnrho_RHS)/nxygrid
-        !  Schur_dlnrho_RHS_zaver_xy(l1:l2,m) = Schur_dlnrho_RHS_zaver_xy(l1:l2,m)+Schur_dlnrho_RHS/nzgrid
-        !  Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(Schur_dlnrho_RHS)/nwgrid
-        !enddo
-        !enddo
-!
-!  The following part is moved into density_after_mn
-!
-        !call finalize_aver(nprocxy,12,Schur_dlnrho_RHS_xyaver_z)
-        !call finalize_aver(nprocz,3,Schur_dlnrho_RHS_zaver_xy)
-        !call finalize_aver(ncpus,123,Schur_dlnrho_RHS_xyzaver)    !MR: verified?
-        
       endif
 !
       call keep_compiler_quiet(f)
@@ -2428,11 +2404,10 @@ module Density
 !  Accumulatively calculate the RHS of Schur flow equations, but only finalize after the mn loop.
 !
         density_rhs=p%uglnrho+p%divu
-
+!
         Schur_dlnrho_RHS_xyaver_z(n-nghost) = Schur_dlnrho_RHS_xyaver_z(n-nghost)+sum(density_rhs)/nxygrid
         Schur_dlnrho_RHS_zaver_xy(:,m-nghost) = Schur_dlnrho_RHS_zaver_xy(:,m-nghost)+density_rhs/nzgrid
         Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(density_rhs)/nwgrid
-
       else
 !
 !  Continuity equation.
@@ -3702,7 +3677,7 @@ module Density
       real, dimension (1) :: mass_per_proc
 !
       if (lSchur_3D3D1D) then
-
+!
         call finalize_aver(nprocxy,12,Schur_dlnrho_RHS_xyaver_z)
         call finalize_aver(nprocz,3,Schur_dlnrho_RHS_zaver_xy)
         call finalize_aver(ncpus,123,Schur_dlnrho_RHS_xyzaver)
