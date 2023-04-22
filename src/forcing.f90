@@ -1460,9 +1460,7 @@ module Forcing
       enddo
       enddo
 !
-!  For printouts
-!  On different processors, irufm needs to be communicated
-!  to other processors.
+!  For printouts, irufm needs to be communicated to other processors.
 !
       if (lout) then
         if (idiag_qfm/=0) then
@@ -2180,7 +2178,7 @@ module Forcing
         enddo
       endif
 !
-!  For printouts on different processors, irufm needs to be communicated.
+!  For printouts, irufm needs to be communicated.
 !
       if (lout) then
         if (idiag_rufm/=0) then
@@ -2872,7 +2870,7 @@ module Forcing
       real, dimension(nx,3,3) :: psi_ij,Tij
       integer :: emm,l,j,jf,Legendrel,lmindex,aindex
       real :: a_ell,anum,adenom,jlm_ff,ylm_ff,rphase1,fnorm,alphar,Balpha,psilm,RYlm,IYlm
-      real :: rz,rindex,ralpha,rphase2,thphase,theta,phi
+      real :: rz,rindex,ralpha,rphase2,thphase,sthphase,cthphase,thprime,phprime
       real, dimension(mx) :: Z_psi
 !
 ! This is designed for 5 emm values and for each one 5 ell values. Total 25 values.
@@ -2925,21 +2923,23 @@ module Forcing
         if (lisotropize_CK) then
           call random_number_wrapper(thphase,CHANNEL=channel_force)
           thphase = pi*thphase/2.
-        else
-          thphase=0.
         endif
 
         do n=1,mz
           do m=1,my
-            theta=y(m); phi=z(n)
             if (lisotropize_CK) then
-              theta=y(m)-thphase
-              if (theta<0) then
-                phi=phi+pi; theta=abs(theta)
+              sthphase=sin(thphase); cthphase=cos(thphase)
+              thprime=acos(sthphase*cosph(n)*sinth(m)+cthphase*costh(m))
+              if (thprime==0. .or. thprime==pi) then
+                phprime=0.
+              else
+                phprime=acos((cthphase*cosph(n)*sinth(m)-sthphase*costh(m))/sin(thprime))
               endif
+            else
+              thprime=y(m); phprime=z(n)
             endif
-            call sp_harm_real(RYlm,Legendrel,emm,theta,phi)
-            call sp_harm_imag(IYlm,Legendrel,emm,theta,phi)
+            call sp_harm_real(RYlm,Legendrel,emm,thprime,phprime)
+            call sp_harm_imag(IYlm,Legendrel,emm,thprime,phprime)
             psilm = RYlm*cos(rphase1)-IYlm*sin(rphase1)
             psif(:,m,n) = Z_psi*psilm
             if (ck_equator_gap/=0) psif(:,m,n)=psif(:,m,n)*profy_ampl(m)
@@ -3065,8 +3065,7 @@ module Forcing
         if (idiag_rufm/=0) then
           irufm=irufm/(nwgrid)
           !
-          !  on different processors, irufm needs to be communicated
-          !  to other processors
+          !  irufm needs to be communicated to other processors
           !
           fsum_tmp=irufm
           call mpireduce_sum(fsum_tmp,fsum)
@@ -3636,7 +3635,7 @@ module Forcing
                   if (lactive_dimension(j)) then
                     jf=j+ifff-1
                     if (iforce_profile=='nothing') then
-                      f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j)
+                      f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j)
                     else
                       f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j) &
                                        *profx_ampl*profy_ampl(m)*profz_ampl(n)
@@ -3679,8 +3678,7 @@ module Forcing
         if (idiag_rufm/=0) then
           irufm=irufm/(nwgrid)
 !
-!  on different processors, irufm needs to be communicated
-!  to other processors
+!  irufm needs to be communicated to other processors
 !
           fsum_tmp=irufm
           call mpireduce_sum(fsum_tmp,fsum)
@@ -3875,8 +3873,7 @@ module Forcing
             if (idiag_rufm/=0) then
               irufm=irufm/(nwgrid)
 !
-!  on different processors, irufm needs to be communicated
-!  to other processors
+!  irufm needs to be communicated to other processors
 !
               fsum_tmp=irufm
               call mpireduce_sum(fsum_tmp,fsum)
@@ -3983,8 +3980,7 @@ module Forcing
         if (idiag_rufm/=0) then
           irufm=irufm/(nwgrid)
 !
-!  on different processors, irufm needs to be communicated
-!  to other processors
+!  irufm needs to be communicated to other processors
 !
           fsum_tmp=irufm
           call mpireduce_sum(fsum_tmp,fsum)
@@ -4645,7 +4641,7 @@ module Forcing
 !  23-dec-18/axel: forcing_helicity has now similar capabilities
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,3) :: force1,force2,force_vec  !MR: a lot of memory
+      real, dimension (mx,my,mz,3) :: force_vec
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real :: phase1,phase2,p_weight
@@ -4677,15 +4673,15 @@ module Forcing
       ky2=kky(ik2)
       kz2=kkz(ik2)
 !
-!  Calculate forcing function
-!
-      call hel_vec(f,kx01,ky1,kz1,phase1,kav,force1)
-      call hel_vec(f,kx02,ky2,kz2,phase2,kav,force2)
-!
 !  Determine weight parameter
 !
       p_weight=(tsforce-t)/dtforce
-      force_vec=p_weight*force1+(1-p_weight)*force2
+!
+!  Calculate forcing function
+!
+      force_vec=0.
+      call hel_vec(f,kx01,ky1,kz1,phase1,kav,force_vec,   p_weight)
+      call hel_vec(f,kx02,ky2,kz2,phase2,kav,force_vec,1.-p_weight)
 !
 ! Find energy input
 !
@@ -4711,27 +4707,26 @@ module Forcing
 !
       if (lwork_ff) then
 !
-!  on different processors, irufm needs to be communicated
-!  to other processors
+!  irufm needs to be communicated to other processors
 !
         fsum_tmp=irufm
-        call mpireduce_sum(fsum_tmp,fsum)
-        irufm=fsum
-        call mpibcast_real(irufm)
+        call mpiallreduce_sum(fsum_tmp,irufm)
 !
 ! What should be added to force_vec in order to make the energy
 ! input equal to work_ff?
 !
-        mulforce_vec=work_ff/irufm
-        if (mulforce_vec > max_force)  mulforce_vec=max_force
+        mulforce_vec=min(max_force,work_ff/irufm)
+!
+!  Add rescaled forcing
+!
+        f(l1:l2,m1:m2,n1:n2,iffx:iffz) = f(l1:l2,m1:m2,n1:n2,iffx:iffz) &
+                                        +force_vec(l1:l2,m1:m2,n1:n2,:)*mulforce_vec
       else
-        mulforce_vec = 1.0
-      endif
 !
 !  Add forcing
 !
-      f(l1:l2,m1:m2,n1:n2,iffx:iffz) = f(l1:l2,m1:m2,n1:n2,iffx:iffz) &
-                                      +force_vec(l1:l2,m1:m2,n1:n2,:)*mulforce_vec
+        f(l1:l2,m1:m2,n1:n2,iffx:iffz) = f(l1:l2,m1:m2,n1:n2,iffx:iffz)+force_vec(l1:l2,m1:m2,n1:n2,:)
+      endif
 !
 ! Save for printouts
 !
@@ -4824,8 +4819,7 @@ module Forcing
 !         if (idiag_rufm/=0) then
 !           irufm=irufm/(nwgrid)
 !           !
-!           !  on different processors, irufm needs to be communicated
-!           !  to other processors
+!           !  irufm needs to be communicated
 !           !
 !           fsum_tmp=irufm
 !           call mpireduce_sum(fsum_tmp,fsum)
@@ -4850,7 +4844,7 @@ module Forcing
 !
     endsubroutine forcing_tidal
 !***********************************************************************
-    subroutine hel_vec(f,kx0,ky,kz,phase,kav,force1)
+    subroutine hel_vec(f,kx0,ky,kz,phase,kav,force1,fac)
 !
 !  Add helical forcing function, using a set of precomputed wavevectors.
 !  The relative helicity of the forcing function is determined by the factor
@@ -4864,6 +4858,8 @@ module Forcing
 !  25-sep-02/axel: preset force_ampl to unity (in case slope is not controlled)
 !   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
 !  17-jan-03/nils: adapted from forcing_hel
+!  21-apr-23/MR: changed to cumulative work: NEEDS INITIALIZATION OF force1 BEFORE CALL!
+!                added parameter fac for immediate scaling of force1
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -4874,6 +4870,7 @@ module Forcing
       real :: kx0,ky,kz
       real :: phase
       real :: kav
+      real :: fac
       real, dimension (mx,my,mz,3) :: force1
 !
       real, dimension (nx) :: radius,tmpx
@@ -5027,7 +5024,7 @@ module Forcing
           jf=j+ifff-1
           do n=n1,n2
             do m=m1,m2
-               force1(l1:l2,m,n,jf) = force_ampl*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+               force1(l1:l2,m,n,jf) = force1(l1:l2,m,n,jf) + (fac*force_ampl)*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
             enddo
           enddo
         enddo
@@ -5045,7 +5042,7 @@ module Forcing
             do m=m1,m2
               radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
               tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
-              force1(l1:l2,m,n,jf) =  real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
+              force1(l1:l2,m,n,jf) = force1(l1:l2,m,n,jf) + fac*real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
             enddo
           enddo
         enddo
