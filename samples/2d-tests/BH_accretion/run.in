@@ -1,0 +1,52 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2012-10-04 16:04:16 wlyra Exp $',
+  ip=14,
+  nt=500, it1=50, isave=500, itorder=3, ialive=0
+  dsnap=20.0,dvid=5.0
+  cdt=0.2, 
+  cdtv=0.2, 
+  cdtv3=0.1
+  dtmin=1.0d-12
+  dtmax=2.0d-3
+  border_frac_r=0.125,0.0
+  lread_global=F
+  lperi = F  , T  , F,           ! periodic direction?
+!      ux  uy   uz   lnrho  lnTT,ar ap  az  shock
+  bcx='s','s','a' , 's',  's', 'a','s','a','a'
+  bcz='a','a','s' , 's',  's', 'a','s','a','a'
+/
+&eos_run_pars
+  cs0  = 5.6d-3 ! Code units
+  rho0 = 1.0 ! Code units
+  gamma= 1.67
+/
+&hydro_run_pars
+  lpressuregradient_gas=T
+/
+&density_run_pars
+  idiff='normal','hyper3lnrho','shock'
+  diffrho=1.0e-4,diffrho_hyper3=1.0d-6,diffrho_shock=1.0
+/
+&grav_run_pars
+  ipotential='pseudo-Newtonian',
+  g0=0.49 ! Corresponds to 20 Msun BH (code units)
+/
+&magnetic_run_pars
+  iresistivity='eta-const','hyper3','shock'
+  eta_hyper3=1.0d-6,eta_shock=1.0,eta=1.0e-5
+/
+&entropy_run_pars
+!  iheatcond='K-const',hcond0=1.0e-13
+  iheatcond='chi-hyper3','chi-const'
+  chi_hyper3=1.0d-6,chi=1.0e-5
+/
+&viscosity_run_pars
+  ivisc='hyper3-nu-const','nu-shock','nu-const'
+  nu_hyper3=1.0d-6,nu_shock=1.0,nu=1.0e-4
+/
+&shock_run_pars
+/

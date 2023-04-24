@@ -1,0 +1,15 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/BH_accretion
+SVN Id:
+    $Id$
+Maintainer:
+    Piyali Chatterjee <mail/piyali.chatterjee AT iiap / res / in> and 
+    Mayank Pathak <mail/mayankpathak AT iisc / ac / in>
+Added:
+    21-April-2023
+Status:
+    
+References:
+    Kato Y., Mineshige S., Shibata K., Magnetohydrodynamic Accretion Flows: 
+    Formation of Magnetic Tower Jet and Subsequent Quasi–Steady State, 
+    The Astrophysical Journal, 605:307–320, 2004 

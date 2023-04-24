@@ -1,0 +1,52 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2012-10-04 16:04:16 wlyra Exp $'
+  ip=14
+!
+  xyz0  =  -100.0,0.0,-50
+  xyz1  =  100.0,0.0, 50.0
+!
+  lperi = F  , T  , F,           ! periodic direction?
+!      ux  uy   uz   lnrho  lnTT, ar  ap  az       
+  bcx='s','s','s' , 'a2',  's', 'a','s','a'
+  bcz='s','s','s' , 'a2',  's', 'a','s','a'
+!
+  lwrite_aux=T
+  unit_system='cgs'
+  unit_length=5928888.5 ! Schwarzchild Radius
+  unit_velocity=3.0d10 ! Speed of light
+  unit_density=7.6d-10
+  unit_temperature=1.0
+  lsmooth_farray=T, farray_smooth_width=12
+/
+&initial_condition_pars
+  r0_d=17.2,rpos=17.2
+  apara=0.47, h_d=10.0, 
+  dsteep=20.0, ngamma=3.0, rho0_c=2.0d-5, cs0_c=0.65,
+  Tc=2.76d12
+  initaa_dc='kato',pbeta=100.0,amplaa=0.0
+/
+&eos_init_pars
+  cs0  = 5.6d-3 ! Code units
+  rho0 = 1.0 ! Code units
+  gamma= 1.67
+/
+&hydro_init_pars
+  inituu='zero'
+/
+&density_init_pars
+  initlnrho='zero'
+/
+&entropy_init_pars
+  initlnTT='zero'
+/
+&grav_init_pars
+  ipotential='pseudo-Newtonian',
+  g0=0.49 ! Corresponds to 20 Msun BH (code units)
+/
+&magnetic_init_pars
+  initaa='zero'
+/
