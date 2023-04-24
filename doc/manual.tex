@@ -11422,7 +11422,8 @@ should always be weaker than the advective Courant criterion.
 }\label{pw}\end{figure}
 
 \begin{figure}[h!]\begin{center}
-\includegraphics[width=.7\columnwidth]{pspec-comp}
+\includegraphics[width=.49\columnwidth]{pspec-comp}
+\includegraphics[width=.49\columnwidth]{pspec-comp-lin}
 \end{center}\caption[]{
   Comparison of centered (solid lines) and upwinding (dashed lines)
   advection in a $512^3$ isothermal turbulence simulation forced with
@@ -11432,6 +11433,12 @@ should always be weaker than the advective Courant criterion.
   The viscosity is $\nu=10^{-4}$.
   The dotted line gives a run without regular diffusion, but
   with slope-limited diffusion (SLD) instead.
+  In the right panel, the curves are plotted versus $k/(sk_\nu)$, where
+  $k_\nu=(\epsilon_{\rm K}/\nu^3)^{1/2}$ is the nominal viscous cutoff
+  wavenumber, and $s$ is an empirical gain factor that has been introduced
+  to collapse the spectra in the inertial range.
+  The maximum gain factor is 2.6, but at the price of increasing
+  the bottle neck.
 }\label{pspec}\end{figure}
 
 A standard adection experiment is shown in Fig.~\ref{pw}
