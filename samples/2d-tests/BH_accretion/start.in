@@ -24,7 +24,7 @@
 /
 &initial_condition_pars
   r0_d=17.2,rpos=17.2
-  apara=0.47, h_d=10.0, 
+  apara=0.46, h_d=10.0, 
   dsteep=20.0, ngamma=3.0, rho0_c=2.0d-5, cs0_c=0.65,
   Tc=2.76d12
   initaa_dc='kato',pbeta=100.0,amplaa=0.0
