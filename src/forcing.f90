@@ -2870,7 +2870,7 @@ module Forcing
       real, dimension(nx,3,3) :: psi_ij,Tij
       integer :: emm,l,j,jf,Legendrel,lmindex,aindex
       real :: a_ell,anum,adenom,jlm_ff,ylm_ff,rphase1,fnorm,alphar,Balpha,psilm,RYlm,IYlm
-      real :: rz,rindex,ralpha,rphase2,thphase,sthphase,cthphase,thprime,phprime
+      real :: rz,rindex,ralpha,rphase2,thphase,sthphase,cthphase,costhprime,phprime
       real, dimension(mx) :: Z_psi
 !
 ! This is designed for 5 emm values and for each one 5 ell values. Total 25 values.
@@ -2929,17 +2929,17 @@ module Forcing
           do m=1,my
             if (lisotropize_CK) then
               sthphase=sin(thphase); cthphase=cos(thphase)
-              thprime=acos(sthphase*cosph(n)*sinth(m)+cthphase*costh(m))
-              if (thprime==0. .or. thprime==pi) then
+              costhprime=sthphase*cosph(n)*sinth(m)+cthphase*costh(m)
+              if (abs(costhprime)==1.) then
                 phprime=0.
               else
-                phprime=acos((cthphase*cosph(n)*sinth(m)-sthphase*costh(m))/sin(thprime))
+                phprime=acos((cthphase*cosph(n)*sinth(m)-sthphase*costh(m))/sqrt(1.-costhprime**2))
               endif
             else
-              thprime=y(m); phprime=z(n)
+              costhprime=costh(m); phprime=z(n)
             endif
-            call sp_harm_real(RYlm,Legendrel,emm,thprime,phprime)
-            call sp_harm_imag(IYlm,Legendrel,emm,thprime,phprime)
+            call sp_harm_real_costh(RYlm,Legendrel,emm,costhprime,phprime)
+            call sp_harm_imag_costh(IYlm,Legendrel,emm,costhprime,phprime)
             psilm = RYlm*cos(rphase1)-IYlm*sin(rphase1)
             psif(:,m,n) = Z_psi*psilm
             if (ck_equator_gap/=0) psif(:,m,n)=psif(:,m,n)*profy_ampl(m)
@@ -5016,26 +5016,26 @@ module Forcing
 !
       if (r_ff == 0) then       ! no radial profile
         if (lwork_ff) then
-          force_ampl=calc_force_ampl(f,fx,fy,fz,coef)
+          force_ampl=fac*calc_force_ampl(f,fx,fy,fz,coef)
         else
-          force_ampl=1.
+          force_ampl=fac
         endif
         do j=1,3
           jf=j+ifff-1
           do n=n1,n2
             do m=m1,m2
-               force1(l1:l2,m,n,jf) = force1(l1:l2,m,n,jf) + (fac*force_ampl)*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+               force1(l1:l2,m,n,jf) = force1(l1:l2,m,n,jf) + force_ampl*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
             enddo
           enddo
         enddo
       else                      ! with radial profile
+        call fatal_error('hel_vec','radial profile should be quenched')
         do j=1,3
           jf=j+ifff-1
           do n=n1,n2
 !--         sig = relhel*tmpz(n)
 !AB: removed tmpz factor
-              sig = relhel
-            call fatal_error('hel_vec','radial profile should be quenched')
+            sig = relhel
             coef(1)=cmplx(k*kex,sig*kkex)
             coef(2)=cmplx(k*key,sig*kkey)
             coef(3)=cmplx(k*kez,sig*kkez)
