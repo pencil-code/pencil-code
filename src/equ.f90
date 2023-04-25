@@ -493,6 +493,7 @@ module Equ
       use Hydro, only: calc_diagnostics_hydro
       use Magnetic, only: calc_diagnostics_magnetic
       use Forcing, only: calc_diagnostics_forcing
+      use Viscosity, only: calc_diagnostics_viscosity
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
@@ -518,6 +519,7 @@ module Equ
         call calc_diagnostics_energy(f,p)
         call calc_diagnostics_hydro(f,p)
         call calc_diagnostics_magnetic(f,p)
+        call calc_diagnostics_viscosity(p)
         if (lforcing_cont) call calc_diagnostics_forcing(p)
 
         lfirstpoint=.false.

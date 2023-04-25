@@ -1216,7 +1216,7 @@ module Viscosity
 !
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu,gradnu_shock
       real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,pnu_shock
-      real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
+      real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2
       real, dimension (nx) :: gradnu_effective,fac,advec_hypermesh_uu
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
       real, dimension (nx,3,3) :: d_sld_flux
@@ -2193,20 +2193,6 @@ module Viscosity
 !
       if (lvisc_forc_as_aux) f(l1:l2,m,n,ivisc_forcx:ivisc_forcz) = p%fvisc
 !
-!  Do diagnostics related to viscosity.
-!
-      if (ldiagnos) then
-        call sum_mn_name(p%nu_smag,idiag_nusmagm)
-        call sum_mn_name(p%nu_smag,idiag_nu_LES)
-        if (idiag_nusmagmin/=0) call max_mn_name(-p%nu_smag,idiag_nusmagmin,lneg=.true.)
-        call max_mn_name(p%nu_smag,idiag_nusmagmax)
-        call sum_mn_name(p%nu,idiag_num)
-        if (idiag_qfviscm/=0) then
-          call dot(p%curlo,p%fvisc,qfvisc)
-          call sum_mn_name(qfvisc,idiag_qfviscm)
-        endif
-      endif
-!
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
     subroutine viscosity_after_boundary(f)
@@ -2479,10 +2465,7 @@ module Viscosity
 !  20-nov-02/tony: coded
 !   9-jul-04/nils: added Smagorinsky viscosity
 !
-      use Diagnostics, only: sum_mn_name, max_mn_name, xysum_mn_name_z, &
-          yzsum_mn_name_x, zsum_mn_name_xy, max_mn_name, phisum_mn_name_rz, &
-          integrate_mn_name
-      use Sub, only: cross, dot2, mult_mat_vv
+      use Diagnostics, only: max_mn_name
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2490,9 +2473,7 @@ module Viscosity
       intent (in) :: p
       intent (inout) :: df
 !
-      real, dimension (nx)  :: Reshock, fvisc2, uus, tmp
-      real, dimension (nx,3):: nuD2uxb, fluxv
-      real, dimension (nx)  :: diffus_nu, diffus_nu2, diffus_nu3
+      real, dimension (nx) :: diffus_nu, diffus_nu3
       integer :: i
 !
 !  Add viscosity to equation of motion
@@ -2509,15 +2490,14 @@ module Viscosity
 !
       if (lfirst.and.ldt) then
 
-        diffus_nu =p%diffus_total *dxyz_2
-        diffus_nu2=p%diffus_total2*dxyz_4
+        diffus_nu = p%diffus_total *dxyz_2
         if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
           diffus_nu3 = p%diffus_total3 * sum(abs(dline_1),2)
         else
-          diffus_nu3=p%diffus_total3*dxyz_6
+          diffus_nu3 = p%diffus_total3*dxyz_6
         endif
-        maxdiffus=max(maxdiffus,diffus_nu)
-        maxdiffus2=max(maxdiffus2,diffus_nu2)
+        maxdiffus =max(maxdiffus ,diffus_nu)
+        maxdiffus2=max(maxdiffus2,p%diffus_total2*dxyz_4)
         maxdiffus3=max(maxdiffus3,diffus_nu3)
 
         if (ldiagnos) then
@@ -2526,10 +2506,25 @@ module Viscosity
         endif
 
       endif
+
+      call calc_diagnostics_viscosity(p)
+
+    endsubroutine calc_viscous_force
+!***********************************************************************
+    subroutine calc_diagnostics_viscosity(p)
+!
+      use Sub, only: cross, dot, dot2, mult_mat_vv
+      use Diagnostics
+!
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx)  :: Reshock, fvisc2, uus, tmp, qfvisc
+      real, dimension (nx,3):: nuD2uxb, fluxv
 !
 !  Diagnostic output
 !
       if (ldiagnos) then
+!
         if (idiag_nu_tdep/=0)  call sum_mn_name(spread(nu_tdep,1,nx),idiag_nu_tdep)
 !        if (lvisc_smag_simplified) nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
 !        if (lvisc_smag_cross_simplified) nu_smag=(C_smag*dxmax)**2.*p%ss12
@@ -2572,12 +2567,6 @@ module Viscosity
             call sum_mn_name(nuD2uxb(:,3),idiag_nuD2uxbzm)
           endif
         endif
-      endif
-!
-! For slope-limted diffusion viscocity diagnostics need to be written
-! out at the last time step
-!
-      if (ldiagnos) then
 
         if (idiag_fviscm/=0 .or. idiag_fviscrmsx/=0) call dot2(p%fvisc,fvisc2)
 
@@ -2595,6 +2584,20 @@ module Viscosity
         if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
         if (idiag_epsKint/=0) call integrate_mn_name(p%visc_heat*p%rho,idiag_epsKint)
 
+        call sum_mn_name(p%nu_smag,idiag_nusmagm)
+        call sum_mn_name(p%nu_smag,idiag_nu_LES)
+        if (idiag_nusmagmin/=0) call max_mn_name(-p%nu_smag,idiag_nusmagmin,lneg=.true.)
+        call max_mn_name(p%nu_smag,idiag_nusmagmax)
+
+        call sum_mn_name(p%nu,idiag_num)
+        if (idiag_qfviscm/=0) then
+          call dot(p%curlo,p%fvisc,qfvisc)
+          call sum_mn_name(qfvisc,idiag_qfviscm)
+        endif
+!
+! For slope-limted diffusion viscocity diagnostics need to be written
+! out at the last time step
+!
       endif
 !
 !  1D-averages.
@@ -2694,7 +2697,7 @@ module Viscosity
         endif
       endif
 !
-    endsubroutine calc_viscous_force
+    endsubroutine calc_diagnostics_viscosity
 !***********************************************************************
     subroutine calc_visc_heat_ppd(df,p)
 !
@@ -2844,11 +2847,10 @@ module Viscosity
       dlver_dr = -(Lambda_V0*der_LV0_rprof(l1:l2)+Lambda_V1*sinth(m)*sinth(m)*der_LV1_rprof(l1:l2))
       dlhor_dtheta = -Lambda_H1*LH1_rprof(l1:l2)*2.*costh(m)*sinth(m)/x(l1:l2)
 !
-      div_lambda = lver*(sinth(m)*lomega*p%glnrho(:,1) &
-                         +3.*sinth(m)*lomega/x(l1:l2) + sinth(m)*dlomega_dr) &
-                  +lomega*sinth(m)*dlver_dr + lhor*(costh(m)*lomega*p%glnrho(:,2) &
-                  -sinth(m)*lomega/x(l1:l2) + 2.*cotth(m)*costh(m)*lomega/x(l1:l2) &
-                  +costh(m)*dlomega_dtheta) + lomega*costh(m)*dlhor_dtheta
+      div_lambda = sinth(m)*(lver*(lomega*p%glnrho(:,1)+3.*lomega/x(l1:l2)+dlomega_dr)+lomega*dlver_dr) &
+                  +costh(m)*(lhor*(lomega*p%glnrho(:,2) &
+                  -1./cotth(m)*lomega/x(l1:l2) + 2.*cotth(m)*lomega/x(l1:l2) &
+                  +dlomega_dtheta) + lomega*dlhor_dtheta)
 !
     endsubroutine calc_lambda
 !***********************************************************************
