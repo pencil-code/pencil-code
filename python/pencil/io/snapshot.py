@@ -326,29 +326,31 @@ def write_h5_snapshot(
     if indx == None:
         indx = read.index()
     #
+    
+    skeys = [
+        "l1",
+        "l2",
+        "m1",
+        "m2",
+        "n1",
+        "n2",
+        "nx",
+        "ny",
+        "nz",
+        "mx",
+        "my",
+        "mz",
+        "nprocx",
+        "nprocy",
+        "nprocz",
+        "maux",
+        "mglobal",
+        "mvar",
+        "precision",
+    ]
+    
     if settings == None:
         settings = {}
-        skeys = [
-            "l1",
-            "l2",
-            "m1",
-            "m2",
-            "n1",
-            "n2",
-            "nx",
-            "ny",
-            "nz",
-            "mx",
-            "my",
-            "mz",
-            "nprocx",
-            "nprocy",
-            "nprocz",
-            "maux",
-            "mglobal",
-            "mvar",
-            "precision",
-        ]
         dim = read.dim()
         for key in skeys:
             settings[key] = dim.__getattribute__(key)
@@ -609,30 +611,21 @@ def write_h5_snapshot(
             size=size,
         )
         for key in settings.keys():
-            if "precision" in key:
-                dataset_h5(
-                    sets_grp,
-                    key,
-                    status=state,
-                    data=(settings[key],),
-                    dtype=None,
-                    rank=rank,
-                    comm=comm,
-                    size=size,
-                    overwrite=overwrite,
-                )
+            if key in skeys:
+                dtype = None
             else:
-                dataset_h5(
-                    sets_grp,
-                    key,
-                    status=state,
-                    data=(settings[key],),
-                    dtype=data_type,
-                    rank=rank,
-                    comm=comm,
-                    size=size,
-                    overwrite=overwrite,
-                )
+                dtype = data_type
+            dataset_h5(
+                sets_grp,
+                key,
+                status=state,
+                data=(settings[key],),
+                dtype=dtype,
+                rank=rank,
+                comm=comm,
+                size=size,
+                overwrite=overwrite,
+            )
         # add grid
         grid_grp = group_h5(
             ds,
