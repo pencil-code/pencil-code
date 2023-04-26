@@ -41,7 +41,7 @@ LDMPI=
 include Makefile.inc  ## needed ? 
 
 ## Default settings
-FC=mpiifort
+FC=mpif90
 FFLAGS=-O1 #-g -traceback #-mcmodel=large
 CFLAGS=-O3 -DFUNDERSC=1
 
@@ -75,7 +75,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 ## (AB/22-06-03: Here I've cut+pasted the current block from $PENCIL_HOME/src)
 ## The -tpp7 flag leads to a 10% speedup on nl6
 #FC=f95
-#FC=mpiifort
+#FC=mpif90
 #FFLAGS=-O1 #-g -traceback -check bounds #-mcmodel=large
 #F90FLAGS=-u -tpp7
 #F90FLAGS= # (fire)
@@ -256,13 +256,32 @@ CFLAGS=-O3 -DFUNDERSC=1
 
 ### End machine dependent
 
-
 ifeq ($(REAL_PRECISION),double)
   FFLAGS := $(FFLAGS) $(FFLAGS_DOUBLE) 
 endif
 
+#  Temporary workaround for GCC version >= 10 for subroutine calls with type mismatch.
+#  Offending files: mpicomm.f90 particles_mpicomm.f90 syscalls.f90 fftpack.f90
+#
+# Determine the Fortran compiler.
+COMPILER = $(notdir $(firstword $(FC)))
+ifneq (,$(filter mpif%,$(COMPILER)))
+  COMPILER = $(notdir $(firstword $(shell $(FC) -show)))
+endif
+
+$(info Compiler: $(COMPILER))
+# If the compiler is from GCC, determine its version.
+ifneq (,$(shell $(FC) --version | grep -i GNU))
+  GCC_VERSION = $(shell $(FC) -dumpversion)
+  $(info GCC version: $(GCC_VERSION))
+  ifeq ($(shell [ $$(echo $(GCC_VERSION) | cut -f1 -d.) -gt 9 ] && echo true),true)
+    $(warning GCC version > 9 ==> allowing argument mismatch in $(MPICOMM).f90, $(PARTICLES_MPICOMM_SRC), $(SYSCALLS_SRC) and fftpack.f90.)
+    FFLAGS += -fallow-argument-mismatch
+  endif
+endif
+
 LD=$(FC)
-LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
+LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) -ldl
 
 .SUFFIXES: .f90 .mod
 
@@ -301,14 +320,15 @@ remesh.o:    remesh.f90 common.local $(technical)
 cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
 common.o:    common.f90 common.local cdata.o cparam.o
-syscalls.o:  syscalls.f90 syscalls_ansi.o
 syscalls_ansi.o:  syscalls_ansi.c
 general.o:   general.f90 cdata.o cparam.o syscalls.o
-mpicomm_double.f90: mpicomm.f90
-	sed -e 's/MPI_REAL/MPI_DOUBLE_PRECISION/g' -e 's/MPI_COMPLEX/MPI_DOUBLE_COMPLEX/g' mpicomm.f90 > mpicomm_double.f90
 #
-$(MPICOMM).o:  $(MPICOMM).f90 noyinyang.o
 #deriv.o:     deriv.f90 cdata.o
+
+syscalls.o: syscalls.f90 syscalls_ansi.o cparam.o
+        $(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o syscalls.o -c syscalls.f90
+$(MPICOMM).o: mpicomm.h $(MPICOMM).f90 noyinyang.o cdata.o
+        $(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o $(MPICOMM).o -c $(MPICOMM).f90
 
 # Clean up, but leave makefile and TAGS
 clean:
