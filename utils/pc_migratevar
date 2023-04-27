@@ -153,6 +153,18 @@ if io_strategy == 'dist':
         dy=dy,
         dz=dz,
         )
+elif io_strategy == 'HDF5':
+    pc.io.write_h5_snapshot(
+        f_new,
+        file_name=dest_var,
+        precision=precision,
+        nghost=3,
+        t=t_new,
+        lghosts=False,
+        overwrite=True,
+        sim_datadir=dest_datadir,
+        datadir=os.path.join(dest_datadir, "allprocs"),
+        )
 else:
     raise NotImplementedError(f"IO strategy {io_strategy} not supported")
 
