@@ -22,7 +22,6 @@
 module Pscalar
 !
   use Cdata
-  use Cparam
   use Messages
 !
   implicit none
@@ -106,6 +105,7 @@ module Pscalar
 !
   real, dimension(:,:), allocatable :: spharm 
   real, dimension(:,:,:,:), allocatable :: bunit,hhh
+  real, dimension (nx) :: bump
 
   contains
 !***********************************************************************
@@ -161,7 +161,8 @@ module Pscalar
         call init_lncc(f)
       endif
 !
-      if (lroot .and. diffcc_shock /= 0.) print*, 'initialize_pscalar: shock diffusion, diffcc_shock = ', diffcc_shock
+      if (lroot .and. diffcc_shock /= 0.)  &
+        print*,'initialize_pscalar: shock diffusion, diffcc_shock = ',diffcc_shock
 !
       if (lmean_friction_cc.and.nprocxy/=1) &
         call fatal_error('initialize_pscalar','lmean_friction works only for nprocxy=1')
@@ -245,10 +246,8 @@ module Pscalar
 !
 !  Warning for the case of multiple passive scalars.
 !
-      if (npscalar > 1 .and. .not. linitial_condition) then
-        call warning('init_lncc', 'only the first species is initialized.')
-        call warning('init_lncc', 'use initial_condition facility instead')
-      endif
+      if (npscalar > 1 .and. .not. linitial_condition) call warning('init_lncc', &
+        'only the first species is initialized - use initial_condition facility instead')
 !
       select case (initcc)
         case ('nothing')
@@ -282,11 +281,9 @@ module Pscalar
         case ('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
         case ('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
         case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
-        case ('triquad'); call triquad(amplcc,f,icc,kx_cc,ky_cc,kz_cc, &
-            kxx_cc,kyy_cc,kzz_cc)
+        case ('triquad'); call triquad(amplcc,f,icc,kx_cc,ky_cc,kz_cc,kxx_cc,kyy_cc,kzz_cc)
         case ('semiangmom'); f(:,:,:,icc)=(1-2*powerlr*hoverr**2-1.5*zoverh**2*hoverr**2) &
-            *spread(spread(x,2,my),3,mz) &
-            +3*zoverh*hoverr*spread(spread(z,1,mx),2,my)
+                             *spread(spread(x,2,my),3,mz) + 3*zoverh*hoverr*spread(spread(z,1,mx),2,my)
         case ('sound-wave')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,icc)=-amplcc*cos(kx_cc*x(l1:l2))
@@ -545,16 +542,14 @@ module Pscalar
 !
 !  20-may-03/axel: coded
 !
-      use Diagnostics
       use Special, only: special_calc_pscalar
       use Sub
-      use General, only: transform_thph_yy,yin2yang_coors
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: diff_op,diff_op2,bump,gcgu,diffus_pscalar,diffus_pscalar3
+      real, dimension (nx) :: diff_op,diff_op2,diffus_pscalar,diffus_pscalar3
       real :: cc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer :: j, k
@@ -568,11 +563,14 @@ module Pscalar
 !
 !  Identify module and boundary conditions.
 !
-      if (nopscalar) then
-        if (headtt.or.ldebug) print*,'not SOLVED: dlncc_dt'
-      else
-        if (headtt.or.ldebug) print*,'SOLVE dlncc_dt'
+      if (headtt.or.ldebug) then
+        if (nopscalar) then
+          print*,'not SOLVED: dlncc_dt'
+        else
+          print*,'SOLVE dlncc_dt'
+        endif
       endif
+
       if (headtt) then
         do k = 1, npscalar
           write(id,'(i0)') k
@@ -598,8 +596,7 @@ module Pscalar
 !
 !  Reaction term. Simple Fisher term for now.
 !
-        if (lreactions) &
-          df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)+lambda_cc*p%cc*(1.0-p%cc)
+        if (lreactions) df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)+lambda_cc*p%cc*(1.0-p%cc)
 !
 !  Passive scalar sink.
 !
@@ -650,7 +647,7 @@ module Pscalar
         if (diffcc_shock /= 0.) then
           do k = 1, npscalar
             call dot_mn(p%gshock, p%gcc(:,:,k), diff_op)
-            df(l1:l2,m,n,icc+k-1) = df(l1:l2,m,n,icc+k-1) + diffcc_shock * (p%shock * p%del2cc(:,k) + diff_op)
+            df(l1:l2,m,n,icc+k-1)=df(l1:l2,m,n,icc+k-1) + diffcc_shock*(p%shock*p%del2cc(:,k) + diff_op)
           enddo
         endif
 !
@@ -689,8 +686,8 @@ module Pscalar
 !  This makes sense really only for periodic boundary conditions.
 !
         do j=1,3
-          if (gradC0(j)/=0.) &
-            df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-spread(gradC0(j)*p%uu(:,j)*gradC_fact,2,npscalar)
+          if (gradC0(j)/=0.) df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2) &
+                             -spread(gradC0(j)*p%uu(:,j)*gradC_fact,2,npscalar)
         enddo
 !
 !  Tensor diffusion (but keep the isotropic one).
@@ -723,13 +720,33 @@ module Pscalar
 !
         if (lspecial) call special_calc_pscalar(f,df,p)
 !
+!
+! AH: notpassive, an angular momentum+gravity workaround
+!
+        if (lnotpassive.and.lhydro) then
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux)+(p%cc(:,1)+(-powerlr*hoverr**2+1.5*zoverh**2*hoverr**2)+ &
+                              (-1+3*powerlr*hoverr**2-4.5*zoverh**2*hoverr**2)*x(l1:l2))*scalaracc
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz)+(-hoverr*zoverh - z(n)+3*hoverr*zoverh*x(l1:l2))*scalaracc
+        endif
+!
       endif evolve
+
+    endsubroutine dlncc_dt
+!***********************************************************************
+    subroutine calc_diagnostics_pscalar(p)
 !
 !  Diagnostics (only for the first passive scalar)
 !
 !  output for double and triple correlators (assume z-gradient of cc)
 !  <u_k u_j d_j c> = <u_k c uu.gradcc>
 !
+      use Diagnostics
+      use Sub, only: dot_mn
+
+      type(pencil_case), intent(IN) :: p
+
+      real, dimension (nx) :: gcgu
+
       if (ldiagnos) then
         call sum_mn_name(bump,idiag_Qpsclm)
         if (idiag_Qrhoccm/=0) call sum_mn_name(bump*p%rho*p%cc(:,1),idiag_Qrhoccm)
@@ -749,10 +766,8 @@ module Pscalar
         if (idiag_uudcm/=0)   call sum_mn_name(p%uu(:,3)*p%ugcc(:,1),idiag_uudcm)
         if (idiag_Cz2m/=0)    call sum_mn_name(p%rho*p%cc(:,1)*z(n)**2,idiag_Cz2m)
         if (idiag_Cz4m/=0)    call sum_mn_name(p%rho*p%cc(:,1)*z(n)**4,idiag_Cz4m)
-        if (idiag_Crmsm/=0) &
-            call sum_mn_name((p%rho*p%cc(:,1))**2,idiag_Crmsm,lsqrt=.true.)
-        if (idiag_ccrms/=0) &
-            call sum_mn_name(p%cc(:,1)**2,idiag_ccrms,lsqrt=.true.)
+        if (idiag_Crmsm/=0)   call sum_mn_name((p%rho*p%cc(:,1))**2,idiag_Crmsm,lsqrt=.true.)
+        if (idiag_ccrms/=0)   call sum_mn_name(p%cc(:,1)**2,idiag_ccrms,lsqrt=.true.)
         call sum_mn_name(p%cc1(:,1),idiag_cc1m)
         if (idiag_cc2m/=0)    call sum_mn_name(p%cc1(:,1)**2,idiag_cc2m)
         if (idiag_cc3m/=0)    call sum_mn_name(p%cc1(:,1)**3,idiag_cc3m)
@@ -799,20 +814,8 @@ module Pscalar
         call zsum_mn_name_xy(p%cc(:,1),idiag_ccmxy)
         call ysum_mn_name_xz(p%cc(:,1),idiag_ccmxz)
       endif
-!
-! AH: notpassive, an angular momentum+gravity workaround
-!
-      if (lnotpassive) then
-        if (lhydro) then
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+(p%cc(:,1) &
-             +(-powerlr*hoverr**2+1.5*zoverh**2*hoverr**2)+ &
-             (-1+3*powerlr*hoverr**2-4.5*zoverh**2*hoverr**2)*x(l1:l2))*scalaracc
-          df(l1:l2,m,n,iuz)= df(l1:l2,m,n,iuz)+(-hoverr*zoverh &
-                            -z(n)+3*hoverr*zoverh*x(l1:l2))*scalaracc
-        endif
-      endif
-!
-    endsubroutine dlncc_dt
+
+    endsubroutine calc_diagnostics_pscalar
 !***********************************************************************
     subroutine read_pscalar_init_pars(iostat)
 !
@@ -1059,9 +1062,8 @@ module Pscalar
 !
       if (idiag_ccm/=0) then
         if (idiag_ccmz==0) then
-          if (headtt) call warning('calc_mpscalar', &
-                                   "to get ccm, ccmz must also be set in xyaver.in."// &
-                                   achar(10)//"We proceed, but you'll get ccm=0")
+          if (headt) call warning('calc_mpscalar',"to get ccm, ccmz must also be set in xyaver.in."// &
+                                  achar(10)//"                     We proceed, but you'll get ccm=0")
           ccm=0.
         else
           ccm=sqrt(sum(fnamez(:,:,idiag_ccmz)**2)/nzgrid)

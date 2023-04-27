@@ -15,7 +15,6 @@
 !***************************************************************
 module Pscalar
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -114,6 +113,14 @@ module Pscalar
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_pscalar
+!***********************************************************************
+    subroutine calc_diagnostics_pscalar(p)
+
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+ 
+   subroutine calc_diagnostics_pscalar
 !***********************************************************************
     subroutine dlncc_dt(f,df,p)
 !

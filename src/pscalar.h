@@ -9,6 +9,7 @@
   public :: init_lncc, dlncc_dt
   public :: pencil_criteria_pscalar, pencil_interdep_pscalar
   public :: calc_pencils_pscalar
+  public :: calc_diagnostics_pscalar
   public :: pscalar_before_boundary
   public :: calc_mpscalar
 

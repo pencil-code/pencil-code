@@ -17,7 +17,6 @@
 !***************************************************************
 module Pscalar
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -88,6 +87,10 @@ module Pscalar
   integer :: idiag_ccmx=0       ! DIAG_DOC:
   integer :: idiag_ccglnrm=0    ! DIAG_DOC: $\left<c\nabla_z\varrho\right>$
 !
+! Auxiliary variables.
+!
+  real, dimension (nx,ny,nz,3) :: bunit,hhh
+!
   contains
 !***********************************************************************
     subroutine register_pscalar()
@@ -141,6 +144,16 @@ module Pscalar
       call put_shared_variable('pscalar_diff',pscalar_diff,caller='initialize_pscalar')
       cc_spec=.false.
 !
+!  read H and Bunit arrays and keep them in memory
+!
+      if (tensor_pscalar_diff/=0.) then
+        open(1,file=trim(directory)//'/bunit.dat',form='unformatted')
+        print*,'read bunit.dat with dimension: ',nx,ny,nz,3
+        read(1) bunit,hhh
+        close(1)
+        print*,'read bunit.dat; bunit=',bunit
+      endif
+!
     endsubroutine initialize_pscalar
 !***********************************************************************
     subroutine init_lncc(f)
@@ -185,9 +198,8 @@ module Pscalar
           if (lroot) print*,'init_lncc: Double shear layer'
           do m=m1,m2
             der=2./delta_lncc
-            prof=amplcc*(&
-                tanh(der*(y(m)+widthlncc))-&
-                tanh(der*(y(m)-widthlncc)))/2.
+            prof=amplcc*(tanh(der*(y(m)+widthlncc))-   &
+                         tanh(der*(y(m)-widthlncc)))/2.
             prof=prof
             do n=n1,n2
               f(l1:l2,m,n,ilncc)=log(1.-prof+amplcc*1e-20)
@@ -200,15 +212,14 @@ module Pscalar
           if (lroot) print*,'init_lncc: Double shear layer'
           do n=n1,n2
             der=2./delta_lncc
-            prof=amplcc*(&
-                tanh(der*(z(n)-widthlncc1))-&
-                tanh(der*(z(n)-widthlncc2)))/2.
+            prof=amplcc*(tanh(der*(z(n)-widthlncc1))-   &
+                         tanh(der*(z(n)-widthlncc2)))/2.
             prof=prof
             do m=m1,m2
               f(l1:l2,m,n,ilncc)=log(prof+amplcc*1e-15)
             enddo
           enddo
-        case default; call fatal_error('init_lncc','bad initlncc='//trim(initlncc))
+        case default; call fatal_error('init_lncc','no such initlncc: '//trim(initlncc))
       endselect
 !
 !  Superimpose something else.
@@ -266,12 +277,11 @@ module Pscalar
           idiag_mcct/=0) lpenc_diagnos(i_cc)=.true.
       if (idiag_rhoccm/=0 .or. idiag_Cz2m/=0 .or. idiag_Cz4m/=0 .or. &
           idiag_Crmsm/=0 .or. idiag_mcct/=0) lpenc_diagnos(i_rho)=.true.
+
       if (idiag_ucm/=0 .or. idiag_uudcm/=0) lpenc_diagnos(i_uu)=.true.
       if (idiag_uudcm/=0) lpenc_diagnos(i_uglncc)=.true.
-      if (idiag_lnccmz/=0 .or. idiag_lnccmy/=0 .or. idiag_lnccmx/=0) &
-          lpenc_diagnos(i_lncc)=.true.
-      if (idiag_ccmz/=0 .or. idiag_ccmy/=0 .or. idiag_ccmx/=0) &
-          lpenc_diagnos(i_cc)=.true.
+      if (idiag_lnccmz/=0 .or. idiag_lnccmy/=0 .or. idiag_lnccmx/=0) lpenc_diagnos(i_lncc)=.true.
+      if (idiag_ccmz/=0 .or. idiag_ccmy/=0 .or. idiag_ccmx/=0) lpenc_diagnos(i_cc)=.true.
       if (idiag_ccglnrm/=0) lpenc_requested(i_glnrho)=.true.
 !
     endsubroutine pencil_criteria_pscalar
@@ -336,7 +346,6 @@ module Pscalar
 !
 !   6-jul-02/axel: coded
 !
-      use Diagnostics
       use Special, only: special_calc_pscalar
       use Sub
 !
@@ -353,10 +362,12 @@ module Pscalar
 !
 !  Identify module and boundary conditions.
 !
-      if (nopscalar) then
-        if (headtt.or.ldebug) print*,'not SOLVED: dlncc_dt'
-      else
-        if (headtt.or.ldebug) print*,'SOLVE dlncc_dt'
+      if (headtt.or.ldebug) then
+        if (nopscalar) then
+          print*,'not SOLVED: dlncc_dt'
+        else
+          print*,'SOLVE dlncc_dt'
+        endif
       endif
       if (headtt) call identify_bcs('cc',ilncc)
 !
@@ -395,12 +406,21 @@ module Pscalar
 !
 !  Tensor diffusion (but keep the isotropic one).
 !
-        if (tensor_pscalar_diff/=0.) &
-            call tensor_diff(df,p,tensor_pscalar_diff)
+        if (tensor_pscalar_diff/=0.) call tensor_diff(df,p,tensor_pscalar_diff)
 !
         if (lspecial) call special_calc_pscalar(f,df,p)
 !
       endif
+
+      call calc_diagnostics_pscalar(p)
+!
+    endsubroutine dlncc_dt
+!***********************************************************************
+    subroutine calc_diagnostics_pscalar(p)
+
+      use Diagnostics
+
+      type (pencil_case) :: p
 !
 !  Diagnostics.
 !
@@ -413,13 +433,11 @@ module Pscalar
         call max_mn_name(p%cc,idiag_ccmax)
         if (idiag_ccmin/=0)  call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
         if (idiag_ucm/=0)    call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
-        if (idiag_uudcm/=0)  &
-            call sum_mn_name(p%uu(:,3)*p%cc*p%uglncc,idiag_uudcm)
+        if (idiag_uudcm/=0)  call sum_mn_name(p%uu(:,3)*p%cc*p%uglncc,idiag_uudcm)
         if (idiag_Cz2m/=0)   call sum_mn_name(p%rho*p%cc*z(n)**2,idiag_Cz2m)
         if (idiag_Cz4m/=0)   call sum_mn_name(p%rho*p%cc*z(n)**4,idiag_Cz4m)
-        if (idiag_Crmsm/=0)  &
-            call sum_mn_name((p%rho*p%cc)**2,idiag_Crmsm,lsqrt=.true.)
-        if (idiag_ccglnrm/=0) call sum_mn_name(p%cc*p%glnrho(:,3),idiag_ccglnrm)
+        if (idiag_Crmsm/=0)  call sum_mn_name((p%rho*p%cc)**2,idiag_Crmsm,lsqrt=.true.)
+        if (idiag_ccglnrm/=0)call sum_mn_name(p%cc*p%glnrho(:,3),idiag_ccglnrm)
       endif
 !
       if (l1davgfirst) then
@@ -430,8 +448,8 @@ module Pscalar
         call xzsum_mn_name_y(p%cc,idiag_ccmy)
         call yzsum_mn_name_x(p%cc,idiag_ccmx)
       endif
-!
-    endsubroutine dlncc_dt
+
+    endsubroutine calc_diagnostics_pscalar
 !***********************************************************************
     subroutine read_pscalar_init_pars(iostat)
 !
@@ -476,7 +494,6 @@ module Pscalar
 !   6-jul-02/axel: coded
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -513,28 +530,22 @@ module Pscalar
 !  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'lnccmz',idiag_lnccmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'ccmz',idiag_ccmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'lnccmz',idiag_lnccmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ccmz',idiag_ccmz)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
 !
       do inamey=1,nnamey
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'lnccmy',idiag_lnccmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'ccmy',idiag_ccmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'lnccmy',idiag_lnccmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'ccmy',idiag_ccmy)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'lnccmx',idiag_lnccmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'ccmx',idiag_ccmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'lnccmx',idiag_lnccmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ccmx',idiag_ccmx)
       enddo
 !
 !  check for those quantities for which we want video slices
@@ -593,7 +604,7 @@ module Pscalar
 !
       use Diagnostics
 !
-      logical,save :: first=.true.
+      logical, save :: lfirst=.true.
       real :: lnccm
 !
 !  Magnetic energy in horizontally averaged field
@@ -602,9 +613,11 @@ module Pscalar
 !
       if (idiag_lnccm/=0) then
         if (idiag_lnccmz==0) then
-          if (first) print*
-          if (first) print*,"NOTE: to get lnccm, lnccmz must also be set in xyaver"
-          if (first) print*,"      We proceed, but you'll get lnccm=0"
+          if (lfirst) then
+            call information('calc_mpscalar','to get lnccm, lnccmz must also be set in xyaver.'// &
+                             achar(10)//"                     We proceed, but you'll get lnccm=0")
+            lfirst=.false.
+          endif
           lnccm=0.
         else
           lnccm=sqrt(sum(fnamez(:,:,idiag_lnccmz)**2)/(nz*nprocz))
@@ -627,21 +640,8 @@ module Pscalar
       type (pencil_case) :: p
       real :: tensor_pscalar_diff
 !
-      real, save, dimension (nx,ny,nz,3) :: bunit,hhh
       real, dimension (nx) :: tmp,scr
       integer :: iy,iz,i,j
-      logical, save :: first=.true.
-!
-!  read H and Bunit arrays and keep them in memory
-!
-      if (first) then
-        open(1,file=trim(directory)//'/bunit.dat',form='unformatted')
-        print*,'read bunit.dat with dimension: ',nx,ny,nz,3
-        read(1) bunit,hhh
-        close(1)
-        print*,'read bunit.dat; bunit=',bunit
-        first=.false.
-      endif
 
       iy=m-m1+1
       iz=n-n1+1
