@@ -16,9 +16,9 @@ parser = argparse.ArgumentParser(description="Copy only certain variables from o
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                  epilog="Example: %(prog)s  --src-var VAR5 --dest-datadir sim2/data --dest-var var.dat --copy-these ux,uy,uz,lnrho sim1/data")
 parser.add_argument('SRC_DATADIR', help="Data directory from which snapshots will be read.", type = str )
-parser.add_argument('--src-var', help="filename of the source snapshot.", default = "var.dat", type = str )
+parser.add_argument('--src-var', help="filename of the source snapshot. Note that for the last snapshot in a HDF5 simulation, you need to set this to 'var.h5'.", default = "var.dat", type = str )
 parser.add_argument('--dest-datadir', help="Data directory into which snapshots will be written.", default = "./data", type = str )
-parser.add_argument('--dest-var', help='filename of the destination snapshot.', default = "var.dat", type = str )
+parser.add_argument('--dest-var', help="filename of the destination snapshot. Note that for the last snapshot in a HDF5 simulation, you need to set this to 'var.h5'.", default = "var.dat", type = str )
 parser.add_argument('--copy-these', help="Comma-separated list of variables to copy (e.g. ux,uy,uz,ax,ay,az). The order of variables does not matter. Note that for vector variables such as uu, specifying uu will only copy ux; one needs to say 'ux,uy,uz' to copy all three components. If this argument is not specified, all variables that are present in both the source and destination simulations will be copied.", type = str )
 parser.add_argument('--write-t', help="Whether to copy the time into the new snapshot. If this option is not passed, the time of the new snapshot will be set to 0", default=False, action='store_true' )
 
