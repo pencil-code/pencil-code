@@ -23,8 +23,6 @@ module Pscalar
 !
   include 'pscalar.h'
 !
-!  Should not be public:
-!
   real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
   integer :: idiag_gcc2m=0, idiag_cc2m=0, idiag_rhoccm=0
 !
@@ -120,7 +118,7 @@ module Pscalar
 
       call keep_compiler_quiet(p)
  
-   subroutine calc_diagnostics_pscalar
+    endsubroutine calc_diagnostics_pscalar
 !***********************************************************************
     subroutine dlncc_dt(f,df,p)
 !
