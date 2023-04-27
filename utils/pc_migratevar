@@ -4,7 +4,7 @@ This is a script which partially copies snapshots (i.e. only specified variables
 
 This script needs to be run after pc_start, as it uses the files written by pc_start to find out about the variables, processors etc. in the destination simulation. For variables that are not modified, the initial conditions set by pc_start will be preserved.
 
-Currently does not support hdf5 (but should be simple to add).
+Only supports io_dist and io_hdf5.
 
 Kishore Gopalakrishnan (kishore96@gmail.com)
 """
