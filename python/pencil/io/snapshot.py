@@ -228,6 +228,7 @@ def write_h5_snapshot(
     overwrite=False,
     rank=0,
     size=1,
+    sim_datadir="data"
 ):
     """
     Write a snapshot given as numpy array.
@@ -256,7 +257,7 @@ def write_h5_snapshot(
       Name of the snapshot file to be written, e.g. VAR0 or var.
 
     *datadir*:
-      Directory where the data is stored.
+      Directory which the snapshot will be written into.
 
     *precision*:
       Single 'f' or double 'd' precision.
@@ -310,6 +311,9 @@ def write_h5_snapshot(
 
     *rank*
       rank of process with root=0.
+    
+    *sim_datadir*
+      Datadir of the destination simulation. Used to get param, dim, and index info when they are not provided.
     """
 
     import numpy as np
@@ -317,15 +321,9 @@ def write_h5_snapshot(
 
     from pencil import read
     from pencil.io import open_h5, group_h5, dataset_h5
-    from pencil import is_sim_dir
 
-    # test if simulation directory
-    if not is_sim_dir():
-        print("ERROR: Directory needs to be a simulation")
-        sys.stdout.flush()
     if indx == None:
-        indx = read.index()
-    #
+        indx = read.index(datadir=sim_datadir)
     
     skeys = [
         "l1",
@@ -351,7 +349,7 @@ def write_h5_snapshot(
     
     if settings == None:
         settings = {}
-        dim = read.dim()
+        dim = read.dim(datadir=sim_datadir)
         for key in skeys:
             settings[key] = dim.__getattribute__(key)
         settings["precision"] = precision.encode()
@@ -376,7 +374,7 @@ def write_h5_snapshot(
         "dz_tilde",
     ]
     if grid == None:
-        grid = read.grid(quiet=True)
+        grid = read.grid(datadir=sim_datadir, quiet=True)
     else:
         gd_err = False
         for key in gkeys:
@@ -400,7 +398,7 @@ def write_h5_snapshot(
         "system",
     ]
     if param == None:
-        param = read.param(quiet=True)
+        param = read.param(datadir=sim_datadir, quiet=True)
         param.__setattr__("unit_mass", param.unit_density * param.unit_length ** 3)
         param.__setattr__("unit_energy", param.unit_mass * param.unit_velocity ** 2)
         param.__setattr__("unit_time", param.unit_length / param.unit_velocity)
