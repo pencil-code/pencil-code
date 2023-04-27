@@ -169,4 +169,4 @@ else:
     raise NotImplementedError(f"IO strategy {io_strategy} not supported")
 
 #Before exiting, tell the user what we did.
-print("Copied {} from {} to {}.".format(','.join(keys_to_copy), os.path.join(src_datadir, src_var), os.path.join(dest_datadir, dest_var)) )
+print("Copied {} from {} to {}.".format(','.join(keys_to_copy), os.path.join(src_datadir, "*proc*", src_var), os.path.join(dest_datadir, "*proc*", dest_var)) )
