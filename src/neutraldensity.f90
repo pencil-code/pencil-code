@@ -77,6 +77,7 @@ module NeutralDensity
 ! Auxiliaries
 !
   real :: alpha_time
+  real, dimension(nx) :: diffus_diffrhon
 
   contains
 !***********************************************************************
@@ -632,7 +633,7 @@ module NeutralDensity
       intent(in)  :: f,p
       intent(out) :: df
 !
-      real, dimension(nx) :: fdiff,gshockglnrhon,gshockgrhon,tmp, diffus_diffrhon,diffus_diffrhon3
+      real, dimension(nx) :: fdiff,gshockglnrhon,gshockgrhon,tmp,diffus_diffrhon3
       integer :: j
 !
 !  identify module and boundary conditions
