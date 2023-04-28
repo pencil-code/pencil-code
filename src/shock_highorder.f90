@@ -179,10 +179,8 @@ module Shock
         if ((bcx(ishock) == 'p') .and. .not. all(bcx(iux:iuz) == 'p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcx=''p'', but the velocity field is not'
-            print*, '                  periodic! (you must set a proper boundary condition for the'
-            print*, '                  shock viscosity)'
-            print*, 'initialize_shock: bcx=', bcx
-            print*, 'initialize_shock: to suppress this error,'
+            print*, '                  periodic! You must set a proper boundary condition for the'
+            print*, '                  shock viscosity, bcx(ishock), to suppress this error;'
             print*, '                  set lforce_periodic_shockviscosity=T in &shock_run_pars'
           endif
           call fatal_error('initialize_shock','')
@@ -190,10 +188,8 @@ module Shock
         if (bcy(ishock)=='p' .and. .not. all(bcy(iux:iuz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcy=''p'', but the velocity field is not'
-            print*, '                  periodic! (you must set a proper boundary condition for the'
-            print*, '                  shock viscosity)'
-            print*, 'initialize_shock: bcy=', bcy
-            print*, 'initialize_shock: to suppress this error,'
+            print*, '                  periodic! You must set a proper boundary condition for the'
+            print*, '                  shock viscosity, bcy(ishock), to suppress this error;'
             print*, '                  set lforce_periodic_shockviscosity=T in &shock_run_pars'
           endif
           call fatal_error('initialize_shock','')
@@ -201,10 +197,8 @@ module Shock
         if (bcz(ishock)=='p' .and. .not. all(bcz(iux:iuz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcz=''p'', but the velocity field is not'
-            print*, '                  periodic! (you must set a proper boundary condition for the'
-            print*, '                  shock viscosity)'
-            print*, 'initialize_shock: bcz=', bcz
-            print*, 'initialize_shock: to suppress this error,'
+            print*, '                  periodic! You must set a proper boundary condition for the'
+            print*, '                  shock viscosity, bcz(ishock), to suppress this error;'
             print*, '                  set lforce_periodic_shockviscosity=T in &shock_run_pars'
           endif
           call fatal_error('initialize_shock','')
@@ -258,10 +252,10 @@ module Shock
 !
       if (lroot.and.ip<14) print*,'rprint_shock: run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'shockm',idiag_shockm)
-        call parse_name(iname,cname(iname),cform(iname),'shockmin',idiag_shockmin)
-        call parse_name(iname,cname(iname),cform(iname),'shockmax',idiag_shockmax)
-        call parse_name(iname, cname(iname), cform(iname),'gshockmax', idiag_gshockmax)
+        call parse_name(iname,cname(iname) ,cform(iname),'shockm',   idiag_shockm)
+        call parse_name(iname,cname(iname) ,cform(iname),'shockmin', idiag_shockmin)
+        call parse_name(iname,cname(iname) ,cform(iname),'shockmax', idiag_shockmax)
+        call parse_name(iname, cname(iname),cform(iname),'gshockmax',idiag_gshockmax)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -355,7 +349,6 @@ module Shock
 !
 !  20-11-04/anders: coded
 !
-      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -373,12 +366,22 @@ module Shock
 ! gshock_perp
         if (lpencil(i_gshock_perp)) call grad(f,ishock_perp,p%gshock_perp)
       endif
-!
+! 
+      call calc_diagnostics_shock(p)
+
+    endsubroutine calc_pencils_shock
+!***********************************************************************
+    subroutine calc_diagnostics_shock(p)
+
+      use Diagnostics
+
+      type (pencil_case) :: p
+
       if (ldiagnos) then
-        call sum_mn_name( p%shock,idiag_shockm)
+        call sum_mn_name(p%shock,idiag_shockm)
         if (idiag_shockmin/=0) call max_mn_name(-p%shock,idiag_shockmin,lneg=.true.)
-        call max_mn_name( p%shock,idiag_shockmax)
-        if (idiag_gshockmax /= 0) call max_mn_name(sqrt(sum(p%gshock**2, dim=2)), idiag_gshockmax)
+        call max_mn_name(p%shock,idiag_shockmax)
+        if (idiag_gshockmax/= 0) call max_mn_name(sqrt(sum(p%gshock**2,dim=2)),idiag_gshockmax)
       endif
 !
       if (l1davgfirst) then
@@ -387,7 +390,7 @@ module Shock
         call xysum_mn_name_z(p%shock,idiag_shockmz)
       endif
 !
-    endsubroutine calc_pencils_shock
+    endsubroutine calc_diagnostics_shock
 !***********************************************************************
     subroutine calc_shock_profile(f)
 !

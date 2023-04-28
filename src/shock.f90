@@ -112,7 +112,7 @@ module Shock
       smooth_factor=1.
       if (nxgrid/=1) then
         smooth_factor(1,:,:)=smooth_factor(1,:,:)*0.25
-        smooth_factor(2,:,:)=smooth_factor(2,:,:) *0.5
+        smooth_factor(2,:,:)=smooth_factor(2,:,:)*0.5
         smooth_factor(3,:,:)=smooth_factor(3,:,:)*0.25
       else
         smooth_factor(1,:,:)=0.
@@ -121,7 +121,7 @@ module Shock
 !
       if (nygrid/=1) then
         smooth_factor(:,1,:)=smooth_factor(:,1,:)*0.25
-        smooth_factor(:,2,:)=smooth_factor(:,2,:) *0.5
+        smooth_factor(:,2,:)=smooth_factor(:,2,:)*0.5
         smooth_factor(:,3,:)=smooth_factor(:,3,:)*0.25
       else
         smooth_factor(:,1,:)=0.
@@ -130,7 +130,7 @@ module Shock
 !
       if (nzgrid/=1) then
         smooth_factor(:,:,1)=smooth_factor(:,:,1)*0.25
-        smooth_factor(:,:,2)=smooth_factor(:,:,2) *0.5
+        smooth_factor(:,:,2)=smooth_factor(:,:,2)*0.5
         smooth_factor(:,:,3)=smooth_factor(:,:,3)*0.25
       else
         smooth_factor(:,:,1)=0.
@@ -227,8 +227,7 @@ module Shock
 !
       if (lroot.and.ip<14) print*,'rprint_shock: run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),&
-            'shockmax',idiag_shockmax)
+        call parse_name(iname,cname(iname),cform(iname),'shockmax',idiag_shockmax)
       enddo
 !
 !  check for those quantities for which we want video slices
@@ -291,7 +290,6 @@ module Shock
 !
 !  20-11-04/anders: coded
 !
-      use Diagnostics, only: max_mn_name
       use Sub, only: grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -304,9 +302,19 @@ module Shock
 ! gshock
       if (lpencil(i_gshock)) call grad(f,ishock,p%gshock)
 !
-      if (ldiagnos.and.idiag_shockmax/=0) call max_mn_name(p%shock,idiag_shockmax)
-!
+      call calc_diagnostics_shock(p)
+
     endsubroutine calc_pencils_shock
+!***********************************************************************
+    subroutine calc_diagnostics_shock(p)
+
+      use Diagnostics, only: max_mn_name
+
+      type (pencil_case) :: p
+!
+      if (ldiagnos) call max_mn_name(p%shock,idiag_shockmax)
+!
+    endsubroutine calc_diagnostics_shock
 !***********************************************************************
     subroutine shock_before_boundary(f)
 !
@@ -342,8 +350,7 @@ module Shock
      call shock_divu(f,f(:,:,:,ishock))
 !
      if (lwith_extreme_div) then
-       where ((f(:,:,:,ishock) > 0.) .and. (f(:,:,:,ishock) < div_threshold)) &
-           f(:,:,:,ishock)=0.
+       where ((f(:,:,:,ishock) > 0.) .and. (f(:,:,:,ishock) < div_threshold)) f(:,:,:,ishock)=0.
        where (f(:,:,:,ishock) > 0.) f(:,:,:,ishock)=f(:,:,:,ishock)*div_scaling
        f(:,:,:,ishock)=abs(f(:,:,:,ishock))
      else
@@ -1012,10 +1019,10 @@ module Shock
         enddo
       endif
 !
-!
     endsubroutine shock_max3_pencil
 !***********************************************************************
 !Utility routines - poss need moving elsewhere
+!***********************************************************************
     subroutine shock_max3_pencil_interp(f,j,maxf)
 !
 !  return array maxed with by 2 points either way
@@ -1218,46 +1225,39 @@ module Shock
         do kk=-1,1
         do jj=-1,1
         do ii=-1,1
-          smoothf(l1:l2) = smoothf(l1:l2) &
-            + smooth_factor(2+ii,2+jj,2+kk)*f(l1+ii:l2+ii,m+jj,n+kk)
+          smoothf(l1:l2) = smoothf(l1:l2) + smooth_factor(2+ii,2+jj,2+kk)*f(l1+ii:l2+ii,m+jj,n+kk)
         enddo
         enddo
         enddo
       elseif ((nxgrid/=1).and.(nygrid/=1)) then
         do jj=-1,1
         do ii=-1,1
-          smoothf(l1:l2) = smoothf(l1:l2) &
-            + smooth_factor(2+ii,2+jj,2   )*f(l1+ii:l2+ii,m+jj,n1  )
+          smoothf(l1:l2) = smoothf(l1:l2) + smooth_factor(2+ii,2+jj,2   )*f(l1+ii:l2+ii,m+jj,n1  )
         enddo
         enddo
       elseif ((nxgrid/=1).and.(nzgrid/=1)) then
         do kk=-1,1
         do ii=-1,1
-          smoothf(l1:l2) = smoothf(l1:l2) &
-            + smooth_factor(2+ii,2   ,2+kk)*f(l1+ii:l2+ii,m1  ,n+kk)
+          smoothf(l1:l2) = smoothf(l1:l2) + smooth_factor(2+ii,2   ,2+kk)*f(l1+ii:l2+ii,m1  ,n+kk)
         enddo
         enddo
       elseif ((nygrid/=1).and.(nzgrid/=1)) then
         do kk=-1,1
         do jj=-1,1
-          smoothf(l1:l2) = smoothf(l1:l2) &
-            + smooth_factor(2   ,2+jj,2+kk)*f(l1   :l2   ,m+jj,n+kk)
+          smoothf(l1:l2) = smoothf(l1:l2) + smooth_factor(2   ,2+jj,2+kk)*f(l1   :l2   ,m+jj,n+kk)
         enddo
         enddo
       elseif (nxgrid/=1) then
         do ii=-1,1
-          smoothf(l1:l2) = smoothf(l1:l2) &
-            + smooth_factor(2+ii,2   ,2   )*f(l1+ii:l2+ii,m1  ,n1  )
+          smoothf(l1:l2) = smoothf(l1:l2) + smooth_factor(2+ii,2   ,2   )*f(l1+ii:l2+ii,m1  ,n1  )
         enddo
       elseif (nygrid/=1) then
         do jj=-1,1
-          smoothf(l1:l2) = smoothf(l1:l2) &
-            + smooth_factor(2   ,2+jj,2   )*f(l1   :l2   ,m+jj,n1  )
+          smoothf(l1:l2) = smoothf(l1:l2) + smooth_factor(2   ,2+jj,2   )*f(l1   :l2   ,m+jj,n1  )
         enddo
       elseif (nzgrid/=1) then
         do kk=-1,1
-          smoothf(l1:l2) = smoothf(l1:l2) &
-            + smooth_factor(2   ,2   ,2+kk)*f(l1   :l2   ,m1  ,n+kk)
+          smoothf(l1:l2) = smoothf(l1:l2) + smooth_factor(2   ,2   ,2+kk)*f(l1   :l2   ,m1  ,n+kk)
         enddo
       endif
 !

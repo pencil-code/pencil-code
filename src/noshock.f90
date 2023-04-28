@@ -136,6 +136,14 @@ module Shock
 !
     endsubroutine calc_pencils_shock
 !***********************************************************************
+    subroutine calc_diagnostics_shock(p)
+
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_shock
+!***********************************************************************
     subroutine calc_shock_profile_simple(f)
 !
 !  calculate viscous heating term for right hand side of entropy equation
