@@ -99,11 +99,13 @@ module Neutraldensity
 !
     endsubroutine calc_pencils_neutraldensity
 !***********************************************************************
-    subroutine calc_diagnostics_neutraldensity(p)
+    subroutine calc_diagnostics_neutraldens(p)
 ! 
       type (pencil_case) :: p
 
-    endsubroutine calc_diagnostics_neutraldensity
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_neutraldens
 !***********************************************************************
     subroutine neutraldensity_after_boundary(f)
 

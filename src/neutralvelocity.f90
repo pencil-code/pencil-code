@@ -572,11 +572,11 @@ module NeutralVelocity
 !
       if (lborder_profiles) call set_border_neutralvelocity(f,df,p)
 !
-      call calc_diagnostics_neutralvelocity(p)
+      call calc_diagnostics_neutralvel(p)
 
     endsubroutine duun_dt
 !***********************************************************************
-    subroutine calc_diagnostics_neutralvelocity(p)
+    subroutine calc_diagnostics_neutralvel(p)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -688,7 +688,7 @@ module NeutralVelocity
         call zsum_mn_name_xy(p%un2,idiag_un2mz)
       endif
 !
-    endsubroutine calc_diagnostics_neutralvelocity
+    endsubroutine calc_diagnostics_neutralvel
 !***********************************************************************
     subroutine set_border_neutralvelocity(f,df,p)
 !

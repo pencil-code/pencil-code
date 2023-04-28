@@ -8,6 +8,5 @@
   public :: init_lnrhon, dlnrhon_dt
 
   public :: pencil_criteria_neutraldensity, pencil_interdep_neutraldensity
-  public :: calc_pencils_neutraldensity
-  public :: lneutraldensity_nolog
+  public :: calc_pencils_neutraldensity, calc_diagnostics_neutraldens
   public :: neutraldensity_after_boundary

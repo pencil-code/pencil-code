@@ -751,11 +751,11 @@ module NeutralDensity
 !
       if (lborder_profiles) call set_border_neutraldensity(f,df,p)
 !
-      call calc_diagnostics_neutraldensity(p)
+      call calc_diagnostics_neutraldens(p)
 
     endsubroutine dlnrhon_dt
 !***********************************************************************
-    subroutine calc_diagnostics_neutraldensity(p)
+    subroutine calc_diagnostics_neutraldens(p)
 ! 
       use Diagnostics
 
@@ -792,7 +792,7 @@ module NeutralDensity
         if (idiag_dtnd/=0)     call max_mn_name(diffus_diffrhon/cdtv,idiag_dtnd,l_dt=.true.)
       endif
 !
-    endsubroutine calc_diagnostics_neutraldensity
+    endsubroutine calc_diagnostics_neutraldens
 !***********************************************************************
     subroutine set_border_neutraldensity(f,df,p)
 !

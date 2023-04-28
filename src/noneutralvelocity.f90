@@ -120,13 +120,13 @@ module NeutralVelocity
 !
     endsubroutine duun_dt
 !***********************************************************************
-    subroutine calc_diagnostics_neutralvelocity(p)
+    subroutine calc_diagnostics_neutralvel(p)
 !
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(p)
 !
-    endsubroutine calc_diagnostics_neutralvelocity
+    endsubroutine calc_diagnostics_neutralvel
 !***********************************************************************
     subroutine read_neutralvelocity_init_pars(iostat)
 !
