@@ -145,20 +145,15 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  Initialise variables which should know that we solve an energy equation.
 !
 !  04-nov-10/anders+evghenii: adapted
 !
       use FArrayManager, only: farray_register_pde
-      use SharedVariables, only: get_shared_variable
 !
       call farray_register_pde('eth',ieth)
-!
-!  logical variable lpressuregradient_gas shared with hydro modules
-!
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='register_energy')
 !
 !  Identify version number.
 !
@@ -189,17 +184,21 @@ module Energy
 !
       call select_eos_variable('eth',ieth)
 !
+!  logical variable lpressuregradient_gas shared with hydro modules
+!
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_energy')
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
 !
 !  Decide if operator splitting is required.
 !
       lsplit_update = lconst_cooling_time .or. lKI02 .or. lSD93
-      if (lsplit_update .and. .not. ldensity) call fatal_error('initialize_energy', 'Density is required for split_update_energy.')
+      if (lsplit_update .and. .not. ldensity) &
+        call fatal_error('initialize_energy','density is required for split_update_energy')
 !
 !  General variables required by split_update_energy.
 !
       ideal_gas: if (lsplit_update) then
-        if (.not. leos_idealgas) call fatal_error('initialize_energy', 'currently assumes eos_idealgas')
+        if (.not. leos_idealgas) call fatal_error('initialize_energy','currently assumes EOS=eos_idealgas')
         call get_cv1(cv1)
         cv1_temp = cv1 * unit_temperature
         if (lstratz) cv1_temp = cv1_temp * cs20 / (gamma * gamma_m1)
@@ -235,7 +234,7 @@ module Energy
 !
       Jeans: if (ljeans_floor) then
         if (nzgrid /= 1) then
-          call fatal_error('initialize_energy', '3D Jeans floor under construction')
+          call not_implemented('initialize_energy', '3D Jeans floor')
         else
           Jeans_c0 = real(njeans) * G_Newton * dxmax / (gamma * gamma_m1)
         endif
@@ -245,13 +244,11 @@ module Energy
 !
       if (lstratz) call get_stratz(z, rho0z, dlneth0dz, eth0z)  ! dlnrho0dz = dlneth0dz
 !
-      if (llocal_iso) &
-          call fatal_error('initialize_energy', &
+      if (llocal_iso) call fatal_error('initialize_energy', &
           'llocal_iso switches on the local isothermal approximation. ' // &
           'Use ENERGY=noenergy in src/Makefile.local')
 !
-      if (ivid_pp/=0) &
-        call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_r)
+      if (ivid_pp/=0) call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_r)
 
       call keep_compiler_quiet(f)
 !
@@ -303,9 +300,7 @@ module Energy
 !
 !  Catch unknown values.
 !
-            write(unit=errormsg,fmt=*) 'No such value for initeth(' &
-                //trim(iinit_str)//'): ',trim(initeth(j))
-            call fatal_error('init_energy',errormsg)
+            call fatal_error('init_energy','no such initeth: '//trim(initeth(j)))
 !
           endselect
         endif
@@ -317,7 +312,7 @@ module Energy
 !
     endsubroutine init_energy
 !***********************************************************************
-    subroutine pencil_criteria_energy()
+    subroutine pencil_criteria_energy
 !
 !  All pencils that the Energy module depends on are specified here.
 !
@@ -370,7 +365,8 @@ module Energy
 !
 !  Diagnostic pencils.
 !
-      if (idiag_ethm/=0 .or. idiag_ethmin/=0 .or. idiag_ethmax/=0 .or. idiag_ethtot/=0) lpenc_diagnos(i_eth)=.true.
+      if (idiag_ethm/=0 .or. idiag_ethmin/=0 .or. idiag_ethmax/=0 .or. idiag_ethtot/=0) &
+         lpenc_diagnos(i_eth)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       etot: if (idiag_etot /= 0) then
         lpenc_diagnos(i_eth) = .true.
@@ -450,12 +446,10 @@ module Energy
 !
 ! transpeth
 !
-      if (lpencil(i_transpeth)) &
-          call weno_transp(f,m,n,ieth,-1,iux,iuy,iuz,p%transpeth,dx_1,dy_1,dz_1)
+      if (lpencil(i_transpeth)) call weno_transp(f,m,n,ieth,-1,iux,iuy,iuz,p%transpeth,dx_1,dy_1,dz_1)
 ! sglnTT 
       if (lpencil(i_sglnTT)) &
-        call fatal_error('calc_pencils_energy', &
-            'Pencil sglnTT not yet implemented for thermal_energy')
+        call not_implemented('calc_pencils_energy','pencil sglnTT for thermal_energy')
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -506,9 +500,11 @@ module Energy
 !
       if (lspecial) call special_calc_energy(f,df,p)
 !
-      stratz: if (lstratz) then
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%ugeths - p%eths * (gamma * p%divu + p%uu(:,3) * dlneth0dz(n))
-      else stratz
+      if (lstratz) then
+
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%ugeths - p%eths*(gamma*p%divu + p%uu(:,3)*dlneth0dz(n))
+
+      else
 !
 !  Add energy transport term.
 !
@@ -523,7 +519,7 @@ module Energy
 !
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%pp*p%divu
 !
-      endif stratz
+      endif
 !
 !  Calculate viscous contribution to temperature.
 !
@@ -554,8 +550,7 @@ module Energy
       if (chi_hyper3_mesh/=0.0) then
         do j=1,3
           call der6(f, ieth, d6eth, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + &
-              chi_hyper3_mesh * d6eth * dline_1(:,j)
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_hyper3_mesh * d6eth * dline_1(:,j)
         enddo
         if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 + chi_hyper3_mesh*sum(dline_1,2)                  
       endif
@@ -563,10 +558,8 @@ module Energy
 !  Radiative diffusion (Rosseland approximation) through thermal energy diffusion.
 !
       if (lchi_rosseland) then
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + ( 16.0*sigmaSB/(3.0*kappa_rosseland))*p%TT*p%TT*p%rho1*(  &
-                                 3.0*sum(p%gTT*p%gTT, 2) &
-                                - p%TT*p%rho1*sum(p%grho*p%gTT, 2) &
-                                + p%TT*p%del2TT )
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + ( 16.0*sigmaSB/(3.0*kappa_rosseland))*p%TT*p%TT*p%rho1*( &
+                             3.0*sum(p%gTT*p%gTT, 2) - p%TT*p%rho1*sum(p%grho*p%gTT, 2) + p%TT*p%del2TT )
 !       This expression has an extra TT/eth = cv1*rho1  to convert to the right units - needed because of the sigmaSB
 !       The timestep gets the factor TT/eth = cv1*rho1
         if (lfirst .and. ldt) diffus_chi = diffus_chi &
@@ -786,15 +779,13 @@ module Energy
 !  Check for those quantities for which we want z-averages.
 !
       do inamexy=1,nnamexy
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy', &
-            idiag_TTmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy',idiag_TTmxy)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
 !
       do inamexz=1,nnamexz
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'TTmxz', &
-            idiag_TTmxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'TTmxz',idiag_TTmxz)
       enddo
 !
 !  check for those quantities for which we want video slices
@@ -1038,7 +1029,7 @@ module Energy
         if (ldebug) then
           where(status < 0) status = rk_nmax
           print *, 'Minimum, maximum, and average numbers of iterations = ', &
-            minval(status), maxval(status), real(sum(status)) / real(nw)
+                   minval(status), maxval(status), real(sum(status)) / real(nw)
         endif
 !
         f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + delta_eth(l1:l2,m1:m2,n1:n2)
@@ -1212,11 +1203,7 @@ module Energy
 !  06-aug-11/ccyang: coded
 !
       real, intent(in) :: t, eth, rho
-      real :: heat
-!
-      real :: eth1
-!
-      if (t == t) &    ! keep the compiler quiet; can be later removed if t is ever used.
+      real :: heat,eth1
 !
       eth1 = eth
       if (ljeans_floor) call jeans_floor(eth1, rho)
@@ -1229,6 +1216,8 @@ module Energy
       elseif (lSD93) then
         heat = heat - cool_SD93(eth1, rho)
       endif
+!
+      call keep_compiler_quiet(t)     !can be later removed if t is ever used. 
 !
     endfunction calc_heat_split
 !***********************************************************************
@@ -1267,7 +1256,7 @@ module Energy
 !
     endfunction
 !***********************************************************************
-    subroutine init_cooling_SD93()
+    subroutine init_cooling_SD93
 !
 !  Initializes the tabulated cooling function of Sutherland and Dopita (1993).
 !
@@ -1288,30 +1277,34 @@ module Energy
 !
 !  Find the number of table entries.
 !
-      get_nt: if (lroot) then
+      if (lroot) then
 !-      call get_environment_variable('PENCIL_HOME', src)
         call get_env_var('PENCIL_HOME', src)
         src = trim(src) // '/src/cooling_SD93_Z00.dat'
+        msg=''
 !-      open (unit=lun, file=src, action='read', iostat=stat, iomsg=msg)
         open (unit=lun, file=src, action='read', iostat=stat)
-        if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot open the cooling table; ' // trim(msg), force=.true.)
+        if (stat /= 0) call fatal_error('init_cooling_SD93','cannot open the cooling table; '// &
+                                        trim(msg),force=.true.)
         nline: do
 !-        read (lun,*,iostat=stat,iomsg=msg) col
           read (lun,*,iostat=stat) col
           if (stat < 0) exit nline
-          if (stat > 0) call fatal_error('init_cooling_SD93', 'error in reading the cooling table; ' // trim(msg), force=.true.)
+          if (stat > 0) call fatal_error('init_cooling_SD93','error in reading the cooling table; '// &
+                                         trim(msg),force=.true.)
           SD_nt = SD_nt + 1
         enddo nline
 !-      close (unit=lun, iostat=stat, iomsg=msg)
         close (unit=lun, iostat=stat)
-        if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot close the cooling table; ' // trim(msg), force=.true.)
-      endif get_nt
+        if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot close the cooling table; '// &
+                                        trim(msg),force=.true.)
+      endif
       call mpibcast_int(SD_nt,comm=MPI_COMM_WORLD)
 !
 !  Allocate the cooling table.
 !
       allocate (SD_logTT(SD_nt), SD_logLambda(SD_nt), stat=stat)
-      if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot allocate the cooling table. ')
+      if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot allocate the cooling table')
 !
 !  Read the cooling table.
 !
@@ -1395,10 +1388,10 @@ module Energy
 !  Find the temperature.
 !
       temp = get_temperature(eth, rho)
-      error: if (temp <= 0.) then
+      if (temp <= 0.) then
         cool = 0.
         return
-      endif error
+      endif
       logTT = log10(temp)
 !
 !  Linearly combine the two heating/cooling functions.
@@ -1442,7 +1435,7 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Presently dummy, for possible use
 !
@@ -1477,7 +1470,7 @@ module Energy
       call keep_compiler_quiet(f)
 
       call warning('update_char_vel_energy', &
-           'characteristic velocity not yet implemented for thermal energy')
+                   'characteristic velocity not yet implemented for thermal energy')
 
     endsubroutine update_char_vel_energy
 !***********************************************************************
