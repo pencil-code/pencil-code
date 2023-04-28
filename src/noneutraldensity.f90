@@ -99,6 +99,12 @@ module Neutraldensity
 !
     endsubroutine calc_pencils_neutraldensity
 !***********************************************************************
+    subroutine calc_diagnostics_neutraldensity(p)
+! 
+      type (pencil_case) :: p
+
+    endsubroutine calc_diagnostics_neutraldensity
+!***********************************************************************
     subroutine neutraldensity_after_boundary(f)
 
       real, dimension (mx,my,mz,mfarray) :: f

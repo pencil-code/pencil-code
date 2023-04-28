@@ -136,9 +136,8 @@ module NeutralVelocity
 !
 ! Check any module dependencies
 !
-      if (.not.leos) &
-        call fatal_error('initialize_neutralvelocity', &
-                         'EOS=noeos but an EQUATION OF STATE for the fluid is required')
+      if (.not.leos) call fatal_error('initialize_neutralvelocity', &
+                                      'EOS=noeos but an EQUATION OF STATE for the fluid is required')
 !
 !  set freezing arrays
 !
@@ -153,8 +152,7 @@ module NeutralVelocity
 !
       if (dimensionality==0) then
         ladvection_velocity=.false.
-        if (lroot) print*, 'initialize_neutralvelocity: 0-D run, '//&
-                           'turned off advection of velocity'
+        if (lroot) print*, 'initialize_neutralvelocity: 0-D run, turned off advection of velocity'
       endif
 !
       if (ladvection_velocity.and.lupw_uun) &
@@ -172,16 +170,14 @@ module NeutralVelocity
       case ('nothing')
         if (lroot.and.ip<=5) print*,"initialize_neutralvelocity: borderuu='nothing'"
       case default
-        call fatal_error('initialize_neutralvelocity', &
-                         'No such value for borderuun: '//trim(borderuun))
+        call fatal_error('initialize_neutralvelocity','no such borderuun: '//trim(borderuun))
       endselect
 !
 !  Turn off neutral viscosity if zero viscosity
 !
       if ((nun == 0.).and.(nun_hyper3==0.)) lviscneutral=.false.
-      if (lroot) print*, &
-          'initialize_neutralvelocity: lviscneutral,nun,nun_hyper3=',&
-          lviscneutral,nun,nun_hyper3
+      if (lroot) print*,'initialize_neutralvelocity: lviscneutral,nun,nun_hyper3=', &
+                        lviscneutral,nun,nun_hyper3
 !
       endsubroutine initialize_neutralvelocity
 !***********************************************************************
@@ -257,9 +253,6 @@ module NeutralVelocity
           call gaunoise_rprof(ampluun(j),f,iunx,iunz,rnoise_int,rnoise_ext)
         case ('follow-ions'); f(:,:,:,iunx:iunz)=f(:,:,:,iux:iuz)
         case default
-          !
-          !  Catch unknown values
-          !
           call fatal_error("init_uun",'No such value for inituu: '//trim(inituun(j)))
 
         endselect
@@ -315,11 +308,9 @@ module NeutralVelocity
       !  lpenc_requested(i_glnrhon)=.true.
       !endif
 !
-      if (lpressuregradient) &
-           lpenc_requested(i_glnrhon)=.true.
+      if (lpressuregradient) lpenc_requested(i_glnrhon)=.true.
 
-      if (lhydro.and.lelectron_pressure) &
-           lpenc_requested(i_fpres)=.true.
+      if (lhydro.and.lelectron_pressure) lpenc_requested(i_fpres)=.true.
 !
 !  diagnostic pencils
 !
@@ -446,8 +437,7 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use Diagnostics
-      use Sub, only: identify_bcs, dot_mn
+      use Sub, only: identify_bcs
       use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -474,8 +464,7 @@ module NeutralVelocity
 !
 !  advection term, -u.gradu
 !
-      if (ladvection_velocity) &
-          df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) - p%ungun
+      if (ladvection_velocity) df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) - p%ungun
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta)
@@ -530,16 +519,15 @@ module NeutralVelocity
 !
       do j=1,3
         jn=j+iuun-1
-        ji=j+iuu -1
 !
 ! neutrals gain momentum by recombination
 !
-        df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + &
-                        cneut*p%rho *(p%uu(:,j)-p%uun(:,j))
+        df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + cneut*p%rho*(p%uu(:,j)-p%uun(:,j))
 !
 ! ions gain momentum by ionization and electron pressure
 !
         if (lhydro) then
+          ji=j+iuu -1
           df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
 !
 ! add electron pressure to the ions if needed
@@ -547,8 +535,7 @@ module NeutralVelocity
 ! df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres
 ! and thus implies altogether a factor of 2, which is correct.
 !
-          if (lelectron_pressure) df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji)+ &
-                                  electron_pressure*p%fpres(:,j)
+          if (lelectron_pressure) df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji)+electron_pressure*p%fpres(:,j)
         endif
 !
       enddo
@@ -561,8 +548,7 @@ module NeutralVelocity
 !
 ! add pressure gradient on neutrals
 !
-        if (lpressuregradient) &
-            df(l1:l2,m,n,iunx:iunz)=df(l1:l2,m,n,iunx:iunz)-csn20*p%glnrhon
+        if (lpressuregradient) df(l1:l2,m,n,iunx:iunz)=df(l1:l2,m,n,iunx:iunz)-csn20*p%glnrhon
 !
       endif
 ! csn2/dx^2 for timestep
@@ -586,18 +572,27 @@ module NeutralVelocity
 !
       if (lborder_profiles) call set_border_neutralvelocity(f,df,p)
 !
+      call calc_diagnostics_neutralvelocity(p)
+
+    endsubroutine duun_dt
+!***********************************************************************
+    subroutine calc_diagnostics_neutralvelocity(p)
+!
 !  Calculate maxima and rms values for diagnostic purposes
 !
+      use Diagnostics
+      use Sub, only: dot_mn
+
+      type (pencil_case) :: p
+
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duun_dt: Calculate maxima and rms values...'
         if (idiag_dtun/=0) call max_mn_name(advec_uun/cdt,idiag_dtun,l_dt=.true.)
         if (idiag_dtcn/=0) call max_mn_name(sqrt(advec_csn2)/cdt,idiag_dtcn,l_dt=.true.)
         call sum_mn_name(p%un2,idiag_unrms,lsqrt=.true.)
         call max_mn_name(p%un2,idiag_unmax,lsqrt=.true.)
-        if (idiag_unzrms/=0) &
-            call sum_mn_name(p%uun(:,3)**2,idiag_unzrms,lsqrt=.true.)
-        if (idiag_unzrmaxs/=0) &
-            call max_mn_name(p%uun(:,3)**2,idiag_unzrmaxs,lsqrt=.true.)
+        if (idiag_unzrms/=0) call sum_mn_name(p%uun(:,3)**2,idiag_unzrms,lsqrt=.true.)
+        if (idiag_unzrmaxs/=0) call max_mn_name(p%uun(:,3)**2,idiag_unzrmaxs,lsqrt=.true.)
         call max_mn_name(p%uun(:,1),idiag_unxmax)
         call max_mn_name(p%uun(:,2),idiag_unymax)
         call max_mn_name(p%uun(:,3),idiag_unzmax)
@@ -674,10 +669,8 @@ module NeutralVelocity
         if (idiag_unyunzmx/=0) call yzsum_mn_name_x(p%uun(:,2)*p%uun(:,3),idiag_unyunzmx)
 !  phi-z averages
         call phizsum_mn_name_r(p%un2,idiag_un2mr)
-        if (idiag_unrmr/=0) &
-             call phizsum_mn_name_r(p%uun(:,1)*p%pomx+p%uun(:,2)*p%pomy,idiag_unrmr)
-        if (idiag_unpmr/=0) &
-             call phizsum_mn_name_r(p%uun(:,1)*p%phix+p%uun(:,2)*p%phiy,idiag_unpmr)
+        if (idiag_unrmr/=0) call phizsum_mn_name_r(p%uun(:,1)*p%pomx+p%uun(:,2)*p%pomy,idiag_unrmr)
+        if (idiag_unpmr/=0) call phizsum_mn_name_r(p%uun(:,1)*p%phix+p%uun(:,2)*p%phiy,idiag_unpmr)
         call phizsum_mn_name_r(p%uun(:,3),idiag_unzmr)
       endif
 !
@@ -695,7 +688,7 @@ module NeutralVelocity
         call zsum_mn_name_xy(p%un2,idiag_un2mz)
       endif
 !
-    endsubroutine duun_dt
+    endsubroutine calc_diagnostics_neutralvelocity
 !***********************************************************************
     subroutine set_border_neutralvelocity(f,df,p)
 !
@@ -823,8 +816,7 @@ module NeutralVelocity
                call der6(f,ju,tmp,i,IGNOREDX=.true.)
                fvisc(:,jj)=fvisc(:,jj)+nun_hyper3*pi4_1*tmp*dline_1(:,i)**2
              enddo
-             if (lfirst.and.ldt) &
-                  diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxmin_pencil**4
+             if (lfirst.and.ldt) diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxmin_pencil**4
            enddo
 !
      !    case ('shock','nun-shock')
@@ -955,18 +947,12 @@ module NeutralVelocity
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'unxmz',idiag_unxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'unymz',idiag_unymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'unzmz',idiag_unzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'unx2mz',idiag_unx2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'uny2mz',idiag_uny2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'unz2mz',idiag_unz2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'unxunymz',idiag_unxunymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'unxunzmz',idiag_unxunzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'unyunzmz',idiag_unyunzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'unx2mz',idiag_unx2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uny2mz',idiag_uny2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'unz2mz',idiag_unz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'unxunymz',idiag_unxunymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'unxunzmz',idiag_unxunzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'unyunzmz',idiag_unyunzmz)
       enddo
 !
 !  check for those quantities for which we want xz-averages
@@ -975,18 +961,12 @@ module NeutralVelocity
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'unxmy',idiag_unxmy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'unymy',idiag_unymy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'unzmy',idiag_unzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'unx2my',idiag_unx2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uny2my',idiag_uny2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'unz2my',idiag_unz2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'unxunymy',idiag_unxunymy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'unxunzmy',idiag_unxunzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'unyunzmy',idiag_unyunzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'unx2my',idiag_unx2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uny2my',idiag_uny2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'unz2my',idiag_unz2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'unxunymy',idiag_unxunymy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'unxunzmy',idiag_unxunzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'unyunzmy',idiag_unyunzmy)
       enddo
 !
 !  check for those quantities for which we want yz-averages
@@ -995,18 +975,12 @@ module NeutralVelocity
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'unxmx',idiag_unxmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'unymx',idiag_unymx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'unzmx',idiag_unzmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'unx2mx',idiag_unx2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uny2mx',idiag_uny2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'unz2mx',idiag_unz2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'unxunymx',idiag_unxunymx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'unxunzmx',idiag_unxunzmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'unyunzmx',idiag_unyunzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'unx2mx',idiag_unx2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uny2mx',idiag_uny2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'unz2mx',idiag_unz2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'unxunymx',idiag_unxunymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'unxunzmx',idiag_unxunzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'unyunzmx',idiag_unyunzmx)
       enddo
 !
 !  check for those quantities for which we want z-averages

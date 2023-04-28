@@ -89,8 +89,7 @@ module NeutralDensity
 !
       use FArrayManager
 !
-      if (.not.lcartesian_coords) &
-        call not_implemented('register_neutraldensity','non-Cartesian coords')
+      if (.not.lcartesian_coords) call not_implemented('register_neutraldensity','non-Cartesian coords')
 !
       if (lneutraldensity_nolog) then
         call farray_register_pde('rhon',irhon)
@@ -150,8 +149,7 @@ module NeutralDensity
           if (lroot) print*,'diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)rhon'
           ldiffn_hyper3=.true.
         case ('hyper3lnrhon')
-          if (lneutraldensity_nolog) &
-            call fatal_error('initialize_neutraldensity', &
+          if (lneutraldensity_nolog) call fatal_error('initialize_neutraldensity', &
                              "'hyper3lnrhon' diffusion not meaningful for linear density")
           if (lroot) print*,'diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)lnrhon'
           ldiffn_hyper3lnrhon=.true.
@@ -166,7 +164,8 @@ module NeutralDensity
         case ('shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiffn_shock=.true.
-          call not_implemented("initialize_neutraldensity","shock diffusion assumes ions velocity for neutrals")
+          call not_implemented("initialize_neutraldensity", &
+                               "shock diffusion assumes ions velocity for neutrals")
         case ('')
           if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing'
         case default
@@ -181,20 +180,17 @@ module NeutralDensity
 !
       if (lrun) then
         if (ldiffn_normal.and.diffrhon==0.0) &
-            call warning('initialize_neutraldensity', &
-                         'Diffusion coefficient diffrhon is zero')
+            call warning('initialize_neutraldensity','diffusion coefficient diffrhon is zero')
         if ( (ldiffn_hyper3 .or. ldiffn_hyper3lnrhon) .and. diffrhon_hyper3==0.0) &
-            call fatal_error('initialize_neutraldensity', &
-                             'Diffusion coefficient diffrhon_hyper3 is zero')
+          call fatal_error('initialize_neutraldensity','diffusion coefficient diffrhon_hyper3 is zero')
         if ( (ldiffn_hyper3_aniso) .and.  &
-             ((diffrhon_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
-              (diffrhon_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
-              (diffrhon_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
+            ((diffrhon_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
+             (diffrhon_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
+             (diffrhon_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
             call fatal_error('initialize_neutraldensity', &
                              'A diffusion coefficient of diffrhon_hyper3 is zero')
         if (ldiffn_shock .and. diffrhon_shock==0.0) &
-            call fatal_error('initialize_neutraldensity', &
-                             'diffusion coefficient diffrhon_shock is zero')
+          call fatal_error('initialize_neutraldensity','diffusion coefficient diffrhon_shock is zero')
       endif
 
       if (.not.lneutraldensity_nolog) then         ! for logarithmic density
@@ -240,8 +236,7 @@ module NeutralDensity
       case ('nothing')
         if (lroot.and.ip<=5) print*,"initialize_neutraldensity: borderlnrhon='nothing'"
       case default
-         call fatal_error('initialize_neutraldensity','No such value for borderlnrhon: '// &
-                          trim(borderlnrhon))
+         call fatal_error('initialize_neutraldensity','no such borderlnrhon: '//trim(borderlnrhon))
       endselect
 !
     endsubroutine initialize_neutraldensity
@@ -336,16 +331,12 @@ module NeutralDensity
                if (lnrhon_left /= 0.) f(:,:,:,ilnrhon)=lnrhon_left
                call gaunoise(ampllnrhon,f,ilnrhon,ilnrhon)
             case default
-               !
-               !  Catch unknown values
-               !
-               call fatal_error('init_lnrhon','No such value for initlnrhon('// &
+               call fatal_error('init_lnrhon','no such initlnrhon('// &
                                 trim(iinit_str)//'): '//trim(initlnrhon(j)))
 !
             endselect
 
-            if (lroot) print*,'init_lnrhon: initlnrhon(' &
-                              //trim(iinit_str)//') = ',trim(initlnrhon(j))
+            if (lroot) print*,'init_lnrhon: initlnrhon('//trim(iinit_str)//') = ',trim(initlnrhon(j))
          endif
 
       enddo
@@ -363,8 +354,7 @@ module NeutralDensity
 !
 !  sanity check
 !
-      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrhon))) &
-        call error('init_lnrhon', 'Imaginary density values')
+      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrhon))) call error('init_lnrhon','imaginary density values')
 !
     endsubroutine init_lnrhon
 !***********************************************************************
@@ -418,14 +408,10 @@ module NeutralDensity
           lpenc_requested(i_glnrhon2)=.true.
         endif
       endif
-      if (ldiffn_hyper3.or.ldiffn_hyper3_aniso) &
-           lpenc_requested(i_del6rhon)=.true.
-      if (ldiffn_hyper3.and..not.lneutraldensity_nolog) &
-           lpenc_requested(i_rhon)=.true.
-      if (ldiffn_hyper3lnrhon) &
-           lpenc_requested(i_del6lnrhon)=.true.
-      if (ldiffn_hyper3_polar.and..not.lneutraldensity_nolog) &
-           lpenc_requested(i_rhon1)=.true.
+      if (ldiffn_hyper3.or.ldiffn_hyper3_aniso) lpenc_requested(i_del6rhon)=.true.
+      if (ldiffn_hyper3.and..not.lneutraldensity_nolog) lpenc_requested(i_rhon)=.true.
+      if (ldiffn_hyper3lnrhon) lpenc_requested(i_del6lnrhon)=.true.
+      if (ldiffn_hyper3_polar.and..not.lneutraldensity_nolog) lpenc_requested(i_rhon1)=.true.
 !
       if (lmass_source) lpenc_requested(i_rcyl_mn)=.true.
 !
@@ -433,9 +419,9 @@ module NeutralDensity
       lpenc_diagnos2d(i_rhon)=.true.
 !
       if (idiag_rhonm/=0 .or. idiag_rhonmz/=0 .or. idiag_rhonmy/=0 .or. &
-           idiag_rhonmx/=0 .or. idiag_rhon2m/=0 .or. idiag_rhonmin/=0 .or. &
-           idiag_rhonmax/=0 .or. idiag_rhonmxy/=0 .or. idiag_neutralmass/=0) &
-           lpenc_diagnos(i_rhon)=.true.
+          idiag_rhonmx/=0 .or. idiag_rhon2m/=0 .or. idiag_rhonmin/=0 .or. &
+          idiag_rhonmax/=0 .or. idiag_rhonmxy/=0 .or. idiag_neutralmass/=0) &
+        lpenc_diagnos(i_rhon)=.true.
       if (idiag_lnrhon2m/=0) lpenc_diagnos(i_lnrhon)=.true.
       if (idiag_unglnrhonm/=0) lpenc_diagnos(i_unglnrhon)=.true.
 !
@@ -580,8 +566,7 @@ module NeutralDensity
         smooth_step_threshold=.5*(1+atan(tmp)*2*pi_1)
 
         !OO=p%uu(*,2)*p%rcyl_mn1
-        p%alpha=(alpha_time*smooth_step_threshold)* &
-                (p%uu(:,2)*p%rcyl_mn1)*p%rho1**(2-star_form_exponent)
+        p%alpha=(alpha_time*smooth_step_threshold)*(p%uu(:,2)*p%rcyl_mn1)*p%rho1**(2-star_form_exponent)
 !
       else
         p%alpha=alpha
@@ -638,7 +623,6 @@ module NeutralDensity
 !  28-feb-07/wlad: adapted
 !
       use Deriv, only: der6
-      use Diagnostics
       use Sub, only: identify_bcs, del6fj, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -709,9 +693,9 @@ module NeutralDensity
             call del6fj(f,diffrhon_hyper3_aniso,ilnrhon,tmp)
             fdiff = fdiff + tmp
             if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3 + &
-                 diffrhon_hyper3_aniso(1)*dline_1(:,1)**6 + &
-                 diffrhon_hyper3_aniso(2)*dline_1(:,2)**6 + &
-                 diffrhon_hyper3_aniso(3)*dline_1(:,3)**6
+                                                 diffrhon_hyper3_aniso(1)*dline_1(:,1)**6 + &
+                                                 diffrhon_hyper3_aniso(2)*dline_1(:,2)**6 + &
+                                                 diffrhon_hyper3_aniso(3)*dline_1(:,3)**6
             if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=(Dx,Dy,Dz)=',diffrhon_hyper3_aniso
           endif
         endif
@@ -722,8 +706,7 @@ module NeutralDensity
             if (.not.lneutraldensity_nolog) tmp=tmp*p%rhon1
             fdiff = fdiff + diffrhon_hyper3*pi4_1*tmp*dline_1(:,j)**2
           enddo
-          if (lfirst.and.ldt) &
-               diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1*dxmin_pencil**4
+          if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1*dxmin_pencil**4
           if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
         endif
 !
@@ -758,8 +741,7 @@ module NeutralDensity
         endif
 !
         if (lfirst.and.ldt) then
-          if (headtt.or.ldebug) &
-            print*,'dlnrhon_dt: max(diffus_diffrhon) =', maxval(diffus_diffrhon)
+          if (headtt.or.ldebug) print*,'dlnrhon_dt: max(diffus_diffrhon) =',maxval(diffus_diffrhon)
           maxdiffus=max(maxdiffus,diffus_diffrhon)
           maxdiffus3=max(maxdiffus3,diffus_diffrhon3)
         endif
@@ -768,6 +750,16 @@ module NeutralDensity
 !  Apply border profile
 !
       if (lborder_profiles) call set_border_neutraldensity(f,df,p)
+!
+      call calc_diagnostics_neutraldensity(p)
+
+    endsubroutine dlnrhon_dt
+!***********************************************************************
+    subroutine calc_diagnostics_neutraldensity(p)
+! 
+      use Diagnostics
+
+      type (pencil_case) :: p
 !
 !  2d-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
@@ -792,17 +784,15 @@ module NeutralDensity
       if (ldiagnos) then
         call sum_mn_name(p%rhon,idiag_rhonm)
         call sum_lim_mn_name(p%rhon,idiag_neutralmass,p)
-        if (idiag_rhonmin/=0) &
-            call max_mn_name(-p%rhon,idiag_rhonmin,lneg=.true.)
+        if (idiag_rhonmin/=0)  call max_mn_name(-p%rhon,idiag_rhonmin,lneg=.true.)
         call max_mn_name(p%rhon,idiag_rhonmax)
-        if (idiag_rhon2m/=0)    call sum_mn_name(p%rhon**2,idiag_rhon2m)
-        if (idiag_lnrhon2m/=0)  call sum_mn_name(p%lnrhon**2,idiag_lnrhon2m)
+        if (idiag_rhon2m/=0)   call sum_mn_name(p%rhon**2,idiag_rhon2m)
+        if (idiag_lnrhon2m/=0) call sum_mn_name(p%lnrhon**2,idiag_lnrhon2m)
         call sum_mn_name(p%unglnrhon,idiag_unglnrhonm)
-        if (idiag_dtnd/=0) &
-            call max_mn_name(diffus_diffrhon/cdtv,idiag_dtnd,l_dt=.true.)
+        if (idiag_dtnd/=0)     call max_mn_name(diffus_diffrhon/cdtv,idiag_dtnd,l_dt=.true.)
       endif
 !
-    endsubroutine dlnrhon_dt
+    endsubroutine calc_diagnostics_neutraldensity
 !***********************************************************************
     subroutine set_border_neutraldensity(f,df,p)
 !
@@ -919,8 +909,7 @@ module NeutralDensity
 !  check for those quantities for which we want phi-averages
 !
       do irz=1,nnamerz
-        call parse_name(irz,cnamerz(irz),cformrz(irz),&
-            'lnrhonmphi',idiag_lnrhonmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'lnrhonmphi',idiag_lnrhonmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'rhonmphi',idiag_rhonmphi)
       enddo
 !
