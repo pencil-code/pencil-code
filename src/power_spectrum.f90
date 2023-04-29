@@ -5056,7 +5056,7 @@ endsubroutine pdf
   integer :: i, ikx, iky, ikz, im, in, ivec, ikr
   integer :: nv,nvmin,nsum,nsub,icor
   integer :: kxx,kyy,kzz,kint
-  real :: k2,rr,k,j0,j0x,j0y,j0z,j1
+  real :: k2, rr, k, j0, j0x, j0y, j0z, j1, dx_2pi_box
   real, dimension(4) :: w
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,b_re,h_re,h_im
@@ -5079,6 +5079,7 @@ endsubroutine pdf
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
   !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !  Note that this must also be taken into account when using dx -> dx_2pi_box.
   !
   kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
@@ -5209,12 +5210,14 @@ endsubroutine pdf
   enddo
   !
   !  the spectral method
+  !  Take into account that k is not normalized, so dx -> dx_2pi_box.
   !
   call fft_xyz_parallel(h_re,h_im)
   h_re = h_re*h_re + h_im*h_im  !  this is h^*(k) h(k)
   !
+  dx_2pi_box=twopi/nxgrid
   do ikr=1,nk
-    rr = ikr*dx  !  rr=dx,2dx,...,Lx/2
+    rr = ikr*dx_2pi_box  !  rr=dx,2dx,...,Lx/2
     do ikx=1,nx; do iky=1,ny; do ikz=1,nz
       kxx = kx(ikx+ipx*nx)       !  the true kx
       kyy = ky(iky+ipy*ny)       !  the true ky
