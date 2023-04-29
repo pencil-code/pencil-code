@@ -88,6 +88,10 @@ module NeutralVelocity
   integer :: idiag_fricneut=0, idiag_fricions=0
   integer :: idiag_epsKn=0       ! DIAG_DOC: $\left<2\nu_n\varrho_n\Strain_n^2\right>$
 !
+! Auxiliaries
+!
+  real, dimension(nx) :: cions_rhon,cneut_rho
+
   contains
 !***********************************************************************
     subroutine register_neutralvelocity()
@@ -437,8 +441,9 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use Sub, only: identify_bcs
+      use Diagnostics, only: max_mn_name
       use General, only: notanumber
+      use Sub, only: identify_bcs
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -448,8 +453,8 @@ module NeutralVelocity
       intent(out) :: df
       intent(inout) :: p
 !
-      real, dimension (nx) :: ionization,recombination,cions,cneut,advec_csn2,advec_uun
-      real, dimension (nx) :: udelu_neut, udelu_ions
+      real, dimension (nx) :: ionization,recombination,advec_csn2,advec_uun
+!
       real :: c2,s2
       integer :: j,jn,ji
 !
@@ -514,21 +519,21 @@ module NeutralVelocity
 !
       ionization=p%zeta*p%rho1
       recombination=p%alpha*p%rho*p%rhon1
-      cions=colldrag+ionization
-      cneut=colldrag+recombination
+      cions_rhon=(colldrag+ionization)*p%rhon
+      cneut_rho=(colldrag+recombination)*p%rho
 !
       do j=1,3
         jn=j+iuun-1
 !
 ! neutrals gain momentum by recombination
 !
-        df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + cneut*p%rho*(p%uu(:,j)-p%uun(:,j))
+        df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + cneut_rho*(p%uu(:,j)-p%uun(:,j))
 !
 ! ions gain momentum by ionization and electron pressure
 !
         if (lhydro) then
           ji=j+iuu -1
-          df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
+          df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - cions_rhon*(p%uu(:,j)-p%uun(:,j))
 !
 ! add electron pressure to the ions if needed
 ! This adds to the already entered contribution from noentropy.f90
@@ -566,6 +571,9 @@ module NeutralVelocity
         if (notanumber(advec_uun)) print*, 'advec_uun  =',advec_uun
         if (headtt.or.ldebug) print*,'duun_dt: max(advec_uun) =',maxval(advec_uun)
         maxadvec=maxadvec+advec_uun
+!
+        if (idiag_dtun/=0) call max_mn_name(advec_uun/cdt,idiag_dtun,l_dt=.true.)
+        if (idiag_dtcn/=0) call max_mn_name(sqrt(advec_csn2)/cdt,idiag_dtcn,l_dt=.true.)
       endif
 !
 !  Apply border profiles
@@ -585,10 +593,9 @@ module NeutralVelocity
 
       type (pencil_case) :: p
 
+      real, dimension (nx) :: udelu_neut, udelu_ions
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duun_dt: Calculate maxima and rms values...'
-        if (idiag_dtun/=0) call max_mn_name(advec_uun/cdt,idiag_dtun,l_dt=.true.)
-        if (idiag_dtcn/=0) call max_mn_name(sqrt(advec_csn2)/cdt,idiag_dtcn,l_dt=.true.)
         call sum_mn_name(p%un2,idiag_unrms,lsqrt=.true.)
         call max_mn_name(p%un2,idiag_unmax,lsqrt=.true.)
         if (idiag_unzrms/=0) call sum_mn_name(p%uun(:,3)**2,idiag_unzrms,lsqrt=.true.)
@@ -601,11 +608,11 @@ module NeutralVelocity
         if (idiag_pndivunm/=0) call sum_mn_name(csn20*p%rhon*p%divun,idiag_pndivunm)
         if (idiag_fricneut/=0) then
           call dot_mn(p%uu-p%uun,p%uun,udelu_neut)
-          call sum_mn_name(cneut*p%rho*p%rhon*udelu_neut,idiag_fricneut)
+          call sum_mn_name(cneut_rho*p%rhon*udelu_neut,idiag_fricneut)
         endif
         if (idiag_fricions/=0) then
           call dot_mn(p%uu-p%uun,p%uu,udelu_ions)
-          call sum_mn_name(-cions*p%rho*p%rhon*udelu_ions,idiag_fricions)
+          call sum_mn_name(-cions_rhon*p%rho*udelu_ions,idiag_fricions)
         endif
         call max_mn_name(p%un2,idiag_unm2)
         call sum_mn_name(p%uun(:,1),idiag_unxm)
