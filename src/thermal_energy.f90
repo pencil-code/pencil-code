@@ -171,7 +171,7 @@ module Energy
 !
       use EquationOfState, only: select_eos_variable, get_stratz, get_cv1, getmu, gamma, gamma_m1, cs0, cs20
       use SharedVariables
-      use Slice_methods, only: alloc_slice_buffers
+      use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
@@ -248,7 +248,7 @@ module Energy
           'llocal_iso switches on the local isothermal approximation. ' // &
           'Use ENERGY=noenergy in src/Makefile.local')
 !
-      if (ivid_pp/=0) call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_r)
+      if (ivid_pp/=0) call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2,pp_r)
 
       call keep_compiler_quiet(f)
 !
@@ -1205,7 +1205,7 @@ module Energy
       real, intent(in) :: t, eth, rho
       real :: heat,eth1
 !
-      eth1 = eth
+      if (t==t) eth1 = eth     ! to quiet the compiler, can be later removed if t is ever used.
       if (ljeans_floor) call jeans_floor(eth1, rho)
 !
       heat = 0.
@@ -1216,8 +1216,6 @@ module Energy
       elseif (lSD93) then
         heat = heat - cool_SD93(eth1, rho)
       endif
-!
-      call keep_compiler_quiet(t)     !can be later removed if t is ever used. 
 !
     endfunction calc_heat_split
 !***********************************************************************
