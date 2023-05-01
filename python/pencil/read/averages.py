@@ -348,7 +348,7 @@ class Averages(object):
         else:
             #Reading averages from hdf5 files
                 # Get the averaged quantities.
-            dim = read.dim()
+            dim = read.dim(datadir=datadir)
             av_files = glob.glob(join(datadir,"averages","*"))
             if len(av_files) > 0:
                 for av_file in av_files:
