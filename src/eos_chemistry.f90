@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED lnTT;  glnTT(3); TT; TT1; gTT(3)
+! PENCILS PROVIDED lnTT; gss(3); glnTT(3); TT; TT1; gTT(3)
 ! PENCILS PROVIDED pp; del2pp; mu1; gmu1(3); glnmu(3)
 ! PENCILS PROVIDED rho1gpp(3); glnpp(3); del2lnTT
 !
