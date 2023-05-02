@@ -18,14 +18,12 @@
 module Particles_adsorbed
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
   use Particles_mpicomm
   use Particles_sub
   use Particles_chemistry
-  use SharedVariables
 !
   implicit none
 !
@@ -54,17 +52,16 @@ module Particles_adsorbed
 !               Particle dependent variables below here               !
 !*********************************************************************!
 !
-  namelist /particles_ads_init_pars/ &
-      init_adsorbed, &
-      init_surf_ads_frac, &
-      lexperimental_adsorbed, &
-      dpads
+  namelist /particles_ads_init_pars/ init_adsorbed, &
+                                     init_surf_ads_frac, &
+                                     lexperimental_adsorbed, &
+                                     dpads
 !
   namelist /particles_ads_run_pars/ adsplaceholder
 !
   contains
 !***********************************************************************
-    subroutine register_particles_ads()
+    subroutine register_particles_ads
 !
 !  this is a wrapper function for registering particle number
 !  in- and independent variables
@@ -72,16 +69,18 @@ module Particles_adsorbed
       if (lroot) call svn_id( &
           "$Id: particles_adsorbed.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
 !
-      call register_indep_ads()
-      call register_dep_ads()
+      call register_indep_ads
+      call register_dep_ads
 !
     endsubroutine register_particles_ads
 !***********************************************************************
-    subroutine register_indep_ads()
+    subroutine register_indep_ads
 !
 !  Set up indices for access to the fp and dfp arrays
 !
 !  29-aug-14/jonas: coded
+!
+      use SharedVariables, only: get_shared_variable
 !
       integer :: i, stat,j
       character(len=10), dimension(40) :: reactants
@@ -92,8 +91,7 @@ module Particles_adsorbed
       if (nadsspec /= (N_adsorbed_species) .and. N_adsorbed_species > 1) then
         print*,'N_adsorbed_species: ',N_adsorbed_species
         print*,'nadsspec: ',nadsspec
-        call fatal_error('register_particles_ads', &
-            'wrong size of storage for adsorbed species allocated.')
+        call fatal_error('register_particles_ads','wrong storage size for adsorbed species allocated')
       endif
 !
       if (N_adsorbed_species > 1) then
@@ -135,23 +133,17 @@ module Particles_adsorbed
 !
       if (N_adsorbed_species > 1) then
         allocate(mu(N_adsorbed_species,N_surface_reactions),STAT=stat)
-        if (stat > 0) call fatal_error('register_indep_ads', &
-            'Could not allocate memory for mu')
+        if (stat > 0) call fatal_error('register_indep_ads','could not allocate mu')
         allocate(mu_prime(N_adsorbed_species,N_surface_reactions),STAT=stat)
-        if (stat > 0) call fatal_error('register_indep_ads', &
-            'Could not allocate memory for mu_prime')
+        if (stat > 0) call fatal_error('register_indep_ads','could not allocate mu_prime')
         allocate(aac(N_adsorbed_species),STAT=stat)
-        if (stat > 0) call fatal_error('register_indep_ads', &
-            'Could not allocate memory for aac')
+        if (stat > 0) call fatal_error('register_indep_ads','could not allocate aac')
         allocate(site_occupancy(N_adsorbed_species),STAT=stat)
-        if (stat > 0) call fatal_error('register_indep_ads', &
-            'Could not allocate memory for site_occupancy')
+        if (stat > 0) call fatal_error('register_indep_ads','could not allocate site_occupancy')
         allocate(mu_power(N_adsorbed_species,N_surface_reactions),STAT=stat)
-        if (stat > 0) call fatal_error('register_indep_ads', &
-            'Could not allocate memory for mu_power')
+        if (stat > 0) call fatal_error('register_indep_ads','could not allocate mu_power')
         allocate(idiag_ads(N_adsorbed_species),STAT=stat)
-        if (stat > 0) call fatal_error('register_indep_ads', &
-            'Could not allocate memory for idiag_ads')
+        if (stat > 0) call fatal_error('register_indep_ads','could not allocate idiag_ads')
         idiag_ads = 0
       endif
 !
@@ -164,22 +156,17 @@ module Particles_adsorbed
       endif
 !
       if (N_adsorbed_species > 1) then
-        call create_stoc(adsorbed_species_names,mu,.true., &
-            N_adsorbed_species,mu_power)
-        call create_stoc(adsorbed_species_names,mu_prime,.false., &
-            N_adsorbed_species)
+        call create_stoc(adsorbed_species_names,mu,.true.,N_adsorbed_species,mu_power)
+        call create_stoc(adsorbed_species_names,mu_prime,.false.,N_adsorbed_species)
         call create_occupancy(adsorbed_species_names,site_occupancy)
-!
       endif
 !
-      if (lwrite) then
-        call write_outputfile()
-      endif
+      if (lwrite) call write_outputfile
       lwrite = .false.
 !
     endsubroutine register_indep_ads
 !***********************************************************************
-    subroutine register_dep_ads()
+    subroutine register_dep_ads
 !
       integer :: stat
 !
@@ -235,7 +222,7 @@ module Particles_adsorbed
 !  This ensures that we don't have unphysical values as init
 !
             if (sum_ads > 1.) then
-              print*, 'sum of init_surf_ads_frac > 1, normalizing...'
+              if (lroot) print*, 'sum of init_surf_ads_frac > 1, normalizing...'
               init_surf_ads_frac(1:N_adsorbed_species) = &
                   init_surf_ads_frac(1:N_adsorbed_species) / sum_ads
             endif
@@ -244,10 +231,7 @@ module Particles_adsorbed
               fp(i,iads:iads_end) = init_surf_ads_frac(1:N_adsorbed_species-1)
             enddo
           case default
-            if (lroot) &
-                print*, 'init_particles_ads: No such such value for init_adsorbed: ', &
-                trim(init_adsorbed(j))
-            call fatal_error('init_particles_ads','')
+            call fatal_error('init_particles_ads','no such init_adsorbed: '//trim(init_adsorbed(j)))
           endselect
         enddo
         do i = 1,mpar_loc
@@ -257,7 +241,7 @@ module Particles_adsorbed
 !
     endsubroutine init_particles_ads
 !***********************************************************************
-    subroutine pencil_criteria_par_ads()
+    subroutine pencil_criteria_par_ads
 !
 !  All pencils that the Particles_adsorbed
 !  module depends on are specified here.
@@ -281,15 +265,12 @@ module Particles_adsorbed
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
-!     call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
       if (ldiagnos) then
         do i = 1,N_adsorbed_species
-          if (idiag_ads(i) /= 0) then
-            call sum_par_name(fp(1:npar_loc,iads+i-1),idiag_ads(i))
-          endif
+          if (idiag_ads(i) /= 0) call sum_par_name(fp(1:npar_loc,iads+i-1),idiag_ads(i))
         enddo
       endif
 !
@@ -337,9 +318,8 @@ module Particles_adsorbed
 !            write(*,'(A12,10E12.3)' )'R_j_hatbef', R_j_hat(k1:k2,3)
 !
             do i = iads, iads_end
-              dfp(k1:k2,i) = dfp(k1:k2,i) + R_j_hat(k1:k2,i-iads+1)/ &
-                  total_carbon_sites + mod_surf_area(k1:k2) * &
-                  R_c_hat(k1:k2) * fp(k1:k2,i)
+              dfp(k1:k2,i) =  dfp(k1:k2,i) + R_j_hat(k1:k2,i-iads+1)/total_carbon_sites  &
+                            + mod_surf_area(k1:k2) * R_c_hat(k1:k2) * fp(k1:k2,i)
 !            print*, 'dfp(k1:k2,iads:iads_end)', i,  dfp(k1:k2,i)
 !             print*, 'fp(k1:k2,iads:iads_end)', i,  fp(k1:k2,i)
 !            print*,  'R_j_hat(k1,i-iads+n_ads+1)', R_j_hat(k1,i-iads+n_ads+1)
@@ -445,7 +425,7 @@ module Particles_adsorbed
 !
     endsubroutine particles_ads_prepencil_calc
 !***********************************************************************
-    subroutine particles_adsorbed_clean_up()
+    subroutine particles_adsorbed_clean_up
 !
       if (allocated(mu)) deallocate(mu)
       if (allocated(mu_prime)) deallocate(mu_prime)
@@ -456,7 +436,7 @@ module Particles_adsorbed
 !
     endsubroutine particles_adsorbed_clean_up
 !***********************************************************************
-    subroutine write_outputfile()
+    subroutine write_outputfile
 !
 !  Write particle chemistry info to ./data/particle_chemistry.out
 !
