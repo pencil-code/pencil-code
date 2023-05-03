@@ -32,6 +32,7 @@ s/\([^ ]\) *!.*$/\1/
 #s/^ *module .*$/  # pragma once \n  namespace PC\n{\n  # include "headers_c.h" \n  # include "defines_cdata.h"/ 
 s/^ *module .*$/  #pragma once \n  #include "headers_c.h" \n/
 #replace dimension...:: by *::
+s/, *dimension(\([^,:]*\)) *:: *\([a-zA-Z0-9_]*\)/:: \2[\1]/
 s/, *dimension.*::/*::/
 #transform parameter attribute to const
 s/integer *, *parameter *\([\*]*\):: */const FINT \1/
