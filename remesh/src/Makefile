@@ -269,6 +269,7 @@ ifneq (,$(filter mpif%,$(COMPILER)))
   COMPILER = $(notdir $(firstword $(shell $(FC) -show)))
 endif
 
+ALLOW_ARG_MISMATCH =
 $(info Compiler: $(COMPILER))
 # If the compiler is from GCC, determine its version.
 ifneq (,$(shell $(FC) --version | grep -i GNU))
@@ -276,7 +277,7 @@ ifneq (,$(shell $(FC) --version | grep -i GNU))
   $(info GCC version: $(GCC_VERSION))
   ifeq ($(shell [ $$(echo $(GCC_VERSION) | cut -f1 -d.) -gt 9 ] && echo true),true)
     $(warning GCC version > 9 ==> allowing argument mismatch in $(MPICOMM).f90, $(PARTICLES_MPICOMM_SRC), $(SYSCALLS_SRC) and fftpack.f90.)
-    FFLAGS += -fallow-argument-mismatch
+    ALLOW_ARG_MISMATCH = -fallow-argument-mismatch
   endif
 endif
 
@@ -326,9 +327,9 @@ general.o:   general.f90 cdata.o cparam.o syscalls.o
 #deriv.o:     deriv.f90 cdata.o
 
 syscalls.o: syscalls.f90 syscalls_ansi.o cparam.o
-        $(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o syscalls.o -c syscalls.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o syscalls.o -c syscalls.f90
 $(MPICOMM).o: mpicomm.h $(MPICOMM).f90 noyinyang.o cdata.o
-        $(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o $(MPICOMM).o -c $(MPICOMM).f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o $(MPICOMM).o -c $(MPICOMM).f90
 
 # Clean up, but leave makefile and TAGS
 clean:
