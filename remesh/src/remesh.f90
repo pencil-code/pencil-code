@@ -31,12 +31,10 @@ program remesh
 !   25-mar-06/axel: added dx_1, dx_tilde, etc, for uniform mesh *only*
 !   05-dec-09/simon: added spreading in mulx processors in x direction
 !
-  use Cdata
-  use Cparam
+  use Common
   use Mpicomm
   use Syscalls, only: system_cmd
   use General   !, only: get_from_nml_str,get_from_nml_real,get_from_nml_log,convert_nml
-  use Common
 !
   implicit none
 !
@@ -57,7 +55,9 @@ program remesh
 
   real, dimension(mx,my,mz,mvar) :: a
   real, dimension(mxcoll,mycoll,mzcoll,mvar) :: acoll
-  real, dimension(:), allocatable :: xcoll,ycoll,zcoll
+  real, dimension(mxcoll) :: xcoll
+  real, dimension(mycoll) :: ycoll
+  real, dimension(mzcoll) :: zcoll
 
 ! SC: added axtra dimension in x direction to 'f' array
   real, dimension (mmx_grid,mmy_grid,mmz_grid,mvar) :: f
@@ -201,7 +201,7 @@ program remesh
   else
     overwrite='yes'
   endif
-9 if ( overwrite .eq. 'yes') then
+9 if ( overwrite == 'yes') then
 !
 ! Read global dim.dat in order to find precision
 !
@@ -245,26 +245,23 @@ program remesh
     nprocxx=nprocx*mulx/divx
     nprocyy=nprocy*muly/divy
     nproczz=nprocz*mulz/divz
-
-    allocate(xcoll(mxcoll),ycoll(mycoll),zcoll(mzcoll))
 !
 !  Write size of global array to destination/data/dim.dat
 !
     if (lroot) then
-    call safe_character_assign(dimfile,&
-         trim(destination)//'/'//trim(datadir)//'/dim.dat')
-    if (ip<8) print*,'Writing '//trim(dimfile)
-    open(1,file=dimfile)
-    write(1,'(6i7)') mxout_grid,myout_grid,mzout_grid,mvar,maux,mglobal
-    write(1,'(a)') prec
-    write(1,'(3i3)') nghost, nghost, nghost
+      call safe_character_assign(dimfile, trim(destination)//'/'//trim(datadir)//'/dim.dat')
+      if (ip<8) print*,'Writing '//trim(dimfile)
+      open(1,file=dimfile)
+      write(1,'(6i7)') mxout_grid,myout_grid,mzout_grid,mvar,maux,mglobal
+      write(1,'(a)') prec
+      write(1,'(3i3)') nghost, nghost, nghost
 !
 ! SC: Added iprocz_slowest = 1 in order to solve an issue with the reading 
 !  of the remeshed dim.dat file.
 !  This should work fine for all cases.
 !
-    write(1,'(4i3)') nprocxx, nprocyy, nproczz, 1
-    close(1)
+      write(1,'(4i3)') nprocxx, nprocyy, nproczz, 1
+      close(1)
     endif
 !
 ! Factor for d[xyz].
@@ -409,8 +406,7 @@ yinyang_loop: &
 !
 !  Read grid.dat (needed?)
 !
-      call safe_character_assign(file,&
-          trim(datadir)//'/proc'//trim(ch)//'/grid.dat')
+      call safe_character_assign(file,trim(datadir)//'/proc'//trim(ch)//'/grid.dat')
       if (ip<8) print*,'Reading '//trim(file)
       open(1,file=file,form='unformatted')
       read(1) tdummy,x,y,z,dx,dy,dz
@@ -481,7 +477,7 @@ yinyang_loop: &
           rx(ll2+i)=rx(ll2)+i*dx
         enddo
       else
-        rx(1:mx)=xcoll; rdx_1(1:mx)=dx_1; rdx_tilde(1:mx)=dx_tilde
+        rx(1:mx)=xcoll(1:mx); rdx_1(1:mx)=dx_1; rdx_tilde(1:mx)=dx_tilde
       endif
 !     
       if (remesh_pary/=1.) then
@@ -509,7 +505,7 @@ yinyang_loop: &
           ry(mm2+i)=ry(mm2)+i*dy
         enddo
       else
-        ry(1:my)=ycoll; rdy_1(1:my)=dy_1; rdy_tilde(1:my)=dy_tilde
+        ry(1:my)=ycoll(1:my); rdy_1(1:my)=dy_1; rdy_tilde(1:my)=dy_tilde
       endif
 !
       if (remesh_parz/=1.) then
@@ -537,7 +533,7 @@ yinyang_loop: &
           rz(nn2+i)=rz(nn2)+i*dz
         enddo
       else
-        rz(1:mz)=zcoll; rdz_1(1:mz)=dz_1; rdz_tilde(1:mz)=dz_tilde
+        rz(1:mz)=zcoll(1:mz); rdz_1(1:mz)=dz_1; rdz_tilde(1:mz)=dz_tilde
       endif
 !
 !  Interpolating f-array to increased number of mesh points if only one
@@ -591,50 +587,50 @@ yinyang_loop: &
 !
 ! Tripling or doubling
 !
-                  if (remesh_parx .eq. 3) then
+                  if (remesh_parx == 3) then
                     addx=ii 
-                    if (itx .eq. 3)    addx=1
-                    if (itx .eq. 2) then
-                      if (addx .eq. 0) addx=1
+                    if (itx == 3)    addx=1
+                    if (itx == 2) then
+                      if (addx == 0) addx=1
                     endif
-                    if (itx .eq. mxcoll-2) then
-                      if (addx .eq. 2) addx=1
+                    if (itx == mxcoll-2) then
+                      if (addx == 2) addx=1
                     endif
-                    if (itx .eq. mxcoll-1) addx=0   
-                  elseif (remesh_parx .eq. 2) then
+                    if (itx == mxcoll-1) addx=0   
+                  elseif (remesh_parx == 2) then
                     addx=ii 
-                    if (itx .eq. 2)    addx=1
-                    if (itx .eq. mxcoll-1) addx=0   
+                    if (itx == 2)    addx=1
+                    if (itx == mxcoll-1) addx=0   
                   else
                     addx=1
                   endif
 
-                  if (remesh_pary .eq. 3) then
+                  if (remesh_pary == 3) then
                     addy=jj 
-                    if (ity .eq. 3)    addy=1
-                    if (ity .eq. 2) then
-                      if (addy .eq. 0) addy=1
+                    if (ity == 3)    addy=1
+                    if (ity == 2) then
+                      if (addy == 0) addy=1
                     endif
-                    if (ity .eq. mycoll-2) then
-                      if (addy .eq. 2) addy=1
+                    if (ity == mycoll-2) then
+                      if (addy == 2) addy=1
                     endif
-                    if (ity .eq. mycoll-1) addy=0   
+                    if (ity == mycoll-1) addy=0   
                     addz=kk 
-                    if (itz .eq. 3)    addz=1
-                    if (itz .eq. 2) then
-                      if (addz .eq. 0) addz=1
+                    if (itz == 3)    addz=1
+                    if (itz == 2) then
+                      if (addz == 0) addz=1
                     endif
-                    if (itz .eq. mzcoll-2) then
-                      if (addz .eq. 2) addz=1
+                    if (itz == mzcoll-2) then
+                      if (addz == 2) addz=1
                     endif
-                    if (itz .eq. mzcoll-1) addz=0  
-                  elseif (remesh_parz .eq. 2) then
+                    if (itz == mzcoll-1) addz=0  
+                  elseif (remesh_parz == 2) then
                     addy=jj
                     addz=kk
-                    if (ity .eq. 2)    addy=1
-                    if (ity .eq. mycoll-1) addy=0
-                    if (itz .eq. 2)    addz=1
-                    if (itz .eq. mzcoll-1) addz=0
+                    if (ity == 2)    addy=1
+                    if (ity == mycoll-1) addy=0
+                    if (itz == 2)    addz=1
+                    if (itz == mzcoll-1) addz=0
                   else
                     addy=1
                     addz=1
@@ -682,7 +678,7 @@ yinyang_loop: &
 ! SC: changed 'ff' array from 'ff(i+addx,...)' to 'ff(:,...)'
 ! SC: added to 'f' array 'xstart:xstop'
               ff(:,:,:,:,cpu_local)=f(xstart:xstop,ystart:ystop,zstart:zstop,:)
-!--             if (itx .eq. 2) then
+!--             if (itx == 2) then
               rrx(:,cpu_local)=rx(xstart:xstop)
               rry(:,cpu_local)=ry(ystart:ystop)
               rrz(:,cpu_local)=rz(zstart:zstop)
@@ -786,7 +782,7 @@ yinyang_loop: &
 
     if (lroot) print*, 'Remeshing successfully finished.'
 
-  elseif (overwrite .eq. 'no') then
+  elseif (overwrite == 'no') then
     print*,'OK, -maybe some other time.'
   else
     print*,'You must answer yes or no!'
@@ -829,8 +825,7 @@ endprogram remesh
 !  Not necessary to do this in a (cache-efficient) loop updating in
 !  timestep, since this routine will be applied only infrequently.
 !
-      f(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar) = &
-           f(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar) + &
+      f(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar) = f(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar) + &
            awig_input*df(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar)
 !
     endsubroutine rmwig_1d
@@ -865,8 +860,7 @@ endprogram remesh
 !  Revert back to f if we have been working on exp(f)
 !
       if (explog) then
-        f(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar)=&
-             alog(f(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar))
+        f(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar)=alog(f(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar))
         if(lroot) print*,'RMWIG: turn f back into alog(f), ivar=',ivar
       endif
 !
