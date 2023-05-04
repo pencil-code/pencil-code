@@ -53,15 +53,14 @@ program remesh
   integer :: iproc_new, cpu_count=1
   integer, dimension (mprocs) :: cpu_global
 
-  real, dimension(mx,my,mz,mvar) :: a
-  real, dimension(mxcoll,mycoll,mzcoll,mvar) :: acoll
+  real, dimension(:,:,:,:), allocatable :: acoll, a
   real, dimension(mxcoll) :: xcoll
   real, dimension(mycoll) :: ycoll
   real, dimension(mzcoll) :: zcoll
 
 ! SC: added axtra dimension in x direction to 'f' array
   real, dimension (mmx_grid,mmy_grid,mmz_grid,mvar) :: f
-  real, dimension (mmx,mmy,mmz,mvar,mprocs) :: ff
+  real, dimension (:,:,:,:,:), allocatable :: ff
   real, dimension (mmx_grid) :: rx,rdx_1,rdx_tilde
   real, dimension (mmy_grid) :: ry,rdy_1,rdy_tilde
   real, dimension (mmz_grid) :: rz,rdz_1,rdz_tilde
@@ -75,7 +74,7 @@ program remesh
   integer :: nprocxx, nprocyy, nproczz
   logical :: lexist, lshort, lstop=.false.
   integer :: idx, ifxa, ifxe, idy, ifya, ifye, idz, ifza, ifze, iv, icpu0, icpu1, nprocs_rem
-  integer :: i1x, i2x, i1y, i2y, i1z, i2z, isx, isy, isz, srcproc, idpx, idpy, idpz
+  integer :: i1x, i2x, i1y, i2y, i1z, i2z, isx, isy, isz, srcproc, idpx, idpy, idpz, stat
   character(LEN=128) :: clperi
   integer, dimension(3) :: layout_src, layout_dst, layout_rem
 
@@ -311,6 +310,9 @@ yinyang_loop: &
       !ipz = icpu/(nprocx*nprocy)
       cpu=icpu+iyy
 
+      allocate(acoll(mxcoll,mycoll,mzcoll,mvar),stat=stat)
+      if (stat/=0) print*, 'allocation of acoll fails, iproc=', iproc
+
       i1z=1; i2z=mz
       do isz=0,divz-1
       i1y=1; i2y=my;
@@ -368,8 +370,8 @@ yinyang_loop: &
 !
 ! Possibility to jump here from below
 !
-      read(1) a
-      acoll(i1x:i2x,i1y:i2y,i1z:i2z,:)=a
+!print*, 'i1x,i2x,i1y,i2y,i1z,i2z=', i1x,i2x,i1y,i2y,i1z,i2z
+      read(1) acoll(i1x:i2x,i1y:i2y,i1z:i2z,:)
 !
 !  try first to read with deltay, but if that fails then
 !  go to the next possibility without deltay.
@@ -660,6 +662,10 @@ yinyang_loop: &
 !
 ! Spreading results to different processors.
 !
+      deallocate(acoll)
+      allocate(ff(mmx,mmy,mmz,mvar,mprocs),stat=stat)
+      if (stat/=0) print*, 'allocation of ff fails, iproc=', iproc
+
       if (any((/mulx,muly,mulz/)/=1)) then
         do counx=1,mulx
           do couny=1,muly
@@ -737,6 +743,7 @@ yinyang_loop: &
           close(91)
         endif
       enddo
+      deallocate(ff)
 !
 !  Write dim.dat for new local processor(s)
 !
