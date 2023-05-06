@@ -45,10 +45,19 @@ readSlice[sim_,var_,sl_]:=
     },
     readSlice::nofile=StringJoin[file," does not exist. Please check."];
     readSlice::badformat=StringJoin[file," has bad format. Please check."];
-    Module[{p,nx,ny,nz,n1,n2,readOneTime,data,slices,times,positions},
+    Module[{p,nx,ny,nz,n1,n2,s1,s2,readOneTime,data,slices,times,positions},
       If[!FileExistsQ[file],Message[readSlice::nofile];Return[$Failed]];
+      
+      (* determine data dimension *)
       {p,nx,ny,nz}=readDim[sim]/@{"precision","nx","ny","nz"};
       {n1,n2}=Switch[StringTake[sl,2],"xy",{nx,ny},"yz",{ny,nz},"xz",{nx,nz}];
+      (* step size *)
+      {s1,s2}=With[{s12=sim<>"/data/stride_"<>StringTake[sl,2]<>".dat"},
+        If[FileExistsQ[s12],Import[s12][[1]],{1,1}]
+      ];
+      {n1,n2}=Ceiling[{n1,n2}/{s1,s2}];
+      
+      (* read *)
       readOneTime[x_]:=Module[{nstart=Last[x],slice,t,pos,nend,nnext},
         slice=BinaryRead[file,ConstantArray[p,n1*n2]];
         t=BinaryRead[file,p];
