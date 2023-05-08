@@ -1710,12 +1710,13 @@ module Hydro
 !
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (mx,3) :: ss
-      real, dimension (mx) :: tmpmx, ss2
+      real, dimension (mx) :: tmpmx, ss2, delx, tau_hless
       real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0,ur,lnrhor
       real, dimension (:,:), allocatable :: yz
       real :: kabs,crit,eta_sigma,tmp0,phi0
       real :: a2, rr2, wall_smoothing
       real :: dis, xold,yold,uprof, factx, factz, sph, sph_har_der, der
+      real :: dely, delz
       integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz,iter,niter=100
       logical :: lvectorpotential=.false.
 !
@@ -2587,7 +2588,21 @@ module Hydro
 !
 !  Initialize Higgsless field
 !
-        if (lhiggsless) f(:,:,:,ihless)=alpha_hless/(1.+alpha_hless)
+        if (lhiggsless) then
+          f(:,:,:,ihless)=huge1
+          do jhless=1,nhless
+            do n=1,mz
+            do m=1,my
+              delx=2.*atan(tan(.5*(x   -xhless(jhless))))
+              dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
+              delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
+              tau_hless=thless(jhless)+sqrt(delx**2+dely**2+delz**2)/vwall
+              where(tau_hless<f(:,m,n,ihless)) f(:,m,n,ihless)=tau_hless
+            enddo
+            enddo
+          enddo
+        endif
+
       endif
 !
     endsubroutine init_uu
@@ -3439,17 +3454,17 @@ module Hydro
 !
       if (lconservative) then
         if (lhiggsless) then
-          do jhless=1,nhless
-            do n=1,mz
-            do m=1,my
-              delx=2.*atan(tan(.5*(x   -xhless(jhless))))
-              dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
-              delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
-              where(sqrt(delx**2+dely**2+delz**2) &
-                    < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
-            enddo
-            enddo
-          enddo
+   !      do jhless=1,nhless
+   !        do n=1,mz
+   !        do m=1,my
+   !          delx=2.*atan(tan(.5*(x   -xhless(jhless))))
+   !          dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
+   !          delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
+   !          where(sqrt(delx**2+dely**2+delz**2) &
+   !                < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
+   !        enddo
+   !        enddo
+   !      enddo
         endif
  !       
         if (iTij==0) call fatal_error("hydro_before_boundary","must compute Tij for lconservative")
@@ -3471,7 +3486,8 @@ module Hydro
 !  Higgsless field
 !
             if (lhiggsless) then
-              hydro_energy=hydro_energy-f(:,m,n,ihless)
+!             hydro_energy=hydro_energy-f(:,m,n,ihless)
+              where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-alpha_hless/(1.+alpha_hless)
             endif
 !
             hydro_energy1=1./hydro_energy
