@@ -10430,6 +10430,7 @@ module Magnetic
 !  16-may-12/MR: coded
 !
       use Diagnostics, only : name_is_present, expand_cname
+      use General, only: reallocate
 !
       integer :: nnamerz_prev
 
