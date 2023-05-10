@@ -10431,23 +10431,26 @@ module Magnetic
 !
       use Diagnostics, only : name_is_present, expand_cname
 !
+      integer :: nnamerz_prev
+
       if (nnamerz>0) then
 !
-        call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'bbmphi'),&
-                          'brmphi','bpmphi','bzmphi')
+        nnamerz_prev=nnamerz
+        call expand_cname(cnamerz,cformrz,nnamerz,'brmphi','bpmphi','bzmphi',name='bbmphi')
         if (name_is_present(cnamerz,'bpmphi')>0) then
-          call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'bbsphmphi'),&
-                            'brsphmphi','bthmphi')
+          call expand_cname(cnamerz,cformrz,nnamerz,'brsphmphi','bthmphi',name='bbsphmphi')
         else
-          call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'bbsphmphi'),&
-                            'brsphmphi','bthmphi','bpmphi')
+          call expand_cname(cnamerz,cformrz,nnamerz,'brsphmphi','bthmphi','bpmphi',name='bbsphmphi')
         endif
 !
-        call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uxbmphi'),&
-                          'uxbrmphi','uxbpmphi','uxbzmphi')
-        call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'jxbmphi'),&
-                          'jxbrmphi','jxbpmphi','jxbzmphi')
+        call expand_cname(cnamerz,cformrz,nnamerz,'uxbrmphi','uxbpmphi','uxbzmphi',name='uxbmphi')
+        call expand_cname(cnamerz,cformrz,nnamerz,'jxbrmphi','jxbpmphi','jxbzmphi',name='jxbmphi')
 !
+        if (nnamerz>nnamerz_prev) then
+          if (.not.reallocate(fnamerz,nnamerz,4)) &
+            call fatal_error('expand_shands_magnetic','could not reallocate fnamerz')
+        endif
+
       endif
 !
     endsubroutine expand_shands_magnetic
