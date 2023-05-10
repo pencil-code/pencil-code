@@ -47,7 +47,7 @@ module Special
 !  integer :: ia0, idiva_name
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
-  logical :: lvectorpotential=.false., phi_inhom=.true.
+  logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: loverride_ee_prev=.false.
   logical, pointer :: loverride_ee
   character(len=50) :: initee='zero', inita0='zero'
@@ -59,7 +59,7 @@ module Special
     kz_ex, kz_ey, kz_ez, &
     kx_a0, ky_a0, kz_a0, &
     phase_ex, phase_ey, phase_ez, phase_a0, &
-    llorenz_gauge_disp, phi_inhom, &
+    llorenz_gauge_disp, lphi_hom, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
     ampla0, initpower_a0, initpower2_a0, &
@@ -67,7 +67,7 @@ module Special
 !
   ! run parameters
   namelist /special_run_pars/ &
-    alpf, llorenz_gauge_disp, phi_inhom
+    alpf, llorenz_gauge_disp, lphi_hom
 !
 ! Declare any index variables necessary for main or
 !
@@ -114,6 +114,7 @@ module Special
       endif
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
+      call put_shared_variable('lphi_hom',lphi_hom,caller='register_disp_current')
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -335,22 +336,22 @@ module Special
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
 !
         if (alpf/=0.) then
-          if (phi_inhom) then
+          if (lphi_hom) then
+            call multsv(p%infl_dphi,p%bb,gtmp)
+          else
             call cross(p%gphi,p%el,gtmp)
             call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
-          else
-            call multsv(p%infl_dphi,p%bb,gtmp)
           endif
 !          print*,"p%infl_phi",p%infl_phi
 !          print*,"p%infl_dphi",p%infl_dphi
           df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
           if (llorenz_gauge_disp) then
             call del2(f,ia0,del2a0)
-            if (phi_inhom) then
+            if (lphi_hom) then
+              df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+del2a0
+            else
               call dot_mn(p%gphi,p%bb,tmp)
               df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp+del2a0
-            else
-              df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+del2a0
             endif
             !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
             df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)

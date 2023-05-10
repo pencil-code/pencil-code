@@ -85,7 +85,8 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
+!  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
+  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, Ndiv=100
   real :: ncutoff_phi=1.
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0., eps=.01
@@ -94,13 +95,14 @@ module Special
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
-  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
+  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all, edotbm, edotbm_all
   real, target :: ddotam_all
   real, pointer :: alpf
   real, dimension (nx) :: dt1_special
   logical :: lbackreact_infl=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false.
+  logical, pointer :: lphi_hom
 !
   character (len=labellen) :: Vprime_choice='quadratic'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
@@ -147,7 +149,7 @@ module Special
 !
       call farray_register_pde('infl_phi',iinfl_phi)
       call farray_register_pde('infl_dphi',iinfl_dphi)
-      call farray_register_pde('infl_hubble',iinfl_hubble)
+!      call farray_register_pde('infl_hubble',iinfl_hubble)
       call farray_register_pde('infl_lna',iinfl_lna)
 !
 !  for power spectra, it is convenient to use ispecialvar and
@@ -172,6 +174,7 @@ module Special
       call put_shared_variable('ddotam',ddotam_all,caller='initialize_backreact_infl')
 !
       if (lmagnetic .and. lbackreact_infl) call get_shared_variable('alpf',alpf)
+      if (lmagnetic .and. lbackreact_infl) call get_shared_variable('lphi_hom',lphi_hom)
 !
       call keep_compiler_quiet(f)
 !
@@ -206,7 +209,7 @@ module Special
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
+!            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
             f(:,:,:,iinfl_lna)=f(:,:,:,iinfl_lna)+lnascale
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
@@ -217,7 +220,7 @@ module Special
             lnascale=log(ascale_ini)
             f(:,:,:,iinfl_phi)   =f(:,:,:,iinfl_phi)   +phi0
             f(:,:,:,iinfl_dphi)  =f(:,:,:,iinfl_dphi)  +dphi0
-            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
+!            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
             f(:,:,:,iinfl_lna)   =f(:,:,:,iinfl_lna)   +lnascale
           case ('gaussian-noise')
             call gaunoise(amplphi,f,iinfl_phi)
@@ -337,7 +340,8 @@ module Special
 !
       phi=f(l1:l2,m,n,iinfl_phi)
       dphi=f(l1:l2,m,n,iinfl_dphi)
-      Hscript=f(l1:l2,m,n,iinfl_hubble)
+!      Hscript=f(l1:l2,m,n,iinfl_hubble)
+      Hscript=sqrt((8.*pi/3.)*a2rhom_all)
       lnascale=f(l1:l2,m,n,iinfl_lna)
       ascale=exp(lnascale)
       a2scale=ascale**2
@@ -368,7 +372,8 @@ module Special
 !
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+f(l1:l2,m,n,iinfl_dphi)
         df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2scale*Vprime
-        df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+Hscript**2
+!        df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+Hscript**2
+!        df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+(8.*pi/3.)*a2rhom_all
         df(l1:l2,m,n,iinfl_lna)=df(l1:l2,m,n,iinfl_lna)+Hscript
 !
 !  speed of light term
@@ -381,8 +386,12 @@ module Special
 !  magnetic terms, add (alpf/a^2)*(E.B) to dphi'/dt equation
 !
       if (lmagnetic .and. lbackreact_infl) then
-        call dot_mn(p%el,p%bb,tmp)
-        df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*p%infl_a21*tmp
+        if (lphi_hom) then
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*p%infl_a21*edotbm_all
+        else
+          call dot_mn(p%el,p%bb,tmp)
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*p%infl_a21*tmp
+        endif
       endif
 !
 !  Total contribution to the timestep
@@ -496,16 +505,16 @@ module Special
 !  06-jul-06/tony: coded
 !
       use Mpicomm, only: mpiallreduce_sum
-      use Sub, only: dot2_mn, grad, curl
+      use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, a2rho
-      real, dimension (nx) :: ddota, phi, a2, Vpotential
+      real, dimension (nx) :: ddota, phi, a2, Vpotential, edotb
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !
-      ddotam=0.; a2rhopm=0.; a2rhom=0.
+      ddotam=0.; a2rhopm=0.; a2rhom=0.; edotbm=0;
 
       do n=n1,n2
       do m=m1,m2
@@ -546,12 +555,20 @@ module Special
         ddotam=ddotam+sum(ddota)
         a2rho=a2rho+a2*Vpotential
         a2rhom=a2rhom+sum(a2rho)
+        if (lphi_hom) then
+          call dot_mn(el,bb,edotb)
+          edotbm=edotbm+sum(edotb)
+        endif
       enddo
       enddo
      
       a2rhopm=a2rhopm/nwgrid
       a2rhom=a2rhom/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
+      if (lphi_hom) then
+          edotbm=edotbm/nwgrid
+          call mpiallreduce_sum(edotbm,edotbm_all)
+      endif
 
       call mpiallreduce_sum(a2rhopm,a2rhopm_all)
       call mpiallreduce_sum(a2rhom,a2rhom_all)
