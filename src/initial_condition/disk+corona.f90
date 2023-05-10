@@ -146,12 +146,12 @@ module InitialCondition
       
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
       real, dimension (:,:),              optional, intent(out)  :: profiles
-      real, dimension (mx, my, mz) :: psi, rcut, masked, xmesh, tmasked, masked3
+      real, dimension (mx, my, mz) :: rho_d1, psi, rcut, masked, xmesh, tmasked, masked3,masked4
       real, dimension (mx) :: rr_sph, rr_cyl
       real, dimension (nx) :: rho_d, lnrho_c, psipn, l_d, vphi_d, lnT_d, aphi
-      real, dimension (nx) :: dzphi_d, drphi_d, pg, dzrho_d, drrho_d, kphi, pg_c, pbeta_c
+      real, dimension (nx) :: dzphi_d, drphi_d, pg, dzrho_d, drrho_d, kphi, pg_c, pr,beta_c
       real, pointer :: g0
-      real :: cp1, m00, rpn=1.2, pg0, drphi_d0, drrho_d0
+      real :: cp1, m00, rpn=2.0, pg0, drphi_d0, drrho_d0
       integer :: lpos, mpos, npos, procno,procnomax
 
 ! Some constants
@@ -159,12 +159,13 @@ module InitialCondition
       call get_shared_variable('g0',g0)
       lnrho0_c=log(rho0_c)
       rs=2*g0/c_light**2
-      l0_d=sqrt(g0*r0_d**3.0)/(r0_d-rs)
-      l_d1=l0_d*(2.0*rs/r0_d)**apara
-      psipn0=-g0/(r0_d-rs)
+      l0_d=sqrt(g0*(r0_d*rs)**3.0)/(r0_d*rs-rs)
+      l_d1=l0_d*(2.0*rs/r0_d*rs)**apara
+      psipn0=-g0/(r0_d*rs-rs)
       psipn1=-g0/rs
-      psi0d=psipn0+1.0/(2.0-2.0*apara)*(l0_d/r0_d)**2.0
+      psi0d=psipn0+1.0/(2.0-2.0*apara)*(l0_d/(r0_d*rs))**2.0
       psi1=psipn1+1.0/(2.0-2.0*apara)*(l_d1/(2.0*rs))**2.0
+!      psi0=psipn0+1.0/(2.0-2.0*apara)*(l0_d/(r0_d*rs))**2.0
 !    
       call get_cp1(cp1) 
       m00=(g0/G_Newton)
@@ -179,21 +180,23 @@ module InitialCondition
 !       
 ! Pseudo-Newtonian potential
 !        
-        psipn=-g0/(rr_sph(l1:l2)-rs)
+        psipn=-g0/(rr_sph(l1:l2)*rs-rs+0.01*rs)
 
 ! Gravitational Potential for the system
         
-        psi(l1:l2,m,n)=psipn+1.0/(2.0-2.0*apara)*(l_d/rr_cyl(l1:l2))**2.0
+        psi(l1:l2,m,n)=psipn+1.0/(2.0-2.0*apara)*(l_d/(rr_cyl(l1:l2)*rs+0.01*rs))**2.0
+        rho_d1(l1:l2,m,n)=rho0*(1.0-gamma*(psi(l1:l2,m,n)-psi0d)/(cs0**2.0*(ngamma+1.0)))**ngamma
         enddo
       enddo
       if (location_in_proc((/rpos,xyz0(2), 0.0/),lpos,mpos,npos)) then
           psi0=psi(lpos,mpos,npos)
+!          procno=iprocmask2 = abs(XX) gt 4.0
           procno=iproc
-          print*, psi0, x(lpos),procno
+!          print*, psi0mask2 = abs(XX) gt 4.0
       else
           procno=-100 
       endif
-!
+
 ! The following is a hack as procno is not set for other processors
 !
       call find_procno(procno,procnomax)
@@ -205,16 +208,27 @@ module InitialCondition
                masked=0.0
             end where mask
 !
-      mask2: where ((-(psi-psi0) .gt. 0.0) .and. (abs(xmesh) .gt. rpos))
-               tmasked=0.0
-             elsewhere
-               tmasked=1.0
-            end where mask2
+!      mask2: where ((-(psi-psi0) .gt. 0.0) .and. (abs(xmesh) .gt. rpos))
+!               tmasked=0.0
+!             elsewhere
+!               tmasked=1.0
+!            end where mask2
       mask3: where (rcut .gt. rpn)
                masked3=1.0
             elsewhere
                masked3=0.0
             end where mask3
+!
+      mask4: where ((rho_d1 .gt. 0.0) .and. (abs(xmesh) .gt. rpos))
+               masked4=1.0
+            elsewhere
+               masked4=0.0
+            end where mask4
+      mask2: where ((rho_d1 .gt. 0.0) .and. (abs(xmesh) .gt. rpos))
+               tmasked=0.0
+            elsewhere
+               tmasked=1.0
+            end where mask2
 !
       do n=n1,n2
         do m=m1,m2
@@ -226,20 +240,23 @@ module InitialCondition
 !
 ! Pseudo-Newtonian potential
 !
-        psipn=-g0/(rr_sph(l1:l2)-rs)
+        psipn=-g0/(rr_sph(l1:l2)*rs-rs+0.01*rs)
         
 !  Disk Density
                   
-        rho_d=masked(l1:l2,m,n)*exp(lnrho0)*(1.0-gamma*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0)))**ngamma
+!        rho_d=masked(l1:l2,m,n)*exp(lnrho0)*(1.0-gamma*(psi(l1:l2,m,n)-psi0)/(cs0**2*(ngamma+1.0)))**ngamma
+        rho_d=masked4(l1:l2,m,n)*rho0*(1.0-gamma*(psi(l1:l2,m,n)-psi0d)/(cs0**2.0*(ngamma+1.0)))**ngamma
 !
 ! Corona Density
-        lnrho_c=lnrho0_c-masked3(l1:l2,m,n)*(psipn-psipn1)*gamma/cs0_c**2
-        
+        lnrho_c=lnrho0_c-masked3(l1:l2,m,n)*(psipn-psipn1)*gamma/cs0_c**2.0
         
         pg=exp(lnrho0)**(-1.0/ngamma)*cs0**2.0/gamma*(rho_d)**(1.0+1.0/ngamma)
-        pg_c=exp(lnrho_c)*cs0_c**2.0/gamma
+        pg_c=exp(lnrho_c)*cs0_c**2.0/gamma 
+        pr=pg/(pg_c)
         f(l1:l2,m,n,ilnrho) = log(rho_d+exp(lnrho_c))
-        vphi_d=l_d*x(l1:l2)/rr_cyl(l1:l2)**2*masked(l1:l2,m,n)
+       ! f(l1:l2,m,n,ilnrho) = 
+        !vphi_d=l_d*x(l1:l2)/rr_cyl(l1:l2)**2*masked(l1:l2,m,n)
+        vphi_d=l_d*x(l1:l2)/(rr_cyl(l1:l2)*rs)**2*masked4(l1:l2,m,n)
         f(l1:l2,m,n,iuy) = vphi_d  
         lnT_d=(log(rho_d)-lnrho0)/ngamma+log(cs0**2.0/(gamma_m1/cp1))
         f(l1:l2,m,n,ilnTT)=log(exp(lnT_d)+Tc*tmasked(l1:l2,m,n))
@@ -269,7 +286,7 @@ module InitialCondition
               call get_radial_distance(rr_sph,rr_cyl)
               aphi=amplaa*rpos**2.0/(rpos**2.0+rr_sph(l1:l2)**2)**1.5*(1+15.0*rpos**2.0*&
                 x(l1:l2)**2.0/(8.0*(rpos**2.0+rr_sph(l1:l2)**2)**2.0))
-              f(l1:l2,m,n,iay)=aphi*x(l1:l2)*masked(l1:l2,m,n)
+              f(l1:l2,m,n,iay)=aphi*x(l1:l2)  !*masked(l1:l2,m,n)
             enddo
           enddo
         case ('nothing')
