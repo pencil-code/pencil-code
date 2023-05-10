@@ -71,6 +71,7 @@ module Register
       use Viscosity,        only: register_viscosity
       use ImplicitPhysics,  only: register_implicit_physics
       use Solid_Cells,      only: register_solid_cells
+      use Syscalls,         only: system_cmd
 !
       integer :: ierr
 !
@@ -171,8 +172,8 @@ module Register
 !
       if (nvar /= mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_modules: nvar /= mvar. '// &
-           'Check your MVAR and/or MAUX CONTRIBUTION in cparam.local')
+        call fatal_error('register_modules','nvar /= mvar. '// &
+                         'Check your MVAR and/or MAUX CONTRIBUTION in cparam.local')
       endif
 !
 !  Initialize headt for root processor only.
@@ -289,7 +290,7 @@ module Register
         c_light=c_light_cgs/unit_velocity
         G_Newton=G_Newton_cgs*unit_length**2*unit_density/unit_velocity**2
       elseif (unit_system=='SI') then
-        if (lroot.and.leos_ionization) print*,&
+        if (lroot.and.leos_ionization) print*, &
             'initialize_modules: unit_velocity, unit_density, etc, are in SI'
         hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
         mu0=1e-7*mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2
@@ -325,9 +326,8 @@ module Register
 !  Print parameters in code units, but only when used.
 !
       if (lroot.and.ip<14) then
-         if (leos_ionization.or.lradiation.or.lradiation_ray.or.linterstellar) then
+         if (leos_ionization.or.lradiation.or.lradiation_ray.or.linterstellar) &
             write(*,'(a,1p,4e14.6)') ' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
-         endif
       endif
 !
 !  initialize time integrals
@@ -462,7 +462,7 @@ module Register
 !  12-jul-06/axel: adapted from units_eos
 !
       use Cdata, only: unit_system,G_Newton,c_light,hbar,lroot, &
-        unit_length,unit_velocity,unit_density,unit_magnetic
+                       unit_length,unit_velocity,unit_density,unit_magnetic
       use Cparam, only: G_Newton_cgs,c_light_cgs,hbar_cgs,impossible
 !
 !  Unless G_Newton,c_light,hbar are all set,
@@ -477,16 +477,12 @@ module Register
       else
         if (unit_system == 'cgs') then
            unit_velocity=c_light_cgs/c_light
-           unit_density=unit_velocity**5/((G_Newton_cgs/G_Newton)**2 &
-                *(hbar_cgs/hbar))
-           unit_length=sqrt((G_Newton_cgs/G_Newton) &
-                *(hbar_cgs/hbar)/unit_velocity**3)
+           unit_density=unit_velocity**5/((G_Newton_cgs/G_Newton)**2*(hbar_cgs/hbar))
+           unit_length=sqrt((G_Newton_cgs/G_Newton)*(hbar_cgs/hbar)/unit_velocity**3)
         elseif (unit_system == 'SI') then
            unit_velocity=c_light_cgs*1e-2/c_light
-           unit_density=unit_velocity**5/((G_Newton_cgs*1e-3/G_Newton)**2 &
-                *(hbar_cgs*1e-7/hbar))
-           unit_length=sqrt((G_Newton_cgs*1e-3/G_Newton) &
-                *(hbar_cgs*1e-7/hbar)/unit_velocity**3)
+           unit_density=unit_velocity**5/((G_Newton_cgs*1e-3/G_Newton)**2*(hbar_cgs*1e-7/hbar))
+           unit_length=sqrt((G_Newton_cgs*1e-3/G_Newton)*(hbar_cgs*1e-7/hbar)/unit_velocity**3)
         elseif (unit_system == 'set') then
            unit_velocity=1.
            unit_density=1.
@@ -503,11 +499,9 @@ module Register
       if (unit_magnetic == impossible) then
         if (lfix_unit_std) then
           if (unit_system=='cgs') then
-            unit_magnetic=3.5449077018110318* &
-                sqrt(unit_density)*unit_velocity
+            unit_magnetic=3.5449077018110318*sqrt(unit_density)*unit_velocity
           elseif (unit_system=='SI') then
-            unit_magnetic=3.5449077018110318* &
-                sqrt(1e-7*unit_density)*unit_velocity
+            unit_magnetic=3.5449077018110318*sqrt(1e-7*unit_density)*unit_velocity
           endif
         else
           unit_magnetic=3.5449077018110318
@@ -516,10 +510,12 @@ module Register
 !
 !  Check that everything is OK.
 !
-      if (lroot) print*,'units_general: unit_velocity=',unit_velocity
-      if (lroot) print*,'units_general: unit_density=',unit_density
-      if (lroot) print*,'units_general: unit_length=',unit_length
-      if (lroot) print*,'units_general: unit_magnetic=',unit_magnetic
+      if (lroot) then
+        print*,'units_general: unit_velocity=',unit_velocity
+        print*,'units_general: unit_density=',unit_density
+        print*,'units_general: unit_length=',unit_length
+        print*,'units_general: unit_magnetic=',unit_magnetic
+      endif
 !
     endsubroutine units_general
 !***********************************************************************
@@ -535,7 +531,7 @@ module Register
       integer :: i
 !
       if (lroot.and.ip<14) call information('choose_pencils','finding out which pencils '// &
-          'are needed for the pencil case')
+                                            'are needed for the pencil case')
 !
 !  Must set all pencil arrays to false in case of reload.
 !
@@ -562,13 +558,13 @@ module Register
       if (ipencil_swap/=0) then
         if (lpencil_requested_swap) then
           lpenc_requested(ipencil_swap) = (.not. lpenc_requested(ipencil_swap))
-          print*, 'choose_pencils: Swapped requested pencil number ', &
-              ipencil_swap, ' to ', lpenc_requested(ipencil_swap)
+          if (lroot) print*, 'choose_pencils: Swapped requested pencil number ', &
+                             ipencil_swap, ' to ', lpenc_requested(ipencil_swap)
         endif
         if (lpencil_diagnos_swap) then
           lpenc_diagnos(ipencil_swap) = (.not. lpenc_diagnos(ipencil_swap))
-          print*, 'choose_pencils: Swapped diagnostic pencil number ', &
-              ipencil_swap, ' to ', lpenc_diagnos(ipencil_swap)
+          if (lroot) print*, 'choose_pencils: Swapped diagnostic pencil number ', &
+                             ipencil_swap, ' to ', lpenc_diagnos(ipencil_swap)
         endif
       endif
 !
@@ -792,7 +788,7 @@ module Register
           if (io_err > 0) call fatal_error('read_name_format', &
                                            'IO-error while reading "'//trim(in_file)//'"')
           cname_tmp = adjustl(cname_tmp)
-          if ((cname_tmp /= ' ') .and. (cname_tmp(1:1) /= '!') .and. (cname_tmp(1:1) /= comment_char)) then
+          if ((cname_tmp /= ' ').and.(cname_tmp(1:1) /= '!').and.(cname_tmp(1:1) /= comment_char)) then
             nnamel = nnamel+1
             cnamel(nnamel) = cname_tmp
           endif
@@ -859,13 +855,13 @@ module Register
       use TestPerturb,     only: rprint_testperturb
       use PointMasses,     only: rprint_pointmasses
       use File_io,         only: parallel_file_exists, parallel_count_lines
+      use Io,              only: IO_strategy
 !
       logical, intent(IN) :: lreset
 !
-      integer :: i,iadd,ios
+      integer :: i,iadd,ios,irz
       logical :: ldummy
       character (len=30) :: cname_tmp
-      character (len=30), allocatable :: ctmp(:)
 !
       character (LEN=15)           :: print_in_file
       character (LEN=*), parameter :: video_in_file    = 'video.in'
@@ -897,8 +893,7 @@ module Register
         call allocate_fnames(nname)
         ldummy = read_name_format(print_in_file,cname,nname)
       elseif ( nname==0 ) then
-        call fatal_error('rprint_list','You must have a "'// &
-                          trim(print_in_file)// &               ! Why is that required?
+        call fatal_error('rprint_list','You must have a "'//trim(print_in_file)// &
                          '" file in the run directory with valid print requests!')
       endif
 !
@@ -917,19 +912,16 @@ module Register
         endif
       endif
 
-      if (lroot .and. (ip<14)) &
-          print*, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
+      if (lroot .and. (ip<14)) print*, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamev=', nnamev
 !
 !  Set the tracers write flag.
 !
-      if ( dtracers/=0.0 ) &
-          lwrite_tracers = .true.
+      if ( dtracers/=0.0 ) lwrite_tracers = .true.
 !
 !  Set the fixed points write flag.
 !
-      if ( dfixed_points/=0.0 ) &
-          lwrite_fixed_points = .true.
+      if ( dfixed_points/=0.0 ) lwrite_fixed_points = .true.
 !
 !  Read in the list of variables for "sound".
 !
@@ -953,8 +945,7 @@ module Register
 !
 !              tsound=rnan
               tsound=-1.0
-              open(1,file=trim(directory)//'/sound.dat',position='append', &
-                   status='old',iostat=ios)
+              open(1,file=trim(directory)//'/sound.dat',position='append',status='old',iostat=ios)
               if (ios==0) then
                 backspace(1)
                 read(1,*) tsound
@@ -1049,43 +1040,26 @@ module Register
 !
       if (nnamerz>0) then
         if (lcylinder_in_a_box.or.lsphere_in_a_box) then
-!
-          allocate(ctmp(nnamerz))
-          lwrite_phiaverages = read_name_format(phiaver_in_file,ctmp,nnamerz)
-
-          if (lwrite_phiaverages) then
-            iadd=0
-            do i=1,nnamerz
-              cname_tmp=ctmp(i)
-              if ( cname_tmp=='uumphi' .or. cname_tmp=='uusphmphi' .or.  &
-                   cname_tmp=='bbmphi' .or. cname_tmp=='bbsphmphi' .or.  &
-                   cname_tmp=='uxbmphi'.or. cname_tmp=='jxbmphi'       ) &
-                iadd=iadd+2
-            enddo
-
-            call allocate_phiaverages(nnamerz+iadd)
-            cnamerz(1:nnamerz)=ctmp(1:nnamerz)
-          endif
-          deallocate(ctmp)
-!
+          call allocate_phiaverages(nnamerz)
+          lwrite_phiaverages = read_name_format(phiaver_in_file,cnamerz,nnamerz)
         else
           nnamerz=0
           call warning('rprint_list','phi averages suppressed as l[cylinder&star]_in_a_box=F')
         endif
-!
       endif
 !
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamerz=', nnamerz
 !
 !  Set logical for 1-D averages.
 !
-      lwrite_1daverages= &
+      lwrite_1daverages = &
           lwrite_xyaverages.or.lwrite_xzaverages.or.lwrite_yzaverages.or.lwrite_phizaverages
 !
 !  Set logical for 2-D averages.
 !
-      lwrite_2daverages= &
-          lwrite_yaverages.or.lwrite_zaverages.or.lwrite_phiaverages
+      lwrite_2daverages = lwrite_yaverages.or.lwrite_zaverages.or.lwrite_phiaverages
+!
+     call expand_shands
 !
 !  Check which variables are set.
 !  For the convenience of idl users, the indices of variables in
@@ -1128,7 +1102,30 @@ module Register
       call rprint_testperturb     (lreset,LWRITE=lroot)
       call rprint_pointmasses     (lreset,LWRITE=lroot)
 !
+      if (lroot .and. (IO_strategy /= "HDF5")) then
+        ! output in phiavg.list the list of fields after taking into
+        ! account of possible shorthands in phiaver.in
+        ! MR: Why needed? the names are anyway in the data files.
+        open(11,file=trim(datadir)//'/averages/phiavg.list',status='unknown')
+        do irz=1,nnamerz
+          write(11,'(A30)') cnamerz(irz)
+        enddo
+        close(11)
+      endif
+
     endsubroutine rprint_list
+!***********************************************************************
+    subroutine expand_shands
+
+      use Hydro, only: expand_shands_hydro
+      use Energy, only: expand_shands_energy
+      use Magnetic, only: expand_shands_magnetic
+
+      call expand_shands_hydro
+      call expand_shands_energy
+      call expand_shands_magnetic
+
+    endsubroutine expand_shands
 !***********************************************************************
     subroutine rprint_general(lreset,lwrite)
 !
@@ -1141,11 +1138,7 @@ module Register
       use Cdata
       use Diagnostics
       use General, only: loptest
-      use Energy, only: expand_shands_energy
       use FArrayManager, only: farray_index_append
-      use Hydro, only: expand_shands_hydro
-      use Io, only: IO_strategy
-      use Magnetic,only: expand_shands_magnetic
 !
       integer :: iname,irz
       logical :: lreset,lwr
@@ -1167,7 +1160,7 @@ module Register
 !
 !  iname runs through all possible names that may be listed in print.in.
 !
-      if (lroot.and.ip<14) print*,'rprint_register: run through parse list'
+      if (lroot.and.ip<14) print*,'rprint_general: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'t',idiag_t)
         call parse_name(iname,cname(iname),cform(iname),'it',idiag_it)
@@ -1179,17 +1172,9 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'Rmesh',idiag_Rmesh)
         call parse_name(iname,cname(iname),cform(iname),'Rmesh3',idiag_Rmesh3)
         call parse_name(iname,cname(iname),cform(iname),'maxadvec',idiag_maxadvec)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'walltime',idiag_walltime)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'timeperstep',idiag_timeperstep)
+        call parse_name(iname,cname(iname),cform(iname),'walltime',idiag_walltime)
+        call parse_name(iname,cname(iname),cform(iname),'timeperstep',idiag_timeperstep)
       enddo
-!
-!  Expand shorthand names
-!
-      if (lhydro                  ) call expand_shands_hydro
-      if (lmagnetic               ) call expand_shands_magnetic
-      if (lentropy.or.ltemperature) call expand_shands_energy
 !
 !  phi-averages
 !
@@ -1204,16 +1189,6 @@ module Register
           call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',idiag_rmphi)
         enddo
 !
-        if (lroot .and. (IO_strategy /= "HDF5")) then
-          ! output in phiavg.list the list of fields after taking into
-          ! account of possible shorthands in phiaver.in
-          ! MR: Why needed? the names are anyway in the data files.
-          open(11,file=trim(datadir)//'/averages/phiavg.list',status='unknown')
-          do irz=1,nnamerz
-            write(11,'(A30)') cnamerz(irz)
-          enddo
-          close(11)
-        endif
       endif
 !
 !  For compatibility with older IDL scripts.
@@ -1329,6 +1304,7 @@ module Register
 !
       10 format (3g13.5,2x,3i6)
       11 format (a)
+!
     endsubroutine write_pt_positions
 !***********************************************************************
 endmodule Register

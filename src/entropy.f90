@@ -614,9 +614,10 @@ module Energy
       real, dimension (nzgrid) :: tmpz
       real, dimension (nx) :: tmpz_penc
       real :: beta1, cp1, beta0, TT_bcz, star_cte, cs2top_from_cool 
-      real, parameter :: dummy=1.
+      real :: dummy
       integer :: i, j, n, m, stat, lend
-      logical :: lnothing, exist
+      logical :: lnothing, exist, opend
+      character(LEN=11) :: formtd
       real, pointer :: gravx
       character (len=*), parameter :: lnT_dat = 'driver/b_lnT.dat'
 !
@@ -935,19 +936,29 @@ module Energy
           case ('zprofile')
             inquire(file='zprof.txt',exist=exist)
             if (exist) then
-              open(31,file='zprof.txt')
+              inquire(file='zprof.txt',FORMATTED=formtd)
+              inquire(file='zprof.txt',OPENED=opend)
+              if (.not.opend) open(31,file='zprof.txt',form=formtd)
             else
               inquire(file=trim(directory)//'/zprof.ascii',exist=exist)
               if (exist) then
                 open(31,file=trim(directory)//'/zprof.ascii')
+                formtd='FORMATTED'
               else
-                call fatal_error('reinitialize_rho','error - no zprof.txt input file')
+                call fatal_error('initialize_energy','error - no zprof.* input file')
               endif
             endif
-            do n=1,nzgrid
-              read(31,*,iostat=stat) tmpz(n)
-              if (stat<0) exit
-            enddo
+            if (formtd=='FORMATTED') then
+              do n=1,nzgrid
+                read(31,*,iostat=stat) tmpz(n)
+                if (stat<0) exit
+              enddo
+            else
+              read(31,iostat=stat) dummy,tmpz  !Why dummy?
+              if (stat/=0) call fatal_error_local('initialize_energy','IO error when reading'// &
+                                                  'zprof.txt')
+            endif
+            close(31)
             do n=n1,n2
               f(:,:,n,iss)=f(:,:,n,iss)+tmpz(n-nghost+nz*ipz)
             enddo
@@ -3906,7 +3917,7 @@ module Energy
 !
         if (lss_flucz_as_aux) then
           do n=1,mz
-             f(l1:l2,m1:m2,n,iss_flucz) = f(l1:l2,m1:m2,n,iss) - ssmz(n)
+            f(l1:l2,m1:m2,n,iss_flucz) = f(l1:l2,m1:m2,n,iss) - ssmz(n)
           enddo
         endif
 !
@@ -5150,9 +5161,8 @@ module Energy
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+(gamma*chix+chi_t)*dxyz_2
-!        if (ldiagnos.and.idiag_dtchi/=0) then
-!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-!        endif
+        if (ldiagnos.and.idiag_dtchi/=0) &
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond_kramers

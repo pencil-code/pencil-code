@@ -65,7 +65,7 @@ module General
   public :: compress_nvidia
   public :: qualify_position_bilin, qualify_position_bicub, &
             qualify_position_biquin
-  public :: binomial,merge_lists
+  public :: binomial,merge_lists,reallocate
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -227,7 +227,12 @@ module General
     endfunction find_proc_general
 !***********************************************************************
     subroutine find_proc_coords_general(rank, nprocx, nprocy, nprocz, ipx, ipy, ipz)
-
+!
+!  Determines the Cartesian processor coordinates ip[xyz] of processor rank for
+!  processor layout defined by nproc[xyz].
+!
+!  6-dec-22/MR: coded
+!
       integer :: rank, nprocx, nprocy, nprocz, ipx, ipy, ipz
 
       ipx = modulo(rank,nprocx)
@@ -1185,7 +1190,7 @@ module General
 !
       leng = len(trim(str))
       if (str(leng:leng)==char(0)) leng=leng-1
-      if (leng>1) leng=leng-1   !???
+      !!!if (leng>1) leng=leng-1   !???
       read(str,'(i'//trim(itoa(leng))//')') atoi
 !
     endfunction atoi
@@ -2664,6 +2669,7 @@ real(KIND=max(rkind8,rkind16)) :: fact, oldfact, pll, pmm, pmmp1, omx2
 !
 if ( (emm < 0) .or. (emm > ell) .or. (abs(costh) > 1) ) then
   print*, 'plegendre: Bad arguments!'
+  plegendre=0.
   return
 endif
 !
@@ -3999,31 +4005,100 @@ endfunction
 !***********************************************************************
     logical function lextend_vector_float(vector,newlen)
 !
-!  Checks whether a vector of floats can be used up to length newlen.
+!  Extends a vector of floats to length newlen. Contents has same index positions after extension.
 !  Surrogate for a real extension routine possible with FORTRAN 2003.
 !
 !  16-may-12/MR: coded
 !
-      real, dimension(:), intent(in) :: vector
-      integer           , intent(in) :: newlen
+      real, dimension(:), allocatable, intent(inout):: vector
+      integer           , intent(in)   :: newlen
 !
-      lextend_vector_float = newlen<=size(vector)
+      integer :: oldlen,ierr
+      real, dimension(:), allocatable :: tmp
+
+      oldlen=size(vector)
+      if (newlen>oldlen) then
+        allocate(tmp(oldlen),stat=ierr)
+        if (ierr==0) then
+          tmp=vector
+          deallocate(vector); allocate(vector(newlen),stat=ierr)
+          vector(:oldlen)=tmp
+        endif
+        lextend_vector_float = ierr==0
+      else
+        lextend_vector_float = .true.
+      endif
 !
     endfunction lextend_vector_float
 !***********************************************************************
     logical function lextend_vector_char(vector,newlen)
 !
-!  Checks whether a vector of chars can be used up to length newlen.
+!  Extends a vector of chars to length newlen. Contents has same index positions after extension.
 !  Surrogate for a real extension routine possible with FORTRAN 2003.
 !
 !  16-may-12/MR: coded
 !
-      character (len=*), dimension(:), intent(in) :: vector
-      integer          , intent(in) :: newlen
+      character (len=*), dimension(:), allocatable, intent(inout):: vector
+      integer          ,                            intent(in)   :: newlen
 !
-      lextend_vector_char = newlen<=size(vector)
+      integer :: oldlen,ierr
+      character(len=len(vector)), dimension(:), allocatable :: tmp
+
+      oldlen=size(vector)
+      if (newlen>oldlen) then
+        allocate(tmp(oldlen),stat=ierr)
+        if (ierr==0) then
+          tmp=vector
+          deallocate(vector); allocate(vector(newlen),stat=ierr)
+          vector(:oldlen)=tmp
+        endif
+        lextend_vector_char = ierr==0
+      else
+        lextend_vector_char = .true.
+      endif
 !
     endfunction lextend_vector_char
+!***********************************************************************
+    logical function reallocate(arr,newlen,dim_,icopy_)
+!
+! Reallocates 4D array arr to length newlen in dimension dim_.
+! Copies content to old index postions if icopy_ >0.
+!
+      real, dimension(:,:,:,:), allocatable :: arr
+      integer :: newlen, dim_
+      integer, optional :: icopy_
+
+      integer :: dim,ierr,icopy
+      real, dimension(:,:,:,:), allocatable :: tmp
+      integer, dimension(4) :: sizes, sizes_prev
+
+      reallocate=.false.
+      dim=ioptest(dim_,1)
+      icopy = ioptest(icopy_)
+
+      if (dim<=0 .or. dim>4) then
+        return
+      else
+
+        sizes_prev=(/size(arr,1),size(arr,2),size(arr,3),size(arr,4)/)
+        sizes = sizes_prev; sizes(dim) = newlen
+
+        if (icopy>0) then
+          allocate(tmp(sizes_prev(1),sizes_prev(2),sizes_prev(3),sizes_prev(4)),stat=ierr)
+          if (ierr==0) tmp=arr
+        else
+          ierr=0
+        endif
+
+        if (ierr==0) then
+          deallocate(arr)
+          allocate(arr(sizes(1),sizes(2),sizes(3),sizes(4)),stat=ierr)
+          if (icopy>0) arr(:sizes_prev(1),:sizes_prev(2),:sizes_prev(3),:sizes_prev(4))=tmp
+          reallocate=.true.
+        endif
+      endif
+
+    endfunction reallocate
 !***********************************************************************
   integer function pos_in_array_int(needle, haystack)
 !
@@ -4777,6 +4852,33 @@ endfunction
       endif
 !
     endfunction numeric_precision
+!***********************************************************************
+    function detect_precision_of_binary(file,reclen) result(prec)
+!
+!  only correct for one subrecord only in record.
+!
+      character :: prec
+      character(LEN=*) :: file
+      integer :: reclen
+
+      integer :: marker,leng
+      character :: own_prec
+
+      open(87,file=trim(file),access='stream',form='unformatted')
+      read(87) marker
+      close(87)
+
+      own_prec=numeric_precision()
+      if (own_prec=='S') then
+        leng=4*reclen
+        prec='D'
+      else
+        leng=8*reclen
+        prec='S'
+      endif
+      if (marker==leng) prec=own_prec
+
+    endfunction detect_precision_of_binary
 !***********************************************************************
     subroutine touch_file(file)
 !
@@ -5977,7 +6079,7 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       enddo
 
       ncx=sz(1); ncy=sz(2); ncz=sz(3)
-      if (sz(1)==nghost) then
+      if (ncx==nghost) then
         icx=ceiling(nghost/2.)
         do iv=1,sz(4)
           diffmax(iv)=0.; reldiffmax(iv)=0.
@@ -5996,7 +6098,7 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
             enddo
           enddo
         enddo
-      elseif (sz(2)==nghost) then
+      elseif (ncy==nghost) then
         icy=ceiling(nghost/2.)
         do iv=1,sz(4)
           diffmax(iv)=0.; reldiffmax(iv)=0.
@@ -6015,7 +6117,7 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
             enddo
           enddo
         enddo
-      elseif (sz(3)==nghost) then
+      elseif (ncz==nghost) then
         icz=ceiling(nghost/2.)
         do iv=1,sz(4)
           diffmax(iv)=0.; reldiffmax(iv)=0.

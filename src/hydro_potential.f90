@@ -3924,12 +3924,6 @@ module Hydro
 !***********************************************************************
     subroutine hydro_clean_up
 !
-!  This is a dummy routine.
-!
-!  8-sep-2009/dhruba: coded
-!
-      if (ldebug) call warning('hydro_clean_up','Nothing to do for hydro.f90')
-!
     endsubroutine hydro_clean_up
 !***********************************************************************
     subroutine expand_shands_hydro
@@ -3939,18 +3933,24 @@ module Hydro
 !  16-may-12/MR: coded
 !
       use Diagnostics, only : name_is_present, expand_cname
+      use General, only: reallocate
+
+      integer :: nnamerz_prev
 !
       if (nnamerz>0) then
+
+        nnamerz_prev=nnamerz
 !
-        call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uumphi'),&
-                          'urmphi','upmphi','uzmphi')
+        call expand_cname(cnamerz,cformrz,nnamerz,'urmphi','upmphi','uzmphi',name='uumphi')
 !
-        if (name_is_present(cnamerz,'upmphi')>0) then
-          call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uusphmphi'),&
-                            'ursphmphi','uthmphi')
+        if (name_is_present(cnamerz,'upmphi')>0) then      ! avoid doubling of upmphi
+          call expand_cname(cnamerz,cformrz,nnamerz,'ursphmphi','uthmphi',name='uusphmphi')
         else
-          call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uusphmphi'),&
-                            'ursphmphi','uthmphi','upmphi')
+          call expand_cname(cnamerz,cformrz,nnamerz,'ursphmphi','uthmphi','upmphi',name='uusphmphi')
+        endif
+        if (nnamerz>nnamerz_prev) then
+          if (.not.reallocate(fnamerz,nnamerz,4)) &
+            call fatal_error('expand_shands_hydro','could not reallocate fnamerz')
         endif
       endif
 !

@@ -2918,9 +2918,9 @@ module Hydro
 !                   for which pencils are calculated, default: all
 ! 21-sep-13/MR    : returned to pencil mask as parameter lpenc_loc
 !
-      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
-      type (pencil_case),                intent(INOUT):: p
-      logical, dimension(:),             intent(IN) :: lpenc_loc
+      real, dimension (mx,my,mz,mfarray), intent(INOUT):: f
+      type (pencil_case),                 intent(INOUT):: p
+      logical, dimension(:),              intent(IN)   :: lpenc_loc
 !
       if (llinearized_hydro) then
         call calc_pencils_hydro_linearized(f,p,lpenc_loc)
@@ -4009,8 +4009,10 @@ module Hydro
         endif
         if (.not.lgpu) then
           if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
-          if (idiag_dtF/=0) call max_mn_name(Fmax/cdt_tauf,idiag_dtF,l_dt=.true.)
-          if ((idiag_taufmin/=0).and.lcdt_tauf) call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
+          if (lcdt_tauf) then
+            if (idiag_dtF/=0) call max_mn_name(Fmax/cdt_tauf,idiag_dtF,l_dt=.true.)
+            call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
+          endif
         endif
 !
 ! urlm
@@ -6764,7 +6766,7 @@ module Hydro
       endif
 !
       if (lSGS_hydro) call rprint_SGS_hydro(lreset,lwrite)
-
+      
     endsubroutine rprint_hydro
 !***********************************************************************
     subroutine get_slices_hydro(f,slices)
@@ -7934,12 +7936,6 @@ module Hydro
 !***********************************************************************
     subroutine hydro_clean_up
 !
-!  This is a dummy routine.
-!
-!  8-sep-2009/dhruba: coded
-!
-      if (ldebug) call warning('hydro_clean_up','Nothing to do for hydro.f90')
-!
     endsubroutine hydro_clean_up
 !***********************************************************************
     subroutine expand_shands_hydro
@@ -7949,15 +7945,24 @@ module Hydro
 !  16-may-12/MR: coded
 !
       use Diagnostics, only : name_is_present, expand_cname
+      use General, only: reallocate
+
+      integer :: nnamerz_prev
 !
       if (nnamerz>0) then
+
+        nnamerz_prev=nnamerz
 !
-        call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uumphi'),'urmphi','upmphi','uzmphi')
+        call expand_cname(cnamerz,cformrz,nnamerz,'urmphi','upmphi','uzmphi',name='uumphi')
 !
-        if (name_is_present(cnamerz,'upmphi')>0) then
-          call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uusphmphi'),'ursphmphi','uthmphi')
+        if (name_is_present(cnamerz,'upmphi')>0) then      ! avoid doubling of upmphi
+          call expand_cname(cnamerz,cformrz,nnamerz,'ursphmphi','uthmphi',name='uusphmphi')
         else
-          call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uusphmphi'),'ursphmphi','uthmphi','upmphi')
+          call expand_cname(cnamerz,cformrz,nnamerz,'ursphmphi','uthmphi','upmphi',name='uusphmphi')
+        endif
+        if (nnamerz>nnamerz_prev) then
+          if (.not.reallocate(fnamerz,nnamerz,4)) &
+            call fatal_error('expand_shands_hydro','could not reallocate fnamerz')
         endif
       endif
 !

@@ -3159,12 +3159,20 @@ module Energy
 !
 !  16-may-12/MR: coded
 !
-      use Diagnostics, only : expand_cname
+      use Diagnostics, only: expand_cname
+      use General, only: lextend_vector
 !
+      integer :: nname_prev
+
       if (nname>0) then
-        call expand_cname(cname,nname,'uuTm','u',.true.)
-        call expand_cname(cname,nname,'gugTm','gu',.true.)
-        call expand_cname(cname,nname,'Tdpm','Td',.true.)
+        nname_prev=nname
+        call expand_cname(cname,nname,'uuTm', 'u', cform)
+        call expand_cname(cname,nname,'gugTm','gu',cform)
+        call expand_cname(cname,nname,'Tdpm', 'Td',cform)
+        if (nname>nname_prev) then
+          if (.not.lextend_vector(fname,nname)) & ! sanity check
+            call fatal_error('expand_shands_energy','could not extend fname')
+        endif
       endif
 !
     endsubroutine expand_shands_energy
