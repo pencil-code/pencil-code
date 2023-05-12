@@ -233,7 +233,6 @@ class Averages(object):
             nr_phiavg = data1[0]
             nz_phiavg = data1[1]
             nvars = data1[2]
-            nprocz = data1[3]
 
             data2 = file_id.read_record(dtype=read_precision).astype(precision)
             t = data2[0]
