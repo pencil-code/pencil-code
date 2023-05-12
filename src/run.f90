@@ -688,7 +688,11 @@ program run
 !  advance warning so the relevant components of the f-array
 !  can be filled.
 !
-    if (dspec/=impossible) call powersnap_prepare
+    if (dspec==impossible) then
+      lspec = (mod(it-1,itspec) == 0)
+    else
+      call powersnap_prepare
+    endif
 !
 !  Time advance.
 !
@@ -831,7 +835,7 @@ program run
 !
 !  Save spectrum snapshot.
 !
-    if (dspec/=impossible) call powersnap(f)
+    if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
 !
 !  Save global variables.
 !
