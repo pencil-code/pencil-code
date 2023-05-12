@@ -192,6 +192,7 @@ module Boundcond
       use Syscalls, only: directory_exists
       use IO, only: IO_strategy
       use HDF5_IO, only: input_dim
+      use SharedVariables, only : get_shared_variable
 
       integer :: ix_bc,ix2_bc,iy_bc,iy2_bc,iz_bc,iz2_bc,idum
       logical :: lread_slice_yz,lread_slice_yz2,lread_slice_xz,lread_slice_xz2, &
