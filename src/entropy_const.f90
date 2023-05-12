@@ -364,5 +364,47 @@ module Energy
 
     endsubroutine update_char_vel_energy
 !***********************************************************************
+    subroutine heatcond_TT_2d(TT, hcond, dhcond)
+!
+! dummy
+!
+      implicit none
+!
+      real, dimension(:,:), intent(in) :: TT
+      real, dimension(:,:), intent(out) :: hcond
+      real, dimension(:,:), optional :: dhcond
+
+      call keep_compiler_quiet(TT,hcond,dhcond)
+
+    endsubroutine heatcond_TT_2d
+!***********************************************************************
+    subroutine heatcond_TT_1d(TT, hcond, dhcond)
+!
+! dummy
+!
+      implicit none
+!
+      real, dimension(:), intent(in) :: TT
+      real, dimension(:), intent(out) :: hcond
+      real, dimension(:), optional :: dhcond
+
+      call keep_compiler_quiet(TT,hcond,dhcond)
+
+    endsubroutine heatcond_TT_1d
+!***********************************************************************
+    subroutine heatcond_TT_0d(TT, hcond, dhcond)
+!
+! dummy
+!
+      implicit none
+!
+      real, intent(in) :: TT
+      real, intent(out) :: hcond
+      real, optional :: dhcond
+
+      call keep_compiler_quiet(TT,hcond,dhcond)
+
+    endsubroutine heatcond_TT_0d
+!***********************************************************************
 endmodule Energy
 

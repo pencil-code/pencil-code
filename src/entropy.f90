@@ -466,6 +466,8 @@ module Energy
 ! Auxiliaries
 !
   real, dimension(:,:), pointer :: reference_state
+  real, pointer :: cp,cv
+
   real, dimension (nx) :: Hmax,ss0,diffus_chi,diffus_chi3,cs2cool_x
   integer, parameter :: prof_nz=150
   real, dimension (prof_nz) :: prof_lnT,prof_z
@@ -630,6 +632,8 @@ module Energy
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
                                caller='initialize_energy')
+      call get_shared_variable('cp',cp,caller='initialize_eos')
+      call get_shared_variable('cv',cv)
 !
 !  Tell the equation of state that we are here and what f variable we use.
 !
@@ -8061,11 +8065,200 @@ module Energy
 !
    endsubroutine energy_after_timestep
 !***********************************************************************
+    subroutine bc_ss_flux(f,topbot,lone_sided)
+!
+!  constant flux boundary condition for entropy (called when bcz='c1')
+!
+!  23-jan-2002/wolf: coded
+!  11-jun-2002/axel: moved into the entropy module
+!   8-jul-2002/axel: split old bc_ss into two
+!  26-aug-2003/tony: distributed across ionization modules
+!  13-mar-2011/pete: c1 condition for z-boundaries with Kramers' opacity
+!   4-jun-2015/MR: factor cp added in front of tmp_xy
+!  30-sep-2016/MR: changes for use of one-sided BC formulation (chosen by setting new optional switch lone_sided)
+!
+      use DensityMethods, only: getdlnrho_z, getderlnrho_z, getrho
+      use Deriv, only: bval_from_neumann, set_ghosts_for_onesided_ders
+      use General, only: loptest
+      use Equationofstate, only: lnrho0, cs0
+!
+      integer :: topbot
+      real, dimension (:,:,:,:) :: f
+      logical, optional :: lone_sided
+!
+      real, dimension (size(f,1),size(f,2)) :: tmp_xy,cs2_xy,rho_xy
+      integer :: i
+      real :: cv1
+!
+      if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
+!
+!  Do the `c1' boundary condition (constant heat flux) for entropy.
+!
+      cv1 =1./cv
+!
+      select case (topbot)
+!
+!  bottom boundary
+!  ===============
+!
+      case (BOT)
+!
+!  calculate Fbot/(K*cs2)
+!
+        if (pretend_lnTT) then
+          tmp_xy=-FbotKbot/exp(f(:,:,n1,iss))
+          do i=1,nghost
+            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)-dz2_bound(-i)*tmp_xy
+          enddo
+        else
+!
+          call getrho(f(:,:,n1,ilnrho),rho_xy)
+          cs2_xy = f(:,:,n1,iss)         ! here cs2_xy = entropy
+          if (lreference_state) &
+            cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
+!
+          if (ldensity_nolog) then
+            cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
+          else
+            cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*cs2_xy)
+          endif
+!
+!  Check whether we have chi=constant at bottom, in which case
+!  we have the nonconstant rho_xy*chi in tmp_xy.
+!  Check also whether Kramers opacity is used, then hcond itself depends
+!  on density and temperature.
+!
+          if (lheatc_chiconst) then
+            tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
+          else if (lheatc_kramers) then
+            tmp_xy=Fbot*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers) &
+                   /(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
+          else
+            tmp_xy=FbotKbot/cs2_xy
+          endif
+!
+!  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Fbot/(Kbot*cs2)
+!
+          if (loptest(lone_sided)) then
+            call not_implemented('bc_ss_flux', 'one-sided BC')
+            call getderlnrho_z(f,n1,rho_xy)                           ! rho_xy=d_z ln(rho)
+            call bval_from_neumann(f,topbot,iss,3,rho_xy)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+          else
+            do i=1,nghost
+              call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)        ! rho_xy=del_z ln(rho)
+              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+cp*(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
+            enddo
+          endif
+        endif
+!
+!  top boundary
+!  ============
+!
+      case (TOP)
+!
+!  calculate Ftop/(K*cs2)
+!
+        if (pretend_lnTT) then
+          tmp_xy=-FtopKtop/exp(f(:,:,n2,iss))
+          do i=1,nghost
+             f(:,:,n2-i,iss)=f(:,:,n2+i,iss)-dz2_bound(i)*tmp_xy
+          enddo
+        else
+!
+          call getrho(f(:,:,n2,ilnrho),rho_xy)
+          cs2_xy = f(:,:,n2,iss)             ! here cs2_xy = entropy
+          if (lreference_state) &
+            cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
+!
+          if (ldensity_nolog) then
+            cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
+          else
+            cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*cs2_xy)
+          endif
+!
+!  Check whether we have chi=constant at top, in which case
+!  we have the nonconstant rho_xy*chi in tmp_xy.
+!  Check also whether Kramers opacity is used, then hcond itself depends
+!  on density and temperature.
+!
+          if (lheatc_chiconst) then
+            tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
+          else if (lheatc_kramers) then
+            tmp_xy=Ftop*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers) &
+                   /(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
+          else
+            tmp_xy=FtopKtop/cs2_xy
+          endif
+!
+!  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Ftop/(K*cs2)
+!
+          if (loptest(lone_sided)) then
+            call not_implemented('bc_ss_flux', 'one-sided BC')
+            call getderlnrho_z(f,n2,rho_xy)                           ! rho_xy=d_z ln(rho)
+            call bval_from_neumann(f,topbot,iss,3,rho_xy)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+          else
+            do i=1,nghost
+              call getdlnrho_z(f(:,:,:,ilnrho),n2,i,rho_xy)        ! rho_xy=del_z ln(rho)
+              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+cp*(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)
+            enddo
+          endif
+        endif
+!
+      case default
+        call fatal_error('bc_ss_flux','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_flux
+!***********************************************************************
     subroutine expand_shands_energy
 !
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine heatcond_TT_2d(TT, hcond, dhcond)
+!
+! dummy
+!
+      implicit none
+!
+      real, dimension(:,:), intent(in) :: TT
+      real, dimension(:,:), intent(out) :: hcond
+      real, dimension(:,:), optional :: dhcond
+
+      call keep_compiler_quiet(TT,hcond,dhcond)
+
+    endsubroutine heatcond_TT_2d
+!***********************************************************************
+    subroutine heatcond_TT_1d(TT, hcond, dhcond)
+!
+! dummy
+!
+      implicit none
+!
+      real, dimension(:), intent(in) :: TT
+      real, dimension(:), intent(out) :: hcond
+      real, dimension(:), optional :: dhcond
+
+      call keep_compiler_quiet(TT,hcond,dhcond)
+
+    endsubroutine heatcond_TT_1d
+!***********************************************************************
+    subroutine heatcond_TT_0d(TT, hcond, dhcond)
+!
+! dummy
+!
+      implicit none
+!
+      real, intent(in) :: TT
+      real, intent(out) :: hcond
+      real, optional :: dhcond
+
+      call keep_compiler_quiet(TT,hcond,dhcond)
+
+    endsubroutine heatcond_TT_0d
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

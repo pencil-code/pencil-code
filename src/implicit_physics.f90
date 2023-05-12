@@ -19,29 +19,25 @@
 !***************************************************************
 module ImplicitPhysics
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error, warning
   use General, only: tridag, cyclic
+  use Energy, only: heatcond_TT
 !
   implicit none
 !
   include 'implicit_physics.h'
 !
-  interface heatcond_TT ! Overload subroutine `hcond_TT' function
-    module procedure heatcond_TT_0d  ! get one value (hcond, dhcond)
-    module procedure heatcond_TT_1d  ! get 1d-arrays (hcond, dhcond)
-    module procedure heatcond_TT_2d  ! get 2d-arrays (hcond, dhcond)
-  end interface
-!
   real, pointer :: hcond0, Fbot, hcond1, hcond2, widthlnTT
   logical, pointer :: lADI_mixed, lmultilayer
-  real :: Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha
   real :: dx_2, dy_2, dz_2, cp1
   logical :: lyakonov=.true.
 !
   real, dimension(mz) :: hcondz, dhcondz
+!
+!  Implicit advance of the radiative diffusion in the temperature equation.
+!
+  real, dimension(mx) :: hcondADI
 !
   contains
 !***********************************************************************
@@ -53,21 +49,23 @@ module ImplicitPhysics
 !  03-mar-2010/dintrans: coded
 !
       use FArrayManager, only: farray_register_auxiliary
+      use SharedVariables, only: put_shared_variable
 !
       call farray_register_auxiliary('TTold',iTTold,communicated=.true.)
-      print*, 'iTTold=', iTTold
+      if (lroot) print*, 'register_implicit_physics: iTTold=', iTTold
 !
 !  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
        "$Id$")
 !
+      call put_shared_variable('hcondADI', hcondADI)
+!
     endsubroutine register_implicit_physics
 !***********************************************************************
     subroutine initialize_implicit_physics(f)
 !
       use SharedVariables, only: get_shared_variable
-      use MpiComm, only: stop_it
       use EquationOfState, only: get_cp1
       use Gravity, only: z1, z2
       use Sub, only: step,der_step,write_zprof
@@ -75,7 +73,6 @@ module ImplicitPhysics
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(:), pointer :: hole_params
       real, dimension(mz) :: profz
 !
       call get_shared_variable('hcond0', hcond0, caller='initialize_implicit_physics')
@@ -88,26 +85,11 @@ module ImplicitPhysics
       print*,'***********************************'
       call get_shared_variable('Fbot', Fbot)
       call get_shared_variable('lADI_mixed', lADI_mixed)
-      call get_shared_variable('hole_params', hole_params)
-      Tbump=hole_params(1)
-      Kmin=hole_params(2)
-      Kmax=hole_params(3)
-      hole_slope=hole_params(4)
-      hole_width=hole_params(5)
-      hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
-      if (lroot .and. ldebug) then
-        print*, '************ hole parameters ************'
-        print*,'Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha=', &
-               Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha
-        print*, '*****************************************'
-      endif
 !
-      if (lrun) then
-! hcondADI is dynamically shared with boundcond() for the 'c3' BC
-        call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
-      else
-        hcondADI=spread(Kmax, 1, mx)
-      endif
+! hcondADI is dynamically shared with boundcond for the 'c3' BC. Initialized here.
+! Requires that initialize_implicit_physics is called *after* initialize_energy!
+!
+      call heatcond_TT(f(:,m1,n1,ilnTT), hcondADI)
 !
 ! variables that are needed everywhere in this module
 !
@@ -130,11 +112,9 @@ module ImplicitPhysics
 !
       if (lrun) then
         if (lmultilayer) then
-          profz = 1. + (hcond1-1.)*step(z,z1,-widthlnTT) &
-                   + (hcond2-1.)*step(z,z2,widthlnTT)
+          profz = 1. + (hcond1-1.)*step(z,z1,-widthlnTT) + (hcond2-1.)*step(z,z2,widthlnTT)
           hcondz = hcond0*profz
-          dhcondz = (hcond1-1.)*der_step(z,z1,-widthlnTT) &
-                   + (hcond2-1.)*der_step(z,z2,widthlnTT)
+          dhcondz = (hcond1-1.)*der_step(z,z1,-widthlnTT) + (hcond2-1.)*der_step(z,z2,widthlnTT)
           dhcondz = hcond0*dhcondz
         else
           hcondz=hcond0
@@ -241,10 +221,10 @@ module ImplicitPhysics
 !
       call update_ghosts(f)
 !
-      TT=f(:,4,:,iTTold)
-      source=(f(:,4,:,ilnTT)-TT)/dt
+      TT=f(:,m1,:,iTTold)
+      source=(f(:,m1,:,ilnTT)-TT)/dt
       if (ldensity) then
-        rho=exp(f(:,4,:,ilnrho))
+        rho=exp(f(:,m1,:,ilnrho))
       else
         rho=1.
       endif
@@ -256,9 +236,8 @@ module ImplicitPhysics
         ax=-wx*dx_2/2.
         bx=1.+wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,j)+wx*dz_2/2.*                         &
-             (TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))    &
-             +dt/2.*source(l1:l2,j)
+        rhsx= TT(l1:l2,j)+wx*dz_2/2.*                         &
+             (TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))+dt/2.*source(l1:l2,j)
 !
 ! x boundary conditions: periodic
 !
@@ -279,9 +258,8 @@ module ImplicitPhysics
         az=-wz*dz_2/2.
         bz=1.+wz*dz_2
         cz=az
-        rhsz=finter(i,n1:n2)+wz*dx_2/2.*                               &
-             (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))  &
-             +dt/2.*source(i,n1:n2)
+        rhsz= finter(i,n1:n2)+wz*dx_2/2.*                               &
+             (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))+dt/2.*source(i,n1:n2)
         !
         ! z boundary conditions
         ! Always constant temperature at the top
@@ -309,7 +287,7 @@ module ImplicitPhysics
 !
         call tridag(az, bz, cz, rhsz, workz, err, msg)
         if (err) call warning('ADI_Kconst', trim(msg))
-        f(i,4,n1:n2,ilnTT)=workz
+        f(i,m1,n1:n2,ilnTT)=workz
       enddo
 !
     endsubroutine ADI_Kconst
@@ -340,15 +318,17 @@ module ImplicitPhysics
       logical :: err
       character(len=255) :: msg
 !
-      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
+      source=(f(:,m1,:,ilnTT)-f(:,m1,:,iTTold))/dt
+!
 ! BC important not for the x-direction (always periodic) but for
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
-      call heatcond_TT(f(:,4,:,iTTold), hcond, dhcond)
-      call boundary_ADI(f(:,4,:,iTTold), hcond(:,n1))
-      TT=f(:,4,:,iTTold)
+!
+      call heatcond_TT(f(:,m1,:,iTTold), hcond, dhcond)
+      call boundary_ADI(f(:,m1,:,iTTold), hcond(:,n1))
+      TT=f(:,m1,:,iTTold)
       if (ldensity) then
-        rho=exp(f(:,4,:,ilnrho))
+        rho=exp(f(:,m1,:,ilnrho))
       else
         rho=1.
       endif
@@ -359,29 +339,29 @@ module ImplicitPhysics
        wx=cp1*gamma/rho(l1:l2,j)
 ! ax=-dt/2*J_x for i=i-1 (lower diagonal)
        ax=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)    &
-         *(TT(l1-1:l2-1,j)-TT(l1:l2,j))          &
-         +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
+          *(TT(l1-1:l2-1,j)-TT(l1:l2,j))          &
+          +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
 ! bx=1-dt/2*J_x for i=i (main diagonal)
-       bx=1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)      &
-         *(2.*TT(l1:l2,j)-TT(l1-1:l2-1,j)        &
-         -TT(l1+1:l2+1,j))+2.*hcond(l1:l2,j)     &
-         +hcond(l1+1:l2+1,j)+hcond(l1-1:l2-1,j))
+       bx= 1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)      &
+          *(2.*TT(l1:l2,j)-TT(l1-1:l2-1,j)        &
+          -TT(l1+1:l2+1,j))+2.*hcond(l1:l2,j)     &
+          +hcond(l1+1:l2+1,j)+hcond(l1-1:l2-1,j))
 ! cx=-dt/2*J_x for i=i+1 (upper diagonal)
        cx=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)    &
           *(TT(l1+1:l2+1,j)-TT(l1:l2,j))         &
           +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
 ! rhsx=f_y(T^n) + f_x(T^n) (Eq. 3.6)
 ! do first f_y(T^n)
-       rhsx=wx*dz_2/2.*((hcond(l1:l2,j+1)        &
-           +hcond(l1:l2,j))*(TT(l1:l2,j+1)       &
-           -TT(l1:l2,j))-(hcond(l1:l2,j)         &
-           +hcond(l1:l2,j-1))                    &
-           *(TT(l1:l2,j)-TT(l1:l2,j-1)))
+       rhsx= wx*dz_2/2.*((hcond(l1:l2,j+1)        &
+            +hcond(l1:l2,j))*(TT(l1:l2,j+1)       &
+            -TT(l1:l2,j))-(hcond(l1:l2,j)         &
+            +hcond(l1:l2,j-1))                    &
+            *(TT(l1:l2,j)-TT(l1:l2,j-1)))
 ! then add f_x(T^n)
-       rhsx=rhsx+wx*dx_2/2.*((hcond(l1+1:l2+1,j)         &
-         +hcond(l1:l2,j))*(TT(l1+1:l2+1,j)-TT(l1:l2,j))  &
-           -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))          &
-           *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
+       rhsx= rhsx+wx*dx_2/2.*((hcond(l1+1:l2+1,j)         &
+            +hcond(l1:l2,j))*(TT(l1+1:l2+1,j)-TT(l1:l2,j))  &
+            -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))          &
+            *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
 !
 ! x boundary conditions: periodic
        aalpha=cx(nx) ; bbeta=ax(1)
@@ -394,17 +374,17 @@ module ImplicitPhysics
       do i=l1,l2
        wz=dt*cp1*gamma*dz_2/rho(i,n1:n2)
        az=-wz/4.*(dhcond(i,n1-1:n2-1)   &
-         *(TT(i,n1-1:n2-1)-TT(i,n1:n2)) &
-         +hcond(i,n1-1:n2-1)+hcond(i,n1:n2))
+          *(TT(i,n1-1:n2-1)-TT(i,n1:n2)) &
+          +hcond(i,n1-1:n2-1)+hcond(i,n1:n2))
 !
-       bz=1.+wz/4.*(dhcond(i,n1:n2)*             &
-         (2.*TT(i,n1:n2)-TT(i,n1-1:n2-1)         &
-         -TT(i,n1+1:n2+1))+2.*hcond(i,n1:n2)     &
-         +hcond(i,n1+1:n2+1)+hcond(i,n1-1:n2-1))
+       bz= 1.+wz/4.*(dhcond(i,n1:n2)*             &
+          (2.*TT(i,n1:n2)-TT(i,n1-1:n2-1)         &
+          -TT(i,n1+1:n2+1))+2.*hcond(i,n1:n2)     &
+          +hcond(i,n1+1:n2+1)+hcond(i,n1-1:n2-1))
 !
        cz=-wz/4.*(dhcond(i,n1+1:n2+1)            &
-         *(TT(i,n1+1:n2+1)-TT(i,n1:n2))          &
-         +hcond(i,n1:n2)+hcond(i,n1+1:n2+1))
+          *(TT(i,n1+1:n2+1)-TT(i,n1:n2))          &
+          +hcond(i,n1:n2)+hcond(i,n1+1:n2+1))
 !
        rhsz=finter(i,n1:n2)
 !
@@ -431,11 +411,11 @@ module ImplicitPhysics
        val(i,n1:n2)=workz(1:nz)
       enddo
 !
-      f(:,4,:,ilnTT)=f(:,4,:,iTTold)+dt*val
+      f(:,m1,:,ilnTT)=f(:,m1,:,iTTold)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
-      call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
+      call heatcond_TT(f(:,m1,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof
 !***********************************************************************
@@ -480,17 +460,17 @@ module ImplicitPhysics
 !  zones. It is needed by rho,rhot and source,sourcet.
 !
       call update_ghosts(f)
-      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
+      source=(f(:,m1,:,ilnTT)-f(:,m1,:,iTTold))/dt
 !
 ! BC important not for the x-direction (always periodic) but for
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
 !
-      TT=f(:,4,:,iTTold)
+      TT=f(:,m1,:,iTTold)
       call heatcond_TT(TT, hcond, dhcond)
       call boundary_ADI(TT, hcond(:,n1))
       if (ldensity) then
-        rho=exp(f(:,4,:,ilnrho))
+        rho=exp(f(:,m1,:,ilnrho))
       else
         rho=1.
       endif
@@ -514,13 +494,13 @@ module ImplicitPhysics
            +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
 ! rhsx=f_z(T^n) + f_x(T^n) (Eq. 3.6)
 ! do first f_z(T^n)
-        rhsx=wx*dz_2/2.*((hcond(l1:l2,j+1)         &
+        rhsx= wx*dz_2/2.*((hcond(l1:l2,j+1)         &
              +hcond(l1:l2,j))*(TT(l1:l2,j+1)       &
              -TT(l1:l2,j))-(hcond(l1:l2,j)         &
              +hcond(l1:l2,j-1))                    &
              *(TT(l1:l2,j)-TT(l1:l2,j-1)))
 ! then add f_x(T^n)
-        rhsx=rhsx+wx*dx_2/2.*((hcond(l1+1:l2+1,j)            &
+        rhsx= rhsx+wx*dx_2/2.*((hcond(l1+1:l2+1,j)            &
              +hcond(l1:l2,j))*(TT(l1+1:l2+1,j)-TT(l1:l2,j))  &
              -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))            &
              *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
@@ -545,7 +525,7 @@ module ImplicitPhysics
            *(TTt(n1t-1:n2t-1,i)-TTt(n1t:n2t,i))      &
            +hcondt(n1t-1:n2t-1,i)+hcondt(n1t:n2t,i))
 !
-        bz=1.+wz/4.*(dhcondt(n1t:n2t,i)*                 &
+        bz= 1.+wz/4.*(dhcondt(n1t:n2t,i)*                 &
            (2.*TTt(n1t:n2t,i)-TTt(n1t-1:n2t-1,i)         &
            -TTt(n1t+1:n2t+1,i))+2.*hcondt(n1t:n2t,i)     &
            +hcondt(n1t+1:n2t+1,i)+hcondt(n1t-1:n2t-1,i))
@@ -582,11 +562,11 @@ module ImplicitPhysics
 ! come back on the grid (x,z)
 !
       call transp_zx(valt(n1t:n2t,:), val)
-      f(l1:l2,4,n1:n2,ilnTT)=f(l1:l2,4,n1:n2,iTTold)+dt*val
+      f(l1:l2,m1,n1:n2,ilnTT)=f(l1:l2,m1,n1:n2,iTTold)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
-      if (iproc==0) call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
+      if (iproc==0) call heatcond_TT(f(:,m1,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof_MPI
 !***********************************************************************
@@ -610,23 +590,21 @@ module ImplicitPhysics
 !
 ! top boundary condition z=z(n2): always constant temperature
 !
-      if (llast_proc_z) then
-        f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
-      endif
+      if (llast_proc_z) f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
 !
 ! bottom bondary condition z=z(n1): constant T or imposed flux dT/dz
 !
-      if (iproc==0) then
-      select case (bcz12(ilnTT,1))
-        case ('cT') ! constant temperature
-          f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
-        case ('c3') ! constant flux
-          if (.not. present(hcond)) then
-            f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond0
-          else
-            f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond(:)
-          endif
-      endselect
+      if (lroot) then
+        select case (bcz12(ilnTT,1))
+          case ('cT') ! constant temperature
+            f_2d(:,n1-1)=2.*f_2d(:,n1)-f_2d(:,n1+1)
+          case ('c3') ! constant flux
+            if (.not. present(hcond)) then
+              f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond0
+            else
+              f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond
+            endif
+        endselect
       endif
 !
     endsubroutine boundary_ADI
@@ -648,9 +626,9 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       call update_ghosts(f,iTT)
-      TT=f(4,4,:,iTT)
+      TT=f(l1,m1,:,iTT)
 !
-      wz(:)=dt*dz_2*gamma*cp1*hcond0*exp(-f(4,4,n1:n2,ilnrho))
+      wz(:)=dt*dz_2*gamma*cp1*hcond0*exp(-f(l1,m1,n1:n2,ilnrho))
       az(:)=-0.5*wz
       bz(:)=1.+wz
       cz(:)=az
@@ -664,7 +642,7 @@ module ImplicitPhysics
 !        cz(1)=2.*cz(1) ; rhsz(1)=rhsz(1)+wz(1)*dz*Fbot/hcond0  ! T' = -Fbot/K
         bz(1)=1. ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcond0  ! T' = -Fbot/K
       endif
-      call tridag(az, bz, cz, rhsz, f(4,4,n1:n2,iTT), err, msg)
+      call tridag(az, bz, cz, rhsz, f(l1,m1,n1:n2,iTT), err, msg)
       if (err) call warning('crank_Kconst', trim(msg))
 !
     endsubroutine crank_Kconst
@@ -687,15 +665,15 @@ module ImplicitPhysics
       logical :: err
       character(len=255) :: msg
 !
-      source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
-      rho=exp(f(4,4,:,ilnrho))
+      source=(f(l1,m1,:,ilnTT)-f(l1,m1,:,iTTold))/dt
+      rho=exp(f(l1,m1,:,ilnrho))
 !
 ! need to set up the 'c3' BC at the 2nd-order before the implicit stuff
 !
-      call heatcond_TT(f(4,4,:,iTTold), hcond, dhcond)
+      call heatcond_TT(f(l1,m1,:,iTTold), hcond, dhcond)
       hcondADI=spread(hcond(1), 1, mx)
-      call boundary_ADI(f(:,4,:,iTTold), hcondADI)
-      TT=f(4,4,:,iTTold)
+      call boundary_ADI(f(:,m1,:,iTTold), hcondADI)
+      TT=f(l1,m1,:,iTTold)
 !
       do j=n1,n2
         jj=j-nghost
@@ -706,8 +684,7 @@ module ImplicitPhysics
         a(jj)=-wz/4.*(hcondm-dhcond(j-1)*(TT(j)-TT(j-1)))
         b(jj)=1.-wz/4.*(-hcondp-hcondm+dhcond(j)*(TT(j+1)-2.*TT(j)+TT(j-1)))
         c(jj)=-wz/4.*(hcondp+dhcond(j+1)*(TT(j+1)-TT(j)))
-        rhs(jj)=wz/2.*(hcondp*(TT(j+1)-TT(j))-hcondm*(TT(j)-TT(j-1))) &
-                +dt*source(j)
+        rhs(jj)=wz/2.*(hcondp*(TT(j+1)-TT(j))-hcondm*(TT(j)-TT(j-1)))+dt*source(j)
 !
 ! Always constant temperature at the top: T^(n+1)-T^n = 0
 !
@@ -725,11 +702,11 @@ module ImplicitPhysics
       enddo
       call tridag(a, b, c, rhs, work, err, msg)
       if (err) call warning('ADI_Kprof_1d', trim(msg))
-      f(4,4,n1:n2,ilnTT)=f(4,4,n1:n2,iTTold)+work
+      f(l1,m1,n1:n2,ilnTT)=f(l1,m1,n1:n2,iTTold)+work
 !
 ! Update the bottom value of hcond used for the 'c3' BC in boundcond
 !
-      call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
+      call heatcond_TT(f(:,m1,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof_1d
 !***********************************************************************
@@ -757,9 +734,9 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       call update_ghosts(f,iTT)
-      TT=f(:,4,:,iTT)
+      TT=f(:,m1,:,iTT)
       if (ldensity) then
-        rho1=exp(-f(:,4,:,ilnrho))
+        rho1=exp(-f(:,m1,:,ilnrho))
       else
         rho1=1.
       endif
@@ -771,9 +748,8 @@ module ImplicitPhysics
         ax=-wx*dx_2
         bx=1.+2.*wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,j) &
-          +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
-          +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
+        rhsx=TT(l1:l2,j)+wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
+                        +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
 !
 ! x boundary conditions: periodic
 !
@@ -811,63 +787,9 @@ module ImplicitPhysics
         call tridag(az, bz, cz, rhsz, wtmp(:,i), err, msg)
         if (err) call warning('ADI_Kconst_MPI', trim(msg))
       enddo
-      call transp_zx(wtmp, f(l1:l2,4,n1:n2,iTT))
+      call transp_zx(wtmp, f(l1:l2,m1,n1:n2,iTT))
 !
     endsubroutine ADI_Kconst_MPI
-!***********************************************************************
-    subroutine heatcond_TT_2d(TT, hcond, dhcond)
-!
-! 07-Sep-07/gastine: computed 2-D radiative conductivity hcond(T) with
-! its derivative dhcond=dhcond(T)/dT.
-!
-      implicit none
-!
-      real, dimension(:,:), intent(in) :: TT
-      real, dimension(:,:), intent(out) :: hcond
-      real, dimension(:,:), optional :: dhcond
-!
-      hcond=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
-      if (present(dhcond)) &
-        dhcond=2.*hole_alpha/(1.+hcond**2)*hole_slope*(TT-Tbump)
-      hcond=Kmax+hole_alpha*(-pi/2.+atan(hcond))
-!
-    endsubroutine heatcond_TT_2d
-!***********************************************************************
-    subroutine heatcond_TT_1d(TT, hcond, dhcond)
-!
-! 18-Sep-07/dintrans: computed 1-D radiative conductivity
-! hcond(T) with its derivative dhcond=dhcond(T)/dT.
-!
-      implicit none
-!
-      real, dimension(:), intent(in) :: TT
-      real, dimension(:), intent(out) :: hcond
-      real, dimension(:), optional :: dhcond
-!
-      hcond=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
-      if (present(dhcond)) &
-        dhcond=2.*hole_alpha/(1.+hcond**2)*hole_slope*(TT-Tbump)
-      hcond=Kmax+hole_alpha*(-pi/2.+atan(hcond))
-!
-    endsubroutine heatcond_TT_1d
-!***********************************************************************
-    subroutine heatcond_TT_0d(TT, hcond, dhcond)
-!
-! 07-Sep-07/gastine: computed the radiative conductivity hcond(T)
-! with its derivative dhcond=dhcond(T)/dT at a given temperature.
-!
-      implicit none
-!
-      real, intent(in) :: TT
-      real, intent(out) :: hcond
-      real, optional :: dhcond
-!
-      hcond=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
-      if (present(dhcond)) &
-        dhcond=2.*hole_alpha/(1.+hcond**2)*hole_slope*(TT-Tbump)
-      hcond=Kmax+hole_alpha*(-pi/2.+atan(hcond))
-!
-    endsubroutine heatcond_TT_0d
 !***********************************************************************
     subroutine ADI_Kprof_1d_mixed(f)
 !
@@ -887,16 +809,16 @@ module ImplicitPhysics
       logical :: err
       character(len=255) :: msg
 !
-      source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
-      call heatcond_TT(f(4,4,:,iTTold), hcond, dhcond)
+      source=(f(l1,m1,:,ilnTT)-f(l1,m1,:,iTTold))/dt
+      call heatcond_TT(f(l1,m1,:,iTTold), hcond, dhcond)
 !
 ! need to set up the 'c3' BC at the 2nd-order before the implicit stuff
 !
       hcondADI=spread(hcond(1), 1, mx)
-      call boundary_ADI(f(:,4,:,iTTold), hcondADI)
-      TT=f(4,4,:,iTTold)
+      call boundary_ADI(f(:,m1,:,iTTold), hcondADI)
+      TT=f(l1,m1,:,iTTold)
       if (ldensity) then
-        chi=cp1*hcond/exp(f(4,4,:,ilnrho))
+        chi=cp1*hcond/exp(f(l1,m1,:,ilnrho))
       else
         chi=cp1*hcond
       endif
@@ -928,11 +850,11 @@ module ImplicitPhysics
 !
       call tridag(a, b, c, rhs, work, err, msg)
       if (err) call warning('ADI_Kprof_1d_mixed', trim(msg))
-      f(4,4,n1:n2,ilnTT)=f(4,4,n1:n2,iTTold)+work
+      f(l1,m1,n1:n2,ilnTT)=f(l1,m1,n1:n2,iTTold)+work
 !
 ! Update the bottom value of hcond used for the 'c3' BC in boundcond
 !
-      call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
+      call heatcond_TT(f(:,m1,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof_1d_mixed
 !***********************************************************************
@@ -956,8 +878,7 @@ module ImplicitPhysics
 !
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
-                                chi, dLnhcond
+      real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, chi, dLnhcond
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real :: aalpha, bbeta
@@ -966,16 +887,18 @@ module ImplicitPhysics
 !
       call update_ghosts(f)
 !
-      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
+      source=(f(:,m1,:,ilnTT)-f(:,m1,:,iTTold))/dt
+!
 ! BC important not for the x-direction (always periodic) but for
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
-      call heatcond_TT(f(:,4,:,iTTold), hcond, dhcond)
-      call boundary_ADI(f(:,4,:,iTTold), hcond(:,n1))
-      TT=f(:,4,:,iTTold)
+!
+      call heatcond_TT(f(:,m1,:,iTTold), hcond, dhcond)
+      call boundary_ADI(f(:,m1,:,iTTold), hcond(:,n1))
+      TT=f(:,m1,:,iTTold)
       if (ldensity) then
-        chi=cp1*hcond/exp(f(:,4,:,ilnrho))
-!        chi=cp1*hcond0/exp(f(:,4,:,ilnrho))
+        chi=cp1*hcond/exp(f(:,m1,:,ilnrho))
+!        chi=cp1*hcond0/exp(f(:,m1,:,ilnrho))
       else
         chi=cp1*hcond
       endif
@@ -987,15 +910,15 @@ module ImplicitPhysics
       do j=n1,n2
         wx=gamma*chi(l1:l2,j)
         ax=-dt/2.*wx*dx_2
-        bx=1.-dt/2.*wx*dx_2*(-2.+dLnhcond(l1:l2,j)* &
-           (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)))
+        bx=1.-dt/2.*wx*dx_2*(-2.+dLnhcond(l1:l2,j)*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)))
         cx=-dt/2.*wx*dx_2
+!
 ! rhsx=f_x(T^n) + f_z(T^n) + source
 ! do first f_z(T^n)
+!
         rhsx=wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
 ! then add f_x(T^n) + source
-        rhsx=rhsx+wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
-             +source(l1:l2,j)
+        rhsx=rhsx+wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j))+source(l1:l2,j)
 !
 ! periodic boundary conditions in x --> cyclic matrix
 !
@@ -1009,8 +932,7 @@ module ImplicitPhysics
       do i=l1,l2
         wz=dt*gamma*dz_2*chi(i,n1:n2)
         az=-wz/2.
-        bz=1.-wz/2.*(-2.+dLnhcond(i,n1:n2)*    &
-          (TT(i,n1+1:n2+1)-2.*TT(i,n1:n2)+TT(i,n1-1:n2-1)))
+        bz=1.-wz/2.*(-2.+dLnhcond(i,n1:n2)*(TT(i,n1+1:n2+1)-2.*TT(i,n1:n2)+TT(i,n1-1:n2-1)))
         cz=-wz/2.
         rhsz=finter(i,n1:n2)
 !
@@ -1037,11 +959,11 @@ module ImplicitPhysics
        val(i,n1:n2)=workz(1:nz)
       enddo
 !
-      f(:,4,:,ilnTT)=f(:,4,:,iTTold)+dt*val
+      f(:,m1,:,ilnTT)=f(:,m1,:,iTTold)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
-      call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
+      call heatcond_TT(f(:,m1,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof_mixed
 !***********************************************************************
@@ -1073,9 +995,9 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       call update_ghosts(f)
-      TT=f(:,4,:,iTT)
+      TT=f(:,m1,:,iTT)
       if (ldensity) then
-        rho1=exp(-f(:,4,:,ilnrho))
+        rho1=exp(-f(:,m1,:,ilnrho))
       else
         rho1=1.
       endif
@@ -1087,10 +1009,8 @@ module ImplicitPhysics
         ax=-wx*dx_2/2.
         bx=1.+wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,j)+ &
-             wx*dz_2/2.*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
-        rhsx=rhsx+wx*dx_2/2.*                                 &
-             (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j))
+        rhsx=TT(l1:l2,j)+wx*dz_2/2.*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
+        rhsx=rhsx+wx*dx_2/2.*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j))
 !
 ! x boundary conditions: periodic
 !
@@ -1129,7 +1049,7 @@ module ImplicitPhysics
 !
         call tridag(az,bz,cz,rhsz,workz,err,msg)
         if (err) call warning('ADI_Kconst_yakonov', trim(msg))
-        f(i,4,n1:n2,iTT)=workz
+        f(i,m1,n1:n2,iTT)=workz
       enddo
 !
     endsubroutine ADI_Kconst_yakonov
@@ -1150,8 +1070,8 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       call update_ghosts(f,iTT)
-      TT=f(4,4,:,iTT)
-      rho1=exp(-f(4,4,:,ilnrho))
+      TT=f(l1,m1,:,iTT)
+      rho1=exp(-f(l1,m1,:,ilnrho))
 !
       chi=0.5*dt*dz_2*gamma*cp1*hcondz(n1:n2)*rho1(n1:n2)
       dchi=0.25*dt/dz*gamma*cp1*dhcondz(n1:n2)*rho1(n1:n2)
@@ -1169,7 +1089,7 @@ module ImplicitPhysics
 !        cz(1)=2.*cz(1) ; rhsz(1)=rhsz(1)+wz(n1)*dz*Fbot/hcondz(n1)  ! T' = -Fbot/K
         bz(1)=1. ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcondz(n1)  ! T' = -Fbot/K
       endif
-      call tridag(az, bz, cz, rhsz, f(4,4,n1:n2,iTT), err, msg)
+      call tridag(az, bz, cz, rhsz, f(l1,m1,n1:n2,iTT), err, msg)
       if (err) call warning('crank_Kprof', trim(msg))
 !
     endsubroutine crank_Kprof
@@ -1200,8 +1120,8 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       call update_ghosts(f)
-      TT=f(:,4,:,iTT)
-      rho1=exp(-f(:,4,:,ilnrho))
+      TT=f(:,m1,:,iTT)
+      rho1=exp(-f(:,m1,:,ilnrho))
 !
 ! x-direction
 !
@@ -1213,10 +1133,9 @@ module ImplicitPhysics
         ax=-wx*dx_2
         bx=1.+2.*wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,j)   &
-            +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
-            +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
-            +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))
+        rhsx=TT(l1:l2,j)+wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
+                        +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
+                        +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))
 !
 ! x boundary conditions: periodic
 !
@@ -1250,7 +1169,7 @@ module ImplicitPhysics
             call fatal_error('ADI_poly','bcz on TT must be cT or c1')
         endselect
 !
-        call tridag(az,bz,cz,rhsz,f(i,4,n1:n2,iTT),err,msg)
+        call tridag(az,bz,cz,rhsz,f(i,m1,n1:n2,iTT),err,msg)
         if (err) call warning('ADI_poly', trim(msg))
       enddo
 !
@@ -1279,8 +1198,8 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       call update_ghosts(f,iTT)
-      TT=f(:,4,:,iTT)
-      rho1=exp(-f(:,4,:,ilnrho))
+      TT=f(:,m1,:,iTT)
+      rho1=exp(-f(:,m1,:,ilnrho))
 !
 ! x-direction
 !
@@ -1292,10 +1211,9 @@ module ImplicitPhysics
         ax=-wx*dx_2
         bx=1.+2.*wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,j)    &
-            +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
-            +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
-            +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))
+        rhsx=TT(l1:l2,j)+wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
+                        +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
+                        +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))
 !
 ! x boundary conditions: periodic
 !
@@ -1339,7 +1257,7 @@ module ImplicitPhysics
         call tridag(az,bz,cz,rhsz,wtmp(:,i),err,msg)
         if (err) call warning('ADI_poly_MPI', trim(msg))
       enddo
-      call transp_zx(wtmp, f(l1:l2,4,n1:n2,iTT))
+      call transp_zx(wtmp, f(l1:l2,m1,n1:n2,iTT))
 !
     endsubroutine ADI_poly_MPI
 !***********************************************************************
@@ -1387,13 +1305,10 @@ module ImplicitPhysics
         ax=-wx*dx_2
         bx=1.+2.*wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,m,n)+ &
-             wx*dz_2*(TT(l1:l2,m,n+1)-2.*TT(l1:l2,m,n)+TT(l1:l2,m,n-1)) &
-            +wx1/dz*(TT(l1:l2,m,n+1)-TT(l1:l2,m,n-1))                   &
-            +wx*dy_2*(TT(l1:l2,m+1,n)-2.*TT(l1:l2,m,n)+TT(l1:l2,m-1,n))
-        rhsx=rhsx+wx*dx_2*                                    &
-             (TT(l1+1:l2+1,m,n)-2.*TT(l1:l2,m,n)+TT(l1-1:l2-1,m,n)) &
-             +dt*source(l1:l2,m,n)
+        rhsx=TT(l1:l2,m,n)+wx*dz_2*(TT(l1:l2,m,n+1)-2.*TT(l1:l2,m,n)+TT(l1:l2,m,n-1)) &
+                          +wx1/dz*(TT(l1:l2,m,n+1)-TT(l1:l2,m,n-1))                   &
+                          +wx*dy_2*(TT(l1:l2,m+1,n)-2.*TT(l1:l2,m,n)+TT(l1:l2,m-1,n))
+        rhsx=rhsx+wx*dx_2*(TT(l1+1:l2+1,m,n)-2.*TT(l1:l2,m,n)+TT(l1-1:l2-1,m,n))+dt*source(l1:l2,m,n)
 !
 ! x boundary conditions: periodic
 !
@@ -1501,17 +1416,14 @@ module ImplicitPhysics
         ax=-wx*dx_2
         bx=1.+2.*wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,m,n)+ &
-             wx*dz_2*(TT(l1:l2,m,n+1)-2.*TT(l1:l2,m,n)+TT(l1:l2,m,n-1)) &
-            +wx1/dz*(TT(l1:l2,m,n+1)-TT(l1:l2,m,n-1))                   &
-            +wx*dy_2*(TT(l1:l2,m+1,n)-2.*TT(l1:l2,m,n)+TT(l1:l2,m-1,n))
-        rhsx=rhsx+wx*dx_2*                                    &
-             (TT(l1+1:l2+1,m,n)-2.*TT(l1:l2,m,n)+TT(l1-1:l2-1,m,n)) &
-             +dt*source(l1:l2,m,n)
+        rhsx=TT(l1:l2,m,n)+wx*dz_2*(TT(l1:l2,m,n+1)-2.*TT(l1:l2,m,n)+TT(l1:l2,m,n-1)) &
+                          +wx1/dz*(TT(l1:l2,m,n+1)-TT(l1:l2,m,n-1))                   &
+                          +wx*dy_2*(TT(l1:l2,m+1,n)-2.*TT(l1:l2,m,n)+TT(l1:l2,m-1,n))
+        rhsx=rhsx+wx*dx_2*(TT(l1+1:l2+1,m,n)-2.*TT(l1:l2,m,n)+TT(l1-1:l2-1,m,n))+dt*source(l1:l2,m,n)
 !
 ! x boundary conditions: periodic
 !
-        aalpha=cx(nx) ; bbeta=ax(1)
+        aalpha=cx(nx); bbeta=ax(1)
         call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,finterx(l1:l2,m,n),nx)
       enddo
       enddo
@@ -1529,7 +1441,7 @@ module ImplicitPhysics
 !
 ! y boundary conditions: periodic
 !
-        aalpha=cy(ny) ; bbeta=ay(1)
+        aalpha=cy(ny); bbeta=ay(1)
         call cyclic(ay,by,cy,aalpha,bbeta,rhsy,fintery(l,m1:m2,n),ny)
       enddo
       enddo
@@ -1537,38 +1449,38 @@ module ImplicitPhysics
 !  z-direction
 !
       do m=m1,m2
-      call transp_xz(fintery(l1:l2,m,n1:n2), finteryt)
-      call transp_xz(chi(l1:l2,m,n1:n2), chit)
-      call transp_xz(dchi(l1:l2,m,n1:n2), dchit)
-      do l=1,nxt
-        wz=0.5*dz_2*chit(:,l)
-        wz1=0.25/dz*dchit(:,l)
-        az=-wz+wz1
-        bz=1.+2.*wz
-        cz=-wz-wz1
-        rhsz=finteryt(:,l)
+        call transp_xz(fintery(l1:l2,m,n1:n2), finteryt)
+        call transp_xz(chi(l1:l2,m,n1:n2), chit)
+        call transp_xz(dchi(l1:l2,m,n1:n2), dchit)
+        do l=1,nxt
+          wz=0.5*dz_2*chit(:,l)
+          wz1=0.25/dz*dchit(:,l)
+          az=-wz+wz1
+          bz=1.+2.*wz
+          cz=-wz-wz1
+          rhsz=finteryt(:,l)
 !
 ! z boundary conditions
 !
 ! Constant temperature at the top
-        bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=cs2top/gamma_m1
+          bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=cs2top/gamma_m1
 ! bottom
-        select case (bcz12(ilnTT,1))
-          ! Constant temperature at the bottom
-          case ('cT')
-            bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
-          ! Constant flux at the bottom: c1 condition
-          case ('c1')
-!            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
-            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcond0
-          case default
-            call fatal_error('ADI_poly','bcz on TT must be cT or c1')
-        endselect
-!
-        call tridag(az,bz,cz,rhsz,wtmp(:,l),err,msg)
-        if (err) call warning('ADI_poly', trim(msg))
-      enddo
-      call transp_zx(wtmp, f(l1:l2,m,n1:n2,ilnTT))
+          select case (bcz12(ilnTT,1))
+            ! Constant temperature at the bottom
+            case ('cT')
+              bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
+            ! Constant flux at the bottom: c1 condition
+            case ('c1')
+!              bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
+              bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcond0
+            case default
+              call fatal_error('ADI_poly','bcz on TT must be cT or c1')
+          endselect
+!  
+          call tridag(az,bz,cz,rhsz,wtmp(:,l),err,msg)
+          if (err) call warning('ADI_poly', trim(msg))
+        enddo
+        call transp_zx(wtmp, f(l1:l2,m,n1:n2,ilnTT))
       enddo
 !
     endsubroutine ADI3D_MPI

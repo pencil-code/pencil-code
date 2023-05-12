@@ -46,7 +46,6 @@ module Energy
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
-  real, dimension(5) :: hole_params
   real, dimension(nz) :: zmask_temp, zmask_emiss
   real, dimension(nzgrid) :: zmask_temp_global
   real, dimension(2) :: temp_zaver_range=(/-max_real,max_real/)
@@ -554,12 +553,6 @@ module Energy
         call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
         call put_shared_variable('lupw_lnTT',lupw_lnTT)
       endif
-!
-!  Share the 4 parameters of the radiative conductivity hole (kappa-mechanism
-!  problem).
-!
-      hole_params=(/Tbump,Kmin,Kmax,hole_slope,hole_width/)
-      call put_shared_variable('hole_params',hole_params)
 !
 !  A word of warning...
 !
@@ -1227,7 +1220,6 @@ module Energy
 !
       use Deriv, only: der6
       use EquationOfState, only: gamma_m1, lpres_grad
-      use ImplicitPhysics, only: heatcond_TT
       use Special, only: special_calc_energy
       use Sub, only: identify_bcs, calc_slope_diff_flux
       use Viscosity, only: calc_viscous_heat
@@ -1609,7 +1601,6 @@ module Energy
 !
       use Diagnostics
       use Sub, only: dot2, dot, dot_mn
-      use ImplicitPhysics, only: heatcond_TT
 
       type(pencil_case) :: p
 
@@ -1937,7 +1928,6 @@ module Energy
       use Gravity, only: gravz
       use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot,gamma, &
                                  gamma_m1,eoscalc,ilnrho_TT
-      use ImplicitPhysics, only: heatcond_TT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: temp,lnrho
@@ -2338,7 +2328,6 @@ module Energy
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
       use Sub, only: dot, multsv
-      use ImplicitPhysics, only: heatcond_TT
 !
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension (nx)   :: dhcond, g1, chix
@@ -3188,6 +3177,66 @@ module Energy
 !
     endsubroutine energy_after_timestep
 !***********************************************************************
+    subroutine heatcond_TT_2d(TT, hcond, dhcond)
+!
+! 07-Sep-07/gastine: computes 2-D radiative conductivity hcond(T) with
+! its derivative dhcond=dhcond(T)/dT for radiative conductivity hole (kappa-mechanism problem).
+!
+      implicit none
+!
+      real, dimension(:,:), intent(in) :: TT
+      real, dimension(:,:), intent(out) :: hcond
+      real, dimension(:,:), optional :: dhcond
+!
+      real :: hole_alpha
+
+      hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
+      hcond=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
+      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+hcond**2)*hole_slope*(TT-Tbump)
+      hcond=Kmax+hole_alpha*(-pi/2.+atan(hcond))
+!
+    endsubroutine heatcond_TT_2d
+!***********************************************************************
+    subroutine heatcond_TT_1d(TT, hcond, dhcond)
+!
+! 18-Sep-07/dintrans: computes 1-D radiative conductivity with
+! its derivative dhcond=dhcond(T)/dT for radiative conductivity hole (kappa-mechanism problem).
+!
+      implicit none
+!
+      real, dimension(:), intent(in) :: TT
+      real, dimension(:), intent(out) :: hcond
+      real, dimension(:), optional :: dhcond
+!
+      real :: hole_alpha
+
+      hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
+      hcond=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
+      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+hcond**2)*hole_slope*(TT-Tbump)
+      hcond=Kmax+hole_alpha*(-pi/2.+atan(hcond))
+!
+    endsubroutine heatcond_TT_1d
+!***********************************************************************
+    subroutine heatcond_TT_0d(TT, hcond, dhcond)
+!
+! 07-Sep-07/gastine: computes the radiative conductivity hcond(T) with
+! its derivative dhcond=dhcond(T)/dT for radiative conductivity hole (kappa-mechanism problem).
+!
+      implicit none
+!
+      real, intent(in) :: TT
+      real, intent(out) :: hcond
+      real, optional :: dhcond
+!
+      real :: hole_alpha
+
+      hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
+      hcond=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
+      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+hcond**2)*hole_slope*(TT-Tbump)
+      hcond=Kmax+hole_alpha*(-pi/2.+atan(hcond))
+!
+    endsubroutine heatcond_TT_0d
+!***********************************************************************
     subroutine update_char_vel_energy(f)
 !
 !  Updates characteristic veelocity for slope-limited diffusion.
@@ -3217,6 +3266,18 @@ module Energy
         call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ene)
 !
     endsubroutine update_char_vel_energy
+!***********************************************************************
+    subroutine bc_ss_flux(f,topbot,lone_sided)
+!
+      integer :: topbot
+      real, dimension (:,:,:,:) :: f
+      logical, optional :: lone_sided
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(lone_sided)
+!
+   endsubroutine bc_ss_flux
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

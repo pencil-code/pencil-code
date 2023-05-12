@@ -17,3 +17,12 @@
   public :: energy_after_timestep
   public :: pushpars2c
   public :: calc_diagnostics_energy
+  !public :: bc_ss_flux
+  public :: heatcond_TT
+!
+  interface heatcond_TT 
+    module procedure heatcond_TT_0d  ! get one value (hcond, dhcond)
+    module procedure heatcond_TT_1d  ! get 1d-arrays (hcond, dhcond)
+    module procedure heatcond_TT_2d  ! get 2d-arrays (hcond, dhcond)
+  end interface
+

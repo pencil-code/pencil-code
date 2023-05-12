@@ -683,10 +683,6 @@ module Cdata
 !
   integer :: init_loops=1
 !
-!  Implicit advance of the radiative diffusion in the temperature equation.
-!
-  real, dimension (mx) :: hcondADI
-!
 !  Particle-mesh schemes, such as drag force and particle self-gravity,
 !  sometimes add force to ghost zones. In that case we must fold the force
 !  on the ghost zones onto the other side of the physical domain.
