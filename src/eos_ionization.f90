@@ -187,6 +187,8 @@ module EquationOfState
                 lnrho_e,lnrho_H,lnrho_He,lnrho_e_
       endif
 
+      call put_shared_variable('cp',cp,caller='initialize_eos')
+
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0,caller='initialize_eos')
         call put_shared_variable('lnrho0',lnrho0)
