@@ -54,6 +54,7 @@ module Boundcond
                                     slc_dat_yz, slc_dat_yz2
   integer :: nt_slices=0
   integer, parameter :: sz_slc_chunk=20
+  real, dimension(:), pointer :: hcondADI
 !
   contains
 !***********************************************************************
@@ -200,6 +201,8 @@ module Boundcond
       logical :: lbcxslc,lbcyslc,lbczslc
       character :: prec_in
       character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
+
+      if (lADI) call get_shared_variable('hcondADI', hcondADI, caller='initialize_boundcond')
 !
 ! Set proper BC code for Yin-Yang grid
 !
