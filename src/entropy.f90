@@ -8089,6 +8089,7 @@ module Energy
       real, dimension (size(f,1),size(f,2)) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
       real :: cv1
+      integer, parameter :: BOT=1, TOP=2
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
