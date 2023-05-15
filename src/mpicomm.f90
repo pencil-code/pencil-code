@@ -6156,7 +6156,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  28-dec-2010/Bourdin.KIS: extended to work for any 3D vector field data.
 !
       real, dimension (:,:,:,:), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      integer, intent (in) :: topbot
       integer, intent(in), optional :: start_index
 !
       real, dimension (nx,nghost,nghost+1,3) :: lbufyo,ubufyo,lbufyi,ubufyi
@@ -6169,9 +6169,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       nn1=-1; nn2=-1
       select case (topbot)
-        case ('bot'); nn1=1;  nn2=n1
-        case ('top'); nn1=n2; nn2=size(f,3)
-        case default; call stop_it_if_any(.true.,"communicate_vect_field_ghosts: "//topbot//" should be either `top' or `bot'")
+        case (BOT); nn1=1;  nn2=n1
+        case (TOP); nn1=n2; nn2=size(f,3)
+        case default; call stop_it_if_any(.true.,"communicate_vect_field_ghosts: topbot should be BOT or TOP")
       end select
 !
 !  Periodic boundaries in y -- communicate along y if necessary
