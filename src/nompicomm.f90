@@ -1945,7 +1945,7 @@ module Mpicomm
         case (BOT); nn1=1;  nn2=n1
         case (TOP); nn1=n2; nn2=mz
         case default
-          call fatal_error("communicate_vect_field_ghosts","topbot should be BOT or TOP")
+          call stop_it("communicate_vect_field_ghosts: topbot should be BOT or TOP")
       end select
 !
 !  Periodic boundaries in y
