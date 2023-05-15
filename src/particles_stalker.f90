@@ -517,9 +517,9 @@ module Particles_stalker
         call der(f(:,:,:,ivar),der_pencil,ider)
         f(l1:l2,m,n,iscratch)=der_pencil
       enddo; enddo
-      call bc_per_x(f,'top',iscratch); call bc_per_x(f,'bot',iscratch)
-      call bc_per_y(f,'top',iscratch); call bc_per_y(f,'bot',iscratch)
-      call bc_per_z(f,'top',iscratch); call bc_per_z(f,'bot',iscratch)
+      call bc_per_x(f,TOP,iscratch); call bc_per_x(f,BOT,iscratch)
+      call bc_per_y(f,TOP,iscratch); call bc_per_y(f,BOT,iscratch)
+      call bc_per_z(f,TOP,iscratch); call bc_per_z(f,BOT,iscratch)
 !
 !  Now that the derivative is stored in the f array, we can use the usual
 !  subroutine to find the local state of the gas at the positions of the
@@ -553,9 +553,9 @@ module Particles_stalker
         call der(f,iaa-1+2,der2_pencil,3)
         f(l1:l2,m,n,iscratch)=der1_pencil-der2_pencil
       enddo; enddo
-      call bc_per_x(f,'top',iscratch); call bc_per_x(f,'bot',iscratch)
-      call bc_per_y(f,'top',iscratch); call bc_per_y(f,'bot',iscratch)
-      call bc_per_z(f,'top',iscratch); call bc_per_z(f,'bot',iscratch)
+      call bc_per_x(f,TOP,iscratch); call bc_per_x(f,BOT,iscratch)
+      call bc_per_y(f,TOP,iscratch); call bc_per_y(f,BOT,iscratch)
+      call bc_per_z(f,TOP,iscratch); call bc_per_z(f,BOT,iscratch)
       call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iscratch,bx)
 !
       do n=n1,n2; do m=m1,m2
@@ -563,9 +563,9 @@ module Particles_stalker
         call der(f,iaa-1+3,der2_pencil,1)
         f(l1:l2,m,n,iscratch)=der1_pencil-der2_pencil
       enddo; enddo
-      call bc_per_x(f,'top',iscratch); call bc_per_x(f,'bot',iscratch)
-      call bc_per_y(f,'top',iscratch); call bc_per_y(f,'bot',iscratch)
-      call bc_per_z(f,'top',iscratch); call bc_per_z(f,'bot',iscratch)
+      call bc_per_x(f,TOP,iscratch); call bc_per_x(f,BOT,iscratch)
+      call bc_per_y(f,TOP,iscratch); call bc_per_y(f,BOT,iscratch)
+      call bc_per_z(f,TOP,iscratch); call bc_per_z(f,BOT,iscratch)
       call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iscratch,by)
 !
       do n=n1,n2; do m=m1,m2
@@ -573,9 +573,9 @@ module Particles_stalker
         call der(f,iaa-1+1,der2_pencil,2)
         f(l1:l2,m,n,iscratch)=der1_pencil-der2_pencil
       enddo; enddo
-      call bc_per_x(f,'top',iscratch); call bc_per_x(f,'bot',iscratch)
-      call bc_per_y(f,'top',iscratch); call bc_per_y(f,'bot',iscratch)
-      call bc_per_z(f,'top',iscratch); call bc_per_z(f,'bot',iscratch)
+      call bc_per_x(f,TOP,iscratch); call bc_per_x(f,BOT,iscratch)
+      call bc_per_y(f,TOP,iscratch); call bc_per_y(f,BOT,iscratch)
+      call bc_per_z(f,TOP,iscratch); call bc_per_z(f,BOT,iscratch)
       call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iscratch,bz)
 !
     endsubroutine stalk_magnetic
