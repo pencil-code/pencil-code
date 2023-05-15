@@ -198,6 +198,9 @@ module EquationOfState
       lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/ &
           (1+yH0+xHe-xH2)-2.5)
 
+      call put_shared_variable('cp',cp,caller='initialize_eos')
+      call put_shared_variable('cv',cv)
+!
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0,caller='initialize_eos')
         call put_shared_variable('lnrho0',lnrho0)
