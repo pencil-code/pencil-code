@@ -144,8 +144,7 @@ module Magnetic_meanfield
     subroutine pc_aasb_const_alpha(f,topbot,j)
 
     real, dimension(:,:,:,:) :: f
-    integer :: j
-    character (LEN=*) :: topbot
+    integer :: j, topbot
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
