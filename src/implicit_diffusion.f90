@@ -12,7 +12,6 @@
 !***************************************************************
 module ImplicitDiffusion
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages, only: fatal_error, warning
@@ -32,8 +31,6 @@ module ImplicitDiffusion
   real, dimension(nxgrid) :: ax_imp = 0.0, bx_imp = 0.0, cx_imp = 0.0
   real, dimension(nygrid) :: ay_imp = 0.0, by_imp = 0.0, cy_imp = 0.0
   real, dimension(nzgrid) :: az_imp = 0.0, bz_imp = 0.0, cz_imp = 0.0
-!
-  integer, parameter :: BOT=1, TOP=2
 !
   contains
 !***********************************************************************
@@ -97,7 +94,7 @@ module ImplicitDiffusion
         call integrate_diffusion_zonly(get_diffus_coeff, f, iv1, iv2)
 !
       case default method
-        call fatal_error('integrate_diffusion', 'unknown implicit_method = ' // implicit_method)
+        call fatal_error('integrate_diffusion','no such implicit_method: '//trim(implicit_method))
 !
       endselect method
 !
@@ -371,7 +368,7 @@ module ImplicitDiffusion
         c = 0.5 * dc * dz1grid * (dz1grid + 0.5 * dztgrid)
 !
       case default dir
-        call fatal_error('set_up_equations', 'unknown direction')
+        call fatal_error('set_diffusion_equations', 'unknown direction')
 !
       endselect dir
 !
@@ -468,8 +465,7 @@ module ImplicitDiffusion
 
           zscan: do k = n1, n2
             call set_diffusion_equations(get_diffus_coeff, 2, a, b, c, iz=ipz*nz+k-nghost)
-            if (.not.lspherical_coords) &
-              call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
+            if (.not.lspherical_coords) call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
             axy = f(l1:l2,m1:m2,k,l)
             call transp_xy(axy)  ! assuming nxgrid = nygrid
             xscan: do j = 1, ny
