@@ -849,8 +849,7 @@ module EquationOfState
         ss = Rgas*mu1_0*ss
       endif
 !
-      if (present(cs2)) &
-        call fatal_error('eoscalc_farray','calculation of cs2 not implemented')
+      if (present(cs2)) call not_implemented('eoscalc_farray','calculation of cs2')
 !
       if (present(kapparho)) then
 !
@@ -1067,8 +1066,8 @@ module EquationOfState
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
      subroutine get_average_pressure(average_density,average_pressure)
+!
 !   01-dec-2009/piyali+dhrube: coded
-      use Cdata
 !
       real, intent(in):: average_density
       real, intent(out):: average_pressure
@@ -1094,7 +1093,7 @@ module EquationOfState
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
       real, dimension (size(f,1),size(f,2)) :: tmp_xy,cs2_xy,rho_xy
@@ -1110,7 +1109,7 @@ module EquationOfState
 !  bottom boundary
 !  ===============
 !
-      case ('bot')
+      case(BOT)
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
@@ -1141,7 +1140,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case ('top')
+      case(TOP)
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
         else
@@ -1169,7 +1168,7 @@ module EquationOfState
               (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-dz2_bound(i)*tmp_xy)
         enddo
       case default
-        call fatal_error('bc_ss_flux','invalid argument')
+        call fatal_error('bc_ss_flux','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_flux
@@ -1180,8 +1179,10 @@ module EquationOfState
 !
 !   4-may-2009/axel: dummy routine
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+!
+      call not_implemented('bc_ss_flux_turb','in eos_temperature_ionization')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1194,8 +1195,10 @@ module EquationOfState
 !
 !   31-may-2010/axel: dummy routine
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+!
+      call not_implemented('bc_ss_flux_turb_x','in eos_temperature_ionization')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1206,8 +1209,10 @@ module EquationOfState
 !
 !   23-apr-2014/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      call not_implemented('bc_ss_flux_condturb_x','in eos_temperature_ionization')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1218,8 +1223,10 @@ module EquationOfState
 !
 !   07-jan-2015/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      call not_implemented('bc_ss_flux_condturb_mean_x','in eos_temperature_ionization')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1230,8 +1237,10 @@ module EquationOfState
 !
 !   15-jul-2014/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      call not_implemented('bc_ss_flux','in eos_temperature_ionization')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1250,7 +1259,7 @@ module EquationOfState
 !
       use Gravity
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,2)) :: tmp_xy
       integer :: i
@@ -1269,7 +1278,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if ((bcz12(ilnrho,1) /= 'a2') .and. (bcz12(ilnrho,1) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
@@ -1285,7 +1294,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if ((bcz12(ilnrho,2) /= 'a2') .and. (bcz12(ilnrho,2) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
@@ -1301,7 +1310,7 @@ module EquationOfState
           f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
         enddo
       case default
-        call fatal_error('bc_ss_temp_old','invalid argument')
+        call fatal_error('bc_ss_temp_old','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_temp_old
@@ -1315,7 +1324,7 @@ module EquationOfState
 !
       use Gravity
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
@@ -1333,7 +1342,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -1347,7 +1356,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                        'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
@@ -1360,7 +1369,7 @@ module EquationOfState
         enddo
 !
       case default
-        call fatal_error('bc_ss_temp_x','invalid argument')
+        call fatal_error('bc_ss_temp_x','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_temp_x
@@ -1374,7 +1383,7 @@ module EquationOfState
 !
       use Gravity
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
@@ -1392,7 +1401,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -1406,7 +1415,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                      'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
@@ -1419,7 +1428,7 @@ module EquationOfState
         enddo
 !
       case default
-        call fatal_error('bc_ss_temp_y','invalid argument')
+        call fatal_error('bc_ss_temp_y','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_temp_y
@@ -1434,7 +1443,7 @@ module EquationOfState
 !
       use Gravity
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
       real :: tmp
@@ -1453,7 +1462,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp_z: set z bottom temperature: TTbot=',TTbot
         if (TTbot<=0.) print*, &
@@ -1462,14 +1471,14 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                      'bc_ss_temp_z: set z top temperature: TTtop=',TTtop
         if (TTtop<=0.) print*,'bc_ss_temp_z: cannot have TTtop<=0'
         f(:,:,n2,ilnTT) = log(TTtop)
 !
       case default
-        call fatal_error('bc_ss_temp_z','invalid argument')
+        call fatal_error('bc_ss_temp_z','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_temp_z
@@ -1483,7 +1492,7 @@ module EquationOfState
 !
       use Gravity
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
@@ -1501,7 +1510,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                  'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*, &
@@ -1524,7 +1533,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                     'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*, &
@@ -1546,7 +1555,7 @@ module EquationOfState
         enddo
 !
       case default
-        call fatal_error('bc_lnrho_temp_z','invalid argument')
+        call fatal_error('bc_lnrho_temp_z','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_lnrho_temp_z
@@ -1562,7 +1571,7 @@ module EquationOfState
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
       use DensityMethods, only: putlnrho
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1578,7 +1587,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_top,ss_top=',lnrho_top,ss_top
 !
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
@@ -1614,7 +1623,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_bot,ss_bot=',lnrho_bot,ss_bot
 !
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
@@ -1649,7 +1658,7 @@ module EquationOfState
         enddo
 !
       case default
-        call fatal_error('bc_lnrho_pressure_z','invalid argument')
+        call fatal_error('bc_lnrho_pressure_z','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_lnrho_pressure_z
@@ -1663,7 +1672,7 @@ module EquationOfState
 !
       use Gravity
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
@@ -1681,7 +1690,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp2_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -1694,7 +1703,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                      'bc_ss_temp2_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp2_z: cannot have cs2top<=0'
@@ -1704,7 +1713,7 @@ module EquationOfState
                - gamma_m1/gamma*(f(:,:,n2+i,ilnrho)-lnrho0)
         enddo
       case default
-        call fatal_error('bc_ss_temp2_z','invalid argument')
+        call fatal_error('bc_ss_temp2_z','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_temp2_z
@@ -1713,11 +1722,10 @@ module EquationOfState
 !
 !  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call fatal_error('bc_ss_temp3_z', &
-          'not implemented in eos_temperature_ionization.f90')
+      call not_implemented('bc_ss_temp3_z','in eos_temperature_ionization')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1733,7 +1741,7 @@ module EquationOfState
 !
       use Gravity
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1749,7 +1757,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (cs2bot<=0.) print*, &
                         'bc_ss_stemp_x: cannot have cs2bot<=0'
         do i=1,nghost
@@ -1759,7 +1767,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (cs2top<=0.) print*, &
                         'bc_ss_stemp_x: cannot have cs2top<=0'
         do i=1,nghost
@@ -1768,7 +1776,7 @@ module EquationOfState
         enddo
 !
       case default
-        call fatal_error('bc_ss_stemp_x','invalid argument')
+        call fatal_error('bc_ss_stemp_x','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_stemp_x
@@ -1782,7 +1790,7 @@ module EquationOfState
 !
       use Gravity
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1798,7 +1806,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (cs2bot<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
@@ -1808,7 +1816,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (cs2top<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
@@ -1817,7 +1825,7 @@ module EquationOfState
         enddo
 !
       case default
-        call fatal_error('bc_ss_stemp_y','invalid argument')
+        call fatal_error('bc_ss_stemp_y','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_stemp_y
@@ -1831,7 +1839,7 @@ module EquationOfState
 !
       use Gravity
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1847,7 +1855,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
           if (cs2bot<=0.) print*, &
                                   'bc_ss_stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
@@ -1857,7 +1865,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (cs2top<=0.) print*, &
                  'bc_ss_stemp_z: cannot have cs2top<=0'
          do i=1,nghost
@@ -1865,7 +1873,7 @@ module EquationOfState
                 + gamma_m1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
          enddo
       case default
-        call fatal_error('bc_ss_stemp_z','invalid argument')
+        call fatal_error('bc_ss_stemp_z','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_stemp_z
@@ -1880,7 +1888,7 @@ module EquationOfState
 !
 !  22-sep-2010/fred: adapted from bc_ss_stemp_z
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1896,7 +1904,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-        case ('bot')
+        case(BOT)
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_x: cannot have cs2bot<=0'
           do i=1,nghost
@@ -1909,7 +1917,7 @@ module EquationOfState
 !
 !  top boundary
 !
-        case ('top')
+        case(TOP)
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_x: cannot have cs2top<=0'
           do i=1,nghost
@@ -1921,7 +1929,7 @@ module EquationOfState
           enddo
 !
         case default
-          call fatal_error('bc_ss_a2stemp_x','invalid argument')
+          call fatal_error('bc_ss_a2stemp_x','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_a2stemp_x
@@ -1936,7 +1944,7 @@ module EquationOfState
 !
 !  22-sep-2010/fred: adapted from bc_ss_stemp_y
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1953,7 +1961,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-        case ('bot')
+        case(BOT)
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_y: cannot have cs2bot<=0'
           do i=1,nghost
@@ -1966,7 +1974,7 @@ module EquationOfState
 !
 !  top boundary
 !
-        case ('top')
+        case(TOP)
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_y: cannot have cs2top<=0'
           do i=1,nghost
@@ -1978,7 +1986,7 @@ module EquationOfState
           enddo
 !
         case default
-          call fatal_error('bc_ss_a2stemp_y','invalid argument')
+          call fatal_error('bc_ss_a2stemp_y','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_a2stemp_y
@@ -1993,7 +2001,7 @@ module EquationOfState
 !
 !  22-sep-2010/fred: adapted from bc_ss_stemp_z
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -2009,7 +2017,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-        case ('bot')
+        case(BOT)
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
@@ -2022,7 +2030,7 @@ module EquationOfState
 !
 !  top boundary
 !
-        case ('top')
+        case(TOP)
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_z: cannot have cs2top<=0'
           do i=1,nghost
@@ -2033,7 +2041,7 @@ module EquationOfState
                 (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)))
           enddo
         case default
-          call fatal_error('bc_ss_a2stemp_z','invalid argument')
+          call fatal_error('bc_ss_a2stemp_z','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_a2stemp_z
@@ -2046,7 +2054,7 @@ module EquationOfState
 !  11-jul-2002/nils: moved into the entropy module
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,2)) :: cs2_2d
       integer :: i
@@ -2060,7 +2068,7 @@ module EquationOfState
 !
 ! Bottom boundary
 !
-    case ('bot')
+    case(BOT)
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
@@ -2072,7 +2080,7 @@ module EquationOfState
 !
 ! Top boundary
 !
-    case ('top')
+    case(TOP)
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
@@ -2082,7 +2090,7 @@ module EquationOfState
               +log(cs2_2d))
       enddo
     case default
-      call fatal_error('bc_ss_energy','invalid argument')
+      call fatal_error('bc_ss_energy','topbot should be BOT or TOP')
     endselect
 !
     endsubroutine bc_ss_energy
@@ -2101,7 +2109,6 @@ module EquationOfState
 !
 !  At the moment, this is probably only useful for solar surface convection.
 !
-!
 !  11-May-2006/tobi: coded
 !  16-May-2006/tobi: isentropic lower boundary
 !
@@ -2109,7 +2116,7 @@ module EquationOfState
       use DensityMethods, only: getlnrho
 !
       real, dimension (:,:,:,:), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      integer, intent(IN) :: topbot
 !
       real, dimension (size(f,1),size(f,2)) :: lnrho,lnTT,TT1
       real, dimension (size(f,1),size(f,2)) :: rhs,sqrtrhs,yH
@@ -2126,7 +2133,7 @@ module EquationOfState
 !
 !  Bottom boundary
 !
-      case ('bot')
+      case(BOT)
 !
 !  Boundary condition for density and temperature
 !
@@ -2197,7 +2204,7 @@ module EquationOfState
 !
 !  Top boundary
 !
-      case ('top')
+      case(TOP)
 !
 !  Boundary condition for density, temperature, and vector potential
 !
@@ -2252,6 +2259,7 @@ module EquationOfState
         enddo
 !
       case default
+        call fatal_error('bc_stellar_surface','topbot should be BOT or TOP')
 !
       endselect
 !
@@ -2259,13 +2267,10 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED in "// &
-          "eos_temperature_ionization")
+      call not_implemented("bc_lnrho_cfb_r_iso","in eos_temperature_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2274,13 +2279,10 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED in "// &
-          "eos_temperature_ionization")
+      call not_implemented("bc_lnrho_hds_z_iso","in eos_temperature_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2289,13 +2291,10 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED in "// &
-          "eos_temperature_ionization")
+      call not_implemented("bc_lnrho_hdss_z_iso","in eos_temperature_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2317,7 +2316,7 @@ module EquationOfState
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !  Copied from eos_ionization written for entropy - may need revision
 !
-      character (len=bclen) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
       real :: density_scale1, density_scale
@@ -2332,7 +2331,7 @@ module EquationOfState
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case(BOT)               ! bottom boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -2361,7 +2360,7 @@ module EquationOfState
           endif
         enddo
 !
-      case ('top')               ! top boundary
+      case(TOP)               ! top boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -2391,7 +2390,7 @@ module EquationOfState
         enddo
 !
       case default
-        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+        call fatal_error('bc_ism','topbot should be BOT or TOP')
 !
       endselect
 !

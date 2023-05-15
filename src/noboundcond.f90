@@ -90,7 +90,7 @@ module Boundcond
 !
       real, dimension (:,:,:,:) :: f
       integer :: j
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -104,7 +104,7 @@ module Boundcond
 !
       real, dimension (:,:,:,:) :: f
       integer :: j
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -118,7 +118,7 @@ module Boundcond
 !
       real, dimension (:,:,:,:) :: f
       integer :: j
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)

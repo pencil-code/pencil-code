@@ -327,8 +327,8 @@ module EquationOfState
 !
       call keep_compiler_quiet(mu_tmp)
       call keep_compiler_quiet(present(f))
-      call fatal_error("getmu", &
-             "This routine is not implemented: ")
+
+      call not_implemented("getmu","in eos_chemistry_simple")
 !
     endsubroutine getmu
 !***********************************************************************
@@ -1059,7 +1059,7 @@ module EquationOfState
 !
       cs2=impossible
       cp1tilde=impossible
-      call fatal_error('pressure_gradient_farray','SHOULD NOT BE CALLED WITH eos_chemistry')
+      call not_implemented("pressure_gradient_farray","in eos_chemistry_simple")
 !
       call keep_compiler_quiet(f)
 !
@@ -1077,7 +1077,7 @@ module EquationOfState
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
 !
-      call fatal_error('pressure_gradient_farray','SHOULD NOT BE CALLED WITH eos_chemistry')
+      call not_implemented("pressure_gradient_point","in eos_chemistry_simple")
 !
       call keep_compiler_quiet(cs2,cp1tilde,ss,lnrho)
 !
@@ -1095,7 +1095,7 @@ module EquationOfState
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
 !
-     call fatal_error('temperature_gradien','SHOULD NOT BE CALLED WITH eos_chemistry')
+      call not_implemented("temperature_gradient","in eos_chemistry_simple")
 !
 !  given that we just stopped, it cannot become worse by setting
 !  cp1tilde to impossible, which allows the compiler to compile.
@@ -1117,7 +1117,7 @@ module EquationOfState
       real, dimension(nx), intent(in) :: del2lnrho,del2ss
       real, dimension(nx), intent(out) :: del2lnTT
 !
-      call fatal_error('temperature_laplacian','SHould not be called!')
+      call not_implemented("temperature_laplacian","in eos_chemistry_simple")
 !
      call keep_compiler_quiet(f)
      call keep_compiler_quiet(del2lnrho,del2ss,del2lnTT)
@@ -1136,8 +1136,7 @@ module EquationOfState
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3,3), intent(out) :: hlnTT
 !
-      call fatal_error('temperature_hessian', &
-        'This routine is not coded for eos_chemistry')
+      call not_implemented("temperature_hessian","in eos_chemistry_simple")
 !
       hlnTT(:,:,:)=0
 !
@@ -1163,8 +1162,7 @@ module EquationOfState
       call keep_compiler_quiet(present(pp),present(kapparho))
       call keep_compiler_quiet(present(cs2))
 !
-      call fatal_error('eoscalc_farray', &
-          'This routine is not coded for eos_chemistry')
+      call not_implemented("eoscalc_farray","in eos_chemistry_simple")
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
@@ -1180,8 +1178,7 @@ module EquationOfState
       real, optional :: yH,lnTT
       real, optional :: ee,pp,cs2
 !
-      call fatal_error('eoscalc_point', &
-        'This routine is not coded for eos_chemistry')
+      call not_implemented("eoscalc_point","in eos_chemistry_simple")
 !
       call keep_compiler_quiet(present(lnrho),present(lnTT))
       call keep_compiler_quiet(present(pp),present(ee))
@@ -1213,8 +1210,7 @@ module EquationOfState
       real, dimension(nx), optional :: yH,lnTT
       real, dimension(nx), optional :: ee,pp,cs2
 !
-      call fatal_error('eoscalc_pencil', &
-        'This routine is not coded for eos_chemistry')
+      call not_implemented("eoscalc_pencil","in eos_chemistry_simple")
 !
       call keep_compiler_quiet(present(lnrho),present(lnTT))
       call keep_compiler_quiet(present(pp),present(ee))
@@ -1235,8 +1231,7 @@ module EquationOfState
       real, intent(out) :: cs2
 !
       cs2=impossible
-      call fatal_error('get_soundspeed', &
-        'This routine is not coded for eos_chemistry')
+      call not_implemented("get_soundspeed","in eos_chemistry_simple")
 !
       call keep_compiler_quiet(TT)
 !
@@ -1262,8 +1257,7 @@ module EquationOfState
       real, intent(in) :: T0
 !
       cs2top=cs2bot
-      call fatal_error('isothermal_entropy', &
-          'This routine is not coded for eos_chemistry')
+      call not_implemented("isothermal_entropy","in eos_chemistry_simple")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(T0)
@@ -1279,8 +1273,7 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
 !
-      call fatal_error('isothermal_lnrho_ss', &
-        'This routine is not coded for eos_chemistry')
+      call not_implemented("isothermal_lnrho_ss","in eos_chemistry_simple")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(T0)
@@ -1299,7 +1292,7 @@ module EquationOfState
 !   3-oct-16/MR: added new optional switch lone_sided
 !
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
 !
@@ -1314,7 +1307,7 @@ module EquationOfState
 !
 !   4-may-2009/axel: dummy routine
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
@@ -1328,7 +1321,7 @@ module EquationOfState
 !
 !   31-may-2010/pete: dummy routine
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
@@ -1340,7 +1333,7 @@ module EquationOfState
 !
 !   23-apr-2014/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1352,7 +1345,7 @@ module EquationOfState
 !
 !   07-jan-2015/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1364,7 +1357,7 @@ module EquationOfState
 !
 !   15-jul-2014/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1383,7 +1376,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1399,7 +1392,7 @@ module EquationOfState
 !
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1414,7 +1407,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1429,7 +1422,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       logical, optional :: lone_sided
 !
       call keep_compiler_quiet(f)
@@ -1445,7 +1438,7 @@ module EquationOfState
 !  19-aug-2005/tobi: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1461,7 +1454,7 @@ module EquationOfState
 !  19-aug-2005/tobi: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1476,7 +1469,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1487,11 +1480,10 @@ module EquationOfState
 !
 !  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call fatal_error('bc_ss_temp3_z', &
-          'not implemented in eos_chemistry.f90')
+      call not_implemented("bc_ss_temp3_z","in eos_chemistry_simple")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1506,7 +1498,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1521,7 +1513,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1536,7 +1528,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1551,7 +1543,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1566,7 +1558,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1581,7 +1573,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1598,7 +1590,7 @@ module EquationOfState
 !
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1608,7 +1600,7 @@ module EquationOfState
     subroutine bc_stellar_surface(f,topbot)
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1622,7 +1614,7 @@ module EquationOfState
 !  21-aug-2006/wlad: coded
 !
       real, dimension (:,:,:,:), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1636,7 +1628,7 @@ module EquationOfState
 !  12-Juil-2006/dintrans: coded
 !
       real, dimension (:,:,:,:), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1650,7 +1642,7 @@ module EquationOfState
 !  05-jul-07/tobi: Adapted from bc_aa_pot3
 !
       real, dimension (:,:,:,:), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      integer, intent(IN) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1673,7 +1665,7 @@ module EquationOfState
 !  Copied from eos_ionization written for entropy - may need revision
 !  Currently not correct for energy variable
 !
-      character (len=bclen) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
       real :: density_scale1, density_scale
@@ -1687,7 +1679,7 @@ module EquationOfState
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case(BOT)               ! bottom boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -1711,7 +1703,7 @@ module EquationOfState
           endif
         enddo
 !
-      case ('top')               ! top boundary
+      case(TOP)               ! top boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -1803,25 +1795,25 @@ module EquationOfState
 
     endsubroutine get_average_pressure
 !***********************************************************************
-    subroutine pushpars2c(p_par)
-
-    integer, parameter :: n_pars=1
-    integer(KIND=ikind8), dimension(n_pars) :: p_par
-
-    call keep_compiler_quiet(p_par)
-
-    endsubroutine pushpars2c
-!***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee,pp,ss
 !
-      call not_implemented("eosperturb")
+      call not_implemented("eosperturb","in eos_chemistry_simple")
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(present(ee),present(pp),present(ss))
 !
     endsubroutine eosperturb
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=0
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call keep_compiler_quiet(p_par)
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule EquationOfState

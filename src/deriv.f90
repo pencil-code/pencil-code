@@ -444,7 +444,7 @@ module Deriv
       call mpisendrecv_real(arr(n1:n1i,        :),(/nghost,nc/),ilneigh,tagl_send, &
                             arr(n2+1:n2+nghost,:),              iuneigh,tagu_recv,idir=IZBEAM)
       if (ipz==0.and..not.lperi(3)) then
-        do j=1,nc; call set_ghosts_for_onesided_ders_1D(arr,'bot',j); enddo
+        do j=1,nc; call set_ghosts_for_onesided_ders_1D(arr,BOT,j); enddo
       endif
 
       ! send to right neighbor, recv from left
@@ -452,7 +452,7 @@ module Deriv
       call mpisendrecv_real(arr(n2i:n2,  :),(/nghost,nc/),iuneigh,tagu_send, &
                             arr(1:nghost,:),              ilneigh,tagl_recv,idir=IZBEAM)
       if (ipz==nprocz-1.and..not.lperi(3)) then
-        do j=1,nc; call set_ghosts_for_onesided_ders_1D(arr,'top',j); enddo
+        do j=1,nc; call set_ghosts_for_onesided_ders_1D(arr,TOP,j); enddo
       endif
 
       do j=1,nc
@@ -5528,14 +5528,14 @@ module Deriv
 !  30-sep-16/MR: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 
       integer :: k
 
 !MR: coarse missing
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (-val*60.*dx + 360.*f(k+1,:,:,j) &
@@ -5599,14 +5599,14 @@ module Deriv
 !  30-sep-16/MR: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 
       integer :: k
 
 !MR: coarse missing
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (  360.*f(k+1,:,:,j) &
@@ -5670,14 +5670,14 @@ module Deriv
 !  30-dec-16/MR: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 
       integer :: k
 
 !MR: coarse missing
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (- 3132.*f(k+1,:,:,j) &
@@ -5743,7 +5743,7 @@ module Deriv
       use General, only: loptest
 
       real, dimension(:,:) :: arr
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j
       logical, optional :: l2nd
 
@@ -5755,7 +5755,7 @@ module Deriv
         off=nghost
       endif
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         do k=nghost,nghost+1-off,-1
           arr(k,j)=  7.*(arr(k+1,j)-arr(k+6,j)) &
                    -21.*(arr(k+2,j)-arr(k+5,j)) &
@@ -5787,7 +5787,7 @@ module Deriv
       use General, only: loptest
 
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       logical, optional :: l2nd
 
@@ -5799,7 +5799,7 @@ module Deriv
         off=nghost
       endif
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
 
           do k=l1-1,l1-off,-1
@@ -5860,14 +5860,14 @@ module Deriv
 !  30-sep-16/MR: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 
       integer :: k
 
 !MR: coarse missing
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (-val*60.*dx + 360.*f(k+1,:,:,j) &
@@ -5932,14 +5932,14 @@ module Deriv
 !  09-feb-17/Ivan: completed dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 !
 !MR: coarse missing
       integer :: k
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (  360.*f(k+1,:,:,j) &
@@ -6004,13 +6004,13 @@ module Deriv
 !
 !MR: coarse missing
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 
       integer :: k
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (- 3132.*f(k+1,:,:,j) &

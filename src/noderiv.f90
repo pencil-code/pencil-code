@@ -458,7 +458,7 @@ module Deriv
 !  Dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 !
@@ -469,7 +469,7 @@ module Deriv
 !  Dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 !
@@ -480,7 +480,7 @@ module Deriv
 !  Dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 !
@@ -491,7 +491,7 @@ module Deriv
 !  Dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       logical, optional :: l2nd
 !
@@ -502,7 +502,7 @@ module Deriv
 !  Dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 !
@@ -513,7 +513,7 @@ module Deriv
 !  Dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 !
@@ -524,7 +524,7 @@ module Deriv
 !  Dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 !

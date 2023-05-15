@@ -97,7 +97,7 @@ module EquationOfState
   real, dimension(mz) :: dlnrho0dz = 0.0
   real, dimension(mz) :: eth0z = 0.0
   logical :: lstratset = .false.
-  integer, parameter :: BOT=1, TOP=nx
+  integer, parameter :: XBOT=1, XTOP=nx
 !
   contains
 !***********************************************************************
@@ -299,8 +299,7 @@ module EquationOfState
       lstratset = .true.
 !
       if (lfargo_advection.and.(pretend_lnTT.or.ltemperature)) &
-          call fatal_error("initialize_eos","fargo advection not "//&
-          "implemented for the temperature equation")
+          call not_implemented("initialize_eos","fargo advection for temperature equation")
 !
 !  Register gradient of pressure
 !
@@ -2263,7 +2262,7 @@ module EquationOfState
       logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers
       real, dimension(:,:), pointer :: reference_state
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
 !
@@ -2298,7 +2297,7 @@ module EquationOfState
 !  bottom boundary
 !  ===============
 !
-      case ('bot')
+      case(BOT)
 !
 !  calculate Fbot/(K*cs2)
 !
@@ -2352,7 +2351,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case ('top')
+      case(TOP)
 !
 !  calculate Ftop/(K*cs2)
 !
@@ -2425,7 +2424,7 @@ module EquationOfState
       real, pointer :: chit_prof1,chit_prof2,hcond0_kramers, nkramers
       real, dimension(:,:), pointer :: reference_state
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,2)) :: dsdz_xy,cs2_xy,lnrho_xy,rho_xy, &
           TT_xy,dlnrhodz_xy,chi_xy
@@ -2471,7 +2470,7 @@ module EquationOfState
 !  bottom boundary
 !  ===============
 !
-      case ('bot')
+      case(BOT)
 !
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
@@ -2506,7 +2505,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case ('top')
+      case(TOP)
 !
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
@@ -2591,7 +2590,7 @@ module EquationOfState
 !
       real, pointer :: chi_t,hcondxbot,hcondxtop,chit_prof1,chit_prof2
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,2),size(f,3)) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
       real, dimension (size(f,2),size(f,3)) :: hcond_total
@@ -2625,7 +2624,7 @@ module EquationOfState
 !  bottom boundary
 !  ===============
 !
-      case ('bot')
+      case(BOT)
 !
 ! For the case of pretend_lnTT=T, set glnTT=-sigma*T^3/hcond
 !
@@ -2639,11 +2638,11 @@ module EquationOfState
 !  set ghost zones such that dsdx_yz obeys
 !  - chi_t rho T dsdx_yz - hcond gTT = sigmaSBt*TT^4
 !
-          call getrho(f(l1,:,:,ilnrho),BOT,rho_yz)
+          call getrho(f(l1,:,:,ilnrho),XBOT,rho_yz)
 !
           if (ldensity_nolog) then
             cs2_yz=f(l1,:,:,iss)                    ! here cs2_yz = entropy
-            if (lreference_state) cs2_yz = cs2_yz+reference_state(BOT,iref_s)
+            if (lreference_state) cs2_yz = cs2_yz+reference_state(XBOT,iref_s)
             cs2_yz=cs20*exp(gamma_m1*(log(rho_yz)-lnrho0)+cv1*cs2_yz)
           else
             cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
@@ -2662,8 +2661,8 @@ module EquationOfState
 !  Add gradient of reference density and divide by total density
 !
             if (lreference_state) then
-              dlnrhodx_yz=dlnrhodx_yz + reference_state(BOT,iref_grho)
-              dlnrhodx_yz=dlnrhodx_yz/(rho_yz + reference_state(BOT,iref_rho))
+              dlnrhodx_yz=dlnrhodx_yz + reference_state(XBOT,iref_grho)
+              dlnrhodx_yz=dlnrhodx_yz/(rho_yz + reference_state(XBOT,iref_rho))
             else
               dlnrhodx_yz=dlnrhodx_yz/rho_yz
             endif
@@ -2680,7 +2679,7 @@ module EquationOfState
 !
 !  Substract gradient of reference entropy.
 !
-          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(BOT,iref_gs)
+          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(XBOT,iref_gs)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
@@ -2692,7 +2691,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case ('top')
+      case(TOP)
 !
 !  For the case of pretend_lnTT=T, set glnTT=-sigma*T^3/hcond
 !
@@ -2706,12 +2705,12 @@ module EquationOfState
 !  set ghost zones such that dsdx_yz obeys
 !  - chi_t rho T dsdx_yz - hcond gTT = sigmaSBt*TT^4
 !
-          call getrho(f(l2,:,:,ilnrho),TOP,rho_yz)
+          call getrho(f(l2,:,:,ilnrho),XTOP,rho_yz)
 !
           if (ldensity_nolog) then
             cs2_yz=f(l2,:,:,iss)                         ! here cs2_yz = entropy
             if (lreference_state) &
-              cs2_yz = cs2_yz+reference_state(TOP,iref_s)
+              cs2_yz = cs2_yz+reference_state(XTOP,iref_s)
             cs2_yz=cs20*exp(gamma_m1*(log(rho_yz)-lnrho0)+cv1*cs2_yz)
           else
             cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+cv1*f(l2,:,:,iss))
@@ -2730,8 +2729,8 @@ module EquationOfState
 !  Add gradient of reference density to d rho/d x and divide by total density
 !
             if (lreference_state) then
-              dlnrhodx_yz=dlnrhodx_yz + reference_state(TOP,iref_grho)
-              dlnrhodx_yz=dlnrhodx_yz/(rho_yz + reference_state(TOP,iref_rho))
+              dlnrhodx_yz=dlnrhodx_yz + reference_state(XTOP,iref_grho)
+              dlnrhodx_yz=dlnrhodx_yz/(rho_yz + reference_state(XTOP,iref_rho))
             else
               dlnrhodx_yz=dlnrhodx_yz/rho_yz
             endif
@@ -2750,7 +2749,7 @@ module EquationOfState
 !
 !  Substract gradient of reference entropy.
 !
-            if (lreference_state) dsdx_yz = dsdx_yz - reference_state(TOP,iref_gs)
+            if (lreference_state) dsdx_yz = dsdx_yz - reference_state(XTOP,iref_gs)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
@@ -2783,7 +2782,7 @@ module EquationOfState
       real, pointer :: chi_t, hcondxbot, hcondxtop, chit_prof1, chit_prof2
       real, pointer :: Fbot, Ftop
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: dsdx_yz, TT_yz, rho_yz, dlnrhodx_yz, Kxbot
       integer :: i
@@ -2818,7 +2817,7 @@ module EquationOfState
 !  bottom boundary
 !  ===============
 !
-      case ('bot')
+      case(BOT)
 !
 ! Do the pretend_lnTT=T case first
 !
@@ -2828,12 +2827,12 @@ module EquationOfState
 !
 !  Set ghost zones such that -chi_t*rho*T*grads -hcond*gTT = Fbot
 !
-          call getrho(f(l1,:,:,ilnrho),BOT,rho_yz)
+          call getrho(f(l1,:,:,ilnrho),XBOT,rho_yz)
 !
           if (ldensity_nolog) then
             TT_yz=f(l1,:,:,iss)                                      ! TT_yz here entropy
             if (lreference_state) &
-              TT_yz = TT_yz+reference_state(BOT,iref_s)
+              TT_yz = TT_yz+reference_state(XBOT,iref_s)
             TT_yz=cs20*exp(gamma_m1*(log(rho_yz)-lnrho0)+cv1*TT_yz)  ! TT_yz here cs2
           else
             TT_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
@@ -2851,8 +2850,8 @@ module EquationOfState
 !  Add gradient of reference density and divide by total density (but not used later!).
 !
             if (lreference_state) then
-              dlnrhodx_yz=dlnrhodx_yz + reference_state(BOT,iref_grho)
-              dlnrhodx_yz=dlnrhodx_yz/(rho_yz + reference_state(BOT,iref_rho))
+              dlnrhodx_yz=dlnrhodx_yz + reference_state(XBOT,iref_grho)
+              dlnrhodx_yz=dlnrhodx_yz/(rho_yz + reference_state(XBOT,iref_rho))
             else
               dlnrhodx_yz=dlnrhodx_yz/rho_yz
             endif
@@ -2869,7 +2868,7 @@ module EquationOfState
 !
 !  Add gradient of reference entropy.
 !
-          if (lreference_state) dsdx_yz = dsdx_yz + reference_state(BOT,iref_gs)
+          if (lreference_state) dsdx_yz = dsdx_yz + reference_state(XBOT,iref_gs)
 !
 !  Enforce ds/dx = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
@@ -2884,7 +2883,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case ('top')
+      case(TOP)
 !
          call stop_it("bc_ss_flux_condturb_x: not implemented for the top boundary")
 !
@@ -2909,7 +2908,7 @@ module EquationOfState
       real, pointer :: chi_t, hcondxbot, hcondxtop, chit_prof1, chit_prof2
       real, pointer :: Fbot, Ftop
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: dsdx_yz
       real, dimension (-nghost:nghost) :: lnrmx, lnrmx_tmp
@@ -2941,7 +2940,7 @@ module EquationOfState
 !  bottom boundary
 !  ===============
 !
-      case ('bot')
+      case(BOT)
 !
 ! Do the pretend_lnTT=T case first
 !
@@ -2954,9 +2953,9 @@ module EquationOfState
           fact=1./((cos(y0)-cos(y0+Lxyz(2)))*Lxyz(3))
           cs2mx=0.
           do n=n1,n2
-            call getlnrho(f(l1,:,n,ilnrho),BOT,tmp2)
+            call getlnrho(f(l1,:,n,ilnrho),XBOT,tmp2)
             tmp2 = gamma_m1*(tmp2-lnrho0) + cv1*f(l1,m1:m2,n,iss)
-            if (lreference_state) tmp2 = tmp2 + cv1*reference_state(BOT,iref_s)
+            if (lreference_state) tmp2 = tmp2 + cv1*reference_state(XBOT,iref_s)
             cs2mx = cs2mx+sum(cs20*exp(tmp2)*dVol_y(m1:m2))*dVol_z(n)
           enddo
           cs2mx=fact*cs2mx
@@ -2967,7 +2966,7 @@ module EquationOfState
             tmp1=0.
             lf=l+nghost+1
             do n=n1,n2
-              call getlnrho(f(lf,:,n,ilnrho),BOT,tmp2)         ! doubled call to getlnrho not yet optimal
+              call getlnrho(f(lf,:,n,ilnrho),XBOT,tmp2)         ! doubled call to getlnrho not yet optimal
               tmp1=tmp1+sum(tmp2*dVol_y(m1:m2))*dVol_z(n)
             enddo
             lnrmx(l)=lnrmx(l)+tmp1
@@ -3000,7 +2999,7 @@ module EquationOfState
                   gamma_m1/gamma*dlnrmxdx
 !
           if (lreference_state) &
-            dsdx_yz = dsdx_yz - reference_state(BOT,iref_gs)
+            dsdx_yz = dsdx_yz - reference_state(XBOT,iref_gs)
 !
           do i=1,nghost
             f(l1-i,:,:,iss)=f(l1+i,:,:,iss)-dx2_bound(-i)*dsdx_yz
@@ -3010,7 +3009,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case ('top')
+      case(TOP)
 !
          call stop_it("bc_ss_flux_condturb_mean_x: not implemented for the top boundary")
 !
@@ -3038,7 +3037,7 @@ module EquationOfState
       real, pointer :: Fbot, Ftop
       logical, pointer :: lheatc_chiconst
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: dsdz_xy, TT_xy, rho_xy
       integer :: i
@@ -3074,7 +3073,7 @@ module EquationOfState
 !  bottom boundary
 !  ===============
 !
-      case ('bot')
+      case(BOT)
 !
 ! Do the pretend_lnTT=T case first
 !
@@ -3122,7 +3121,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case ('top')
+      case(TOP)
 !
          call stop_it("bc_ss_flux_condturb_z: not implemented for the top boundary")
 !
@@ -3144,7 +3143,7 @@ module EquationOfState
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,2)) :: tmp_xy
       integer :: i
@@ -3167,7 +3166,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if ((bcz12(ilnrho,1) /= 'a2') .and. (bcz12(ilnrho,1) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
@@ -3186,7 +3185,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if ((bcz12(ilnrho,2) /= 'a2') .and. (bcz12(ilnrho,2) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, 'bc_ss_temp_old: set top temperature - cs2top=',cs2top
@@ -3218,7 +3217,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       real, dimension(my,mz) :: lnrho_yz
@@ -3243,17 +3242,17 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, 'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, 'bc_ss_temp_x: cannot have cs2bot<=0'
 !
         if (lentropy .and. .not. pretend_lnTT) then
           tmp = 2*cv*log(cs2bot/cs20)
-          call getlnrho(f(l1,:,:,ilnrho),BOT,lnrho_yz)
+          call getlnrho(f(l1,:,:,ilnrho),XBOT,lnrho_yz)
           f(l1,:,:,iss) =   0.5*tmp - (cp-cv)*(lnrho_yz - lnrho0)
 !
           if (lreference_state) &
-            f(l1,:,:,iss) = f(l1,:,:,iss) - reference_state(BOT,iref_s)
+            f(l1,:,:,iss) = f(l1,:,:,iss) - reference_state(XBOT,iref_s)
 !
           if (ldensity_nolog) then
             do i=1,nghost
@@ -3286,18 +3285,18 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, 'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, 'bc_ss_temp_x: cannot have cs2top<=0'
 !
         if (lentropy .and. .not. pretend_lnTT) then
 !
           tmp = 2*cv*log(cs2top/cs20)
-          call getlnrho(f(l2,:,:,ilnrho),TOP,lnrho_yz)
+          call getlnrho(f(l2,:,:,ilnrho),XTOP,lnrho_yz)
           f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(lnrho_yz - lnrho0)
 !
           if (lreference_state) &
-            f(l2,:,:,iss) = f(l2,:,:,iss) - reference_state(TOP,iref_s)
+            f(l2,:,:,iss) = f(l2,:,:,iss) - reference_state(XTOP,iref_s)
 !
 !  Distinguish cases for linear and logarithmic density
 !
@@ -3308,8 +3307,8 @@ module EquationOfState
 ! Reference state assumed symmetric about boundary point.
 !
                 f(l2+i,:,:,iss) =-f(l2-i,:,:,iss) + tmp - 2.*reference_state(nx-i,iref_s) &
-                                 - (cp-cv)*(log((f(l2-i,:,:,irho)+reference_state(TOP-i,iref_rho)) &
-                                               *(f(l2+i,:,:,irho)+reference_state(TOP-i,iref_rho)))-2*lnrho0)
+                                 - (cp-cv)*(log((f(l2-i,:,:,irho)+reference_state(XTOP-i,iref_rho)) &
+                                               *(f(l2+i,:,:,irho)+reference_state(XTOP-i,iref_rho)))-2*lnrho0)
               else
                 f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
                                   -(cp-cv)*(log(f(l2-i,:,:,irho)*f(l2+i,:,:,irho))-2*lnrho0)
@@ -3342,7 +3341,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
@@ -3365,7 +3364,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
         if (cs2bot<=0.) print*, 'bc_ss_temp_y: cannot have cs2bot<=0'
@@ -3396,7 +3395,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                      'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, 'bc_ss_temp_y: cannot have cs2top<=0'
@@ -3443,7 +3442,7 @@ module EquationOfState
       use Deriv, only: set_ghosts_for_onesided_ders
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       logical, optional :: lone_sided
 !
       real :: tmp
@@ -3467,7 +3466,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -3526,7 +3525,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                    'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
@@ -3598,7 +3597,7 @@ module EquationOfState
 !
       use Gravity, only: gravz
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
@@ -3621,7 +3620,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                  'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*, &
@@ -3648,7 +3647,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                     'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*, &
@@ -3689,7 +3688,7 @@ module EquationOfState
 !
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), pointer :: reference_state
@@ -3709,7 +3708,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_top,ss_top=',lnrho_top,ss_top
 !
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
@@ -3748,7 +3747,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_bot,ss_bot=',lnrho_bot,ss_bot
 !
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
@@ -3798,7 +3797,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       real :: tmp
@@ -3822,7 +3821,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp2_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, 'bc_ss_temp2_z: cannot have cs2bot<=0'
@@ -3835,7 +3834,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                      'bc_ss_temp2_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp2_z: cannot have cs2top<=0'
@@ -3859,7 +3858,7 @@ module EquationOfState
 !
       use Gravity, only: gravz
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       real :: tmp,dcs2bot
@@ -3893,7 +3892,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         dcs2bot=gamma*gravz/(mpoly+1.)
         if (ldebug) print*, 'bc_ss_temp3_z: set cs2bot,dcs2bot=',cs2bot,dcs2bot
         if (cs2bot<=0.) print*, 'bc_ss_temp3_z: cannot have cs2bot<=0'
@@ -3906,7 +3905,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, 'bc_ss_temp3_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp3_z: cannot have cs2top<=0'
 !
@@ -3931,7 +3930,7 @@ module EquationOfState
 !
       use DensityMethods, only: getdlnrho_x
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), allocatable :: rho_yz,dlnrho
@@ -3954,17 +3953,17 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (cs2bot<=0.) print*, 'bc_ss_stemp_x: cannot have cs2bot<=0'
 !
-        if (lreference_state) call getrho(f(l1,:,:,ilnrho),BOT,rho_yz)
+        if (lreference_state) call getrho(f(l1,:,:,ilnrho),XBOT,rho_yz)
 !
         do i=1,nghost
           if (ldensity_nolog) then
 !
             if (lreference_state) then
               call getdlnrho_x(f(:,:,:,ilnrho),l1,i,rho_yz,dlnrho)     ! dlnrho = d_x ln(rho)
-              f(l1-i,:,:,iss) =  f(l1+i,:,:,iss) + dx2_bound(-i)*reference_state(BOT,iref_gs) &
+              f(l1-i,:,:,iss) =  f(l1+i,:,:,iss) + dx2_bound(-i)*reference_state(XBOT,iref_gs) &
                                + (cp-cv)*dlnrho
             else
               f(l1-i,:,:,iss) =  f(l1+i,:,:,iss) &
@@ -3978,16 +3977,16 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (cs2top<=0.) print*, 'bc_ss_stemp_x: cannot have cs2top<=0'
 !
-        if (lreference_state) call getrho(f(l2,:,:,ilnrho),TOP,rho_yz)
+        if (lreference_state) call getrho(f(l2,:,:,ilnrho),XTOP,rho_yz)
 !
         do i=1,nghost
           if (ldensity_nolog) then
             if (lreference_state) then
               call getdlnrho_x(f(:,:,:,ilnrho),l2,i,rho_yz,dlnrho)    ! dlnrho = d_x ln(rho)
-              f(l2+i,:,:,iss) =  f(l2-i,:,:,iss) - dx2_bound(i)*reference_state(TOP,iref_gs) &
+              f(l2+i,:,:,iss) =  f(l2-i,:,:,iss) - dx2_bound(i)*reference_state(XTOP,iref_gs) &
                                - (cp-cv)*dlnrho
             else
               f(l2+i,:,:,iss) =   f(l2-i,:,:,iss) &
@@ -4014,7 +4013,7 @@ module EquationOfState
 !
       use DensityMethods, only: getdlnrho_y
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       integer :: i
@@ -4036,7 +4035,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (cs2bot<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
@@ -4046,7 +4045,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (cs2top<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
@@ -4069,7 +4068,7 @@ module EquationOfState
 !
       use DensityMethods, only: getdlnrho_z
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(mx,my) :: dlnrho
@@ -4090,7 +4089,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (cs2bot<=0.) print*, 'bc_ss_stemp_z: cannot have cs2bot<=0'
         do i=1,nghost
           call getdlnrho_z(f(:,:,:,ilnrho),n1,i,dlnrho)     ! dlnrho = d_z ln(rho)
@@ -4099,7 +4098,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (cs2top<=0.) print*, 'bc_ss_stemp_z: cannot have cs2top<=0'
         do i=1,nghost
           call getdlnrho_z(f(:,:,:,ilnrho),n2,i,dlnrho)     ! dlnrho = d_z ln(rho)
@@ -4125,7 +4124,7 @@ module EquationOfState
 !
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), pointer :: reference_state
@@ -4145,7 +4144,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-        case ('bot')
+        case(BOT)
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_x: cannot have cs2bot<=0'
           do i=1,nghost
@@ -4155,7 +4154,7 @@ module EquationOfState
 !
 !  top boundary
 !
-        case ('top')
+        case(TOP)
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_x: cannot have cs2top<=0'
           do i=1,nghost
@@ -4183,7 +4182,7 @@ module EquationOfState
 !
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), pointer :: reference_state
@@ -4203,7 +4202,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-        case ('bot')
+        case(BOT)
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_y: cannot have cs2bot<=0'
           do i=1,nghost
@@ -4213,7 +4212,7 @@ module EquationOfState
 !
 !  top boundary
 !
-        case ('top')
+        case(TOP)
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_y: cannot have cs2top<=0'
           do i=1,nghost
@@ -4241,7 +4240,7 @@ module EquationOfState
 !
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), pointer :: reference_state
@@ -4261,7 +4260,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-        case ('bot')
+        case(BOT)
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
@@ -4271,7 +4270,7 @@ module EquationOfState
 !
 !  top boundary
 !
-        case ('top')
+        case(TOP)
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_z: cannot have cs2top<=0'
           do i=1,nghost
@@ -4293,7 +4292,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,2)) :: cs2_2d
       integer :: i
@@ -4307,7 +4306,7 @@ module EquationOfState
 !
 ! Bottom boundary
 !
-    case ('bot')
+    case(BOT)
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
@@ -4319,7 +4318,7 @@ module EquationOfState
 !
 ! Top boundary
 !
-    case ('top')
+    case(TOP)
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
@@ -4338,10 +4337,10 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
+      call not_implemented("bc_stellar_surface","in eos_idealgas")
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -4367,7 +4366,7 @@ module EquationOfState
       use Sub, only: div
 !
       real, dimension (:,:,:,:), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (size(f,2),size(f,3)) :: cs2,gravterm,centterm,uphi,rho
       real :: potp,potm,rad,step
       integer :: i
@@ -4380,9 +4379,9 @@ module EquationOfState
 !
 !  Bottom boundary
 !
-      case ('bot')
+      case(BOT)
 !
-        if (ldensity_nolog) call getrho(f(l1,:,:,irho),BOT,rho)
+        if (ldensity_nolog) call getrho(f(l1,:,:,irho),XBOT,rho)
 !
         do i=1,nghost
 !
@@ -4401,7 +4400,7 @@ module EquationOfState
             f(l1-i,:,:,irho) = f(l1+i,:,:,irho) + rho*(gravterm + centterm)
             if (lreference_state) &
               f(l1-i,:,:,irho)=  f(l1-i,:,:,irho) &
-                               + dx2_bound(-i)*reference_state(BOT,iref_grho)
+                               + dx2_bound(-i)*reference_state(XBOT,iref_grho)
           else
             f(l1-i,:,:,ilnrho)=f(l1+i,:,:,ilnrho) + gravterm + centterm
           endif
@@ -4414,9 +4413,9 @@ module EquationOfState
 !
 !  Top boundary
 !
-      case ('top')
+      case(TOP)
 !
-        if (ldensity_nolog) call getrho(f(l2,:,:,irho),TOP,rho)
+        if (ldensity_nolog) call getrho(f(l2,:,:,irho),XTOP,rho)
 !
         do i=1,nghost
 !
@@ -4436,7 +4435,7 @@ module EquationOfState
             f(l2+i,:,:,irho) = f(l2-i,:,:,irho) + rho*(gravterm + centterm)
             if (lreference_state) &
               f(l2+i,:,:,irho)=  f(l2+i,:,:,irho) &
-                               - dx2_bound(i)*reference_state(TOP,iref_grho)
+                               - dx2_bound(i)*reference_state(XTOP,iref_grho)
           else
             f(l2+i,:,:,ilnrho) = f(l2-i,:,:,ilnrho) + gravterm + centterm
           endif
@@ -4474,7 +4473,7 @@ module EquationOfState
       use Sub, only: div
 !
       real, dimension (:,:,:,:), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      integer, intent(IN) :: topbot
 !
       real, dimension (size(f,1),size(f,2)) :: cs2
       real, dimension (l2-l1+1) :: divu
@@ -4490,7 +4489,7 @@ module EquationOfState
 !
 !  Bottom boundary
 !
-      case ('bot')
+      case(BOT)
 !
         if (lentropy) then
 !
@@ -4510,7 +4509,7 @@ module EquationOfState
 !
             rho=getrho_s(f(l1,m1,n1,ilnrho),l1)
             ss=f(l1,m1,n1,iss)
-            if (lreference_state) ss=ss+reference_state(BOT,iref_s)
+            if (lreference_state) ss=ss+reference_state(XBOT,iref_s)
             call eoscalc(irho_ss,rho,ss, cs2=cs2_point)
 !
             dlnrhodz = gamma *gravz/cs2_point
@@ -4608,7 +4607,7 @@ module EquationOfState
 !
 !  Top boundary
 !
-      case ('top')
+      case(TOP)
 !
         if (lentropy) then
 !
@@ -4627,7 +4626,7 @@ module EquationOfState
 !
             rho=getrho_s(f(l2,m2,n2,ilnrho),l2)
             ss=f(l2,m2,n2,iss)
-            if (lreference_state) ss=ss+reference_state(TOP,iref_s)
+            if (lreference_state) ss=ss+reference_state(XTOP,iref_s)
             call eoscalc(irho_ss,rho,ss,cs2=cs2_point)
 !
             dlnrhodz = gamma *gravz/cs2_point
@@ -4722,7 +4721,7 @@ module EquationOfState
       use Gravity, only: potential
 !
       real, dimension (:,:,:,:), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      integer, intent(IN) :: topbot
 !
       real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
       real, dimension (nx,ny) :: tmp_re,tmp_im
@@ -4748,7 +4747,7 @@ module EquationOfState
 !
 !  Potential field condition at the bottom
 !
-      case ('bot')
+      case(BOT)
 !
         do i=1,nghost
 !
@@ -4791,7 +4790,7 @@ module EquationOfState
 !
 !  Potential field condition at the top
 !
-      case ('top')
+      case(TOP)
 !
         do i=1,nghost
 !
@@ -4854,7 +4853,7 @@ module EquationOfState
 !  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !
-      character (len=bclen) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
       real :: density_scale1, density_scale
@@ -4868,7 +4867,7 @@ module EquationOfState
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case(BOT)               ! bottom boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -4891,7 +4890,7 @@ module EquationOfState
           endif
         enddo
 !
-      case ('top')               ! top boundary
+      case(TOP)               ! top boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -4915,7 +4914,7 @@ module EquationOfState
         enddo
 !
       case default
-        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_ism ", topbot, " should be BOT or TOP"
 !
       endselect
 !

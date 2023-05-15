@@ -42,7 +42,7 @@ module EquationOfState
   real, parameter :: gamma=5.0/3.0, gamma_m1=2.0/3.0, gamma1=1./gamma
   real :: cs2bot=1.0, cs2top=1.0
   real, dimension(nchemspec,18) :: species_constants
-  real :: Cp_const=impossible
+  real :: Cp_const=impossible, cp=impossible, cv=impossible
   real :: Pr_number=0.7
   logical :: lpres_grad=.false.
 !
@@ -73,6 +73,8 @@ module EquationOfState
 !
       rho02 = rho0**2
 
+      call put_shared_variable('cp',cp)
+      call put_shared_variable('cv',cv)
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0,caller='initialize_eos')
         call put_shared_variable('lnrho0',lnrho0)
@@ -573,7 +575,7 @@ module EquationOfState
 !
       use SharedVariables,only: get_shared_variable
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
 !
@@ -619,7 +621,7 @@ module EquationOfState
 !  bottom boundary
 !  ===============
 !
-      case ('bot')
+      case(BOT)
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
@@ -660,7 +662,7 @@ module EquationOfState
 !  top boundary
 !  ============
 !
-      case ('top')
+      case(TOP)
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
         else
@@ -713,7 +715,7 @@ module EquationOfState
 !
 !   4-may-2009/axel: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
@@ -725,7 +727,7 @@ module EquationOfState
 !
 !   31-may-2010/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
@@ -737,7 +739,7 @@ module EquationOfState
 !
 !   23-apr-2014/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -749,7 +751,7 @@ module EquationOfState
 !
 !   07-jan-2015/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -761,7 +763,7 @@ module EquationOfState
 !
 !   15-jul-2014/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -780,7 +782,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       real, dimension (:,:,:,:), intent(inout) :: f
-      character (len=3), intent(in) :: topbot
+      integer, intent(IN) :: topbot
 !
       real, dimension (:,:), allocatable :: tmp_xy
       integer :: i, stat
@@ -805,7 +807,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if ((bcz12(ilnrho,1) /= 'a2') .and. (bcz12(ilnrho,1) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
@@ -825,7 +827,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if ((bcz12(ilnrho,2) /= 'a2') .and. (bcz12(ilnrho,2) /= 'a3')) &
           call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
@@ -861,7 +863,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
@@ -879,7 +881,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -904,7 +906,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                        'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
@@ -940,7 +942,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
@@ -958,7 +960,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -981,7 +983,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                      'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
@@ -1016,7 +1018,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !   3-oct-16/MR: added new optional switch lone_sided
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
       real :: tmp
@@ -1035,7 +1037,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -1058,7 +1060,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                      'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp_z: cannot have cs2top<=0'
@@ -1092,7 +1094,7 @@ module EquationOfState
 !
       use Gravity, only: gravz
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
@@ -1110,7 +1112,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                  'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*, &
@@ -1133,7 +1135,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                     'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*, &
@@ -1170,7 +1172,7 @@ module EquationOfState
 !
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1186,7 +1188,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_top,ss_top=',lnrho_top,ss_top
 !
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
@@ -1222,7 +1224,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_bot,ss_bot=',lnrho_bot,ss_bot
 !
 !  fix entropy if inflow (uz>0); otherwise leave s unchanged
@@ -1269,7 +1271,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
@@ -1287,7 +1289,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (ldebug) print*, &
                    'bc_ss_temp2_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
@@ -1305,7 +1307,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (ldebug) print*, &
                      'bc_ss_temp2_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp2_z: cannot have cs2top<=0'
@@ -1329,7 +1331,7 @@ module EquationOfState
 !
 !  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       call fatal_error('bc_ss_temp3_z','not implemented in noeos.f90')
@@ -1346,7 +1348,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1362,7 +1364,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (cs2bot<=0.) print*, &
                         'bc_ss_stemp_x: cannot have cs2bot<=0'
         do i=1,nghost
@@ -1377,7 +1379,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (cs2top<=0.) print*, &
                         'bc_ss_stemp_x: cannot have cs2top<=0'
         do i=1,nghost
@@ -1403,7 +1405,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1419,7 +1421,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         if (cs2bot<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
@@ -1434,7 +1436,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (cs2top<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
@@ -1460,7 +1462,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1476,7 +1478,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
           if (cs2bot<=0.) print*, &
                                   'bc_ss_stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
@@ -1491,7 +1493,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         if (cs2top<=0.) print*, &
                  'bc_ss_stemp_z: cannot have cs2top<=0'
           do i=1,nghost
@@ -1515,7 +1517,7 @@ module EquationOfState
 !
 !  22-sep-2010/fred: adapted from bc_ss_stemp_z
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1531,7 +1533,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-        case ('bot')
+        case(BOT)
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_x: cannot have cs2bot<=0'
           do i=1,nghost
@@ -1552,7 +1554,7 @@ module EquationOfState
 !
 !  top boundary
 !
-        case ('top')
+        case(TOP)
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_x: cannot have cs2top<=0'
           do i=1,nghost
@@ -1583,7 +1585,7 @@ module EquationOfState
 !
 !  22-sep-2010/fred: adapted from bc_ss_stemp_y
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1599,7 +1601,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-        case ('bot')
+        case(BOT)
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_y: cannot have cs2bot<=0'
           do i=1,nghost
@@ -1620,7 +1622,7 @@ module EquationOfState
 !
 !  top boundary
 !
-        case ('top')
+        case(TOP)
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_y: cannot have cs2top<=0'
           do i=1,nghost
@@ -1651,7 +1653,7 @@ module EquationOfState
 !
 !  22-sep-2010/fred: adapted from bc_ss_stemp_z
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
 !
@@ -1667,7 +1669,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-        case ('bot')
+        case(BOT)
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
@@ -1688,7 +1690,7 @@ module EquationOfState
 !
 !  top boundary
 !
-        case ('top')
+        case(TOP)
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_z: cannot have cs2top<=0'
           do i=1,nghost
@@ -1720,7 +1722,7 @@ module EquationOfState
 !  11-jul-2002/nils: moved into the entropy module
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,2)) :: cs2_2d
       integer :: i
@@ -1734,7 +1736,7 @@ module EquationOfState
 !
 !  Bottom boundary
 !
-    case ('bot')
+    case(BOT)
 !
 !  Set cs2 (temperature) in the ghost points to the value on
 !  the boundary
@@ -1756,7 +1758,7 @@ module EquationOfState
 !
 !  Top boundary
 !
-    case ('top')
+    case(TOP)
 !
 !  Set cs2 (temperature) in the ghost points to the value on
 !  the boundary
@@ -1784,7 +1786,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       call fatal_error('bc_stellar_surface','not implemented in noeos')
@@ -1797,7 +1799,7 @@ module EquationOfState
     subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_cfb_r_iso','not implemented in noeos')
 !
@@ -1809,7 +1811,7 @@ module EquationOfState
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_hds_z_iso','not implemented in noeos')
 !
@@ -1821,7 +1823,7 @@ module EquationOfState
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
       real, dimension (:,:,:,:) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_hdss_z_iso','not implemented in noeos')
 !
@@ -1844,7 +1846,7 @@ module EquationOfState
 !  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !
-      character (len=bclen) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
       real :: density_scale1, density_scale
@@ -1858,7 +1860,7 @@ module EquationOfState
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case(BOT)               ! bottom boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -1871,7 +1873,7 @@ module EquationOfState
           endif
         enddo
 !
-      case ('top')               ! top boundary
+      case(TOP)               ! top boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then

@@ -2098,7 +2098,7 @@ module Deriv
       use General, only: loptest
 
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       logical, optional :: l2nd
 
@@ -2110,7 +2110,7 @@ module Deriv
         off=5
       endif
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
 
           do k=l1-1,l1-off,-1
@@ -2213,13 +2213,13 @@ module Deriv
 !  27-jan-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 
       integer :: k
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (-val*2520.*dx+  25200.*f(k+1,:,:,j) &
@@ -2307,13 +2307,13 @@ module Deriv
 !  09-feb-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 
       integer :: k
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (-val*2520.*dx+  25200.*f(k+1,:,:,j) &
@@ -2401,13 +2401,13 @@ module Deriv
 !  27-jan-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 
       integer :: k
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (   25200.*f(k+1,:,:,j) &
@@ -2496,14 +2496,14 @@ module Deriv
 !  09-feb-17/Ivan: completed dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
       external :: func
 !
       integer :: k
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (   25200.*f(k+1,:,:,j) &
@@ -2591,13 +2591,13 @@ module Deriv
 !  27-jan-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 
       integer :: k
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (-  972200.*f(k+1,:,:,j) &
@@ -2685,13 +2685,13 @@ module Deriv
 !  09-feb-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 
       integer :: k
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
         if (idir==1) then
           k=l1
           f(l1,:,:,j) = (-  972200.*f(k+1,:,:,j) &

@@ -77,6 +77,7 @@ module EquationOfState
 !
       use FArrayManager
       use Sub
+      use SharedVariables,only: put_shared_variable
 !
       leos_ionization=.true.
 !
@@ -103,6 +104,14 @@ module EquationOfState
         write(15,*) 'yH = fltarr(mx,my,mz)*one'
         write(15,*) 'lnTT = fltarr(mx,my,mz)*one'
       endif
+
+      call put_shared_variable('cp',cp,caller='initialize_eos')
+      call put_shared_variable('cv',cv)
+
+      if (.not.ldensity) then
+        call put_shared_variable('rho0',rho0)
+        call put_shared_variable('lnrho0',lnrho0)
+      endif
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -123,7 +132,7 @@ module EquationOfState
           unit_temperature=1.
         endif
       endif
-      print*,'unit temperature',unit_temperature
+      if (lroot) print*,'unit temperature',unit_temperature
 !
     endsubroutine units_eos
 !***********************************************************************
@@ -135,9 +144,7 @@ module EquationOfState
 !   2-feb-03/axel: adapted from Interstellar module
 !
       use General
-      use Mpicomm, only: stop_it
       use Sub, only: register_report_aux
-      use SharedVariables,only: put_shared_variable
 !
       if (lroot) print*,'initialize_eos: ENTER'
 !
@@ -168,7 +175,7 @@ module EquationOfState
       if (xHe>0) then
         xHe_term=xHe*(log(xHe)-lnrho_He)
       elseif (xHe<0) then
-        call stop_it('initialize_eos: xHe lower than zero makes no sense')
+        call fatal_error('initialize_eos','xHe < 0 makes no sense')
       else
         xHe_term=0
       endif
@@ -185,14 +192,6 @@ module EquationOfState
                 TT_ion,ss_ion,kappa0
         print*,'initialize_eos: lnrho_e,lnrho_H,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_He,lnrho_e_
-      endif
-
-      call put_shared_variable('cp',cp,caller='initialize_eos')
-      call put_shared_variable('cv',cv)
-
-      if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0,caller='initialize_eos')
-        call put_shared_variable('lnrho0',lnrho0)
       endif
 !
 !  write scale non-free constants to file; to be read by idl
@@ -630,6 +629,8 @@ module EquationOfState
      real, dimension (mx,my,mz,mfarray) :: f
      real, dimension (mx,my,mz), intent(out) :: TT_tmp
 !
+     call not_implemented('gettemperature','in eos_ionization')
+!
      call keep_compiler_quiet(f)
      call keep_compiler_quiet(TT_tmp)
 !
@@ -640,7 +641,7 @@ module EquationOfState
      real, dimension (nx), intent(out) :: pp_tmp
      real, dimension (nx), intent(in)  :: TT_tmp,rho_tmp,mu1_tmp
 !
-     call fatal_error('getpressure','Should not be called with eos_ionization.')
+     call not_implemented('getpressure','in eos_ionization')
 !
      call keep_compiler_quiet(pp_tmp)
      call keep_compiler_quiet(TT_tmp)
@@ -799,7 +800,7 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type (pencil_case) :: p
 !
-      call not_implemented('temperature_laplacian')
+      call not_implemented('temperature_laplacian','in eos_ionization')
 !
       p%del2lnTT=0.0
       call keep_compiler_quiet(f)
@@ -1539,14 +1540,13 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !   3-oct-16/MR: added new optional switch lone_sided
 !
-      use Mpicomm, only: stop_it
       use Gravity
-      use SharedVariables,only:get_shared_variable
+      use SharedVariables,only: get_shared_variable
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
       real, dimension (size(f,1),size(f,2)) :: tmp_xy,TT_xy,rho_xy,yH_xy
@@ -1572,7 +1572,7 @@ module EquationOfState
 !  bottom boundary
 !  ---------------
 !
-      case ('bot')
+      case(BOT)
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
@@ -1607,7 +1607,7 @@ module EquationOfState
 !  top boundary
 !  ------------
 !
-      case ('top')
+      case(TOP)
         if (lmultilayer) then
           if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
         else
@@ -1635,13 +1635,12 @@ module EquationOfState
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
-          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+ss_ion*(1+yH_xy+xHe)* &
-              (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-3*i*dz*tmp_xy)
+          f(:,:,n2+i,iss)= f(:,:,n2-i,iss)+ss_ion*(1+yH_xy+xHe)* &
+                          (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-3*i*dz*tmp_xy)
         enddo
 !
       case default
-        print*,"bc_ss_flux: invalid argument"
-        call stop_it("")
+        call fatal_error("bc_ss_flux","topbot should be BOT or TOP")
       endselect
       call keep_compiler_quiet(present(lone_sided))
 !
@@ -1653,8 +1652,10 @@ module EquationOfState
 !
 !   4-may-2009/axel: dummy routine
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+!
+      call not_implemented("bc_ss_flux_turb","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1667,8 +1668,10 @@ module EquationOfState
 !
 !   31-may-2010/pete: dummy routine
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+!
+      call not_implemented("bc_ss_flux_turb_x","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1679,8 +1682,10 @@ module EquationOfState
 !
 !   23-apr-2014/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+!
+      call not_implemented("bc_ss_flux_condturb_x","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1691,8 +1696,10 @@ module EquationOfState
 !
 !   07-jan-2015/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      call not_implemented("bc_ss_flux_condturb_z_mean_x","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1703,8 +1710,10 @@ module EquationOfState
 !
 !   15-jul-2014/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+!
+      call not_implemented("bc_ss_flux_condturb_z","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1721,12 +1730,10 @@ module EquationOfState
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_temp_old: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_temp_old","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1740,12 +1747,10 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_temp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_temp_x","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1759,12 +1764,10 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_temp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_temp_y","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1778,13 +1781,11 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
 !
-      call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_temp_z","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1798,12 +1799,10 @@ module EquationOfState
 !
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_lnrho_temp_z","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1816,12 +1815,10 @@ module EquationOfState
 !
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_lnrho_pressure_z","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1835,12 +1832,10 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_temp2_z","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1851,11 +1846,10 @@ module EquationOfState
 !
 !  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call fatal_error('bc_ss_temp3_z', &
-          'not implemented in eos_ionization')
+      call not_implemented('bc_ss_temp3_z','in eos_ionization')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1869,12 +1863,10 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_stemp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_stemp_x","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1888,12 +1880,10 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_stemp_y","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1906,10 +1896,9 @@ module EquationOfState
 !
 !  26-sep-2003/tony: coded
 !
-      use Mpicomm, only: stop_it
       use Gravity
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,2),nghost) :: lnrho,ss,yH,lnTT,TT,K,sqrtK,yH_term,one_yH_term
       integer :: i
@@ -1924,7 +1913,7 @@ module EquationOfState
 !
 !  bottom boundary
 !
-      case ('bot')
+      case(BOT)
         do i=1,nghost
           f(:,:,n1-i,ilnTT) = f(:,:,n1+i,ilnTT)
         enddo
@@ -1957,7 +1946,7 @@ module EquationOfState
 !
 !  top boundary
 !
-      case ('top')
+      case(TOP)
         do i=1,nghost
           f(:,:,n2+i,ilnTT) = f(:,:,n2-i,ilnTT)
         enddo
@@ -1989,8 +1978,7 @@ module EquationOfState
         f(:,:,n2+1:,iss)=ss
 !
       case default
-        print*,"bc_ss_stemp_z: invalid argument"
-        call stop_it("")
+        call fatal_error('bc_ss_stemp_z','topbot should be BOT or TOP')
       endselect
 !
     endsubroutine bc_ss_stemp_z
@@ -2002,12 +1990,10 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_a2stemp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_a2stemp_x","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2021,12 +2007,10 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_a2stemp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_a2stemp_y","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2040,12 +2024,10 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_a2stemp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_a2stemp_z","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2060,9 +2042,7 @@ module EquationOfState
 !  11-jul-2002/nils: moved into the entropy module
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
 !  The 'ce' boundary condition for entropy makes the energy constant at
@@ -2070,7 +2050,7 @@ module EquationOfState
 !  This assumes that the density is already set (ie density must register
 !  first!)
 !
-      call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_ss_stemp_y","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2079,12 +2059,10 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_stellar_surface","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2093,12 +2071,10 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_lnrho_cfb_r_iso","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2107,12 +2083,10 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_lnrho_hds_z_iso","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2121,12 +2095,10 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
-      use Mpicomm, only: stop_it
-!
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call not_implemented("bc_lnrho_hdss_z_iso","in eos_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2147,7 +2119,7 @@ module EquationOfState
 !  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !
-      character (len=bclen) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k,stat
       real :: density_scale1, density_scale
@@ -2162,16 +2134,14 @@ module EquationOfState
 !
       if (j==iss.and..not.ltemperature) then
         allocate(cp(size(f,1),size(f,2)),stat=stat)
-        if (stat>0) call fatal_error('bc_ism', &
-            'Could not allocate memory for cp')
+        if (stat>0) call fatal_error('bc_ism','could not allocate cp')
         allocate(cv(size(f,1),size(f,2)),stat=stat)
-        if (stat>0) call fatal_error('bc_ism', &
-            'Could not allocate memory for cv')
+        if (stat>0) call fatal_error('bc_ism','could not allocate cv')
       endif
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case(BOT)               ! bottom boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -2204,7 +2174,7 @@ module EquationOfState
           endif
         enddo
 !
-      case ('top')               ! top boundary
+      case(TOP)               ! top boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -2238,12 +2208,9 @@ module EquationOfState
         enddo
 !
       case default
-        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+        call fatal_error("bc_ism","topbot should be BOT or TOP")
 !
       endselect
-!
-      if (allocated(cp)) deallocate(cp)
-      if (allocated(cv)) deallocate(cv)
 !
     endsubroutine bc_ism
 !***********************************************************************
@@ -2300,7 +2267,7 @@ module EquationOfState
       real, dimension(:), intent(in) :: z
       real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz, eth0z
 !
-      call fatal_error('get_stratz', 'Stratification for this EOS is not implemented. ')
+      call not_implemented('get_stratz', 'for eos_ionization')
 !
       call keep_compiler_quiet(z)
       if (present(rho0z)) call keep_compiler_quiet(rho0z)

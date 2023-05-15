@@ -2046,7 +2046,7 @@ module Deriv
 !  Dummy.
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       logical, optional :: l2nd_
 
@@ -2059,7 +2059,7 @@ module Deriv
 !  Dummy.
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 
@@ -2072,7 +2072,7 @@ module Deriv
 !  Dummy.
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 
@@ -2085,7 +2085,7 @@ module Deriv
 !  Dummy.
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 
@@ -2101,7 +2101,7 @@ module Deriv
 !  30-sep-16/MR: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
       external :: func
@@ -2115,7 +2115,7 @@ module Deriv
 !  Dummy.
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
 
@@ -2132,7 +2132,7 @@ module Deriv
 !  09-feb-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
-      character(LEN=3) :: topbot
+      integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 

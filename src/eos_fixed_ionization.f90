@@ -195,14 +195,13 @@ module EquationOfState
       lnTTss=(2./3.)/(1.+yH0+xHe-xH2)/ss_ion
       lnTTlnrho=2./3.
 !
-      lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/ &
-          (1+yH0+xHe-xH2)-2.5)
+      lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/(1+yH0+xHe-xH2)-2.5)
 
       call put_shared_variable('cp',cp,caller='initialize_eos')
       call put_shared_variable('cv',cv)
 !
       if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0,caller='initialize_eos')
+        call put_shared_variable('rho0',rho0)
         call put_shared_variable('lnrho0',lnrho0)
       endif
 !
@@ -1025,11 +1024,11 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !   8-jul-2002/axel: split old bc_ss into two
 !   3-oct-16/MR: added new optional switch lone_sided
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
 !
-      call stop_it("bc_ss_flux: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_flux","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1042,7 +1041,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !   4-may-2009/axel: dummy routine
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
@@ -1056,7 +1055,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !   31-may-2010/pete: dummy routine
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
@@ -1068,7 +1067,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !   23-apr-2014/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1080,7 +1079,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !   07-jan-2015/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1092,7 +1091,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !   15-jul-2014/pete: dummy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1109,10 +1108,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !   8-jul-2002/axel: split old bc_ss into two
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_temp_old: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_temp_old","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1125,10 +1124,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_temp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_temp_x","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1141,10 +1140,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_temp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_temp_y","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1157,11 +1156,11 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
 !
-      call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_temp_z","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1174,10 +1173,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_lnrho_temp_z","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1190,10 +1189,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_lnrho_pressure_z","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1207,10 +1206,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_temp2_z","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1221,11 +1220,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call fatal_error('bc_ss_temp3_z', &
-          'not implemented in eos_fixed_ionization.f90')
+      call not_implemented('bc_ss_temp3_z','in eos_fixed_ionization')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1238,10 +1236,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_stemp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_stemp_x","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1254,10 +1252,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_stemp_y","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1270,10 +1268,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_stemp_z","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1286,10 +1284,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_a2stemp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_a2stemp_x","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1302,10 +1300,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_a2stemp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_a2stemp_y","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1318,10 +1316,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_ss_a2stemp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_ss_a2stemp_z","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1335,7 +1333,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  may-2002/nils: coded
 !  11-jul-2002/nils: moved into the entropy module
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
 !  The 'ce' boundary condition for entropy makes the energy constant at
@@ -1350,10 +1348,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_stellar_surface","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1362,10 +1360,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_lnrho_cfb_r_iso","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1374,10 +1372,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_lnrho_hds_z_iso","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1386,10 +1384,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
+      call not_implemented("bc_lnrho_hdss_z_iso","in eos_fixed_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1412,7 +1410,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  Copied from eos_ionization written for entropy - may need revision
 !  Currently not correct for energy variable
 !
-      character (len=bclen) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
       real :: density_scale1, density_scale
@@ -1426,7 +1424,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case(BOT)               ! bottom boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -1450,7 +1448,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
           endif
         enddo
 !
-      case ('top')               ! top boundary
+      case(TOP)               ! top boundary
         do k=1,nghost
           if (j==irho .or. j==ilnrho) then
             if (ldensity_nolog) then
@@ -1475,7 +1473,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         enddo
 !
       case default
-        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+        call fatal_error('bc_ss_flux','topbot should be BOT or TOP')
 !
       endselect
 !
@@ -1498,6 +1496,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       character (len=*) :: input_file
 !
       call keep_compiler_quiet(input_file)
+
     endsubroutine read_species
 !***********************************************************************
     subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)

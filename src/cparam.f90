@@ -12,6 +12,7 @@ module Cparam
   integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
   integer, parameter :: rkind4=selected_real_kind(6)  ! 4-byte real kind
   integer, parameter :: rkind16 = selected_real_kind(33, 4931) ! 16-byte real kind
+  !integer, parameter :: rkind16 = rkind8
 !
   include 'cparam.local'
 !
@@ -236,6 +237,7 @@ module Cparam
   integer, parameter :: iBC_Y_BOT=-2
   integer, parameter :: iBC_Z_TOP=3
   integer, parameter :: iBC_Z_BOT=-3
+  integer, parameter :: BOT=1, TOP=2, BOTH=3
 !
 !  Indices of rho, d rho/d x, d^2 rho/d x^2, d^6 rho/d x^6, d p/d x, s, d s/d x, &
 !             d^2 s/d x^2, d^6 s/d x^6, d lnrho/d z in array reference_state.
