@@ -1787,12 +1787,12 @@ module Magnetic_meanfield
 !
     real, dimension(:,:,:,:) :: f
     integer :: j
-    character (LEN=*) :: topbot
+    integer :: topbot
 
     real :: g0, D
     integer :: k
 
-      if (topbot=='bot') then
+      if (topbot==BOT) then
 
         if (j/=iax) return
 
@@ -1812,7 +1812,7 @@ module Magnetic_meanfield
                          + 72.*(-g0*f(:,:,k+5,iay)+alpha_effect*f(:,:,k+5,iax)) &
                          - 10.*(-g0*f(:,:,k+6,iay)+alpha_effect*f(:,:,k+6,iax))  )/D
       else 
-        stop
+        call fatal_error('pc_aasb_const_alpha','topbot should be BOT or TOP')
       endif
       
     endsubroutine pc_aasb_const_alpha
