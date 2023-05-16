@@ -1724,7 +1724,7 @@ module Mpicomm
 !  28-dec-2010/Bourdin.KIS: extended to work for any 3D vector field data.
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      integer, intent (in) :: topbot
       integer, intent(in), optional :: start_index
 !
       integer :: nn1,nn2,is,ie
@@ -1737,10 +1737,9 @@ module Mpicomm
       nn2=-1
 !
       select case (topbot)
-        case ('bot'); nn1=1;  nn2=n1
-        case ('top'); nn1=n2; nn2=mz
-        case default; call stop_it("communicate_vect_field_ghosts: "//topbot//&
-                                   " should be either `top' or `bot'")
+        case (BOT); nn1=1;  nn2=n1
+        case (TOP); nn1=n2; nn2=mz
+        case default; call stop_it("communicate_vect_field_ghosts: topbot should be BOT or TOP")
       end select
 !
 !  Periodic boundaries in y

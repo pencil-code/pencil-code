@@ -180,8 +180,8 @@ module InitialCondition
       real :: GM,rhob
       logical :: lsuccess=.false.
       character (len=labellen) :: gtype,gprofile
-      character (len=bclen) :: boundtype_rho,bot_rho,direction_rho
-      character (len=bclen) :: boundtype_vel,bot_vel,direction_vel,comp_vel
+      character (len=bclen) :: boundtype_rho,direction_rho
+      character (len=bclen) :: boundtype_vel,direction_vel,comp_vel
 !
       Ecrit=0.5*cs20-cs20*log(cs0)-2*cs20*log(rcrit)-2*cs20
       cs20logx=2*cs20*log(x)
@@ -215,7 +215,7 @@ module InitialCondition
         if (lroot) print*,'Gravity set consistently'
         call initialize_gravity(f)
       else
-        call fatal_error('initial_condition/parker_wind:','gravity not set consistently')
+        call fatal_error('initial_condition/parker_wind','gravity not set consistently')
       endif
 !
 !
@@ -224,13 +224,12 @@ module InitialCondition
       direction_rho='x'
       boundtype_rho='fg'  
       rhob=rho(l1)
-      bot_rho='bot'
-      call set_consistent_density_boundary(f,direction_rho,boundtype_rho,bot_rho,rhob,lsuccess)
-      if(lsuccess) then
+      call set_consistent_density_boundary(f,direction_rho,boundtype_rho,BOT,rhob,lsuccess)
+      if (lsuccess) then
          lreset_boundary_values=lsuccess
-        if (lroot) print*,'density set consistently at the boundaries'
+         if (lroot) print*,'density set consistently at the boundaries'
       else
-        call fatal_error('initial_condition/parker_wind:','density in fbcx1 not set consistently')
+        call fatal_error('initial_condition/parker_wind','density in fbcx1 not set consistently')
       endif
 !
 !
@@ -238,14 +237,13 @@ module InitialCondition
 !
       direction_vel='x'
       boundtype_vel='fg'
-      bot_vel='bot'
       comp_vel='x'
-      call set_consistent_vel_boundary(f,direction_vel,boundtype_vel,bot_vel,comp_vel,lsuccess)
-      if(lsuccess) then
-         lreset_boundary_values=lsuccess
+      call set_consistent_vel_boundary(f,direction_vel,boundtype_vel,BOT,comp_vel,lsuccess)
+      if (lsuccess) then
+        lreset_boundary_values=lsuccess
         if (lroot) print*,'velocity set consistently at the boundaries'
       else
-        call fatal_error('initial_condition/parker_wind:','velocity not set consistently')
+        call fatal_error('initial_condition/parker_wind','velocity not set consistently')
       endif
 !
 !

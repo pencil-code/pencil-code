@@ -524,11 +524,11 @@ module Special
             if (lfirst_proc_z.and.n.eq.n1) lcorner_z=.true.
             if (lcorner_y.or.lcorner_z) lcorner=.true.
 !            if (lcorner) then
-!              do k=iay, iaz; call bc_nfc_x(f,'top',k); enddo
+!              do k=iay, iaz; call bc_nfc_x(f,TOP,k); enddo
 !            endif
-            call bc_emf_x(f,df,dt_,'top',iax)
-            call bc_emf_x(f,df,dt_,'top',iay)
-            call bc_emf_x(f,df,dt_,'top',iaz)
+            call bc_emf_x(f,df,dt_,TOP,iax)
+            call bc_emf_x(f,df,dt_,TOP,iay)
+            call bc_emf_x(f,df,dt_,TOP,iaz)
           endif
         enddo
       enddo

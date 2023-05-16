@@ -103,7 +103,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), optional :: f
       real, intent(out) :: mu
 !
-      call fatal_error('getmu','SHOULD NOT BE CALLED WITH NOEOS')
+      call fatal_error('getmu','should not be called with noeos')
 !
       mu=0.0
 !
@@ -220,7 +220,7 @@ module EquationOfState
       real, dimension (mx,my,mz), intent(inout) :: rho
       real, dimension (mx,my,mz,mfarray), optional :: f
 !
-      call fatal_error('getdensity','SHOULD NOT BE CALLED WITH NOEOS')
+      call fatal_error('getdensity','should not be called with noeos')
 !
       call keep_compiler_quiet(rho)
       call keep_compiler_quiet(present(yH))
@@ -235,7 +235,7 @@ module EquationOfState
      real, dimension (mx,my,mz,mfarray), optional :: f
      real, dimension (mx,my,mz), intent(out) :: TT_tmp
 !
-     call fatal_error('gettemperature','Should not be called with noeos.')
+     call fatal_error('gettemperature','should not be called with noeos')
 !
      call keep_compiler_quiet(present(f))
      call keep_compiler_quiet(TT_tmp)
@@ -247,7 +247,7 @@ module EquationOfState
      real, dimension (nx), intent(out) :: pp_tmp
      real, dimension (nx), intent(in)  :: TT_tmp,rho_tmp,mu1_tmp
 !
-     call fatal_error('getpressure','Should not be called with noeos.')
+     call fatal_error('getpressure','should not be called with noeos')
 !
      call keep_compiler_quiet(pp_tmp)
      call keep_compiler_quiet(TT_tmp)
@@ -260,7 +260,7 @@ module EquationOfState
 !
       real, intent(out) :: cp1_
 !
-      call fatal_error('get_cp1','cp1 is not defined with noeos.f90')
+      call fatal_error('get_cp1','cp1 is not defined with noeos')
 !
       cp1_=0.0
 !
@@ -274,7 +274,7 @@ module EquationOfState
 !
       real, intent(out) :: cv1_
 !
-      call fatal_error('get_cv1','cv1 is not defined with noeos.f90')
+      call fatal_error('get_cv1','cv1 is not defined with noeos')
 !
       cv1_=0.
 !
@@ -287,8 +287,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx), intent(out) :: cs2,cp1tilde
 !
-      call fatal_error('pressure_gradient_farray', &
-          'should not be called with noeos')
+      call fatal_error('pressure_gradient_farray','should not be called with noeos')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(cs2,cp1tilde)
@@ -302,8 +301,7 @@ module EquationOfState
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
 !
-      call fatal_error('pressure_gradient_point', &
-          'should not be called with noeos')
+      call fatal_error('pressure_gradient_point','should not be called with noeos')
 !
       call keep_compiler_quiet(lnrho,ss)
       call keep_compiler_quiet(cs2,cp1tilde)
@@ -334,8 +332,7 @@ module EquationOfState
       real, dimension (nx), intent(in) :: del2lnrho,del2ss
       real, dimension (nx), intent(out) :: del2lnTT
 !
-      call fatal_error('temperature_laplacian', &
-          'should not be called with noeos')
+      call fatal_error('temperature_laplacian','should not be called with noeos')
 !
       del2lnTT=0.0
 !
@@ -353,8 +350,7 @@ module EquationOfState
       real, dimension (nx,3), intent(in) :: hlnrho,hss
       real, dimension (nx,3) :: hlnTT
 !
-      call fatal_error('temperature_hessian','now I do not believe you'// &
-          ' intended to call this!')
+      call fatal_error('temperature_hessian','should not be called with noeos')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(hlnrho,hss,hlnTT)
@@ -367,7 +363,7 @@ module EquationOfState
       integer, intent(in) :: psize
       real, dimension (psize), intent(in), optional :: ee,pp
 !
-      call not_implemented('eosperturb')
+      call not_implemented('eosperturb','in noeos')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(psize)
@@ -457,7 +453,7 @@ module EquationOfState
       real, intent(in)  :: TT
       real, intent(out) :: cs2
 !
-      call not_implemented('get_soundspeed')
+      call not_implemented('get_soundspeed','in noeos')
       cs2=0.0
       call keep_compiler_quiet(TT)
 !
@@ -543,8 +539,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
 !
-      call fatal_error('isothermal_lnrho_ss', &
-          'should not be called with noeos')
+      call fatal_error('isothermal_lnrho_ss','should not be called with noeos')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(T0,rho0)
@@ -590,18 +585,14 @@ module EquationOfState
 !
       iszx=size(f,1); iszy=size(f,2)
       allocate(tmp_xy(iszx,iszy),stat=stat)
-      if (stat>0) call fatal_error('bc_ss_flux', &
-          'Could not allocate memory for tmp_xy')
+      if (stat>0) call fatal_error('bc_ss_flux','Could not allocate tmp_xy')
       allocate(cs2_xy(iszx,iszy),stat=stat)
-      if (stat>0) call fatal_error('bc_ss_flux', &
-          'Could not allocate memory for cs2_xy')
+      if (stat>0) call fatal_error('bc_ss_flux','Could not allocate cs2_xy')
       allocate(rho_xy(iszx,iszy),stat=stat)
-      if (stat>0) call fatal_error('bc_ss_flux', &
-          'Could not allocate memory for rho_xy')
+      if (stat>0) call fatal_error('bc_ss_flux','Could not allocate rho_xy')
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
-!
 !
 !  Get the shared variables
 !
@@ -616,7 +607,6 @@ module EquationOfState
       call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
 !
       select case (topbot)
-!
 !
 !  bottom boundary
 !  ===============
@@ -792,8 +782,7 @@ module EquationOfState
 !  Allocate memory for large arrays.
 !
       allocate(tmp_xy(size(f,1),size(f,2)),stat=stat)
-      if (stat>0) call fatal_error('bc_ss_temp_old', &
-          'Could not allocate memory for tmp_xy')
+      if (stat>0) call fatal_error('bc_ss_temp_old','could not allocate tmp_xy')
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
 !  This assumes that the density is already set (ie density must register
@@ -809,11 +798,9 @@ module EquationOfState
 !
       case(BOT)
         if ((bcz12(ilnrho,1) /= 'a2') .and. (bcz12(ilnrho,1) /= 'a3')) &
-          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
-        if (ldebug) print*, &
-                'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) &
-              print*,'bc_ss_temp_old: cannot have cs2bot<=0'
+          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3')
+        if (ldebug) print*, 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0.) print*,'bc_ss_temp_old: cannot have cs2bot<=0'
 !
         if (ldensity_nolog) then
           tmp_xy = (-gamma_m1*log(f(:,:,n1,irho)/rho0) + log(cs2bot/cs20))*gamma1
@@ -829,13 +816,11 @@ module EquationOfState
 !
       case(TOP)
         if ((bcz12(ilnrho,2) /= 'a2') .and. (bcz12(ilnrho,2) /= 'a3')) &
-          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
-        if (ldebug) print*, &
-                   'bc_ss_temp_old: set top temperature - cs2top=',cs2top
-        if (cs2top<=0.) print*, &
-                   'bc_ss_temp_old: cannot have cs2top<=0'
+          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3')
+        if (ldebug) print*, 'bc_ss_temp_old: set top temperature - cs2top=',cs2top
+        if (cs2top<=0.) print*, 'bc_ss_temp_old: cannot have cs2top<=0'
   !     if (bcz12(ilnrho,1) /= 'a2') &
-  !          call fatal_error(bc_ss_temp_old','Inconsistent boundary conditions 4.')
+  !          call fatal_error(bc_ss_temp_old','Inconsistent boundary conditions 4')
 !
         if (ldensity_nolog) then
           tmp_xy = (-gamma_m1*log(f(:,:,n2,irho)/rho0) + log(cs2top/cs20))*gamma1
@@ -882,10 +867,8 @@ module EquationOfState
 !  bottom boundary
 !
       case(BOT)
-        if (ldebug) print*, &
-                   'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp_x: cannot have cs2bot<=0'
+        if (ldebug) print*, 'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0.) print*, 'bc_ss_temp_x: cannot have cs2bot<=0'
         tmp = 2*gamma1*alog(cs2bot/cs20)
 !
         if (ldensity_nolog) then
@@ -907,10 +890,8 @@ module EquationOfState
 !  top boundary
 !
       case(TOP)
-        if (ldebug) print*, &
-                       'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
-        if (cs2top<=0.) print*, &
-                       'bc_ss_temp_x: cannot have cs2top<=0'
+        if (ldebug) print*, 'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
+        if (cs2top<=0.) print*, 'bc_ss_temp_x: cannot have cs2top<=0'
         tmp = 2*gamma1*alog(cs2top/cs20)
 !
         if (ldensity_nolog) then
@@ -961,10 +942,8 @@ module EquationOfState
 !  bottom boundary
 !
       case(BOT)
-        if (ldebug) print*, &
-                   'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp_y: cannot have cs2bot<=0'
+        if (ldebug) print*, 'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
+        if (cs2bot<=0.) print*, 'bc_ss_temp_y: cannot have cs2bot<=0'
         tmp = 2*gamma1*alog(cs2bot/cs20)
         if (ldensity_nolog) then
           f(:,m1,:,iss) = 0.5*tmp - gamma_m1/gamma*log(f(:,m1,:,irho)/rho0)
@@ -984,10 +963,8 @@ module EquationOfState
 !  top boundary
 !
       case(TOP)
-        if (ldebug) print*, &
-                     'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
-        if (cs2top<=0.) print*, &
-                     'bc_ss_temp_y: cannot have cs2top<=0'
+        if (ldebug) print*, 'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
+        if (cs2top<=0.) print*, 'bc_ss_temp_y: cannot have cs2top<=0'
         tmp = 2*gamma1*alog(cs2top/cs20)
         if (ldensity_nolog) then
           f(:,m2,:,iss) = 0.5*tmp - gamma_m1/gamma*log(f(:,m2,:,irho)/rho0)
@@ -1038,10 +1015,8 @@ module EquationOfState
 !  bottom boundary
 !
       case(BOT)
-        if (ldebug) print*, &
-                   'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp_z: cannot have cs2bot<=0'
+        if (ldebug) print*, 'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0.) print*, 'bc_ss_temp_z: cannot have cs2bot<=0'
         tmp = 2*gamma1*alog(cs2bot/cs20)
         if (ldensity_nolog) then
           f(:,:,n1,iss) = 0.5*tmp - gamma_m1/gamma*log(f(:,:,n1,irho)/rho0)
@@ -1061,8 +1036,7 @@ module EquationOfState
 !  top boundary
 !
       case(TOP)
-        if (ldebug) print*, &
-                     'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
+        if (ldebug) print*, 'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp_z: cannot have cs2top<=0'
         tmp = 2*gamma1*alog(cs2top/cs20)
         if (ldensity_nolog) then
@@ -1113,10 +1087,8 @@ module EquationOfState
 !  bottom boundary
 !
       case(BOT)
-        if (ldebug) print*, &
-                 'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0. .and. lroot) print*, &
-                 'bc_lnrho_temp_z: cannot have cs2bot<=0'
+        if (ldebug) print*, 'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0. .and. lroot) print*, 'bc_lnrho_temp_z: cannot have cs2bot<=0'
         tmp = 2*gamma1*log(cs2bot/cs20)
 !
 !  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
@@ -1136,10 +1108,8 @@ module EquationOfState
 !  top boundary
 !
       case(TOP)
-        if (ldebug) print*, &
-                    'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top
-        if (cs2top<=0. .and. lroot) print*, &
-                    'bc_lnrho_temp_z: cannot have cs2top<=0'
+        if (ldebug) print*,'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top
+        if (cs2top<=0. .and. lroot) print*,'bc_lnrho_temp_z: cannot have cs2top<=0'
         tmp = 2*gamma1*log(cs2top/cs20)
 !
 !  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
@@ -1290,10 +1260,8 @@ module EquationOfState
 !  bottom boundary
 !
       case(BOT)
-        if (ldebug) print*, &
-                   'bc_ss_temp2_z: set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp2_z: cannot have cs2bot<=0'
+        if (ldebug) print*, 'bc_ss_temp2_z: set z bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0.) print*, 'bc_ss_temp2_z: cannot have cs2bot<=0'
         tmp = gamma1*alog(cs2bot/cs20)
         do i=0,nghost
           if (ldensity_nolog) then
@@ -1308,17 +1276,14 @@ module EquationOfState
 !  top boundary
 !
       case(TOP)
-        if (ldebug) print*, &
-                     'bc_ss_temp2_z: set z top temperature: cs2top=',cs2top
+        if (ldebug) print*, 'bc_ss_temp2_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp2_z: cannot have cs2top<=0'
         tmp = gamma1*alog(cs2top/cs20)
         do i=0,nghost
           if (ldensity_nolog) then
-            f(:,:,n2+i,iss) = tmp &
-                 - gamma_m1/gamma*log(f(:,:,n2+i,irho)/rho0)
+            f(:,:,n2+i,iss) = tmp - gamma_m1/gamma*log(f(:,:,n2+i,irho)/rho0)
           else
-            f(:,:,n2+i,iss) = tmp &
-                 - gamma_m1/gamma*(f(:,:,n2+i,ilnrho)-lnrho0)
+            f(:,:,n2+i,iss) = tmp - gamma_m1/gamma*(f(:,:,n2+i,ilnrho)-lnrho0)
           endif
         enddo
       case default
@@ -1334,7 +1299,7 @@ module EquationOfState
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call fatal_error('bc_ss_temp3_z','not implemented in noeos.f90')
+      call not_implemented('bc_ss_temp3_z','in noeos')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1365,8 +1330,7 @@ module EquationOfState
 !  bottom boundary
 !
       case(BOT)
-        if (cs2bot<=0.) print*, &
-                        'bc_ss_stemp_x: cannot have cs2bot<=0'
+        if (cs2bot<=0.) print*,'bc_ss_stemp_x: cannot have cs2bot<=0'
         do i=1,nghost
           if (ldensity_nolog) then
             f(l1-i,:,:,iss) = f(l1+i,:,:,iss) &
@@ -1380,8 +1344,7 @@ module EquationOfState
 !  top boundary
 !
       case(TOP)
-        if (cs2top<=0.) print*, &
-                        'bc_ss_stemp_x: cannot have cs2top<=0'
+        if (cs2top<=0.) print*,'bc_ss_stemp_x: cannot have cs2top<=0'
         do i=1,nghost
           if (ldensity_nolog) then
             f(l2+i,:,:,iss) = f(l2-i,:,:,iss) &
@@ -1422,8 +1385,7 @@ module EquationOfState
 !  bottom boundary
 !
       case(BOT)
-        if (cs2bot<=0.) print*, &
-                       'bc_ss_stemp_y: cannot have cs2bot<=0'
+        if (cs2bot<=0.) print*,'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
           if (ldensity_nolog) then
             f(:,m1-i,:,iss) = f(:,m1+i,:,iss) &
@@ -1437,8 +1399,7 @@ module EquationOfState
 !  top boundary
 !
       case(TOP)
-        if (cs2top<=0.) print*, &
-                       'bc_ss_stemp_y: cannot have cs2top<=0'
+        if (cs2top<=0.) print*,'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
           if (ldensity_nolog) then
             f(:,m2+i,:,iss) = f(:,m2-i,:,iss) &
@@ -1748,11 +1709,9 @@ module EquationOfState
       endif
       do i=1,nghost
         if (ldensity_nolog) then
-          f(:,:,n1-i,iss)= gamma1*(-gamma_m1*log(f(:,:,n1-i,irho))-log(cs20)&
-                          +log(cs2_2d))
+          f(:,:,n1-i,iss)= gamma1*(-gamma_m1*log(f(:,:,n1-i,irho))-log(cs20)+log(cs2_2d))
         else
-          f(:,:,n1-i,iss)= gamma1*(-gamma_m1*f(:,:,n1-i,ilnrho)-log(cs20)&
-                          +log(cs2_2d))
+          f(:,:,n1-i,iss)= gamma1*(-gamma_m1*f(:,:,n1-i,ilnrho)-log(cs20)+log(cs2_2d))
         endif
       enddo
 !
@@ -1771,11 +1730,9 @@ module EquationOfState
 
       do i=1,nghost
         if (ldensity_nolog) then
-          f(:,:,n2+i,iss)= gamma1*(-gamma_m1*log(f(:,:,n2+i,irho))-log(cs20)&
-                          +log(cs2_2d))
+          f(:,:,n2+i,iss)= gamma1*(-gamma_m1*log(f(:,:,n2+i,irho))-log(cs20)+log(cs2_2d))
         else
-          f(:,:,n2+i,iss)= gamma1*(-gamma_m1*f(:,:,n2+i,ilnrho)-log(cs20)&
-                          +log(cs2_2d))
+          f(:,:,n2+i,iss)= gamma1*(-gamma_m1*f(:,:,n2+i,ilnrho)-log(cs20)+log(cs2_2d))
         endif
       enddo
     case default
@@ -1789,7 +1746,7 @@ module EquationOfState
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
-      call fatal_error('bc_stellar_surface','not implemented in noeos')
+      call not_implemented('bc_stellar_surface','in noeos')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1801,7 +1758,7 @@ module EquationOfState
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
 !
-      call fatal_error('bc_lnrho_cfb_r_iso','not implemented in noeos')
+      call not_implemented('bc_lnrho_cfb_r_iso','in noeos')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1813,7 +1770,7 @@ module EquationOfState
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
 !
-      call fatal_error('bc_lnrho_hds_z_iso','not implemented in noeos')
+      call not_implemented('bc_lnrho_hds_z_iso','in noeos')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1825,7 +1782,7 @@ module EquationOfState
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
 !
-      call fatal_error('bc_lnrho_hdss_z_iso','not implemented in noeos')
+      call not_implemented('bc_lnrho_hdss_z_iso','in noeos')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1887,7 +1844,7 @@ module EquationOfState
         enddo
 !
       case default
-        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_ism: topbot should be BOT or TOP"
 !
       endselect
 !

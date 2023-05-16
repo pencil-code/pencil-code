@@ -829,9 +829,8 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
 !  Dummy routine for frozen-in flux at boundary
 !
-      character (len=3) :: topbot
+      integer :: topbot
 !
-
       print*, 'WARNING:'
       print*, '  bc_frozen_in_bb_z not implemented for magnetic_ffreeMHDrel !!'
 !
@@ -845,15 +844,15 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !  z boundary. The implementation occurs in daa_dt where magnetic
 !  diffusion is switched off in that layer.
 !
-      character (len=3) :: topbot
+      integer :: topbot
 !
       select case (topbot)
-      case ('bot')               ! bottom boundary
+      case (BOT)               ! bottom boundary
         lfrozen_bz_z_bot = .true.    ! set flag
-      case ('top')               ! top boundary
+      case (TOP)               ! top boundary
         lfrozen_bz_z_top = .true.    ! set flag
       case default
-        print*, "bc_frozen_in_bb_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_frozen_in_bb_z: topbot should be BOT or TOP"
       endselect
 !
     endsubroutine bc_frozen_in_bb_z
@@ -867,7 +866,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
       use Mpicomm, only: stop_it
 !
-      character (len=3) :: topbot
+      integer :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny) :: f2,f3
       real, dimension (nx,ny,nghost+1) :: fz
@@ -880,7 +879,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
 !  potential field condition at the bottom
 !
-      case ('bot')
+      case (BOT)
         if (headtt) print*,'bc_aa_pot: potential field boundary condition at the bottom'
         if (nprocy/=1) &
              call stop_it("bc_aa_pot: potential field doesn't work yet with nprocy/=1")
@@ -898,7 +897,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
 !  potential field condition at the top
 !
-      case ('top')
+      case (TOP)
         if (headtt) print*,'bc_aa_pot: potential field boundary condition at the top'
         if (nprocy/=1) &
              call stop_it("bc_aa_pot: potential field doesn't work yet with nprocy/=1")
@@ -914,7 +913,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
         call potentdiv(fz,f2,f3,+1)
         f(l1:l2,m1:m2,n2:mz,iaz)=-fz
       case default
-        if (lroot) print*,"bc_aa_pot: invalid argument"
+        if (lroot) print*,"bc_aa_pot: topbot should be BOT or TOP"
       endselect
 !
       endsubroutine bc_aa_pot
