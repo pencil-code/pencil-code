@@ -1310,9 +1310,9 @@ module Special
         call initiate_isendrcv_bdry(f,iax,iaz)
         call finalize_isendrcv_bdry(f,iax,iaz)
         do m=m1,m2
-          call bc_emf_z(f,df,dt_,'top',iax)
-          call bc_emf_z(f,df,dt_,'top',iay)
-          call bc_emf_z(f,df,dt_,'top',iaz)
+          call bc_emf_z(f,df,dt_,TOP,iax)
+          call bc_emf_z(f,df,dt_,TOP,iay)
+          call bc_emf_z(f,df,dt_,TOP,iaz)
         enddo
       endif
 !
@@ -4430,7 +4430,7 @@ module Special
 !***********************************************************************
     subroutine bc_emf_z(f,df,dt_,topbot,j)
 !
-      character (len=bclen), intent (in) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent(in) :: df
       real, dimension(mz) :: border_prof_z_uu=1.0
@@ -4441,9 +4441,9 @@ module Special
       integer :: i
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
-        print*, "bc_emf_z: ", topbot, " should be 'top'"
-      case ('top')               ! top boundary
+      case(BOT)               ! bottom boundary
+        print*, "bc_emf_z: topbot should be TOP"
+      case(TOP)               ! top boundary
         if (border_frac_z(2) /= 0) then 
           border_width=border_frac_z(2)*Lxyz(3)/2
           uborder=xyz1(3)-border_width
@@ -4463,7 +4463,7 @@ module Special
         endif
 
       case default
-        print*, "bc_emf_z: ", topbot, " should be 'top'"
+        print*, "bc_emf_z: topbot should be TOP"
       endselect
 !
     endsubroutine bc_emf_z
