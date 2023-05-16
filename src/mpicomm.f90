@@ -10732,7 +10732,7 @@ endif
                                  intbuf,ncpus+peer,tag_foreign+peer,MPI_COMM_WORLD)
             frgn_setup%yind_rng(py,:)=intbuf(1:2)
 
-!print*,'PENCIL yind1', iproc, frgn_setup%yind_rng(py,1),frgn_setup%yind_rng(py,2)
+!print*,'PENCIL yind1', iproc, peer,ipy,frgn_setup%yind_rng(py,1),frgn_setup%yind_rng(py,2)
 !print*,'PENCIL yind2',iproc,frgn_setup%ypeer_rng(1),frgn_setup%ypeer_rng(2)
             if (frgn_setup%ypeer_rng(1)>=0) then
               if (frgn_setup%yind_rng(py,1)>=frgn_setup%yind_rng(py,2).and.frgn_setup%ypeer_rng(2)<0) then
@@ -10749,8 +10749,6 @@ endif
 !
           if (frgn_setup%linterpol(2)) &
             call get_linterp_weights_1D(frgn_setup%ygrid,frgn_setup%yind_rng(-1,:),y,frgn_setup%yinds,frgn_setup%yweights)
-print*, 'iproc, frgn_setup%yinds=', iproc, frgn_setup%yinds   !, sum(frgn_setup%yweights,2)
-
         endif   !lfirst_proc_xz
 !                              
         if (lfirst_proc_yz) then             ! on processors of first XBEAM, i.e., ipy=ipz=0
@@ -10830,6 +10828,8 @@ print*, 'iproc, frgn_setup%yinds=', iproc, frgn_setup%yinds   !, sum(frgn_setup%
 
         if (allocated(frgn_buffer)) deallocate(frgn_buffer)
         allocate(frgn_buffer(lenx,leny,mz,3))
+!print*, 'PENCIL0B',iproc,peer, lbound(frgn_buffer),ubound(frgn_buffer)
+!print*, 'PENCIL global len*',iproc,peer, lenx, leny, mz
 
         if (allocated(frgn_setup%recv_req)) deallocate(frgn_setup%recv_req)
         allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1)) 
@@ -10857,6 +10857,10 @@ print*, 'Pencil: after barrier'
       logical, optional :: lnonblock
 
       integer :: istart,ixstart,iystart,lenx_loc,leny_loc,px,py,iv,peer
+      logical :: lesav !Not needed in the normal run as savings would come normally now. Retained for now, in case is needed again.
+
+!GM: Assume will not save initially
+      lesav = .false.
 
       do px=frgn_setup%xpeer_rng(1),frgn_setup%xpeer_rng(2)
           
@@ -10875,14 +10879,36 @@ print*, 'Pencil: after barrier'
               call mpirecv_real(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv), &
                                (/lenx_loc,leny_loc,mz/),peer+ncpus,iproc+tag_foreign,MPI_COMM_WORLD,frgn_setup%recv_req(px))
             else                              ! blocking 
-print*, 'PENCIL: before receive data receiver, sender, dims=', iproc,peer+ncpus,lenx_loc,leny_loc,mz    
+!print*, 'PENCIL1X', iproc,peer,px,ixstart, ixstart+lenx_loc-1    
+!print*, 'PENCIL1Y', iproc,peer,py,iystart, iystart+leny_loc-1  
+!print*, 'PENCIL3', iproc,peer,lenx_loc,leny_loc,mz     
+!print*,'PENCIL4', iproc, peer,l1, l2,m1,m2
+!print*, 'PENCIL1B', iproc, lbound(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv)),ubound(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv))  
+!print*, 'PENCIL2B', iproc, size(x),size(y),size(z)
               call mpirecv_real(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv), &
                                (/lenx_loc,leny_loc,mz/),peer+ncpus,iproc+tag_foreign,MPI_COMM_WORLD)
             endif 
 !
           enddo
         enddo
-      enddo
+      enddo 
+!GM: Wait for the saving command      
+if(iproc==0) then 
+!  print*, 'PENCIL Before RECEIVED LOGICAL SAVE', lesav
+  call mpirecv_logical(lesav,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+!  if (lesav) then
+!      call mpirecv_real(time)
+!      print*, 'Pencil Time', t, 'Eulag time', time_e
+!  endif
+endif
+!GM: Broadcast saving logical
+call mpibcast_logical(lesav,comm=MPI_COMM_PENCIL)
+!if (lesav) call write_2daverages() !Not needed for now.
+!if (lesav) call output_snap(,nv1=nv1_capitalvar,nv2=m     snap,file=file)
+!print *, 'PENCIL - MINMAX W',iproc, minval(frgn_buffer(:,:,:,1)), maxval(frgn_buffer(:,:,:,1))
+!print *, 'PENCIL - MINMAX V',iproc, minval(frgn_buffer(:,:,:,2)), maxval(frgn_buffer(:,:,:,2))
+!print *, 'PENCIL - MINMAX U',iproc, minval(frgn_buffer(:,:,:,3)), maxval(frgn_buffer(:,:,:,3))
+
       return !END new version
 !
 print*, 'PENCIL-BARRIER', iproc    
@@ -10946,13 +10972,17 @@ stop
 !
 ! 20-oct-21/MR: coded
 ! 
-      use General, only: loptest,linear_interpolate_1d
+      use General, only: loptest,linear_interpolate_1d, itoa
+!      use IO, only: output_snap, output_snap_finalize
 
       real, dimension(:,:,:,:) :: f,frgn_buffer,interp_buffer
       integer :: ivar1, ivar2, lf1
       logical, optional :: lnonblock
       integer, parameter :: ytag=115
       integer :: istart_y,istart_z,istop_y,istop_z,px,py,pz,partner,ll,nvars
+!      logical :: lesav
+!      integer, save :: sav_counter = 0
+!      character(*), parameter :: filepath = "data/allprocs/"
 
       !if (mod(frgn_setup%dims(2),nygrid)==0 .and. mod(frgn_setup%dims(3),nzgrid)==0) then
       lf1 = 1
@@ -10963,7 +10993,91 @@ stop
 
         if (loptest(lnonblock)) call mpiwait(frgn_setup%recv_req(px))
         if(size(frgn_buffer,1) > size(f,1)) lf1 = 2
-        !!!f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+!!!        f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU  !ORIGINAL SETUP
+        if (lfirst_proc_y .and. nprocy==1) then
+          if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
+            f(l1:l2,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+!
+          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+            f(:,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+!
+          else if (lfirst_proc_x) then! on processors of first XBEAM
+!          
+            f(l1:,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
+          else if(llast_proc_x) then!on processors of last XBEAM
+            f(:l2,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+          endif
+
+        else if(.not.(lfirst_proc_y .or. llast_proc_y)) then!MID of YBEAM 
+!
+          if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
+            f(l1:l2,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+!
+          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+            f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+!
+          else if (lfirst_proc_x) then! on processors of first XBEAM
+!          
+            f(l1:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
+          else if(llast_proc_x) then!on processors of last XBEAM
+            f(:l2,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+          endif
+
+!       i
+        else if (lfirst_proc_y) then! on processors of first YBEAM
+          if(lfirst_proc_x .and. nprocx==1) then !if only one proc in X
+            f(l1:l2,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+!
+          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+            f(:,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+!        
+          else if (lfirst_proc_x) then! on processors of first XBEAM
+!          
+            f(l1:,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
+          else if(llast_proc_x) then!on processors of last XBEAM
+            f(:l2,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+          endif
+!          
+        else if(llast_proc_y) then!on processors of last YBEAM
+          if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
+            f(l1:l2,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+!
+          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+            f(:,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+          else if (lfirst_proc_x) then! on processors of first XBEAM
+!          
+            f(l1:,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
+          else if(llast_proc_x) then!on processors of last XBEAM
+            f(:l2,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
+          endif
+        endif
+!
+!print*,'PENCILFin0', iproc, m1,m2
+!print*,'PENCILFin1', iproc, lbound(f),ubound(f)
+!print*,'PENCILFin2', iproc, lbound(frgn_buffer),ubound(frgn_buffer)
+!print*,'PENCILFin3', iproc, ncpus, nghost+1, mx-nghost, my-nghost, mz-nghost
+!print*,'PENCILFin4', iproc, size(frgn_buffer,1) , size(frgn_buffer,2)
+
+!GM: Wait for the saving command/ IF SAVING HERE IS NEEDED
+!if(iproc==0) then
+!  print*, 'PENCIL Before RECEIVED LOGICAL SAVE', lesav
+!  call mpirecv_logical(lesav,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
+!  print*, 'PENCIL RECEIVED LOGICAL SAVE', lesav
+!  print*, 'PENCIL TEST savefile, itoa', 'data'//itoa(sav_counter)
+!  sav_counter = sav_counter + 1
+!  if (lesav) then
+    !call mpirecv_real(time)
+    !print*, 'Pencil Time', t, 'Eulag time', time_e
+!  endif
+!endif
+!GM: Broadcast saving logical
+!call mpibcast_logical(lesav,comm=MPI_COMM_PENCIL)
+
+!if (lesav) then !SAVES FULL DATA
+!  call output_snap(f,nv1=1,nv2=mfarray,file='data'//itoa(sav_counter)//'.dat',mode=1)
+!  call output_snap_finalize
+!endif
+goto 125!!!        
         !!!f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,my::-1,:,:)/frgn_setup%renorm_UU  !For invertion of theta
 !
 !print*, 'iproc, weights=', iproc, maxval(frgn_setup%xweights), maxval(frgn_setup%yweights)
@@ -10995,6 +11109,7 @@ stop
 ! Z-Interpolation
         endif
 ! 
+125 continue !!!
       elseif (lfirst_proc_yz) then 
 
         if (frgn_setup%proc_multis(1)>1) then

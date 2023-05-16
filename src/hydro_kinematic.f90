@@ -199,7 +199,7 @@ module Hydro
 !                  also oscillating with omega_kinflow
 !
       use FArrayManager
-      use Sub, only: erfunc, ylm, ylm_other, smoothing_kernel, smooth
+      use Sub, only: erfunc, ylm, ylm_other, smoothing_kernel, smooth, eulag_filter
       use Boundcond, only: update_ghosts
       use General
       use Mpicomm
@@ -367,16 +367,20 @@ module Hydro
             call get_foreign_snap_initiate(3,frgn_buffer)    !,lnonblock=.true.)
             if (.not.allocated(interp_buffer)) allocate(interp_buffer(mx,my,mz,3))
             if (.not.allocated(uu_2)) allocate(uu_2(mx,my,mz,3))
-!print *, 'PENCIL UU2EVAL', iproc,nx, ny, ny,  size(uu_2, 1)
+!print*,'PENCILH0B', iproc, lbound(frgn_buffer),ubound(frgn_buffer)
+!print*,'PENCILH1B', iproc, lbound(f),ubound(f)
             call get_foreign_snap_finalize(f,iux,iuz,frgn_buffer,interp_buffer)   !,lnonblock=.true.)
+!print*,'PENCILH2B', iproc, lbound(f),ubound(f)
             !if (smooth_width > 0) call smooth_velocity(f,iux,iuz,smooth_factor)
-            if (smooth_width > 0) call smooth(f,iux,iuz,smooth_width_=smooth_width)
+            !if (smooth_width > 0) call smooth(f,iux,iuz,smooth_width_=smooth_width)
+            if (smooth_width > 0) call eulag_filter(f)
 !print*, 'Pencil successful get_foreign_snap_finalize 1', iproc
 !if (lroot) print*, 'PENCIL FMAX INIT' , maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
 !print*, 'PENCIL FMAX INIT' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer)  !,lnonblock=.true.)
-            if (smooth_width > 0) call smooth(uu_2,1,3,smooth_width_=smooth_width)
+            !if (smooth_width > 0) call smooth(uu_2,1,3,smooth_width_=smooth_width)
+            if (smooth_width > 0) call eulag_filter(uu_2)
 !print*, 'Pencil successful get_foreign_snap_finalize 2', iproc
 !        
 ! prepare receiving next snapshot
@@ -2593,7 +2597,7 @@ module Hydro
 !   16-dec-10/bing: coded
 !
       use Mpicomm, only: update_foreign_data
-      use Sub, only: smooth
+      use Sub, only: smooth, eulag_filter
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -2608,7 +2612,8 @@ module Hydro
           if (update_foreign_data(t,t_foreign)) then
             f(:,:,:,iux:iuz) = uu_2
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
-            if (smooth_width > 0) call smooth(f,iux,iuz,smooth_width_=smooth_width)
+            !if (smooth_width > 0) call smooth(f,iux,iuz,smooth_width_=smooth_width)
+            if (smooth_width > 0) call eulag_filter(uu_2)
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
           endif
         endif

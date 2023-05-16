@@ -88,7 +88,7 @@ module Sub
   public :: tensor_diffusion_coef
 !
   public :: smooth_kernel, despike, smoothing_kernel
-  public :: smooth, smooth_mn, get_smooth_kernel
+  public :: smooth, smooth_mn, get_smooth_kernel, eulag_filter
 !
   public :: ludcmp, lubksb
   public :: bspline_basis, bspline_interpolation, bspline_precondition
@@ -4200,6 +4200,41 @@ module Sub
       kernel = kernel / sum(kernel)
 !
     endsubroutine get_smooth_kernel
+!***********************************************************************
+    subroutine eulag_filter(f)
+!    
+!  3D filter for the data comming from EULAG. It needs filter to smoothout radial ripples
+!  Variables:  
+!   f    = field to be filtered
+!   bc   = boundary conditions. 0 = boundary value is zero, 1 = boundary value of df/dr is zero
+!   ivar = which dimension correspond to the field. 1=x,2=y,3=z
+!  02-may-23/GM: Coded
+!
+    real, dimension(mx,my,mz,3), intent(inout) :: f
+!    integer,  intent(in) :: bc, ivar
+    real, dimension(mx,my,mz,3) :: ffield
+    integer :: i,j
+
+
+    do i=1, 3 ! Over the number of fields
+!GM: The next bit may not be needed since mx,my,mz, comes with the ghost zones included. 
+!      if (i==1) then !BC for impenetrable, velocity field = 0 
+!        ffield(1,:,:,i) = 0
+!        ffield(mx,:,:,i) = 0
+!      else
+!        ffield(1,:,:,i)  = 0.5*(ffield(1,:,:,i)+ffield(2,:,:,i))
+!        ffield(mx,:,:,i) = 0.5*(ffield(mx,:,:,i)+ffield(mx-1,:,:,i))
+!      endif
+      do j= 2,mx-1 !Excludes from the filtering only first and last point, which are ghostzones anyway
+        ffield(j,:,:,i) = 0.25*(f(j-1,:,:,i)+2*f(j,:,:,i)+f(j+1,:,:,i))
+      enddo
+    enddo
+!    
+    f = ffield
+
+    
+
+    endsubroutine eulag_filter
 !***********************************************************************
     subroutine binomial_coeffs(b)
 !

@@ -827,6 +827,26 @@ else if (($hn =~ c*.mahti.csc.fi)) then
   set remote_top     = 0
   set local_binary = 0
 #--------------------------------------------------
+else if (($hn =~ atlas*) && ($USER =~ monteiro)) then
+  echo "Atlas - MPS, Gottingen, Germany"
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
+  endif
+  set mpirun = 'mpiexec'
+  #set mpirun = 'srun'
+  set npops = "-np $ncpus"
+  #set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
+#--------------------------------------------------
+
 else if (($hn =~ nid* && $masterhost == lumi)) then
   echo "Lumi - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
