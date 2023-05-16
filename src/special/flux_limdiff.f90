@@ -207,9 +207,9 @@ module Special
 !  Do 's' boundary
 !
       do i=1,nghost
-        !call bc_sym_x(f,+1,'bot',ivar)
+        !call bc_sym_x(f,+1,BOT,ivar)
         f(l1-i,:,:,ikappar:ilambda)=f(l1+i,:,:,ikappar:ilambda)
-        !call bc_sym_x(f,+1,'top',ivar)
+        !call bc_sym_x(f,+1,TOP,ivar)
         f(l2+i,:,:,ikappar:ilambda)=f(l2-i,:,:,ikappar:ilambda)
       enddo
 !

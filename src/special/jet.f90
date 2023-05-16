@@ -445,20 +445,18 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       type (boundary_condition) :: bc
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
-!
-!
-      topbot='top'
-      if (bc%location==-1) topbot='bot'
+      topbot=TOP
+      if (bc%location==-1) topbot=BOT
 !
       select case (bc%bcname)
       case ('tur')
         select case (bc%location)
         case (iBC_X_TOP)
-          call bc_turb(f,bc%value1,'top',1,bc%ivar)
+          call bc_turb(f,bc%value1,TOP,1,bc%ivar)
         case (iBC_X_BOT)
-          call bc_turb(f,bc%value1,'bot',1,bc%ivar)
+          call bc_turb(f,bc%value1,BOT,1,bc%ivar)
           bc%done=.true.
         end select
       case ('wi')
@@ -480,15 +478,13 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: shift, grid_shift, weight, round
       integer :: iround,lower,upper,ii,j,imin,imax,ivar
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real :: T_t,u_t
 !
 ! Read data from file only initially
 ! At later times this is stored in processor memory.
 !
-      if (first_time) then
-        call read_turbulent_data(topbot,j)
-      end if
+      if (first_time) call read_turbulent_data(topbot,j)
 !
 ! Set all ghost points at the same time
 !
@@ -496,7 +492,7 @@ module Special
 !
 ! Set which ghost points to update
 !
-        if (topbot=='bot') then
+        if (topbot==BOT) then
           imin=1
           imax=3
         else
@@ -554,7 +550,7 @@ module Special
       use General, only: safe_character_assign, itoa
       use Sub, only : rdim
 !
-      character (len=3), intent(in) :: topbot
+      integer, intent(IN) :: topbot
       integer, intent(in) :: j
       integer :: i,stat
       logical :: exist
@@ -579,17 +575,13 @@ module Special
 ! but we leav it like this during the development of this feature.
 !
       allocate( f_in(mx_in,my_in,mz_in,nv_in),STAT=stat)
-      if (stat>0) call fatal_error('bc_turb',&
-          "Couldn't allocate memory for f_in ")
+      if (stat>0) call fatal_error('bc_turb',"Couldn't allocate f_in ")
       allocate( x_in(mx_in),STAT=stat)
-      if (stat>0) call fatal_error('bc_turb',&
-          "Couldn't allocate memory for x_in ")
+      if (stat>0) call fatal_error('bc_turb',"Couldn't allocate x_in ")
       allocate( y_in(my_in),STAT=stat)
-      if (stat>0) call fatal_error('bc_turb',&
-          "Couldn't allocate memory for y_in ")
+      if (stat>0) call fatal_error('bc_turb',"Couldn't allocate y_in ")
       allocate( z_in(mz_in),STAT=stat)
-      if (stat>0) call fatal_error('bc_turb',&
-          "Couldn't allocate memory for z_in ")
+      if (stat>0) call fatal_error('bc_turb',"Couldn't allocate z_in ")
 !
 ! Check which processor we want to read from.
 ! In the current implementation it is required that:
@@ -609,22 +601,22 @@ module Special
         nprocy_in=nprocy
         nprocz_in=nprocz
         if (j==1) then
-          if ((topbot=='bot'.and.lfirst_proc_x).or.&
-              (topbot=='top'.and.llast_proc_x)) then
+          if ((topbot==BOT.and.lfirst_proc_x).or.&
+              (topbot==TOP.and.llast_proc_x)) then
             proc_at_inlet=.true.
             ipx_in=0
             nprocx_in=1
           endif
         elseif (j==2) then
-          if ((topbot=='bot'.and.lfirst_proc_y).or.&
-              (topbot=='top'.and.llast_proc_y)) then
+          if ((topbot==BOT.and.lfirst_proc_y).or.&
+              (topbot==TOP.and.llast_proc_y)) then
             proc_at_inlet=.true.
             ipy_in=0
             nprocy_in=1
           endif
         elseif (j==3) then
-          if ((topbot=='bot'.and.lfirst_proc_z).or.&
-              (topbot=='top'.and.llast_proc_z)) then
+          if ((topbot==BOT.and.lfirst_proc_z).or.&
+              (topbot==TOP.and.llast_proc_z)) then
             proc_at_inlet=.true.
             ipz_in=0
             nprocz_in=1
@@ -676,7 +668,7 @@ module Special
 !
 !  23-may-10/nils+marianne: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real :: val
       integer :: sgn,i,j
@@ -789,7 +781,7 @@ module Special
 !
 !  23-may-10/nils+marianne: coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real  :: val
       integer :: sgn,i,j
@@ -869,7 +861,7 @@ module Special
 !!$      use EquationOfState
 !!$      use chemistry
 !!$!
-!!$      character (len=3) :: topbot
+!!$      integer, intent(IN) :: topbot
 !!$      real, dimension (mx,my,mz,mfarray) :: f
 !!$      real :: val
 !!$      integer :: sgn,i,j

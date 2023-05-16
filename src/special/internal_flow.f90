@@ -413,9 +413,9 @@ module Special
       case ('poi')
         select case (bc%location)
         case (iBC_X_TOP)
-          call bc_poi_x(f,-1,'top',iux,REL=.true.,val=bc%value1)
+          call bc_poi_x(f,-1,TOP,iux,REL=.true.,val=bc%value1)
         case (iBC_X_BOT)
-          call bc_poi_x(f,-1,'bot',iux,REL=.true.,val=bc%value1)
+          call bc_poi_x(f,-1,BOT,iux,REL=.true.,val=bc%value1)
         end select
       end select
 !
@@ -604,7 +604,7 @@ endif
 !
 !  03-jan-08/nils: Coded
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: val
       real :: umax,y2,height,h2
@@ -616,7 +616,7 @@ endif
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case(BOT)               ! bottom boundary
         if (present(val)) then
           ! Multiply by three halfs to get max velocity from mean velocity
           umax=val!*3/2
@@ -640,7 +640,7 @@ endif
           f(l1,:,:,j)=(4.*f(l1+1,:,:,j)-f(l1+2,:,:,j))/3.
         endif
 !
-      case ('top')               ! top boundary
+      case(TOP)               ! top boundary
         if (present(val)) then
           umax=val
         else
@@ -664,7 +664,7 @@ endif
         endif
 !
       case default
-        print*, "bc_poi_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_poi_x: topbot should be BOT or TOP"
 !
       endselect
 !

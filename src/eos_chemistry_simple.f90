@@ -92,7 +92,6 @@ module EquationOfState
 !  Register gradient of pressure
 !
         call farray_register_auxiliary('gpx',igpx)
-!
         call farray_register_auxiliary('gpy',igpy)
 !
       endif
@@ -114,8 +113,6 @@ module EquationOfState
 !  22-jun-06/axel: adapted from initialize_eos
 !  16-mar-10/Natalia
 !
-      use Mpicomm, only: stop_it
-!
       logical :: chemin=.false.,cheminp=.false.
 !
 ! Initialize variable selection code (needed for RELOADing)
@@ -130,15 +127,15 @@ module EquationOfState
       endif
 !
       if (unit_temperature == impossible) then
-        call stop_it('unit_temperature is not found!')
+        call fatal_error('units_eos','unit_temperature is not found')
       else
         Rgas=Rgas_unit_sys*unit_temperature*scale_Rgas/unit_velocity**2
       endif
 !
       inquire(file='chem.inp',exist=cheminp)
       inquire(file='chem.in',exist=chemin)
-      if(chemin .and. cheminp) call fatal_error('eos_chemistry',&
-          'chem.inp and chem.in found. Please decide for one')
+      if (chemin .and. cheminp) &
+        call fatal_error('units_eos','chem.inp and chem.in found. Please decide for one')
 !
       if (cheminp) input_file='chem.inp'
       if (chemin) input_file='chem.in'
@@ -159,7 +156,7 @@ module EquationOfState
 !  using an include file or another module.
 !
       if (pretend_lnTT) then
-        call warning('initialize_eos','pretend_lnTT is not used with ionization')
+        call warning('initialize_eos','pretend_lnTT is not used with eos_chemistry_simple')
         pretend_lnTT=.false.
       endif
       if (lroot) then
@@ -218,18 +215,15 @@ module EquationOfState
 !
       if (ieosvar_count==0) ieosvar_selected=0
 !
-      if (ieosvar_count>=2) &
-        call fatal_error("select_eos_variable", &
-             "2 thermodynamic quantities have already been defined while attempting to add a 3rd: ") !//variable)
+      if (ieosvar_count>=2) call fatal_error("select_eos_variable", &
+        "2 thermodynamic quantities have already been defined while attempting to add a 3rd: ") !//variable)
 !
       ieosvar_count=ieosvar_count+1
 !
 !      select case (variable)
       if (variable=='ss') then
           this_var=ieosvar_ss
-          if (findex<0) then
-            leos_isentropic=.true.
-          endif
+          if (findex<0) leos_isentropic=.true.
       elseif (variable=='cs2') then
           this_var=ieosvar_cs2
           if (findex==-2) then
@@ -243,29 +237,20 @@ module EquationOfState
           endif
       elseif (variable=='lnTT') then
           this_var=ieosvar_lnTT
-          if (findex<0) then
-            leos_isothermal=.true.
-          endif
+          if (findex<0) leos_isothermal=.true.
       elseif (variable=='TT') then
           this_var=ieosvar_TT
       elseif (variable=='lnrho') then
           this_var=ieosvar_lnrho
-          if (findex<0) then
-            leos_isochoric=.true.
-          endif
+          if (findex<0) leos_isochoric=.true.
       elseif (variable=='rho') then
           this_var=ieosvar_rho
-          if (findex<0) then
-            leos_isochoric=.true.
-          endif
+          if (findex<0) leos_isochoric=.true.
       elseif (variable=='pp') then
           this_var=ieosvar_pp
-          if (findex<0) then
-            leos_isobaric=.true.
-          endif
+          if (findex<0) leos_isobaric=.true.
       else
-        call fatal_error("select_eos_variable", &
-             "unknown thermodynamic variable")
+        call fatal_error("select_eos_variable","unknown thermodynamic variable")
       endif
       if (ieosvar_count==1) then
         ieosvar1=findex
@@ -308,7 +293,7 @@ module EquationOfState
           if (lroot) print*, 'select_eos_variable: Using rho and TT'
           ieosvars=irho_TT
         case default
-          if (lroot) print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
+          if (lroot) print*,"Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
           call fatal_error("select_eos_variable", &
              "This thermodynamic variable combination is not implemented: ")
       endselect
@@ -530,9 +515,7 @@ module EquationOfState
            p%TT=exp(f(l1:l2,m,n,ilnTT))
          endif
 !
-         if (minval(p%TT)==0.) then
-           call fatal_error('calc_pencils_eos','p%TT=0!')
-         endif         
+         if (minval(p%TT)==0.) call fatal_error('calc_pencils_eos','p%TT=0')
        endif
 !
        if (lpenc_loc(i_TT1)) then
@@ -557,18 +540,14 @@ module EquationOfState
       endif
 !
       if (lpenc_loc(i_del2lnTT)) then
-        if (.not. ltemperature_nolog) then
-          call del2(f,ilnTT,p%del2lnTT)
-        endif
+        if (.not. ltemperature_nolog) call del2(f,ilnTT,p%del2lnTT)
       endif
 !
 ! Viscosity of a mixture
 !
       if (lpencil(i_nu)) then
-          p%nu = f(l1:l2,m,n,iviscosity)
-        if (lpencil(i_gradnu)) then
-          call grad(f(:,:,:,iviscosity),p%gradnu)
-        endif
+        p%nu = f(l1:l2,m,n,iviscosity)
+        if (lpencil(i_gradnu)) call grad(f(:,:,:,iviscosity),p%gradnu)
       endif
 !
 ! Calculate thermal conductivity & diffusivity
@@ -605,8 +584,7 @@ module EquationOfState
 !
       if (lpenc_loc(i_rho1gpp)) then
         do i=1,3
-          p%rho1gpp(:,i) = p%pp*p%rho1(:) &
-               *(p%glnrho(:,i)+p%glnTT(:,i)+p%glnRR(:,i))
+          p%rho1gpp(:,i) = p%pp*p%rho1(:)*(p%glnrho(:,i)+p%glnTT(:,i)+p%glnRR(:,i))
         enddo
       endif
       if (lpres_grad) then
@@ -637,8 +615,6 @@ module EquationOfState
 !
 !  05-feb-08/nils: coded
 !
-      use Mpicomm, only: stop_it
-!
       character (len=*), intent(in) :: element_name
       real, intent(out) :: MolMass
 !
@@ -661,7 +637,7 @@ module EquationOfState
         MolMass=0.
       case default
         if (lroot) print*,'element_name=',element_name
-        call stop_it('find_mass: Element not found!')
+        call fatal_error('find_mass','no such element: '//trim(element_name))
       end select
 !
     endsubroutine find_mass
@@ -694,8 +670,7 @@ module EquationOfState
       if ((ind_glob==0)) then
         found_specie=.false.
      !  if (lroot) print*,' no species has been found  ',' species index= ', ind_glob,ind_chem,species_name
-     !   call fatal_error('find_species_index',&
-      !                 'no species has been found')
+     !   call fatal_error('find_species_index','no species has been found')
       else
         found_specie=.true.
     !    if (lroot) print*,species_name,'   species index= ',ind_chem
@@ -710,8 +685,6 @@ module EquationOfState
 !  the syntax of chem.inp.
 !
 !  06-mar-08/nils: coded
-!
-      use Mpicomm, only: stop_it
 !
       logical :: IsSpecie=.false., emptyfile
       integer :: k,file_id=123, StartInd, StopInd
@@ -742,8 +715,7 @@ module EquationOfState
               else
                 if (k>nchemspec) then
                   print*,'nchemspec=',nchemspec
-                  call stop_it("There were too many species, "//&
-                      "please increase nchemspec!")
+                  call fatal_error('read_species',"there were too many species, increase nchemspec")
                 endif
                 varname(ichemspec(k))=trim(ChemInpLine(StartInd:StopInd-1))
                 StartInd=StopInd
@@ -757,14 +729,13 @@ module EquationOfState
 !
 !  Stop if chem.inp is empty
 !
-1000  if (emptyFile)  call stop_it('The input file chem.inp was empty!')
+1000  if (emptyFile)  call fatal_error('read_species','input file chem.inp was empty')
 !
 !  Check if nchemspec where not too large
 !
       if (k<nchemspec-1) then
         print*,'nchemspec=',nchemspec
-        call stop_it("There were too few species, "//&
-            "please decrease nchemspec!")
+        call fatal_error("read_species","there were too few species, decrease nchemspec")
       endif
 !
       close(file_id)
@@ -820,8 +791,7 @@ module EquationOfState
             StopInd=index(ChemInpLine,' ')
             specie_string=trim(ChemInpLine(1:StopInd-1))
 !
-            call find_species_index(specie_string,ind_glob,ind_chem,&
-                found_specie)
+            call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
 !
 ! Check if we are working with a specie that was found under the SPECIES
 ! section of chem.inp.
@@ -856,8 +826,7 @@ module EquationOfState
                   call find_mass(element_string,MolMass(iElement))
                   In5=verify(ChemInpLine(In3:In4),' ')+In3-1
                   NumberOfElement_string=trim(ChemInpLine(In5:In4))
-                  read (unit=NumberOfElement_string,fmt='(I5)') &
-                      NumberOfElement_i
+                  read (unit=NumberOfElement_string,fmt='(I5)') NumberOfElement_i
                   MolMass(iElement)=MolMass(iElement)*NumberOfElement_i
                 endif
               enddo
@@ -880,17 +849,13 @@ module EquationOfState
 !
             elseif (ChemInpLine(80:80)=="2") then
               ! Read iaa1(1):iaa1(5)
-              read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
-                  species_constants(ind_chem,iaa1(1):iaa1(5))
-!
+              read (unit=ChemInpLine(1:75),fmt='(5E15.8)') species_constants(ind_chem,iaa1(1):iaa1(5))
             elseif (ChemInpLine(80:80)=="3") then
               ! Read iaa1(6):iaa5(3)
-              read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
-                  species_constants(ind_chem,iaa1(6):iaa2(3))
+              read (unit=ChemInpLine(1:75),fmt='(5E15.8)') species_constants(ind_chem,iaa1(6):iaa2(3))
             elseif (ChemInpLine(80:80)=="4") then
               ! Read iaa2(4):iaa2(7)
-              read (unit=ChemInpLine(1:75),fmt='(4E15.8)')  &
-                  species_constants(ind_chem,iaa2(4):iaa2(7))
+              read (unit=ChemInpLine(1:75),fmt='(4E15.8)') species_constants(ind_chem,iaa2(4):iaa2(7))
             endif
 !
           endif
@@ -934,8 +899,7 @@ module EquationOfState
       write(file_id,*) '***********************************************'
       dataloop2: do k=1,nchemspec
         write(file_id,*) varname(ichemspec(k))
-        write(file_id,'(F10.2,3F10.2)') species_constants(k,imass),&
-            species_constants(k,iTemp1:iTemp3)
+        write(file_id,'(F10.2,3F10.2)') species_constants(k,imass),species_constants(k,iTemp1:iTemp3)
         write(file_id,'(7E12.5)') species_constants(k,iaa1)
         write(file_id,'(7E12.5)') species_constants(k,iaa2)
       enddo dataloop2
@@ -949,8 +913,7 @@ module EquationOfState
         write (143,*) 'specmass=fltarr(',nchemspec,')'
         do k=1,nchemspec
           ispec=itoa(k-1)
-          write (143,*) 'specname[',trim(ispec),']=',"'",&
-              trim(varname(ichemspec(k))),"'"
+          write (143,*) 'specname[',trim(ispec),']=',"'",trim(varname(ichemspec(k))),"'"
           write (143,*) 'specmass[',trim(ispec),']=',species_constants(k,imass)
         enddo
         close (143)
@@ -1728,7 +1691,7 @@ module EquationOfState
         enddo
 !
       case default
-        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_ism: topbot should be BOT or TOP"
 !
       endselect
 !
@@ -1743,7 +1706,7 @@ module EquationOfState
       real, dimension(:), intent(in) :: z
       real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz, eth0z
 !
-      call fatal_error('get_stratz', 'Stratification for this EOS is not implemented. ')
+      call not_implemented('get_stratz', 'stratification for eos_chemistry_simple')
 !
       call keep_compiler_quiet(z)
       if (present(rho0z)) call keep_compiler_quiet(rho0z)

@@ -73,10 +73,9 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, fatal_error, not_implemented
 !
   implicit none
 !
@@ -456,7 +455,6 @@ module Special
           endif
         endif
       endif
-    
 !
     endsubroutine special_calc_density
 !***********************************************************************
@@ -545,7 +543,6 @@ module Special
       endif
       if (cool_RTV /= 0.0) call calc_heat_cool_RTV(df,p)
       if (heat_vol /= 0.0) call calc_heat_volumetric(df,p)
-    
 !
     endsubroutine special_calc_energy
 !***********************************************************************
@@ -566,13 +563,14 @@ module Special
       real, dimension (nx,3,3) :: flux_sld_ten
       integer :: i
       logical :: laa_nolog=.true.
+
+
       if (lslope_limited_special .and. llast) then
         do i=1,3
               call div_diff_flux(f,iax+(i-1),p,fdiff,laa_nolog)
 !              df(l1:l2,m,n,iax+i-1) = df(l1:l2,m,n,iax+i-1) + fdiff
         enddo
       endif
-
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
@@ -659,7 +657,6 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      character (len=3) :: topbot
       type (boundary_condition), intent(inout) :: bc
       integer :: j
 !
@@ -668,44 +665,35 @@ module Special
       j=bc%ivar
         select case (bc%location)
         case (iBC_X_TOP)
-          topbot='top'
-          call bc_nfc_x(f,topbot,j)
+          call bc_nfc_x(f,TOP,j)
       bc%done=.true.
         case (iBC_X_BOT)
-          topbot='bot'
-          call bc_nfc_x(f,topbot,j)
+          call bc_nfc_x(f,BOT,j)
       bc%done=.true.
         case (iBC_Y_TOP)
-          topbot='top'
-          call bc_nfc_x(f,topbot,j)
+          call bc_nfc_x(f,TOP,j)
       bc%done=.true.
         case (iBC_Y_BOT)
-          topbot='bot'
-          call bc_nfc_x(f,topbot,j)
+          call bc_nfc_x(f,BOT,j)
       bc%done=.true.
         case (iBC_Z_TOP)
-          topbot='top'
-          call bc_nfc_x(f,topbot,j)
+          call bc_nfc_x(f,TOP,j)
       bc%done=.true.
         case (iBC_Z_BOT)
-          topbot='bot'
-          call bc_nfc_x(f,topbot,j)
+          call bc_nfc_x(f,BOT,j)
       bc%done=.true.
         end select
       case ('go')
       j=bc%ivar
         select case (bc%location)
         case (iBC_X_TOP)
-          topbot='top'
-          call bc_go_x(f,topbot,j)
+          call bc_go_x(f,TOP,j)
       bc%done=.true.
         case (iBC_X_BOT)
-          topbot='bot'
-          call bc_go_x(f,topbot,j)
+          call bc_go_x(f,BOT,j)
       bc%done=.true.
         end select
       end select
-
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -851,9 +839,9 @@ module Special
         enddo
         if (lset_boundary_emf) then
           do m=m1,m2
-            call bc_emf_z(f,df,dt_,'top',iax)
-            call bc_emf_z(f,df,dt_,'top',iay)
-            call bc_emf_z(f,df,dt_,'top',iaz)
+            call bc_emf_z(f,df,dt_,TOP,iax)
+            call bc_emf_z(f,df,dt_,TOP,iay)
+            call bc_emf_z(f,df,dt_,TOP,iaz)
           enddo
         endif
       else
@@ -968,9 +956,9 @@ module Special
         if (lset_boundary_emf) then
           do m=m1,m2
             do n=n1,n2
-              call bc_emf_x(f,df,dt_,'top',iax)
-              call bc_emf_x(f,df,dt_,'top',iay)
-              call bc_emf_x(f,df,dt_,'top',iaz)
+              call bc_emf_x(f,df,dt_,TOP,iax)
+              call bc_emf_x(f,df,dt_,TOP,iay)
+              call bc_emf_x(f,df,dt_,TOP,iaz)
             enddo
           enddo
         endif
@@ -1003,7 +991,6 @@ module Special
 !   1-may-02/wolf: coded (see the manual, Section C.3)
 !   7-jun-09/axel: added gaussian and constant (or box) profiles
 !
-      use Mpicomm, only: stop_it
       use Sub, only: erfunc
 !
       real, dimension (3) :: vv,uu
@@ -1061,7 +1048,7 @@ module Special
                 vv(3)=0.0
             endif
       case default
-        call stop_it('norm_ring: No such fluxtube profile')
+        call fatal_error('norm_ring','no such fluxtube profile: '//trim(profile))
       endselect
 !
     endsubroutine norm_ring
@@ -1075,7 +1062,6 @@ module Special
 !   1-may-02/wolf: coded (see the manual, Section C.3)
 !   7-jun-09/axel: added gaussian and constant (or box) profiles
 !
-      use Mpicomm, only: stop_it
       use Sub, only: erfunc
 !
       real, dimension (3) :: vv
@@ -1114,7 +1100,7 @@ module Special
               vv(3)=0.0
             endif
       case default
-        call stop_it('norm_upin: No such fluxtube profile')
+        call fatal_error('norm_upin','no such fluxtube profile: '//trim(profile))
       endselect
 !
     endsubroutine norm_upin
@@ -1154,7 +1140,7 @@ module Special
 !
 !  25-Aug-2012/piyali: adapted from bc_set_nfr_x
 !
-      character (len=bclen), intent (in) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension(3,3) :: mat
       real, dimension(3) :: rhs
@@ -1164,13 +1150,13 @@ module Special
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case(BOT)               ! bottom boundary
         do k=1,nghost
           if (lfirst_proc_x) &
           f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1+k)/x(l1-k))
         enddo
 !
-     case ('top')               ! top boundary
+     case(TOP)               ! top boundary
        if (llast_proc_x) then
          x2=x(l2+1)
          x3=x(l2+2)
@@ -1196,7 +1182,7 @@ module Special
 
 !
       case default
-        print*, "bc_nfc_x: ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_nfc_x: topbot should be BOT or TOP"
 !
       endselect
 !
@@ -1204,17 +1190,18 @@ module Special
 !***********************************************************************
     subroutine bc_emf_x(f,df,dt_,topbot,j)
 !
-      character (len=bclen), intent (in) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent(in) :: df
       real, intent(in) :: dt_
       integer, intent (in) :: j
       integer :: i
+
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
-        print*, "bc_emf_x: ", topbot, " should be 'top'"
-      case ('top')               ! top boundary
+      case(BOT)               ! bottom boundary
+        print*, "bc_emf_x: topbot should be TOP"
+      case(TOP)               ! top boundary
         if (llast_proc_x) then
           do i=1,nghost
             f(l2+i,m,n,j)=f(l2+i,m,n,j)+df(l2,m,n,j)*dt_ 
@@ -1222,23 +1209,25 @@ module Special
         endif
       
       case default
-        print*, "bc_emf_x: ", topbot, " should be 'top'"
+        print*, "bc_emf_x: topbot should be TOP"
       endselect
+
     endsubroutine bc_emf_x
 !***********************************************************************
     subroutine bc_emf_z(f,df,dt_,topbot,j)
 !
-      character (len=bclen), intent (in) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent(in) :: df
       real, intent(in) :: dt_
       integer, intent (in) :: j
       integer :: i
+
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
-        print*, "bc_emf_z: ", topbot, " should be 'top'"
-      case ('top')               ! top boundary
+      case(BOT)               ! bottom boundary
+        print*, "bc_emf_z: topbot should be TOP"
+      case(TOP)               ! top boundary
         if (llast_proc_z) then
           do i=1,nghost
             f(l1:l2,m,n2+i,j)=f(l1:l2,m,n2+i,j)+df(l1:l2,m,n2,j)*dt_ 
@@ -1246,7 +1235,7 @@ module Special
         endif
       
       case default
-        print*, "bc_emf_z: ", topbot, " should be 'top'"
+        print*, "bc_emf_z: topbot should be TOP"
       endselect
 !
     endsubroutine bc_emf_z
@@ -1272,11 +1261,11 @@ module Special
                    (f(l,m,n1-ig-1,ilnrho)-alog(rho0))))/gamma
         f(l,m,n1-ig,iuz)=((Pres_m1-Pres_p1)*dz_1(n1-ig)/exp(f(l,m,n1-ig,ilnrho))+gravz)*dt_
         if (f(l,m,n1,iuz) < 0) then 
-          call bc_sym_z(f,l,m,iux,ig,+1,'bot')
-          call bc_sym_z(f,l,m,iuy,ig,+1,'bot')
+          call bc_sym_z(f,l,m,iux,ig,+1,BOT)
+          call bc_sym_z(f,l,m,iuy,ig,+1,BOT)
         else
-          call bc_sym_z(f,l,m,iux,ig,-1,'bot')
-          call bc_sym_z(f,l,m,iuy,ig,-1,'bot')
+          call bc_sym_z(f,l,m,iux,ig,-1,BOT)
+          call bc_sym_z(f,l,m,iuy,ig,-1,BOT)
         endif
       endif
 !
@@ -1293,7 +1282,7 @@ module Special
 !  11-nov-02/wolf: coded
 !  10-apr-05/axel: added val argument
 !
-      character (len=bclen) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: sgn,i,j,l,m
       logical, optional :: rel
@@ -1303,7 +1292,7 @@ module Special
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case(BOT)               ! bottom boundary
         if (relative) then
           f(l,m,n1-i,j)=2*f(l,m,n1,j)+sgn*f(l,m,n1+i,j)
         else
@@ -1311,7 +1300,7 @@ module Special
           if (sgn<0) f(l,m,n1,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
 !
-      case ('top')               ! top boundary
+      case(TOP)               ! top boundary
         if (relative) then
           f(l,m,n2+i,j)=2*f(l,m,n2,j)+sgn*f(l,m,n2-i,j)
         else
@@ -1320,7 +1309,7 @@ module Special
         endif
 !
       case default
-        print*, "bc_sym_z: ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_sym_z: topbot should be BOT or TOP"
 !
       endselect
 !
@@ -1338,7 +1327,7 @@ module Special
 !  14-jun-2011/axel: adapted from bc_outflow_z
 !  17-sep-2012/piyali: adapted from bc_outflow_x
 !
-      character (len=bclen) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       logical, optional :: lforce_ghost
@@ -1353,7 +1342,7 @@ module Special
 !
 !  Bottom boundary.
 !
-      case ('bot')
+      case(BOT)
         do iy=1,my; do iz=1,mz
           if (f(l1,iy,iz,j)<0.0) then  ! 's'
             do i=1,nghost; f(l1-i,iy,iz,j)=+f(l1+i,iy,iz,j); enddo
@@ -1370,7 +1359,7 @@ module Special
 !
 !  Top boundary.
 !
-      case ('top')
+      case(TOP)
         if (llast_proc_x) then
           do iy=1,my
           do iz=1,mz
@@ -1398,7 +1387,7 @@ module Special
 !  Default.
 !
       case default
-        print*, "bc_go_x: ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_go_x: topbot should be BOT or TOP"
 !
       endselect
 !
@@ -1499,7 +1488,7 @@ module Special
                 sin(y(m)-0.5*dy)*flux_im12(:,2))/(x(l1:l2)*sin(y(m))*dy) &
             +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
       else
-        call fatal_error('twist_inject:div_diff_flux','Not coded for cartesian and cylindrical')
+        call not_implemented('twist_inject:div_diff_flux','for Cartesian and cylindrical coordinates')
       endif
       if (present(flux_sld)) flux_sld=0.0
 !
@@ -1735,6 +1724,7 @@ module Special
           endif
           cmax_ip12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(mu0*rho_tmp)+sqrt(p%cs2)
         endselect
+
     endsubroutine characteristic_speed
 !***********************************************************************
     real function minmod(a,b)
@@ -1756,7 +1746,6 @@ module Special
 !
       use EquationOfState, only: gamma
       use Diagnostics,     only: max_mn_name
-      use Mpicomm,         only: stop_it
       use Sub,             only: cubic_step,step
       use SharedVariables, only: get_shared_variable
       use Slices_methods,  only: store_slices
@@ -1769,7 +1758,7 @@ module Special
       real :: unit_lnQ
 !
       unit_lnQ = 3*alog(real(unit_velocity))+ &
-          5*alog(real(unit_length))+alog(real(unit_density))
+                 5*alog(real(unit_length))+alog(real(unit_density))
       lnTT_SI = p%lnTT + alog(real(unit_temperature))
 !
 !     calculate ln(ne*ni) :
@@ -1802,10 +1791,9 @@ module Special
 ! Do nothing actually!
 !
       case(2)
-        rtv_cool = rtv_cool &
-          *step(x(l1:l2),x_cutoff,0.2)
+        rtv_cool = rtv_cool*step(x(l1:l2),x_cutoff,0.2)
       case default
-        call fatal_error('cool_RTV_cutoff:','wrong value')
+        call fatal_error('twist_inject','wrong value of cool_RTV_cutoff')
       endselect
 !
 !     add to temperature equation
@@ -1813,8 +1801,7 @@ module Special
       if (ltemperature) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
       else
-        if (lentropy) &
-            call stop_it('solar_corona: calc_heat_cool:lentropy=not implemented')
+        if (lentropy) call not_implemented('solar_corona','calc_heat_cool for entropy')
       endif
 !
       if (lfirst .and. ldt) then
@@ -2014,7 +2001,7 @@ module Special
         enddo
 !
       case default
-        call fatal_error('get_lnQ','wrong type')
+        call fatal_error('get_lnQ','wrong cool_type')
       endselect
 !
     endsubroutine get_lnQ
@@ -2037,7 +2024,7 @@ module Special
       integer :: mid, num, inc
 !
       num = size (haystack, 1)
-      if (num < 2) call fatal_error ('interpol_tabulated', "Too few tabulated values!", .true.)
+      if (num < 2) call fatal_error ('interpol_tabulated', "too few tabulated values", .true.)
       if (lower >= num) lower = num - 1
       if ((upper <= lower) .or. (upper > num)) upper = num
 !
@@ -2126,7 +2113,7 @@ module Special
         interpol_tabulated = lower + (needle - haystack(lower)) / (haystack(upper) - haystack(lower))
       else
         interpol_tabulated = -1.0
-        call fatal_error ('interpol_tabulated', "Tabulated values are invalid!", .true.)
+        call fatal_error ('interpol_tabulated', "tabulated values are invalid", .true.)
       endif
 !
     endfunction interpol_tabulated

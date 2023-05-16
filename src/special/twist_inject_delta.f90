@@ -334,7 +334,6 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      character (len=3) :: topbot
       type (boundary_condition), intent(inout) :: bc
       integer :: j
 !
@@ -343,24 +342,20 @@ module Special
       j=bc%ivar
         select case (bc%location)
         case (iBC_X_TOP)
-          topbot='top'
-          call bc_nfc_x(f,topbot,j)
+          call bc_nfc_x(f,TOP,j)
       bc%done=.true.
         case (iBC_X_BOT)
-          topbot='bot'
-          call bc_nfc_x(f,topbot,j)
+          call bc_nfc_x(f,BOT,j)
       bc%done=.true.
         end select
       case ('go')
       j=bc%ivar
         select case (bc%location)
         case (iBC_X_TOP)
-          topbot='top'
-          call bc_go_x(f,topbot,j)
+          call bc_go_x(f,TOP,j)
       bc%done=.true.
         case (iBC_X_BOT)
-          topbot='bot'
-          call bc_go_x(f,topbot,j)
+          call bc_go_x(f,BOT,j)
       bc%done=.true.
         end select
       end select
@@ -747,7 +742,7 @@ module Special
 !
 !  25-Aug-2012/piyali: adapted from bc_set_nfr_x
 !
-      character (len=bclen), intent (in) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension(3,3) :: mat
       real, dimension(3) :: rhs
@@ -757,13 +752,13 @@ module Special
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case(BOT)               ! bottom boundary
         do k=1,nghost
           if (lfirst_proc_x) &
           f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1+k)/x(l1-k))
         enddo
 !
-     case ('top')               ! top boundary
+     case(TOP)               ! top boundary
        x2=x(l2+1)
        x3=x(l2+2)
        do m=m1, m2
@@ -788,24 +783,26 @@ module Special
       enddo
 !
       case default
-        print*, "bc_nfc_x: ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_nfc_x: topbot should be BOT or TOP"
 !
       endselect
 !
     endsubroutine bc_nfc_x
 !***********************************************************************
     subroutine bc_emf_x(f,df,dt_,topbot,j)
-      character (len=bclen), intent (in) :: topbot
+
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent(in) :: df
       real, intent(in) :: dt_
       integer, intent (in) :: j
       integer :: i
+
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
-        print*, "bc_emf_x: ", topbot, " should be 'top'"
-      case ('top')               ! top boundary
+      case(BOT)               ! bottom boundary
+        print*, "bc_emf_x: topbot should be TOP"
+      case(TOP)               ! top boundary
         if (llast_proc_x) then
           do i=1,nghost
             f(l2+i,m,n,j)=f(l2+i,m,n,j)+df(l2,m,n,j)*dt_
@@ -813,7 +810,7 @@ module Special
         endif
 !
       case default
-        print*, "bc_emf_x: ", topbot, " should be 'top'"
+        print*, "bc_emf_x: topbot should be TOP"
       endselect
     endsubroutine bc_emf_x
 !***********************************************************************
@@ -829,7 +826,7 @@ module Special
 !  14-jun-2011/axel: adapted from bc_outflow_z
 !  17-sep-2012/piyali: adapted from bc_outflow_x
 !
-      character (len=bclen) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       logical, optional :: lforce_ghost
@@ -844,7 +841,7 @@ module Special
 !
 !  Bottom boundary.
 !
-      case ('bot')
+      case(BOT)
         do iy=1,my; do iz=1,mz
           if (f(l1,iy,iz,j)<0.0) then  ! 's'
             do i=1,nghost; f(l1-i,iy,iz,j)=+f(l1+i,iy,iz,j); enddo
@@ -861,7 +858,7 @@ module Special
 !
 !  Top boundary.
 !
-      case ('top')
+      case(TOP)
         if (llast_proc_x) then
           do iy=1,my
           do iz=1,mz
@@ -887,7 +884,7 @@ module Special
 !  Default.
 !
       case default
-        print*, "bc_go_x: ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_go_x: topbot should be BOT or TOP"
 !
       endselect
 !
