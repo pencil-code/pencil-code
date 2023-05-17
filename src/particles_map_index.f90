@@ -1031,6 +1031,8 @@ module Particles_map
 !  20-sep-15/ccyang: coded.
 !  21-jun-17/ccyang: added optional argument mass.
 !
+      use Particles_sub, only: weigh_particle
+!
       integer, intent(in) :: npar
       integer, dimension(npar), intent(in) :: proc
       real, dimension(npar,3), intent(in) :: xi, xp, vp
@@ -1146,6 +1148,8 @@ module Particles_map
 !
 !  20-sep-15/ccyang: coded.
 !
+      use Particles_sub, only: weigh_particle
+!
       integer, intent(in) :: np
       real, dimension(mx,my,mz), intent(out) :: fg
       real, dimension(np,3), intent(in) :: xi
@@ -1185,6 +1189,8 @@ module Particles_map
 !  positions xi in index space.  Ghost cells are assumed updated.
 !
 !  05-jun-15/ccyang: coded.
+!
+      use Particles_sub, only: weigh_particle
 !
       integer, intent(in) :: np
       real, dimension(mx,my,mz), intent(in) :: fg
@@ -1418,130 +1424,6 @@ module Particles_map
           (lfirst_proc_x .and. xside == -1 .or. llast_proc_x .and. xside == +1)
 !
     endfunction is_shear_boundary
-!***********************************************************************
-    elemental real function particlemesh_weighting(dxi) result(weight)
-!
-!  Returns a normalized weight of a particle according to its distance
-!  from the cell center in index space in one dimension.
-!
-!  13-apr-15/ccyang: coded.
-!
-      real, intent(in) :: dxi
-!
-      real :: x
-!
-      pm: select case (particle_mesh)
-!
-!  Nearest-Grid-Point scheme.
-!
-      case ('ngp', 'NGP') pm
-        weight = merge(1.0, 0.0, -0.5 <= dxi .and. dxi < 0.5)
-!
-!  Cloud-In-Cell scheme
-!
-      case ('cic', 'CIC') pm
-        weight = max(1.0 - abs(dxi), 0.0)
-!
-!  Triangular-Shaped-Cloud scheme
-!
-      case ('tsc', 'TSC') pm
-        x = abs(dxi)
-        if (x < 0.5) then
-          weight = 0.75 - x**2
-        elseif (x < 1.5) then
-          weight = 0.5 * (1.5 - x)**2
-        else
-          weight = 0.0
-        endif
-!
-!  Third-order
-!
-      case ('3rd') pm
-        x = abs(dxi)
-        if (x < 1.0) then
-          weight = (4.0 - 3.0 * (2.0 - x) * x**2) / 6.0
-        elseif (x < 2.0) then
-          weight = (2.0 - x)**3 / 6.0
-        else
-          weight = 0.0
-        endif
-!
-!  Sixth-order
-!
-      case ('6th') pm
-        x = abs(dxi)
-        if (x < 0.5) then
-          x = x**2
-          weight = (5.887e3 - 20.0 * x * (2.31e2 - x * (84.0 - 16.0 * x))) / 1.152e4
-        elseif (x < 1.5) then
-          weight = (2.3583e4 + x * (-420.0 + x * (-1.638e4 + x * (-5.6e3 + x * (1.512e4 + x * (-6.72e3 + 960.0 * x)))))) / 4.608e4
-        elseif (x < 2.5) then
-          weight = (4.137e3 + x*(3.0408e4 + x*(-5.922e4 + x*(4.256e4 + x*(-1.512e4 + x*(2.688e3 - 192.0 * x)))))) / 2.304e4
-        elseif (x < 3.5) then
-          weight = (7.0 - 2.0 * x)**6 / 4.608e4
-        else
-          weight = 0.0
-        endif
-!
-!  Extended TSC with radius 2.
-!
-      case ('etsc', 'ETSC') pm
-        x = abs(dxi)
-        if (x < 0.5) then
-          weight = 0.4375 - 0.25 * x**2
-        elseif (x < 1.5) then
-          weight = 0.5 - 0.25 * x
-        elseif (x < 2.5) then
-          weight = 0.125 * (2.5 - x)**2
-        else
-          weight = 0.0
-        endif
-!
-!  Extended TSC with radius 3.
-!
-      case ('etsc2', 'ETSC2') pm
-        x = abs(dxi)
-        if (x < 0.5) then
-          weight = (2.75 - x**2) / 9.0
-        elseif (x < 2.5) then
-          weight = (3.0 - x) / 9.0
-        elseif (x < 3.5) then
-          weight = (3.5 - x)**2 / 18.0
-        else
-          weight = 0.0
-        endif
-!
-!  Unknown weight function; give insensible value.
-!
-      case default pm
-!
-        weight = huge(1.0)
-!
-      endselect pm
-!
-    endfunction particlemesh_weighting
-!***********************************************************************
-    elemental real function weigh_particle(dxi1, dxi2, dxi3) result(weight)
-!
-!  Weighs a particle according to the particle-mesh method.
-!
-!  03-feb-15/ccyang: coded.
-!
-      real, intent(in) :: dxi1, dxi2, dxi3
-!
-!  Apply the weighting function in each direction.
-!
-      if (nxgrid > 1) then
-        weight = particlemesh_weighting(dxi1)
-      else
-        weight = 1.0
-      endif
-!
-      if (nygrid > 1) weight = weight * particlemesh_weighting(dxi2)
-!
-      if (nzgrid > 1) weight = weight * particlemesh_weighting(dxi3)
-!
-    endfunction weigh_particle
 !***********************************************************************
 !***********************************************************************
 !  DUMMY PROCEDURES GO BELOW HERE.
