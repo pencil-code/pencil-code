@@ -543,6 +543,11 @@ module Particles_map
         f(:,:,:,iupx:iupz) = 0.0
         fb(:,:,:,iupx:iupz,0:nblock_loc-1) = 0.0
 !
+!  Sanity check.
+!
+        if (lparticles_density .or. lparticles_radius .or. lparticles_number) &
+            call fatal_error("map_vvp_grid", "variable particle mass is not implemented")
+!
         pm: if (lparticlemesh_tsc) then
 !
 !  Triangular Shaped Cloud (TSC) scheme.
@@ -563,10 +568,10 @@ module Particles_map
             endif tsc
           enddo blocks
 !
-          call fatal_error("map_vvp_grid", "TSC under construction. ")
+          call fatal_error("map_vvp_grid", "TSC under construction")
 !
         else pm
-          call fatal_error("map_vvp_grid", "not implemented for non-TSC scheme. ")
+          call fatal_error("map_vvp_grid", "not implemented for non-TSC scheme")
         endif pm
       endif uup
 !
