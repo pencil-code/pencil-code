@@ -357,21 +357,9 @@ module Particles_map
 !  decreases with the distance from the particle centre.
 !
                   ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-                  if (nxgrid/=1) then
-                    ixx0=ix0-1; ixx1=ix0+1
-                  else
-                    ixx0=ix0  ; ixx1=ix0
-                  endif
-                  if (nygrid/=1) then
-                    iyy0=iy0-1; iyy1=iy0+1
-                  else
-                    iyy0=iy0  ; iyy1=iy0
-                  endif
-                  if (nzgrid/=1) then
-                    izz0=iz0-1; izz1=iz0+1
-                  else
-                    izz0=iz0  ; izz1=iz0
-                  endif
+                  call tsc_index_range(ix0, nxgrid, ixx0, ixx1)
+                  call tsc_index_range(iy0, nygrid, iyy0, iyy1)
+                  call tsc_index_range(iz0, nzgrid, izz0, izz1)
 !
 !  Calculate mass density per superparticle.
 !
@@ -543,6 +531,11 @@ module Particles_map
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
 !
+      integer :: ix0, ixx0, ixx1
+      integer :: iy0, iyy0, iyy1
+      integer :: iz0, izz0, izz1
+      integer :: ib, k
+!
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
 !
@@ -551,7 +544,27 @@ module Particles_map
         fb(:,:,:,iupx:iupz,0:nblock_loc-1) = 0.0
 !
         pm: if (lparticlemesh_tsc) then
+!
+!  Triangular Shaped Cloud (TSC) scheme.
+!
+          blocks: do ib = 0, nblock_loc - 1
+            tsc: if (npar_iblock(ib) /= 0) then
+              par: do k = k1_iblock(ib), k2_iblock(ib)
+!
+!  Find neighboring grid points of a particle.
+!
+                ix0 = ineargrid(k,1)
+                iy0 = ineargrid(k,2)
+                iz0 = ineargrid(k,3)
+                call tsc_index_range(ix0, nxgrid, ixx0, ixx1)
+                call tsc_index_range(iy0, nygrid, iyy0, iyy1)
+                call tsc_index_range(iz0, nzgrid, izz0, izz1)
+              enddo par
+            endif tsc
+          enddo blocks
+!
           call fatal_error("map_vvp_grid", "TSC under construction. ")
+!
         else pm
           call fatal_error("map_vvp_grid", "not implemented for non-TSC scheme. ")
         endif pm
@@ -1720,5 +1733,28 @@ module Particles_map
       call keep_compiler_quiet(policy)
 !
     endsubroutine interp_field_pencil
+!***********************************************************************
+!***********************************************************************
+! LOCAL SUBROUTINES OR FUNCTIONS
+!***********************************************************************
+!***********************************************************************
+    elemental subroutine tsc_index_range(ix0, nxgrid, ixx0, ixx1)
+!
+!  Get the index range surrounding a particle for TSC.
+!
+!  17-may-23/ccyang: coded
+!
+      integer, intent(in) :: ix0, nxgrid
+      integer, intent(out) :: ixx0, ixx1
+!
+      range: if (nxgrid > 1) then
+        ixx0 = ix0 - 1
+        ixx1 = ix0 + 1
+      else range
+        ixx0 = ix0
+        ixx1 = ix0
+      endif range
+!
+    endsubroutine tsc_index_range
 !***********************************************************************
 endmodule Particles_map
