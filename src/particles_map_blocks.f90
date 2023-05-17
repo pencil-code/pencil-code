@@ -211,7 +211,7 @@ module Particles_map
 !  01-nov-09/anders: coded
 !
       use GhostFold,     only: fold_f
-      use Particles_sub, only: get_rhopswarm
+      use Particles_sub, only: get_rhopswarm, weigh_particle
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mpar_loc,mparray), intent(in) :: fp
@@ -381,34 +381,9 @@ module Particles_map
 !  3/4 contribution to that grid point and 1/8 to each of the neighbours.
 !
                   do izz=izz0,izz1 ; do iyy=iyy0,iyy1 ; do ixx=ixx0,ixx1
-!
-                    if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
-                      weight_x=1.125-1.5* abs(fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib)+ &
-                           0.5*(abs(fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib))**2
-                    else
-                      if (nxgrid/=1) &
-                           weight_x=0.75-   ((fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib))**2
-                    endif
-                    if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
-                      weight_y=1.125-1.5* abs(fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib)+ &
-                           0.5*(abs(fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib))**2
-                    else
-                      if (nygrid/=1) &
-                           weight_y=0.75 -   ((fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib))**2
-                    endif
-                    if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
-                      weight_z=1.125-1.5* abs(fp(k,izp)-zb(izz,ib))*dz1b(izz,ib)+ &
-                           0.5*(abs(fp(k,izp)-zb(izz,ib))*dz1b(izz,ib))**2
-                    else
-                      if (nzgrid/=1) &
-                           weight_z=0.75 -   ((fp(k,izp)-zb(izz,ib))*dz1b(izz,ib))**2
-                    endif
-!
-                    weight=weight0
-!
-                    if (nxgrid/=1) weight=weight*weight_x
-                    if (nygrid/=1) weight=weight*weight_y
-                    if (nzgrid/=1) weight=weight*weight_z
+                    weight = weight0 * weigh_particle(abs(fp(k,ixp) - xb(ixx,ib)) * dx1b(ixx,ib), &
+                                                      abs(fp(k,iyp) - yb(iyy,ib)) * dy1b(iyy,ib), &
+                                                      abs(fp(k,izp) - zb(izz,ib)) * dz1b(izz,ib))
                     fb(ixx,iyy,izz,irhop,ib)=fb(ixx,iyy,izz,irhop,ib) + weight
 !
 !  For debugging:
@@ -527,6 +502,9 @@ module Particles_map
 !  16-nov-09/anders: dummy
 !  17-may-23/ccyang: under construction
 !
+      use GhostFold, only: fold_f
+      use Particles_sub, only: weigh_particle
+!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
@@ -534,10 +512,9 @@ module Particles_map
       integer :: ix0, ixx0, ixx1
       integer :: iy0, iyy0, iyy1
       integer :: iz0, izz0, izz1
-      integer :: ib, k
-!
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(ineargrid)
+      integer :: ixx, iyy, izz
+      integer :: ib, ivp, k
+      real :: weight, dxi1, dxi2, dxi3
 !
       uup: if (iuup /= 0) then
         f(:,:,:,iupx:iupz) = 0.0
@@ -548,31 +525,63 @@ module Particles_map
         if (lparticles_density .or. lparticles_radius .or. lparticles_number) &
             call fatal_error("map_vvp_grid", "variable particle mass is not implemented")
 !
-        pm: if (lparticlemesh_tsc) then
-!
-!  Triangular Shaped Cloud (TSC) scheme.
-!
-          blocks: do ib = 0, nblock_loc - 1
-            tsc: if (npar_iblock(ib) /= 0) then
-              par: do k = k1_iblock(ib), k2_iblock(ib)
+        blocks: do ib = 0, nblock_loc - 1
+          tsc: if (npar_iblock(ib) /= 0) then
+            par: do k = k1_iblock(ib), k2_iblock(ib)
 !
 !  Find neighboring grid points of a particle.
 !
-                ix0 = ineargrid(k,1)
-                iy0 = ineargrid(k,2)
-                iz0 = ineargrid(k,3)
+              ix0 = ineargrid(k,1)
+              iy0 = ineargrid(k,2)
+              iz0 = ineargrid(k,3)
+              pm: if (lparticlemesh_tsc) then
                 call tsc_index_range(ix0, nxgrid, ixx0, ixx1)
                 call tsc_index_range(iy0, nygrid, iyy0, iyy1)
                 call tsc_index_range(iz0, nzgrid, izz0, izz1)
-              enddo par
-            endif tsc
-          enddo blocks
+              else pm
+                call fatal_error("map_vvp_grid", "not implemented for non-TSC scheme")
+              endif pm
 !
-          call fatal_error("map_vvp_grid", "TSC under construction")
+!  Add the particle momentum to neighboring grid points.
 !
-        else pm
-          call fatal_error("map_vvp_grid", "not implemented for non-TSC scheme")
-        endif pm
+              zscan: do izz = izz0, izz1
+                dxi3 = abs(fp(k,izp) - zb(izz,ib)) * dz1b(izz,ib)
+                yscan: do iyy = iyy0, iyy1
+                  dxi2 = abs(fp(k,iyp) - yb(iyy,ib)) * dy1b(iyy,ib)
+                  xscan: do ixx = ixx0, ixx1
+                    dxi1 = abs(fp(k,ixp) - xb(ixx,ib)) * dx1b(ixx,ib)
+                    weight = mp_swarm * weigh_particle(dxi1, dxi2, dxi3)
+                    fb(ixx,iyy,izz,iupx:iupz,ib) = fb(ixx,iyy,izz,iupx:iupz,ib) + weight * fp(k,ivpx:ivpz)
+                  enddo xscan
+                enddo yscan
+              enddo zscan
+!
+            enddo par
+          endif tsc
+        enddo blocks
+!
+!  Communicate the particle momentum.
+!
+        do ivp = iupx, iupz
+          call fill_bricks_with_blocks(f, fb, mfarray, ivp)
+        enddo
+!
+        comm: if (particle_mesh /= "NGP" .and. particle_mesh /= "ngp") then
+          call fold_f(f, iupx, iupz)
+          uup1: do ivp = iupx, iupz
+            where (f(l1:l2,m1:m2,n1:n2,irhop) > 0.0)
+              f(l1:l2,m1:m2,n1:n2,ivp) = f(l1:l2,m1:m2,n1:n2,ivp) / f(l1:l2,m1:m2,n1:n2,irhop)
+            elsewhere
+              f(l1:l2,m1:m2,n1:n2,ivp) = 0.0
+            endwhere
+            do izz = n1, n2
+              do iyy = m1, m2
+                f(l1:l2,iyy,izz,ivp) = f(l1:l2,iyy,izz,ivp) / (dVol_x(l1:l2) * dVol_y(iyy) * dVol_z(izz))
+              enddo
+            enddo
+            call fill_blocks_with_bricks(f, fb, mfarray, ivp)
+          enddo uup1
+        endif comm
       endif uup
 !
     endsubroutine map_vvp_grid
