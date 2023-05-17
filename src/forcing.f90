@@ -943,8 +943,8 @@ module Forcing
             profx_ampl=exp(-.5*x(l1:l2)**2/radius_ff**2)
             profy_ampl=exp(-.5*y**2/radius_ff**2)
           endif
-        elseif (iforcing_cont(i)=='RobertsFlow-zdep' .or.
-                iforcing_cont(i)=='Roberts-for-SSD' .or.
+        elseif (iforcing_cont(i)=='RobertsFlow-zdep' .or. &
+                iforcing_cont(i)=='Roberts-for-SSD' .or. &
                 iforcing_cont(i)=='elevator-flow') then
           if (lroot) print*,'forcing_cont: z-dependent Roberts Flow'
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
