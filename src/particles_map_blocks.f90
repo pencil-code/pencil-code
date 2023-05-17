@@ -536,18 +536,26 @@ module Particles_map
 !
 !  Map the particle velocities as vector field on the grid.
 !
-!  16-nov-09/anders: coded
+!  16-nov-09/anders: dummy
+!  17-may-23/ccyang: under construction
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
 !
-      if (iupx/=0) call fatal_error('map_vvp_grid', &
-          'not implemented for block domain decomposition')
-!
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
+!
+      uup: if (iuup /= 0) then
+        f(:,:,:,iupx:iupz) = 0.0
+        fb(:,:,:,iupx:iupz,0:nblock_loc-1) = 0.0
+!
+        pm: if (lparticlemesh_tsc) then
+          call fatal_error("map_vvp_grid", "TSC under construction. ")
+        else pm
+          call fatal_error("map_vvp_grid", "not implemented for non-TSC scheme. ")
+        endif pm
+      endif uup
 !
     endsubroutine map_vvp_grid
 !***********************************************************************
