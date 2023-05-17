@@ -73,6 +73,7 @@ module Particles
   real :: cs2_powerlaw
   logical, pointer :: lshearadvection_as_shift
   logical, target :: ldragforce_gas_par=.false.
+  logical :: lcalc_uup = .false.
   logical :: ldragforce_dust_par=.false.
   logical :: lpar_spec=.false., learly_particle_map=.true.
   logical :: ldragforce_equi_global_eps=.false.
@@ -116,7 +117,7 @@ module Particles
       remove_particle_criteria_edtog, rad_sphere, pos_sphere, rhopmat, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       lrandom_particle_pencils, it1_loadbalance, &
-      lnocalc_np, lnocalc_rhop, lcommunicate_rhop, lcommunicate_np, &
+      lcalc_uup, lnocalc_np, lnocalc_rhop, lcommunicate_rhop, lcommunicate_np, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
       lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, &
       xp1, yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
@@ -199,8 +200,16 @@ module Particles
 !
 !  Set indices for auxiliary variables
 !
+      uup: if (lcalc_uup) then
+        call farray_register_auxiliary("uup", iuup, communicated=.true., vector=3)
+        iupx = iuup
+        iupy = iuup + 1
+        iupz = iuup + 2
+      endif uup
+!
       if (.not. lnocalc_np) call farray_register_auxiliary('np',inp,&
           communicated=lcommunicate_np)
+!
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated=lparticles_sink.or.lcommunicate_rhop)
 !
