@@ -21,6 +21,7 @@
 ! CPARAM character (len=20), parameter :: particles_module="dust_blocks"
 !
 ! PENCILS PROVIDED np; rhop; epsp; grhop(3);peh
+! PENCILS PROVIDED uup(3)
 !
 !***************************************************************
 module Particles
@@ -162,6 +163,8 @@ module Particles
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
+  integer :: idiag_rpvpxmx = 0, idiag_rpvpymx = 0, idiag_rpvpzmx = 0
+  integer :: idiag_rpvpx2mx = 0, idiag_rpvpy2mx = 0, idiag_rpvpz2mx = 0
   integer :: idiag_mpt=0, idiag_dedragp=0
   integer :: idiag_rhopmxy=0, idiag_rhopmxz=0, idiag_rhopmr=0
   integer :: idiag_sigmap=0
@@ -1399,6 +1402,11 @@ k_loop:   do while (.not. (k>npar_loc))
       if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0 .or. &
           idiag_epspmin/=0 .or. idiag_epspmax/=0) &
           lpenc_diagnos(i_epsp)=.true.
+      if (idiag_rpvpxmx /= 0 .or. idiag_rpvpymx /= 0 .or. idiag_rpvpzmx /= 0 .or. &
+          idiag_rpvpx2mx /= 0 .or. idiag_rpvpy2mx /= 0 .or. idiag_rpvpz2mx /= 0) then
+        lpenc_diagnos(i_rhop) = .true.
+        lpenc_diagnos(i_uup) = .true.
+      endif
       if (idiag_rhopmxz/=0 .or. idiag_rhopmxy/=0 .or. idiag_rhopmr/=0 .or. &
           idiag_sigmap/=0) lpenc_diagnos2d(i_rhop)=.true.
 !
@@ -1414,6 +1422,9 @@ k_loop:   do while (.not. (k>npar_loc))
       logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_rhop) .and. irhop==0) lpencil_in(i_np)=.true.
+!
+      if (lpencil_in(i_uup) .and. iuup == 0) &
+          call fatal_error("pencil_interdep_particles", "p%uup is requested but not calculated. ")
 !
       if (lpencil_in(i_epsp)) then
         lpencil_in(i_rhop)=.true.
@@ -1459,6 +1470,8 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
+!
+      if (lpencil(i_uup)) p%uup = f(l1:l2,m,n,iupx:iupz)
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -1970,6 +1983,13 @@ k_loop:   do while (.not. (k>npar_loc))
         call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
+!
+        if (idiag_rpvpxmx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,1), idiag_rpvpxmx)
+        if (idiag_rpvpymx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,2), idiag_rpvpymx)
+        if (idiag_rpvpzmx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,3), idiag_rpvpzmx)
+        if (idiag_rpvpx2mx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,1)**2, idiag_rpvpx2mx)
+        if (idiag_rpvpy2mx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,2)**2, idiag_rpvpy2mx)
+        if (idiag_rpvpz2mx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,3)**2, idiag_rpvpz2mx)
       endif
 !
       if (l2davgfirst) then
@@ -2822,6 +2842,8 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
+        idiag_rpvpxmx = 0; idiag_rpvpymx = 0; idiag_rpvpzmx = 0
+        idiag_rpvpx2mx = 0; idiag_rpvpy2mx = 0; idiag_rpvpz2mx = 0
         idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0; idiag_sigmap=0
         idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparbmax=0
@@ -2912,6 +2934,12 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'npmx',idiag_npmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',idiag_rhopmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',idiag_epspmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpxmx', idiag_rpvpxmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpymx', idiag_rpvpymx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpzmx', idiag_rpvpzmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpx2mx', idiag_rpvpx2mx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpy2mx', idiag_rpvpy2mx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpz2mx', idiag_rpvpz2mx)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
