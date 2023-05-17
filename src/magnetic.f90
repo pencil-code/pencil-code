@@ -3889,7 +3889,7 @@ module Magnetic
 !  Check whether or not the displacement current is being computed.
 !  Note that the previously calculated p%jj would now be overwritten.
 !
-        if (iex>0) then
+        if (iex>0 .and. .not. loverride_ee) then
           if (lvacuum) then
             p%jj=0
           else
@@ -5521,7 +5521,7 @@ module Magnetic
         f(l1:l2,m,n,ibb_sphr) = p%bb(:,1)*p%evr(:,1)+p%bb(:,2)*p%evr(:,2)+p%bb(:,3)*p%evr(:,3)
         f(l1:l2,m,n,ibb_spht) = p%bb(:,1)*p%evth(:,1)+p%bb(:,2)*p%evth(:,2)+p%bb(:,3)*p%evth(:,3)
         f(l1:l2,m,n,ibb_sphp) = p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
-     endif
+      endif
 !
 !  Now add all the contribution to dAdt so far into df.
 !  This is done here, such that contribution from mean-field models are not added to
@@ -5534,7 +5534,7 @@ module Magnetic
 !
       if (lmagn_mf) call daa_dt_meanfield(f,df,p)
 !
-!  This is the endif from iex>0.
+!  This is the endif from (iex==0.or.loverride_ee)
 !
       endif
 !
@@ -6893,6 +6893,9 @@ module Magnetic
           case ('linear-sigma')
             eta_tdep=1./(1./eta_max+(1./eta-1./eta_max) &
                 *max(min(real(t-eta_tdep_toffset)/eta_tdep_t0,1.),0.))
+          case ('eta_table')
+            call fatal_error('magnetic_after_boundary','eta_table not yet completed')
+            eta_tdep=0.
           case default
           endselect
         if (lroot.and.ldiagnos) call save_name(eta_tdep,idiag_eta_tdep)

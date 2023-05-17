@@ -943,7 +943,9 @@ module Forcing
             profx_ampl=exp(-.5*x(l1:l2)**2/radius_ff**2)
             profy_ampl=exp(-.5*y**2/radius_ff**2)
           endif
-        elseif (iforcing_cont(i)=='RobertsFlow-zdep'.or.iforcing_cont(i)=='Roberts-for-SSD') then
+        elseif (iforcing_cont(i)=='RobertsFlow-zdep' .or.
+                iforcing_cont(i)=='Roberts-for-SSD' .or.
+                iforcing_cont(i)=='elevator-flow') then
           if (lroot) print*,'forcing_cont: z-dependent Roberts Flow'
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
           siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
@@ -5718,6 +5720,23 @@ module Forcing
               -dfpara*ampl_ff(i)*sinx(l1:l2,i)*cosy(m,i)*sqrt21k1
           force(:,2)=+ampl_ff(i)*sinx(l1:l2,i)*cosy(m,i) &
               -dfpara*ampl_ff(i)*cosx(l1:l2,i)*siny(m,i)*sqrt21k1
+          force(:,3)=+fpara*ampl_ff(i)*cosx(l1:l2,i)*cosy(m,i)*sqrt2
+!
+        case ('elevator-flow')
+          if (headtt) print*,'z-dependent elevator-flow; eps_fcont=',eps_fcont
+          fpara=quintic_step(z(n),-1.+eps_fcont(i),eps_fcont(i)) &
+               -quintic_step(z(n),+1.-eps_fcont(i),eps_fcont(i))
+          dfpara=quintic_der_step(z(n),-1.+eps_fcont(i),eps_fcont(i))&
+                -quintic_der_step(z(n),+1.-eps_fcont(i),eps_fcont(i))
+!
+!  abbreviations
+!
+          sqrt21k1=1./(sqrt2*k1_ff)
+!
+!  amplitude factor missing in upper lines
+!
+          force(:,1)=-dfpara*ampl_ff(i)*sinx(l1:l2,i)*cosy(m,i)*sqrt21k1
+          force(:,2)=-dfpara*ampl_ff(i)*cosx(l1:l2,i)*siny(m,i)*sqrt21k1
           force(:,3)=+fpara*ampl_ff(i)*cosx(l1:l2,i)*cosy(m,i)*sqrt2
 !
 !  f=(sinx,0,0)
