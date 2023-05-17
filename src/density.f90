@@ -80,7 +80,7 @@ module Density
   real :: mass_source_omega=0.
   real :: co1_ss=0.0, co2_ss=0.0, Sigma1=150.0
   real :: lnrho_int=0.0, lnrho_ext=0.0, damplnrho_int=0.0, damplnrho_ext=0.0
-  real :: wdamp=0.0, density_floor=-1.0
+  real :: wdamp=0.0, density_floor=-1.0, density_floor_exp=0.
   real :: mass_source_Mdot=0.0, mass_source_sigma=0.0, mass_source_offset=0.0
   real :: tstart_mass_source=0.0, tstop_mass_source=-1.0
   real :: lnrho_z_shift=0.0
@@ -139,6 +139,7 @@ module Density
   character (len=labellen) :: ffree_profile='none'
   character (len=fnlen) :: datafile='dens_temp.dat'
   character (len=labellen) :: cloud_mode='isothermal'
+  character (len=labellen) :: density_floor_profile='uniform'
   logical :: ldensity_slope_limited=.false.
   real :: h_sld_dens=2.0, nlf_sld_dens=1.0
   real, dimension(3), target :: beta_glnrho_global = 0.0
@@ -153,6 +154,7 @@ module Density
       amplrho, phase_lnrho, coeflnrho, kxx_lnrho, kyy_lnrho,  kzz_lnrho, &
       co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, wdamp, lcontinuity_gas, &
       lisothermal_fixed_Hrho, density_floor, lanti_shockdiffusion, &
+      density_floor_profile, density_floor_exp, &
       lmassdiff_fix, lmassdiff_fixmom, lmassdiff_fixkin,  &
       lrho_as_aux, ldiffusion_nolog, lnrho_z_shift, powerlr, zoverh, hoverr, &
       lffree, ffree_profile, rzero_ffree, wffree, rho_top, rho_bottom, &
@@ -174,6 +176,7 @@ module Density
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
       lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
+      density_floor_profile, density_floor_exp, &
       ldiffusion_nolog, lcheck_negative_density, &
       lmassdiff_fix, lmassdiff_fixmom, lmassdiff_fixkin,&
       lcalc_lnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
@@ -3304,9 +3307,11 @@ module Density
 !
 !  13-aug-07/anders: implemented.
 !  10-feb-15/MR: adaptations for reference state
+!  17-may-23/hongzhe: implemented non-uniform density floor (for lnrho only)
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
+      real :: density_floor_local
       integer :: i, j, k
 !
 !  Impose the density floor.
@@ -3317,7 +3322,17 @@ module Density
           if (.not.lreference_state) &     ! else?
             where (f(:,:,:,irho)<density_floor) f(:,:,:,irho)=density_floor
         else
-          where (f(:,:,:,ilnrho)<density_floor_log) f(:,:,:,ilnrho)=density_floor_log
+          select case (density_floor_profile)
+          case ('uniform')
+            where (f(:,:,:,ilnrho)<density_floor_log) f(:,:,:,ilnrho)=density_floor_log
+          case('sphr_powerlaw')
+            do i=1,mx
+              density_floor_local = density_floor_log + density_floor_exp*log(x(i))
+              where (f(i,:,:,ilnrho)<density_floor_local) f(i,:,:,ilnrho) = density_floor_local
+            enddo
+          case default
+            call fatal_error_local('impose_density_floor','no such density_floor_profile implemented')
+          endselect
         endif
       else
 !
