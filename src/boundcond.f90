@@ -910,6 +910,13 @@ module Boundcond
                 case ('el')
                   ! BCX_DOC: linear extrapolation from last two active cells
                   call bcx_extrap_linear(f, topbot, j)
+                case ('pl')
+                  ! BCX_DOC: extrapolate using power law with the power index specified by fbcx
+                  if (j==ilnrho) then
+                    call bcx_extrap_powerlaw(f,topbot,j,fbcx(j,topbot),llog=.true.)
+                  else
+                    call bcx_extrap_powerlaw(f,topbot,j,fbcx(j,topbot),llog=.false.)
+                  endif
                 case ('hat')
                   ! BCX_DOC: top hat jet profile in spherical coordinate.
                   !Defined only for the bottom boundary
@@ -4941,6 +4948,51 @@ module Boundcond
       endselect
 !
     endsubroutine bcx_extrap_2_3
+!***********************************************************************
+    subroutine bcx_extrap_powerlaw(f,topbot,j,pj,llog)
+!
+!  Extrapolation boundary condition in logarithm:
+!  It maintains a power law with index pj.
+!
+!  17-may-23/hongzhe: coded
+!
+      real, dimension (:,:,:,:) :: f
+      integer, intent(IN) :: topbot
+      integer :: j
+      real :: pj
+      logical, optional :: llog
+!
+      integer :: i
+      logical :: lln=.false.
+!
+      if (present(llog)) lln=llog
+!
+      select case (topbot)
+!
+      case (BOT)
+        do i=1,nghost
+          if (lln) then
+            f(l1-i,:,:,j) = f(l1,:,:,j)+pj*log(x(l1-i)/x(l1))
+          else
+            f(l1-i,:,:,j) = f(l1,:,:,j)*(x(l1-i)/x(l1))**pj
+          endif
+        enddo
+!
+      case (TOP)
+        do i=1,nghost
+          if (lln) then
+            f(l2+i,:,:,j) = f(l2,:,:,j)+pj*log(x(l2+i)/x(l2))
+          else
+            f(l2+i,:,:,j) = f(l2,:,:,j)*(x(l2+i)/x(l2))**pj
+          endif
+        enddo
+!
+      case default
+        print*, "bcx_extrap_powerlaw: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bcx_extrap_powerlaw
 !***********************************************************************
     subroutine bcx_extrap_linear(f, topbot, j)
 !
