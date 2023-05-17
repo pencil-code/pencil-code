@@ -45,9 +45,11 @@ module Special
   real, dimension (nx) :: grand, grant, dgrant
   real :: grand_sum, grant_sum, dgrant_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
+  real :: nmin0=-1., nmax0=3.
   real, dimension (nx) :: dt1_special
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
+  logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
@@ -57,7 +59,8 @@ module Special
   namelist /special_run_pars/ &
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
-    Ndivt, lanalytic, lvariable_k
+    Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
+    nmin0, nmax0
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -125,11 +128,25 @@ module Special
 !  19-feb-2019/axel: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: lnk
+      real :: lnt, lnH, lnkmin0, lnkmax0, dlnk
+      real :: kmax=2., lnkmax, lnk0=1. !(redundant?)
       integer :: ik
 !
 !  Initialize any module variables which are parameter dependent
 !
-      if (llnk_spacing) then
+      if (llnk_spacing_adjustable) then
+        lnt=exp(t)
+        lnH=exp(H)
+        lnkmin0=nmin0+lnH+lnt
+        lnkmax0=nmax0+lnH+lnt
+        dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
+        do ik=1,nx
+          lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
+          k(ik)=exp(lnk(ik))
+        enddo
+        print*,'iproc,lnk=',iproc,lnk
+      elseif (llnk_spacing) then
         lnkmax=alog(kmax)
         dlnk=lnkmax/(ncpus*nx)
         lnk0=dlnk
@@ -583,6 +600,11 @@ endif
       epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
       epsQB=g**2*Q**4/(Mpl2*H**2)
 !
+!  decide about revising the k array
+!
+!       if
+!XX
+!
 !  integrand (for diagnostics)
 !
       TReff=TR
@@ -598,7 +620,9 @@ endif
       grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
       grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
 !
-      if (llog_spacing) then
+      !if (llog_spacing) then
+!AB: bug, right?
+      if (llnk_spacing) then
         if (lconf_time) then
           dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+g*Qdot)*TReff**2+(mQ*H-k/a)*2*TReff*TRdoteff &
@@ -609,7 +633,6 @@ endif
           )/twopi**3
         endif
       else
-XX
         if (lconf_time) then
           dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+g*Qdot)*TReff**2+(mQ*H-k/a)*2*TReff*TRdoteff &
