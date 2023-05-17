@@ -37,41 +37,36 @@ Begin["`Private`"]
 (*Read slice files*)
 
 
-readSlice[sim_,var_,sl_]:=
-  With[{
-      file=sim<>"/data/slice_"<>var<>"."<>sl,
-      dvid=readParamNml[sim,"run.in","DVID"],
-      tlast=readTS[sim,"t"][[-1]]
-    },
-    readSlice::nofile=StringJoin[file," does not exist. Please check."];
-    readSlice::badformat=StringJoin[file," has bad format. Please check."];
-    Module[{p,nx,ny,nz,n1,n2,s1,s2,readOneTime,data,slices,times,positions},
-      If[!FileExistsQ[file],Message[readSlice::nofile];Return[$Failed]];
-      
-      (* determine data dimension *)
-      {p,nx,ny,nz}=readDim[sim]/@{"precision","nx","ny","nz"};
-      {n1,n2}=Switch[StringTake[sl,2],"xy",{nx,ny},"yz",{ny,nz},"xz",{nx,nz}];
-      (* step size *)
-      {s1,s2}=With[{s12=sim<>"/data/stride_"<>StringTake[sl,2]<>".dat"},
-        If[FileExistsQ[s12],Import[s12][[1]],{1,1}]
-      ];
-      {n1,n2}=Ceiling[{n1,n2}/{s1,s2}];
-      
-      (* read *)
-      readOneTime[x_]:=Module[{nstart=Last[x],slice,t,pos,nend,nnext},
-        slice=BinaryRead[file,ConstantArray[p,n1*n2]];
-        t=BinaryRead[file,p];
-        pos=BinaryRead[file,p];
-        nend=BinaryRead[file,"Integer32"];
-        If[nstart!=nend,Message[readSlice::badformat];Return[$Failed]];
-        Return[{Partition[slice,n1],t,pos,BinaryRead[file,"Integer32"]}]
-      ];
-      Close[file]//Quiet;
-      data=NestWhileList[readOneTime,{BinaryRead[file,"Integer32"]},(Last[#]=!=EndOfFile)&];
-      {slices,times,positions}=Most[Transpose[Rest@data]];
-      {slices,times,Union[positions]}
-    ]
-  ]
+readSlice[sim_,var_,sl_]:=Module[
+  {file,p,nx,ny,nz,n1,n2,s1,s2,readOneTime,data,slices,times,positions},
+  file=sim<>"/data/slice_"<>var<>"."<>sl;
+  readSlice::nofile=StringJoin[file," does not exist. Please check."];
+  readSlice::badformat=StringJoin[file," has bad format. Please check."];
+  If[!FileExistsQ[file],Message[readSlice::nofile];Return[$Failed]];
+  
+  (* determine data dimension *)
+  {p,nx,ny,nz}=readDim[sim]/@{"precision","nx","ny","nz"};
+  {n1,n2}=Switch[StringTake[sl,2],"xy",{nx,ny},"yz",{ny,nz},"xz",{nx,nz}];
+  (* step size *)
+  {s1,s2}=With[{s12=sim<>"/data/stride_"<>StringTake[sl,2]<>".dat"},
+    If[FileExistsQ[s12],Import[s12][[1]],{1,1}]
+  ];
+  {n1,n2}=Ceiling[{n1,n2}/{s1,s2}];
+  
+  (* read *)
+  readOneTime[x_]:=Module[{nstart=Last[x],slice,t,pos,nend,nnext},
+    slice=BinaryRead[file,ConstantArray[p,n1*n2]];
+    t=BinaryRead[file,p];
+    pos=BinaryRead[file,p];
+    nend=BinaryRead[file,"Integer32"];
+    If[nstart!=nend,Message[readSlice::badformat];Return[$Failed]];
+    Return[{Partition[slice,n1],t,pos,BinaryRead[file,"Integer32"]}]
+  ];
+  Close[file]//Quiet;
+  data=NestWhileList[readOneTime,{BinaryRead[file,"Integer32"]},(Last[#]=!=EndOfFile)&];
+  {slices,times,positions}=Most[Transpose[Rest@data]];
+  {slices,times,Union[positions]}
+]
 
 
 (* ::Chapter:: *)
