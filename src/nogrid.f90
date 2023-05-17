@@ -50,7 +50,7 @@ module Grid
     module procedure calc_pencils_grid_std
   endinterface calc_pencils_grid
 !
-  integer, parameter :: BOT=1, TOP=2
+! integer, parameter :: BOT=1, TOP=2
 !
   contains
 !***********************************************************************
