@@ -889,24 +889,27 @@ module Particles_mpicomm
 !  is extremely slow when the processor number is high (>>100). Thus we only
 !  allow communication with surrounding processors during the run.
 !
-        if (lstart.or.lreblocking) then
-          do i=0,ncpus-1
-            if (iproc/=i) then
-              call mpirecv_int(nmig_enter(i),i,itag_nmig)
-            else
-              do j=0,ncpus-1
-                if (iproc/=j) call mpisend_int(nmig_leave(j),j,itag_nmig)
-              enddo
-            endif
-          enddo
-        else
-          do i=1,nproc_comm
-            call mpisend_int(nmig_leave(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc)
-          enddo
-          do i=1,nproc_comm
-            call mpirecv_int(nmig_enter(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc_comm(i))
-          enddo
-        endif
+        nmig: if (lstart.or.lreblocking) then
+          sproc: do i = 0, ncpus - 1
+            scomm: if (i < iproc) then
+              call mpisend_int(nmig_leave(i),i,itag_nmig+i)
+              call mpirecv_int(nmig_enter(i),i,itag_nmig+iproc)
+            elseif (i > iproc) then scomm
+              call mpirecv_int(nmig_enter(i),i,itag_nmig+iproc)
+              call mpisend_int(nmig_leave(i),i,itag_nmig+i)
+            endif scomm
+          enddo sproc
+        else nmig
+          proc: do i = 1, nproc_comm
+            comm: if (iproc_comm(i) < iproc) then
+              call mpisend_int(nmig_leave(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc)
+              call mpirecv_int(nmig_enter(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc_comm(i))
+            elseif (iproc_comm(i) > iproc) then comm
+              call mpirecv_int(nmig_enter(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc_comm(i))
+              call mpisend_int(nmig_leave(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc)
+            endif comm
+          enddo proc
+        endif nmig
 !
 !  Check that there is room for the new particles at each processor.
 !
