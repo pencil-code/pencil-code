@@ -1089,11 +1089,12 @@ module Io
 !
 !  Read total number of particles.
 !
-      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, MPI_INTEGER, MPI_INTEGER, "native", io_info, mpi_err)
-      call check_success("input_part", "set view of", fpath)
-!
-      call MPI_FILE_READ_ALL(handle, npar_tot, 1, MPI_INTEGER, status, mpi_err)
-      call check_success("input_part", "read total number of particles", fpath)
+      nptot: if (lroot) then
+        call MPI_FILE_READ(handle, npar_tot, 1, MPI_INTEGER, status, mpi_err)
+        call check_success_local("input_part", "read total number of particles")
+      endif nptot
+      call MPI_BCAST(npar_tot, 1, MPI_INTEGER, root, MPI_COMM_WORLD, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast total number of particles")
 !
       cknp: if (npar_tot > mv * ncpus) then
         if (lroot) print *, "input_part_snap: npar_tot, mv = ", npar_tot, mv
@@ -1102,32 +1103,44 @@ module Io
 !
 !  Identify local particles.
 !
-      offset = get_disp_to_par_real(npar_tot)
-      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
-      call check_success("input_part", "set view of", fpath)
-!
       allocate(lpar_loc(npar_tot), stat=mpi_err)
       call check_success_local("input_part", "allocate lpar_loc")
       lpar_loc = .true.
 !
+      offset = get_disp_to_par_real(npar_tot)
+      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
+      call check_success("input_part", "set view of", fpath)
+!
       inx: if (lactive_dimension(1)) then
-        call MPI_FILE_READ_AT_ALL(handle, (ixp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
-                                  rbuf, npar_tot, mpi_precision, status, mpi_err)
-        call check_success("input_part", "read xp of", fpath)
+        xp: if (lroot) then
+          call MPI_FILE_READ_AT(handle, (ixp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), rbuf, npar_tot, &
+                                mpi_precision, status, mpi_err)
+          call check_success_local("input_part", "read xp of")
+        endif xp
+        call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast xp. ")
         lpar_loc = lpar_loc .and. procx_bounds(ipx) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procx_bounds(ipx+1)
       endif inx
 !
       iny: if (lactive_dimension(2)) then
-        call MPI_FILE_READ_AT_ALL(handle, (iyp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
-                                  rbuf, npar_tot, mpi_precision, status, mpi_err)
-        call check_success("input_part", "read yp of", fpath)
+        yp: if (lroot) then
+          call MPI_FILE_READ_AT(handle, (iyp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), rbuf, npar_tot, &
+                                mpi_precision, status, mpi_err)
+          call check_success_local("input_part", "read yp of")
+        endif yp
+        call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast yp. ")
         lpar_loc = lpar_loc .and. procy_bounds(ipy) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procy_bounds(ipy+1)
       endif iny
 !
       inz: if (lactive_dimension(3)) then
-        call MPI_FILE_READ_AT_ALL(handle, (izp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
-                                  rbuf, npar_tot, mpi_precision, status, mpi_err)
-        call check_success("input_part", "read zp of", fpath)
+        zp: if (lroot) then
+          call MPI_FILE_READ_AT(handle, (izp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), rbuf, npar_tot, &
+                                mpi_precision, status, mpi_err)
+          call check_success_local("input_part", "read zp of")
+        endif zp
+        call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast zp. ")
         lpar_loc = lpar_loc .and. procz_bounds(ipz) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procz_bounds(ipz+1)
       endif inz
 !
