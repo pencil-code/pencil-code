@@ -211,7 +211,6 @@ module Io
       real, dimension(mzgrid), intent(in), optional :: gz
 !
       real, dimension(mxgrid+mygrid+mzgrid) :: tmp_grid
-      integer :: px, py, pz, partner
       integer, parameter :: tag_gx=680, tag_gy=681, tag_gz=682
 !
       if (lroot) then
