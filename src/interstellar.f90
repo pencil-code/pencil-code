@@ -3286,15 +3286,14 @@ module Interstellar
 !  Initialize SN volume
 !
       sol_mass_tot=solar_mass*N_mass
-      SNvol=fourthird*pi/sol_mass_tot
+      SNvol=fourthird*pi/sol_mass_tot/energy_Nsigma
 !
 !  Rescale injection radius to contain only N_mass solar masses or at least
 !  min radius. Iterate a few times to improve radius match to N_mass.
 !
       if (lSN_scale_rad) then
-        Nsol_ratio=1.
         radius_min=rfactor_SN*SNR%feat%dr
-        radius_max=200*pc_cgs/unit_length
+        radius_max=100*pc_cgs/unit_length
         radius_best=SNR%feat%radius
         Nsol_ratio=SNvol*rhom*SNR%feat%radius**3
         if (Nsol_ratio>0.99) then
@@ -3339,7 +3338,7 @@ module Interstellar
         endif
         SNR%feat%rhom=rhom
       endif
-      radius2=SNR%feat%radius**2
+      radius2=energy_Nsigma**2*SNR%feat%radius**2
       if (present(ierr)) then
         call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
       else
@@ -3363,7 +3362,7 @@ module Interstellar
         print "(1x,'explode_SN: Shell forming start t_SF',e10.3)",SNR%feat%t_SF
         print "(1x,'explode_SN: Elapsed shell formation',e11.3)", &
             SNR%feat%t_sedov-SNR%feat%t_SF
-        print "(1x,'explode_SN: Shell forming radius RPDS',f7.4)",RPDS
+        print "(1x,'explode_SN: Shell forming radius RPDS vs radius',2f7.4)",RPDS,SNR%feat%radius
       endif
 !
 !  Calculate the SN kinetic energy fraction for shell formation energy
@@ -3498,7 +3497,7 @@ module Interstellar
           rho_old=exp(lnrho)
         endif
         site_rho=rho_old*dVol
-        where (dr2_SN>energy_Nsigma**2*radius2) site_rho = 0.0
+        where (dr2_SN>radius2) site_rho = 0.0
         site_mass=site_mass+sum(site_rho)
         if (lSN_mass.and.cmass_SN>0.) then
           deltarho=0.
@@ -3519,7 +3518,7 @@ module Interstellar
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
           maskedlnTT=lnTT
-          where (dr2_SN>energy_Nsigma**2*radius2) maskedlnTT=-10.0
+          where (dr2_SN>radius2) maskedlnTT=-10.0
           maxTT=maxval(exp(maskedlnTT))
           if (SNR%feat%radius<=1.1*rfactor_SN*SNR%feat%dr) then
             !dense remnant
@@ -3634,7 +3633,7 @@ module Interstellar
 !  Rescale cvelocity_SN if density distribution yields excessively high
 !  kinetic energy to approximate kinetic energy = ktmp.
 !
-      if (lSN_velocity.and.ktmp>0.and..not.lSN_coolingmass) then
+      if (lSN_velocity.and.ktmp>0) then
         call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
         if (ekintot_new-ekintot<ktmp) then
           if (lSN_eth) then
