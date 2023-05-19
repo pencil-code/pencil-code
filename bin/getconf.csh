@@ -87,18 +87,38 @@ set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9]*)/i && p
 set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+#set lcubed_sphere = `perl -ne '$_ =~ /^\s*logical\b[^\\\!]*lcubed_sphere\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+set lcubed_sphere = `perl -ne '$_ =~ /^\s*lcubed_sphere\s*=\s*([TF])/i && print $1' start.in`
 set lyinyang = `perl -ne '$_ =~ /^\s*lyinyang\s*=\s*([TF])/i && print $1' start.in`
+echo AXEL lcubed_sphere= $lcubed_sphere
+echo AXEL ncpus= $ncpus
+echo AXEL lyinyang= $lyinyang
 if (! $ncpus) then
   @ ncpus = $nprocx * $nprocy * $nprocz
 endif
 if ( $lyinyang == '') then
   set lyinyang = F
+else
+  set lyinyang = T
+endif
+
+if ( $lcubed_sphere == '') then
+  set lcubed_sphere = F
+else
+  set lcubed_sphere = T
 endif
 
 if ( $mpi && ($lyinyang == T) ) then
   @ ncpus = 2 * $ncpus
   echo "YIN-YANG GRID RUN"
 endif
+
+# Preparations for cubed sphere (for the moment, unconditional)
+if ( $mpi && ($lcubed_sphere == T) ) then
+  @ ncpus = 6 * $ncpus
+  echo "CUBED SPHERE RUN"
+endif
+
 echo "$ncpus CPUs"
 
 # Location of executables and other default settings; can be overwritten
