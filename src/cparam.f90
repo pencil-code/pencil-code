@@ -250,4 +250,9 @@ module Cparam
 !
   integer, parameter :: BILIN=1, BIQUAD=2, BICUB=3, QUADSPLINE=4, BIQUIN=5
 !
+!  Symbolic constants for Cubed Sphere grid.
+!  The order of the patches is the same as in MATINS.
+!
+  integer, parameter :: XPLUS=1, YPLUS=2, XMINUS=3, YMINUS=4, ZPLUS=5, ZMINUS=6
+!
 endmodule Cparam
