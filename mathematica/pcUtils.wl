@@ -128,12 +128,16 @@ pcExtend[{x_,y_},f_List:{0.1,0.1}]:=List[
   ]
 ]
 
-pcRescale[l_List,f_List:{0.1,0.1}]:=Module[{tmp},
+pcRescaleNumeric[l_List,f_List:{0.1,0.1}]:=Module[{tmp},
   tmp=Transpose[l];
   tmp[[3]]=Rescale[tmp[[3]],tmp[[3]]//MinMax//pcExtend[#,f]&];
   Transpose[tmp]
 ]
-pcRescaleSigned[l_List,f_Real:0.1]:=Module[{tmp,max,pos,neg},
+pcRescale[l_List,f_List:{0.1,0.1}]:=With[{lnumeric=NumericQ[#[[-1]]]&/@l},
+  ReplacePart[l,Thread[Position[lnumeric,True]->pcRescaleNumeric[Pick[l,lnumeric],f]]]
+]
+
+pcRescaleSignedNumeric[l_List,f_Real:0.1]:=Module[{tmp,max,pos,neg},
   tmp=Transpose[l];
   max=(1+f)*Max[Abs[tmp[[3]]]];
   
@@ -145,6 +149,9 @@ pcRescaleSigned[l_List,f_Real:0.1]:=Module[{tmp,max,pos,neg},
   
   tmp[[3]]=pos+neg;
   Transpose[tmp]
+]
+pcRescaleSigned[l_List,f_Real:0.1]:=With[{lnumeric=NumericQ[#[[-1]]]&/@l},
+  ReplacePart[l,Thread[Position[lnumeric,True]->pcRescaleSignedNumeric[Pick[l,lnumeric],f]]]
 ]
 
 pcDivide[l_,n_Integer:3]:=Partition[l,UpTo@Floor[Length[l]/n]][[1;;n]]
