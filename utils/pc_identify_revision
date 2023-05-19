@@ -57,6 +57,11 @@ write_revision () {
 
 write_revision_from_git_sandbox () {
     revision="$(git_cmd rev-parse --short HEAD)"
+    mypath="$(pwd)"
+    if ! [[ $mypath =~ .*$PENCIL_HOME.* ]]; then
+        sed -i -e 's/cvsid *=.*$/cvsid="'$revision'"/' ../start.in
+        sed -i -e 's/cvsid *=.*$/cvsid="'$revision'"/' ../run.in
+    fi
     modified="$(git_cmd status --short --untracked-files=no)"
     if [ "$one_line" ]; then
         if [ "$modified" ]; then
