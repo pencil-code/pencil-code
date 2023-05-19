@@ -637,6 +637,7 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
                                              gridbuf_right                !             ~         of right corner neighbour
 
       integer :: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot
+      integer :: ipatch
       logical, save :: lcalled=.false.
 
       if (lcalled) then 
