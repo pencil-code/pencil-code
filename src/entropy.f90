@@ -485,6 +485,7 @@ module Energy
 !  6-nov-01/wolf: coded
 !
       use FArrayManager, only: farray_register_pde, farray_register_auxiliary, farray_index_append
+      use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('ss',iss)
 !
@@ -588,6 +589,43 @@ module Energy
         aux_var(aux_count)=',TT_flucz'
         if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
         aux_count=aux_count+1
+      endif
+!
+!  Shared variables.
+!
+      call put_shared_variable('hcond0',hcond0,caller='initialize_energy')
+      call put_shared_variable('hcond1',hcond1)
+      call put_shared_variable('Kbot',Kbot)
+      call put_shared_variable('hcondxbot',hcondxbot)
+      call put_shared_variable('hcondxtop',hcondxtop)
+      call put_shared_variable('hcondzbot',hcondzbot)
+      call put_shared_variable('hcondztop',hcondztop)
+      call put_shared_variable('Fbot',Fbot)
+      call put_shared_variable('Ftop',Ftop)
+      call put_shared_variable('FbotKbot',FbotKbot)
+      call put_shared_variable('FtopKtop',FtopKtop)
+      call put_shared_variable('chi',chi)
+      call put_shared_variable('chi_t',chi_t)
+      call put_shared_variable('chit_prof1',chit_prof1)
+      call put_shared_variable('chit_prof2',chit_prof2)
+      call put_shared_variable('lmultilayer',lmultilayer)
+      call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
+      call put_shared_variable('lviscosity_heat',lviscosity_heat)
+      call put_shared_variable('lheatc_kramers',lheatc_kramers)
+      call put_shared_variable('isothtop',isothtop)
+      call put_shared_variable('cs2cool',cs2cool)
+      call put_shared_variable('mpoly0',mpoly0)
+      call put_shared_variable('mpoly1',mpoly1)
+      call put_shared_variable('mpoly2',mpoly2)
+!      call put_shared_variable('lheatc_chit',lheatc_chit)
+
+      if (any(initss=='star_heat')) then
+        if (lroot) print*, "put_shared_variable in entropy=", wheat, luminosity, r_bcz, widthss, alpha_MLT
+        call put_shared_variable('wheat', wheat)
+        call put_shared_variable('luminosity', luminosity)
+        call put_shared_variable('r_bcz', r_bcz)
+        call put_shared_variable('widthss', widthss)
+        call put_shared_variable('alpha_MLT', alpha_MLT)
       endif
 !
     endsubroutine register_energy
@@ -925,7 +963,7 @@ module Energy
       if (nwgrid==1) then
         lpressuregradient_gas=.false.
         ladvection_entropy=.false.
-        print*, 'initialize_energy: 0-D run, turned off pressure gradient and advection of entropy'
+        if (lroot) print*,'initialize_energy: 0-D run, turned off pressure gradient and advection of entropy'
       endif
 !
 !  reinitialize entropy
@@ -1258,34 +1296,6 @@ module Energy
       case default
         call fatal_error('initialize_energy','no such borderss: '//trim(borderss))
       endselect
-!
-!  Shared variables.
-!
-      call put_shared_variable('hcond0',hcond0,caller='initialize_energy')
-      call put_shared_variable('hcond1',hcond1)
-      call put_shared_variable('Kbot',Kbot)
-      call put_shared_variable('hcondxbot',hcondxbot)
-      call put_shared_variable('hcondxtop',hcondxtop)
-      call put_shared_variable('hcondzbot',hcondzbot)
-      call put_shared_variable('hcondztop',hcondztop)
-      call put_shared_variable('Fbot',Fbot)
-      call put_shared_variable('Ftop',Ftop)
-      call put_shared_variable('FbotKbot',FbotKbot)
-      call put_shared_variable('FtopKtop',FtopKtop)
-      call put_shared_variable('chi',chi)
-      call put_shared_variable('chi_t',chi_t)
-      call put_shared_variable('chit_prof1',chit_prof1)
-      call put_shared_variable('chit_prof2',chit_prof2)
-      call put_shared_variable('lmultilayer',lmultilayer)
-      call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
-      call put_shared_variable('lviscosity_heat',lviscosity_heat)
-      call put_shared_variable('lheatc_kramers',lheatc_kramers)
-      call put_shared_variable('isothtop',isothtop)
-      call put_shared_variable('cs2cool',cs2cool)
-      call put_shared_variable('mpoly0',mpoly0)
-      call put_shared_variable('mpoly1',mpoly1)
-      call put_shared_variable('mpoly2',mpoly2)
-!      call put_shared_variable('lheatc_chit',lheatc_chit)
 
       if (lheatc_kramers) then
         call put_shared_variable('hcond0_kramers',hcond0_kramers)
@@ -1332,15 +1342,6 @@ module Energy
                              ' in entropy_run_pars for temperature fluctuation diagnostics')
       endif
 !
-      if (initss(1)=='star_heat') then
-        print*, "put_shared_variable in entropy=", wheat, luminosity, r_bcz, widthss, alpha_MLT
-        call put_shared_variable('wheat', wheat)
-        call put_shared_variable('luminosity', luminosity)
-        call put_shared_variable('r_bcz', r_bcz)
-        call put_shared_variable('widthss', widthss)
-        call put_shared_variable('alpha_MLT', alpha_MLT)
-      endif
-!
 !  Check if reduced sound speed is used
 !
       if (ldensity) then
@@ -1366,8 +1367,15 @@ module Energy
         cs2bot=cs2bot*TTbot_factor
       endif
 !
-      if (pretend_lnTT .and. tau_ss_exterior/=0.0) & 
-        call not_implemented('initialize_energy','tau_ss_exterior for pretend_lnTT = T')
+      if (pretend_lnTT) then
+        if (tau_ss_exterior/=0.0) & 
+          call not_implemented('initialize_energy','tau_ss_exterior for pretend_lnTT = T')
+!
+        if (lheatc_corona.or.tdown/=0.0) &
+          call not_implemented('initialize_energy','newton_cool for pretend_lnTT=T')
+!
+        if (lcalc_heat_cool) call not_implemented('initialize_energy','calc_heat_cool for pretend_lnTT=T')
+      endif
 !
     endsubroutine initialize_energy
 !***********************************************************************
@@ -1477,6 +1485,8 @@ module Energy
 !
       do j=1,ninit
 !
+!  Is f(...,iss) consistently set in a cumulative way?
+!
         if (initss(j)=='nothing') cycle
 !
         lnothing=.false.
@@ -1495,7 +1505,7 @@ module Energy
             call blob_radeq(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
           case ('isothermal'); call isothermal_entropy(f,T0)
           case ('isothermal_lnrho_ss')
-            print*, 'init_energy: Isothermal density and entropy stratification'
+            if (lroot) print*, 'init_energy: Isothermal density and entropy stratification'
             call isothermal_lnrho_ss(f,T0,rho0)
           case ('hydrostatic-isentropic')
             call hydrostatic_isentropic(f,lnrho_bot,ss_const)
@@ -1726,8 +1736,8 @@ module Energy
 !
             call layer_ss(f)
           case ('blob_hs')
-            print*, 'init_energy: put blob in hydrostatic equilibrium: '// &
-                    'radius_ss(j),ampl_ss(j)=', radius_ss(j), ampl_ss(j)
+            if (lroot) print*, 'init_energy: put blob in hydrostatic equilibrium: '// &
+                       'radius_ss(j),ampl_ss(j)=', radius_ss(j), ampl_ss(j)
             call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
             call blob(-ampl_ss(j),f,ilnrho,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
             if (ldensity_nolog) then
@@ -2053,8 +2063,8 @@ module Energy
       real :: zz,lnrho,ss,rho,cs2,dlnrho,dss
       integer :: iz
 !
-      if (headtt) print*,'init_energy : strat_const_chit stratification'
       if (.not.lgravz) call fatal_error('strat_const_chit','works only for vertical gravity')
+      if (headtt) print*,'init_energy : strat_const_chit stratification'
 !
 !  Integrate downward.
 !
@@ -4938,7 +4948,8 @@ module Energy
 !
 !  Calculate diffusion term.
 !
-      call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,GVKPERP=gvKperp,GVKPARA=gvKpara)
+      call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff, &
+                                 GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
       if (lfirst .and. ip == 13) then
         call output_pencil('spitzer.dat',thdiff,1)
@@ -5769,8 +5780,6 @@ module Energy
       intent(in) :: p
       intent(inout) :: Hmax,df
 !
-      if (pretend_lnTT) call not_implemented('calc_heat_cool','for pretend_lnTT = T')
-!
 !  Vertical gravity determines some heat/cool models.
 !
       if (headtt) print*, 'calc_heat_cool: lgravz, lgravr, lgravx, lspherical_coords=', &
@@ -5984,7 +5993,7 @@ module Energy
 !  condition is not the same as the power law.
 !
       if (lborder_heat_variable) then
-        pborder=quintic_step(x(l1:l2),r_int,widthss,SHIFT=1.) - &
+        pborder=quintic_step(x(l1:l2),r_int,widthss,SHIFT= 1.) - &
                 quintic_step(x(l1:l2),r_ext,widthss,SHIFT=-1.)
       else
         pborder=1.
@@ -6048,7 +6057,7 @@ module Energy
 !
       case ('square-well')
         prof=spread((1.+.5*(erfunc((z(n)-zcool)/wcool)- &
-                           erfunc((z(n)+zcool)/wcool))),1,l2-l1+1)
+                            erfunc((z(n)+zcool)/wcool))),1,l2-l1+1)
 !
 !  add "coronal" heating (to simulate a hot corona; see temperature_ionization)
 !
@@ -6169,7 +6178,7 @@ module Energy
       case ('lin-z')
         prof=spread(z(n)/wcool, 1, l2-l1+1)
       case default
-        call fatal_error('get_heat_cool_gravz','please select a cooltype')
+        call fatal_error('get_heat_cool_gravz','no such cooling_profile: '//trim(cooling_profile))
       endselect
 !
       if (lcalc_cs2mz_mean .and..not. lheat_cool_gravz) then
@@ -7021,27 +7030,21 @@ module Energy
             if (lreference_state) ssadd=reference_state(l-l1+1,iref_s)
 
             do n=n1,n2
-              if (lwrite_slice_xz) &
-                call eoscalc(irho_ss,getrho_s(f(l,iy_loc,n,ilnrho),l), &
-                             f(l,iy_loc,n,iss)+ssadd,pp=slices%xz(l-l1+1,n-n1+1))
-              if (lwrite_slice_xz2) &
-                call eoscalc(irho_ss,getrho_s(f(l,iy2_loc,n,ilnrho),l), &
-                             f(l,iy2_loc,n,iss)+ssadd,pp=slices%xz2(l-l1+1,n-n1+1))
+              if (lwrite_slice_xz)  call eoscalc(irho_ss,getrho_s(f(l,iy_loc,n,ilnrho),l), &
+                                    f(l,iy_loc,n,iss)+ssadd,pp=slices%xz(l-l1+1,n-n1+1))
+              if (lwrite_slice_xz2) call eoscalc(irho_ss,getrho_s(f(l,iy2_loc,n,ilnrho),l), &
+                                    f(l,iy2_loc,n,iss)+ssadd,pp=slices%xz2(l-l1+1,n-n1+1))
             enddo
 
             do m=m1,m2
-              if (lwrite_slice_xy) &
-                call eoscalc(irho_ss,getrho_s(f(l,m,iz_loc,ilnrho),l), &
-                             f(l,m,iz_loc, iss)+ssadd,pp=slices%xy(l-l1+1,m-m1+1))
-              if (lwrite_slice_xy2) &
-                call eoscalc(irho_ss,getrho_s(f(l,m,iz2_loc,ilnrho),l), &
-                             f(l,m,iz2_loc,iss)+ssadd,pp=slices%xy2(l-l1+1,m-m1+1))
-              if (lwrite_slice_xy3) &
-                call eoscalc(irho_ss,getrho_s(f(l,m,iz3_loc,ilnrho),l), &
-                             f(l,m,iz3_loc,iss)+ssadd,pp=slices%xy3(l-l1+1,m-m1+1))
-              if (lwrite_slice_xy4) &
-                call eoscalc(irho_ss,getrho_s(f(l,m,iz4_loc,ilnrho),l), &
-                             f(l,m,iz4_loc,iss)+ssadd,pp=slices%xy4(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy)  call eoscalc(irho_ss,getrho_s(f(l,m,iz_loc,ilnrho),l), &
+                                    f(l,m,iz_loc, iss)+ssadd,pp=slices%xy(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy2) call eoscalc(irho_ss,getrho_s(f(l,m,iz2_loc,ilnrho),l), &
+                                    f(l,m,iz2_loc,iss)+ssadd,pp=slices%xy2(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy3) call eoscalc(irho_ss,getrho_s(f(l,m,iz3_loc,ilnrho),l), &
+                                    f(l,m,iz3_loc,iss)+ssadd,pp=slices%xy3(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy4) call eoscalc(irho_ss,getrho_s(f(l,m,iz4_loc,ilnrho),l), &
+                                    f(l,m,iz4_loc,iss)+ssadd,pp=slices%xy4(l-l1+1,m-m1+1))
             enddo
           enddo
           slices%ready=.true.
@@ -7063,27 +7066,21 @@ module Energy
             if (lreference_state) ssadd=reference_state(l-l1+1,iref_s)
 
             do n=n1,n2
-              if (lwrite_slice_xz) &
-                call eoscalc(irho_ss,getrho_s(f(l,iy_loc,n,ilnrho),l), &
-                             f(l,iy_loc,n,iss)+ssadd,lnTT=slices%xz(l-l1+1,n-n1+1))
-              if (lwrite_slice_xz2) &
-                call eoscalc(irho_ss,getrho_s(f(l,iy2_loc,n,ilnrho),l), &
-                             f(l,iy2_loc,n,iss)+ssadd,lnTT=slices%xz2(l-l1+1,n-n1+1))
+              if (lwrite_slice_xz)  call eoscalc(irho_ss,getrho_s(f(l,iy_loc,n,ilnrho),l), &
+                                    f(l,iy_loc,n,iss)+ssadd,lnTT=slices%xz(l-l1+1,n-n1+1))
+              if (lwrite_slice_xz2) call eoscalc(irho_ss,getrho_s(f(l,iy2_loc,n,ilnrho),l), &
+                                    f(l,iy2_loc,n,iss)+ssadd,lnTT=slices%xz2(l-l1+1,n-n1+1))
             enddo
 
             do m=m1,m2
-              if (lwrite_slice_xy) &
-                call eoscalc(irho_ss,getrho_s(f(l,m,iz_loc,ilnrho),l), &
-                             f(l,m,iz_loc,iss)+ssadd,lnTT=slices%xy(l-l1+1,m-m1+1))
-              if (lwrite_slice_xy2) &
-                call eoscalc(irho_ss,getrho_s(f(l,m,iz2_loc,ilnrho),l), &
-                             f(l,m,iz2_loc,iss)+ssadd,lnTT=slices%xy2(l-l1+1,m-m1+1))
-              if (lwrite_slice_xy3) &
-                call eoscalc(irho_ss,getrho_s(f(l,m,iz3_loc,ilnrho),l), &
-                             f(l,m,iz3_loc,iss)+ssadd,lnTT=slices%xy3(l-l1+1,m-m1+1))
-              if (lwrite_slice_xy4) &
-                call eoscalc(irho_ss,getrho_s(f(l,m,iz4_loc,ilnrho),l), &
-                             f(l,m,iz4_loc,iss)+ssadd,lnTT=slices%xy4(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy)  call eoscalc(irho_ss,getrho_s(f(l,m,iz_loc,ilnrho),l), &
+                                    f(l,m,iz_loc,iss)+ssadd,lnTT=slices%xy(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy2) call eoscalc(irho_ss,getrho_s(f(l,m,iz2_loc,ilnrho),l), &
+                                    f(l,m,iz2_loc,iss)+ssadd,lnTT=slices%xy2(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy3) call eoscalc(irho_ss,getrho_s(f(l,m,iz3_loc,ilnrho),l), &
+                                    f(l,m,iz3_loc,iss)+ssadd,lnTT=slices%xy3(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy4) call eoscalc(irho_ss,getrho_s(f(l,m,iz4_loc,ilnrho),l), &
+                                    f(l,m,iz4_loc,iss)+ssadd,lnTT=slices%xy4(l-l1+1,m-m1+1))
             enddo
           enddo
 !
@@ -7440,8 +7437,6 @@ module Energy
       intent(inout) :: df
       intent(in) :: p
 !
-      if (pretend_lnTT) call not_implemented('newton_cool','when pretend_lnTT = T')
-!
 !  Get reference temperature.
 !
       if (z(n) < prof_z(1) ) then
@@ -7603,7 +7598,7 @@ module Energy
       real :: beta0,beta1,TT_bcz,cp1
       real :: lnrho_int,lnrho_ext,lnrho_bcz
 !
-      if (headtt) print*,'r_bcz in entropy.f90=',r_bcz
+      if (lroot) print*,'r_bcz in entropy.f90=',r_bcz
 !
 !  The temperature gradient is dT/dr=beta/r with
 !  beta = (g/cp) /[(1-1/gamma)*(m+1)]
@@ -7950,7 +7945,7 @@ module Energy
       integer :: mid, num, inc
 !
       num = size (haystack, 1)
-      if (num < 2) call fatal_error('interpol_tabulated',"too few tabulated values", .true.)
+      if (num < 2) call fatal_error('interpol_tabulated',"too few tabulated values",.true.)
       if (lower >= num) lower = num - 1
       if ((upper <= lower) .or. (upper > num)) upper = num
 !
@@ -8039,79 +8034,10 @@ module Energy
         interpol_tabulated = lower + (needle - haystack(lower))/(haystack(upper) - haystack(lower))
       else
         interpol_tabulated = -1.0
-        call fatal_error('interpol_tabulated', "tabulated values are invalid", .true.)
+        call fatal_error('interpol_tabulated',"tabulated values are invalid",.true.)
       endif
 !
     endfunction interpol_tabulated
-!***********************************************************************
-    subroutine split_update_energy(f)
-!
-!  Dummy subroutine
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine
-!***********************************************************************
-   subroutine energy_after_timestep(f,df,dtsub)
-!
-     real, dimension(mx,my,mz,mfarray) :: f
-     real, dimension(mx,my,mz,mvar) :: df
-     real :: dtsub
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(dtsub)
-!
-   endsubroutine energy_after_timestep
-!***********************************************************************
-    subroutine expand_shands_energy
-!
-!  Presently dummy, for possible use
-!
-    endsubroutine expand_shands_energy
-!***********************************************************************
-    subroutine heatcond_TT_2d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, dimension(:,:), intent(in) :: TT
-      real, dimension(:,:), intent(out) :: hcond
-      real, dimension(:,:), optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_2d
-!***********************************************************************
-    subroutine heatcond_TT_1d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, dimension(:), intent(in) :: TT
-      real, dimension(:), intent(out) :: hcond
-      real, dimension(:), optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_1d
-!***********************************************************************
-    subroutine heatcond_TT_0d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, intent(in) :: TT
-      real, intent(out) :: hcond
-      real, optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_0d
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
@@ -8124,4 +8050,14 @@ module Energy
 
     endsubroutine pushpars2c
 !***********************************************************************
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include 'energy_common.inc'
+!*********************************************************************** 
 endmodule Energy
