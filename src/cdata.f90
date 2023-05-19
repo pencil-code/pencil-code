@@ -68,6 +68,10 @@ module Cdata
   integer :: nycut=my, nzcut=mz
   real :: rel_dang=0.
 !
+!  Cubed sphere grid.
+!
+  logical :: lcubed_sphere=.false.
+!
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
@@ -412,7 +416,7 @@ module Cdata
   integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1  !MR: dangerous names  ix -> ix_slice
   integer :: ix_loc=1,iy_loc=1, iy2_loc=1
   integer :: iz_loc=1,iz2_loc=1, iz3_loc=1, iz4_loc=1
-  integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0
+  integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
   logical :: lprocz_slowest=.true., lzorder=.false.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
