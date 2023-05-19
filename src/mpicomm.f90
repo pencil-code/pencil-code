@@ -321,11 +321,14 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
       call MPI_COMM_SIZE(MPI_COMM_PENCIL, nprocs_penc, mpierr)
       nprocs_foreign=nprocs-nprocs_penc
 
-      if (.not.( lyinyang.and.nprocs_penc==2*ncpus .or. &
+      if (.not.( lyinyang.and.nprocs_penc==2*ncpus .or. lcubed_sphere.and.nprocs_penc==6*ncpus .or. &
                  (lforeign.and.(nprocs_foreign>0.or.lstart) .or. .not.lforeign).and.nprocs_penc==ncpus )) then
         if (lroot) then
           if (lyinyang) then
             print*, 'Compiled with 2*ncpus = ', 2*ncpus, &
+                ', but running on ', nprocs_penc, ' processors'
+          elseif (lcubed_sphere) then
+            print*, 'Compiled with 6*ncpus = ', 6*ncpus, &
                 ', but running on ', nprocs_penc, ' processors'
           elseif (nprocs_penc/=ncpus) then
             print*, 'Compiled with ncpus = ', ncpus, &
@@ -357,9 +360,9 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
         lyang=iproc>=ncpus             ! if this proc is in first half of all it is in YIN grid otherwise in YANG grid
       endif
 
-      if (lyinyang) &
+      if (lyinyang .or. lcubed_sphere) &
         call MPI_COMM_SPLIT(MPI_COMM_PENCIL, int(iproc/ncpus), mod(iproc,ncpus), MPI_COMM_GRID, mpierr)
-!
+
 !  MPI_COMM_GRID refers to Yin or Yang grid or to PencilCode, when launched as first code (mandatory).
 !
       if (lyinyang) then
@@ -369,6 +372,13 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
         else
           cyinyang='Yin'
         endif
+      endif
+
+!  MPI_COMM_GRID refers to one of the 6 patches of the cubed sphere grid or to PencilCode, when launched as first code (mandatory).
+!
+      if (lcubed_sphere) then
+        iproc=modulo(iproc,ncpus)
+        ipatch=int(iproc/ncpus)
       endif
 !
 !  Position on the processor grid (WITHIN Yin or Yang grid!).
@@ -613,6 +623,50 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
       endif active
 !
     endfunction index_to_iproc_comm
+!***********************************************************************
+    subroutine cubed_sphere_init
+!
+!  Cubed mesh
+!
+!  20-dec-15/MR: coded
+!
+      use General, only: find_proc
+!
+      real, dimension(:,:,:), allocatable :: gridbuf_midy, gridbuf_midz, &! contains grid request of direct neighbour(s)
+                                             gridbuf_left, &              !             ~         of left corner neighbour
+                                             gridbuf_right                !             ~         of right corner neighbour
+
+      integer :: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot
+      logical, save :: lcalled=.false.
+
+      if (lcalled) then 
+        return
+      else
+        lcalled=.true.
+      endif
+!
+      if (ipatch<5) then
+        patch_neigh_right=modulo(ipatch  ,4)+1
+        patch_neigh_left =modulo(ipatch+2,4)+1
+        patch_neigh_top  =ZPLUS
+        patch_neigh_bot  =ZMINUS
+        if (llast_proc_y)  yuneigh=find_proc(ipx,       0,ipz)+(patch_neigh_right-1)*ncpus
+        if (lfirst_proc_y) ylneigh=find_proc(ipx,nprocy-1,ipz)+(patch_neigh_left -1)*ncpus
+        if (ipatch==1 .or. ipatch==3) then
+          if (llast_proc_z)  zuneigh=find_proc(ipx,ipy,       0)+(patch_neigh_top  -1)*ncpus
+          if (lfirst_proc_z) zlneigh=find_proc(ipx,ipy,nprocz-1)+(patch_neigh_bot  -1)*ncpus
+        else
+          if (llast_proc_z)  zuneigh=find_proc(ipx,       0,ipy)+(patch_neigh_top  -1)*ncpus
+          if (lfirst_proc_z) zlneigh=find_proc(ipx,nprocy-1,ipy)+(patch_neigh_bot  -1)*ncpus
+        endif
+
+print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot=', &
+              patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot
+      elseif (ipatch==5) then
+      elseif (ipatch==6) then
+      endif
+!
+    endsubroutine cubed_sphere_init
 !***********************************************************************
     subroutine yyinit
 !
