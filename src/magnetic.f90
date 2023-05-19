@@ -15,7 +15,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3); aps
+! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3); exatotal(3); aps
 ! PENCILS PROVIDED b2; b21; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); curlb(3); e3xa(3)
 ! PENCILS PROVIDED el(3); e2; bijtilde(3,3),bij_cov_corr(3,3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uj; ob; uxb(3); uxb2
@@ -702,6 +702,9 @@ module Magnetic
   integer :: idiag_examx=0      ! DIAG_DOC: $\left<\Ev\times\Av\right>|_x$
   integer :: idiag_examy=0      ! DIAG_DOC: $\left<\Ev\times\Av\right>|_y$
   integer :: idiag_examz=0      ! DIAG_DOC: $\left<\Ev\times\Av\right>|_z$
+  integer :: idiag_exatotalmx=0 ! DIAG_DOC: $\left<\Ev\times\Av\right>|_x$
+  integer :: idiag_exatotalmy=0 ! DIAG_DOC: $\left<\Ev\times\Av\right>|_y$
+  integer :: idiag_exatotalmz=0 ! DIAG_DOC: $\left<\Ev\times\Av\right>|_z$
   integer :: idiag_exjmx=0      ! DIAG_DOC: $\left<\Ev\times\Jv\right>|_x$
   integer :: idiag_exjmy=0      ! DIAG_DOC: $\left<\Ev\times\Jv\right>|_y$
   integer :: idiag_exjmz=0      ! DIAG_DOC: $\left<\Ev\times\Jv\right>|_z$
@@ -870,6 +873,9 @@ module Magnetic
   integer :: idiag_examz1=0     ! XYAVG_DOC: $\left<\Ev\times\Av\right>_{xy}|_x$
   integer :: idiag_examz2=0     ! XYAVG_DOC: $\left<\Ev\times\Av\right>_{xy}|_y$
   integer :: idiag_examz3=0     ! XYAVG_DOC: $\left<\Ev\times\Av\right>_{xy}|_z$
+  integer :: idiag_exatotalmz1=0! XYAVG_DOC: $\left<\Ev\times\Av\right>_{xy}|_x$
+  integer :: idiag_exatotalmz2=0! XYAVG_DOC: $\left<\Ev\times\Av\right>_{xy}|_y$
+  integer :: idiag_exatotalmz3=0! XYAVG_DOC: $\left<\Ev\times\Av\right>_{xy}|_z$
   integer :: idiag_e3xamz1=0    ! XYAVG_DOC: $\left<\Ev_{hyper3}\times\Av\right>_{xy}|_x$
   integer :: idiag_e3xamz2=0    ! XYAVG_DOC: $\left<\Ev_{hyper3}\times\Av\right>_{xy}|_y$
   integer :: idiag_e3xamz3=0    ! XYAVG_DOC: $\left<\Ev_{hyper3}\times\Av\right>_{xy}|_z$
@@ -2851,7 +2857,9 @@ module Magnetic
 !
       if (idiag_aybym2/=0 .or. idiag_exaym2/=0 .or. &
           idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 .or. &
+          idiag_exatotalmx/=0 .or. idiag_exatotalmy/=0 .or. idiag_exatotalmz/=0 .or. &
           idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 .or. &
+          idiag_exatotalmz1/=0 .or. idiag_exatotalmz2/=0 .or. idiag_exatotalmz3/=0 .or. &
           idiag_e3xamz1/=0 .or. idiag_e3xamz2/=0 .or. idiag_e3xamz3/=0 &
          ) lpenc_diagnos(i_aa)=.true.
 !
@@ -3927,6 +3935,13 @@ module Magnetic
 ! exa
       if (lpenc_loc(i_exa)) then
         call cross_mn(-p%uxb+eta*p%jj,p%aa,p%exa)
+      endif
+! exatotal
+      if (lpenc_loc(i_exatotal)) then
+        do j=1,3
+           tmp(:,j) = etatotal*p%jj(:,j)
+        enddo
+        call cross_mn(-p%uxb+tmp,p%aa,p%exatotal)
       endif
 ! j2
       if (lpenc_loc(i_j2)) call dot2_mn(p%jj,p%j2)
@@ -6133,6 +6148,12 @@ module Magnetic
 !
       endif
 !
+      if (idiag_exatotalmx/=0 .or. idiag_exatotalmy/=0 .or. idiag_exatotalmz/=0) then
+        call sum_mn_name(p%exatotal(:,1),idiag_exatotalmx)
+        call sum_mn_name(p%exatotal(:,2),idiag_exatotalmy)
+        call sum_mn_name(p%exatotal(:,3),idiag_exatotalmz)
+      endif
+!
 !  Calculate part II of magnetic helicity flux (phi*B contribution).
 !
       if (idiag_phibmx/=0 .or. idiag_phibmy/=0 .or. idiag_phibmz/=0) then
@@ -6482,6 +6503,12 @@ module Magnetic
         call xysum_mn_name_z(p%exa(:,1),idiag_examz1)
         call xysum_mn_name_z(p%exa(:,2),idiag_examz2)
         call xysum_mn_name_z(p%exa(:,3),idiag_examz3)
+!
+!  Calculate magnetic helicity flux (ExA contribution).
+!
+        call xysum_mn_name_z(p%exatotal(:,1),idiag_exatotalmz1)
+        call xysum_mn_name_z(p%exatotal(:,2),idiag_exatotalmz2)
+        call xysum_mn_name_z(p%exatotal(:,3),idiag_exatotalmz3)
 !
 !  Calculate magnetic helicity flux for n=3 hyperdiffusion (E^{(3)}xA contribution).
 !
@@ -9531,6 +9558,8 @@ module Magnetic
         idiag_uxbcmx=0; idiag_uxbsmx=0
         idiag_uxbcmy=0; idiag_uxbsmy=0; idiag_examz1=0; idiag_examz2=0
         idiag_examz3=0; idiag_examx=0; idiag_examy=0; idiag_examz=0
+        idiag_exatotalmz1=0;idiag_exatotalmz2=0;  idiag_exatotalmz3=0
+        idiag_exatotalmx=0; idiag_exatotalmy=0;   idiag_exatotalmz=0
         idiag_e3xamz1=0; idiag_e3xamz2=0; idiag_e3xamz3=0
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0; idiag_dexbmx=0
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
@@ -9746,6 +9775,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'examx',idiag_examx)
         call parse_name(iname,cname(iname),cform(iname),'examy',idiag_examy)
         call parse_name(iname,cname(iname),cform(iname),'examz',idiag_examz)
+        call parse_name(iname,cname(iname),cform(iname),'exatotalmx',idiag_exatotalmx)
+        call parse_name(iname,cname(iname),cform(iname),'exatotalmy',idiag_exatotalmy)
+        call parse_name(iname,cname(iname),cform(iname),'exatotalmz',idiag_exatotalmz)
         call parse_name(iname,cname(iname),cform(iname),'exjmx',idiag_exjmx)
         call parse_name(iname,cname(iname),cform(iname),'exjmy',idiag_exjmy)
         call parse_name(iname,cname(iname),cform(iname),'exjmz',idiag_exjmz)
@@ -10028,6 +10060,9 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz1',idiag_examz1)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz2',idiag_examz2)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz3',idiag_examz3)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'exatotalmz1',idiag_exatotalmz1)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'exatotalmz2',idiag_exatotalmz2)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'exatotalmz3',idiag_exatotalmz3)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'e3xamz1',idiag_e3xamz1)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'e3xamz2',idiag_e3xamz2)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'e3xamz3',idiag_e3xamz3)
