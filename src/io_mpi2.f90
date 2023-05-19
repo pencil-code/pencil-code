@@ -1076,7 +1076,7 @@ module Io
       real, dimension(mv*ncpus) :: rbuf
       character(len=fnlen) :: fpath
       integer(KIND=MPI_OFFSET_KIND) :: offset, dsize
-      integer :: handle, ftype, i
+      integer :: handle, ftype, i, k
 !
       if (present(label)) call warning("input_part_snap", "The argument label has no effects. ")
 !
@@ -1153,7 +1153,15 @@ module Io
 !
       allocate(indices(nv), stat=mpi_err)
       call check_success_local("input_part", "allocate indices")
-      indices = pack((/ (i, i = 1, npar_tot) /), lpar_loc) - 1
+      k = 0
+      par: do i = 1, npar_tot
+        loc: if (lpar_loc(i)) then
+          k = k + 1
+          indices(k) = i - 1
+        endif loc
+      enddo par
+      ! The following was inefficient for large npar_tot.
+      !indices = pack((/ (i, i = 0, npar_tot - 1) /), lpar_loc)
 !
 !  Decompose the integer data domain and read.
 !
