@@ -17,7 +17,7 @@
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1tilde; glnTT(3)
 ! PENCILS PROVIDED TT; TT1; Ma2; ugss; hss(3,3); hlnTT(3,3)
-! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; fpres(3); sglnTT(3)
+! PENCILS PROVIDED del2ss; del6ss; fpres(3); sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -29,7 +29,6 @@ module Energy
   use Density, only: beta_glnrho_global
   use Interstellar
   use Messages
-  use Viscosity
 !
   implicit none
 !
@@ -44,7 +43,6 @@ module Energy
   logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=intlen) :: iinit_str
-  integer :: pushpars2c  ! should be procedure pointer (F2003)
 !
   namelist /entropy_init_pars/ &
       initss, ss_const, T0, beta_glnrho_global, ladvection_energy
@@ -68,9 +66,7 @@ module Energy
 !  6-nov-01/wolf: coded
 !
       use FArrayManager
-      use SharedVariables, only: get_shared_variable
-!
-      integer :: ierr
+      use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('ss',iss)
 !
@@ -79,10 +75,7 @@ module Energy
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  logical variable lpressuregradient_gas shared with hydro modules
-!
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
+      call put_shared_variable('lviscosity_heat',lviscosity_heat,caller='register_energy')
 !
     endsubroutine register_energy
 !***********************************************************************
@@ -92,9 +85,10 @@ module Energy
 !
 !  21-jul-2002/wolf: coded
 !
+      use Density, only: beta_glnrho_scaled
       use EquationOfState
       use Gravity, only: gravz,g0
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -103,9 +97,8 @@ module Energy
 !
 !  check any module dependencies.
 !
-      if (.not. leos) then
-        call fatal_error('initialize_energy','EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
-      endif
+      if (.not. leos) call fatal_error('initialize_energy', &
+          'EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
       call select_eos_variable('ss',iss)
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
@@ -114,7 +107,7 @@ module Energy
       if (maxval(abs(beta_glnrho_global))/=0.0) then
         beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
         if (lroot) print*, 'initialize_energy: Global density gradient '// &
-            'with beta_glnrho_global=', beta_glnrho_global
+                           'with beta_glnrho_global=', beta_glnrho_global
       endif
 !
 !  Turn off pressure gradient term and advection for 0-D runs.
@@ -122,11 +115,15 @@ module Energy
       if (nxgrid*nygrid*nzgrid==1) then
         lpressuregradient_gas=.false.
         ladvection_energy=.false.
-        print*, 'initialize_energy: 0-D run, turned off pressure gradient term'
-        print*, 'initialize_energy: 0-D run, turned off advection of entropy'
+        if (lroot) then
+          print*, 'initialize_energy: 0-D run, turned off pressure gradient term'
+          print*, 'initialize_energy: 0-D run, turned off advection of entropy'
+        endif
       endif
 !
-      call put_shared_variable('lviscosity_heat',lviscosity_heat)
+!  logical variable lpressuregradient_gas shared with hydro modules
+!
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_energy')
 !
       call keep_compiler_quiet(f)
 !
@@ -203,15 +200,13 @@ module Energy
             case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
             case ('isothermal'); call isothermal_entropy(f,T0)
             case ('isothermal_lnrho_ss')
-              print*, 'init_energy: Isothermal density and entropy stratification'
+              if (lroot) print*, 'init_energy: Isothermal density and entropy stratification'
               call isothermal_lnrho_ss(f,T0,rho0)
             case default
 !
 !  Catch unknown values
 !
-              write(unit=errormsg,fmt=*) 'No such value for initss(' &
-                               //trim(iinit_str)//'): ',trim(initss(j))
-              call fatal_error('init_energy',errormsg)
+              call fatal_error('init_energy','no such initss('//trim(iinit_str)//'): '//trim(initss(j)))
           endselect
 !
         endif
@@ -355,8 +350,7 @@ module Energy
         endif
       endif
 ! ugss
-      if (lpencil(i_ugss)) &
-          call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
+      if (lpencil(i_ugss)) call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
 !ajwm Should probably combine the following two somehow.
 ! hss
       if (lpencil(i_hss)) then
@@ -388,13 +382,11 @@ module Energy
       if (lpencil(i_divud)) p%divud(:,1)=p%divu
 !
       if (lpencil(i_fpres)) &
-        call fatal_error('calc_pencils_energy', &
-                 'calculation of pressure force not yet implemented'//&
-                 ' for entropy_onefluid')
+        call not_implemented('calc_pencils_energy', &
+                 'calculation of pressure force for entropy_onefluid')
 ! sglnTT 
       if (lpencil(i_sglnTT)) &
-        call fatal_error('calc_pencils_energy', &
-            'Pencil sglnTT not yet implemented for entropy_onefluid')
+        call not_implemented('calc_pencils_energy','pencil sglnTT for entropy_onefluid')
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -403,10 +395,10 @@ module Energy
 !  Calculate right hand side of entropy equation.
 !
 !      use Conductivity, only: heat_conductivity
-      use Diagnostics
       use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use Special, only: special_calc_energy
       use Sub
+      use Viscosity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -433,8 +425,7 @@ module Energy
         if (lpressuregradient_gas) then
           do j=1,3
             ju=j+iuu-1
-            df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
-                 p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
+            df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
           enddo
 !
 !  Add pressure force from global density gradient.
@@ -444,8 +435,7 @@ module Energy
           if (maxval(abs(beta_glnrho_global))/=0.0) then
             if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
               do j=1,3
-                df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-                    - p%cs2*beta_glnrho_scaled(j)
+                df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) - p%cs2*beta_glnrho_scaled(j)
               enddo
             endif
           endif
@@ -480,6 +470,8 @@ module Energy
 !***********************************************************************
     subroutine calc_diagnostics_energy(f,p)
 
+      use Diagnostics
+
       real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 !
@@ -491,12 +483,10 @@ module Energy
         call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         call sum_mn_name(p%TT,idiag_TTm)
-        if (idiag_dtc/=0) &
-            call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (idiag_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
-        if (idiag_ethdivum/=0) &
-            call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
+        if (idiag_ethdivum/=0) call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
         call sum_mn_name(p%ss,idiag_ssm)
       endif
 !
@@ -504,7 +494,7 @@ module Energy
 !  idiag_fradz is done in the calc_heatcond routine
 !
       if (l1davgfirst) then
-        if (idiag_fconvz) call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
+        if (idiag_fconvz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         call xysum_mn_name_z(p%ss,idiag_ssmz)
         call xzsum_mn_name_y(p%ss,idiag_ssmy)
         call yzsum_mn_name_x(p%ss,idiag_ssmx)
@@ -523,69 +513,9 @@ module Energy
       call keep_compiler_quiet(f)
 !
       if (lenergy_slope_limited) &
-        call fatal_error('energy_after_boundary', &
-                         'Slope-limited diffusion not implemented')
+        call not_implemented('energy_after_boundary','slope-limited diffusion')
 
     endsubroutine energy_after_boundary
-!***********************************************************************
-    subroutine fill_farray_pressure(f)
-!
-!  Fill f array with the pressure, to be able to calculate pressure gradient
-!  directly from the pressure.
-!
-!  18-feb-10/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine fill_farray_pressure
-!***********************************************************************
-    subroutine impose_energy_floor(f)
-!
-!  Dummy subroutine; may not be necessary for lnTT
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine impose_energy_floor
-!***********************************************************************
-    subroutine split_update_energy(f)
-!
-!  Dummy subroutine
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine split_update_energy
-!***********************************************************************
-    subroutine expand_shands_energy
-!
-!  Presently dummy, for possible use
-!
-    endsubroutine expand_shands_energy
-!***********************************************************************
-    subroutine dynamical_thermal_diffusion(uc)
-!
-!  Dummy subroutine
-!
-      real, intent(in) :: uc
-!
-      call keep_compiler_quiet(uc)
-!
-    endsubroutine dynamical_thermal_diffusion
-!***********************************************************************
-    subroutine get_slices_energy(f,slices)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
-!
-    endsubroutine get_slices_energy
 !***********************************************************************
     subroutine rprint_energy(lreset,lwrite)
 !
@@ -668,17 +598,6 @@ module Energy
       endif
 !
     endsubroutine rprint_energy
-!***********************************************************************
-    subroutine energy_after_timestep(f,df,dtsub)
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real :: dtsub
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(dtsub)
-!
-    endsubroutine energy_after_timestep
 !***********************************************************************    
     subroutine update_char_vel_energy(f)
 !
@@ -695,46 +614,14 @@ module Energy
 
     endsubroutine update_char_vel_energy
 !***********************************************************************
-    subroutine heatcond_TT_2d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, dimension(:,:), intent(in) :: TT
-      real, dimension(:,:), intent(out) :: hcond
-      real, dimension(:,:), optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_2d
-!***********************************************************************
-    subroutine heatcond_TT_1d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, dimension(:), intent(in) :: TT
-      real, dimension(:), intent(out) :: hcond
-      real, dimension(:), optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_1d
-!***********************************************************************
-    subroutine heatcond_TT_0d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, intent(in) :: TT
-      real, intent(out) :: hcond
-      real, optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_0d
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include 'energy_common.inc'
 !***********************************************************************
 endmodule Energy
