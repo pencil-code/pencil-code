@@ -116,7 +116,7 @@ module Energy
 !  6-nov-01/wolf: coded
 !
       use FArrayManager
-      use SharedVariables, only: get_shared_variable
+      use SharedVariables, only: put_shared_variable
 !
       integer :: ierr
 !
@@ -126,8 +126,6 @@ module Energy
       else
         call farray_register_pde('lnTT',ilnTT)
       endif
-!
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='register_energy')
 !
 !  Identify version number.
 !
@@ -146,6 +144,15 @@ module Energy
         write(15,*) 'lnTT = fltarr(mx,my,mz)*one'
       endif
 !
+!  put lviscosity_heat as shared variable for viscosity module
+!
+      call put_shared_variable('lviscosity_heat',lviscosity_heat,caller='register_energy')
+      if (lsolid_cells) then
+        call put_shared_variable('ladvection_temperature',ladvection_temperature)
+        call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
+        call put_shared_variable('lupw_lnTT',lupw_lnTT)
+      endif
+!
     endsubroutine register_energy
 !***********************************************************************
     subroutine initialize_energy(f)
@@ -155,8 +162,8 @@ module Energy
 !  21-jul-2002/wolf: coded
 !
       use Mpicomm, only: stop_it
-      use SharedVariables, only: put_shared_variable, get_shared_variable
-      use EquationOfState, only : select_eos_variable
+      use SharedVariables, only: get_shared_variable
+      use EquationOfState, only: select_eos_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ierr,i
@@ -174,10 +181,9 @@ module Energy
 !  Check any module dependencies
 !
       if (.not.leos_temperature_ionization) then
-        if (.not.leos_chemistry) &
-          call fatal_error('initialize_energy','EOS/=noeos but'//&
-                           'temperature_ionization already include'//&
-                           'an EQUATION OF STATE for the fluid')
+        if (.not.leos_chemistry) call fatal_error('initialize_energy','EOS/=noeos but'// &
+                                                  'temperature_ionization already include'// &
+                                                  'an EQUATION OF STATE for the fluid')
       endif
 !
 !  Check whether we want heating/cooling
@@ -195,48 +201,30 @@ module Energy
       lheatc_chiconst = (chi > tiny(chi))
       lheatc_hyper3 = (chi_hyper3 > tiny(chi_hyper3))
 !
-!  put lviscosity_heat as shared variable for viscosity module
-!
-      call put_shared_variable('lviscosity_heat',lviscosity_heat,caller='initialize_energy')
-      if (lsolid_cells) then
-        call put_shared_variable('ladvection_temperature',ladvection_temperature)
-        call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
-        call put_shared_variable('lupw_lnTT',lupw_lnTT)
-      endif
-!
       do i=1,nheatc_max
         select case (iheatcond(i))
         case ('chi-const')
           lheatc_chiconst=.true.
-          if (lroot) call information('initialize_energy', &
-              ' heat conduction: constant chi')
+          call information('initialize_energy','heat conduction: constant chi')
         case ('chi-hyper3')
           lheatc_hyper3=.true.
-          if (lroot) call information('initialize_energy','hyper conductivity')
+          call information('initialize_energy','hyper conductivity')
         case ('chi-shock')
           lheatc_shock=.true.
-          if (lroot) call information('initialize_energy','shock conductivity')
+          call information('initialize_energy','shock conductivity')
         case ('nothing')
           if (lroot) print*,'heat conduction: nothing'
         case default
-          if (lroot) then
-            write(unit=errormsg,fmt=*)  &
-                'No such value iheatcond = ', trim(iheatcond(i))
-            call fatal_error('initialize_energy',errormsg)
-          endif
+          call fatal_error('initialize_energy','no such iheatcond: '//trim(iheatcond(i)))
         endselect
       enddo
 !
-      if (lheatc_chiconst .and. chi==0.0) then
-        call warning('initialize_energy','chi is zero!')
-      endif
-      if (lheatc_hyper3 .and. chi_hyper3==0.0) then
-        call warning('initialize_energy', &
-            'Conductivity coefficient chi_hyper3 is zero!')
-      endif
-      if (lheatc_shock .and. chi_shock==0.0) then
-        call warning('initialize_energy','chi_shock is zero!')
-      endif
+      if (lheatc_chiconst .and. chi==0.0) call warning('initialize_energy','chi is zero')
+      if (lheatc_hyper3 .and. chi_hyper3==0.0) &
+        call warning('initialize_energy','Conductivity coefficient chi_hyper3 is zero')
+      if (lheatc_shock .and. chi_shock==0.0) call warning('initialize_energy','chi_shock is zero')
+!
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_energy')
 !
 !  Check if reduced sound speed is used
 !
@@ -248,9 +236,8 @@ module Energy
         endif
       endif
 !
-      if (llocal_iso) &
-           call fatal_error('initialize_energy', &
-           'llocal_iso switches on the local isothermal approximation. ' // &
+      if (llocal_iso) call fatal_error('initialize_energy', &
+           'llocal_iso switches on the local isothermal approximation. '// &
            'Use ENERGY=energy in src/Makefile.local')
 !
 !  For diagnostics of pressure shock propagation
@@ -356,14 +343,11 @@ module Energy
 !
 !  Catch unknown values
 !
-            write(unit=errormsg,fmt=*) 'No such value for initss(' &
-                //trim(iinit_str)//'): ',trim(initlnTT(j))
-            call fatal_error('init_energy',errormsg)
+            call fatal_error('init_energy','no such initss('//trim(iinit_str)//'): '//trim(initlnTT(j)))
 !
           endselect
 !
-          if (lroot) print*,'init_energy: initss(' &
-              //trim(iinit_str)//') = ',trim(initlnTT(j))
+          if (lroot) print*,'init_energy: initss('//trim(iinit_str)//') = ',trim(initlnTT(j))
 !
         endif
 !
@@ -576,20 +560,16 @@ module Energy
           if (lheatc_chiconst) then
             p%tcond=chi*p%rho/p%cp1
           else
-            call fatal_error('calc_pencils_energy',  &
-                'This heatcond is not implemented to work with lpencil(i_cond)!')
+            call not_implemented('calc_pencils_energy','this heatcond to work with lpencil(i_cond)')
           endif
         endif
       endif
 !
-      if (lpencil(i_fpres)) &
-        call fatal_error('calc_pencils_energy', &
-                  'calculation of pressure force not yet implemented'//&
-                  ' for temperature_ionization')
+      if (lpencil(i_fpres)) call not_implemented('calc_pencils_energy', &
+                            'calculation of pressure force for temperature_ionization')
 ! sglnTT 
       if (lpencil(i_sglnTT)) &
-        call fatal_error('calc_pencils_energy', &
-            'Pencil sglnTT not yet implemented for temperature_ionization')
+        call not_implemented('calc_pencils_energy','pencil sglnTT for temperature_ionization')
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -646,15 +626,12 @@ module Energy
         endif
       endif
 !
-      if (headtt.or.ldebug) &
-          print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
+      if (headtt.or.ldebug) print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
 !
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes)
 !
-      if (lpressuregradient_gas) then
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%rho1gpp
-      endif
+      if (lpressuregradient_gas) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%rho1gpp
 !
 !  velocity damping in the coronal heating zone
 !
@@ -667,11 +644,11 @@ module Energy
 !  Advection term
 !
       if (ladvection_temperature) then
-       if (ltemperature_nolog) then
-        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - p%ugTT
-       else
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
-       endif
+        if (ltemperature_nolog) then
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - p%ugTT
+        else
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
+        endif
       endif
 !
 !  Calculate viscous contribution to temperature
@@ -746,25 +723,24 @@ module Energy
         call sum_mn_name(p%ss,idiag_ssm)
         call sum_mn_name(p%cv,idiag_cv)
         call sum_mn_name(p%cp,idiag_cp)
-        if (idiag_dtc/=0) &
-          call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (idiag_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         call sum_mn_name(p%ee,idiag_eem)
         call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_Tppm/=0) call sum_mn_name(max(pthresh-p%pp,0.)*pthreshnorm,idiag_Tppm)
         call max_mn_name(p%pp,idiag_ppmax)
         if (idiag_ppmin/=0) call max_mn_name(-p%pp,idiag_ppmin,lneg=.true.)
         call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
-        if (idiag_mum/=0) call sum_mn_name(1/p%mu1,idiag_mum)
+        if (idiag_mum/=0) call sum_mn_name(1./p%mu1,idiag_mum)
       endif
 !
 !  1-D averages.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(p%rho*p%uu(:,3)*p%cp*p%TT,idiag_ffakez)
-        call xysum_mn_name_z(p%ee*p%rho*p%uu(:,3),idiag_eruzmz)
-        call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_puzmz)
-        call xysum_mn_name_z(p%pp*p%rho1,idiag_pr1mz)
-        call xysum_mn_name_z(1/p%mu1,idiag_mumz)
+        if (idiag_ffakez/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)*p%cp*p%TT,idiag_ffakez)
+        if (idiag_eruzmz/=0) call xysum_mn_name_z(p%ee*p%rho*p%uu(:,3),idiag_eruzmz)
+        if (idiag_puzmz/=0) call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_puzmz)
+        if (idiag_pr1mz/=0) call xysum_mn_name_z(p%pp*p%rho1,idiag_pr1mz)
+        if (idiag_mumz/=0) call xysum_mn_name_z(1./p%mu1,idiag_mumz)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
         call xysum_mn_name_z(p%ss,idiag_ssmz)
         call xysum_mn_name_z(p%ee,idiag_eemz)
@@ -805,16 +781,6 @@ module Energy
 !
     endsubroutine energy_before_boundary
 !***********************************************************************
-    subroutine energy_after_boundary(f)
-!
-!  dummy routine
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine energy_after_boundary
-!***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
 !
 !  calculate chi*grad(rho*T*glnTT)/(rho*TT)
@@ -849,9 +815,7 @@ module Energy
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond_constchi
@@ -871,9 +835,7 @@ module Energy
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+chi_hyper3*dxyz_6
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond_hyper3
@@ -915,9 +877,7 @@ module Energy
 !  Ds/Dt = ... + chi_shock0*[shock*(del2ss+glnpp.gss) + gshock.gss]
 !
       if (headtt) print*,'calc_heatcond_shock: use shock diffusion'
-      if (lheatc_shock) then
-          thdiff=p%gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
-      endif
+      if (lheatc_shock) thdiff=p%gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
 !
 !  Add heat conduction to entropy equation.
 !
@@ -928,9 +888,7 @@ module Energy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss.
 !
-      if (lfirst.and.ldt) then
-          diffus_chi=diffus_chi+(p%gamma*chi_shock*p%shock)*dxyz_2
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+(p%gamma*chi_shock*p%shock)*dxyz_2
 !
     endsubroutine calc_heatcond_shock
 !***********************************************************************
@@ -972,8 +930,7 @@ module Energy
 !
       if (tau_heat_cor>0) then
         prof = cubic_step(z(n),(ztop+zcor)/2,(ztop-zcor)/2)
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)  &
-                            - prof*(1-TT_cor/p%TT)/tau_heat_cor
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - prof*(1.-TT_cor/p%TT)/tau_heat_cor
       endif
 !
 !  Add to RHS of temperature equation
@@ -1095,26 +1052,6 @@ module Energy
 !
     endsubroutine get_slices_energy
 !***********************************************************************
-    subroutine fill_farray_pressure(f)
-!
-!  18-feb-10/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine fill_farray_pressure
-!***********************************************************************
-    subroutine impose_energy_floor(f)
-!
-!  Dummy subroutine; may not be necessary for lnTT
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine impose_energy_floor
-!***********************************************************************
     subroutine dynamical_thermal_diffusion(uc)
 !
 !  Dummy subroutine
@@ -1122,79 +1059,10 @@ module Energy
       real, intent(in) :: uc
 !
       call keep_compiler_quiet(uc)
-      call fatal_error('dynamical_thermal_diffusion', 'not implemented yet')
+      call not_implemented('dynamical_thermal_diffusion','')
 !
     endsubroutine dynamical_thermal_diffusion
 !***********************************************************************
-    subroutine split_update_energy(f)
-!
-!  Dummy subroutine
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine
-!***********************************************************************
-    subroutine expand_shands_energy
-!
-!  Presently dummy, for possible use
-!
-    endsubroutine expand_shands_energy
-!***********************************************************************
-    subroutine heatcond_TT_2d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, dimension(:,:), intent(in) :: TT
-      real, dimension(:,:), intent(out) :: hcond
-      real, dimension(:,:), optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_2d
-!***********************************************************************
-    subroutine heatcond_TT_1d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, dimension(:), intent(in) :: TT
-      real, dimension(:), intent(out) :: hcond
-      real, dimension(:), optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_1d
-!***********************************************************************
-    subroutine heatcond_TT_0d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, intent(in) :: TT
-      real, intent(out) :: hcond
-      real, optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_0d
-!***********************************************************************
-    subroutine energy_after_timestep(f,df,dtsub)
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real :: dtsub
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(dtsub)
-!
-    endsubroutine energy_after_timestep
-!***********************************************************************    
     subroutine update_char_vel_energy(f)
 !
 ! TB implemented.
@@ -1210,18 +1078,6 @@ module Energy
 
     endsubroutine update_char_vel_energy
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot,lone_sided)
-!
-      integer :: topbot
-      real, dimension (:,:,:,:) :: f
-      logical, optional :: lone_sided
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-      call keep_compiler_quiet(lone_sided)
-!
-   endsubroutine bc_ss_flux
-!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
@@ -1232,5 +1088,15 @@ module Energy
     call copy_addr(chi,p_par(1))
 
     endsubroutine pushpars2c
+!***********************************************************************
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include 'energy_common.inc'
 !***********************************************************************
 endmodule Energy
