@@ -149,7 +149,7 @@ module Hydro
   logical, pointer :: lrelativistic_eos
   logical :: lno_noise_uu=.false.
   logical :: llorentz_limiter=.false., full_3D=.false.
-  logical :: lhiggsless=.false.
+  logical :: lhiggsless=.false., lhiggsless_old=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real, pointer :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
@@ -188,7 +188,7 @@ module Hydro
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
       lfactors_uu, qirro_uu, lno_noise_uu, llorentz_limiter, &
-      lhiggsless, vwall, alpha_hless
+      lhiggsless, lhiggsless_old, vwall, alpha_hless
 !
 !  Run parameters.
 !
@@ -2589,18 +2589,22 @@ module Hydro
 !  Initialize Higgsless field
 !
         if (lhiggsless) then
-          f(:,:,:,ihless)=huge1
-          do jhless=1,nhless
-            do n=1,mz
-            do m=1,my
-              delx=2.*atan(tan(.5*(x   -xhless(jhless))))
-              dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
-              delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
-              tau_hless=thless(jhless)+sqrt(delx**2+dely**2+delz**2)/vwall
-              where(tau_hless<f(:,m,n,ihless)) f(:,m,n,ihless)=tau_hless
+          if (lhiggsless_old) then
+            f(:,:,:,ihless) = alpha_hless/(1.+alpha_hless)
+          else
+            f(:,:,:,ihless)=huge1
+            do jhless=1,nhless
+              do n=1,mz
+              do m=1,my
+                delx=2.*atan(tan(.5*(x   -xhless(jhless))))
+                dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
+                delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
+                tau_hless=thless(jhless)+sqrt(delx**2+dely**2+delz**2)/vwall
+                where(tau_hless<f(:,m,n,ihless)) f(:,m,n,ihless)=tau_hless
+              enddo
+              enddo
             enddo
-            enddo
-          enddo
+          endif
         endif
 
       endif
@@ -3453,20 +3457,6 @@ module Hydro
 !  gamma for the nonmagnetic case.
 !
       if (lconservative) then
-        if (lhiggsless) then
-   !      do jhless=1,nhless
-   !        do n=1,mz
-   !        do m=1,my
-   !          delx=2.*atan(tan(.5*(x   -xhless(jhless))))
-   !          dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
-   !          delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
-   !          where(sqrt(delx**2+dely**2+delz**2) &
-   !                < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
-   !        enddo
-   !        enddo
-   !      enddo
-        endif
- !       
         if (iTij==0) call fatal_error("hydro_before_boundary","must compute Tij for lconservative")
         cs201=cs20+1.
         cs2011=1./cs201
@@ -3486,10 +3476,19 @@ module Hydro
 !  Higgsless field
 !
             if (lhiggsless) then
-!             hydro_energy=hydro_energy-f(:,m,n,ihless)
-              where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-alpha_hless/(1.+alpha_hless)
+              if (lhiggsless_old) then
+                do jhless=1,nhless
+                  delx=2.*atan(tan(.5*(x   -xhless(jhless))))
+                  dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
+                  delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
+                  where(sqrt(delx**2+dely**2+delz**2) &
+                       < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
+                  hydro_energy=hydro_energy-f(:,m,n,ihless)
+                enddo
+              else
+                where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-alpha_hless/(1.+alpha_hless)
+              endif
             endif
-!
             hydro_energy1=1./hydro_energy
           else
             hydro_energy=1.
@@ -3552,7 +3551,12 @@ module Hydro
 !
           if (ilorentz /= 0) f(:,m,n,ilorentz)=lorentz_gamma2
           if (lhiggsless) then
-            press=rho*cs20-f(:,m,n,ihless)
+            if (lhiggsless_old) then
+              press=rho*cs20-f(:,m,n,ihless)
+            else
+              press=rho*cs20
+              where(real(t) < f(:,m,n,ihless)) press=press-alpha_hless/(1.+alpha_hless)
+            endif
           else
             press=rho*cs20
           endif
