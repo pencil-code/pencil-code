@@ -4201,22 +4201,24 @@ module Sub
 !
     endsubroutine get_smooth_kernel
 !***********************************************************************
-    subroutine eulag_filter(f)
+    subroutine eulag_filter(f,ivar1,ivar2)
 !    
 !  3D filter for the data comming from EULAG. It needs filter to smoothout radial ripples
 !  Variables:  
 !   f    = field to be filtered
+!   ivar1:ivar2 = range of variable indices
 !   bc   = boundary conditions. 0 = boundary value is zero, 1 = boundary value of df/dr is zero
-!   ivar = which dimension correspond to the field. 1=x,2=y,3=z
+!
 !  02-may-23/GM: Coded
 !
-    real, dimension(mx,my,mz,3), intent(inout) :: f
-!    integer,  intent(in) :: bc, ivar
-    real, dimension(mx,my,mz,3) :: ffield
-    integer :: i,j
+    real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+    integer, intent(IN) :: ivar1,ivar2
+!    integer,  intent(in) :: bc
 
+    real, dimension(mx,my,mz,ivar2-ivar1+1) :: ffield
+    integer :: k,j
 
-    do i=1, 3 ! Over the number of fields
+    do k=1,ivar2-ivar1+1 ! Over the range of fields
 !GM: The next bit may not be needed since mx,my,mz, comes with the ghost zones included. 
 !      if (i==1) then !BC for impenetrable, velocity field = 0 
 !        ffield(1,:,:,i) = 0
@@ -4225,14 +4227,12 @@ module Sub
 !        ffield(1,:,:,i)  = 0.5*(ffield(1,:,:,i)+ffield(2,:,:,i))
 !        ffield(mx,:,:,i) = 0.5*(ffield(mx,:,:,i)+ffield(mx-1,:,:,i))
 !      endif
-      do j= 2,mx-1 !Excludes from the filtering only first and last point, which are ghostzones anyway
-        ffield(j,:,:,i) = 0.25*(f(j-1,:,:,i)+2*f(j,:,:,i)+f(j+1,:,:,i))
+      do j=2,mx-1 ! Excludes from the filtering only first and last point, which are ghostzones anyway
+        ffield(j,:,:,k+ivar1-1) = 0.25*(f(j-1,:,:,k)+2.*f(j,:,:,k)+f(j+1,:,:,k))
       enddo
     enddo
 !    
-    f = ffield
-
-    
+    f(:,:,:,ivar1:ivar2) = ffield
 
     endsubroutine eulag_filter
 !***********************************************************************
@@ -4626,7 +4626,7 @@ module Sub
 !
     endfunction step_vector
 !***********************************************************************
-    function der_step(x,x0,width)
+    elemental real function der_step(x,x0,width)
 !
 !  Derivative of smooth unit STEP() function given above (i.e. a bump profile).
 !  Adapt this if you change the STEP() profile, or you will run into
@@ -4636,20 +4636,21 @@ module Sub
 !  23-jan-02/wolf: coded
 !  06-feb-20/MR: smoother for large arguments
 !
-      real, dimension(:) :: x
-      real, dimension(size(x)) :: der_step,arg
-      real :: x0,width
+      real, intent(IN) :: x,x0,width
 !
+      real :: arg
+
       arg = abs((x-x0)/(width+tini))
-      where (abs(arg)>=8.) 
+
+      if (abs(arg)>=8.)  then
 !
 !  Some argument gymnastics to avoid `floating overflow' for large
 !  arguments.
 !
         der_step = 2./width*exp(-2.*abs(arg))
-      elsewhere
+      else
         der_step = 0.5/(width*cosh(arg)**2)
-      endwhere
+      endif
 !
       endfunction der_step
 !***********************************************************************
