@@ -1149,7 +1149,7 @@ module Viscosity
         lpenc_diagnos(i_curlo)=.true.
         lpenc_diagnos(i_fvisc)=.true.
       endif
-      if (idiag_fviscmin/=0.or.idiag_fviscmax) lpenc_diagnos(i_fvisc)=.true.
+      if (idiag_fviscmin/=0.or.idiag_fviscmax/=0) lpenc_diagnos(i_fvisc)=.true.
       if (idiag_ufviscm/=0) then
         lpenc_diagnos(i_uu)=.true.
         lpenc_diagnos(i_fvisc)=.true.
