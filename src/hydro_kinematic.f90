@@ -373,14 +373,14 @@ module Hydro
 !print*,'PENCILH2B', iproc, lbound(f),ubound(f)
             !if (smooth_width > 0) call smooth_velocity(f,iux,iuz,smooth_factor)
             !if (smooth_width > 0) call smooth(f,iux,iuz,smooth_width_=smooth_width)
-            if (smooth_width > 0) call eulag_filter(f)
+            if (smooth_width > 0) call eulag_filter(f,iux,iuz)
 !print*, 'Pencil successful get_foreign_snap_finalize 1', iproc
 !if (lroot) print*, 'PENCIL FMAX INIT' , maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
 !print*, 'PENCIL FMAX INIT' , iproc, maxval(abs(f(l1:l2,m1:m2,n1:n2,iux:iuz)))
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer)  !,lnonblock=.true.)
             !if (smooth_width > 0) call smooth(uu_2,1,3,smooth_width_=smooth_width)
-            if (smooth_width > 0) call eulag_filter(uu_2)
+            if (smooth_width > 0) call eulag_filter(uu_2,1,3)
 !print*, 'Pencil successful get_foreign_snap_finalize 2', iproc
 !        
 ! prepare receiving next snapshot
@@ -2613,7 +2613,7 @@ module Hydro
             f(:,:,:,iux:iuz) = uu_2
             call get_foreign_snap_finalize(uu_2,1,3,frgn_buffer,interp_buffer,lnonblock=.false.)!!!true
             !if (smooth_width > 0) call smooth(f,iux,iuz,smooth_width_=smooth_width)
-            if (smooth_width > 0) call eulag_filter(uu_2)
+            if (smooth_width > 0) call eulag_filter(uu_2,1,3)
             call get_foreign_snap_initiate(3,frgn_buffer,lnonblock=.false.)!!!true
           endif
         endif
