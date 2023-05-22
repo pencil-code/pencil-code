@@ -1149,6 +1149,7 @@ module Viscosity
         lpenc_diagnos(i_curlo)=.true.
         lpenc_diagnos(i_fvisc)=.true.
       endif
+      if (idiag_fviscmin/=0.or.idiag_fviscmax) lpenc_diagnos(i_fvisc)=.true.
       if (idiag_ufviscm/=0) then
         lpenc_diagnos(i_uu)=.true.
         lpenc_diagnos(i_fvisc)=.true.
@@ -2577,7 +2578,7 @@ module Viscosity
                                                p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
 
         if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
-        call max_mn_name(p%fvisc,idiag_fviscmax,lsqrt=.true.)
+        if (idiag_fviscmax/=0) call max_mn_name(p%fvisc,idiag_fviscmax)
 
         if (idiag_fviscrmsx/=0) call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
         call sum_mn_name(p%visc_heat,idiag_visc_heatm)
