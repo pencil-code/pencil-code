@@ -1471,7 +1471,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
 !
-      if (lpencil(i_uup)) p%uup = f(l1:l2,m,n,iupx:iupz)
+      if (lpencil(i_uup) .and. iuup > 0) p%uup = f(l1:l2,m,n,iupx:iupz)
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
