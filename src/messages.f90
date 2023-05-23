@@ -17,7 +17,7 @@ module Messages
   public :: fatal_error, inevitably_fatal_error, not_implemented
   public :: fatal_error_local, fatal_error_local_collect
   public :: life_support_on, life_support_off
-  public :: outlog, set_caller
+  public :: outlog, set_caller, memory_usage
   public :: terminal_setfgbrightcolor, terminal_setfgcolor
 !
   integer, public, parameter :: iterm_DEFAULT   = 0
@@ -998,5 +998,32 @@ module Messages
     close(lun)
 !
   end function scanfile
+!***********************************************************************
+  subroutine memory_usage
+!
+! Prints total memory usage and per-process usage. 
+!
+! 20-apr-23/MR: coded
+!
+    use Mpicomm, only: mpireduce_max_int, mpireduce_sum_int
+    use Syscalls, only: memusage
+
+    integer :: memuse, memory, memcpu
+
+    memuse=memusage()
+    call mpireduce_max_int(memuse,memcpu)
+    call mpireduce_sum_int(memuse,memory)
+
+    if (lroot) then
+      print'(1x,a,f9.3)', 'Maximum used memory per cpu [MBytes] = ', memcpu/1024.
+      if (memory>1e6) then
+        print'(1x,a,f12.3)', 'Maximum used memory [GBytes] = ', memory/1024.**2
+      else
+        print'(1x,a,f12.3)', 'Maximum used memory [MBytes] = ', memory/1024.
+      endif
+      print*
+    endif
+
+  endsubroutine memory_usage
 !***********************************************************************
 endmodule Messages
