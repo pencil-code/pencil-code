@@ -7,6 +7,17 @@
 #    mkproc-tree 128
 #  generates 128 proc directories. Can be used for storing old slice data.
 #
+if ($#argv == 0) then
+  echo Number of procs missing!!!
+  exit
+endif
+
+set wd = `pwd`
+if ($wd:t != data) then
+  echo Call from data dir!!!
+  exit
+endif
+
 set subdirs = `printf "%s%s%s\n" "for(i=0;i<$1;i++){" '"proc";' 'i; }' | bc`
 foreach dir ($subdirs)
   # Make sure a sufficient number of subdirectories exist
