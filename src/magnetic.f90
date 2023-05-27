@@ -247,7 +247,7 @@ module Magnetic
   logical :: lbraginsky=.false.
   logical :: lcoulomb=.false.
   logical :: lfactors_aa=.false., lvacuum=.false.
-  logical :: loverride_ee=.false., loverride_ee_decide=.false.
+  logical :: loverride_ee=.false., loverride_ee2=.true., loverride_ee_decide=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -416,7 +416,7 @@ module Magnetic
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
       lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
-      loverride_ee_decide, eta_tdep_loverride_ee, &
+      loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -3895,9 +3895,12 @@ module Magnetic
         p%curlb=p%jj
 !
 !  Check whether or not the displacement current is being computed.
-!  Note that the previously calculated p%jj would now be overwritten.
+!  Note that the previously calculated p%jj would then be overwritten.
+!  However, by default, loverride_ee2=T, so we'd keep keep J=curlB/mu0,
+!  unless loverride_ee2=F is set. This means that the current entering
+!  The Lorentz force ignores the displacement.
 !
-        if (iex>0 .and. .not. loverride_ee) then
+        if (iex>0 .and. .not. loverride_ee2) then
           if (lvacuum) then
             p%jj=0
           else
