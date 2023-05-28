@@ -132,6 +132,7 @@ module Dustvelocity
 !
       use FArrayManager
       use General, only: itoa
+      use SharedVariables, only: put_shared_variable
 !
       integer :: k, uud_tmp
 !
@@ -149,6 +150,11 @@ module Dustvelocity
         iudz(k) = iuud(k)+2
       enddo
 !
+!  Need deltamd for normalization purposes in dustdensity.
+!
+      call put_shared_variable('llin_radiusbins',llin_radiusbins,caller='register_dustvelocity')
+      if (ldustdensity) call put_shared_variable('deltamd',deltamd)
+!
     endsubroutine register_dustvelocity
 !***********************************************************************
     subroutine initialize_dustvelocity(f)
@@ -160,7 +166,6 @@ module Dustvelocity
 !
       use EquationOfState, only: cs0
       use BorderProfiles, only: request_border_driving
-      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -186,8 +191,7 @@ module Dustvelocity
 !
       if (tausgmin/=0.0) then
         tausg1max=1.0/tausgmin
-        if (lroot) print*, 'initialize_dustvelocity: '// &
-            'minimum gas friction time tausgmin=', tausgmin
+        if (lroot) print*,'initialize_dustvelocity: '//'minimum gas friction time tausgmin=',tausgmin
       endif
 !
 !  Define inverse of limiting friction time for short friction time
@@ -232,7 +236,7 @@ module Dustvelocity
       case ('simplified')
 
       case default
-        call fatal_error('initialize_dustvelocity','No valid dust chemistry specified.')
+        call fatal_error('initialize_dustvelocity','No valid dust chemistry specified')
 
       endselect
 
@@ -328,7 +332,7 @@ module Dustvelocity
         surfmon = surfd(1)*(mmon/(md(1)*unit_md))**(1.-dimd1)
 
       case default
-        call fatal_error('initialize_dustvelocity','No such dust geometry: '//trim(dust_geometry))
+        call fatal_error('initialize_dustvelocity','no such dust geometry: '//trim(dust_geometry))
       endselect
 !
 !  Auxiliary variables necessary for different drag laws
@@ -367,7 +371,7 @@ module Dustvelocity
         case ('ad_exponential')
           nud=nud_all*(ad/adref_nud)**viscd_exponent
         case default
-          call fatal_error('initialize_dustvelocity','No such value for viscd_law: '//trim(viscd_law))
+          call fatal_error('initialize_dustvelocity','no such viscd_law: '//trim(viscd_law))
         endselect
         if (lroot) print*, 'initialize_dustvelocity: nud=',nud
       endif
@@ -399,8 +403,7 @@ module Dustvelocity
           if (lroot) print*, 'Viscous force (dust): nud*del2ud'
           lviscd_simplified=.true.
         case ('nud-const')
-          if (lroot) print*, &
-               'Viscous force (dust): nud*(del2ud+graddivud/3+2Sd.glnnd)'
+          if (lroot) print*, 'Viscous force (dust): nud*(del2ud+graddivud/3+2Sd.glnnd)'
           lviscd_nud_const=.true.
         case ('shock','nud-shock')
           lviscd_shock=.true.
@@ -422,18 +425,12 @@ module Dustvelocity
           if (lroot) print*,'viscous force: nud_hyper3_mesh/pi^5 *(Deltav)^6/Deltaq'
           lviscd_hyper3_mesh=.true.
         case default
-          call fatal_error('initialize_dustvelocity','No such value for iviscd: '//trim(iviscd(i)))
+          call fatal_error('initialize_dustvelocity','no such iviscd: '//trim(iviscd(i)))
         endselect
       enddo
-!
-!  Need deltamd for normalization purposes in dustdensity.
-!
-        if (ldustdensity) &
-          call put_shared_variable('deltamd',deltamd,caller='initialize_dustvelocity')
-        call put_shared_variable('llin_radiusbins',llin_radiusbins,caller='initialize_dustvelocity')
 
-        if (ldust_pressure.and.dust_pressure_factor==0.0) &
-            call fatal_error('initialize_dustvelocity','dust_pressure_factor should not be 0')
+      if (ldust_pressure.and.dust_pressure_factor==0.0) &
+          call fatal_error('initialize_dustvelocity','dust_pressure_factor should not be 0')
 
       select case (borderuud)
       case ('zero','0','initial-condition')
@@ -443,11 +440,10 @@ module Dustvelocity
 !
         call request_border_driving(borderuud)
       case ('nothing')
-        if (lroot.and.ip<=5) &
-             print*,"initialize_dustvelocity: borderuud='nothing'"
+        if (lroot.and.ip<=5) print*,"initialize_dustvelocity: borderuud='nothing'"
 !
       case default
-        call fatal_error('initialize_dustvelocity','No such value for borderuud: '//trim(borderuud))
+        call fatal_error('initialize_dustvelocity','no such borderuud: '//trim(borderuud))
       endselect
 !
       call keep_compiler_quiet(f)
@@ -508,8 +504,7 @@ module Dustvelocity
         endif
       enddo
 !
-      if (lroot) print*, 'copy_bcs_dust: '// &
-        'Copied bcs on first dust species to all others'
+      if (lroot) print*, 'copy_bcs_dust: '//'Copied bcs on first dust species to all others'
     endif
 !
     endsubroutine copy_bcs_dust
@@ -521,7 +516,6 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !  21-jan-15/MR: changes for use for reference state.
 !
-      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use Sub
       use Gravity
       use Initcond
@@ -535,9 +529,12 @@ module Dustvelocity
       integer :: j,k,l
       logical :: lnothing
       real, dimension(:,:), pointer :: reference_state
+      real, dimension(:), pointer :: beta_glnrho_global,beta_glnrho_scaled
 !
-      if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,caller='init_uud')
+      call get_shared_variable('beta_glnrho_global',beta_glnrho_global,caller='init_uud')
+      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
+
+      if (lreference_state) call get_shared_variable('reference_state',reference_state)
 !
 !  inituud corresponds to different initializations of uud (called from start).
 !
@@ -596,18 +593,15 @@ module Dustvelocity
           enddo
         case ('udx_sinxsinysinz')
           do l=1,mx; do m=1,my; do n=1,mz
-            f(l,m,n,iudx(1)) = &
-                ampluud*sin(kx_uud*x(l))*sin(ky_uud*y(m))*sin(kz_uud*z(n))
+            f(l,m,n,iudx(1)) = ampluud*sin(kx_uud*x(l))*sin(ky_uud*y(m))*sin(kz_uud*z(n))
           enddo; enddo; enddo
         case ('udy_sinxsinysinz')
           do l=1,mx; do m=1,my; do n=1,mz
-            f(l,m,n,iudy(1)) = &
-                ampluud*sin(kx_uud*x(l))*sin(ky_uud*y(m))*sin(kz_uud*z(n))
+            f(l,m,n,iudy(1)) = ampluud*sin(kx_uud*x(l))*sin(ky_uud*y(m))*sin(kz_uud*z(n))
           enddo; enddo; enddo
         case ('udz_sinxsinysinz')
           do l=1,mx; do m=1,my; do n=1,mz
-            f(l,m,n,iudz(1)) = &
-                ampluud*sin(kx_uud*x(l))*sin(ky_uud*y(m))*sin(kz_uud*z(n))
+            f(l,m,n,iudz(1)) = ampluud*sin(kx_uud*x(l))*sin(ky_uud*y(m))*sin(kz_uud*z(n))
           enddo; enddo; enddo
         case ('follow_gas','follow-gas')
           do k=1,ndustspec
@@ -636,8 +630,7 @@ module Dustvelocity
                 endif
                 call pressure_gradient(f,cs2,cp1tilde)
                 call get_stoppingtime(f(l1:l2,m,n,iudx(k):iudz(k)),f(l1:l2,m,n,iux:iuz),rho,cs2,rhod,k)
-                f(l1:l2,m,n,iudz(k)) = &
-                    f(l1:l2,m,n,iudz(k)) - tausd1(:,k)**(-1)*nu_epicycle**2*z(n)
+                f(l1:l2,m,n,iudz(k)) = f(l1:l2,m,n,iudz(k)) - tausd1(:,k)**(-1)*nu_epicycle**2*z(n)
               enddo
             enddo
           enddo
@@ -649,7 +642,7 @@ module Dustvelocity
 !
           if (lroot) then
             print*, 'init_uud: vertical shear due to dust'
-            if (maxval(abs(beta_glnrho_scaled))/=0.0) then
+            if (any(beta_glnrho_scaled/=0.0)) then
               print*, 'init_uud: beta_glnrho_scaled=', beta_glnrho_scaled
             elseif (beta_dPdr_dust_scaled/=0.0) then
               print*, 'init_uud: beta_dPdr_dust_scaled=', beta_dPdr_dust_scaled
@@ -745,10 +738,8 @@ module Dustvelocity
               endif
             endif
             f(l,m,n,iux) = f(l,m,n,iux) + &
-                u0_gas_pseudo*(1.0 + Omega_pseudo*tausd(1))/ &
-                (1.0 + eps + Omega_pseudo*tausd(1))
-            f(l,m,n,iudx) = f(l,m,n,iudx) + &
-                u0_gas_pseudo/(1.0 + eps + Omega_pseudo*tausd(1))
+                u0_gas_pseudo*(1.0 + Omega_pseudo*tausd(1))/(1.0 + eps + Omega_pseudo*tausd(1))
+            f(l,m,n,iudx) = f(l,m,n,iudx) + u0_gas_pseudo/(1.0 + eps + Omega_pseudo*tausd(1))
           enddo; enddo; enddo
 !
         case ('streaming')
@@ -762,19 +753,15 @@ module Dustvelocity
 !
           if (ldensity_nolog) then
             if (ldustdensity_log) then
-              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnnd(1))))/ &
-                  sum(f(l1:l2,m1:m2,n1:n2,irho))
+              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnnd(1))))/sum(f(l1:l2,m1:m2,n1:n2,irho))
             else
-              eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/ &
-                  sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+              eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
             endif
           else
             if (ldustdensity_log) then
-              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnnd(1))))/ &
-                  sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnnd(1))))/sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
             else
-              eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/ &
-                  sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+              eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
             endif
           endif
 !
@@ -823,7 +810,7 @@ module Dustvelocity
 !  Catch unknown values
 !
         case default
-          call fatal_error('init_uud','No such such value for inituud: '//trim(inituud(j)))
+          call fatal_error('init_uud','no such inituud: '//trim(inituud(j)))
 
         endselect
 !
@@ -975,13 +962,11 @@ module Dustvelocity
 ! udij
         if (lpencil(i_udij)) call gij(f,iuud(k),p%udij(:,:,:,k),1)
 ! divud
-        if (lpencil(i_divud)) &
-            p%divud(:,k) = p%udij(:,1,1,k) + p%udij(:,2,2,k) + p%udij(:,3,3,k)
+        if (lpencil(i_divud)) p%divud(:,k) = p%udij(:,1,1,k) + p%udij(:,2,2,k) + p%udij(:,3,3,k)
 ! udgud
         if (lpencil(i_udgud)) then
           if (lspherical_coords.or.lcylindrical_coords) then
-            call u_dot_grad(f,iuud(k),p%udij(:,:,:,k),&
-                 p%uud(:,:,k),p%udgud(:,:,k))
+            call u_dot_grad(f,iuud(k),p%udij(:,:,:,k),p%uud(:,:,k),p%udgud(:,:,k))
           else
             call multmv_mn(p%udij(:,:,:,k),p%uud(:,:,k),p%udgud(:,:,k))
           endif
@@ -1023,8 +1008,7 @@ module Dustvelocity
 ! del6ud
         if (lpencil(i_del6ud)) call del6v(f,iuud(k),p%del6ud(:,:,k))
 ! graddivud
-        if (lpencil(i_graddivud)) &
-            call del2v_etc(f,iuud(k),GRADDIV=p%graddivud(:,:,k))
+        if (lpencil(i_graddivud)) call del2v_etc(f,iuud(k),GRADDIV=p%graddivud(:,:,k))
       enddo
 !
     endsubroutine calc_pencils_dustvelocity
@@ -1075,8 +1059,7 @@ module Dustvelocity
 !  Short stopping time approximation.
 !  Calculated from master equation d(wx-ux)/dt = A + B*(wx-ux) = 0.
 !
-        if (ldustvelocity_shorttausd .and. &
-            any(tausd1(:,k)>=shorttaus1limit)) then
+        if (ldustvelocity_shorttausd .and. any(tausd1(:,k)>=shorttaus1limit)) then
           do j=1,3
             if (lgrav) then
               AA_sfta(:,j)=p%gg(:,j)
@@ -1106,7 +1089,7 @@ module Dustvelocity
 !  Direct integration of equation of motion.
 !
           if (ladvection_dust) df(l1:l2,m,n,iudx(k):iudz(k)) = &
-                df(l1:l2,m,n,iudx(k):iudz(k)) - p%udgud(:,:,k)
+                               df(l1:l2,m,n,iudx(k):iudz(k)) - p%udgud(:,:,k)
 !
 !  Coriolis force, -2*Omega x ud
 !  Omega=(-sin_theta, 0, cos_theta)
@@ -1114,22 +1097,17 @@ module Dustvelocity
 !
           if (Omega/=0. .and. lcoriolisforce_dust) then
             if (theta==0) then
-              if (headtt .and. k == 1) &
-                  print*,'duud_dt: add Coriolis force; Omega=',Omega
+              if (headtt .and. k == 1) print*,'duud_dt: add Coriolis force; Omega=',Omega
               c2=2*Omega
               df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + c2*p%uud(:,2,k)
               df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) - c2*p%uud(:,1,k)
             else
-              if (headtt .and. k == 1) print*, &
-                  'duud_dt: Coriolis force; Omega,theta=',Omega,theta
+              if (headtt .and. k == 1) print*, 'duud_dt: Coriolis force; Omega,theta=',Omega,theta
               c2=2*Omega*cos(theta*pi/180.)
               s2=2*Omega*sin(theta*pi/180.)
-              df(l1:l2,m,n,iudx(k)) = &
-                  df(l1:l2,m,n,iudx(k)) + c2*p%uud(:,2,k)
-              df(l1:l2,m,n,iudy(k)) = &
-                  df(l1:l2,m,n,iudy(k)) - c2*p%uud(:,1,k) + s2*p%uud(:,3,k)
-              df(l1:l2,m,n,iudz(k)) = &
-                  df(l1:l2,m,n,iudz(k))                   + s2*p%uud(:,2,k)
+              df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + c2*p%uud(:,2,k)
+              df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) - c2*p%uud(:,1,k) + s2*p%uud(:,3,k)
+              df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k))                   + s2*p%uud(:,2,k)
             endif
           endif
 !
@@ -1138,7 +1116,7 @@ module Dustvelocity
           if (ldragforce_dust) then
             do i=1,3
               df(l1:l2,m,n,iudx(k)-1+i) = df(l1:l2,m,n,iudx(k)-1+i) - &
-                  tausd1(:,k)*(p%uud(:,i,k)-p%uu(:,i))
+                                          tausd1(:,k)*(p%uud(:,i,k)-p%uu(:,i))
             enddo
 !
 !  Add drag force on gas (back-reaction from dust)
@@ -1147,8 +1125,7 @@ module Dustvelocity
               tausg1 = p%rhod(:,k)*tausd1(:,k)*p%rho1
               if (tausgmin/=0.0) where (tausg1>=tausg1max) tausg1=tausg1max
               do i=1,3
-                df(l1:l2,m,n,iux-1+i) = df(l1:l2,m,n,iux-1+i) - &
-                   tausg1*(p%uu(:,i)-p%uud(:,i,k))
+                df(l1:l2,m,n,iux-1+i) = df(l1:l2,m,n,iux-1+i) - tausg1*(p%uu(:,i)-p%uud(:,i,k))
               enddo
               if (lfirst.and.ldt) dt1_max=max(dt1_max,(tausg1+tausd1(:,k))/cdtd)
             else
@@ -1158,8 +1135,7 @@ module Dustvelocity
 !
 ! Gravity force on dust in x direction
 !
-          if (gravx_dust/=0.0) df(l1:l2,m,n,iudx(k)) = &
-             df(l1:l2,m,n,iudx(k)) + gravx_dust
+          if (gravx_dust/=0.0) df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + gravx_dust
 !
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
 !  comes from a global pressure gradient P = P0*(r/r0)^alpha.
@@ -1174,7 +1150,7 @@ module Dustvelocity
           if (ldust_pressure) then
             do i=1,3
               df(l1:l2,m,n,iudx(k)-1+i) = df(l1:l2,m,n,iudx(k)-1+i) - &
-                  dust_pressure_factor*p%cs2*p%glnrho(:,i)
+                                          dust_pressure_factor*p%cs2*p%glnrho(:,i)
                   !dust_pressure_factor*p%cs2*p%glnnd(:,i,k)
             enddo
           endif
@@ -1182,10 +1158,8 @@ module Dustvelocity
 !  Add pseudo Coriolis force (to drive velocity difference between dust and gas)
 !
           if (Omega_pseudo/=0.0) then
-            df(l1:l2,m,n,iux) = &
-                df(l1:l2,m,n,iux) - Omega_pseudo*(p%uu(:,1)-u0_gas_pseudo)
-            df(l1:l2,m,n,iudx(:)) = &
-                df(l1:l2,m,n,iudx(:)) - Omega_pseudo*p%uud(:,1,:)
+            df(l1:l2,m,n,iux)  = df(l1:l2,m,n,iux)  - Omega_pseudo*(p%uu(:,1)-u0_gas_pseudo)
+            df(l1:l2,m,n,iudx) = df(l1:l2,m,n,iudx) - Omega_pseudo*p%uud(:,1,:)
           endif
 !
 !  Add viscosity on dust
@@ -1208,7 +1182,7 @@ module Dustvelocity
           if (lviscd_nud_const) then
             if (ldustdensity) then
               fviscd = fviscd + 2*nud(k)*p%sdglnnd(:,:,k) + &
-                  nud(k)*(p%del2ud(:,:,k)+1/3.0*p%graddivud(:,:,k))
+                       nud(k)*(p%del2ud(:,:,k)+1/3.0*p%graddivud(:,:,k))
             else
               fviscd = fviscd + nud(k)*(p%del2ud(:,:,k)+1/3.*p%graddivud(:,:,k))
             endif
@@ -1227,8 +1201,7 @@ module Dustvelocity
             call multsv(nud_shock(k)*p%shock,tmp,tmp2)
             call multsv_add(tmp2,nud_shock(k)*p%divud(:,k),p%gshock,tmp)
             fviscd = fviscd + tmp
-            if (lfirst.and.ldt) &
-                diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
+            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
           endif
 !
 !  Viscous force: nud_shock simplified (not momentum conserving)
@@ -1238,8 +1211,7 @@ module Dustvelocity
             call multsv(nud_shock(k)*p%shock,tmp,tmp2)
             call multsv_add(tmp2,nud_shock(k)*p%divud(:,k),p%gshock,tmp)
             fviscd = fviscd + tmp
-            if (lfirst.and.ldt) &
-                diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
+            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
           endif
 !
 !  Viscous force: nud*del6ud (not momentum-conserving)
@@ -1256,11 +1228,9 @@ module Dustvelocity
               ju=j+iuud(k)-1
               do i=1,3
                 call der6(f,ju,tmp3,i,IGNOREDX=.true.)
-                fviscd(:,j) = fviscd(:,j) + &
-                     nud_hyper3(k)*pi4_1*tmp3*dline_1(:,i)**2
+                fviscd(:,j) = fviscd(:,j) + nud_hyper3(k)*pi4_1*tmp3*dline_1(:,i)**2
               enddo
-              if (lfirst.and.ldt) &
-                   diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmin_pencil**4
+              if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmin_pencil**4
             enddo
           endif
 !
@@ -1271,8 +1241,7 @@ module Dustvelocity
               ju=j+iuud(k)-1
               do i=1,3
                 call der6(f,ju,tmp3,i,IGNOREDX=.true.)
-                fviscd(:,j) = fviscd(:,j) + &
-                     nud_hyper3_mesh(k)*pi5_1/60.*tmp3*dline_1(:,i)
+                fviscd(:,j) = fviscd(:,j) + nud_hyper3_mesh(k)*pi5_1/60.*tmp3*dline_1(:,i)
               enddo
             enddo
             if (lfirst .and. ldt) then
@@ -1297,7 +1266,6 @@ module Dustvelocity
 !
 !  Viscous force: nud*(del6ud+S.glnnd), where S_ij=d^5 ud_i/dx_j^5
 !
-
           if (lviscd_hyper3_nud_const) then
             fviscd = fviscd + nud_hyper3(k)*(p%del6ud(:,:,k)+p%sdglnnd(:,:,k))
             if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
@@ -1312,10 +1280,8 @@ module Dustvelocity
           if (lfirst .and. ldt) then
             advec_uud=sum(abs(p%uud(:,:,k))*dline_1,2)
             maxadvec=maxadvec+advec_uud
-            if (idiag_dtud(k)/=0) &
-                call max_mn_name(advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
-            if (idiag_dtnud(k)/=0) &
-                 call max_mn_name(diffus_nud/cdtv,idiag_dtnud(k),l_dt=.true.)
+            if (idiag_dtud(k)/=0) call max_mn_name(advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
+            if (idiag_dtnud(k)/=0) call max_mn_name(diffus_nud/cdtv,idiag_dtnud(k),l_dt=.true.)
             if ((headtt.or.ldebug) .and. (ip<6)) then
               print*,'duud_dt: max(advec_uud) =',maxval(advec_uud)
               print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
@@ -1343,30 +1309,21 @@ module Dustvelocity
           call sum_mn_name(p%ud2(:,k),idiag_udrms(k),lsqrt=.true.)
           call max_mn_name(p%ud2(:,k),idiag_udmax(k),lsqrt=.true.)
           if (idiag_rdudmax(k)/=0) &
-              call max_mn_name(p%rhod(:,k)**2*p%ud2(:,k),idiag_rdudmax(k), &
-                               lsqrt=.true.)
+              call max_mn_name(p%rhod(:,k)**2*p%ud2(:,k),idiag_rdudmax(k),lsqrt=.true.)
           call sum_mn_name(p%ud2(:,k),idiag_ud2m(k))
           call integrate_mn_name(p%ud2,idiag_ekintot_dust)
           call sum_mn_name(p%uud(:,1,k),idiag_udxm(k))
           call sum_mn_name(p%uud(:,2,k),idiag_udym(k))
           call sum_mn_name(p%uud(:,3,k),idiag_udzm(k))
-          if (idiag_udx2m(k)/=0) &
-              call sum_mn_name(p%uud(:,1,k)**2,idiag_udx2m(k))
-          if (idiag_udy2m(k)/=0) &
-              call sum_mn_name(p%uud(:,2,k)**2,idiag_udy2m(k))
-          if (idiag_udz2m(k)/=0) &
-              call sum_mn_name(p%uud(:,3,k)**2,idiag_udz2m(k))
+          if (idiag_udx2m(k)/=0) call sum_mn_name(p%uud(:,1,k)**2,idiag_udx2m(k))
+          if (idiag_udy2m(k)/=0) call sum_mn_name(p%uud(:,2,k)**2,idiag_udy2m(k))
+          if (idiag_udz2m(k)/=0) call sum_mn_name(p%uud(:,3,k)**2,idiag_udz2m(k))
           call max_mn_name(p%ud2(:,k),idiag_udm2(k))
-          if (idiag_divud2m(k)/=0) &
-              call sum_mn_name(p%divud(:,k)**2,idiag_divud2m(k))
-          if (idiag_rdudxm(k)/=0) &
-              call sum_mn_name(p%rhod(:,k)*p%uud(:,1,k),idiag_rdudxm(k))
-          if (idiag_rdudym(k)/=0) &
-              call sum_mn_name(p%rhod(:,k)*p%uud(:,2,k),idiag_rdudym(k))
-          if (idiag_rdudzm(k)/=0) &
-              call sum_mn_name(p%rhod(:,k)*p%uud(:,3,k),idiag_rdudzm(k))
-          if (idiag_rdudx2m(k)/=0) &
-              call sum_mn_name((p%rhod(:,k)*p%uud(:,1,k))**2,idiag_rdudx2m(k))
+          if (idiag_divud2m(k)/=0) call sum_mn_name(p%divud(:,k)**2,idiag_divud2m(k))
+          if (idiag_rdudxm(k)/=0) call sum_mn_name(p%rhod(:,k)*p%uud(:,1,k),idiag_rdudxm(k))
+          if (idiag_rdudym(k)/=0) call sum_mn_name(p%rhod(:,k)*p%uud(:,2,k),idiag_rdudym(k))
+          if (idiag_rdudzm(k)/=0) call sum_mn_name(p%rhod(:,k)*p%uud(:,3,k),idiag_rdudzm(k))
+          if (idiag_rdudx2m(k)/=0) call sum_mn_name((p%rhod(:,k)*p%uud(:,1,k))**2,idiag_rdudx2m(k))
           call sum_mn_name(p%od2(:,1),idiag_odrms(k),lsqrt=.true.)
           call max_mn_name(p%od2,idiag_odmax(k),lsqrt=.true.)
           call sum_mn_name(p%od2(:,1),idiag_od2m(k))
@@ -1381,12 +1338,9 @@ module Dustvelocity
           call xysum_mn_name_z(p%uud(:,1,k),idiag_udxmz(k))
           call xysum_mn_name_z(p%uud(:,2,k),idiag_udymz(k))
           call xysum_mn_name_z(p%uud(:,3,k),idiag_udzmz(k))
-          if (idiag_udx2mz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,1,k)**2,idiag_udx2mz(k))
-          if (idiag_udy2mz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,2,k)**2,idiag_udy2mz(k))
-          if (idiag_udz2mz(k)/=0) &
-              call xysum_mn_name_z(p%uud(:,3,k)**2,idiag_udz2mz(k))
+          if (idiag_udx2mz(k)/=0) call xysum_mn_name_z(p%uud(:,1,k)**2,idiag_udx2mz(k))
+          if (idiag_udy2mz(k)/=0) call xysum_mn_name_z(p%uud(:,2,k)**2,idiag_udy2mz(k))
+          if (idiag_udz2mz(k)/=0) call xysum_mn_name_z(p%uud(:,3,k)**2,idiag_udz2mz(k))
         enddo
       endif
 !
@@ -1640,11 +1594,10 @@ module Dustvelocity
         tausd1(:,k) = csrho*rhodsad1(k)
       case ('epstein_gaussian_z')
         tausd1(:,k) = (1/tausd(k))*exp(-z(n)**2/(2*scaleHtaus**2))
-        if (z0taus/=0.0) &
-          tausd1(:,k)=tausd1(:,k)/( &
+        if (z0taus/=0.0) tausd1(:,k)=tausd1(:,k)/( &
             0.5*(tanh((z(n)+z0taus)/widthtaus)+tanh((-z(n)+z0taus)/widthtaus)))
       case default
-        call fatal_error("get_stoppingtime","No such drag law: "//trim(draglaw))
+        call fatal_error("get_stoppingtime","no such drag law: "//trim(draglaw))
 
       endselect
 !
@@ -1784,18 +1737,12 @@ module Dustvelocity
 !  Check for those quantities for which we want xy-averages.
 !
         do inamez=1,nnamez
-          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-              'udxmz'//trim(sdust),idiag_udxmz(k))
-          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-              'udymz'//trim(sdust),idiag_udymz(k))
-          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-              'udzmz'//trim(sdust),idiag_udzmz(k))
-          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-              'udx2mz'//trim(sdust),idiag_udx2mz(k))
-          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-              'udy2mz'//trim(sdust),idiag_udy2mz(k))
-          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-              'udz2mz'//trim(sdust),idiag_udz2mz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'udxmz'//trim(sdust),idiag_udxmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'udymz'//trim(sdust),idiag_udymz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'udzmz'//trim(sdust),idiag_udzmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'udx2mz'//trim(sdust),idiag_udx2mz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'udy2mz'//trim(sdust),idiag_udy2mz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'udz2mz'//trim(sdust),idiag_udz2mz(k))
         enddo
 !
 !  Check for those quantities for which we want z-averages.

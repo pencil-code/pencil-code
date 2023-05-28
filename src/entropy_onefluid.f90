@@ -26,7 +26,6 @@ module Energy
   use Cdata
   use General, only: keep_compiler_quiet
   use EquationOfState, only: gamma, gamma_m1, cs20
-  use Density, only: beta_glnrho_global
   use Interstellar
   use Messages
 !
@@ -43,6 +42,7 @@ module Energy
   logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=intlen) :: iinit_str
+  real, dimension(3) :: beta_glnrho_global=0.
 !
   namelist /entropy_init_pars/ &
       initss, ss_const, T0, beta_glnrho_global, ladvection_energy
@@ -55,6 +55,8 @@ module Energy
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
   integer :: idiag_ssmz=0,idiag_ssmy=0,idiag_ssmx=0,idiag_TTmz=0
+!
+  real, dimension(:), pointer :: beta_glnrho_scaled
 !
   contains
 !***********************************************************************
@@ -77,6 +79,9 @@ module Energy
 !
       call put_shared_variable('lviscosity_heat',lviscosity_heat,caller='register_energy')
 !
+      if (.not.ldensity) &
+        call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
+!
     endsubroutine register_energy
 !***********************************************************************
     subroutine initialize_energy(f)
@@ -85,7 +90,6 @@ module Energy
 !
 !  21-jul-2002/wolf: coded
 !
-      use Density, only: beta_glnrho_scaled
       use EquationOfState
       use Gravity, only: gravz,g0
       use SharedVariables, only: get_shared_variable
@@ -93,7 +97,6 @@ module Energy
       real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: i
-      logical :: lnothing
 !
 !  check any module dependencies.
 !
@@ -104,11 +107,7 @@ module Energy
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
 !  gradient dlnrho/dr = beta/H.
 !
-      if (maxval(abs(beta_glnrho_global))/=0.0) then
-        beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
-        if (lroot) print*, 'initialize_energy: Global density gradient '// &
-                           'with beta_glnrho_global=', beta_glnrho_global
-      endif
+      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
 !
 !  Turn off pressure gradient term and advection for 0-D runs.
 !
@@ -180,16 +179,13 @@ module Energy
       real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: j
-      logical :: lnothing
 !
       intent(inout) :: f
 !
-      lnothing=.true.
       do j=1,ninit
 !
         if (initss(j)/='nothing') then
 !
-          lnothing=.false.
           iinit_str=itoa(j)
 !
 !  select different initial conditions
@@ -225,8 +221,6 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      use Density, only: beta_glnrho_scaled
-!
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) then
         lpenc_requested(i_cs2)=.true.
@@ -238,7 +232,7 @@ module Energy
       if (pretend_lnTT) lpenc_requested(i_divu)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_cp1tilde)=.true.
 !
-      if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
+      if (any(beta_glnrho_scaled/=0.0)) lpenc_requested(i_cs2)=.true.
 !
       lpenc_diagnos2d(i_ss)=.true.
 !
@@ -395,7 +389,6 @@ module Energy
 !  Calculate right hand side of entropy equation.
 !
 !      use Conductivity, only: heat_conductivity
-      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use Special, only: special_calc_energy
       use Sub
       use Viscosity
@@ -432,18 +425,18 @@ module Energy
 !  WARNING (AJ): This may be implemented inconsistently, since we have
 !  here linearised rho and P independently.
 !
-          if (maxval(abs(beta_glnrho_global))/=0.0) then
+          if (any(beta_glnrho_scaled/=0.0)) then
             if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
-              do j=1,3
-                df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) - p%cs2*beta_glnrho_scaled(j)
-              enddo
-            endif
+            do j=1,3
+              df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) - p%cs2*beta_glnrho_scaled(j)
+            enddo
           endif
         endif
 !
 !  Advection term.
 !
-      if (ladvection_energy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+        if (ladvection_energy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+      endif
 !
 !  Calculate viscous contribution to entropy.
 !

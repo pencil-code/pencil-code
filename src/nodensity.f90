@@ -29,22 +29,28 @@ module Density
 !
   logical :: lcalc_lnrhomean=.false.,lupw_lnrho=.false.
   real, dimension (mz,1) :: lnrhomz
-  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   include 'density.h'
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+  integer :: pushpars2c 
 
   interface calc_pencils_density
     module procedure calc_pencils_density_pnc
     module procedure calc_pencils_density_std
   endinterface calc_pencils_density
 !
+  real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
+!
   contains
 !***********************************************************************
     subroutine register_density
 !
+      use SharedVariables, only: put_shared_variable
+!
       if (lroot) call svn_id( &
           "$Id$")
+!
+      call put_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='register_density')
+      if (.not.lentropy) call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
 !
     endsubroutine register_density
 !***********************************************************************
@@ -55,10 +61,13 @@ module Density
 !
 !  24-nov-02/tony: coded
 !
-      use EquationOfState, only: select_eos_variable
+      use EquationOfState, only: select_eos_variable, cs0
       use DensityMethods, only: initialize_density_methods
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension(:), pointer :: beta_glnrho_global_
 !
 !  Tell the equation of state that we're here and we don't have a
 !  variable => isochoric (constant density).
@@ -67,6 +76,19 @@ module Density
       call initialize_density_methods
 !
       ro_spec=.false.; lr_spec=.false.; r2u_spec=.false.; r3u_spec=.false.
+!
+      if (lentropy) then
+        call get_shared_variable('beta_glnrho_global',beta_glnrho_global_,caller='initialize_density')
+!
+!  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
+!  gradient dlnrho/dr = beta/H.
+!
+        if (any(beta_glnrho_global_/=0.)) then
+          beta_glnrho_scaled=beta_glnrho_global_*Omega/cs0
+          if (lroot) print*, 'initialize_density: Global density gradient with beta_glnrho_global=', &
+                             beta_glnrho_global_
+        endif
+      endif
 
       call keep_compiler_quiet(f)
 !

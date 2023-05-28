@@ -811,6 +811,11 @@ module Hydro
       use SharedVariables, only: put_shared_variable
       use Sub, only: register_report_aux
 !
+!  Identify version number (generated automatically by SVN).
+!
+      if (lroot) call svn_id( &
+           "$Id$")
+!
 !  indices to access uu
 !
       call farray_register_pde('uu',iuu,vector=3)
@@ -873,9 +878,7 @@ module Hydro
 !
 !  Define the Higgs less field
 !
-      if (lhiggsless) then
-        call farray_register_auxiliary('hless',ihless,communicated=.true.)
-      endif
+      if (lhiggsless) call farray_register_auxiliary('hless',ihless,communicated=.true.)
 !
 !  To compute the added mass term for particle drag,
 !  the advective derivative is needed.
@@ -919,6 +922,18 @@ module Hydro
         call farray_register_auxiliary('phiuu',iphiuu)
       endif
 !
+!  Writing files for use with IDL.
+!
+      if (lroot) then
+        if (maux == 0) then
+          if (nvar < mvar) write(4,*) ',uu $'
+          if (nvar == mvar) write(4,*) ',uu'
+        else
+          write(4,*) ',uu $'
+        endif
+        write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
+      endif
+!
 !  Share lpressuregradient_gas so the entropy module knows whether to apply
 !  pressure gradient or not. But hydro wants pressure gradient only when
 !  the density is computed, i.e. not with lboussinesq nor lanelastic.
@@ -934,26 +949,24 @@ module Hydro
         call put_shared_variable('Pr',Pr)
       endif
 !
-!  Identify version number (generated automatically by SVN).
-!
-      if (lroot) call svn_id( &
-           "$Id$")
-!
-!  Writing files for use with IDL.
-!
-      if (lroot) then
-        if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',uu $'
-          if (nvar == mvar) write(4,*) ',uu'
-        else
-          write(4,*) ',uu $'
-        endif
-        write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
-      endif
-!
 !  shared variable of lconservative for density
 !
-      call put_shared_variable('lconservative',lconservative, caller='register_hydro')
+      call put_shared_variable('lconservative',lconservative)
+
+      call put_shared_variable ('tdamp', tdamp)
+      call put_shared_variable ('ldamp_fade', ldamp_fade)
+      call put_shared_variable ('tfade_start', tfade_start)
+!
+      if (force_lower_bound == 'vel_time' .or. force_upper_bound == 'vel_time') then
+        call put_shared_variable('ampl_forc', ampl_forc)
+        call put_shared_variable('k_forc', k_forc)
+        call put_shared_variable('w_forc', w_forc)
+        call put_shared_variable('x_forc', x_forc)
+        call put_shared_variable('dx_forc', dx_forc)
+      endif
+
+      call put_shared_variable('lshear_rateofstrain',lshear_rateofstrain)
+      if (lviscosity) call put_shared_variable ('lcalc_uuavg',lcalc_uuavg)
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
 ! of gas velocity as auxiliary
@@ -1031,10 +1044,6 @@ module Hydro
       if (ldamp_fade .and. (tfade_start == -1.0)) tfade_start = 0.5 * tdamp
       if (ldamp_fade .and. (tfade_start >= tdamp) .and. (tdamp > 0.0)) &
           call fatal_error ('initialize_hydro', 'Please set tfade_start < tdamp')
-
-      call put_shared_variable ('tdamp', tdamp)
-      call put_shared_variable ('ldamp_fade', ldamp_fade)
-      call put_shared_variable ('tfade_start', tfade_start)
 
       if (Omega/=0.) then
 !
@@ -1193,16 +1202,6 @@ module Hydro
         print*,'zmask_hyd=',zmask_hyd
       endif
 !
-      if (force_lower_bound == 'vel_time' .or. force_upper_bound == 'vel_time') then
-        call put_shared_variable('ampl_forc', ampl_forc)
-        call put_shared_variable('k_forc', k_forc)
-        call put_shared_variable('w_forc', w_forc)
-        call put_shared_variable('x_forc', x_forc)
-        call put_shared_variable('dx_forc', dx_forc)
-      endif
-
-      call put_shared_variable('lshear_rateofstrain',lshear_rateofstrain)
-!
 !  Check if we are solving the force-free equations in parts of domain.
 !  This is currently possible with density (including anelastic, but not
 !  boussinesq).
@@ -1215,8 +1214,6 @@ module Hydro
           call get_shared_variable('profz_ffree',profz_ffree)
         endif
       endif
-!
-      if (lviscosity) call put_shared_variable ('lcalc_uuavg',lcalc_uuavg)
 !
 !  Get the reference state if requested
 !
@@ -1695,7 +1692,6 @@ module Hydro
 !  13-feb-15/MR: changes for use of reference_state
 !
       use Boundcond, only: update_ghosts
-      use Density, only: beta_glnrho_scaled
       use DensityMethods, only: getrho, putlnrho
       use EquationOfState, only: cs20
       use General
@@ -1704,6 +1700,7 @@ module Hydro
       use InitialCondition, only: initial_condition_uu
       use Sub
       use Mpicomm, only: lyang
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: tmpvec
@@ -1720,9 +1717,12 @@ module Hydro
       integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz,iter,niter=100
       logical :: lvectorpotential=.false.
 !
+      real, dimension(:), pointer :: beta_glnrho_scaled
+!
 !  inituu corresponds to different initializations of uu (called from start).
 !
-     
+      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='init_uu')
+ 
       do j=1,ninit
 !
         select case (inituu(j))
@@ -5228,8 +5228,8 @@ module Hydro
 !  until the next restart  !MR: but are not persistent, right?
 !
       if (novec>novecmax) then
-        print*,'calc_othresh: processor=',iproc_world,'; othresh_scl,novec,novecmax=', &
-                                          othresh_scl,novec,novecmax
+        !print*,'calc_othresh: processor=',iproc_world,'; othresh_scl,novec,novecmax=', &
+        !                                  othresh_scl,novec,novecmax
         othresh_scl=othresh_scl*1.2
       endif
 !

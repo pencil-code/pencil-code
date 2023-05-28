@@ -22,8 +22,7 @@ module Energy
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot
-  use Density, only: beta_glnrho_global, beta_glnrho_scaled
+  use EquationOfState, only: cs2top, cs2bot
   use DensityMethods, only: putrho, putlnrho, getlnrho, getrho_s
   use Messages
 !
@@ -174,6 +173,7 @@ module Energy
   real, dimension (:), allocatable :: hcond_prof,dlnhcond_prof
   real, dimension (:), allocatable :: chit_prof_stored,chit_prof_fluct_stored
   real, dimension (:), allocatable :: dchit_prof_stored,dchit_prof_fluct_stored
+  real, dimension(3) :: beta_glnrho_global=0.
 !
 !  xy-averaged field
 !
@@ -466,13 +466,14 @@ module Energy
 ! Auxiliaries
 !
   real, dimension(:,:), pointer :: reference_state
-  real, pointer :: cp,cv
+  real, pointer :: cp,cv,gamma,rho0,cs0
 
   real, dimension (nx) :: Hmax,ss0,diffus_chi,diffus_chi3,cs2cool_x
   integer, parameter :: prof_nz=150
   real, dimension (prof_nz) :: prof_lnT,prof_z
   logical :: lcalc_heat_cool
-  real :: tau1_cool,rho01
+  real :: tau1_cool,rho01,lnrho0,cs20,gamma_m1,gamma1
+  real, dimension(:), pointer :: beta_glnrho_scaled
 !
   contains
 !
@@ -619,15 +620,9 @@ module Energy
       call put_shared_variable('mpoly2',mpoly2)
 !      call put_shared_variable('lheatc_chit',lheatc_chit)
 
-      if (any(initss=='star_heat')) then
-        if (lroot) print*, "put_shared_variable in entropy=", wheat, luminosity, r_bcz, widthss, alpha_MLT
-        call put_shared_variable('wheat', wheat)
-        call put_shared_variable('luminosity', luminosity)
-        call put_shared_variable('r_bcz', r_bcz)
-        call put_shared_variable('widthss', widthss)
-        call put_shared_variable('alpha_MLT', alpha_MLT)
-      endif
-!
+      if (.not.ldensity) &
+        call put_shared_variable('beta_glnrho_global',beta_glnrho_global,caller='register_energy')
+
     endsubroutine register_energy
 !***********************************************************************
     subroutine initialize_energy(f)
@@ -640,7 +635,7 @@ module Energy
 !  15-nov-16/fred: option to use z-profile for reinitialize_ss
 !
       use BorderProfiles, only: request_border_driving
-      use EquationOfState, only: cs0, rho0, get_soundspeed, get_cp1, select_eos_variable
+      use EquationOfState, only: get_soundspeed, get_cp1, select_eos_variable, gamma, lnrho0, cs0, cs20
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
       use HDF5_IO, only: input_profile
@@ -660,6 +655,8 @@ module Energy
       character(LEN=11) :: formtd
       real, pointer :: gravx
       character (len=*), parameter :: lnT_dat = 'driver/b_lnT.dat'
+      real, dimension(:), pointer :: beta_glnrho_global_
+
 !
 !  Check any module dependencies.
 !
@@ -670,8 +667,17 @@ module Energy
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
                                caller='initialize_energy')
-      call get_shared_variable('cp',cp,caller='initialize_eos')
+      if (ldensity) then
+        call get_shared_variable('beta_glnrho_global',beta_glnrho_global_)
+        beta_glnrho_global=beta_glnrho_global_
+      endif
+      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
+
+      call get_shared_variable('cp',cp,caller='initialize_energy')
       call get_shared_variable('cv',cv)
+      !!call get_shared_variable('gamma',gamma); gamma_m1=gamma-1.; gamma1=1./gamma
+      !!call get_shared_variable('rho0',rho0); lnrho0=log(rho0)
+      !!call get_shared_variable('cs0',cs0); cs20=cs0**2
 !
 !  Tell the equation of state that we are here and what f variable we use.
 !
@@ -948,15 +954,6 @@ module Energy
           mpoly=mpoly0  ! needed to compute Fbot when bc=c1 (L383)
 !
       endselect
-!
-!  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
-!  gradient dlnrho/dr = beta/H.
-!
-      if (maxval(abs(beta_glnrho_global))/=0.0) then
-        beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
-        if (lroot) print*, 'initialize_energy: Global density gradient with beta_glnrho_global=', &
-                           beta_glnrho_global
-      endif
 !
 !  Turn off pressure gradient term and advection for 0-D runs.
 !
@@ -1455,7 +1452,7 @@ module Energy
 !  20-jan-2015/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: get_cp1, cs0, rho0, lnrho0, isothermal_entropy, &
+      use EquationOfState, only: get_cp1, isothermal_entropy, &
                                  isothermal_lnrho_ss, eoscalc, ilnrho_pp, eosperturb
       use General, only: itoa
       use Gravity
@@ -2056,7 +2053,6 @@ module Energy
 !
 !   2-mar-13/axel: coded
 !
-      use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
       use Gravity, only: gravz
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2119,7 +2115,7 @@ module Energy
 !  12-jul-05/axel: coded
 !  17-Nov-05/dintrans: updated using strat_MLT
 !
-      use EquationOfState, only: gamma_m1, rho0, lnrho0, cs20, cs2top, eoscalc, ilnrho_lnTT
+      use EquationOfState, only: cs2top, eoscalc, ilnrho_lnTT
       use General, only: safe_character_assign
       use Gravity, only: z1
 !
@@ -2931,7 +2927,7 @@ module Energy
         lpenc_requested(i_cp)=.true.
       endif
 !
-      if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
+      if (any(beta_glnrho_scaled/=0.0)) lpenc_requested(i_cs2)=.true.
 !
 !  magnetic chi-quenching
 !
@@ -3167,7 +3163,6 @@ module Energy
 !  20-nov-04/anders: coded
 !  15-mar-15/MR: changes for use of reference state.
 !
-      use EquationOfState, only: gamma1
       use Sub, only: u_dot_grad, grad, multmv, h_dot_grad
       use WENO_transport, only: weno_transp
 !
@@ -3299,7 +3294,7 @@ module Energy
 !
 !  Add pressure force from global density gradient.
 !
-        if (maxval(abs(beta_glnrho_global))/=0.0) then
+        if (any(beta_glnrho_scaled/=0.0)) then
           if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
           do j=1,3
             df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) - p%cs2*beta_glnrho_scaled(j)
@@ -3829,7 +3824,7 @@ module Energy
 !
 !   1-apr-20/joern: coded
 !
-      use EquationOfState, only : lnrho0, cs20, get_cv1, cs2top
+      use EquationOfState, only: get_cv1, cs2top
       use Sub, only : step
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -3907,7 +3902,7 @@ module Energy
       use Deriv, only: der_x, der2_x, der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div,smooth
-      use EquationOfState, only : lnrho0, cs20, get_cv1, get_cp1
+      use EquationOfState, only: get_cv1, get_cp1
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
@@ -4187,7 +4182,7 @@ module Energy
 !  28-apr-16/wlad: added case initial-temperature
 !
       use BorderProfiles, only: border_driving, set_border_initcond
-      use EquationOfState, only: gamma,gamma_m1,get_cp1
+      use EquationOfState, only: get_cp1
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -4661,7 +4656,6 @@ module Energy
 !  22-aug-14/joern: removed chi_t from here.
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -4752,7 +4746,6 @@ module Energy
 !                   but no chit adding anymore
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot, step, der_step
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -4908,7 +4901,6 @@ module Energy
 !
 !  10-feb-04/bing: coded
 !
-      use EquationOfState, only: gamma
       use Debug_IO, only: output_pencil
       use Sub, only: dot2_mn, multsv_mn, tensor_diffusion_coef
 !
@@ -5767,7 +5759,7 @@ module Energy
 !  02-jul-02/wolf: coded
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
-      use EquationOfState, only: cs0, get_cp1, lnrho0, gamma,gamma_m1
+      use EquationOfState, only: get_cp1
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -5968,7 +5960,6 @@ module Energy
 !
 ! Thermal relaxation for radially stratified global Keplerian disks
 !
-      use EquationOfState, only: gamma1
       use Sub, only: quintic_step
 !
       real, dimension(nx), intent(inout) :: heat
@@ -7426,7 +7417,6 @@ module Energy
 !  25-sep-2006/bing: updated, using external data
 !
       use Debug_IO, only: output_pencil
-      use EquationOfState, only: lnrho0, gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: newton
@@ -7527,7 +7517,6 @@ module Energy
 !  equations until rho=1 at the bottom of convection zone (z=z1)
 !  see Eqs. (20-21-22) in Brandenburg et al., AN, 326 (2005)
 !
-!      use EquationOfState, only: gamma, gamma_m1
       use Gravity, only: z1, z2, gravz
       use Sub, only: interp1
 !
@@ -7590,7 +7579,7 @@ module Energy
 !
 !  09-aug-06/dintrans: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, lnrho0, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1
       use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -7661,7 +7650,7 @@ module Energy
 !
 !  17-mar-07/dintrans: coded
 !
-      use EquationOfState, only: lnrho0, cs20, gamma, gamma_m1, cs2top, cs2bot, get_cp1, eoscalc, ilnrho_TT
+      use EquationOfState, only: cs2top, cs2bot, get_cp1, eoscalc, ilnrho_TT
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -7716,7 +7705,7 @@ module Energy
 !
 !  06-sep-07/dintrans: coded a single polytrope of index mpoly0
 !
-      use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1, gamma_m1, lnrho0
+      use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1
       use Gravity, only: gravz
       use SharedVariables, only: get_shared_variable
 !

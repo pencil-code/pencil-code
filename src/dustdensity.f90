@@ -160,9 +160,11 @@ module Dustdensity
   integer, dimension(ndustspec) :: idiag_divud2m=0
   integer, dimension(0:mmom)    :: idiag_rmom=0, idiag_admom=0
 !
+  real, dimension(:), pointer :: beta_glnrho_scaled
+
   contains
 !***********************************************************************
-    subroutine register_dustdensity()
+    subroutine register_dustdensity
 !
 !  Initialise variables which should know that we solve the
 !  compressible hydro equations: ind; increase nvar accordingly.
@@ -245,13 +247,14 @@ module Dustdensity
 !      real :: ddsize, ddsize0
       logical :: lnothing
 !
+      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='initialize_special')
+!
 !  Need deltamd for computing the radius differential in dustdensity.
 !
       if (ldustvelocity) then
-        call get_shared_variable('deltamd',deltamd,caller='initialize_dustvelocity')
-        call get_shared_variable('llin_radiusbins',llin_radiusbins,caller='initialize_dustvelocity')
-        if (llin_radiusbins.and..not.lradius_binning) &
-            call fatal_error('initialize_dustdensity', &
+        call get_shared_variable('deltamd',deltamd)
+        call get_shared_variable('llin_radiusbins',llin_radiusbins)
+        if (llin_radiusbins.and..not.lradius_binning) call fatal_error('initialize_dustdensity', &
                 'must not use llin_radiusbins=T with lradius_binning=F')
       endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -554,7 +557,6 @@ module Dustdensity
 !   7-nov-01/wolf: coded
 !  28-jun-02/axel: added isothermal
 !
-      use Density, only: beta_glnrho_scaled
       use EquationOfState, only: cs20, gamma
       use Initcond, only: hat3d, sinwave_phase, posnoise
       use InitialCondition, only: initial_condition_nd
@@ -941,7 +943,6 @@ module Dustdensity
 !
 !  18-sep-05/anders: coded
 !
-      use Density, only: beta_glnrho_scaled
       use EquationOfState, only: gamma, cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1071,7 +1072,7 @@ module Dustdensity
 !
     endsubroutine constant_richardson
 !***********************************************************************
-    subroutine pencil_criteria_dustdensity()
+    subroutine pencil_criteria_dustdensity
 !
 !  All pencils that the Dustdensity module depends on are specified here.
 !

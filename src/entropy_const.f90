@@ -63,6 +63,8 @@ module Energy
   integer :: idiag_dtc=0,idiag_ethm=0,idiag_ethdivum=0,idiag_ssm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
 !
+  real, dimension(3) :: beta_glnrho_global=0.
+
   contains
 !***********************************************************************
     subroutine register_energy
@@ -74,9 +76,13 @@ module Energy
 !
 !  identify version number
 !
+      use SharedVariables, only: put_shared_variable
+
       if (lroot) call svn_id( &
            "$Id$")
 !
+      if (.not.ldensity) call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
+
     endsubroutine register_energy
 !***********************************************************************
     subroutine initialize_energy(f)

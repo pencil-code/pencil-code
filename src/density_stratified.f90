@@ -50,12 +50,13 @@ module Density
   real :: density_floor = 0.0
   real :: diffrho_shock = 0.0
   real :: diffrho_hyper3_mesh = 0.0
-  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
+  real, dimension(3) :: beta_glnrho_global=0.,beta_glnrho_scaled=0.
   logical :: lrelativistic_eos=.false.
 !
   namelist /density_init_pars/ initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix
 !
-  namelist /density_run_pars/ density_floor, diffrho_hyper3_mesh, diffrho_shock, lconserve_mass, lmassdiff_fix
+  namelist /density_run_pars/ density_floor, diffrho_hyper3_mesh, diffrho_shock, lconserve_mass, lmassdiff_fix, &
+                              beta_glnrho_global
 !
 !  Diagnostic Variables
 !
@@ -105,7 +106,7 @@ module Density
 !
   real, dimension(mz,1) :: lnrhomz
   logical :: lcalc_lnrhomean = .false.
-  logical :: lupw_lnrho = .false.
+  logical :: lupw_lnrho = .false.,lffree=.false.
 !
   contains
 !***********************************************************************
@@ -133,6 +134,10 @@ module Density
 !  Communicate lrelativistic_eos to entropy too.
 !
       call put_shared_variable('lrelativistic_eos',lrelativistic_eos,caller='register_density') 
+      call put_shared_variable('lffree',lffree)
+!
+      call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
+      call put_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
 !
 !  Identify version number.
 !
@@ -147,7 +152,7 @@ module Density
 !
 !  07-sep-14/ccyang: coded.
 !
-      use EquationOfState, only: select_eos_variable, get_stratz
+      use EquationOfState, only: select_eos_variable, get_stratz, cs0
       use SharedVariables, only: put_shared_variable
       use DensityMethods,  only: initialize_density_methods
 !
@@ -163,10 +168,6 @@ module Density
 !  Get density stratification.
 !
       if (lstratz) call get_stratz(z, rho0z, dlnrho0dz)
-!
-!  Disable the force-free considerations.
-!
-      call put_shared_variable('lffree', .false., caller='initialize_density')
 !
 !  Check the switches.
 !
@@ -184,6 +185,15 @@ module Density
 !  Get the total mass.
 !
       if (lconserve_mass) mass0 = total_mass(f)
+!
+!  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
+!  gradient dlnrho/dr = beta/H.
+!
+      if (any(beta_glnrho_global/=0.0)) then
+        beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
+        if (lroot) print*, 'initialize_density: Global density gradient with beta_glnrho_global=', &
+                           beta_glnrho_global
+      endif
 !
     endsubroutine initialize_density
 !***********************************************************************

@@ -23,7 +23,6 @@
 !***************************************************************
 module Density
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet, itoa
   use Messages
@@ -142,8 +141,7 @@ module Density
   character (len=labellen) :: density_floor_profile='uniform'
   logical :: ldensity_slope_limited=.false.
   real :: h_sld_dens=2.0, nlf_sld_dens=1.0
-  real, dimension(3), target :: beta_glnrho_global = 0.0
-  real, dimension(3) :: beta_glnrho_scaled = 0.0
+  real, dimension(3) :: beta_glnrho_global = 0., beta_glnrho_scaled=0.
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
@@ -185,7 +183,7 @@ module Density
       lreduced_sound_speed, lrelativistic_eos, ladvection_density, &
       xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, &
       density_zaver_range, rss_coef1, rss_coef2, &
-      ieos_profile, width_eos_prof, beta_glnrho_global,&
+      ieos_profile, width_eos_prof, beta_glnrho_global, &
       lconserve_total_mass, total_mass, density_ceiling, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho, &
       lsubtract_init_stratification, ireference_state, &
@@ -294,7 +292,7 @@ module Density
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use FArrayManager
-      use SharedVariables, only: put_shared_variable, get_shared_variable
+      use SharedVariables, only: put_shared_variable
 !
       if (ldensity_nolog) then
         call farray_register_pde('rho',irho)
@@ -344,19 +342,30 @@ module Density
 !
       call put_shared_variable('lrelativistic_eos',lrelativistic_eos) 
 !
-!  Check if we are solving for relativistic bulk motions, not just EoS.
+!  Communicate lffree to entropy too.
 !
-      if (lhydro.and.iphiuu==0) then
-        call get_shared_variable('lconservative', lconservative)
-      else
-        allocate(lconservative)
-        lconservative=.false.
+      call put_shared_variable('lffree',lffree)
+!
+!  Put the force-free profiles to entropy and hydro too.
+!
+      if (lffree) then
+        call put_shared_variable('profx_ffree',profx_ffree)
+        call put_shared_variable('profy_ffree',profy_ffree)
+        call put_shared_variable('profz_ffree',profz_ffree)
       endif
 !
-!  Some modules Density depends on may still need access.
+!  Communicate whether reduced sound speed is used to entropy.
 !
-      call put_shared_variable("beta_glnrho_global", beta_glnrho_global)
+      call put_shared_variable('lreduced_sound_speed',lreduced_sound_speed)
 !
+      if (lreduced_sound_speed) then
+        call put_shared_variable('reduce_cs2',reduce_cs2)
+        call put_shared_variable('lscale_to_cs2top',lscale_to_cs2top)
+      endif
+
+      call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
+      call put_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
+
     endsubroutine register_density
 !***********************************************************************
     subroutine initialize_density(f)
@@ -784,10 +793,6 @@ module Density
 !
 !  Check if we are solving partially force-free equations.
 !
-!  Communicate lffree to entropy too.
-!
-      call put_shared_variable('lffree',lffree,caller='initialize_density')
-!
       if (lffree) then
         select case(ffree_profile)
         case('radial_stepdown')
@@ -818,21 +823,9 @@ module Density
         case default
           call fatal_error('initialize_density', 'lffree=T but no profile selected')
         endselect
-!
-!  Put the profiles to entropy and hydro too.
-!
-        call put_shared_variable('profx_ffree',profx_ffree)
-        call put_shared_variable('profy_ffree',profy_ffree)
-        call put_shared_variable('profz_ffree',profz_ffree)
       endif
 !
-!  Check if we are reduced sound speed is used and communicate to
-!  entropy
-!
-      call put_shared_variable('lreduced_sound_speed',lreduced_sound_speed)
-!
       if (lreduced_sound_speed) then
-        call put_shared_variable('reduce_cs2',reduce_cs2)
 !
         if (lscale_to_cs2top) then
           if (.not.leos_idealgas.and.lroot) &
@@ -846,7 +839,6 @@ module Density
 ! 
         reduce_cs2_profx=reduce_cs2*reduce_cs2_profx
 !
-        call put_shared_variable('lscale_to_cs2top',lscale_to_cs2top)
       endif
 
       if (lmass_source) then
@@ -884,6 +876,15 @@ module Density
       elseif (ieos_profile=='surface_z') then
         profz_eos=0.5*(1.0-erfunc(z/width_eos_prof))
         dprofz_eos=-exp(-(z/width_eos_prof)**2)/(sqrtpi*width_eos_prof)
+      endif
+!
+!  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
+!  gradient dlnrho/dr = beta/H.
+!
+      if (any(beta_glnrho_global/=0.0)) then
+        beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
+        if (lroot) print*, 'initialize_density: Global density gradient with beta_glnrho_global=', &
+                           beta_glnrho_global
       endif
 !
       if (lreference_state) then
@@ -951,6 +952,15 @@ module Density
       if (lrun .and. total_mass < 0.0) then
         total_mass = mean_density(f) * box_volume
         if (lreference_state) total_mass = total_mass + reference_state_mass
+      endif
+!
+!  Check if we are solving for relativistic bulk motions, not just EoS.
+!
+      if (lhydro.and.iphiuu==0) then
+        call get_shared_variable('lconservative', lconservative)
+      else
+        allocate(lconservative)
+        lconservative=.false.
       endif
 
       if (lcontinuity_gas.and..not.lweno_transport.and.ldensity_nolog.and.lconservative.and..not.lhydro) &
@@ -3896,26 +3906,5 @@ module Density
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     endsubroutine pushpars2c
-!***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    use Syscalls, only: copy_addr
-    use Diagnostics, only: set_type
-
-    integer, parameter :: n_diags=5
-    integer(KIND=ikind8), dimension(n_diags) :: p_diag
-
-    call copy_addr(idiag_rhom,p_diag(1))
-    call set_type(idiag_rhom,lsum=.true.)
-    call copy_addr(idiag_rhomin,p_diag(2))
-    call set_type(idiag_rhomin,lmin=.true.)
-    call copy_addr(idiag_rhomax,p_diag(3))
-    call set_type(idiag_rhomax,lmax=.true.)
-    call copy_addr(idiag_mass,p_diag(4))
-    call set_type(idiag_mass,lint=.true.)
-    call copy_addr(idiag_rhorms,p_diag(5))
-    call set_type(idiag_rhorms,lsqrt=.true.)
-
-    endsubroutine pushdiags2c
 !***********************************************************************
 endmodule Density

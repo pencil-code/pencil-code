@@ -632,7 +632,7 @@ module Hydro
 !  pressure gradient or not. But hydro wants pressure gradient only when
 !  the density is computed, i.e. not with lboussinesq nor lanelastic.
 !
-      if  (.not.ldensity.or.lanelastic) lpressuregradient_gas=.false.
+      if (.not.ldensity.or.lanelastic) lpressuregradient_gas=.false.
       call put_shared_variable('lpressuregradient_gas', &
           lpressuregradient_gas,caller='register_hydro')
 !
@@ -665,9 +665,17 @@ module Hydro
 !
 !  shared variable of lrelativistic for density
 !
-      if (ldensity) &
-        call put_shared_variable('lrelativistic', &
-            lrelativistic, caller='register_density')
+      if (ldensity) call put_shared_variable('lrelativistic',lrelativistic)
+!
+      if (force_lower_bound == 'vel_time' .or. force_upper_bound == 'vel_time') then
+        call put_shared_variable('ampl_forc', ampl_forc)
+        call put_shared_variable('k_forc', k_forc)
+        call put_shared_variable('w_forc', w_forc)
+        call put_shared_variable('x_forc', x_forc)
+        call put_shared_variable('dx_forc', dx_forc)
+      endif
+
+      call put_shared_variable('lshear_rateofstrain',lshear_rateofstrain)
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
 ! of gas velocity as auxiliary
@@ -710,22 +718,12 @@ module Hydro
       endif
       if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
 !
-      if (force_lower_bound == 'vel_time' .or. force_upper_bound == 'vel_time') then
-        call put_shared_variable('ampl_forc', ampl_forc)
-        call put_shared_variable('k_forc', k_forc)
-        call put_shared_variable('w_forc', w_forc)
-        call put_shared_variable('x_forc', x_forc)
-        call put_shared_variable('dx_forc', dx_forc)
-      endif
-
-      call put_shared_variable('lshear_rateofstrain',lshear_rateofstrain)
-!
 !  Check if we are solving the force-free equations in parts of domain.
 !  This is currently possible with density (including anelastic, but not
 !  boussinesq).
 !
       if (ldensity) then
-        call get_shared_variable('lffree',lffree)
+        call get_shared_variable('lffree',lffree,'initialize_hydro')
         if (lffree) then
           call get_shared_variable('profx_ffree',profx_ffree)
           call get_shared_variable('profy_ffree',profy_ffree)
@@ -736,7 +734,7 @@ module Hydro
 !  Get the reference state if requested
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state)
+        call get_shared_variable('reference_state',reference_state,'initialize_hydro')
 !
       lcalc_uumeanz = lcalc_uumeanz .or. lcalc_uumean .or. ltestfield_xz      ! lcalc_uumean for compatibility
 !
@@ -744,7 +742,7 @@ module Hydro
 !
       if (lcalc_uumeanxy) then
         if (lyinyang) then
-          call fatal_error('initialize_hydro','Calculation of z average not implmented for Yin-Yang')
+          call not_implemented('initialize_hydro','calculation of z average for Yin-Yang')
           !call initialize_zaver_yy(myl,nycap)
         endif
       endif
@@ -763,7 +761,7 @@ module Hydro
 !  give warning if orms is not set in print.in
 !
       if (othresh_per_orms/=0..and.idiag_orms==0) &
-        call warning('initialize_hydro','need to set orms in print.in to get othresh.')
+        call warning('initialize_hydro','need to set orms in print.in to get othresh')
 !
       call keep_compiler_quiet(f)
 !
@@ -793,27 +791,19 @@ module Hydro
 !
 !  do xy-averaged mean field for each component
 !
-      if (lcalc_uumeanz) then
-        call fatal_error('hydro_potential','duu_dt')
-      endif
+      if (lcalc_uumeanz) call not_implemented('calc_means_hydro','uumeanz')
 !
 !  do yz-averaged mean field for each component
 !
-      if (lcalc_uumeanx) then
-        call fatal_error('hydro_potential','duu_dt')
-      endif
+      if (lcalc_uumeanx) call not_implemented('calc_means_hydro','uumeanx')
 !
 !  Do mean 2D field in (x,y)-plane for each component
 !
-      if (lcalc_uumeanxy) then
-        call fatal_error('hydro_potential','duu_dt')
-      endif
+      if (lcalc_uumeanxy) call not_implemented('calc_means_hydro','uumeanxy')
 !
 !  Do mean 2D field in (x,z)-plane for each component
 !
-      if (lcalc_uumeanxz) then
-        call fatal_error('hydro_potential','duu_dt')
-      endif
+      if (lcalc_uumeanxz) call not_implemented('calc_means_hydro','uumeanxz')
 !
       endsubroutine calc_means_hydro
 !***********************************************************************
@@ -826,7 +816,6 @@ module Hydro
 !  13-feb-15/MR: changes for use of reference_state
 !
       use Boundcond, only:update_ghosts
-      use Density, only: beta_glnrho_scaled
       use DensityMethods, only: getrho, putlnrho
       use EquationOfState, only: cs20
       use General
@@ -879,8 +868,7 @@ module Hydro
           !
           !  Catch unknown values
           !
-          call fatal_error("init_uu", &
-              "No such value for inituu: "//trim(inituu(j)))
+          call fatal_error("init_uu","no such inituu: "//trim(inituu(j)))
 !
         endselect
 !
@@ -1096,7 +1084,7 @@ module Hydro
 !
       if (idiag_urmsn/=0 .or. idiag_ormsn/=0 .or. idiag_oumn/=0) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
-          call fatal_error("pencil_criteria_hydro","You have to set either of"// &
+          call fatal_error("pencil_criteria_hydro","You have to set either of "// &
               "lequatory or lequatorz to true to calculate averages over half the box")
         else
           if (lequatory) write(*,*) 'pencil-criteria_hydro: box divided along y dirn'
@@ -1290,18 +1278,18 @@ module Hydro
         outest = minval(p%ou)
         if (outest<(-1.0d-8))then
           write(*,*) m,n,outest,maxval(p%ou),lpenc_loc(i_ou)
-          write(*,*)'WARNING : hydro:ou has different sign than relhel'
+          call warning('calc_pencils_hydro_nonlinear','ou has different sign than relhel')
         else
         endif
       else
       endif
 ! ugu
       if (lpenc_loc(i_ugu)) then
-        if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
-        call fatal_error('calc_pencils_hydro_nonlinear:','does not calculate ugu pencil')
+        if (headtt.and.lupw_uu) print *,'calc_pencils_hydro_nonlinear: upwinding advection term'
+        call fatal_error('calc_pencils_hydro_nonlinear','does not calculate ugu pencil')
       endif
 ! ugu2
-      if (lpenc_loc(i_ugu2)) call fatal_error('calc_pencils_hydro_nonlinear:','does not calculate ugu2 pencil')
+      if (lpenc_loc(i_ugu2)) call fatal_error('calc_pencils_hydro_nonlinear','does not calculate ugu2 pencil')
 ! ogu ... ogu2
       if (lpenc_loc(i_ogu)) call u_dot_grad(f,iuu,p%uij,p%oo,p%ogu,UPWIND=lupw_uu)
 ! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
@@ -1456,7 +1444,7 @@ module Hydro
       if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
       if (lpenc_loc(i_uu0)) p%uu0=f(l1:l2,m,n,iu0x:iu0z)
 ! u2, should not be calculated
-      if (lpenc_loc(i_u2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate u2 pencil')
+      if (lpenc_loc(i_u2)) call fatal_error('calc_pencils_hydro_linearized','does not calculate u2 pencil')
 ! uij
       if (lpenc_loc(i_uij)) call gij(f,iuu,p%uij,1)
       if (lpenc_loc(i_u0ij)) call gij(f,iuu0,p%u0ij,1)
@@ -1466,31 +1454,29 @@ module Hydro
 ! sij
       if (lpenc_loc(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
 ! sij2
-      if (lpenc_loc(i_sij2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate sij2 pencil')
+      if (lpenc_loc(i_sij2)) call fatal_error('calc_pencils_hydro_linearized','does not calculate sij2 pencil')
 ! uij5
-      if (lpenc_loc(i_uij5)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate uij5 pencil')
+      if (lpenc_loc(i_uij5)) call fatal_error('calc_pencils_hydro_linearized','does not calculate uij5 pencil')
 ! oo (=curlu)
-      if (lpenc_loc(i_oo)) then
-        call curl_mn(p%uij,p%oo,p%uu)
-      endif
+      if (lpenc_loc(i_oo)) call curl_mn(p%uij,p%oo,p%uu)
 ! o2
-      if (lpenc_loc(i_o2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate o2 pencil')
+      if (lpenc_loc(i_o2)) call fatal_error('calc_pencils_hydro_linearized','does not calculate o2 pencil')
 ! ou
-      if (lpenc_loc(i_ou)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate ou pencil')
+      if (lpenc_loc(i_ou)) call fatal_error('calc_pencils_hydro_linearized','does not calculate ou pencil')
 ! ugu
       if (lpenc_loc(i_ugu)) then
-        if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
+        if (headtt.and.lupw_uu) print *,'calc_pencils_hydro_linearized: upwinding advection term'
 !        call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
         call u_dot_grad(f,iuu0,p%u0ij,p%uu,ugu0,UPWIND=lupw_uu)
         call u_dot_grad(f,iuu,p%uij,p%uu0,u0gu,UPWIND=lupw_uu)
         p%ugu = ugu0+u0gu
       endif
 ! ugu2
-      if (lpenc_loc(i_ugu2)) call fatal_error('calc_pencils_hydro_linearized:','does not calculate ugu2 pencil')
+      if (lpenc_loc(i_ugu2)) call fatal_error('calc_pencils_hydro_linearized','does not calculate ugu2 pencil')
 ! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
       if (lpenc_loc(i_u3u21).or.lpenc_loc(i_u1u32).or.lpenc_loc(i_u2u13)  &
         .or.lpenc_loc(i_u2u31).or.lpenc_loc(i_u3u12).or.lpenc_loc(i_u1u23) ) then
-        call fatal_error('calc_pencils_hydro_linearized:','ujukl pencils not calculated')
+        call fatal_error('calc_pencils_hydro_linearized','ujukl pencils not calculated')
       endif
 ! del4u, del6u, and del4graddivu
       if (lpenc_loc(i_del4u)) call del4v(f,iuu,p%del4u)
@@ -1511,7 +1497,7 @@ module Hydro
 !
       if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
         if (lpenc_loc(i_graddivu)) then
-          if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
+          if (headtt.or.ldebug) print*,'calc_pencils_hydro_linearized: call gij_etc'
           call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
         endif
         if (lpenc_loc(i_del2u)) then
@@ -1547,14 +1533,11 @@ module Hydro
 !
 !del2uj, d^u/dx^2 etc
 !
-      if (lpenc_loc(i_d2uidxj)) &
-        call d2fi_dxj(f,iuu,p%d2uidxj)
+      if (lpenc_loc(i_d2uidxj)) call d2fi_dxj(f,iuu,p%d2uidxj)
 !
 ! deluidxjk
 !
-      if (lpenc_loc(i_uijk)) then
-        call del2fi_dxjk(f,iuu,p%uijk)
-      endif
+      if (lpenc_loc(i_uijk)) call del2fi_dxjk(f,iuu,p%uijk)
 !
 ! grad5divu
 !
@@ -1573,7 +1556,7 @@ module Hydro
 ! transpurho
 !
       if (lpenc_loc(i_transpurho)) &
-        call fatal_error('calc_pencils_hydro_linearized:','no linearized weno transport ')
+        call fatal_error('calc_pencils_hydro_linearized','no linearized weno transport ')
 !
     endsubroutine calc_pencils_hydro_linearized
 !***********************************************************************
@@ -1733,8 +1716,7 @@ module Hydro
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
-      if (lforcing_cont_uu) &
-        df(l1:l2,m,n,iphiuu)=df(l1:l2,m,n,iphiuu)+ ampl_fcont_uu*p%fcont(:,1,1)
+      if (lforcing_cont_uu) df(l1:l2,m,n,iphiuu)=df(l1:l2,m,n,iphiuu)+ ampl_fcont_uu*p%fcont(:,1,1)
 !
 !  store slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
@@ -1765,12 +1747,9 @@ module Hydro
         if (idiag_urmsz/=0) call sum_mn_name(p%u2*zmask_hyd(n-n1+1),idiag_urmsz,lsqrt=.true.)
         if (idiag_umax /=0) call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
         if (idiag_umin /=0) call max_mn_name(-sqrt(p%u2),idiag_umin,lneg=.true.)
-        if (idiag_uxrms/=0) &
-            call sum_mn_name(p%uu(:,1)**2,idiag_uxrms,lsqrt=.true.)
-        if (idiag_uzrms/=0) &
-            call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
-        if (idiag_uzrmaxs/=0) &
-            call max_mn_name(p%uu(:,3)**2,idiag_uzrmaxs,lsqrt=.true.)
+        if (idiag_uxrms/=0) call sum_mn_name(p%uu(:,1)**2,idiag_uxrms,lsqrt=.true.)
+        if (idiag_uzrms/=0) call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
+        if (idiag_uzrmaxs/=0) call max_mn_name(p%uu(:,3)**2,idiag_uzrmaxs,lsqrt=.true.)
         if (idiag_uxmin/=0) call max_mn_name(-p%uu(:,1),idiag_uxmin,lneg=.true.)
         if (idiag_uymin/=0) call max_mn_name(-p%uu(:,2),idiag_uymin,lneg=.true.)
         if (idiag_uzmin/=0) call max_mn_name(-p%uu(:,3),idiag_uzmin,lneg=.true.)
@@ -1801,17 +1780,13 @@ module Hydro
         if (idiag_ux2ssm/=0)  call sum_mn_name(s2z(n)*p%uu(:,1)**2,idiag_ux2ssm)
         if (idiag_uy2ccm/=0)  call sum_mn_name(c2z(n)*p%uu(:,2)**2,idiag_uy2ccm)
         if (idiag_uy2ssm/=0)  call sum_mn_name(s2z(n)*p%uu(:,2)**2,idiag_uy2ssm)
-        if (idiag_uxuycsm/=0) &
-            call sum_mn_name(cz(n)*sz(n)*p%uu(:,1)*p%uu(:,2),idiag_uxuycsm)
+        if (idiag_uxuycsm/=0) call sum_mn_name(cz(n)*sz(n)*p%uu(:,1)*p%uu(:,2),idiag_uxuycsm)
         if (idiag_uxuym/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,2),idiag_uxuym)
         if (idiag_uxuzm/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,3),idiag_uxuzm)
         if (idiag_uyuzm/=0)   call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
-        if (idiag_ruxuym/=0) &
-            call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuym)
-        if (idiag_ruxuzm/=0) &
-            call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzm)
-        if (idiag_ruyuzm/=0) &
-            call sum_mn_name(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzm)
+        if (idiag_ruxuym/=0) call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuym)
+        if (idiag_ruxuzm/=0) call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzm)
+        if (idiag_ruyuzm/=0) call sum_mn_name(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzm)
         if (idiag_divuHrms/=0) call sum_mn_name((p%uij(:,1,1)+p%uij(:,2,2))**2,idiag_divuHrms,lsqrt=.true.)
         if (idiag_uxxrms/=0) call sum_mn_name(p%uij(:,1,1)**2,idiag_uxxrms,lsqrt=.true.)
         if (idiag_uyyrms/=0) call sum_mn_name(p%uij(:,2,2)**2,idiag_uyyrms,lsqrt=.true.)
@@ -1828,15 +1803,11 @@ module Hydro
         call sum_mn_name(p%ekin,idiag_ekin)
         call integrate_mn_name(p%ekin,idiag_ekintot)
         if (idiag_totangmom/=0) &
-            call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
-            idiag_totangmom,p)
-        if (idiag_uxglnrym/=0) &
-            call sum_mn_name(p%uu(:,1)*p%glnrho(:,2),idiag_uxglnrym)
-        if (idiag_uyglnrxm/=0) &
-            call sum_mn_name(p%uu(:,2)*p%glnrho(:,1),idiag_uyglnrxm)
+            call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),idiag_totangmom,p)
+        if (idiag_uxglnrym/=0) call sum_mn_name(p%uu(:,1)*p%glnrho(:,2),idiag_uxglnrym)
+        if (idiag_uyglnrxm/=0) call sum_mn_name(p%uu(:,2)*p%glnrho(:,1),idiag_uyglnrxm)
         if (idiag_uzdivum/=0) call sum_mn_name(p%uu(:,3)*p%divu,idiag_uzdivum)
-        if (idiag_uxuydivum/=0) &
-            call sum_mn_name(p%uu(:,1)*p%uu(:,2)*p%divu,idiag_uxuydivum)
+        if (idiag_uxuydivum/=0) call sum_mn_name(p%uu(:,1)*p%uu(:,2)*p%divu,idiag_uxuydivum)
 !
         if (idiag_udpxxm/=0) call sum_mn_name(2.*(p%uu(:,1)*p%fpres(:,1)),idiag_udpxxm)
         if (idiag_udpyym/=0) call sum_mn_name(2.*(p%uu(:,2)*p%fpres(:,2)),idiag_udpyym)
@@ -1889,14 +1860,10 @@ module Hydro
 !
 !  Mean angular momenta.
 !
-        if (idiag_rlxm/=0) call sum_mn_name( &
-            p%rho*(y(m)*p%uu(:,3)-z(n)*p%uu(:,2)),idiag_rlxm)
-        if (idiag_rlym/=0) call sum_mn_name( &
-            p%rho*(z(n)*p%uu(:,1)-x(l1:l2)*p%uu(:,3)),idiag_rlym)
-        if (idiag_rlzm/=0) call sum_mn_name( &
-            p%rho*(x(l1:l2)*p%uu(:,2)-y(m)*p%uu(:,1)),idiag_rlzm)
-        if (idiag_rlx2m/=0) call sum_mn_name( &
-            (p%rho*(y(m)*p%uu(:,3)-z(n)*p%uu(:,2)))**2,idiag_rlx2m)
+        if (idiag_rlxm/=0) call sum_mn_name(p%rho*(y(m)*p%uu(:,3)-z(n)*p%uu(:,2)),idiag_rlxm)
+        if (idiag_rlym/=0) call sum_mn_name(p%rho*(z(n)*p%uu(:,1)-x(l1:l2)*p%uu(:,3)),idiag_rlym)
+        if (idiag_rlzm/=0) call sum_mn_name(p%rho*(x(l1:l2)*p%uu(:,2)-y(m)*p%uu(:,1)),idiag_rlzm)
+        if (idiag_rlx2m/=0) call sum_mn_name((p%rho*(y(m)*p%uu(:,3)-z(n)*p%uu(:,2)))**2,idiag_rlx2m)
         if (idiag_rly2m/=0) call sum_mn_name( &
             (p%rho*(z(n)*p%uu(:,1)-x(l1:l2)*p%uu(:,3)))**2,idiag_rly2m)
         if (idiag_rlz2m/=0) call sum_mn_name( &
@@ -2017,18 +1984,12 @@ module Hydro
           call sum_mn_name(u2t,idiag_u2tm)
         endif
 !
-        if (idiag_uxfampm/=0) &
-            call sum_mn_name(p%uu(:,1)*space_part_re,idiag_uxfampm)
-        if (idiag_uyfampm/=0) &
-            call sum_mn_name(p%uu(:,2)*space_part_re,idiag_uyfampm)
-        if (idiag_uzfampm/=0) &
-            call sum_mn_name(p%uu(:,3)*space_part_re,idiag_uzfampm)
-        if (idiag_uxfampim/=0) &
-            call sum_mn_name(p%uu(:,1)*space_part_im,idiag_uxfampim)
-        if (idiag_uyfampim/=0) &
-            call sum_mn_name(p%uu(:,2)*space_part_im,idiag_uyfampim)
-        if (idiag_uzfampim/=0) &
-            call sum_mn_name(p%uu(:,3)*space_part_im,idiag_uzfampim)
+        if (idiag_uxfampm/=0) call sum_mn_name(p%uu(:,1)*space_part_re,idiag_uxfampm)
+        if (idiag_uyfampm/=0) call sum_mn_name(p%uu(:,2)*space_part_re,idiag_uyfampm)
+        if (idiag_uzfampm/=0) call sum_mn_name(p%uu(:,3)*space_part_re,idiag_uzfampm)
+        if (idiag_uxfampim/=0) call sum_mn_name(p%uu(:,1)*space_part_im,idiag_uxfampim)
+        if (idiag_uyfampim/=0) call sum_mn_name(p%uu(:,2)*space_part_im,idiag_uyfampim)
+        if (idiag_uzfampim/=0) call sum_mn_name(p%uu(:,3)*space_part_im,idiag_uzfampim)
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -2156,15 +2117,11 @@ module Hydro
 !  phi-z averages
 !
         call phizsum_mn_name_r(p%u2,idiag_u2mr)
-        if (idiag_urmr/=0) &
-            call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmr)
-        if (idiag_upmr/=0) &
-            call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmr)
+        if (idiag_urmr/=0) call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmr)
+        if (idiag_upmr/=0) call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmr)
         call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
-        if (idiag_ormr/=0) &
-            call phizsum_mn_name_r(p%oo(:,1)*p%pomx+p%oo(:,2)*p%pomy,idiag_ormr)
-        if (idiag_opmr/=0) &
-            call phizsum_mn_name_r(p%oo(:,1)*p%phix+p%oo(:,2)*p%phiy,idiag_opmr)
+        if (idiag_ormr/=0) call phizsum_mn_name_r(p%oo(:,1)*p%pomx+p%oo(:,2)*p%pomy,idiag_ormr)
+        if (idiag_opmr/=0) call phizsum_mn_name_r(p%oo(:,1)*p%phix+p%oo(:,2)*p%phiy,idiag_opmr)
         call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
         endif
 !
@@ -2172,16 +2129,12 @@ module Hydro
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        if (idiag_urmphi/=0) &
-            call phisum_mn_name_rz(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmphi)
-        if (idiag_ursphmphi/=0) &
-            call phisum_mn_name_rz(p%uu(:,1)*p%evr(:,1)+ &
+        if (idiag_urmphi/=0) call phisum_mn_name_rz(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmphi)
+        if (idiag_ursphmphi/=0) call phisum_mn_name_rz(p%uu(:,1)*p%evr(:,1)+ &
               p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3),idiag_ursphmphi)
-        if (idiag_uthmphi/=0) &
-            call phisum_mn_name_rz(p%uu(:,1)*p%evth(:,1)+ &
+        if (idiag_uthmphi/=0) call phisum_mn_name_rz(p%uu(:,1)*p%evth(:,1)+ &
               p%uu(:,2)*p%evth(:,2)+p%uu(:,3)*p%evth(:,3),idiag_uthmphi)
-        if (idiag_upmphi/=0) &
-            call phisum_mn_name_rz(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmphi)
+        if (idiag_upmphi/=0) call phisum_mn_name_rz(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmphi)
         call phisum_mn_name_rz(p%uu(:,3),idiag_uzmphi)
         call phisum_mn_name_rz(p%u2,idiag_u2mphi)
         call phisum_mn_name_rz(p%oo(:,3),idiag_ozmphi)
@@ -2190,18 +2143,12 @@ module Hydro
         call ysum_mn_name_xz(p%uu(:,1),idiag_uxmxz)
         call ysum_mn_name_xz(p%uu(:,2),idiag_uymxz)
         call ysum_mn_name_xz(p%uu(:,3),idiag_uzmxz)
-        if (idiag_ux2mxz/=0) &
-            call ysum_mn_name_xz(p%uu(:,1)**2,idiag_ux2mxz)
-        if (idiag_uy2mxz/=0) &
-            call ysum_mn_name_xz(p%uu(:,2)**2,idiag_uy2mxz)
-        if (idiag_uz2mxz/=0) &
-            call ysum_mn_name_xz(p%uu(:,3)**2,idiag_uz2mxz)
-        if (idiag_uxuymxz/=0) &
-            call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,2),idiag_uxuymxz)
-        if (idiag_uxuzmxz/=0) &
-            call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,3),idiag_uxuzmxz)
-        if (idiag_uyuzmxz/=0) &
-            call ysum_mn_name_xz(p%uu(:,2)*p%uu(:,3),idiag_uyuzmxz)
+        if (idiag_ux2mxz/=0) call ysum_mn_name_xz(p%uu(:,1)**2,idiag_ux2mxz)
+        if (idiag_uy2mxz/=0) call ysum_mn_name_xz(p%uu(:,2)**2,idiag_uy2mxz)
+        if (idiag_uz2mxz/=0) call ysum_mn_name_xz(p%uu(:,3)**2,idiag_uz2mxz)
+        if (idiag_uxuymxz/=0) call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,2),idiag_uxuymxz)
+        if (idiag_uxuzmxz/=0) call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,3),idiag_uxuzmxz)
+        if (idiag_uyuzmxz/=0) call ysum_mn_name_xz(p%uu(:,2)*p%uu(:,3),idiag_uyuzmxz)
         call ysum_mn_name_xz(p%ou,idiag_oumxz)
 !
         call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
@@ -2222,19 +2169,16 @@ module Hydro
         if (idiag_ruxmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1),idiag_ruxmxy)
         call zsum_mn_name_xy(p%uu,idiag_ruymxy,(/0,1,0/),p%rho)
         call zsum_mn_name_xy(p%uu,idiag_ruzmxy,(/0,0,1/),p%rho)
-        if (idiag_ux2mxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,1)**2,idiag_ux2mxy)
+        if (idiag_ux2mxy/=0) call zsum_mn_name_xy(p%uu(:,1)**2,idiag_ux2mxy)
         call zsum_mn_name_xy(p%uu,idiag_uy2mxy,(/0,2,0/))
         call zsum_mn_name_xy(p%uu,idiag_uz2mxy,(/0,0,2/))
-        if (idiag_rux2mxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,1)**2,idiag_rux2mxy)
+        if (idiag_rux2mxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1)**2,idiag_rux2mxy)
         call zsum_mn_name_xy(p%uu,idiag_ruy2mxy,(/0,2,0/),p%rho)
         call zsum_mn_name_xy(p%uu,idiag_ruz2mxy,(/0,0,2/),p%rho)
         call zsum_mn_name_xy(p%uu,idiag_ruxuymxy,(/1,1,0/),p%rho)
         call zsum_mn_name_xy(p%uu,idiag_ruxuzmxy,(/1,0,1/),p%rho)
         call zsum_mn_name_xy(p%uu,idiag_ruyuzmxy,(/0,1,1/),p%rho)
-        if (idiag_fkinxmxy/=0) &
-            call zsum_mn_name_xy(p%ekin*p%uu(:,1),idiag_fkinxmxy)
+        if (idiag_fkinxmxy/=0) call zsum_mn_name_xy(p%ekin*p%uu(:,1),idiag_fkinxmxy)
         call zsum_mn_name_xy(p%uu,idiag_fkinymxy,(/0,1,0/),p%ekin)
       else
 !
@@ -2928,8 +2872,7 @@ module Hydro
             'uyuzmx',idiag_uyuzmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'oumx',idiag_oumx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ekinmx',idiag_ekinmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'fkinxmx',idiag_fkinxmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'fkinxmx',idiag_fkinxmx)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
@@ -2980,18 +2923,15 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rux2mz',idiag_rux2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruy2mz',idiag_ruy2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruz2mz',idiag_ruz2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'uxuymz',idiag_uxuymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'uxuzmz',idiag_uxuzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'uyuzmz',idiag_uyuzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), 'ruxuymz',idiag_ruxuymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), 'ruxuzmz',idiag_ruxuzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), 'ruyuzmz',idiag_ruyuzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), 'ruxuy2mz',idiag_ruxuy2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), 'ruxuz2mz',idiag_ruxuz2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), 'ruyuz2mz',idiag_ruyuz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxuymz',idiag_uxuymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxuzmz',idiag_uxuzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyuzmz',idiag_uyuzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruxuymz',idiag_ruxuymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruxuzmz',idiag_ruxuzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruyuzmz',idiag_ruyuzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruxuy2mz',idiag_ruxuy2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruxuz2mz',idiag_ruxuz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruyuz2mz',idiag_ruyuz2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxuxxmz',idiag_oxuxxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oyuxymz',idiag_oyuxymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxuyxmz',idiag_oxuyxmz)
@@ -3001,12 +2941,9 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyxuzxmz',idiag_uyxuzxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyyuzymz',idiag_uyyuzymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyzuzzmz',idiag_uyzuzzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'fmasszmz',idiag_fmasszmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'fkinzmz',idiag_fkinzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'ekinmz',idiag_ekinmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fmasszmz',idiag_fmasszmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fkinzmz',idiag_fkinzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ekinmz',idiag_ekinmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'u2mz',idiag_u2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'o2mz',idiag_o2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'curlru2mz',idiag_curlru2mz)
@@ -3362,11 +3299,9 @@ module Hydro
 !
       if (idiag_umx/=0) then
         if (idiag_uymxy==0.or.idiag_uzmxy==0) then
-          if (first) print*, 'calc_mflow:                    WARNING'
-          if (first) print*, &
-                  "calc_mflow: NOTE: to get umx, uymxy and uzmxy must also be set in zaver"
-          if (first) print*, &
-                  "calc_mflow:      We proceed, but you'll get umx=0"
+          if (first) &
+            call warning("calc_mflow","to get umx, uymxy and uzmxy must also be set in zaver"// &
+                         achar(10)//"We proceed, but you'll get umx=0")
           umx=0.
         else
           if (lfirst_proc_z) then
@@ -3388,11 +3323,9 @@ module Hydro
 !
       if (idiag_umy/=0) then
         if (idiag_uxmxy==0.or.idiag_uzmxy==0) then
-          if (first) print*, 'calc_mflow:                    WARNING'
-          if (first) print*, &
-                  "calc_mflow: NOTE: to get umy, uxmxy and uzmxy must also be set in zaver"
-          if (first) print*, &
-                  "calc_mflow:       We proceed, but you'll get umy=0"
+          if (first) &
+            call warning("calc_mflow","to get umy, uxmxy and uzmxy must also be set in zaver"// &
+                         achar(10)//"We proceed, but you'll get umy=0")
           umy=0.
         else
           if (lfirst_proc_z) then
@@ -3415,13 +3348,10 @@ module Hydro
 !
       if (idiag_umz/=0) then
         if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_uzmz==0) then
-          if (first) print*,"calc_mflow:                    WARNING"
-          if (first) print*, &
-                  "calc_mflow: NOTE: to get umz, uxmz, uymz and uzmz must also be set in xyaver"
-          if (first) print*, &
-                  "calc_mflow:       This may be because we renamed zaver.in into xyaver.in"
-          if (first) print*, &
-                  "calc_mflow:       We proceed, but you'll get umz=0"
+          if (first) &
+            call warning("calc_mflow","to get umz, uxmz, uymz and uzmz must also be set in xyaver"//&
+                         achar(10)//"This may be because we renamed zaver.in into xyaver.in."// & 
+                         "We proceed, but you'll get umz=0")
           umz=0.
         else
           umz=sqrt(sum(fnamez(:,:,idiag_uxmz)**2 &
@@ -3460,11 +3390,9 @@ module Hydro
 !  so print warning if this is not ok.
 !
       if (idiag_oxmz==0.or.idiag_oymz==0.or.idiag_uxmz==0.or.idiag_uymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get omumz, set uxmz, uymz, oxmz, and oymz in xyaver"
-          print*,"We proceed, but you'll get omumz=0"
-        endif
+        if (first) &
+          call warning("calc_omumz","to get omumz, set uxmz, uymz, oxmz, and oymz in xyaver."// &
+                       achar(10)//"We proceed, but you'll get omumz=0")
         omumz=0.
       else
         omumz=sum(fnamez(:,:,idiag_oxmz)*fnamez(:,:,idiag_uxmz) &
@@ -3497,11 +3425,9 @@ module Hydro
 !  so print warning if this is not ok.
 !
       if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_axmz==0.or.idiag_aymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get umamz, set uxmz, uymz, axmz, and aymz in xyaver"
-          print*,"We proceed, but you'll get umamz=0"
-        endif
+        if (first) &
+          call warning("calc_umamz","to get umamz, set uxmz, uymz, axmz, and aymz in xyaver"// &
+                       achar(10)//"We proceed, but you'll get umamz=0")
         umamz=0.
       else
         umamz=sum(fnamez(:,:,idiag_uxmz)*fnamez(:,:,idiag_axmz) &
@@ -3534,11 +3460,9 @@ module Hydro
 !  so print warning if this is not ok.
 !
       if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_bxmz==0.or.idiag_bymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get umbmz, set uxmz, uymz, bxmz, and bymz in xyaver"
-          print*,"We proceed, but you'll get umbmz=0"
-        endif
+        if (first) &
+          call warning("calc_umbmz","to get umbmz, set uxmz, uymz, bxmz, and bymz in xyaver"// & 
+                       achar(10)//"We proceed, but you'll get umbmz=0"
         umbmz=0.
       else
         umbmz=sum(fnamez(:,:,idiag_uxmz)*fnamez(:,:,idiag_bxmz) &
@@ -3571,11 +3495,9 @@ module Hydro
 !  so print warning if this is not ok.
 !
       if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_bxmz==0.or.idiag_bymz==0) then
-        if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get umxbmz, set uxmz, uymz, bxmz, and bymz in xyaver"
-          print*,"We proceed, but you'll get umxbmz=0"
-        endif
+        if (first) &
+          call warning("calc_umxbmz","to get umxbmz, set uxmz, uymz, bxmz, and bymz in xyaver."// &
+                       achar(10)//"We proceed, but you'll get umxbmz=0"
         umxbmz=0.
       else
         umxbmz=sum(fnamez(:,:,idiag_uxmz)*fnamez(:,:,idiag_bymz) &
@@ -3851,7 +3773,8 @@ module Hydro
 !  no profile matches
 !
       case default
-        if (lroot) print*,'interior_bc_hydro: No such profile ',interior_bc_hydro_profile
+        call fatal_error('interior_bc_hydro','no such interior_bc_hydro_profile: '// &
+                         trim(interior_bc_hydro_profile))
       endselect
 !
     endsubroutine interior_bc_hydro
@@ -3880,7 +3803,7 @@ module Hydro
         if (exist) then
           open(31,file=trim(directory)//'/uumz.ascii')
         else
-          call fatal_error('read_uumz_profile','*** error *** - no input file')
+          call fatal_error('read_uumz_profile','no input file')
         endif
       endif
 !

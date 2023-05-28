@@ -16,11 +16,10 @@
   public :: mean_density
   public :: update_char_vel_density
   public :: density_after_timestep
-  public :: pushpars2c, pushdiags2c
+  public :: pushpars2c
   public :: calc_diagnostics_density
   public :: write_z_stratification
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !
   public :: lnrhomz,lcalc_lnrhomean,lupw_lnrho
-  public :: beta_glnrho_global,beta_glnrho_scaled
