@@ -144,15 +144,18 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use Density, only: beta_glnrho_global
       use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+!
+      intent (inout) :: f
+      intent (out) :: fp
 !
       real, dimension (nx) :: eps
       real, dimension (3) :: Lxyz_par, xyz0_par, xyz1_par
@@ -162,9 +165,11 @@ module Particles
 !
       real :: rad,rad_scl,phi,tmp
 !
-      intent (inout) :: f
-      intent (out) :: fp
+      real, dimension(:), pointer :: beta_glnrho_global, beta_glnrho_scaled
 !
+      call get_shared_variable('beta_glnrho_global',beta_glnrho_global,caller='init_particles')
+      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
+
 !  Use either a local random position or a global random position for certain
 !  initial conditions. The default is a local random position, but the equal
 !  number of particles per processors means that this is not completely random.
