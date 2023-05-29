@@ -145,6 +145,7 @@ module Gravity
 !
   real, dimension(mx) :: gravx_xpencil_0
   real ::G4pi
+  real, dimension(:,:), pointer :: reference_state
 !  
   contains
 !***********************************************************************
@@ -156,8 +157,15 @@ module Gravity
 !
 !  Identify version number (generated automatically by SVN).
 !
+      use SharedVariables, only: put_shared_variable
+!
       if (lroot) call svn_id( &
           '$Id$')
+!
+      call put_shared_variable('nu_epicycle',nu_epicycle,caller='register_gravity')
+      call put_shared_variable('gravz_zpencil',gravz_zpencil)
+      call put_shared_variable('gravx', gravx)
+      call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
     endsubroutine register_gravity
 !***********************************************************************
@@ -175,13 +183,14 @@ module Gravity
 !                gravity adjustment.
 !                For Kepler profile, gravitational_const is calculated from gravx and mass_cent_body.
 !
-      use SharedVariables, only: put_shared_variable, get_shared_variable
+      use SharedVariables, only: get_shared_variable
       use General, only: notanumber
       use Sub, only: cubic_step
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, pointer :: cs20,mpoly,gamma
+      !real :: cs20
 !
       real, dimension (mz) :: prof
       real :: ztop
@@ -196,8 +205,7 @@ module Gravity
         if (gravx_profile == 'zero' .and. &
             gravy_profile == 'zero' .and. &
             gravz_profile == 'zero') then
-          call warning('initialize_gravity', &
-              'You do not need gravity_simple for zero gravity...')
+          call warning('initialize_gravity','You do not need gravity_simple for zero gravity')
         endif
       endif
 !
@@ -212,7 +220,7 @@ module Gravity
           if (zref==impossible) then
             call fatal_error('initialize_gravity','zref=impossible')
           else
-            call get_shared_variable('cs20',cs20,caller='initialize_gravity')
+            call get_shared_variable('cs20',cs20,caller='initialize_gravity'); !cs20=cs0**2
             call get_shared_variable('gamma',gamma)
             if (ldensity.and..not.lstratz) then
               call get_shared_variable('mpoly',mpoly)
@@ -246,15 +254,12 @@ module Gravity
         if (lroot) print*,'initialize_gravity: constant x-grav=', gravx
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
-        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
-        call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
       case ('const_tilt')
         gravx=grav_amp*sin(grav_tilt*pi/180.)
         if (lroot) print*,'initialize_gravity: constant gravx=', gravx
         gravx_xpencil=gravx
         potx_xpencil=-gravx*(x-xinfty)
-        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
 !
 ! Linear gravity profile in x for planetary core dynamos
 !
@@ -262,7 +267,6 @@ module Gravity
         if (lroot) print*,'initialize_gravity: linear x-grav, gravx=', gravx
         gravx_xpencil = -gravx*x
         potx_xpencil  = 0.5*gravx*(x**2-xinfty**2)
-        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
 !
 !  Linear gravity potential with additional z dependence.
 !  Calculate zdep here, but don't multiply it onto gravx_xpencil
@@ -297,26 +301,21 @@ module Gravity
       case ('Baker74')
         !abag added, need to make adaptable to any width/position
         if (lroot) print*,'initialize_gravity: Baker_74=',gravx
-        gravx_xpencil =(tanh((x+pi/3.)/0.1)+tanh(-(x-pi/3.)/0.1))/2.*&
-            gravx*sin(2*(x-pi/2.))
+        gravx_xpencil =(tanh((x+pi/3.)/0.1)+tanh(-(x-pi/3.)/0.1))/2.*gravx*sin(2*(x-pi/2.))
         potx_xpencil=(tanh((x+pi/3.)/0.1)+tanh(-(x-pi/3.)/0.1))/2.*&
-            gravx*(.5*cos(2*(x-pi/2.))-0.5) + potx_const
+                     gravx*(.5*cos(2*(x-pi/2.))-0.5) + potx_const
 !
       case ('kepler')
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx/x + potx_const
         g0=gravx
-        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
-        call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
       case ('kepler_2d')
         if (lroot) print*,'initialize_gravity: kepler_2d x-grav, gravx=',gravx
         gravx_xpencil=-gravx/x
         potx_xpencil=-gravx*alog(x) + potx_const
         g0=gravx
-        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
-        call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
 !  Convection zone model, normalized to the bottom of the domain
 !
@@ -325,8 +324,6 @@ module Gravity
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx*(1./x-1./xyz0(1)) + potx_const
         g0=gravx
-        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
-        call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
 !  Convection zone model, normalized to the middle of the domain
 !
@@ -335,8 +332,6 @@ module Gravity
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx*(1./x-2./(xyz0(1)+xyz1(1))) + potx_const
         g0=gravx
-        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
-        call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
       ! solid sphere (homogenous) gravity profile
       ! 'xref' determines the location of the sphere border relative to the lower box boundary.
@@ -344,7 +339,7 @@ module Gravity
       ! 'sphere_rad' is the radius of the sphere (independant from box coordinates).
       ! Together, sphere_rad and xref describe, how much of the sphere lies inside the box.
       case ('solid_sphere')
-        if (lroot) print *, 'initialize_gravity: solid sphere xref=', xref, ', g_ref=', g_ref, ', sphere_rad=', sphere_rad
+        if (lroot) print *,'initialize_gravity: solid sphere xref=',xref,', g_ref=',g_ref,', sphere_rad=',sphere_rad
         where (x > xref)
           gravx_xpencil = g_ref * sphere_rad**2 / (x-xref+sphere_rad)**2
         else where (x < xref-2*sphere_rad)
@@ -369,9 +364,7 @@ module Gravity
         potx_xpencil =gravx*(2*xyz0(1)+2*Lxyz(1))/pi * potx_xpencil + potx_const
 !
       case default
-        if (lroot) print*, &
-            'initialize_gravity: unknown gravx_profile ', gravx_profile
-        call fatal_error('initialize_gravity','chosen gravx_profile not valid')
+        call fatal_error('initialize_gravity','no such gravx_profile:'//trim(gravx_profile))
 !
       endselect
 !
@@ -401,9 +394,7 @@ module Gravity
         poty_ypencil  = -gravy/y + poty_const
 !
       case default
-        if (lroot) print*, &
-            'initialize_gravity: unknown gravy_profile ', gravy_profile
-        call fatal_error('initialize_gravity','chosen gravy_profile not valid')
+        call fatal_error('initialize_gravity','no such gravy_profile:'//trim(gravy_profile))
 !
       endselect
 !
@@ -448,8 +439,7 @@ module Gravity
 !
       case ('const_zero')  !  Const. gravity acc. (but zero for z>zgrav)
         if (headtt) print*,'initialize_gravity: const_zero gravz=', gravz
-        if (zgrav==impossible .and. lroot) &
-            print*,'initialize_gravity: zgrav is not set!'
+        if (zgrav==impossible .and. lroot) print*,'initialize_gravity: zgrav is not set!'
         do n=n1,n2
           if (z(n)<=zgrav) gravz_zpencil(n) = gravz
         enddo
@@ -466,7 +456,7 @@ module Gravity
       ! 'sphere_rad' is the radius of the sphere (independant from box coordinates).
       ! Together, sphere_rad and zref describe, how much of the sphere lies inside the box.
       case ('solid_sphere')
-        if (lroot) print *, 'initialize_gravity: solid sphere zref=', zref, ', g_ref=', g_ref, ', sphere_rad=', sphere_rad
+        if (lroot) print *, 'initialize_gravity: solid sphere zref=',zref,', g_ref=',g_ref,', sphere_rad=',sphere_rad
         where (z > zref)
           gravz_zpencil = g_ref * sphere_rad**2 / (z-zref+sphere_rad)**2
         else where (z < zref-2*sphere_rad)
@@ -482,7 +472,7 @@ module Gravity
       case ('profile')
         allocate(grav_init_z(mz), stat = alloc_err)
         if (alloc_err > 0) call fatal_error ('initialize_gravity', &
-          'Could not allocate memory for gravity and gravity potential profiles', .true.)
+          'Could not allocate grav_init_z', .true.)
         call read_grav_profile(gravity_z_dat, grav_init_z, real(unit_length/(unit_time*unit_time)), .false.)
         gravz_zpencil = grav_init_z
         potz_zpencil = -gravz_zpencil * (z - zinfty)
@@ -543,7 +533,7 @@ module Gravity
         g_C = g_C_factor*g_C_cgs/unit_velocity*unit_time
         g_D = g_D_factor*g_D_cgs/unit_length
       else if (unit_system=='SI') then
-        call fatal_error('initialize_gravity','SI unit conversions not inplemented')
+        call not_implemented('initialize_gravity','SI unit conversions')
       endif
 !
 !  Gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
@@ -557,8 +547,7 @@ module Gravity
       case ('Galactic-hs')
         if (lroot) print*,'Galactic hydrostatic equilibrium gravity profile'
         if (lroot.and.(cs0hs==0.or.H0hs==0)) &
-            call fatal_error('initialize-gravity', &
-            'Set cs0hs and H0hs in grav_init_pars!')
+            call fatal_error('initialize-gravity','set cs0hs and H0hs in grav_init_pars')
         gravz_zpencil = -z*(cs0hs/H0hs)**2/sqrt(1 + (z/H0hs)**2)
 !
       case ('reduced_top')
@@ -569,9 +558,7 @@ module Gravity
         gravz_zpencil = (1 - prof*(1-reduced_top))*gravz
 !
       case default
-        if (lroot) print*, &
-            'initialize_gravity: unknown gravz_profile ', gravz_profile
-        call fatal_error('initialize_gravity','chosen gravz_profile not valid')
+        call fatal_error('initialize_gravity','no such gravz_profile: '//trim(gravz_profile))
 !
       endselect
 !
@@ -583,10 +570,6 @@ module Gravity
         call fatal_error('initialize_gravity','found NaN or +/-Inf in gravy_ypencil')
       if (notanumber(gravz_zpencil)) &
         call fatal_error('initialize_gravity','found NaN or +/-Inf in gravz_zpencil')
-!
-      call put_shared_variable('nu_epicycle',nu_epicycle,caller='initialize_gravity')
-      call put_shared_variable('gravz_zpencil',gravz_zpencil)
-      if (lreference_state) call put_shared_variable('gravx', gravx)
 !
       if (n_adjust_sphersym>0 .and. lspherical_coords) then
 
@@ -608,6 +591,14 @@ module Gravity
 
       endif
   
+      if (lhydro) then 
+        if (lboussinesq_grav.and..not.lentropy) &
+          call fatal_error('initialize_gravity','lboussinesq_grav w/o entropy not ok')
+
+      if (.not.(lboussinesq_grav.or.lanelastic).and.lreference_state) &
+        call get_shared_variable('reference_state',reference_state,caller='initialize_gravity')
+
+      endif
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_gravity
@@ -637,11 +628,10 @@ module Gravity
 !      
       integer :: alloc_err
 !
-!
       inquire (IOLENGTH=len_double) 1.0d0
 !
       if (.not. parallel_file_exists (filename)) &
-          call fatal_error ('read_grav_profile', "can't find "//filename)
+          call fatal_error ('read_grav_profile', "can't find "//trim(filename))
       ! file access is only done on the MPI root rank
       if (lroot) then
         ! determine the number of data points in the profile
@@ -652,7 +642,7 @@ module Gravity
       ! allocate memory
       allocate (data(n_data), data_z(n_data), stat=alloc_err)
       if (alloc_err > 0) call fatal_error ('read_grav_profile', &
-          'Could not allocate memory for data and its z coordinate', .true.)
+          'Could not allocate data and/or data_z', .true.)
 !
       if (lroot) then
         ! read profile
@@ -679,8 +669,6 @@ module Gravity
 !
       ! interpolate logarthmic data to Pencil grid profile
       call interpolate_grav_profile (data, data_z, n_data, profile)
-!
-      deallocate (data, data_z)
 !
     endsubroutine read_grav_profile
 !***********************************************************************
@@ -723,14 +711,13 @@ module Gravity
         endif
       enddo
 !
-      if (lfirst_proc_xy .and. (num_below > 0)) then
+      if (lfirst_proc_xy .and. (num_below > 0)) &
         call warning ("interpolate_grav_profile", &
-            "extrapolated "//trim (itoa (num_below))//" grid points below bottom")
-      endif
-      if (lfirst_proc_xy .and. (num_over > 0)) then
+                      "extrapolated "//trim(itoa (num_below))//" grid points below bottom")
+
+      if (lfirst_proc_xy .and. (num_over > 0)) &
         call warning ("interpolate_grav_profile", &
-            "extrapolated "//trim (itoa (num_over))//" grid points over top")
-      endif
+                      "extrapolated "//trim(itoa (num_over))//" grid points over top")
 !
     endsubroutine interpolate_grav_profile
 !***********************************************************************
@@ -819,7 +806,7 @@ module Gravity
             gravz=ginput
           endif
       case default
-        call fatal_error('set_consistent_gravity','gtype does not match any, aborting')
+        call fatal_error('set_consistent_gravity','no such gtype: '//trim(gtype))
       endselect
       lsuccess=.true.
 !
@@ -904,8 +891,7 @@ module Gravity
         p%gg(:,3) = gravz_zpencil(n)
       endif
 !
-      if (lpencil(i_epot)) p%epot=p%rho* &
-          (potx_xpencil(l1:l2)+poty_ypencil(m)+potz_zpencil(n))
+      if (lpencil(i_epot)) p%epot=p%rho*(potx_xpencil(l1:l2)+poty_ypencil(m)+potz_zpencil(n))
 !
       call keep_compiler_quiet(f)
 !
@@ -925,7 +911,6 @@ module Gravity
 !  20-jan-15/MR: changes for use of reference state
 !
       use Diagnostics
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -937,7 +922,6 @@ module Gravity
       integer :: k
       real, dimension(nx,3) :: gg
       real, dimension(nx) :: refac
-      real, dimension(:,:), pointer :: reference_state
 !
 !  Add gravity acceleration on gas.
 !
@@ -947,18 +931,13 @@ module Gravity
             if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%ss*p%gg(:,1)
             if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%ss*p%gg(:,2)
             if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%ss*p%gg(:,3)
-          else
-            if (headtt) print*,'duu_dt_grav: lboussinesq_grav w/o lentropy not ok!'
           endif
-        else if (lanelastic) then
+        elseif (lanelastic) then
 ! Now works for the linear anelastic formulation only
-                if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*&
-                                p%rho_anel
-                if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)*&
-                                p%rho_anel
-                if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*&
-                                 (-p%ss)
-!                                p%rho_anel
+          if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*p%rho_anel
+          if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)*p%rho_anel
+          if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*(-p%ss)
+!                                                                       p%rho_anel
         else
           if (lgravx_gas) gg(:,1)=p%gg(:,1)
           if (lgravy_gas) gg(:,2)=p%gg(:,2)
@@ -968,7 +947,6 @@ module Gravity
 ! Note that the pencil case contains always the total quantities.
 !
           if (lreference_state) then
-            call get_shared_variable('reference_state',reference_state,caller='duu_dt_grav')  ! shouldn't be within the mn loop
             refac=1.-reference_state(:,iref_rho)*p%rho1
             if (lgravx_gas) gg(:,1)=gg(:,1)*refac
             if (lgravy_gas) gg(:,2)=gg(:,2)*refac
@@ -991,24 +969,19 @@ module Gravity
 !
       if (ldustvelocity) then
         do k=1,ndustspec
-          if (lgravx_dust) &
-              df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + p%gg(:,1)
-          if (lgravy_dust) &
-              df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) + p%gg(:,2)
-          if (lgravz_dust) &
-              df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + p%gg(:,3)
+          if (lgravx_dust) df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + p%gg(:,1)
+          if (lgravy_dust) df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) + p%gg(:,2)
+          if (lgravz_dust) df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + p%gg(:,3)
         enddo
       endif
 !
 !  Gravity diagnostics.
 !
       if (ldiagnos) then
-        if (idiag_epot/=0) call sum_mn_name(p%epot,idiag_epot)
+        call sum_mn_name(p%epot,idiag_epot)
         if (idiag_ugm/=0) &
-          call sum_mn_name(p%uu(:,1)*p%gg(:,1) + &
-          p%uu(:,2)*p%gg(:,2) + &
-          p%uu(:,3)*p%gg(:,3),idiag_ugm)
-        if (idiag_epottot/=0) call integrate_mn_name(p%epot,idiag_epottot)
+          call sum_mn_name(p%uu(:,1)*p%gg(:,1) + p%uu(:,2)*p%gg(:,2) + p%uu(:,3)*p%gg(:,3),idiag_ugm)
+        call integrate_mn_name(p%epot,idiag_epottot)
       endif
 !
 !  Gravity 1-D diagnostics.
@@ -1056,8 +1029,7 @@ module Gravity
       real, dimension (:,:,:) :: pot
       real, optional :: pot0
 !
-      call fatal_error('potential_global','this subroutine has been '// &
-          'deprecated for gravity_simple')
+      call fatal_error('potential_global','subroutine is deprecated for gravity_simple')
 !
       call keep_compiler_quiet(pot)
       if (present(pot0)) call keep_compiler_quiet(pot0)
@@ -1081,9 +1053,7 @@ module Gravity
 !  Calculate potential from master pencils defined in initialize_gravity.
 !
       if (lxyzdependence) then
-        pot=potx_xpencil(l1:l2)*zdep(n) &
-           +poty_ypencil(m) &
-           +potz_zpencil(n)*xdep(l1:l2)
+        pot=potx_xpencil(l1:l2)*zdep(n) + poty_ypencil(m) + potz_zpencil(n)*xdep(l1:l2)
       else
         pot=potx_xpencil(l1:l2)+poty_ypencil(m)+potz_zpencil(n)
       endif
@@ -1133,8 +1103,7 @@ module Gravity
         case ('CZmid1')
           potx_xpoint=-gravx*(1./x-2./(xyz0(1)+xyz1(1)))
         case default
-          call fatal_error('potential_point', &
-               'gravx_profile='//gravx_profile//' not implemented')
+          call fatal_error('potential_point','no such gravx_profile: '//trim(gravx_profile))
         endselect
       endif
 !
@@ -1145,8 +1114,7 @@ module Gravity
         case ('const')
           poty_ypoint=-gravy*(y-yinfty)
         case default
-          call fatal_error('potential_point', &
-               'gravy_profile='//gravy_profile//' not implemented')
+          call fatal_error('potential_point','no such gravy_profile: '//trim(gravy_profile))
         endselect
       endif
 !
@@ -1173,8 +1141,7 @@ module Gravity
         case ('tanh')
           potz_zpoint=gravz*zref*alog(cosh(z/zref))
         case default
-          call fatal_error('potential_point', &
-               'gravz_profile='//gravz_profile//' not implemented')
+          call fatal_error('potential_point','no such gravz_profile: '//trim(gravz_profile))
         endselect
       endif
 !
@@ -1196,9 +1163,7 @@ module Gravity
 !
 !  Calculate acceleration from master pencils defined in initialize_gravity.
 !
-      if (size(gg,2)/=3) then
-        call fatal_error('acceleration_penc','Expecting a 3-vector pencil')
-      endif
+      if (size(gg,2)/=3) call fatal_error('acceleration_penc','expecting a 3-vector pencil')
 !
 !  Note: the following would not yet work if lxyzdependence is set to true.
 !
@@ -1210,7 +1175,7 @@ module Gravity
         gg(:,1) = gravx_xpencil
         !ABlater: gg(:,1) = gravx_xpencil*zdep
       case default
-        call fatal_error('acceleration_penc','Wrong pencil size.')
+        call fatal_error('acceleration_penc','wrong pencil size.')
       endselect
 !
       gg(:,2) = gravy_ypencil(m)
@@ -1333,35 +1298,28 @@ module Gravity
 !  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epotmx', &
-            idiag_epotmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epotuxmx', &
-            idiag_epotuxmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epotmx',idiag_epotmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epotuxmx',idiag_epotuxmx)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
 !
       do inamey=1,nnamey
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'epotmy', &
-            idiag_epotmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'epotmy',idiag_epotmy)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epotmz', &
-            idiag_epotmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epotuzmz', &
-            idiag_epotuzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epotmz',idiag_epotmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epotuzmz',idiag_epotuzmz)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
 !
       do inamexy=1,nnamexy
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
-            'epotmxy', idiag_epotmxy)
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
-            'epotuxmxy', idiag_epotuxmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'epotmxy', idiag_epotmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'epotuxmxy', idiag_epotuxmxy)
       enddo
 !
     endsubroutine rprint_gravity
