@@ -22,7 +22,7 @@ module Energy
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use EquationOfState, only: cs2top, cs2bot
+  use EquationOfState, only: gamma, gamma_m1, gamma1, rho0, lnrho0, cs0, cs20, cs2top, cs2bot
   use DensityMethods, only: putrho, putlnrho, getlnrho, getrho_s
   use Messages
 !
@@ -466,13 +466,13 @@ module Energy
 ! Auxiliaries
 !
   real, dimension(:,:), pointer :: reference_state
-  real, pointer :: cp,cv,gamma,rho0,cs0
+  real, pointer :: cp,cv    !,gamma,rho0,cs0
 
   real, dimension (nx) :: Hmax,ss0,diffus_chi,diffus_chi3,cs2cool_x
   integer, parameter :: prof_nz=150
   real, dimension (prof_nz) :: prof_lnT,prof_z
   logical :: lcalc_heat_cool
-  real :: tau1_cool,rho01,lnrho0,cs20,gamma_m1,gamma1
+  real :: tau1_cool,rho01    !,lnrho0,cs20,gamma_m1,gamma1
   real, dimension(:), pointer :: beta_glnrho_scaled
 !
   contains
@@ -635,7 +635,7 @@ module Energy
 !  15-nov-16/fred: option to use z-profile for reinitialize_ss
 !
       use BorderProfiles, only: request_border_driving
-      use EquationOfState, only: get_soundspeed, get_cp1, select_eos_variable, gamma, lnrho0, cs0, cs20
+      use EquationOfState, only: get_soundspeed, get_cp1, select_eos_variable
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
       use HDF5_IO, only: input_profile
@@ -1452,8 +1452,8 @@ module Energy
 !  20-jan-2015/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: get_cp1, isothermal_entropy, &
-                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp, eosperturb
+      use EquationOfState, only: get_cp1, isothermal_entropy, eoscalc, eosperturb, &
+                                 isothermal_lnrho_ss, ilnrho_pp
       use General, only: itoa
       use Gravity
       use Initcond
@@ -2115,7 +2115,7 @@ module Energy
 !  12-jul-05/axel: coded
 !  17-Nov-05/dintrans: updated using strat_MLT
 !
-      use EquationOfState, only: cs2top, eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc, ilnrho_lnTT
       use General, only: safe_character_assign
       use Gravity, only: z1
 !
@@ -3824,7 +3824,7 @@ module Energy
 !
 !   1-apr-20/joern: coded
 !
-      use EquationOfState, only: get_cv1, cs2top
+      use EquationOfState, only: get_cv1
       use Sub, only : step
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -7650,7 +7650,7 @@ module Energy
 !
 !  17-mar-07/dintrans: coded
 !
-      use EquationOfState, only: cs2top, cs2bot, get_cp1, eoscalc, ilnrho_TT
+      use EquationOfState, only: get_cp1, eoscalc, ilnrho_TT
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
