@@ -152,6 +152,7 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !
       use FArrayManager, only: farray_register_pde
+      use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('eth',ieth)
 !
@@ -159,6 +160,8 @@ module Energy
 !
       if (lroot) call svn_id( &
            "$Id$")
+!
+      call put_shared_variable('lviscosity_heat',lviscosity_heat, caller='register_energy')
 !
     endsubroutine register_energy
 !***********************************************************************
@@ -170,7 +173,7 @@ module Energy
 !  03-oct-11/ccyang: add initialization for KI02
 !
       use EquationOfState, only: select_eos_variable, get_stratz, get_cv1, getmu, gamma, gamma_m1, cs0, cs20
-      use SharedVariables
+      use SharedVariables, only: get_shared_variable
       use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -187,7 +190,6 @@ module Energy
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_energy')
-      call put_shared_variable('lviscosity_heat',lviscosity_heat)
 !
 !  Decide if operator splitting is required.
 !
@@ -538,9 +540,9 @@ module Energy
       shock: if (chi_shock /= 0.0) then
         stratz1: if (lstratz) then
           call del2(f, ieth, penc)
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock * (p%shock * penc + sum(p%gshock*p%geths, 2))
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock*(p%shock*penc + sum(p%gshock*p%geths, 2))
         else stratz1
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock * (p%shock * p%del2eth + sum(p%gshock*p%geth, 2))
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock*(p%shock*p%del2eth + sum(p%gshock*p%geth,2))
         endif stratz1
         if (lfirst .and. ldt) diffus_chi = diffus_chi + chi_shock * p%shock * dxyz_2
       endif shock
@@ -651,29 +653,6 @@ module Energy
      endif
 !
     endsubroutine energy_before_boundary
-!***********************************************************************
-    subroutine energy_after_boundary(f)
-!
-!  Dummy routine.
-!
-!  04-nov-10/anders+evghenii: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine energy_after_boundary
-!***********************************************************************
-    subroutine energy_after_timestep(f,df,dtsub)
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real :: dtsub
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(dtsub)
-!
-    endsubroutine energy_after_timestep
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
@@ -867,16 +846,6 @@ module Energy
 !
     endsubroutine get_slices_energy
 !***********************************************************************
-    subroutine fill_farray_pressure(f)
-!
-!  04-nov-10/anders+evghenii: adapted
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine fill_farray_pressure
-!***********************************************************************
     subroutine impose_energy_floor(f)
 !
 !  Trap any negative energy or impose a floor in minimum thermal energy.
@@ -1017,7 +986,7 @@ module Energy
 !
         if (any(status < 0)) then
           write(message,10) count(status == -1), ' cells had underflows and ', &
-                            count(status == -2), ' cells reached maximum iterations.'
+                            count(status == -2), ' cells reached maximum iterations'
           10 format(1x, i3, a, i3, a)
           call warning('split_update_energy', trim(message))
           do k = n1, n2; do j = m1, m2; do i = l1, l2
@@ -1318,7 +1287,7 @@ module Energy
       call mpibcast_real(SD_logTT, SD_nt, comm=MPI_COMM_WORLD)
       call mpibcast_real(SD_logLambda, SD_nt,comm=MPI_COMM_WORLD)
 !
-      if (lroot) print *, 'init_cooling_SD93: read the Sutherland & Dopita (1993) cooling table. '
+      if (lroot) print *, 'init_cooling_SD93: read the Sutherland & Dopita (1993) cooling table.'
 !
 !  Save the conversion factor.
 !
@@ -1433,12 +1402,6 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy
-!
-!  Presently dummy, for possible use
-!
-    endsubroutine expand_shands_energy
-!***********************************************************************
     pure real function get_temperature(eth, rho) result(temp)
 !
 !  Finds the absolute temperature in Kelvins assuming the ideal-gas EOS.
@@ -1472,60 +1435,6 @@ module Energy
 
     endsubroutine update_char_vel_energy
 !***********************************************************************
-    subroutine heatcond_TT_2d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, dimension(:,:), intent(in) :: TT
-      real, dimension(:,:), intent(out) :: hcond
-      real, dimension(:,:), optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_2d
-!***********************************************************************
-    subroutine heatcond_TT_1d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, dimension(:), intent(in) :: TT
-      real, dimension(:), intent(out) :: hcond
-      real, dimension(:), optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_1d
-!***********************************************************************
-    subroutine heatcond_TT_0d(TT, hcond, dhcond)
-!
-! dummy
-!
-      implicit none
-!
-      real, intent(in) :: TT
-      real, intent(out) :: hcond
-      real, optional :: dhcond
-
-      call keep_compiler_quiet(TT,hcond,dhcond)
-
-    endsubroutine heatcond_TT_0d
-!***********************************************************************
-    subroutine bc_ss_flux(f,topbot,lone_sided)
-!
-      integer :: topbot
-      real, dimension (:,:,:,:) :: f
-      logical, optional :: lone_sided
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-      call keep_compiler_quiet(lone_sided)
-!
-   endsubroutine bc_ss_flux
-!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
@@ -1536,5 +1445,15 @@ module Energy
     call copy_addr(chi,p_par(1))
 
     endsubroutine pushpars2c
+!***********************************************************************
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include 'energy_common.inc'
 !***********************************************************************
 endmodule Energy
