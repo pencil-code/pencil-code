@@ -8,10 +8,9 @@
 !  For this, an additional force on the gas is exerted, similar
 !  to what is done in noentropy.f90:
 !
-!      df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-!              - p%cs2*beta_glnrho_scaled(j)
+!    df(l1:l2,m,n,(iux-1)+j) =  df(l1:l2,m,n,(iux-1)+j) - p%cs2*beta_glnrho_scaled(j)
 !
-!  but with spacial dependency on.
+!  but with spatial dependency on.
 !
 !  So far, only azimuthal and vertical periodic and homogeneuos
 !  pressure bumps are included, i.e. only radial dependence of lnrho.
@@ -38,7 +37,6 @@
 !
 module Special
 !
-    use Cparam
     use Cdata
     use General, only: keep_compiler_quiet
     use Messages
@@ -62,6 +60,8 @@ module Special
     namelist /special_run_pars/ &
         pb_type, pb_amplitude
 !
+    real, dimension(:), pointer :: beta_glnrho_scaled
+!
     contains
 !***********************************************************************
 subroutine pb_special_setup
@@ -78,7 +78,7 @@ subroutine pb_special_setup
     ! if (lroot) print*, 'l2= ', l2
 !
     if (pb_type/='none') then
-        if (lroot) print*, '!!!! Pressure Bump selected: ', pb_type
+        if (lroot) print*, 'Pressure Bump selected: ', pb_type
         select case (pb_type)
 
         case ('gauss-x')
@@ -88,8 +88,7 @@ subroutine pb_special_setup
           pb_profile = -1*pb_amplitude*sin(2*pi/Lxyz(1)*x(l1:l2))
 
         case default
-          if (lroot) print*, '! ERROR: Couldnt identify selected pressure bump profile pb_type = ', pb_type
-
+          call fatal_error('pb_special_setup','no such pressure bump profile pb_type: '//trim(pb_type))
 !
 ! Convert pb_profile into "pb_profile_scaled", replace since orig. not needed
 !
@@ -98,7 +97,7 @@ subroutine pb_special_setup
         end select
         ! if (lroot) print*, '!pb_special_setup! x coordinates: x(l1:l2) = ', x(l1:l2)
         ! if (lroot) print*, '!pb_special_setup! size(x(l1:l2)) = ', size(x(l1:l2))
-        if (lroot) print*, '!!!!!!! pb_profile = ', pb_profile
+        if (lroot) print*, 'pb_profile = ', pb_profile
         ! if (lroot) print*, '!pb_special_setup! size(pb_profile) = ', size(pb_profile)
     endif
 !
@@ -110,7 +109,6 @@ subroutine init_special(f)
 !  06-oct-2003/tony: coded
 !
     use EquationOfState, only: cs20
-    use Density, only:  beta_glnrho_global, beta_glnrho_scaled
 
     real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -181,6 +179,7 @@ subroutine initialize_special(f)
 !  06-oct-03/tony: coded
 !
     use EquationOfState, only: cs20
+    use SharedVariables, only: get_shared_variable
 !
     integer :: j
 !
@@ -191,6 +190,8 @@ subroutine initialize_special(f)
     if (lroot) print*, '**************** initialize_special ****************'
 !
     call pb_special_setup
+!
+    call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='initialize_special')
 !
 endsubroutine initialize_special
 !***********************************************************************
@@ -208,8 +209,6 @@ subroutine dspecial_dt(f,df,p)
 !
 !  06-oct-03/tony: coded
 !
-    use Density, only: beta_glnrho_global, beta_glnrho_scaled
-!
     integer :: j
 !
     real, dimension (mx,my,mz,mfarray) :: f
@@ -225,10 +224,10 @@ subroutine dspecial_dt(f,df,p)
 !
 !   Add pressure force from pressure gradient profile.
 !
-    if (any(beta_glnrho_global /= 0.) .and. pb_type/='none') then
+    if (any(beta_glnrho_scaled /= 0.) .and. pb_type/='none') then
         ! if (headtt) print*, 'dspecial_dt: adding global pressure gradient profile force'
         do j=1,3
-            if (beta_glnrho_global(j) /= 0) then
+            if (beta_glnrho_scaled(j) /= 0) then
                 ! if (lroot) print*, '~~> m:', m
                 ! if (lroot) print*, '~~> n:', n
                 ! if (lroot) print*, '!special_calc_hydro! for j=',j
@@ -237,8 +236,7 @@ subroutine dspecial_dt(f,df,p)
                 ! if (lroot) print*, '!special_calc_hydro! with beta_glnrho_scaled(j):', beta_glnrho_scaled(j)
                 ! if (lroot) print*, '!special_calc_hydro! df before:',  df(l1:l2,m,n,(iux-1)+j)
                 ! if (lroot) print*, '!special_calc_hydro! df change:', p%cs2*beta_glnrho_scaled(j)*pb_profile
-                df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-                  - p%cs2*beta_glnrho_scaled(j)*pb_profile
+                df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) - p%cs2*beta_glnrho_scaled(j)*pb_profile
                 ! if (lroot) print*, '!special_calc_hydro! df after:', df(l1:l2,m,n,(iux-1)+j)
             endif
         enddo
@@ -271,7 +269,6 @@ subroutine special_calc_hydro(f,df,p)
 !
     ! if (lroot) print*, ''
     ! if (lroot) print*, '**************** special_calc_hydro ****************'
-
 !
     call keep_compiler_quiet(f,df)
     call keep_compiler_quiet(p)

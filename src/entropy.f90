@@ -620,7 +620,7 @@ module Energy
       call put_shared_variable('mpoly2',mpoly2)
 !      call put_shared_variable('lheatc_chit',lheatc_chit)
 
-      if (.not.ldensity) &
+      if (.not.ldensity.or.lboussinesq) &
         call put_shared_variable('beta_glnrho_global',beta_glnrho_global,caller='register_energy')
 
     endsubroutine register_energy

@@ -79,7 +79,7 @@ module Energy
 !
       call put_shared_variable('lviscosity_heat',lviscosity_heat,caller='register_energy')
 !
-      if (.not.ldensity) &
+      if (.not.ldensity.or.lboussinesq) &
         call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
 !
     endsubroutine register_energy

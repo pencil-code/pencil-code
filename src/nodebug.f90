@@ -7,10 +7,9 @@
 !   Two dummy debugging routines (in case the C stuff doesn't work).
 !
 !***********************************************************************
-subroutine output_penciled_vect_c(filename,pencil,ndim,i,iy,iz,t, &
-                                  nx,ny,nz,nghost,fnlen)
+subroutine output_penciled_vect_c(filename,pencil,ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen)
 !
-  use Cdata, only: mx,headt,imn
+  use Cdata, only: mx,headtt,imn
   use General, only: keep_compiler_quiet
 !
   implicit none
@@ -20,9 +19,7 @@ subroutine output_penciled_vect_c(filename,pencil,ndim,i,iy,iz,t, &
   integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
   character (len=*) :: filename
 !
-  if (headt .and. (imn==1)) print*, &
-       'OUTPUT_PENCIL: Not writing to ', trim(filename), &
-       ' since DEBUG=nodebug'
+  if (headtt) print*, 'OUTPUT_PENCIL: Not writing to '//trim(filename)//' since DEBUG=nodebug'
 !
   call keep_compiler_quiet(pencil(1,1))
   call keep_compiler_quiet(ndim)
@@ -38,10 +35,9 @@ subroutine output_penciled_vect_c(filename,pencil,ndim,i,iy,iz,t, &
 !
 endsubroutine output_penciled_vect_c
 !***********************************************************************
-subroutine output_penciled_scal_c(filename,pencil,ndim,i,iy,iz,t, &
-                                  nx,ny,nz,nghost,fnlen)
+subroutine output_penciled_scal_c(filename,pencil,ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen)
 !
-  use Cdata, only: mx,headt,imn
+  use Cdata, only: mx,headtt,imn
   use General, only: keep_compiler_quiet
 !
   real,dimension(mx) :: pencil
@@ -49,9 +45,7 @@ subroutine output_penciled_scal_c(filename,pencil,ndim,i,iy,iz,t, &
   integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
   character (len=*) :: filename
 !
-  if (headt .and. (imn==1)) print*, &
-       'OUTPUT_PENCIL: Not writing to ', trim(filename), &
-       ' since DEBUG=nodebug'
+  if (headtt) print*, 'OUTPUT_PENCIL: Not writing to '//trim(filename)//' since DEBUG=nodebug'
 !
   call keep_compiler_quiet(pencil(1))
   call keep_compiler_quiet(ndim)

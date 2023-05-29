@@ -81,7 +81,7 @@ module Energy
       if (lroot) call svn_id( &
            "$Id$")
 !
-      if (.not.ldensity) call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
+      if (.not.ldensity.or.lboussinesq) call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
 
     endsubroutine register_energy
 !***********************************************************************

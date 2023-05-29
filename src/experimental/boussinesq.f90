@@ -47,7 +47,6 @@ module Density
   include '../density.h'
 !
   integer :: iorder_z=4
-  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   namelist /density_run_pars/ iorder_z, lwrite_debug, lremove_mean_temperature
 !

@@ -146,7 +146,6 @@ module Particles
 !
       use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
-      use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
       use Sub
 !
@@ -165,10 +164,9 @@ module Particles
 !
       real :: rad,rad_scl,phi,tmp
 !
-      real, dimension(:), pointer :: beta_glnrho_global, beta_glnrho_scaled
+      real, dimension(:), pointer :: beta_glnrho_global
 !
       call get_shared_variable('beta_glnrho_global',beta_glnrho_global,caller='init_particles')
-      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
 
 !  Use either a local random position or a global random position for certain
 !  initial conditions. The default is a local random position, but the equal
@@ -299,7 +297,7 @@ module Particles
 !
           if (.not.(lcartesian_coords.and.(all(lequidist)))) &
                call not_implemented("init_particles","dragforce_equilibrium " // &
-               "initial condition for polar or non-equidistant grids")
+                                    "initial condition for polar or non-equidistant grids")
 !  Calculate average dust-to-gas ratio in box.
 
           if (ldensity_nolog) then
@@ -460,13 +458,13 @@ module Particles
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_xpm/=0) call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
-        if (idiag_ypm/=0) call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
-        if (idiag_zpm/=0) call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
+        call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
+        call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
+        call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
         if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
         if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
         if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
-        if (idiag_nparmax/=0) call max_name(npar_loc,idiag_nparmax)
+        call max_name(npar_loc,idiag_nparmax)
       endif
 !
       if (lfirstcall) lfirstcall=.false.
@@ -812,7 +810,7 @@ module Particles
               fp(1:npar_loc,izp)=zp0
               !
             case default
-              call fatal_error("particles_tracers","No such insertxxp: "//trim(insertxxp(j)))
+              call fatal_error("particles_tracers","no such insertxxp: "//trim(insertxxp(j)))
               !
             endselect
 !

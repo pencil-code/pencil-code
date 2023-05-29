@@ -14,7 +14,6 @@
 module Particles_surfspec
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
@@ -23,7 +22,6 @@ module Particles_surfspec
   use Particles_chemistry
   use Chemistry
   use EquationOfState
-  use SharedVariables
 !
   implicit none
 !
@@ -74,16 +72,17 @@ module Particles_surfspec
 !
   integer :: idiag_dtpchem=0   ! DIAG_DOC: $dt_{particle,chemistry}$
 !
+  real, pointer :: true_density_carbon
+!
   contains
 ! ******************************************************************************
+    subroutine register_particles_surfspec
+!
 !  This is a wrapper routine for particle dependent and particle
 !  independent variables
 !  JONAS: Back to standalone via mpar_loc=1?
 !
-    subroutine register_particles_surfspec()
-!
       use FArrayManager, only: farray_register_auxiliary
-!
 !
       character(len=11) :: chemspecaux
       integer :: i
@@ -91,8 +90,8 @@ module Particles_surfspec
 !      if (lroot) call svn_id( &
 !          "$Id: particles_surfspec.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
 !
-      call register_indep_psurfspec()
-      call register_dep_psurfspec()
+      call register_indep_psurfspec
+      call register_dep_psurfspec
 !
 !  We need to register an auxiliary array to diffuse the species transfer
 !
@@ -113,55 +112,46 @@ module Particles_surfspec
         call farray_register_auxiliary('ispecenth',ispecenth,communicated=.true.)
       elseif (ldiffuse_backenth .and. .not. lspecies_transfer) then
         call fatal_error('particles_surfspec:', &
-            'diffusion of the mass bound enthalpy needs lspecies_transfer')
+                         'diffusion of the mass bound enthalpy needs lspecies_transfer')
       endif
 !
     endsubroutine register_particles_surfspec
 ! ******************************************************************************
+    subroutine register_indep_psurfspec
 !
-    subroutine register_indep_psurfspec()
       integer :: i, k, stat, k1, k2
       character(len=10), dimension(40) :: reactants
 !
       if (nsurfreacspec /= N_surface_species) then
         print*,'N_surface_species: ', N_surface_species
         print*,'NSURFREACSPEC :', nsurfreacspec
-        call fatal_error('register_particles_surf', &
-            'wrong size of storage for surface species allocated')
+        call fatal_error('register_indep_psurfspec', &
+                         'wrong size of storage for surface species allocated')
       endif
 !
 !  Increase of npvar according to N_surface_species, which is
 !  the concentration of gas phase species at the particle surface
 !
-      if (N_surface_species <= 1) then
-        call fatal_error('register_particles_', 'N_surface_species must be > 1')
-      endif
+      if (N_surface_species <= 1) call fatal_error('register_indep_psurfspec', &
+                                                   'N_surface_species must be > 1')
 !
 ! Allocate memory for a number of arrays
       allocate(dependent_reactant(N_surface_reactions),STAT=stat)
-      if (stat > 0) call fatal_error('register_indep_psurfchem', &
-          'Could not allocate memory for dependent_reactant')
+      if (stat > 0) call fatal_error('register_indep_psurfspec','Could not allocate dependent_reactant')
       allocate(nu(N_surface_species,N_surface_reactions),STAT=stat)
-      if (stat > 0) call fatal_error('register_indep_psurfchem', &
-          'Could not allocate memory for nu')
+      if (stat > 0) call fatal_error('register_indep_psurfspec','Could not allocate nu')
       allocate(nu_prime(N_surface_species,N_surface_reactions),STAT=stat)
-      if (stat > 0) call fatal_error('register_indep_psurfchem', &
-          'Could not allocate memory for nu_prime')
+      if (stat > 0) call fatal_error('register_indep_psurfspec','Could not allocate nu_prime')
       allocate(ac(N_surface_species),STAT=stat)
-      if (stat > 0) call fatal_error('register_indep_psurfchem', &
-          'Could not allocate memory for ac')
+      if (stat > 0) call fatal_error('register_indep_psurfspec','Could not allocate ac')
       allocate(jmap(N_surface_species),STAT=stat)
-      if (stat > 0) call fatal_error('register_indep_psurfchem', &
-          'Could not allocate memory for jmap')
+      if (stat > 0) call fatal_error('register_indep_psurfspec','Could not allocate jmap')
       allocate(solid_species(N_surface_species),STAT=stat)
-      if (stat > 0) call fatal_error('register_indep_psurfchem', &
-          'Could not allocate memory for solid_species')
+      if (stat > 0) call fatal_error('register_indep_psurfspec','Could not allocate solid_species')
       allocate(nu_power(N_surface_species,N_surface_reactions),STAT=stat)
-      if (stat > 0) call fatal_error('register_indep_chem', &
-          'Could not allocate memory for nu_power')
+      if (stat > 0) call fatal_error('register_indep_psurfspec','Could not allocate nu_power')
       allocate(idiag_surf(N_surface_species),STAT=stat)
-      if (stat > 0) call fatal_error('register_indep_chem', &
-          'Could not allocate memory for idiag_surf')
+      if (stat > 0) call fatal_error('register_indep_psurfspec','Could not allocate idiag_surf')
       idiag_surf = 0
 !
       call create_ad_sol_lists(solid_species,'sol')
@@ -176,7 +166,7 @@ module Particles_surfspec
 !  create binding between gas phase and near field gas species
 !  chemistry and particles_chemistry module
 !
-      call create_jmap()
+      call create_jmap
 !
 !  print*, jH2O,JCO2,jH2,jO2,jCO,jCH,jHCO,jCH2,jCH3
 !
@@ -191,32 +181,33 @@ module Particles_surfspec
       call create_stoc(solid_species,nu_prime,.false., N_surface_species)
 !
 ! Define which gas phase reactants the given reaction depends on
-      call create_dependency(nu,dependent_reactant, &
-          n_surface_reactions,n_surface_reactants)
+!
+      call create_dependency(nu,dependent_reactant, n_surface_reactions,n_surface_reactants)
 !
 ! Find the mole production of the forward reaction
-      call create_dngas()
 !
-      if (lwrite) then
-        call write_outputfile()
-      endif
+      call create_dngas
+!
+      if (lwrite) call write_outputfile
       lwrite = .false.
 !
     endsubroutine register_indep_psurfspec
 ! ******************************************************************************
-    subroutine register_dep_psurfspec()
+    subroutine register_dep_psurfspec
+!
     endsubroutine register_dep_psurfspec
 ! ******************************************************************************
+    subroutine initialize_particles_surf(f)
+!
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  29-sep-14/jonas coded
 !
-    subroutine initialize_particles_surf(f)
+      use SharedVariables, only: get_shared_variable
+
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: dimx, dimy, dimz, ncells=1
-!
-!      print*, weight_array
 !
       if (lparticlemesh_gab) ncells = 7
       if (lparticlemesh_tsc) ncells = 3
@@ -246,34 +237,48 @@ module Particles_surfspec
         allocate(weight_array(1,1,1))
       endif
       call precalc_weights(weight_array)
+
+      if (lpreactions) call get_shared_variable('true_density_carbon', &
+                       true_density_carbon,caller='initialize_particles_surf')
 !
       call keep_compiler_quiet(f)
+!
     endsubroutine initialize_particles_surf
 ! ******************************************************************************
     subroutine read_particles_surf_init_pars(iostat)
+!
       use File_io, only: parallel_unit
+!
       integer, intent(out) :: iostat
 !
       read (parallel_unit, NML=particles_surf_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_particles_surf_init_pars
 ! ******************************************************************************
     subroutine write_particles_surf_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write (unit, NML=particles_surf_init_pars)
+!
     endsubroutine write_particles_surf_init_pars
 ! ******************************************************************************
     subroutine read_particles_surf_run_pars(iostat)
+!
       use File_io, only: parallel_unit
+!
       integer, intent(out) :: iostat
 !
       read (parallel_unit, NML=particles_surf_run_pars, IOSTAT=iostat)
+!
     endsubroutine read_particles_surf_run_pars
 ! ******************************************************************************
     subroutine write_particles_surf_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write (unit, NML=particles_surf_run_pars)
+!
     endsubroutine write_particles_surf_run_pars
 ! ******************************************************************************
 !  Initial particle surface fractions
@@ -311,11 +316,9 @@ module Particles_surfspec
                 init_surf_mol_frac(1:N_surface_species) / sum_surf_spec
           endif
 !
-          if (sum_surf_spec == 0.0) then
-            call fatal_error('particles_surfspec', &
+          if (sum_surf_spec == 0.0) call fatal_error('init_particles_surf', &
                 'initial molefraction was given without value. '// &
                 'please specify the initial gas fraction')
-          endif
 !
           do k = 1,mpar_loc
             fp(k,isurf:isurf_end) = init_surf_mol_frac(1:N_surface_species)
@@ -330,33 +333,29 @@ module Particles_surfspec
             mean_molar_mass = 0.0
 !
             do i = 1,nchemspec
-              mean_molar_mass = mean_molar_mass + &
-                  species_constants(i,imass) * f(4,4,4,ichemspec(i))
+              mean_molar_mass = mean_molar_mass + species_constants(i,imass) * f(4,4,4,ichemspec(i))
             enddo
 !
 !
             do i = 1, N_surface_species
               igas = ichemspec(jmap(i))
-              fp(k,isurf+i-1) = f(4,4,4,igas) / &
-                  species_constants(jmap(i),imass)*mean_molar_mass
+              fp(k,isurf+i-1) = f(4,4,4,igas) / species_constants(jmap(i),imass)*mean_molar_mass
             enddo
           enddo
 !
         case default
-          if (lroot) &
-              print*, 'init_particles_ads: No such such value for init_surf: ', &
-              trim(init_surf(j))
-          call fatal_error('init_particles_surf','')
+          call fatal_error('init_particles_surf','no such init_surf: '//trim(init_surf(j)))
         endselect
       enddo
+!
     endsubroutine init_particles_surf
 ! ******************************************************************************
+    subroutine dpsurf_dt(f,df,fp,dfp,ineargrid)
+!
 !  evolution of particle surface fractions
 !  (all particles on one node)
 !
 !  1-oct-14/Jonas: coded
-!
-    subroutine dpsurf_dt(f,df,fp,dfp,ineargrid)
 !
       use Boundcond
       use Mpicomm
@@ -380,8 +379,9 @@ module Particles_surfspec
 !  the bulk species (ichemspec(nchemspec)) to ensure species conservation
 !
       if (lspecies_transfer .and. ldiffuse_backspec) then
-        if (ldensity_nolog) call fatal_error('particles_surf', &
-            'not implemented for ldensity_nolog')
+        if (ldensity_nolog) call not_implemented('dpsurf_dt', &
+            'lspecies_transfer .and. ldiffuse_backspec for lin density')
+
         do j = 1,nchemspec-1
           do i = 1,ndiffsteps
             call boundconds_x(f,ispecaux(j),ispecaux(j))
@@ -396,31 +396,28 @@ module Particles_surfspec
 !  Control that we don't influence points that would bring the mass fraction into the negative 
 !
           if (.not. lpfilter) then
-            df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
-                f(l1:l2,m1:m2,n1:n2,ispecaux(j))
+            df(l1:l2,m1:m2,n1:n2,ichemspec(j)) = df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
+                                                 f(l1:l2,m1:m2,n1:n2,ispecaux(j))
           else
-            where ((f(l1:l2,m1:m2,n1:n2,ichemspec(j))+ &
-                f(l1:l2,m1:m2,n1:n2,ispecaux(j))*dt)< 0.0)
+            where ((f(l1:l2,m1:m2,n1:n2,ichemspec(j))+f(l1:l2,m1:m2,n1:n2,ispecaux(j))*dt)< 0.0)
               f(l1:l2,m1:m2,n1:n2,ispecaux(j)) = f(l1:l2,m1:m2,n1:n2,ichemspec(j))*dt1*(-0.9)
               where ((f(l1:l2,m1:m2,n1:n2,ichemspec(j)) <= 1E-25))
                 f(l1:l2,m1:m2,n1:n2,ispecaux(j)) = 0.0
               end where
             end where
-            df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
-                f(l1:l2,m1:m2,n1:n2,ispecaux(j))
+            df(l1:l2,m1:m2,n1:n2,ichemspec(j)) = df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
+                                                 f(l1:l2,m1:m2,n1:n2,ispecaux(j))
           endif
         enddo
         df(l1:l2,m1:m2,n1:n2,ichemspec(nchemspec)) = &
-            df(l1:l2,m1:m2,n1:n2,ichemspec(nchemspec))- &
-            sum(df(l1:l2,m1:m2,n1:n2,ichemspec(:)),DIM=4)
+            df(l1:l2,m1:m2,n1:n2,ichemspec(nchemspec))-sum(df(l1:l2,m1:m2,n1:n2,ichemspec(:)),DIM=4)
       endif
 !
 !  Diffusion of the mass bound enthalpy
 !
       if (lspecies_transfer .and. ldiffuse_backenth) then
-        if (ldensity_nolog .and. ltemperature_nolog) &
-            call fatal_error('particles_surf', 'diffusion of mass bound enthalpy &
-            & not implemented for ldensity_nolog')
+        if (ldensity_nolog .and. ltemperature_nolog) call not_implemented('dpsurf_dt', &
+            'diffusion of mass bound enthalpy for lin density and temperature')
         do i = 1,ndiffsteps
           call boundconds_x(f,ispecenth,ispecenth)
           call initiate_isendrcv_bdry(f,ispecenth,ispecenth)
@@ -430,15 +427,12 @@ module Particles_surfspec
           call diffuse_interaction(f(:,:,:,ispecenth),ldiffenth,.False.,rdiffconsts)
 !
         enddo
-        df(l1:l2,m1:m2,n1:n2,ilnTT) =  df(l1:l2,m1:m2,n1:n2,ilnTT) + &
-            f(l1:l2,m1:m2,n1:n2,ispecenth)
+        df(l1:l2,m1:m2,n1:n2,ilnTT) =  df(l1:l2,m1:m2,n1:n2,ilnTT) + f(l1:l2,m1:m2,n1:n2,ispecenth)
       endif
 !
       if (ldiagnos) then
         do i = 1,N_surface_species
-          if (idiag_surf(i) /= 0) then
-            call sum_par_name(fp(1:npar_loc,isurf+i-1),idiag_surf(i))
-          endif
+          call sum_par_name(fp(1:npar_loc,isurf+i-1),idiag_surf(i))
         enddo
       endif
 !
@@ -474,7 +468,6 @@ module Particles_surfspec
       integer :: ixx0, iyy0, izz0
       integer :: ixx1, iyy1, izz1
       integer :: index1, index2
-      real, pointer :: true_density_carbon
       integer :: density_index
       real :: dmass_frac_dt=0.0
       real :: diffusion_transfer=0.0
@@ -491,6 +484,7 @@ module Particles_surfspec
       reac_pchem = 0.0
 !
       if (lpreactions) then
+!
 !  initializing the auxiliary pencils for the mass and mass bound enthalpy diffusi
 !
         volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nxgrid*nygrid*nzgrid)
@@ -513,9 +507,7 @@ module Particles_surfspec
           allocate(ndot(k1:k2,N_surface_species))
           allocate(term(k1:k2,N_surface_reactants))
 !
-          call get_shared_variable('true_density_carbon',true_density_carbon,caller='dpsurf_dt_pencil')
-!
-          call calc_mass_trans_reactants()
+          call calc_mass_trans_reactants
           call get_surface_chemistry(Cg_surf,ndot,mass_loss)
 !
 !  set surface gas species composition
@@ -565,8 +557,7 @@ module Particles_surfspec
                 enddo
               else
                 print*,'Must set linfinite_diffusion=T if lboundary_explicit=F.'
-                call fatal_error('dpsurf_dt_pencil', &
-                    'Implicit solver for surface consentrations is not implemented.')
+                call not_implemented('dpsurf_dt_pencil','implicit solver for surface concentrations')
               endif
             endif
 !
@@ -609,8 +600,7 @@ module Particles_surfspec
                     if (lpencil(i_H0_RT)) then
                       denth = denth+ndot(k,i)*A_p*p%cv(ix0-nghost)*(p%TT(ix0-nghost)-298.15)
                     else
-                      call fatal_error('particles_surfspec', &
-                          'mass bound enthalpy transfer needs p%H0_RT')
+                      call fatal_error('particles_surfspec','mass bound enthalpy transfer needs p%H0_RT')
                     endif
                   endif
                 endif
@@ -659,8 +649,7 @@ module Particles_surfspec
                     endif
                   enddo
                 else
-                  call fatal_error('particles_surf','backdiffusion not yet implemented &
-                      & for ldensity_nolog')
+                  call not_implemented('particles_surf','backdiffusion for lin density')
                 endif
               else
 !
@@ -757,18 +746,15 @@ module Particles_surfspec
 !
               elseif (lpchem_mass_enth .and. ldiffuse_backenth) then
                 if (ldensity_nolog .and. ltemperature_nolog) then
-                  call fatal_error('particles_surf','diffusion not implemented for &
-                      & ldensity_nolog')
+                  call not_implemented('particles_surf','diffusion for lin density and temperature')
                 elseif (ldensity_nolog .and. .not. ltemperature_nolog) then
-                  call fatal_error('particles_surf','diffusion not implemented for &
-                      & ldensity_nolog')
+                  call not_implemented('particles_surf','diffusion for lin density and log temperature')
                 elseif (.not. ldensity_nolog .and. ltemperature_nolog) then
-                  call fatal_error('particles_surf','diffusion not implemented for &
-                      & ltemperature_nolog')
+                  call not_implemented('particles_surf','diffusion for log density and lin temperature')
                 else
                   f(ix0,iy0,iz0,ispecenth) =  f(ix0,iy0,iz0,ispecenth) &
-                      +denth*p%cv1(ix0-nghost)*p%TT1(ix0-nghost) / &
-                      (exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
+                                             +denth*p%cv1(ix0-nghost)*p%TT1(ix0-nghost) / &
+                                             (exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
                 endif
               endif
 !
@@ -784,27 +770,27 @@ module Particles_surfspec
 !            if (lparticles_adsorbed) print*, 'values in surfspec end',fp(k,isurf:isurf_end)
           enddo
 !
-!
           if (ldiagnos) then
             if (idiag_dtpchem /= 0 ) call max_name(reac_pchem/cdtc,idiag_dtpchem,l_dt=.true.)
           endif
 !
           if (allocated(term)) deallocate(term)
           if (allocated(ndot)) deallocate(ndot)
-          if (allocated(Cg_surf))   deallocate(Cg_surf)
-          if (allocated(mass_loss))   deallocate(mass_loss)
+          if (allocated(Cg_surf)) deallocate(Cg_surf)
+          if (allocated(mass_loss)) deallocate(mass_loss)
         endif
 !
       endif
 !
     endsubroutine dpsurf_dt_pencil
 ! ******************************************************************************
+    subroutine rprint_particles_surf(lreset,lwrite)
+!
 !  Read and register print parameters relevant for
 !  particles near field gas composition
 !
 !  06-oct-14/jonas: adapted
 !
-    subroutine rprint_particles_surf(lreset,lwrite)
       use Diagnostics
 !
       logical :: lreset
@@ -814,7 +800,6 @@ module Particles_surfspec
       integer :: iname,i
       character(len=7) :: diagn_surf, number
 !
-! Write information to index.pro
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
       if (lreset) then
@@ -835,6 +820,8 @@ module Particles_surfspec
 !
     endsubroutine rprint_particles_surf
 ! ******************************************************************************
+    subroutine create_jmap
+!
 !  07-oct-2014/jonas: coded
 !  29-oct-2014/jonas: moved parts of the code into routine, implemented
 !                     error when gas phase species is in
@@ -843,7 +830,6 @@ module Particles_surfspec
 !  find the indexes used in chemistry.f90 of species present
 !  in the near field of the particle
 !
-    subroutine create_jmap()
       use EquationOfState
 !
       integer :: index_glob, index_chem
@@ -937,11 +923,13 @@ module Particles_surfspec
       if (inuHCO > 0)     jmap(inuHCO) = jHCO
       if (inuCH2 > 0)     jmap(inuCH2) = jCH2
       if (inuCH3 > 0)     jmap(inuCH3) = jCH3
+
     endsubroutine create_jmap
 ! ******************************************************************************
+    subroutine calc_mass_trans_reactants
+!
 !  restrict mass trans coefficients to surface reactants only
 !
-    subroutine calc_mass_trans_reactants()
       integer :: k, i, k1, k2
 !
       k1 = k1_imn(imn)
@@ -952,13 +940,14 @@ module Particles_surfspec
           mass_trans_coeff_reactants(k,i) = mass_trans_coeff_species(k,i)
         enddo
       enddo
+
     endsubroutine calc_mass_trans_reactants
 ! ******************************************************************************
 !  Allocate pencils for mass transport coefficiens
 !
 !  nov-14/jonas: coded
 !
-    subroutine allocate_surface_pencils()
+    subroutine allocate_surface_pencils
       integer :: k1, k2, stat
 !
       k1 = k1_imn(imn)
@@ -966,10 +955,10 @@ module Particles_surfspec
 !
       allocate(mass_trans_coeff_species(k1:k2,N_species), STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
-          'Could not allocate memory for mass_trans_coeff_species')
+                                     'Could not allocate mass_trans_coeff_species')
       allocate(mass_trans_coeff_reactants(k1:k2,N_surface_reactants),STAT=stat)
-      if (stat > 0) call fatal_error('register_indep_psurfchem', &
-          'Could not allocate memory for mass_trans_coeff_reactants')
+      if (stat > 0) call fatal_error('allocate_surface_pencils', &
+                                     'Could not allocate mass_trans_coeff_reactants')
 !
     endsubroutine allocate_surface_pencils
 ! ******************************************************************************
@@ -978,7 +967,7 @@ module Particles_surfspec
 !
 !  nov-14/jonas: coded
 !
-    subroutine cleanup_surf_pencils()
+    subroutine cleanup_surf_pencils
 !
       deallocate(mass_trans_coeff_species)
       deallocate(mass_trans_coeff_reactants)
@@ -991,12 +980,13 @@ module Particles_surfspec
 !  nov-14/jonas: coded
 !
     subroutine calc_psurf_pencils(f,fp,p,ineargrid)
+
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
       type (pencil_case) :: p
 !
-      call allocate_surface_pencils()
+      call allocate_surface_pencils
       call calc_mass_trans_coeff(f,fp,p,ineargrid)
 !
     endsubroutine calc_psurf_pencils
@@ -1006,7 +996,8 @@ module Particles_surfspec
 !  oct-14/Jonas: coded
 !
     subroutine calc_mass_trans_coeff(f,fp,p,ineargrid)
-      real, dimension(mx,my,mz,mparray), intent(in) :: f
+
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
@@ -1048,7 +1039,7 @@ module Particles_surfspec
 !
     endsubroutine calc_mass_trans_coeff
 ! ******************************************************************************
-    subroutine particles_surfspec_clean_up()
+    subroutine particles_surfspec_clean_up
 !
       if (allocated(dependent_reactant)) deallocate(dependent_reactant)
       if (allocated(nu)) deallocate(nu)
@@ -1061,7 +1052,7 @@ module Particles_surfspec
 !
     endsubroutine particles_surfspec_clean_up
 ! ******************************************************************************
-    function find_index(element, list,lengthlist)
+    function find_index(element, list, lengthlist)
 !
       implicit none
 !
@@ -1078,7 +1069,7 @@ module Particles_surfspec
 !
     endfunction find_index
 !***********************************************************************
-    subroutine write_outputfile()
+    subroutine write_outputfile
 !
 !  Write particle chemistry info to ./data/particle_chemistry.out
 !
