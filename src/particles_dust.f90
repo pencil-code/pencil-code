@@ -954,9 +954,9 @@ module Particles
         call fatal_error('initialize_particles','Cond ratio=0 with thermophoretic force')
 !
       if (irhop /= 0) then
-        if ((nprocx /= 1).and.(.not. lcommunicate_rhop)) &
-          call fatal_error("calc_pencils_particles", &
-                           "Switch on lcommunicate_rhop=T in particles_run_pars")
+        !if ((nprocx /= 1).and.(.not. lcommunicate_rhop)) &
+        !   call fatal_error("calc_pencils_particles", &
+        !                    "Switch on lcommunicate_rhop=T in particles_run_pars")
       else
         if ((nprocx /= 1).and.(.not. lcommunicate_np)) &
           call fatal_error("initialize_particles","Switch on lcommunicate_np=T in particles_run_pars")
