@@ -210,8 +210,7 @@ module Particles
         iupz = iuup + 2
       endif uup
 !
-      if (.not. lnocalc_np) call farray_register_auxiliary('np',inp,&
-          communicated=lcommunicate_np)
+      if (.not. lnocalc_np) call farray_register_auxiliary('np',inp,communicated=lcommunicate_np)
 !
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated=lparticles_sink.or.lcommunicate_rhop)
@@ -221,10 +220,14 @@ module Particles
       call put_shared_variable("ldragforce_gas_par", ldragforce_gas_par, caller="register_particles")
 !
       share: if (ldraglaw_epstein) then
-        call put_shared_variable("tausp", tausp, caller="register_particles")
-        call put_shared_variable("tausp_species", tausp_species, caller="register_particles")
-        call put_shared_variable("tausp1_species", tausp1_species, caller="register_particles")
+        call put_shared_variable("tausp", tausp)
+        call put_shared_variable("tausp_species", tausp_species)
+        call put_shared_variable("tausp1_species", tausp1_species)
       endif share
+!
+!  Share Keplerian gravity.
+!
+      call put_shared_variable('gravr',gravr,caller='register_particles')
 !
     endsubroutine register_particles
 !***********************************************************************
@@ -238,7 +241,7 @@ module Particles
 !
       use EquationOfState, only: cs0, rho0, get_stratz
       use FArrayManager
-      use SharedVariables, only: put_shared_variable,get_shared_variable
+      use SharedVariables, only: get_shared_variable
       use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -385,10 +388,6 @@ module Particles
 !
       if (gravsmooth/=0.0) gravsmooth2=gravsmooth**2
 !
-!  Share Keplerian gravity.
-!
-      call put_shared_variable('gravr',gravr,caller='initialize_particles')
-!
 !  Gas density is needed for back-reaction friction force.
 !
       if (ldragforce_gas_par .and. .not. ldensity) then
@@ -447,8 +446,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use Density, only: beta_glnrho_global
       use EquationOfState, only: gamma, cs20
+      use SharedVariables, only: get_shared_variable
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use Sub
@@ -458,6 +457,7 @@ module Particles
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+      intent (out) :: f, fp, ineargrid
 !
       real, dimension (3) :: Lxyz_par, xyz0_par, xyz1_par
       real :: vpx_sum, vpy_sum, vpz_sum
@@ -467,7 +467,9 @@ module Particles
       integer :: l, j, k, ix0, iy0, iz0, ib
       logical :: lequidistant=.false.
 !
-      intent (out) :: f, fp, ineargrid
+      real, dimension(:), pointer :: beta_glnrho_global
+!
+      call get_shared_variable('beta_glnrho_global',beta_glnrho_global,caller='init_particles')
 !
 !  Use either a local random position or a global random position for certain
 !  initial conditions. The default is a local random position, but the equal
@@ -1424,7 +1426,7 @@ k_loop:   do while (.not. (k>npar_loc))
       if (lpencil_in(i_rhop) .and. irhop==0) lpencil_in(i_np)=.true.
 !
       if (lpencil_in(i_uup) .and. iuup == 0) &
-          call fatal_error("pencil_interdep_particles", "p%uup is requested but not calculated. ")
+          call fatal_error("pencil_interdep_particles", "p%uup is requested but not calculated")
 !
       if (lpencil_in(i_epsp)) then
         lpencil_in(i_rhop)=.true.
