@@ -10,6 +10,7 @@
 ! MPVAR CONTRIBUTION 7
 ! MAUX CONTRIBUTION 3
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="dust_brdeplete"
 !
 ! PENCILS PROVIDED np; rhop; vol; peh
 ! PENCILS PROVIDED np_rad(5); npvz(5); sherwood
@@ -23,7 +24,6 @@
 module Particles
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
@@ -34,8 +34,8 @@ module Particles
 ! 
   implicit none
 !
-  include 'particles.h'
-  include 'particles_common.h'
+  include '../particles.h'
+  include '../particles_common.h'
 !
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, target, dimension (npar_species) :: tausp_species=0.0
@@ -284,6 +284,8 @@ module Particles
   integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
   integer :: idiag_tausupersatrms=0
 !
+  real, dimension(:), pointer :: beta_glnrho_global, beta_glnrho_scaled
+!
   contains
 !***********************************************************************
     subroutine register_particles
@@ -293,6 +295,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use FArrayManager, only: farray_register_auxiliary
+      use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -336,7 +339,27 @@ module Particles
         call farray_register_auxiliary('tausupersat', itausupersat) 
 !
 !  Kill particles that spend enough time in birth ring
+!
       if (lbirthring_depletion) call append_npvar('ibrtime',ibrtime)
+!
+!  Share Keplerian gravity.
+!
+      call put_shared_variable('gravr',gravr,caller='register_particles')
+!
+!  Share friction time (but only if Epstein drag regime!).
+!
+      if (ldraglaw_epstein .or. ldraglaw_simple) then
+        call put_shared_variable( 'tausp_species', tausp_species)
+        call put_shared_variable('tausp1_species',tausp1_species)
+      endif
+!
+      if (l_shell) then
+        if ( k_shell < 0) call fatal_error('register_particles','Set k_shell')
+        call put_shared_variable('uup_shared',uup_shared)
+        call put_shared_variable('vel_call',vel_call)
+        call put_shared_variable('turnover_call',turnover_call)
+        call put_shared_variable('turnover_shared',turnover_shared)
+      endif
 !
     endsubroutine register_particles
 !***********************************************************************
@@ -349,7 +372,7 @@ module Particles
 !   5-mar-15/MR: reference state included in calculation of mean density
 !
       use EquationOfState, only: rho0, cs0
-      use SharedVariables, only: put_shared_variable, get_shared_variable
+      use SharedVariables, only: get_shared_variable
       use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -385,7 +408,7 @@ module Particles
 !  Check if shear advection is on and decide if it needs to be included in the timestep condition.
 !
       shear: if (lshear) then
-        call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift)
+        call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift, caller='initialize_particles')
         lcdtp_shear = .not. lshearadvection_as_shift
         nullify(lshearadvection_as_shift)
       endif shear
@@ -445,13 +468,6 @@ module Particles
         endif
         tausp_species(1)=tausp
         if (tausp_species(1)/=0.0) tausp1_species(1)=1/tausp_species(1)
-      endif
-!
-!  Share friction time (but only if Epstein drag regime!).
-!
-      if (ldraglaw_epstein .or. ldraglaw_simple) then
-        call put_shared_variable( 'tausp_species', tausp_species)
-        call put_shared_variable('tausp1_species',tausp1_species)
       endif
 !      
 !  Global gas pressure gradient seen from the perspective of the dust.
@@ -518,12 +534,6 @@ module Particles
 !  Calculate gravsmooth**2 for gravity.
 !
       if (gravsmooth/=0.0) gravsmooth2=gravsmooth**2
-!
-!  Share Keplerian gravity.
-!
-      call put_shared_variable('gravr',gravr,ierr)
-      if (ierr/=0) call fatal_error('initialize_particles', &
-          'there was a problem when sharing gravr')
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -767,14 +777,6 @@ module Particles
             'interp_pol_nu: '//trim(interp_pol_nu))
       endselect
 !
-      if (l_shell) then
-        if ( k_shell < 0) call fatal_error('initialize_particles','Set k_shell')
-        call put_shared_variable('uup_shared',uup_shared,ierr)
-        call put_shared_variable('vel_call',vel_call,ierr)
-        call put_shared_variable('turnover_call',turnover_call,ierr)
-        call put_shared_variable('turnover_shared',turnover_shared,ierr)
-      endif
-!
 !  Write constants to disk.
 !
       if (lroot) then
@@ -796,12 +798,12 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use Density, only: beta_glnrho_global
       use EquationOfState, only: cs20
       use General, only: random_number_wrapper, normal_deviate
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent (out) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
@@ -816,6 +818,9 @@ module Particles
       integer :: l, j, k, ix0, iy0, iz0, n_kill
       logical :: lequidistant=.false.
       real :: rpar_int,rpar_ext
+!
+      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='init_particles')
+      call get_shared_variable('beta_glnrho_global',beta_glnrho_global)
 !
 !  Use either a local random position or a global random position for certain
 !  initial conditions. The default is a local random position, but the equal
@@ -1823,9 +1828,8 @@ module Particles
            fp(k,ivpz) = delta_vp0*fp(k,izp)/rp_ext
          enddo
 !
-!
         case default
-          call fatal_error('init_particles','Unknown value initvvp="'//trim(initvvp(j))//'"')
+          call fatal_error('init_particles','no such initvvp: "'//trim(initvvp(j))//'"')
 !
         endselect
 !
@@ -2162,7 +2166,6 @@ module Particles
 !
 !  14-apr-06/anders: coded
 !
-      use Density, only: beta_glnrho_global
       use EquationOfState, only: cs0
 !
       real, dimension (mpar_loc,mparray) :: fp
@@ -2271,7 +2274,6 @@ module Particles
 !
 !  30-jan-06/anders: coded
 !
-      use Density, only: beta_glnrho_global
       use General, only: random_number_wrapper
       use Particles_mpicomm
 !
@@ -2380,7 +2382,6 @@ module Particles
 !
 !  14-sep-05/anders: coded
 !
-      use Density, only: beta_glnrho_scaled
       use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
 !

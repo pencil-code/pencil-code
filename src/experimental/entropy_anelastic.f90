@@ -9,12 +9,13 @@
 !
 ! CPARAM logical, parameter :: lentropy = .true.
 ! CPARAM logical, parameter :: ltemperature = .false.
+! CPARAM logical, parameter :: lthermal_energy = .false.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 1
 ! COMMUNICATED AUXILIARIES 1
 !
-! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT
+! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglntt(3)
 ! PENCILS PROVIDED ugss_b; gss(3); del2ss; glnTTb(3) ; gss_b(3)
 !
 !***************************************************************
@@ -24,7 +25,6 @@ module Energy
   use Cdata
   use General, only: keep_compiler_quiet
   use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot
-  use Density, only: beta_glnrho_global
   use Interstellar
   use Messages
   use Viscosity
@@ -94,7 +94,8 @@ module Energy
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
-  character (len=intstr) :: iinit_str
+  character (len=intlen) :: iinit_str
+  real, dimension(3) :: beta_glnrho_global = 0.
 !
 ! Parameters for subroutine cool_RTV in SI units (from Cook et al. 1989)
 !
@@ -226,7 +227,7 @@ module Energy
 !  6-nov-01/wolf: coded
 !
       use FArrayManager
-      use SharedVariables
+      use SharedVariables, only: put_shared_variable
       use Sub
 !
       call farray_register_pde('ss',iss)
@@ -237,6 +238,17 @@ module Energy
       if (lroot) call svn_id( &
           "$Id$")
 !
+! Shared variables
+!
+      call put_shared_variable('hcond0',hcond0,caller='register_energy')
+      call put_shared_variable('lviscosity_heat',lviscosity_heat)
+      call put_shared_variable('cs2cool',cs2cool)
+      call put_shared_variable('mpoly0',mpoly0)
+      call put_shared_variable('mpoly1',mpoly2)
+      call put_shared_variable('mpoly2',mpoly2)
+
+      if (.not.ldensity) call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
+
     endsubroutine register_energy
 !***********************************************************************
     subroutine initialize_energy(f)
@@ -248,11 +260,10 @@ module Energy
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
                                  select_eos_variable,gamma,gamma_m1
-      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use FArrayManager
       use Gravity, only: gravz,g0
       use Mpicomm, only: stop_it
-      use SharedVariables, only: get_shared_variable, put_shared_variable
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -262,12 +273,17 @@ module Energy
       integer :: i, q
       logical :: lnothing,lcompute_grav
       type (pencil_case) :: p
+      real, dimension(:), pointer :: beta_glnrho_global_
 !
 ! Check any module dependencies
 !
-      if (.not. leos) &
-        call fatal_error('initialize_energy', &
+      if (.not. leos) call fatal_error('initialize_energy', &
             'EOS=noeos but energy requires an EQUATION OF STATE for the fluid')
+
+      if (ldensity) then
+        call get_shared_variable('beta_glnrho_global',beta_glnrho_global_)
+        beta_glnrho_global=beta_glnrho_global_
+      endif
 !
 ! Tell the equation of state that we're here and what f variable we use
 !
@@ -284,7 +300,7 @@ module Energy
       endif
 
       if (ldensity.and..not.lstratz) then
-        call get_shared_variable('mpoly',mpoly)
+        call get_shared_variable('mpoly',mpoly,caller='initialize_energy')
       else
         call warning('initialize_energy','mpoly not obtained from density,'// &
                      'set impossible')
@@ -510,15 +526,6 @@ module Energy
 !
       endselect
 !
-!  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
-!  gradient dlnrho/dr = beta/H
-!
-      if (maxval(abs(beta_glnrho_global))/=0.0) then
-        beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
-        if (lroot) print*, 'initialize_energy: Global density gradient '// &
-            'with beta_glnrho_global=', beta_glnrho_global
-      endif
-!
 !  Turn off pressure gradient term and advection for 0-D runs.
 !
       if (nxgrid*nygrid*nzgrid==1) then
@@ -564,19 +571,8 @@ module Energy
 !
 !  A word of warning...
 !
-      if (all(iheatcond=='nothing') .and. hcond0/=0.0) then
-        call warning('initialize_energy', &
-            'No heat conduction, but hcond0 /= 0')
-      endif
-!
-! Shared variables
-!
-      call put_shared_variable('hcond0',hcond0,caller='initialize_energy')
-      call put_shared_variable('lviscosity_heat',lviscosity_heat)
-      call put_shared_variable('cs2cool',cs2cool)
-      call put_shared_variable('mpoly0',mpoly0)
-      call put_shared_variable('mpoly1',mpoly2)
-      call put_shared_variable('mpoly2',mpoly2)
+      if (all(iheatcond=='nothing') .and. hcond0/=0.0) &
+        call warning('initialize_energy', 'No heat conduction, but hcond0 /= 0')
 !
       call keep_compiler_quiet(f)
 !
@@ -758,8 +754,7 @@ module Energy
 !
     endsubroutine blob_radeq
 !***********************************************************************
-    subroutine polytropic_ss_z( &
-         f,mpoly,zint,zbot,zblend,isoth,cs2int,ssint)
+    subroutine polytropic_ss_z(f,mpoly,zint,zbot,zblend,isoth,cs2int,ssint)
 !
 !  Implement a polytropic profile in ss above zbot. If this routine is
 !  called several times (for a piecewise polytropic atmosphere), on needs
@@ -1057,7 +1052,7 @@ module Energy
 !  21-aug-08/dhruba: added spherical coordinates
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1
       use Mpicomm, only:stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1157,7 +1152,7 @@ module Energy
 !  generalised for cp/=1.
 !
       use Gravity, only: gravz, zinfty
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -1806,7 +1801,7 @@ module Energy
 !  28-jul-06/wlad: coded
 !
       use BorderProfiles, only: border_driving
-      use EquationOfState, only: cs20,get_ptlaw,get_cp1,lnrho0
+      use EquationOfState, only: cs20,get_cp1,lnrho0  !!!,get_ptlaw
       use Sub, only: power_law
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -1822,7 +1817,7 @@ module Energy
       case ('constant')
          f_target=ss_const
       case ('power-law')
-        call get_ptlaw(ptlaw)
+        !!!call get_ptlaw(ptlaw)
         call get_cp1(cp1)
         call power_law(cs20,p%rcyl_mn,ptlaw,cs2,r_ref)
         f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*lnrho0)
@@ -2156,7 +2151,7 @@ module Energy
 !
       use EquationOfState, only: gamma,gamma_m1
       use Sub
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
@@ -2323,7 +2318,7 @@ module Energy
       use Diagnostics
       use Gravity
       use IO
-      use HDF5IO, only: output_profile
+      use HDF5_IO, only: output_profile
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -2565,7 +2560,7 @@ module Energy
 !
 !  15-dec-04/bing: coded
 !
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
@@ -3055,7 +3050,7 @@ module Energy
 !  25-sep-2006/bing: updated, using external data
 !
       use EquationOfState, only: lnrho0,gamma
-      use Io, only:  output_pencil
+      use Debug_IO, only:  output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: newton
