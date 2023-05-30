@@ -952,14 +952,15 @@ module Particles
 !
       if (lthermophoretic_forces.and.cond_ratio==0.0) & 
         call fatal_error('initialize_particles','Cond ratio=0 with thermophoretic force')
-!
-      if (irhop /= 0) then
-        !if ((nprocx /= 1).and.(.not. lcommunicate_rhop)) &
-        !   call fatal_error("calc_pencils_particles", &
-        !                    "Switch on lcommunicate_rhop=T in particles_run_pars")
-      else
-        if ((nprocx /= 1).and.(.not. lcommunicate_np)) &
-          call fatal_error("initialize_particles","Switch on lcommunicate_np=T in particles_run_pars")
+
+      if (.false.) then   !MR: put here instead .false. the condition under which p%grhop is needed
+        if (irhop /= 0) then
+          if (nprocx /= 1.and.(.not.lcommunicate_rhop)) &
+            call fatal_error("initialize_particles","Switch on lcommunicate_rhop=T in particles_run_pars")
+        else
+          if (nprocx /= 1.and.(.not.lcommunicate_np)) &
+            call fatal_error("initialize_particles","Switch on lcommunicate_np=T in particles_run_pars")
+        endif
       endif
 !
       if (any(gravr_profile==(/'newtonian-central','newtonian        '/).and.lpointmasses.and. &
@@ -1367,7 +1368,8 @@ module Particles
                 rpar_int=rp_int
                 rpar_ext=rp_ext
               else
-                call not_implemented("init_particles","random-cyl for nprocx/=1 in Cartesian. Parallelize in y or z")
+                call not_implemented("init_particles", &
+                                     "random-cyl for nprocx/=1 in Cartesian. Parallelize in y or z")
               endif
             else
               rpar_int = xyz0_loc(1)
@@ -1969,12 +1971,10 @@ module Particles
 !  Take either global or local dust-to-gas ratio.
                   if (.not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f,l,m,n)
 !
-                  f(l,m,n,iux) = f(l,m,n,iux) - &
-                      beta_glnrho_global(1)*eps*Omega*tausp/ &
-                      ((1.0+eps)**2+(Omega*tausp)**2)*cs
-                  f(l,m,n,iuy) = f(l,m,n,iuy) + &
-                      beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
-                      (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+                  f(l,m,n,iux) = f(l,m,n,iux) - beta_glnrho_global(1)*eps*Omega*tausp/ &
+                                                ((1.0+eps)**2+(Omega*tausp)**2)*cs
+                  f(l,m,n,iuy) = f(l,m,n,iuy) + beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
+                                                (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
                 enddo
               enddo
             enddo
@@ -2011,15 +2011,11 @@ module Particles
             endif
             cs = sqrt(cs20)
             if (Deltauy_gas_friction /= 0.0) then
-              fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction* &
-                  1/(1.0/(Omega*tausp_par)+Omega*tausp_par)
-              fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction* &
-                  1/(1.0+(Omega*tausp_par)**2)
+              fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction/(1.0/(Omega*tausp_par)+Omega*tausp_par)
+              fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction/(1.0+(Omega*tausp_par)**2)
             else
-              fp(k,ivpx) = fp(k,ivpx) + beta_glnrho_global(1)*cs* &
-                  1/(1.0/(Omega*tausp_par)+Omega*tausp_par)
-              fp(k,ivpy) = fp(k,ivpy) + beta_glnrho_global(1)/2*cs* &
-                  1/(1.0+(Omega*tausp_par)**2)
+              fp(k,ivpx) = fp(k,ivpx) + beta_glnrho_global(1)*cs/(1.0/(Omega*tausp_par)+Omega*tausp_par)
+              fp(k,ivpy) = fp(k,ivpy) + beta_glnrho_global(1)/2*cs/(1.0+(Omega*tausp_par)**2)
             endif
           enddo
 !
@@ -2034,10 +2030,8 @@ module Particles
 !  Set particle velocity field.
           cs = sqrt(cs20)
           do k = 1,npar_loc
-            fp(k,ivpx) = fp(k,ivpx) + &
-                1/(Omega*tausp+1/(Omega*tausp))*beta_dPdr_dust*cs
-            fp(k,ivpy) = fp(k,ivpy) - &
-                1/(1.0+1/(Omega*tausp)**2)*beta_dPdr_dust/2*cs
+            fp(k,ivpx) = fp(k,ivpx) + 1/(Omega*tausp+1/(Omega*tausp))*beta_dPdr_dust*cs
+            fp(k,ivpy) = fp(k,ivpy) - 1/(1.0+1/(Omega*tausp)**2)*beta_dPdr_dust/2*cs
           enddo
 !
         case ('Keplerian','keplerian')
@@ -2364,10 +2358,10 @@ module Particles
               if (lcylindrical_coords) then
                 fp(npar_loc_old+1:npar_loc,ivpx) &
                     = vpx0*cos(fp(npar_loc_old+1:npar_loc,iyp)) &
-                    +vpy0*sin(fp(npar_loc_old+1:npar_loc,iyp))
+                     +vpy0*sin(fp(npar_loc_old+1:npar_loc,iyp))
                 fp(npar_loc_old+1:npar_loc,ivpy) &
                     = vpy0*cos(fp(npar_loc_old+1:npar_loc,iyp)) &
-                    -vpx0*sin(fp(npar_loc_old+1:npar_loc,iyp))
+                     -vpx0*sin(fp(npar_loc_old+1:npar_loc,iyp))
                 fp(npar_loc_old+1:npar_loc,ivpz) = vpz0
               else
                 fp(npar_loc_old+1:npar_loc,ivpx) = vpx0
@@ -2383,8 +2377,7 @@ module Particles
               if (lroot) &
                   print*, 'insert_particles: Particle velocity equal to gas velocity'
               do k = 1,npar_loc
-                call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup, &
-                    ineargrid(k,:),0,0)
+                call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,0)
                 fp(k,ivpx:ivpz) = uup
               enddo
 !
@@ -2453,8 +2446,7 @@ module Particles
                 (rr_tmp(k)  <=  birthring_r+birthring_width)) &
                 fp(k,ibrtime) = fp(k,ibrtime)+dt
           endif
-          if (fp(k,ibrtime)  >=  birthring_lifetime) &
-              call remove_particle(fp,ipar,k)
+          if (fp(k,ibrtime)  >=  birthring_lifetime) call remove_particle(fp,ipar,k)
         enddo
       endif
 !
@@ -2524,13 +2516,13 @@ module Particles
       do k = 1,npar_loc
         fp(k,ivpx) = fp(k,ivpx) + eta_vK*amplxxp* &
             ( real(coeff(1))*cos(kx_xxp*fp(k,ixp)) - &
-            aimag(coeff(1))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
+             aimag(coeff(1))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
         fp(k,ivpy) = fp(k,ivpy) + eta_vK*amplxxp* &
             ( real(coeff(2))*cos(kx_xxp*fp(k,ixp)) - &
-            aimag(coeff(2))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
+             aimag(coeff(2))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
         fp(k,ivpz) = fp(k,ivpz) + eta_vK*(-amplxxp)* &
             (aimag(coeff(3))*cos(kx_xxp*fp(k,ixp)) + &
-            real(coeff(3))*sin(kx_xxp*fp(k,ixp)))*sin(kz_xxp*fp(k,izp))
+              real(coeff(3))*sin(kx_xxp*fp(k,ixp)))*sin(kz_xxp*fp(k,izp))
       enddo
 !
 !  Change the gas velocity amplitude so that the numerical error on the drag
@@ -2634,13 +2626,13 @@ module Particles
 !  Set particle velocity.
         fp(k,ivpx) = fp(k,ivpx) + eta_glnrho*v_Kepler*amplxxp* &
             ( real(coeff(1))*cos(kx_xxp*fp(k,ixp)) - &
-            aimag(coeff(1))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
+             aimag(coeff(1))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
         fp(k,ivpy) = fp(k,ivpy) + eta_glnrho*v_Kepler*amplxxp* &
             ( real(coeff(2))*cos(kx_xxp*fp(k,ixp)) - &
-            aimag(coeff(2))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
+             aimag(coeff(2))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
         fp(k,ivpz) = fp(k,ivpz) + eta_glnrho*v_Kepler*(-amplxxp)* &
             (aimag(coeff(3))*cos(kx_xxp*fp(k,ixp)) + &
-            real(coeff(3))*sin(kx_xxp*fp(k,ixp)))*sin(kz_xxp*fp(k,izp))
+              real(coeff(3))*sin(kx_xxp*fp(k,ixp)))*sin(kz_xxp*fp(k,izp))
 !
       enddo
 !
@@ -2661,22 +2653,22 @@ module Particles
           f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
               (eta_glnrho*v_Kepler)**2*amplxxp* &
               ( real(coeff(7))*cos(kx_xxp*x(l1:l2)) - &
-              aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+               aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
               eta_glnrho*v_Kepler*amplxxp* &
               ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
-              aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+               aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
               eta_glnrho*v_Kepler*amplxxp* &
               ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
-              aimag(coeff(5))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+               aimag(coeff(5))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + &
               eta_glnrho*v_Kepler*(-amplxxp)* &
               (aimag(coeff(6))*cos(kx_xxp*x(l1:l2)) + &
-              real(coeff(6))*sin(kx_xxp*x(l1:l2)))*sin(kz_xxp*z(n))
+                real(coeff(6))*sin(kx_xxp*x(l1:l2)))*sin(kz_xxp*z(n))
         enddo
       enddo
 !
@@ -2726,7 +2718,7 @@ module Particles
         fXi = -2*Xi + alog((1+Xi)/(1-Xi))-Sigmad/(Hd*rho1)
 !
         i = i+1
-        if (i >= 1000) stop
+        if (i >= 1000) call fatal_error('constant_richardson','1000 Newton-Raphson iterations reached')
 !
       enddo
 !
@@ -2751,8 +2743,7 @@ module Particles
 !  Calculate the dust column density numerically.
 !
       Sigmad_num = sum(rho1*eps*dz_dense)
-      if (lroot) print*, 'constant_richardson: Sigmad, Sigmad (numerical) = ', &
-          Sigmad, Sigmad_num
+      if (lroot) print*, 'constant_richardson: Sigmad, Sigmad (numerical) = ', Sigmad, Sigmad_num
 !
 !  Place particles according to probability function.
 !
@@ -2990,7 +2981,7 @@ module Particles
         lpenc_diagnos(i_uup) = .true.
       endif
 !
-      if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz) = .true.
+      if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz) = .true.   !MR: not pencil_diagnos?
       if (maxval(idiag_npvz2mz) > 0) lpenc_requested(i_npvz2) = .true.
       if (maxval(idiag_npuzmz) > 0) lpenc_requested(i_npuz) = .true.
       if (maxval(idiag_nptz) > 0)   lpenc_requested(i_np_rad) = .true.
@@ -5247,8 +5238,7 @@ module Particles
 !
     endsubroutine create_particles_sink_simple
 !***********************************************************************
-    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup, &
-        nochange_opt,rep,stocunn)
+    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup,nochange_opt,rep,stocunn)
 !
 !  Calculate the friction time.
 !
@@ -5463,6 +5453,7 @@ module Particles
       real :: knudsen, reynolds, lambda
       real :: inv_particle_radius, kn_crit
       logical, optional :: lstokes
+      logical, save :: lfirstcall
 !
 !  Epstein drag away from the limit of subsonic particle motion. The drag
 !  force is given by (Schaaf 1963)
@@ -5652,7 +5643,7 @@ module Particles
 !
 !  Only use Epstein drag
 !
-        if (headtt) print*,'calc_draglaw_parameters: Epstein transonic drag law'
+        if (lfirstcall) print*,'calc_draglaw_parameters: Epstein transonic drag law'
 !
         mach2 = (duu(1)**2+duu(2)**2+duu(3)**2)/p%cs2(inx0)
         fd = sqrt(1+(9.0*pi/128)*mach2)
@@ -5692,6 +5683,8 @@ module Particles
           endif
         endif
       endif
+!
+      lfirstcall = .false.
 !
     endsubroutine calc_draglaw_parameters
 !***********************************************************************
