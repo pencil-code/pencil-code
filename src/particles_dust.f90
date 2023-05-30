@@ -953,16 +953,6 @@ module Particles
       if (lthermophoretic_forces.and.cond_ratio==0.0) & 
         call fatal_error('initialize_particles','Cond ratio=0 with thermophoretic force')
 
-      if (.false.) then   !MR: put here instead .false. the condition under which p%grhop is needed
-        if (irhop /= 0) then
-          if (nprocx /= 1.and.(.not.lcommunicate_rhop)) &
-            call fatal_error("initialize_particles","Switch on lcommunicate_rhop=T in particles_run_pars")
-        else
-          if (nprocx /= 1.and.(.not.lcommunicate_np)) &
-            call fatal_error("initialize_particles","Switch on lcommunicate_np=T in particles_run_pars")
-        endif
-      endif
-!
       if (any(gravr_profile==(/'newtonian-central','newtonian        '/).and.lpointmasses.and. &
           lparticle_gravity.and. tstart_grav_r_par>0)) &
         call fatal_error('initialize_particles','You are using massive particles. '// &
@@ -3008,12 +2998,24 @@ module Particles
       endif
 !
       if (lpencil_in(i_uup) .and. iuup == 0) &
-        call fatal_error("pencil_interdep_particles", "p%uup requested but not calculated")
+        call fatal_error("pencil_interdep_particles","p%uup requested but not calculated")
 !
       if (lascalar .and. ltauascalar) lpencil_in(i_tauascalar) = .true.
       if (lascalar) lpencil_in(i_condensationRate) = .true.
       if (lascalar) lpencil_in(i_waterMixingRatio) = .true.
       if (lascalar) lpencil_in(i_ssat) = .true.
+!
+      if (lpencil_in(i_grhop)) then
+        if (irhop /= 0) then
+          if (nprocx /= 1.and.(.not.lcommunicate_rhop)) &
+            call fatal_error("pencil_interdep_particles", &
+                             "Switch on lcommunicate_rhop=T in particles_run_pars")
+        else
+          if (nprocx /= 1.and.(.not.lcommunicate_np)) &
+            call fatal_error("pencil_interdep_particles", &
+                             "Switch on lcommunicate_np=T in particles_run_pars")
+        endif
+      endif
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
