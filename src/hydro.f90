@@ -1721,11 +1721,7 @@ module Hydro
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
-      if (.not.lboussinesq) then
-        call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='init_uu')
-      else
-        allocate(beta_glnrho_scaled(3)); beta_glnrho_scaled=0.
-      endif
+      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='init_uu')
  
       do j=1,ninit
 !

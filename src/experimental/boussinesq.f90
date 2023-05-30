@@ -43,6 +43,7 @@ module Density
   real, dimension (nz) :: lnrhomz,glnrhomz
   real :: dx_2, dz_2
   real, pointer :: chi
+  real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
 !
   include '../density.h'
 !
@@ -50,17 +51,23 @@ module Density
 !
   namelist /density_run_pars/ iorder_z, lwrite_debug, lremove_mean_temperature
 !
+  real, pointer :: Pr
+!
   contains
 !***********************************************************************
-    subroutine register_density()
+    subroutine register_density
 !
       use FArrayManager, only: farray_register_auxiliary
+      use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
           "$Id$")
 !
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       if (lsphere_in_a_box) lgravr=.true.
+
+      call put_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='register_density')
+      if (.not.lentropy) call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
 !
     endsubroutine register_density
 !***********************************************************************
@@ -73,20 +80,19 @@ module Density
 !
       use EquationOfState, only: select_eos_variable
       use DensityMethods, only: initialize_density_methods
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  Boussinesq not implemented for entropy
 !
       if (lenergy) then
-        if (lentropy) call fatal_error("initialize_density", &
-          "Boussinesq not implemented for entropy")
+        if (lentropy) call not_implemented("initialize_density","Boussinesq for entropy")
 !
 !  Boussinesq only implemented for ltemperature_nolog
 !
-        if (.not.ltemperature_nolog) call fatal_error("initialize_density", &
-          "Boussinesq is only implemented for ltemperature_nolog")
-!
+        if (.not.ltemperature_nolog) call not_implemented("initialize_density", &
+                                          "Boussinesq for log ltemperature")
       endif
 !
 !  Tell the equation of state that we're here and we don't have a
@@ -98,6 +104,11 @@ module Density
 !
       dx_2=1./dx**2
       dz_2=1./dz**2
+!
+      if (.not.lviscosity) then
+        call get_shared_variable('Pr',Pr,caller='initialize_density')
+        if (lroot) print*, 'Boussinesq: Pr=', Pr
+      endif
 !
       call initialize_density_methods
 !
@@ -168,7 +179,7 @@ module Density
 !
   endsubroutine density_after_boundary
 !***********************************************************************
-    subroutine pencil_criteria_density()
+    subroutine pencil_criteria_density
 !
 !  All pencils that the Density module depends on are specified here.
 !
@@ -363,20 +374,11 @@ module Density
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
       integer :: j, ju, ierr
-      real, pointer, save :: Pr
-      logical, save :: l1st=.true.
 !
       if (lviscosity) then
         call update_ghosts(f,iuu,iuu+2)
       else
         call update_ghosts(f)
-        if (l1st) then
-          call get_shared_variable('Pr',Pr,ierr)
-          if (ierr/=0) call fatal_error('implicit_diffusion',&
-              'pb to get Pr')
-          print*, 'get Pr=', Pr
-          l1st=.false.
-        endif
 !
 !  Implicit advance of both viscous and radiative diffusion terms
 !
@@ -436,7 +438,7 @@ module Density
 !  10-avr-2012/dintrans: coded
 !         2017/MR: optional parameters for various BCs added
 !                  (not yet used)
-!  Fourth-order in the vertical direction that uses pendag().
+!  Fourth-order in the vertical direction that uses pendag.
 !  Note: the (kx=0,ky=0) mode is computed using a Green function.
 !
       use Fourier, only: fourier_transform_xy, kx_fft, ky_fft
@@ -512,12 +514,10 @@ module Density
             b1t(:,ikx)=u_tri
           else
             do iz = 1, nzgrid 
-              cz(iz) = 0.5*dz2h*(                       &
-                cmplx(phit(1,ikx),b1t(1,ikx))*abs(iz-1) &
-               +cmplx(phit(nzgrid,ikx),b1t(nzgrid,ikx))*abs(iz-nzgrid))
+              cz(iz) = 0.5*dz2h*( cmplx(phit(1,ikx),b1t(1,ikx))*abs(iz-1) &
+                                 +cmplx(phit(nzgrid,ikx),b1t(nzgrid,ikx))*abs(iz-nzgrid))
               do iz1 = 2, nzgrid-1
-                cz(iz) = cz(iz) + cmplx(phit(iz1,ikx), b1t(iz1,ikx)) * &
-                         abs(iz - iz1) * dz2h
+                cz(iz) = cz(iz) + cmplx(phit(iz1,ikx), b1t(iz1,ikx)) * abs(iz - iz1) * dz2h
               enddo
             enddo
             phit(:,ikx) = real(cz(1:nzgrid))
@@ -539,7 +539,7 @@ module Density
     subroutine inverse_laplacian_z_2nd(phi)
 !
 !  19-mar-2012/dintrans: coded
-!  Second-order version in the vertical direction that uses tridag().
+!  Second-order version in the vertical direction that uses tridag.
 !  Note: the (kx=0,ky=0) mode is computed using a Green function.
 !
       use Fourier, only: fourier_transform_xy, kx_fft, ky_fft
@@ -599,12 +599,10 @@ module Density
             b1t(:,ikx)=u_tri
           else
             do iz = 1, nzgrid 
-              cz(iz) = 0.5*dz2h*(                       &
-                cmplx(phit(1,ikx),b1t(1,ikx))*abs(iz-1) &
-               +cmplx(phit(nzgrid,ikx),b1t(nzgrid,ikx))*abs(iz-nzgrid))
+              cz(iz) = 0.5*dz2h*( cmplx(phit(1,ikx),b1t(1,ikx))*abs(iz-1) &
+                                 +cmplx(phit(nzgrid,ikx),b1t(nzgrid,ikx))*abs(iz-nzgrid))
               do iz1 = 2, nzgrid-1
-                cz(iz) = cz(iz) + cmplx(phit(iz1,ikx), b1t(iz1,ikx)) * &
-                         abs(iz - iz1) * dz2h
+                cz(iz) = cz(iz) + cmplx(phit(iz1,ikx), b1t(iz1,ikx)) * abs(iz - iz1) * dz2h
               enddo
             enddo
             phit(:,ikx) = real(cz(1:nzgrid))
@@ -652,23 +650,21 @@ module Density
 !
 !  rows dealt implicitly
 !
-      ax(:)=-cdiff*dt*dx_2/2.
-      bx(:)=1.+cdiff*dt*dx_2
-      cx(:)=ax
+      ax=-cdiff*dt*dx_2/2.
+      bx=1.+cdiff*dt*dx_2
+      cx=ax
       aalpha=cx(nx) ; bbeta=ax(1)  ! x-direction periodic
       do n=n1,n2
-        rhsx=TT(l1:l2,n)+     &
-             cdiff*dt*dz_2/2.*(TT(l1:l2,n+1)-2.*TT(l1:l2,n)+TT(l1:l2,n-1))
-        rhsx=rhsx+cdiff*dt*dx_2/2.* &
-             (TT(l1+1:l2+1,n)-2.*TT(l1:l2,n)+TT(l1-1:l2-1,n))
+        rhsx=TT(l1:l2,n)+cdiff*dt*dz_2/2.*(TT(l1:l2,n+1)-2.*TT(l1:l2,n)+TT(l1:l2,n-1))
+        rhsx=rhsx+cdiff*dt*dx_2/2.*(TT(l1+1:l2+1,n)-2.*TT(l1:l2,n)+TT(l1-1:l2-1,n))
         call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,finter(l1:l2,n),nx)
       enddo
 !
 !  columns dealt implicitly
 !
-      az(:)=-cdiff*dt*dz_2/2.
-      bz(:)=1.+cdiff*dt*dz_2
-      cz(:)=az
+      az=-cdiff*dt*dz_2/2.
+      bz=1.+cdiff*dt*dz_2
+      cz=az
       if (ivar.eq.iTT .or. ivar.eq.iuz) then
         bz(1)=1.  ; cz(1)=0.  ; rhsz(1)=0.   ! T = uz = 0
         bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=0.  ! T = uz = 0
@@ -712,10 +708,8 @@ module Density
       cx(:)=ax
       aalpha=cx(nx) ; bbeta=ax(1)  ! x-direction periodic
       do n=n1,n2
-        rhsx=TT(l1:l2,n)+     &
-             cdiff*dt*dz_2/2.*(TT(l1:l2,n+1)-2.*TT(l1:l2,n)+TT(l1:l2,n-1))
-        rhsx=rhsx+cdiff*dt*dx_2/2.* &
-             (TT(l1+1:l2+1,n)-2.*TT(l1:l2,n)+TT(l1-1:l2-1,n))
+        rhsx=TT(l1:l2,n)+cdiff*dt*dz_2/2.*(TT(l1:l2,n+1)-2.*TT(l1:l2,n)+TT(l1:l2,n-1))
+        rhsx=rhsx+cdiff*dt*dx_2/2.*(TT(l1+1:l2+1,n)-2.*TT(l1:l2,n)+TT(l1-1:l2-1,n))
         call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,finter(l1:l2,n),nx)
       enddo
 !
