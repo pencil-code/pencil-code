@@ -218,7 +218,7 @@ module Magnetic
   logical :: lresi_anomalous=.false.
   logical :: lresi_spitzer=.false.
   logical :: lresi_cspeed=.false.
-  logical :: lresi_vAspeed=.false.,lalfven_as_aux=.false.
+  logical :: lresi_vAspeed=.false., lalfven_as_aux=.false.
   logical :: lresi_magfield=.false.
   logical :: lresi_eta_proptouz=.false.
   logical, target, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
@@ -228,7 +228,7 @@ module Magnetic
   logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
-  logical :: lee_as_aux=.false.
+  logical :: lee_as_aux=.false., ladd_disp_current_from_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
@@ -262,7 +262,8 @@ module Magnetic
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       lscale_tobox, kgaussian_aa, z1_aa, z2_aa, &
       lcheck_positive_va2, lskip_projection_aa, &
-      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux,&
+      ladd_disp_current_from_aux, &
+      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux, &
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2max_boris, cmin,va2power_jxb, eta_jump, &
@@ -307,7 +308,7 @@ module Magnetic
   real :: gamma_epspb=2.4, exp_epspb, ncr_quench=0.
   real :: ampl_eta_uz=0.0
   real :: no_ohmic_heat_z0=1.0, no_ohmic_heat_zwidth=0.0
-  real :: imp_alpha0=0.0, imp_halpha=0.0
+  real :: imp_alpha0=0.0, imp_halpha=0.0, c_light2, c_light21
   real, target :: betamin_jxb = 0.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
@@ -409,6 +410,7 @@ module Magnetic
       eta_jump_shock, eta_zshock, tau_remove_meanaxy, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, &
       ladd_efield,ampl_efield, h_sld_magn,w_sldchar_mag, lsld_bb, eta_cspeed, &
+      ladd_disp_current_from_aux, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
@@ -1357,6 +1359,13 @@ module Magnetic
       B_ext11=sqrt(B_ext21)
       B1_ext=B_ext*B_ext11
       B_ext_inv=B_ext*B_ext21
+!
+!  Speed of light, sometimes used for displacement current correction
+!
+      if (c_light/=impossible) then
+        c_light2=c_light**2
+        c_light21=1./c_light2
+      endif
 !
 !  Compute exp_epspb=(gamma_epspb+1.)/4.
 !  Note that the extra 1/2 factor is because we work with B^2.
@@ -3645,6 +3654,7 @@ module Magnetic
 !
       use Sub
       use EquationOfState, only: rho0
+      use FArrayManager, only: farray_index_by_name
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       type (pencil_case),                 intent(out)  :: p
@@ -3654,7 +3664,7 @@ module Magnetic
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
-      integer :: i,j,ix
+      integer :: i, j, ix, iedotx, iedotz
 ! aa
       if (lpenc_loc(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
 ! a2
@@ -3912,6 +3922,17 @@ module Magnetic
           endif
         else
           p%jj=mu01*p%jj
+          if (ladd_disp_current_from_aux) then
+            iedotx=farray_index_by_name('eedot')
+            iedotz=iedotx+2
+            if (iedotx>0 .and. iedotz>0) then
+              if (lresi_eta_tdep) then
+                p%jj=p%jj+c_light21*eta_tdep*f(l1:l2,m,n,iedotx:iedotz)
+              else
+                p%jj=p%jj+c_light21*eta*f(l1:l2,m,n,iedotx:iedotz)
+              endif
+            endif
+          endif
         endif
 !
 !  Add external j-field.

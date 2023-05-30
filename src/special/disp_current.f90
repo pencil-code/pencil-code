@@ -43,12 +43,12 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0
-  integer :: ia0=0, idiva_name=0
-!  integer :: ia0, idiva_name
+  integer :: ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: loverride_ee_prev=.false.
+  logical :: leedot_as_aux=.false.
   logical, pointer :: loverride_ee
   character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
@@ -63,7 +63,8 @@ module Special
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
     ampla0, initpower_a0, initpower2_a0, &
-    cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0
+    cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
+    leedot_as_aux
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -100,6 +101,7 @@ module Special
 !  18-mar-21/axel: coded Faraday displacement current
 !
       use FArrayManager
+      use Sub, only: register_report_aux
       use SharedVariables, only: put_shared_variable
 !
 !  It would have been more consistent to call the indices to the
@@ -107,6 +109,9 @@ module Special
 !
       call farray_register_pde('ee',iee,vector=3)
       iex=iee; iey=iee+1; iez=iee+2
+!
+      if (leedot_as_aux) &
+        call register_report_aux('eedot', ieedot, iedotx, iedoty, iedotz)
 !
       if (llorenz_gauge_disp) then
         call farray_register_pde('a0',ia0)
@@ -213,6 +218,10 @@ module Special
         endselect
       endif
 !
+      if (leedot_as_aux) then
+        f(:,:,:,iedotx:iedotz)=0.
+      endif
+!
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
@@ -311,8 +320,8 @@ module Special
       real, dimension (nx,3) :: gtmp
       real, dimension (nx) :: tmp, del2a0
 !
-      intent(in) :: f,p
-      intent(inout) :: df
+      intent(in) :: p
+      intent(inout) :: f, df
 !
 !  identify module and boundary conditions
 !
@@ -358,6 +367,12 @@ module Special
             df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
           endif
         endif
+      endif
+!
+!  Compute eedot_as_aux; currently ignore alpf/=0.
+!
+      if (leedot_as_aux) then
+        f(l1:l2,m,n,iedotx:iedotz)=c_light2*(p%curlb-mu0*p%jj)
       endif
 !
 !  timestep constraint
