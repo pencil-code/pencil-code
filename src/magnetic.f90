@@ -3933,11 +3933,7 @@ module Magnetic
                 iedotx=farray_index_by_name('eedot')
                 iedotz=iedotx+2
                 if (iedotx>0 .and. iedotz>0) then
-                  if (lresi_eta_tdep) then
-                    p%jj=mu01*p%curlb-c_light21*eta_tdep*f(l1:l2,m,n,iedotx:iedotz)
-                  else
-                    p%jj=mu01*p%curlb-c_light21*eta*f(l1:l2,m,n,iedotx:iedotz)
-                  endif
+                  p%jj=mu01*p%curlb-c_light21*f(l1:l2,m,n,iedotx:iedotz)
                 else
                   call fatal_error('calc_pencils_magnetic_pencpar', &
                       'need leedot_as_aux=T in special/disp_current')
