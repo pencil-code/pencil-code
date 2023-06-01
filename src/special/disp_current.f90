@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED e2; el(3); a0; ga0(3)
+! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3)
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3), infl_a2
 !***************************************************************
 !
@@ -68,7 +68,8 @@ module Special
 !
   ! run parameters
   namelist /special_run_pars/ &
-    alpf, llorenz_gauge_disp, lphi_hom
+    alpf, llorenz_gauge_disp, lphi_hom, &
+    leedot_as_aux
 !
 ! Declare any index variables necessary for main or
 !
@@ -79,6 +80,7 @@ module Special
 !
   integer :: idiag_EEEM=0       ! DIAG_DOC: $\left<\Ev^2+\Bv^2\right>/2$
   integer :: idiag_erms=0       ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
+  integer :: idiag_edotrms=0    ! DIAG_DOC: $\left<\dot{\Ev}^2\right>^{1/2}$
   integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
   integer :: idiag_a0rms=0      ! DIAG_DOC: $\left<A_0^2\right>^{1/2}$
   integer :: idiag_grms=0   ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
@@ -245,9 +247,11 @@ module Special
       if (llorenz_gauge_disp) then
         lpenc_requested(i_diva)=.true.
       endif
+      lpenc_requested(i_jj_ohm)=.true.
 
       if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
       if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
+      if (idiag_edotrms/=0) lpenc_diagnos(i_edot2)=.true.
       if (idiag_EEEM/=0 .or. idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
       if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
 !
@@ -285,6 +289,12 @@ module Special
       p%el=f(l1:l2,m,n,iex:iez)
 ! e2
       call dot2_mn(p%el,p%e2)
+!
+! edot2
+!
+      if (leedot_as_aux) then
+        call dot2_mn(f(l1:l2,m,n,iedotx:iedotz),p%edot2)
+      endif
 !
 ! a0 & ga0
 !
@@ -333,7 +343,7 @@ module Special
 !
       if (lmagnetic) then
         if (.not.loverride_ee) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
-        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj)
+        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
 !
 !  if particles, would add J=sum(qi*Vi*ni)
 !
@@ -372,7 +382,7 @@ module Special
 !  Compute eedot_as_aux; currently ignore alpf/=0.
 !
       if (leedot_as_aux) then
-        f(l1:l2,m,n,iedotx:iedotz)=c_light2*(p%curlb-mu0*p%jj)
+        f(l1:l2,m,n,iedotx:iedotz)=c_light2*(p%curlb-mu0*p%jj_ohm)
       endif
 !
 !  timestep constraint
@@ -384,6 +394,7 @@ module Special
       if (ldiagnos) then
         call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
+        call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
         call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
         if (idiva_name>0) then
@@ -458,7 +469,7 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_EEEM=0; idiag_erms=0; idiag_emax=0
+        idiag_EEEM=0; idiag_erms=0; idiag_edotrms=0; idiag_emax=0
         idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0
         cformv=''
       endif
@@ -468,6 +479,7 @@ module Special
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'EEEM',idiag_EEEM)
         call parse_name(iname,cname(iname),cform(iname),'erms',idiag_erms)
+        call parse_name(iname,cname(iname),cform(iname),'edotrms',idiag_edotrms)
         call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
         call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)
         call parse_name(iname,cname(iname),cform(iname),'grms',idiag_grms)

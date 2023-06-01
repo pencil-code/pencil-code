@@ -16,7 +16,8 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3); exatotal(3); aps
-! PENCILS PROVIDED b2; b21; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); curlb(3); e3xa(3)
+! PENCILS PROVIDED b2; b21; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); jj_ohm(3); (3)
+! PENCILS PROVIDED curlb(3); e3xa(3)
 ! PENCILS PROVIDED el(3); e2; bijtilde(3,3),bij_cov_corr(3,3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uj; ob; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
@@ -247,7 +248,7 @@ module Magnetic
   logical :: lbraginsky=.false.
   logical :: lcoulomb=.false.
   logical :: lfactors_aa=.false., lvacuum=.false.
-  logical :: loverride_ee=.false., loverride_ee2=.true., loverride_ee_decide=.false.
+  logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -3906,33 +3907,59 @@ module Magnetic
 !
 !  Check whether or not the displacement current is being computed.
 !  Note that the previously calculated p%jj would then be overwritten.
-!  However, by default, loverride_ee2=T, so we'd keep keep J=curlB/mu0,
-!  unless loverride_ee2=F is set. This means that the current entering
-!  The Lorentz force ignores the displacement.
 !
-        if (iex>0 .and. .not. loverride_ee2) then
+!  , or if
+!  loverride_ee2=T is set. In that case, the Lorentz force uses p%jj
+!  and ignores the displacement, unless ladd_disp_current_from_aux.
+!
+        if (iex>0) then
           if (lvacuum) then
-            p%jj=0
+            p%jj=0.
+            p%jj_ohm=0.
           else
+!
+! The Ohm's current is independent of loverride_ee2, etc.
+!
             if (lresi_eta_tdep) then
-              p%jj=(p%el+p%uxb)/eta_tdep
+              p%jj_ohm=(p%el+p%uxb)*mu01/eta_tdep
             else
-              p%jj=(p%el+p%uxb)/eta
+              p%jj_ohm=(p%el+p%uxb)*mu01/eta
+            endif
+!
+! Compute current for Lorentz force.
+!
+            if (loverride_ee2) then
+              if (ladd_disp_current_from_aux) then
+                iedotx=farray_index_by_name('eedot')
+                iedotz=iedotx+2
+                if (iedotx>0 .and. iedotz>0) then
+                  if (lresi_eta_tdep) then
+                    p%jj=mu01*p%curlb-c_light21*eta_tdep*f(l1:l2,m,n,iedotx:iedotz)
+                  else
+                    p%jj=mu01*p%curlb-c_light21*eta*f(l1:l2,m,n,iedotx:iedotz)
+                  endif
+                else
+                  call fatal_error('calc_pencils_magnetic_pencpar', &
+                      'need leedot_as_aux=T in special/disp_current')
+                endif
+              else
+                p%jj=mu01*p%curlb
+              endif
+            else
+!
+!  If not loverride_ee2, then the current in the Lorentz force is the same
+!  as the Ohmic current.
+!
+              p%jj=p%jj_ohm
             endif
           endif
         else
-          p%jj=mu01*p%jj
-          if (ladd_disp_current_from_aux) then
-            iedotx=farray_index_by_name('eedot')
-            iedotz=iedotx+2
-            if (iedotx>0 .and. iedotz>0) then
-              if (lresi_eta_tdep) then
-                p%jj=p%jj+c_light21*eta_tdep*f(l1:l2,m,n,iedotx:iedotz)
-              else
-                p%jj=p%jj+c_light21*eta*f(l1:l2,m,n,iedotx:iedotz)
-              endif
-            endif
-          endif
+!
+!  Go here in standard MHD if no displacement current exists.
+!  In that case, no ohmic current is needed or used.
+!
+          p%jj=mu01*p%curlb
+          p%jj_ohm=0.
         endif
 !
 !  Add external j-field.
