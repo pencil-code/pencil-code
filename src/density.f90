@@ -724,18 +724,30 @@ module Density
          call farray_register_global('gg',iglobal_gg,vector=3)
       endif
 !
+!  To counteract the shock diffusion of the mean stratification, the initial stratification
+!  needs to be read from file.
+!
+      if (lanti_shockdiffusion) then
+        if ( .not. lwrite_stratification) &
+          call fatal_error('initialize_density','must have lwrite_stratification for anti shock diffusion')
+      else
+        lwrite_stratification=.false.
+        call information('initialize_density','no need to read initial stratification for '// &
+                                              'lanti_shockdiffusion=F')
+      endif
+!
 !  Possible to read initial stratification from file.
 !
       if (lrun .and. lwrite_stratification) then
-        if (lroot) print*, 'initialize_density: reading original stratification from stratification.dat'
-        open(19,file=trim(directory_dist)//'/stratification.dat')
-          if (ldensity_nolog) then
-            call fatal_error('initialize_density', &
-              'currently only possible to read *logarithmic* stratification from file')
-          else
-            read(19,*) lnrho_init_z_nz
-          endif
-        close(19)
+        if (ldensity_nolog) then
+          call fatal_error('initialize_density', &
+            'currently only possible to read *logarithmic* stratification from file')
+        else
+          if (lroot) print*, 'initialize_density: reading original stratification from stratification.dat'
+          open(19,file=trim(directory_dist)//'/stratification.dat')
+          read(19,*) lnrho_init_z_nz
+          close(19)
+        endif
 !
 !  Need to precalculate some terms for anti shock diffusion.
 !
@@ -745,12 +757,6 @@ module Density
           del2lnrho_glnrho2_init_z=del2lnrho_glnrho2_init_z+dlnrhodz_init_z**2
         endif
       endif
-!
-!  Must write stratification to file to counteract the shock diffusion of the
-!  mean stratification.
-!
-      if (lanti_shockdiffusion .and. .not. lwrite_stratification) &
-        call fatal_error('initialize_density','must have lwrite_stratification for anti shock diffusion')
 !
 !  Possible to store non log rho as auxiliary variable.
 !
@@ -1610,7 +1616,7 @@ module Density
 !
 !  sanity check
 !
-      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) call error('init_lnrho', 'Imaginary density values')
+      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) call error('init_lnrho','imaginary density values')
 !
     endsubroutine init_lnrho
 !***********************************************************************
@@ -2578,11 +2584,10 @@ module Density
 !  Counteract the shock diffusion of the mean stratification. Must set
 !  lwrite_stratification=T in start.in for this to work.
 !
-            if (lanti_shockdiffusion) then
+            if (lanti_shockdiffusion) &
               fdiff = fdiff - diffrho_shock * (p%shock*(del2lnrho_glnrho2_init_z(n) + &
                       2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
                       p%gshock(:,3)*dlnrhodz_init_z(n) )
-            endif
           endif
         endif
         if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
