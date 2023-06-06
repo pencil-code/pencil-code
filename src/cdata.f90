@@ -56,7 +56,7 @@ module Cdata
 !  Simultaneous foreign code.
 !
   integer :: tag_foreign=0
-  logical :: lforeign=.false.
+  logical :: lforeign=.false.,lforeign_comm_nblckg=.false.
 !
 !  Yin-Yang grid.
 !
@@ -279,10 +279,9 @@ module Cdata
 !
 !  Module flags.
 !
-  logical :: ldensity_nolog=.false., lwrite_stratification=.false., &
+  logical :: ldensity_nolog=.false., &
              lreference_state=.false., lfullvar_in_slices=.false., &
-             lsubstract_reference_state=.false., &
-             ldensity_linearstart=.false.
+             lsubstract_reference_state=.false.
   logical :: lmpicomm=.false., lforcing_cont=.false.
   logical :: lpostproc=.false.
   logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.

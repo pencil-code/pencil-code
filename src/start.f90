@@ -45,7 +45,6 @@
 !***********************************************************************
 program start
 !
-  use General
   use Boundcond,        only: update_ghosts, initialize_boundcond
   use Cdata
   use Chemistry,        only: init_chemistry
@@ -61,6 +60,7 @@ program start
   use EquationOfState
   use FArrayManager,    only: farray_clean_up
   use Filter
+  use General
   use Gravity,          only: init_gg
   use Grid
   use HDF5_IO,          only: init_hdf5, initialize_hdf5
@@ -95,7 +95,6 @@ program start
   use Ascalar,          only: init_acc
   use Testfield,        only: init_aatest
   use Testflow,         only: init_uutest
-
 !
   implicit none
 !
@@ -222,9 +221,9 @@ program start
 !  FG: force theta coordinate to span 0:pi for periodic across pole 
 !
         elseif (lpole(i)) then
-          if (lperi(i)) call fatal_error('start',&
+          if (lperi(i)) call fatal_error('start', &
             'lperi and lpole cannot be used together in same component')
-          if (.not.lspherical_coords) call fatal_error('start',&
+          if (.not.lspherical_coords) call fatal_error('start', &
             'lpole only implemented for spherical coordinates')
 
           if (i==2) then
@@ -233,17 +232,16 @@ program start
             xyz0(3) = 0.
             Lxyz(3) = 2.*pi
           else
-            call fatal_error('start',&
-                'origin/pole not included for components or coordinates')
+            call fatal_error('start','origin/pole not included for components or coordinates')
           endif
         else
           Lxyz(i)=2.*pi    ! default value
         endif
       else
         if (lpole(i)) then ! overwrite xyz0 and xyz1 to 0:pi 
-          if (.not. lspherical_coords) call fatal_error('start',&
+          if (.not. lspherical_coords) call fatal_error('start', &
             'lpole only implemented for spherical coordinates')
-          if (lperi(i)) call fatal_error('start',&
+          if (lperi(i)) call fatal_error('start', &
             'lperi and lpole cannot be used together in same component')
           if (i==2) then
             xyz0(i) = 0.
@@ -251,8 +249,7 @@ program start
             xyz0(3) = 0.
             xyz1(3) = 2.*pi
           else
-            call fatal_error('start',&
-                'origin/pole not included for components or coordinates')
+            call fatal_error('start','origin/pole not included for components or coordinates')
           endif
         else
           Lxyz(i)=xyz1(i)-xyz0(i)
@@ -272,8 +269,7 @@ program start
   enddo
 !
   if (lyinyang) then
-    if (lroot) &
-      print*, 'Setting latitude and longitude intervals for Yin-Yang grid, ignoring input'
+    if (lroot) print*, 'Setting latitude and longitude intervals for Yin-Yang grid, ignoring input'
 !
 ! Min(dy,dz) put between Yin and Yang grid at closest distance to minimize overlap.
 !   
@@ -303,12 +299,9 @@ program start
 !
 !  Check consistency.
 !
-  if (.not.lperi(1).and.nxgrid<2) &
-      call fatal_error('start','for lperi(1)=F: must have nxgrid>1')
-  if (.not.lperi(2).and.nygrid<2) &
-      call fatal_error('start','for lperi(2)=F: must have nygrid>1')
-  if (.not.lperi(3).and.nzgrid<2) &
-      call fatal_error('start','for lperi(3)=F: must have nzgrid>1')
+  if (.not.lperi(1).and.nxgrid<2) call fatal_error('start','for lperi(1)=F: must have nxgrid>1')
+  if (.not.lperi(2).and.nygrid<2) call fatal_error('start','for lperi(2)=F: must have nygrid>1')
+  if (.not.lperi(3).and.nzgrid<2) call fatal_error('start','for lperi(3)=F: must have nzgrid>1')
 !
 !  Initialise random number generator in processor-independent fashion
 !
@@ -368,8 +361,8 @@ program start
     endif
   endif
 !
-  if (lyinyang.and.lroot) &
-    call warning('start','Most initial conditions depending on y or z will be set correctly only on Yin grid.')
+  if (lyinyang) call warning('start', &
+    'Most initial conditions depending on y or z will be set correctly only on Yin grid')
 !
 !  Initialise random number generator in processor-dependent fashion for
 !  random initial data.
@@ -402,8 +395,7 @@ program start
 !
   do i=1,init_loops
     if (lroot .and. init_loops/=1) &
-        print '(A33,i3,A25)', 'start: -- performing loop number', i, &
-        ' of initial conditions --'
+        print '(A33,i3,A25)', 'start: -- performing loop number', i, ' of initial conditions --'
     call init_gg(f)
 !
 !  This is a temporary solution for calculating the correct initial
@@ -452,10 +444,6 @@ program start
 !
   if (lparticles) call particles_init(f)
 !
-!  If requested, write original (z-dependent) stratification to file.
-!
-  call write_z_stratification(f)
-!
 !  Check whether we want ionization.
 !
   if (leos_ionization) call ioninit(f)
@@ -467,7 +455,7 @@ program start
 !
 !  Filter initial velocity.
 !  NOTE: this procedure is currently not very efficient,
-!  because for all variables boundary conditions and communication
+!  because for all variables, boundary conditions and communication
 !  are done again and again for each variable.
 !
   if (nfilter/=0) then
@@ -504,21 +492,19 @@ program start
     if (ichannel2>1) call random_seed_wrapper(PUT=seed2,CHANNEL=2)
   endif
 !
-!  Final update of ghost cells, after that 'f' must not be altered, anymore.
+!  Final update of ghost cells, after that 'f' is only altered by smoothing if requested.
 !
   call update_ghosts(f)
-  if (lsmooth_farray) then
-    if (iux .eq. 0) call fatal_error('start','cannot use smooth if iux is zero')
-    if (iaz .eq. 0) call fatal_error('start','cannot use smooth if iaz is zero')
-    call smooth(f,iux,iaz,.true.,farray_smooth_width)
+  if (lsmooth_farray .and. dimensionality>0 .and. (iux/=0.or.iax/=0)) then
+    !Why not all avriables?
+    call smooth(f,merge(iux,iax,iux>0),merge(iaz,iuz,iaz>0),.true.,farray_smooth_width)
     call update_ghosts(f)
   endif
 !
 !  Write initial condition to disk.
 !
   if (lwrite_ic) then
-    if (lparticles) &
-        call write_snapshot_particles(f,ENUM=.false.,snapnum=0)
+    if (lparticles) call write_snapshot_particles(f,ENUM=.false.,snapnum=0)
 !
     call wsnap('VAR0',f,mvar_io,ENUM=.false.,FLIST='varN.list',noghost=.true.)
     call pointmasses_write_snapshot('QVAR0',ENUM=.false.,FLIST='qvarN.list')
@@ -531,8 +517,7 @@ program start
   lnoerase = control_file_exists("NOERASE")
   if ( (.not.lnowrite .and. .not.lnoerase) .or. lwrite_var_anyway) then
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
-    if (lparticles) &
-        call write_snapshot_particles(f,ENUM=.false.)
+    if (lparticles) call write_snapshot_particles(f,ENUM=.false.)
     call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
     call wsnap('var.dat',f,mvar_io,ENUM=.false.,noghost=.true.)
   elseif (lmodify) then
@@ -555,12 +540,14 @@ program start
 !
 !  Write global variables.
 !
-  if (mglobal/=0) &
-      call output_globals('global.dat', &
-          f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+  if (mglobal/=0) call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+!
+!  If requested, write original (z-dependent) stratification to file.
+!
+   call write_z_stratification(f)
 !
 !  Write input parameters to a parameter file (for run.x and IDL).
-!  Do this late enough, so init_entropy etc. can adjust them.
+!  Do this late enough, so initialization routines can adjust them.
 !
   call write_all_init_pars('IDL')
 !
@@ -584,8 +571,7 @@ program start
   call initial_condition_clean_up
   if (lparticles) call particles_cleanup
 !
-!  Deallocate the arrays allocated for
-!  1-D and 2-D diagnostics.
+!  Deallocate the arrays allocated for 1-D and 2-D diagnostics.
 !
   call diagnostics_clean_up
 !
@@ -593,6 +579,6 @@ program start
 !
   if (lroot) print*
   if (lroot) print*,'start.x has completed successfully'
-  if (lroot) print* ! (finish with an empty line)
+  if (lroot) print*
 !
 endprogram

@@ -126,8 +126,8 @@ module Density
   logical, target :: lscale_to_cs2top=.false.
   logical :: lconserve_total_mass=.false.
   real :: density_ceiling=-1.
-  logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
-  logical :: lsubtract_init_stratification=.false.
+  logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false., ldensity_linearstart=.false.
+  logical :: lsubtract_init_stratification=.false., lwrite_stratification=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
@@ -731,7 +731,6 @@ module Density
         if ( .not. lwrite_stratification) &
           call fatal_error('initialize_density','must have lwrite_stratification for anti shock diffusion')
       else
-        lwrite_stratification=.false.
         call information('initialize_density','no need to read initial stratification for '// &
                                               'lanti_shockdiffusion=F')
       endif
@@ -3572,7 +3571,7 @@ module Density
       intent(inout) :: f
 !
       if (lgravr) then
-         if (lroot) print*, 'init_lnrho: radial density stratification (assumes s=const)'
+         if (lroot) print*, 'init_hydrostatic_r: radial density stratification (assumes s=const)'
 !
          do n=n1,n2; do m=m1,m2
             r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
@@ -3613,7 +3612,7 @@ module Density
       intent(inout) :: f
 !
       if (lgravr) then
-        if (lroot) print*, 'init_lnrho: isothermal sphere'
+        if (lroot) print*, 'init_sph_isoth: isothermal sphere'
         haut=cs20/gamma
         TT=spread(cs20/gamma_m1,1,nx)
         do n=n1,n2
@@ -3890,12 +3889,9 @@ module Density
 !***********************************************************************s
     subroutine write_z_stratification(f)
 
-      use Boundcond, only: update_ghosts
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       if (lwrite_stratification) then
-        call update_ghosts(f,ilnrho)
         open(19,file=trim(directory_dist)//'/stratification.dat')
         write(19,*) f(l1,m1,:,ilnrho)
         close(19)
