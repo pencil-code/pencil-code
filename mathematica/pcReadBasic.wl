@@ -32,6 +32,12 @@ Output:
   An Association object with available arguments
     {mx,my,mz,precision,gh1,gh2,gh3,nx,ny,nz}.";
 
+readGrid::usage="readGrid[sim] reads from /data/allprocs/grid.dat only for the xyz grids.
+Input:
+  sim: String. Directory of the simulation folder
+Output:
+  {gridx,gridy,gridz}, each being a 1D List.";
+
 varName::usage="varName[sim] returns contents in data/varName.dat.
 Input:
   sim: String. Directory of the simulation folder
@@ -66,6 +72,21 @@ readDim[sim_,n_Integer:-1]:=Module[{file,data,precision,nxyz,names},
     {"nx","ny","nz"}];
   
   AssociationThread[names->Flatten@List[data[[1]],precision,data[[3;;-1]],nxyz]]
+]
+
+Options[readGrid]={"ltrim"->True};
+readGrid[sim_,OptionsPattern[]]:=Module[{file,p,mx,my,mz,tmp},
+  file=StringJoin[sim,"/data/allprocs/grid.dat"];
+  {p,mx,my,mz}=readDim[sim]/@{"precision","mx","my","mz"};
+  
+  file//Close//Quiet;
+  BinaryRead[file,"Integer32"];
+  BinaryRead[file,"Real32"]; (* time *)
+  tmp=BinaryRead[file,ConstantArray[p,#]]&/@{mx,my,mz};
+  If[OptionValue["ltrim"],
+    #[[4;;-4]]&/@tmp,
+    tmp
+  ]
 ]
 
 nProc[sim_]:=Import[sim<>"/data/dim.dat"]//Last//Most
@@ -125,11 +146,12 @@ readParamNml[sim_,file_,param_]:=Module[{breakTwoInOne,listToString,import,value
     StringReplace[value,{"E+"->"*^+","E-"->"*^-"}],StringLength[param]+1
   ];
   Switch[value,
+    "T",  True,
+    "F",  False,
+    str_/;StringContainsQ[str,LetterCharacter],value,
     str_/;StringStartsQ[str,DigitCharacter],ToExpression[value],
     str_/;StringStartsQ[str,"+"],ToExpression[value],
     str_/;StringStartsQ[str,"-"],ToExpression[value],
-    "T",  True,
-    "F",  False,
     _,    value
   ]
 ]
@@ -143,7 +165,7 @@ End[]
 
 
 Protect[
-  readParamNml,readDim,
+  readParamNml,readDim,readGrid,
   varName,
   nProc,procBounds,
   nSnap

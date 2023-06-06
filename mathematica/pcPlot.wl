@@ -108,9 +108,15 @@ pcHexColor[hex_]:=RGBColor@@(IntegerDigits[ToExpression@StringReplace[hex,"#"->"
 
 pcColors=Association[
   "Red"->RGBColor[{166,42,23}/255],
-  "Blue"->RGBColor[{28,77,124}/255],
+  "Blue"->RGBColor[{28,77,124}/255],      
   "Rainbow"->ColorData["Rainbow"],
-  "RainbowR"->ColorData[{"Rainbow","Reversed"}]
+  "RainbowR"->ColorData[{"Rainbow","Reversed"}],
+  
+  (* Blend Blue->Black->Red for data range in [-m,m], and fix black at 0 *)
+  "BlueRedSigned"->Function[m,Function[x,Blend[{
+      {-m,pcColors["Blue"]},{-0.5m,pcHexColor["#006C65"]},{0,Black},
+      {0.5m,pcHexColor["#E2792E"]},{m,pcColors["Red"]}
+      },x]]]
 ];
 
 
@@ -151,6 +157,13 @@ pcPlotStyle[]:=Module[{setOps},
     },{
       ListDensityPlot
     }];
+   (*Options for MatrixPlot*)
+   setOps[{
+       ColorFunction->pcColors["Rainbow"],PlotRangePadding->None,LabelStyle->pcLabelStyle,FrameStyle->pcLabelStyle,
+       FrameTicks->{{Automatic,None},{Automatic,None}}
+     },{
+       MatrixPlot
+     }];
 ]
 
 pcPopup[plot_]:=CreateDocument[plot,
