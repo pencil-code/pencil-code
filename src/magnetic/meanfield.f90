@@ -1329,7 +1329,9 @@ module Magnetic_meanfield
         do nn=1,3
           p%mf_EMF(:,j)=p%mf_EMF(:,j)+levi_civita(k,nn,j)*hij(:,i,nn)*p%bij(:,k,i)
 if (levi_civita(k,nn,j) /= 0.) then
-  print*,'AXEL1, j,k,i,nn,eps, hij(1,i,nn),p%bij(1,2,1)=',j,k,i,nn,levi_civita(k,nn,j),hij(1,i,nn),p%bij(1,2,1)
+  print*,'AXEL1, j,k,i,nn,eps, hij(1,i,nn),p%bij(1,2,1),p%mf_EMF(:,j)=',j,k,i,nn, &
+    levi_civita(k,nn,j),hij(1,i,nn),p%bij(1,2,1),p%mf_EMF(1,j), &
+    levi_civita(k,nn,j)*hij(1,i,nn)*p%bij(1,2,1)
 endif
         enddo
         enddo
@@ -1517,11 +1519,13 @@ endif
         alpha_effect/=0.0 .or. delta_effect/=0.0) .or. &
         gamma_effect/=0.0 .or. lread_alpha_tensor_z .or. &
         lread_eta_tensor_z .or. lread_alpha_tensor_z_as_y .or. &
-        lread_eta_tensor_z_as_y) then
+        lread_eta_tensor_z_as_y .or. lGW_tensor) then
 !
 !  Apply p%mf_EMF only if .not.lmagn_mf_demfdt; otherwise postpone.
 !
+ print*,'AXEL2, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
         if (.not.lmagn_mf_demfdt) then
+ print*,'AXEL3, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         endif
 !
