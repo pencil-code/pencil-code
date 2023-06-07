@@ -692,6 +692,11 @@ module Magnetic_meanfield
         lpenc_requested(i_b2)=.true.
       endif
 !
+      if (lGW_tensor) then
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_mf_EMF)=.true.
+      endif
+!
     endsubroutine pencil_criteria_magn_mf
 !***********************************************************************
     subroutine pencil_interdep_magn_mf(lpencil_in)
