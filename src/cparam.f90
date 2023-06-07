@@ -23,7 +23,7 @@ module Cparam
   integer, parameter :: nprocxz=nprocx*nprocz
   integer, parameter :: n_forcing_cont_max=2
   character, dimension(3), parameter :: coornames=(/'x','y','z'/)
-  character, dimension(12), parameter :: compnames=(/coornames,'xx','xy','xz','yx','yy','yz','zx','zy','zz'/)
+  character(LEN=2), dimension(12), parameter :: compnames=(/'x ','y ','z ','xx','xy','xz','yx','yy','yz','zx','zy','zz'/)
   integer, dimension(6),parameter :: compinds_6=(/1,2,3,5,6,9/)
   logical, dimension(3), parameter :: lactive_dimension = (/ nxgrid > 1, nygrid > 1, nzgrid > 1 /)
   integer, parameter :: dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
