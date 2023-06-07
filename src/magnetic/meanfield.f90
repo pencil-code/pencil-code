@@ -34,6 +34,7 @@ module Magnetic_meanfield
   real, pointer :: B_ext2
   logical, pointer :: lweyl_gauge
 !
+  real, dimension (nx,3,3) :: hij
   real, dimension (nx) :: kf_x, kf_x1
   real, dimension (my) :: kf_y
   real, dimension (mz) :: kf_z
@@ -72,6 +73,7 @@ module Magnetic_meanfield
   logical :: lmeanfield_chitB=.false., lignore_gradB2_inchiB=.false.
   logical :: lchit_with_glnTT=.false., lrho_chit=.true., lchit_Bext2_equil=.false.
   logical :: lturb_temp_diff=.false., lqp_profile=.false., lqpx_profile=.false.
+  logical :: lGW_tensor=.false.
 !
   namelist /magn_mf_init_pars/ &
       x1_alp, x2_alp, y1_alp, y2_alp
@@ -85,7 +87,7 @@ module Magnetic_meanfield
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
   real :: mf_qJ2=0.0, qp_aniso_factor=1.0
-  real :: kx_alpha=1.
+  real :: kx_alpha=1., kx_hij=1., relhel_hij=1., hij_ampl=1.
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
   real, dimension(ny,3,3) :: alpha_tensor_y=0., eta_tensor_y=0.
@@ -139,7 +141,8 @@ module Magnetic_meanfield
       lrhs_term, lrhs_term2, rhs_term_amplz, rhs_term_amplphi, rhs_term_ampl, &
       Omega_rmax, Omega_rwidth, lread_alpha_tensor_z, lread_eta_tensor_z, &
       lread_alpha_tensor_z_as_y, lread_eta_tensor_z_as_y, &
-      x1_alp, x2_alp, y1_alp, y2_alp
+      x1_alp, x2_alp, y1_alp, y2_alp, &
+      lGW_tensor, kx_hij, relhel_hij, hij_ampl
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -564,6 +567,16 @@ module Magnetic_meanfield
         call initialize_magn_mf_demfdt(f)
       endif
 !
+!  compute GW tensor
+!
+      hij=0.
+      if (lGW_tensor) then
+        hij(:,2,2)=hij_ampl*cos(kx_hij*x(l1:l2))
+        hij(:,2,3)=hij_ampl*sin(kx_hij*x(l1:l2))*relhel_hij
+        hij(:,3,3)=-hij(:,2,2)
+        hij(:,3,2)=+hij(:,2,3)
+      endif
+!
 !  Get B_ext2 from magnetic module.
 !
       call get_shared_variable('B_ext2',B_ext2)
@@ -772,7 +785,7 @@ module Magnetic_meanfield
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit, XXj
       real, dimension (nx,3) :: meanfield_getat_tmp, getat_cross_B_tmp, B2glnrho, glnchit2
       real :: kx,fact
-      integer :: i,j,l
+      integer :: i, j, k, nn, l
 !
       intent(inout) :: f,p
 !
@@ -1298,6 +1311,25 @@ module Magnetic_meanfield
             p%mf_EMF(:,2)=p%mf_EMF(:,2)*EMF_prof(:)
             p%mf_EMF(:,3)=p%mf_EMF(:,3)*EMF_prof(:)
         endif
+      endif
+!
+!  compute GW part,
+!  Use also indices m and n, which are normally used to address positions in the f-array
+!  when underneath the mn-loop, but this is not the case 
+!XX
+      if (lGW_tensor) then
+        do j=1,3
+        do k=1,3
+        do i=1,3
+        do nn=1,3
+          p%mf_EMF(:,j)=p%mf_EMF(:,j)+levi_civita(k,nn,j)*hij(:,i,nn)*p%bij(:,k,i)
+if (levi_civita(k,nn,j) /= 0.) then
+  print*,'AXEL1, j,k,i,nn,eps, hij(1,i,nn),p%bij(1,2,1)=',j,k,i,nn,levi_civita(k,nn,j),hij(1,i,nn),p%bij(1,2,1)
+endif
+        enddo
+        enddo
+        enddo
+        enddo
       endif
 !
 !  Evaluate exa, but do this at the end after mf_EMF has been

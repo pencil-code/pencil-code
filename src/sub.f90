@@ -22,7 +22,7 @@ module Sub
 !
   public :: step,stepdown,der_stepdown
   public :: ylm, ylm_other
-  public :: kronecker_delta
+  public :: kronecker_delta, levi_civita
 !
   public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
   public :: inverse_parse_bc
