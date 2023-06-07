@@ -51,9 +51,10 @@ module Density
   real :: diffrho_shock = 0.0
   real :: diffrho_hyper3_mesh = 0.0
   real, dimension(3) :: beta_glnrho_global=0.,beta_glnrho_scaled=0.
-  logical :: lrelativistic_eos=.false.
+  logical :: lrelativistic_eos=.false., lwrite_stratification=.false.
 !
-  namelist /density_init_pars/ initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix
+  namelist /density_init_pars/ initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix, &
+                               lwrite_stratification
 !
   namelist /density_run_pars/ density_floor, diffrho_hyper3_mesh, diffrho_shock, lconserve_mass, lmassdiff_fix, &
                               beta_glnrho_global
@@ -969,12 +970,9 @@ module Density
 !***********************************************************************s
     subroutine write_z_stratification(f)
 
-      use Boundcond, only: update_ghosts
-
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       if (lwrite_stratification) then
-        call update_ghosts(f,ilnrho)
         open(19,file=trim(directory_dist)//'/stratification.dat')
         write(19,*) f(l1,m1,:,ilnrho)
         close(19)
