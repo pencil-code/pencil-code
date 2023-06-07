@@ -33,6 +33,7 @@ module FArrayManager
   public :: farray_size_by_name
   public :: farray_type_by_name
   public :: farray_index_by_name
+  public :: farray_get_name
 !
   public :: farray_check_maux
 !
@@ -524,8 +525,7 @@ module FArrayManager
       type (farray_contents_list), pointer :: item
       integer :: i, nvars
 !
-!  Put variable name in array for
-!  use by analysis tool output
+!  Put variable name in array for use by analysis tool output.
 !
       nvars=item%ncomponents*item%narray
       if (nvars>1) then
@@ -715,6 +715,26 @@ module FArrayManager
       return
 !
     endfunction variable_exists
+!***********************************************************************
+    function farray_get_name(indx,name) result(ncomps)
+     
+      integer :: indx 
+      character(len=30) :: name
+      integer :: ncomps
+
+      type (farray_contents_list), pointer :: item
+
+      item=>thelist
+      do while (associated(item))
+        if (item%ivar(1)%p==indx) then
+          ncomps=item%ncomponents
+          name=item%varname
+          return
+        endif
+        item=>item%next
+      enddo
+
+    endfunction farray_get_name
 !***********************************************************************
     function find_by_name(varname, include_scratch, only_scratch)
 !

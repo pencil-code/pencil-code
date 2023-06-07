@@ -231,7 +231,7 @@ module Cdata
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
   integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, ngrid_down
   logical :: ldownsampl=.false., ldownsampling=.false., lrepair_snap=.false., linterpol_on_repair=.false.
-
+  logical :: lastaroth_output=.false.
   integer, dimension(2) :: ivar_omit=(/0,0/)
   logical :: lzaver_on_input=.false.
   logical :: lfatal_num_vector_369=.true.

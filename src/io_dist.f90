@@ -117,14 +117,19 @@ module Io
 !                  moved donwsampling stuff to snapshot
 !
       use Mpicomm, only: start_serialize, end_serialize
-      use General, only: get_range_no, ioptest
+      use General, only: get_range_no, ioptest, safe_character_assign, itoa, upper_case
+      use FArrayManager, only: farray_get_name
 !
       real, dimension (:,:,:,:),  intent(IN) :: a
       integer,           optional,intent(IN) :: nv1,nv2
       character (len=*), optional,intent(IN) :: file
 !
       real :: t_sp   ! t in single precision for backwards compatibility
-      integer :: na, ne
+      integer :: na, ne, bytes, out_size, j, nc, ncomps
+      character (len=6) :: ch
+      character (len=fnlen) :: file1, file2
+      character (len=30) :: vname, vnm
+      integer, save :: icall=0
 !
       t_sp = real (t)
 !
@@ -149,6 +154,37 @@ module Io
           call fatal_error ('output_snap', 'lwrite_2d used for 3D simulation!')
         endif
       else
+        if (lstart .and. lastaroth_output .and. icall==0) then
+          call safe_character_assign(file1,trim(datadir)//'/allprocs/field-')
+          call safe_character_assign(file2,'-segment-'// &
+               trim(itoa(ipx*nx))//'-'//trim(itoa(ipy*ny))//'-'//trim(itoa(ipz*nz))//'.mesh')
+          inquire (IOLENGTH=bytes) t_sp
+          out_size=nw*bytes
+
+          j=1
+          do while(j<=mvar)
+
+            ncomps=farray_get_name(j,vname)
+            do nc=1,ncomps
+              if (ncomps==3) then
+                vnm=trim(vname)//compnames(nc)
+              elseif (ncomps==6) then
+                vnm=trim(vname)//compnames(compinds_6(nc))
+              elseif (ncomps==9) then
+                vnm=trim(vname)//compnames(nc+3)
+              else
+                vnm=vname
+              endif
+ 
+!print*, 'rank,j,file=', iproc,j,trim(file1)//trim(upper_case(vnm))//trim(file2)
+              open(lun_output+1,file=trim(file1)//trim(upper_case(vnm))//trim(file2),form='unformatted', &
+                   access='direct',recl=out_size)
+              write(lun_output+1,rec=1) a(l1:l2,m1:m2,n1:n2,j)
+              close(lun_output+1)
+            enddo
+            j = j+ncomps
+          enddo
+        endif
         write (lun_output) a(:,:,:,na:ne)
       endif
 !
@@ -163,6 +199,7 @@ module Io
       endif
 !
       if (lserial_io) call end_serialize
+      icall=modulo(icall+1,2)
 !
     endsubroutine output_snap
 !***********************************************************************
@@ -757,7 +794,7 @@ module Io
       character (len=*), intent(in) :: file
       character (len=*), optional, intent(in) :: label
 !
-      open (lun_input, FILE=trim(directory_dist)//'/'//file, FORM='unformatted')
+      open (lun_input, FILE=trim(directory_dist)//'/'//file, FORM='unformatted',action='read')
       ! Read number of particles for this processor.
       read (lun_input) nv
       if (nv > 0) then
@@ -829,7 +866,8 @@ module Io
 !
       if (present (file)) then
         close (lun_input)
-        open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
+        open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', &
+              status='old', action='read')
       endif
 !
       if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
@@ -1069,7 +1107,7 @@ module Io
 !
       if (lserial_io) call start_serialize
 !
-      open(lun_input,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',status='old')
+      open(lun_input,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',status='old',action='read')
 
       if (lread_from_other_prec) then
         if (kind(a)==rkind4) then
@@ -1327,7 +1365,7 @@ module Io
       real(KIND=rkind8) :: dxdb,dydb,dzdb,Lxdb,Lydb,Lzdb
       real(KIND=rkind4) :: dxsg,dysg,dzsg,Lxsg,Lysg,Lzsg
 
-      open(lun_input,FILE=trim(directory)//'/'//file,FORM='unformatted',status='old')
+      open(lun_input,FILE=trim(directory)//'/'//file,FORM='unformatted',status='old',action='read')
 
       lotherprec=.false.
 
@@ -1417,7 +1455,7 @@ module Io
       real(KIND=rkind8), dimension(0:nprocy):: procy_boundsdb
       real(KIND=rkind8), dimension(0:nprocz):: procz_boundsdb
 !
-      open(lun_input,FILE=file,FORM='unformatted',status='old')
+      open(lun_input,FILE=file,FORM='unformatted',status='old',action='read')
 
       if (lread_from_other_prec) then
         if (kind(x)==rkind4) then

@@ -90,7 +90,7 @@ module Param_IO
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_nomu5, &
       lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
-      lread_oldsnap_onlyA, &
+      lread_oldsnap_onlyA, lastaroth_output, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, lenforce_maux_check, &
       lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, lzorder, &
@@ -217,7 +217,7 @@ module Param_IO
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
       cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut, rel_dang, &
-      lignore_nonequi, tag_foreign, tau_aver1, fmt_avgs, &
+      lignore_nonequi, tag_foreign, lforeign_comm_nblckg, tau_aver1, fmt_avgs, &
       ou_omega, ou_kzspec, ab_kzspec, cor_uu, ou_polar, ab_polar, jb_polar, &
       uut_spec, uut_polar, ouout_spec, ouout2_spec, ouout_polar, out_spec, uot_spec, &
       saffman_ub, saffman_mag, saffman_mag_c, saffman_aa, saffman_aa_c, saffman_bb, &
