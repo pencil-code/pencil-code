@@ -1330,8 +1330,8 @@ module Magnetic_meanfield
           p%mf_EMF(:,j)=p%mf_EMF(:,j)+levi_civita(k,nn,j)*hij(:,i,nn)*p%bij(:,k,i)
 if (levi_civita(k,nn,j) /= 0.) then
   print*,'AXEL1, j,k,i,nn,eps, hij(1,i,nn),p%bij(1,2,1),p%mf_EMF(:,j)=',j,k,i,nn, &
-    levi_civita(k,nn,j),hij(1,i,nn),p%bij(1,2,1),p%mf_EMF(1,j), &
-    levi_civita(k,nn,j)*hij(1,i,nn)*p%bij(1,2,1)
+    levi_civita(k,nn,j),hij(1,i,nn),p%bij(1,k,i),p%mf_EMF(1,j), &
+    levi_civita(k,nn,j)*hij(1,i,nn)*p%bij(1,k,i)
 endif
         enddo
         enddo
