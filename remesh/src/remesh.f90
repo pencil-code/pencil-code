@@ -1,6 +1,24 @@
 ! $Id$
 !
 !***********************************************************************
+module Posix
+!
+! Make C function usleep with argument in microseconds available.
+!
+  use, intrinsic :: iso_c_binding, only: c_int, c_int32_t
+  implicit none
+
+  interface
+    ! int usleep(useconds_t useconds)
+    function c_usleep(useconds) bind(c, name='usleep')
+      import :: c_int, c_int32_t
+      integer(kind=c_int32_t), value :: useconds
+      integer(kind=c_int)            :: c_usleep
+    endfunction c_usleep
+  endinterface
+
+endmodule Posix
+!***********************************************************************
 program remesh
 !
 !  Program to remesh existing run. The remeshed run get remesh_par 
@@ -35,6 +53,8 @@ program remesh
   use Mpicomm
   use Syscalls, only: system_cmd
   use General   !, only: get_from_nml_str,get_from_nml_real,get_from_nml_log,convert_nml
+  use Messages, only: memory_usage
+  use Posix
 !
   implicit none
 !
@@ -72,13 +92,18 @@ program remesh
   integer :: cpu_local,iyy,icpu,out_size,io_len
   integer :: counx, couny, counz, xstart,xstop, ystart,ystop, zstart, zstop
   integer :: nprocxx, nprocyy, nproczz
-  logical :: lexist, lshort, lstop=.false.
-  integer :: idx, ifxa, ifxe, idy, ifya, ifye, idz, ifza, ifze, iv, icpu0, icpu1, nprocs_rem
+  logical :: lexist, lshort, lstop=.false.,lok
+  integer :: idx, ifxa, ifxe, idy, ifya, ifye, idz, ifza, ifze, iv, icpu0, icpu1, nprocs_rem, ires
   integer :: i1x, i2x, i1y, i2y, i1z, i2z, isx, isy, isz, srcproc, idpx, idpy, idpz, stat
-  character(LEN=128) :: clperi
+  character(LEN=128) :: clperi, msg
   integer, dimension(3) :: layout_src, layout_dst, layout_rem
 
+  integer(kind=ikind8) :: mmw=mmx*mmy*mmz, mmw_grid=mmx_grid*mmy_grid*mmz_grid, mwcoll=mxcoll*mycoll*mzcoll
+
   call mpicomm_init
+  if (lroot) print*,'Per process memory for arrays f:',mmw_grid*mvar,', ff:',mmw*mvar*mprocs, &
+             ', acoll:',mvar*mwcoll,' (Multiply with no of bytes per element!)'
+
   if (divx<=0) then
     if (lroot) print*, 'Error: divx<=0 not allowed, set it to 1!'
     lstop=.true.
@@ -298,12 +323,18 @@ program remesh
       icpu0=iproc; icpu1=iproc
     endif
 !
+    call mpibarrier
+!       
 !  Loop over number of CPU's in original run
 !
 yinyang_loop: &
     do iyy=0,0   !ncpus,ncpus   !suppressed yinyang-loop for now
     do icpu=icpu0,icpu1
-   
+!
+! Serialize reading of chunks by the processes.
+!
+      if (iproc>0) call mpirecv_logical(lok,iproc-1,iproc-1,comm=MPI_COMM_WORLD)
+
       call find_proc_coords_general(icpu,layout_rem(1),layout_rem(2),layout_rem(3),ipx,ipy,ipz)
       !ipx = modulo(icpu, nprocx)
       !ipy = modulo(icpu/nprocx, nprocy)
@@ -366,12 +397,13 @@ yinyang_loop: &
 !
 !  Read varfile (this is typically var.dat).
 !
-      open(1,file=file,form='unformatted')
+      open(1,file=file,form='unformatted',action='read')
 !
 ! Possibility to jump here from below
 !
 !print*, 'i1x,i2x,i1y,i2y,i1z,i2z=', i1x,i2x,i1y,i2y,i1z,i2z
-      read(1) acoll(i1x:i2x,i1y:i2y,i1z:i2z,:)
+      read(1,iostat=stat,iomsg=msg) acoll(i1x:i2x,i1y:i2y,i1z:i2z,:)
+      if (stat/=0) print*,'Error reading file "',trim(file),'"; iproc=',iproc,'; Message: '//trim(msg)
 !
 !  try first to read with deltay, but if that fails then
 !  go to the next possibility without deltay.
@@ -410,7 +442,7 @@ yinyang_loop: &
 !
       call safe_character_assign(file,trim(datadir)//'/proc'//trim(ch)//'/grid.dat')
       if (ip<8) print*,'Reading '//trim(file)
-      open(1,file=file,form='unformatted')
+      open(1,file=file,form='unformatted',action='read')
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
       read(1) Lx,Ly,Lz
@@ -427,6 +459,13 @@ yinyang_loop: &
       enddo
       i1z=i1z+nz; i2z=i2z+nz;
       enddo    ! end collection loop
+
+      if (iproc<nprocs-1) then
+        ires=c_usleep(400000)         ! 0.4 sec appropr. for LUMI
+        call mpisend_logical(lok,iproc+1,iproc,comm=MPI_COMM_WORLD)
+      endif
+
+      !goto 113         ! for testing: neither remeshes nor writes any data then.
 !
 !  Finding global processor number for new run
 !
@@ -776,6 +815,7 @@ yinyang_loop: &
              '/'//trim(datadir)//'/proc'//trim(ch)//'/grid.dat')
         if (ip<8) print*,'Writing ',gridfile
         open(1,FILE=gridfile,FORM='unformatted')
+!if (lroot) print*, '1st rec gridfile:', i, t_sp, size(rrx(:,i)), size(rry(:,i)), size(rrz(:,i)), dx, dy,dz
         write(1) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz
         write(1) dx,dy,dz
         write(1) Lx,Ly,Lz
@@ -784,6 +824,7 @@ yinyang_loop: &
         close(1)
       enddo
 !
+113   continue
     enddo
     enddo yinyang_loop
 
@@ -794,7 +835,10 @@ yinyang_loop: &
   else
     print*,'You must answer yes or no!'
   endif
+
   call mpibarrier
+  call memory_usage
+
   call mpifinalize
 !
 endprogram remesh

@@ -28,8 +28,9 @@ FFLAGS_GENERAL=
 # 
 # Default double flags (can be overwritten in machine-specific section).
 #
-FFLAGS_DOUBLE = -r8
-#FFLAGS_DOUBLE = -fdefault-real-8
+FFLAGS_DOUBLE = -r8                #Intel
+FFLAGS_DOUBLE = -fdefault-real-8   #GNU
+FFLAGS_DOUBLE = -s real64          #CRAY
 CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 
 ## Overwrite settings that are local to each run directory
@@ -38,12 +39,14 @@ include Makefile.local
 #MPICOMM   = mpicomm_
 LDMPI=
 
-include Makefile.inc  ## needed ? 
+include Makefile.inc
 
 ## Default settings
-FC=mpif90
-FFLAGS=-O1 #-g -traceback #-mcmodel=large
-CFLAGS=-O3 -DFUNDERSC=1
+#FC=mpif90
+#FFLAGS=-O1              #Intel: -g -traceback #-mcmodel=large
+#FC=ftn
+#FFLAGS=-O1 -g -h pic    #CRAY w. large memory
+#CFLAGS=-O1 -DFUNDERSC=1
 
 ## The following block (`Begin/End machine dependent') specifies compilers
 ## and switches for given architectures and machine names. See
@@ -74,9 +77,12 @@ CFLAGS=-O3 -DFUNDERSC=1
 ## Linux:
 ## (AB/22-06-03: Here I've cut+pasted the current block from $PENCIL_HOME/src)
 ## The -tpp7 flag leads to a 10% speedup on nl6
-#FC=f95
+#FC=mpiifort
 #FC=mpif90
-#FFLAGS=-O1 #-g -traceback -check bounds #-mcmodel=large
+#FFLAGS=-O1 #-g -traceback -check bounds #-mcmodel=large               # Intel
+#FC=ftn
+#FFLAGS=-O1 #-fbacktrace -g -fallow-argument-mismatch -mcmodel=large   # GNU
+#FFLAGS=-O1 -g -h pic  -Wl,--no-relax                                  # CRAY
 #F90FLAGS=-u -tpp7
 #F90FLAGS= # (fire)
 #F90FLAGS=
@@ -281,8 +287,10 @@ ifneq (,$(shell $(FC) --version | grep -i GNU))
   endif
 endif
 
+MODULE_CMD := $(shell command -v module 2> /dev/null)
+
 LD=$(FC)
-LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) -ldl
+LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) -ldl -Wl,--no-relax   # CRAY w. large memory
 
 .SUFFIXES: .f90 .mod
 
@@ -305,11 +313,15 @@ code:
 	make remesh.x
 #	make remesh.x remesh_ext.x
 
-technical=cparam.o cdata.o common.o syscalls.o syscalls_ansi.o general.o $(MPICOMM).o noyinyang.o
+technical=cparam.o cdata.o common.o messages.o syscalls.o syscalls_ansi.o general.o $(MPICOMM).o noyinyang.o
 remesh=remesh.o $(technical)
 #remesh_ext=remesh_ext.o $(technical)
 
 remesh.x: $(remesh) Makefile.local
+ifneq ($(MODULE_CMD),)
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
+	                       -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
+endif
 	$(LD) $(LDFLAGS) $(remesh) $(LDMPI) -o remesh.x 
 
 #remesh_ext.x: $(remesh_ext) Makefile.local
@@ -323,6 +335,8 @@ cdata.o:     cdata.f90 cparam.o
 common.o:    common.f90 common.local cdata.o cparam.o
 syscalls_ansi.o:  syscalls_ansi.c
 general.o:   general.f90 cdata.o cparam.o syscalls.o
+messages.o:  messages.f90 mpicomm.o
+noyinyang.o:  noyinyang.f90 general.o
 #
 #deriv.o:     deriv.f90 cdata.o
 
