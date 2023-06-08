@@ -3906,11 +3906,8 @@ module Magnetic
         p%curlb=p%jj
 !
 !  Check whether or not the displacement current is being computed.
-!  Note that the previously calculated p%jj would then be overwritten.
-!
-!  , or if
-!  loverride_ee2=T is set. In that case, the Lorentz force uses p%jj
-!  and ignores the displacement, unless ladd_disp_current_from_aux.
+!  Note that the previously calculated p%jj would then be overwritten
+!  by the Ohmic current, J=sigma*(E+uxB)=(E+uxB)/(mu0*eta).
 !
         if (iex>0) then
           if (lvacuum) then
@@ -3926,7 +3923,11 @@ module Magnetic
               p%jj_ohm=(p%el+p%uxb)*mu01/eta
             endif
 !
-! Compute current for Lorentz force.
+!  Compute current for Lorentz force.
+!  Note that loverride_ee2 is a "permanent" switch,
+!  i.e., it is the same for the entire run.
+!  There is the option to add in the displacement current,
+!  if ladd_disp_current_from_aux=T.
 !
             if (loverride_ee2) then
               if (ladd_disp_current_from_aux) then
@@ -5564,6 +5565,7 @@ module Magnetic
 !
 !  Electric field E = -dA/dt, store the Electric field in f-array if asked for.
 !  This line must not be used when the displacement current is being solved for.
+!  But is might actually work correctly.
 !
       if (lee_as_aux) f(l1:l2,m,n,iex:iez)= -dAdt
 !
@@ -5580,6 +5582,9 @@ module Magnetic
 !  This is done here, such that contribution from mean-field models are not added to
 !  the electric field. This may need review later.
 !  All this is not executed when the displacement current is being computed.
+!  Ideally, we would like this dAdt to be equal to -p%el, if the displacement
+!  current is not being advanced. It should therefore be turned into a pencil.
+!  But we could use dAdt here for diagnostics.
 !
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+dAdt
 !

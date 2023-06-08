@@ -286,7 +286,11 @@ module Special
       intent(inout) :: p
 !
 ! el
-      p%el=f(l1:l2,m,n,iex:iez)
+      if (loverride_ee) then
+        p%el=0.
+      else
+        p%el=f(l1:l2,m,n,iex:iez)
+      endif
 ! e2
       call dot2_mn(p%el,p%e2)
 !
@@ -514,12 +518,15 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
-!  Annoucement that we switched:
+!  Announcement that we have switched:
 !
       if (lroot.and.lmagnetic) then
-        if (loverride_ee.neqv.loverride_ee_prev) then
+        if ((loverride_ee.neqv.loverride_ee_prev).and.lroot) then
           print*,'loverride_ee has CHANGED: now loverride_ee=',loverride_ee
           loverride_ee_prev=loverride_ee
+          open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+          write (1,'(a,1pd26.16)') 'toverride_ee=',t
+          close (1)
         endif
       endif
 !
