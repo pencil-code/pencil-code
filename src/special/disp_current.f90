@@ -43,13 +43,14 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0
+  real, pointer :: eta, eta_tdep
   integer :: ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: loverride_ee_prev=.false.
   logical :: leedot_as_aux=.false.
-  logical, pointer :: loverride_ee
+  logical, pointer :: loverride_ee, lresi_eta_tdep
   character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
     initee, inita0, alpf, &
@@ -149,7 +150,12 @@ module Special
       iinfl_phi=farray_index_by_name('infl_phi')
       iinfl_dphi=farray_index_by_name('infl_dphi')
 !
-      if (lmagnetic) call get_shared_variable('loverride_ee',loverride_ee)
+      if (lmagnetic) then
+        call get_shared_variable('loverride_ee',loverride_ee)
+        call get_shared_variable('lresi_eta_tdep',lresi_eta_tdep)
+        call get_shared_variable('eta_tdep',eta_tdep)
+        call get_shared_variable('eta',eta)
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -287,7 +293,11 @@ module Special
 !
 ! el
       if (loverride_ee) then
-        p%el=0.
+        if (lresi_eta_tdep) then
+          p%el=-p%uxb+mu0*eta_tdep*p%jj
+        else
+          p%el=-p%uxb+mu0*eta*p%jj
+        endif
       else
         p%el=f(l1:l2,m,n,iex:iez)
       endif

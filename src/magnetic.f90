@@ -1,4 +1,4 @@
-! $Id$
+! $Idf(l1:l2,m,n,iex:iez)$
 !
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -1151,7 +1151,10 @@ module Magnetic
 !  Share lbb_as_comaux with gravitational wave module.
 !
       call put_shared_variable('lbb_as_comaux',lbb_as_comaux, caller='register_magnetic')
+      call put_shared_variable('lresi_eta_tdep', lresi_eta_tdep)
       call put_shared_variable('loverride_ee', loverride_ee)
+      call put_shared_variable('eta_tdep', eta_tdep)
+      call put_shared_variable('eta', eta)
 !
 !  Share several parameters for Alfven limiter with module Shock.
 !
