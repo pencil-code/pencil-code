@@ -35,6 +35,7 @@ module Magnetic_meanfield
   logical, pointer :: lweyl_gauge
 !
   real, dimension (nx,3,3) :: hij
+  real, dimension (nx,3,3,3) :: hijk
   real, dimension (nx) :: kf_x, kf_x1
   real, dimension (my) :: kf_y
   real, dimension (mz) :: kf_z
@@ -570,11 +571,16 @@ module Magnetic_meanfield
 !  compute GW tensor
 !
       hij=0.
+      hijk=0.
       if (lGW_tensor) then
         hij(:,2,2)=hij_ampl*cos(kx_hij*x(l1:l2))
         hij(:,2,3)=hij_ampl*sin(kx_hij*x(l1:l2))*relhel_hij
         hij(:,3,3)=-hij(:,2,2)
         hij(:,3,2)=+hij(:,2,3)
+        hijk(:,2,2,1)=-kx_hij*hij_ampl*sin(kx_hij*x(l1:l2))
+        hijk(:,2,3,1)=kx_hij*hij_ampl*cos(kx_hij*x(l1:l2))*relhel_hij
+        hijk(:,3,3,1)=-hijk(:,2,2,1)
+        hijk(:,3,2,1)=+hijk(:,2,3,1)
       endif
 !
 !  Get B_ext2 from magnetic module.
@@ -693,6 +699,7 @@ module Magnetic_meanfield
       endif
 !
       if (lGW_tensor) then
+        lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_mf_EMF)=.true.
       endif
@@ -1327,7 +1334,9 @@ module Magnetic_meanfield
         do k=1,3
         do i=1,3
         do nn=1,3
-          p%mf_EMF(:,j)=p%mf_EMF(:,j)+levi_civita(k,nn,j)*hij(:,i,nn)*p%bij(:,k,i)
+          p%mf_EMF(:,j)=p%mf_EMF(:,j)+levi_civita(k,nn,j)*hij(:,i,nn)*p%bij(:,k,i) &
+                                     -levi_civita(k,nn,i)*hij(:,j,nn)*p%bij(:,k,i) &
+                                     -levi_civita(k,nn,i)*hijk(:,j,nn,i)*p%bb(:,k)
 if (levi_civita(k,nn,j) /= 0.) then
   print*,'AXEL1, j,k,i,nn,eps, hij(1,i,nn),p%bij(1,2,1),p%mf_EMF(:,j)=',j,k,i,nn, &
     levi_civita(k,nn,j),hij(1,i,nn),p%bij(1,k,i),p%mf_EMF(1,j), &
