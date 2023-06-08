@@ -90,7 +90,7 @@ module Param_IO
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_nomu5, &
       lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
-      lread_oldsnap_onlyA, lastaroth_output, &
+      lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, lenforce_maux_check, &
       lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, lzorder, &

@@ -155,7 +155,11 @@ module Io
         endif
       else
         if (lstart .and. lastaroth_output .and. icall==0) then
-          call safe_character_assign(file1,trim(datadir)//'/allprocs/field-')
+          if (astaroth_dest=='') then
+            call safe_character_assign(file1,trim(datadir)//'/allprocs/field-')
+          else
+            call safe_character_assign(file1,trim(astaroth_dest)//'/field-')
+          endif
           call safe_character_assign(file2,'-segment-'// &
                trim(itoa(ipx*nx))//'-'//trim(itoa(ipy*ny))//'-'//trim(itoa(ipz*nz))//'.mesh')
           inquire (IOLENGTH=bytes) t_sp
@@ -166,8 +170,9 @@ module Io
 
             ncomps=farray_get_name(j,vname)
             do nc=1,ncomps
+
               if (ncomps==3) then
-                vnm=trim(vname)//compnames(nc)
+                vnm=trim(vname)//trim(compnames(nc))
               elseif (ncomps==6) then
                 vnm=trim(vname)//compnames(compinds_6(nc))
               elseif (ncomps==9) then
@@ -181,6 +186,7 @@ module Io
                    access='direct',recl=out_size)
               write(lun_output+1,rec=1) a(l1:l2,m1:m2,n1:n2,j)
               close(lun_output+1)
+
             enddo
             j = j+ncomps
           enddo
