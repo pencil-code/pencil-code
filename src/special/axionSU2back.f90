@@ -45,15 +45,17 @@ module Special
   real, dimension (nx) :: grand, grant, dgrant
   real :: grand_sum, grant_sum, dgrant_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
+  real :: lnkmin0, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3.
-  real, dimension (nx) :: dt1_special
+  real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
-    lconf_time, Ndivt, lanalytic, lvariable_k
+    lconf_time, Ndivt, lanalytic, lvariable_k, &
+    llnk_spacing_adjustable, llnk_spacing
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -128,18 +130,17 @@ module Special
 !  19-feb-2019/axel: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: lnk
-      real :: lnt, lnH, lnkmin0, lnkmax0, dlnk
-      real :: kmax=2., lnkmax, lnk0=1. !(redundant?)
+      real :: lnt, lnH, lna, lnkmin0, lnkmax0
+      real :: kmax=2., lnkmax, lnk0=1.
       integer :: ik
 !
 !  Initialize any module variables which are parameter dependent
 !
       if (llnk_spacing_adjustable) then
-        lnt=exp(t)
-        lnH=exp(H)
-        lnkmin0=nmin0+lnH+lnt
-        lnkmax0=nmax0+lnH+lnt
+        lna=H*t
+        lnH=alog(H)
+        lnkmin0=nmin0+lnH+lna
+        lnkmax0=nmax0+lnH+lna
         dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
         do ik=1,nx
           lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
@@ -577,6 +578,8 @@ endif
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: mQ, xi, a, epsQE, epsQB
       real, dimension (nx) :: psi, psidot, TR, TRdot, TReff, TRdoteff
+      real :: lnt, lnH, lna, lnkmin, lnkmax
+      integer :: ik, nswitch
 !
 !  Set parameters
 !
@@ -601,9 +604,26 @@ endif
       epsQB=g**2*Q**4/(Mpl2*H**2)
 !
 !  decide about revising the k array
+!  a=exp(N), N=H*t (=lna).
 !
-!       if
-!XX
+      if (llnk_spacing_adjustable) then
+        lna=H*t
+        lnH=alog(H)
+        lnkmin=nmin0+lnH+lna
+        lnkmax=nmax0+lnH+lna
+        print*,'AXEL: i,n,lnkmin,lnkmax=',lna,lnkmin,lnkmax
+        if (lnkmin >= (lnkmin0+dlnk)) then
+          nswitch=int((lnkmin-lnkmin0)/dlnk)
+          print*
+          print*,'switch: ',nswitch
+          print*
+          do ik=1,nswitch
+            lnk(ik)=lnkmin0+dlnk*(ik-1+(ncpus+iproc)*nx)
+            k(ik)=exp(lnk(ik))
+          enddo
+        endif
+        print*,'iproc,lnk=',iproc,lnk
+      endif
 !
 !  integrand (for diagnostics)
 !
