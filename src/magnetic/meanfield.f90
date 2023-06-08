@@ -89,6 +89,7 @@ module Magnetic_meanfield
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
   real :: mf_qJ2=0.0, qp_aniso_factor=1.0
   real :: kx_alpha=1., kx_hij=1., relhel_hij=1., hij_ampl=1.
+  real :: GWfac1=1., GWfac2=1., GWfac3=1.
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
   real, dimension(ny,3,3) :: alpha_tensor_y=0., eta_tensor_y=0.
@@ -143,7 +144,7 @@ module Magnetic_meanfield
       Omega_rmax, Omega_rwidth, lread_alpha_tensor_z, lread_eta_tensor_z, &
       lread_alpha_tensor_z_as_y, lread_eta_tensor_z_as_y, &
       x1_alp, x2_alp, y1_alp, y2_alp, &
-      lGW_tensor, kx_hij, relhel_hij, hij_ampl
+      lGW_tensor, kx_hij, relhel_hij, hij_ampl, GWfac1, GWfac2, GWfac3
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -578,7 +579,7 @@ module Magnetic_meanfield
         hij(:,3,3)=-hij(:,2,2)
         hij(:,3,2)=+hij(:,2,3)
         hijk(:,2,2,1)=-kx_hij*hij_ampl*sin(kx_hij*x(l1:l2))
-        hijk(:,2,3,1)=kx_hij*hij_ampl*cos(kx_hij*x(l1:l2))*relhel_hij
+        hijk(:,2,3,1)=+kx_hij*hij_ampl*cos(kx_hij*x(l1:l2))*relhel_hij
         hijk(:,3,3,1)=-hijk(:,2,2,1)
         hijk(:,3,2,1)=+hijk(:,2,3,1)
       endif
@@ -1328,16 +1329,16 @@ module Magnetic_meanfield
 !  compute GW part,
 !  Use also indices m and n, which are normally used to address positions in the f-array
 !  when underneath the mn-loop, but this is not the case 
-!XX
+!
       if (lGW_tensor) then
         do j=1,3
         do k=1,3
         do i=1,3
         do nn=1,3
-          p%mf_EMF(:,j)=p%mf_EMF(:,j)+levi_civita(k,nn,j)*hij(:,i,nn)*p%bij(:,k,i) &
-                                     -levi_civita(k,nn,i)*hij(:,j,nn)*p%bij(:,k,i) &
-                                     -levi_civita(k,nn,i)*hijk(:,j,nn,i)*p%bb(:,k)
-if (levi_civita(k,nn,j) /= 0.) then
+          p%mf_EMF(:,j)=p%mf_EMF(:,j)+GWfac1*levi_civita(k,nn,j)*hij(:,i,nn)*p%bij(:,k,i) &
+                                     -GWfac2*levi_civita(k,nn,i)*hij(:,j,nn)*p%bij(:,k,i) &
+                                     -GWfac3*levi_civita(k,nn,i)*hijk(:,j,nn,i)*p%bb(:,k)
+if (ip<10 .and. levi_civita(k,nn,j) /= 0.) then
   print*,'AXEL1, j,k,i,nn,eps, hij(1,i,nn),p%bij(1,2,1),p%mf_EMF(:,j)=',j,k,i,nn, &
     levi_civita(k,nn,j),hij(1,i,nn),p%bij(1,k,i),p%mf_EMF(1,j), &
     levi_civita(k,nn,j)*hij(1,i,nn)*p%bij(1,k,i)
@@ -1532,9 +1533,9 @@ endif
 !
 !  Apply p%mf_EMF only if .not.lmagn_mf_demfdt; otherwise postpone.
 !
- print*,'AXEL2, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
+if (ip<10) print*,'AXEL2, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
         if (.not.lmagn_mf_demfdt) then
- print*,'AXEL3, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
+if (ip<10) print*,'AXEL3, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         endif
 !
