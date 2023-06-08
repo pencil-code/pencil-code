@@ -204,7 +204,7 @@ module Interstellar
 !  fred: max rho intended to avoid explosion sites that are difficult to
 !  resolve, but can lead to persistent high density structures that cannot be
 !  destroyed by SN, so may be better to allow unrestricted
-  real, parameter :: TT_SN_min_cgs=1., TT_SN_max_cgs=2.5E6
+  real, parameter :: TT_SN_min_cgs=1., TT_SN_max_cgs=5E7
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
   real :: SN_rho_ratio=1e4, SN_TT_ratio=2.0e1
@@ -224,7 +224,7 @@ module Interstellar
 !
   real, parameter :: SNII_mass_rate_cgs=1.584434515E-19
   real, parameter :: SNI_mass_rate_cgs=1.489368444E-21
-  real :: SNII_mass_rate, SNI_mass_rate
+  real :: SNII_mass_rate, SNI_mass_rate, Lxyzmin
   real :: SN_interval_rhom=impossible, SN_interval_rhom_cgs=2.8e-25
   logical :: lSN_mass_rate=.false., lscale_SN_interval=.false.
   real :: iSNdx=4.
@@ -282,7 +282,7 @@ module Interstellar
   real :: outer_shell_proportion = 1.2
   real :: inner_shell_proportion = 1.
   real :: width_SN=impossible
-  real :: energy_Nsigma=impossible
+  real :: energy_Nsigma=impossible, energy_Nsigma2
 !
 !  Set SN by predefined list of time and coordinates for direct comparison
 !  between models
@@ -566,7 +566,11 @@ module Interstellar
 !
         if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
         if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
-        if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs / unit_temperature
+        if (TT_SN_max==impossible) then
+          TT_SN_max=TT_SN_max_cgs/unit_temperature
+        else
+          TT_SN_max=TT_SN_max/unit_temperature
+        endif
         if (TT_SN_min==impossible) TT_SN_min=TT_SN_min_cgs / unit_temperature
         if (OB_area_rate==impossible) &
             OB_area_rate=OB_area_rate_cgs * unit_length**2 * unit_time
@@ -655,6 +659,20 @@ module Interstellar
             energy_Nsigma=1.5
           endif
         endif
+        energy_Nsigma2=energy_Nsigma**2
+        if (lSN_scale_rad) then
+           if (thermal_profile=="gaussian")  &
+               Lxyzmin=min(minval(Lxyz)/2, &
+                           minval(Lxyz)/cnorm_gaussian_SN(dimensionality))
+           if (thermal_profile=="gaussian2") &
+               Lxyzmin=min(minval(Lxyz)/2, &
+                           minval(Lxyz)/cnorm_gaussian2_SN(dimensionality))
+           if (thermal_profile=="gaussian3") &
+               Lxyzmin=min(minval(Lxyz)/2, &
+                           minval(Lxyz)/cnorm_SN(dimensionality))
+           if (lroot) print &
+               "(1x,'initialize_interstellar: Lxyzmin = ',e10.3)", Lxyzmin
+        endif
         if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
         if (T_init == impossible) T_init=T_init_cgs/unit_temperature
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
@@ -665,7 +683,7 @@ module Interstellar
         if (mass_SN_progenitor==impossible) &
             mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
         if (width_SN==impossible) width_SN= &
-            max(width_SN_cgs / real(unit_length),rfactor_SN*dxmin)
+            min(width_SN_cgs / real(unit_length),rfactor_SN*dxmin)
         if (SN_clustering_radius==impossible) &
             SN_clustering_radius=SN_clustering_radius_cgs / unit_length
         if (SN_clustering_time==impossible) &
@@ -3191,6 +3209,7 @@ module Interstellar
         SNR%feat%radius=width_SN
         if (lSN_scale_rad) then
           SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**onethird
+          SNR%feat%radius=min(SNR%feat%radius,Lxyzmin)
           SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*SNR%feat%dr) ! minimum grid resolution
         endif
 !
@@ -3260,7 +3279,7 @@ module Interstellar
       real :: ekintot_new, ambient_mass
       real :: Nsol_ratio, Nsol_ratio_best, radius_min, radius_max, sol_mass_tot
       real :: uu_sedov, rad_hot, rho_hot, rho_max
-      real :: radius2, SNvol
+      real :: radius2, SNvol, radius2mass
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
       real, dimension(nx,3) :: deltauu=0., deltafcr=0.
@@ -3286,46 +3305,44 @@ module Interstellar
 !  Initialize SN volume
 !
       sol_mass_tot=solar_mass*N_mass
-      SNvol=fourthird*pi/sol_mass_tot/energy_Nsigma
+      SNvol=fourthird*pi/sol_mass_tot
 !
 !  Rescale injection radius to contain only N_mass solar masses or at least
 !  min radius. Iterate a few times to improve radius match to N_mass.
 !
       if (lSN_scale_rad) then
         radius_min=rfactor_SN*SNR%feat%dr
-        radius_max=100*pc_cgs/unit_length
+        radius_max=Lxyzmin
         radius_best=SNR%feat%radius
         Nsol_ratio=SNvol*rhom*SNR%feat%radius**3
-        if (Nsol_ratio>0.99) then
-          Nsol_ratio_best=abs(Nsol_ratio-1)
-        else
-          Nsol_ratio_best=1e6
-        endif
-        do i=1,25
-          if (Nsol_ratio<1) then
-            radius_min=SNR%feat%radius
-          else
-            radius_max=SNR%feat%radius
-          endif
-          SNR%feat%radius=0.5*(radius_min+radius_max)
+        Nsol_ratio_best=impossible
+        if ((Nsol_ratio<1).or.(SNR%feat%radius/=radius_min)) then
+          do i=1,25
+            if (Nsol_ratio<1) then
+              radius_min=SNR%feat%radius
+            else
+              radius_max=SNR%feat%radius
+            endif
+            SNR%feat%radius=0.25*(3*radius_min+radius_max)
+            call get_properties(f,SNR,rhom,ekintot,rhomin)
+            Nsol_ratio=SNvol*rhom*SNR%feat%radius**3
+            if ((Nsol_ratio>=1).and.(abs(Nsol_ratio-1)<Nsol_ratio_best)) then
+              Nsol_ratio_best=Nsol_ratio
+              radius_best=SNR%feat%radius
+            endif
+            if (lroot.and.ip==1963) then
+              print "(1x,'explode_SN: i          ',   i6)",i
+              print "(1x,'explode_SN: radius_min ', f9.6)",radius_min
+              print "(1x,'explode_SN: radius_max ', f9.6)",radius_max
+              print "(1x,'explode_SN: Rmax-Rmin  ',e10.3)",radius_max-radius_min
+              print "(1x,'explode_SN: radius_best', f9.6)",radius_best
+              print "(1x,'explode_SN: Nsol       ',e10.3)",Nsol_ratio*sol_mass_tot/solar_mass
+            endif
+            if (radius_max-radius_min<SNR%feat%dr*0.01) exit
+          enddo
+          SNR%feat%radius=radius_best
           call get_properties(f,SNR,rhom,ekintot,rhomin)
-          Nsol_ratio=SNvol*rhom*SNR%feat%radius**3
-          if ((Nsol_ratio>=0.99).and.(abs(Nsol_ratio-1)<Nsol_ratio_best)) then
-            Nsol_ratio_best=Nsol_ratio
-            radius_best=SNR%feat%radius
-          endif
-          if (lroot.and.ip==1963) then
-            print "(1x,'explode_SN: i          ',   i6)",i
-            print "(1x,'explode_SN: radius_min ', f9.6)",radius_min
-            print "(1x,'explode_SN: radius_max ', f9.6)",radius_max
-            print "(1x,'explode_SN: Rmax-Rmin  ',e10.3)",radius_max-radius_min
-            print "(1x,'explode_SN: radius_best', f9.6)",radius_best
-            print "(1x,'explode_SN: Nsol       ',e10.3)",Nsol_ratio*sol_mass_tot/solar_mass
-          endif
-          if (radius_max-radius_min<SNR%feat%dr*0.04) exit
-        enddo
-        SNR%feat%radius=radius_best
-        call get_properties(f,SNR,rhom,ekintot,rhomin)
+        endif
       endif
 
       if (present(ierr)) then
@@ -3338,13 +3355,14 @@ module Interstellar
         endif
         SNR%feat%rhom=rhom
       endif
-      radius2=energy_Nsigma**2*SNR%feat%radius**2
       if (present(ierr)) then
         call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
       else
         call get_properties(f,SNR,rhom,ekintot,rhomin)
       endif
       SNR%feat%rhom=rhom
+      if (lroot.and.ip==1963) print &
+          "(1x,'explode_SN: total old kinetic energy =',e10.3)", ekintot
 !
 !  Calculate effective Sedov evolution time and shell speed diagnostic.
 !
@@ -3469,6 +3487,8 @@ module Interstellar
 !
 !  Validate the explosion.
 !
+      radius2=energy_Nsigma2*SNR%feat%radius**2
+      radius2mass=SNR%feat%radius**2
       site_mass=0.0
       maxlnTT=-10.0
       maxTT=exp(maxlnTT)
@@ -3497,7 +3517,7 @@ module Interstellar
           rho_old=exp(lnrho)
         endif
         site_rho=rho_old*dVol
-        where (dr2_SN>radius2) site_rho = 0.0
+        where (dr2_SN>radius2mass) site_rho = 0.0
         site_mass=site_mass+sum(site_rho)
         if (lSN_mass.and.cmass_SN>0.) then
           deltarho=0.
@@ -3651,6 +3671,11 @@ module Interstellar
 !
 !  Remnant parameters pass, so now implement the explosion
 !
+      if (lroot.and.ip==1963) then
+        print "(1x,'explode_SN:         c_SN finally =',e11.4)",c_SN
+        print "(1x,'explode_SN:     cmass_SN finally =',e10.3)",cmass_SN
+        print "(1x,'explode_SN: cvelocity_SN finally =',e10.3)",cvelocity_SN
+      endif
       SNR%feat%EE=0.
       SNR%feat%MM=0.
       SNR%feat%CR=0.
@@ -3735,12 +3760,9 @@ module Interstellar
 !
       call get_properties(f,SNR,rhom,ekintot_new,rhomin,ierr)
       if (lroot.and.ip==1963) print &
+          "(1x,'explode_SN: total new kinetic energy =',e10.3)", ekintot_new
+      if (lroot.and.ip==1963) print &
           "(1x,'explode_SN: total kinetic energy change =',e10.3)",ekintot_new-ekintot
-      if (lroot.and.ip==1963) then
-        print "(1x,'explode_SN:         c_SN finally =',e11.4)",c_SN
-        print "(1x,'explode_SN:     cmass_SN finally =',e10.3)",cmass_SN
-        print "(1x,'explode_SN: cvelocity_SN finally =',e10.3)",cvelocity_SN
-      endif
 !
 !  Sum and share diagnostics etc. amongst processors.
 !
@@ -3889,7 +3911,7 @@ module Interstellar
 !
 !  inner rad defined to determine mean density inside rad and smooth if desired
 !
-      radius2 = energy_Nsigma**2*remnant%feat%radius**2
+      radius2 = energy_Nsigma2*remnant%feat%radius**2
       tmp=0.0
       rhomin=1e20
       rhomax=0.0
@@ -4003,7 +4025,7 @@ module Interstellar
 !
       width_mass     = remnant%feat%radius*mass_width_ratio
       width_velocity = remnant%feat%radius*velocity_width_ratio
-      radius2 = energy_Nsigma**2*remnant%feat%radius**2
+      radius2 = energy_Nsigma2*remnant%feat%radius**2
       tmp=0.0
       MMtot=0.
 !
@@ -4087,7 +4109,7 @@ module Interstellar
 !  Find lowest rho value in the surronding cavity.
 !
       rho_lowest=1E10
-      radius2 = energy_Nsigma**2*radius**2
+      radius2 = energy_Nsigma2*radius**2
       do n=n1,n2
       do m=m1,m2
         call proximity_SN(SNR)
