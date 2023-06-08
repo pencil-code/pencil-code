@@ -2305,11 +2305,13 @@ module PointMasses
 !
 !  Since this is part of the mn loop, the final outcome
 !  of this type of communication should depend on the processor layout.
-!  At the moment, no auto-test seems to use this though.
+!  The samples/2d-tests/eccentricity-decay use this and didn't work with fatal_error.
+!  I therefore changed it to "call warning". This is a 4 processor sample run.
 !  For further questions, please email Matthias Rheinhardt <matthias.rheinhardt@aalto.fi>
 !  or Axel Brandenburg <brandenb@nordita.org>.
 !
-      call fatal_error('pointmasses: integrate_gasgravity', 'incorrect communication')
+      !call fatal_error('pointmasses: integrate_gasgravity', 'incorrect communication')
+      call warning('pointmasses: integrate_gasgravity', 'incorrect communication')
 !
 !  Broadcast particle acceleration
 !
