@@ -26,8 +26,8 @@
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='chi-therm','shock'
-  chi_th=0.02,chi_shock=10.0
+  iheatcond='chi-cspeed','shock'
+  chi=0.02,chi_shock=10.0
   lupw_ss=T
 /
 &magnetic_run_pars
@@ -39,14 +39,14 @@
 !  cosmicray_diff=.04
 !/
 &interstellar_run_pars
+  lSNII_gaussian=F
   width_SN=0.02
-  frac_eth=1.0
+  frac_kin=0.05
   frac_ecr=0.0
   lSN_ecr=F
   h_SNI=0.325
 !  h_SNI=0.15
   lSNII=F
-!  lforce_locate_SNI=T
   lSNI=F
 !  h_SNII=0.106
 !  t_next_SNII=0.0
@@ -62,25 +62,14 @@
   energy_width_ratio=1.
   thermal_profile='gaussian'
   mass_width_ratio=1.
-!  mass_profile='gaussian'
-  mass_movement='off'
-  velocity_profile='r8thgaussian'
-  lSN_velocity=T
-!  ampl_SN=3.182093016 !without kinetic energy
-  ampl_SN=2.563883714 !3.182093016 !without kinetic energy
-  kampl_SN=3.182093016e-1 !with 50% kinetic energy
+  velocity_profile='gaussian'
   mass_SN=6.303127e-8
-  heatcool_shock_cutoff=0.065 !0.015
   heatcool_shock_cutoff_rate=0.005
-  cooling_select='SS-Slyzr'
-  heating_select='Gressel-hs'
-  lcooltime_smooth=T
-!  SNR_damping=0.5 !any non-zero value ldamping=T value not used
 /
 !&shear_run_pars
 !/
 &viscosity_run_pars
-  ivisc='nu-therm','nu-shock'
+  ivisc='nu-cspeed','nu-shock'
   nu=0.02,nu_shock=12.0
 /
 &shock_run_pars

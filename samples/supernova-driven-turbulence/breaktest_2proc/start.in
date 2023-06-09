@@ -26,7 +26,7 @@
 /
 &density_init_pars
   initlnrho='Galactic-hs'
-!  initlnrho='const_lnrho', lnrho_const=0.514379302
+  initlnrho='const_lnrho', lnrho_const=0.514379302
 !  density 1.67262158e-24 g per cm^3
 /
 &grav_init_pars
@@ -35,9 +35,9 @@
 !  cs0hs=0.090837799,H0hs=0.5
 /
 &entropy_init_pars
-!  cs0hs=0.090837799,H0hs=0.2
-!  rho0hs=2.83727192!1.67262158
-  initss='Gressel-hs'
+  cs0hs=0.090837799,H0hs=0.2
+  rho0hs=2.83727192!1.67262158
+  initss='Galactic-hs'
 /
 &magnetic_init_pars
   amplaa=0.0
@@ -53,9 +53,9 @@
 !  heating_select='off'
   lSNII=F
   lSNI=F
-  cooling_select='SS-Slyzr'
-  heating_select='Gressel-hs'
+  cooling_select='SSr'
+  heating_select='thermal-hs'
 /
 !&shear_init_pars
 !  Sshear=-25.0
-!/ 
+!/
