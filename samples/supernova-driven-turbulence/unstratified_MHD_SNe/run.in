@@ -6,7 +6,7 @@
   cvsid='$Id$',
   nt= 40, it1=10, isave=2000, it1d=2000, itorder=3, tmax=0.0024
   cdt=0.2, cdtv=0.2, dtmin=1e-10, cdts=0.05
-  dsnap=.000025, dvid=.005, slice_position='m' 
+  dsnap=.000025, dvid=.005, slice_position='m'
   lpencil_check_small=F
   lpencil_check=F
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
@@ -51,7 +51,7 @@
 &interstellar_run_pars
   lSN_scale_rad=T
   N_mass=25.0
-  rfactor_SN=4.5 !depending on resolution min radius 18 parsec 
+  rfactor_SN=4.5 !depending on resolution min radius 18 parsec
   mass_profile='gaussian3'
   thermal_profile='gaussian2'
   mass_width_ratio=1.75
@@ -59,7 +59,6 @@
   frac_kin=0.0
   frac_ecr=0.0
   eps_mass=0.01
-  eps_radius=0.005
   TT_SN_max=4.9e6
   rho_SN_max=50.0
   luniform_zdist_SNI=T
