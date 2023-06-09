@@ -106,9 +106,9 @@ module InitialCondition
       call get_shared_variable('cpot2', cpot2)
       call get_shared_variable('g_r', g_r)
 !
-!  Compute rr_sph (radius going from zero to maximum value at the corners)
+!  Compute rr_sph (i.e. half-diagonal with radius going from zero to maximum value at the corners)
 !
-      rmax = sqrt(3.*(0.5*Lxyz(1))**2)*(xyz0(1)+Lx) ! Assuming the domain is a cube!
+      rmax = 0.5*sqrt(3.*Lx) ! Assuming the domain is a cube!
       do ir=1,2*nxgrid
          rr_sph(ir) = rmax*(ir-1)/float(2*nxgrid)
       enddo
@@ -157,7 +157,7 @@ module InitialCondition
 !
       dTdr_global = gg_r/(cv*(gamma-1)*(npoly+1))
       where (rr_sph >= Rstar) dTdr_global=0.
-!      
+!
 !  Integrate temperature from the known value at the centre to the surface
 !
      TT_global(1)=cs20/(cv*gamma*(gamma-1.))
