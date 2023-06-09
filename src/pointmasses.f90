@@ -790,6 +790,10 @@ module PointMasses
 return !!!
       if (lhydro .and. llive_secondary) then
 
+        if (headtt) print*,'Adding gas+dust gravity to the massive particles'
+!
+        accg=0.
+
         pencloc=.false.
         pencloc((/i_r_mn,i_rcyl_mn/))=.true.
 
