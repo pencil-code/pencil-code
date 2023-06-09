@@ -315,6 +315,7 @@ module Equ
       !if (ltestfield)             call testfield_after_boundary(f,p)
       if (ldensity)               call density_after_boundary(f)
       if (lneutraldensity)        call neutraldensity_after_boundary(f)
+      if (lpointmasses)           call pointmasses_after_boundary(f)
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
       if (lspecial)               call special_after_boundary(f)
 !
