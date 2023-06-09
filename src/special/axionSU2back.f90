@@ -130,14 +130,57 @@ module Special
 !  19-feb-2019/axel: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: lnt, lnH, lna, lnkmin0, lnkmax0
+      real :: lnH, lna, a
+      integer :: ik
+!
+      lamf=lam/fdecay
+!
+!  Initialize lnkmin0 and lnkmax0
+!
+      if (llnk_spacing_adjustable .and. .not.lstart) then
+        a=-1./(H*t)
+        lna=alog(a)
+        lnH=alog(H)
+        lnkmin0=nmin0+lnH+lna
+        lnkmax0=nmax0+lnH+lna
+        dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
+      endif
+!
+!  calculate k array
+!
+      do ik=1,nx
+        lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
+        k(ik)=exp(lnk(ik))
+      enddo
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine initialize_special
+!***********************************************************************
+    subroutine init_special(f)
+!
+!  initialise special condition; called from start.f90
+!   2-dec-2022/axel: coded
+!
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: psi, psidot, TR, TRdot
+      real :: chi0
+      real :: lnt, lnH, lna, a
       real :: kmax=2., lnkmax, lnk0=1.
       integer :: ik
+!
+      intent(inout) :: f
 !
 !  Initialize any module variables which are parameter dependent
 !
       if (llnk_spacing_adjustable) then
-        lna=H*t
+        tstart=-1./(ascale_ini*H)
+        t=tstart
+        a=-1./(H*t)
+        lna=alog(a)
         lnH=alog(H)
         lnkmin0=nmin0+lnH+lna
         lnkmax0=nmax0+lnH+lna
@@ -160,25 +203,6 @@ module Special
           k(ik)=k0+dk*(ik-1+iproc*nx)
         enddo
       endif
-      lamf=lam/fdecay
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initialize_special
-!***********************************************************************
-    subroutine init_special(f)
-!
-!  initialise special condition; called from start.f90
-!   2-dec-2022/axel: coded
-!
-      use Mpicomm
-      use Sub
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: psi, psidot, TR, TRdot
-      real :: chi0
-!
-      intent(inout) :: f
 !
 !  Initial condition; depends on k, which is here set to x.
 !
@@ -187,8 +211,6 @@ module Special
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
           if (lconf_time) then
-            tstart=-1./(ascale_ini*H)
-            t=tstart
             print*,'k=',k
             psi=(1./sqrt(2.*k))*cos(-k*t)
             psidot=(k/sqrt(2.*k))*sin(-k*t)
@@ -575,16 +597,17 @@ endif
 
       use Mpicomm, only: mpiallreduce_sum
 !
+      real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: mQ, xi, a, epsQE, epsQB
+      real, dimension (nx) :: mQ, xi, epsQE, epsQB
       real, dimension (nx) :: psi, psidot, TR, TRdot, TReff, TRdoteff
-      real :: lnt, lnH, lna, lnkmin, lnkmax
+      real :: lnt, lnH, lna, a, lnkmin, lnkmax
       integer :: ik, nswitch
 !
 !  Set parameters
 !
-      m=1
-      n=1
+      m=m1
+      n=n1
 !
       Q=f(l1:l2,m,n,iaxi_Q)
       Qdot=f(l1:l2,m,n,iaxi_Qdot)
@@ -606,23 +629,52 @@ endif
 !  decide about revising the k array
 !  a=exp(N), N=H*t (=lna).
 !
-      if (llnk_spacing_adjustable) then
-        lna=H*t
+      if (llnk_spacing_adjustable .and. lfirst) then
+        lna=alog(a)
         lnH=alog(H)
         lnkmin=nmin0+lnH+lna
         lnkmax=nmax0+lnH+lna
-        print*,'AXEL: i,n,lnkmin,lnkmax=',lna,lnkmin,lnkmax
         if (lnkmin >= (lnkmin0+dlnk)) then
           nswitch=int((lnkmin-lnkmin0)/dlnk)
-          print*
-          print*,'switch: ',nswitch
-          print*
-          do ik=1,nswitch
-            lnk(ik)=lnkmin0+dlnk*(ik-1+(ncpus+iproc)*nx)
+          print*,'nswitch: ',a, lnkmin0, nswitch
+          if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
+!
+!  calculate new k array (because nswitch=1)
+!
+          do ik=1,nx
+            lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx+nswitch)
             k(ik)=exp(lnk(ik))
           enddo
+!
+!  move f array
+!
+          !f(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_psi:iaxi_TRdot)
+          tmp(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_psi:iaxi_TRdot)
+          f(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=tmp(l1:l2,:,:,iaxi_psi:iaxi_TRdot)
+          if (ipx==nprocx-1) then
+print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
+            psi=(1./sqrt(2.*k))*cos(-k*t)
+            psidot=(k/sqrt(2.*k))*sin(-k*t)
+            TR=(1./sqrt(2.*k))*cos(-k*t)
+            TRdot=(k/sqrt(2.*k))*sin(-k*t)
+            n=n1
+            m=m1
+            f(l2,m,n,iaxi_psi)=psi(nx)
+            f(l2,m,n,iaxi_psidot)=psidot(nx)
+            f(l2,m,n,iaxi_TR)=TR(nx)
+            f(l2,m,n,iaxi_TRdot)=TRdot(nx)
+          endif
+!
+!  reset lnkmin0
+!
+     !    a=-1./(H*t)
+     !    lna=alog(a)
+     !    lnH=alog(H)
+     !    lnkmin0=nmin0+lnH+lna
+          lnkmin0=lnkmin0+dlnk
+        else
+          nswitch=0
         endif
-        print*,'iproc,lnk=',iproc,lnk
       endif
 !
 !  integrand (for diagnostics)

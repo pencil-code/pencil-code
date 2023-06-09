@@ -989,6 +989,8 @@ module Boundcond
                 case ('slc')
                   call set_from_slice_x(f,topbot,j)
                   call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
+                case ('no')
+!  don't change anything
                 case default
                   bc%bcname=bcx12(j,topbot)
                   bc%ivar=j
