@@ -108,6 +108,8 @@ module PointMasses
   integer, dimension(nqpar)   :: idiag_period=0,idiag_torque=0
   integer                     :: idiag_totenergy=0,idiag_mdot_pt=0
 !
+  real, dimension(nqpar,3) :: accg
+!
   contains
 !***********************************************************************
     subroutine register_pointmasses()
@@ -772,6 +774,73 @@ module PointMasses
       call dvvq_dt_pointmasses_pencil(f,df,p)
 !
     endsubroutine pointmasses_pde_pencil
+!***********************************************************************         
+    subroutine pointmasses_after_boundary(f)
+
+      use Grid, only: calc_pencils_grid
+      use Sub, only: finalize_aver, get_radial_distance
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      type(pencil_case) :: p
+      logical :: lparticle_out, lintegrate
+      integer :: ks
+      logical, dimension(npencils) :: pencloc
+      real, dimension (nx,nqpar) :: rp_mn, rpcyl_mn
+return !!!
+      if (lhydro .and. llive_secondary) then
+
+        pencloc=.false.
+        pencloc((/i_r_mn,i_rcyl_mn/))=.true.
+
+        do n=n1,n2; do m=m1,m2
+
+          call calc_pencils_grid(p,pencloc)
+
+          do ks=1,nqpar
+
+            if ((ks==iprimary).and.lnoselfgrav_primary) cycle
+!
+!  Check if the particle is out of the box. 
+!
+            lparticle_out = (fq(ks,ixq)< xyz0(1)).or.(fq(ks,ixq) > xyz1(1)) .or. &
+                            (fq(ks,iyq)< xyz0(2)).or.(fq(ks,iyq) > xyz1(2)) .or. &
+                            (fq(ks,izq)< xyz0(3)).or.(fq(ks,izq) > xyz1(3))
+!
+!  A live particle needs to be integrated if selfgravity is not being used (poisson
+!  equation not being solved) or if it is not in the grid (in which case the selfgravity
+!  cannot be interpolated. 
+!
+            lintegrate=(.not.lselfgravity).or.lparticle_out
+!
+!  Sometimes making the star feel the selfgravity of the disk leads to
+!  numerical troubles as the star is too close to the origin (in cylindrical
+!  coordinates).
+!
+            if (lintegrate) then
+!
+!  Get the acceleration particle ks suffers due to self-gravity.
+!
+              call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks), &
+                                       E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
+!
+              if (lcylindrical_gravity_nbody(ks)) then
+                call integrate_gasgravity(ks,p,rpcyl_mn(:,ks),fq(ks,ixq:izq),r_smooth(ks))
+              else
+                call integrate_gasgravity(ks,p,rp_mn(:,ks),fq(ks,ixq:izq),r_smooth(ks))
+              endif
+
+            endif
+          enddo       ! ks=1,nqpar
+        enddo; enddo  ! mn-loop
+
+        call finalize_aver(ncpus,123,accg)
+
+      endif           ! lhydro.and.llife_secondary
+!
+      call keep_compiler_quiet(f)
+
+    endsubroutine pointmasses_after_boundary
 !***********************************************************************         
     subroutine dvvq_dt_pointmasses_pencil(f,df,p)
 !
