@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3)
+! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3)
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3), infl_a2
 !***************************************************************
 !
@@ -42,7 +42,7 @@ module Special
   real :: relhel_ee=0.0, kgaussian_ee=0.0
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
-  real :: relhel_a0=0.0, kgaussian_a0=0.0
+  real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
   real, pointer :: eta, eta_tdep
   integer :: ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
@@ -70,7 +70,7 @@ module Special
   ! run parameters
   namelist /special_run_pars/ &
     alpf, llorenz_gauge_disp, lphi_hom, &
-    leedot_as_aux
+    leedot_as_aux, eta_ee
 !
 ! Declare any index variables necessary for main or
 !
@@ -255,6 +255,8 @@ module Special
       endif
       lpenc_requested(i_jj_ohm)=.true.
 
+      if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
+
       if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
       if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
       if (idiag_edotrms/=0) lpenc_diagnos(i_edot2)=.true.
@@ -309,6 +311,10 @@ module Special
       if (leedot_as_aux) then
         call dot2_mn(f(l1:l2,m,n,iedotx:iedotz),p%edot2)
       endif
+!
+!  del2ee
+!
+      if (eta_ee/=0.) call del2v(f,iex,p%del2ee)
 !
 ! a0 & ga0
 !
@@ -391,6 +397,7 @@ module Special
             df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
           endif
         endif
+        if (eta_ee/=0.) df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*eta_ee*p%del2ee
       endif
 !
 !  Compute eedot_as_aux; currently ignore alpf/=0.
