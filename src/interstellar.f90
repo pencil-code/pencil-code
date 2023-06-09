@@ -204,10 +204,10 @@ module Interstellar
 !  fred: max rho intended to avoid explosion sites that are difficult to
 !  resolve, but can lead to persistent high density structures that cannot be
 !  destroyed by SN, so may be better to allow unrestricted
-  real, parameter :: TT_SN_min_cgs=1., TT_SN_max_cgs=5E7
+  real, parameter :: TT_SN_min_cgs=1., TT_SN_max_cgs=1E8
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
-  real :: SN_rho_ratio=1e4, SN_TT_ratio=2.0e1
+  real :: SN_rho_ratio=1e4, SN_TT_ratio=1.0e1
 !
 !  SNI per (x,y)-area explosion rate
 !
@@ -566,11 +566,7 @@ module Interstellar
 !
         if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
         if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
-        if (TT_SN_max==impossible) then
-          TT_SN_max=TT_SN_max_cgs/unit_temperature
-        else
-          TT_SN_max=TT_SN_max/unit_temperature
-        endif
+        if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs/unit_temperature
         if (TT_SN_min==impossible) TT_SN_min=TT_SN_min_cgs / unit_temperature
         if (OB_area_rate==impossible) &
             OB_area_rate=OB_area_rate_cgs * unit_length**2 * unit_time
@@ -2141,19 +2137,19 @@ module Interstellar
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO HOT, (x,y,z) =',3f7.3,', rho =',e10.3)",&
+                "(1x,'check_SNI: TOO HOT, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                SNRs(iSNR)%site%rho
+                SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO UNEVEN, (x,y,z) =',3f7.3,', rho =',e10.3)",&
+                "(1x,'check_SNI: TOO UNEVEN, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                SNRs(iSNR)%site%rho
+                SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO RARIFIED, (x,y,z) =',3f7.3,', rho =',e10.3)",&
+                "(1x,'check_SNI: TOO RARIFIED, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                SNRs(iSNR)%site%rho
+                SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           endif
         enddo
 !
@@ -2231,19 +2227,19 @@ module Interstellar
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO HOT, (x,y,z) =',3f7.3,', rho =',e10.3)",&
+                "(1x,'check_SNIIb: TOO HOT, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                SNRs(iSNR)%site%rho
+                SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO UNEVEN, (x,y,z) =',3f7.3,', rho =',e10.3)",&
+                "(1x,'check_SNIIb: TOO UNEVEN, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                SNRs(iSNR)%site%rho
+                SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO RARIFIED, (x,y,z) =',3f7.3,', rho =',e10.3)",&
+                "(1x,'check_SNIIb: TOO RARIFIED, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                SNRs(iSNR)%site%rho
+                SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           endif
         enddo
 !
@@ -3865,19 +3861,19 @@ module Interstellar
         select case (ierr)
           case (iEXPLOSION_TOO_HOT)
             if (lroot.and.ip==1963) print &
-                "(1x,'explode_SN: TOO HOT, (x,y,z) =',3f7.3,', rho =',e10.3)",&
+                "(1x,'explode_SN: TOO HOT, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
                 SNR%feat%x, SNR%feat%y, SNR%feat%z,&
-                SNR%site%rho
+                SNR%site%rho, SNR%feat%radius
           case (iEXPLOSION_TOO_UNEVEN)
             if (lroot.and.ip==1963) print &
-                "(1x,'explode_SN: TOO UNEVEN, (x,y,z) =',3f7.3,', rho =',e10.3)",&
+                "(1x,'explode_SN: TOO UNEVEN, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
                 SNR%feat%x, SNR%feat%y, SNR%feat%z,&
-                SNR%site%rho
+                SNR%site%rho, SNR%feat%radius
           case (iEXPLOSION_TOO_RARIFIED)
             if (lroot.and.ip==1963) print &
-                "(1x,'explode_SN: TOO RARIFIED, (x,y,z) =',3f7.3,', rho =',e10.3)",&
+                "(1x,'explode_SN: TOO RARIFIED, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
                 SNR%feat%x, SNR%feat%y, SNR%feat%z,&
-                SNR%site%rho
+                SNR%site%rho, SNR%feat%radius
         endselect
       endif
 !
