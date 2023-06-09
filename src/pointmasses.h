@@ -13,5 +13,5 @@
   public :: pointmasses_read_snapshot
   public :: pointmasses_write_snapshot,pointmasses_write_qdim
   public :: pointmasses_timestep_first,pointmasses_timestep_second
-  public :: boundconds_pointmasses, pointmasses_after_boundary
+  public :: boundconds_pointmasses
 

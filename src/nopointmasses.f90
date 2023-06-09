@@ -111,14 +111,6 @@ module PointMasses
 !
     endsubroutine  pointmasses_pde
 !***********************************************************************         
-    subroutine pointmasses_after_boundary(f)
-
-      real, dimension (mx,my,mz,mfarray) :: f
-
-      call keep_compiler_quiet(f)
-!
-    endsubroutine pointmasses_after_boundary
-!***********************************************************************
     subroutine read_pointmasses_init_pars(iostat)
 !
       integer, intent(out) :: iostat
