@@ -825,9 +825,9 @@ return !!!
                                        E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
 !
               if (lcylindrical_gravity_nbody(ks)) then
-                call integrate_gasgravity(ks,p,rpcyl_mn(:,ks),fq(ks,ixq:izq),r_smooth(ks))
+                !!!call integrate_gasgravity(ks,p,rpcyl_mn(:,ks),fq(ks,ixq:izq),r_smooth(ks))
               else
-                call integrate_gasgravity(ks,p,rp_mn(:,ks),fq(ks,ixq:izq),r_smooth(ks))
+                !!!call integrate_gasgravity(ks,p,rp_mn(:,ks),fq(ks,ixq:izq),r_smooth(ks))
               endif
 
             endif
