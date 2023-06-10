@@ -1406,7 +1406,7 @@ You are now ready to start the code:
    uu: up-down
    piecewise polytropic vertical stratification (lnrho)
    init_lnrho: cs2bot,cs2top=   1.450000      0.3333330
-   e.g. for ionization runs: cs2bot,cs2top not yet set
+   e.g., for ionization runs: cs2bot,cs2top not yet set
    piecewise polytropic vertical stratification (ss)
 
    start.x has completed successfully
@@ -1904,7 +1904,7 @@ You may compile with a default compiler-specific configuration:
 \end{alltt}
 \end{enumerate}
 Many compilers are supported already, please refer to the available config
-files in \file[compilers]{\$PENCIL_HOME/config/compilers/*.conf}, e.g.
+files in \file[compilers]{\$PENCIL_HOME/config/compilers/*.conf}, e.g.,
 \file{Intel.conf} and \file{Intel_MPI.conf}.
 
 If you have to set up some compiler options specific to a certain host system you work on,
@@ -2005,7 +2005,7 @@ This command will tell you the \emph{host-ID} of the system that you are using:
 
 It is strongly recommended to include in a users configuration file one of
 the preset compiler suite configuration files. Then, only minor options
-need to be set by a user, e.g. the optimization flags.
+need to be set by a user, e.g., the optimization flags.
 One of those user configuration files looks rather simple:
 \begin{verbatim}
   # Simple config file. Most files don't need more.
@@ -2069,7 +2069,7 @@ The \file{.conf} files consist of the following elements:
   }
 
   The included path gets a \code{.conf} suffix appended.
-  Included paths are typically ``absolute'', e.g.
+  Included paths are typically ``absolute'', e.g.,
 \begin{verbatim}
   %include os/Unix
 \end{verbatim}
@@ -3015,7 +3015,7 @@ Here is a list of the more important ones.
   contains a copy of the old \file{*.local} files, runs \cmd{pc_setupsrc}, and
   makes also a copy of the old \file{*.in} and \file{k.dat} files.
 \item[pc_newscan] Generates a new scan directory from an old one. The new one
-  contains a copy of the old, e.g. the one given under
+  contains a copy of the old, e.g., the one given under
   \file{samples/parameter_scan}. Look in the \file{README} file for details.
 \item[pc_inspectrun] Check the execution of the current run: prints legend
   and the last few lines of the \file{time_series.dat} file. It also appends
@@ -3760,7 +3760,7 @@ Alternatively, you could simply use the \file{ts.pro} script:
 \end{alltt}
 
 To work with data from \file{var.dat} and similar snapshot files, you can
-e.g. use the following routines:
+e.g., use the following routines:
 \begin{alltt}
   \prompt{GDL> } pc_read_dim, OBJECT=dim
   \prompt{GDL> } \$\$PENCIL_HOME/bin/nl2idl -d ./data/param.nml> ./param.pro
@@ -3777,7 +3777,7 @@ what information is available:
   \prompt{GDL> } help, var, /STRUCT
 \end{alltt}
 
-To visualize data, we can e.g. do\footnote{
+To visualize data, we can e.g., do\footnote{
   If \code{contourfill} produces just contour lines instead of a
   color-coded plot, your version of GDL is too old.
   E.g. the version shipped with Ubuntu 9.10 is based on GDL 0.9rc1 and has
@@ -3830,7 +3830,7 @@ the corresponding options in the file selector dialog.
 The Pencil Code GUI offers also some options to be set on the command-line,
 please refer to their description in the source code.
 
-There are also other small GUIs available, e.g. the file `time-series.dat'
+There are also other small GUIs available, e.g., the file `time-series.dat'
 can easily be analyzed with the command:
 \begin{alltt}
   \prompt{unix> } idl
@@ -3845,7 +3845,7 @@ use of \cmd{pc_get_quantity} to derive any implemented physical quantity.
 Packed in a script, this is the recommended way to get reproducible results,
 without any chance for accidental errors on the interactive IDL command-line.
 
-Alternatively, by using the command-line to see the time evolution of e.g.
+Alternatively, by using the command-line to see the time evolution of e.g.,
 velocity and magnetic field (if they are present in you run), start \name{IDL}
 \footnote{
   If you run IDL from the command line, you will highly appreciate the
@@ -3986,7 +3986,7 @@ what data the structure contains by using the command \cmd{tag_names}
   \prompt{IDL> } print, tag_names(ff)
   T X Y Z DX DY DZ UU LNRHO AA
 \end{alltt}
-One can access the individual variables by typing \cmd{ff.varname}, e.g.
+One can access the individual variables by typing \cmd{ff.varname}, e.g.,
 \begin{alltt}
   \prompt{IDL> } help, ff.aa
   <Expression>    FLOAT     = Array[32, 32, 32, 3]
@@ -4088,7 +4088,7 @@ matplotlib.rcParams['savefig.directory'] = ''
 \end{alltt}
 
 \subparagraph{.pythonrc}
-If you don't have IPython and cannot install it (e.g. on some cluster),
+If you don't have IPython and cannot install it (e.g., on some cluster),
 you can instead edit your \texttt{.pythonrc}:
 \begin{alltt}
 #!/usr/bin/python
@@ -4132,7 +4132,7 @@ However, none of this is required to use the Pencil Code Python modules.
 For a list of all Pencil Code commands start IPython and type
 \texttt{pc. <TAB>} (as with auto completion).
 To access the help of any command just type the command followed by a '?'
-(no spaces), e.g.:
+(no spaces), e.g.,
 \begin{alltt}
 In [1]: pc.math.dot?
 Signature: pc.math.dot(a, b)
@@ -4154,13 +4154,13 @@ You can also use \texttt{help(pc.dot)} for a more complete documentation of the 
 
 There are various reading routines for the Pencil Code data.
 All of them return an object with the data.
-To store the data into a user defined variable type e.g.
+To store the data into a user defined variable type, e.g.,
 \begin{alltt}
 In [1]: ts = pc.read.ts()
 \end{alltt}
 
 Most commands take some arguments.
-For most of them there is a default value, e.g.
+For most of them there is a default value, e.g.,
 \begin{alltt}
 In [1]: pc.read.ts(file_name='time_series.dat', datadir='data')
 \end{alltt}
@@ -4294,7 +4294,7 @@ Remember that in order to visualize the full domain with IDL (rather than
 just the domain processed and written by one processor), you need to use
 \file{rall.pro} instead of \file{r.pro}.
 
-\subsubsection{Hierarchical networks (e.g.~on Beowulf clusters)}
+\subsubsection{Hierarchical networks (e.g., on Beowulf clusters)}
 \label{Bandwidth}
 \index{bandwidth}
 \index{Beowulf clusters}
@@ -4728,7 +4728,7 @@ particles.
 
 \subsubsection{Particles in parallel}
 
-The particle variables (e.g. $\vec{x}_i$ and $\vec{v}_i$) are kept in the
+The particle variables (e.g., $\vec{x}_i$ and $\vec{v}_i$) are kept in the
 arrays \code{fp} and \code{dfp}. For parallel runs, particles must be able to
 move from processor to processor as they pass out of the $(x,y,z)$-interval of
 the local processor. Since not all particles are present at the same processor
@@ -6248,7 +6248,7 @@ pc_build -f Intel_MPI,Intel_large
 {\bf A}: The Pencil Code needs a working combination of a Fortran- and a
 C-compiler. If this is not correctly set up, usually the linker won't find
 the functions inside the \name{syscalls} module. If that happens, either the
-combination of C- and Fortran-compiler is inappropriate (e.g. \name{ifort}
+combination of C- and Fortran-compiler is inappropriate (e.g., \name{ifort}
 needs \name{icc}), or the compiler needs additional flags, like \name{g95}
 might need the option \option{-fno-second-underscore} and \name{xlf} might
 need the option \option{-qextname}.
@@ -6303,7 +6303,7 @@ or
 \begin{Verbatim}
   setenv LD_ASSUME_KERNEL 2.4.1
 \end{Verbatim}
-This has solved the problems e.g.~on a system with \emph{glibc-2.3.2}
+This has solved the problems e.g., on a system with \emph{glibc-2.3.2}
 and kernel \emph{2.4.22}.
 
 Thanks to Leonardo J. Milano (\url{http://udel.edu/~lmilano/}) for part of
@@ -6523,7 +6523,7 @@ Goodness gracious me, you shouldn't have to compile your own MPI library.
 
 {\bf A}: Then don't use the old LAM-MPI. It is long superseded by open-mpi now.
 Open-mpi doesn't need a daemon to be running. I am using the version that
-ships with Ubuntu (e.g. 9.04):
+ships with Ubuntu (e.g., 9.04):
 
 \begin{Verbatim}
   frenesi:~> aptitude -w 210 search openmpi | grep '^i'
@@ -6657,7 +6657,7 @@ even if pencils are missing. But it does prevent mathematical inconsistencies.
 
 {\bf A}: Then you need to look into the how the code and the pencil check
 operate.  Reduce the problem in size and dimensions to find the smallest
-problem that makes the pencil check fail (e.g. 1x1x8 grid points). At the line
+problem that makes the pencil check fail (e.g., 1x1x8 grid points). At the line
 of \file{pencil_check.f90} when a difference is found between \code{df_ref} and
 \code{df}, add some debug lines telling you which variable is inconsistent and
 in what place. Often you will be surprised that the pencil check has correctly
@@ -6961,7 +6961,7 @@ variable \var{!path}. Make sure you source
 \subsubsection{\file{start.pro} doesn't work:}
 
 Isn't there some clever (or even trivial) way that one can avoid the
-annoying error messages that one gets, when running e.g. ".r rall" after
+annoying error messages that one gets, when running e.g., ".r rall" after
 a new variable has been introduced in "idl/varcontent.pro"? Ever so
 often there's a new variable that can't be found in my param2.nml --
 this time it was IECR, IGG, and ILNTT that I had to circumvent\ldots
@@ -7552,7 +7552,7 @@ is usually the easiest way to proceed.  In short the most important rules are:
 \begin{itemize}
 \item \cmd{tab} characters do not occur anywhere in the code (in fact the use of
 tab character is an extension to the Fortran standard).
-\item Code in any delimited block, e.g. if statements, do loops, subroutines
+\item Code in any delimited block, e.g., if statements, do loops, subroutines
 etc., is indented be precisely 2 spaces.
 E.g.
 \begin{Verbatim}
@@ -7842,16 +7842,16 @@ stored in one-dimensional \name{pencils} of length \var{nx}. All the pencils
 that are defined for a given set of physics modules are in turn bundled up in a
 Fortran structure called \code{p} (or, more illustrative, the \name{pencil
 case}). Access to individual pencils happens through the variable
-\code{p\%name}, where \code{name} is the name of a pencil, e.g. \code{rho} that
+\code{p\%name}, where \code{name} is the name of a pencil, e.g., \code{rho} that
 is a derived variable of the logarithmic density \code{lnrho}.
 
 The pencils provided by a given physics module are declared in the header of
-the file, e.g. in the Density module:
+the file, e.g., in the Density module:
 \begin{alltt}
 ! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); uglnrho; ugrho
 \end{alltt}
 Notice that the pencil names are separated with a semi-colon and that vector
-pencils are declared with ``(3)'' after the name.
+pencils are declared with ``(3)'' after the name, and ``(3,3)'' for a $3\times3$ matrix.
 Before compiling the code, the script \file{mkcparam} collects the names of all
 pencils that are provided by the chosen physics modules. It then defines the
 structure \code{p} with slots for every single of these pencils. The definition
@@ -7863,7 +7863,7 @@ physics module. They are all called once before entering the time loop. In the
 \code{pencil_criteria} subroutines the logical arrays \code{lpenc_requested},
 \code{lpenc_diagnos}, \code{lpenc_diagnos2d}, and \code{lpenc_video} are set
 according to the pencils that are needed for the given run. Some pencils depend
-on each other, e.g. \code{uglnrho} depends on \code{uu} and \code{glnrho}. Such
+on each other, e.g., \code{uglnrho} depends on \code{uu} and \code{glnrho}. Such
 interdependencies are sorted out in the subroutines
 \code{pencil_interdep_modulename} that are called after
 \code{pencil_criteria_modulename}.
@@ -7879,8 +7879,8 @@ variables in pencils.
 
 The centralized pencil calculation scheme is a guarantee that
 \begin{itemize}
-  \item All pencils are only calculated once
-  \item Pencils are always calculated by the proper physics module
+  \item All pencils are only calculated once, and only once.
+  \item Pencils are always calculated by the proper physics module.
 \end{itemize}
 Since the {\sc Pencil Code} is a multipurpose code that has many different physics
 modules, it can lead to big problems if a module tries to calculate a derived
@@ -8056,7 +8056,7 @@ relevant lines in the subroutines for reading and writing the namelists.
 For compiling reasons, these subroutines in \file{noinitial_condition.f90}
 are dummies. The lines are easily identifiable in the code.
 
-Check e.g. the samples \file{2d-tests/baroclinic},
+Check, e.g., the samples \file{2d-tests/baroclinic},
 \file{2d-tests/spherical\_viscous\_ring}, or \file{interlocked-fluxrings},
 for examples of how the module is used.
 
@@ -9194,7 +9194,7 @@ structure (see \ref{pencil-case}).
 
 Quantities commonly represented by a particular single character
 in mathematics are typically given names formed by repeating the
-character (usually in lowercase), e.g. the velocity $u$ becomes `uu',
+character (usually in lowercase), e.g., the velocity $u$ becomes `uu',
 specific entropy $s$ becomes `ss' etc.
 
 Temperature in variable names is denoted with a capital T so as not to
@@ -11337,7 +11337,7 @@ boundary or inside the box.\footnote{%
   In two- or three-dimensional settings, the presence of stagnation points
   of X-type leads to the same configuration, this time with the
   possibility of a steady state (i.e.~without accumulation of mass).
-  Such stagnation points occur e.g.~at the top of an upwelling, or at
+  Such stagnation points occur, e.g., at the top of an upwelling, or at
   the bottom of a downdraft in convection simulations, where locally
   $u_z \propto z_{\rm X}-z$.
 }
@@ -13136,7 +13136,7 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{lread_aux} [\code{F}]
                & This controls whether auxiliary variables are read from snapshots. 
                  This is only required for configurations in which the auxiliary
-                 variables are actually not calculated at each timestep (e.g. when 
+                 variables are actually not calculated at each timestep (e.g., when 
                  you set \code{kinematic_flow='from-snap'} in \name{hydro_run_pars}).\\
   \var{lread_oldsnap} [\code{F}]
                & if set \code{T}, the old snapshot will be read in before
@@ -14015,9 +14015,9 @@ information on wavenumbers and $z$ positions.\\
   \var{fountain} [$1.$]
                & amplitude of the fountain flow. \\
   \var{omega_ff} [$1.$]
-               & frequency of the cos or sin forcing [e.g. cos(omega_ff*t)]. \\
+               & frequency of the cos or sin forcing [e.g., cos(omega_ff*t)]. \\
   \var{ampl_ff} [$1.$]
-               & amplitude of forcing in front of cos or sin [e.g.
+               & amplitude of forcing in front of cos or sin [e.g.,
                  ampl_ff*cos(omega_ff*t)]. \\
 %
 \midrule
