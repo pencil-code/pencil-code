@@ -25,30 +25,34 @@ module Chiral
 !
   include 'chiral.h'
 !
-  integer :: iXX_chiral=0,iYY_chiral=0
-  character (len=labellen) :: initXX_chiral='zero',initYY_chiral='zero'
-  logical :: llorentzforceEP=.false.
+  integer :: iXX_chiral=0, iYY_chiral=0, iZZ_chiral=0
+  character (len=labellen) :: initXX_chiral='zero', initYY_chiral='zero', initZZ_chiral='zero'
+  logical :: llorentzforceEP=.false., lZZ_chiral=.false.
   logical :: linitialize_aa_from_EP=.false.
   logical :: linitialize_aa_from_EP_alpgrad=.false.
   logical :: linitialize_aa_from_EP_betgrad=.false.
   real :: tinitialize_aa_from_EP=0.
   real :: amplXX_chiral=.1, widthXX_chiral=.5
   real :: amplYY_chiral=.1, widthYY_chiral=.5
+  real :: amplZZ_chiral=.1, widthZZ_chiral=.5
   real :: kx_XX_chiral=1.,ky_XX_chiral=1.,kz_XX_chiral=1.,radiusXX_chiral=0.
   real :: kx_YY_chiral=1.,ky_YY_chiral=1.,kz_YY_chiral=1.,radiusYY_chiral=0.
   real :: xposXX_chiral=0.,yposXX_chiral=0.,zposXX_chiral=0.
   real :: xposYY_chiral=0.,yposYY_chiral=0.,zposYY_chiral=0.
 !
   namelist /chiral_init_pars/ &
-       initXX_chiral,amplXX_chiral,kx_XX_chiral,ky_XX_chiral,kz_XX_chiral, &
-       initYY_chiral,amplYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral, &
-       radiusXX_chiral,widthXX_chiral, &
-       radiusYY_chiral,widthYY_chiral, &
-       xposXX_chiral,yposXX_chiral,zposXX_chiral, &
-       xposYY_chiral,yposYY_chiral,zposYY_chiral
+       initXX_chiral, amplXX_chiral, kx_XX_chiral, ky_XX_chiral, kz_XX_chiral, &
+       initYY_chiral, amplYY_chiral, kx_YY_chiral, ky_YY_chiral, kz_YY_chiral, &
+       initZZ_chiral, amplZZ_chiral, lZZ_chiral, &
+       radiusXX_chiral, widthXX_chiral, &
+       radiusYY_chiral, widthYY_chiral, &
+       xposXX_chiral, yposXX_chiral, zposXX_chiral, &
+       xposYY_chiral, yposYY_chiral, zposYY_chiral
 !
   real :: chiral_diffXX=impossible, chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
+  real :: chiral_diffZZ=impossible
   real :: chiral_fishernu=0., chiral_fisherK=1. !fishers equation growth rate, carrying capac.
+  real :: chiral_fishermu=0., chiral_fisherH=1. !fishers equation growth rate, carrying capac.
   real :: chiral_fisherR=0., chiral_fisherR2=0. !(reinfections, second model corresponds to SIRS)
   real :: chiral_fisherR2_tend=0., chiral_fisherR2_tstart=0. !(second model, tend and start time)
   real, dimension(3) :: gradX0=(/0.0,0.0,0.0/), gradY0=(/0.0,0.0,0.0/)
@@ -57,9 +61,10 @@ module Chiral
   logical :: lupw_chiral=.false.
 !
   namelist /chiral_run_pars/ &
-       chiral_diffXX, chiral_diff, chiral_crossinhibition, chiral_fidelity, &
+       chiral_diffXX, chiral_diff, chiral_diffZZ, chiral_crossinhibition, chiral_fidelity, &
        chiral_reaction, limposed_gradient, gradX0, gradY0, &
        chiral_fishernu, chiral_fisherK, chiral_fisherR, chiral_fisherR2, &
+       chiral_fishermu, chiral_fisherH, &
        lupw_chiral, llorentzforceEP, &
        linitialize_aa_from_EP,tinitialize_aa_from_EP, &
        linitialize_aa_from_EP_alpgrad,linitialize_aa_from_EP_betgrad, &
@@ -67,6 +72,7 @@ module Chiral
 !
   integer :: idiag_XX_chiralmax=0, idiag_XX_chiralm=0
   integer :: idiag_YY_chiralmax=0, idiag_YY_chiralm=0
+  integer :: idiag_ZZ_chiralmax=0, idiag_ZZ_chiralm=0
   integer :: idiag_QQm_chiral=0, idiag_QQ21m_chiral=0, idiag_QQ21QQm_chiral=0
   integer :: idiag_brmsEP=0, idiag_bmaxEP=0
   integer :: idiag_jrmsEP=0, idiag_jmaxEP=0
@@ -86,6 +92,7 @@ module Chiral
 !
       call farray_register_pde('XX_chiral',iXX_chiral)
       call farray_register_pde('YY_chiral',iYY_chiral)
+      if (lZZ_chiral) call farray_register_pde('ZZ_chiral',iZZ_chiral)
 !
 !  Identify version number.
 !
@@ -106,7 +113,9 @@ module Chiral
 !  default: chiral_diffXX=chiral_diff
 !
       if (chiral_diffXX==impossible) chiral_diffXX=chiral_diff
-      if (headt) print*,'chiral_diffXX,chiral_diff=',chiral_diffXX,chiral_diff
+      if (chiral_diffZZ==impossible) chiral_diffZZ=chiral_diff
+      if (headt) print*,'chiral_diffXX, chiral_diff, chiral_diffZZ =', &
+                         chiral_diffXX, chiral_diff, chiral_diffZZ
 !
 !  set f to zero and then call the same initial condition
 !  that was used in start.csh
@@ -175,8 +184,17 @@ module Chiral
         case ('cosy_cosz'); call cosy_cosz(amplYY_chiral,f,iYY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('cosx_siny_cosz'); call cosx_siny_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
-        case ('chiral_list'); call chiral_list(amplYY_chiral,f,iYY_chiral)
+        case ('chiral_list'); call chiral_list(amplYY_chiral,f,iYY_chiral,'chiral_list')
         case default; call stop_it('init_chiral: bad init_chiral='//trim(initYY_chiral))
+      endselect
+!
+!  check next for initZZ_chiral
+!
+      select case (initZZ_chiral)
+        case ('zero'); f(:,:,:,iZZ_chiral)=0.
+        case ('const'); f(:,:,:,iZZ_chiral)=amplZZ_chiral
+        case ('chiral_list'); call chiral_list(amplZZ_chiral,f,iZZ_chiral,'chiral_listZZ')
+        case default; call stop_it('init_chiral: bad init_chiral='//trim(initZZ_chiral))
       endselect
 !
 !  Interface for user's own initial condition
@@ -185,17 +203,18 @@ module Chiral
 !
     endsubroutine init_chiral
 !***********************************************************************
-    subroutine chiral_list(fact,f,i)
+    subroutine chiral_list(fact,f,i,filename)
 !
 !  Read intial conditions from file
 !
 !  13-apr-20/axel: coded
 !
       integer :: nrow, irow, ix, iy, i, l, m, n=1
+      character (len=*) :: filename
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl, fact
 !
-      open(1,file='chiral_list.dat')
+      open(1,file=trim(filename)//'.dat')
       read(1,*) nrow
       do irow=1,nrow
         read(1,*) ix,iy,ampl
@@ -269,10 +288,11 @@ module Chiral
       type (pencil_case) :: p
 !
       real, dimension (nx,3,3) :: gXXij_chiral,gYYij_chiral
-      real, dimension (nx,3) :: gXX_chiral,gYY_chiral,bbEP,jjEP,jxbEP
-      real, dimension (nx) :: bbEP2,jjEP2,jbEP
-      real, dimension (nx) :: XX_chiral,ugXX_chiral,del2XX_chiral,dXX_chiral
-      real, dimension (nx) :: YY_chiral,ugYY_chiral,del2YY_chiral,dYY_chiral
+      real, dimension (nx,3) :: gXX_chiral, gYY_chiral, gZZ_chiral, bbEP, jjEP, jxbEP
+      real, dimension (nx) :: bbEP2, jjEP2, jbEP
+      real, dimension (nx) :: XX_chiral, ugXX_chiral, del2XX_chiral, dXX_chiral
+      real, dimension (nx) :: YY_chiral, ugYY_chiral, del2YY_chiral, dYY_chiral
+      real, dimension (nx) :: ZZ_chiral, ugZZ_chiral, del2ZZ_chiral, dZZ_chiral
       real, dimension (nx) :: RRXX_chiral,XX2_chiral
       real, dimension (nx) :: RRYY_chiral,YY2_chiral
       real, dimension (nx) :: RR21_chiral
@@ -307,21 +327,32 @@ module Chiral
         enddo
       endif
 !
-!  advection term
+!  Advection term.
 !
-      !call dot_mn(p%uu,gXX_chiral,ugXX_chiral)
-      !call dot_mn(p%uu,gYY_chiral,ugYY_chiral)
-      call u_dot_grad(f,iXX_chiral,gXX_chiral,p%uu,ugXX_chiral,UPWIND=lupw_chiral)
-      call u_dot_grad(f,iYY_chiral,gYY_chiral,p%uu,ugYY_chiral,UPWIND=lupw_chiral)
-      df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)-ugXX_chiral
-      df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)-ugYY_chiral
+      if (lhydro) then
+        call u_dot_grad(f,iXX_chiral,gXX_chiral,p%uu,ugXX_chiral,UPWIND=lupw_chiral)
+        call u_dot_grad(f,iYY_chiral,gYY_chiral,p%uu,ugYY_chiral,UPWIND=lupw_chiral)
+        df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)-ugXX_chiral
+        df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)-ugYY_chiral
+      endif
 !
-!  diffusion term
+!  Diffusion term.
 !
       call del2(f,iXX_chiral,del2XX_chiral)
       call del2(f,iYY_chiral,del2YY_chiral)
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+chiral_diffXX*del2XX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+chiral_diff  *del2YY_chiral
+!
+!  Advection & diffusion for the containment in the SIR model.
+!
+      if (lZZ_chiral) then
+        if (lhydro) then
+          call u_dot_grad(f,iZZ_chiral,gZZ_chiral,p%uu,ugZZ_chiral,UPWIND=lupw_chiral)
+          df(l1:l2,m,n,iZZ_chiral)=df(l1:l2,m,n,iZZ_chiral)-ugZZ_chiral
+        endif
+        call del2(f,iZZ_chiral,del2ZZ_chiral)
+        df(l1:l2,m,n,iZZ_chiral)=df(l1:l2,m,n,iZZ_chiral)+chiral_diffZZ*del2ZZ_chiral
+      endif
 !
 !  For Euler Potentials, possibility to add Lorentz force
 !
@@ -390,6 +421,9 @@ module Chiral
       case('SIR')
       if (headtt) print*,"chiral_reaction='SIR equation'"
       if (headtt) print*,"growth rate=", chiral_fishernu,"carrying capacity=",chiral_fisherK
+!
+!  time-dependent reinfection rate
+!
       if (chiral_fisherR2_tend==0.) then
         chiral_fisherR2_tdep=chiral_fisherR2
       else
@@ -397,14 +431,28 @@ module Chiral
           max(0.,1.-(max(0.,real(t)-chiral_fisherR2_tstart)/ &
           (chiral_fisherR2_tend-chiral_fisherR2_tstart))**2)**2)
       endif
+!
       XX_chiral=f(l1:l2,m,n,iXX_chiral)
       YY_chiral=f(l1:l2,m,n,iYY_chiral)
+!
       dXX_chiral=-chiral_fishernu*XX_chiral*YY_chiral &
         +chiral_fisherR2_tdep*(1.-(XX_chiral+YY_chiral))
       dYY_chiral=+chiral_fishernu*XX_chiral*YY_chiral-chiral_fisherK*YY_chiral &
         +chiral_fisherR*(1.-(XX_chiral+YY_chiral))
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+dYY_chiral
+!
+!  Containment in the SIR model.
+!
+      if (lZZ_chiral) then
+        ZZ_chiral=f(l1:l2,m,n,iZZ_chiral)
+        dXX_chiral=-chiral_fishermu*XX_chiral*ZZ_chiral
+        dZZ_chiral=+chiral_fishermu*XX_chiral*ZZ_chiral-chiral_fisherH*ZZ_chiral
+        df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
+        df(l1:l2,m,n,iZZ_chiral)=df(l1:l2,m,n,iZZ_chiral)+dZZ_chiral
+      endif
+!
+!  Alternative when nothing is set.
 !
       case ('nothing')
         if (lroot.and.ip<=5) print*,"chiral_reaction='nothing'"
@@ -431,12 +479,12 @@ module Chiral
 !  <u_k u_j d_j c> = <u_k c uu.gradXX_chiral>
 !
       if (ldiagnos) then
-        if (idiag_XX_chiralmax/=0) &
-            call max_mn_name(XX_chiral,idiag_XX_chiralmax)
-        if (idiag_YY_chiralmax/=0) &
-            call max_mn_name(YY_chiral,idiag_YY_chiralmax)
+        if (idiag_XX_chiralmax/=0) call max_mn_name(XX_chiral,idiag_XX_chiralmax)
+        if (idiag_YY_chiralmax/=0) call max_mn_name(YY_chiral,idiag_YY_chiralmax)
+        if (idiag_ZZ_chiralmax/=0) call max_mn_name(ZZ_chiral,idiag_ZZ_chiralmax)
         if (idiag_XX_chiralm/=0) call sum_mn_name(XX_chiral,idiag_XX_chiralm)
         if (idiag_YY_chiralm/=0) call sum_mn_name(YY_chiral,idiag_YY_chiralm)
+        if (idiag_ZZ_chiralm/=0) call sum_mn_name(ZZ_chiral,idiag_ZZ_chiralm)
         if (idiag_R2tdep/=0) call save_name(chiral_fisherR2_tdep,idiag_R2tdep)
 !
 !  extra diagnostics
@@ -600,6 +648,7 @@ module Chiral
       if (lreset) then
         idiag_XX_chiralmax=0; idiag_XX_chiralm=0
         idiag_YY_chiralmax=0; idiag_YY_chiralm=0
+        idiag_ZZ_chiralmax=0; idiag_ZZ_chiralm=0
         idiag_QQm_chiral=0; idiag_QQ21m_chiral=0; idiag_QQ21QQm_chiral=0
         idiag_brmsEP=0; idiag_bmaxEP=0
         idiag_jrmsEP=0; idiag_jmaxEP=0
@@ -614,9 +663,13 @@ module Chiral
         call parse_name(iname,cname(iname),cform(iname),&
             'YYm',idiag_YY_chiralm)
         call parse_name(iname,cname(iname),cform(iname),&
+            'ZZm',idiag_ZZ_chiralm)
+        call parse_name(iname,cname(iname),cform(iname),&
             'XXmax',idiag_XX_chiralmax)
         call parse_name(iname,cname(iname),cform(iname),&
             'YYmax',idiag_YY_chiralmax)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'ZZmax',idiag_ZZ_chiralmax)
         call parse_name(iname,cname(iname),cform(iname),&
             'QQm',idiag_QQm_chiral)
         call parse_name(iname,cname(iname),cform(iname),&
@@ -640,7 +693,10 @@ module Chiral
 !  check for those quantities for which we want video slices
 !
       if (lwrite_slices) then
-        where(cnamev=='XX_chiral'.or.cnamev=='YY_chiral'.or.cnamev=='DQ_chiral') &
+        where(cnamev=='XX_chiral' .or. &
+              cnamev=='YY_chiral' .or. &
+              cnamev=='ZZ_chiral' .or. &
+              cnamev=='DQ_chiral') &
           cformv='DEFINED'
       endif
 !
@@ -668,6 +724,10 @@ module Chiral
 !  Chirality fields: YY
 !
         case ('YY_chiral'); call assign_slices_scal(slices,f,iYY_chiral)
+!
+!  Chirality fields: ZZ
+!
+        case ('ZZ_chiral'); call assign_slices_scal(slices,f,iZZ_chiral)
 !
 !  Chirality fields: DQ
 !
