@@ -10,7 +10,9 @@ Status:
     has been working in this form since 27-Aug-2014
 Recommended resolution:
     at least 128^3
-Comments:
-    This sample is for simulating the coagulation of particles using the superparticle algorithm. 
 References:
     https://doi.org/10.1002/2017MS000930
+Comments:
+    This sample is for simulating the coagulation of particles using the superparticle algorithm. 
+    [PAB] 23-Mar-2023:
+    This auto-test never succeeded with any GCC version 7.5 or later.
