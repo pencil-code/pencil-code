@@ -24,7 +24,7 @@ Comments:
     numerical integration of the linearised equation system, produced by the
     IDL script shear_wave.pro (in the idl/ directory).
     [PAB] 25-Mar-2023:
-    I fixed an issue with uninitialized values in the FFT routines.
-    Since then, this autotest is failing...
-    Not sure if the current output is right or the old "reference.out",
-    as the old result might have been affected by the FFT problem.
+    I fixed an issue the 'fourier_shift_yz_y' routines, where processors were
+    calculating something, even though they should not participate in the FFT.
+    Not sure if the current output or the old "reference.out" is right.
+    Anders, please check.
