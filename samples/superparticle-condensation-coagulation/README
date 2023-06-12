@@ -14,3 +14,9 @@ References:
     https://doi.org/10.1175/JAS-D-19-0107.1
 Comments:
     This sample is for simulating the condensation + coagulation of particles using the superparticle algorithm. 
+    [PAB] 23-Mar-2023:
+    This auto-test never succeeded with any GCC version 7.5 or later.
+    I added sample outputs from GCC 4, 6, 7, 8, 11, 12, and Intel 2020.
+    Results vary randomly for GCC>=7.5 if we repeat the run from scratch.
+    Intel 2020 compiler results deviate from the "reference.out", too.
+    Intel results are at least stable, probably because Intel initializes all variables on its own.
