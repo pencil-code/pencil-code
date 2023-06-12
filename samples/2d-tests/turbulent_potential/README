@@ -14,3 +14,9 @@ Reference:
     Lyra, W., Turner, N., & McNally, C.P. (2015), A&A, 574, A10. Rossby wave instability does not require sharp resistivity gradients.
 Comments:
     Run using the turbulent potential prescription used in Horn et al. (2012), and before by Baruteau & Lin (2010), based on Laughlin (2007?). 
+    [PAB] 23-Mar-2023:
+    This auto-test never succeeded with any GCC version 7.5 or later.
+    I added sample outputs from GCC 4, 6, 7, 8, 11, 12, and Intel 2020.
+    Results vary randomly for GCC>=7.5 if we repeat the run from scratch.
+    Intel 2020 compiler results deviate from the "reference.out", too.
+    Intel results are at least stable, probably because Intel initializes all variables on its own.
