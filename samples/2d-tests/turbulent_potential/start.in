@@ -40,5 +40,6 @@
 /
 &special_init_pars
   lcap_modes_at_m6=F
-  rmodes_int=6.
+  ltime_dependant_amplitude=F
+  alpha=1.0
 /
