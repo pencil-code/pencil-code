@@ -48,6 +48,7 @@ use constant NOQUIET     => 0;
 use constant QUIET       => 1;
 use constant LOCK_FAILED => 128; # return status if we can't get lock
 use Cwd;
+use File::Copy;
 use POSIX qw(floor strftime);
 use Getopt::Long;
 use vars qw{ %failed $test_status }; # do we really need global vars here?
@@ -1819,6 +1820,16 @@ sub mark_failed {
     # Mark failure only if not previously failed - or if explicity requested!
     if (!-e $last || $overwrite_fail) { write_revision ($last); }
 
+    my $readme = "";
+    my $source = $pencil_home.'/samples/'.$dir.'/README';
+    if ($log_dir && (-e $source)) {
+        # copy sample's README file into web directory
+        my $destination = get_path ($dir, "README");
+        if (copy ($source, $destination)) {
+            $readme = ' [<a href="'.$dir.'/README">README</a>]';
+        }
+    }
+
     my $last_succeeded = get_path ($dir, "LAST_SUCCEEDED");
     if (-e $last_succeeded) {
         print "===> Test still succeeded with revision:\n";
@@ -1874,12 +1885,18 @@ sub mark_failed {
                 if ($author =~ /<author>\s*(.*)<\/author>/is) { $author = $1; }
                 else { $author = "problem obtaining author information"; }
                 chomp $author;
-                print "===> This is the offending commit from: $author\n";
+                print "===> This is the offending commit from: $author$readme\n";
+            }
+            elsif ($readme) {
+                print "===> Please also see the $readme\n";
             }
         }
         else {
             print "===> Please use SVN checkout for an automatic analysis!\n";
         }
+    }
+    elsif ($readme) {
+        print "===> Please also see the $readme\n";
     }
 }
 # ---------------------------------------------------------------------- #
