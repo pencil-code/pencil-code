@@ -11,6 +11,8 @@ Status:
 Recommended resolution:
     128x128x128 (nu=eta=1.3e-3)
 Comments:
+    Please add some description here...
+
     [PAB] 25-Mar-2023:
     Fails if 'nt', 'dsnap', and 'dvid' are not at their original values.
     This is not intended behaviour and should be investigated. 

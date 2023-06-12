@@ -14,5 +14,6 @@ References:
     https://doi.org/10.1002/2017MS000930
 Comments:
     This sample is for simulating the coagulation of particles using the superparticle algorithm. 
+
     [PAB] 23-Mar-2023:
     This auto-test never succeeded with any GCC version 7.5 or later.

@@ -23,6 +23,7 @@ Comments:
     self-gravity.  One can compare the numerical solution to the result of a
     numerical integration of the linearised equation system, produced by the
     IDL script shear_wave.pro (in the idl/ directory).
+
     [PAB] 25-Mar-2023:
     I fixed an issue the 'fourier_shift_yz_y' routines, where processors were
     calculating something, even though they should not participate in the FFT.
