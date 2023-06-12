@@ -16,6 +16,7 @@
   lcylindrical_gravity=T
   grid_func  = 'power-law', ,
   coeff_grid = 1e-3, ,
+  seed0=1
 /
 &initial_condition_pars
   density_power_law=0.5
