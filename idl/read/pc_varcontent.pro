@@ -124,6 +124,7 @@ indices = [ $
   { name:'ibb', label:'Magnetic field', dims:3 }, $
   { name:'ijj', label:'Current density', dims:3 }, $
   { name:'iee', label:'Electric field', dims:3 }, $
+  { name:'ie', label:'Electric field', dims:3 }, $
   { name:'iemf', label:'Electromotive force', dims:3 }, $
   { name:'iaak', label:'Real part of vector potential', dims:3 }, $
   { name:'iaakim', label:'Imaginary part of vector potential', dims:3 }, $
@@ -174,6 +175,7 @@ indices = [ $
   { name:'iacc', label:'Active Scalar', dims:1 }, $
   { name:'iXX_chiral', label:'XX chiral', dims:1 }, $
   { name:'iYY_chiral', label:'YY chiral', dims:1 }, $
+  { name:'iZZ_chiral', label:'ZZ chiral', dims:1 }, $
   { name:'ispecial', label:'Special', dims:1 }, $
   { name:'ispec_3vec', label:'Special vector', dims:3 }, $
   { name:'ilorentz', label:'Lorentz factor', dims:1 }, $
@@ -292,6 +294,15 @@ indices_aux = [ $
   { name:'iSt6', label:'St6', dims:1 }, $
   { name:'iStT', label:'StT', dims:1 }, $
   { name:'iStX', label:'StX', dims:1 }, $
+;  { name:'iex', label:'ex', dims:1 }, $
+;  { name:'iey', label:'ey', dims:1 }, $
+;  { name:'iez', label:'ez', dims:1 }, $
+;  { name:'ieex', label:'eex', dims:1 }, $
+;  { name:'ieey', label:'eey', dims:1 }, $
+;  { name:'ieez', label:'eez', dims:1 }, $
+  { name:'ieedotx', label:'eedotx', dims:1 }, $
+  { name:'ieedoty', label:'eedoty', dims:1 }, $
+  { name:'ieedotz', label:'eedotz', dims:1 }, $
   { name:'iStTim', label:'StTim', dims:1 }, $
   { name:'iStXim', label:'StXim', dims:1 }, $
   { name:'ihhT_realspace', label:'ihhT_realspace', dims:1 }, $
