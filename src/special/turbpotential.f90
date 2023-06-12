@@ -105,7 +105,7 @@ module Special
   real, dimension(mx) :: rad,amplitude_scaled
 !
   integer :: ipotturb
-  integer :: idiag_potturbm=0,idiag_potturbmax=0,idiag_potturbmin=0
+  integer :: idiag_potturbm=0,idiag_potturb2m=0,idiag_potturbmax=0,idiag_potturbmin=0
   integer :: idiag_gpotturbx2m=0,idiag_gpotturby2m=0,idiag_gpotturbz2m=0
 !
   contains
@@ -225,6 +225,7 @@ module Special
 !  The turbulence force from the potential, for the momentum equation.
 !
       if (ldiagnos .and. (idiag_potturbm   /=0 .or. &
+                          idiag_potturb2m  /=0 .or. &
                           idiag_potturbmax /=0 .or. & 
                           idiag_potturbmin /=0) &
           ) q%potturb = f(l1:l2,m,n,ipotturb)
@@ -695,13 +696,14 @@ module Special
 !  Write information to index.pro
 !
       if (lreset) then
-        idiag_potturbm=0;idiag_potturbmax=0;idiag_potturbmin=0 
+        idiag_potturbm=0;idiag_potturb2m=0;idiag_potturbmax=0;idiag_potturbmin=0 
         idiag_gpotturbx2m=0;idiag_gpotturby2m=0;idiag_gpotturbz2m=0
         cformv=''
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'potturbm',idiag_potturbm)
+        call parse_name(iname,cname(iname),cform(iname),'potturb2m',idiag_potturb2m)
         call parse_name(iname,cname(iname),cform(iname),'potturbmax',idiag_potturbmax)
         call parse_name(iname,cname(iname),cform(iname),'potturbmin',idiag_potturbmin)
         call parse_name(iname,cname(iname),cform(iname),'gpotturbx2m',idiag_gpotturbx2m)
@@ -717,6 +719,7 @@ module Special
 !
       if (lwr) then
         call farray_index_append('i_potturbm',idiag_potturbm)
+        call farray_index_append('i_potturb2m',idiag_potturb2m)
         call farray_index_append('i_potturbmax',idiag_potturbmax)
         call farray_index_append('i_potturbmin',idiag_potturbmin)
         call farray_index_append('i_gpotturbx2m',idiag_gpotturbx2m)
@@ -752,9 +755,10 @@ module Special
       endif
 !
       if (ldiagnos) then 
-        if (idiag_potturbm/=0)   call sum_mn_name(q%potturb,idiag_potturbm)
-        if (idiag_potturbmax/=0) call max_mn_name(q%potturb,idiag_potturbmax)
-        if (idiag_potturbmin/=0) call max_mn_name(-q%potturb,idiag_potturbmin,lneg=.true.)
+        if (idiag_potturbm/=0)    call sum_mn_name(q%potturb,idiag_potturbm)
+        if (idiag_potturb2m/=0)   call sum_mn_name(q%potturb**2,idiag_potturb2m)
+        if (idiag_potturbmax/=0)  call max_mn_name(q%potturb,idiag_potturbmax)
+        if (idiag_potturbmin/=0)  call max_mn_name(-q%potturb,idiag_potturbmin,lneg=.true.)
         if (idiag_gpotturbx2m/=0) call sum_mn_name(q%gpotturb(:,1)**2,idiag_gpotturbx2m)
         if (idiag_gpotturby2m/=0) call sum_mn_name(q%gpotturb(:,2)**2,idiag_gpotturby2m)
         if (idiag_gpotturbz2m/=0) call sum_mn_name(q%gpotturb(:,3)**2,idiag_gpotturbz2m)
