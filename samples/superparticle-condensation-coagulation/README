@@ -10,7 +10,7 @@ Status:
     has been working in this form since 27-Aug-2014
 Recommended resolution:
     at least 128^3
-Comments:
-    This sample is for simulating the condensation + coagulation of particles using the superparticle algorithm. 
 References:
     https://doi.org/10.1175/JAS-D-19-0107.1
+Comments:
+    This sample is for simulating the condensation + coagulation of particles using the superparticle algorithm. 
