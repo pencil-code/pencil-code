@@ -4850,7 +4850,7 @@ module EquationOfState
 !  responsive to interior dynamics.
 !  06-jun-22/fred update to allow setting scale height in start.in or run.in
 !  default is density_scale_factor=impossible so that scale_factor is 0.9, assuming
-!  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
+!  unit_length = 1 kpc and scale is 400 pc. To change scale height add to
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !
       integer, intent(IN) :: topbot

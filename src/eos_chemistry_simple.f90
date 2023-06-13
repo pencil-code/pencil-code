@@ -322,7 +322,7 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         if (lpres_grad) where(cnamev=='gpx'.or.cnamev=='gpy') cformv='DEFINED'
         where(cnamev=='pp') cformv='DEFINED'
       endif
@@ -492,7 +492,7 @@ module EquationOfState
               do k = 1,nchemspec
                 R_mix = R_mix + Rgas/species_constants(k,imass)*f(l1:l2,m,n,ichemspec(k))
               enddo
-              p%cv = p%cp - R_mix 
+              p%cv = p%cp - R_mix
             endif
             if (lpencil(i_cv1)) p%cv1 = 1./p%cv
             if (lpencil(i_cp1)) p%cp1 = 1./p%cp
@@ -521,7 +521,7 @@ module EquationOfState
        if (lpenc_loc(i_TT1)) then
          if (ltemperature_nolog) then
            p%TT1=1./f(l1:l2,m,n,iTT)
-         else 
+         else
            p%TT1=1./exp(f(l1:l2,m,n,ilnTT))
          endif
        endif
@@ -554,12 +554,12 @@ module EquationOfState
 !
       D_th = f(l1:l2,m,n,iviscosity)/Pr_number
       if (lpencil(i_lambda)) p%lambda = p%cp*p%rho*D_th
-      if (lpencil(i_glambda)) then         
+      if (lpencil(i_glambda)) then
          call grad(f(:,:,:,icp),p%glncp)
          do i = 1,3
            p%glncp(:,i) = p%glncp(:,i)*p%cp1
            glnDiff_full_add(:,i) = p%gradnu(:,i)/p%nu
-           p%glambda(:,i) = p%lambda*(p%glnrho(:,i)+glnDiff_full_add(:,i) + p%glncp(:,i)) 
+           p%glambda(:,i) = p%lambda*(p%glnrho(:,i)+glnDiff_full_add(:,i) + p%glncp(:,i))
          enddo
       endif
 !
@@ -598,7 +598,7 @@ module EquationOfState
 !
 ! Gradient of lnpp (removed)
 !
-! This is not used now since advec_cs2 is not computed but will probably be needed 
+! This is not used now since advec_cs2 is not computed but will probably be needed
 !
       if (lpencil(i_cs2)) then
         if (any(p%cv1 == 0.0)) then
@@ -1623,7 +1623,7 @@ module EquationOfState
 !  responsive to interior dynamics.
 !  06-jun-22/fred update to allow setting scale height in start.in or run.in
 !  default is density_scale_factor=impossible so that scale_factor is 0.9, assuming
-!  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
+!  unit_length = 1 kpc and scale is 400 pc. To change scale height add to
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !  Copied from eos_ionization written for entropy - may need revision
 !  Currently not correct for energy variable

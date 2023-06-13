@@ -347,7 +347,7 @@ module EquationOfState
 !
 !  check for those quantities for which we want video slices
 !
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         where(cnamev=='lnTT'.or.cnamev=='pp') cformv='DEFINED'
       endif
 !
@@ -525,13 +525,13 @@ module EquationOfState
 !
          if (minval(p%TT)==0.) then
            call fatal_error('calc_pencils_eos','p%TT=0!')
-         endif         
+         endif
        endif
 !
        if (lpenc_loc(i_TT1)) then
          if (ltemperature_nolog) then
            p%TT1=1./f(l1:l2,m,n,iTT)
-         else 
+         else
            p%TT1=1./exp(f(l1:l2,m,n,ilnTT))
          endif
        endif
@@ -551,7 +551,7 @@ module EquationOfState
 !
         if (ltemperature_nolog) then
           if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
-            call dot2(p%gTT,gradTgradT) 
+            call dot2(p%gTT,gradTgradT)
             call del2(f,iTT,del2TT)
             p%del2lnTT = -p%TT1*p%TT1*gradTgradT+p%TT1*del2TT
          !NILS: The call below does not yield del2lnTT but rather del2TT,
@@ -1400,7 +1400,7 @@ module EquationOfState
 !  responsive to interior dynamics.
 !  06-jun-22/fred update to allow setting scale height in start.in or run.in
 !  default is density_scale_factor=impossible so that scale_factor is 0.9, assuming
-!  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
+!  unit_length = 1 kpc and scale is 400 pc. To change scale height add to
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !  Copied from eos_ionization written for entropy - may need revision
 !  Currently not correct for energy variable

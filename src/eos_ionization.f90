@@ -324,7 +324,7 @@ module EquationOfState
 !
 !  check for those quantities for which we want video slices
 !
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         where(cnamev=='lnTT'.or.cnamev=='yH') cformv='DEFINED'
       endif
 !
@@ -700,7 +700,7 @@ module EquationOfState
       real, dimension(nx) :: R,dlnTTdy,dRdy,temp
       real, dimension(nx) :: dlnPPdlnrho,fractions,fractions1
       real, dimension(nx) :: dlnPPdss,TT1
-      
+
       lnrho=f(l1:l2,m,n,ilnrho)
       yH=f(l1:l2,m,n,iyH)
       lnTT=f(l1:l2,m,n,ilnTT)
@@ -973,7 +973,7 @@ module EquationOfState
           call pressure_gradient(f,cs2_(l1:l2),cp1tilde_(l1:l2))
           cs2=cs2_
         endif
-!        
+!
       case default
         call stop_it("eoscalc: no such pencil size")
 !
@@ -2116,7 +2116,7 @@ module EquationOfState
 !  responsive to interior dynamics.
 !  06-jun-22/fred update to allow setting scale height in start.in or run.in
 !  default is density_scale_factor=impossible so that scale_factor is 0.9, assuming
-!  unit_length = 1 kpc and scale is 900 pc. To change scale height add to
+!  unit_length = 1 kpc and scale is 400 pc. To change scale height add to
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !
       integer, intent(IN) :: topbot
