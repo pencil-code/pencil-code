@@ -190,12 +190,14 @@ module Chiral
 !
 !  check next for initZZ_chiral
 !
-      select case (initZZ_chiral)
-        case ('zero'); f(:,:,:,iZZ_chiral)=0.
-        case ('const'); f(:,:,:,iZZ_chiral)=amplZZ_chiral
-        case ('chiral_list'); call chiral_list(amplZZ_chiral,f,iZZ_chiral,'chiral_listZZ')
-        case default; call stop_it('init_chiral: bad init_chiral='//trim(initZZ_chiral))
-      endselect
+      if (lZZ_chiral) then
+        select case (initZZ_chiral)
+          case ('zero'); f(:,:,:,iZZ_chiral)=0.
+          case ('const'); f(:,:,:,iZZ_chiral)=amplZZ_chiral
+          case ('chiral_list'); call chiral_list(amplZZ_chiral,f,iZZ_chiral,'chiral_listZZ')
+          case default; call stop_it('init_chiral: bad init_chiral='//trim(initZZ_chiral))
+        endselect
+      endif
 !
 !  Interface for user's own initial condition
 !
