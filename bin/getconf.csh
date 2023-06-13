@@ -1754,6 +1754,7 @@ else if ($hn =~ co[0-9]*) then
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = srun
+  set npops = ''
 #---------------------------------------------------
 else if ($hn =~ rav*[0-9]*) then
   echo "Raven system at Rechenzentrum Garching"
@@ -1766,6 +1767,7 @@ else if ($hn =~ rav*[0-9]*) then
     echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = srun
+  set npops = ''
 #---------------------------------------------------  
 else if ($hn =~ *.sng.lrz.de) then
   echo "Supermuc-NG at Leibniz-Rechenzentrum"
