@@ -77,13 +77,17 @@ module Special
   real :: rmodes_int=impossible
   real :: rmodes_ext=impossible                ! emulate a dead zone
 !
+  logical :: lautotest_mode=.false.
+!  
   namelist /special_init_pars/ alpha,lcalc_potturb,lturbulent_force,&
        ltime_dependant_amplitude,lgravitational_turbulence,&
-       lcap_modes_at_m6,lupdate_as_var,rmodes_int,rmodes_ext
+       lcap_modes_at_m6,lupdate_as_var,rmodes_int,rmodes_ext,&
+       lautotest_mode
 !
   namelist /special_run_pars/ alpha,lcalc_potturb,lturbulent_force,&
        ltime_dependant_amplitude,lgravitational_turbulence,&
-       lcap_modes_at_m6,lupdate_as_var,rmodes_int,rmodes_ext
+       lcap_modes_at_m6,lupdate_as_var,rmodes_int,rmodes_ext,&
+       lautotest_mode
 !
   integer, parameter :: nmode_max = 50
   integer :: mmode_max=nygrid/8, mmode_min = 1
@@ -509,7 +513,7 @@ module Special
 !  This sets all the needed parameters of the mode, and stores them in 
 !  a "structure".
 !
-      !use General, only: random_number_wrapper
+      use General, only: random_number_wrapper
 !
       real, dimension(9), intent(out) :: g
       integer, intent(out) :: h
@@ -523,7 +527,11 @@ module Special
 !
 !  Mode's azimuthal wavenumber. 
 !
-      call random_number(aux1)
+      if (lautotest_mode) then 
+        call random_number_wrapper(aux1)
+      else
+        call random_number(aux1)
+      endif
       aux1 = aux1*(logmode_max-logmode_min)+logmode_min
       mode_wnumber_scl = nint(exp(aux1))
 !
@@ -532,7 +540,11 @@ module Special
 !
 !  Mode's radial location
 !
-      call random_number(aux1)
+      if (lautotest_mode) then 
+        call random_number_wrapper(aux1)
+      else
+        call random_number(aux1)
+      endif
       rcenter_scl    = aux1*(rmodes_ext-rmodes_int) + rmodes_int
 !
 !  Sound speed at mode location
@@ -550,24 +562,48 @@ module Special
 !
 !  Mode's Gaussian-distributed random amplitude.
 !
+      if (lautotest_mode) then 
+        call random_number_wrapper(aux1)
+        call random_number_wrapper(aux2)
+      else
         call random_number(aux1)
         call random_number(aux2)
-        gauss_ampl_scl   = sqrt(-2*log(aux1))*cos(2*pi*aux2)
+      endif
+      gauss_ampl_scl   = sqrt(-2*log(aux1))*cos(2*pi*aux2)
 !
 !  Mode's random radial and azimuthal location.
 !
         if (lspherical_coords) then
-          call random_number(aux1)
+           if (lautotest_mode) then 
+             call random_number_wrapper(aux1)
+           else
+             call random_number(aux1)
+           endif
           phicenter_scl  = xyz0(3) + aux1*Lxyz(3)
-          call random_number(aux1)
+          if (lautotest_mode) then 
+            call random_number_wrapper(aux1)
+          else
+            call random_number(aux1)
+          endif
+
           !random theta
           aux1=xyz0(2) + aux1*Lxyz(2)
           !z=r*cos(theta)
           zcenter_scl  = rcenter_scl*cos(aux1) 
         elseif (lcylindrical_coords) then
-          call random_number(aux1)
+           if (lautotest_mode) then 
+             call random_number_wrapper(aux1)
+           else
+             call random_number(aux1)
+           endif
+
           phicenter_scl  = xyz0(2) + aux1*Lxyz(2)
-          call random_number(aux1)
+          if (lautotest_mode) then 
+            call random_number_wrapper(aux1)
+          else
+            call random_number(aux1)
+          endif
+
           zcenter_scl    = xyz0(3) + aux1*Lxyz(3)
         endif
 !

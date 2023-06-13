@@ -39,6 +39,7 @@
 /
 &special_run_pars
   lcap_modes_at_m6=F
+  lautotest_mode=T
 /
 &shock_run_pars
 /

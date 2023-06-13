@@ -43,4 +43,5 @@
   lcap_modes_at_m6=F
   ltime_dependant_amplitude=F
   alpha=1.0
+  lautotest_mode=T
 /
