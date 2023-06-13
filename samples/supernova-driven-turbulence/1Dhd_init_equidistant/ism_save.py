@@ -1,5 +1,8 @@
 import pencil as pcn
 import numpy as np
+from scipy.optimize import curve_fit
+from pencil.math.stats import fit_exp, fit_linear
+
 
 varfile = 'var.dat' # or specific snaphot as required 'VAR?'
 var=pcn.read.var(varfile,magic=['tt'],trimall=True,quiet=True)
@@ -38,6 +41,17 @@ def plot_ism(varfiles=[]):
                 varfile=var.split('/')[-1]
                 ax[0].semilogy(globals()[varfile].z[:],globals()[varfile].rho[:,0,0],':',
                             )
+                if ivar==0:
+                    nz_4 = int(globals()[varfile].z.size/4)
+                    nskip = int(nz_4/5)
+                    zz = globals()[varfile].z[:nz_4:nskip]
+                    rhoz = globals()[varfile].rho[:nz_4:nskip,0,0]
+                    popt,copt = curve_fit(fit_linear, zz, np.log(rhoz),
+                                maxfev=5000)
+                    ax[0].plot(zz, np.exp(popt[0])*np.exp(popt[1]*zz),
+                             ':', marker='^', markersize=2.5,
+                             label=r"$\rho=\exp(-{:.2f} |z|)$".format(1/popt[1]))
+
                 ax[1].semilogy(globals()[varfile].z[:],globals()[varfile].tt[:,0,0]*param.unit_temperature,':',
                             )
                 ax[2].plot(globals()[varfile].z[:],globals()[varfile].uu[2,:,0,0],':',
@@ -53,13 +67,14 @@ def plot_ism(varfiles=[]):
     ax[2].set_xlim([-2,2])
     #ax[2].set_ylim([globals()[varfile].uu[2,:,0,0].min(),globals()[varfile].uu[2,:,0,0].max()])
         #ax[imod,1].set_ylim(r'$p(u(k))$')
-    ax[0].set_xlabel(r'$z$ [kpc]')        
-    ax[1].set_xlabel(r'$z$ [kpc]')        
-    ax[2].set_xlabel(r'$z$ [kpc]')        
+    ax[0].set_xlabel(r'$z$ [kpc]')
+    ax[1].set_xlabel(r'$z$ [kpc]')
+    ax[2].set_xlabel(r'$z$ [kpc]')
     ax[0].legend(loc='upper left',framealpha=0.5)
     ax[1].legend(loc='lower left',framealpha=0.5)
     ax[2].legend(loc='upper right',framealpha=0.5)
     fig.tight_layout()
-    plt.show() 
+    plt.savefig('profiles.png')
+    plt.show()
 
 plot_ism()
