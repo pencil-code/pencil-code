@@ -41,17 +41,6 @@ def plot_ism(varfiles=[]):
                 varfile=var.split('/')[-1]
                 ax[0].semilogy(globals()[varfile].z[:],globals()[varfile].rho[:,0,0],':',
                             )
-                if ivar==0:
-                    nz_4 = int(globals()[varfile].z.size/4)
-                    nskip = int(nz_4/5)
-                    zz = globals()[varfile].z[:nz_4:nskip]
-                    rhoz = globals()[varfile].rho[:nz_4:nskip,0,0]
-                    popt,copt = curve_fit(fit_linear, zz, np.log(rhoz),
-                                maxfev=5000)
-                    ax[0].plot(zz, np.exp(popt[0])*np.exp(popt[1]*zz),
-                             ':', marker='^', markersize=2.5,
-                             label=r"$\rho=\exp(-{:.2f} |z|)$".format(1/popt[1]))
-
                 ax[1].semilogy(globals()[varfile].z[:],globals()[varfile].tt[:,0,0]*param.unit_temperature,':',
                             )
                 ax[2].plot(globals()[varfile].z[:],globals()[varfile].uu[2,:,0,0],':',
@@ -70,6 +59,15 @@ def plot_ism(varfiles=[]):
     ax[0].set_xlabel(r'$z$ [kpc]')
     ax[1].set_xlabel(r'$z$ [kpc]')
     ax[2].set_xlabel(r'$z$ [kpc]')
+    nz_4 = int(globals()[varfile].z.size/4)
+    nskip = int(nz_4/5)
+    zz = globals()[varfile].z[:nz_4:nskip]
+    rhoz = globals()[varfile].rho[:nz_4:nskip,0,0]
+    popt,copt = curve_fit(fit_linear, zz, np.log(rhoz),
+                maxfev=5000)
+    ax[0].plot(zz, np.exp(popt[0])*np.exp(popt[1]*zz),
+             ':', marker='^', markersize=2.5,
+             label=r"$\rho=\exp(-{:.2f} |z|)$".format(1/popt[1]))
     ax[0].legend(loc='upper left',framealpha=0.5)
     ax[1].legend(loc='lower left',framealpha=0.5)
     ax[2].legend(loc='upper right',framealpha=0.5)
