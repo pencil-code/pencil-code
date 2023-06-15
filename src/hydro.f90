@@ -301,7 +301,7 @@ module Hydro
   integer :: idiag_gamrms=0     ! DIAG_DOC: $\left<\gamma^2\right>^{1/2}$
   integer :: idiag_gammax=0     ! DIAG_DOC: $\max(\gamma)$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
-  integer :: idiag_u2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=1} \uv^2 dV$,
+  integer :: idiag_u2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=r_{\rm diag}} \uv^2 dV$,
                                 ! DIAG_DOC:   where $r=\sqrt{x^2+y^2+z^2}$
   integer :: idiag_um2=0        ! DIAG_DOC:
   integer :: idiag_uxpt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
@@ -467,7 +467,7 @@ module Hydro
   integer :: idiag_o2m=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>
                                 ! DIAG_DOC:   \equiv \left<(\curl\uv)^2\right>$
   integer :: idiag_o2u2m=0      ! DIAG_DOC: $\left<\uv^2\boldsymbol{\omega}^2\right>$
-  integer :: idiag_o2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
+  integer :: idiag_o2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=r_{\rm diag}} \boldsymbol{\omega}^2 dV$,
                                 ! DIAG_DOC:   where $r=\sqrt{x^2+y^2+z^2}$
   integer :: idiag_orms=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>^{1/2}$
   integer :: idiag_omax=0       ! DIAG_DOC: $\max(|\boldsymbol{\omega}|)$
@@ -4060,7 +4060,7 @@ module Hydro
         call max_mn_name(p%u2,idiag_um2)
         call sum_mn_name(p%u2,idiag_u2m)
         if (idiag_u2sphm/=0 .or. idiag_o2sphm/=0) then
-          where (p%r_mn <= 1.)
+          where (p%r_mn <= radius_diag)
             rmask = 1.
           elsewhere
             rmask = 0.

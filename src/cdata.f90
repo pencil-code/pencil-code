@@ -520,6 +520,8 @@ module Cdata
   real, dimension (mname_half,2) :: fname_half
   integer :: name_half_max=0
   character (len=30) :: cname_half(mname_half)
+!  Radius inside of which diagnostics are calculated for sphere_in_a_box models
+  real :: radius_diag=1.0
 !  Coordinates of the point where some quantities can be printed.
   integer :: lpoint=(mx+1)/2,mpoint=(my+1)/2,npoint=(mz+1)/2
   integer :: lpoint2=(mx+1)/4,mpoint2=(my+1)/4,npoint2=(mz+1)/4

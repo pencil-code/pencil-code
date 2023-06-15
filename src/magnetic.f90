@@ -779,7 +779,7 @@ module Magnetic
   integer :: idiag_hjperpm=0    ! DIAG_DOC: Mean value of the component
                                 ! DIAG_DOC: of $J_{\rm hyper}$ perpendicular to B
   integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
-  integer :: idiag_b2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=1} \Bv^2 dV$,
+  integer :: idiag_b2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=r_{\rm diag}} \Bv^2 dV$,
                                 ! DIAG_DOC:   where $r=\sqrt{x^2+y^2+z^2}$
   integer :: idiag_brmsx=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$ for
                                 ! DIAG_DOC: the magnetic_xaver_range
@@ -5909,7 +5909,7 @@ module Magnetic
       if (idiag_abrms/=0) call sum_mn_name(p%ab**2,idiag_abrms,lsqrt=.true.)
       if (idiag_jbrms/=0) call sum_mn_name(p%jb**2,idiag_jbrms,lsqrt=.true.)
       if (idiag_b2sphm/=0) then
-        where (p%r_mn <= 1.)
+        where (p%r_mn <= radius_diag)
           rmask = 1.
         elsewhere
           rmask = 0.
