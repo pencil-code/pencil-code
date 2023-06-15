@@ -222,7 +222,7 @@ module Density
   integer :: idiag_rhomr=0      ! DIAG_DOC:
   integer :: idiag_totmass=0    ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
-  integer :: idiag_sphmass=0    ! DIAG_DOC: $\int\varrho\,dV$ inside $r < 1$.
+  integer :: idiag_sphmass=0    ! DIAG_DOC: $\int\varrho\,dV$ inside $r < r_{\rm diag}$.
   integer :: idiag_inertiaxx=0  ! DIAG_DOC: $xx$ component of the inertia tensor (spherical coordinates)
   integer :: idiag_inertiayy=0  ! DIAG_DOC: $yy$ component of the inertia tensor (spherical coordinates)
   integer :: idiag_inertiazz=0  ! DIAG_DOC: $zz$ component of the inertia tensor (spherical coordinates)
@@ -2881,7 +2881,7 @@ module Density
         if (idiag_inertiazz/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*cos(y(m))**2,idiag_inertiazz)
         if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
             idiag_inertiazz_car/=0 .or. idiag_sphmass/=0) then
-          where (p%r_mn <= 1.)
+          where (p%r_mn <= radius_diag)
             rmask = 1.
           elsewhere
             rmask = 0.
