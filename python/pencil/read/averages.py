@@ -10,6 +10,7 @@ import sys
 from pencil import read
 from pencil.math import natural_sort
 import glob
+import time
 
 def aver(*args, **kwargs):
     """
@@ -98,6 +99,7 @@ class Averages(object):
         param=list(),
         proc=-1,
         precision="f",
+        comp_time=False,
     ):
         """
         read(plane_list=None, datadir='data', proc=-1, var_index=-1, proc=-1):
@@ -423,6 +425,7 @@ class Averages(object):
                         proc,
                         simdir,
                         precision=precision,
+                        comp_time=comp_time,
                     )
 
                 self.t = t
@@ -448,6 +451,7 @@ class Averages(object):
         proc,
         simdir,
         precision="f",
+        comp_time=False,
     ):
         """
         Read the yaverages.dat, zaverages.dat.
@@ -543,29 +547,47 @@ class Averages(object):
                 ext_object = Foo()
             else:
                 ext_object = self.__getattribute__(plane)
+            if comp_time:
+                start_time = time.time()
+                data_shape = None
+                for var in var_names:
+                    if not data_shape:
+                        data_shape = list()
+                        data_shape.append(len(itlist))
+                        if var.strip() in tmp[str(itlist[0])].keys():
+                            dshape = tmp[str(itlist[0])+ "/" + var.strip()].shape
+                        for dsh in dshape:
+                            data_shape.append(dsh)
+                    raw_data = np.zeros(data_shape, dtype=precision)
+                    t = np.zeros(data_shape[0], dtype=precision)
+                    for t_idx, tmp_idx in zip(range(len(itlist)),itlist):
+                        t[int(t_idx)] = tmp[str(tmp_idx) + "/time"][()]
 
-            data_shape = None
-            for var in var_names:
-                if not data_shape:
-                    data_shape = list()
-                    data_shape.append(len(itlist))
-                    if var.strip() in tmp[str(itlist[0])].keys():
-                        dshape = tmp[str(itlist[0])+ "/" + var.strip()].shape
-                    for dsh in dshape:
-                        data_shape.append(dsh)
-                raw_data = np.zeros(data_shape, dtype=precision)
+                        if var.strip() in tmp[str(tmp_idx)].keys():
+                            raw_data[int(t_idx)] = tmp[str(tmp_idx) + "/" + var.strip()][()]
+
+                    setattr(ext_object, var.strip(), raw_data)
+            else:
+                start_time = time.time()
+                tmpkeys = list(tmp[str(itlist[0])].keys())
+                tmpkeys.remove('time')
+                data_shape = [len(itlist),]
+                for dshape in tmp[str(itlist[0])][tmpkeys[0]].shape:
+                    data_shape.append(dshape)
                 t = np.zeros(data_shape[0], dtype=precision)
+                for var in var_names:
+                    setattr(ext_object, var.strip(), np.zeros(data_shape, dtype=precision))
                 for t_idx, tmp_idx in zip(range(len(itlist)),itlist):
                     t[int(t_idx)] = tmp[str(tmp_idx) + "/time"][()]
-                    if var.strip() in tmp[str(tmp_idx)].keys():
-                        raw_data[int(t_idx)] = tmp[str(tmp_idx) + "/" + var.strip()][()]
-
-                setattr(ext_object, var.strip(), raw_data)
+                    for var in var_names:
+                        if var.strip() in tmp[str(tmp_idx)].keys():
+                            ext_object.__getattribute__(var.strip())[int(t_idx)] = tmp[str(tmp_idx) + "/" + var.strip()][()]
             plane_keys = list(ext_object.__dict__.keys())
             if "keys" in plane_keys:
                 plane_keys.remove("keys")
             setattr(ext_object, "keys", plane_keys)
-
+        end_time = time.time()-start_time
+        print("{} object reading time {:.0f} seconds".format(plane,end_time))
         return t, ext_object
 
     def __read_1d_aver(

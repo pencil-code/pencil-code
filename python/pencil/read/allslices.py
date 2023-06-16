@@ -184,7 +184,7 @@ class SliceSeries(object):
         else:
             l_h5 = False
         if not isinstance(iter_list, list):
-            if not isinstance(iter_list, int):
+            if not isinstance(iter_list, (int,np.int32,np.int64)):
                 print("iter_list must be an integer or integer list, ignoring")
                 iter_list = list()
             else:
@@ -317,6 +317,11 @@ class SliceSeries(object):
                                 setattr(pos_object, extension, np.array(pos_list))
                                 setattr(ind_object, extension, np.array(ind_list))
                     setattr(ext_object, field, slice_series)
+                plane_keys = ext_object.__dict__.keys()
+                plane_keys = list(ext_object.__dict__.keys())
+                if "keys" in plane_keys:
+                    plane_keys.remove("keys")
+                setattr(ext_object, "keys", plane_keys)
 
                 setattr(self, extension, ext_object)
                 setattr(self, "position", pos_object)
