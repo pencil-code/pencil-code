@@ -300,6 +300,8 @@ module Energy
   integer :: idiag_divheatmphi=0 ! PHIAVG_DOC: divergence of heating flux
   integer :: idiag_fradrsphmphi_kramers=0 ! PHIAVG_DOC: $F_{\rm rad}$ ($\varphi$-averaged,
                                           ! PHIAVG_DOC: from Kramers' opacity)
+  integer :: idiag_fradrsphmphi_Kconst=0 ! PHIAVG_DOC: $F_{\rm rad}$ ($\varphi$-averaged,
+                                         ! PHIAVG_DOC: for K-const)
   integer :: idiag_fconvrsphmphi=0  ! PHIAVG_DOC: $\left<c_p \varrho u_r T \right>_\varphi$
   integer :: idiag_fconvthsphmphi=0 ! PHIAVG_DOC: $\left<c_p \varrho u_\theta T \right>_\varphi$
   integer :: idiag_fconvpsphmphi=0  ! PHIAVG_DOC: $\left<c_p \varrho u_\phi T \right>_\varphi$
@@ -3004,9 +3006,11 @@ module Energy
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
-      if (idiag_fradz/=0 .or. idiag_fradrsphmphi_kramers/=0 .or. idiag_gTT2mz/=0 .or. idiag_TT2m/=0) &
+      if (idiag_fradz/=0 .or. idiag_fradrsphmphi_kramers/=0.or. idiag_fradrsphmphi_Kconst/=0 .or. &
+          idiag_gTT2mz/=0 .or. idiag_TT2m/=0) &
         lpenc_diagnos(i_gTT)=.true.
-      if (idiag_fradrsphmphi_kramers/=0 .or. idiag_fconvrsphmphi/=0 .or. idiag_ursphTTmphi/=0) &
+      if (idiag_fradrsphmphi_Kconst/=0 .or. idiag_fradrsphmphi_kramers/=0 .or. &
+          idiag_fconvrsphmphi/=0 .or. idiag_ursphTTmphi/=0) &
         lpenc_diagnos(i_evr)=.true.
       if (idiag_fconvthsphmphi/=0) lpenc_diagnos(i_evth)=.true.
       if (idiag_fconvxy/=0 .or. idiag_fconvyxy/=0 .or. idiag_fconvzxy/=0) then
@@ -4815,7 +4819,7 @@ module Energy
 !   8-jul-02/axel: adapted from Wolfgang's more complex version
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
-      use Diagnostics, only: max_mn_name, yzsum_mn_name_x
+      use Diagnostics, only: max_mn_name, yzsum_mn_name_x, phisum_mn_name_rz
       use Sub, only: dot
 !
       type (pencil_case) :: p
@@ -4877,6 +4881,14 @@ module Energy
 !
       if (l1davgfirst) then
         if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
+      endif
+!
+!  2d-averages
+!
+      if (l2davgfirst) then
+         if (idiag_fradrsphmphi_Kconst/=0) &
+            call phisum_mn_name_rz(-hcond*p%TT*(p%glnTT(:,1)*p%evr(:,1)+ &
+               p%glnTT(:,2)*p%evr(:,2)+p%glnTT(:,3)*p%evr(:,3)),idiag_fradrsphmphi_Kconst)
       endif
 !
 !  Check maximum diffusion from thermal diffusion.
@@ -6748,7 +6760,7 @@ module Energy
         idiag_fradx_kramers=0; idiag_fradz_kramers=0; idiag_fradxy_kramers=0
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolx=0; idiag_dcoolxy=0
         idiag_dcoolmphi=0; idiag_divcoolmphi=0; idiag_divheatmphi=0
-        idiag_fradrsphmphi_kramers=0
+        idiag_fradrsphmphi_kramers=0; idiag_fradrsphmphi_Kconst=0
         idiag_fconvrsphmphi=0; idiag_fconvthsphmphi=0; idiag_fconvpsphmphi=0
         idiag_ufpresm=0; idiag_fradz_constchi=0; idiag_ursphTTmphi=0
         idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
@@ -6952,6 +6964,7 @@ module Energy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'divcoolmphi',idiag_divcoolmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'divheatmphi',idiag_divheatmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fradrsphmphi_kramers',idiag_fradrsphmphi_kramers)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'fradrsphmphi_Kconst',idiag_fradrsphmphi_Kconst)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvrsphmphi',idiag_fconvrsphmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvthsphmphi',idiag_fconvthsphmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvpsphmphi',idiag_fconvpsphmphi)
