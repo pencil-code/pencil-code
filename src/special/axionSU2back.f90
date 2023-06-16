@@ -663,6 +663,9 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
             f(l2,m,n,iaxi_psidot)=psidot(nx)
             f(l2,m,n,iaxi_TR)=TR(nx)
             f(l2,m,n,iaxi_TRdot)=TRdot(nx)
+open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
+write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psi)
+close(1)
           endif
 !
 !  reset lnkmin0
