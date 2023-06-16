@@ -1,10 +1,10 @@
 ! $Id$
 !
-!  This module provides a 1D profile of density and temperature for the 
-!  initial conditions to be applied for supernova driven turbulence 
+!  This module provides a 1D profile of density and temperature for the
+!  initial conditions to be applied for supernova driven turbulence
 !  simulations in the interstellar medium.
 !  After the 1D profile converges to an equilibrium state save the profiles
-!  of rho and tt to init_ism.dat, which will be imported by 
+!  of rho and tt to init_ism.dat, which will be imported by
 !  initial_condition/ths_equilibrium_ism.f90 for 3D simulations
 !
 !   Description                               | Relevant function call
@@ -84,16 +84,16 @@ module InitialCondition
   include '../initial_condition.h'
 !
 !  Observed number density per cubic cm parameters from Dickey & Lockman
-!  Includes neutral hydrogen and warm ionized hydrogen plus helium 
+!  Includes neutral hydrogen and warm ionized hydrogen plus helium
 !  proportionately. Multiply by m_u_cgs for gas density
 !
-! particles per cm cubed not normalized to 1 at midplane 
+! particles per cm cubed not normalized to 1 at midplane
   real, parameter, dimension(5) :: nfraction_cgs = &
       (/0.399,0.1083,0.0627,0.015,0.025/)
 ! scale height in cm
   real, parameter, dimension(5) :: hscale_cgs = &
       (/3.9188e20, 9.8125e20, 1.2435e21, 2.1600e20, 2.7771e21/)
-  real, dimension(5) :: rho_fraction, hscale 
+  real, dimension(5) :: rho_fraction, hscale
 !
 !  Heating function, cooling function
 !
@@ -151,10 +151,10 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
       real, dimension (:,:),              optional, intent(out)  :: profiles
-! 
+!
 !  SAMPLE IMPLEMENTATION
 !
-      
+
 
       call keep_compiler_quiet(f)
       if (present(profiles)) then
@@ -203,9 +203,9 @@ module InitialCondition
       lnTT = log(T_init)
       rho = rho_fraction(1) * exp(-z**2/hscale(1)**2) &
               + rho_fraction(2) * exp(-z**2/hscale(2)**2) &
-              + rho_fraction(3) * exp(-abs(z)/hscale(3)) &
-              + rho_fraction(4) * exp(-abs(z)/hscale(4)) &
-              + rho_fraction(5) * exp(-abs(z)/hscale(5))
+              + rho_fraction(3) * exp(-abs(z)/hscale(3)) !&
+              !+ rho_fraction(4) * exp(-abs(z)/hscale(4)) &
+              !+ rho_fraction(5) * exp(-abs(z)/hscale(5))
       do n=n1,n2
         f(:,:,n,ilnrho)=log(rho(n))
       enddo
@@ -218,7 +218,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT 
+      use EquationOfState, only: eoscalc, ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: lnrho, ss
