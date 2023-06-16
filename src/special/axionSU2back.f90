@@ -757,7 +757,7 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
       if (lreset) then
         idiag_Q=0; idiag_Qdot=0; idiag_Qddot=0; idiag_chi=0; idiag_chidot=0; idiag_chiddot=0
         idiag_psi=0; idiag_TR=0; idiag_psi_anal=0; idiag_TR_anal=0
-        idiag_grand=0; idiag_grant=0; idiag_grand2=0; idiag_dgrant=0; idiag_fact=0
+        idiag_grand2=0; idiag_dgrant=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0; idiag_k0=0; idiag_dk=0
       endif
 !
@@ -773,7 +773,7 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
         call parse_name(iname,cname(iname),cform(iname),'psi_anal' ,idiag_psi_anal)
         call parse_name(iname,cname(iname),cform(iname),'TR_anal' ,idiag_TR_anal)
 !       call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
-        call parse_name(iname,cname(iname),cform(iname),'grant' ,idiag_grant)
+!       call parse_name(iname,cname(iname),cform(iname),'grant' ,idiag_grant)
         call parse_name(iname,cname(iname),cform(iname),'grand2' ,idiag_grand2)
         call parse_name(iname,cname(iname),cform(iname),'dgrant' ,idiag_dgrant)
         call parse_name(iname,cname(iname),cform(iname),'fact' ,idiag_fact)
