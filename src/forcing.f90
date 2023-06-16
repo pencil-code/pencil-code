@@ -132,6 +132,7 @@ module Forcing
   real, dimension (my,n_forcing_cont_max) :: siny,cosy,sinyt,cosyt,embedy,expmk2y2
   real, dimension (mz,n_forcing_cont_max) :: sinz,cosz,sinzt,coszt,embedz
   real, dimension (100,n_forcing_cont_max) :: xi_GP,eta_GP
+  real, allocatable, dimension (:,:,:,:) :: fcont_from_file
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
@@ -1046,6 +1047,15 @@ module Forcing
         elseif (iforcing_cont(i)=='exp(-x2-y2)') then
           expmk2x2(:,i)=exp(-kf_fcont(i)**2*x**2)
           expmk2y2(:,i)=exp(-kf_fcont(i)**2*y**2)
+        elseif (iforcing_cont(i)=='from_file') then
+          if (allocated(fcont_from_file)) deallocate(fcont_from_file)
+          allocate(fcont_from_file(3,nxgrid,nygrid,nzgrid))
+          
+          ! To create forcing_cont.dat, see function pc.util.write_forcing_cont in the Python module.
+          if (lroot.and.ip<14) print*,'initialize_forcing: opening forcing_cont.dat'
+          open(1,file='forcing_cont.dat',status='old')
+          read(1,*) fcont_from_file
+          close(1)
         endif
       enddo
       if (n_forcing_cont==0) call warning('forcing','no valid continuous iforcing_cont specified')
@@ -5515,6 +5525,7 @@ module Forcing
 !   9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u
 !                and u.grad u for Roberts geometry
 !   4-nov-11/MR: now also compensates Coriolis force
+!   16-jun-23/Kishore G: Added ability to read forcing function from a file.
 !
 !  Note: It is not enough to set lforcing_cont = T in input parameters of
 !  forcing one must also set  lforcing_cont_uu = T in hydro for the
@@ -5982,6 +5993,21 @@ module Forcing
         case('zero')
           force=0.
 !
+!   Read forcing profile from file. Currently can be used only for one variable
+!   (e.g. either uu or aa).
+!
+        case('from_file')
+          force(:,1) = fcont_from_file(1, &
+                                       l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
+                                       m-nghost+ipy*ny,n-nghost+ipz*nz)
+          force(:,2) = fcont_from_file(2, &
+                                       l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
+                                       m-nghost+ipy*ny,n-nghost+ipz*nz)
+          force(:,3) = fcont_from_file(3, &
+                                       l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
+                                       m-nghost+ipy*ny,n-nghost+ipz*nz)
+          force=ampl_ff(i)*force
+!
 !  nothing 
 !
         case ('nothing')
@@ -6200,6 +6226,8 @@ module Forcing
         deallocate(psif,cklist)
         if (lfastCK) deallocate(Zpsi_list,RYlm_list,IYlm_list)
       endif
+      
+      if (allocated(fcont_from_file)) deallocate(fcont_from_file)
 !
     endsubroutine forcing_clean_up
 !***********************************************************************
