@@ -314,65 +314,65 @@ def load_dataset(src, key, lindx, lindy, lindz, nghost):
     else:
         n3, n4, m3, m4, l3, l4 = None, None, None, None, None, None
         # define array indices in z direction
-        if var.shape[-3] >= nz:
-            n1, n2 = 0, lindz.size
+        #if var.shape[-3] >= nz:
+        #    n1, n2 = 0, lindz.size
+        #    nn1, nn2 = 0, lindz.size
+        #else:
+        if lindz[0] == np.min(lindz):
+            n1, n2 = lindz[0], lindz[-1]+1
             nn1, nn2 = 0, lindz.size
         else:
-            if lindz[0] == np.min(lindz):
-                n1, n2 = lindz[0], lindz[-1]+1
-                nn1, nn2 = 0, lindz.size
+            n1 = lindz[0]
+            n2 = nz - nghost
+            n3 = nghost
+            n4 = lindz[-1] + 1
+            nn1 = 0
+            nn2 = n2 - n1
+            nn3 = n2 - n1
+            if lindz[-1] > nz:
+                nn4 = lindz.size
             else:
-                n1 = lindz[0]
-                n2 = nz - nghost
-                n3 = nghost
-                n4 = lindz[-1] + 1
-                nn1 = 0
-                nn2 = n2 - n1
-                nn3 = n2 - n1
-                if lindz[-1] > nz:
-                    nn4 = lindz.size
-                else:
-                    nn4 = np.mod(lindz.size, nz)
+                nn4 = np.mod(lindz.size, nz+nghost)
         # define array indices in y direction
-        if var.shape[-2] >= ny:
-            m1, m2 =  0, lindy.size
+        #if var.shape[-2] >= ny:
+        #    m1, m2 =  0, lindy.size
+        #    mm1, mm2 = 0, lindy.size
+        #else:
+        if lindy[0] == np.min(lindy):
+            m1, m2 = lindy[0], lindy[-1]+1
             mm1, mm2 = 0, lindy.size
         else:
-            if lindy[0] == np.min(lindy):
-                m1, m2 = lindy[0], lindy[-1]+1
-                mm1, mm2 = 0, lindy.size
+            m1 = lindy[0]
+            m2 = ny - nghost
+            m3 = nghost
+            m4 = lindy[-1] + 1
+            mm1 = 0
+            mm2 = m2 - m1
+            mm3 = m2 - m1
+            if lindy[-1] > ny:
+                mm4 = lindy.size
             else:
-                m1 = lindy[0]
-                m2 = ny - nghost
-                m3 = nghost
-                m4 = lindy[-1] + 1
-                mm1 = 0
-                mm2 = m2 - m1
-                mm3 = m2 - m1
-                if lindy[-1] > ny:
-                    mm4 = lindy.size
-                else:
-                    mm4 = np.mod(lindy.size, ny)
+                mm4 = np.mod(lindy.size, ny+nghost)
         # define array indices in x direction
-        if var.shape[-1] >= nx:
-            l1, l2 = 0, lindx.size
+        #if var.shape[-1] >= nx:
+        #    l1, l2 = 0, lindx.size
+        #    ll1, ll2 = 0, lindx.size
+        #else:
+        if lindx[0] == np.min(lindx):
+            l1, l2 = lindx[0], lindx[-1]+1
             ll1, ll2 = 0, lindx.size
         else:
-            if lindx[0] == np.min(lindx):
-                l1, l2 = lindx[0], lindx[-1]+1
-                ll1, ll2 = 0, lindx.size
+            l1 = lindx[0]
+            l2 = nx - lindx[0]
+            l3 = nghost
+            l4 = lindx[-1] + 1
+            ll1 = 0
+            ll2 = l2 - l1
+            ll3 = l2 - l1
+            if lindx[-1] > nx:
+                ll4 = lindx.size
             else:
-                l1 = lindx[0]
-                l2 = nx - nghost
-                l3 = nghost
-                l4 = lindx[-1] + 1
-                ll1 = 0
-                ll2 = l2 - l1
-                ll3 = l2 - l1
-                if lindx[-1] > nx:
-                    ll4 = lindx.size
-                else:
-                    ll4 = np.mod(lindx.size, nx)
+                ll4 = np.mod(lindx.size, nx+nghost)
         var[:,nn1:nn2,mm1:mm2,ll1:ll2] = src[key][:,n1:n2,m1:m2,l1:l2]
         if l3:
             var[:,nn1:nn2,mm1:mm2,ll3:ll4] = src[key][:,n1:n2,m1:m2,l3:l4]
