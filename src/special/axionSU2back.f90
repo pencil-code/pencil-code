@@ -79,8 +79,8 @@ module Special
   integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
   integer :: idiag_psi_anal =0 ! DIAG_DOC: $\psi^{\rm anal}$
   integer :: idiag_TR_anal  =0 ! DIAG_DOC: $T_R^{\rm anal}$
-  integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
-  integer :: idiag_grant=0 ! DIAG_DOC: ${\cal T}^\chi$
+! integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
+! integer :: idiag_grant=0 ! DIAG_DOC: ${\cal T}^\chi$
   integer :: idiag_grand2=0 ! DIAG_DOC: ${\cal T}^Q$ (test)
   integer :: idiag_dgrant=0 ! DIAG_DOC: $\dot{\cal T}^\chi$
   integer :: idiag_fact=0   ! DIAG_DOC: $\Theta(t)$
@@ -517,8 +517,8 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call sum_mn_name(TR_anal,idiag_TR_anal)
         call sum_mn_name(psi,idiag_psi)
         call sum_mn_name(TR,idiag_TR)
-        call sum_mn_name(grand,idiag_grand)  !redundant
-        call sum_mn_name(grant,idiag_grant)  !redundant
+!       call sum_mn_name(grand,idiag_grand)  !redundant
+!       call sum_mn_name(grant,idiag_grant)  !redundant
         call save_name(grand_sum,idiag_grand2)
         call save_name(dgrant_sum,idiag_dgrant)
         call save_name(fact,idiag_fact)
@@ -663,10 +663,13 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
             f(l2,m,n,iaxi_psidot)=psidot(nx)
             f(l2,m,n,iaxi_TR)=TR(nx)
             f(l2,m,n,iaxi_TRdot)=TRdot(nx)
-open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
-write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psi)
-close(1)
           endif
+!
+!  output
+!
+          open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
+          write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psi)
+          close(1)
 !
 !  reset lnkmin0
 !
@@ -692,8 +695,11 @@ close(1)
 !        TRdoteff=(k/sqrt(2.*k))*sin(-k*t)
       endwhere
 !
-      grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
-      grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
+      !grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
+      !grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
+!
+      grand=(4.*pi*k**3*dlnk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
+      grant=(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
 !
       !if (llog_spacing) then
 !AB: bug, right?
@@ -709,11 +715,11 @@ close(1)
         endif
       else
         if (lconf_time) then
-          dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+          dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+g*Qdot)*TReff**2+(mQ*H-k/a)*2*TReff*TRdoteff &
           )/twopi**3
         else 
-          dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+          dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+a*g*Qdot)*TReff**2+(a*mQ*H-k)*2*TReff*TRdoteff &
           )/twopi**3
         endif
@@ -766,7 +772,7 @@ close(1)
         call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
         call parse_name(iname,cname(iname),cform(iname),'psi_anal' ,idiag_psi_anal)
         call parse_name(iname,cname(iname),cform(iname),'TR_anal' ,idiag_TR_anal)
-        call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
+!       call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
         call parse_name(iname,cname(iname),cform(iname),'grant' ,idiag_grant)
         call parse_name(iname,cname(iname),cform(iname),'grand2' ,idiag_grand2)
         call parse_name(iname,cname(iname),cform(iname),'dgrant' ,idiag_dgrant)
