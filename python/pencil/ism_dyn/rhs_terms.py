@@ -5,12 +5,12 @@
 #
 """ Derive auxilliary data and other diagnostics from var.h5 file and
     save to new h5 file
- 
+
     uses:
       compute "data" arrays of size [nz,ny,nx] as required
       store "time" of snapshot
       compute "masks" for example by temperature phase
-      compute summary statistics "stats" 
+      compute summary statistics "stats"
       compute "structure" functions as required
 """
 
@@ -49,7 +49,7 @@ from pencil import read
 import os
 
 def rhs_data(sim_path, src, dst, magic=["uxb","etadel2a"], par=[], comm=None,
-                gd=[], grp_overwrite=False, overwrite=False, 
+                gd=[], grp_overwrite=False, overwrite=False,
                 rank=0, size=1, nghost=3,status="a",
                 chunksize = 1000.0, dtype=np.float64, quiet=True, nmin=32,
                 Reynolds_shock=False, lmix=False
@@ -79,7 +79,7 @@ def rhs_data(sim_path, src, dst, magic=["uxb","etadel2a"], par=[], comm=None,
                               MBmin=chunksize,nmin=nmin,size=size)[1]
     else:
         nchunks = [1,1,1]
-    print("nchunks {}".format(nchunks)) 
+    print("nchunks {}".format(nchunks))
     # for mpi split chunks across processes
     if size > 1:
         locindx = np.array_split(np.arange(nx)+nghost,nchunks[0])
@@ -190,7 +190,7 @@ def rhs_data(sim_path, src, dst, magic=["uxb","etadel2a"], par=[], comm=None,
 #==============================================================================
 def calc_rhs_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
                       nghost=3, Reynolds_shock=False, lmix=False):
-    """ 
+    """
     compute from src data and existing dst data derived data
     """
     #==========================================================================
@@ -213,7 +213,7 @@ def calc_rhs_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
                 print("no velocity used setting uxb=0 in induction calculation")
                 var = np.zeros_like(bb)
             return var
-     
+
     #==========================================================================
     def resistive(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
         if key == "etadel2a":
@@ -256,7 +256,7 @@ def calc_rhs_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
             var = curl(tmp, gd.dx, gd.dy, gd.dz,x=gd.x[l1shift:l2shift],y=gd.y[m1shift:m2shift],coordinate_system=par.coord_system)
             n1r,m1r,l1r = under_limits(n1,m1,l1,n1shift,m1shift,l1shift,nghost)
             return var[:,n1r:n2-n1+n1r,m1r:m2-m1+m1r,l1r:l2-l1+l1r]
-        
+
     #======================================================================
     def curletadel2a(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
         if key == "curletadel2a":
@@ -272,7 +272,7 @@ def calc_rhs_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
             var = curl(tmp, gd.dx, gd.dy, gd.dz,x=gd.x[l1shift:l2shift],y=gd.y[m1shift:m2shift],coordinate_system=par.coord_system)
             n1r,m1r,l1r = under_limits(n1,m1,l1,n1shift,m1shift,l1shift,nghost)
             return var[:,n1r:n2-n1+n1r,m1r:m2-m1+m1r,l1r:l2-l1+l1r]
-        
+
     #======================================================================
     def bcurluxb(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
         if key == "bcurluxb":
@@ -289,7 +289,7 @@ def calc_rhs_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
                 bb = dst["data/bb"][:,n1:n2,m1:m2,l1:l2]
             var = dot(bb,tmp)
             return var
-        
+
     #======================================================================
     def bcurletadel2a(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
         if key == "bcurletadel2a":
@@ -339,7 +339,7 @@ def calc_rhs_data(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2,
                           ]))
             for j, x in zip((1,2,3),("z","y","x")):
                 if "grav{}_profile".format(x) in par.keys:
-                    gg = grav_profile(par.__getattribute__("grav{}_profile".format(x)), gd.x[l1:l2], gd.y[m1:m2], gd.z[n1:n2], par=par)
+                    gg = grav_profile("grav{}_profile".format(x), gd.x[l1:l2], gd.y[m1:m2], gd.z[n1:n2], par=par)
                     grav[j] = gg
                 if "grav{}".format(x) in par.keys:
                     if par.__getattribute__("grav{}".format(x))>0:
