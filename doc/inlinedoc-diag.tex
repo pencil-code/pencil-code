@@ -114,7 +114,7 @@
   \var{gamrms}    & $\left<\gamma^2\right>^{1/2}$ \\
   \var{gammax}    & $\max(\gamma)$ \\
   \var{u2m}       & $\left<\uv^2\right>$ \\
-  \var{u2sphm}    & $\int_{r=0}^{r=1} \uv^2 dV$,
+  \var{u2sphm}    & $\int_{r=0}^{r=r_{\rm diag}} \uv^2 dV$,
                     where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
   \var{uypt}      & $u_y(x_1,y_1,z_1,t)$ \\
@@ -238,7 +238,7 @@
   \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
                     \equiv \left<(\curl\uv)^2\right>$ \\
   \var{o2u2m}     & $\left<\uv^2\boldsymbol{\omega}^2\right>$ \\
-  \var{o2sphm}    & $\int_{r=0}^{r=1} \boldsymbol{\omega}^2 dV$,
+  \var{o2sphm}    & $\int_{r=0}^{r=r_{\rm diag}} \boldsymbol{\omega}^2 dV$,
                     where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{orms}      & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
   \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
@@ -320,7 +320,7 @@
   \var{uglnrhom}  & $\left<\uv\cdot\nabla\ln\varrho\right>$ \\
   \var{totmass}   & $\int\varrho\,dV$ \\
   \var{mass}      & $\int\varrho\,dV$ \\
-  \var{sphmass}   & $\int\varrho\,dV$ inside $r < 1$. \\
+  \var{sphmass}   & $\int\varrho\,dV$ inside $r < r_{\rm diag}$. \\
   \var{inertiaxx} & $xx$ component of the inertia tensor (spherical coordinates) \\
   \var{inertiayy} & $yy$ component of the inertia tensor (spherical coordinates) \\
   \var{inertiazz} & $zz$ component of the inertia tensor (spherical coordinates) \\
@@ -700,7 +700,7 @@
                     of $J_{\rm hyper}$ parallel to B \\
   \var{hjperpm}   & Mean value of the component
                     of $J_{\rm hyper}$ perpendicular to B \\
-  \var{b2sphm}    & $\int_{r=0}^{r=1} \Bv^2 dV$,
+  \var{b2sphm}    & $\int_{r=0}^{r=r_{\rm diag}} \Bv^2 dV$,
                     where $r=\sqrt{x^2+y^2+z^2}$ \\
   \var{brmsx}     & $\left<\Bv^2\right>^{1/2}$ for
                     the magnetic_xaver_range \\

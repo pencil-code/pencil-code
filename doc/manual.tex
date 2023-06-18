@@ -11026,7 +11026,7 @@ This produces the forcing function $\fv$ of the form
 \begin{equation}
 \fv(\xv,t)=\mbox{Re}\{N\fv_{\kv(t)}\exp[i\kv(t)\cdot\xv+i\phi(t)]\},
 \end{equation}
-where $\kv(t)=(k_x,k_y,k_z)$ is a time dependent wave vector,
+where $\kv(t)=(k_x,k_y,k_z)$ is a random time dependent wave vector,
 $\xv=(x,y,z)$ is position, and $\phi(t)$ with $|\phi|<\pi$ is
 a random phase. On dimensional grounds the normalization factor
 is chosen to be
@@ -11082,7 +11082,7 @@ there are several such files prepared:
    k15.dat  k27.dat  k30.dat  k4.dat  k8.dat
 \end{verbatim}
 and more can be prepared in \cmd{IDL} with the procedure
-\file[generate_kvectors.pro]{\${PENCIL_HOME}/samples/helical-MHDturb/idl/generate_kvectors.pro}
+\file[generate_kvectors.pro]{\${PENCIL_HOME}/samples/helical-MHDturb/idl/generate_kvectors.pro}.
 There is also more help in the \file{README} file in \file{helical-MHDturb}.
 
 %AB: added based on Matthias' check-in message of 27-mar-19.
@@ -11446,7 +11446,7 @@ should always be weaker than the advective Courant criterion.
   wavenumber, and $s$ is an empirical gain factor that has been introduced
   to collapse the spectra in the inertial range.
   The maximum gain factor is 2.6, but at the price of increasing
-  the bottle neck.
+  the bottleneck.
 }\label{pspec}\end{figure}
 
 A standard adection experiment is shown in Fig.~\ref{pw}
@@ -11867,7 +11867,7 @@ more accurate alternatives are
 or
 \begin{equation}
   \delta\tau
-  = \frac{\chi_{k+1}-\chi_k}{\ln\frac{\chi_{k+1}}{\ln\chi_k}} \, \delta x
+  = \frac{\chi_{k+1}-\chi_k}{\ln\frac{\chi_{k+1}}{\ln\chi_k}} \, \delta x.
 \end{equation}
 
 
@@ -12332,7 +12332,7 @@ u_{\hat r;\hat\phi}A_{\hat r}
 
 \begin{equation}
 u_{\hat\beta} A_{\hat\alpha;\hat\beta}=u_{\hat\beta} A_{\hat\alpha,\hat\beta}
--{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\beta}\,u_{\hat\beta} A_{\hat\sigma},
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\beta}\,u_{\hat\beta} A_{\hat\sigma}.
 \end{equation}
 Write out
 \begin{eqnarray}
@@ -12399,7 +12399,7 @@ u_{\hat r,\hat\phi}+u_{\hat\phi,\hat r}-u_{\hat\phi}/r&
   u_{\hat\theta,\hat\phi}+u_{\hat\phi,\hat\theta}-
                               u_{\hat\phi}\frac{\cot\!\theta}{r}&
     2u_{\hat\phi,\hat\phi}+2u_{\hat r}/r+
-                               2u_{\hat\theta}\frac{\cot\!\theta}{r}
+                               2u_{\hat\theta}\frac{\cot\!\theta}{r}.
 \end{pmatrix}
 \end{equation}
 The trace-less rate of strain matrix is given by
@@ -12408,6 +12408,7 @@ The trace-less rate of strain matrix is given by
 \end{equation}
 
 \subsubsection{Lambda effect}
+\index{Lambda effect}
 
 \begin{equation}
 Q_{ij}=
@@ -12415,7 +12416,7 @@ Q_{ij}=
 0 & 0 & \Lambda_V\Omega \cr
 0 & 0 & \Lambda_H\Omega \cr
 \Lambda_V\Omega & \Lambda_H\Omega & 0
-\end{pmatrix}
+\end{pmatrix},
 \end{equation}
 where $\Omega=u_{\hat\phi}/r\sin\theta$.
 Next, compute $Q_{ij;j}$.
@@ -12423,40 +12424,40 @@ Next, compute $Q_{ij;j}$.
 Q_{\hat\alpha\hat\beta;\hat\gamma}
 &=&Q_{\hat\alpha\hat\beta,\hat\gamma}
 -{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,Q_{\hat\sigma\hat\beta}
--{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}\,Q_{\hat\alpha\hat\sigma}.
+-{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}\,Q_{\hat\alpha\hat\sigma}
 \end{eqnarray}
 \begin{eqnarray}
 Q_{\hat\theta\hat\rrrr;\hat\rrrr}
 &=&Q_{\hat\theta\hat\rrrr,\hat\rrrr}
 -{\Gamma^{\hat\sigma}}_{\hat\theta\hat\rrrr}\,Q_{\hat\sigma\hat\rrrr}
--{\Gamma^{\hat\sigma}}_{\hat\rrrr\hat\rrrr}\,Q_{\hat\theta\hat\sigma}.
+-{\Gamma^{\hat\sigma}}_{\hat\rrrr\hat\rrrr}\,Q_{\hat\theta\hat\sigma}
 \cr
-&=&0
+&=&0.
 \end{eqnarray}
 \begin{eqnarray}
 Q_{\hat\theta\hat\theta;\hat\theta}
 &=&Q_{\hat\theta\hat\theta,\hat\theta}
 -{\Gamma^{\hat\sigma}}_{\hat\theta\hat\theta}\,Q_{\hat\sigma\hat\theta}
--{\Gamma^{\hat\sigma}}_{\hat\theta\hat\theta}\,Q_{\hat\theta\hat\sigma}.
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\theta}\,Q_{\hat\theta\hat\sigma}
 \cr
 &=&
 -{\Gamma^{\hat\phi}}_{\hat\theta\hat\theta}\,Q_{\hat\phi\hat\theta}
--{\Gamma^{\hat\phi}}_{\hat\theta\hat\theta}\,Q_{\hat\theta\hat\phi}.
+-{\Gamma^{\hat\phi}}_{\hat\theta\hat\theta}\,Q_{\hat\theta\hat\phi}
 \cr
-&=&0
+&=&0.
 \end{eqnarray}
 \begin{eqnarray}
 Q_{\hat\theta\hat\phi;\hat\phi}
 &=&Q_{\hat\theta\hat\phi,\hat\phi}
 -{\Gamma^{\hat\sigma}}_{\hat\theta\hat\phi}\,Q_{\hat\sigma\hat\phi}
--{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat\sigma}.
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat\sigma}
 \cr
 &=&Q_{\hat\theta\hat\phi,\hat\phi}
 -{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,Q_{\hat\phi\hat\phi}
 -{\Gamma^{\hat r}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat r}
--{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat\theta}.
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat\theta}
 \cr
-&=&0
+&=&0.
 \end{eqnarray}
 %--------------------------------------------------------------------
 $\phi$ terms
@@ -12464,9 +12465,9 @@ $\phi$ terms
 Q_{\hat\phi\hat\rrrr;\hat\rrrr}
 &=&Q_{\hat\phi\hat\rrrr,\hat\rrrr}
 -{\Gamma^{\hat\sigma}}_{\hat\phi\hat\rrrr}\,Q_{\hat\sigma\hat\rrrr}
--{\Gamma^{\hat\sigma}}_{\hat\rrrr\hat\rrrr}\,Q_{\hat\phi\hat\sigma}.
+-{\Gamma^{\hat\sigma}}_{\hat\rrrr\hat\rrrr}\,Q_{\hat\phi\hat\sigma}
 \cr
-&=&Q_{\hat\phi\hat\rrrr,\hat\rrrr}
+&=&Q_{\hat\phi\hat\rrrr,\hat\rrrr}.
 \end{eqnarray}
 \begin{eqnarray}
 Q_{\hat\phi\hat\theta;\hat\theta}
@@ -12478,7 +12479,7 @@ Q_{\hat\phi\hat\theta;\hat\theta}
 -{\Gamma^{\hat\rrrr}}_{\hat\theta\hat\theta}\,Q_{\hat\phi\hat\rrrr}
 \cr
 &=&Q_{\hat\phi\hat\theta,\hat\theta}
-+r^{-1}\,Q_{\hat\phi\hat\rrrr}
++r^{-1}\,Q_{\hat\phi\hat\rrrr}.
 \end{eqnarray}
 \begin{eqnarray}
 Q_{\hat\phi\hat\phi;\hat\phi}
@@ -12505,7 +12506,7 @@ Q_{\hat\phi\hat\phi;\hat\phi}
 \cr
 &=&
 +2r^{-1}\,\Lambda_{\rm V}\Omega
-+2\cot\theta\,r^{-1}\,\Lambda_{\rm H}\Omega
++2\cot\theta\,r^{-1}\,\Lambda_{\rm H}\Omega.
 \end{eqnarray}
 So, the $\phi$ component of the divergence of the Lambda tensor is then
 \begin{equation}
@@ -12513,7 +12514,7 @@ Q_{\hat\phi\hat\sigma;\hat\sigma}=
 Q_{\hat\phi\hat\rrrr,\hat\rrrr}
 +Q_{\hat\phi\hat\theta,\hat\theta}
 +3r^{-1}\,\Lambda_{\rm V}\Omega
-+2\cot\theta\,r^{-1}\,\Lambda_{\rm H}\Omega
++2\cot\theta\,r^{-1}\,\Lambda_{\rm H}\Omega.
 \end{equation}
 
 \subsubsection{Laplacian of a scalar}
@@ -12523,7 +12524,7 @@ Then
 \begin{equation}
 \Delta\Psi = E_{\hat\beta;\hat\beta}
 = (\partial_{\hat\beta}\Psi)_{,\hat\beta} +
-  \frac{2}{r}\Psi_{,\hat r} + \frac{\cot\!\theta}{r}\Psi_{,\hat\theta}
+  \frac{2}{r}\Psi_{,\hat r} + \frac{\cot\!\theta}{r}\Psi_{,\hat\theta}.
 \end{equation}
 
 \subsubsection{Hessian of a scalar}
@@ -12671,7 +12672,7 @@ B_{\hat\theta,\hat r}=
 A_{\hat r,\hat\phi\hat r}-A_{\hat\phi,\hat r\hat r}-({\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi})_{,\hat r}
 \quad&
 B_{\hat r,\hat\theta}=
-A_{\hat\phi,\hat\theta\hat\theta}-A_{\hat\theta,\hat\phi\hat\theta}+({\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi})_{,\hat\theta}
+A_{\hat\phi,\hat\theta\hat\theta}-A_{\hat\theta,\hat\phi\hat\theta}+({\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi})_{,\hat\theta}.
 \end{array}
 \end{eqnarray}
 Thus,
@@ -12859,7 +12860,7 @@ A_{\hat\alpha;\hat\alpha\hat\phi}
 \cr
 &=&A_{\hat\alpha,\hat\alpha\hat\phi}
 +2r^{-1}A_{\hat r,\hat\phi}
-+r^{-1}\cot\!\theta A_{\hat\theta,\hat\phi}
++r^{-1}\cot\!\theta A_{\hat\theta,\hat\phi}.
 \end{eqnarray}
 In the first line of the expression above, the last four terms vanish\footnote{
 The following four terms vanish because
