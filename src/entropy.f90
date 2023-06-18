@@ -101,6 +101,7 @@ module Energy
   real :: peh_factor=1., heat_ceiling=-1.0
   real :: Pr_smag1=1.
   real :: cs2top_ini=impossible, dcs2top_ini=impossible, TTbot_factor=1.
+  real :: nheat_rho=1.0, nheat_TT=1.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -165,6 +166,7 @@ module Energy
   character (len=labellen) :: borderss='nothing', div_sld_ene='2nd'
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
+  character (len=labellen) :: heattype='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen) :: ichit='nothing'
   character (len=intlen) :: iinit_str
@@ -243,7 +245,8 @@ module Energy
       lss_running_aver_as_aux, lss_running_aver_as_var, lFenth_as_aux, &
       lss_flucz_as_aux, lTT_flucz_as_aux, rescale_hcond, wpres, &
       lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver, &
-      kx_ss, ky_ss, kz_ss, tau_relax_ss, ampl_imp_ss, TTbot_factor
+      kx_ss, ky_ss, kz_ss, tau_relax_ss, ampl_imp_ss, TTbot_factor, &
+      heattype, nheat_rho, nheat_TT
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -3105,6 +3108,11 @@ module Energy
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_pp)=.true.
+      endif
+!
+      if (heattype == 'cs2-rho') then
+         lpenc_requested(i_rho)=.true.
+         lpenc_requested(i_cs2)=.true.
       endif
 !
 ! Store initial stratification as pencils if f-array space allocated
@@ -6206,12 +6214,7 @@ module Energy
 !  Subroutine to calculate the heat/cool term for radial gravity
 !  in cartesian and cylindrical coordinate, used in 'star-in-box' type of
 !  simulations (including the sample run of geodynamo).
-!  Note that this may actually work for the spherical coordinate too
-!  because p%r_mn is set to be the correct quantity for each coordinate
-!  system in subroutine grid. But the spherical part has not been tested
-!  in spherical coordinates. At present (May 2010)
-!  get_heat_cool_gravr_spherical is recommended for the spherical coordinates.
-!  Normalised central heating profile so volume integral = 1
+!  Normalised Gaussian central heating profile so volume integral = 1
 !
 !  13-sep-07/boris: coded
 !
@@ -6224,13 +6227,24 @@ module Energy
 !      real :: zbot,ztop
       intent(in) :: p
 !
-      if (nzgrid == 1) then
-        prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
-      else
-        prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
-      endif
-      heat = luminosity*prof
-      div_heat = luminosity*prof
+      select case (heattype)
+      case ('gaussian', 'Gaussian') ! heating with a sptially fixed Gaussian profile
+        if (nzgrid == 1) then
+          prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
+        else
+          prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
+        endif
+        heat = luminosity*prof
+        div_heat = luminosity*prof
+      case ('cs2-rho') ! heating depending on ambient density and temperature
+        prof = (p%rho/rho0)**nheat_rho*(p%cs2/cs20)**nheat_TT
+        heat = luminosity*prof
+        div_heat = luminosity*prof
+!
+      case default
+        call fatal_error('get_heat_cool_gravr','no such heattype: '//trim(heattype))
+      endselect
+!
       if (headt .and. lfirst .and. ip<=9) call output_pencil('heat.dat',heat,1)
 !
 !  Surface cooling: entropy or temperature
