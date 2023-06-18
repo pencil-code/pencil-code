@@ -1,3 +1,25 @@
+As of 18 Jun 2023: 20 owners: 
+        Sven Bingert <sven.bingert@gwdg.de>,
+        Philippe Bourdin <Philippe.Bourdin@oeaw.ac.at>,
+        Axel Brandenburg <brandenb@nordita.org>,
+        simon candelaresi <simon.candelaresi@gmail.com>,
+        Piyali Chatterjee <mppiyali@gmail.com>,
+        Boris Dintrans <boris.dintrans@cines.fr>,
+        Wolfgang Dobler <wdobler@gmail.com>,
+        Frederick Gent <frederick.gent@aalto.fi>,
+        Nils E Haugen <Nils.E.Haugen@sintef.no>,
+        Tobias Heinemann <tobias.heinemann@gmail.com>,
+        Anders Johansen <anders.johansen@sund.ku.dk>,
+        Petri KÃ¤pylÃ¤ <pkaepyl@uni-goettingen.de>,
+        Maarit Korpi-Lagg <maarit.korpi-lagg@aalto.fi>,
+        Wladimir Lyra <wladimir.lyra@gmail.com>,
+        Dhrubaditya Mitra <dhruba.mitra@gmail.com>,
+        Matthias Rheinhardt <matthias.rheinhardt@aalto.fi>,
+        Jennifer Schober <schober.jen@gmail.com>,
+        Joern Warnecke <warnecke@mps.mpg.de>,
+        Chao-Chin Yang <ccyang@unlv.edu>,
+        Hongzhe Zhou <hongzhe.zhou@sjtu.edu.cn>
+
 As of 7 Dec 2019: 16 owners: 
         Sven Bingert <sven.bingert@gwdg.de>,
         Philippe Bourdin <Philippe.Bourdin@oeaw.ac.at>,
