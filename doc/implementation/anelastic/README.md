@@ -12,5 +12,7 @@ There is a sample in:
   ~/pencil-code/samples/2d-tests/anelastic_decay/
 
 Documentation can be found under:
-  anelastic_hurdle.pdf
+  [anelastic_hurdle.pdf][anelastic_hurdle]
+
+[anelastic_hurdle]: anelastic_hurdle.pdf
 
