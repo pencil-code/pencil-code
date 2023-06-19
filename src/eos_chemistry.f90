@@ -84,8 +84,6 @@ module EquationOfState
       use SharedVariables, only: put_shared_variable
       use Sub, only: register_report_aux
 !
-      leos_chemistry=.true.
-!
       ilnTT = 0
 !
 !  Identify version number.

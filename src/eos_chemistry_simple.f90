@@ -79,8 +79,6 @@ module EquationOfState
       use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
-      leos_chemistry=.true.
-!
       ilnTT = 0
 !
       if (lpres_grad) then

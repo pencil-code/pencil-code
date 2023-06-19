@@ -898,7 +898,7 @@ module EquationOfState
       real, intent(in)  :: TT
       real, intent(out) :: cs2
 !
-      call fatal_error("get_soundspeed','with ionization, lnrho needs to be known here")
+      call fatal_error('get_soundspeed','with ionization, lnrho needs to be known here')
 !
       call keep_compiler_quiet(TT,cs2)
 !

@@ -900,6 +900,7 @@ module Density
 !
       call get_gamma_etc(gamma,cp)
       gamma1=1./gamma; gamma_m1=gamma-1.; cp1=1./cp
+print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
 !
       if (lreference_state) then
 !

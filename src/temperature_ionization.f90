@@ -759,19 +759,24 @@ module Energy
 !
 !   1-apr-20/joern: coded
 !
+      use EquationOfState, only: get_gamma_etc
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: cs2
+      real :: gamma, gamma_m1, cp
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet.
 !
+     call get_gamma_etc(gamma,cp); gamma_m1=gamma-1.
+
      if (lslope_limit_diff .and. llast) then
        do m=m1,m2
        do n=n1,m2
          if (ltemperature_nolog) then
-           cs2 = p%gamma_m1/p%cp1*f(l1:l2,m,n,iTT)
+           cs2 = gamma_m1*cp*f(l1:l2,m,n,iTT)
          else
-           cs2 = p%gamma_m1/p%cp1*exp(f(l1:l2,m,n,ilnTT))
+           cs2 = gamma_m1*cp*exp(f(l1:l2,m,n,ilnTT))
          endif
          f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
        enddo

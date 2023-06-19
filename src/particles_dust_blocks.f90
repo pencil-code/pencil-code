@@ -395,7 +395,7 @@ module Particles
 !
       if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number) &
           .and..not.lparticles_density) &
-        call not_implemented('initialize_particles',
+        call not_implemented('initialize_particles', &
                              'drag force on gas for variable particle radius or number')
 !
 !  Check if shear advection is on for time-step condition.
@@ -1222,7 +1222,7 @@ k_loop:   do while (.not. (k>npar_loc))
          enddo
 !
         case default
-          call fatal_error('init_particles','no such initvvp: '//trim(initvvp))
+          call fatal_error('init_particles','no such initvvp: '//trim(initvvp(j)))
 !
         endselect
 !

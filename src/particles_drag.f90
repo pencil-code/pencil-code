@@ -763,7 +763,6 @@ module Particles_drag
 !
       use EquationOfState, only: rho0, cs0, get_gamma_etc
       use Gravity, only: gravz_profile
-      use SharedVariables, only: get_shared_variable
 !
       real :: mp_swarm
       real, intent(in) :: eps_dtog

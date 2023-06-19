@@ -44,7 +44,7 @@ module InitialCondition
       dustdensity_powerlaw,edtog,ladd_field_azimuthal,ladd_field_vertical
 !
   real :: ksi=1.
-  real :: gamma, gamma_m1
+  real :: gamma, gamma_m1, cp1
 !
   contains
 !***********************************************************************

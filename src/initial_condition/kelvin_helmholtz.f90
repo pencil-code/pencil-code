@@ -194,21 +194,21 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0,lnrho0
+      use EquationOfState, only: cs20,rho0,lnrho0,gamma_etc
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,rho
-      real :: cp,cv,cp1,lnTT0,pp0,TT0
+      real :: gamma,gamma1,gamma_m1,cp,cv,cp1,lnTT0,pp0,TT0
       integer :: irho
 !
 !  SAMPLE IMPLEMENTATION
 !
-      cp=1.
-      cp1=1/cp
-      cv=gamma1*cp
+      call gamma_etc(gamma,cp=cp)
+      gamma1=1./gamma; gamma_m1=gamma-1.
+      cp1=1./cp; cv=gamma1*cp
 !
       TT0 = cs20*cp1/gamma_m1 ; lnTT0=log(TT0)
-      pp0=(cp-cv)*TT0*rho0
+      pp0 = (cp-cv)*TT0*rho0
 !
       irho=ilnrho
 !
@@ -222,8 +222,7 @@ module InitialCondition
 !
 ! cp=1
 !
-        f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss) + &
-             cv*(lnTT-gamma_m1*lnrho)
+        f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss) + cv*(lnTT-gamma_m1*lnrho)
 !
       enddo;enddo
 !
