@@ -39,7 +39,7 @@ module EquationOfState
 !
   real :: cs0=1.0, rho0=1.0, rho02
   real :: cs20=1.0, lnrho0=0.0 
-  real, parameter :: gamma=5.0/3.0, gamma_m1=gamma-1., gamma1=1./gamma
+  real :: gamma=5.0/3.0, gamma_m1, gamma1
   real :: cs2bot=1.0, cs2top=1.0
   real, dimension(nchemspec,18) :: species_constants
   real :: Cp_const=impossible
@@ -73,6 +73,7 @@ module EquationOfState
 !***********************************************************************
     subroutine initialize_eos
 !
+      gamma_m1=gamma-1.; gamma1=1./gamma
       rho02 = rho0**2
 !
     endsubroutine initialize_eos
