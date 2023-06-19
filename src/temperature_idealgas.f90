@@ -343,7 +343,7 @@ module Energy
 !
       use FArrayManager, only: farray_register_global
       use Gravity, only: gravz, compute_gravity_star
-      use EquationOfState, only : cs2bot, cs2top, select_eos_variable, get_gamma_etc
+      use EquationOfState, only : cs2bot, cs2top, rho0, select_eos_variable, get_gamma_etc
       use Sub, only: step,der_step
       use SharedVariables, only: get_shared_variable
       use Slices_methods, only: alloc_slice_buffers

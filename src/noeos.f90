@@ -59,7 +59,7 @@ module EquationOfState
       if (lroot) call svn_id( &
           '$Id$')
 
-      call put_shared_variable('gamma',gamma,'register_eos')
+      call put_shared_variable('gamma',gamma,caller='register_eos')
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0)
         call put_shared_variable('lnrho0',lnrho0)
