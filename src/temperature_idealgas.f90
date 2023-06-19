@@ -90,7 +90,6 @@ module Energy
 !
   real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
 !
-!
 !  Init parameters.
 !
   namelist /entropy_init_pars/ &
@@ -343,7 +342,7 @@ module Energy
 !
       use FArrayManager, only: farray_register_global
       use Gravity, only: gravz, compute_gravity_star
-      use EquationOfState, only : cs2bot, cs2top, rho0, select_eos_variable, get_gamma_etc
+      use EquationOfState, only : cs2bot, cs2top, select_eos_variable, get_gamma_etc
       use Sub, only: step,der_step
       use SharedVariables, only: get_shared_variable
       use Slices_methods, only: alloc_slice_buffers
@@ -2156,6 +2155,7 @@ module Energy
 !
 !  Note: if ldensity=.false. then rho=1 and chi=K/cp
 !
+      use EquationOfState, only: rho0
       use Diagnostics, only: max_mn_name
       use Sub, only: dot
 !
