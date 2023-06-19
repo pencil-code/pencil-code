@@ -1207,17 +1207,29 @@ module EquationOfState
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
-    subroutine get_gamma_etc(gamma_,cp_,cv_)
+    subroutine get_gamma_etc(gamma_,cp,cv)
 !
       real, intent(OUT) :: gamma_
-      real, optional, intent(OUT) :: cp_,cv_
+      real, optional, intent(OUT) :: cp,cv
 !
       gamma_=gamma
 
-      if (present(cp_)) cp_=cp
-      if (present(cv_)) cv_=cv
+      if (present(cp)) cp=get_cp()     ! as module variable is hidden here
+      if (present(cv)) cv=get_cv()
 
     endsubroutine get_gamma_etc
+!***********************************************************************
+    real function get_cp()
+
+      get_cp=cp
+
+    endfunction get_cp
+!***********************************************************************
+    real function get_cv()
+
+      get_cv=cv
+
+    endfunction get_cv
 !***********************************************************************
     subroutine pressure_gradient_point(lnrho,ss,cs2,cp1tilde)
 !
