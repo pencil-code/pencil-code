@@ -438,6 +438,10 @@ module Energy
 !
       if (lparticles_temperature) lpenc_requested(i_tcond)=.true.
 !
+      if (lslope_limit_diff) then
+        lpenc_requested(i_gamma_m1)=.true.
+        lpenc_requested(i_cp1)=.true.
+      endif
     !  if (lchemistry) then
     !     lpenc_requested(i_lnTT)=.true.
     !     lpenc_requested(i_TT)=.true.
@@ -755,26 +759,21 @@ module Energy
 !
 !   1-apr-20/joern: coded
 !
-      use EquationOfState, only : gamma_m1, get_cp1
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: cs2
-      real :: cp1
+      real, dimension (nx) :: cs2
 !
 !    Slope limited diffusion: update characteristic speed
-!    Not staggered yet
+!    Not staggered yet.
 !
      if (lslope_limit_diff .and. llast) then
-       call get_cp1(cp1)
-       cs2=0.
-       do m=1,my
-       do n=1,mz
+       do m=m1,m2
+       do n=n1,m2
          if (ltemperature_nolog) then
-           cs2 = gamma_m1/cp1*f(:,m,n,iTT)
+           cs2 = p%gamma_m1/p%cp1*f(l1:l2,m,n,iTT)
          else
-           cs2 = gamma_m1/cp1*exp(f(:,m,n,ilnTT))
+           cs2 = p%gamma_m1/p%cp1*exp(f(l1:l2,m,n,ilnTT))
          endif
-         f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
+         f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
        enddo
        enddo
      endif
@@ -804,7 +803,7 @@ module Energy
         gamma = p%gamma
       else
         call dot(p%glnTT+p%glnrho,p%glnTT,g2)
-        gamma = 5.0/3.0
+        gamma = 5.0/3.0      !MR: problematic
       endif
 !
 !  Add heat conduction to RHS of temperature equation
@@ -853,7 +852,6 @@ module Energy
 !  07-jun-19/joern: copied from entropy.f90
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df

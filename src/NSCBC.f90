@@ -17,7 +17,6 @@
 module NSCBC
 !
   use Cdata
-  use Cparam
   use Messages, only: fatal_error
   use Mpicomm, only: stop_it
 !
@@ -94,6 +93,8 @@ module NSCBC
       jet_center,velocity_ratio,turb_inlet_file,sigma,lfinal_velocity_profile,&
       velocity_profile,turb_profile_mag,inlet_zz1,inlet_zz2,zz_profile
 !
+  real :: gamma
+
   contains
 !***********************************************************************
     subroutine nscbc_boundtreat(f,df)
@@ -115,12 +116,15 @@ module NSCBC
 !
 !   7-jul-08/arne: coded.
 !
+      use EquationOfState, only: get_gamma_etc
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
-      intent(inout) :: f
-      intent(inout) :: df
+      intent(inout) :: f, df
 !
+      call get_gamma_etc(gamma)
+
       if (nscbc_bc1(1) /= '' .or. nscbc_bc2(1) /= '') &
           call nscbc_boundtreat_xyz(f,df,1)
       if (nscbc_bc1(2) /= '' .or. nscbc_bc2(2) /= '') &
@@ -136,7 +140,6 @@ module NSCBC
 !   j = 1, 2 or 3 for x, y or z-boundaries respectively.
 !
 !   7-jul-08/arne: coded.
-!
 !
       use General, only: safe_character_assign, itoa
 !
@@ -1418,7 +1421,7 @@ module NSCBC
 ! 2010.01.21/Nils Erland: coded
 !
         use Chemistry
-        use EquationOfState, only: cs0, cs20, eoscalc, irho_TT, gamma
+        use EquationOfState, only: cs0, cs20, eoscalc, irho_TT
 !
         real, dimension(mx,my,mz,mfarray) :: f
         integer, intent(in) :: direction, sgn,lll,imin,imax,jmin,jmax
@@ -3521,14 +3524,14 @@ module NSCBC
 !
       if (allocated(u_in)) deallocate(u_in)
 !
- endsubroutine no_nscbc
+    endsubroutine no_nscbc
 !***********************************************************************
     subroutine final_velocity_profile(f,dir,topbot,imin,imax,jmin,jmax,igrid,jgrid)
 !
 !  Create the final inlet velocity profile.
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, allocatable, dimension(:,:)   :: u_profile
+      real, allocatable, dimension(:,:) :: u_profile
       integer :: j,kkk,jjj,bound
       integer, dimension(10) :: stat
       real :: rad_2
@@ -3597,11 +3600,6 @@ module NSCBC
             f(l1:l2,m1:m2,bound,iuy) = f(l1:l2,m1:m2,bound,iuy)*u_profile
             f(l1:l2,m1:m2,bound,iuz) = f(l1:l2,m1:m2,bound,iuz)*u_profile
           endif
-!
-!
-!  Deallocate
-!
-        deallocate(u_profile)
 !
       endsubroutine final_velocity_profile
 !***********************************************************************

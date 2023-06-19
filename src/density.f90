@@ -26,8 +26,7 @@ module Density
   use Cdata
   use General, only: keep_compiler_quiet, itoa
   use Messages
-  use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
-                             gamma, gamma1, gamma_m1
+  use EquationOfState, only: cs0, cs20, cs2bot, cs2top, rho0, lnrho0
   use DensityMethods
 !
   implicit none
@@ -279,6 +278,7 @@ module Density
   real, dimension(nx) :: diffus_diffrho
   real, dimension(nx) :: diffus_diffrho3
   real :: density_floor_log
+  real :: gamma, gamma1, gamma_m1, cp1
 
   contains
 !***********************************************************************
@@ -366,6 +366,11 @@ module Density
       call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
       call put_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
 
+      if (lreference_state) then
+        call put_shared_variable('reference_state',reference_state)
+        call put_shared_variable('reference_state_mass',reference_state_mass)
+      endif
+
     endsubroutine register_density
 !***********************************************************************
     subroutine initialize_density(f)
@@ -385,7 +390,7 @@ module Density
 !  15-nov-16/fred: option to apply z-profile to reinitialize_*
 !  25-may-18/fred: definitive test of mass diffusion correction implemented
 !
-      use EquationOfState, only: select_eos_variable
+      use EquationOfState, only: select_eos_variable, get_gamma_etc
       use BorderProfiles, only: request_border_driving
       use Deriv, only: der,der2
       use FArrayManager
@@ -403,6 +408,7 @@ module Density
       logical :: lnothing, exist
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
+      real :: cp
 !
 !  Prevent this module when background stratification is on.
 !
@@ -892,6 +898,9 @@ module Density
                            beta_glnrho_global
       endif
 !
+      call get_gamma_etc(gamma,cp)
+      gamma1=1./gamma; gamma_m1=gamma-1.; cp1=1./cp
+!
       if (lreference_state) then
 !
         select case(ireference_state)
@@ -945,9 +954,6 @@ module Density
           reference_state_mass=tmp
         endif
 !
-        call put_shared_variable('reference_state',reference_state)
-        call put_shared_variable('reference_state_mass',reference_state_mass)
-
       endif
 !
       call initialize_density_methods
@@ -1107,7 +1113,7 @@ module Density
         case ('stratification-xz'); call stratification_xz(f,strati_type)
         case ('polytropic_simple'); call polytropic_simple(f)
         case ('stratification_tsallis'); call stratification_tsallis(f)
-        case ('hydrostatic_TT'); call temp_hydrostatic(f,rho_const)
+        case ('hydrostatic_TT'); call temp_hydrostatic(f,rho_const,gamma)
         case ('hydrostatic-z', '1')
           if (lroot) print*, 'init_lnrho: use polytropic_simple instead!'
         case ('xjump')
@@ -1158,7 +1164,7 @@ module Density
 !          call isotdisk(powerlr,f,iss,zoverh,hoverr, -(gamma-1)/gamma)
         case ('sinx_siny_sinz')
           call sinx_siny_sinz(ampllnrho(j),f,ilnrho,kx_lnrho(j),ky_lnrho(j),kz_lnrho(j))
-        case ('corona'); call corona_init(f)
+        case ('corona'); call corona_init(f,gamma)
         case ('gaussian3d')
           call gaussian3d(ampllnrho(j),f,ilnrho,radius_lnrho(j))
         case ('gaussian-z')
@@ -3007,7 +3013,6 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: pot,tmp
-      real :: cp1
 !
 !  Stratification depends on the gravity potential.
 !
@@ -3017,7 +3022,6 @@ module Density
             'for gamma/=1.0, you need entropy or temperature!');
       endif
 !
-      call get_cp1(cp1)
       do n=n1,n2
         do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)
@@ -3063,13 +3067,12 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: pot,tmp
-      real :: pot1,tmp1,cp1
+      real :: pot1,tmp1
 !
 !  Stratification depends on the gravity potential;
 !
       if (lroot) print*, 'stratification_tsallis: Tsallis stratification'
 !
-      call get_cp1(cp1)
       do n=n1,n2
         do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)

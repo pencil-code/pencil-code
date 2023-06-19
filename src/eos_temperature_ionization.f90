@@ -8,7 +8,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: leos = .true.
+! CPARAM logical, parameter :: leos = .true., leos_ionization = .true.
+! CPARAM logical, parameter :: leos_idealgas = .false., leos_chemistry = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
@@ -57,13 +58,13 @@ module EquationOfState
   real :: va2max_eos=huge1
   integer :: va2power_eos=5
   real, dimension (3) :: B_ext_eos=(/0.,0.,0./)
-  real :: cs0=impossible, rho0=impossible, cp=impossible,cv=impossible
+  real :: cs0=impossible, rho0=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
   logical :: lss_as_aux=.false., lpp_as_aux=.false., lcs_as_aux=.false.
   logical :: lcp_as_aux=.false., lcv_as_aux=.false., lgamma_as_aux=.false.
   logical :: lnabad_as_aux=.false., ldelta_as_aux=.false.
-  real :: gamma=5./3., gamma_m1=impossible, gamma1=impossible
+  real :: gamma=impossible, gamma_m1=impossible
 !
 ! init parameters
 !
@@ -106,6 +107,7 @@ module EquationOfState
 !  14-jun-03/axel: adapted from register_eos
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
       leos_temperature_ionization=.true.
 !
@@ -127,6 +129,15 @@ module EquationOfState
       if (lroot) call svn_id( &
            '$Id$')
 !
+      call put_shared_variable('gamma',gamma,caller='register_eos')
+
+      if (.not.ldensity) then
+        call put_shared_variable('rho0',rho0)
+        call put_shared_variable('lnrho0',lnrho0)
+      else
+        call put_shared_variable('TTtop',TTtop)
+      endif
+
     endsubroutine register_eos
 !***********************************************************************
     subroutine initialize_eos
@@ -136,7 +147,6 @@ module EquationOfState
 !  21-may-14/axel: adapted from eos_entropy
 !
       use Sub, only: register_report_aux
-      use SharedVariables, only: put_shared_variable
 !
       if (lroot) print*,'initialize_eos: ENTER'
 !
@@ -180,13 +190,6 @@ module EquationOfState
       if (ldelta_as_aux) call register_report_aux('delta',idelta)
       if (lgamma_as_aux) call register_report_aux('gamma',igamma)
       if (lnabad_as_aux) call register_report_aux('nabad',inabad)
-
-      if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0,caller='initialize_eos')
-        call put_shared_variable('lnrho0',lnrho0)
-      else
-        call put_shared_variable('TTtop',TTtop,caller='initialize_eos')
-      endif
 !
 !  write scale non-free constants to file; to be read by idl
 !
@@ -640,39 +643,18 @@ module EquationOfState
 !
     endsubroutine getpressure
 !***********************************************************************
-    subroutine get_cp1(cp1_)
+    subroutine get_gamma_etc(gamma,cp,cv)
 !
-!  04-nov-06/axel: added to alleviate spurious use of pressure_gradient
+      real, intent(OUT) :: gamma
+      real, optional, intent(OUT) :: cp,cv
 !
-!  return the value of cp1 to outside modules
-!
-      real, intent(out) :: cp1_
-!
-!  for variable ionization, it doesn't make sense to calculate
-!  just a single value of cp1, because it must depend on position.
-!  Therefore, return impossible, so one can reconsider this case.
-!
-      call fatal_error('get_cp1',"SHOULDN'T BE CALLED WITH eos_temperature_...")
-      cp1_=impossible
-!
-    endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_cv1(cv1_)
-!
-!  22-dec-10/PJK: adapted from get_cp1
-!
-!  return the value of cv1 to outside modules
-!
-      real, intent(out) :: cv1_
-!
-!  for variable ionization, it doesn't make sense to calculate
-!  just a single value of cv1, because it must depend on position.
-!  Therefore, return impossible, so one can reconsider this case.
-!
-      call fatal_error('get_cv1',"SHOULDN'T BE CALLED WITH eos_temperature_...")
-      cv1_=impossible
-!
-    endsubroutine get_cv1
+      call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_temperature_ionization.'// &
+                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
+      gamma=5./3.
+      if (present(cp)) cp=1.
+      if (present(cv)) cv=3./5.
+
+    endsubroutine get_gamma_etc
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -1031,6 +1013,7 @@ module EquationOfState
 !  if T0 is different from unity, we interpret
 !  ss_offset = ln(T0)/gamma as an additive offset of ss
 !
+      call fatal_error('isothermal_entropy','gamma_m1 undefined')
       if (T0/=1.) ss_offset=alog(T0)/gamma
 !
       do n=n1,n2

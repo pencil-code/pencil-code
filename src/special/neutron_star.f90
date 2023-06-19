@@ -136,6 +136,8 @@ module Special
   integer :: idiag_dtcrad=0
   integer :: idiag_dtchi=0
 !
+  real :: gamma,gamma_m1
+
   contains
 !
 !***********************************************************************
@@ -161,7 +163,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use EquationOfState
+      use EquationOfState, only: get_gamma_etc
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
@@ -169,16 +171,12 @@ module Special
 !
       l1D_cool_heat=l1D_cooling.or.l1D_heating
 !
-      if (l1D_cool_heat.and.lroot) &
-          print*, 'neutron_star: 1D cooling or heating'
+      if (l1D_cool_heat.and.lroot) print*, 'neutron_star: 1D cooling or heating'
 !
-!  Make sure initialization (somehow) works with eos_ionization.f90
+!  Make sure initialization (somehow) works with any eos.
 !
-      if (gamma == impossible) then
-        gamma  = 1
-        gamma_m1 = 0.
-        gamma1 = 1.
-      endif
+      call get_gamma_etc(gamma)
+      gamma_m1=gamma-1.
 !
       call keep_compiler_quiet(f)
 !

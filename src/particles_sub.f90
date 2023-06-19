@@ -48,9 +48,11 @@ module Particles_sub
 !     Fortran 2003 syntax: flexible
 !      integer, parameter :: KIND = selected_int_kind(int(log10(real(npar_species)) + log10(real(npar))) + 1)
 !     Fortran 95 syntax: not flexible
-      integer, parameter :: KIND = selected_int_kind(12)
+      integer, parameter :: KIND = ikind8
 !
       p = int(int(npar_species, kind=KIND) * int(ipar - 1, kind=KIND) / int(npar, kind=KIND)) + 1
+!MR: so?
+!      p = int(npar_species*(real(ipar-1)/real(npar)))
 !
     endfunction assign_species
 !***********************************************************************

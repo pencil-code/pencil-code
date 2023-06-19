@@ -21,7 +21,6 @@
 !
 module Heatflux
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
@@ -68,6 +67,8 @@ module Heatflux
 !
   include 'heatflux.h'
 !
+  real :: gamma
+
 contains
 !***********************************************************************
   subroutine register_heatflux()
@@ -77,6 +78,7 @@ contains
 !  24-apr-13/bing: coded
 !
     use FArrayManager, only: farray_register_pde
+    use SharedVariables, only: put_shared_variable
 !
     call farray_register_pde('qq',iqq,vector=3)
     iqx=iqq; iqy=iqq+1; iqz=iqq+2
@@ -104,15 +106,18 @@ contains
 !
 !  07-sept-17/bingert: updated
 !
+    use EquationOfState, only: get_gamma_etc
     use Slices_methods, only: alloc_slice_buffers
     use SharedVariables, only: get_shared_variable
 !
     real, dimension (mx,my,mz,mfarray) :: f
     real :: eps0,unit_ampere,e_charge
 !
+    call get_gamma_etc(gamma)
+!
 !  Get the external magnetic field if exists.
-    if (lmagnetic) &
-      call get_shared_variable('B_ext', B_ext, caller='calc_hcond_timestep')
+!
+    if (lmagnetic) call get_shared_variable('B_ext', B_ext)
 !
 !  Set up some important constants
 !
@@ -724,7 +729,6 @@ contains
 !  07-sept-17/bingert: updated
 !
     use Slices_methods, only: store_slices
-    use EquationOfState, only: gamma
     use Sub
 !
     real, dimension (mx,my,mz,mfarray) :: f

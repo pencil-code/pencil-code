@@ -20,7 +20,6 @@
 !***************************************************************
 module Energy
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -143,6 +142,8 @@ module Energy
   real, dimension(mz) :: rho0z = 0.0
   real, dimension(nx) :: diffus_chi, diffus_chi3
 !
+  real :: gamma, gamma_m1
+
   contains
 !***********************************************************************
     subroutine register_energy
@@ -172,7 +173,7 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !  03-oct-11/ccyang: add initialization for KI02
 !
-      use EquationOfState, only: select_eos_variable, get_stratz, get_cv1, getmu, gamma, gamma_m1, cs0, cs20
+      use EquationOfState, only: select_eos_variable, get_stratz, getmu, cs0, cs20, get_gamma_etc
       use SharedVariables, only: get_shared_variable
       use Slices_methods, only: alloc_slice_buffers
 !
@@ -183,13 +184,19 @@ module Energy
       integer :: istat
       integer :: i, j, k
       real :: mu
-      real :: c0, c1
+      real :: c0, c1, cp, cv
 !
       call select_eos_variable('eth',ieth)
 !
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_energy')
+
+      if (.not.leos_idealgas) call fatal_error('initialize_energy','currently assumes EOS=eos_idealgas')
+!
+      call get_gamma_etc(gamma,cp,cv)
+      gamma_m1=gamma-1.
+      cv1=1./cv
 !
 !  Decide if operator splitting is required.
 !
@@ -199,12 +206,10 @@ module Energy
 !
 !  General variables required by split_update_energy.
 !
-      ideal_gas: if (lsplit_update) then
-        if (.not. leos_idealgas) call fatal_error('initialize_energy','currently assumes EOS=eos_idealgas')
-        call get_cv1(cv1)
+      if (lsplit_update) then
         cv1_temp = cv1 * unit_temperature
         if (lstratz) cv1_temp = cv1_temp * cs20 / (gamma * gamma_m1)
-      endif ideal_gas
+      endif
 !
 !  Initialize the KI02 terms.
 !
@@ -264,7 +269,7 @@ module Energy
 !
       use General, only: itoa
       use Initcond, only: jump
-      use EquationOfState, only: rho0, cs20, gamma, gamma_m1
+      use EquationOfState, only: rho0, cs20
       use InitialCondition, only: initial_condition_ss
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -419,7 +424,7 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !  14-feb-11/bing: moved eth dependend pecnils to eos_idealgas
 !
-      use EquationOfState, only: gamma, gamma_m1, cs20
+      use EquationOfState, only: cs20
       use Sub, only: u_dot_grad
       use WENO_transport, only: weno_transp
 !
@@ -464,7 +469,6 @@ module Energy
 !  04-nov-10/anders+evghenii: coded
 !  02-aug-11/ccyang: add mesh hyper-diffusion
 !
-      use EquationOfState, only: gamma
       use Special, only: special_calc_energy
       use Sub, only: identify_bcs, u_dot_grad, del2
       use Viscosity, only: calc_viscous_heat
@@ -629,8 +633,6 @@ module Energy
 !  Actions to take before boundary conditions are set.
 !
 !   1-apr-20/joern: coded
-!
-      use EquationOfState, only : gamma_m1, gamma
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: cs2

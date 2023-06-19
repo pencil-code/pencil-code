@@ -15,7 +15,6 @@
 !***************************************************************
 module Detonate
 !
-  use Cparam
   use Cdata
   use Messages, only: svn_id, fatal_error, warning
 !
@@ -70,7 +69,7 @@ module Detonate
 !  14-feb-14/ccyang: coded
 !
       use General, only: keep_compiler_quiet
-      use EquationOfState, only: cs20, gamma, gamma_m1
+      use EquationOfState, only: cs20, get_gamma_etc
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -78,17 +77,20 @@ module Detonate
       real, pointer :: tsg
       integer :: istat
       integer :: i, j, k
-      real :: volume
+      real :: volume, gamma, gamma_m1
 !
       call keep_compiler_quiet(f)
 !
 !  This module currently only works with thermal_energy.
 !
-      if (.not. lthermal_energy) call fatal_error('initialize_detonate', 'currently only works with thermal_energy')
+      if (.not.lthermal_energy) call fatal_error('initialize_detonate','currently only works with thermal_energy')
 !
 !  If called by start.f90: nothing to do.
 !
       if (lstart) return
+
+      call get_gamma_etc(gamma)
+      gamma_m1=gamma-1.
 !
 !  Calculate the conversion factor between density and energy for Jeans
 !  stability.
@@ -128,22 +130,21 @@ module Detonate
       case ('quadratic', 'binding') scale
         power = 2
         if (nzgrid > 1) then
-          call fatal_error('initialize_detonate', 'quadratic scaling for 3D is under construction')
+          call fatal_error('initialize_detonate','quadratic scaling for 3D is under construction')
         else
           deth0 = det_factor * (8.0 * pi / 3.0) * G_Newton * dxmax * det_radius**3
         endif
 !
       case default scale
-        call fatal_error('initialize_detonate', 'unknown det_scale')
+        call fatal_error('initialize_detonate','no such det_scale: '//trim(det_scale))
       endselect scale
 !
 !  Get tselfgrav_gentle.
 !
-      selfgrav: if (lselfgravity) then
-        call get_shared_variable('tselfgrav_gentle', tsg, istat)
-        if (istat /= 0) call warning('initialize_detonate', 'unable to get tselfgrav_gentle')
+      if (lselfgravity) then
+        call get_shared_variable('tselfgrav_gentle', tsg)
         tgentle = tsg
-      endif selfgrav
+      endif
 !
     endsubroutine initialize_detonate
 !***********************************************************************

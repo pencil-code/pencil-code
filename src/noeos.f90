@@ -6,7 +6,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: leos = .false.
+! CPARAM logical, parameter :: leos = .false., leos_ionization=.false.
+! CPARAM logical, parameter :: leos_idealgas = .false., leos_chemistry = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -20,7 +21,6 @@
 !***************************************************************
 module EquationOfState
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -39,10 +39,10 @@ module EquationOfState
 !
   real :: cs0=1.0, rho0=1.0, rho02
   real :: cs20=1.0, lnrho0=0.0 
-  real, parameter :: gamma=5.0/3.0, gamma_m1=2.0/3.0, gamma1=1./gamma
+  real, parameter :: gamma=5.0/3.0, gamma_m1=gamma-1., gamma1=1./gamma
   real :: cs2bot=1.0, cs2top=1.0
   real, dimension(nchemspec,18) :: species_constants
-  real :: Cp_const=impossible, cp=impossible, cv=impossible
+  real :: Cp_const=impossible
   real :: Pr_number=0.7
   logical :: lpres_grad=.false.
 !
@@ -52,33 +52,28 @@ module EquationOfState
 !
 !  14-jun-03/axel: adapted from register_eos
 !
+      use SharedVariables, only: put_shared_variable
+!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
           '$Id$')
+
+      call put_shared_variable('gamma',gamma,'register_eos')
+      if (.not.ldensity) then
+        call put_shared_variable('rho0',rho0)
+        call put_shared_variable('lnrho0',lnrho0)
+      endif
 !
     endsubroutine register_eos
 !***********************************************************************
     subroutine units_eos
 !
-!  Dummy.
-!
     endsubroutine units_eos
 !***********************************************************************
     subroutine initialize_eos
 !
-!  Dummy.
-!
-      use SharedVariables, only: put_shared_variable
-!
       rho02 = rho0**2
-
-      call put_shared_variable('cp',cp)
-      call put_shared_variable('cv',cv)
-      if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0,caller='initialize_eos')
-        call put_shared_variable('lnrho0',lnrho0)
-      endif
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -256,29 +251,18 @@ module EquationOfState
 !
     endsubroutine getpressure
 !***********************************************************************
-    subroutine get_cp1(cp1_)
+    subroutine get_gamma_etc(gamma,cp,cv)
 !
-      real, intent(out) :: cp1_
+      real, intent(OUT) :: gamma
+      real, optional, intent(OUT) :: cp,cv
 !
-      call fatal_error('get_cp1','cp1 is not defined with noeos')
-!
-      cp1_=0.0
-!
-    endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_cv1(cv1_)
-!
-!  23-dec-10/bing: dummy routine
-!
-!  return the value of cv1 to outside modules
-!
-      real, intent(out) :: cv1_
-!
-      call fatal_error('get_cv1','cv1 is not defined with noeos')
-!
-      cv1_=0.
-!
-    endsubroutine get_cv1
+      call warning('get_gamma_etc','gamma, cp, and cv are undefined in noeos.'// &
+                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
+      gamma=5./3.
+      if (present(cp)) cp=1.
+      if (present(cv)) cv=3./5.
+
+    endsubroutine get_gamma_etc
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -1495,8 +1479,7 @@ module EquationOfState
 !  bottom boundary
 !
         case(BOT)
-          if (cs2bot<=0.) print*, &
-              'bc_ss_a2stemp_x: cannot have cs2bot<=0'
+          if (cs2bot<=0.) call fatal_error('bc_ss_a2stemp_x','cannot have cs2bot<=0')
           do i=1,nghost
             if (ldensity_nolog) then
               f(l1-i,:,:,iss) = min( &
@@ -1516,8 +1499,7 @@ module EquationOfState
 !  top boundary
 !
         case(TOP)
-          if (cs2top<=0.) print*, &
-              'bc_ss_a2stemp_x: cannot have cs2top<=0'
+          if (cs2top<=0.) call fatal_error('bc_ss_a2stemp_x','cannot have cs2top<=0')
           do i=1,nghost
             if (ldensity_nolog) then
               f(l2+i,:,:,iss) = min( &
@@ -1563,8 +1545,7 @@ module EquationOfState
 !  bottom boundary
 !
         case(BOT)
-          if (cs2bot<=0.) print*, &
-              'bc_ss_a2stemp_y: cannot have cs2bot<=0'
+          if (cs2bot<=0.) call fatal_error('bc_ss_a2stemp_y','cannot have cs2bot<=0')
           do i=1,nghost
             if (ldensity_nolog) then
               f(:,m1-i,:,iss) = min( &
@@ -1584,8 +1565,7 @@ module EquationOfState
 !  top boundary
 !
         case(TOP)
-          if (cs2top<=0.) print*, &
-              'bc_ss_a2stemp_y: cannot have cs2top<=0'
+          if (cs2top<=0.) call fatal_error('bc_ss_a2stemp_y','cannot have cs2top<=0')
           do i=1,nghost
             if (ldensity_nolog) then
               f(:,m2+i,:,iss) = min( &
@@ -1631,8 +1611,7 @@ module EquationOfState
 !  bottom boundary
 !
         case(BOT)
-          if (cs2bot<=0.) print*, &
-              'bc_ss_a2stemp_z: cannot have cs2bot<=0'
+          if (cs2bot<=0.) call fatal_error('bc_ss_a2stemp_z','cannot have cs2bot<=0')
           do i=1,nghost
             if (ldensity_nolog) then
               f(:,:,n1-i,iss) = min( &
@@ -1652,8 +1631,7 @@ module EquationOfState
 !  top boundary
 !
         case(TOP)
-          if (cs2top<=0.) print*, &
-              'bc_ss_a2stemp_z: cannot have cs2top<=0'
+          if (cs2top<=0.) call fatal_error('bc_ss_a2stemp_z','cannot have cs2top<=0')
           do i=1,nghost
             if (ldensity_nolog) then
               f(:,:,n2+i,iss) = min( &
@@ -1903,7 +1881,7 @@ module EquationOfState
       real, dimension(:), intent(in) :: z
       real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz, eth0z
 !
-      call fatal_error('get_stratz', 'Stratification for this EOS is not implemented. ')
+      call not_implemented('get_stratz','stratification for noeos')
 !
       call keep_compiler_quiet(z)
       if (present(rho0z)) call keep_compiler_quiet(rho0z)

@@ -371,7 +371,7 @@ module Particles
 !
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f)
+    subroutine initialize_particles(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -384,6 +384,7 @@ module Particles
       use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray), intent (out) :: fp
 !
       real :: rhom
       integer :: ierr, jspec
@@ -4376,8 +4377,7 @@ print*,'interp_default=',interp_default,particle_mesh
           elseif (lspherical_coords) then
             OO=(fp(k,ixp)*sin(fp(k,iyp)))**(-1.5)
           else
-            call fatal_error("calc_draglaw_parameters", &
-                 "no valid coord system")
+            call fatal_error("calc_draglaw_parameters","no valid coord system")
             OO=0.
           endif
         else
@@ -4407,7 +4407,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
         if (mean_free_path_gas==0) then
           call fatal_error("calc_draglaw_parameters","You want to use Stokes drag"// &
-              "but you forgot to set 'mean_free_path_gas' in the *.in files.")
+              "but you forgot to set 'mean_free_path_gas' in the *.in files")
         endif
 !
         if (nzgrid==1) then
@@ -4469,8 +4469,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  Only use Epstein drag
 !
-        if (lfirstcall) &
-            print*,'get_frictiontime: Epstein transonic drag law'
+        if (lfirstcall) print*,'get_frictiontime: Epstein transonic drag law'
 !
         mach2=(duu(1)**2+duu(2)**2+duu(3)**2)/p%cs2(inx0)
         fd=sqrt(1+(9.0*pi/128)*mach2)
@@ -4484,11 +4483,9 @@ print*,'interp_default=',interp_default,particle_mesh
       if (iap/=0) then
         if (fp(k,iap)/=0.0) then
           if (nzgrid==1) then
-            tausp1_par=     2*pi_1*OO* &
-                p%rho(inx0)*fac/(fp(k,iap)*rhopmat)
+            tausp1_par=     2*pi_1*OO*p%rho(inx0)*fac/(fp(k,iap)*rhopmat)
           else
-            tausp1_par=sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)* &
-                fac/(fp(k,iap)*rhopmat)
+            tausp1_par=sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)*fac/(fp(k,iap)*rhopmat)
           endif
         endif
       else
@@ -4803,8 +4800,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  Diagnostics.
       if (ldiagnos) then
-        if (idiag_decollp/=0) &
-          call sum_mn_name(coll_heat,idiag_decollp)
+        call sum_mn_name(coll_heat,idiag_decollp)
       endif
 !
     endsubroutine collisional_cooling
@@ -4841,14 +4837,12 @@ print*,'interp_default=',interp_default,particle_mesh
 !  friction force relative to mean particle velocity.
 !
         do k=k1_imn(imn),k2_imn(imn)
-          call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par_mod, &
-              nochange_opt=.false.)
-          call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par_org, &
-              nochange_opt=.true.)
+          call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par_mod,nochange_opt=.false.)
+          call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par_org,nochange_opt=.true.)
           tausp1_par=tausp1_par_org-tausp1_par_mod
           ix0=ineargrid(k,1)
           dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-              tausp1_par*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
+                             tausp1_par*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
         enddo
       endif
 !
@@ -4917,13 +4911,11 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  Output the diagnostics
 !
-      if (idiag_dvpx2m/=0) call sum_mn_name(dvp2m(:,1),idiag_dvpx2m)
-      if (idiag_dvpy2m/=0) call sum_mn_name(dvp2m(:,2),idiag_dvpy2m)
-      if (idiag_dvpz2m/=0) call sum_mn_name(dvp2m(:,3),idiag_dvpz2m)
-      if (idiag_dvpm/=0)   call sum_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
-                                            idiag_dvpm,lsqrt=.true.)
-      if (idiag_dvpmax/=0) call max_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
-                                            idiag_dvpmax,lsqrt=.true.)
+      call sum_mn_name(dvp2m(:,1),idiag_dvpx2m)
+      call sum_mn_name(dvp2m(:,2),idiag_dvpy2m)
+      call sum_mn_name(dvp2m(:,3),idiag_dvpz2m)
+      if (idiag_dvpm/=0)   call sum_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),idiag_dvpm,lsqrt=.true.)
+      if (idiag_dvpmax/=0) call max_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),idiag_dvpmax,lsqrt=.true.)
 !
     endsubroutine calculate_rms_speed
 !***********************************************************************
@@ -4961,14 +4953,14 @@ print*,'interp_default=',interp_default,particle_mesh
         elseif (ivis=='nu-therm') then
           nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
         elseif (ivis=='mu-therm') then
-          nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))&
-              /interp_rho(k1_imn(imn):k2_imn(imn))
+          nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))/interp_rho(k1_imn(imn):k2_imn(imn))
         else
-          call fatal_error('calc_pencil_rep','No such ivis!')
+          call fatal_error('calc_pencil_rep','no such ivis: '//trim(ivis))
+
         endif
       endif
 !
-      if (maxval(nu) == 0.0) call fatal_error('calc_pencil_rep', 'nu (kinematic visc.) must be non-zero!')
+      if (maxval(nu) == 0.0) call fatal_error('calc_pencil_rep','nu (kinematic visc.) must be non-zero')
 !
       do k=k1_imn(imn),k2_imn(imn)
         rep(k) = 2.0 * sqrt(sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2)) / nu(k)
@@ -4979,7 +4971,8 @@ print*,'interp_default=',interp_default,particle_mesh
       elseif (particle_radius > 0.0) then
         rep = rep * particle_radius
       else
-        call fatal_error('calc_pencil_rep', 'unable to calculate the particle Reynolds number without a particle radius. ')
+        call fatal_error('calc_pencil_rep', &
+             'unable to calculate the particle Reynolds number without a particle radius')
       endif
 !
     endsubroutine calc_pencil_rep
@@ -5007,8 +5000,7 @@ print*,'interp_default=',interp_default,particle_mesh
         if (lstocunn1) then
           stocunn(k) = 1.
         else
-          stocunn(k)=1.+2.*mean_free_path_gas/dia* &
-              (1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
+          stocunn(k)=1.+2.*mean_free_path_gas/dia*(1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
         endif
 !
       enddo
@@ -5023,6 +5015,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  beta for added mass according to beta=3rho_fluid/(2rho_part+rho_fluid)
 !  problem: we would have to calculate beta every time for every particle
+!
         added_mass_beta=3*interp_rho(k)/(2*rhopmat+interp_rho(k))
 !
     end subroutine calc_added_mass_beta
@@ -5057,18 +5050,15 @@ print*,'interp_default=',interp_default,particle_mesh
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k))
       elseif (ivis=='mu-therm') then
-        nu=nu_*sqrt(interp_TT(k))&
-            /interp_rho(k)
+        nu=nu_*sqrt(interp_TT(k))/interp_rho(k)
       else
-        call fatal_error('calc_draglaw_purestokes','No such ivis!')
+        call fatal_error('calc_draglaw_purestokes','no such ivis: '//trim(ivis))
       endif
 !
 !  Particle diameter
 !
-      if (.not.lparticles_radius) then
-        call fatal_error('calc_draglaw_purestokes', &
-            'need particles_radius module to calculate the relaxation time!')
-      endif
+      if (.not.lparticles_radius) call fatal_error('calc_draglaw_purestokes', &
+          'need particles_radius module to calculate the relaxation time')
 !
       dia=2.0*fp(k,iap)
 !
@@ -5104,31 +5094,28 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  Use usual viscosity for the drag law.
 !
-      call getnu(nu_input=nu_,ivis=ivis)
-      if (ivis=='nu-const') then
-        nu=nu_
-      elseif (ivis=='nu-mixture') then
-        nu=interp_nu(k)
-      elseif (ivis=='rho-nu-const') then
-        nu=nu_/interp_rho(k)
-      elseif (ivis=='sqrtrho-nu-const') then
-        nu=nu_/sqrt(interp_rho(k))
-      elseif (ivis=='nu-therm') then
-        nu=nu_*sqrt(interp_TT(k))
-      elseif (ivis=='mu-therm') then
-        nu=nu_*sqrt(interp_TT(k))&
-            /interp_rho(k)
-      else
-        call fatal_error('calc_draglaw_steadystate','No such ivis!')
-      endif
+        call getnu(nu_input=nu_,ivis=ivis)
+        if (ivis=='nu-const') then
+          nu=nu_
+        elseif (ivis=='nu-mixture') then
+          nu=interp_nu(k)
+        elseif (ivis=='rho-nu-const') then
+          nu=nu_/interp_rho(k)
+        elseif (ivis=='sqrtrho-nu-const') then
+          nu=nu_/sqrt(interp_rho(k))
+        elseif (ivis=='nu-therm') then
+          nu=nu_*sqrt(interp_TT(k))
+        elseif (ivis=='mu-therm') then
+          nu=nu_*sqrt(interp_TT(k))/interp_rho(k)
+        else
+          call fatal_error('calc_draglaw_steadystate','no such ivis: '//trim(ivis))
+        endif
       endif
 !
 !  Particle diameter
 !
-      if (.not.lparticles_radius) then
-        call fatal_error('calc_draglaw_steadystate', &
+      if (.not.lparticles_radius) call fatal_error('calc_draglaw_steadystate', &
             'need particles_radius module to calculate the relaxation time!')
-      endif
 !
       dia=2.0*fp(k,iap)
 !
@@ -5181,10 +5168,9 @@ print*,'interp_default=',interp_default,particle_mesh
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k))
       elseif (ivis=='mu-therm') then
-        nu=nu_*sqrt(interp_TT(k))&
-            /interp_rho(k)
+        nu=nu_*sqrt(interp_TT(k))/interp_rho(k)
       else
-        call fatal_error('calc_brownian_force','No such ivis!')
+        call fatal_error('calc_brownian_force','no such ivis: '//trim(ivis))
       endif
 !
 !  Particle diameter:
@@ -5205,8 +5191,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
       call get_rhopswarm(mp_swarm,fp,k,ineark,rhop_swarm_par)
 !
-      Szero=216*nu*k_B*TT*pi_1/ &
-           (dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
+      Szero=216*nu*k_B*TT*pi_1/(dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
 !
 !  https://en.wikipedia.org/wiki/Brownian_motion
 !  .3 * urms * lmfp = D=kB*T/(6pi*eta*a)
@@ -5268,7 +5253,7 @@ print*,'interp_default=',interp_default,particle_mesh
       elseif (ivis=='mu-therm') then
         mu=nu_*sqrt(TT)
       else
-        call fatal_error('calc_thermophoretic_force','No such ivis!')
+        call fatal_error('calc_thermophoretic_force','no such ivis: '//trim(ivis))
       endif
       Cint=0.5
       if (interp%lgradTT) then
@@ -5283,7 +5268,7 @@ print*,'interp_default=',interp_default,particle_mesh
       if (thermophoretic_eq=='near_continuum') then
         phi_therm=-9*pi/cond_ratio
       elseif (thermophoretic_eq=='transition') then
-        phi_therm=-12.0*pi*(Ktc*(1.0+cond_ratio*Ce*Kn)+3.0*Cm*Kn*(1.0-cond_ratio+cond_ratio*Ce*Kn))&
+        phi_therm=-12.0*pi*(Ktc*(1.0+cond_ratio*Ce*Kn)+3.0*Cm*Kn*(1.0-cond_ratio+cond_ratio*Ce*Kn)) &
             /((1.0+3.0*Kn*exp(-Cint/Kn))*(1.0+3.0*Cm*Kn)*(2.0+cond_ratio+2.0*cond_ratio*Ce*Kn))
       elseif (thermophoretic_eq=='free_molecule') then
         phi_therm=0.0
@@ -5558,21 +5543,15 @@ print*,'interp_default=',interp_default,particle_mesh
 !***********************************************************************
     subroutine particles_final_clean_up
 !
-!  cleanup (dummy)
-!
-      print*,'particles_tracer: Nothing to clean up'
-
     endsubroutine particles_final_clean_up
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
-!
 !
 ! Impose periodic boundary condition on gradu as auxiliary variable
 !
       use Boundcond, only: set_periodic_boundcond_on_aux
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-
 !
       if (lparticles_grad) then
         if (iguij .ne. 0) then
@@ -5641,8 +5620,7 @@ print*,'interp_default=',interp_default,particle_mesh
             call boundconds_z(f,idlncc,idlncc)
             call diffuse_interaction(f(:,:,:,idlncc),ldiff_pass,.False.,rdiffconst_pass)
           enddo
-          df(l1:l2,m1:m2,n1:n2,ilncc) =  df(l1:l2,m1:m2,n1:n2,ilncc) + &
-              f(l1:l2,m1:m2,n1:n2,idlncc)
+          df(l1:l2,m1:m2,n1:n2,ilncc) = df(l1:l2,m1:m2,n1:n2,ilncc) + f(l1:l2,m1:m2,n1:n2,idlncc)
           f(:,:,:,idlncc) = 0.0
         endif
 !
@@ -5659,8 +5637,7 @@ print*,'interp_default=',interp_default,particle_mesh
             call diffuse_interaction(f(:,:,:,idfy),ldiff_dragf,.False.,rdiffconst_dragf)
             call diffuse_interaction(f(:,:,:,idfz),ldiff_dragf,.False.,rdiffconst_dragf)
           enddo
-          df(l1:l2,m1:m2,n1:n2,iux:iuz) =  df(l1:l2,m1:m2,n1:n2,iux:iuz) + &
-              f(l1:l2,m1:m2,n1:n2,idfx:idfz)
+          df(l1:l2,m1:m2,n1:n2,iux:iuz) = df(l1:l2,m1:m2,n1:n2,iux:iuz)+f(l1:l2,m1:m2,n1:n2,idfx:idfz)
           f(:,:,:,idfx:idfz) = 0.0
         endif
       endif

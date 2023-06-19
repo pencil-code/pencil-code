@@ -75,7 +75,7 @@ module PointMasses
     integer :: ixw=0,iyw=0,izw=0
     integer :: ivxw=0,ivyw=0,ivzw=0
   endtype IndexDustParticles
-  type (IndexDustParticles), save :: index
+  type (IndexDustParticles) :: index
 !
   namelist /pointmasses_init_pars/ &
       initxxq, initvvq, xq0, yq0, zq0, vxq0, vyq0, vzq0,  &
@@ -108,7 +108,7 @@ module PointMasses
   integer, dimension(nqpar)   :: idiag_period=0,idiag_torque=0
   integer                     :: idiag_totenergy=0,idiag_mdot_pt=0
 !
-  real, dimension(nqpar,3) :: accg
+  real, dimension(nqpar,3) :: acc_grav
 !
   contains
 !***********************************************************************
@@ -129,10 +129,10 @@ module PointMasses
 !
       if (nqpar < 2) then
         if (lroot) write(0,*) 'nqpar = ', nqpar
-        call fatal_error('register_pointmasses','the number of massive'//&
-             ' particles is less than 2. There is no need to use the'//&
-             ' N-body code. Consider setting gravity as a global variable'//&
-             ' using gravity_r.f90 instead.')
+        call fatal_error('register_pointmasses','the number of massive'// &
+             ' particles is less than 2. There is no need to use the'// &
+             ' N-body code. Consider setting gravity as a global variable'// &
+             ' using gravity_r.f90 instead')
       endif
 !
 !  Auxiliary variables for polar coordinates
@@ -261,20 +261,16 @@ module PointMasses
 !  inverse total mass
 !
       totmass=sum(pmass)
-      if (totmass/=1) &
-           call warning("initialize_pointmasses","The masses do not sum up to one!")
+      if (totmass/=1) call warning("initialize_pointmasses","the masses do not sum up to one")
       totmass1=1./max(totmass, tini)
 !
 !  Check for consistency between the cylindrical gravities switches
 !  from cdata and the one from point mass.
 !
-      if (((lcylindrical_gravity).and.&
-        (.not.lcylindrical_gravity_nbody(iprimary))).or.&
-             (.not.lcylindrical_gravity).and.&
-             (lcylindrical_gravity_nbody(iprimary))) then
-        call fatal_error('initialize_pointmasses','inconsistency '//&
-            'between lcylindrical_gravity from cdata and the '//&
-            'one from point mass')
+      if ((lcylindrical_gravity.and.(.not.lcylindrical_gravity_nbody(iprimary))).or. &
+          ((.not.lcylindrical_gravity).and.lcylindrical_gravity_nbody(iprimary))) then
+        call fatal_error('initialize_pointmasses','inconsistency '// &
+            'between lcylindrical_gravity from cdata and the one from point mass')
       endif
 !
 !  Smoothing radius 
@@ -298,8 +294,7 @@ module PointMasses
         print*,'rsmooth from cdata=',rsmooth
         print*,'r_smooth(iprimary)=',r_smooth(iprimary)
         call fatal_error('initialize_pointmasses','inconsistency '//&
-            'between rsmooth from cdata and the '//&
-            'one from point mass')
+            'between rsmooth from cdata and the one from point mass')
       endif
 !
 !  The presence of dust particles needs to be known.
@@ -319,8 +314,8 @@ module PointMasses
 !
 
       if (lcylindrical_coords.and.bcqy=='p2pi'.and.lselfgravity) &
-           call fatal_error("initialize_pointmasses",&
-           "p2pi assumes the range is -pi/pi; selfgravity_logspirals" // & 
+           call fatal_error("initialize_pointmasses", &
+           "p2pi assumes the range is -pi/pi; selfgravity_logspirals"// & 
            "assumes the range is 0/2pi. Change bcqy to 'p'")
 !
       call keep_compiler_quiet(f)
@@ -337,8 +332,7 @@ module PointMasses
 !  22-sep-06/wlad: adapted
 !
       if (ldensity) lpenc_requested(i_rho)=.true.
-      if (ldust.and.llive_secondary) &
-          lpenc_requested(i_rhop)=.true.
+      if (ldust.and.llive_secondary) lpenc_requested(i_rhop)=.true.
 !
       if (llive_secondary.and.(.not.lselfgravity)) then
         if (l2D.or.(l3D.and.lcylindrical_gravity)) then
@@ -435,8 +429,7 @@ module PointMasses
 !
       case ('constant')
         if (lroot) &
-            print*, 'init_pointmasses: Place point mass particles at x,y,z=', &
-            xq0, yq0, zq0
+            print*, 'init_pointmasses: Place point mass particles at x,y,z=', xq0, yq0, zq0
         do k=1,nqpar
            fq(k,ixq:izq)=positions(k,1:3)
         enddo
@@ -449,12 +442,9 @@ module PointMasses
           if (nzgrid/=1) call random_number_wrapper(positions(ks,izq))
         enddo
 !
-        if (nxgrid/=1) &
-             positions(1:nqpar,ixq)=xyz0_loc(1)+positions(1:nqpar,ixq)*Lxyz_loc(1)
-        if (nygrid/=1) &
-             positions(1:nqpar,iyq)=xyz0_loc(2)+positions(1:nqpar,iyq)*Lxyz_loc(2)
-        if (nzgrid/=1) &
-             positions(1:nqpar,izq)=xyz0_loc(3)+positions(1:nqpar,izq)*Lxyz_loc(3)
+        if (nxgrid/=1) positions(1:nqpar,ixq)=xyz0_loc(1)+positions(1:nqpar,ixq)*Lxyz_loc(1)
+        if (nygrid/=1) positions(1:nqpar,iyq)=xyz0_loc(2)+positions(1:nqpar,iyq)*Lxyz_loc(2)
+        if (nzgrid/=1) positions(1:nqpar,izq)=xyz0_loc(3)+positions(1:nqpar,izq)*Lxyz_loc(3)
 !
         do k=1,nqpar
 !
@@ -470,8 +460,8 @@ module PointMasses
 !
       case ('fixed-cm')
         if (lgrav) then
-          print*,'a gravity module is being used. Are you using '//&
-               'both a fixed central gravity and point mass gravity? '//&
+          print*,'a gravity module is being used. Are you using '// &
+               'both a fixed central gravity and point mass gravity? '// &
                'better stop and check'
           call fatal_error('init_pointmasses','')
         endif
@@ -482,19 +472,19 @@ module PointMasses
 !
         if (any(yq0/=0)) then
           if (lspherical_coords) then
-            call fatal_error('init_pointmasses','not yet generalized'//&
+            call fatal_error('init_pointmasses','not yet generalized'// &
                  ' for non-zero initial inclinations')
           else
-            call fatal_error('init_pointmasses','not yet generalized'//&
+            call fatal_error('init_pointmasses','not yet generalized'// &
                  ' for non-zero azimuthal initial position')
           endif
         endif
         if (any(zq0/=0)) then
           if (lspherical_coords) then
-            call fatal_error('init_pointmasses','not yet generalized'//&
+            call fatal_error('init_pointmasses','not yet generalized'// &
                  ' for non-zero azimuthal initial position')
           else
-            call fatal_error('init_pointmasses','point mass code not'//&
+            call fatal_error('init_pointmasses','point mass code not'// &
                  ' yet generalized to allow initial inclinations')
           endif
         endif
@@ -592,8 +582,8 @@ module PointMasses
 !
 !  Coded only for 2 bodies
 !
-        if (nqpar /= 2) call fatal_error("init_pointmasses",&
-             "This initial condition is currently coded for 2 massive particles only.")
+        if (nqpar /= 2) call fatal_error("init_pointmasses", &
+             "this initial condition is currently coded for 2 massive particles only")
 !
 !  Define isecondary. iprimary=1 and isecondary=2 is default
 !
@@ -626,9 +616,7 @@ module PointMasses
         enddo
 !
       case default
-        if (lroot) print*,'init_pointmasses: No such such value for'//&
-            ' initxxq: ',trim(initxxq)
-        call fatal_error('init_pointmasses','')
+        call fatal_error('init_pointmasses','no such  initxxq: '//trim(initxxq))
 !
       endselect
 !
@@ -716,8 +704,8 @@ module PointMasses
 !
 !  Coded only for 2 bodies
 !
-        if (nqpar /= 2) call fatal_error("init_pointmasses",&
-             "This initial condition is currently coded for 2 massive particles only.")
+        if (nqpar /= 2) call fatal_error("init_pointmasses", &
+             "this initial condition is currently coded for 2 massive particles only")
 !
 !  Define isecondary. iprimary=1 and isecondary=2 is default.
 !
@@ -742,9 +730,7 @@ module PointMasses
         enddo
 !
       case default
-        if (lroot) print*, 'init_pointmasses: No such such value for'//&
-             'initvvq: ',trim(initvvq)
-        call fatal_error('init_pointmasses','')
+        call fatal_error('init_pointmasses','no such initvvq: '//trim(initvvq))
 !
       endselect
 !
@@ -775,77 +761,6 @@ module PointMasses
 !
     endsubroutine pointmasses_pde_pencil
 !***********************************************************************         
-    subroutine pointmasses_after_boundary(f)
-
-      use Grid, only: calc_pencils_grid
-      use Sub, only: finalize_aver, get_radial_distance
-
-      real, dimension (mx,my,mz,mfarray) :: f
-
-      type(pencil_case) :: p
-      logical :: lparticle_out, lintegrate
-      integer :: ks
-      logical, dimension(npencils) :: pencloc
-      real, dimension (nx,nqpar) :: rp_mn, rpcyl_mn
-return !!!
-      if (lhydro .and. llive_secondary) then
-
-        if (headtt) print*,'Adding gas+dust gravity to the massive particles'
-!
-        accg=0.
-
-        pencloc=.false.
-        pencloc((/i_r_mn,i_rcyl_mn/))=.true.
-
-        do n=n1,n2; do m=m1,m2
-
-          call calc_pencils_grid(p,pencloc)
-
-          do ks=1,nqpar
-
-            if ((ks==iprimary).and.lnoselfgrav_primary) cycle
-!
-!  Check if the particle is out of the box. 
-!
-            lparticle_out = (fq(ks,ixq)< xyz0(1)).or.(fq(ks,ixq) > xyz1(1)) .or. &
-                            (fq(ks,iyq)< xyz0(2)).or.(fq(ks,iyq) > xyz1(2)) .or. &
-                            (fq(ks,izq)< xyz0(3)).or.(fq(ks,izq) > xyz1(3))
-!
-!  A live particle needs to be integrated if selfgravity is not being used (poisson
-!  equation not being solved) or if it is not in the grid (in which case the selfgravity
-!  cannot be interpolated. 
-!
-            lintegrate=(.not.lselfgravity).or.lparticle_out
-!
-!  Sometimes making the star feel the selfgravity of the disk leads to
-!  numerical troubles as the star is too close to the origin (in cylindrical
-!  coordinates).
-!
-            if (lintegrate) then
-!
-!  Get the acceleration particle ks suffers due to self-gravity.
-!
-              call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks), &
-                                       E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
-!
-              if (lcylindrical_gravity_nbody(ks)) then
-                !!!call integrate_gasgravity(ks,p,rpcyl_mn(:,ks),fq(ks,ixq:izq),r_smooth(ks))
-              else
-                !!!call integrate_gasgravity(ks,p,rp_mn(:,ks),fq(ks,ixq:izq),r_smooth(ks))
-              endif
-
-            endif
-          enddo       ! ks=1,nqpar
-        enddo; enddo  ! mn-loop
-
-        call finalize_aver(ncpus,123,accg)
-
-      endif           ! lhydro.and.llife_secondary
-!
-      call keep_compiler_quiet(f)
-
-    endsubroutine pointmasses_after_boundary
-!***********************************************************************         
     subroutine dvvq_dt_pointmasses_pencil(f,df,p)
 !
 !  Add gravity from the particles to the gas and the backreaction from the
@@ -859,11 +774,13 @@ return !!!
 !
       use Diagnostics
       use Sub
-      use Mpicomm, only: mpireduce_sum  !not needed
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+!
+      intent (in) :: f, p
+      intent (inout) :: df
 !
       real, dimension (nx,nqpar) :: rp_mn, rpcyl_mn
       real, dimension (mx,3) :: ggt
@@ -872,12 +789,10 @@ return !!!
       integer :: ks
       logical :: lintegrate, lparticle_out
 !
-      intent (in) :: f, p
-      intent (inout) :: df
-!
 !  Get the pre-calculated gravity field.
 !
       lhydroif: if (lhydro) then
+
         call get_total_gravity(ggt)
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggt(l1:l2,:)
 !
@@ -894,16 +809,21 @@ return !!!
 !
         if (llive_secondary) then
           pointmasses1: do ks=1,nqpar
+!
+!  Sometimes making the star feel the selfgravity of the disk leads to
+!  numerical troubles as the star is too close to the origin (in cylindrical
+!  coordinates).
+!
+            if ((ks==iprimary).and.lnoselfgrav_primary) cycle
+
             lparticle_out=.false.
 !
 !  Check if the particle is out of the box. 
 !
             if ((fq(ks,ixq)< xyz0(1)).or.(fq(ks,ixq) > xyz1(1)) .or. &
-                 (fq(ks,iyq)< xyz0(2)).or.(fq(ks,iyq) > xyz1(2)) .or. &
-                 (fq(ks,izq)< xyz0(3)).or.(fq(ks,izq) > xyz1(3))) then
-               !particle out of box
-               lparticle_out=.true.
-            endif
+                (fq(ks,iyq)< xyz0(2)).or.(fq(ks,iyq) > xyz1(2)) .or. &
+                (fq(ks,izq)< xyz0(3)).or.(fq(ks,izq) > xyz1(3)))     &
+               lparticle_out=.true.     !particle out of box
 !
 !  A live particle needs to be integrated if selfgravity is not being used (poisson
 !  equation not being solved) or if it is not in the grid (in which case the selfgravity
@@ -911,52 +831,41 @@ return !!!
 !
             lintegrate=(.not.lselfgravity).or.lparticle_out
 !
-!  Sometimes making the star feel the selfgravity of the disk leads to
-!  numerical troubles as the star is too close to the origin (in cylindrical
-!  coordinates).
-!
-            if ((ks==iprimary).and.lnoselfgrav_primary) lintegrate=.false.
-!
             integrategas: if (lintegrate) then
 !
 !  Get the acceleration particle ks suffers due to self-gravity.
 !
-               call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
-                    E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
-               xxq = fq(ks,ixq:izq)
+              call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
+                                       E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
+              xxq = fq(ks,ixq:izq)
 !
-               if (lcylindrical_gravity_nbody(ks)) then
-                 call integrate_gasgravity(p,rpcyl_mn(:,ks),&
-                      xxq,accg,r_smooth(ks))
-               else
-                 call integrate_gasgravity(p,rp_mn(:,ks),&
-                      xxq,accg,r_smooth(ks))
-               endif
-!
-!  Add it to its dfp
-!
-               dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg(1:3)
+              if (lcylindrical_gravity_nbody(ks)) then
+                call integrate_gasgravity(p,rpcyl_mn(:,ks),xxq,accg,r_smooth(ks))
+              else
+                call integrate_gasgravity(p,rp_mn(:,ks),xxq,accg,r_smooth(ks))
+              endif
+              acc_grav(ks,:)=acc_grav(ks,:)+accg
 !
 !  Calculate torques for output, if needed
 !
-               if (ldiagnos.and.idiag_torque(ks)/=0) then
-                  rpsecondary=(/fq(ks,ixq)*cos(fq(ks,iyq)-y(m)),&
-                       fq(ks,ixq)*sin(fq(ks,iyq)-y(m)),&
-                       fq(ks,izq)                      &
-                       /)
+              if (ldiagnos.and.idiag_torque(ks)/=0) then
+                rpsecondary=(/fq(ks,ixq)*cos(fq(ks,iyq)-y(m)), &
+                              fq(ks,ixq)*sin(fq(ks,iyq)-y(m)), &
+                              fq(ks,izq)                       &
+                              /)
 !
 !  Integrate will add the cell volume, so we first remove it from the
 !  calculation.
 !
-                  !torque=(rpsecondary(1)*accg_mn(:,2)-rpsecondary(2)*accg_mn(:,1))*&
-                  !     dVol1_x(l1:l2)*dVol1_y(m)*dVol1_z(n)
-                  call cross(rpsecondary,accg,torque)
-                  call integrate_mn_name(pmass(ks)*torque,idiag_torque(ks))
-               endif
+                 !torque=(rpsecondary(1)*accg_mn(:,2)-rpsecondary(2)*accg_mn(:,1))*&
+                 !     dVol1_x(l1:l2)*dVol1_y(m)*dVol1_z(n)
+                call cross(rpsecondary,accg,torque)
+                call integrate_mn_name(pmass(ks)*torque,idiag_torque(ks))
+              endif
 !
-             endif integrategas
-           enddo pointmasses1
-         endif
+            endif integrategas
+          enddo pointmasses1
+        endif  ! llive_secondary
 !
 !  Diagnostic
 !
@@ -966,17 +875,14 @@ return !!!
             if (idiag_totenergy/=0.or.&
                 idiag_torqext(ks)/=0.or.&
                 idiag_torqint(ks)/=0) &
-                call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
-                   E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
-!
+                call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks), &
+                                         E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
 !  Total energy
 !
             if (idiag_totenergy/=0) then 
-              pot_energy=0.0
               !potential energy
-              pot_energy = pot_energy - &
-                   GNewton*pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
               if (ks==nqpar) then
+                pot_energy = - GNewton*pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
                 if (lcartesian_coords) then 
                   call sum_lim_mn_name(.5*p%rho*p%u2 + pot_energy,idiag_totenergy,p)
                 else
@@ -990,7 +896,7 @@ return !!!
             if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
                  call calc_torque_split_int_ext(p,rpcyl_mn(:,ks),ks)
 !
-         enddo pointmasses2
+          enddo pointmasses2
         endif diagnos
       endif lhydroif
 !
@@ -1105,7 +1011,7 @@ return !!!
 !
 ! squared semi major axis - assumes GM=1, so beware...
 !
-          if (totmass/=1) call fatal_error('calc_hill_radius',&
+          if (totmass/=1) call fatal_error('calc_hill_radius', &
                'can only calculate semimajor axis for normalized total mass')
           sma2  = (rr/(2-rr*w2))**2
 !
@@ -1173,11 +1079,8 @@ return !!!
           if (lfollow_particle(ks)) then
             do j=1,3
               jpos=j+ixq-1 ; jvel=j+ivxq-1
-              if (idiag_xxq(ks,j)/=0) then
-                call point_par_name(fq(ks,jpos),idiag_xxq(ks,j))
-              endif
-              if (idiag_vvq(ks,j)/=0) &
-                  call point_par_name(fq(ks,jvel),idiag_vvq(ks,j))
+              call point_par_name(fq(ks,jpos),idiag_xxq(ks,j))
+              call point_par_name(fq(ks,jvel),idiag_vvq(ks,j))
             enddo
             if (idiag_period(ks)/=0) call point_par_name(2*pi*fq(ks,ixq)/fq(ks,ivyq),idiag_period(ks))
           endif
@@ -1288,11 +1191,9 @@ return !!!
               Omega2_pm = -GNewton*pmass(ks)*(3*sqrt(r2_ij)*rhill1 - 4)*rhill1**3
             endif
 !
-
           case default
-            if (lroot) print*, 'gravity_pointmasses: '//&
-                 'No such value for ipotential_pointmass: ', trim(ipotential_pointmass(ks))
-            call fatal_error("","")
+            call fatal_error("gravity_pointmasses", &
+                             "no such ipotential_pointmass: "//trim(ipotential_pointmass(ks)))
           endselect  
 !
 !  If there is accretion, remove the accreted particles from the simulation, if any.
@@ -1365,7 +1266,7 @@ return !!!
         dfq(k,ivxq:ivzq) = dfq(k,ivxq:ivzq) - &
              abs(fq(k,ivxq:ivzq)-uup)*(fq(k,ivxq:ivzq)-uup)/StokesNumber(k)
       else
-        call fatal_error("drag should be linear or quadratic","")
+        call fatal_error("dragforce_pointmasses","drag should be linear or quadratic")
       endif
 !
     endsubroutine dragforce_pointmasses
@@ -1393,9 +1294,9 @@ return !!!
 !
       do ks=1,nqpar
         if (ks/=iprimary) then
+
           call bilinear_interpolate(acceleration,fq(ks,ixq:izq),accg)
-          if (lroot.and.llive_secondary) &
-               dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg
+          if (lroot.and.llive_secondary) dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg
 !
           if (ldiagnos) call calc_torque(ks,accg)
 !
@@ -1467,9 +1368,7 @@ return !!!
       real ::  a
       integer :: iname
 !
-      if (iname/=0) then
-        fname(iname)=a
-      endif
+      if (iname/=0) fname(iname)=a
 !
 !  There is no entry in itype_name.
 !
@@ -1565,12 +1464,9 @@ return !!!
         thtcm=atan2(sqrt(xcm**2+ycm**2),zcm)
         phicm=atan2(ycm,xcm)
 !
-        vcm(1)= vxcm*sin(thtcm)*cos(phicm) + &
-             vycm*sin(thtcm)*sin(phicm) + vzcm*cos(thtcm)
-        vcm(2)= vxcm*cos(thtcm)*cos(phicm) + &
-             vycm*cos(thtcm)*sin(phicm) - vzcm*sin(thtcm)
-        vcm(3)=-vxcm*sin(phicm)            + &
-             vycm*cos(phicm)
+        vcm(1)= vxcm*sin(thtcm)*cos(phicm) + vycm*sin(thtcm)*sin(phicm) + vzcm*cos(thtcm)
+        vcm(2)= vxcm*cos(thtcm)*cos(phicm) + vycm*cos(thtcm)*sin(phicm) - vzcm*sin(thtcm)
+        vcm(3)=-vxcm*sin(phicm)            + vycm*cos(phicm)
       endif
 !
       do ks=1,nqpar
@@ -1880,9 +1776,8 @@ return !!!
 !                                                                                                                                     
 !  Catch unknown values                                                                                                               
 !                                                                                                                                     
-          if (lroot) print*, 'get_total_gravity: '//&
-               'No such value for ipotential_pointmass: ', trim(ipotential_pointmass(ks))
-          call fatal_error("","")
+          call fatal_error("get_total_gravity","no such ipotential_pointmass: "// &
+                           trim(ipotential_pointmass(ks)))
         endselect
 !
         call get_gravity_field_pointmasses(Omega2_pm,ggp,ks)
@@ -2023,10 +1918,10 @@ return !!!
           dist(:,2)=         xxpar(2)*sin(y(m)-xxpar(2))
           dist(:,3)=z(  n  )-xxpar(3)
         elseif (coord_system=='spherical') then
-          call fatal_error('correct_gasgravity_integrate', &
-               ' not yet implemented for spherical polars')
+          call not_implemented('correct_gasgravity_integrate','for spherical polars')
         else
-          call fatal_error('correct_gasgravity_integrate','wrong coord_system')
+          call fatal_error('correct_gasgravity_integrate','no such coord_system: '// &
+                           trim(coord_system))
         endif
 !
         dv=1
@@ -2130,7 +2025,7 @@ return !!!
       if (nz==1) then
         iz0=1
       else
-        call fatal_error("trilinear_interpolate","logpsirals works only for 2D")
+        call fatal_error("bilinear_interpolate","logpsirals works only for 2D")
         !call calc_indices_and_processors(q(3),zgrid,dz1grid,nprocz,nz,&
         !lperi(3),iz0,iz1,ipz0,ipz1,rdz1,rdz2)
       endif
@@ -2276,27 +2171,20 @@ return !!!
 !
 !  15-sep-06/wlad : coded
 !
-      use Mpicomm
-!
       real, dimension(nx,3) :: dist
       real, dimension(nx) :: rrp,rr,gasgravity,density,cellmass
       real, dimension(nx) :: dv,tmp
       real :: rp0,fac
-      real, dimension(3) :: xxpar,accg,sum_loc
+      real, dimension(3) :: xxpar, accg
       integer :: j
       type (pencil_case) :: p
-      logical :: lfirstcall=.true.
-!
+
       intent(out) :: accg
-!
-      if (lfirstcall.and.lroot) &
-          print*,'Adding gas+dust gravity to the massive particles'
 !
 !  Sanity check
 !
-      if (.not.(lgas_gravity.or.ldust_gravity)) &
-           call fatal_error("lintegrate_gasgravity",&
-           "No gas gravity or dust gravity to add. "//&
+      if (.not.(lgas_gravity.or.ldust_gravity)) call fatal_error("lintegrate_gasgravity", &
+           "No gas gravity or dust gravity to add. "// &
            "Switch on lgas_gravity or ldust_gravity in n-body parameters")
 !
       if (coord_system=='cartesian') then      
@@ -2310,8 +2198,7 @@ return !!!
         dist(:,2)=         xxpar(1)*sin(y(m)-xxpar(2))
         dist(:,3)=z(  n  )-xxpar(3)
       elseif (coord_system=='spherical') then
-        call fatal_error('integrate_gasgravity', &
-            ' not yet implemented for spherical polars')
+        call not_implemented('integrate_gasgravity','for spherical polars')
       else
         call fatal_error('integrate_gasgravity','wrong coord_system')
       endif
@@ -2341,56 +2228,36 @@ return !!!
 !
       if (lexclude_frozen) then
         if (lcylinder_in_a_box) then
-          where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
-            gasgravity = 0
-          endwhere
+          where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext)) gasgravity = 0
         else
           if (l2D.or.(l3D.and.lcylindrical_gravity)) then
             rr=p%rcyl_mn
           else
             rr=p%r_mn
           endif
-          where ((rr<=r_int).or.(rr>=r_ext))
-            gasgravity = 0
-          endwhere
+          where ((rr<=r_int).or.(rr>=r_ext)) gasgravity = 0
         endif
       endif
 !
 !  Integrate the accelerations on this processor
 !  And sum over processors with mpireduce
 !
+      !take proper care of the trapezoidal rule
+      !in the case of non-periodic boundaries                    
+      fac = 1.
+      if (.not.lperi(2)) then
+        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) fac = 0.5
+      endif
+
       do j=1,3
+!
         tmp=gasgravity*dist(:,j)
-        !take proper care of the trapezoidal rule
-        !in the case of non-periodic boundaries                    
-        fac = 1.
-        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
-          if (.not.lperi(2)) fac = .5*fac
-        endif
-!
         if (lperi(1)) then
-          sum_loc(j) = fac*sum(tmp)
+          accg(j) = fac*sum(tmp)
         else
-          sum_loc(j) = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
+          accg(j) = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
         endif
-        call mpireduce_sum(sum_loc(j),accg(j))
       enddo
-!
-!  Since this is part of the mn loop, the final outcome
-!  of this type of communication should depend on the processor layout.
-!  The samples/2d-tests/eccentricity-decay use this and didn't work with fatal_error.
-!  I therefore changed it to "call warning". This is a 4 processor sample run.
-!  For further questions, please email Matthias Rheinhardt <matthias.rheinhardt@aalto.fi>
-!  or Axel Brandenburg <brandenb@nordita.org>.
-!
-      !call fatal_error('pointmasses: integrate_gasgravity', 'incorrect communication')
-      call warning('pointmasses: integrate_gasgravity', 'incorrect communication')
-!
-!  Broadcast particle acceleration
-!
-      call mpibcast_real(accg,3)
-!
-      if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine integrate_gasgravity
 !***********************************************************************
@@ -2525,8 +2392,7 @@ return !!!
         do j=1,3
           if (j==1) str='x';if (j==2) str='y';if (j==3)  str='z'
           do iname=1,nname
-            call parse_name(iname,cname(iname),cform(iname),&
-                 trim(str)//'q'//trim(sks),idiag_xxq(ks,j))
+            call parse_name(iname,cname(iname),cform(iname),trim(str)//'q'//trim(sks),idiag_xxq(ks,j))
             call parse_name(iname,cname(iname),cform(iname),&
                  'v'//trim(str)//'q'//trim(sks),idiag_vvq(ks,j))
           enddo          
@@ -2643,8 +2509,7 @@ return !!!
 !  in a cylindrical simulation
 !
           else
-            print*, 'boundconds_pointmasses: No such boundary condition =', boundx
-            call stop_it('boundconds_pointmasses')
+            call fatal_error_local('boundconds_pointmasses','no such boundx: '//trim(boundx))
           endif
         endif
 !
@@ -2702,8 +2567,7 @@ return !!!
             ! massive particles can be out of the box
             ! the star, for example, in a cylindrical simulation
           else
-            print*, 'boundconds_pointmasses: No such boundary condition =', boundy
-            call stop_it('boundconds_pointmasses')
+            call fatal_error_local('boundconds_pointmasses','no such boundy: '//trim(boundy))
           endif
         endif
 !
@@ -2737,8 +2601,7 @@ return !!!
             ! massive particles can be out of the box
             ! the star, for example, in a cylindrical simulation
           else
-            print*, 'boundconds_pointmasses: No such boundary condition=', boundz
-            call stop_it('boundconds_pointmasses')
+            call fatal_error_local('boundconds_pointmasses','no such boundz: '//trim(boundz))
           endif
         endif
       enddo
@@ -2747,8 +2610,6 @@ return !!!
 !***********************************************************************
     subroutine pointmasses_timestep_first(f)
 !
-      use Particles_main, only: fetch_nparloc
-!    
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (lroot) then
@@ -2759,6 +2620,11 @@ return !!!
           dfq(1:nqpar,:)=alpha_ts(itsub)*dfq(1:nqpar,:)
           dfq_cart(1:nqpar,:)=alpha_ts(itsub)*dfq_cart(1:nqpar,:)
         endif
+      endif
+
+      if (lhydro.and.llive_secondary) then
+        acc_grav=0.
+        if (headtt) print*,'Adding gas+dust gravity to the massive particles'
       endif
 !
       call keep_compiler_quiet(f)
@@ -2771,18 +2637,26 @@ return !!!
 !
 !  07-jan-05/anders: coded
 !
-      use Mpicomm, only: mpibcast_real
+      use Mpicomm, only: mpibcast_real, mpireduce_sum
       use Particles_main, only: fetch_nparloc,fetch_fp_array,return_fp_array
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(3) :: xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart
+      real, dimension(nqpar,3) :: accg
       integer :: ks
 !
       real, dimension (mpar_loc,mparray) :: fp_aux
       real, dimension (mpar_loc,mpvar) :: dfp_aux
       integer :: np_aux,k
 !
+      if (lhydro.and.llive_secondary) call mpireduce_sum(acc_grav,accg,(/nqpar,3/))
+
       if (lroot) then 
+!
+!  Add accumulated gravitational acceleration of gas to dfq.
+!
+        if (lhydro.and.llive_secondary) dfq(:,ivxq:ivzq) = dfq(:,ivxq:ivzq) + accg
+
         do ks=1,nqpar
           xx_polar    = fq(ks,ixq:izq)
           vv_polar    = fq(ks,ivxq:ivzq)

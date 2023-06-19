@@ -88,6 +88,8 @@ module Particles_radius
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
   integer :: idiag_ieffp=0
 !
+  real :: gamma
+!
   contains
 !***********************************************************************
     subroutine register_particles_radius()
@@ -96,6 +98,8 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
+      use SharedVariables, only: put_shared_variable
+
       if (lroot) call svn_id( "$Id$")
 !
 !  Index for particle radius.
@@ -108,6 +112,8 @@ module Particles_radius
 !
       if (lparticles_radius_rpbeta) call append_npvar('irpbeta',irpbeta)
 !
+      call put_shared_variable('ap0',ap0,caller='register_particles_radius')
+!
     endsubroutine register_particles_radius
 !***********************************************************************
     subroutine initialize_particles_radius(f,fp)
@@ -117,8 +123,9 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      use SharedVariables, only: put_shared_variable, get_shared_variable
+      use EquationOfState, only: get_gamma_etc
       use General, only: random_number_wrapper
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mparray) :: fp
@@ -196,8 +203,6 @@ module Particles_radius
       if (tau_damp_evap /= 0.0) tau_damp_evap1 = 1/tau_damp_evap
       if (tau_ocean_driving /= 0.0) tau_ocean_driving1 = 1/tau_ocean_driving
 !
-      call put_shared_variable('ap0',ap0,caller='initialize_particles_radius')
-!
 ! If we have decided to hold the radius of the particles to be fixed then
 ! we should not have any process that changes the radius.
 !
@@ -215,6 +220,8 @@ module Particles_radius
 !
       call keep_compiler_quiet(f)
 !
+      call get_gamma_etc(gamma)
+
       if (lascalar) then
         call get_shared_variable('G_condensation', G_condensation)
         if (lcondensation_rate) call get_shared_variable('ssat0', ssat0)
@@ -723,7 +730,7 @@ module Particles_radius
 !
 !  15-jan-10/anders: coded
 !
-      use EquationOfState, only: gamma, rho0
+      use EquationOfState, only: rho0
       use Particles_number
 !
       real, dimension(mx,my,mz,mfarray) :: f

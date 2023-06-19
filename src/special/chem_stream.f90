@@ -177,15 +177,7 @@ module Special
         Rgas_unit_sys = k_B_cgs/m_u_cgs
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
       endif
-!
-!  Make sure initialization (somehow) works with eos_ionization.f90
-!
-      if (gamma == impossible) then
-        gamma  = 1
-        gamma_m1 = 0.
-        gamma1 = 1.
-      endif
-!
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special

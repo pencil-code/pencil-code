@@ -2,8 +2,8 @@
 
   private
 
-  public :: eoscalc,pressure_gradient,temperature_gradient,get_cp1
-  public :: temperature_laplacian,get_cv1
+  public :: eoscalc,pressure_gradient,temperature_gradient
+  public :: temperature_laplacian, get_gamma_etc
   public :: ilnrho_ss, ilnrho_lnTT, ilnrho_pp, ilnrho_ee, ilnrho_TT
   public :: ipp_ss,ipp_cs2, irho_TT, irho_ss, irho_eth, ilnrho_eth
   public :: ics
@@ -51,7 +51,7 @@
 !Shouldn't be public, certainly means don't add anymore!!
 !,mu,Rgas    BREAKS THE AUTO-TEST
 
-  public :: gamma,gamma_m1,gamma1,cs2top,cs2bot
+  public :: cs2top,cs2bot
 
 ! chemistry
   public :: read_thermodyn,write_thermodyn

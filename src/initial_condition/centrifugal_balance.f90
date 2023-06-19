@@ -70,7 +70,6 @@
 !
 module InitialCondition
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -142,6 +141,8 @@ module InitialCondition
        lselfgravity_logspirals,dustdensity_powerlaw,edtog,&
        B0_spiral,etamu0_spiral,Omega0_spiral,r0_spiral
 !
+  real :: gamma, gamma_m1, cp1, cv1
+
   contains
 !***********************************************************************
     subroutine register_initial_condition()
@@ -150,8 +151,19 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
+      use SharedVariables, only: put_shared_variable
+
       if (lroot) call svn_id( &
          "$Id$")
+!
+      if (llocal_iso.and.lparticles_blocks) &
+           call put_shared_variable('itemperature_power_law',temperature_power_law, &
+                                    caller='register_initial_condition')
+! for magnetic spiral
+      call put_shared_variable('B0_spiral',B0_spiral)
+      call put_shared_variable('etamu0_spiral',etamu0_spiral)
+      call put_shared_variable('Omega0_spiral',Omega0_spiral)
+      call put_shared_variable('r0_spiral',r0_spiral)
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -161,35 +173,24 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use SharedVariables, only: put_shared_variable
-!
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: cp, cv
 !
       Lxn=Lx-2*(rborder_int+rborder_ext)
 !
       if (lcorotational_frame) then
-        if (lpointmasses) then
-          if (lroot) then
-            print*,'initialize_initial_condition: lcorotational frame not coded for pointmasses'
-            print*,'switch to gravity_r'
-            call fatal_error("","")
-          endif
-        endif
+        if (lpointmasses) &
+          call not_implemented("initialize_initial_condition","lcorotational frame for pointmasses"// &
+                               "switch to gravity_r")
         OOcorot=rcorot**(-1.5)
       else
         OOcorot=0.
       endif
 !
-      if (llocal_iso.and.lparticles_blocks) &
-           call put_shared_variable('itemperature_power_law',&
-             temperature_power_law,&
-             caller='initialize_particles')
-! for magnetic spiral
-      call put_shared_variable('B0_spiral',B0_spiral)
-      call put_shared_variable('etamu0_spiral',etamu0_spiral)
-      call put_shared_variable('Omega0_spiral',Omega0_spiral)
-      call put_shared_variable('r0_spiral',r0_spiral)
-!
+      call get_gamma_etc(gamma,cp,cv)
+      gamma_m1=gamma-1.
+      cp1=1./cp; cv1=1./cv
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
@@ -303,20 +304,13 @@ module InitialCondition
     subroutine add_noise(f)
 !
       use FArrayManager, only: farray_use_global
-      use EquationOfState, only: get_cv1,cs20,gamma_m1,lnrho0
+      use EquationOfState, only: cs20,lnrho0
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: cs2
-      real :: cv1,cp1
       integer, pointer :: iglobal_cs2
 !
-      if (llocal_iso) then
-        call farray_use_global('cs2',iglobal_cs2)
-      elseif (lentropy) then
-        call get_cv1(cv1)
-      elseif (ltemperature) then
-        call get_cp1(cp1)
-      endif
+      if (llocal_iso) call farray_use_global('cs2',iglobal_cs2)
 !
       do n=n1,n2; do m=m1,m2
         if (llocal_iso) then
@@ -857,14 +851,14 @@ module InitialCondition
 !                  variables.
 !
       use FArrayManager
-      use EquationOfState, only: gamma,gamma_m1,get_cp1,&
+      use EquationOfState, only: &
            cs20,cs2bot,cs2top,lnrho0
       use Sub,             only: power_law,get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
       real, dimension (nx) :: gslnTT
-      real :: cp1,temperature_power_law
+      real :: temperature_power_law
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
 !
@@ -909,8 +903,6 @@ module InitialCondition
         nullify(iglobal_glnTT)
         call farray_use_global('glnTT',iglobal_glnTT)
       endif
-!
-      if (lenergy) call get_cp1(cp1)
 !
       do m=m1,m2
       do n=n1,n2
@@ -994,7 +986,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: cs20,get_cv1
+      use EquationOfState, only: cs20
       use Sub, only: step, power_law
       use FArrayManager, only: farray_use_global
 !
@@ -1035,8 +1027,8 @@ module InitialCondition
               f(l1:l2,m,n,iay) =   Aphi*x(l1:l2)/rr
             enddo; enddo
           elseif (lcylindrical_coords) then
-            call fatal_error("initial_condition_aa","alfven_zconst: "//&
-                 "not implemented for cylindrical coordinates")
+            call not_implemented("initial_condition_aa","alfven_zconst: "// &
+                                 "for cylindrical coordinates")
           elseif (lspherical_coords) then
             amplbb=Lxyz(2)/(2*zmode_mag*pi)
             pblaw=1-qgshear!-plaw/2.
@@ -1206,8 +1198,8 @@ module InitialCondition
         elseif (lspherical_coords) then
           f(:,m,n,iaz) = sin(y(m))*aphi_mx/x 
         else 
-          call fatal_error("initial_condition_aa",&
-               "bz-const not implemented for the chosen coordinated system")
+          call not_implemented("initial_condition_aa", &
+               "bz-const for the chosen coordinated system")
         endif
       enddo;enddo
 !
@@ -1217,7 +1209,7 @@ module InitialCondition
 !
       use FArrayManager,   only: farray_use_global
       use Sub,             only: get_radial_distance
-      use EquationOfState, only: cs20,get_cv1,lnrho0,gamma_m1
+      use EquationOfState, only: cs20,lnrho0
       use Boundcond,       only: update_ghosts
       use Messages,        only: fatal_error
 !
@@ -1225,7 +1217,6 @@ module InitialCondition
       real, dimension(mx) :: cs2,pressure,Bphi,BB,tmp
       real, dimension(mx) :: rr_sph,rr_cyl
       integer, pointer :: iglobal_cs2
-      real :: cv1
 !
       if (.not.lspherical_coords) &
            call fatal_error("set_field_constbeta",&
@@ -1233,11 +1224,7 @@ module InitialCondition
 !
       call update_ghosts(f)
 !
-      if (llocal_iso) then
-        call farray_use_global('cs2',iglobal_cs2)
-      elseif (lentropy) then
-        call get_cv1(cv1)
-      endif
+      if (llocal_iso) call farray_use_global('cs2',iglobal_cs2)
 
       do m=m1,m2 
         if (llocal_iso) then

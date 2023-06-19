@@ -28,7 +28,6 @@
 !***************************************************************
 module Radiation
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -185,6 +184,8 @@ module Radiation
       zclip_up, TT_bump, sigma_bump, ampl_bump, kappa_ceiling, &
       ldoppler_rad, ldoppler_rad_includeQ, ldoppler_rad_includeQder
 !
+  real :: gamma
+!
   contains
 !***********************************************************************
     subroutine register_radiation
@@ -264,6 +265,7 @@ module Radiation
 !  03-jul-03/tobi: position array added
 !  19-feb-14/axel: read tabulated source function
 !
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: parse_bc_rad
       use Slices_methods, only: alloc_slice_buffers
 !
@@ -456,6 +458,8 @@ module Radiation
         Qderfact=0.
       endif
 !
+      call get_gamma_etc(gamma)
+
     endsubroutine initialize_radiation
 !***********************************************************************
     subroutine calc_angle_weights
@@ -509,12 +513,12 @@ module Radiation
 !
         if (dx/=dy) then
           print*,'dx,dy=',dx,dy
-          call fatal_error('initialize_radiation', &
+          call fatal_error('calc_angle_weights', &
               'weights not calculated for dx/dy != 1')
         endif
         aspect_ratio=dx/dz
         if (aspect_ratio<0.69.or.aspect_ratio>sqrt(3.0)) &
-            call fatal_error('initialize_radiation', &
+            call fatal_error('calc_angle_weights', &
             'weights go negative for this dx/dz ratio')
 !
 !  Calculate the weights.
@@ -540,7 +544,7 @@ module Radiation
           !room diagonal
           if (dir(idir,1)/=0.and.dir(idir,2)/=0.and.dir(idir,3)/=0) weight(idir)=room
           if (lroot.and.ip<11) &
-              print*,'initialize_radiation: dir(idir,1:3),weight(idir) =',&
+              print*,'calc_angle_weights: dir(idir,1:3),weight(idir) =',&
               dir(idir,1:3),weight(idir)
         enddo
         weightn=weight

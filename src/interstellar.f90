@@ -15,7 +15,6 @@
 !*****************************************************************************
 module Interstellar
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -482,6 +481,8 @@ module Interstellar
       lscale_SN_interval, SN_interval_rhom, rfactor_SN, iSNdx, &
       energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added
 !
+  real :: gamma
+!
   contains
 !
 !***********************************************************************
@@ -525,8 +526,8 @@ module Interstellar
 !                  containing same format as data/sn_series.dat typically
 !                  from previous run, if lSN_list.
 !
+      use EquationOfState, only: getmu, get_gamma_etc
       use Mpicomm, only: stop_it
-      use EquationOfState , only: getmu
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, int1_list, stat
@@ -544,6 +545,8 @@ module Interstellar
       if (lroot.and.luniform_zdist_SNI) then
         print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
+
+      call get_gamma_etc(gamma)
       if (leos_idealgas) then
         call getmu(f,mu)
       else
@@ -686,7 +689,7 @@ module Interstellar
             SN_clustering_time=SN_clustering_time_cgs / unit_time
         t_interval_OB   = 1./(OB_area_rate * Lx * Ly)
       else
-        call stop_it('initialize_interstellar: SI unit conversions not implemented')
+        call not_implemented('initialize_interstellar','SI unit conversions')
       endif
 !
       call select_cooling(cooling_select,lncoolT,lncoolH,coolB)
@@ -1771,7 +1774,6 @@ module Interstellar
 !   3-apr-06/axel: add ltemperature switch
 !
       use Diagnostics, only: max_mn_name, sum_mn_name, xysum_mn_name_z
-      use EquationOfState, only: gamma
       use Sub, only: dot2
       use Messages, only: fatal_error
 !

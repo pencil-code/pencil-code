@@ -70,7 +70,6 @@
 !
 module InitialCondition
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -131,6 +130,8 @@ module InitialCondition
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
        ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,Omegap
 !
+  real :: gamma, gamma_m1, cp1
+
   contains
 !***********************************************************************
     subroutine register_initial_condition()
@@ -151,9 +152,15 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+
+      real :: cp
 !
       Lxn=Lx-2*(rborder_int+rborder_ext)
 !
+      call get_gamma_etc(gamma,cp)
+      gamma_m1=gamma-1.
+      cp1=1./cp
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
@@ -377,7 +384,7 @@ module InitialCondition
 !  Set the thermodynamical variable
 !
       if (llocal_iso) then
-        call set_thermodynamical_quantities&
+        call set_thermodynamical_quantities &
              (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
       else if (lenergy) then 
         call set_thermodynamical_quantities(f,temperature_power_law,ics2)
@@ -399,8 +406,7 @@ module InitialCondition
 !
     endsubroutine initial_condition_ss
 !***********************************************************************
-    subroutine set_thermodynamical_quantities&
-         (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
+    subroutine set_thermodynamical_quantities(f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
 !
 !  Subroutine that sets the thermodynamical quantities
 !   - static sound speed, temperature or entropy -
@@ -418,16 +424,18 @@ module InitialCondition
 !                  variables.
 !
       use FArrayManager
-      use EquationOfState, only: gamma,gamma_m1,get_cp1,&
+      use EquationOfState, only: &
            cs20,cs2bot,cs2top,lnrho0
+      use SharedVariables, only: get_shared_variable
       use Sub,             only: power_law,get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
       real, dimension (nx) :: gslnTT
-      real :: cp1,temperature_power_law
+      real :: temperature_power_law
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
+      real, pointer :: cp
 !
       intent(in)  :: temperature_power_law
       intent(out) :: f
@@ -470,8 +478,6 @@ module InitialCondition
         nullify(iglobal_glnTT)
         call farray_use_global('glnTT',iglobal_glnTT)
       endif
-!
-      if (lenergy) call get_cp1(cp1)
 !
       do m=m1,m2
       do n=n1,n2

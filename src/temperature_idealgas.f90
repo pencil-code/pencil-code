@@ -28,7 +28,6 @@ module Energy
 ! 12-may-12/MR: made ampl_lnTT a vector; added parameters for initialization
 !               by mode to input pars
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -255,6 +254,7 @@ module Energy
   integer :: ivid_pp=0
 !
   real, dimension(nx) :: diffus_chi,diffus_chi3,hcond
+  real :: gamma, gamma1, gamma_m1, cp1
 !
   contains
 !***********************************************************************
@@ -343,7 +343,7 @@ module Energy
 !
       use FArrayManager, only: farray_register_global
       use Gravity, only: gravz, compute_gravity_star
-      use EquationOfState, only : cs2bot, cs2top, gamma, gamma_m1, select_eos_variable
+      use EquationOfState, only : cs2bot, cs2top, select_eos_variable, get_gamma_etc
       use Sub, only: step,der_step
       use SharedVariables, only: get_shared_variable
       use Slices_methods, only: alloc_slice_buffers
@@ -354,7 +354,7 @@ module Energy
       logical :: lnothing
       integer :: i
       logical, pointer :: lrss
-      real :: star_cte
+      real :: star_cte, cp
 
       if (lstart .and. .not.leos) call warning('initialize_energy', &
             'EOS=noeos, but possibly an EQUATION OF STATE is needed')
@@ -366,6 +366,10 @@ module Energy
       else
         call select_eos_variable('lnTT',ilnTT)
       endif
+!
+      call get_gamma_etc(gamma,cp)
+      gamma1=1./gamma; gamma_m1=gamma-1.
+      cp1=1./cp
 !
 !  Freeze temperature.
 !
@@ -590,8 +594,7 @@ module Energy
 !
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
-                               caller='initialize_energy')
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas)
 !
 !  real variable PrRa shared with hydro modules, used for Boussinesq
 !
@@ -626,7 +629,7 @@ module Energy
       use General,  only: itoa
       use Sub,      only: blob
       use InitialCondition, only: initial_condition_ss
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, cs20, lnrho0, get_cp1, rho0
+      use EquationOfState, only: cs2bot, cs2top, cs20, lnrho0, rho0
       use Gravity, only: gravz
       use Initcond, only: modes
 !
@@ -635,7 +638,7 @@ module Energy
 !
       integer :: j
       logical :: lnothing=.true.
-      real :: haut, Rgas, cp1, Ttop, alpha, beta, expo, ztop
+      real :: haut, Rgas, Ttop, alpha, beta, expo, ztop
 !
       do j=1,ninit
 !
@@ -741,7 +744,6 @@ module Energy
             if (lroot) print*, 'init_lnTT: hydrostatic+radiative equilibria'
             if (Fbot==impossible .or. hcond0==impossible) &
                 call fatal_error("initialize_lnTT","Fbot or hcond0 not initialized")
-            call get_cp1(cp1)
             Rgas=(1.-1./gamma)/cp1
             Ttop=cs20/gamma_m1
             beta=-Fbot/hcond0
@@ -1057,7 +1059,6 @@ module Energy
 !  20-11-04/anders: coded
 !  31-01-18/MR: made calculation of p%gTT corrrect also for log temperature
 !
-      use EquationOfState, only: gamma1
       use Sub, only: u_dot_grad,grad,multmv,del2
       use Deriv, only: der2
 !
@@ -1177,7 +1178,7 @@ module Energy
 !  18-may-12/MR: compression work as heat sink added for boussinesq
 !
       use Deriv, only: der6
-      use EquationOfState, only: gamma_m1, lpres_grad
+      use EquationOfState, only: lpres_grad
       use Special, only: special_calc_energy
       use Sub, only: identify_bcs, calc_slope_diff_flux
       use Viscosity, only: calc_viscous_heat
@@ -1733,18 +1734,14 @@ module Energy
 !
 !   1-apr-20/joern: coded
 !
-      use EquationOfState, only : gamma_m1, get_cp1
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: cs2
-      real :: cp1
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
      if (lslope_limit_diff .and. llast) then
 !     if (lslope_limit_diff) then
-       call get_cp1(cp1)
        cs2=0.
        do m=1,my
        do n=1,mz
@@ -1825,7 +1822,6 @@ module Energy
 !  01-aug-08/wlad: adapted from entropy
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -1872,7 +1868,7 @@ module Energy
 !  16-may-07/gastine+dintrans: coded
 !
       use Gravity, only: gravz
-      use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot,gamma,gamma_m1,eoscalc,ilnrho_TT
+      use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot,eoscalc,ilnrho_TT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: temp,lnrho
@@ -2020,7 +2016,6 @@ module Energy
 !  01-mar-07/dintrans: adapted from temperature_ionization
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -2066,7 +2061,6 @@ module Energy
 !  21-oct-18/joern: adapted from calc_heatcond_constchi
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot, cubic_step, cubic_der_step
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -2117,7 +2111,6 @@ module Energy
 !  Note: if ldensity=.false. then rho=1 and chi=K/cp
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       real, dimension(mx,my,mz,mvar) :: df
@@ -2164,7 +2157,6 @@ module Energy
 !  Note: if ldensity=.false. then rho=1 and chi=K/cp
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma, rho0
       use Sub, only: dot
 !
       real, dimension(mx,my,mz,mvar) :: df
@@ -2213,7 +2205,6 @@ module Energy
       use Debug_IO, only: output_pencil
       use Sub, only: dot
       use General, only: notanumber
-      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2256,7 +2247,6 @@ module Energy
 !  this term being less restrictive for the explicit timestep
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot, multsv
 !
       real, dimension(mx,my,mz,mvar) :: df
@@ -2302,7 +2292,6 @@ module Energy
 !  12-Mar-07/dintrans: coded
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot, step, der_step
       use Gravity, only: z1, z2
 !
@@ -2376,7 +2365,6 @@ module Energy
 !  25-aug-09/bing: moved from denergy_dt to here
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot,dot2,tensor_diffusion_coef
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -2742,10 +2730,10 @@ module Energy
 !  04-aug-07/dintrans: a single polytrope with index mpoly0
 !
       use Gravity, only: gravz
-      use EquationOfState, only: cs20, lnrho0, gamma, gamma_m1, get_cp1, cs2bot, cs2top
+      use EquationOfState, only: cs20, lnrho0, cs2bot, cs2top
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: beta, zbot, ztop, cp1, T0, temp
+      real :: beta, zbot, ztop, T0, temp
 !
 !  beta is the (negative) temperature gradient
 !  beta = -(g/cp) /[(1-1/gamma)*(m+1)]
@@ -2755,7 +2743,6 @@ module Energy
       if (.not. leos) call fatal_error('single_polytrope', &
                       'EOS=noeos, but polytrope requires an EQUATION OF STATE')
 
-      call get_cp1(cp1)
       beta=-cp1*gravz/(mpoly0+1.)*gamma/gamma_m1
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
@@ -2794,18 +2781,16 @@ module Energy
 !  ------------ zbot
 !
       use Gravity, only: gravz, z1, z2
-      use EquationOfState, only: cs2top, cs2bot, gamma, gamma_m1, lnrho0, get_cp1
+      use EquationOfState, only: cs2top, cs2bot, lnrho0
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real :: Ttop, T1, T2, beta0, beta1, beta2, cp1, temp
+      real :: Ttop, T1, T2, beta0, beta1, beta2, temp
       real :: lnrhotop, lnrho1, lnrho2, ztop
       integer :: i
 !
       if (.not. leos) &
         call fatal_error('piecew_poly','EOS=noeos, but polytrope requires an EQUATION OF STATE')
 
-      call get_cp1(cp1)
-!
 !  Top boundary values.
 !
       Ttop=cs2top*cp1/gamma_m1
@@ -2852,7 +2837,7 @@ module Energy
 !
 !  04-fev-2011/dintrans: coded
 !
-      use EquationOfState, only: rho0, lnrho0, get_soundspeed, eoscalc, ilnrho_TT, gamma, gamma_m1
+      use EquationOfState, only: rho0, lnrho0, get_soundspeed, eoscalc, ilnrho_TT
       use Sub, only: step, interp1, erfunc
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2893,7 +2878,7 @@ module Energy
 !
       rhotop=rt_new
       call strat_heat(nr, r, lumi, g, hcond, temp, lnrho, rhotop, rhobot)
-      print*, 'find rhobot=', rhobot
+      if (lroot) print*, 'find rhobot=', rhobot
       rb_new=rhobot
 !
       do iter=1,10
@@ -2910,7 +2895,7 @@ module Energy
         rt_new=rhotop
         rb_new=rhobot
       enddo
-      print*,'- iteration completed: rhotop,crit=',rhotop,crit
+      if (lroot) print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
 !  One needs to refresh rho0 and lnrho0 because the density top value
 !  has changed --> important for the future EOS calculations (ss, ...)
@@ -2948,7 +2933,7 @@ module Energy
 !***********************************************************************
     subroutine strat_heat(nr,r,lumi,g,hcond,temp,lnrho,rhotop,rhobot)
 !
-      use EquationOfState, only: gamma, gamma_m1, cs20
+      use EquationOfState, only: cs20
       use Sub, only: interp1
 !
       integer              :: nr, i

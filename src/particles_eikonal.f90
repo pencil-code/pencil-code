@@ -19,7 +19,6 @@
 module Particles
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
@@ -232,6 +231,8 @@ module Particles
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
   integer :: idiag_omegapm=0
 !
+  real, dimension(:), pointer :: beta_glnrho_global, beta_glnrho_scaled
+
   contains
 !***********************************************************************
     subroutine register_particles()
@@ -241,6 +242,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use FArrayManager, only: farray_register_auxiliary
+      use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -275,9 +277,28 @@ module Particles
         ifgx=iffg; ifgy=iffg+1; ifgz=iffg+2
       endif
 !
+!  Share Keplerian gravity.
+!
+      call put_shared_variable('gravr',gravr,caller='register_particles')
+!
+      if (l_shell) then
+        if (k_shell < 0) call fatal_error('initialize_particles','set k_shell >=0')
+        call put_shared_variable('uup_shared',uup_shared)
+        call put_shared_variable('vel_call',vel_call)
+        call put_shared_variable('turnover_call',turnover_call)
+        call put_shared_variable('turnover_shared',turnover_shared)
+      endif
+!
+!  Share friction time (but only if Epstein drag regime!).
+!
+      if (ldraglaw_epstein .or. ldraglaw_simple) then
+        call put_shared_variable('tausp_species', tausp_species)
+        call put_shared_variable('tausp1_species',tausp1_species)
+      endif
+!
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f)
+    subroutine initialize_particles(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -285,30 +306,27 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use EquationOfState, only: rho0, cs0
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
 !
       real :: rhom
-      integer :: ierr, jspec
+      integer :: jspec
 !
 !  This module is incompatible with particle block domain decomposition.
 !
-      if (lparticles_blocks) then
-        if (lroot) then
-          print*, 'initialize_particles: must use PARTICLES =  PARTICLES_DUST_BLOCKS'
-          print*, '                      with particle block domain decomposition'
-        endif
-        call fatal_error('initialize_particles','')
-      endif
+      if (lparticles_blocks) &
+        call fatal_error('initialize_particles','must use PARTICLES = PARTICLES_DUST_BLOCKS'// &
+                         //achar(10)//'with particle block domain decomposition')
 !
 !  Report the particle radius, if set.
 !
-      apar: if (particle_radius /= 0.0) then
-        if (lparticles_radius) &
-            call fatal_error('initialize_particles', 'particle_radius /= 0 has no effect when module Particles_radius is on. ')
+      if (particle_radius /= 0.0) then
+        if (lparticles_radius) call fatal_error('initialize_particles', 
+            'particle_radius /= 0 has no effect when module Particles_radius is on')
         if (lroot) print *, 'initialize_particles: radius of each constituent particle = ', particle_radius
-      endif apar
+      endif
 !
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
@@ -326,44 +344,31 @@ module Particles
 !
       if (npar_species>1) then
         if (lroot) then
-          print*, 'initialize_particles: '// &
-              'Number of particle species = ', npar_species
+          print*, 'initialize_particles: Number of particle species = ', npar_species
           print*, 'initialize_particles: tausp_species = ', tausp_species
         endif
 !
 !  Must have set tausp_species for drag force.
 !
         if (ldragforce_dust_par .or. ldragforce_gas_par) then
-          if (any(tausp_species==0.0)) then
-            if (lroot) print*, &
-                'initialize_particles: drag force must have tausp_species/=0.0!'
-                call fatal_error('initialize_particles','')
-          endif
+          if (any(tausp_species==0.0)) &
+              call fatal_error('initialize_particles','drag force must have tausp_species/=0')
 !
 !  Inverse friction time is needed for drag force.
 !
           do jspec=1,npar_species
-            if (tausp_species(jspec)/=0.0) &
-                tausp1_species(jspec)=1/tausp_species(jspec)
+            if (tausp_species(jspec)/=0.0) tausp1_species(jspec)=1/tausp_species(jspec)
           enddo
         endif
       else
 !
 !  Single dust species => If tausp_species is set, it is probably an error.
 !
-        if (any(tausp_species/=0.0) .and. tausp/=tausp_species(1)) then
-          call fatal_error('initialize_particles', 'When there is only '// &
-              '1 particle species, use tausp instead of tausp_species')
-        endif
+        if (any(tausp_species/=0.0) .and. tausp/=tausp_species(1)) &
+          call fatal_error('initialize_particles', 'when there is only '// &
+                           'one particle species, use tausp instead of tausp_species')
         tausp_species(1)=tausp
         if (tausp_species(1)/=0.0) tausp1_species(1)=1/tausp_species(1)
-      endif
-!
-!  Share friction time (but only if Epstein drag regime!).
-!
-      if (ldraglaw_epstein .or. ldraglaw_simple) then
-        call put_shared_variable( 'tausp_species', tausp_species,caller='initialize_particles')
-        call put_shared_variable('tausp1_species',tausp1_species)
       endif
 !
 !  Global gas pressure gradient seen from the perspective of the dust.
@@ -371,7 +376,7 @@ module Particles
       if (beta_dPdr_dust/=0.0) then
         beta_dPdr_dust_scaled=beta_dPdr_dust*Omega/cs0
         if (lroot) print*, 'initialize_particles: Global pressure '// &
-            'gradient with beta_dPdr_dust=', beta_dPdr_dust
+                           'gradient with beta_dPdr_dust=', beta_dPdr_dust
       endif
 !
 !  Calculate mass density per particle (for back-reaction drag force on gas)
@@ -393,23 +398,16 @@ module Particles
         else
           rhom = rho0
         endif
-        if (rhop_swarm==0.0) &
-            rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
-        if (mp_swarm==0.0) &
-            mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
-        if (lroot) print*, 'initialize_particles: '// &
-            'dust-to-gas ratio eps_dtog=', eps_dtog
+        if (rhop_swarm==0.0) rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
+        if (mp_swarm==0.0) mp_swarm = eps_dtog*rhom*box_volume/(real(npar))
+        if (lroot) print*, 'initialize_particles: dust-to-gas ratio eps_dtog=', eps_dtog
       endif
 !
       if (lroot) then
-        print*, 'initialize_particles: '// &
-            'mass per constituent particle mpmat=', mpmat
-        print*, 'initialize_particles: '// &
-            'mass per superparticle mp_swarm =', mp_swarm
-        print*, 'initialize_particles: '// &
-            'number density per superparticle np_swarm=', np_swarm
-        print*, 'initialize_particles: '// &
-            'mass density per superparticle rhop_swarm=', rhop_swarm
+        print*, 'initialize_particles: mass per constituent particle mpmat=', mpmat
+        print*, 'initialize_particles: mass per superparticle mp_swarm =', mp_swarm
+        print*, 'initialize_particles: number density per superparticle np_swarm=', np_swarm
+        print*, 'initialize_particles: mass density per superparticle rhop_swarm=', rhop_swarm
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.
@@ -420,10 +418,6 @@ module Particles
 !  Calculate gravsmooth**2 for gravity.
 !
       if (gravsmooth/=0.0) gravsmooth2=gravsmooth**2
-!
-!  Share Keplerian gravity.
-!
-      call put_shared_variable('gravr',gravr,caller='initialize_particles')
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -447,13 +441,9 @@ module Particles
 !
 !  Gas density is needed for back-reaction friction force.
 !
-      if (ldragforce_gas_par .and. .not. ldensity) then
-        if (lroot) then
-          print*, 'initialize_particles: friction force on gas only works '
-          print*, '                      together with gas density module!'
-        endif
-        call fatal_error('initialize_particles','')
-      endif
+      if (ldragforce_gas_par .and. .not. ldensity) &
+        call fatal_error('initialize_particles', &
+             'friction force on gas only works together with gas density module')
 !
 !  Need to map particles on the grid for dragforce on gas.
 !
@@ -471,28 +461,23 @@ module Particles
       endif
 !
       if (ldraglaw_epstein_stokes_linear) ldraglaw_epstein=.false.
-      if (ldraglaw_epstein_transonic    .or.&
-          ldraglaw_eps_stk_transonic    .or.&
-          ldraglaw_steadystate          .or.&
+      if (ldraglaw_epstein_transonic    .or. &
+          ldraglaw_eps_stk_transonic    .or. &
+          ldraglaw_steadystate          .or. &
           ldraglaw_simple) then
         ldraglaw_epstein=.false.
       endif
-      if (ldraglaw_epstein_transonic         .and.&
-          ldraglaw_eps_stk_transonic) then
-        print*,'both epstein and epstein-stokes transonic '//&
-               'drag laws are switched on. You cannot have '//&
-               'both. Stop and choose only one.'
-        call fatal_error('initialize_particles','')
-      endif
+      if (ldraglaw_epstein_transonic    .and. &
+          ldraglaw_eps_stk_transonic) &
+        call fatal_error('initialize_particles','both epstein and epstein-stokes transonic '//&
+                         'drag laws are switched on. Only one allowed')
 !
 !  Stiff drag force approximation.
 !
       if (ldragforce_stiff) then
-        if (ldragforce_dust_par .or. ldragforce_gas_par) then
-          if (lroot) print*, 'initialize_particles: stiff drag force '// &
-              'approximation is incompatible with normal drag'
-          call fatal_error('initialize_particles','')
-        endif
+        if (ldragforce_dust_par .or. ldragforce_gas_par) &
+          call fatal_error('initialize_particles', &
+               'stiff drag force approximation incompatible with normal drag')
         f(l1:l2,m1:m2,n1:n2,ifgx:ifgz)=0.0
       endif
 !
@@ -503,11 +488,9 @@ module Particles
 !  Drag force on gas right now assumed rhop_swarm is the same for all particles.
 !
       if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number) &
-          .and..not.lparticles_density) then
-        if (lroot) print*, 'initialize_particles: drag force on gas is '// &
-            'not yet implemented for variable particle radius or number'
-        call fatal_error('initialize_particles','')
-      endif
+          .and..not.lparticles_density) &
+        call not_implemented('initialize_particles', &
+                             'drag force on gas for variable particle radius or number')
 !
 !  Particle self gravity for x,z,r direction
 !
@@ -525,7 +508,7 @@ module Particles
 !
       uu: if (lnostore_uu) then
         if (ldraglaw_steadystate .or. lparticles_spin) &
-            call fatal_error('initialize_particles', 'lnostore_uu = .false. is required. ')
+            call fatal_error('initialize_particles', 'lnostore_uu = .false. is required')
         interp%luu = .false.
       else uu
         interp%luu = ldragforce_dust_par .or. ldraglaw_steadystate .or. lparticles_spin
@@ -556,8 +539,7 @@ module Particles
       case ('ngp')
         interp%pol_uu=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_uu: '//trim(interp_pol_uu))
+        call fatal_error('initialize_particles','no such interp_pol_uu: '//trim(interp_pol_uu))
       endselect
 !
       select case (interp_pol_oo)
@@ -568,8 +550,7 @@ module Particles
       case ('ngp')
         interp%pol_oo=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_oo: '//trim(interp_pol_oo))
+        call fatal_error('initialize_particles','no such interp_pol_oo: '//trim(interp_pol_oo))
       endselect
 !
       select case (interp_pol_TT)
@@ -580,22 +561,20 @@ module Particles
       case ('ngp')
         interp%pol_TT=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_TT: '//trim(interp_pol_TT))
+        call fatal_error('initialize_particles','no such interp_pol_TT: '//trim(interp_pol_TT))
       endselect
 !
       select case (interp_pol_gradTT)
       case ('tsc')
-        call fatal_error('initialize_particles','Not implemented gradTT'// &
-          'interp_pol_gradTT: '//trim(interp_pol_gradTT))
+        call not_implemented('initialize_particles','gradTT for interp_pol_gradTT='// &
+                             trim(interp_pol_gradTT))
       case ('cic')
-        call fatal_error('initialize_particles','Not implemented gradTT'// &
-          'interp_pol_gradTT: '//trim(interp_pol_gradTT))
+        call not_implemented('initialize_particles','gradTT for interp_pol_gradTT='// &
+                             trim(interp_pol_gradTT))
       case ('ngp')
         interp%pol_gradTT=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_gradTT: '//trim(interp_pol_gradTT))
+        call fatal_error('initialize_particles','no such interp_pol_gradTT: '//trim(interp_pol_gradTT))
       endselect
 !
       select case (interp_pol_rho)
@@ -606,17 +585,11 @@ module Particles
       case ('ngp')
         interp%pol_rho=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-          'interp_pol_rho: '//trim(interp_pol_rho))
+        call fatal_error('initialize_particles','no such interp_pol_rho: '//trim(interp_pol_rho))
       endselect
-!
-      if (l_shell) then
-        if ( k_shell < 0) call fatal_error('initialize_particles','Set k_shell')
-        call put_shared_variable('uup_shared',uup_shared)
-        call put_shared_variable('vel_call',vel_call)
-        call put_shared_variable('turnover_call',turnover_call)
-        call put_shared_variable('turnover_shared',turnover_shared)
-      endif
+!     
+      call get_shared_variable('beta_glnrho_global',beta_glnrho_global,caller='initialize_particles')
+      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
 !
 !  Write constants to disk.
 !
@@ -639,7 +612,6 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use Density, only: beta_glnrho_global
       use EquationOfState, only: cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
@@ -696,15 +668,13 @@ module Particles
           fp(1:npar_loc,izp)=0.0
 !
         case ('constant')
-          if (lroot) &
-              print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
+          if (lroot) print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
           fp(1:npar_loc,ixp)=xp0
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
 !
         case ('constant-1')
-          if (lroot) &
-              print*, 'init_particles: Particle 1 at x,y,z=', xp1, yp1, zp1
+          if (lroot) print*, 'init_particles: Particle 1 at x,y,z=', xp1, yp1, zp1
           do k=1,npar_loc
             if (ipar(k)==1) then
               fp(k,ixp)=xp1
@@ -714,8 +684,7 @@ module Particles
           enddo
 !
         case ('constant-2')
-          if (lroot) &
-              print*, 'init_particles: Particle 2 at x,y,z=', xp2, yp2, zp2
+          if (lroot) print*, 'init_particles: Particle 2 at x,y,z=', xp2, yp2, zp2
           do k=1,npar_loc
             if (ipar(k)==2) then
               fp(k,ixp)=xp2
@@ -725,8 +694,7 @@ module Particles
           enddo
 !
         case ('constant-3')
-          if (lroot) &
-              print*, 'init_particles: Particle 2 at x,y,z=', xp3, yp3, zp3
+          if (lroot) print*, 'init_particles: Particle 2 at x,y,z=', xp3, yp3, zp3
           do k=1,npar_loc
             if (ipar(k)==3) then
               fp(k,ixp)=xp3
@@ -742,12 +710,9 @@ module Particles
             if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
-          if (nzgrid/=1) &
-              fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
 !
         case ('random-sources')
           if (lroot) print*, 'init_particles: Random particle positions'
@@ -760,12 +725,9 @@ module Particles
           do isource=1,nsource
             ipar1=(isource-1)*nray+1
             ipar2=ipar1+nray-1
-            if (nxgrid/=1) &
-                fp(ipar1:ipar2,ixp)=xyz0_par(1)+fp(isource,ivpx)*Lxyz_par(1)
-            if (nygrid/=1) &
-                fp(ipar1:ipar2,iyp)=xyz0_par(2)+fp(isource,ivpy)*Lxyz_par(2)
-            if (nzgrid/=1) &
-                fp(ipar1:ipar2,izp)=xyz0_par(3)+fp(isource,ivpz)*Lxyz_par(3)
+            if (nxgrid/=1) fp(ipar1:ipar2,ixp)=xyz0_par(1)+fp(isource,ivpx)*Lxyz_par(1)
+            if (nygrid/=1) fp(ipar1:ipar2,iyp)=xyz0_par(2)+fp(isource,ivpy)*Lxyz_par(2)
+            if (nzgrid/=1) fp(ipar1:ipar2,izp)=xyz0_par(3)+fp(isource,ivpz)*Lxyz_par(3)
           enddo
 !
           do isource=1,nsource
@@ -795,18 +757,15 @@ module Particles
         case ('random-sphere')
           if (lroot) print*, 'init_particles: Random particle positions '// &
               'in a sphere around (0,0,0) with radius=',rad_sphere
-          if (rad_sphere==0) then
-            call fatal_error('init_particles','random-sphere '// &
-                  'radius needs to be larger than zero')
-          endif
+          if (rad_sphere==0) &
+            call fatal_error('init_particles','random-sphere: radius needs to be larger than zero')
           if (-rad_sphere+pos_sphere(1)<xyz0(1) .or. &
                rad_sphere+pos_sphere(1)>xyz1(1) .or. &
               -rad_sphere+pos_sphere(2)<xyz0(2) .or. &
                rad_sphere+pos_sphere(2)>xyz1(2) .or. &
               -rad_sphere+pos_sphere(3)<xyz0(3) .or. &
                rad_sphere+pos_sphere(3)>xyz1(3)) then
-            call fatal_error('init_particles','random-sphere '// &
-                 'sphere needs to fit in the box')
+            call fatal_error('init_particles','random-sphere: sphere needs to fit in the box')
           endif
           if (lcartesian_coords) then
             do k=1,npar_loc
@@ -833,18 +792,16 @@ module Particles
           if (lroot) print*, 'init_particles: Random particle positions '// &
               'in an ellipsoid around ', pos_ellipsoid, ' with ' // &
               'semi-principal axes a,b,c =',a_ellipsoid,b_ellipsoid,c_ellipsoid
-          if ((a_ellipsoid==0) .or. (b_ellipsoid==0) .or. (c_ellipsoid==0)) then
+          if (any((/a_ellipsoid,b_ellipsoid,c_ellipsoid/)<=0)) &
             call fatal_error('init_particles','random-ellipsoid '// &
                 'all semi-principal axes need to be larger than zero')
-          endif
           if (-a_ellipsoid+pos_ellipsoid(1)<xyz0(1) .or. &
                a_ellipsoid+pos_ellipsoid(1)>xyz1(1) .or. &
               -b_ellipsoid+pos_ellipsoid(2)<xyz0(2) .or. &
                b_ellipsoid+pos_ellipsoid(2)>xyz1(2) .or. &
               -c_ellipsoid+pos_ellipsoid(3)<xyz0(3) .or. &
                c_ellipsoid+pos_ellipsoid(3)>xyz1(3)) then
-            call fatal_error('init_particles','random-ellipsoid '// &
-                 'ellipsoid needs to fit in the box')
+            call fatal_error('init_particles','random-ellipsoid: ellipsoid needs to fit in the box')
           endif
           if (lcartesian_coords) then
             a_ell2=a_ellipsoid**2
@@ -875,8 +832,7 @@ module Particles
           do k=1,npar_loc
             if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
 !
@@ -885,14 +841,12 @@ module Particles
           do k=1,npar_loc
             if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
           enddo
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
           fp(1:npar_loc,ixp)=xp0
           fp(1:npar_loc,izp)=zp0
 !
         case ('random-hole')
-          if (lroot) print*, 'init_particles: Random particle positions '// &
-              'with inner hole'
+          if (lroot) print*, 'init_particles: Random particle positions with inner hole'
           do k=1,npar_loc
             rp2=-1.0
             do while (rp2<rp_int**2)
@@ -907,8 +861,7 @@ module Particles
           enddo
 !
         case ('random-box')
-          if (lroot) print*, 'init_particles: Random particle positions '// &
-               'within a box'
+          if (lroot) print*, 'init_particles: Random particle positions within a box'
           do k=1,npar_loc
             if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
             if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
@@ -954,8 +907,7 @@ module Particles
               if (nxgrid/=1) fp(k,ixp)=rad
               if (nygrid/=1) fp(k,iyp)=phi
             elseif (lspherical_coords) then
-              call fatal_error('init_particles','random-cylindrical '// &
-                  'not implemented for spherical coordinates')
+              call not_implemented('init_particles','random-cylindrical for spherical coordinates')
             endif
 !
             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
@@ -1125,23 +1077,19 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         case ('shift')
           if (lroot) print*, 'init_particles: shift particle positions'
-          if (.not. lequidistant) then
-            if (lroot) print*, 'init_particles: must place particles equidistantly before shifting!'
-            call fatal_error('init_particles','')
-          endif
+          if (.not. lequidistant) &
+            call fatal_error('init_particles','must place particles equidistantly before shifting')
           k2_xxp=kx_xxp**2+ky_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, &
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed')
           endif
           do k=1,npar_loc
             fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
-                sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
+                        sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
             fp(k,iyp) = fp(k,iyp) - ky_xxp/k2_xxp*amplxxp* &
-                sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
+                        sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
             fp(k,izp) = fp(k,izp) - kz_xxp/k2_xxp*amplxxp* &
-                sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
+                        sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
           enddo
 !
         case ('gaussian-z')
@@ -1161,10 +1109,8 @@ k_loop:   do while (.not. (k>npar_loc))
               if ((fp(k,izp)>=xyz0(3)).and.(fp(k,izp)<=xyz1(3))) exit
             enddo
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
 !
         case ('gaussian-x')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
@@ -1178,10 +1124,8 @@ k_loop:   do while (.not. (k>npar_loc))
               if ((fp(k,ixp)>=xyz0(1)).and.(fp(k,ixp)<=xyz1(1))) exit
             enddo
           enddo
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
-          if (nzgrid/=1) &
-              fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
 !
         case ('gaussian-z-pure')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
@@ -1229,10 +1173,7 @@ k_loop:   do while (.not. (k>npar_loc))
           call constant_richardson(fp,f)
 !
         case default
-          if (lroot) &
-              print*, 'init_particles: No such such value for initxxp: ', &
-              trim(initxxp(j))
-          call fatal_error('init_particles','')
+          call fatal_error('init_particles','no such initxxp: '//trim(initxxp(j)))
 !
         endselect
 !
@@ -1281,13 +1222,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         case ('constant')
           if (lroot) print*, 'init_particles: Constant particle velocity'
-          if (lroot) &
-              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           if (lcylindrical_coords) then
-            fp(1:npar_loc,ivpx)&
-                =vpx0*cos(fp(k,iyp))+vpy0*sin(fp(k,iyp))
-            fp(1:npar_loc,ivpy)&
-                =vpy0*cos(fp(k,iyp))-vpx0*sin(fp(k,iyp))
+            fp(1:npar_loc,ivpx)=vpx0*cos(fp(k,iyp))+vpy0*sin(fp(k,iyp))
+            fp(1:npar_loc,ivpy)=vpy0*cos(fp(k,iyp))-vpx0*sin(fp(k,iyp))
             fp(1:npar_loc,ivpz)=vpz0
           else
             fp(1:npar_loc,ivpx)=vpx0
@@ -1296,9 +1234,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
 !
         case ('constant-1')
-          if (lroot) &
-              print*, 'init_particles: Particle 1 velocity vx,vy,vz=', &
-              vpx1, vpy1, vpz1
+          if (lroot) print*, 'init_particles: Particle 1 velocity vx,vy,vz=', vpx1, vpy1, vpz1
           do k=1,npar_loc
             if (ipar(k)==1) then
               fp(k,ivpx)=vpx1
@@ -1308,9 +1244,7 @@ k_loop:   do while (.not. (k>npar_loc))
           enddo
 !
         case ('constant-2')
-          if (lroot) &
-              print*, 'init_particles: Particle 2 velocity vx,vy,vz=', &
-              vpx2, vpy2, vpz2
+          if (lroot) print*, 'init_particles: Particle 2 velocity vx,vy,vz=', vpx2, vpy2, vpz2
           do k=1,npar_loc
             if (ipar(k)==2) then
               fp(k,ivpx)=vpx2
@@ -1320,9 +1254,7 @@ k_loop:   do while (.not. (k>npar_loc))
           enddo
 !
         case ('constant-3')
-          if (lroot) &
-              print*, 'init_particles: Particle 3 velocity vx,vy,vz=', &
-              vpx3, vpy3, vpz3
+          if (lroot) print*, 'init_particles: Particle 3 velocity vx,vy,vz=', vpx3, vpy3, vpz3
           do k=1,npar_loc
             if (ipar(k)==3) then
               fp(k,ivpx)=vpx3
@@ -1350,8 +1282,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         case ('sphere')
           if (lroot) print*, 'init_particles for vvp: uniform-circle'
-          if (lroot) &
-              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           ntheta=npar_loc !(for now)
           theta1=sphere_theta1*pi/180.
           theta2=sphere_theta2*pi/180.
@@ -1368,8 +1299,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         case ('uniform-circle')
           if (lroot) print*, 'init_particles for vvp: uniform-circle'
-          if (lroot) &
-              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           do k=1,npar_loc
             phi=2*pi*real(k)/real(npar_loc)
             fp(k,ivpx)=fp(k,ivpx)+amplvvp*cos(phi)
@@ -1378,8 +1308,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         case ('sinwave-phase')
           if (lroot) print*, 'init_particles: sinwave-phase'
-          if (lroot) &
-              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           do k=1,npar_loc
             fp(k,ivpx)=fp(k,ivpx)+vpx0*sin(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
             fp(k,ivpy)=fp(k,ivpy)+vpy0*sin(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
@@ -1388,8 +1317,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         case ('coswave-phase')
           if (lroot) print*, 'init_particles: coswave-phase'
-          if (lroot) &
-              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           do k=1,npar_loc
             fp(k,ivpx)=fp(k,ivpx)+vpx0*cos(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
             fp(k,ivpy)=fp(k,ivpy)+vpy0*cos(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
@@ -1397,8 +1325,7 @@ k_loop:   do while (.not. (k>npar_loc))
           enddo
 !
         case ('random')
-          if (lroot) print*, 'init_particles: Random particle velocities; '// &
-              'delta_vp0=', delta_vp0
+          if (lroot) print*, 'init_particles: Random particle velocities; delta_vp0=', delta_vp0
           do k=1,npar_loc
             call random_number_wrapper(r)
             fp(k,ivpx) = fp(k,ivpx) + delta_vp0*(2*r-1)
@@ -1409,24 +1336,21 @@ k_loop:   do while (.not. (k>npar_loc))
           enddo
 !
         case ('random-x')
-          if (lroot) print*, 'init_particles: Random particle x-velocity; '// &
-              'delta_vp0=', delta_vp0
+          if (lroot) print*, 'init_particles: Random particle x-velocity; delta_vp0=', delta_vp0
           do k=1,npar_loc
             call random_number_wrapper(r)
             fp(k,ivpx) = fp(k,ivpx) + delta_vp0*(2*r-1)
           enddo
 !
         case ('random-y')
-          if (lroot) print*, 'init_particles: Random particle y-velocity; '// &
-              'delta_vp0=', delta_vp0
+          if (lroot) print*, 'init_particles: Random particle y-velocity; delta_vp0=', delta_vp0
           do k=1,npar_loc
             call random_number_wrapper(r)
             fp(k,ivpy) = fp(k,ivpy) + delta_vp0*(2*r-1)
           enddo
 !
         case ('random-z')
-          if (lroot) print*, 'init_particles: Random particle z-velocity; '// &
-              'delta_vp0=', delta_vp0
+          if (lroot) print*, 'init_particles: Random particle z-velocity; delta_vp0=', delta_vp0
           do k=1,npar_loc
             call random_number_wrapper(r)
             fp(k,ivpz) = fp(k,ivpz) + delta_vp0*(2*r-1)
@@ -1447,17 +1371,15 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lroot) &
               print*, 'init_particles: Particle velocity equal to gas velocity'
           do k=1,npar_loc
-            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup, &
-                ineargrid(k,:),0,0)
+            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,0)
             fp(k,ivpx:ivpz) = uup
           enddo
 !
         case ('jeans-wave-dustpar-x')
         ! assumes rhs_poisson_const=1 !
           do k=1,npar_loc
-            fp(k,ivpx) = fp(k,ivpx) - amplxxp* &
-                (sqrt(1+4*1.0*1.0*tausp**2)-1)/ &
-                (2*kx_xxp*1.0*tausp)*sin(kx_xxp*(fp(k,ixp)))
+            fp(k,ivpx) = fp(k,ivpx) - amplxxp*(sqrt(1+4*1.0*1.0*tausp**2)-1)/ &
+                         (2*kx_xxp*1.0*tausp)*sin(kx_xxp*(fp(k,ixp)))
           enddo
 !
         case ('dragforce_equilibrium','dragforce-equilibrium')
@@ -1472,11 +1394,9 @@ k_loop:   do while (.not. (k>npar_loc))
           cs=sqrt(cs20)
 !  Calculate average dust-to-gas ratio in box.
           if (ldensity_nolog) then
-            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                sum(f(l1:l2,m1:m2,n1:n2,irho))
+            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/sum(f(l1:l2,m1:m2,n1:n2,irho))
           else
-            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
-                sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
           endif
           if (ldragforce_equi_noback) eps=0.0
 !
@@ -1487,12 +1407,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Take either global or local dust-to-gas ratio.
               if (.not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f,l,m,n)
 !
-              f(l,m,n,iux) = f(l,m,n,iux) - &
-                  beta_glnrho_global(1)*eps*Omega*tausp/ &
-                  ((1.0+eps)**2+(Omega*tausp)**2)*cs
-              f(l,m,n,iuy) = f(l,m,n,iuy) + &
-                  beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
-                  (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+              f(l,m,n,iux) = f(l,m,n,iux) - beta_glnrho_global(1)*eps*Omega*tausp/ &
+                             ((1.0+eps)**2+(Omega*tausp)**2)*cs
+              f(l,m,n,iuy) = f(l,m,n,iuy) + beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
+                             (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
 !
             enddo; enddo; enddo
           endif
@@ -1508,22 +1426,18 @@ k_loop:   do while (.not. (k>npar_loc))
               endif
             endif
 !
-            fp(k,ivpx) = fp(k,ivpx) + &
-                beta_glnrho_global(1)*Omega*tausp/ &
-                ((1.0+eps)**2+(Omega*tausp)**2)*cs
-            fp(k,ivpy) = fp(k,ivpy) + &
-                beta_glnrho_global(1)*(1+eps)/ &
-                (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+            fp(k,ivpx) = fp(k,ivpx) + beta_glnrho_global(1)*Omega*tausp/ &
+                         ((1.0+eps)**2+(Omega*tausp)**2)*cs
+            fp(k,ivpy) = fp(k,ivpy) + beta_glnrho_global(1)*(1+eps)/ &
+                         (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
 !
           enddo
 !
         case ('dragforce_equi_nohydro')
 !
           do k=1,npar_loc
-            fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction* &
-                1/(1.0/(Omega*tausp)+Omega*tausp)
-            fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction* &
-                1/(1.0+(Omega*tausp)**2)
+            fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction/(1.0/(Omega*tausp)+Omega*tausp)
+            fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction/(1.0+(Omega*tausp)**2)
           enddo
 !
         case ('dragforce_equi_dust')
@@ -1537,10 +1451,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Set particle velocity field.
           cs=sqrt(cs20)
           do k=1,npar_loc
-            fp(k,ivpx) = fp(k,ivpx) + &
-                1/(Omega*tausp+1/(Omega*tausp))*beta_dPdr_dust*cs
-            fp(k,ivpy) = fp(k,ivpy) - &
-                1/(1.0+1/(Omega*tausp)**2)*beta_dPdr_dust/2*cs
+            fp(k,ivpx) = fp(k,ivpx) + 1/(Omega*tausp+1/(Omega*tausp))*beta_dPdr_dust*cs
+            fp(k,ivpy) = fp(k,ivpy) - 1/(1.0+1/(Omega*tausp)**2)*beta_dPdr_dust/2*cs
           enddo
 !
        case ('Keplerian','keplerian')
@@ -1549,10 +1461,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (lroot) then
             print*, 'init_particles: Keplerian velocity'
-            if (lspherical_coords) call fatal_error('init_particles', &
-                 'Keplerian particle initial condition: '// &
-                 'not implemented for spherical coordinates')
-            if (lshear) call fatal_error("init_particles",&
+            if (lspherical_coords) call not_implemented('init_particles', &
+                 'Keplerian particle initial condition for spherical coordinates')
+            if (lshear) call fatal_error("init_particles", &
                  "Keplerian initial condition is for global disks, not shearing boxes")
           endif
           do k=1,npar_loc
@@ -1583,10 +1494,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !
         case default
-          if (lroot) &
-              print*, 'init_particles: No such such value for initvvp: ', &
-              trim(initvvp(j))
-          call fatal_error('','')
+          call fatal_error('init_particles','no such initvvp: '//trim(initvvp(j)))
 !
         endselect
 !
@@ -1657,8 +1565,7 @@ k_loop:   do while (.not. (k>npar_loc))
         n_insert=int(avg_n_insert + remaining_particles)
 ! Remaining particles saved for subsequent timestep:
         remaining_particles=avg_n_insert + remaining_particles - n_insert
-        if ((n_insert+npar_total <= mpar_loc) &
-            .and. (t<max_particle_insert_time)) then
+        if ((n_insert+npar_total <= mpar_loc) .and. (t<max_particle_insert_time)) then
           linsertmore=.true.
         else
           linsertmore=.false.
@@ -1701,9 +1608,7 @@ k_loop:   do while (.not. (k>npar_loc))
               if (lroot .and. j==1) print*, 'init_particles: nothing'
 !
             case default
-              print*, 'insert_particles: No such such value for initxxp: ', &
-                  trim(initxxp(j))
-              call fatal_error('init_particles','')
+              call fatal_error('insert_particles','no such initxxp: '//trim(initxxp(j)))
 !
             endselect
           enddo
@@ -1713,16 +1618,14 @@ k_loop:   do while (.not. (k>npar_loc))
           do j=1,ninit
             select case (initvvp(j))
             case ('nothing')
-              if (j==1) print*, 'init_particles: No particle velocity set'
+              if (j==1) print*, 'insert_particles: No particle velocity set'
 !
             case ('constant')
               if (lcylindrical_coords) then
-                fp(npar_loc_old+1:npar_loc,ivpx)&
-                    =vpx0*cos(fp(npar_loc_old+1:npar_loc,iyp))&
-                    +vpy0*sin(fp(npar_loc_old+1:npar_loc,iyp))
-                fp(npar_loc_old+1:npar_loc,ivpy)&
-                    =vpy0*cos(fp(npar_loc_old+1:npar_loc,iyp))&
-                    -vpx0*sin(fp(npar_loc_old+1:npar_loc,iyp))
+                fp(npar_loc_old+1:npar_loc,ivpx)=vpx0*cos(fp(npar_loc_old+1:npar_loc,iyp)) &
+                                                +vpy0*sin(fp(npar_loc_old+1:npar_loc,iyp))
+                fp(npar_loc_old+1:npar_loc,ivpy)=vpy0*cos(fp(npar_loc_old+1:npar_loc,iyp)) &
+                                                -vpx0*sin(fp(npar_loc_old+1:npar_loc,iyp))
                 fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
               else
                 fp(npar_loc_old+1:npar_loc,ivpx)=vpx0
@@ -1731,9 +1634,7 @@ k_loop:   do while (.not. (k>npar_loc))
               endif
 !
             case default
-              print*, 'insert_particles: No such such value for initvvp: ', &
-                  trim(initvvp(j))
-              call fatal_error('','')
+              call fatal_error('insert_particles','no such initvvp: '//trim(initvvp(j)))
               !
             endselect
 !
@@ -1750,8 +1651,7 @@ k_loop:   do while (.not. (k>npar_loc))
           if (nygrid==1) fp(npar_loc_old+1:npar_loc,iyp)=y(nghost+1)
           if (nzgrid==1) fp(npar_loc_old+1:npar_loc,izp)=z(nghost+1)
 !
-          if (lparticles_diagnos_state) &
-              call insert_particles_diagnos_state(fp, npar_loc_old)
+          if (lparticles_diagnos_state) call insert_particles_diagnos_state(fp, npar_loc_old)
 !
         endif
       endif ! if (lroot) then
@@ -1789,7 +1689,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  14-apr-06/anders: coded
 !
-      use Density, only: beta_glnrho_global
       use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp
@@ -1802,13 +1701,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if ( sqrt(npar/real(nwgrid))/=int(sqrt(npar/real(nwgrid))) .or. &
            sqrt(npar_loc/real(nw))/=int(sqrt(npar_loc/real(nw))) ) then
-        if (lroot) then
-          print*, 'streaming_coldstart: the number of particles per grid must'
-          print*, '                     be a quadratic number!'
-        endif
         print*, '                     iproc, npar/nw, npar_loc/nwgrid=', &
-            iproc, npar/real(nwgrid), npar_loc/real(nw)
-        call fatal_error('streaming_coldstart','')
+                iproc, npar/real(nwgrid), npar_loc/real(nw)
+        call fatal_error('streaming_coldstart','the number of particles per grid must be a square')
       endif
 !
 !  Define a few disc parameters.
@@ -1834,20 +1729,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Shift particle locations slightly so that wanted mode appears.
 !
       do k=1,npar_loc
-        fp(k,ixp) = fp(k,ixp) - &
-            amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
-            (kx_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))+ &
-             kx_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
-        fp(k,izp) = fp(k,izp) - &
-            amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
-            (kz_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))- &
-             kz_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
-        fp(k,ixp) = fp(k,ixp) + &
-            kx_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
-            sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
-        fp(k,izp) = fp(k,izp) + &
-            kz_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
-            sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
+        fp(k,ixp) = fp(k,ixp) - amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
+                    (kx_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))+ &
+                     kx_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
+        fp(k,izp) = fp(k,izp) - amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
+                    (kz_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))- &
+                     kz_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
+        fp(k,ixp) = fp(k,ixp) + kx_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
+                    sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
+        fp(k,izp) = fp(k,izp) + kz_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
+                    sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
       enddo
 !  Set particle velocity.
       do k=1,npar_loc
@@ -1868,31 +1759,26 @@ k_loop:   do while (.not. (k>npar_loc))
 !  this is to go to a quadratic interpolation scheme.
 !
       ampluug=amplxxp
-      if (lcoldstart_amplitude_correction) &
-          ampluug=amplxxp/(1-dx**2/8*(kx_xxp**2+kz_xxp**2))
+      if (lcoldstart_amplitude_correction) ampluug=amplxxp/(1-dx**2/8*(kx_xxp**2+kz_xxp**2))
 !
 !  Set fluid fields.
 !
       do m=m1,m2; do n=n1,n2
-        f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
-            amplxxp* &
-            ( real(coeff(7))*cos(kx_xxp*x(l1:l2)) - &
-             aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+        f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + amplxxp* &
+                              ( real(coeff(7))*cos(kx_xxp*x(l1:l2)) - &
+                               aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
-        f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
-            eta_glnrho*v_Kepler*ampluug* &
-            ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
-             aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+        f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + eta_glnrho*v_Kepler*ampluug* &
+                           ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
+                            aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
-        f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-            eta_glnrho*v_Kepler*ampluug* &
-            ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
-             aimag(coeff(5))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+        f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + eta_glnrho*v_Kepler*ampluug* &
+                           ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
+                            aimag(coeff(5))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
-        f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + &
-            eta_glnrho*v_Kepler*(-ampluug)* &
-            (aimag(coeff(6))*cos(kx_xxp*x(l1:l2)) + &
-              real(coeff(6))*sin(kx_xxp*x(l1:l2)))*sin(kz_xxp*z(n))
+        f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + eta_glnrho*v_Kepler*(-ampluug)* &
+                           (aimag(coeff(6))*cos(kx_xxp*x(l1:l2)) + &
+                             real(coeff(6))*sin(kx_xxp*x(l1:l2)))*sin(kz_xxp*z(n))
       enddo; enddo
 !
     endsubroutine streaming_coldstart
@@ -1903,7 +1789,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  30-jan-06/anders: coded
 !
-      use Density, only: beta_glnrho_global
       use General, only: random_number_wrapper
       use Particles_mpicomm
 !
@@ -1950,22 +1835,20 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         enddo
 !
-        if ( mod(k,npar_loc/100)==0) then
-          print '(i7,i3,4f11.7)', k, j, r, p, xprob, zprob
-        endif
+        if ( mod(k,npar_loc/100)==0) print '(i7,i3,4f11.7)', k, j, r, p, xprob, zprob
 !
         fp(k,ixp)=xprob*Lxyz(1)+xyz0(1)
         fp(k,izp)=zprob*Lxyz(3)+xyz0(3)
 !  Set particle velocity.
         fp(k,ivpx) = fp(k,ivpx) + eta_glnrho*v_Kepler*amplxxp* &
-            ( real(coeff(1))*cos(kx_xxp*fp(k,ixp)) - &
-             aimag(coeff(1))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
+                     ( real(coeff(1))*cos(kx_xxp*fp(k,ixp)) - &
+                      aimag(coeff(1))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
         fp(k,ivpy) = fp(k,ivpy) + eta_glnrho*v_Kepler*amplxxp* &
-            ( real(coeff(2))*cos(kx_xxp*fp(k,ixp)) - &
-             aimag(coeff(2))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
+                     ( real(coeff(2))*cos(kx_xxp*fp(k,ixp)) - &
+                      aimag(coeff(2))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
         fp(k,ivpz) = fp(k,ivpz) + eta_glnrho*v_Kepler*(-amplxxp)* &
-            (aimag(coeff(3))*cos(kx_xxp*fp(k,ixp)) + &
-              real(coeff(3))*sin(kx_xxp*fp(k,ixp)))*sin(kz_xxp*fp(k,izp))
+                     (aimag(coeff(3))*cos(kx_xxp*fp(k,ixp)) + &
+                       real(coeff(3))*sin(kx_xxp*fp(k,ixp)))*sin(kz_xxp*fp(k,izp))
 !
       enddo
 !
@@ -1982,25 +1865,21 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Set fluid fields.
 !
       do m=m1,m2; do n=n1,n2
-        f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
-            (eta_glnrho*v_Kepler)**2*amplxxp* &
-            ( real(coeff(7))*cos(kx_xxp*x(l1:l2)) - &
-             aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+        f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + (eta_glnrho*v_Kepler)**2*amplxxp* &
+                              ( real(coeff(7))*cos(kx_xxp*x(l1:l2)) - &
+                               aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
-        f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
-            eta_glnrho*v_Kepler*amplxxp* &
-            ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
-             aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+        f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + eta_glnrho*v_Kepler*amplxxp* &
+                           ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
+                            aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
-        f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-            eta_glnrho*v_Kepler*amplxxp* &
-            ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
-             aimag(coeff(5))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+        f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + eta_glnrho*v_Kepler*amplxxp* &
+                           ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
+                            aimag(coeff(5))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
-        f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + &
-            eta_glnrho*v_Kepler*(-amplxxp)* &
-            (aimag(coeff(6))*cos(kx_xxp*x(l1:l2)) + &
-              real(coeff(6))*sin(kx_xxp*x(l1:l2)))*sin(kz_xxp*z(n))
+        f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + eta_glnrho*v_Kepler*(-amplxxp)* &
+                           (aimag(coeff(6))*cos(kx_xxp*x(l1:l2)) + &
+                             real(coeff(6))*sin(kx_xxp*x(l1:l2)))*sin(kz_xxp*z(n))
       enddo; enddo
 !
     endsubroutine streaming
@@ -2012,8 +1891,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  14-sep-05/anders: coded
 !
-      use Density, only: beta_glnrho_scaled
-      use EquationOfState, only: gamma, cs20
+      use EquationOfState, only: cs20, get_gamma_etc
       use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp
@@ -2025,6 +1903,9 @@ k_loop:   do while (.not. (k>npar_loc))
       real :: dz_dense, eps_point, z00_dense, rho, lnrho
       integer :: nz_dense=nz_inc*nz, npar_bin
       integer :: i, i0, k
+      real :: gamma
+
+      call get_gamma_etc(gamma)
 !
 !  Calculate dust "scale height".
 !
@@ -2075,8 +1956,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Calculate the dust column density numerically.
 !
       Sigmad_num=sum(rho1*eps*dz_dense)
-      if (lroot) print*, 'constant_richardson: Sigmad, Sigmad (numerical) = ', &
-          Sigmad, Sigmad_num
+      if (lroot) print*, 'constant_richardson: Sigmad, Sigmad (numerical) = ', Sigmad, Sigmad_num
 !
 !  Place particles according to probability function.
 !
@@ -2093,8 +1973,7 @@ k_loop:   do while (.not. (k>npar_loc))
         enddo
         i0=i0+npar_bin
       enddo
-      if (lroot) print '(A,i7,A)', 'constant_richardson: placed ', &
-          i0, ' particles according to Ri=const'
+      if (lroot) print '(A,i7,A)','constant_richardson: placed ',i0,' particles according to Ri=const.'
 !
 !  Particles left out by round off are just placed randomly.
 !
@@ -2103,8 +1982,7 @@ k_loop:   do while (.not. (k>npar_loc))
           call random_number_wrapper(fp(k,izp))
           fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
         enddo
-        if (lroot) print '(A,i7,A)', 'constant_richardson: placed ', &
-            npar_loc-i0, ' particles randomly.'
+        if (lroot) print '(A,i7,A)','constant_richardson: placed ',npar_loc-i0,' particles randomly.'
       endif
 !
 !  Random positions in x and y.
@@ -2113,10 +1991,8 @@ k_loop:   do while (.not. (k>npar_loc))
         if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
         if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
       enddo
-      if (nxgrid/=1) &
-          fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-      if (nygrid/=1) &
-          fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+      if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+      if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
 !
 !  Set gas velocity according to dust-to-gas ratio and global pressure gradient.
 !
@@ -2126,10 +2002,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         if (abs(z(n))<=Hd*sqrt(1-1/(1+eps1)**2)) then
           lnrho = -sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)* &
-              gamma*Omega**2*Hd**2/cs20 + gamma*Omega**2*Hd**2/(cs20*(1+eps1))
+                   gamma*Omega**2*Hd**2/cs20 + gamma*Omega**2*Hd**2/(cs20*(1+eps1))
         else
           lnrho = -0.5*gamma*Omega**2/cs20*z(n)**2 + &
-              gamma*Omega**2*Hd**2/cs20*(1/(1+eps1)-1/(2*(1+eps1)**2) - 0.5)
+                   gamma*Omega**2*Hd**2/cs20*(1/(1+eps1)-1/(2*(1+eps1)**2) - 0.5)
         endif
 !
 !  Isothermal stratification.
@@ -2147,12 +2023,11 @@ k_loop:   do while (.not. (k>npar_loc))
         eps_point=1/sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)-1
         if (eps_point<=0.0) eps_point=0.0
 !
-        f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
-            cs20*beta_glnrho_scaled(1)*eps_point*tausp/ &
-            (1.0+2*eps_point+eps_point**2+(Omega*tausp)**2)
+        f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - cs20*beta_glnrho_scaled(1)*eps_point*tausp/ &
+                           (1.0+2*eps_point+eps_point**2+(Omega*tausp)**2)
         f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-            cs20*beta_glnrho_scaled(1)*(1+eps_point+(Omega*tausp)**2)/ &
-            (2*Omega*(1.0+2*eps_point+eps_point**2+(Omega*tausp)**2))
+                           cs20*beta_glnrho_scaled(1)*(1+eps_point+(Omega*tausp)**2)/ &
+                           (2*Omega*(1.0+2*eps_point+eps_point**2+(Omega*tausp)**2))
         f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.0
       enddo
 !
@@ -2163,12 +2038,10 @@ k_loop:   do while (.not. (k>npar_loc))
         eps_point=1/sqrt(fp(k,izp)**2/Hd**2+1/(1+eps1)**2)-1
         if (eps_point<=0.0) eps_point=0.0
 !
-        fp(k,ivpx) = fp(k,ivpx) + &
-            cs20*beta_glnrho_scaled(1)*tausp/ &
-            (1.0+2*eps_point+eps_point**2+(Omega*tausp)**2)
-        fp(k,ivpy) = fp(k,ivpy) + &
-            cs20*beta_glnrho_scaled(1)*(1+eps_point)/ &
-            (2*Omega*(1.0+2*eps_point+eps_point**2+(Omega*tausp)**2))
+        fp(k,ivpx) = fp(k,ivpx) + cs20*beta_glnrho_scaled(1)*tausp/ &
+                     (1.0+2*eps_point+eps_point**2+(Omega*tausp)**2)
+        fp(k,ivpy) = fp(k,ivpy) + cs20*beta_glnrho_scaled(1)*(1+eps_point)/ &
+                     (2*Omega*(1.0+2*eps_point+eps_point**2+(Omega*tausp)**2))
         fp(k,ivpz) = fp(k,ivpz) - tausp*Omega**2*fp(k,izp)
 !
       enddo
@@ -2199,7 +2072,7 @@ k_loop:   do while (.not. (k>npar_loc))
           eps=f(l1:l2,m,n,irhop)/f(l1:l2,m,n,irho)
           do i=0,2
             f(l1:l2,m,n,iux+i)=(f(l1:l2,m,n,iux+i)+eps*f(l1:l2,m,n,iupx+i) + &
-                eps/(1.0+eps)*tausp*f(l1:l2,m,n,ifgx+i))/(1.0+eps)
+                               eps/(1.0+eps)*tausp*f(l1:l2,m,n,ifgx+i))/(1.0+eps)
           enddo
           f(l1:l2,m,n,ifgx:ifgz)=f(l1:l2,m,n,iux:iuz)-f(l1:l2,m,n,ifgx:ifgz)
         enddo
@@ -2211,15 +2084,12 @@ k_loop:   do while (.not. (k>npar_loc))
         do k=1,npar_loc
           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
           if (lparticlemesh_cic) then
-            call interpolate_linear(f,ifgx,ifgz, &
-                fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+            call interpolate_linear(f,ifgx,ifgz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
           elseif (lparticlemesh_tsc) then
             if (linterpolate_spline) then
-              call interpolate_quadratic_spline(f,ifgx,ifgz, &
-                  fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+              call interpolate_quadratic_spline(f,ifgx,ifgz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
             else
-              call interpolate_quadratic(f,ifgx,ifgz, &
-                  fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+              call interpolate_quadratic(f,ifgx,ifgz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
             endif
           else
             vvp=f(ix0,iy0,iz0,ifgx:ifgz)
@@ -2304,6 +2174,18 @@ k_loop:   do while (.not. (k>npar_loc))
         lpencil_in(i_rho1)=.true.
       endif
 !
+      if (lpencil_in(i_grhop)) then
+        if (irhop /= 0) then
+          if (nprocx /= 1.and.(.not.lcommunicate_rhop)) &
+            call fatal_error("pencil_interdep_particles", &
+                             "Switch on lcommunicate_rhop=T in particles_run_pars")
+        else
+          if (nprocx /= 1.and.(.not.lcommunicate_np)) &
+            call fatal_error("pencil_interdep_particles", &
+                             "Switch on lcommunicate_np=T in particles_run_pars")
+        endif
+      endif
+!
     endsubroutine pencil_interdep_particles
 !***********************************************************************
     subroutine calc_pencils_particles(f,p)
@@ -2336,14 +2218,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lpencil(i_grhop)) then
         if (irhop/=0) then
-          if ((nprocx/=1).and.(.not.lcommunicate_rhop)) & 
-               call fatal_error("calc_pencils_particles",&
-               "Switch on lcommunicate_rhop=T in particles_run_pars")  
           call grad(f,irhop,p%grhop)
         else
-          if ((nprocx/=1).and.(.not.lcommunicate_np)) & 
-               call fatal_error("calc_pencils_particles",&
-               "Switch on lcommunicate_np=T in particles_run_pars")  
           call grad(f,inp,p%grhop)
           p%grhop=rhop_swarm*p%grhop
         endif
@@ -2378,15 +2254,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Identify module and boundary conditions.
 !
-      if (lheader) print*,'dxxp_dt: Calculate dxxp_dt'
       if (lheader) then
+        print*,'dxxp_dt: Calculate dxxp_dt'
         print*, 'dxxp_dt: Particles boundary condition bcpx=', bcpx
         print*, 'dxxp_dt: Particles boundary condition bcpy=', bcpy
         print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
+        print*, 'dxxp_dt: Set rate of change of particle position equal to particle velocity.'
       endif
 !
-      if (lheader) print*, 'dxxp_dt: Set rate of change of particle '// &
-          'position equal to particle velocity.'
 !
 !  With shear there is an extra term due to the background shear flow.
 !
@@ -2426,9 +2301,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Print out header information in first time step.
 !
       lheader=lfirstcall .and. lroot
-      if (lheader) then
-        print*,'dvvp_dt: Calculate dvvp_dt'
-      endif
+      if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
 !
 !  Add Coriolis force from rotating coordinate frame.
 !
@@ -2437,14 +2310,10 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
           Omega2=2*Omega
           if (.not.lspherical_coords) then
-            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + &
-                Omega2*fp(1:npar_loc,ivpy)
-            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - &
-                Omega2*fp(1:npar_loc,ivpx)
+            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
+            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
           else
-            print*,'dvvp_dt: Coriolis force on the particles is '
-            print*,'not yet implemented for spherical coordinates.'
-            call fatal_error('dvvp_dt','')
+            call not_implemented('dvvp_dt','Coriolis force on particles for spherical coordinates')
           endif
         endif
 !
@@ -2454,26 +2323,19 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
           if (lcartesian_coords) then
 !
-            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + &
-                Omega**2*fp(1:npar_loc,ixp)
-!
-            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + &
-                Omega**2*fp(1:npar_loc,iyp)
+            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
+            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + Omega**2*fp(1:npar_loc,iyp)
 !
           elseif (lcylindrical_coords) then
-            dfp(1:npar_loc,ivpx) = &
-                dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
+            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
           else
-            print*,'dvvp_dt: Centrifugal force on the particles is '
-            print*,'not implemented for spherical coordinates.'
-            call fatal_error('dvvp_dt','')
+            call not_implemented('dvvp_dt','centrifugal force on particles for spherical coordinates')
           endif
         endif
 !
 !  With shear there is an extra term due to the background shear flow.
 !
-        if (lshear) dfp(1:npar_loc,ivpy) = &
-            dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
+        if (lshear) dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
       endif
 !
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
@@ -2481,19 +2343,18 @@ k_loop:   do while (.not. (k>npar_loc))
 !  (the term must be added to the dust equation of motion when measuring
 !  velocities relative to the shear flow modified by the global pressure grad.)
 !
-      if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) then
+      if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) &
         dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
-      endif
 !
 !  Diagnostic output
 !
       if (ldiagnos) then
         if (idiag_nparmin/=0) call max_name(-npar_loc,idiag_nparmin,lneg=.true.)
-        if (idiag_nparmax/=0) call max_name(+npar_loc,idiag_nparmax)
+        call max_name(+npar_loc,idiag_nparmax)
         if (idiag_nparpmax/=0) call max_name(maxval(npar_imn),idiag_nparpmax)
-        if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
-        if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
-        if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
+        call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
+        call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
+        call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
         if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
         if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
         if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
@@ -2501,15 +2362,12 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2),idiag_rpm)
         if (idiag_rp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2+ &
             fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2,idiag_rp2m)
-        if (idiag_vpxm/=0) call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
-        if (idiag_vpym/=0) call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
-        if (idiag_vpzm/=0) call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
-        if (idiag_vpxvpym/=0) call sum_par_name( &
-            fp(1:npar_loc,ivpx)*fp(1:npar_loc,ivpy),idiag_vpxvpym)
-        if (idiag_vpxvpzm/=0) call sum_par_name( &
-            fp(1:npar_loc,ivpx)*fp(1:npar_loc,ivpz),idiag_vpxvpzm)
-        if (idiag_vpyvpzm/=0) call sum_par_name( &
-            fp(1:npar_loc,ivpy)*fp(1:npar_loc,ivpz),idiag_vpyvpzm)
+        call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
+        call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
+        call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
+        if (idiag_vpxvpym/=0) call sum_par_name(fp(1:npar_loc,ivpx)*fp(1:npar_loc,ivpy),idiag_vpxvpym)
+        if (idiag_vpxvpzm/=0) call sum_par_name(fp(1:npar_loc,ivpx)*fp(1:npar_loc,ivpz),idiag_vpxvpzm)
+        if (idiag_vpyvpzm/=0) call sum_par_name(fp(1:npar_loc,ivpy)*fp(1:npar_loc,ivpz),idiag_vpyvpzm)
         if (idiag_lpxm/=0) call sum_par_name( &
             fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
             fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy),idiag_lpxm)
@@ -2521,25 +2379,21 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx),idiag_lpzm)
         if (idiag_lpx2m/=0) call sum_par_name( &
             (fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
-            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy))**2,idiag_lpx2m)
+             fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy))**2,idiag_lpx2m)
         if (idiag_lpy2m/=0) call sum_par_name( &
             (fp(1:npar_loc,izp)*fp(1:npar_loc,ivpx)- &
-            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpz))**2,idiag_lpy2m)
+             fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpz))**2,idiag_lpy2m)
         if (idiag_lpz2m/=0) call sum_par_name( &
             (fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpy)- &
-            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx))**2,idiag_lpz2m)
-        if (idiag_vpx2m/=0) &
-            call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
-        if (idiag_vpy2m/=0) &
-            call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
-        if (idiag_vpz2m/=0) &
-            call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
+             fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx))**2,idiag_lpz2m)
+        if (idiag_vpx2m/=0) call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
+        if (idiag_vpy2m/=0) call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
+        if (idiag_vpz2m/=0) call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
         if (idiag_vprms/=0) &
             call sum_par_name((fp(1:npar_loc,ivpx)**2 &
                               +fp(1:npar_loc,ivpy)**2 &
                               +fp(1:npar_loc,ivpz)**2),idiag_vprms,lsqrt=.true.)
-        if (idiag_vpyfull2m/=0) &
-            call sum_par_name((fp(1:npar_loc,ivpy)- &
+        if (idiag_vpyfull2m/=0) call sum_par_name((fp(1:npar_loc,ivpy)- &
             qshear*Omega*fp(1:npar_loc,ixp))**2,idiag_vpyfull2m)
         if (idiag_ekinp/=0) then
           if (lparticles_density) then
@@ -2550,18 +2404,16 @@ k_loop:   do while (.not. (k>npar_loc))
               call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
                    sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
             else
-              call sum_par_name(0.5*mp_swarm* &
-                   sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+              call sum_par_name(0.5*mp_swarm*sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
             endif
           endif
         endif
         if (idiag_epotpm/=0) call sum_par_name( &
             -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
-        if (idiag_vpmax/=0) call max_par_name( &
-            sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
-        if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
-        if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
-        if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
+        if (idiag_vpmax/=0) call max_par_name(sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
+        call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
+        call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
+        call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
         if (idiag_vpzmin/=0) call max_par_name(-fp(1:npar_loc,ivpz), &
             idiag_vpzmin,lneg=.true.)
         if (idiag_eccpxm/=0) call sum_par_name( &
@@ -2596,72 +2448,58 @@ k_loop:   do while (.not. (k>npar_loc))
             sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
         if (idiag_rhopvpxm/=0) then
           if (lparticles_density) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpx), &
-                idiag_rhopvpxm)
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpx),idiag_rhopvpxm)
           elseif (lparticles_radius.and.lparticles_number) then
             call sum_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpx),idiag_rhopvpxm)
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)*fp(1:npar_loc,ivpx),idiag_rhopvpxm)
           endif
         endif
         if (idiag_rhopvpym/=0) then
           if (lparticles_density) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy), &
-                idiag_rhopvpym)
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy),idiag_rhopvpym)
           elseif (lparticles_radius.and.lparticles_number) then
             call sum_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpy),idiag_rhopvpym)
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)*fp(1:npar_loc,ivpy),idiag_rhopvpym)
           endif
         endif
         if (idiag_rhopvpzm/=0) then
           if (lparticles_density) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpz), &
-                idiag_rhopvpzm)
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpz),idiag_rhopvpzm)
           elseif (lparticles_radius.and.lparticles_number) then
             call sum_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpz),idiag_rhopvpzm)
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)*fp(1:npar_loc,ivpz),idiag_rhopvpzm)
           endif
         endif
         if (idiag_rhopvpxt/=0) then
           if (lparticles_density) then
-            call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
-                fp(1:npar_loc,ivpx),idiag_rhopvpxt)
+            call integrate_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpx),idiag_rhopvpxt)
           elseif (lparticles_radius.and.lparticles_number) then
             call integrate_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpx),idiag_rhopvpxt)
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)*fp(1:npar_loc,ivpx),idiag_rhopvpxt)
           endif
         endif
         if (idiag_rhopvpyt/=0) then
           if (lparticles_density) then
-            call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
-                fp(1:npar_loc,ivpy),idiag_rhopvpyt)
+            call integrate_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy),idiag_rhopvpyt)
           elseif (lparticles_radius.and.lparticles_number) then
             call integrate_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpy),idiag_rhopvpyt)
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)*fp(1:npar_loc,ivpy),idiag_rhopvpyt)
           endif
         endif
         if (idiag_rhopvpzt/=0) then
           if (lparticles_density) then
-            call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
-                fp(1:npar_loc,ivpz),idiag_rhopvpzt)
+            call integrate_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpz),idiag_rhopvpzt)
           elseif (lparticles_radius.and.lparticles_number) then
             call integrate_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpz),idiag_rhopvpzt)
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)*fp(1:npar_loc,ivpz),idiag_rhopvpzt)
           endif
         endif
         if (idiag_rhopvpysm/=0) then
           if (lparticles_density) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)* &
-                Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
           elseif (lparticles_radius.and.lparticles_number) then
             call sum_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)*Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
           endif
         endif
         if (idiag_mpt/=0) then
@@ -2676,9 +2514,7 @@ k_loop:   do while (.not. (k>npar_loc))
           call count_particles(ipar,npar_found)
           call save_name(float(npar-npar_found),idiag_npargone)
         endif
-        if (idiag_deshearbcsm/=0) then
-          call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
-        endif
+        if (idiag_deshearbcsm/=0) call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
       endif
 !
       if (lfirstcall) lfirstcall=.false.
@@ -2711,22 +2547,21 @@ k_loop:   do while (.not. (k>npar_loc))
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
             
-            
-              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
-              if (lshear) then
-                dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
-              else
-                dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
-              endif
-              dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
-              if (l_shell) then
-                dt1_advpx=abs(fp(k,ivpx))/k_shell
-                dt1_advpy=abs(fp(k,ivpy))/k_shell
-                dt1_advpz=abs(fp(k,ivpz))/k_shell
-              endif
-              dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
-                   sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
+            if (lshear) then
+              dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
+            else
+              dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
+            endif
+            dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
+            if (l_shell) then
+              dt1_advpx=abs(fp(k,ivpx))/k_shell
+              dt1_advpy=abs(fp(k,ivpy))/k_shell
+              dt1_advpz=abs(fp(k,ivpz))/k_shell
+            endif
+            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
+                 sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
             
           enddo
         endif
@@ -2777,9 +2612,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Identify module.
 !
-      if (headtt) then
-        if (lroot) print*,'dvvp_dt_pencil: calculate dvvp_dt'
-      endif
+      if (headtt) print*,'dvvp_dt_pencil: calculate dvvp_dt'
 !
 !  Precalculate certain quantities, if necessary.
 !
@@ -2787,21 +2620,18 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Precalculate particle Reynolds numbers.
 !
-        getrep: if (ldraglaw_steadystate .or. lparticles_spin) then
+        if (ldraglaw_steadystate .or. lparticles_spin) then
           allocate(rep(k1_imn(imn):k2_imn(imn)))
-          if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', 'unable to allocate sufficient memory for rep', .true.)
+          if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil','unable to allocate rep', .true.)
           call calc_pencil_rep(fp, rep)
-        endif getrep
+        endif
 !
 !  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple)
 !
         if (.not.ldraglaw_simple) then
           if (ldraglaw_steadystate.or.lbrownian_forces) then
             allocate(stocunn(k1_imn(imn):k2_imn(imn)))
-            if (.not.allocated(stocunn)) then
-              call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'//&
-                'memory for stocunn')
-            endif
+            if (.not.allocated(stocunn)) call fatal_error('dvvp_dt_pencil','unable to allocate stocunn') 
 !
             call calc_stokes_cunningham(fp,stocunn)
           endif
@@ -2832,15 +2662,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !
               if (lhydro) then
                 if (lparticlemesh_cic) then
-                  call interpolate_linear(f,iux,iuz, &
-                    fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
+                  call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
                 elseif (lparticlemesh_tsc) then
                   if (linterpolate_spline) then
                     call interpolate_quadratic_spline(f,iux,iuz, &
                       fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
                   else
-                    call interpolate_quadratic(f,iux,iuz, &
-                      fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
+                    call interpolate_quadratic(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
                   endif
                 else
                   uup=f(ix0,iy0,iz0,iux:iuz)
@@ -2853,15 +2681,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !
               if (lmagnetic) then
                 if (lparticlemesh_cic) then
-                    call interpolate_linear(f,ibx,ibz, &
-                      fp(k,ixp:izp),bbp,ineargrid(k,:),0,ipar(k))
+                  call interpolate_linear(f,ibx,ibz,fp(k,ixp:izp),bbp,ineargrid(k,:),0,ipar(k))
                 elseif (lparticlemesh_tsc) then
                   if (linterpolate_spline) then
                     call interpolate_quadratic_spline(f,ibx,ibz, &
                         fp(k,ixp:izp),bbp,ineargrid(k,:),0,ipar(k))
                   else
-                    call interpolate_quadratic(f,ibx,ibz, &
-                        fp(k,ixp:izp),bbp,ineargrid(k,:),0,ipar(k))
+                    call interpolate_quadratic(f,ibx,ibz,fp(k,ixp:izp),bbp,ineargrid(k,:),0,ipar(k))
                   endif
                 else
                   bbp=f(ix0,iy0,iz0,ibx:ibz)
@@ -2875,8 +2701,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
               if (leos) then
                 if (lparticlemesh_cic) then
-                    call interpolate_linear(f,ics, &
-                      fp(k,ixp:izp),csp,ineargrid(k,:),0,ipar(k))
+                    call interpolate_linear(f,ics,fp(k,ixp:izp),csp,ineargrid(k,:),0,ipar(k))
                 elseif (lparticlemesh_tsc) then
                   ! if (linterpolate_spline) then
                   !   call interpolate_quadratic_spline(f,ics,ics, &
@@ -2885,8 +2710,7 @@ k_loop:   do while (.not. (k>npar_loc))
                   !   call interpolate_quadratic(f,ics,ics, &
                   !     fp(k,ixp:izp),csp,ineargrid(k,:),0,ipar(k))
                   ! endif
-                  call fatal_error('dvvp_dt_pencil', &
-                      'lparticlemesh_tsc not yet for scalar')
+                  call not_implemented('dvvp_dt_pencil','lparticlemesh_tsc for scalar')
                 else
                   csp=f(ix0,iy0,iz0,ics)
                 endif
@@ -2898,8 +2722,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
               if (leos) then
                 if (lparticlemesh_cic) then
-                    call interpolate_linear(f,ilnrho, &
-                      fp(k,ixp:izp),lnrhop,ineargrid(k,:),0,ipar(k))
+                    call interpolate_linear(f,ilnrho,fp(k,ixp:izp),lnrhop,ineargrid(k,:),0,ipar(k))
                 elseif (lparticlemesh_tsc) then
                   ! if (linterpolate_spline) then
                   !   call interpolate_quadratic_spline(f,ilnrho,ilnrho, &
@@ -2908,8 +2731,7 @@ k_loop:   do while (.not. (k>npar_loc))
                   !   call interpolate_quadratic(f,ilnrho,ilnrho, &
                   !     fp(k,ixp:izp),lnrhop,ineargrid(k,:),0,ipar(k))
                   ! endif
-                  call fatal_error('dvvp_dt_pencil', &
-                      'lparticlemesh_tsc not yet for scalar')
+                  call not_implemented('dvvp_dt_pencil','lparticlemesh_tsc for scalar')
                 else
                   lnrhop=f(ix0,iy0,iz0,ilnrho)
                 endif
@@ -2920,19 +2742,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Track particle state in terms of local gas velocity
 !  [to put frequency calculation in there]
 !
-              if (lparticles_diagnos_state .and. lfirst) &
-                  call persistence_check(fp, k, uup)
+              if (lparticles_diagnos_state .and. lfirst) call persistence_check(fp, k, uup)
 !
 !  Get the friction time. For the case of |uup| ~> cs, the Epstein drag law
 !  is dependent on the relative mach number, hence the need to feed uup as
 !  an optional argument to get_frictiontime.
 !
-              if (ldraglaw_epstein_transonic .or. &
-                  ldraglaw_eps_stk_transonic) then
+              if (ldraglaw_epstein_transonic .or. ldraglaw_eps_stk_transonic) then
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup)
               elseif (ldraglaw_steadystate) then
-                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k),&
-                  stocunn=stocunn(k))
+                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k),stocunn=stocunn(k))
               else
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
               endif
@@ -2948,6 +2767,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Wave speed: compute kperp etc.
 !
               if(lmagnetic) then
+
                 B2=bbp(1)**2+bbp(2)**2+bbp(3)**2
 !
 !  compute omega_ms
@@ -2989,12 +2809,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !    dt1_drag = Sum_k[eps_k/tau_k]
 !
               if (lfirst.and.ldt) then
-                dt1_drag_dust(ix0-nghost)= &
-                  max(dt1_drag_dust(ix0-nghost),tausp1_par)
+                dt1_drag_dust(ix0-nghost)=max(dt1_drag_dust(ix0-nghost),tausp1_par)
                 if (ldragforce_gas_par) then
                   if (p%np(ix0-nghost)/=0.0) &
-                    dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
-                    rhop_swarm_par*tausp1_par
+                    dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+rhop_swarm_par*tausp1_par
                 endif
               endif
           enddo
@@ -3058,53 +2876,51 @@ k_loop:   do while (.not. (k>npar_loc))
 !  For stiff drag force equations we need to store the forces that are
 !  unique to the gas.
 !
-      if (ldragforce_stiff .and. .not. lpencil_check_at_work) then
+      if (ldragforce_stiff .and. .not. lpencil_check_at_work) &
         f(l1:l2,m,n,ifgx:ifgz)=p%fpres+p%jxbr+p%fvisc
-      endif
 !
 !  Diagnostic output.
 !
       if (ldiagnos) then
-        if (idiag_npm/=0)      call sum_mn_name(p%np,idiag_npm)
+        call sum_mn_name(p%np,idiag_npm)
         if (idiag_np2m/=0)     call sum_mn_name(p%np**2,idiag_np2m)
-        if (idiag_npmax/=0)    call max_mn_name(p%np,idiag_npmax)
+        call max_mn_name(p%np,idiag_npmax)
         if (idiag_npmin/=0)    call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
-        if (idiag_rhopm/=0)    call sum_mn_name(p%rhop,idiag_rhopm)
-        if (idiag_omegapm/=0)  call max_name(local_omega,idiag_omegapm)
+        call sum_mn_name(p%rhop,idiag_rhopm)
+        call max_name(local_omega,idiag_omegapm)
         if (idiag_rhop2m/=0 )  call sum_mn_name(p%rhop**2,idiag_rhop2m)
         if (idiag_rhoprms/=0)  call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
-        if (idiag_rhopmax/=0)  call max_mn_name(p%rhop,idiag_rhopmax)
+        call max_mn_name(p%rhop,idiag_rhopmax)
         if (idiag_rhopmin/=0)  call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
-        if (idiag_epspmax/=0)  call max_mn_name(p%epsp,idiag_epspmax)
+        call max_mn_name(p%epsp,idiag_epspmax)
         if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
-        if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
+        call sum_mn_name(drag_heat,idiag_dedragp)
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
             call calculate_rms_speed(fp,ineargrid,p)
-        if (idiag_dtdragp/=0.and.(lfirst.and.ldt))  &
-            call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
+        if (lfirst.and.ldt)  call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       if (l1davgfirst) then
-        if (idiag_npmx/=0)    call yzsum_mn_name_x(p%np,idiag_npmx)
-        if (idiag_npmy/=0)    call xzsum_mn_name_y(p%np,idiag_npmy)
-        if (idiag_npmz/=0)    call xysum_mn_name_z(p%np,idiag_npmz)
-        if (idiag_rhopmx/=0)  call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
-        if (idiag_rhopmy/=0)  call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
-        if (idiag_rhopmz/=0)  call xysum_mn_name_z(p%rhop,idiag_rhopmz)
-        if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%epsp,idiag_epspmx)
-        if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
-        if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
-        if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
+        call yzsum_mn_name_x(p%np,idiag_npmx)
+        call xzsum_mn_name_y(p%np,idiag_npmy)
+        call xysum_mn_name_z(p%np,idiag_npmz)
+        call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
+        call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
+        call xysum_mn_name_z(p%rhop,idiag_rhopmz)
+        call yzsum_mn_name_x(p%epsp,idiag_epspmx)
+        call xzsum_mn_name_y(p%epsp,idiag_epspmy)
+        call xysum_mn_name_z(p%epsp,idiag_epspmz)
+        call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
       endif
 !
       if (l2davgfirst) then
-        if (idiag_npmxy/=0)    call zsum_mn_name_xy(p%np,idiag_npmxy)
-        if (idiag_rhopmphi/=0) call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
-        if (idiag_rhopmxy/=0)  call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
-        if (idiag_rhopmxz/=0)  call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
+        call zsum_mn_name_xy(p%np,idiag_npmxy)
+        call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
+        call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
+        call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
       endif
 !
 !  particle-particle separation and relative velocity diagnostics
@@ -3160,8 +2976,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt_blocks
 !***********************************************************************
-    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup,&
-      nochange_opt,rep,stocunn)
+    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup,nochange_opt,rep,stocunn)
 !
 !  Calculate the friction time.
 !
@@ -3224,13 +3039,10 @@ k_loop:   do while (.not. (k>npar_loc))
             elseif (lcylindrical_coords) then
               OO=fp(k,ixp)**(-1.5)
             elseif (lspherical_coords) then
-              call fatal_error("get_frictiontime",&
-                   "variable draglaw not implemented for"//&
-                   "spherical coordinates")
+              call not_implemented("get_frictiontime","variable draglaw for spherical coordinates")
               OO=0.
             else
-              call fatal_error("get_frictiontime", &
-                  "no valid coord system")
+              call fatal_error("get_frictiontime","no valid coordinate system")
               OO=0.
             endif
             tausp1_par=tmp*OO
@@ -3263,10 +3075,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !            ~= 4.5e-9/Sigmag
 !  when Sigmag is given in g/cm^2.
 !
-        if (iap==0) then
-          if (lroot) print*, 'get_frictiontime: need particle radius as dynamical variable for Stokes law'
-          call fatal_error('get_frictiontime','')
-        endif
+        if (iap==0) &
+          call fatal_error('get_frictiontime','need particle radius as dynamical variable for Stokes law')
         if (fp(k,iap)<2.25*mean_free_path_gas) then
           tausp1_par = 1/(fp(k,iap)*rhopmat)
         else
@@ -3288,13 +3098,12 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       elseif (ldraglaw_steadystate) then
         if (.not.present(rep)) then
-          call fatal_error('get_frictiontime','need particle reynolds '// &
-                  'number, rep, to calculate the steady state drag '// &
-                  'relaxation time!')
+          call fatal_error('get_frictiontime','need particle Reynolds '// &
+                           'number, rep, to calculate the steady state drag relaxation time')
         elseif (.not.present(stocunn)) then
           call fatal_error('get_frictiontime','need particle stokes '// &
-                  'cunningham factor, stocunn, to calculate the steady '// &
-                  ' state drag relaxation time!')
+                           'cunningham factor, stocunn, to calculate the steady '// &
+                           ' state drag relaxation time')
         else
           call calc_draglaw_steadystate(fp,k,rep,stocunn,tausp1_par)
         endif
@@ -3322,8 +3131,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         if (tausg_min/=0.0) then
           tausg1_point=tausp1_par*p%epsp(ix0-nghost)
-          if (tausg1_point>tausg1_max) &
-              tausp1_par=tausg1_max/p%epsp(ix0-nghost)
+          if (tausg1_point>tausg1_max) tausp1_par=tausg1_max/p%epsp(ix0-nghost)
         endif
 !
 !  Increase friction time linearly with dust density where the dust-to-gas
@@ -3452,9 +3260,7 @@ k_loop:   do while (.not. (k>npar_loc))
           elseif (lcylindrical_coords) then
             OO=fp(k,ixp)**(-1.5)
           elseif (lspherical_coords) then
-            call fatal_error('get_frictiontime', &
-                'variable draglaw not implemented for '//&
-                'spherical coordinates')
+            call not_implemented('calc_draglaw_parameters','variable draglaw for spherical coordinates')
           endif
         else
           OO=nu_epicycle
@@ -3465,8 +3271,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (present(lstokes)) then
 !
-        if (lfirstcall) &
-            print*, 'get_frictiontime: Epstein-Stokes transonic drag law'
+        if (lfirstcall) print*, 'get_frictiontime: Epstein-Stokes transonic drag law'
 !
 !  The mach number and the correction fd to flows of arbitrary mach number
 !
@@ -3481,11 +3286,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !  and sigma_coll its cross section (2e-15 cm^2).
 !  Assume that (mu/sigma_coll) is the input parameter mean_free_path_gas
 !
-        if (mean_free_path_gas==0) then
-          print*,'You want to use Stokes drag but you forgot to set '//&
-               'mean_free_path_gas in the .in files. Stop and check.'
-          call fatal_error("calc_draglaw_parameters","")
-        endif
+        if (mean_free_path_gas==0) &
+          call fatal_error("calc_draglaw_parameters","for using Stokes drag you must set "// &
+                           'mean_free_path_gas in the .in files')
 !
         if (nzgrid==1) then
           !the sqrt(2pi) factor is inside the mean_free_path_gas constant
@@ -3530,10 +3333,6 @@ k_loop:   do while (.not. (k>npar_loc))
           kd=3.96e-6*reynolds**2.4
         elseif (reynolds>1500) then
           kd=0.11*reynolds
-        else
-          call fatal_error("calc_draglaw_parameters", &
-              "something went pretty wrong")
-          kd=0.
         endif
 !
 !  And we finally have the Stokes correction to intermediate Knudsen numbers
@@ -3547,8 +3346,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Only use Epstein drag
 !
-        if (lfirstcall) &
-            print*,'get_frictiontime: Epstein transonic drag law'
+        if (lfirstcall) print*,'get_frictiontime: Epstein transonic drag law'
 !
         mach2=(duu(1)**2+duu(2)**2+duu(3)**2)/p%cs2(inx0)
         fd=sqrt(1+(9.0*pi/128)*mach2)
@@ -3562,11 +3360,9 @@ k_loop:   do while (.not. (k>npar_loc))
       if (iap/=0) then
         if (fp(k,iap)/=0.0) then
           if (nzgrid==1) then
-            tausp1_par=     2*pi_1*OO* &
-                p%rho(inx0)*fac/(fp(k,iap)*rhopmat)
+            tausp1_par=     2*pi_1*OO*p%rho(inx0)*fac/(fp(k,iap)*rhopmat)
           else
-            tausp1_par=sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)* &
-                fac/(fp(k,iap)*rhopmat)
+            tausp1_par=sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)*fac/(fp(k,iap)*rhopmat)
           endif
         endif
       else
@@ -3576,7 +3372,7 @@ k_loop:   do while (.not. (k>npar_loc))
           if (luse_tau_ap) then
             tausp1_par=tmp1*2*pi_1*OO*p%rho(inx0)*fac/(rho0*rhopmat)
           else
-            tausp1_par=tmp1*OO*p%rho(inx0)*fac/ rho0
+            tausp1_par=tmp1*OO*p%rho(inx0)*fac/rho0
           endif
         else
           if (luse_tau_ap) then
@@ -3637,8 +3433,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-                taucool1*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - taucool1*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
           enddo
 !
           if (lfirst.and.ldt) dt1_max=max(dt1_max,taucool1/cdtp)
@@ -3655,8 +3450,7 @@ k_loop:   do while (.not. (k>npar_loc))
           if (npar_species>1) then
             tausp1m=0.0
           else
-            call get_frictiontime(f,fp,p,ineargrid,1,tausp1_par, &
-                nochange_opt=.true.)
+            call get_frictiontime(f,fp,p,ineargrid,1,tausp1_par,nochange_opt=.true.)
           endif
 !  Need vpm=<|vvp-<vvp>|> to calculate the collisional time-scale.
           vvpm=0.0; vpm=0.0
@@ -3664,8 +3458,7 @@ k_loop:   do while (.not. (k>npar_loc))
             ix0=ineargrid(k,1)
             vvpm(ix0-nghost,:) = vvpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
             if (npar_species>1) then
-              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par, &
-                  nochange_opt=.true.)
+              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,nochange_opt=.true.)
               tausp1m(ix0-nghost) = tausp1m(ix0-nghost) + tausp1_par
             endif
           enddo
@@ -3678,37 +3471,30 @@ k_loop:   do while (.not. (k>npar_loc))
 !  vpm
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
-            vpm(ix0-nghost) = vpm(ix0-nghost) + &
-                sqrt( (fp(k,ivpx)-vvpm(ix0-nghost,1))**2 + &
-                      (fp(k,ivpy)-vvpm(ix0-nghost,2))**2 + &
-                      (fp(k,ivpz)-vvpm(ix0-nghost,3))**2 )
+            vpm(ix0-nghost) = vpm(ix0-nghost) + sqrt( (fp(k,ivpx)-vvpm(ix0-nghost,1))**2 + &
+                                                      (fp(k,ivpy)-vvpm(ix0-nghost,2))**2 + &
+                                                      (fp(k,ivpz)-vvpm(ix0-nghost,3))**2 )
           enddo
-          do l=1,nx
-            if (p%np(l)>1.0) then
-              vpm(l)=vpm(l)/p%np(l)
-            endif
-          enddo
+          where (p%np>1.) vpm=vpm/p%np
+!
 !  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
 !  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
+!
           if (npar_species>1) then
             tau_coll1=(1.0-coeff_restitution)*p%epsp*vpm*tausp1m
           else
             tau_coll1=(1.0-coeff_restitution)*p%epsp*vpm*tausp1_par
           endif
 !  Limit inverse time-step of collisional cooling if requested.
-          if (tau_coll_min>0.0) then
-            where (tau_coll1>tau_coll1_max) tau_coll1=tau_coll1_max
-          endif
+          if (tau_coll_min>0.0) where (tau_coll1>tau_coll1_max) tau_coll1=tau_coll1_max
 !
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-                tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz)-tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
             if (lcollisional_heat .or. ldiagnos) then
               call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
-              coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + &
-                   rhop_swarm_par*tau_coll1(ix0-nghost)*&
-                   sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
+              coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + rhop_swarm_par*tau_coll1(ix0-nghost)* &
+                                      sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
             endif
           enddo
 !
@@ -3727,39 +3513,31 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Limit inverse time-step of collisional cooling if requested.
             do while (k/=0)
               dt1_cool=0.0
-              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_park, &
-                  nochange_opt=.true.)
+              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_park,nochange_opt=.true.)
               tausp_park=1/tausp1_park
               tausp_park3=tausp_park**3
               j=k
               do while (kneighbour(j)/=0)
 !  Collide with the neighbours of k and their neighbours.
                 j=kneighbour(j)
-                call get_frictiontime(f,fp,p,ineargrid,j,tausp1_parj, &
-                    nochange_opt=.true.)
+                call get_frictiontime(f,fp,p,ineargrid,j,tausp1_parj,nochange_opt=.true.)
                 tausp_parj=1/tausp1_parj
                 tausp_parj3=tausp_parj**3
 !  Collision velocity.
                 deltavp_vec=fp(k,ivpx:ivpz)-fp(j,ivpx:ivpz)
-                deltavp=sqrt( deltavp_vec(1)**2 + deltavp_vec(2)**2 + &
-                              deltavp_vec(3)**2 )
-                vbar_jk= &
-                    (tausp_parj3*fp(k,ivpx:ivpz)+tausp_park3*fp(j,ivpx:ivpz))/ &
-                    (tausp_parj3+tausp_park3)
+                deltavp=sqrt( deltavp_vec(1)**2 + deltavp_vec(2)**2 + deltavp_vec(3)**2 )
+                vbar_jk=(tausp_parj3*fp(k,ivpx:ivpz)+tausp_park3*fp(j,ivpx:ivpz))/ &
+                        (tausp_parj3+tausp_park3)
 !  Cooling time-scale.
                 call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
-                tau_cool1_par= &
-                     (1.0-coeff_restitution)* &
-                     rhop_swarm_par*deltavp*(tausp_parj+tausp_park)**2/ &
-                     (tausp_parj3+tausp_park3)
+                tau_cool1_par = (1.0-coeff_restitution)* &
+                     rhop_swarm_par*deltavp*(tausp_parj+tausp_park)**2/(tausp_parj3+tausp_park3)
                 dt1_cool=dt1_cool+tau_cool1_par
 !                if (tau_coll_min>0.0) then
 !                  if (tau_cool1_par>tau_coll1_max) tau_cool1_par=tau_coll1_max
 !                endif
-                dfp(j,ivpx:ivpz) = dfp(j,ivpx:ivpz) - &
-                    tau_cool1_par*(fp(j,ivpx:ivpz)-vbar_jk)
-                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-                    tau_cool1_par*(fp(k,ivpx:ivpz)-vbar_jk)
+                dfp(j,ivpx:ivpz) = dfp(j,ivpx:ivpz) - tau_cool1_par*(fp(j,ivpx:ivpz)-vbar_jk)
+                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tau_cool1_par*(fp(k,ivpx:ivpz)-vbar_jk)
               enddo
               if (lfirst.and.ldt) dt1_max=max(dt1_max(l),dt1_cool/cdtp)
 !  Go through all possible k.
@@ -3780,10 +3558,8 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             ispecies=npar_species*(ipar(k)-1)/npar+1
-            vvpm_species(ix0-nghost,:,ispecies) = &
-                vvpm_species(ix0-nghost,:,ispecies) + fp(k,ivpx:ivpz)
-            np_species(ix0-nghost,ispecies)  = &
-                np_species(ix0-nghost,ispecies) + 1.0
+            vvpm_species(ix0-nghost,:,ispecies) = vvpm_species(ix0-nghost,:,ispecies) + fp(k,ivpx:ivpz)
+            np_species(ix0-nghost,ispecies) = np_species(ix0-nghost,ispecies) + 1.0
           enddo
           do l=1,nx
             do ispecies=1,npar_species
@@ -3796,17 +3572,15 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             ispecies=npar_species*(ipar(k)-1)/npar+1
-            vpm_species(ix0-nghost,ispecies) = &
-                vpm_species(ix0-nghost,ispecies) + sqrt( &
+            vpm_species(ix0-nghost,ispecies) = vpm_species(ix0-nghost,ispecies) + sqrt( &
                 (fp(k,ivpx)-vvpm_species(ix0-nghost,1,ispecies))**2 + &
                 (fp(k,ivpy)-vvpm_species(ix0-nghost,2,ispecies))**2 + &
                 (fp(k,ivpz)-vvpm_species(ix0-nghost,3,ispecies))**2 )
           enddo
           do l=1,nx
             do ispecies=1,npar_species
-              if (np_species(l,ispecies)>1.0) then
+              if (np_species(l,ispecies)>1.0) &
                 vpm_species(l,ispecies)=vpm_species(l,ispecies)/np_species(l,ispecies)
-              endif
             enddo
           enddo
 !
@@ -3816,19 +3590,15 @@ k_loop:   do while (.not. (k>npar_loc))
 !    tau_ij = tau_ji*rho_j/rho_i
 !
           do ispecies=1,npar_species; do jspecies=ispecies,npar_species
-            vcoll= &
-                sqrt(vpm_species(:,ispecies)**2+vpm_species(:,ispecies)**2 + &
-                  (vvpm_species(:,1,ispecies)-vvpm_species(:,1,jspecies))**2 + &
-                  (vvpm_species(:,2,ispecies)-vvpm_species(:,2,jspecies))**2 + &
-                  (vvpm_species(:,3,ispecies)-vvpm_species(:,3,jspecies))**2)
+            vcoll= sqrt(vpm_species(:,ispecies)**2+vpm_species(:,ispecies)**2 + &
+                       (vvpm_species(:,1,ispecies)-vvpm_species(:,1,jspecies))**2 + &
+                       (vvpm_species(:,2,ispecies)-vvpm_species(:,2,jspecies))**2 + &
+                       (vvpm_species(:,3,ispecies)-vvpm_species(:,3,jspecies))**2)
             call get_rhopswarm(mp_swarm,fp,k,m,n,rhop_swarm_mn)
-            tau_coll1_species(:,jspecies,ispecies) = &
-                 vcoll*np_species(:,ispecies)*rhop_swarm_mn*p%rho1 / ( &
-                 tausp_species(jspecies)**3/ &
-                 (tausp_species(ispecies)+tausp_species(jspecies))**2 )
-            where (np_species(:,ispecies)/=0.0) &
-              tau_coll1_species(:,ispecies,jspecies)= &
-                   tau_coll1_species(:,jspecies,ispecies)*np_species(:,jspecies)/np_species(:,ispecies)
+            tau_coll1_species(:,jspecies,ispecies) = vcoll*np_species(:,ispecies)*rhop_swarm_mn*p%rho1/( &
+                 tausp_species(jspecies)**3/(tausp_species(ispecies)+tausp_species(jspecies))**2 )
+            where (np_species(:,ispecies)/=0.0) tau_coll1_species(:,ispecies,jspecies)= &
+                 tau_coll1_species(:,jspecies,ispecies)*np_species(:,jspecies)/np_species(:,ispecies)
           enddo; enddo
 !
           tau_coll1_tot=0.0
@@ -3840,7 +3610,7 @@ k_loop:   do while (.not. (k>npar_loc))
             do ispecies=1,npar_species; do l=1,nx
               if (tau_coll1_tot(l,ispecies) > tau_coll1_max) then
                 tau_coll1_species(l,ispecies,:)=tau_coll1_species(l,ispecies,:)* &
-                    tau_coll1_max/tau_coll1_tot(l,ispecies)
+                                                tau_coll1_max/tau_coll1_tot(l,ispecies)
               endif
             enddo; enddo
             tau_coll1_tot=0.0
@@ -3858,16 +3628,14 @@ k_loop:   do while (.not. (k>npar_loc))
             ix0=ineargrid(k,1)
             ispecies=npar_species*(ipar(k)-1)/npar+1
             do jspecies=1,npar_species
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-                  tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
-                  (fp(k,ivpx:ivpz)-vvpm_species(ix0-nghost,:,jspecies))
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
+                                 (fp(k,ivpx:ivpz) - vvpm_species(ix0-nghost,:,jspecies))
               if (lcollisional_heat .or. ldiagnos) then
                 call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
-                coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + &
-                     rhop_swarm_par* &
-                     tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
-                     sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz) - &
-                     vvpm_species(ix0-nghost,:,jspecies)))
+                coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + rhop_swarm_par* &
+                                        tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
+                                        sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz) - &
+                                        vvpm_species(ix0-nghost,:,jspecies)))
               endif
             enddo
           enddo
@@ -3881,10 +3649,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Diagnostics.
 !
-      if (ldiagnos) then
-        if (idiag_decollp/=0) &
-          call sum_mn_name(coll_heat,idiag_decollp)
-      endif
+      if (ldiagnos) call sum_mn_name(coll_heat,idiag_decollp)
 !
     endsubroutine collisional_cooling
 !***********************************************************************
@@ -3928,8 +3693,8 @@ k_loop:   do while (.not. (k>npar_loc))
       if (npar_imn(imn)/=0) then
 !
         do k=k1_imn(imn),k2_imn(imn)
-            inx0=ineargrid(k,1)-nghost
-            vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
+          inx0=ineargrid(k,1)-nghost
+          vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
         enddo
         do l=1,nx
           if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
@@ -3938,10 +3703,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Get the residual in quadrature, dvp2m. Need vvpm calculated above.
 !
         do k=k1_imn(imn),k2_imn(imn)
-            inx0=ineargrid(k,1)-nghost
-            dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
-            dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2
-            dvp2m(inx0,3)=dvp2m(inx0,3)+(fp(k,ivpz)-vvpm(inx0,3))**2
+          inx0=ineargrid(k,1)-nghost
+          dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
+          dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2
+          dvp2m(inx0,3)=dvp2m(inx0,3)+(fp(k,ivpz)-vvpm(inx0,3))**2
         enddo
         do l=1,nx
           if (p%np(l)>1.0) dvp2m(l,:)=dvp2m(l,:)/p%np(l)
@@ -3951,13 +3716,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Output the diagnostics
 !
-      if (idiag_dvpx2m/=0) call sum_mn_name(dvp2m(:,1),idiag_dvpx2m)
-      if (idiag_dvpy2m/=0) call sum_mn_name(dvp2m(:,2),idiag_dvpy2m)
-      if (idiag_dvpz2m/=0) call sum_mn_name(dvp2m(:,3),idiag_dvpz2m)
-      if (idiag_dvpm/=0)   call sum_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
-                                            idiag_dvpm,lsqrt=.true.)
-      if (idiag_dvpmax/=0) call max_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
-                                            idiag_dvpmax,lsqrt=.true.)
+      call sum_mn_name(dvp2m(:,1),idiag_dvpx2m)
+      call sum_mn_name(dvp2m(:,2),idiag_dvpy2m)
+      call sum_mn_name(dvp2m(:,3),idiag_dvpz2m)
+      if (idiag_dvpm/=0) call sum_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),idiag_dvpm,lsqrt=.true.)
+      if (idiag_dvpmax/=0) call max_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),idiag_dvpmax,lsqrt=.true.)
 !
     endsubroutine calculate_rms_speed
 !***********************************************************************
@@ -3988,13 +3751,12 @@ k_loop:   do while (.not. (k>npar_loc))
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
       elseif (ivis=='mu-therm') then
-        nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))&
-            /interp_rho(k1_imn(imn):k2_imn(imn))
+        nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))/interp_rho(k1_imn(imn):k2_imn(imn))
       else
-        call fatal_error('calc_pencil_rep','No such ivis!')
+        call fatal_error('calc_pencil_rep','no such ivis: '//trim(ivis))
       endif
 !
-      if (maxval(nu)==0.0) call fatal_error('calc_pencil_rep', 'nu (kinematic visc.) must be non-zero!')
+      if (maxval(nu)==0.0) call fatal_error('calc_pencil_rep', 'nu (kinematic visc.) must be non-zero')
 !
       do k=k1_imn(imn),k2_imn(imn)
         rep(k) = 2.0 * sqrt(sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2)) / nu(k)
@@ -4005,7 +3767,8 @@ k_loop:   do while (.not. (k>npar_loc))
       elseif (particle_radius > 0.0) then
         rep = rep * particle_radius
       else
-        call fatal_error('calc_pencil_rep', 'unable to calculate the particle Reynolds number without a particle radius. ')
+        call fatal_error('calc_pencil_rep', &
+             'unable to calculate particle Reynolds number without particle radius')
       endif
 !
     endsubroutine calc_pencil_rep
@@ -4030,8 +3793,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         dia=2.0*fp(k,iap)
 !
-        stocunn(k)=1.+2.*mean_free_path_gas/dia* &
-          (1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
+        stocunn(k)=1.+2.*mean_free_path_gas/dia*(1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
 !
       enddo
 !
@@ -4068,20 +3830,16 @@ k_loop:   do while (.not. (k>npar_loc))
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k))
       elseif (ivis=='mu-therm') then
-        nu=nu_*sqrt(interp_TT(k))&
-            /interp_rho(k)
+        nu=nu_*sqrt(interp_TT(k))/interp_rho(k)
       else
-        call fatal_error('calc_pencil_rep','No such ivis!')
+        call fatal_error('calc_draglaw_steadystate','no such ivis: '//trim(ivis))
       endif
 !
 !  Particle diameter
 !
-      if (.not.lparticles_radius) then
-        print*,'calc_draglaw_steadystate: need particles_radius module to '// &
-            'calculate the relaxation time!'
-        call fatal_error('calc_draglaw_steadystate','')
-      endif
-!
+      if (.not.lparticles_radius) &
+        call fatal_error('calc_draglaw_steadystate','need particles_radius module to '// &
+                         'calculate the relaxation time'
       dia=2.0*fp(k,iap)
 !
 !  Calculate drag coefficent pre-factor:
@@ -4133,10 +3891,9 @@ k_loop:   do while (.not. (k>npar_loc))
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k))
       elseif (ivis=='mu-therm') then
-        nu=nu_*sqrt(interp_TT(k))&
-            /interp_rho(k)
+        nu=nu_*sqrt(interp_TT(k))/interp_rho(k)
       else
-        call fatal_error('calc_pencil_rep','No such ivis!')
+        call fatal_error('calc_brownian_force','no such ivis: '//trim(ivis))
       endif
 !
 !  Particle diameter:
@@ -4157,8 +3914,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       call get_rhopswarm(mp_swarm,fp,k,ineark,rhop_swarm_par)
 !
-      Szero=216*nu*k_B*TT*pi_1/ &
-           (dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
+      Szero=216*nu*k_B*TT*pi_1/(dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
 !
       if (dt==0.0) then
         force=0.0
@@ -4170,7 +3926,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
 !
-      real,    dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
@@ -4184,7 +3940,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
 !
-      real,    dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
@@ -4323,22 +4079,14 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'vpzmax',idiag_vpzmax)
         call parse_name(iname,cname(iname),cform(iname),'vpzmin',idiag_vpzmin)
         call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm', &
-            idiag_rhopvpxm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpym', &
-            idiag_rhopvpym)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpzm', &
-            idiag_rhopvpzm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
-            idiag_rhopvpysm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxt', &
-            idiag_rhopvpxt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpyt', &
-            idiag_rhopvpyt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpzt', &
-            idiag_rhopvpzt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
-            idiag_rhopvpysm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm',idiag_rhopvpxm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpym',idiag_rhopvpym)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpzm',idiag_rhopvpzm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm',idiag_rhopvpysm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpxt',idiag_rhopvpxt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpyt',idiag_rhopvpyt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpzt',idiag_rhopvpzt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm',idiag_rhopvpysm)
         call parse_name(iname,cname(iname),cform(iname),'lpxm',idiag_lpxm)
         call parse_name(iname,cname(iname),cform(iname),'lpym',idiag_lpym)
         call parse_name(iname,cname(iname),cform(iname),'lpzm',idiag_lpzm)
@@ -4371,19 +4119,13 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'dvpz2m',idiag_dvpz2m)
         call parse_name(iname,cname(iname),cform(iname),'dvpm',idiag_dvpm)
         call parse_name(iname,cname(iname),cform(iname),'dvpmax',idiag_dvpmax)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'dedragp',idiag_dedragp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'decollp',idiag_decollp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'epotpm',idiag_epotpm)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'npargone',idiag_npargone)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'vpyfull2m',idiag_vpyfull2m)
+        call parse_name(iname,cname(iname),cform(iname),'dedragp',idiag_dedragp)
+        call parse_name(iname,cname(iname),cform(iname),'decollp',idiag_decollp)
+        call parse_name(iname,cname(iname),cform(iname),'epotpm',idiag_epotpm)
+        call parse_name(iname,cname(iname),cform(iname),'npargone',idiag_npargone)
+        call parse_name(iname,cname(iname),cform(iname),'vpyfull2m',idiag_vpyfull2m)
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'deshearbcsm',idiag_deshearbcsm)
+        call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
@@ -4439,7 +4181,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
 !
-! dummy
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)

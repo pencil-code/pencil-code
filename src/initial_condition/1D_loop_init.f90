@@ -34,7 +34,7 @@ module InitialCondition
       set_lnTT_first,T0,T1,z0_tanh,width_tanh,mpoly_special,zpoly, &
       loop_frac
 !
-  real :: Ltot
+  real :: gamma, gamma_m1, Ltot, cp1
 !
 contains
 !***********************************************************************
@@ -57,6 +57,8 @@ contains
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      real :: cp
+
       if (iproc==0) then
         write(*,*) "-------------------------------------------------------------"
         write(*,*) "Parameters to be set in run.in:"
@@ -80,6 +82,10 @@ contains
         call fatal_error('initialize_initial_condition','Wrong loop_frac')
         Ltot = 0.
       endselect
+!
+      call get_gamma_etc(gamma,cp)
+      gamma_m1=gamma-1.
+      cp1=1./cp
 
       call keep_compiler_quiet(f)
 !
@@ -147,14 +153,14 @@ contains
 !
 !  04-sep-10/bing: coded
 !
-      use EquationOfState, only: get_cp1,gamma,gamma_m1,cs20
+      use EquationOfState, only: cs20
       use File_io, only: file_exists, file_size
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Messages, only: warning
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real :: cp1=1.,ztmp
+      real :: ztmp
       integer :: lend,lend_b8,ierr
       integer :: i,j
       integer, parameter :: unit=12
@@ -342,7 +348,6 @@ contains
             f(:,:,:,ilnTT)=spread(spread(profile_x,2,my),3,mz)
           endif
         else if (lthermal_energy) then
-          if (leos) call get_cp1(cp1)
           f(:,:,:,ieth)=spread(spread(exp(profile_x),2,my),3,mz)
           if (ldensity_nolog) then
             f(:,:,:,ieth)=f(:,:,:,ieth)*f(:,:,:,irho)/(gamma*cp1)
@@ -350,7 +355,6 @@ contains
             f(:,:,:,ieth)=f(:,:,:,ieth)*exp(f(:,:,:,ilnrho))/(gamma*cp1)
           endif
         else if (lentropy .and. (.not. pretend_lnTT)) then
-          if (leos) call get_cp1(cp1)
           f(:,:,:,iss) = (log(gamma_m1/cs20/cp1)+spread(spread(profile_x,2,my),3,mz)- &
               gamma_m1*(f(:,:,:,ilnrho)-log(rho_init))) / cp1 /gamma
         else
@@ -367,19 +371,18 @@ contains
 ! temperature from the f-array.
 ! Integration is done using the trapezoidal rule.
 !
-      use EquationOfState, only: gamma,gamma_m1,get_cp1,lnrho0
+      use EquationOfState, only: lnrho0
       use Gravity, only: get_xgravity
       use Mpicomm, only: mpisend_real,mpirecv_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: konst,cp1=1.,lnrho_0,int
+      real :: konst,lnrho_0,int
       real, dimension(mx) :: TT,lnTT,xgrav
       integer :: i,ii
 !
       if (nygrid/=1 .or. nzgrid/=1) call fatal_error('hydrostatic_lnTT', &
           'only for nygrid=nzgrid=1')
 !
-      if (leos) call get_cp1(cp1)
       call get_xgravity(xgrav)
 !
       konst = gamma*cp1/gamma_m1
@@ -501,17 +504,14 @@ contains
 !***********************************************************************
     subroutine piecewice_poly(f)
 !
-      use EquationOfState, only: gamma, gamma_m1, get_cp1
       use Gravity, only: gravz
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real :: Ttop,T2, T1, T0, cp1=1, temp
+      real :: Ttop,T2, T1, T0, temp
       real :: lnrhotop, lnrho2, lnrho1, lnrho0, ztop
       real :: lnrhobot,zbot,Tbot
       real, dimension(4) :: beta
       integer :: i
-!
-      if (leos) call get_cp1(cp1)
 !
 !  Top boundary values.
 !

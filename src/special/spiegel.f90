@@ -115,6 +115,7 @@ module Special
   integer :: idiag_dtchi=0
 !
   real, dimension(nx) :: diffus_chi
+  real :: gamma, gamma_m1
 
   contains
 !
@@ -139,9 +140,14 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use EquationOfState, only: get_gamma_etc
+
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
 !  Initialize any module variables which are parameter dependent
+!
+      call get_gamma_etc(gamma)
+      gamma_m1=gamma-1.
 !
       call keep_compiler_quiet(f)
 !
@@ -155,12 +161,12 @@ module Special
       use EquationOfState
       use Mpicomm
       use Sub
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       intent(inout) :: f
 !
-!!
       select case (initnstar)
         case ('default')
           if (lroot) print*,'init_special: Default neutron star setup'

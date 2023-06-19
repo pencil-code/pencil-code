@@ -15,7 +15,6 @@
 !*****************************************************************************
 module Interstellar
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -383,6 +382,8 @@ module Interstellar
       lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
       p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, kpara
 !
+  real :: gamma
+
   contains
 !
 !***********************************************************************
@@ -425,7 +426,7 @@ module Interstellar
 !
       use General, only: random_seed_wrapper
       use Mpicomm, only: stop_it
-      use EquationOfState , only: getmu
+      use EquationOfState , only: getmu, get_gamma_etc
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -527,6 +528,8 @@ module Interstellar
       else
         lheatcool_shock_cutoff=.false.
       endif
+!
+      call get_gamma_etc(gamma,cp)
 !
 !  Slopeyness used for tanh rounding profiles etc.
 !
@@ -1418,7 +1421,6 @@ module Interstellar
 !   3-apr-06/axel: add ltemperature switch
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
-      use EquationOfState, only: gamma, gamma1
       use Sub, only: dot2
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f

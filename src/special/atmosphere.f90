@@ -48,7 +48,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -107,7 +106,6 @@ module Special
   namelist /special_run_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy, lbuffer_zone_T, lnTT1, lnTT2
 !
-!
   integer :: idiag_dtcrad=0
   integer :: idiag_dtchi=0
 !
@@ -124,7 +122,6 @@ module Special
 !
       use Cdata
    !   use Density
-      use EquationOfState
       use Mpicomm
 !
       logical, save :: first=.true.
@@ -133,12 +130,9 @@ module Special
 !
       if (.not. first) call stop_it('register_special called twice')
       first = .false.
-!
 !!
 !! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code
 !!   THIS IS NOW DONE IN THE HEADER ABOVE
-!
-!
 !
 !!
 !! Set any required f-array indexes to the next available slot
@@ -150,12 +144,10 @@ module Special
 !      iSPECIAL_AUXILIARY_VARIABLE_INDEX = naux+1             ! index to access entropy
 !      naux = naux+1
 !
-!
 !  identify CVS/SVN version information:
 !
       if (lroot) call svn_id( &
            "$Id$")
-!
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
 !  been configured in a custom module but they do no harm)
@@ -178,8 +170,6 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use EquationOfState
-
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: k,i
       real :: ddsize, Ntot_
@@ -208,7 +198,6 @@ module Special
       print*,'special: water index', ind_H2O
       print*,'special: N2 index', ind_N2
 !
-!
       call set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !
     endsubroutine initialize_special
@@ -220,7 +209,6 @@ module Special
 !
       use Cdata
    !   use Density
-      use EquationOfState
       use Mpicomm
       use Sub
 !
@@ -228,7 +216,6 @@ module Special
 !
       intent(inout) :: f
 !
-!!
 !      select case (initstream)
 !        case ('flame_spd')
 !         call flame_spd(f)
@@ -242,22 +229,7 @@ module Special
 !          call stop_it("")
 !      endselect
 !
-!
-
-!
     endsubroutine init_special
-!***********************************************************************
-    subroutine pencil_criteria_special()
-!
-!  All pencils that this special module depends on are specified here.
-!
-!  18-07-06/tony: coded
-!
-      use Cdata
-!
-!
-!
-    endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
@@ -388,23 +360,6 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!   06-oct-03/tony: coded
-!
-      use Cdata
-      ! use Viscosity
-      use EquationOfState
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
 !   16-jul-06/natalia: coded
@@ -521,7 +476,6 @@ module Special
 
 !               df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)  &
 !                   -(f(l1:l2,m,n,ilnTT)-f(l1:l2,m,nn2,ilnTT))*dt1
-
 !
            endif
 !
@@ -597,8 +551,6 @@ module Special
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
                + 2.5e6/1005.*p%ccondens*p%TT1
 !
-!
-! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
@@ -616,10 +568,8 @@ module Special
       real :: del
       logical :: lzone=.false., lzone_left, lzone_right
 !
-
        dt1=1./(3.*dt)
        del=0.1
-!
 !
          lzone_left=.false.
          lzone_right=.false.
@@ -680,8 +630,6 @@ module Special
 !               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
 !               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
 !
-
-!
          endif
 !
         enddo
@@ -737,8 +685,6 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       type (boundary_condition) :: bc
-!
-!
 !
       select case (bc%bcname)
          case ('stm')
@@ -797,7 +743,6 @@ module Special
 !  Used for the Fargo shift, for instance.
 !
 !  27-nov-08/wlad: coded
-!
 !
       use General, only: spline_integral, spline
 
@@ -1183,7 +1128,6 @@ subroutine bc_satur_x(f,bc)
     use Cdata
     use Mpicomm, only: stop_it
 !
-!
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (boundary_condition) :: bc
       real, dimension (my,mz) :: sum_Y, pp_sat
@@ -1235,10 +1179,7 @@ subroutine bc_satur_x(f,bc)
        psf_2=psat2
       endif
 !
-!
 ! Recalculation of the air_mass for different boundary conditions
-!
-!
 !
 !           air_mass_1=0
 !           do k=1,nchemspec
@@ -1251,8 +1192,8 @@ subroutine bc_satur_x(f,bc)
 !             air_mass_2=air_mass_2+init_Yk_2(k)/species_constants(k,imass)
 !           enddo
 !           air_mass_2=1./air_mass_2
-        do iter=1,3
 !
+        do iter=1,3
 !
 !           air_mass_2=0
 !           do k=1,nchemspec
@@ -1265,8 +1206,6 @@ subroutine bc_satur_x(f,bc)
 !
            init_Yk_1(ind_H2O)=psf_1/(PP*air_mass_1/18.)*dYw1
            init_Yk_2(ind_H2O)=psf_2/(PP*air_mass_2/18.)*dYw2
-!
-!
 !
            sum1=0.
            sum2=0.
@@ -1292,8 +1231,6 @@ subroutine bc_satur_x(f,bc)
 !             tmp=tmp+init_Yk_2(k)/species_constants(k,imass)
 !           enddo
 !           air_mass_2=1./tmp
-!
-!
 !
 !print*,'special', air_mass_1, init_Yk_1(ind_H2O), iter, vr, ichemspec(ind_H2O)
 !
@@ -1328,25 +1265,6 @@ subroutine bc_satur_x(f,bc)
       endif
 !
     endsubroutine bc_satur_x
-!********************************************************************
-    subroutine special_before_boundary(f)
-!
-!   Possibility to modify the f array before the boundaries are
-!   communicated.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-jul-06/tony: coded
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!
 !********************************************************************
    subroutine set_init_parameters(Ntot_,dsize,init_distr, init_distr2)
 !
@@ -1492,7 +1410,6 @@ subroutine bc_satur_x(f,bc)
       enddo
 
 !      endif
-
 
       vr=bc%ivar
 !

@@ -49,7 +49,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -81,6 +80,8 @@ module Special
   integer :: idiag_taucoolm=0,idiag_taucoolmax=0,idiag_taucoolmin=0
   integer :: idiag_dts=0
 !
+  real :: gamma, gamma1, gamma_m1, cp1, cv1
+
   contains
 !***********************************************************************
     subroutine register_special()
@@ -90,7 +91,6 @@ module Special
 !
 !  14-jul-09/wlad: coded
 !
-      use Cdata
       use FArrayManager, only: farray_register_auxiliary
 !
       if (lroot) call svn_id( &
@@ -114,9 +114,15 @@ module Special
 !
 !  14-jul-09/wlad: coded
 !
-      use Cdata 
+      use EquationOfState, only: get_gamma_etc
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: cp, cv
+!
+      call get_gamma_etc(gamma,cp,cv)
+
+      gamma1=1./gamma; gamma_m1=gamma-1.
+      cp1=1./cp; cv1=1./cv
 !
       call keep_compiler_quiet(f)
 !
@@ -140,18 +146,15 @@ module Special
 !
 !  03-oct-12/wlad: coded
 !
-      use EquationOfState, only: cs20,rho0,gamma_m1,get_cp1,get_cv1
+      use EquationOfState, only: cs20,rho0
       use Sub, only: grad,dot
       use General, only: notanumber
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: rho,TT
-      real :: TT0,rho01,lnTT0,cp1,cv1,kappa_cgs,TTdim,rhodim
+      real :: TT0,rho01,lnTT0,kappa_cgs,TTdim,rhodim
       integer :: i,j      
 !
-      call get_cp1(cp1)
-      call get_cv1(cv1)
-
       lnTT0=log(cs20*cp1/gamma_m1)
       TT0=exp(lnTT0)
       rho01=1./rho0
@@ -316,13 +319,12 @@ module Special
 !***********************************************************************
     subroutine calc_cooling_time(f,p,taucool,taucool1)
 !
-      use EquationOfState, only: gamma1,gamma_m1,get_cp1,get_cv1,cs20,rho0
+      use EquationOfState, only: cs20,rho0
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(nx) :: tmp,tau_eff,Rd,OOK1
       real, dimension(nx), intent(out) :: taucool,taucool1
-      real :: cp1,cp,cv1,cv
 !
       integer :: i
 !
@@ -535,7 +537,7 @@ module Special
 !
       use Cdata
       use Diagnostics
-      use EquationOfState, only: cs20,gamma_m1,gamma1
+      use EquationOfState, only: cs20
       use General, only: notanumber
 !      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f

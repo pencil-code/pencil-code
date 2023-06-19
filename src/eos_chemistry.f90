@@ -6,7 +6,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: leos = .true.
+! CPARAM logical, parameter :: leos = .true., leos_ionization=.false.
+! CPARAM logical, parameter :: leos_idealgas = .false., leos_chemistry = .true.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -17,7 +18,7 @@
 !
 ! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del6lnTT
 ! PENCILS PROVIDED yH; ee; ss; delta; glnmumol(3); ppvap; csvap2; cs2
-! PENCILS PROVIDED cp1tilde; cp; gamma_m1; gamma
+! PENCILS PROVIDED cp1tilde; cp
 ! PENCILS PROVIDED rho_anel; gradcp(3)
 !
 !
@@ -47,11 +48,9 @@ module EquationOfState
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
   logical :: lpp_as_aux=.false.
-  real :: gamma=5./3.
-  real :: Rgas_cgs=0., Rgas, Rgas_unit_sys=1.,  error_cp=1e-6
-  real :: gamma_m1    !(=gamma-1)
-  real :: gamma1   !(=1/gamma)
-  real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
+  real :: gamma=impossible
+  real :: Rgas_cgs=0., Rgas, Rgas_unit_sys=1., error_cp=1e-6
+  real :: cp=impossible
   real :: cs2bot=1., cs2top=1.
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   integer :: ll1,ll2,mm1,mm2,nn1,nn2
@@ -59,10 +58,7 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
   character (len=20) :: input_file
-  logical, SAVE ::  lcheminp_eos=.false.
-  logical :: l_gamma_m1=.false.
-  logical :: l_gamma=.false.
-  logical :: l_cp=.false.
+  logical ::  lcheminp_eos=.false.
   integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
 !
   real, dimension(nchemspec,18) :: species_constants
@@ -77,7 +73,7 @@ module EquationOfState
 !
   namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, lpp_as_aux
 !
-  namelist /eos_run_pars/  mu, cp, cs0, rho0, gamma, error_cp, lpp_as_aux
+  namelist /eos_run_pars/  mu, cs0, rho0, lpp_as_aux
 !
   contains
 !***********************************************************************
@@ -85,6 +81,7 @@ module EquationOfState
 !
 !  14-jun-03/axel: adapted from register_eos
 !
+      use SharedVariables, only: put_shared_variable
       use Sub, only: register_report_aux
 !
       leos_chemistry=.true.
@@ -100,6 +97,8 @@ module EquationOfState
 !
       if (lpp_as_aux) call register_report_aux('pp',ipp)
 !
+      call put_shared_variable('gamma',gamma,caller='register_eos')
+
     endsubroutine register_eos
 !***********************************************************************
     subroutine units_eos
@@ -605,8 +604,8 @@ module EquationOfState
          call dot2(p%gmu1,gmu12)
          call dot2(p%glnpp,glnpp2)
          call del2(mu1_full,del2mu1)
-         p%del2pp&
-             =p%pp*glnpp2&
+         p%del2pp &
+             =p%pp*glnpp2 &
              +p%pp*(rho1del2rho+TT1del2TT+del2mu1/p%mu1)&
              -p%pp*(p%glnrho2+glnTT2+gmu12/p%mu1**2)
 
@@ -690,29 +689,18 @@ module EquationOfState
 !
    endsubroutine getpressure
 !***********************************************************************
-    subroutine get_cp1(cp1_)
+    subroutine get_gamma_etc(gamma,cp,cv)
 !
-!  04-nov-06/axel: added to alleviate spurious use of pressure_gradient
+      real, intent(OUT) :: gamma
+      real, optional, intent(OUT) :: cp,cv
 !
-!  return the value of cp1 to outside modules
-!
-      real, intent(out) :: cp1_
-      call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_chemistry')
-      cp1_=impossible
-!
-    endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_cv1(cv1_)
-!
-!  22-dec-10/PJK: adapted from get_cp1
-!
-!  return the value of cv1 to outside modules
-!
-      real, intent(out) :: cv1_
-      call fatal_error('get_cv1','SHOULD NOT BE CALLED WITH eos_chemistry')
-      cv1_=impossible
-!
-    endsubroutine get_cv1
+      call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_chemistry.'// &
+                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
+      gamma=5./3.
+      if (present(cp)) cp=1.
+      if (present(cv)) cv=3./5.
+
+    endsubroutine get_gamma_etc
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !

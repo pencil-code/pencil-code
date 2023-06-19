@@ -160,7 +160,6 @@ module Special
 !
       use Mpicomm
       use Gravity, only: potential
-      use EquationOfState, only: gamma,cs20
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p

@@ -144,7 +144,7 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: gamma, cs20
+      use EquationOfState, only: cs20
       use General, only: random_number_wrapper
       use SharedVariables, only: get_shared_variable
       use Sub

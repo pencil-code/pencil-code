@@ -33,6 +33,8 @@ module InitialCondition
       set_lnTT_first,T0,T1,z0_tanh,width_tanh,mpoly_special,zpoly, &
       const_alfven
 !
+  real :: gamma, gamma_m1, cp1
+
 contains
 !***********************************************************************
   subroutine register_initial_condition()
@@ -53,6 +55,7 @@ contains
 !  14-dec-10/bing: coded
 !
     real, dimension (mx,my,mz,mfarray) :: f
+    real :: cp
 !
     if (iproc==0) then
       write(*,*) "-------------------------------------------------------------"
@@ -72,6 +75,10 @@ contains
       write(*,*) "-------------------------------------------------------------"
     endif
 !
+    call get_gamma_etc(gamma,cp)
+    gamma_m1=gamma-1.
+    cp1=1./cp
+
     call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
@@ -156,14 +163,13 @@ contains
 !
 !  04-sep-10/bing: coded
 !
-      use EquationOfState, only: get_cp1,gamma,gamma_m1,cs20
+      use EquationOfState, only: cs20
       use File_io, only: file_exists, file_size
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Messages, only: warning
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real :: cp1=1.
       integer :: lend,lend_b8,ierr
       integer :: i,j
       integer, parameter :: unit=12
@@ -357,7 +363,6 @@ contains
             if (direction=='x') f(:,:,:,ilnTT)=spread(spread(profile_x,2,my),3,mz)
           endif
         else if (lthermal_energy) then
-          if (leos) call get_cp1(cp1)
           if (direction=='z') f(:,:,:,ieth)=spread(spread(exp(profile_z),1,mx),2,my)
           if (direction=='x') f(:,:,:,ieth)=spread(spread(exp(profile_x),2,my),3,mz)
 !
@@ -369,7 +374,6 @@ contains
             f(:,:,:,ieth)=f(:,:,:,ieth)*exp(f(:,:,:,ilnrho))/(gamma*cp1)
           endif
         else if (lentropy) then
-          if (leos) call get_cp1(cp1)
           if (direction=='z') then
             f(:,:,:,iss) = (log(gamma_m1/cs20/cp1)+spread(spread(profile_z,1,mx),2,my)- &
                 gamma_m1*(f(:,:,:,ilnrho)-log(rho_init))) / cp1 /gamma
@@ -396,7 +400,7 @@ contains
 !  Temperature given as function lnT(z) in SI units
 !  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
 !
-      use EquationOfState, only: gamma,cs2top,cs2bot
+      use EquationOfState, only: cs2top,cs2bot
       use File_io, only: file_exists, file_size
       use Gravity, only: gravz
       use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
@@ -503,16 +507,13 @@ contains
 ! temperature from the f-array.
 ! Integration is done using the trapezoidal rule.
 !
-    use EquationOfState, only: gamma,gamma_m1,get_cp1
     use Gravity, only: gravz
     use Mpicomm, only: mpisend_real,mpirecv_real
 !
     real, dimension (mx,my,mz,mfarray) :: f
-    real :: konst,cp1=1.,lnrho_0,int
+    real :: konst,lnrho_0,int
     real, dimension(mz) :: TT,lnTT
     integer :: i,j,k,ipt,ii
-!
-    if (leos) call get_cp1(cp1)
 !
     konst = gamma*cp1/gamma_m1
 !
@@ -571,7 +572,6 @@ contains
 !  Temperature given as function lnT(z) in SI units
 !  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
 !
-    use EquationOfState, only: gamma,get_cp1
     use File_io, only: file_exists, file_size
     use Gravity, only: get_xgravity
     use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
@@ -582,12 +582,10 @@ contains
     real :: tmp_lnrho,lnrho_0,ztmp,integrand
     integer :: i,lend,lend_b8,j,ierr,unit=1
     real, dimension(mx) :: xgrav,lnTT_loop
-    real :: cp1=1
 !
 ! file location settings
     character (len=*), parameter :: lnT_dat = 'prof_lnT.dat'
 !
-    if (leos) call get_cp1(cp1)
     call get_xgravity(xgrav)
 !
     inquire(IOLENGTH=lend) 1.0
@@ -768,17 +766,14 @@ contains
 !***********************************************************************
   subroutine piecewice_poly(f)
 !
-    use EquationOfState, only: gamma, gamma_m1, get_cp1
     use Gravity, only: gravz
 !
     real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-    real :: Ttop,T2, T1, T0, cp1=1, temp
+    real :: Ttop,T2, T1, T0, temp
     real :: lnrhotop, lnrho2, lnrho1, lnrho0, ztop
     real :: lnrhobot,zbot,Tbot
     real, dimension(4) :: beta
     integer :: i
-!
-    if (leos) call get_cp1(cp1)
 !
 !  Top boundary values.
 !

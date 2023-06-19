@@ -49,7 +49,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -72,6 +71,8 @@ module Special
   integer :: idiag_divfluxm=0,idiag_divflux2m=0
   integer :: idiag_divfluxmax=0,idiag_divfluxmin=0
 !
+  real :: gamma, gamma_m1, cp1, cv1
+!
   contains
 !***********************************************************************
     subroutine register_special()
@@ -81,7 +82,6 @@ module Special
 !
 !  14-jul-09/wlad: coded
 !
-      use Cdata
       use FArrayManager, only: farray_register_auxiliary
 !
       if (lroot) call svn_id( &
@@ -105,10 +105,15 @@ module Special
 !
 !  14-jul-09/wlad: coded
 !
-      use Cdata 
-!
+      use EquationOfState, only: get_gamma_etc
+
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: cp, cv
 !
+      call get_gamma_etc(gamma,cp,cv)
+      gamma_m1=gamma-1.
+      cp1=1./cp; cv1=1./cv
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -129,21 +134,18 @@ module Special
 !
 !  03-oct-12/wlad: coded
 !
-      use EquationOfState, only: cs20,rho0,gamma_m1,get_cp1,get_cv1
+      use EquationOfState, only: cs20,rho0
       use Sub, only: grad,dot
       !use Boundcond, only: update_ghosts
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx,3) :: grho,gss,glnrho,glnTT
       real, dimension(nx) :: rho,TT,modglnTT,tmp,RR,rho1
-      real :: TT0,rho01,lnTT0,cp1,cv1,kappa_cgs
+      real :: TT0,rho01,lnTT0,kappa_cgs
       integer :: i,j      
 !
 !  Rossland mean opacity and flux limiter.
 !
-      call get_cp1(cp1)
-      call get_cv1(cv1)
-
       lnTT0=log(cs20*cp1/gamma_m1)
       TT0=exp(lnTT0)
       rho01=1./rho0

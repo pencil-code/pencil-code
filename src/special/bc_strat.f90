@@ -43,13 +43,14 @@ module Special
 !
 !  12-aug-15/ccyang: coded
 !
-      use EquationOfState, only: gamma, cs20
+      use EquationOfState, only: cs20, get_gamma_etc
       use Gravity, only: potential
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       real, dimension(mz) :: rho0z
       integer :: k
+      real :: gamma
 !
       call keep_compiler_quiet(f)
 !
@@ -58,6 +59,8 @@ module Special
       do k = 1, mz
         call potential(z=z(k), pot=rho0z(k))
       enddo
+
+      call get_gamma_etc(gamma)
       rho0z = exp(-gamma / cs20 * rho0z)
 !
 !  Find the scale factors needed for the boundary conditions.

@@ -318,8 +318,7 @@ module Cdata
   logical :: lslope_limit_diff=.false.
   logical :: leos_temperature_ionization=.false.
   logical :: ltemperature_nolog=.false.
-  logical :: leos_idealgas=.false., leos_chemistry=.false.
-  logical :: leos_ionization=.false.,leos_fixed_ionization=.false.
+  logical :: leos_fixed_ionization=.false.
   logical :: ltestperturb=.false.
   logical :: lweno_transport=.false.
   logical :: lstart=.false., lrun=.false., lreloading=.false.

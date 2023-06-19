@@ -653,17 +653,21 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,tmp
+      real, pointer :: cp
       real :: cp1
 !
 !  Stratification depends on the gravity potential
 !
+      if (leos_idealgas) then
+        call get_shared_variable('cp',cp); cp1=1./cp
+      endif
+
       if (lroot) print*,'isothermal_density: isothermal stratification'
       if (gamma/=1.0) then
         if ((.not. lentropy) .and. (.not. ltemperature)) & 
           call fatal_error('isothermal_density','for gamma/=1.0, you need entropy or temperature!');
       endif
 !
-      call get_cp1(cp1)
       do n=n1,n2
         do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)

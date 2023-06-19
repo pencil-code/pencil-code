@@ -74,7 +74,6 @@
 !
 module InitialCondition
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -177,12 +176,15 @@ module InitialCondition
 !
 !  Initialize entropy.
 !
-      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,get_cp1
+      use EquationOfState, only: cs20
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: lnTT0,cp1
+      real :: cp,cp1,lnTT0,gamma,gamma_m1
 !
-      call get_cp1(cp1)
+      call get_gamma_etc(gamma,cp)
+      gamma_m1=gamma-1.
+      cp1=1./cp
+
       lnTT0=log(cs20*cp1/gamma_m1)  !(general case)
       do m=m1,m2;do n=n1,n2
 !

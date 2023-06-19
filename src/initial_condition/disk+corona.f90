@@ -73,7 +73,6 @@
 !
 module InitialCondition
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -89,6 +88,8 @@ module InitialCondition
   namelist /initial_condition_pars/ r0_d, apara,amplaa, & 
   h_d, rho0_c, dsteep, ngamma, cs0_c, Tc, rpos, pbeta,initaa_dc
 !
+  real :: gamma, gamma_m1, cp1
+
   contains
 !***********************************************************************
     subroutine register_initial_condition()
@@ -109,7 +110,13 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+
+      real :: cp
 !
+      call get_gamma_etc(gamma,cp)
+      gamma_m1=gamma-1.
+      cp1=1./cp
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
@@ -138,8 +145,7 @@ module InitialCondition
 !/mayank
 
       use Mpicomm, only: mpibcast
-      use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
-                             gamma, gamma1, gamma_m1
+      use EquationOfState, only: cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
       use FArrayManager,   only: farray_use_global
       use Sub,             only: get_radial_distance, location_in_proc
       use SharedVariables, only: get_shared_variable
@@ -151,7 +157,7 @@ module InitialCondition
       real, dimension (nx) :: rho_d, lnrho_c, psipn, l_d, vphi_d, lnT_d, aphi
       real, dimension (nx) :: dzphi_d, drphi_d, pg, dzrho_d, drrho_d, kphi, pg_c, pr,beta_c
       real, pointer :: g0
-      real :: cp1, m00, rpn=2.0, pg0, drphi_d0, drrho_d0
+      real :: m00, rpn=2.0, pg0, drphi_d0, drrho_d0
       integer :: lpos, mpos, npos, procno,procnomax
 
 ! Some constants
@@ -167,7 +173,6 @@ module InitialCondition
       psi1=psipn1+1.0/(2.0-2.0*apara)*(l_d1/(2.0*rs))**2.0
 !      psi0=psipn0+1.0/(2.0-2.0*apara)*(l0_d/(r0_d*rs))**2.0
 !    
-      call get_cp1(cp1) 
       m00=(g0/G_Newton)
       do n=n1,n2
         do m=1,my
@@ -292,9 +297,8 @@ module InitialCondition
         case ('nothing')
 !         Do nothing
         case default
-          call fatal_error('initialize_magnetic','No such initaa_dc')
+          call fatal_error('initial_condition_all','no such initaa_dc: '//trim(initaa_dc))
       endselect 
-!
 !
     endsubroutine initial_condition_all
 !***********************************************************************

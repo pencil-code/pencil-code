@@ -30,7 +30,7 @@ module ImplicitPhysics
 !
   real, pointer :: hcond0, Fbot, hcond1, hcond2, widthlnTT
   logical, pointer :: lADI_mixed, lmultilayer
-  real :: dx_2, dy_2, dz_2, cp1
+  real :: dx_2, dy_2, dz_2
   logical :: lyakonov=.true.
 !
   real, dimension(mz) :: hcondz, dhcondz
@@ -38,6 +38,7 @@ module ImplicitPhysics
 !  Implicit advance of the radiative diffusion in the temperature equation.
 !
   real, dimension(mx) :: hcondADI
+  real :: gamma, gamma_m1, cp1
 !
   contains
 !***********************************************************************
@@ -66,7 +67,6 @@ module ImplicitPhysics
     subroutine initialize_implicit_physics(f)
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: get_cp1
       use Gravity, only: z1, z2
       use Sub, only: step,der_step,write_zprof
 !
@@ -74,6 +74,7 @@ module ImplicitPhysics
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: profz
+      real :: cp
 !
       call get_shared_variable('hcond0', hcond0, caller='initialize_implicit_physics')
       call get_shared_variable('hcond1', hcond1)
@@ -85,6 +86,9 @@ module ImplicitPhysics
       print*,'***********************************'
       call get_shared_variable('Fbot', Fbot)
       call get_shared_variable('lADI_mixed', lADI_mixed)
+
+      call get_gamma_etc(gamma,cp)
+      gamma_m1=gamma-1.; cp1=1./cp
 !
 ! hcondADI is dynamically shared with boundcond for the 'c3' BC. Initialized here.
 ! Requires that initialize_implicit_physics is called *after* initialize_energy!
@@ -93,7 +97,6 @@ module ImplicitPhysics
 !
 ! variables that are needed everywhere in this module
 !
-      call get_cp1(cp1)
       if (dx>0.) then
          dx_2 = 1.0 / dx**2
       else
@@ -203,7 +206,7 @@ module ImplicitPhysics
 !  where Lambda_x and Lambda_y denote diffusion operators and the source
 !  term comes from the explicit advance.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
 !
       implicit none
@@ -304,8 +307,6 @@ module ImplicitPhysics
 !    T^(n+1) = T^n + dt*beta
 !
 !    where J_x and J_y denote Jacobian matrices df/dT.
-!
-      use EquationOfState, only: gamma
 !
       implicit none
 !
@@ -435,7 +436,6 @@ module ImplicitPhysics
 !  21-aug-2010/dintrans: simplified version that uses Anders' original
 !    transp_xz and transp_zx subroutines
 !
-      use EquationOfState, only: gamma
       use Mpicomm, only: transp_xz, transp_zx
       use Boundcond, only: update_ghosts
 !
@@ -614,7 +614,7 @@ module ImplicitPhysics
 ! 18-sep-07/dintrans: coded
 ! Implicit Crank Nicolson scheme in 1-D for a constant K.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
 !
       implicit none
@@ -652,8 +652,6 @@ module ImplicitPhysics
 ! 18-sep-07/dintrans: coded
 ! Implicit 1-D case for a temperature-dependent conductivity K(T).
 ! Not really an ADI but keep the generic name for commodity.
-!
-      use EquationOfState, only: gamma
 !
       implicit none
 !
@@ -716,7 +714,7 @@ module ImplicitPhysics
 !  Parallel version of the ADI scheme for the K=cte case.
 !  Note: this is the parallelisation of the Yakonov form *only*.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use EquationOfState, only: cs2bot, cs2top
       use Mpicomm, only: transp_xz, transp_zx
       use Boundcond, only: update_ghosts
 !
@@ -797,8 +795,6 @@ module ImplicitPhysics
 ! Simpler version where a part of the radiative diffusion term is
 ! computed during the explicit advance.
 !
-      use EquationOfState, only: gamma
-!
       implicit none
 !
       integer :: j, jj
@@ -871,7 +867,6 @@ module ImplicitPhysics
 !
 !    where J_x and J_y denote Jacobian matrices df/dT.
 !
-      use EquationOfState, only: gamma
       use Boundcond, only: update_ghosts
 !
       implicit none
@@ -980,7 +975,7 @@ module ImplicitPhysics
 !  Note: this form is more adapted for a parallelisation compared the
 !  Peaceman & Rachford one.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
 !
       implicit none
@@ -1058,7 +1053,7 @@ module ImplicitPhysics
 !
 ! 01-may-14/dintrans: coded
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
 !
       implicit none
@@ -1105,7 +1100,7 @@ module ImplicitPhysics
 !
 !  where Lambda_x and Lambda_z denote diffusion operators.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
 !
       implicit none
@@ -1180,7 +1175,7 @@ module ImplicitPhysics
 !  01-may-14/dintrans: coded
 !  Parallel version in the z-direction of ADI_poly.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
       use Mpicomm, only: transp_xz, transp_zx
 !
@@ -1274,7 +1269,7 @@ module ImplicitPhysics
 !  where L_x, L_y and L_z denote diffusion operators and the source
 !  term comes from the explicit advance.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
 !
       implicit none
@@ -1382,7 +1377,7 @@ module ImplicitPhysics
 !  where L_x, L_y and L_z denote diffusion operators and the source
 !  term comes from the explicit advance.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
       use Mpicomm, only: transp_xz, transp_zx
 !

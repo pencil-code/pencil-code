@@ -678,23 +678,18 @@ module EquationOfState
 !
     endsubroutine getpressure
 !***********************************************************************
-    subroutine get_cp1(cp1_)
+    subroutine get_gamma_etc(gamma,cp,cv)
 !
-      real :: cp1_
+      real, intent(OUT) :: gamma
+      real, optional, intent(OUT) :: cp,cv
 !
-      call fatal_error('get_cp1','not implemented')
-!
-      call keep_compiler_quiet(cp1_)
-!
-    endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_cv1(cv1_)
-!
-      real, intent(out) :: cv1_
-!
-      call fatal_error('get_cv1','not implemented')
-!
-    endsubroutine get_cv1
+      call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_idealgas_vapor.'// &
+                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
+      gamma=5./3.
+      if (present(cp)) cp=1.
+      if (present(cv)) cv=3./5.
+
+    endsubroutine get_gamma_etc
 !***********************************************************************
     subroutine get_ptlaw(ptlaw_)
 !

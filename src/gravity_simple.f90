@@ -20,7 +20,6 @@
 !***************************************************************
 module Gravity
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -183,14 +182,13 @@ module Gravity
 !                gravity adjustment.
 !                For Kepler profile, gravitational_const is calculated from gravx and mass_cent_body.
 !
-      use SharedVariables, only: get_shared_variable
       use General, only: notanumber
       use Sub, only: cubic_step
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, pointer :: cs20,mpoly,gamma
-      !real :: cs20
+      real, pointer :: mpoly,gamma,cs20
 !
       real, dimension (mz) :: prof
       real :: ztop
@@ -220,8 +218,9 @@ module Gravity
           if (zref==impossible) then
             call fatal_error('initialize_gravity','zref=impossible')
           else
-            call get_shared_variable('cs20',cs20,caller='initialize_gravity'); !cs20=cs0**2
+            call get_shared_variable('cs20',cs20,caller='initialize_gravity')
             call get_shared_variable('gamma',gamma)
+            if (gamma==impossible) call fatal_error('initialize_gravity','invalid value of gamma')
             if (ldensity.and..not.lstratz) then
               call get_shared_variable('mpoly',mpoly)
             else

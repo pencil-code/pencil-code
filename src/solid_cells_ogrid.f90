@@ -21,7 +21,6 @@
 !
 module Solid_Cells
 
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -87,6 +86,8 @@ module Solid_Cells
 !
 !---------------------------------
 !
+  real :: gamma, cp, cv, gamma1, gamma_m1
+
   contains 
 !***********************************************************************
     subroutine register_solid_cells
@@ -106,9 +107,9 @@ module Solid_Cells
 !  feb--apr-17/Jorgen: Coded
 !
       use Solid_Cells_Mpicomm, only: initialize_mpicomm_ogrid
-      use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: lpres_grad, Pr_number
+      use EquationOfState, only: lpres_grad, Pr_number, get_gamma_etc
   !    use Energy, only: lpres_grad
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer :: i, ndims, k
@@ -507,6 +508,9 @@ module Solid_Cells
         endif
       endif
 !
+      call get_gamma_etc(gamma,cp,cv)
+      gamma1=1./gamma; gamma_m1=gamma-1.
+!
 !  Get thermal diffusivity from energy module
 !
       if (iTT .ne. 0) then
@@ -531,7 +535,7 @@ module Solid_Cells
 !
 !  If TVD Runge-Kutta method is used, temoporary array is needed for storage
 !
-      if(lrk_tvd) allocate(f_tmp(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid))
+      if (lrk_tvd) allocate(f_tmp(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid))
 !
     end subroutine initialize_solid_cells
 !***********************************************************************
@@ -951,13 +955,14 @@ module Solid_Cells
 !
 !  4-apr-17/Jorgen: Coded
 !
-      use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1,rho0,lnrho0
-      real :: cp1, cp
-!
-!  Inverse cv and cp values.
-!
-        call get_cp1(cp1)
-        cp=1./cp1
+      use EquationOfState, only: cs20,rho0,lnrho0
+
+      if (leos_idealgas) then
+        call get_shared_variable('cp',cp,caller='initialize_eos_ogr')
+        call get_shared_variable('cv',cv)
+      else
+        call fatal_error('initialize_eos_ogr','currently assumes EOS=eos_idealgas')
+      endif
 !
 !        rho0=1.0
 !        lnrho0=log(rho0)
@@ -2164,7 +2169,6 @@ module Solid_Cells
 !***********************************************************************
   subroutine interpolate_point_cart_to_curv(id,ivar1,ivar2,farr,f_cartesian,ipp_int,iRR_int)
 !
-    use EquationOfState, only: gamma_m1!,get_cv1
     real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
 !
 !  Use linear interpolation routine to interpolate the values on the cartesian 
@@ -2252,7 +2256,7 @@ module Solid_Cells
 !  Use linear interpolation routine to interpolate the values on the cartesian 
 !  grid to the interpolation point on the curvilinear grid
 !
-    use EquationOfState, only: lpres_grad,gamma_m1!,get_cv1
+    use EquationOfState, only: lpres_grad
   !  use Energy, only: lpres_grad
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f_cartesian
@@ -4295,8 +4299,6 @@ module Solid_Cells
 !  Calculate pressure gradient term for isothermal/polytropic equation
 !  of state.
 !
-      use EquationOfState, only: gamma_m1
-!
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) ::  f_og
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
       integer :: j
@@ -4362,7 +4364,6 @@ module Solid_Cells
 !  17-aug-17/ewa+nils: adapted from temperature_idealgas
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
@@ -4444,17 +4445,12 @@ module Solid_Cells
 !
 !  10-feb-17/Jorgen+Nils: Adapted from calc_pencils_eos_pencpar in eos_idealgas.f90
 !
-      use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1,lnrho0
+      use EquationOfState, only: cs20,lnrho0
 !
-      real :: cp1, cv1, cp, cv
+      real :: cv1
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
-!
-!  Inverse cv and cp values.
-!
-      call get_cp1(cp1)
-      call get_cv1(cv1)
-      cp=1./cp1
-      cv=1./cv1
+
+      cv1=1./cv
 !
       if (iTT .ne. 0) then
         if (lpencil_ogrid(i_og_TT)) &
@@ -4493,7 +4489,7 @@ module Solid_Cells
 !  Calculate Energy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-      use EquationOfState, only: gamma1, lpres_grad
+      use EquationOfState, only: lpres_grad
 !      use Energy, only: lpres_grad
 !
       integer :: j

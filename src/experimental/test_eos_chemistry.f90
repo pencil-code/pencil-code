@@ -673,29 +673,18 @@ module EquationOfState
 !
    endsubroutine getpressure
 !***********************************************************************
-    subroutine get_cp1(cp1_)
+    subroutine get_gamma_etc(gamma,cp,cv)
 !
-!  04-nov-06/axel: added to alleviate spurious use of pressure_gradient
+      real, intent(OUT) :: gamma
+      real, optional, intent(OUT) :: cp,cv
 !
-!  return the value of cp1 to outside modules
-!
-      real, intent(out) :: cp1_
-      call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_chemistry')
-      cp1_=impossible
-!
-    endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_cv1(cv1_)
-!
-!  22-dec-10/PJK: adapted from get_cp1
-!
-!  return the value of cv1 to outside modules
-!
-      real, intent(out) :: cv1_
-      call fatal_error('get_cv1','SHOULD NOT BE CALLED WITH eos_chemistry')
-      cv1_=impossible
-!
-    endsubroutine get_cv1
+      call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_chemistry.'// &
+                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
+      gamma=5./3.
+      if (present(cp)) cp=1.
+      if (present(cv)) cv=3./5.
+
+    endsubroutine get_gamma_etc
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !

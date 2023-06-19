@@ -147,15 +147,12 @@ module InitialCondition
 !  15-feb-15/MR: optional parameter 'profiles' added
 !
       use Messages, only: fatal_error
-      use EquationOfState, only: getmu, eoscalc
 !
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
       real, dimension (:,:),              optional, intent(out)  :: profiles
 !
 !  SAMPLE IMPLEMENTATION
 !
-
-
       call keep_compiler_quiet(f)
       if (present(profiles)) then
         call fatal_error('initial_condition_all', &
@@ -185,8 +182,6 @@ module InitialCondition
 !  converting it to linear density if you use ldensity_nolog.
 !
 !  07-jul-15/fred: coded
-!
-      use EquationOfState, only: getmu, get_cp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !

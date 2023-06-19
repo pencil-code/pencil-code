@@ -21,10 +21,9 @@
 !***************************************************************
 module Energy
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot
+  use EquationOfState, only: cs20, cs2top, cs2bot
   use Interstellar
   use Messages
   use Viscosity
@@ -44,7 +43,6 @@ module Energy
   real :: pp_const=0.
   real :: tau_ss_exterior=0.,T0=1.
   real :: mixinglength_flux=0.
-  real :: cp1=0.0
   !parameters for Sedov type initial condition
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: center2_x=0., center2_y=0., center2_z=0.
@@ -215,6 +213,7 @@ module Energy
 !  Auxiliary variables
 !
   real, dimension(nx) :: diffus_chi, diffus_chi3
+  real :: gamma, gamma1, gamma_m1, cp1
 !
   contains
 !
@@ -258,8 +257,8 @@ module Energy
 !  21-jul-02/wolf: coded
 !
       use BorderProfiles, only: request_border_driving
-      use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
-                                 select_eos_variable,gamma,gamma_m1
+      use EquationOfState, only: cs0, get_soundspeed, &
+                                 select_eos_variable, get_gamma_etc
       use FArrayManager
       use Gravity, only: gravz,g0
       use Mpicomm, only: stop_it
@@ -274,11 +273,16 @@ module Energy
       logical :: lnothing,lcompute_grav
       type (pencil_case) :: p
       real, dimension(:), pointer :: beta_glnrho_global_
+      real :: cp
 !
 ! Check any module dependencies
 !
       if (.not. leos) call fatal_error('initialize_energy', &
             'EOS=noeos but energy requires an EQUATION OF STATE for the fluid')
+
+      call get_gamma_etc(gamma,cp)
+      gamma1=1./gamma; gamma_m1=gamma-1.
+      cp1=1./cp
 
       if (ldensity) then
         call get_shared_variable('beta_glnrho_global',beta_glnrho_global_)
@@ -458,7 +462,6 @@ module Energy
 !
 !   make sure all relevant parameters are set for spherical shell problems
 !
-      call get_cp1(cp1)
       select case (initss(1))
         case ('geo-kws','geo-benchmark','shell_layers')
           if (lroot) then
@@ -954,7 +957,7 @@ module Energy
 !
       use Gravity, only: gravz, z1
       use General, only: safe_character_assign
-      use EquationOfState, only: gamma, gamma_m1, rho0, lnrho0, cs0, &
+      use EquationOfState, only: rho0, lnrho0, cs0, &
                                  cs20, cs2top, eoscalc, ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1052,17 +1055,16 @@ module Energy
 !  21-aug-08/dhruba: added spherical coordinates
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT
       use Mpicomm, only:stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT,r_mn
-      real :: beta1,cp1
+      real :: beta1
 !
 !  beta1 is the temperature gradient
 !  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
-      call get_cp1(cp1)
       beta1=cp1*g0/(mpoly+1)*gamma/gamma_m1
 !
 !  set intial condition
@@ -1152,19 +1154,18 @@ module Energy
 !  generalised for cp/=1.
 !
       use Gravity, only: gravz, zinfty
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx) :: lnrho,lnTT,TT,ss,z_mn
-      real :: beta1,cp1
+      real :: beta1
 !
 !  beta1 is the temperature gradient
 !  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !  Also set dcs2top_ini in case one uses radiative b.c.
 !  NOTE: cs2top_ini=cs20 would be wrong if zinfty is not correct in gravity
 !
-      call get_cp1(cp1)
       beta1=cp1*gamma/gamma_m1*gravz/(mpoly+1)
       dcs2top_ini=gamma_m1*gravz
       cs2top_ini=cs20
@@ -1550,7 +1551,6 @@ module Energy
 !
 !  08-dec-2009/piyali:adapted
 !
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1588,7 +1588,7 @@ module Energy
 !
 !   08-dec-09/piyali: adapted from entropy.f90
       use Diagnostics
-      use EquationOfState, only: gamma1, cs0
+      use EquationOfState, only: cs0
       use Special, only: special_calc_energy
       use Sub
 !
@@ -1801,14 +1801,14 @@ module Energy
 !  28-jul-06/wlad: coded
 !
       use BorderProfiles, only: border_driving
-      use EquationOfState, only: cs20,get_cp1,lnrho0  !!!,get_ptlaw
+      use EquationOfState, only: cs20,lnrho0  !!!,get_ptlaw
       use Sub, only: power_law
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target,cs2
-      real :: ptlaw,cp1
+      real :: ptlaw
 !
       select case (borderss)
 !
@@ -1818,7 +1818,6 @@ module Energy
          f_target=ss_const
       case ('power-law')
         !!!call get_ptlaw(ptlaw)
-        call get_cp1(cp1)
         call power_law(cs20,p%rcyl_mn,ptlaw,cs2,r_ref)
         f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*lnrho0)
          !f_target= gamma1*log(cs2_0) !- gamma_m1*gamma1*lnrho
@@ -2035,7 +2034,6 @@ module Energy
 !  19-nov-03/axel: added chi_t also here.
 !
       use Diagnostics
-      use EquationOfState, only: gamma
       use Gravity
       use Sub
 !
@@ -2149,7 +2147,6 @@ module Energy
 !
 !  10-feb-04/bing: coded
 !
-      use EquationOfState, only: gamma,gamma_m1
       use Sub
       use Debug_IO, only: output_pencil
 !
@@ -2267,7 +2264,6 @@ module Energy
 !
 !  07-feb-07/wlad+heidar : coded
 !
-      use EquationOfState, only: gamma,gamma_m1
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -3049,7 +3045,7 @@ module Energy
 !  15-dec-2004/bing: coded
 !  25-sep-2006/bing: updated, using external data
 !
-      use EquationOfState, only: lnrho0,gamma
+      use EquationOfState, only: lnrho0
       use Debug_IO, only:  output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -3126,7 +3122,6 @@ module Energy
 ! see Eqs. (20-21-22) in Brandenburg et al., AN, 326 (2005)
 !
       use Gravity, only: z1,z2,gravz
-      use EquationOfState, only: gamma, gamma_m1
 !
       real, dimension (nzgrid) :: zz, lnrhom, tempm
       real :: rhotop, zm, ztop, dlnrho, dtemp, &
@@ -3195,11 +3190,11 @@ module Energy
 !  09-aug-06/dintrans: coded
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, lnrho0, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, lnrho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,r_mn
-      real :: beta0,beta1,TT_crit,cp1
+      real :: beta0,beta1,TT_crit
       real :: lnrho_int,lnrho_ext,lnrho_crit
 !
       if (headtt) print*,'r_bcz in entropy.f90=',r_bcz
@@ -3207,7 +3202,6 @@ module Energy
 !  beta is the temperature gradient
 !  1/beta = -(g/cp) /[(1-1/gamma)*(m+1)]
 !
-      call get_cp1(cp1)
       beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
       beta1=-cp1*g0/(mpoly1+1)*gamma/gamma_m1
       TT_crit=TT_ext+beta0*(r_bcz-r_ext)
@@ -3263,7 +3257,7 @@ module Energy
 !  20-dec-06/dintrans: coded
 !  28-nov-07/dintrans: merged with strat_heat_grav
 !
-    use EquationOfState, only: gamma, gamma_m1, rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_TT
+    use EquationOfState, only: rho0, lnrho0, cs20, get_soundspeed,eoscalc, ilnrho_TT
     use FArrayManager
     use Sub, only: step, interp1, erfunc
 !
@@ -3417,7 +3411,7 @@ module Energy
 !
 !  17-jan-07/dintrans: coded
 !
-    use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
+    use EquationOfState, only: lnrho0, cs20
     use Sub, only: step, erfunc, interp1
 !
     integer, parameter   :: nr=100
@@ -3503,20 +3497,19 @@ module Energy
 !  Initialise ss in a cylindrical ring using 2 superposed polytropic layers
 !
       use Gravity, only: gravz, g0
-      use EquationOfState, only: lnrho0,cs20,gamma,gamma_m1,cs2top,cs2bot, &
-                                 get_cp1,eoscalc,ilnrho_TT
+      use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot, &
+                                 eoscalc,ilnrho_TT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss
       real :: beta0, beta1, TT_bcz, TT_ext, TT_int
-      real :: cp1, lnrho_bcz
+      real :: lnrho_bcz
 !
       if (headtt) print*,'r_bcz in cylind_layers=', r_bcz
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
-      call get_cp1(cp1)
       beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
       beta1=-cp1*g0/(mpoly1+1)*gamma/gamma_m1
       TT_ext=cs20/gamma_m1
@@ -3557,20 +3550,19 @@ module Energy
 !  Note: both entropy and density are initialized there (compared to layer_ss)
 !
       use Gravity, only: gravz, g0
-      use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1, &
-                                 gamma_m1, lnrho0
+      use EquationOfState, only: eoscalc, ilnrho_TT, &
+                                 lnrho0
       use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss, z_mn
-      real :: beta, cp1, zbot, ztop, TT0
+      real :: beta, zbot, ztop, TT0
       real, pointer :: gravx
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
-      call get_cp1(cp1)
       if (lcylindrical_coords) then
         call get_shared_variable('gravx', gravx, caller='single_polytrope')
         beta=cp1*gamma/gamma_m1*gravx/(mpoly0+1)

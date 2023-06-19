@@ -18,7 +18,6 @@
 !***************************************************************
 module Cosmicray
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -188,8 +187,6 @@ module Cosmicray
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma_m1
-!
       logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_ugecr)) then
@@ -213,7 +210,6 @@ module Cosmicray
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f

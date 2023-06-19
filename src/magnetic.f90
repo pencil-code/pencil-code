@@ -36,12 +36,10 @@
 !***************************************************************
 module Magnetic
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet, loptest, itoa
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented
-  use EquationOfState, only: gamma1
   use SharedVariables, only: get_shared_variable
   use Mpicomm, only: stop_it
 !
@@ -1029,6 +1027,8 @@ module Magnetic
   real, dimension (mz) :: phiz,sinz,cosz
   real :: R2,R12
 
+  real :: gamma, gamma1, gamma_m1
+
   contains
 !***********************************************************************
     subroutine register_magnetic
@@ -1202,7 +1202,7 @@ module Magnetic
       use BorderProfiles, only: request_border_driving
       use FArrayManager
       use SharedVariables, only: get_shared_variable, put_shared_variable
-      use EquationOfState, only: cs0
+      use EquationOfState, only: cs0, get_gamma_etc
       use Initcond
       use Forcing, only: n_forcing_cont
       use Yinyang_mpi, only: initialize_zaver_yy
@@ -1211,6 +1211,9 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,nyl,nycap
       real :: eta_zdep_exponent
+!
+      call get_gamma_etc(gamma)
+      gamma1=1./gamma; gamma_m1=gamma-1.
 !
 !  To know whether we are solving the relativistic eos equations we need to get lrelativistic_eos from density.
 !

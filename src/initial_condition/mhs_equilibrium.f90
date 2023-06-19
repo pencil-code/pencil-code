@@ -16,7 +16,6 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -45,6 +44,7 @@ module InitialCondition
       dustdensity_powerlaw,edtog,ladd_field_azimuthal,ladd_field_vertical
 !
   real :: ksi=1.
+  real :: gamma, gamma_m1
 !
   contains
 !***********************************************************************
@@ -70,25 +70,30 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      real :: cp
       call keep_compiler_quiet(f)
 !
-        if (lmagnetic) then 
-          ksi=(1.+plasma_beta)/plasma_beta
-          if (ladd_field) then 
-            if (ladd_field_azimuthal.and.ladd_field_vertical) then 
-              call fatal_error("initialize_initial_condition",&
-                   "Both ladd_field_azimuthal and ladd_field_vertical are true. Choose one.")
-            else if ((.not.ladd_field_azimuthal).and.(.not.ladd_field_vertical)) then 
-              call fatal_error("initialize_initial_condition",&
-                   "Both ladd_field_azimuthal and ladd_field_vertical are false. Choose one.")
-            endif
+      if (lmagnetic) then 
+        ksi=(1.+plasma_beta)/plasma_beta
+        if (ladd_field) then 
+          if (ladd_field_azimuthal.and.ladd_field_vertical) then 
+            call fatal_error("initialize_initial_condition", &
+                 "Both ladd_field_azimuthal and ladd_field_vertical are true. Choose one.")
+          else if ((.not.ladd_field_azimuthal).and.(.not.ladd_field_vertical)) then 
+            call fatal_error("initialize_initial_condition", &
+                 "Both ladd_field_azimuthal and ladd_field_vertical are false. Choose one.")
           endif
-        else
-          ksi=1.
         endif
+      else
+        ksi=1.
+      endif
 !
-        lcap_field=lcap_field_radius.or.lcap_field_theta
+      lcap_field=lcap_field_radius.or.lcap_field_theta
 !
+      call get_gamma_etc(gamma,cp)
+      gamma_m1=gamma-1.
+      cp1=1./cp
+
     endsubroutine initialize_initial_condition
 !***********************************************************************
     subroutine initial_condition_uu(f)
@@ -100,7 +105,6 @@ module InitialCondition
       use Gravity,        only: acceleration
       use Sub,            only: get_radial_distance, power_law
       use FArrayManager,  only: farray_use_global
-      use EquationofState,only: gamma
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl,g_r
@@ -186,7 +190,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: rho0,gamma
+      use EquationOfState, only: rho0
       use FArrayManager,   only: farray_use_global
       use Gravity,         only: potential
       use Sub,             only: get_radial_distance
@@ -591,14 +595,12 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: gamma,gamma_m1,get_cp1,cs20,lnrho0
+      use EquationOfState, only: cs20,lnrho0
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: cs2,lnrho
-      real :: cp1
-!
-      call get_cp1(cp1)
-!
+
       do m=m1,m2; do n=n1,n2
         if (ldensity_nolog) then 
           lnrho=log(f(l1:l2,m,n,irho))

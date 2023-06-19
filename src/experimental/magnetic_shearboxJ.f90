@@ -31,12 +31,10 @@
 !***************************************************************
 module Magnetic
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet, loptest
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
-  use EquationOfState, only: gamma1
   use SharedVariables, only: get_shared_variable  
   use Mpicomm, only: stop_it
 !
@@ -819,6 +817,7 @@ module Magnetic
 !
   real, dimension(nzgrid) :: eta_zgrid = 0.0
   real :: eta_shock_jump1
+  real :: gamma, gamma1, gamma_m1
 !
   contains
 !***********************************************************************
@@ -830,6 +829,7 @@ module Magnetic
 !  1-may-02/wolf: coded
 !
       use FArrayManager, only: farray_register_pde,farray_register_auxiliary
+      use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('aa',iaa,vector=3)
       iax = iaa; iay = iaa+1; iaz = iaa+2
@@ -877,6 +877,15 @@ module Magnetic
 !
       if (lmagn_mf) call register_magn_mf()
 !
+!  Share the external magnetic field with module Shear.
+!
+      if (lmagn_mf.or.lshock .or. leos .or. lspecial) &
+        call put_shared_variable('B_ext', B_ext, caller='register_magnetic')
+!
+!  Share the external magnetic field with mean field module.
+!
+      if (lmagn_mf) call put_shared_variable('B_ext2', B_ext2, caller='register_magnetic')
+!
     endsubroutine register_magnetic
 !***********************************************************************
     subroutine initialize_magnetic(f)
@@ -893,29 +902,22 @@ module Magnetic
       use Magnetic_meanfield, only: initialize_magn_mf
       use BorderProfiles, only: request_border_driving
       use FArrayManager
-      use SharedVariables, only: put_shared_variable
-      use EquationOfState, only: cs0
+      use EquationOfState, only: cs0, get_gamma_etc
       use Initcond
       use Forcing, only: n_forcing_cont
+      use SharedVariables, only: get_shared_variable, put_shared_variable
       use Slices_methods, only: alloc_slice_buffers
 
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
       real :: J_ext2
 !
-!  Share the external magnetic field with module Shear.
-!
-      if (lmagn_mf.or.lshock .or. leos .or. lspecial) &
-        call put_shared_variable('B_ext', B_ext, caller='initialize_magnetic')
-!
-!  Share the external magnetic field with mean field module.
-!
-      if (lmagn_mf) &
-        call put_shared_variable('B_ext2', B_ext2, caller='initialize_magnetic')
-!
 !  Shear of B_ext,x is not implemented.
 !
       if (lshear .and. B_ext(1) /= 0.0) call fatal_error('initialize_magnetic', 'B_ext,x /= 0 with shear is not implemented.')
+!
+      call get_gamma_etc(gamma)
+      gamma1=1./gamma; gamma_m1=gamma-1.
 !
 !  Compute mask for x-averaging where x is in magnetic_xaver_range.
 !  Normalize such that the average over the full domain

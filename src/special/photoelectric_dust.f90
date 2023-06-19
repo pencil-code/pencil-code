@@ -91,6 +91,7 @@ module Special
   integer :: idiag_dtcp=0
 !
   logical, pointer :: lpressuregradient_gas
+  real :: gamma, gamma1
 !
   contains
 !***********************************************************************
@@ -101,11 +102,6 @@ module Special
 !
 !  14-jul-09/wlad: coded
 !
-      use SharedVariables
-      integer :: ierr
-!
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_special','lpressuregradient_gas')
 !
     endsubroutine register_special
 !***********************************************************************
@@ -116,12 +112,16 @@ module Special
 !  14-jul-09/wlad: coded
 !
       use Cdata 
+      use EquationOfState, only: cs20, get_gamma_etc
       use Mpicomm
-      use EquationOfState, only: gamma1,cs20
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ierr
+!
+      if (lentropy) call fatal_error('initialize_special','This code should be used with noentropy')
+!
+      call get_gamma_etc(gamma)
+      gamma1=1./gamma
 !
 !  Initializing the pressures. Seeting mu=1 makes the polytrope a linear barotrope.
 !
@@ -129,16 +129,11 @@ module Special
       const2=factor_photoelectric * cs20 * gamma1
       const3=factor_localiso
 !
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas)
       if (lrun) then 
-        call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-        if (ierr/=0) call fatal_error('initialize_special','lpressuregradient_gas')
-        if (lpressuregradient_gas) then 
+        if (lpressuregradient_gas) &
           call fatal_error('initialize_special','switch lpressuregradient_gas=F in hydro_run_pars') 
-        endif
       endif  
-!
-      if (lentropy) & 
-           call fatal_error('initialize_special','This code should be used with noentropy.')
 !
       call keep_compiler_quiet(f)
 !
@@ -338,7 +333,6 @@ module Special
 !
       use Cdata
       use Diagnostics
-      use EquationOfState, only: gamma1
 !      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -346,8 +340,7 @@ module Special
       integer :: j,ju,k
 !
       if (lfirst.and.ldt) advec_cs2 = (const3*p%cs2 + const2*gamma1 + const1) * dxyz_2
-      if (headtt.or.ldebug) &
-           print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
+      if (headtt.or.ldebug) print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
 !
 !  Modified momentum equation
 !

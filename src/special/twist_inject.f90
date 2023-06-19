@@ -111,9 +111,11 @@ module Special
 !!   integer :: ispecial=0
    integer :: ispecaux=0
 !
-!! Diagnostic variables (needs to be consistent with reset list below).
+! Diagnostic variables (needs to be consistent with reset list below).
 !
    integer :: idiag_posx=0,idiag_Iring=0,idiag_posz=0
+!
+  real :: gamma, cp1
 !
   contains
 !***********************************************************************
@@ -140,15 +142,18 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: gij,curl_mn
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: aa,pbb
       real, dimension(nx,3,3) :: aij
       real, dimension(3) :: tmpv,vv,uu,bb,uxb
       integer :: i
-!!
-!! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
-!!
+      real :: cp
+!
+! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
+!
       if (lrun) then
 !        f(:,:,:,ispecaux)=0.0d0
         if (lslope_limited_special) then
@@ -159,17 +164,21 @@ module Special
           do n=n1,n2
             do m=m1,m2
               call gij(f,iaa,aij,1)
-!! bb
+! bb
               call curl_mn(aij,pbb,aa)
               f(l1:l2,m,n,ibx  :ibz  )=pbb
             enddo
           enddo
         endif
       else
+!
+      call get_gamma_etc(gamma,cp)
+      cp1=1./cp
+!
       call keep_compiler_quiet(f)
 !
       endif
-!!
+!
     endsubroutine initialize_special
 !***********************************************************************
     subroutine finalize_special(f)
@@ -705,7 +714,7 @@ module Special
 !  27-nov-08/wlad: coded
 !
       use Deriv, only: der
-      use EquationOfState, only: cs0, rho0, get_cp1,gamma,gamma_m1
+      use EquationOfState, only: cs0, rho0
       use Mpicomm, only: mpibcast
       use Diagnostics, only: save_name
       use Sub, only: cross,gij,curl_mn,step
@@ -721,7 +730,7 @@ module Special
       real, dimension(nx,3,3) :: aij
       real, dimension(3) :: tmpv,vv,uu,bb,uxb
       real :: xi,xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,distyz,phi,rr,r1,&
-              prof,ymid,zmid,umax,cs2,rho_corr,cp1
+              prof,ymid,zmid,umax,cs2,rho_corr
       real :: tmpx,tmpy,tmpz,posxold,Iringold,poszold
       real :: uborder, lborder
       logical :: lring=.true.
@@ -765,7 +774,6 @@ module Special
         if (idiag_posz/=0) &
           call save_name(posz,idiag_posz)
       endif
-      call get_cp1(cp1)
 !
       if (lfirst_proc_z.and.lcartesian_coords) then
         n=n1
@@ -1244,15 +1252,12 @@ module Special
 !
 ! vz=(-dP/dz/rho-gravz)*dt_
 !
-      use EquationOfState, only: cs0, rho0, get_cp1,gamma,gamma_m1
+      use EquationOfState, only: cs0, rho0
       use Gravity, only: gravz
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: dt_
       integer, intent(in) :: l,m,ig
-      real :: Pres_p1,Pres_m1,cp1
-!
-!
-      call get_cp1(cp1)
+      real :: Pres_p1,Pres_m1
 !
       if (ig.lt.3) then
         Pres_p1=cs0**2*(exp(gamma*f(l,m,n1-ig+1,iss)*cp1+gamma*&
@@ -1744,7 +1749,6 @@ module Special
 !
 !  30-jan-08/bing: coded
 !
-      use EquationOfState, only: gamma
       use Diagnostics,     only: max_mn_name
       use Sub,             only: cubic_step,step
       use SharedVariables, only: get_shared_variable
@@ -1819,7 +1823,6 @@ module Special
 !
 !  15-jun-22/piyali: coded
 !
-      use EquationOfState, only: gamma
       use Diagnostics,     only: max_mn_name
       use Mpicomm,         only: stop_it
       use SharedVariables, only: get_shared_variable

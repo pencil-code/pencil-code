@@ -31,7 +31,6 @@
 module Dustdensity
 !
   use Cdata
-  use Cparam
   use Dustvelocity
   use General, only : keep_compiler_quiet
   use Messages
@@ -161,7 +160,7 @@ module Dustdensity
   integer, dimension(0:mmom)    :: idiag_rmom=0, idiag_admom=0
 !
   real, dimension(:), pointer :: beta_glnrho_scaled
-
+  real :: gamma
   contains
 !***********************************************************************
     subroutine register_dustdensity
@@ -235,6 +234,7 @@ module Dustdensity
 !
 !  24-nov-02/tony: coded
 !
+      use EquationOfState, only: get_gamma_etc
       use SharedVariables, only: get_shared_variable
       use BorderProfiles, only: request_border_driving
       use FArrayManager, only: farray_register_global
@@ -247,7 +247,8 @@ module Dustdensity
 !      real :: ddsize, ddsize0
       logical :: lnothing
 !
-      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='initialize_special')
+      call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled, caller='initialize_dustdensity')
+      call get_gamma_etc(gamma)
 !
 !  Need deltamd for computing the radius differential in dustdensity.
 !
@@ -557,7 +558,7 @@ module Dustdensity
 !   7-nov-01/wolf: coded
 !  28-jun-02/axel: added isothermal
 !
-      use EquationOfState, only: cs20, gamma
+      use EquationOfState, only: cs20
       use Initcond, only: hat3d, sinwave_phase, posnoise
       use InitialCondition, only: initial_condition_nd
       use Mpicomm, only: stop_it
@@ -802,7 +803,7 @@ module Dustdensity
           enddo; enddo
           if (lroot) print*, 'init_nd: Cosine nd with nd_const=', nd_const
         case ('jeans-wave-dust-x')
-          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, caller='init_nd')
+          call get_shared_variable('rhs_poisson_const', rhs_poisson_const)
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ind(1)) = 1.0 + amplnd*cos(kx_nd*x(l1:l2))
             f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) - amplnd* &
@@ -943,7 +944,7 @@ module Dustdensity
 !
 !  18-sep-05/anders: coded
 !
-      use EquationOfState, only: gamma, cs20
+      use EquationOfState, only: cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

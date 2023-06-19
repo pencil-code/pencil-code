@@ -18,7 +18,6 @@
 !***************************************************************
 module Cosmicray
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -75,6 +74,7 @@ module Cosmicray
 !  09-oct-03/tony: coded
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('ecr',iecr)
 !
@@ -95,13 +95,17 @@ module Cosmicray
         write(15,*) 'ecr = fltarr(mx,my,mz)*one'
       endif
 !
+!  Shares diffusivities allowing the cosmicrayflux module to know them
+!
+     call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
+     call put_shared_variable('K_para', K_para)
+!
     endsubroutine register_cosmicray
 !***********************************************************************
     subroutine initialize_cosmicray(f)
 !
 !  Perform any necessary post-parameter read initialization
 !
-      use SharedVariables, only: put_shared_variable
       real, dimension (mx,my,mz,mfarray) :: f
 !
      if (K_para==0. .and. K_perp==0. .and. luse_diff_constants) &
@@ -111,11 +115,6 @@ module Cosmicray
 !
       gammacr1=gammacr-1.
       if (lroot) print*,'gammacr1=',gammacr1
-!
-!     Shares diffusivities allowing the cosmicrayflux module to know them
-!
-     call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
-     call put_shared_variable('K_para', K_para)
 
      call keep_compiler_quiet(f)
 
@@ -208,8 +207,6 @@ module Cosmicray
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma_m1
-!
       logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_ugecr)) then
@@ -233,7 +230,6 @@ module Cosmicray
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0
       use Sub, only: u_dot_grad,grad,dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f

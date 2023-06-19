@@ -2671,7 +2671,7 @@ module Particles
 !
 !  14-sep-05/anders: coded
 !
-      use EquationOfState, only: gamma, cs20
+      use EquationOfState, only: cs20, get_gamma_etc
       use General, only: random_number_wrapper
 !
       real, dimension(mpar_loc,mparray) :: fp
@@ -2683,6 +2683,9 @@ module Particles
       real :: dz_dense, eps_point, z00_dense, rho, lnrho
       integer :: nz_dense=nz_inc*nz, npar_bin
       integer :: i, i0, k
+      real :: gamma
+
+      call get_gamma_etc(gamma)
 !
 !  Calculate dust "scale height".
 !

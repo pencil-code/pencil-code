@@ -70,7 +70,6 @@ module Special
   include '../special.h'
 ! Global arrays
   real :: rho01,cs201,gammam11,Bshear=0.,p0,p01,nw1
-  real :: cv1
   logical :: lunstratified=.false.,lstratification=.true.
   logical :: lstatic_stratification=.false.
   real, dimension (nx) :: strat
@@ -81,6 +80,8 @@ module Special
 !
   integer :: idiag_pstratm=0,idiag_pstratmax=0,idiag_pstratmin=0
 !
+  real :: gamma, gamma1, gamma_m1, cv1
+
   contains
 !
 !***********************************************************************
@@ -106,15 +107,17 @@ module Special
 !
       use Cdata
       use Mpicomm
-      use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
+      use EquationOfState, only: rho0,cs20,get_gamma_etc
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: cp1
+      real :: cv
 !
 !  Define if we want stratification
 !
-      if (nzgrid==1.or.&
-         (nzgrid/=1.and.lunstratified)) lstratification=.false.
+      if (nzgrid==1.or.(nzgrid/=1.and.lunstratified)) lstratification=.false.
+!
+      call get_gamma_etc(gamma,cv=cv)
+      gamma1=1./gamma; gamma_m1=gamma-1.; cv1=1./cv
 !
 !  Shortcuts for inverse variables
 !
@@ -130,11 +133,6 @@ module Special
 !  Shortcut for normalization nxgrid*nygrid
 !
       nw1=1./(nxgrid*nygrid)
-!
-!  Get cv1
-!
-      call get_cp1(cp1)
-      cv1=gamma*cp1
 !
       call keep_compiler_quiet(f)
 !
@@ -165,7 +163,7 @@ module Special
 !
       use Mpicomm
       use Gravity, only: potential
-      use EquationOfState, only: gamma,cs20
+      use EquationOfState, only: cs20
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -244,8 +242,7 @@ module Special
 !
       use Mpicomm
       use Sub
-      use EquationOfState, only: gamma1,gamma_m1,&
-          cs20,lnrho0,rho0
+      use EquationOfState, only: cs20,lnrho0,rho0
       use Gravity
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f

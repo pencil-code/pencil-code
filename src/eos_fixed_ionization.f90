@@ -7,7 +7,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: leos = .true.
+! CPARAM logical, parameter :: leos = .true., leos_ionization = .true.
+! CPARAM logical, parameter :: leos_idealgas = .false., leos_chemistry = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -21,11 +22,9 @@
 !***************************************************************
 module EquationOfState
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use Mpicomm, only: stop_it
 !
   implicit none
 !
@@ -54,12 +53,9 @@ module EquationOfState
   namelist /eos_run_pars/ yH0,xHe,xH2,opacity_type,kappa_cst
 !ajwm  can't use impossible else it breaks reading param.nml
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped
-  real :: cs0=1., rho0=1., cp=1.
+  real :: cs0=1., rho0=1. 
   real :: cs20=1., lnrho0=0.
-  logical :: lcalc_cp = .false.
   real :: gamma=5./3., gamma_m1,gamma1, nabla_ad
-  !real :: cp=impossible, cp1=impossible
-  real :: cp1=impossible,cv=impossible
 !ajwm  can't use impossible else it breaks reading param.nml
   real :: cs2bot=1., cs2top=1.
   integer :: imass=1, ics
@@ -76,6 +72,7 @@ module EquationOfState
 !
 !  14-jun-03/axel: adapted from register_ionization
 !
+      use SharedVariables, only: put_shared_variable
       use Sub
 !
       leos_fixed_ionization=.true.
@@ -91,6 +88,13 @@ module EquationOfState
 !
       if (lroot) call svn_id( &
           "$Id$")
+!
+      call put_shared_variable('gamma',gamma,caller='initialize_eos')
+!
+      if (.not.ldensity) then
+        call put_shared_variable('rho0',rho0)
+        call put_shared_variable('lnrho0',lnrho0)
+      endif
 !
     endsubroutine register_eos
 !*******************************************************************
@@ -109,7 +113,7 @@ module EquationOfState
 ! Complain if xH2 not between 0 and 0.5
 !
       if (xH2 < 0. .or. xH2 > 0.5) &
-          call stop_it('initialize_ionization: xH2 must be <= 0.5 and >= 0.0')
+          call fatal_error('get_mu','xH2 must be <= 0.5 and >= 0.0')
 !
       call keep_compiler_quiet(present(f))
 !
@@ -127,8 +131,6 @@ module EquationOfState
 !  parameters.
 !
 !   2-feb-03/axel: adapted from Interstellar module
-!
-      use SharedVariables, only: put_shared_variable
 !
       integer :: ierr
       real :: mu1yHxHe
@@ -169,7 +171,7 @@ module EquationOfState
       if (yH0>0.) then
         yH_term=yH0*(2*log(yH0)-lnrho_e-lnrho_p)
       elseif (yH0<0.) then
-        call stop_it('initialize_eos: yH0 must not be lower than zero')
+        call fatal_error('initialize_eos','yH0 must not be lower than zero')
       else
         yH_term=0.
       endif
@@ -177,7 +179,7 @@ module EquationOfState
       if (yH0<1.) then
         one_yH_term=(1.-yH0)*(log(1.-yH0)-lnrho_H)
       elseif (yH0>1.) then
-        call stop_it('initialize_eos: yH0 must not be greater than one')
+        call fatal_error('initialize_eos','yH0 must not be greater than one')
       else
         one_yH_term=0.
       endif
@@ -185,7 +187,7 @@ module EquationOfState
       if (xHe>0.) then
         xHe_term=xHe*(log(xHe)-lnrho_He)
       elseif (xHe<0.) then
-        call stop_it('initialize_eos: xHe lower than zero makes no sense')
+        call fatal_error('initialize_eos','xHe lower than zero makes no sense')
       else
         xHe_term=0.
       endif
@@ -197,14 +199,6 @@ module EquationOfState
 !
       lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/(1+yH0+xHe-xH2)-2.5)
 
-      call put_shared_variable('cp',cp,caller='initialize_eos')
-      call put_shared_variable('cv',cv)
-!
-      if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0)
-        call put_shared_variable('lnrho0',lnrho0)
-      endif
-!
       if (lroot) then
         print*,'initialize_eos: reference values for ionization'
         print*,'initialize_eos: TT_ion,ss_ion,kappa0=', &
@@ -513,10 +507,11 @@ module EquationOfState
       real, intent(in) :: EE,TT,yH
       real, intent(out) :: rho
       real :: lnrho
-print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
+
       lnrho = log(EE) - log(1.5*(1.+yH+xHe-xH2)*ss_ion*TT + yH*ee_ion)
 !
       rho=exp(max(lnrho,-15.))
+!
     endsubroutine getdensity
 !***********************************************************************
   subroutine gettemperature(f,TT_tmp)
@@ -534,7 +529,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
      real, dimension (nx), intent(out) :: pp_tmp
      real, dimension (nx), intent(in)  :: TT_tmp,rho_tmp,mu1_tmp
 !
-     call fatal_error('getpressure','Should not be called with noeos.')
+     call fatal_error('getpressure','should not be called with eos_fixed_ionization')
 !
      call keep_compiler_quiet(pp_tmp)
      call keep_compiler_quiet(TT_tmp)
@@ -542,36 +537,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
      call keep_compiler_quiet(mu1_tmp)
 !
     endsubroutine getpressure
-!***********************************************************************
-    subroutine get_cp1(cp1_)
-!
-!  04-nov-06/axel: added to alleviate spurious use of pressure_gradient
-!
-!  return the value of cp1 to outside modules
-!
-      real, intent(out) :: cp1_
-!
-!  Hasn't been implemented yet
-!
-      call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_fixed_ion...')
-      cp1_=impossible
-!
-    endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_cv1(cv1_)
-!
-!  22-dec-10/PJK: adapted from get_cp1
-!
-!  return the value of cv1 to outside modules
-!
-      real, intent(out) :: cv1_
-!
-!  Hasn't been implemented yet
-!
-      call fatal_error('get_cv1','SHOULD NOT BE CALLED WITH eos_fixed_ion...')
-      cv1_=impossible
-!
-    endsubroutine get_cv1
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -593,6 +558,19 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       cp1tilde=nabla_ad/(1+yH0+xHe-xH2)/ss_ion
 !
     endsubroutine pressure_gradient_farray
+!***********************************************************************
+    subroutine get_gamma_etc(gamma,cp,cv)
+!
+      real, intent(OUT) :: gamma
+      real, optional, intent(OUT) :: cp,cv
+!
+      call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_fixed_ionization.'// &
+                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
+      gamma=5./3.
+      if (present(cp)) cp=1.
+      if (present(cv)) cv=3./5.
+
+    endsubroutine get_gamma_etc
 !***********************************************************************
     subroutine pressure_gradient_point(lnrho,ss,cs2,cp1tilde)
 !
@@ -717,7 +695,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         ss_=f(:,m,n,iss)
 !
       case default
-        call stop_it("eoscalc: no such pencil size")
+        call fatal_error("eoscalc_farray","no such pencil size")
 !
       end select
 !
@@ -731,8 +709,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       if (present(lnTT))  lnTT=lnTT_
       if (present(ee))    ee=1.5*(1+yH_+xHe-xH2)*ss_ion*TT_+yH_*ss_ion*TT_ion
       if (present(pp))    pp=(1+yH_+xHe-xH2)*exp(lnrho_)*TT_*ss_ion
-      if (present(cs2)) &
-        call fatal_error('eoscalc_farray','calculation of cs2 not implemented')
+      if (present(cs2)) call not_implemented('eoscalc_farray','calculation of cs2')
 !
 !  Hminus opacity
 !
@@ -799,7 +776,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         cs2_=impossible
 !
       case default
-        call stop_it('eoscalc_point: thermodynamic case')
+        call fatal_error('eoscalc_point','invalid thermodynamic case')
      end select
 !
       if (present(lnrho)) lnrho=lnrho_
@@ -864,7 +841,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         ss_    = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
 !
       case default
-        call stop_it('eoscalc_pencil: thermodynamic case')
+        call fatal_error('eoscalc_pencil','invalid thermodynamic case')
      end select
 !
       if (present(lnrho)) lnrho=lnrho_
@@ -921,7 +898,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, intent(in)  :: TT
       real, intent(out) :: cs2
 !
-      call stop_it("get_soundspeed: with ionization, lnrho needs to be known here")
+      call fatal_error("get_soundspeed','with ionization, lnrho needs to be known here")
 !
       call keep_compiler_quiet(TT,cs2)
 !
@@ -1532,7 +1509,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension(:), intent(in) :: z
       real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz, eth0z
 !
-      call fatal_error('get_stratz', 'Stratification for this EOS is not implemented. ')
+      call not_implemented('get_stratz','stratification for eos_fixed_ionization')
 !
       call keep_compiler_quiet(z)
       if (present(rho0z)) call keep_compiler_quiet(rho0z)

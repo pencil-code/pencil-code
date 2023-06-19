@@ -17,7 +17,6 @@
 module Conductivity
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
 !
@@ -53,6 +52,8 @@ module Conductivity
 !  Auxiliaries
 !
   real, dimension(nx) :: diffus_chi, diffus_chi3
+  real, pointer :: gamma
+  real :: gamma_m1
 !
   contains
 !***********************************************************************
@@ -73,6 +74,8 @@ module Conductivity
 !
 !  18-jun-13/wlad: coded
 !
+      use SharedVariables, only: get_shared_variable
+
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       integer :: i
@@ -137,6 +140,10 @@ module Conductivity
       if (pretend_lnTT) call fatal_error("initialize_conductivity",&
            "alpha version, lnTT capability not yet implemented")
 !
+      call get_shared_variable('gamma',gamma,caller="initialize_conductivity")
+      if (gamma==impossible) call fatal_error('initialize_conductivity','invalid value of gamma')
+      gamma_m1=gamma-1.
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_conductivity
@@ -273,7 +280,6 @@ module Conductivity
 !
 !  29-sep-02/axel: adapted from calc_heatcond
 !
-      use EquationOfState, only: gamma, gamma_m1
       use Sub, only: dot
 !
       type (pencil_case), intent(inout) :: p
@@ -365,7 +371,6 @@ module Conductivity
 !
 !  18-jun-13/wlad: coded      
 !
-      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       type (pencil_case) :: p
@@ -436,7 +441,6 @@ module Conductivity
 !!  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !!
 !      use Debug_IO, only: output_pencil
-!      use EquationOfState, only: gamma, gamma_m1
 !      use Sub, only: dot, g2ij, write_zprof
 !!
 !      real, dimension (mx,my,mz,mfarray) :: f

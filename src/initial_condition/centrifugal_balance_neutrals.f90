@@ -131,6 +131,8 @@ module InitialCondition
        ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2, &
        rhon_to_rho_ratio
 !
+  real :: gamma, gamma_m1, cv1, cp1
+
   contains
 !***********************************************************************
     subroutine register_initial_condition()
@@ -152,6 +154,8 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      real :: cp, cv
+
       Lxn=Lx-2*(rborder_int+rborder_ext)
 !
       if (lcorotational_frame) then
@@ -159,6 +163,10 @@ module InitialCondition
       else
         OOcorot=0.
       endif
+
+      call get_gamma_etc(gamma,cp,cv)
+      gamma_m1=gamma-1.
+      cp1=1./cp; cv1=1./cv
 !
       call keep_compiler_quiet(f)
 !
@@ -287,20 +295,13 @@ module InitialCondition
     subroutine add_noise(f)
 !
       use FArrayManager, only: farray_use_global
-      use EquationOfState, only: get_cv1,cs20,gamma_m1,lnrho0
+      use EquationOfState, only: cs20,lnrho0
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: cs2
-      real :: cv1,cp1
       integer, pointer :: iglobal_cs2
 !
-      if (llocal_iso) then
-        call farray_use_global('cs2',iglobal_cs2)
-      elseif (lentropy) then
-        call get_cv1(cv1)
-      elseif (ltemperature) then 
-        call get_cp1(cp1)
-      endif
+      if (llocal_iso) call farray_use_global('cs2',iglobal_cs2)
 !
       do n=n1,n2; do m=m1,m2
         if (llocal_iso) then
@@ -619,14 +620,14 @@ module InitialCondition
 !                  variables.
 !
       use FArrayManager
-      use EquationOfState, only: gamma,gamma_m1,get_cp1,&
+      use EquationOfState, only: &
            cs20,cs2bot,cs2top,lnrho0
       use Sub,             only: power_law,get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
       real, dimension (nx) :: gslnTT
-      real :: cp1,temperature_power_law
+      real :: temperature_power_law
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
 !
@@ -671,8 +672,6 @@ module InitialCondition
         nullify(iglobal_glnTT)
         call farray_use_global('glnTT',iglobal_glnTT)
       endif
-!
-      if (lenergy) call get_cp1(cp1)
 !
       do m=m1,m2
       do n=n1,n2
@@ -756,7 +755,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: cs20,get_cv1
+      use EquationOfState, only: cs20
       use Sub, only: step, power_law
       use FArrayManager, only: farray_use_global
 !
@@ -979,7 +978,7 @@ module InitialCondition
 !
       use FArrayManager,   only: farray_use_global
       use Sub,             only: get_radial_distance
-      use EquationOfState, only: cs20,get_cv1,lnrho0,gamma_m1
+      use EquationOfState, only: cs20,lnrho0
       use Boundcond,       only: update_ghosts
       use Messages,        only: fatal_error
 !
@@ -987,7 +986,6 @@ module InitialCondition
       real, dimension(mx) :: cs2,pressure,Bphi,BB,tmp
       real, dimension(mx) :: rr_sph,rr_cyl
       integer, pointer :: iglobal_cs2
-      real :: cv1
 !
       if (.not.lspherical_coords) &
            call fatal_error("set_field_constbeta",&
@@ -995,11 +993,7 @@ module InitialCondition
 !
       call update_ghosts(f)
 !
-      if (llocal_iso) then
-        call farray_use_global('cs2',iglobal_cs2)
-      elseif (lentropy) then
-        call get_cv1(cv1)
-      endif
+      if (llocal_iso) call farray_use_global('cs2',iglobal_cs2)
 
       do m=m1,m2 
         if (llocal_iso) then

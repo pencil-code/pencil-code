@@ -236,8 +236,7 @@ module InitialCondition
 !                  variables.
 !
       use FArrayManager
-      use EquationOfState, only: gamma,gamma_m1,get_cp1,&
-           cs20,cs2bot,cs2top,lnrho0
+      use EquationOfState, only: cs20,cs2bot,cs2top,lnrho0
       use Sub,             only: power_law,get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f

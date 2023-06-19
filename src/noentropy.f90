@@ -48,6 +48,7 @@ module Energy
   integer :: idiag_csm=0        ! DIAG_DOC: $\left<c_{\rm s}\right>$
 !
   real, dimension(:), pointer :: beta_glnrho_scaled
+  real :: gamma
 !
   contains
 !***********************************************************************
@@ -75,10 +76,14 @@ module Energy
 !
 !  24-nov-02/tony: coded
 !
-      use EquationOfState, only: cs0, select_eos_variable,gamma_m1
+      use EquationOfState, only: cs0, select_eos_variable, get_gamma_etc
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      real :: cp
+
+      call get_gamma_etc(gamma,cp)
 !
 !  Tell the equation of state that we're here and what f variable we use.
 !
@@ -87,7 +92,7 @@ module Energy
            'llocal_iso=T. Make sure you have the appropriate INITIAL_CONDITION in Makefile.local')
         call select_eos_variable('cs2',-2) !special local isothermal
       else
-        if (gamma_m1 == 0.) then
+        if (gamma == 1.) then
           call select_eos_variable('cs2',-1) !isothermal
         else
           call select_eos_variable('ss',-1) !isentropic => polytropic
@@ -96,7 +101,7 @@ module Energy
 !
 !  Logical variable lpressuregradient_gas shared with hydro modules.
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_energy')
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas)
 !
       call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
 !
@@ -208,8 +213,6 @@ module Energy
 !
 !  20-nov-04/anders: coded
 !
-      use EquationOfState, only: gamma_m1
-!
       logical, dimension (npencils) :: lpencil_in
 !
       if (lpencil_in(i_Ma2)) then
@@ -227,8 +230,8 @@ module Energy
         endif
         if (llocal_iso)  lpencil_in(i_glnTT)=.true.
       endif
-      if (lpencil_in(i_TT1) .and. gamma_m1/=0.) lpencil_in(i_cs2)=.true.
-      if (lpencil_in(i_cs2) .and. gamma_m1/=0.) lpencil_in(i_lnrho)=.true.
+      if (lpencil_in(i_TT1) .and. gamma/=1.) lpencil_in(i_cs2)=.true.
+      if (lpencil_in(i_cs2) .and. gamma/=1.) lpencil_in(i_lnrho)=.true.
 !
     endsubroutine pencil_interdep_energy
 !***********************************************************************

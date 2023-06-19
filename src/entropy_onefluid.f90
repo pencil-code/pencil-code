@@ -22,10 +22,8 @@
 !***************************************************************
 module Energy
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use EquationOfState, only: gamma, gamma_m1, cs20
   use Interstellar
   use Messages
 !
@@ -123,6 +121,9 @@ module Energy
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_energy')
+!
+      if (lenergy_slope_limited) &
+        call not_implemented('initialize_energy','slope-limited diffusion')
 !
       call keep_compiler_quiet(f)
 !
@@ -504,9 +505,6 @@ module Energy
       intent(in) :: f
 !
       call keep_compiler_quiet(f)
-!
-      if (lenergy_slope_limited) &
-        call not_implemented('energy_after_boundary','slope-limited diffusion')
 
     endsubroutine energy_after_boundary
 !***********************************************************************

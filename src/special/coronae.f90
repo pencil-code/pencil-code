@@ -160,6 +160,7 @@ module Special
   real :: nu_ee=0.,ln_unit_TT=0.
 !
   real, dimension(nx) :: diffus_chi
+  real :: gamma, gamma1, gamma_m1, cp1
 !
   contains
 !
@@ -179,7 +180,7 @@ module Special
 !
 !  13-sep-10/bing: coded
 !
-      use EquationOfState, only: gamma,get_cp1
+      use EquationOfState, only: get_gamma_etc
       use File_io, only: parallel_file_exists
       use SharedVariables, only: get_shared_variable
       use Slices_methods, only: alloc_slice_buffers
@@ -190,13 +191,17 @@ module Special
       real, dimension (mz) :: ztmp
       character (len=*), parameter :: filename='/strat.dat'
       integer :: lend,unit=12
-      real :: dummy=1.,cp1=1.,eps0,unit_ampere,e_charge
+      real :: dummy=1.,eps0,unit_ampere,e_charge,cp
       logical :: exists
       real,dimension(:,:,:),allocatable :: ltemp
+
+      call get_gamma_etc(gamma,cp)
+      gamma1=1./gamma; gamma_m1=gamma-1.
+      cp1=1./cp
 !
 !  Get the external magnetic field if exists.
-      if (lmagnetic) &
-        call get_shared_variable('B_ext', B_ext, caller='calc_hcond_timestep')
+!
+      if (lmagnetic) call get_shared_variable('B_ext', B_ext)
 !
 !     magnetic helicity density set in units of G2 Mm
 !     renormalize to average magnetic helicity density in PC units
@@ -265,7 +270,6 @@ module Special
           else if (lentropy.and.pretend_lnTT) then
             lnTT_init_prof = f(l1,m1,:,ilnTT)
           else if (lthermal_energy .and. ldensity) then
-            if (leos) call get_cp1(cp1)
             lnTT_init_prof=log(gamma*cp1*f(l1,m1,:,ieth)*exp(-lnrho_init_prof))
           else
             call fatal_error('initialize_special', &
@@ -499,8 +503,6 @@ module Special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
-      use EquationOfState, only: gamma
-!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (pencil_case), intent(inout) :: p
 !
@@ -582,7 +584,6 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use EquationOfState, only: gamma
       use Deriv, only: der2, der
       use Diagnostics, only: max_mn_name, sum_mn_name
       use Sub
@@ -753,8 +754,6 @@ module Special
     subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  10-oct-12/bing: coded
-!
-      use EquationOfState, only: gamma
 !
       logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -1127,7 +1126,6 @@ module Special
 !  04-sep-10/bing: coded
 !
       use Diagnostics,     only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot2_mn, multsv_mn, cubic_step, dot_mn
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -1282,7 +1280,6 @@ module Special
 !  04-sep-10/bing: coded
 !
       use Diagnostics,     only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot2_mn, multsv_mn, cubic_step, dot_mn
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -1446,7 +1443,6 @@ module Special
 !
       use Diagnostics,     only: max_mn_name
       use Sub,             only: dot2,dot,multsv,multmv,unit_vector
-      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -1594,7 +1590,6 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use Sub, only: dot2,dot,multsv,multmv,unit_vector
-      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1715,7 +1710,6 @@ module Special
 !
       use Diagnostics,     only: max_mn_name
       use Sub,             only: dot2,dot,multsv,multmv
-      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1800,7 +1794,6 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
-      use EquationOfState, only: gamma
       use Diagnostics,     only: max_mn_name
       use Sub, only: cubic_step
 !
@@ -1960,7 +1953,6 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
-      use EquationOfState, only: gamma
       use Sub, only: dot2, cubic_step,gij
       use General, only: notanumber
 !
@@ -3772,18 +3764,15 @@ module Special
 !***********************************************************************
     subroutine footpoint_quenching(f)
 !
-      use EquationofState, only: gamma_m1,gamma1,lnrho0,cs20,get_cp1
+      use EquationofState, only: lnrho0,cs20
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       real, dimension(nx,ny) :: q,pp,beta
-      real :: cp1=1.
       integer :: i
 !
 ! for footpoint quenching compute pressure
-!
-      if (leos) call get_cp1(cp1)
 !
       if (ltemperature.and..not.ltemperature_nolog) then
         if (ldensity_nolog) then
@@ -4233,7 +4222,6 @@ module Special
 !  USED PENCILS  uij  uu
       use Diagnostics,     only: max_mn_name
       use Sub,             only: dot2,dot,multsv,multmv
-      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -4288,7 +4276,6 @@ module Special
 !
       use Diagnostics,     only: max_mn_name
       use Sub,             only: dot2,dot,multsv,multmv
-      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -4499,7 +4486,6 @@ module Special
 !  06/09/16/MR: replaced explicit calculation by call to get_grid_mn
 !               attention: dxyz_2 now depends on the setting of lmaximal_cdtv (should be improved)
 !
-      use EquationOfState, only : gamma, get_cp1
       use Diagnostics
       use Grid,            only : get_grid_mn
       use Sub,             only : dot2,dot,grad,gij,curl_mn, &
@@ -4512,14 +4498,12 @@ module Special
       real, dimension (nx) :: chi_spitzer,chi_grad,chi_grad_iso
       real, dimension (nx,3) :: unit_glnTT,bbb_tmp
       real, dimension (nx) :: diffus_hcond,dt1_hcond_max
-      real :: B2_ext,cp1
+      real :: B2_ext
       logical :: luse_Bext_in_b2=.true.
 !
       dt1_hcond_max = 0d0
 !
       if (sub_step_hcond) then
-!
-        call get_cp1(cp1)
 !
 !  Do loop over m and n.
 !

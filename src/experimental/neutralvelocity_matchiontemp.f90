@@ -214,7 +214,6 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use EquationOfState, only: cs20, gamma
       use Gravity, only: z1
       use Initcond
       use InitialCondition, only: initial_condition_uun

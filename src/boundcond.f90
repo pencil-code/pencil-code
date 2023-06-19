@@ -54,6 +54,9 @@ module Boundcond
   integer, parameter :: sz_slc_chunk=20
   real, dimension(:), pointer :: hcondADI
 !
+  real, pointer :: gamma, cp, cv
+  real :: gamma1, gamma_m1, cp1
+
   contains
 !***********************************************************************
     subroutine update_ghosts_all(f)
@@ -199,6 +202,14 @@ module Boundcond
       character :: prec_in
       character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
 
+      call get_shared_variable('gamma',gamma,caller="initialize_boundcond")
+      if (gamma==impossible) call fatal_error('initialize_boundcond','invalid value of gamma')
+      gamma1=1./gamma; gamma_m1=gamma-1.
+
+      if (leos_idealgas) then
+        call get_shared_variable('cp',cp); cp1=1./cp
+        call get_shared_variable('cv',cv)
+      endif
       if (lADI) call get_shared_variable('hcondADI', hcondADI, caller='initialize_boundcond')
 !
 ! Set proper BC code for Yin-Yang grid
@@ -5338,7 +5349,7 @@ module Boundcond
 !
 !  26-apr-2004/wolf: coded
 !
-      use EquationOfState, only: gamma_m1, cs2top, cs2bot
+      use EquationOfState, only: cs2top, cs2bot
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
@@ -5665,7 +5676,7 @@ module Boundcond
 !  11-aug-06/axel: make it compile with nprocx>0, renamed quenching -> quen
 !  18-jun-08/bing: quenching depends on B^2, not only Bz^2
 !
-       use EquationOfState, only : gamma,gamma_m1,gamma1,cs20,lnrho0
+       use EquationOfState, only : cs20,lnrho0
        use File_io, only : file_exists
        use Mpicomm, only : mpisend_real, mpirecv_real
 !
@@ -6299,7 +6310,7 @@ module Boundcond
 !   5-feb-15/MR: added reference state
 !  11-feb-15/MR: corrected use of reference state
 !
-      use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
+      use EquationOfState, only: lnrho0, cs20
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (:,:,:,:) :: f
@@ -6327,7 +6338,6 @@ module Boundcond
 !
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
         call get_shared_variable('nkramers',nkramers)
-        call get_shared_variable('cp',cp)
 !
       endif
 !
@@ -7650,7 +7660,6 @@ module Boundcond
 !
 !  19-nov-2010/Bourdin.KIS: coded
 !
-      use EquationOfState, only: gamma, gamma_m1, get_cp1
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (:,:,:,:), intent (inout) :: f
@@ -7658,13 +7667,12 @@ module Boundcond
 !
       integer :: i
       real, dimension (size(f,1),size(f,2)) :: T_inv, grad_rho
-      real :: g_ref, delta_z, inv_cp_cv, cp_inv
+      real :: g_ref, delta_z, inv_cp_cv
       real, dimension (:), pointer :: gravz_zpencil
 !
 !
       call get_shared_variable ('gravz_zpencil', gravz_zpencil, caller='bcz_hydrostatic_temp')
-      call get_cp1 (cp_inv)
-      inv_cp_cv = gamma / gamma_m1 * cp_inv
+      inv_cp_cv = gamma / gamma_m1 * cp1
 !
       select case (topbot)
       case(BOT)
@@ -7698,7 +7706,6 @@ module Boundcond
 !
 !  24-May-2019/PABourdin: adapted from bcz_hydrostatic_temp
 !
-      use EquationOfState, only: gamma, gamma_m1, get_cp1
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (:,:,:,:), intent (inout) :: f
@@ -7706,13 +7713,12 @@ module Boundcond
 !
       integer :: i
       real, dimension (size(f,1),size(f,2)) :: T_inv
-      real :: g_ref, delta_z, inv_cp_cv, cp_inv
+      real :: g_ref, delta_z, inv_cp_cv
       real, dimension (:), pointer :: gravz_zpencil
 !
 !
       call get_shared_variable ('gravz_zpencil', gravz_zpencil, caller='bcz_hydrostatic_rho')
-      call get_cp1 (cp_inv)
-      inv_cp_cv = gamma / gamma_m1 * cp_inv
+      inv_cp_cv = gamma / gamma_m1 * cp1
 !
       select case (topbot)
       case(BOT)
@@ -8639,16 +8645,10 @@ module Boundcond
 !
 !  14-mar-11/fred: check that 'cdz' is also set for bcz density.
 !
-      use EquationOfState, only: get_cv1,get_cp1
-!
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
-      real :: cv1,cp1,cv,cp
       real, dimension (size(f,1),size(f,2),size(f,3)) :: lnrho_
-!
-      call get_cv1(cv1); cv=1./cv1
-      call get_cp1(cp1); cp=1./cp1
 !
       call bc_cdz(f,topbot,j-1)
 !

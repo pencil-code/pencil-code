@@ -154,7 +154,7 @@ module Special
       use Cdata
       use Mpicomm
       use General, only: random_number_wrapper
-      !use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
+      !use EquationOfState, only: rho0,cs20
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: r2,rr,uphi_jet

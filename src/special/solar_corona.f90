@@ -163,14 +163,15 @@ module Special
   real, dimension(:,:), allocatable :: BB2
   real, dimension(:,:), allocatable :: BB2_local
   integer, dimension(:,:), allocatable :: avoid_gran
-  real, save :: tsnap_uu=0., thresh
-  integer, save :: isnap
-  integer, save, dimension(mseed) :: points_rstate
-  real, dimension(nx,ny), save :: Ux_local, Uy_local
+  real :: tsnap_uu=0., thresh
+  integer :: isnap
+  integer, dimension(mseed) :: points_rstate
+  real, dimension(nx,ny) :: Ux_local, Uy_local
 !
-  integer, save, dimension(mseed) :: nano_seed
+  integer, dimension(mseed) :: nano_seed
   integer :: alloc_err
   real, dimension(nx) :: diffus_chi, diffus_chi3
+  real :: gamma, gamma1, gamma_m1, cp1
 !
   contains
 !
@@ -194,10 +195,12 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use EquationOfState, only: get_gamma_etc
       use File_io, only: parallel_file_exists
       use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      real :: cp
 !
 ! Consistency checks:
 !
@@ -263,12 +266,15 @@ module Special
 !
       if ((.not. lreloading) .and. lrun) nano_seed = 0
 !
-      if (lpencil_check_at_work) return
+      if (lpencil_check_at_work) return   !  MR: should not be needed
 !
       if (luse_timedep_magnetogram .and. .not. parallel_file_exists (mag_times_dat)) &
           call fatal_error ('solar_corona/initialize_special', &
               "Could not find file '"//trim (mag_times_dat)//"'.")
 !
+      call get_gamma_etc(gamma,cp)
+      gamma1=1./gamma; gamma_m1=gamma-1.; cp1=1./cp
+
       if (lgranulation .and. lrun) then
         ! Define and initialize the processors that are computing the granulation
         lgran_proc = ((.not. lgran_parallel) .and. lroot) .or. &
@@ -299,7 +305,7 @@ module Special
 !
 !  27-aug-2010/Bourdin.KIS: coded
 !
-      use EquationOfState, only: lnrho0,gamma,gamma_m1,cs20,cs2top,cs2bot
+      use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot
       use Messages, only: warning
 !
       real, dimension(mx,my,mz,mfarray), intent(out) :: f
@@ -1990,7 +1996,7 @@ module Special
 !
 ! 30-oct-2011/Bourdin.KIS: extracted from gran_driver
 !
-      use EquationOfState, only: gamma1, get_cp1, gamma_m1, lnrho0, cs20
+      use EquationOfState, only: lnrho0, cs20
       use Sub, only: cubic_step
 !
       real, dimension(nx,ny), intent(in) :: BB2
@@ -1998,11 +2004,9 @@ module Special
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       real, dimension(nx,ny) :: pp_tmp, beta, quench
-      real :: cp1 = 1.0
       integer :: py
 !
       ! Compute pressure for footpoint quenching.
-      if (leos) call get_cp1(cp1)
       if (ltemperature) then
         if (ltemperature_nolog) then
           pp_tmp = gamma_m1*gamma1/cp1*f(l1:l2,m1:m2,irefz,iTT)
@@ -2422,7 +2426,6 @@ module Special
 !    Spitzer-type coronal parameters: expo=2.5, K=9e-12 [kg*m/s^3/K^3.5]
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot, dot2, step
       use SharedVariables, only: get_shared_variable
 !
@@ -2519,7 +2522,6 @@ module Special
 ! K = K_iso [m^5/s^3/K^2]
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -2565,7 +2567,6 @@ module Special
 ! Define chi = K_0/rho
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -2608,7 +2609,6 @@ module Special
 !  K = hcond2 [m^6/s^3/K]
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot, multsv
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -2652,7 +2652,6 @@ module Special
 !  K = hcond3 [m^6/s^3/K]
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -2752,7 +2751,6 @@ module Special
 !  08-Mar-2017/PABourdin: coded
 !
       use Diagnostics,     only: max_mn_name
-      use EquationOfState, only: gamma
       use Mpicomm,         only: stop_it
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -2799,7 +2797,7 @@ module Special
 !  Apply external heating and cooling profile for heating per particle.
 !
       use Diagnostics,     only: max_mn_name
-      use EquationOfState, only: gamma, getmu
+      use EquationOfState, only: getmu
       use Mpicomm,         only: stop_it
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -2841,7 +2839,6 @@ module Special
 !  Apply external heating and cooling profile for heating per particle.
 !
       use Diagnostics,     only: max_mn_name
-      use EquationOfState, only: gamma
       use Mpicomm,         only: stop_it
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -2885,7 +2882,6 @@ module Special
 !  12-Mar-2017/PABourdin: coded
 !
       use Diagnostics,     only: max_mn_name
-      use EquationOfState, only: gamma
       use Mpicomm,         only: stop_it
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -2960,7 +2956,6 @@ module Special
 !
 !  30-jan-08/bing: coded
 !
-      use EquationOfState, only: gamma
       use Diagnostics,     only: max_mn_name
       use Mpicomm,         only: stop_it
       use Sub,             only: cubic_step,step
@@ -3211,7 +3206,6 @@ module Special
 !
 !  22-sept-10/Tijmen: coded
 !
-      use EquationOfState, only: gamma
       use Diagnostics, only: max_mn_name
       use General, only: random_number_wrapper,random_seed_wrapper, &
           normal_deviate

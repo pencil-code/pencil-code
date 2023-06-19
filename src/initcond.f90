@@ -6115,7 +6115,7 @@ module Initcond
 
     endsubroutine random_isotropic_shell
 !***********************************************************************
-    subroutine corona_init(f)
+    subroutine corona_init(f,gamma)
 !
 !  Initialize the density for a given temperature profile
 !  in the vertical (z) direction by solving for hydrostatic
@@ -6124,11 +6124,11 @@ module Initcond
 !
 !  07-dec-05/bing : coded.
 !
-      use EquationOfState, only: lnrho0,gamma,gamma_m1,cs20,cs2top,cs2bot
+      use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: tmp,ztop,zbot,dummy=1.
+      real :: tmp,ztop,zbot,gamma,gamma_m1,dummy=1.
       integer, parameter :: prof_nz=150
       real, dimension (prof_nz) :: prof_lnT,prof_lnrho,prof_z
       integer :: i,lend,j
@@ -6139,7 +6139,7 @@ module Initcond
 !
       ! temperature given as function lnT(z) in SI units
       ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
-      if (pretend_lnTT) print*,'corona_init: not implemented for pretend_lnTT=T'
+      if (pretend_lnTT) call not_implemented('corona_init','for pretend_lnTT=T')
 !
       if (lroot) then
         inquire(IOLENGTH=lend) dummy
@@ -6160,6 +6160,8 @@ module Initcond
       prof_z = prof_z*1.e6/unit_length
       prof_lnT = prof_lnT - alog(real(unit_temperature))
       prof_lnrho = prof_lnrho - alog(real(unit_density))
+
+      gamma_m1=gamma-1.
 !
 ! simple linear interpolation
 !
@@ -6245,8 +6247,8 @@ module Initcond
 !
 !  Allocate memory for arrays.
 !
-      if (.not.lequidist(1).or..not.lequidist(2)) call fatal_error('mdi_init', &
-          'not yet implemented for non-equidistant grids')
+      if (.not.lequidist(1).or..not.lequidist(2)) call not_implemented('mdi_init', &
+          'for non-equidistant grids')
 !
       iostat = 0
       if (periodic) then
@@ -6431,8 +6433,8 @@ module Initcond
 !
       if (.not. lperi(1) .or. .not. lperi(2)) call fatal_error ('mag_init', &
           'Currently only implemented for xy-periodic setups!')
-      if (.not. lequidist(1) .or. .not. lequidist(2)) call fatal_error ('mag_init', &
-          'not yet implemented for non-equidistant grids')
+      if (.not. lequidist(1) .or. .not. lequidist(2)) call not_implemented('mag_init', &
+          'for non-equidistant grids')
       if (mod (nygrid, nprocxy) /= 0) call fatal_error ('mag_init', &
           'nygrid needs to be an integer multiple of nprocx*nprocy')
       if (mod (nxgrid, nprocxy) /= 0) call fatal_error ('mag_init', &
@@ -6678,14 +6680,14 @@ module Initcond
 !
     endsubroutine file_init
 !***********************************************************************
-    subroutine temp_hydrostatic(f,rho0)
+    subroutine temp_hydrostatic(f,rho0,gamma)
 !
 ! 07-dec-05/bing : coded.
 !      intialize the density for a given temperature profile in vertical
 !      z direction by solving the hydrostatic equilibrium:
 !      dlnrho = - dlnTT + (cp-cv)/T g dz
 !
-      use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot
+      use EquationOfState, only: lnrho0,cs2top,cs2bot
       use Gravity, only: gravz
       use Mpicomm, only: mpibcast_real
 !
@@ -6693,7 +6695,7 @@ module Initcond
       real :: ztop,zbot,dummy=1.
       integer, parameter :: prof_nz=150
       real, dimension (prof_nz) :: prof_lnT,prof_z
-      real :: tmprho,tmpT,tmpdT,tmpz,dz_step,lnrho_0,rho0
+      real :: tmprho,tmpT,tmpdT,tmpz,dz_step,lnrho_0,rho0,gamma
       integer :: i,lend,j
 !
       ! file location settings
@@ -6701,10 +6703,11 @@ module Initcond
 !
       ! temperature given as function lnT(z) in SI units
       ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
-      if (pretend_lnTT) print*,'temp_hydrostatic: not implemented for pretend_lnTT=T'
+      if (pretend_lnTT) call not_implemented('temp_hydrostatic','for pretend_lnTT=T')
 !
       if (lnrho0 > 0.99*log(impossible)) then
-        call warning("lnrho0 from eos module not useful","use rho_const from density instead")
+        call warning("temp_hydrostatic", &
+                     "lnrho0 from eos module not useful, use rho_const from density instead")
         lnrho_0 = log(rho0)
       else
         lnrho_0 = lnrho0
@@ -7181,8 +7184,8 @@ module Initcond
           enddo
         enddo
       else
-        call fatal_error('dipole_tor', &
-        'dipolar toroidal field not implemented for non-spherical coordinates')
+        call not_implemented('dipole_tor', &
+        'dipolar toroidal field for non-spherical coordinates')
       endif
 !
     endsubroutine dipole_tor

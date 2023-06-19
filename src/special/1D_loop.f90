@@ -89,6 +89,7 @@ module Special
 !
   real :: Kspitzer_para_SI = 2e-11, Kspitzer_para=0.
   real :: Ksaturation_SI = 7e7,Ksaturation=0.,ln_unit_TT=0.
+  real :: gamma
 !
   contains
 !***********************************************************************
@@ -105,6 +106,7 @@ module Special
 !
 !  13-sep-10/bing: coded
 !
+      use EquationOfState, only: get_gamma_etc
       use Slices_methods, only: alloc_slice_buffers
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -143,6 +145,8 @@ module Special
         Ltot = 0.
       endselect
 !
+      call get_gamma_etc(gamma)
+
       if (ivid_rtv/=0) &
         call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2,rtv_r)
       if (ivid_logQ/=0) &
@@ -337,7 +341,6 @@ module Special
 !
 !  12-may-11/bingert: coded
 !
-      use EquationOfState, only: gamma
       use Deriv, only: der6
       use Diagnostics,     only : max_mn_name, sum_mn_name
       use Sub, only: identify_bcs, multsv, dot, del6
@@ -411,8 +414,6 @@ module Special
     subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  10-oct-12/bing: coded
-!
-      use EquationOfState, only: gamma
 !
       logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -600,7 +601,6 @@ module Special
 !  10-oct-04/bing: coded
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: dot2,dot,cubic_step
       use Slices_methods, only: store_slices
 !
@@ -706,7 +706,6 @@ module Special
     subroutine calc_heatcond_kchrom(df,p)
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub, only: cubic_step, cubic_der_step, dot2,cross,dot
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -767,7 +766,6 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
-    use EquationOfState, only: gamma
     use Diagnostics,     only: max_mn_name
     use Messages, only: warning
     use Sub, only: cubic_step
@@ -974,7 +972,6 @@ module Special
 !
 !  22-sept-10/Tijmen: coded
 !
-      use EquationOfState, only: gamma
       use Diagnostics, only: max_mn_name
       use General, only: random_number_wrapper,random_seed_wrapper, &
           normal_deviate,notanumber
@@ -1279,7 +1276,6 @@ module Special
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv
-      use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1330,7 +1326,6 @@ module Special
 ! Define chi = K_0/rho
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
       use Sub
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -1452,8 +1447,6 @@ module Special
     endsubroutine der_upwind
 !***********************************************************************
     subroutine calc_bullets_heating(df,p)
-!
-      use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p

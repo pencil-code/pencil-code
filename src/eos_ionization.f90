@@ -7,7 +7,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: leos = .true.
+! CPARAM logical, parameter :: leos = .true., leos_ionization = .true.
+! CPARAM logical, parameter :: leos_idealgas = .false., leos_chemistry = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 2
@@ -21,7 +22,6 @@
 !***************************************************************
 module EquationOfState
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -50,10 +50,10 @@ module EquationOfState
 !ajwm  reworking to be independent of these things first
 !ajwm  can't use impossible else it breaks reading param.nml
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped
-  real :: cs0=impossible, rho0=impossible, cp=impossible, cv=impossible
+  real :: cs0=impossible, rho0=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lpp_as_aux=.false., lcp_as_aux=.false.
-  real :: gamma=impossible, gamma_m1=impossible,gamma1=impossible
+  real :: gamma=impossible
   real :: cs2bot=impossible, cs2top=impossible
 ! input parameters
   namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
@@ -79,8 +79,6 @@ module EquationOfState
       use Sub
       use SharedVariables,only: put_shared_variable
 !
-      leos_ionization=.true.
-!
 !  Set indices for auxiliary variables.
 !
       !call farray_register_auxiliary('yH',iyH,communicated=.true.)
@@ -105,8 +103,7 @@ module EquationOfState
         write(15,*) 'lnTT = fltarr(mx,my,mz)*one'
       endif
 
-      call put_shared_variable('cp',cp,caller='initialize_eos')
-      call put_shared_variable('cv',cv)
+      call put_shared_variable('gamma',gamma,caller='register_eos')
 
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0)
@@ -650,39 +647,18 @@ module EquationOfState
 !
     endsubroutine getpressure
 !***********************************************************************
-    subroutine get_cp1(cp1_)
+    subroutine get_gamma_etc(gamma,cp,cv)
 !
-!  04-nov-06/axel: added to alleviate spurious use of pressure_gradient
+      real, intent(OUT) :: gamma
+      real, optional, intent(OUT) :: cp,cv
 !
-!  return the value of cp1 to outside modules
-!
-      real, intent(out) :: cp1_
-!
-!  for variable ionization, it doesn't make sense to calculate
-!  just a single value of cp1, because it must depend on position.
-!  Therefore, return fatal_error.
-!
-      call fatal_error('get_cp1',&
-          'SHOULD NOT BE CALLED WITH eos_ionization, but pencil instead')
-!
-    endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_cv1(cv1_)
-!
-!  22-dec-10/PJK: adapted from get_cp1
-!
-!  return the value of cv1 to outside modules
-!
-      real, intent(out) :: cv1_
-!
-!  for variable ionization, it doesn't make sense to calculate
-!  just a single value of cv1, because it must depend on position.
-!  Therefore, return fatal_error.
-!
-      call fatal_error('get_cv1',&
-          'SHOULD NOT BE CALLED WITH eos_ionization, but pencil instead')
-!
-    endsubroutine get_cv1
+      call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_ionization.'// &
+                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
+      gamma=5./3.
+      if (present(cp)) cp=1.
+      if (present(cv)) cv=3./5.
+
+    endsubroutine get_gamma_etc
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !

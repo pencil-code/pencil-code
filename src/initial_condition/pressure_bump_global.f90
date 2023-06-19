@@ -108,6 +108,8 @@ module InitialCondition
        bump_radius,bump_ampl,bump_width,&
        ipressurebump
 !
+  real :: gamma, gamma_m1, cv1, cp1
+
   contains
 !***********************************************************************
     subroutine register_initial_condition()
@@ -128,7 +130,12 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: cp, cv
 !
+      call get_gamma_etc(gamma,cp,cv)
+      gamma_m1=gamma-1.
+      cp1=1./cp; cv1=1./cv
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
@@ -155,12 +162,10 @@ module InitialCondition
       real, dimension (nx) :: rr_cyl,rr_sph,OO,g_r,tmp
       integer :: i
 !
-      if (lroot) &
-           print*,'centrifugal_balance: initializing velocity field'
+      if (lroot) print*,'centrifugal_balance: initializing velocity field'
 !
       if ((rsmooth/=0.).or.(r0_pot/=0)) then
-        if (rsmooth/=r0_pot) &
-             call fatal_error("centrifugal_balance","rsmooth and r0_pot must be equal")
+        if (rsmooth/=r0_pot) call fatal_error("centrifugal_balance","rsmooth and r0_pot must be equal")
         if (n_pot<=2) &
              call fatal_error("centrifugal_balance","don't you dare using less smoothing than n_pot=2")
       endif
@@ -234,20 +239,13 @@ module InitialCondition
     subroutine add_noise(f)
 !
       use FArrayManager, only: farray_use_global
-      use EquationOfState, only: get_cv1,cs20,gamma_m1,lnrho0
+      use EquationOfState, only: cs20,lnrho0
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: cs2
-      real :: cv1,cp1
       integer, pointer :: iglobal_cs2
 !
-      if (llocal_iso) then
-        call farray_use_global('cs2',iglobal_cs2)
-      elseif (lentropy) then
-        call get_cv1(cv1)
-      elseif (ltemperature) then 
-        call get_cp1(cp1)
-      endif
+      if (llocal_iso) call farray_use_global('cs2',iglobal_cs2)
 !
       do n=n1,n2; do m=m1,m2
         if (llocal_iso) then
@@ -481,14 +479,14 @@ module InitialCondition
 !                  variables.
 !
       use FArrayManager
-      use EquationOfState, only: gamma,gamma_m1,get_cp1,&
+      use EquationOfState, only: &
            cs20,cs2bot,cs2top,lnrho0
       use Sub,             only: power_law,get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
       real, dimension (nx) :: gslnTT
-      real :: cp1,temperature_power_law
+      real :: temperature_power_law
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
 !
@@ -533,8 +531,6 @@ module InitialCondition
         nullify(iglobal_glnTT)
         call farray_use_global('glnTT',iglobal_glnTT)
       endif
-!
-      if (lenergy) call get_cp1(cp1)
 !
       do m=m1,m2
       do n=n1,n2
@@ -623,20 +619,15 @@ module InitialCondition
 !
       use FArrayManager
       use Sub,    only: get_radial_distance,grad
-      use EquationOfState, only: get_cv1,get_cp1
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: glnrho,gss
       real, dimension (nx)   :: rr,rr_cyl,rr_sph
       real, dimension (nx)   :: cs2,fpres_thermal,gslnrho,gsss
-      real :: cp1,cv1
       logical                :: lheader
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
-!
-      call get_cv1(cv1)
-      call get_cp1(cp1)
 !
       do n=n1,n2 ; do m=m1,m2
         lheader=(lfirstpoint.and.lroot)

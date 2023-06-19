@@ -72,6 +72,8 @@ module Particles_radius
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
   integer :: idiag_ieffp=0
 !
+  real :: gamma
+
   contains
 !***********************************************************************
     subroutine register_particles_radius()
@@ -79,6 +81,8 @@ module Particles_radius
 !  Set up indices for access to the fp and dfp arrays.
 !
 !  22-aug-05/anders: coded
+!
+      use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -93,6 +97,8 @@ module Particles_radius
 !
       call append_npaux('ieffp',ieffp)
 !
+      call put_shared_variable('ap0',ap0,caller='initialize_particles_radius')
+!
     endsubroutine register_particles_radius
 !***********************************************************************
     subroutine initialize_particles_radius(f)
@@ -102,7 +108,7 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      use SharedVariables, only: put_shared_variable
+      use EquationOfState, only: get_gamma_etc
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -136,8 +142,6 @@ module Particles_radius
       if (tau_damp_evap/=0.0) tau_damp_evap1=1/tau_damp_evap
       if (tau_ocean_driving/=0.0) tau_ocean_driving1=1/tau_ocean_driving
 !
-      call put_shared_variable('ap0',ap0,caller='initialize_particles_radius')
-!
 ! If we have decided to hold the radius of the particles to be fixed then
 ! we should not have any process that changes the radius. 
 !
@@ -153,6 +157,8 @@ module Particles_radius
           'incosistency: lfixed_particles_radius and lparticles_chemistry cannot both be true')
       endif
 !
+      call get_gamma_etc(gamma)
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_radius
@@ -625,7 +631,6 @@ module Particles_radius
 !
 !  15-jan-10/anders: coded
 !
-      use EquationOfState, only: gamma
       use Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -818,7 +823,6 @@ module Particles_radius
 !
 !  28-may-16/Xiang-Yu: coded
 !
-      use EquationOfState, only: gamma
       use Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f

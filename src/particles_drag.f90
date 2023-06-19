@@ -761,13 +761,16 @@ module Particles_drag
 !
 !  13-sep-15/ccyang: coded.
 !
-      use EquationOfState, only: gamma, rho0, cs0
+      use EquationOfState, only: rho0, cs0, get_gamma_etc
       use Gravity, only: gravz_profile
+      use SharedVariables, only: get_shared_variable
 !
       real :: mp_swarm
       real, intent(in) :: eps_dtog
 !
-      real :: mass
+      real :: mass, gamma
+
+      call get_gamma_etc(gamma)
 !
 !  Find the total gas mass.
 !
@@ -781,7 +784,7 @@ module Particles_drag
       case default gasmass
 !       Unsupported vertical stratification
         mass = 0.0
-        call fatal_error("find_mp_swarm", "unsupported gravz_profile = '" // trim(gravz_profile) // "'")
+        call fatal_error("find_mp_swarm", "no such gravz_profile: '"//trim(gravz_profile)//"'")
       endselect gasmass
       mass = rho0 * mass
 !
