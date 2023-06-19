@@ -66,6 +66,7 @@ module ImplicitPhysics
 !***********************************************************************
     subroutine initialize_implicit_physics(f)
 !
+      use EquationOfState, only: get_gamma_etc
       use SharedVariables, only: get_shared_variable
       use Gravity, only: z1, z2
       use Sub, only: step,der_step,write_zprof
