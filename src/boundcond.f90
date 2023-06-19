@@ -203,9 +203,11 @@ module Boundcond
       character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
 
       call get_shared_variable('gamma',gamma,caller="initialize_boundcond")
-      if (gamma==impossible) call warning('initialize_boundcond','invalid value of gamma, set it to 5/3')
-      gamma=5./3.
-      gamma1=1./gamma; gamma_m1=gamma-1.
+      if (gamma==impossible) then
+        call warning('initialize_boundcond','invalid value of gamma, set it to 5/3')
+        gamma=5./3.
+        gamma1=1./gamma; gamma_m1=gamma-1.
+      endif
 
       if (leos_idealgas) then
         call get_shared_variable('cp',cp); cp1=1./cp
