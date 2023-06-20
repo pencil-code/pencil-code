@@ -213,18 +213,18 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0,lnrho0
+      use EquationOfState, only: cs20,rho0,get_gamma_etc
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,rho
-      real :: cp,cv,cp1,lnTT0,pp0,TT0
+      real :: gamma,gamma_m1,cp,cv,cp1,lnTT0,pp0,TT0
       integer :: irho
 !
 !  Get the density and use a constant pressure entropy condition
 !
-      cp=1.
-      cp1=1/cp
-      cv=gamma1*cp
+      call get_gamma_etc(gamma,cp,cv)
+      cp1=1./cp
+      gamma_m1=gamma-1.
 !
       TT0 = cs20*cp1/gamma_m1 ; lnTT0=log(TT0)
       pp0=(cp-cv)*TT0*rho0

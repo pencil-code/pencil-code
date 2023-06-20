@@ -954,8 +954,8 @@ module EquationOfState
       real, intent(in) :: T0,rho0
       real, dimension(nx) :: lnrho,ss,lnTT
 !
-      if (gravz_profile /= 'linear') call stop_it &
-          ('isothermal_lnrho_ss: Only implemented for linear gravity profile')
+      if (gravz_profile /= 'linear') call not_implemented &
+          ('isothermal_lnrho_ss','for other than linear gravity profile')
 !
 !  First calculate hydrostatic density stratification when T=T0
 !
@@ -978,7 +978,6 @@ module EquationOfState
       enddo
 !
     endsubroutine isothermal_lnrho_ss
-!
 !***********************************************************************
      subroutine get_average_pressure(average_density,average_pressure)
 !

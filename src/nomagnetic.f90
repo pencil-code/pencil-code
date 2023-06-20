@@ -337,21 +337,6 @@ module Magnetic
 !
     endsubroutine get_slices_magnetic
 !***********************************************************************
-    subroutine bdry_magnetic(f,quench,task)
-!
-!  Dummy routine
-!
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
-      real, dimension (nx) :: quench
-      character (len=*), intent(in) :: task
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(quench)
-      call keep_compiler_quiet(task)
-      call fatal_error('bdry_magnetic','not to be called w/o B-field')
-!
-    endsubroutine bdry_magnetic
-!***********************************************************************
     subroutine calc_mfield
 !
 !  Dummy routine

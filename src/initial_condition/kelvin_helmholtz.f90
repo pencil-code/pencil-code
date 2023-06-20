@@ -194,7 +194,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: cs20,rho0,lnrho0,gamma_etc
+      use EquationOfState, only: cs20,rho0,get_gamma_etc
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,rho
@@ -203,7 +203,7 @@ module InitialCondition
 !
 !  SAMPLE IMPLEMENTATION
 !
-      call gamma_etc(gamma,cp=cp)
+      call get_gamma_etc(gamma,cp=cp)
       gamma1=1./gamma; gamma_m1=gamma-1.
       cp1=1./cp; cv=gamma1*cp
 !

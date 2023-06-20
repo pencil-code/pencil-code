@@ -2120,12 +2120,11 @@ module EquationOfState
 !
 !  Boundary condition for density and temperature
 !
-        if (bcz12(ilnTT,1)/='StS'.and.bcz12(ilnTT,1)/='') then
+        if (bcz12(ilnTT,1)/='StS'.and.bcz12(ilnTT,1)/='') &
           call fatal_error("bc_stellar_surface", &
                            "This boundary condition for density also sets "// &
                            "temperature. We therfore require "// &
                            "bcz12(ilnTT,1)='StS' or bcz12(ilnTT,1)=''")
-        endif
 !
 !  Get variables from f-array
 !

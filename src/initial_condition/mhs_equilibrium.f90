@@ -68,6 +68,8 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
+      use EquationOfState, only: get_gamma_etc
+
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: cp

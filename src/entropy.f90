@@ -652,7 +652,7 @@ module Energy
 !
       real, dimension (nzgrid) :: tmpz
       real, dimension (nx) :: tmpz_penc
-      real :: beta1, cp1, beta0, TT_bcz, star_cte, cs2top_from_cool 
+      real :: beta1, beta0, TT_bcz, star_cte, cs2top_from_cool 
       real :: dummy,cp
       integer :: i, j, n, m, stat, lend
       logical :: lnothing, exist, opend

@@ -1328,6 +1328,7 @@ module EquationOfState
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
 !
+      call not_implemented("bc_stellar_surface","in eos_chemistry")
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
