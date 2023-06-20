@@ -18,7 +18,7 @@
 !
 ! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del6lnTT
 ! PENCILS PROVIDED yH; ee; ss; delta; glnmumol(3); ppvap; csvap2; cs2
-! PENCILS PROVIDED cp1tilde; cp
+! PENCILS PROVIDED cp1tilde; cp; gamma; gamma_m1
 ! PENCILS PROVIDED rho_anel; gradcp(3)
 !
 !
