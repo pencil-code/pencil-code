@@ -10429,6 +10429,26 @@ resulting from a third order time step, for which we have
 where $C_{\rm CFL}$ is the CFL parameter which is either 0.4
 in the conservative case or 0.9 in the more progressive case.
 
+Figure~\ref{Fig-phyper} shows the scaling of the diffusion velocity
+normalized by the rms velocity of the turbulence.
+We see that (i) the value of $k/k_{\rm Ny}$ increases with the number
+of mesh points and (ii) the diffusion speed decreases inversely linear
+with the wavenumber.
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,phyper]%
+    {BurgersShock}
+  \caption{
+Scaling of the diffusion velocity normalized by the rms velocity of the turbulence.
+  }
+  \label{Fig-phyper}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+
 \subsection{Anisotropic hyperdissipation}
 
 As we want quenching primarily at the Nyquist frequency, hyperdissipation

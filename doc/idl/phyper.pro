@@ -35,6 +35,6 @@ oplot,kk/kNy,2e-8*kk^5/urms,li=2,col=55
 oplot,[1.,1.]*.28,yr,li=3,col=155
 ;
 oplot,xr,.1/xr,li=1,col=155
-print,"$mv idl.ps figs/phyper.eps"
+print,"$mv idl.ps ../figs/phyper.eps"
 ;
 END
