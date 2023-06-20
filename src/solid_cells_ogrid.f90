@@ -429,8 +429,11 @@ module Solid_Cells
         endif
       else
         lbidiagonal_derij_ogrid=.true.
-        if(lroot) print*, 'WARNING: No cylinder boundary condition set'
+        call warning('initialize_solid_cells','no cylinder boundary condition set')
       endif
+!
+      call get_gamma_etc(gamma,cp,cv)
+      gamma1=1./gamma; gamma_m1=gamma-1.
 !
 !  Set up necessary units for equation of state
 !
@@ -507,9 +510,6 @@ module Solid_Cells
           endif
         endif
       endif
-!
-      call get_gamma_etc(gamma,cp,cv)
-      gamma1=1./gamma; gamma_m1=gamma-1.
 !
 !  Get thermal diffusivity from energy module
 !
@@ -957,12 +957,7 @@ module Solid_Cells
 !
       use EquationOfState, only: cs20,rho0,lnrho0
 
-      if (leos_idealgas) then
-        call get_shared_variable('cp',cp,caller='initialize_eos_ogr')
-        call get_shared_variable('cv',cv)
-      else
-        call fatal_error('initialize_eos_ogr','currently assumes EOS=eos_idealgas')
-      endif
+      if (.not.leos_idealgas) call fatal_error('initialize_eos_ogr','currently assumes EOS=eos_idealgas')
 !
 !        rho0=1.0
 !        lnrho0=log(rho0)
