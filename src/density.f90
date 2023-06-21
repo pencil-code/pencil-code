@@ -44,7 +44,7 @@ module Density
   real, dimension (mz) :: lnrho_init_z=0.0
   real, dimension (mz) :: dlnrhodz_init_z=0.0, del2lnrho_glnrho2_init_z=0.0
   real, dimension (3) :: diffrho_hyper3_aniso=0.0
-  real, dimension (nx) :: profx_ffree=1.0, dprofx_ffree=0.0 
+  real, dimension (nx) :: profx_ffree=1.0, dprofx_ffree=0.0
   real, dimension (my) :: profy_ffree=1.0, dprofy_ffree=0.0
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
@@ -65,8 +65,8 @@ module Density
   real, dimension(1) :: Schur_dlnrho_RHS_xyzaver
   real, dimension (nz) :: Schur_dlnrho_RHS_xyaver_z
   real, dimension (nx,ny) :: Schur_dlnrho_RHS_zaver_xy
-! 
-! reference state, components:  1       2          3              4            5      6     7         8            9        
+!
+! reference state, components:  1       2          3              4            5      6     7         8            9
 !                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
   real, dimension(nx,nref_vars) :: reference_state=0.
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
@@ -336,11 +336,11 @@ module Density
 ! mpoly needs to be put here as in initialize_density it were
 ! too late for other modules (especially the nomodule noentropy).
 !
-      call put_shared_variable('mpoly',mpoly,caller='register_density') 
+      call put_shared_variable('mpoly',mpoly,caller='register_density')
 !
 !  Communicate lrelativistic_eos to magnetic too.
 !
-      call put_shared_variable('lrelativistic_eos',lrelativistic_eos) 
+      call put_shared_variable('lrelativistic_eos',lrelativistic_eos)
 !
 !  Communicate lffree to entropy too.
 !
@@ -437,7 +437,7 @@ module Density
 !  If density variable is actually deviation from reference state, log(density) cannot be used.
 !
       if (lreference_state) then
-        if (.not.ldensity_nolog) & 
+        if (.not.ldensity_nolog) &
           call fatal_error('initialize_density','use of reference state requires use of linear density')
 
         lcheck_negative_density=.false.
@@ -847,7 +847,7 @@ module Density
           reduce_cs2_profx=1.
           reduce_cs2_profz=1.
         endif
-! 
+!
         reduce_cs2_profx=reduce_cs2*reduce_cs2_profx
 !
       endif
@@ -900,7 +900,6 @@ module Density
 !
       call get_gamma_etc(gamma,cp)
       gamma1=1./gamma; gamma_m1=gamma-1.; cp1=1./cp
-print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
 !
       if (lreference_state) then
 !
@@ -995,7 +994,7 @@ print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
 !  28-jun-02/axel: added isothermal
 !  15-oct-03/dave: added spherical shell (kws)
 !
-      use EquationOfState, only: eoscalc, ilnrho_TT 
+      use EquationOfState, only: eoscalc, ilnrho_TT
       use General, only: itoa,rtoa,complex_phase,notanumber
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
@@ -1533,7 +1532,7 @@ print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
               real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 !
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnrho) = lnrho_const + ampllnrho(j)*sin(kx_lnrho(j)*x(l1:l2) + & 
+            f(l1:l2,m,n,ilnrho) = lnrho_const + ampllnrho(j)*sin(kx_lnrho(j)*x(l1:l2) + &
                                   ky_lnrho(j)*y(m) + kz_lnrho(j)*z(n))
             if (kx_lnrho(j)/=0) &
                 f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + abs(omega_jeans*ampllnrho(j)) * &
@@ -1673,7 +1672,7 @@ print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
           enddo
         endif
       endif
-!   
+!
       if (lrmv) then
 !
 !  Force mass conservation if requested
@@ -2186,7 +2185,7 @@ print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
 !  13-05-10/dhruba: stolen parts of earlier calc_pencils_density.
 !  21-jan-15/MR: changes for use of reference state.
 !  22-jan-15/MR: removed unneeded get_shared_variable('reference_state,...
-!  19-jan-15/MR: adapted weno transport for use with reference state. 
+!  19-jan-15/MR: adapted weno transport for use with reference state.
 !                suppressed weno for log density
 !
       use WENO_transport
@@ -2214,7 +2213,7 @@ print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
 !
         call grad(f,irho,p%grho)
         if (lreference_state) p%grho(:,1)=p%grho(:,1)+reference_state(:,iref_grho)
-! 
+!
         if (lpenc_loc(i_glnrho)) then
           do i=1,3
             p%glnrho(:,i)=p%rho1*p%grho(:,i)
@@ -2247,8 +2246,8 @@ print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
 ! del6lnrho
       if (lpenc_loc(i_del6lnrho)) then
         if (ldiff_hyper3lnrho) then
-          call not_implemented('calc_pencils_density','del6lnrho for linear mass density') 
-        elseif (ldiff_hyper3lnrho_strict) then 
+          call not_implemented('calc_pencils_density','del6lnrho for linear mass density')
+        elseif (ldiff_hyper3lnrho_strict) then
           call not_implemented('calc_pencils_density','del6lnrho_strict for linear mass density')
         endif
       endif
@@ -2657,7 +2656,7 @@ print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
       if (ldiff_hyper3_polar) then
         do j=1,3
           !for ldensity_nolog it is doing del6lnrho, as it should for a simple hyperdiffusion
-          if (ldensity_nolog) then 
+          if (ldensity_nolog) then
             call der6(f,irho,tmp,j,IGNOREDX=.true.)
           else
             call der6(f,ilnrho,tmp,j,IGNOREDX=.true.)
@@ -3547,7 +3546,7 @@ print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
 !
 !  check for those quantities for which we want video slices
 !
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         where(cnamev=='rho'.or.cnamev=='lnrho') cformv='DEFINED'
       endif
 !
@@ -3640,7 +3639,7 @@ print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
 !  10-feb-15/MR: adaptations for reference state
 !
       use Slices_methods
- 
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
       character(LEN=labellen) :: name
@@ -3865,7 +3864,7 @@ print*, 'density: cp1, gamma1, gamma_m1=', cp1, gamma1, gamma_m1
     subroutine impose_density_ceiling(f)
 !
 !  Impose a maximum (log) density by setting all higher (log) densities to the maximum
-!  value (density_ceiling). 
+!  value (density_ceiling).
 !
 !  3-mar-2017/MR: implemented.
 !
