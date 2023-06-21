@@ -1,12 +1,12 @@
-import pencil as pcn
+import pencil as pc
 import numpy as np
 from scipy.optimize import curve_fit
 from pencil.math.stats import fit_exp, fit_linear
 
 
 varfile = 'var.dat' # or specific snaphot as required 'VAR?'
-var=pcn.read.var(varfile,magic=['tt'],trimall=True,quiet=True)
-param=pcn.read.param(quiet=True)
+var=pc.read.var(varfile,magic=['tt'],trimall=True,quiet=True)
+param=pc.read.param(quiet=True)
 
 filename='init_ism.in'
 f = open(filename, 'w')
@@ -29,7 +29,7 @@ def plot_ism(varfiles=[]):
         print(varfiles)
     for var in varfiles:
         varfile=var.split('/')[-1]
-        globals()[varfile]=pcn.read.var(varfile,
+        globals()[varfile]=pc.read.var(varfile,
                                        magic=['tt'],
                                        trimall=True,
                                        quiet=True
@@ -67,7 +67,7 @@ def plot_ism(varfiles=[]):
                 maxfev=5000)
     ax[0].plot(zz, np.exp(popt[0])*np.exp(popt[1]*zz),
              ':', marker='^', markersize=2.5,
-             label=r"$\rho=\exp(-{:.2f} |z|)$".format(1/popt[1]))
+             label=r"$\rho\propto\exp(-{:.2f} |z|)$".format(1/popt[1]))
     ax[0].legend(loc='upper left',framealpha=0.5)
     ax[1].legend(loc='lower left',framealpha=0.5)
     ax[2].legend(loc='upper right',framealpha=0.5)
