@@ -972,14 +972,14 @@ module Diagnostics
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
-!  Finally, normalization is performed with phiavg_norm*nz
+!  Finally, normalization is performed with phiavg_norm*nzgrid
 !
       if (nnamer>0) then
         call mpireduce_sum(fnamer,fsumr,(/nrcyl,nnamer/))
-        call mpireduce_sum(phiavg_norm,norm,nrcyl)
+        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl,comm=MPI_COMM_XYPLANE)
         if (lroot) then
           do iname=1,nnamer
-            fnamer(:,iname)=fsumr(:,iname)/(norm*nz)
+            fnamer(:,iname)=fsumr(:,iname)/(norm*nzgrid)
           enddo
         endif
       endif
@@ -1062,7 +1062,7 @@ module Diagnostics
 !
       if (nnamerz>0) then
         call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz,nprocz,nnamerz/))
-        call mpireduce_sum(phiavg_norm,norm,nrcyl)  ! avoid double comm!
+        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl,comm=MPI_COMM_XYPLANE)  ! avoid double comm!
         if (lroot) then
           do i=1,nnamerz
             fnamerz(:,:,:,i)=fsumrz(:,:,:,i)/spread(spread(norm,2,nz),3,nprocz)
@@ -2781,7 +2781,7 @@ module Diagnostics
       endif
 !
 !  Normalization factor, not depending on n, so only done for n=nfirst.
-!  As it is a z-average, multiply by nz when used.
+!  As we calculate z-averages, multiply by nzgrid when used.
 !
       if (n==nfirst) phiavg_norm=phiavg_norm+sum(phiavg_profile,2)
 !
