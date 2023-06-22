@@ -198,8 +198,8 @@ module Energy
 !
 !  Check whether we want heat conduction
 !
-      lheatc_chiconst = (chi > tiny(chi))
-      lheatc_hyper3 = (chi_hyper3 > tiny(chi_hyper3))
+      lheatc_chiconst = (chi > tiny(chi))               !?? see below
+      lheatc_hyper3 = (chi_hyper3 > tiny(chi_hyper3))   !?? see below
 !
       do i=1,nheatc_max
         select case (iheatcond(i))
@@ -875,17 +875,17 @@ module Energy
 !
       call dot(p%gshock,p%glnTT,gshockglnTT)
       call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+!
 !  Shock entropy diffusivity.
 !  Write: chi_shock = chi_shock0*shock, and gshock=grad(shock), so
 !  Ds/Dt = ... + chi_shock0*[shock*(del2ss+glnpp.gss) + gshock.gss]
 !
       if (headtt) print*,'calc_heatcond_shock: use shock diffusion'
-      if (lheatc_shock) thdiff=p%gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
+      thdiff=p%gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
 !
 !  Add heat conduction to entropy equation.
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + thdiff
-      if (headtt) print*,'calc_heatcond_shock: added thdiff'
 !
 !  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for entropy is

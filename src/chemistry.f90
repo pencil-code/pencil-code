@@ -15,7 +15,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 1
 !
-! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3);  gXXk(3,nchemspec)
+! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3);  gXXk(3,nchemspec); gamma
 ! PENCILS PROVIDED nu; gradnu(3); gYYk(3,nchemspec)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3); lambda1
@@ -30,10 +30,9 @@ module Chemistry
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, itoa
   use EquationOfState
-  use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error, warning
-  use Mpicomm, only: stop_it
+  use Messages, only: svn_id,timing,fatal_error,inevitably_fatal_error,warning,not_implemented
 !
   implicit none
 !
@@ -799,6 +798,7 @@ module Chemistry
         if (lpencil(i_cv1)) p%cv1 = 1./p%cv
         if (lpencil(i_cp)) p%cp = cp_full(l1:l2,m,n)
         if (lpencil(i_cp1)) p%cp1 = 1./p%cp
+        if (lpencil(i_gamma)) p%gamma = p%cp/p%cv
 !
         TT_2 = p%TT*p%TT
         TT_3 = TT_2*p%TT
@@ -2184,8 +2184,7 @@ module Chemistry
       endif
       final_massfrac_O2 = final_massfrac_O2-delta_O2
 !
-      if (ltemperature_nolog) call fatal_error('opposite_flames', &
-          'only implemented for ltemperature_nolog=F')
+      if (ltemperature_nolog) call not_implemented('opposite_flames','for ltemperature_nolog=T')
 !
 !  Loop over all grid points
 !
@@ -3903,7 +3902,8 @@ module Chemistry
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') low_coeff(3,k)
                             else
-                              call stop_it("No such VarNumber!")
+                              call fatal_error("read_reactions","no such VarNumber: "// &
+                                               trim(itoa(VarNumber_add)))
                             endif
                           endif
                           VarNumber_add=VarNumber_add+1
@@ -3937,7 +3937,8 @@ module Chemistry
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') troe_coeff(3,k)
                             else
-                              call stop_it("No such VarNumber!")
+                              call fatal_error("read_reactions","no such VarNumber: "// &
+                                               trim(itoa(VarNumber_add)))
                             endif
                           endif
                           VarNumber_add=VarNumber_add+1
@@ -3972,7 +3973,8 @@ module Chemistry
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') high_coeff(3,k)
                             else
-                              call stop_it("No such VarNumber!")
+                              call fatal_error("read_reactions","no such VarNumber: "// &
+                                               trim(itoa(VarNumber_add)))
                             endif
                           endif
                           VarNumber_add=VarNumber_add+1
@@ -4103,7 +4105,7 @@ module Chemistry
                       read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
                           E_an(k)
                     else
-                      call stop_it("No such VarNumber!")
+                      call fatal_error("read_reactions","no such VarNumber: "//trim(itoa(VarNumber)))
                     endif
                     VarNumber=VarNumber+1
                     StartInd=StopInd
@@ -6298,7 +6300,7 @@ module Chemistry
                 read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
                     tran_data(ind_chem,VarNumber)
               else
-                call stop_it("No such VarNumber!")
+                call fatal_error("read_transport_data","no such VarNumber: "//trim(itoa(VarNumber)))
               endif
 !
               VarNumber=VarNumber+1
