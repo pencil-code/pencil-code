@@ -20,7 +20,6 @@ module InitialCondition
   use Messages
   use EquationOfState
   use Sub, only: step, der_step
-!  use Mpicomm, only: mpibarrier
 !
   implicit none
 !
@@ -28,17 +27,13 @@ module InitialCondition
 !
   real :: star_luminosity=1.0, Rstar=1.0
   real :: r1_poly, width_npoly
-  real :: xi0=1.0, npoly1=1.5, npoly2=3., npoly_jump=1.0, nad=1.5, rbot=1.0, wbot=0.1
-  real :: npolyK1=1.5, npolyK2=3.
-  real :: npoly_fac=1.0, npoly_exp=1.0, r_ss=1.0, wheat=0.1
-  real :: wtran=0.02,Tcor_jump=1.0, kramers_hcond0=0.0
+  real :: npoly1=1.5, npoly2=3., npoly_jump=1.0, nad=1.5
+  real :: npolyK1=1.5, npolyK2=3., wheat=0.1
   character (len=labellen) :: strat_type='polytropic'
 !
   namelist /initial_condition_pars/ &
       star_luminosity, Rstar, nad, npoly1, npoly2, npolyK1, npolyK2, &
-      r1_poly, width_npoly, npoly_jump, xi0, & 
-      wtran, Tcor_jump, strat_type, r_ss, npoly_fac, &
-      npoly_exp, wheat, rbot, wbot
+      r1_poly, width_npoly, npoly_jump, strat_type, wheat
 !
   contains
 !***********************************************************************
@@ -72,9 +67,8 @@ module InitialCondition
 !  03-mar-23/pete: coded
 !
       use SharedVariables, only: get_shared_variable !, put_shared_variable
-      use EquationOfState, only: gamma, rho0, cs20
+      use EquationOfState, only: rho0, cs20, get_gamma_etc
       use General, only: safe_character_assign
-      use Mpicomm, only: stop_it, mpiallreduce_sum, mpibarrier
       use FArrayManager
       use Sub, only: poly, register_report_aux
 !
@@ -87,24 +81,21 @@ module InitialCondition
       real, dimension (2*nxgrid) :: FF, GG, FF_prime, GG_prime, ggg_r
       real, dimension (2*nxgrid) :: lnrho_global, dlnrhodr_global, cs2_global, ss_global
       real, dimension (2*nxgrid) :: tmp1, tmp2
-      real :: rmax, drr, rr_tmp, delr=0.01
+      real :: rmax, drr, rr_tmp, delr=0.01, gamma, cp, cv
       real, target :: cs2cool=0.0
-      real, pointer :: cp, cv
       real, dimension (:,:), pointer :: cpot
       real, dimension (:,:), pointer :: cpot2
       real, dimension (:), pointer :: g_r
-      integer :: ir, i, j, n, m, ix, ierr, nsurf, nsurf_global
+      integer :: ir, i, j, n, m, ix, ierr
       integer :: iglobal_hcond, iglobal_glhc
       integer, parameter :: unit=1
-      character (len=120) :: wfile
 !
 !     Retrieve cp, cv, and gravx
 !
-      call get_shared_variable('cp', cp, caller='initial_condition_all')
-      call get_shared_variable('cv', cv)
       call get_shared_variable('cpot', cpot)
       call get_shared_variable('cpot2', cpot2)
       call get_shared_variable('g_r', g_r)
+      call get_gamma_etc(gamma,cp,cv)
 !
 !  Compute rr_sph (i.e. half-diagonal with radius going from zero to maximum value at the corners)
 !
