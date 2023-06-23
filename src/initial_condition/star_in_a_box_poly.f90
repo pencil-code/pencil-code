@@ -99,7 +99,7 @@ module InitialCondition
 !
 !  Compute rr_sph (i.e. half-diagonal with radius going from zero to maximum value at the corners)
 !
-      rmax = 0.5*sqrt(3.*Lx) ! Assuming the domain is a cube!
+      rmax = sqrt((3./4.)*Lx**2) + 0.1*Lx ! Assuming the domain is a cube!
       do ir=1,2*nxgrid
          rr_sph(ir) = rmax*(ir-1)/float(2*nxgrid)
       enddo
