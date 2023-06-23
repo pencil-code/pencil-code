@@ -4,7 +4,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k,qk=k2s,$
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2, $
           compensate3=compensate3,datatopdir=datatopdir,double=double, $
-          lkscale=lkscale,cyl=cyl,zwav=zwav
+          lkscale=lkscale,cyl=cyl,zwav=zwav, luse_true_binning=luse_true_binning
 ;
 ;  $Id$
 ;
@@ -64,6 +64,7 @@ default,compensate2,compensate1
 default,compensate3,compensate1
 default,compensate,compensate1
 default,datatopdir,'data'
+default,luse_true_binning, 0
 ;
 pc_read_param,obj=param,/param2,/quiet,datadir=datatopdir
 ;
@@ -159,20 +160,27 @@ globalmin=1e12
 globalmax=1e-30
 i=1L
 quantitites=['u','r2u','r3u','o','b','a','ud']
-if is_defined(v1) then $
-  ltrue_binning1 = param.ltrue_binning and is_in(quantitites,v1) ge 0 $
-else $
-  ltrue_binning1 = 0
 
-if is_defined(v2) then $
-  ltrue_binning2 = param.ltrue_binning and is_in(quantitites,v2) ge 0 $
-else $
-  ltrue_binning2 = 0
+if luse_true_binning then begin
+  if is_defined(v1) then $
+    ltrue_binning1 = param.ltrue_binning and is_in(quantitites,v1) ge 0 $
+  else $
+    ltrue_binning1 = 0
 
-if is_defined(v3) then $
-  ltrue_binning3 = param.ltrue_binning and is_in(quantitites,v3) ge 0 $
-else $
+  if is_defined(v2) then $
+    ltrue_binning2 = param.ltrue_binning and is_in(quantitites,v2) ge 0 $
+  else $
+    ltrue_binning2 = 0
+
+  if is_defined(v3) then $
+    ltrue_binning3 = param.ltrue_binning and is_in(quantitites,v3) ge 0 $
+  else $
   ltrue_binning3 = 0
+endif else begin
+    ltrue_binning1 = 0
+    ltrue_binning2 = 0
+    ltrue_binning3 = 0
+endelse
 
 openr, unit, datatopdir+'/'+file1, /get_lun
 
