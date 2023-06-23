@@ -27,7 +27,7 @@ function gijcurl,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   for i=0,2 do for j=0,2 do for k=0,2 do for l=0,2 do begin
     eps=levi_civita(i,k,l)
-print, i, j, k, l, eps
+;print, i, j, k, l, eps
     if (eps ne 0.0) then $
         w[*,*,*,i,j] += eps * derij_single(f[*,*,*,l],j,k)
   endfor
