@@ -111,8 +111,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0,lnrho0
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION

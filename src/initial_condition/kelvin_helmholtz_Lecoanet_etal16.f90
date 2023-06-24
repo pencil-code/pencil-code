@@ -125,10 +125,15 @@ module InitialCondition
 !
 !   8-may-16/axel: coded
 !
+      use EquationOfState, only: get_gamma_etc
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: sin2pix
       real :: uflow=1., aflow=.05, sig=.2, y1=.5, y2=1.5
-      real :: tanh1, tanh2, exp1, exp2, sig2, lnP0
+      real :: tanh1, tanh2, exp1, exp2, sig2, lnP0, gamma, gamma1
+
+      call get_gamma_etc(gamma)
+      gamma1=1./gamma
 !
 !  perturbation
 !
@@ -162,8 +167,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
     endsubroutine initial_condition_lnrho
@@ -174,12 +177,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0,lnrho0
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: lnrho,lnTT,TT,rho
-      real :: cp,cv,cp1,lnTT0,pp0,TT0
-      integer :: irho
 !
 !  SAMPLE IMPLEMENTATION
 !

@@ -39,19 +39,22 @@ module InitialCondition
 !
 !  10-feb-15/MR: added optional parameter 'profiles' (intended to replace f)
 !
-      use EquationOfState, only: gamma1,cs20,rho0
+      use EquationOfState, only: get_gamma_etc,cs20,rho0
       use Gravity, only: gravx, gravy, gravz
 !      
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
       real, dimension (:,:),              optional, intent(out)  :: profiles
 !
-      real :: pp0, rhoprof, pprof
+      real :: pp0, rhoprof, pprof, gamma, gamma1
       real :: w1ro, ro_a, ro_b, kxro
       real :: kxu, w1u
       real, dimension (mx) :: x_ro
       real, dimension (my) :: y_ro
       real, dimension (mz) :: z_ro
       integer :: l,n,m  !loop indices for x and z direction
+
+      call get_gamma_etc(gamma); gamma1=1./gamma
+
 ! initial distribution for density
       if (lroot) print*, &
           'initial_condition_all: tanh density profile for RT'

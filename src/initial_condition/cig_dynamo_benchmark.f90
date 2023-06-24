@@ -70,7 +70,7 @@ module InitialCondition
 !  10-feb-15/MR   : added optional parameter 'profiles' (intended to replace f)
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: gamma, gamma_m1, rho0, cs20
+      use EquationOfState, only: get_gamma_etc, rho0, cs20
       use General, only: safe_character_assign
       use Mpicomm, only: stop_it
       use FArrayManager
@@ -80,19 +80,15 @@ module InitialCondition
 !
       real, dimension (nx) :: TT, dlnTdr, lnrho, dlnrhodr,xx, ss_prof, TT_prof
       real :: rin, rout, chi, eta, nu, Bnorm, DeltaT, alpha, DeltaTad
-      real, pointer :: gravx, cp, cv
+      real :: gamma, cv
+      real, pointer :: gravx
       integer :: ierr, unit=1, i
 !
       character (len=120) :: wfile
 !
-!     Retrieve cp, cv, and gravx
+!     Retrieve gamma, cv, and gravx
 !
-      call get_shared_variable('cp', cp, ierr)
-      if (ierr/=0) call stop_it(" initialize_initial_condition: "//&
-           "there was a problem when getting cp")
-      call get_shared_variable('cv', cv, ierr)
-      if (ierr/=0) call stop_it(" initialize_initial_condition: "//&
-           "there was a problem when getting cv")
+      call get_gamma_etc(gamma,cv=cv)
       call get_shared_variable('gravx', gravx, ierr)
       if (ierr/=0) call stop_it(" initialize_initial_condition: "//&
            "there was a problem when getting gravx")
@@ -242,8 +238,6 @@ module InitialCondition
 !  Initialize entropy.
 !
 !  07-may-09/wlad: coded
-!
-      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0,lnrho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !

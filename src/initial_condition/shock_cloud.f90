@@ -122,12 +122,14 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: getmu, gamma, gamma_m1
+      use EquationOfState, only: getmu, get_gamma_etc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: pleft, pright, alfa, prat, cleft
-      real :: tempr
+      real :: tempr, gamma, gamma_m1
 !
+      call get_gamma_etc(gamma); gamma_m1=gamma-1.
+
       xpos = -2.66d0 ! shock position
 
 !      nval = 8.0

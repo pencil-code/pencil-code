@@ -80,7 +80,7 @@ module InitialCondition
 !                Profiles hcond and glhcond not written then!
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: gamma, rho0, cs20
+      use EquationOfState, only: get_gamma_etc, rho0, cs20
       use General, only: safe_character_assign
       use Mpicomm, only: stop_it, mpiallreduce_sum
       use FArrayManager
@@ -102,16 +102,16 @@ module InitialCondition
       real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
       real :: T00sun=2.23e6
       real :: volume, total_mass, tmp, tau_KH
-      real, pointer :: gravx, cp, cv
+      real, pointer :: gravx
+      real :: gamma, cv
       integer :: i, j, n, m, ix, ierr, nsurf, nsurf_global
       integer, parameter :: unit=1
 
       character (len=120) :: wfile
 !
-!     Retrieve cp, cv, and gravx
+!     Retrieve cv, and gravx
 !
-      call get_shared_variable('cp', cp, caller='initial_condition_all')
-      call get_shared_variable('cv', cv)
+      call get_gamma_etc(gamma,cv=cv)
       call get_shared_variable('gravx', gravx)
 !
 !  Select type of stratification

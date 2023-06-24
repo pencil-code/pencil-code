@@ -18,7 +18,7 @@ module InitialCondition
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use EquationOfState, only: gamma1, gamma_m1, cs20
+  use EquationOfState, only: get_gamma_etc, cs20
 !
   implicit none
 !
@@ -27,8 +27,25 @@ module InitialCondition
   real, pointer :: hcond0
   real, pointer :: wheat,luminosity,r_bcz,widthss,alpha_MLT
   real, pointer :: mpoly0,mpoly1,mpoly2
+  real :: gamma1, gamma_m1
 !
   contains
+!***********************************************************************
+    subroutine initialize_initial_condition(f)
+!
+!  Initialize any module variables which are parameter dependent.
+!
+!  07-may-09/wlad: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+! 
+      real :: gamma
+
+      call get_gamma_etc(gamma); gamma1=1./gamma; gamma_m1=gamma-1.
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine initialize_initial_condition
 !***********************************************************************
     subroutine initial_condition_ss(f)
 !

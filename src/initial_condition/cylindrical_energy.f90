@@ -80,17 +80,13 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: cs20,gamma,gamma_m1,gamma1
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: argum,term1,term2,press,lnrho0,lnrho,ln
 !
       if (lroot) print*,&
            'initial_condition_lnrho: ring'
 
-
     endsubroutine initial_condition_lnrho
-
 !***********************************************************************
     subroutine initial_condition_ss(f)
 !
@@ -98,26 +94,23 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0
+      use EquationOfState, only: cs20,rho0,get_gamma_etc
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: cp,cv,cp1,lnTT0,pp0,TT0
+      real :: gamma,gamma_m1,cp,cv,cp1,lnTT0,pp0,TT0
       integer :: irho
       real, dimension (mx) :: argum,term1,term2,press,lnrho,lnTT,TT,rho,lnrho0
 !
 !  Get the density and use a constant pressure entropy condition
 !
-     cp=1.
-     cp1=1/cp
-     cv=gamma1*cp
+     call get_gamma_etc(gamma,cp,cv)
+     cp1=1./cp; gamma_m1=gamma-1.
 !
-
      argum=sqrt2*(x-s0)/width
      term1=s0*width*sqrtpi*sqrt2*erfunc(argum)
      term2=(2.*x**2-width**2)*exp(-argum**2)
      press=p0-(.5*b0/s0)**2*(term1+term2)
      lnrho0=eps*log(press)/gamma
-
 !
      do n=1,mz
        do m=1,my
@@ -137,9 +130,6 @@ module InitialCondition
      enddo
 !
     endsubroutine initial_condition_ss
-
-
-
 !***********************************************************************
     subroutine initial_condition_aa(f)
 !

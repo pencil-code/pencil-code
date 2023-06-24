@@ -81,7 +81,7 @@ module InitialCondition
       real, dimension (2*nxgrid) :: FF, GG, FF_prime, GG_prime, ggg_r
       real, dimension (2*nxgrid) :: lnrho_global, dlnrhodr_global, cs2_global, ss_global
       real, dimension (2*nxgrid) :: tmp1, tmp2
-      real :: rmax, drr, rr_tmp, delr=0.01, gamma, cp, cv
+      real :: rmax, drr, rr_tmp, delr=0.01, gamma, cv
       real, target :: cs2cool=0.0
       real, dimension (:,:), pointer :: cpot
       real, dimension (:,:), pointer :: cpot2
@@ -90,12 +90,12 @@ module InitialCondition
       integer :: iglobal_hcond, iglobal_glhc
       integer, parameter :: unit=1
 !
-!     Retrieve cp, cv, and gravx
+!     Retrieve cv, and gravx
 !
       call get_shared_variable('cpot', cpot)
       call get_shared_variable('cpot2', cpot2)
       call get_shared_variable('g_r', g_r)
-      call get_gamma_etc(gamma,cp,cv)
+      call get_gamma_etc(gamma,cv=cv)
 !
 !  Compute rr_sph (i.e. half-diagonal with radius going from zero to maximum value at the corners)
 !

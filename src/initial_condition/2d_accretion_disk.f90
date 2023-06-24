@@ -114,6 +114,8 @@ module InitialCondition
        ampluu_noise,lsimple_density,luniform_density,&
        inituu,initlnrho,rmin_lnrho,rmax_lnrho
 !
+  real :: gamma
+
   contains
 !***********************************************************************
     subroutine register_initial_condition()
@@ -133,12 +135,14 @@ module InitialCondition
 !
 !  21-feb-23/hongzhe: coded
 !
-      use EquationOfState, only: gamma,cs20
+      use EquationOfState, only: get_gamma_etc,cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: mm
 !
+      call get_gamma_etc(gamma)
+
       do m=1,my
         tmp = sin(y(m))-1.+cs20*gamma/(gamma-1.)
         if (tmp<=0.) then
@@ -262,7 +266,7 @@ module InitialCondition
 !  21-feb-23/hongzhe: adapted
 !
       use FArrayManager
-      use EquationOfState, only: gamma,lnrho0,cs20
+      use EquationOfState, only: lnrho0,cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: fact
