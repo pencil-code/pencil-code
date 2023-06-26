@@ -4,7 +4,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k,qk=k2s,$
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2, $
           compensate3=compensate3,datatopdir=datatopdir,double=double, $
-          lkscale=lkscale,cyl=cyl,zwav=zwav, luse_true_binning=luse_true_binning
+          lkscale=lkscale,cyl=cyl,zwav=zwav
 ;
 ;  $Id$
 ;
@@ -64,7 +64,6 @@ default,compensate2,compensate1
 default,compensate3,compensate1
 default,compensate,compensate1
 default,datatopdir,'data'
-default,luse_true_binning, 0
 ;
 pc_read_param,obj=param,/param2,/quiet,datadir=datatopdir
 ;
@@ -161,7 +160,7 @@ globalmax=1e-30
 i=1L
 quantitites=['u','r2u','r3u','o','b','a','ud']
 
-if luse_true_binning then begin
+if tag_exists(param,'ltrue_binning') then begin
   if is_defined(v1) then $
     ltrue_binning1 = param.ltrue_binning and is_in(quantitites,v1) ge 0 $
   else $
