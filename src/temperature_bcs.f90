@@ -10,15 +10,26 @@
     include 'eos_params.h'
 
     real :: gamma, gamma_m1, cp, density_scale, density_scale1
+    real, pointer :: TTbot, TTtop
 
     contains
 !**************************************************************************************************
     subroutine initialize_energy_bcs
 
       use EquationOfState, only: get_gamma_etc
+      use SharedVariables, only: get_shared_variable
 
       call get_gamma_etc(gamma,cp=cp)
       gamma_m1=gamma-1.
+
+      if (leos_ionization) then
+        call get_shared_variable('TTtop',TTtop)
+        call get_shared_variable('TTbot',TTbot)
+      else
+        allocate(TTbot,TTtop)
+        TTbot = cs2bot/(gamma_m1*cp)
+        TTtop = cs2top/(gamma_m1*cp)
+      endif
 
     endsubroutine initialize_energy_bcs
 !***********************************************************************
@@ -150,10 +161,8 @@
 !
       integer :: i
 !
-!  Constant temperature/sound speed for entropy, i.e. antisymmetric
-!  ln(cs2) relative to cs2top/cs2bot.
-!  This assumes that the density is already set (ie density _must_ register
-!  first!)
+!  Constant temperature/sound speed for entropy, i.e. antisymmetric TT relative to TTtop/TTbot.
+!  This assumes that the density is already set (ie density _must_ register first!)  !really?
 !
 !  check whether we want to do top or bottom (this is processor dependent)
 !
@@ -162,13 +171,13 @@
 !  bottom boundary
 !
       case(BOT)
-        if (ldebug) print*, 'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) call fatal_error('bc_ss_temp_z','cannot have cs2bot<=0')
+        if (ldebug) print*, 'bc_ss_temp_z: set z bottom temperature: TTbot=',TTbot
+        if (TTbot<=0.) call fatal_error('bc_ss_temp_z','cannot have TTbot<=0')
 
         if (ltemperature_nolog) then
-          f(:,:,n1,iTT)   = cs2bot/(gamma_m1*cp)      ! factor 1/cp corrected
+          f(:,:,n1,iTT)   = TTbot      ! factor 1/cp corrected
         else
-          f(:,:,n1,ilnTT) = log(cs2bot/(gamma_m1*cp))
+          f(:,:,n1,ilnTT) = log(TTbot)
         endif
         if (loptest(lone_sided)) then
           call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)
@@ -179,13 +188,13 @@
 !  top boundary
 !
       case(TOP)
-        if (ldebug) print*,'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
-        if (cs2top<=0.) call fatal_error('bc_ss_temp_z','cannot have cs2top<=0')
+        if (ldebug) print*,'bc_ss_temp_z: set z top temperature: TTtop=',TTtop
+        if (TTtop<=0.) call fatal_error('bc_ss_temp_z','cannot have TTtop<=0')
 
         if (ltemperature_nolog) then
-          f(:,:,n2,iTT)   = cs2top/(gamma_m1*cp)
+          f(:,:,n2,iTT)   = TTtop
         else
-          f(:,:,n2,ilnTT) = log(cs2top/(gamma_m1*cp))
+          f(:,:,n2,ilnTT) = log(TTtop)
         endif
         if (loptest(lone_sided)) then
           call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)

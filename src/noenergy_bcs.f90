@@ -2,24 +2,14 @@
 
     use Cdata
     use DensityMethods
-    use EquationOfState, only: get_gamma_etc, cs20, lnrho0, ipp_ss, irho_ss, cs2bot, cs2top
+    use EquationOfState, only: get_gamma_etc, cs20, lnrho0, cs2bot, cs2top
     use Messages
 !
     private
     real, dimension(:,:), pointer :: reference_state
 
-    real :: gamma, gamma1, gamma_m1, cp, cv, cp1, cv1
-    logical, pointer :: lheatc_chiconst
-    real, pointer :: chi,chi_t,hcondzbot,hcondztop
-    real, pointer :: hcondxbot, hcondxtop    !, cs2bot, cs2top
-    real, pointer :: Fbot, Ftop, FtopKtop,FbotKbot, mpoly
+    real :: gamma, gamma_m1
 !
-    character (len=labellen) :: meanfield_Beq_profile
-    real, pointer :: meanfield_Beq, chit_quenching, uturb
-    real, dimension(:), pointer :: B_ext
-!
-    integer, parameter :: XBOT=1, XTOP=nx
-
     include 'energy_bcs.h'
 
     contains
@@ -29,48 +19,16 @@
       use EquationOfState, only: get_gamma_etc
       use SharedVariables, only: get_shared_variable
 
-      call get_gamma_etc(gamma,cp,cv)
-      gamma1=1./gamma; gamma_m1=gamma-1.
-      cp1=1./cp; cv1=1./cv
+      call get_gamma_etc(gamma)
+      gamma_m1=gamma-1.
 !
 !  Get the shared variables
 !
       if (lreference_state) call get_shared_variable('reference_state',reference_state, &
                                                      caller='initialize_energy_bcs')
-      call get_shared_variable('Fbot',Fbot)
-      call get_shared_variable('Ftop',Ftop)
-      call get_shared_variable('FbotKbot',FbotKbot)
-      call get_shared_variable('FtopKtop',FtopKtop)
       !call get_shared_variable('cs2bot',cs2bot)
       !call get_shared_variable('cs2top',cs2top)
-      call get_shared_variable('chi',chi)
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
-
-      call get_shared_variable('chi_t',chi_t)
-      call get_shared_variable('hcondzbot',hcondzbot)
-      call get_shared_variable('hcondztop',hcondztop)
 !
-      call get_shared_variable('hcondxbot',hcondxbot)
-      call get_shared_variable('hcondxtop',hcondxtop)
-
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
-!
-      if (ldensity.and..not.lstratz) then
-        call get_shared_variable('mpoly',mpoly)
-      else
-        call warning('initialize_eos','mpoly not obtained from density, set impossible')
-        allocate(mpoly); mpoly=impossible
-      endif
-!
-      if (lrun .and. lmagn_mf) then
-        !call get_shared_variable('meanfield_Beq_profile',dummy)
-        !meanfield_Beq_profile=dummy
-        call get_shared_variable('meanfield_Beq',meanfield_Beq)
-        call get_shared_variable('chit_quenching',chit_quenching)
-        call get_shared_variable('uturb',uturb)
-        call get_shared_variable('B_ext',B_ext)
-      endif
-
     endsubroutine initialize_energy_bcs
 !**************************************************************************************************
     subroutine bc_ss_flux(f,topbot,lone_sided)
@@ -709,18 +667,6 @@
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_hdss_z_iso
-!***********************************************************************
-    subroutine bc_stellar_surface(f,topbot)
-!
-      integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
-!
-      call not_implemented("bc_stellar_surface","in noeos")
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_stellar_surface
 !***********************************************************************
   endmodule EnergyBcs
 

@@ -2,7 +2,7 @@
 
     use Cdata
     use DensityMethods
-    use EquationOfState, only: get_gamma_etc, cs20, lnrho0, ipp_ss, irho_ss, cs2bot, cs2top
+    use EquationOfState, only: get_gamma_etc, cs20, lnrho0, cs2bot, cs2top
     use Messages
 !
     private
@@ -23,6 +23,7 @@
     integer, parameter :: XBOT=1, XTOP=nx
 
     include 'energy_bcs.h'
+    include 'eos_params.h'
 
     contains
 !**************************************************************************************************
@@ -39,31 +40,37 @@
 !
       if (lreference_state) call get_shared_variable('reference_state',reference_state, &
                                                      caller='initialize_energy_bcs')
-      call get_shared_variable('sigmaSBt',sigmaSBt)
-      call get_shared_variable('Fbot',Fbot)
-      call get_shared_variable('Ftop',Ftop)
-      call get_shared_variable('FbotKbot',FbotKbot)
-      call get_shared_variable('FtopKtop',FtopKtop)
+      call get_shared_variable('sigmaSBt',sigmaSBt,caller='initialize_energy_bcs')
+      if (.not.lthermal_energy) then
+        call get_shared_variable('Fbot',Fbot)
+        call get_shared_variable('Ftop',Ftop)
+        call get_shared_variable('FbotKbot',FbotKbot)
+        call get_shared_variable('FtopKtop',FtopKtop)
+        call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
+        call get_shared_variable('lheatc_kramers',lheatc_kramers)
+        call get_shared_variable('chi_t',chi_t)
+        call get_shared_variable('chit_prof1',chit_prof1)
+        call get_shared_variable('chit_prof2',chit_prof2)
+        if (lheatc_kramers) then
+          call get_shared_variable('hcond0_kramers',hcond0_kramers)
+          call get_shared_variable('nkramers',nkramers)
+        endif
+        call get_shared_variable('hcondzbot',hcondzbot)
+        call get_shared_variable('hcondztop',hcondztop)
+        call get_shared_variable('hcondxbot',hcondxbot)
+        call get_shared_variable('hcondxtop',hcondxtop)
+      else
+        allocate(Fbot,Ftop,FbotKbot,FtopKtop)
+        Fbot=0.; Ftop=0.; FbotKbot=0.; FbotKbot=0.
+        allocate(lheatc_chiconst,lheatc_kramers); lheatc_chiconst=.false.; lheatc_kramers=.false.
+        allocate(chi_t,chit_prof1,chit_prof2); chi_t=0.
+        allocate(hcondzbot,hcondztop,hcondxbot,hcondxtop)
+        hcondzbot=0.; hcondztop=0.; hcondxbot=0.; hcondxtop=0.
+      endif
       !call get_shared_variable('cs2bot',cs2bot)
       !call get_shared_variable('cs2top',cs2top)
       call get_shared_variable('chi',chi)
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
-      call get_shared_variable('lheatc_kramers',lheatc_kramers)
-      if (lheatc_kramers) then
-        call get_shared_variable('hcond0_kramers',hcond0_kramers)
-        call get_shared_variable('nkramers',nkramers)
-      endif
     
-      call get_shared_variable('chi_t',chi_t)
-      call get_shared_variable('chit_prof1',chit_prof1)
-      call get_shared_variable('chit_prof2',chit_prof2)
-      call get_shared_variable('hcondzbot',hcondzbot)
-      call get_shared_variable('hcondztop',hcondztop)
-!
-      call get_shared_variable('hcondxbot',hcondxbot)
-      call get_shared_variable('hcondxtop',hcondxtop)
-      
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
 !
       if (ldensity.and..not.lstratz) then
         call get_shared_variable('mpoly',mpoly)
@@ -149,7 +156,7 @@
             tmp_xy=Fbot*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers) &
                    /(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
           else
-            tmp_xy=FbotKbot/cs2_xy
+            tmp_xy=cp*FbotKbot/cs2_xy      ! when FbotKbot= Fbot/Kbot then factor cp tb added
           endif
 !
 !  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Fbot/(Kbot*cs2)
@@ -161,8 +168,8 @@
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
             do i=1,nghost
-              call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)        ! rho_xy=del_z ln(rho)
-              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+cp*(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
+              call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)           ! rho_xy=del_z ln(rho)
+              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)   !! factor cp removed
             enddo
           endif
         endif
@@ -203,7 +210,7 @@
             tmp_xy=Ftop*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers) &
                    /(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
           else
-            tmp_xy=FtopKtop/cs2_xy
+            tmp_xy=cp*FtopKtop/cs2_xy        !! factor cp added
           endif
 !
 !  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Ftop/(K*cs2)
@@ -216,7 +223,7 @@
           else
             do i=1,nghost
               call getdlnrho_z(f(:,:,:,ilnrho),n2,i,rho_xy)        ! rho_xy=del_z ln(rho)
-              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+cp*(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)   !tb checked drop c_p?
+              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)   !! factor cp removed!
             enddo
           endif
         endif
@@ -2147,7 +2154,8 @@
 
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      integer :: j,k
+      integer :: j,k,stat
+
       real :: density_scale1, density_scale
       real, dimension (:,:), allocatable :: cv_,cp_
 !
@@ -2193,7 +2201,7 @@
 
         do k=1,nghost
 
-          if (leos_chemistry) then
+          if (leos_chemistry.or.iyH==0) then
             f(:,:,n2+k,iss)=f(:,:,n2,iss) + (z(n2+k)-z(n2))*density_scale1
           else
             if (ldensity_nolog) then

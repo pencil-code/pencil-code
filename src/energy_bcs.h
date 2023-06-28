@@ -23,4 +23,4 @@ public :: bc_ss_a2stemp_y
 public :: bc_ss_a2stemp_z
 public :: bc_ss_energy
 public :: bc_ism_energ
-!public :: bc_stellar_surface
+public :: bc_stellar_surface
