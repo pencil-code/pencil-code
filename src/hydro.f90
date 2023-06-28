@@ -138,6 +138,7 @@ module Hydro
   logical :: luu_sph_as_aux=.false.
   logical :: lscale_tobox=.true.
   logical :: lfactors_uu=.false.
+  logical :: lpower_profile_file_uu=.false.
   logical, target :: lpressuregradient_gas=.true.
   logical :: lcoriolis_force=.true.
   logical :: lshear_in_coriolis=.false.
@@ -187,7 +188,7 @@ module Hydro
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
-      lfactors_uu, qirro_uu, lno_noise_uu, llorentz_limiter, &
+      lfactors_uu, qirro_uu, lno_noise_uu, lpower_profile_file_uu, llorentz_limiter, &
       lhiggsless, lhiggsless_old, vwall, alpha_hless
 !
 !  Run parameters.
@@ -2253,7 +2254,8 @@ module Hydro
           call power_randomphase_hel(ampluu(j),initpower,initpower2, &
             cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
             lskip_projection, lvectorpotential,lscale_tobox, &
-            nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, qirro=qirro_uu)
+            nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, &
+            lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)
