@@ -5662,7 +5662,7 @@ module Initcond
                 lgk=alog10(sqrt(k2(ikx,iky,ikz)))
                 ik=int((lgk-lgk0)/dlgk)+1
                 if (ik<1.or.ik>nk) then
-                  print*,'ikz,iky,ikx,lgk,ik,nk=',ikz,iky,ikx,lgk,ik,k2(ikx,iky,ikz)
+                  print*,'ikz,iky,ikx,lgk,ik,k2=',ikz,iky,ikx,lgk,ik,k2(ikx,iky,ikz)
                   call fatal_error('power_randomphase_hel','ik<1.or.ik>nk')
                 endif
                 lgk1=lgkk(ik)
