@@ -5104,7 +5104,7 @@ module Initcond
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
-      kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,time,cs)
+      kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,time,cs,lreinit)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5134,7 +5134,7 @@ module Initcond
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
-      logical, intent(in), optional :: llogbranch0,ldouble0
+      logical, intent(in), optional :: llogbranch0,ldouble0, lreinit
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
@@ -5891,7 +5891,11 @@ module Initcond
             do i=1,3
               call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
             enddo !i
-            f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
+            if (lreinit) then
+              f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
+            else
+              f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
+            endif
           endif
         endif
 !

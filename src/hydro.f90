@@ -1000,6 +1000,7 @@ module Hydro
       real, dimension (mz) :: c, s
       integer :: j,myl ! currently unused: nycap
       real :: slope,uinn,uext,zbot
+      logical :: lvectorpotential=.false.
 !
 ! set the right point in profile to unity.
 !
@@ -1035,6 +1036,12 @@ module Hydro
           case ('flip-uy'); f(:,:,:,iuy)=-f(:,:,:,iuy)
           case ('mult-uz-lower-xbdry'); if (ipx==0) f(1:l1,:,:,iuz)=rescale_uu*f(1:l1,:,:,iuz)
           case ('Om_inner'); f(:,:,:,iuz)=Om_inner*spread(spread(xyz0(1)**2/x,2,my)*spread(sin(y),1,mx),3,mz)
+          case ('power_randomphase_hel')
+            call power_randomphase_hel(ampluu(j),initpower,initpower2, &
+              cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
+              lskip_projection, lvectorpotential,lscale_tobox, &
+              nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, &
+              lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu, lreinit=lreinitialize_uu)
           endselect
         enddo
       endif
