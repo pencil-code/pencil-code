@@ -5891,7 +5891,7 @@ module Initcond
             do i=1,3
               call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
             enddo !i
-            if (lreinit) then
+            if (loptest(lreinit)) then
               f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
             else
               f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
