@@ -75,7 +75,7 @@ module Cdata
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
-  real, dimension (mz) :: sinph,cosph 
+  real, dimension (mz) :: sinph,cosph
   real, dimension (my) :: cos1th,tanth
   real, dimension (nygrid) :: sinth_weight_across_proc
   real, dimension (nx) :: rcyl_mn=1.,rcyl_mn1=1.,rcyl_mn2=1.,rcyl_weight
@@ -136,7 +136,7 @@ module Cdata
   real :: x0, y0, z0, Lx, Ly, Lz, wav1=impossible, wav1z=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_int_border=impossible,r_ext_border=impossible
-  real :: r_ref=1.,rsmooth=0.,box_volume=1.0 
+  real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
 !
 !  Time integration parameters.
@@ -151,7 +151,7 @@ module Cdata
 !AB: 5 autotests failed after having decreased cdtv. I suggest to reassess
 !AB: this more carefully and discuss it first in the newsletter.
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
-  real :: cdtsrc = 0.2
+  real :: cdtsrc=0.2, cdtf=0.9
   real :: eps_rkf=1e-8, eps_stiff=1e-6
   real :: ddt=0.0
   real :: dtmin=1.0e-6, dtmax=1.0e37
@@ -476,7 +476,7 @@ module Cdata
   real, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez, fnamexy, fnamexz
   real, dimension(:,:,:,:), allocatable :: fnamerz
   integer, dimension(:,:) , allocatable :: sound_coords_list
-  integer, dimension(:,:) , allocatable :: ncountsz 
+  integer, dimension(:,:) , allocatable :: ncountsz
   character (len=fmtlen), allocatable :: cform(:),cformv(:),cform_sound(:), &
                                          cformxy(:),cformxz(:),cformrz(:), &
                                          cformz(:),cformy(:),cformx(:),cformr(:)
@@ -695,9 +695,9 @@ module Cdata
   logical :: lfold_df=.false.
 !
 !  Reactive particles need their source terms for particle-fluid interaction
-!  distributed over a large number of points to avoid shocks. 
+!  distributed over a large number of points to avoid shocks.
 !  This means that nodes removed up to 3 nodes from the nearest grid point
-!  are affected. This neccissitates folding all the ghost zones into the main 
+!  are affected. This necessitates folding all the ghost zones into the main
 !  domain.
 !
   logical :: lfold_df_3points=.false.
@@ -724,7 +724,7 @@ module Cdata
 !
   logical :: lfargo_advection=.false.
 !
-!  Switch for running global disks in a corotational frame, 
+!  Switch for running global disks in a corotational frame,
 !  and associated corotational radius and omega.
 !
   logical :: lcorotational_frame=.false.

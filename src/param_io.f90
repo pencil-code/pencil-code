@@ -76,7 +76,7 @@ module Param_IO
                            fbcy1=0., fbcy2=0., fbcy1_1=0., fbcy1_2=0., fbcy2_1=0., fbcy2_2=0., &
                            fbcz1=0., fbcz2=0., fbcz1_1=0., fbcz1_2=0., fbcz2_1=0., fbcz2_2=0.
   integer :: niter_poisson  ! dummy
-! 
+!
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
       xyz_units, wav1, wav1z, coord_system, lpole, ncoarse, lfix_unit_std, &
@@ -141,7 +141,7 @@ module Param_IO
       lshift_origin, lshift_origin_lower, coord_system, &
       nt, it1, it1start, it1d, itspec, it_rmv, dt, cdt, ddt, dt_incr, &
       lfractional_tstep_advance, lfractional_tstep_negative, &
-      cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, &
+      cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, cdtf, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, &
       iwig, ldivu_perp, &
@@ -876,10 +876,10 @@ module Param_IO
           if (file == 'stdout') then
             unit = 6
           elseif (file == 'IDL') then
-       
+
 !
 !  Save old param2.nml for later comparison.
-! 
+!
             if (file_exists('data/param2.nml')) &
               call system_cmd("sed -e's/[eE]+*000*//g' -e's/ *, *$//' < data/param2.nml > data/param2.nml.sv")
 
@@ -892,7 +892,7 @@ module Param_IO
           open(unit,FILE=trim(datadir)//'/params.log',position='append')
         endif
 !
-        if (lidl_output) then 
+        if (lidl_output) then
 !
           write(unit,NML=run_pars)
 !
@@ -958,7 +958,7 @@ module Param_IO
 !
           if (file_exists('data/param2.nml.sv')) then
             call system_cmd("sed -e's/[eE]+*000*//g' -e's/ *, *$//' < data/param2.nml |"// &
-                            " diff -w data/param2.nml.sv - | grep '^[><]' >> data/params.log")  
+                            " diff -w data/param2.nml.sv - | grep '^[><]' >> data/params.log")
             call delete_file('data/param2.nml.sv')
           else
 !

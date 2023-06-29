@@ -148,7 +148,7 @@ module Energy
              lhcond0_density_dep=.false.
   logical :: lenergy_slope_limited=.false.
   logical :: limpose_heat_ceiling=.false.
-  logical :: lthdiff_Hmax=.false.
+  logical :: lthdiff_Hmax=.false., lrhs_max=.true.
   logical :: lchit_noT=.false.
   logical :: lss_running_aver_as_aux=.false.
   logical :: lss_running_aver_as_var=.false.
@@ -245,7 +245,7 @@ module Energy
       lss_flucz_as_aux, lTT_flucz_as_aux, rescale_hcond, wpres, &
       lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver, &
       kx_ss, ky_ss, kz_ss, tau_relax_ss, ampl_imp_ss, TTbot_factor, &
-      heattype, nheat_rho, nheat_TT
+      heattype, nheat_rho, nheat_TT, lrhs_max
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -472,7 +472,7 @@ module Energy
   real, dimension(:,:), pointer :: reference_state
   !real, pointer :: rho0,cs0
 
-  real, dimension (nx) :: Hmax,ss0,diffus_chi,diffus_chi3,cs2cool_x
+  real, dimension (nx) :: Hmax,ssmax,diffus_chi,diffus_chi3,cs2cool_x
   integer, parameter :: prof_nz=150
   real, dimension (prof_nz) :: prof_lnT,prof_z
   logical :: lcalc_heat_cool
@@ -652,7 +652,7 @@ module Energy
 !
       real, dimension (nzgrid) :: tmpz
       real, dimension (nx) :: tmpz_penc
-      real :: beta1, beta0, TT_bcz, star_cte, cs2top_from_cool 
+      real :: beta1, beta0, TT_bcz, star_cte, cs2top_from_cool
       real :: dummy,cp
       integer :: i, j, n, m, stat, lend
       logical :: lnothing, exist, opend
@@ -1161,7 +1161,7 @@ module Energy
       if  (lheatc_sfluct) then
         if (chi_t==0.) call fatal_error("initialize_energy","chi_t must not be 0")
         if (.not.(lcalc_ssmean .or. lcalc_ssmeanxy)) &
-          call fatal_error("initialize_energy","lcalc_ssmean(xy) needed") 
+          call fatal_error("initialize_energy","lcalc_ssmean(xy) needed")
       endif
       if (lheatc_hubeny) then
         if (nzgrid>1) call not_implemented('initialize_energy','opacity in 3D for Hubeny conduction')
@@ -1207,7 +1207,7 @@ module Energy
                          tau_cool_ss/=0.0 .or. tau_relax_ss/=0.0 .or. &
                          cool_uniform/=0.0 .or. cool_newton/=0.0 .or. &
                          (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
-                         (tau_cool2 /=0) .or. lheat_cool_gravz) 
+                         (tau_cool2 /=0) .or. lheat_cool_gravz)
 !
 ! Set the constants
 !
@@ -1367,7 +1367,7 @@ module Energy
       endif
 !
       if (pretend_lnTT) then
-        if (tau_ss_exterior/=0.0) & 
+        if (tau_ss_exterior/=0.0) &
           call not_implemented('initialize_energy','tau_ss_exterior for pretend_lnTT = T')
 !
         if (lheatc_corona.or.tdown/=0.0) &
@@ -3240,6 +3240,7 @@ module Energy
       use Special, only: special_calc_energy
       use Sub
       use Viscosity, only: calc_viscous_heat
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3252,7 +3253,8 @@ module Energy
       real, dimension(nx) :: tmp1
       integer :: j
 !
-      Hmax = 0.
+      Hmax = 1./impossible
+      ssmax = 1./impossible
 !
 !  Identify module and boundary conditions.
 !
@@ -3282,6 +3284,11 @@ module Energy
 !
       if (lhydro) then
         if (lpressuregradient_gas) then
+          if (notanumber(p%fpres)) then
+            print*, 'denergy_dt: p%fpres contains a NaN at iproc=', iproc
+            print*, 'p%fpres =',p%fpres
+            call fatal_error_local('denergy_dt','')
+          endif
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
 !
 !  If reference state is used, -grad(p')/rho is needed in momentum equation, hence fpres -> fpres + grad(p0)/rho.
@@ -3412,13 +3419,13 @@ module Energy
 !
 !  Enforce maximum heating rate timestep constraint
 !
-      if (lthdiff_Hmax.and.((lfirst.and.ldt).or. &
-          ldiagnos.and.(idiag_dtH/=0.or.idiag_tauhmin/=0))) ss0 = abs(df(l1:l2,m,n,iss))
+      if ((lthdiff_Hmax.or.(ldiagnos.and.(idiag_dtH/=0.or.idiag_tauhmin/=0))) &
+          .and.(lfirst.and.ldt)) ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
 
       if (lfirst.and.ldt) then
         if (lthdiff_Hmax) then
-          dt1_max=max(dt1_max,ss0*p%cv1/cdts)
-        else
+          dt1_max=max(dt1_max,ssmax/cdts)
+        elseif (lrhs_max) then
           dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
         endif
       endif
@@ -3453,7 +3460,7 @@ module Energy
           if (idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
           if (idiag_dtH/=0) then
             if (lthdiff_Hmax) then
-              call max_mn_name(ss0*p%cv1/cdts,idiag_dtH,l_dt=.true.)
+              call max_mn_name(ssmax/cdts,idiag_dtH,l_dt=.true.)
             else
               call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
             endif
@@ -3461,7 +3468,7 @@ module Energy
           if (idiag_Hmax/=0) call max_mn_name(Hmax/p%ee,idiag_Hmax)
           if (idiag_tauhmin/=0) then
             if (lthdiff_Hmax) then
-              call max_mn_name(ss0*p%cv1,idiag_tauhmin,lreciprocal=.true.)
+              call max_mn_name(ssmax,idiag_tauhmin,lreciprocal=.true.)
             else
               call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.)
             endif
@@ -4086,7 +4093,7 @@ module Energy
 !  of the flux is calculated and stored in the f array.
 !
       !!!if (lenergy_slope_limited.and.llast) then
-  
+
         !!!f(:,:,:,iFF_diff1:iFF_diff2)=0.
         !!!call calc_all_diff_fluxes(f,iss,islope_limiter,h_slope_limited)
 !if (ldiagnos.and.iproc==0) print'(a,i2,22(1x,e14.8))','iss,IPROC=', iproc, f(4,10,:,iss)
@@ -4545,7 +4552,7 @@ module Energy
       call del6fj(f,chi_hyper3_aniso,iss,thdiff)
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
-      if (lfirst.and.ldt) & 
+      if (lfirst.and.ldt) &
         diffus_chi3=diffus_chi3 + (chi_hyper3_aniso(1)*dline_1(:,1)**6 + &
                                    chi_hyper3_aniso(2)*dline_1(:,2)**6 + &
                                    chi_hyper3_aniso(3)*dline_1(:,3)**6)
@@ -6038,7 +6045,7 @@ module Energy
         prof =spread(.5*(1.+erfunc((z(n)-zcool )/wcool )),1,l2-l1+1)
         prof2=spread(.5*(1.+erfunc((z(n)-zcool2)/wcool2)),1,l2-l1+1)
 !
-! useful for accretion disc with hot corona; symmetric about z=0 
+! useful for accretion disc with hot corona; symmetric about z=0
 !
       case ('square-well')
         prof=spread((1.+.5*(erfunc((z(n)-zcool)/wcool)- &
@@ -8045,5 +8052,5 @@ module Energy
 !**  routines not implemented in this file                         **
 !**                                                                **
     include 'energy_common.inc'
-!*********************************************************************** 
+!***********************************************************************
 endmodule Energy

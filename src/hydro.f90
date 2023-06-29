@@ -252,7 +252,7 @@ module Hydro
 !
 !  Option to constrain time for large df.
 !
-  real :: cdt_tauf=1.0, ulev=1.0
+  real :: cdt_tauf=1.0, ulev=impossible
   logical :: lcdt_tauf=.false.
   logical, target :: lcalc_uuavg=.false.
 !
@@ -1005,6 +1005,7 @@ module Hydro
 ! set the right point in profile to unity.
 !
       profile_SH(index_rSH)=dx_1(index_rSH)
+      if (ulev/=impossible) cdtf=ulev
 !
 !  Block use of uninitalised p%fcont
 !
@@ -1327,7 +1328,7 @@ module Hydro
 
       case ('vertical_shear_x_sinz')
         zbot=xyz0(3)
-        where (z <= 0.) 
+        where (z <= 0.)
           prof_amp3=ampl1_diffrot*sin(.5*pi/abs(zbot)*z)
         elsewhere
           prof_amp3=0.
@@ -1362,7 +1363,7 @@ module Hydro
         !prof_amp2=1.-step(x(l1:l2),x2_ff_uu,width_ff_uu)
         else
           call not_implemented("initialize_hydro", &
-                          "uuprof='solar_simple' for other than spherical or Cartesian coordinates") 
+                          "uuprof='solar_simple' for other than spherical or Cartesian coordinates")
         endif
       case ('radial_uniform_shear')
         uinn = omega_in*x(l1)
@@ -1730,7 +1731,7 @@ module Hydro
 !  inituu corresponds to different initializations of uu (called from start).
 !
       call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='init_uu')
- 
+
       do j=1,ninit
 !
         select case (inituu(j))
@@ -2440,7 +2441,7 @@ module Hydro
 !
         case('spher-harm-poloidal')
 !
-!  Poloidal flow, defined by spherical harmonic ll_sh(j), mm_sh(j) 
+!  Poloidal flow, defined by spherical harmonic ll_sh(j), mm_sh(j)
 !  and radial profile of the generating scalar tmp, depending on n_xprof(j) (see below)
 !
           if (.not.lspherical_coords) call fatal_error("init_uu", &
@@ -2493,7 +2494,7 @@ module Hydro
 !
 !  initial iteration step
 !
-          where (x(l1:l2) < .5) 
+          where (x(l1:l2) < .5)
             ur=2.*x(l1:l2)
           elsewhere
             ur=2.
@@ -2503,7 +2504,7 @@ module Hydro
 !  iterate
 !
           do iter=1,niter
-            where (x(l1:l2) < .5) 
+            where (x(l1:l2) < .5)
               ur=exp(.5*ur**2-2.*alog(x(l1:l2))-1./x(l1:l2)-phi0)
             elsewhere
               ur=sqrt(2.*(alog(ur*x(l1:l2)**2)+1./x(l1:l2)+phi0))
@@ -2628,7 +2629,7 @@ module Hydro
 !
       lpenc_requested(i_uu)=.true.
 !
-      if (lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) & 
+      if (lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) &
         lpenc_requested(i_uij) = .true.
       if (ladvection_velocity) then
         if (lweno_transport) then
@@ -3145,11 +3146,11 @@ module Hydro
         do j=1,3
           ju=j+iuu-1
           do i=1,3
-            if (lcylindrical_coords.and.ju==iuy.and.i==1) then  
-              call der6(i,f(:,m,n,iuy)-uu_average_cyl(:,n),p%der6u_res(:,i,j),IGNOREDX=.true.)                
-            elseif (lspherical_coords.and.ju==iuz.and.i==1) then  
-              call der6(i,f(:,m,n,iuz)-uu_average_sph(:,m),p%der6u_res(:,i,j),IGNOREDX=.true.)                
-            else   
+            if (lcylindrical_coords.and.ju==iuy.and.i==1) then
+              call der6(i,f(:,m,n,iuy)-uu_average_cyl(:,n),p%der6u_res(:,i,j),IGNOREDX=.true.)
+            elseif (lspherical_coords.and.ju==iuz.and.i==1) then
+              call der6(i,f(:,m,n,iuz)-uu_average_sph(:,m),p%der6u_res(:,i,j),IGNOREDX=.true.)
+            else
               call der6(f,ju,p%der6u_res(:,i,j),i,IGNOREDX=.true.)
             endif
           enddo
@@ -3613,7 +3614,7 @@ module Hydro
           do m = m1, m2
             call curl(f, iux, pv)
             f(l1:l2,m,n,iox:ioz) = pv
-          enddo 
+          enddo
         enddo
       endif
 !
@@ -3652,7 +3653,7 @@ module Hydro
 ! Sum over processors of same ipz, and different ipy
 ! --only relevant for 3D, but is here for generality
 !
-          call mpiallreduce_sum(fsum_tmp_cyl,uu_average_cyl,(/mx,mz/),idir=2) 
+          call mpiallreduce_sum(fsum_tmp_cyl,uu_average_cyl,(/mx,mz/),idir=2)
           !idir=2 is equal to old LSUMY=.true.
 !
         elseif (lspherical_coords) then
@@ -3664,7 +3665,7 @@ module Hydro
               fsum_tmp_sph(:,m)=fsum_tmp_sph(:,m)+uphi*nzgrid1
             enddo
           enddo
-          call mpiallreduce_sum(fsum_tmp_sph,uu_average_sph,(/mx,my/),idir=3) 
+          call mpiallreduce_sum(fsum_tmp_sph,uu_average_sph,(/mx,my/),idir=3)
           !idir=3 is equal to old LSUMZ=.true.
 !
         endif
@@ -3717,7 +3718,7 @@ module Hydro
       intent(inout) :: p
       intent(inout) :: f,df
 
-      real, dimension (nx,3) :: tmpv
+      real, dimension (nx,3) :: tmpv, uu1
       real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
       real, dimension (nx,3,3) :: puij_Schur
       integer :: i, j, ju
@@ -3977,11 +3978,16 @@ module Hydro
 !
 !  Fred: Option to constrain timestep for large forces
 !
-      if (lfirst.and.ldt.and.lcdt_tauf) then
+      if (lfirst.and.ldt.and.(lcdt_tauf.or.idiag_taufmin/=0.or.idiag_dtF/=0)) then
+        where (abs(p%uu)>1)
+          uu1=1./p%uu
+        elsewhere
+          uu1=1.
+        endwhere
         do j=1,3
-          ftot=abs(df(l1:l2,m,n,iux+j-1))
-          dt1_max=max(dt1_max,ftot/(cdt_tauf*ulev))
-          Fmax=max(Fmax,ftot/ulev)
+          ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
+          if (lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
+          if (idiag_taufmin/=0.or.idiag_dtF/=0) Fmax=max(Fmax,ftot)
         enddo
       endif
 
@@ -4022,10 +4028,8 @@ module Hydro
         endif
         if (.not.lgpu) then
           if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
-          if (lcdt_tauf) then
-            if (idiag_dtF/=0) call max_mn_name(Fmax/cdt_tauf,idiag_dtF,l_dt=.true.)
-            call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
-          endif
+          if (lcdt_tauf.and.idiag_dtF/=0) call max_mn_name(Fmax/cdtf,idiag_dtF,l_dt=.true.)
+          if (idiag_taufmin/=0) call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
         endif
 !
 ! urlm
@@ -4375,7 +4379,7 @@ module Hydro
 !
 !  Here all quantities should be updated the calculation of which requires dt which
 !  is zero at the very first diagnostics output time. (Doesn't work for itorder=1.)
-! 
+!
         lcorr_zero_dt=.false.
         if (lroot) fname(idiag_nshift)=fname(idiag_nshift)*dt
       endif  ! if (ldiagnos)
@@ -4574,7 +4578,7 @@ module Hydro
           call xysum_mn_name_z(uus,idiag_totalforcezmz)
         endif
         if (idiag_totalforcezupmz/=0) then
-          where (p%uu(:,3) > 0.) 
+          where (p%uu(:,3) > 0.)
             uus = p%rho*(p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3))
           elsewhere
             uus=0.
@@ -4596,7 +4600,7 @@ module Hydro
           call xysum_mn_name_z(uus,idiag_acczmz)   ! yet incorrect for Yin-Yang
         endif
         if (idiag_acczupmz/=0) then
-          where (p%uu(:,3) > 0.) 
+          where (p%uu(:,3) > 0.)
             uus = p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3)
           elsewhere
             uus=0.
@@ -4619,7 +4623,7 @@ module Hydro
           call xysum_mn_name_z(uus,idiag_accpowzmz)   ! yet incorrect for Yin-Yang
         endif
         if (idiag_accpowzupmz/=0) then
-          where (p%uu(:,3) > 0.) 
+          where (p%uu(:,3) > 0.)
             uus = p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3)
             uus = p%uu(:,3)*uus
           elsewhere
@@ -5117,7 +5121,7 @@ module Hydro
           do j=1,3
             do m=1,my
               f(:,m,:,iuu+j-1) = f(:,m,:,iuu+j-1)-uumy(m,j)
-            enddo 
+            enddo
             if (lremove_uumeanz.or.lremove_uumeanz_horizontal) &
               f(:,:,:,iuu+j-1)=f(:,:,:,iuu+j-1)+uum0(j)  ! compensation as uum0 is already substracted once
           enddo
@@ -6779,7 +6783,7 @@ module Hydro
       endif
 !
       if (lSGS_hydro) call rprint_SGS_hydro(lreset,lwrite)
-      
+
     endsubroutine rprint_hydro
 !***********************************************************************
     subroutine get_slices_hydro(f,slices)
@@ -6906,7 +6910,7 @@ module Hydro
 !
       endif
 
-      if (lhelmholtz_decomp) then 
+      if (lhelmholtz_decomp) then
 
         !call fatal_error("hydro_after_timestep","Helmholtz decomposition not yet operational")
         if (it==1) call warning("hydro_after_timestep","Helmholtz decomposition under development")
@@ -7612,7 +7616,7 @@ module Hydro
 !  Solar rotation profile from Dikpati & Charbonneau (1999, ApJ)
 !
       case ('solar_DC99')
-      if (lcalc_uumeanxy) then 
+      if (lcalc_uumeanxy) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3)-prof_amp1*prof_amp4(m))
       else
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp1*prof_amp4(m))
@@ -8012,12 +8016,12 @@ module Hydro
     real, dimension(nx,3,3) :: gradu
 !
 ! Calculates gradu and stores it as an auxiliary. This is expected to be called
-! only once either during initialization or post-processing. 
+! only once either during initialization or post-processing.
 !
     lfirstpoint=.true.       ! true for very first iteration of m-n loop
 
     do imn=1,nyz
-    
+
        n=nn(imn)
        m=mm(imn)
        call gij(f,iuu,gradu,1)
@@ -8027,7 +8031,7 @@ module Hydro
          jk=jk+1
        enddo;enddo
        lfirstpoint=.false.
-       
+
     enddo
 !
     endsubroutine calc_gradu

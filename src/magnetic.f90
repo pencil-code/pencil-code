@@ -287,7 +287,7 @@ module Magnetic
           eta_anom_thresh=0.0, eta_ampl=0.
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.5
-  real :: tau_aa_exterior=0.0, tauAD=0.0, alev=1.0
+  real :: tau_aa_exterior=0.0, tauAD=0.0, alev=impossible
   real :: sigma_ratio=1.0, eta_z0=1.0, eta_z1=1.0
   real :: eta_xwidth=0.0, eta_ywidth=0.0, eta_zwidth=0.0, eta_zwidth2=0.0
   real :: eta_rwidth=0.0
@@ -364,7 +364,7 @@ module Magnetic
   character (len=labellen) :: ambipolar_diffusion='constant'
   character (len=labellen) :: div_sld_magn='2nd'
   logical :: lbext_moving_layer=.false.
-  real :: zbot_moving_layer=0., ztop_moving_layer=0., speed_moving_layer=0., edge_moving_layer=.1 
+  real :: zbot_moving_layer=0., ztop_moving_layer=0., speed_moving_layer=0., edge_moving_layer=.1
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, eta_anom_thresh, eta_ampl, &
@@ -1010,7 +1010,7 @@ module Magnetic
 !
 ! Auxiliary module variables
 !
-  real, dimension(nx) :: etatotal=0.,eta_smag=0.,Fmax=0.,dAmax=0.,ss0=0., &
+  real, dimension(nx) :: etatotal=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
   real, dimension(nx,3) :: fres,uxbb
   real, dimension(nzgrid) :: eta_zgrid=0.0
@@ -1214,6 +1214,7 @@ module Magnetic
 !
       call get_gamma_etc(gamma)
       gamma1=1./gamma; gamma_m1=gamma-1.
+      if (alev/=impossible) cdtf=alev
 !
 !  To know whether we are solving the relativistic eos equations we need to get lrelativistic_eos from density.
 !
@@ -1948,7 +1949,7 @@ module Magnetic
           call fatal_error('initialize_magnetic','lshear=F -> cannot do frame transform for time integrals')
 !
 !  Must have nprocy=1 because we shift in the y direction
-! 
+!
         if (nprocy/=1) call fatal_error('initialize_magnetic','nprocy=1 required for lvart_in_shear_frame')
       endif
 !
@@ -2727,6 +2728,7 @@ module Magnetic
       if (lresi_hyper2 .or. lresi_hyper2_tdep) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3 .or. lresi_hyper3_tdep) lpenc_requested(i_del6a)=.true.
       if (lresi_hyper3_csmesh) lpenc_requested(i_cs2)=.true.
+      if (lrhs_max.and.lhydro) lpenc_requested(i_uu)=.true.
 !
 !  Note that for the cylindrical case, according to lpencil_check,
 !  graddiva is not needed. We still need it for the lspherical_coords
@@ -4382,7 +4384,7 @@ module Magnetic
       real, dimension (nx,3) :: ujiaj,gua,ajiuj
       real, dimension (nx,3) :: aa_xyaver
       real, dimension (nx,3) :: geta,uxb_upw,tmp2
-      real, dimension (nx,3) :: dAdt, gradeta_shock
+      real, dimension (nx,3) :: dAdt, gradeta_shock, aa1, uu1
       real, dimension (nx,3,3) :: d_sld_flux
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
@@ -4425,6 +4427,7 @@ module Magnetic
       dAdt=0.
       Fmax=1./impossible
       dAmax=1./impossible
+      ssmax=1./impossible
 !
 !  Replace B_ext locally to accommodate its time dependence.
 !
@@ -4570,7 +4573,7 @@ module Magnetic
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
           fres(:,3) = fres(:,3) + geta_z(n) * p%diva
           if (lfirst .and. ldt) maxadvec = maxadvec + abs(geta_z(n)) * dz_1(n)
-        endif 
+        endif
         etatotal = etatotal + eta_z(n)
       endif
 !
@@ -5550,22 +5553,34 @@ module Magnetic
 !
 !  Option to constrain timestep for large forces and heat sources to include
 !  Lorentz force and Ohmic heating terms
-!  can set in entropy lthdiff_Hmax=F & in hydro lcdt_tauf=F as included here
+!  should set in entropy lthdiff_Hmax=F and lrhs_max=F & in hydro lcdt_tauf=F as handled here
 !
       if (lfirst.and.ldt.and.lrhs_max) then
+        if (lhydro) then
+          where (abs(p%uu)>1)
+            uu1=1./p%uu
+          elsewhere
+            uu1=1.
+          endwhere
+        endif
+        where (abs(p%aa)>1)
+          aa1=1./p%aa
+        elsewhere
+          aa1=1.
+        endwhere
         do j=1,3
-          dAtot=abs(dAdt(:,j))
-          dt1_max=max(dt1_max,dAtot/(cdts*alev))
-          dAmax=max(dAmax,dAtot/alev)
+          dAtot=abs(dAdt(:,j)*aa1(:,j))
+          dt1_max=max(dt1_max,dAtot/cdtf)
+          dAmax=max(dAmax,dAtot/cdtf)
           if (lhydro) then
-            ftot=abs(df(l1:l2,m,n,iux+j-1))
-            dt1_max=max(dt1_max,ftot/(cdts*alev))
-            Fmax=max(Fmax,ftot/alev)
+            ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
+            dt1_max=max(dt1_max,ftot/cdtf)
+            Fmax=max(Fmax,ftot/cdtf)
           endif
         enddo
         if (lentropy) then
-          ss0 = abs(df(l1:l2,m,n,iss))
-          dt1_max=max(dt1_max,ss0*p%cv1/cdts)
+          ssmax = max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1/cdts)
+          dt1_max=max(dt1_max,ssmax)
         endif
       endif
 !
@@ -5786,9 +5801,9 @@ module Magnetic
 !  These diagnostics rely upon mn-dependent quantities which are not in the pencil case.
 !
         if (lrhs_max) then
-          if (idiag_dtHr/=0) call max_mn_name(ss0*p%cv1/cdts,idiag_dtHr,l_dt=.true.)
-          if (idiag_dtFr/=0) call max_mn_name(Fmax/cdts,idiag_dtFr,l_dt=.true.)
-          if (idiag_dtBr/=0) call max_mn_name(dAmax/cdts,idiag_dtBr,l_dt=.true.)
+          if (idiag_dtHr/=0) call max_mn_name(ssmax,idiag_dtHr,l_dt=.true.)
+          if (idiag_dtFr/=0) call max_mn_name(Fmax,idiag_dtFr,l_dt=.true.)
+          if (idiag_dtBr/=0) call max_mn_name(dAmax,idiag_dtBr,l_dt=.true.)
         endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
