@@ -120,7 +120,7 @@ module Special
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
   logical :: lno_noise_GW=.false., lfactors_GW=.false.,lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
-  logical :: llogbranch_GW=.false., ldouble_GW=.false.
+  logical :: llogbranch_GW=.false., ldouble_GW=.false., lLighthill=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1.
   real :: tstress_ramp=0., stress_upscale_rate=0., stress_upscale_exp=0., tturnoff=1.
@@ -187,7 +187,7 @@ module Special
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
     lread_scl_factor_file, t_ini, OmL0, OmM0, OmT0, idt_file_safety, &
-    lconstmod_in_stress, k_in_stress, itorder_GW
+    lconstmod_in_stress, k_in_stress, itorder_GW, lLighthill
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1688,6 +1688,8 @@ module Special
     subroutine compute_gT_and_gX_from_gij(f,label)
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
+!  It also allows for the inclusion of nonlinear corrections to the wave equation.
+!  Alternatively, we can also solve the Lighthill equation if lLighthill=T.
 !
 !  07-aug-17/axel: coded
 !
@@ -1697,7 +1699,7 @@ module Special
 !
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (6) :: Pij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
+      real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
       real, dimension (6) :: e_T_boost, e_X_boost
       real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
       real, dimension (3) :: e1, e2, kvec
@@ -2079,12 +2081,8 @@ module Special
             if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
               e1=0.
               e2=0.
-              Pij(1)=0.
-              Pij(2)=0.
-              Pij(3)=0.
-              Pij(4)=0.
-              Pij(5)=0.
-              Pij(6)=0.
+              Pij=0.
+              kij=0.
               om=0.
               om2=0.
             else
@@ -2155,6 +2153,14 @@ module Special
               Pij(4)=-k1*k2*one_over_k2
               Pij(5)=-k2*k3*one_over_k2
               Pij(6)=-k3*k1*one_over_k2
+              if (lLighthill) then
+                kij(1)=-k1sqr
+                kij(2)=-k2sqr
+                kij(3)=-k3sqr
+                kij(4)=-k1*k2
+                kij(5)=-k2*k3
+                kij(6)=-k3*k1
+              endif
             endif
 !
 !  compute e_T and e_X
@@ -2222,6 +2228,21 @@ module Special
               S_X_im(ikx,iky,ikz)=S_X_im(ikx,iky,ikz)+.5*e_X(ij)*Sij_im(ij)
             enddo
             enddo
+!
+!  Compute the Hessian if we want to solve the Lighthill equation.
+!  At the moment, we don't turn of the TT projection, but this should later be done.
+!  In one-dimensional experiments currently of interest, the TT projection gives zero
+!  and it is also not compute-intensive.
+!
+            if (lLighthill) then
+              do j=1,3
+              do i=1,3
+                ij=ij_table(i,j)
+                S_T_re(ikx,iky,ikz)=S_T_re(ikx,iky,ikz)+kij(ij)*Tpq_re(ikx,iky,ikz,ij)
+                S_T_im(ikx,iky,ikz)=S_T_im(ikx,iky,ikz)+kij(ij)*Tpq_im(ikx,iky,ikz,ij)
+              enddo
+              enddo
+            endif
 !
 !  Possibility to remove phases (lnophase_in_stress=T).
 !  As potential extensions, can also assume the phase to increase linearly in
