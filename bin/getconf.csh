@@ -87,15 +87,14 @@ set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9]*)/i && p
 set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
-#set lcubed_sphere = `perl -ne '$_ =~ /^\s*logical\b[^\\\!]*lcubed_sphere\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
-set lcubed_sphere = `perl -ne '$_ =~ /^\s*lcubed_sphere\s*=\s*([TF])/i && print $1' start.in`
-set lyinyang = `perl -ne '$_ =~ /^\s*lyinyang\s*=\s*([TF])/i && print $1' start.in`
-echo AXEL lcubed_sphere= $lcubed_sphere
-echo AXEL ncpus= $ncpus
-echo AXEL lyinyang= $lyinyang
 if (! $ncpus) then
   @ ncpus = $nprocx * $nprocy * $nprocz
 endif
+#
+# Check for atlas-style grids.
+#set lcubed_sphere = `perl -ne '$_ =~ /^\s*logical\b[^\\\!]*lcubed_sphere\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+set lcubed_sphere = `perl -ne '$_ =~ /^\s*lcubed_sphere\s*=\s*([TF])/i && print $1' start.in`
+set lyinyang = `perl -ne '$_ =~ /^\s*lyinyang\s*=\s*([TF])/i && print $1' start.in`
 if ( $lyinyang == '') then
   set lyinyang = F
 else
@@ -126,7 +125,8 @@ echo "$ncpus CPUs"
 set start_x = "src/start.x"
 set run_x   = "src/run.x"
 set x_ops = ""         # arguments to both start.x and run.x
-set mpirun = ''
+set mpirun = ""
+set datadir = "data"
 
 # Check if experimental copy-snapshots is used
 set copysnapshots="copy-snapshots"
@@ -143,6 +143,10 @@ if { ( grep particles_init_pars start.in >& /dev/null ) } set lparticles=1
 # Check for massive particles
 set lpointmasses=0
 if { ( grep pointmasses_init_pars start.in >& /dev/null ) } set lpointmasses=1
+
+# Check for code coupling
+set lcode_coupling=0
+if { ( grep 'tag_foreign *= *[1-9]' run.in >& /dev/null ) } set lcode_coupling=1
 
 # Settings for machines with local data disks
 # local_disc     = 1 means processes uses their own local scratch disc(s) for
@@ -824,6 +828,15 @@ else if (($hn =~ r*[cg]*.bullx)) then
   set mpirun = 'srun'
   set npops = "-n $ncpus"
   #set npops = "-display-devel-map -map-by slot -n $ncpus"
+  # needed for nvhpc
+  #set mpirunops = "--mpi=pmix_v3"
+  #set mpirun = 'mpiexec'
+  if ($lcode_coupling == 1) then
+    set multi_op = "--multi-prog"
+  else
+    set multi_op = ""
+  endif
+  echo GETCONF:multi_op=$multi_op
   set local_disc = 0
   set one_local_disc = 0
   set remote_top     = 0
