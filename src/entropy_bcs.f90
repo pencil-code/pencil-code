@@ -398,10 +398,10 @@
 !
       real, dimension (:,:,:,:), intent(in) :: f
       real, dimension (:),       intent(out):: quench
+      character (len=*), intent(in) :: task
 !
       real, dimension (size(quench),3) :: bb
       real, dimension (size(quench)) :: rho,b2
-      character (len=*), intent(in) :: task
       integer :: j
 !
       !character (len=linelen), pointer :: dummy
@@ -1626,7 +1626,7 @@
 !
 !  set density value such that pressure is constant at the bottom
 !
-          f(:,:,n1,ilnrho)=lnrho_bot+ss_bot-f(:,:,n1,iss)
+          f(:,:,n1,ilnrho)=lnrho_bot+cp1*(ss_bot-f(:,:,n1,iss))   !! factor cp1 added, check
         else
           f(:,:,n1,ilnrho)=lnrho_bot
         endif

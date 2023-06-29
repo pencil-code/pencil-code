@@ -3,6 +3,7 @@
     use Cdata
     use DensityMethods
     use EquationOfState, only: get_gamma_etc, cs20, lnrho0, cs2bot, cs2top
+    use General, only: keep_compiler_quiet
     use Messages
 !
     private
@@ -16,7 +17,6 @@
 !**************************************************************************************************
     subroutine initialize_energy_bcs
 
-      use EquationOfState, only: get_gamma_etc
       use SharedVariables, only: get_shared_variable
 
       call get_gamma_etc(gamma)
@@ -41,10 +41,9 @@
 !  26-aug-2003/tony: distributed across ionization modules
 !   3-oct-16/MR: added new optional switch lone_sided
 !
-      use SharedVariables,only: get_shared_variable
-!
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+      logical, optional :: lone_sided
 !
       call not_implemented('bc_ss_flux','in noeos')
 
@@ -611,6 +610,53 @@
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_energy
+!***********************************************************************
+    subroutine bdry_magnetic(f,quench,task)
+!
+      real, dimension (:,:,:,:), intent(in) :: f
+      real, dimension (:),       intent(out):: quench
+      character (len=*),         intent(in) :: task
+
+      call not_implemented('bdry_magnetic','in noeos')
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(quench)
+      call keep_compiler_quiet(task)
+
+    endsubroutine bdry_magnetic
+!***********************************************************************
+    subroutine bc_lnrho_hds_z_iso_energ(f,topbot)
+!
+      real, dimension (:,:,:,:) :: f
+      integer, intent(IN) :: topbot
+
+      call not_implemented('bc_lnrho_hds_z_iso_energ','in noeos')
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+
+    endsubroutine bc_lnrho_hds_z_iso_energ
+!***********************************************************************
+    subroutine bc_ism_energ(f,topbot,j)
+!
+!  30-nov-15/fred: Replaced bc_ctz and bc_cdz.
+!  Apply observed scale height locally from Reynolds 1991, Manchester & Taylor
+!  1981 for warm ionized gas - dominant scale height above 500 parsecs.
+!  Apply constant local temperature across boundary for entropy.
+!  Motivation to prevent numerical spikes in shock fronts, which cannot be
+!  absorbed in only three ghost cells, but boundary thermodynamics still
+!  responsive to interior dynamics.
+!
+      real, dimension (:,:,:,:) :: f
+      integer, intent(IN) :: topbot
+      integer :: j,k
+
+      call not_implemented('bc_ism_energ','in noeos')
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+
+    endsubroutine bc_ism_energ
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
