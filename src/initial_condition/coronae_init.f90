@@ -54,6 +54,8 @@ contains
 !
 !  14-dec-10/bing: coded
 !
+    use EquationOfState, only: get_gamma_etc
+
     real, dimension (mx,my,mz,mfarray) :: f
     real :: cp
 !
