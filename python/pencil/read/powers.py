@@ -277,14 +277,10 @@ class Power(object):
                                 power_array.append(ffloat(value_string))
 
                         elif linelen == 16:
-                            for j in range(0, linelen, 2):
-                                a = line.strip().split()[j]
-
-                                b = line.strip().split()[j + 1]
-
-                                power_array.append(
-                                    complex(real=ffloat(a), imag=ffloat(b))
-                                )
+                            re = line.strip().split()[0::2]
+                            im = line.strip().split()[1::2]
+                            for a,b in zip(re,im):
+                                power_array.append(ffloat(a) + 1j*ffloat(b))
 
                 time = np.array(time)
                 if linelen == 8:
