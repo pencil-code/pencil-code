@@ -308,6 +308,8 @@ module Energy
   integer :: idiag_fconvthsphmphi=0 ! PHIAVG_DOC: $\left<c_p \varrho u_\theta T \right>_\varphi$
   integer :: idiag_fconvpsphmphi=0  ! PHIAVG_DOC: $\left<c_p \varrho u_\phi T \right>_\varphi$
   integer :: idiag_ursphTTmphi=0  ! PHIAVG_DOC: $\left<u_r T \right>_\varphi$
+  integer :: idiag_fturbrsphmphi=0  ! PHIAVG_DOC: $F_{\rm SGS}$ ($\varphi$-averaged SGS diffusion
+                                    ! PHIAVG_DOC: for star-in-a-box simulations)
   integer :: idiag_yHm=0        ! DIAG_DOC: mean hydrogen ionization
   integer :: idiag_yHmax=0      ! DIAG_DOC: max of hydrogen ionization
   integer :: idiag_TTm=0        ! DIAG_DOC: $\left<T\right>$
@@ -2989,7 +2991,7 @@ module Energy
       if (idiag_ssruzm/=0 .or. idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. &
           idiag_Fenthz/=0 .or. idiag_Fenthupz/=0 .or. idiag_Fenthdownz/=0 .or. &
           idiag_fconvxmx/=0 .or. idiag_fconvrsphmphi/=0 .or. idiag_fconvthsphmphi/=0 .or. &
-          idiag_fconvpsphmphi/=0) then
+          idiag_fconvpsphmphi/=0 .or. idiag_fturbrsphmphi/=0) then
         lpenc_diagnos(i_cp)=.true.
         lpenc_diagnos(i_uu)=.true.
         lpenc_diagnos(i_rho)=.true.
@@ -5734,6 +5736,13 @@ module Energy
           call dot(gradchit_prof_fluct,gss0,g2)
           thdiff=thdiff+g2
         endif
+!
+        if (l2davgfirst) then
+           if (idiag_fturbrsphmphi/=0) &
+              call phisum_mn_name_rz(-chi_t1*p%rho*(gss0(:,1)*p%evr(:,1)+ &
+                 gss0(:,2)*p%evr(:,2)+gss0(:,3)*p%evr(:,3)),idiag_fturbrsphmphi)
+        endif
+!
       endif
 !
 !  At the end of this routine, add all contribution to
@@ -6766,7 +6775,8 @@ module Energy
         idiag_chikrammin=0; idiag_chikrammax=0; idiag_fradr_constchixy=0
         idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0; idiag_ethmz=0
         idiag_fpreszmz=0; idiag_gTT2mz=0; idiag_gss2mz=0; idiag_TT2m=0
-      endif
+        idiag_fturbrsphmphi=0;
+     endif
 !
 !  iname runs through all possible names that may be listed in print.in.
 !
@@ -6964,6 +6974,7 @@ module Energy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvthsphmphi',idiag_fconvthsphmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvpsphmphi',idiag_fconvpsphmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ursphTTmphi',idiag_ursphTTmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'fturbrsphmphi',idiag_fturbrsphmphi)
       enddo
 !
 !  check for those quantities for which we want video slices
