@@ -283,19 +283,12 @@ class Power(object):
                                 power_array.append(ffloat(a) + 1j*ffloat(b))
 
                 time = np.array(time)
-                if linelen == 8:
-                    power_array = (
-                        np.array(power_array)
-                        .reshape([n_blocks, int(nzpos), int(nk)])
-                        .astype(np.float32)
-                    )
 
-                if linelen == 16:
-                    power_array = (
-                        np.array(power_array)
-                        .reshape([n_blocks, int(nzpos), int(nk)])
-                        .astype(complex)
-                    )
+                if linelen == 8:
+                    power_array = np.array(power_array, dtype=np.float32)
+                elif linelen == 16:
+                    power_array = np.array(power_array, dtype=complex)
+                power_array = power_array.reshape([n_blocks, int(nzpos), int(nk)])
 
                 self.t = time.astype(np.float32)
                 setattr(self, power_list[power_idx], power_array)
