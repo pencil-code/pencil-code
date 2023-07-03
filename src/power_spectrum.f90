@@ -894,7 +894,7 @@ outer:  do ikz=1,nz
 !
 !  on root processor, append global result to diagnostics file "power<field>_xy.dat"
 !
-    if ( sp2=='' ) then
+    if ( len(sp2)==0 ) then
       filename=trim(datadir)//'/power'//trim(sp)//'_xy.dat'
     else
       filename=trim(datadir)//'/power'//trim(sp)//'.'//trim(sp2)//'_xy.dat'
