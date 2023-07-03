@@ -294,7 +294,7 @@ class Power(object):
                     power_array = (
                         np.array(power_array)
                         .reshape([n_blocks, int(nzpos), int(nk)])
-                        .astype(np.complex)
+                        .astype(complex)
                     )
 
                 self.t = time.astype(np.float32)
