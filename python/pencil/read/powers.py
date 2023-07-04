@@ -173,11 +173,7 @@ class Power(object):
                 or file_name == "powera.dat"
             ):
                 continue
-            elif (
-                file_name == "powerux_xy.dat"
-                or file_name == "poweruy_xy.dat"
-                or file_name == "poweruz_xy.dat"
-            ):
+            elif re.match("power.*_xy.dat", file_name):
                 # This file has a different number of k
 
                 # This files has the k vector, and irrational numbers
