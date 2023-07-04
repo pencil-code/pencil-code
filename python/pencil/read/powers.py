@@ -225,6 +225,7 @@ class Power(object):
                     setattr(self, "kz", kz)
                     ini = i + 1
                     nk = max(nk, nkz)
+
                 # Now read z-positions, if any
                 if "z-pos" in line_list[ini]:
                     print("More than 1 z-pos")
@@ -236,42 +237,22 @@ class Power(object):
                     setattr(self, "zpos", zpos)
                 else:
                     nzpos = 1
-                # If more than one z-pos, the file will give the results concatenated for the 3 positions and the lenght of the block will increase
 
                 # Now read the rest of the file
-                # print('ini', ini)
                 line_list = line_list[ini:]
-                # I think this is not needed now
-                # if line_list[0].strip() == "-Infinity":
-                #    line_list = line_list[1:]
-                # if line_list[0][0] == "z":
-                #    line_list = line_list[2:]
                 time = []
                 power_array = []
-                # print('nk', nk)
-                # The power spectrum can be complex or real, hence len 8 or 16
                 linelen = len(line_list[1].strip().split())
 
-                # if linelen == 8:
-                #    print("Reading a real power spectrum")
-                #    block_size = np.ceil(int(nk*nzpos) / linelen) + 1
-
-                # elif linelen == 16:
-                #    print("Reading a complex power spectrum")
-                #    block_size = np.ceil(int(nk *nzpos * 2) / linelen) + 1
-
+                # If more than one z-pos, the file will give the results concatenated for the 3 positions and the length of the block will increase
                 block_size = np.ceil(int(nk * nzpos) / 8) + 1
-                # print(f"block size {block_size}")
-
                 n_blocks = int(len(line_list) / block_size)
 
                 for line_idx, line in enumerate(line_list):
                     if np.mod(line_idx, block_size) == 0:
-                        # print(float(line.strip()))
                         time.append(float(line.strip()))
-                        # print("line_idx", line_idx)
                     else:
-                        # maxi = len(line.strip().split())
+                        # The power spectrum can be complex or real, hence len 8 or 16
                         if linelen == 8:
                             for value_string in line.strip().split():
                                 power_array.append(ffloat(value_string))
