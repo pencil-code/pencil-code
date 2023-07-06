@@ -643,8 +643,11 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
+      use Fourier, only: kx_fft, ky_fft, kz_fft      
       real, dimension (mx,my,mz,mfarray) :: f
       real :: initpower_GWs,initpower2_GWs,initpower_med_GWs,compks,compkh,amplGWs
+      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt, om, om2
+      integer :: ikx,iky,ikz
 !
       intent(inout) :: f
 !
@@ -718,6 +721,37 @@ module Special
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GWs, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
             nfactd0=nfact_GW)
+        case ('power_randomphase_hel_wave')
+          call power_randomphase_hel(amplGW,initpower_GW,initpower2_GW, &
+            cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
+            lskip_projection_GW, lvectorpotential, &
+            lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
+            lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
+            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
+            kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
+            nfactd0=nfact_GW)
+!XXX
+          do ikz=1,nz
+          do iky=1,ny
+          do ikx=1,nx
+            k1=kx_fft(ikx+ipx*nx)
+            k2=ky_fft(iky+ipy*ny)
+            k3=kz_fft(ikz+ipz*nz)
+            k1sqr=k1**2
+            k2sqr=k2**2
+            k3sqr=k3**2
+            ksqr=k1sqr+k2sqr+k3sqr
+            if (delk/=0.) then
+              om2=ksqr+delk**2
+              om=sqrt(om2)
+            else
+              om=sqrt(ksqr)
+            endif
+            f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=om*f(nghost+ikx,nghost+iky,nghost+ikz,ihhT)
+          enddo
+          enddo
+          enddo
         case default
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))
@@ -1687,6 +1721,7 @@ module Special
 !***********************************************************************
     subroutine compute_gT_and_gX_from_gij(f,label)
 !
+!YYY
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !  It also allows for the inclusion of nonlinear corrections to the wave equation.
 !  Alternatively, we can also solve the Lighthill equation if lLighthill=T.
