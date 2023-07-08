@@ -55,6 +55,7 @@ module power_spectrum
   real :: max_k2 = (nxgrid/2)**2 + (nygrid/2)**2 + (nzgrid/2)**2
   integer, dimension(:), allocatable :: k2s
   integer :: nk_truebin=0
+  logical :: lpowerdat_existed=.false.
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
@@ -903,6 +904,7 @@ outer:  do ikz=1,nz
     if (ip<10) print*,'Writing power spectra of variable',sp &
          ,'to ',filename
 !
+    inquire(FILE=trim(filename), EXIST=lpowerdat_existed)
     open(1,file=filename,position='append')
 !
     if (lintegrate_shell) then
@@ -912,33 +914,36 @@ outer:  do ikz=1,nz
 !
     if ( firstout<n_spectra ) then
 !
-      write(1,'(a)') title
+      if (.not. lpowerdat_existed) then
+!  We only want to write all this metadata the first time this file is created, not every time pencil is run.
+        write(1,'(a)') title
 !
-      if (lintegrate_shell) then
+        if (lintegrate_shell) then
 !
-        write(1,'(a)') 'Shell-wavenumbers k ('//trim(itoa(nkl))//'):'
-        write(1,'(1p,8e15.7)') kshell(1:nkl)
+          write(1,'(a)') 'Shell-wavenumbers k ('//trim(itoa(nkl))//'):'
+          write(1,'(1p,8e15.7)') kshell(1:nkl)
 !
-      else
+        else
 
-        nkx = get_range_no( kxrange, nk_max )
-        nky = get_range_no( kyrange, nk_max )
+          nkx = get_range_no( kxrange, nk_max )
+          nky = get_range_no( kyrange, nk_max )
 !
-        write(1,'(a)') 'Wavenumbers k_x ('//trim(itoa(nkx))//') and k_y ('//trim(itoa(nky))//'):'
+          write(1,'(a)') 'Wavenumbers k_x ('//trim(itoa(nkx))//') and k_y ('//trim(itoa(nky))//'):'
 !
-        call write_by_ranges( 1, kx*2*pi/Lx, kxrange )
-        call write_by_ranges( 1, ky*2*pi/Ly, kyrange )
+          call write_by_ranges( 1, kx*2*pi/Lx, kxrange )
+          call write_by_ranges( 1, ky*2*pi/Ly, kyrange )
 !
-      endif
+        endif
 !
-      if (  zrange(1,1)>0 .and. &
-           (zrange(1,1)>1 .or. zrange(2,1)<nzgrid .or. zrange(3,1)>1) ) then
+        if (  zrange(1,1)>0 .and. &
+            (zrange(1,1)>1 .or. zrange(2,1)<nzgrid .or. zrange(3,1)>1) ) then
 !
-        npz = get_range_no( zrange, nz_max )
+          npz = get_range_no( zrange, nz_max )
 !
-        write(1,'(a)') 'z-positions ('//trim(itoa(npz))//'):'
-        call write_by_ranges( 1, zgrid, zrange )
+          write(1,'(a)') 'z-positions ('//trim(itoa(npz))//'):'
+          call write_by_ranges( 1, zgrid, zrange )
 !
+        endif
       endif
 !
     endif
