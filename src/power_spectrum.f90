@@ -588,7 +588,7 @@ outer:  do ikz=1,nz
 !
     use Sub,      only: curli
     use General,  only: ioptest
-    use Fourier,  only: fourier_transform_xy
+    use Fourier,  only: fourier_transform_xy, fft_xy_parallel
 !
     implicit none
 !
@@ -646,14 +646,18 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-    ndelx=nxgrid/n_segment_x      ! segmented work not yet operational -> n_segment_x always 1.
-    le=0
-    do i=1,n_segment_x+1
-      la=le+1
-      if (la>nxgrid) exit
-      le=min(le+ndelx,nxgrid)
-      call fourier_transform_xy(ar(la:le,:,:),ai(la:le,:,:))
-    enddo
+    if (nprocx>1 .or. (nygrid/=1 .and. nxgrid/=nygrid)) then
+      call fft_xy_parallel(ar,ai)
+    else
+      ndelx=nxgrid/n_segment_x      ! segmented work not yet operational -> n_segment_x always 1.
+      le=0
+      do i=1,n_segment_x+1
+        la=le+1
+        if (la>nxgrid) exit
+        le=min(le+ndelx,nxgrid)
+        call fourier_transform_xy(ar(la:le,:,:),ai(la:le,:,:))
+      enddo
+    endif
 !
    endsubroutine comp_spectrum_xy
 !***********************************************************************
