@@ -121,7 +121,7 @@ module Special
    logical :: ldiffmuS_hyper3_simplified=.false.
    logical :: lremove_mean_mu5=.false., lremove_mean_muS=.false.
    logical :: lmu5adv=.true., lmuSadv=.true.
-   logical :: lmu5divu_term=.false., lmuSdivu_term=.false.
+   logical :: lmu5divu_term=.true., lmuSdivu_term=.true.
    logical :: ldt_chiral_mhd=.true., ldiffmu5_tdep=.false.
    logical :: reinitialize_mu5=.false.
 !
