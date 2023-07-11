@@ -2883,12 +2883,18 @@ module Fourier
         call fft_y_parallel (a_re(1,:,:), a_im(1,:,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         return
       endif
-      if (nygrid == 1) then
-        !call fft_x_parallel (a_re(:,1,:), a_im(:,1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
-!AB: Philippe, could you please heck whether this "correction" is correct?
-        call fft_x_parallel (a_re(:,1,1), a_im(:,1,1), .not. lforward, lcompute_im, lignore_shear=lnoshear)
-        return
-      endif
+! Kishore: the code below seems WRONG. After commenting these lines out,
+! the output of fft_xy_parallel_3D becomes the same as that of
+! fourier_transform_xy when nygrid=1. Cursory inspection of fft_x_parallel_2D
+! suggests it cannot be used in this case. I suspect the (nxgrid == 1)
+! block above is also wrong, but I am leaving it in since I don't have a
+! setup ready at the moment to test it.
+!       if (nygrid == 1) then
+!         !call fft_x_parallel (a_re(:,1,:), a_im(:,1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+! !AB: Philippe, could you please heck whether this "correction" is correct?
+!         call fft_x_parallel (a_re(:,1,1), a_im(:,1,1), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+!         return
+!       endif
 !
       inz = size (a_re, 3)
 !
