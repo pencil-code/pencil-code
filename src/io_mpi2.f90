@@ -1095,7 +1095,7 @@ module Io
       call MPI_BCAST(npar_tot, 1, MPI_INTEGER, root, MPI_COMM_WORLD, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast total number of particles")
 !
-      cknp: if (npar_tot > mv * ncpus) then
+      cknp: if (ceiling(real(npar_tot) / real(ncpus)) > mv) then
         if (lroot) print *, "input_part_snap: npar_tot, mv = ", npar_tot, mv
         call fatal_error("input_part_snap", "too many particles")
       endif cknp
