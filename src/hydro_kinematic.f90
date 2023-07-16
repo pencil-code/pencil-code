@@ -102,6 +102,7 @@ module Hydro
   real :: binary_radius=0., radius_kinflow=0., width_kinflow=0.
   real :: power1_kinflow=4., power2_kinflow=-5./3., kgaussian_uu=0., kpeak_kinflow=3., cutoff=1e9
   real :: cs21_kinflow=1.
+  real :: diff_rot_a2=0., diff_rot_a4=0.
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100, smooth_width=0   !nghost
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -130,7 +131,7 @@ module Hydro
       sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz, &
       binary_radius, radius_kinflow, width_kinflow, &
       power1_kinflow, power2_kinflow, kpeak_kinflow, &
-      cs21_kinflow
+      cs21_kinflow, diff_rot_a2, diff_rot_a4
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -244,6 +245,9 @@ module Hydro
         profy_kinflow2=-1.0*(4.*cos(y)**2-3.)
         profy_kinflow3=-1.0
         profz_kinflow1=+1.
+      case ('solar-like')
+        profx_kinflow1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
+        profy_kinflow1=1.-diff_rot_a2*cos(y)**2-diff_rot_a4*cos(y)**4
       case ('KS')
         call periodic_KS_setup(-5./3.) !Kolmogorov spec. periodic KS
         !call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.) !old form
@@ -2211,6 +2215,17 @@ module Hydro
           p%uu(:,3)=local_Omega*x(l1:l2)*sinth(m)
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  Solar-like differential rotation. ref: Charbonneau (2010)
+!
+      case ('solar-like')
+        if (headtt) print*,'solar-like'
+        if (lpenc_loc(i_uu)) then
+          local_Omega = omega_kinflow+(profy_kinflow1(m)-omega_kinflow)*profx_kinflow1
+          p%uu(:,1:2) = 0.
+          p%uu(:,3) = local_Omega*x(l1:l2)*sin(y(m))
+        endif
+        if (lpenc_loc(i_divu)) p%divu = 0.
 !
 !  Vertical wind
 !
