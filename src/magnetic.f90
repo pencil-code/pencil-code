@@ -1396,6 +1396,8 @@ module Magnetic
           case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),kz_aa(j))
           case ('coswave-Ay-kx'); call coswave(amplaa(j),f,iay,kx=kx_aa(j))
           case ('sinwave-Ax-kz'); call sinwave(amplaa(j),f,iax,kz=kz_aa(j))
+          case ('toroidal'); f(:,:,:,iax)=-amplaa(j)*spread(spread( 1.0/x, 2,my),3,mz) &
+                                                    *spread(spread( y,     1,mx),3,mz)
           case default
           endselect
         enddo
