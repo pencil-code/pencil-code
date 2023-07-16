@@ -47,6 +47,7 @@ module Viscosity
   real :: meanfield_nuB=0.0
   real :: nu_infinity=0.,nu0=0.,non_newton_lambda=0.,carreau_exponent=0.
   real :: nu_smag_Ma2_power=0.0
+  real :: nu_rcyl_min=impossible
   character (len=labellen) :: nnewton_type='none'
   character (len=labellen) :: div_sld_visc='2nd'
   real :: nnewton_tscale=0.0,nnewton_step_width=0.0
@@ -137,7 +138,7 @@ module Viscosity
       h_sld_visc,nlf_sld_visc, lnusmag_as_aux, lsld_notensor, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
       no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux, &
-      lvisc_rho_nu_const_prefact
+      lvisc_rho_nu_const_prefact, nu_rcyl_min
 !
 ! diagnostic variable markers (needs to be consistent with reset list below)
 !
@@ -1500,7 +1501,11 @@ module Viscosity
 !
       if (lvisc_nu_profr_powerlaw) then
         if (.not.luse_nu_rmn_prof) then
-          pnu = nu*(p%rcyl_mn/xnu)**(-pnlaw)
+          if (nu_rcyl_min==impossible) then
+            pnu = nu*(p%rcyl_mn/xnu)**(-pnlaw)
+          else
+            pnu = nu*(max(nu_rcyl_min,p%rcyl_mn)/xnu)**(-pnlaw)
+          endif
 !
 !  viscosity gradient
 !
@@ -1509,9 +1514,15 @@ module Viscosity
             gradnu(:,2) = 0.
             gradnu(:,3) = 0.
           elseif (lspherical_coords) then
-            gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*sinth(m)
-            gradnu(:,2) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*costh(m)
-            gradnu(:,3) = 0.
+            if (nu_rcyl_min==impossible) then
+              gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*sinth(m)
+              gradnu(:,2) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*costh(m)
+              gradnu(:,3) = 0.
+            else
+              gradnu(:,1) = -pnlaw*nu*max(nu_rcyl_min,p%rcyl_mn)**(-pnlaw-1)*sinth(m)
+              gradnu(:,2) = -pnlaw*nu*max(nu_rcyl_min,p%rcyl_mn)**(-pnlaw-1)*costh(m)
+              gradnu(:,3) = 0.
+            endif
           else
             call not_implemented("calc_pencils_viscosity", &
                  "power-law viscosity for other than spherical or cylindrical coordinates")
