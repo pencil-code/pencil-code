@@ -83,6 +83,8 @@ readGrid[sim_,OptionsPattern[]]:=Module[{file,p,mx,my,mz,tmp},
   BinaryRead[file,"Integer32"];
   BinaryRead[file,"Real32"]; (* time *)
   tmp=BinaryRead[file,ConstantArray[p,#]]&/@{mx,my,mz};
+  Close[file];
+  
   If[OptionValue["ltrim"],
     #[[4;;-4]]&/@tmp,
     tmp
