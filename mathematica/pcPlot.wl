@@ -16,7 +16,9 @@ BeginPackage["pcPlot`","pcReadBasic`","pcRead1D`","pcRead2D`"]
 
 
 pcHexColor::usage="Takes in a Hex color code and outputs the color."
-pcColors::usage="Some self-defined colors."
+pcColors::usage="Some self-defined colors. Use pcColors[colorName,{min,max}] for a data set where
+0 will always be rescaled to 0.5, and the larger one in Abs[min] and max will be rescaled to 0 or 1.
+Useful when plotting butterfly diagrams etc."
 pcLabelStyle::usage="Font and size.";
 pcPlotStyle::usage="Set some plot styles.";
 pcPopup::usage="Using DisplayFunction->pcPopup will make a plot in a pop-up window."
@@ -106,18 +108,14 @@ Begin["`Private`"]
 
 pcHexColor[hex_]:=RGBColor@@(IntegerDigits[ToExpression@StringReplace[hex,"#"->"16^^"],256,3]/255.)
 
-pcColors=Association[
-  "Red"->RGBColor[{166,42,23}/255],
-  "Blue"->RGBColor[{28,77,124}/255],      
-  "Rainbow"->ColorData["Rainbow"],
-  "RainbowR"->ColorData[{"Rainbow","Reversed"}],
-  
-  (* Blend Blue->Black->Red for data range in [-m,m], and fix black at 0 *)
-  "BlueRedSigned"->Function[m,Function[x,Blend[{
-      {-m,pcColors["Blue"]},{-0.5m,pcHexColor["#006C65"]},{0,Black},
-      {0.5m,pcHexColor["#E2792E"]},{m,pcColors["Red"]}
-      },x]]]
-];
+pcColors[name_]:=Switch[name,
+  "Red",RGBColor[{166,42,23}/255],
+  "Blue",RGBColor[{28,77,124}/255],
+  "RainbowR",ColorData[{"Rainbow","Reversed"}],
+  "BlueBlackRed",Blend[{pcColors["Blue"],pcHexColor["#006C65"],Black,pcHexColor["#E2792E"],pcColors["Red"]},#]&,
+  _,ColorData[name]
+]
+pcColors[name_,{min_,max_}]:=pcColors[name][If[Abs[min]>=max,-0.5/min*(#-min),0.5/max*(#-max)+1]]&
 
 
 (* ::Section:: *)
