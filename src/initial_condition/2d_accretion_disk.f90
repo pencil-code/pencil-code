@@ -102,19 +102,20 @@ module InitialCondition
 !
 ! global variables to this module
 !
-  integer :: mcrit  !  m<mcrit is corona region
-  real, dimension (my) :: frho=1.,fu=1.
-!
-  character (len=labellen) :: inituu='0',initlnrho='uniform'
-  real :: uukep_inner=1.,ampluu_noise=0.
-  real :: rmin_lnrho=1., rmax_lnrho=10.
-  logical :: lsimple_density=.false., luniform_density=.false.
-!
-  namelist /initial_condition_pars/ uukep_inner, &
-       ampluu_noise,lsimple_density,luniform_density,&
-       inituu,initlnrho,rmin_lnrho,rmax_lnrho
-!
+  real :: R0=1.0
   real :: gamma
+  real :: ct0   !  thermal sound speed. ct0=cs0/sqrt(gamma)
+  real :: vk0   !  Keplerian speed at R0
+  real :: h0    !  scale height at R0, h0=ct0*R0/vk0
+  real, dimension (mx,my,mz) :: r_cyl,r_sph,sin_th
+!
+  character (len=labellen) :: inituu='0',initlnrho='uniform',initaa='0'
+  real :: ampluu=0.,ampluu_noise=0.
+  real :: rho_exp=0., rho_rmax=0.,rho_rmin=0., amplrho=1.0
+!
+  namelist /initial_condition_pars/ &
+       inituu,ampluu,ampluu_noise,amplrho,&
+       initlnrho,rho_exp,rho_rmax,rho_rmin
 
   contains
 !***********************************************************************
@@ -136,28 +137,18 @@ module InitialCondition
 !  21-feb-23/hongzhe: coded
 !
       use EquationOfState, only: get_gamma_etc,cs20
+      use Gravity, only : g0
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: tmp
-      integer :: mm
 !
       call get_gamma_etc(gamma)
-
-      do m=1,my
-        tmp = sin(y(m))-1.+cs20*gamma/(gamma-1.)
-        if (tmp<=0.) then
-          frho(m) = 0.001
-          mcrit = m+1
-        else
-          frho(m) = ( tmp*(gamma-1.)/cs20/gamma )**(1./(gamma-1.))
-          if (frho(m)<=0.001) then
-            frho(m) = 0.001
-            mcrit = m+1
-          endif
-        endif
-        tmp = sin(y(m))-cs20*gamma/(gamma-1.)*frho(m)**(gamma-1.)
-        fu(m) = sqrt( max(0.,tmp) )
-      enddo
+!
+      ct0 = sqrt(cs20/gamma)
+      vk0 = sqrt(g0/R0)
+      h0  = ct0*R0/vk0
+      r_cyl = max(R0,spread(spread( x,2,my),3,mz) * spread(spread( sin(y), 1,mx),3,mz))
+      r_sph = spread(spread(x,2,my),3,mz)
+      sin_th = spread(spread( sin(y), 1,mx),3,mz)
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************
@@ -167,96 +158,45 @@ module InitialCondition
 !
 !  21-feb-23/hongzhe: adapted
 !
+      use Gravity, only: g0
+      use Initcond, only: gaunoise
+!
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: fact
+      real, dimension (my) :: fact_y
+!
+      integer :: mm
+      real :: lat_crit
+!
+      lat_crit=acos(1.0/(1.0+0.9*(xyz1(1)*gamma/(gamma-1.)/g0*ct0**2)**(1+rho_exp*(gamma-1.0))))
+!
+!  add noise and rescale to the local keplerian velocity
+!
+      if (ampluu_noise>0.0) then
+        call gaunoise(ampluu_noise,f,iux,iuz)
+        do mm=iux,iuz
+          f(:,:,:,mm) = f(:,:,:,mm)*(r_cyl/R0)**(-0.5)
+        enddo
+      endif
 !
       select case (inituu)
-      case ('0')
-        f(:,:,:,iux:iuz) = 0.
-      case ('kep-cyl')  !  Kepelerian velocity using cylindrical radius
-        do m=1,my
-        do n=1,mz
-          f(:,m,n,iux) = f(:,m,n,iux) + 0.
-          f(:,m,n,iuy) = f(:,m,n,iuy) + 0.
-          fact = (x*sin(y(m)))**(-0.5)*fu(m)
-          f(:,m,n,iuz) = f(:,m,n,iuz) + uukep_inner*fact
-          call gaunoise_vect(ampluu_noise*fact,f,iux,iuz)
-        enddo
-        enddo
-      case ('kep-cyl-noz')  !  same as 'kep_cyl' but no vertical structure
-        do m=1,my
-        do n=1,mz
-          f(:,m,n,iux) = f(:,m,n,iux) + 0.
-          f(:,m,n,iuy) = f(:,m,n,iuy) + 0.
-          fact = (x*sin(y(m)))**(-0.5)
-          f(:,m,n,iuz) = f(:,m,n,iuz) + uukep_inner*fact
-          call gaunoise_vect(ampluu_noise*fact,f,iux,iuz)
-        enddo
-        enddo
+      case ('const')
+        f(:,:,:,iux:iuz) = f(:,:,:,iux:iuz) + ampluu
+      case ('force-balance')
+        !  horizontally balancing gravity and centrifugal forces
+        f(:,:,:,iuz) = f(:,:,:,iuz) + ampluu*sqrt(g0/r_sph)*sin_th
+      case ('force-balance-disk')
+        !  horizontally balancing gravity and centrifugal forces in the disk
+        where (abs(y-pi/2.0)>=lat_crit)
+          fact_y = 0.0
+        elsewhere
+          fact_y = sin(y)
+        endwhere
+        f(:,:,:,iuz) = f(:,:,:,iuz) + ampluu*sqrt(g0/r_sph)*spread(spread(fact_y,1,mx),3,mz)
       case default
         if (lroot) print*,'initial_condition_uu: No profile of inituu="'//trim(inituu)//'"'
       endselect
 !
     endsubroutine initial_condition_uu
-!***********************************************************************
-    subroutine gaunoise_vect(ampl,f,i1,i2)
-!
-!  Add Gaussian noise (= normally distributed) white noise for variables i1:i2
-!
-!  23-may-02/axel: coded
-!  10-sep-03/axel: result only *added* to whatever f array had before
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i1,i2
-!
-      real, dimension (nx) :: r,p,tmp,ampl
-      integer :: i,j
-!
-      intent(in)    :: ampl,i1,i2
-      intent(inout) :: f
-      integer, save, dimension(mseed) :: rstate=0
-!
-!  set gaussian random noise vector
-!
-      do i=i1,i2
-        if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
-        if (modulo(i-i1,2)==0) then
-           do j=1,nx
-              r(j)=ran0(rstate(1))
-              p(j)=ran0(rstate(1))
-          enddo
-          tmp=sqrt(-2*log(r))*sin(2*pi*p)
-        else
-          tmp=sqrt(-2*log(r))*cos(2*pi*p)
-        endif
-        f(l1:l2,m,n,i)=f(l1:l2,m,n,i)+ampl*tmp
-      enddo
-!
-    endsubroutine gaunoise_vect
-!***********************************************************************
-    function ran0(dummy)
-!
-!  The 'Minimal Standard' random number generator
-!  by Lewis, Goodman and Miller.
-!
-!  28.08.02/nils: Adapted from Numerical Recipes
-!
-      integer, intent(inout) :: dummy
-!
-      integer :: k
-      integer, parameter :: ia=16807,im=2147483647,iq=127773,ir=2836, &
-           mask=123459876
-      real, parameter :: am=1./im
-      real :: ran0
-!
-      dummy=ieor(dummy,mask)
-      k=dummy/iq
-      dummy=ia*(dummy-k*iq)-ir*k
-      if (dummy<0) dummy=dummy+im
-      ran0=am*dummy
-      dummy=ieor(dummy,mask)
-!
-    endfunction ran0
 !***********************************************************************
     subroutine initial_condition_lnrho(f)
 !
@@ -266,40 +206,35 @@ module InitialCondition
 !  21-feb-23/hongzhe: adapted
 !
       use FArrayManager
-      use EquationOfState, only: lnrho0,cs20
+      use EquationOfState, only: rho0
+      use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: fact
+      real :: epsilon
+      integer :: ll
 !
       select case (initlnrho)
       case ('uniform')
-        f(:,:,:,ilnrho) = lnrho0 + log(0.001)
-      case ('hydrostatic')
-        do n=1,mz
-        do m=1,mcrit-1  !  corona
-          fact=x**(-1/(gamma-1.))*frho(m)
-          f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + lnrho0 + log(fact)
-        enddo
-        do m=mcrit,my  !  disk
-          fact=(x*sin(y(m)))**(-1/(gamma-1.))*frho(m)
-          f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + lnrho0 + log(fact)
-        enddo
-        enddo
-      case ('thin-disk')  !  powerlaw in r_sph and exponential in z
-        do m=1,my
-        do n=1,mz
-          f(:,m,n,ilnrho) = f(:,m,n,ilnrho) - 1.5*log(x) - (cos(y(m)))**2/cs20
-        enddo
-        enddo
-      case ('thin-disk-gaur')  !  powerlaw+gaussian in r_sph and exponential in z
-        fact = (x-(rmin_lnrho+rmax_lnrho)/2.)/2./(rmax_lnrho-rmin_lnrho)*5.
-        do m=1,my
-        do n=1,mz
-          f(:,m,n,ilnrho) = f(:,m,n,ilnrho) - 1.5*log(x) - fact**2 - (cos(y(m))/2.)**2/cs20
-        enddo
-        enddo
+        f(:,:,:,ilnrho) = log(amplrho*rho0)
+      case ('rpower*exp(-z2/H2)')
+        epsilon = ct0/sqrt(g0/1.0)
+        f(:,:,:,ilnrho) = log(amplrho*rho0) &
+                              + spread(spread(rho_exp*log(x/R0),                      2,my),3,mz) &
+                              + spread(spread(rho_exp*log(0.001+sin(y)),              1,mx),3,mz) &
+                              - spread(spread(0.5*cos(y)**2/epsilon**2, 1,mx),3,mz) &
+                              * spread(spread((x/R0)**(-rho_exp*(gamma-1.)-1),        2,my),3,mz)
+        if (rho_rmin>0.0) then
+          do ll=1,mx
+            if (x(ll)<=rho_rmin) f(ll,:,:,ilnrho) = f(ll,:,:,ilnrho) - min(10.,(x(ll)/rho_rmin-1)**2)
+          enddo
+        endif
+        if (rho_rmax>0.0) then
+          do ll=1,mx
+            if (x(ll)>=rho_rmax) f(ll,:,:,ilnrho) = f(ll,:,:,ilnrho) - min(10.,(x(ll)/rho_rmax-1)**2)
+          enddo
+        endif
       case default
-        if (lroot) print*,'initial_condition_uu: No profile of initlnrho="'//trim(initlnrho)//'"'
+        if (lroot) print*,'initial_condition_lnrho: No profile of initlnrho="'//trim(initlnrho)//'"'
       endselect
 !
     endsubroutine initial_condition_lnrho
@@ -320,7 +255,7 @@ module InitialCondition
 !***********************************************************************
     subroutine initial_condition_aa(f)
 !
-!  Initialize entropy.
+!  Initialize vector potential.
 !
 !  07-may-09/wlad: coded
 !
