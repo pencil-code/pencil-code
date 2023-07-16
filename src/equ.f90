@@ -53,6 +53,7 @@ module Equ
       use Hydro
       use Interstellar, only: interstellar_before_boundary
       use Magnetic
+      use Magnetic_meanfield, only: meanfield_after_boundary
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
       use NeutralDensity, only: neutraldensity_after_boundary
@@ -316,6 +317,7 @@ module Equ
       if (ldensity)               call density_after_boundary(f)
       if (lneutraldensity)        call neutraldensity_after_boundary(f)
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
+      if (lmagn_mf)               call meanfield_after_boundary(f)
       if (lspecial)               call special_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture. This is done after

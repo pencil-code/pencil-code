@@ -14,3 +14,4 @@
   public :: rprint_magn_mf
 !- public :: meanfield_chitB
   public :: pc_aasb_const_alpha
+  public :: meanfield_after_boundary

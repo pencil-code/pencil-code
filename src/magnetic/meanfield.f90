@@ -40,6 +40,14 @@ module Magnetic_meanfield
   real, dimension (my) :: kf_y
   real, dimension (mz) :: kf_z
 !
+!  arrays for the fluctuating alpha effect in axisymmetric spherical coordinates
+!
+  integer :: channel_magn_mf=1, nr_cell=1, nth_cell=1
+  integer, dimension (nx) :: ir_cell=1
+  integer, dimension (nx,my) :: itheta_cell=1
+  real, dimension (nx) :: tau_cell=1.0
+  real, dimension (nx,my) :: rand_alpha=0.
+!
 ! Parameters
 !
   character (len=labellen) :: meanfield_kf_profile='const'
@@ -47,6 +55,7 @@ module Magnetic_meanfield
   character (len=labellen) :: meanfield_Beq_profile='const',qp_model='atan'
   character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
   character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
+  character (len=labellen) :: shear_current_profile='nothing',fluc_alp_profile='gaussian'
 !
 ! Input parameters
 !
@@ -82,14 +91,17 @@ module Magnetic_meanfield
 ! Run parameters
 !
   real :: alpha_rmax=0.0, alpha_width=0.0, alpha_width2=0.0, alpha_exp=0.
-  real :: meanfield_etat_width=0.0, meanfield_Beq_width=0.0
+  real :: meanfield_etat_width=0.0, meanfield_etat_corona=0.0,meanfield_Beq_width=0.0
   real :: meanfield_kf=1.0, meanfield_kf_width=0.0, meanfield_kf_width2=0.0
+  real :: meanfield_cs0=1.0
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
   real :: mf_qJ2=0.0, qp_aniso_factor=1.0
   real :: kx_alpha=1., kx_hij=1., relhel_hij=1., hij_ampl=1.
   real :: GWfac1=1., GWfac2=1., GWfac3=1.
+  real :: fluc_alp_m=1.0, sigma_alpha=1.0
+  real :: b2_to_u2=0.0, shear_current_sh=0.0
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
   real, dimension(ny,3,3) :: alpha_tensor_y=0., eta_tensor_y=0.
@@ -109,6 +121,7 @@ module Magnetic_meanfield
   logical :: lqp_aniso_factor=.false.
   logical :: lread_alpha_tensor_z=.false., lread_alpha_tensor_z_as_y=.false.
   logical :: lread_eta_tensor_z=.false., lread_eta_tensor_z_as_y=.false.
+  logical :: lshear_current_effect=.false., lalphass_disk=.false.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
@@ -122,12 +135,13 @@ module Magnetic_meanfield
       qp_model,&
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
-      meanfield_etat_width, meanfield_etat_exp, meanfield_Beq_width, &
+      meanfield_etat_width, meanfield_etat_exp, meanfield_etat_corona, meanfield_Beq_width, &
       meanfield_kf, meanfield_kf_profile, &
       meanfield_kf_width, meanfield_kf_width2, &
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq2_height, &
       meanfield_Beq_profile, uturb, &
       meanfield_delta_height, meanfield_delta_width, &
+      meanfield_cs0, &
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       lmeanfield_chitB, lchit_with_glnTT, lrho_chit, lchit_Bext2_equil, &
@@ -140,6 +154,8 @@ module Magnetic_meanfield
       alpha_cutoff_up, alpha_cutoff_down, &
       lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
       llarge_scale_velocity, EMF_profile, lEMF_profile, &
+      fluc_alp_profile, fluc_alp_m, sigma_alpha, &
+      lshear_current_effect, shear_current_profile, b2_to_u2, shear_current_sh, &
       lrhs_term, lrhs_term2, rhs_term_amplz, rhs_term_amplphi, rhs_term_ampl, &
       Omega_rmax, Omega_rwidth, lread_alpha_tensor_z, lread_eta_tensor_z, &
       lread_alpha_tensor_z_as_y, lread_eta_tensor_z_as_y, &
@@ -471,6 +487,17 @@ module Magnetic_meanfield
             *exp(-((z-z_surface)/meanfield_etat_width)**2)
           detat_y=0.
           detat_x=0.
+        case ('alphass')
+!
+!  etat=meanfield_etat*cs2/Omega in spherical coordinates.
+!  Here the omega part only. The cs2 part will be added later
+!
+          etat_x = x(l1:l2)**1.5
+          etat_y = max(0.,sin(y))**1.5
+          etat_z = meanfield_etat
+          detat_x= 0.
+          detat_y= 0.
+          detat_z= 0.
         case default;
           call inevitably_fatal_error('initialize_magnetic', &
           'no such meanfield_etat_profile profile')
@@ -588,6 +615,16 @@ module Magnetic_meanfield
 !
       call get_shared_variable('B_ext2',B_ext2)
 !
+!  thin disk model switch
+!
+      if (alpha_profile=='alphass' .or. alpha_profile=='fluc-alpha-disk' &
+          .or. meanfield_etat_profile=='alphass'.or. &
+          shear_current_profile=='alphass') lalphass_disk=.true.
+!
+!  Determine the coherent cells for fluctuating alpha dynamo
+!
+      if (alpha_profile=='fluc-alpha-disk') call calc_fluc_alp_cells
+!
     endsubroutine initialize_magn_mf
 !***********************************************************************
     subroutine init_aa_mf(f)
@@ -704,6 +741,14 @@ module Magnetic_meanfield
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_mf_EMF)=.true.
       endif
+!  thin-disk dynamo models
+!
+      if (lalphass_disk) lpenc_requested(i_cs2)=.true.
+!
+      if (meanfield_Beq_profile=='alphass'.or. &
+          meanfield_Beq_profile=='alphass-algebraic'.or. &
+          meanfield_Beq_profile=='fluc-alpha-disk'.or.&
+          shear_current_profile=='alphass') lpenc_requested(i_pp)=.true.
 !
     endsubroutine pencil_criteria_magn_mf
 !***********************************************************************
@@ -765,6 +810,16 @@ module Magnetic_meanfield
       if (lpencil_in(i_jxbr_mf)) lpencil_in(i_jxb_mf)=.true.
       if (lpencil_in(i_jxb_mf)) lpencil_in(i_jxb)=.true.
 !
+!  Quenching prescription using plasma beta
+!
+      if (meanfield_Beq_profile=='alphass') lpenc_requested(i_b2)=.true.
+!
+!  Shear-current effect
+!
+      if (lshear_current_effect) lpencil_in(i_jj)=.true.
+!
+      if (shear_current_profile=='alphass') lpencil_in(i_b2)=.true.
+!
 !  Pencil criteria for secondary modules
 !
       if (lmagn_mf_demfdt) call pencil_interdep_magn_mf_demfdt(lpencil_in)
@@ -795,6 +850,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21, meanfield_Ba21
       real, dimension (nx) :: meanfield_etaB2, g2, chit_prof !, quench_chiB
       real, dimension (nx) :: oneQbeta02, oneQbeta2, XXj_BBj, BjBzj
+      real, dimension (nx) :: shear_current_sh_tmp, disk_height, z_over_h
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit, XXj
       real, dimension (nx,3) :: meanfield_getat_tmp, getat_cross_B_tmp, B2glnrho, glnchit2
       real :: kx,fact
@@ -854,6 +910,15 @@ module Magnetic_meanfield
           case ('uturb_surface');
             Beq21=mu01*p%rho1/(uturb**2)* &
               0.5*(1.-erfunc((z(n)-z_surface)/meanfield_Beq_width))
+!
+!  thin disk models; meanfield_Beq=alphaSS
+!
+          case ('alphass');
+            Beq21=1.0/max(1e-10, 3.*meanfield_Beq**2*mu0*p%pp-p%b2)
+          case ('alphass-algebraic')
+            Beq21=mu01/( 3*meanfield_Beq**2*(1.-meanfield_Beq)*p%pp )
+          case ('fluc-alpha-disk')
+            Beq21=(sqrt(fluc_alp_m)*sigma_alpha-1.)*4./meanfield_Beq/mu0/p%pp
 !
 !  default
 !
@@ -959,6 +1024,13 @@ module Magnetic_meanfield
           endif
 !
         call multsv_mn(p%rho1,p%jxb_mf,p%jxbr_mf)
+      endif
+!
+!  Needed quantities for a thin disk model
+!
+      if (lalphass_disk) then
+        disk_height = sqrt(p%cs2)/sqrt(1.0)*x(l1:l2)**1.5*max(0.01,sin(y(m)))**1.5
+        z_over_h = x(l1:l2)*cos(y(m))/disk_height
       endif
 !
 !  compute alpha effect for EMF
@@ -1086,6 +1158,17 @@ module Magnetic_meanfield
           pp0=2.*alog(rr)
           spiral=sin((pp-pp0))**2
           alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)*spiral
+!
+!  Shakura-Sunyaev disk, and alphaSS=alpha_effect
+!
+        case ('alphass')
+          alpha_tmp = z_over_h*sqrt(p%cs2)*tanh(5.*(abs(z_over_h)-0.5))*0.5*(1.0+tanh(4.-2.*abs(z_over_h)))
+!
+!  alpha=alpha_effect^(1/2)*cs*rand.
+!  Since we multiply alpha_effect later, here we divide by sqrt(alpha_effect) first.
+!
+        case ('fluc-alpha-disk')
+          alpha_tmp=sqrt(p%cs2)/sqrt(alpha_effect)*rand_alpha(:,m)*0.5*(1.0+tanh(4.-2.*abs(z_over_h)))
         case ('z/H*erfunc(H-z)'); alpha_tmp=z(n)/xyz1(3)*erfunc((xyz1(3)-abs(z(n)))/alpha_width)
         case ('read'); alpha_tmp=alpha_input(l1:l2,m)
         case ('Jouve-2008-benchmark')
@@ -1136,6 +1219,16 @@ module Magnetic_meanfield
             meanfield_etat_tmp=meanfield_etat_tmp/sqrt(1.+p%b2/meanfield_etaB2)
 !           call quench_simple(p%b2,meanfield_etaB2,meanfield_etat_tmp)
           endif
+!
+!  For accretion disks, etat~cs2/Omega
+!
+          if (meanfield_etat_profile=='alphass') then
+            meanfield_etat_tmp=meanfield_etat_tmp*p%cs2  * (1.+z_over_h**2.)*3./8
+            if (meanfield_etat_corona>0.0) then
+              where (abs(z_over_h)>meanfield_etat_width) &
+                meanfield_etat_tmp = meanfield_etat_corona*x(l1:l2)**meanfield_etat_exp
+            endif
+          endif
         endif
 !
 !  Here we initialize alpha_total.
@@ -1183,6 +1276,12 @@ module Magnetic_meanfield
             Beq21=mu01*p%rho1/(uturb**2)
           case ('sqrt(kf_x)');
             Beq21=sqrt(kf_x)/meanfield_Beq**2
+          case ('alphass');
+            Beq21=1.0/max(1e-10, 3.*meanfield_Beq**2*mu0*p%pp-p%b2)
+          case ('alphass-algebraic')
+            Beq21=mu01/( 3*meanfield_Beq**2*(1.-meanfield_Beq)*p%pp )
+          case ('fluc-alpha-disk')
+            Beq21=(sqrt(fluc_alp_m)*sigma_alpha-1.)*4./meanfield_Beq/mu0/p%pp
           case default;
             Beq21=1./meanfield_Beq**2
           endselect
@@ -1307,6 +1406,29 @@ module Magnetic_meanfield
 !  Possibility of adding contribution from large-scale velocity.
 !
         if (llarge_scale_velocity) p%mf_EMF=p%mf_EMF+p%uxb
+!
+!  Possibility of shear-current effect (ref: Zhou & Blackman2021).
+!  Note that only the off-diagonal terms in eta_ij are included,
+!  i.e., not including turbulent diffusion, but including delta
+!  effect, and the shear-current effect itself.
+!
+        if (lshear_current_effect) then
+          select case (shear_current_profile)
+          case ('alphass')
+!
+!  thin-disk model. meanfield_Beq=alphaSS
+!
+            shear_current_sh_tmp = shear_current_sh*0.5*(1.0+tanh(4.-2.*abs(z_over_h))) &
+                                     /( 1.0 + 3.0*p%b2/7.0/meanfield_Beq/mu0/p%pp )
+            !
+            p%mf_EMF(:,1) = p%mf_EMF(:,1) - meanfield_etat_tmp *          &
+                     shear_current_sh_tmp * (0.63-0.26*b2_to_u2) * p%jj(:,3)
+            p%mf_EMF(:,3) = p%mf_EMF(:,3) - meanfield_etat_tmp *          &
+                   shear_current_sh_tmp * (-0.03-0.124*b2_to_u2) * p%jj(:,1)
+          case default
+            call fatal_error('calc_pencils_magn_mf','Invalid shear_current_profile!')
+          endselect
+        endif
 !
 !  Possibility of turning EMF to zero in a certain region.
 !
@@ -1867,5 +1989,123 @@ if (ip<10) print*,'AXEL3, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
       endif
       
     endsubroutine pc_aasb_const_alpha
+!***********************************************************************
+    subroutine meanfield_after_boundary(f)
+!
+!  precalculate parameters that are new at each timestep,
+!  but the same for all pencils
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      if (alpha_profile=='fluc-alpha-disk') call refresh_fluc_alpha_phase
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine meanfield_after_boundary
+!***********************************************************************
+    subroutine calc_fluc_alp_cells
+!
+!  calculate the location-dependent length and time scales for alpha
+!  fluctuations in the Shakura-Sunyaev accretion disk model.
+!
+      use Gravity, only: g0
+!
+      integer :: i,j
+      real :: r0,s0,pos_tmp,s_tmp
+      real :: epsi
+!
+!  determine alpha cells iteratively:
+!  pos(1)=xyz0(1), pos(i+1)=pos(i)+s(i),
+!  s(i)= m * sqrt(alphass) * h0 * (r/r0)**exp
+!  m=fluc_alp_m>1.0 determines how much larger is the coherent structure than the turbulence scale
+!  alphass=alpha_effect is the Shakura-Sunyaev alpha parameter
+!  h0=cs0/Omega0 is the disk scale height at r=r0
+!  exp=alpha_exp determines how turbulence length scale with R
+!
+      r0=1.0
+      s0 = fluc_alp_m * sqrt(alpha_effect) * meanfield_cs0/sqrt(g0/r0**3)
+      pos_tmp = r0
+      nr_cell=0   !  total number of cells in the r direction
+      nth_cell=0  !  maximal number of cells in the theta direction
+      i=1
+      do while (pos_tmp<=xyz1(1))
+        s_tmp = s0 * (pos_tmp/r0)**alpha_exp
+        pos_tmp = pos_tmp + s_tmp
+        epsi = s_tmp/(pos_tmp-0.5*s_tmp)
+        nr_cell=nr_cell+1
+        nth_cell=max(nth_cell,ceiling(xyz1(2)/epsi))
+!
+!  the grid at (l,m)=(i,j) belongs to the ir_cell(i)-th alpha cell in the radial direction,
+!  and the itheta_cell(j)-th cell in the polar direction.
+!
+        do while (i<=nx .and. x(l1+i-1)<pos_tmp)
+          ir_cell(i) = nr_cell
+          tau_cell(i) = fluc_alp_m/sqrt(g0/(pos_tmp - 0.5*s_tmp)**3)
+          itheta_cell(i,:) = ceiling((0.001+y(:))/epsi)
+          !
+          i=i+1
+        enddo
+      enddo
+!
+    endsubroutine calc_fluc_alp_cells
+!***********************************************************************
+    subroutine refresh_fluc_alpha_phase
+!
+!  For each alpha cell, update its value every tau_cell time
+!
+      use General, only: random_number_wrapper
+!
+      integer :: ix,iy,i,j
+      real, dimension(:,:,:), allocatable :: rand1,rand2,update_chance
+!
+!  Skipping it=1 to avoid failing the pencil check
+!
+      if (it>1 .and. lfirst) then
+        allocate( update_chance (nr_cell,nth_cell,1) )
+        call random_number_wrapper(update_chance,CHANNEL=channel_magn_mf)
+!
+        select case (fluc_alp_profile)
+        case ('gaussian')
+          allocate( rand1 (nr_cell,nth_cell,1) )
+          allocate( rand2 (nr_cell,nth_cell,1) )
+!
+          call random_number_wrapper(rand1,CHANNEL=channel_magn_mf)
+          call random_number_wrapper(rand2,CHANNEL=channel_magn_mf)
+!
+          do ix=1,nx
+            i = ir_cell(ix)
+            do iy=1,my
+              j = itheta_cell(ix,iy)
+!
+!  Use Box-Muller transform for a Gaussian ditribution N(0,1) for rand_alpha
+!
+              if (update_chance(i,j,1)<=dt/tau_cell(ix)) &
+                  rand_alpha(ix,iy)=sqrt(-2.0*log(rand1(i,j,1)))*cos(2.0*pi*rand2(i,j,1))
+            enddo
+          enddo
+          rand_alpha=sigma_alpha*rand_alpha
+          where (rand_alpha>1.) rand_alpha=1.
+          where (rand_alpha<-1.) rand_alpha=-1.
+          deallocate(rand1,rand2)
+!
+        case ('uniform')
+          allocate( rand1 (nr_cell,nth_cell,1) )
+          call random_number_wrapper(rand1,CHANNEL=channel_magn_mf)
+!
+          do ix=1,nx
+            i = ir_cell(ix)
+            do iy=1,my
+              j = itheta_cell(ix,iy)
+              if (update_chance(i,j,1)<=dt/tau_cell(ix)) rand_alpha(ix,iy)=2.*rand1(i,j,1)-1.
+            enddo
+          enddo
+          deallocate(rand1)
+        endselect
+!
+        deallocate(update_chance)
+      endif
+!
+    endsubroutine refresh_fluc_alpha_phase
 !***********************************************************************
 endmodule Magnetic_meanfield

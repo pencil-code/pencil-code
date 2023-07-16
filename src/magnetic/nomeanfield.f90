@@ -152,5 +152,17 @@ module Magnetic_meanfield
 
     endsubroutine pc_aasb_const_alpha
 !***********************************************************************
+    subroutine meanfield_after_boundary(f)
+!
+!  precalculate parameters that are new at each timestep,
+!  but the same for all pencils
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine meanfield_after_boundary
+!***********************************************************************
 endmodule Magnetic_meanfield
 
