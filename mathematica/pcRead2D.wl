@@ -15,6 +15,13 @@ BeginPackage["pcRead2D`","pcReadBasic`"]
 (*Usage messages*)
 
 
+readStride::usage="readStride[sim,slice] reads stride files.
+Input:
+  sim: String. Directory of the run.
+  slice: String, which slice to read. E.g., xy, xy2.
+Output:
+  An Association object of the min/max/step indices for each directions.
+"
 readSlice::usage="readSlice[sim,var,slice] reads slice files.
 Input:
   sim: String. Directory of the run
@@ -37,21 +44,41 @@ Begin["`Private`"]
 (*Read slice files*)
 
 
+readStride[sim_,sl_]:=Module[{dim,dir,n,file,stride},
+  dim=readDim[sim];
+  dir=StringTake[sl,#]&/@{{1},{2}};
+  n=dim["n"<>#]&/@dir;
+  
+  file=FileNameJoin[{sim,"data/stride_"<>StringTake[sl,2]<>".dat"}];
+  If[!FileExistsQ[file],
+    (* default values if stride file does not exist *)
+    stride={1,n[[1]],1,1,n[[2]],1},
+    
+    (* read stride file *)
+    stride=Flatten@Import[file];
+    Switch[Length[stride],
+      2, stride={1,n[[1]],stride[[1]],1,n[[2]],stride[[2]]},
+      6, ,
+      _, Print["stride file bad structure. Failed."];Return@$Failed]
+    ];
+    
+    AssociationThread[
+      Flatten[Table[i<>j,{i,dir},{j,{"min","max","step"}}]]->stride
+    ]
+]
+
 readSlice[sim_,var_,sl_]:=Module[
-  {file,p,nx,ny,nz,n1,n2,s1,s2,readOneTime,data,slices,times,positions},
+  {file,p,stride,n1,n2,readOneTime,data,slices,times,positions},
   file=sim<>"/data/slice_"<>var<>"."<>sl;
   readSlice::nofile=StringJoin[file," does not exist. Please check."];
   readSlice::badformat=StringJoin[file," has bad format. Please check."];
   If[!FileExistsQ[file],Message[readSlice::nofile];Return[$Failed]];
   
   (* determine data dimension *)
-  {p,nx,ny,nz}=readDim[sim]/@{"precision","nx","ny","nz"};
-  {n1,n2}=Switch[StringTake[sl,2],"xy",{nx,ny},"yz",{ny,nz},"xz",{nx,nz}];
-  (* step size *)
-  {s1,s2}=With[{s12=sim<>"/data/stride_"<>StringTake[sl,2]<>".dat"},
-    If[FileExistsQ[s12],Import[s12][[1]],{1,1}]
-  ];
-  {n1,n2}=Ceiling[{n1,n2}/{s1,s2}];
+  p=readDim[sim]["precision"];
+  stride=readStride[sim,sl]//Values;
+  n1=Length[Range@@stride[[1;;3]]];
+  n2=Length[Range@@stride[[4;;6]]];
   
   (* read *)
   readOneTime[x_]:=Module[{nstart=Last[x],slice,t,pos,nend,nnext},
@@ -77,7 +104,7 @@ End[]
 
 
 Protect[
-  readSlice
+  readStride,readSlice
 ]
 
 
