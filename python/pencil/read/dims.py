@@ -95,7 +95,8 @@ class Dim(object):
 
         if not param:
             param = read.param(datadir=datadir)
-        if param.io_strategy == "HDF5":
+        if (os.path.isfile(datadir + "./data/grid.h5")):    
+       # if param.io_strategy == "HDF5":
             import h5py
 
             with h5py.File(os.path.join(datadir,"allprocs","var.h5"), "r") as tmp:
