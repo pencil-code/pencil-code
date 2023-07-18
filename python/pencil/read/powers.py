@@ -188,8 +188,8 @@ class Power(object):
                     ini = 2
                     kx = []
                     for i in range(ini, int(np.ceil(nkx / 8)) + ini):
-                        kx.append([float(j) for j in line_list[i].split()])
-                    kx = np.array(list(plt.cbook.flatten(kx)))
+                        kx.extend([float(j) for j in line_list[i].split()])
+                    kx = np.array(kx)
                     setattr(self, "kx", kx)
                     ini = i + 1
                     nk = max(nk, nkx)
@@ -202,8 +202,8 @@ class Power(object):
                     )
                     ky = []
                     for i in range(ini, int(np.ceil(nky / 8)) + ini):
-                        ky.append([float(j) for j in line_list[i].split()])
-                    ky = np.array(list(plt.cbook.flatten(ky)))
+                        ky.extend([float(j) for j in line_list[i].split()])
+                    ky = np.array(ky)
                     setattr(self, "ky", ky)
                     ini = i + 1
                     nk = max(nk, nky)
@@ -217,8 +217,8 @@ class Power(object):
                     )
                     kz = []
                     for i in range(ini, int(np.ceil(nkz / 8)) + ini):
-                        kz.append([float(j) for j in line_list[i].split()])
-                    kz = np.array(list(plt.cbook.flatten(kz)))
+                        kz.extend([float(j) for j in line_list[i].split()])
+                    kz = np.array(kz)
                     setattr(self, "kz", kz)
                     ini = i + 1
                     nk = max(nk, nkz)
