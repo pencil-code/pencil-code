@@ -222,6 +222,21 @@ class Power(object):
                     ini = i + 1
                     nk = max(nk, nkz)
 
+                if "Shell-wavenumbers k" in line_list[1]:
+                    #TODO: may be better to just check param.lintegrate_shell. Previous three ifs can be guarded by checking param.lcomplex.
+                    nk = int(
+                        line_list[1]
+                        .split()[line_list[1].split().index("k") + 1]
+                        .split(")")[0][1:]
+                    )
+                    ini = 2
+                    k = []
+                    for i in range(ini, int(np.ceil(nk / 8)) + ini):
+                        k.extend([float(j) for j in line_list[i].split()])
+                    k = np.array(k)
+                    setattr(self, "k", k)
+                    ini = i + 1
+
                 # Now read z-positions, if any
                 if "z-pos" in line_list[ini]:
                     print("More than 1 z-pos")
