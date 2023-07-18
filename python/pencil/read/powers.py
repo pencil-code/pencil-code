@@ -217,7 +217,7 @@ class Power(object):
                     kz = []
                     for i in range(ini, int(np.ceil(nkz / 8)) + ini):
                         kz.append([float(j) for j in line_list[i].split()])
-                    kz = np.array(list(plt.cbook.flatten(ky)))
+                    kz = np.array(list(plt.cbook.flatten(kz)))
                     setattr(self, "kz", kz)
                     ini = i + 1
                     nk = max(nk, nkz)
