@@ -846,7 +846,7 @@ outer:  do ikz=1,nz
           do ikx=1,nx
 !
             !!k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2))
-            k=nint( sqrt( (kx(ikx)/Lx)**2+(ky(iky+ipy*ny)/Ly)**2 )*Lx ) ! i.e. wavenumber index k
+            k=nint( sqrt( (kx(ikx+ipx*nx)/Lx)**2+(ky(iky+ipy*ny)/Ly)**2 )*Lx ) ! i.e. wavenumber index k
                                                                         ! is |\vec{k}|/(2*pi/Lx)
             if ( k>=0 .and. k<=nk-1 ) then
 !
