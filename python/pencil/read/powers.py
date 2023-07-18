@@ -208,6 +208,7 @@ class Power(object):
                     ini = i + 1
                     nk = max(nk, nky)
 
+                #KG: is this block ever used anywhere? How is it possible for power_xy to output kz?
                 if "k_z" in line_list[1]:
                     nkz = int(
                         line_list[1]
