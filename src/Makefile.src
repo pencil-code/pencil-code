@@ -2575,13 +2575,14 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O3 -DFUNDERSC=1  #(meera)
 ##
 ## Christer's Beskow setup (FC_HDF5 needed for HDF5 to work)
-#FC=ftn
-#F77=$(FC)
-#FC_HDF5=ftn
-#CC=icc
-#FFLAGS=-O3 -mcmodel=large  -dynamic -fp-model strict
-#CFLAGS=-O3 -DFUNDERSC=1 -mcmodel=large -dynamic -D_Float128=__float128
-#FFLAGS_DOUBLE=-r8
+#### [PABourdin] Please add a hostname search pattern!
+##FC=ftn
+##F77=$(FC)
+##FC_HDF5=ftn
+##CC=icc
+##FFLAGS=-O3 -mcmodel=large  -dynamic -fp-model strict
+##CFLAGS=-O3 -DFUNDERSC=1 -mcmodel=large -dynamic -D_Float128=__float128
+##FFLAGS_DOUBLE=-r8
 ##
 ## joishi's laptop
 ##
