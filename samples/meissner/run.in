@@ -3,13 +3,13 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id$'
-  ip=13
-  nt=41, it1=10, isave=500, itorder=3
+  cvsid='$Id$',
+  ip=13,
+  nt=50, it1=10, isave=500, itorder=3
   !tmax=200.
   !tmax=0.918
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
-  dsnap=1.5, dvid=0.025, d2davg=10.
+  dsnap=0.5, dvid=0., d2davg=10.
   tavg=10.,                   ! time constant for time averaging
   slice_position='e'
   lfreeze_varint=T T T T T T T T
