@@ -115,6 +115,7 @@ module Sub
   public :: stagger_to_base_interp_1st, stagger_to_base_interp_3rd
   public :: vortex
   public :: find_index_by_bisection
+  public :: calc_scl_factor
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -8923,5 +8924,177 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       kernel = kernel / sum(kernel)
 !
     endsubroutine smoothing_kernel
+!***********************************************************************
+    subroutine calc_scl_factor
+!
+!  Calculate scale factor of the universe. Read file upon first entry.
+!  Incorporated most of the stuff from special/gravitational_waves_hTXk.f90
+!  but omitted everything that had to do with "Om*"
+!
+      use Cdata, only: lread_scl_factor_file, ip, lroot, t, tmax, &
+        scl_factor_target, Hp_target, appa_target
+      use Messages, only: fatal_error
+!
+      real, save, dimension(:), allocatable :: t_file, scl_factor, Hp_file, appa_file
+      real, save, dimension(:), allocatable :: lgt_file, lgff, lgff2, lgff3, lgff4, lgff5
+      logical, save :: lread_scl_factor_file_exists
+      integer, save :: idt_file_safety=12
+      integer, save :: nt_file, it_file, iTij=0
+      real, save :: lgt0, dlgt, H0=1.
+      real, save :: lgt1, lgt2, lgf1, lgf2, lgf
+      real, save :: lgt_ini, a_ini, Hp_ini, app_om=0
+!
+      real :: lgt_current
+      real :: f, f1, f2
+      integer, save :: it_called=0
+!
+! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
+!--   real :: t_ini=60549
+! axel: for now, I reset it to 1.
+      real :: t_ini=1.
+!
+!  Read file upon first entry.
+!
+      if (lread_scl_factor_file) then
+        if (it_called==0) then
+          inquire(FILE="a_vs_eta.dat", EXIST=lread_scl_factor_file_exists)
+          if (lread_scl_factor_file_exists) then
+            if (lroot.and.ip<14) print*,'initialize_forcing: opening a_vs_eta.dat'
+            open(9,file='a_vs_eta.dat',status='old')
+            read(9,*) nt_file, lgt0, dlgt !, H0
+            if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0=',nt_file,lgt0,dlgt,H0
+            if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, appa_file, &
+                                              lgt_file, lgff, lgff2, lgff3, lgff4, lgff5)
+            allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), appa_file(nt_file), &
+                     lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file), lgff4(nt_file), lgff5(nt_file))
+            do it_file=1,nt_file
+              read(9,*) t_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file)
+              if (ip<14) print*,'AXEL: ',it_file, t_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file)
+            enddo
+            close(9)
+            lgt_file=alog10(t_file)
+            lgff=alog10(scl_factor)
+            lgff2=alog10(Hp_file)
+!
+!  Calculate and set tmax, i.e., the end time of the simulation, so as
+!  to have a regular exit. Note that tmax=max(t_file)/t_ini.
+!  However, to be able to interpolate, we need to stop one step before that.
+!  Therefore, we give idt_file_safety as an empirical number, which depends
+!  on the length of the time step near the end of the calculation.
+!
+            tmax=t_file(nt_file-idt_file_safety)/t_ini
+            if (lroot) print*,'initialize_special: reset tmax=maxval(t_file)/t_ini=',tmax
+!
+!  The values of scl_factor in the file are given divided by a_0 (present time).
+!  First, we need to find a_ini from t_ini (given as initial parameter)
+!  Go through each time and interpolate logarithmically the value of a_ini from t_ini.
+!
+            lgt_ini=alog10(t_ini)
+            it_file=int((lgt_ini-lgt0)/dlgt)+1
+            if (it_file<1.or.it_file>nt_file) then
+              print*,'=',it_file, t_file(it_file), t_ini, t_file(it_file)+1
+              call fatal_error('calc_scl_factor','it_ini<1.or.it_ini>nt')
+            endif
+            lgt1=lgt_file(it_file)
+            lgt2=lgt_file(it_file+1)
+            lgf1=lgff(it_file)
+            lgf2=lgff(it_file+1)
+            lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+            a_ini=10**lgf
+            lgf1=lgff2(it_file)
+            lgf2=lgff2(it_file+1)
+            lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+            Hp_ini=10**lgf
+!
+            lgt_current=alog10(real(t))+lgt_ini
+            it_file=int((lgt_current-lgt0)/dlgt)+1
+            if (it_file<1.or.it_file>nt_file) then
+              if (lroot) print*,'t_ini, it_file, nt_file=',t_ini, it_file, nt_file
+              call fatal_error('calc_scl_factor','it<1.or.it>nt')
+            endif
+            !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+            lgt1=lgt_file(it_file)
+            lgt2=lgt_file(it_file+1)
+            lgf1=lgff(it_file)
+            lgf2=lgff(it_file+1)
+            lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+            scl_factor_target=10**lgf/a_ini
+            !if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
+            !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+            lgf1=lgff2(it_file)
+            lgf2=lgff2(it_file+1)
+            lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+            Hp_target=10**lgf/Hp_ini
+            !if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
+            !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
+            !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+            lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+            appa_target=10**lgf/Hp_ini**2
+            !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',appa_target
+            lgf1=lgff4(it_file)
+            lgf2=lgff4(it_file+1)
+            lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+            lgf1=lgff5(it_file)
+            lgf2=lgff5(it_file+1)
+            lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+          else
+            if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
+            call fatal_error('calc_scl_factor','we need the file a_vs_eta.dat')
+          endif
+        endif
+        it_called=it_called+1
+        if (ip<11.and.lroot) print*,'AXEL: it_called=',it_called
+!
+!  Data should have been read now, so we can interpolate:
+!  t is given as t/t_ini by default, so to compare it with
+!  the stored values in the file, we need to use t*t_ini.
+!  So, lgt_current is not the log10 of the current time t, but of t/t_ini.
+!  At the end of the run, t=1.5e18, but t/t_ini=3.11900E+13 or so.
+!
+        lgt_current=alog10(real(t))+lgt_ini
+        it_file=int((lgt_current-lgt0)/dlgt)+1
+        if (it_file<1.or.it_file>nt_file-1) then
+          print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
+          call fatal_error('calc_scl_factor','it<1.or.it>nt')
+        endif
+        !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+!
+!  Verify that:  lgt1 < lgt_current < lgt2.
+!
+        lgt1=lgt_file(it_file)
+        lgt2=lgt_file(it_file+1)
+        if (ip<11.and.lroot) print*,'AXEL: ',lgt1, lgt_current, lgt2, lgt2-lgt_current
+!
+!  logarithmic interpolation of lgff
+!
+        lgf1=lgff(it_file)
+        lgf2=lgff(it_file+1)
+        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+        scl_factor_target=10**lgf/a_ini
+        !if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
+        !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+!
+!  logarithmic interpolation of lgff2 = lg(Hp_file)
+!
+        lgf1=lgff2(it_file)
+        lgf2=lgff2(it_file+1)
+        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+        Hp_target=10**lgf !/Hp_ini
+        if (ip<14) print*,'AXEL: lgf1 > lg(apa) > lgf2 ? ',lgf1, lgf, lgf2
+        if (ip<14) print*,'AXEL: f1 > apa > f2 ? ',Hp_file(it_file), Hp_target, Hp_file(it_file+1)
+        !if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
+        !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
+        !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+!
+!  logarithmic interpolation of appa_file
+!
+        f1=appa_file(it_file)
+        f2=appa_file(it_file+1)
+        f=f1+(lgt_current-lgt1)*(f2-f1)/(lgt2-lgt1)
+        appa_target=f !/Hp_ini**2
+        if (ip<14) print*,'AXEL: f1 < appa < f2 ? ',f1, appa_target, f2
+      endif
+!
+    endsubroutine calc_scl_factor
 !***********************************************************************    
 endmodule Sub
