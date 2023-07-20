@@ -8931,7 +8931,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !  Incorporated most of the stuff from special/gravitational_waves_hTXk.f90
 !  but omitted everything that had to do with "Om*"
 !
-      use Cdata, only: lread_scl_factor_file, ip, lroot, t, tmax, &
+      use Cdata, only: lread_scl_factor_file_new, ip, lroot, t, tmax, &
         scl_factor_target, Hp_target, appa_target
       use Messages, only: fatal_error
 !
@@ -8955,7 +8955,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
 !  Read file upon first entry.
 !
-      if (lread_scl_factor_file) then
+      if (lread_scl_factor_file_new) then
         if (it_called==0) then
           inquire(FILE="a_vs_eta.dat", EXIST=lread_scl_factor_file_exists)
           if (lread_scl_factor_file_exists) then

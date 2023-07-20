@@ -213,6 +213,7 @@ module Param_IO
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, ivar_omit, &
+      lread_scl_factor_file_new, &
       lsubstract_reference_state, lzaver_on_input, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &

@@ -240,7 +240,7 @@ module Cdata
 !
 !  Entries related to the scale factor of the universe
 !
-  logical :: lread_scl_factor_file=.false.
+  logical :: lread_scl_factor_file=.false., lread_scl_factor_file_new=.false.
   real :: scl_factor_target, Hp_target, appa_target
 !
 ! Debugging

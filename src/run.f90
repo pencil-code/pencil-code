@@ -596,7 +596,7 @@ program run
 !
 !  calculate scale factor of the universe
 !
-    if (lread_scl_factor_file) call calc_scl_factor
+    if (lread_scl_factor_file_new) call calc_scl_factor
 !
     if (lwrite_sound) then
       if ( .not.lout_sound .and. abs( t-tsound - dsound )<= 1.1*dt ) then
