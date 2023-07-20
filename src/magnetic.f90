@@ -9584,6 +9584,7 @@ module Magnetic
         idiag_jmbmz=0; idiag_kmz=0; idiag_kx_aa=0
         idiag_ambmzh=0;idiag_ambmzn=0;idiag_ambmzs=0; idiag_bmzph=0
         idiag_bmzphe=0; idiag_bcosphz=0; idiag_bsinphz=0
+        idiag_bx2mx=0; idiag_by2mx=0; idiag_bz2mx=0
         idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
         idiag_bx2rmz=0; idiag_by2rmz=0; idiag_bz2rmz=0
         idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
