@@ -2316,7 +2316,8 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(mahti-[^g]|mahti[^-])
 #FFLAGS=-O1 #-fimplicit-none #(mahti-[^g]|mahti[^-])
 #FFLAGS_DOUBLE=-fdefault-real-8 #(mahti-[^g]|mahti[^-])
-#FFLAGS_DOUBLE=-r8
+## Intel compiler version:
+##FFLAGS_DOUBLE=-r8 #(mahti-[^g]|mahti[^-])
 #CFLAGS=-DFUNDERSC=1 -O1 #(mahti-[^g]|mahti[^-])
 ##
 ## Lumi: cray_shasta_c
