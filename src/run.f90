@@ -65,7 +65,7 @@ program run
   use Filter
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
-  use General,         only: random_seed_wrapper, touch_file, itoa
+  use General,         only: random_seed_wrapper, touch_file, itoa, calc_scl_factor
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays, &
                              coarsegrid_interp
   use Gpu,             only: gpu_init, register_gpu
@@ -431,7 +431,7 @@ program run
 !
 !  Initialize ionization array.
 !
-  if (leos_ionization) call ioninit(f)
+!AXEL  if (leos_ionization) call ioninit(f)
   if (leos_temperature_ionization) call ioncalc(f)
 !
 !  Prepare particles.
@@ -593,6 +593,10 @@ program run
         lreloading          = .false.
       endif
     endif
+!
+!  calculate scale factor of the universe
+!
+    if (lread_scl_factor_file) call calc_scl_factor
 !
     if (lwrite_sound) then
       if ( .not.lout_sound .and. abs( t-tsound - dsound )<= 1.1*dt ) then

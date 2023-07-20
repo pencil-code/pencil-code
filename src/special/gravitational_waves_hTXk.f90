@@ -112,7 +112,7 @@ module Special
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
   logical :: lreal_space_hTX_boost_as_aux=.false., lreal_space_gTX_boost_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false., lmatter_GW=.false., ldark_energy_GW=.false.
-  logical :: lonly_mag=.false., lread_scl_factor_file=.false.
+  logical :: lonly_mag=.false.!, lread_scl_factor_file=.false.
   logical :: lstress=.true., lstress_ramp=.false., lstress_upscale=.false.
   logical :: lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
@@ -136,7 +136,9 @@ module Special
   integer :: nt_file, it_file, iTij=0
   real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf
-  real :: scl_factor_target, Hp_target, app_target, OmM_target, OmT_target, lgt_current
+  !real :: scl_factor_target, Hp_target, app_target, OmM_target, OmT_target, lgt_current
+!AB: now in cdata
+  real :: app_target, OmM_target, OmT_target, lgt_current
   real :: lgt_ini, a_ini, Hp_ini, app_om=0
 ! real :: OmM_ini, OmT_ini
 ! added variables
@@ -731,7 +733,7 @@ module Special
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
             nfactd0=nfact_GW)
-!XXX
+!
           do ikz=1,nz
           do iky=1,ny
           do ikx=1,nx

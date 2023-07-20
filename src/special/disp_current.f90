@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3)
+! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3), infl_a2
 !***************************************************************
 !
@@ -68,9 +68,10 @@ module Special
     leedot_as_aux
 !
   ! run parameters
+  real :: beta_inflation=0.
   namelist /special_run_pars/ &
     alpf, llorenz_gauge_disp, lphi_hom, &
-    leedot_as_aux, eta_ee
+    leedot_as_aux, eta_ee, beta_inflation
 !
 ! Declare any index variables necessary for main or
 !
@@ -84,8 +85,11 @@ module Special
   integer :: idiag_edotrms=0    ! DIAG_DOC: $\left<\dot{\Ev}^2\right>^{1/2}$
   integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
   integer :: idiag_a0rms=0      ! DIAG_DOC: $\left<A_0^2\right>^{1/2}$
-  integer :: idiag_grms=0   ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
-  integer :: idiag_da0rms=0   ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
+  integer :: idiag_grms=0       ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
+  integer :: idiag_da0rms=0     ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
+  integer :: idiag_BcurlEm=0    ! DIAG_DOC: $\left<\Bv\cdot\nabla\times\Ev\right>$
+  integer :: idiag_fppf=0       ! DIAG_DOC: $f''/f$
+  integer :: idiag_afact=0      ! DIAG_DOC: $a$ (scale factor)
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -246,16 +250,33 @@ module Special
         lpenc_requested(i_gphi)=.true.
         lpenc_requested(i_infl_a2)=.true.
       endif
+!
+!  compulsory pencils
+!
       lpenc_requested(i_el)=.true.
       lpenc_requested(i_ga0)=.true.
-!
       lpenc_requested(i_curlb)=.true.
+      lpenc_requested(i_jj_ohm)=.true.
+!
       if (llorenz_gauge_disp) then
         lpenc_requested(i_diva)=.true.
       endif
+!
+!  diffusion term.
+!
       lpenc_requested(i_jj_ohm)=.true.
-
       if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
+!
+!  Diagnostics pencils:
+!
+      if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
+      lpenc_requested(i_jj_ohm)=.true.
+      if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
+
+      if (idiag_BcurlEm/=0) then
+        lpenc_diagnos(i_curlE)=.true.
+        lpenc_diagnos(i_BcurlE)=.true.
+      endif
 
       if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
       if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
@@ -294,6 +315,7 @@ module Special
       intent(inout) :: p
 !
 ! el
+!
       if (loverride_ee) then
         if (lresi_eta_tdep) then
           p%el=-p%uxb+mu0*eta_tdep*p%jj
@@ -305,6 +327,35 @@ module Special
       endif
 ! e2
       call dot2_mn(p%el,p%e2)
+!
+! edot2
+!
+      if (leedot_as_aux) then
+        call dot2_mn(f(l1:l2,m,n,iedotx:iedotz),p%edot2)
+      else
+        p%edot2=0.
+      endif
+!
+!  del2ee
+!
+      if (eta_ee/=0.) call del2v(f,iex,p%del2ee)
+!
+!  curle
+!
+      if (idiag_BcurlEm/=0) then
+        call curl(f,iex,p%curle)
+        call dot(p%bb,p%curle,p%BcurlE)
+      endif
+!
+! edot2
+!
+      if (leedot_as_aux) then
+        call dot2_mn(f(l1:l2,m,n,iedotx:iedotz),p%edot2)
+      endif
+!
+!  del2ee
+!
+      if (eta_ee/=0.) call del2v(f,iex,p%del2ee)
 !
 ! edot2
 !
@@ -349,6 +400,7 @@ module Special
 !
       real, dimension (nx,3) :: gtmp
       real, dimension (nx) :: tmp, del2a0
+      real :: inflation_factor
 !
       intent(in) :: p
       intent(inout) :: f, df
@@ -362,8 +414,19 @@ module Special
 !  Calculate curlB as -del2a, because curlB leads to instability.
 !
       if (lmagnetic) then
+
         if (.not.loverride_ee) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
+!
+!  magneto-genesis from reheating
+!
+        if (beta_inflation/=0.) then
+          if (ip<14.and.lroot) print*,'scl_factor_target, Hp_target, appa_target=', &
+                                       scl_factor_target, Hp_target, appa_target
+          inflation_factor=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
+          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*inflation_factor
+          if (ip<15.and.lroot.and.lfirst) print*,'t, inflation_factor=',t, inflation_factor
+        endif
 !
 !  if particles, would add J=sum(qi*Vi*ni)
 !
@@ -418,6 +481,9 @@ module Special
         call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
         call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
+        call sum_mn_name(p%BcurlE,idiag_BcurlEm)
+        call save_name(inflation_factor,idiag_fppf)
+        call save_name(scl_factor_target,idiag_afact)
         if (idiva_name>0) then
           call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
           call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
@@ -491,7 +557,8 @@ module Special
 !
       if (lreset) then
         idiag_EEEM=0; idiag_erms=0; idiag_edotrms=0; idiag_emax=0
-        idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0
+        idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
+        idiag_fppf=0; idiag_afact=0
         cformv=''
       endif
 !
@@ -505,6 +572,9 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)
         call parse_name(iname,cname(iname),cform(iname),'grms',idiag_grms)
         call parse_name(iname,cname(iname),cform(iname),'da0rms',idiag_da0rms)
+        call parse_name(iname,cname(iname),cform(iname),'BcurlEm',idiag_BcurlEm)
+        call parse_name(iname,cname(iname),cform(iname),'fppf',idiag_fppf)
+        call parse_name(iname,cname(iname),cform(iname),'afact',idiag_afact)
       enddo
 !
       do inamez=1,nnamez

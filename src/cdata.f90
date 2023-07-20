@@ -238,6 +238,11 @@ module Cdata
   logical :: lfatal_num_vector_369=.true.
   logical :: lsmooth_farray=.false.
 !
+!  Entries related to the scale factor of the universe
+!
+  logical :: lread_scl_factor_file=.false.
+  real :: scl_factor_target, Hp_target, appa_target
+!
 ! Debugging
 !
   integer :: ip=14
