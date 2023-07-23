@@ -5,4 +5,4 @@
 #  Use because you are too lazy to type 'pc_run start' or because you want
 #  to submit the script to a queue which does not allow options to the script.
 #
-pc_run start
+pc_run start $@
