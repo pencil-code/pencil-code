@@ -108,9 +108,12 @@ Begin["`Private`"]
 
 pcHexColor[hex_]:=RGBColor@@(IntegerDigits[ToExpression@StringReplace[hex,"#"->"16^^"],256,3]/255.)
 
-pcColors[name_]:=Switch[name,
+pcColors[cf_Function]:=cf
+pcColors[name_String]:=Switch[name,
   "Red",RGBColor[{166,42,23}/255],
   "Blue",RGBColor[{28,77,124}/255],
+  "Green",RGBColor[{1,113,0}/255],
+  "Magenta",RGBColor[{151,14,83}/255],
   "RainbowR",ColorData[{"Rainbow","Reversed"}],
   "BlueBlackRed",Blend[{pcColors["Blue"],pcHexColor["#006C65"],Black,pcHexColor["#E2792E"],pcColors["Red"]},#]&,
   _,ColorData[name]
