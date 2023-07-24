@@ -193,7 +193,8 @@ module InitialCondition
         endwhere
         f(:,:,:,iuz) = f(:,:,:,iuz) + ampluu*sqrt(g0/r_sph)*spread(spread(fact_y,1,mx),3,mz)
       case default
-        if (lroot) print*,'initial_condition_uu: No profile of inituu="'//trim(inituu)//'"'
+        call fatal_error('initial_condition_uu', &
+            'initial_condition_uu: No profile of inituu="'//trim(inituu)//'"')
       endselect
 !
     endsubroutine initial_condition_uu
@@ -234,7 +235,8 @@ module InitialCondition
           enddo
         endif
       case default
-        if (lroot) print*,'initial_condition_lnrho: No profile of initlnrho="'//trim(initlnrho)//'"'
+        call fatal_error('initial_condition_lnrho', &
+            'initial_condition_lnrho: No profile of initlnrho="'//trim(initlnrho)//'"')
       endselect
 !
     endsubroutine initial_condition_lnrho
