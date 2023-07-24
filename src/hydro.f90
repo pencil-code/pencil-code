@@ -604,9 +604,9 @@ module Hydro
   integer :: idiag_ruxuymz=0    ! XYAVG_DOC: $\langle\rho u_x u_y\rangle_{xy}$
   integer :: idiag_ruxuzmz=0    ! XYAVG_DOC: $\langle\rho u_x u_z\rangle_{xy}$
   integer :: idiag_ruyuzmz=0    ! XYAVG_DOC: $\langle\rho u_y u_z\rangle_{xy}$
-  integer :: idiag_ruxuy2mz=0   ! XYAVG_DOC: $\langle\rho u_x u_y\rangle_{xy}$
-  integer :: idiag_ruxuz2mz=0   ! XYAVG_DOC: $\langle\rho u_x u_z\rangle_{xy}$
-  integer :: idiag_ruyuz2mz=0   ! XYAVG_DOC: $\langle\rho u_y u_z\rangle_{xy}$
+  integer :: idiag_ruxuy2mz=0   ! XYAVG_DOC: $\langle\left(\rho u_x u_y\right)^2\rangle_{xy}$
+  integer :: idiag_ruxuz2mz=0   ! XYAVG_DOC: $\langle\left(\rho u_x u_z\right)^2\rangle_{xy}$
+  integer :: idiag_ruyuz2mz=0   ! XYAVG_DOC: $\langle\left(\rho u_y u_z\right)^2\rangle_{xy}$
   integer :: idiag_oxuxxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{x,x}\right>_{xy}$
   integer :: idiag_oyuxymz=0    ! XYAVG_DOC: $\left<\omega_y u_{x,y}\right>_{xy}$
   integer :: idiag_oxuyxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{y,x}\right>_{xy}$
