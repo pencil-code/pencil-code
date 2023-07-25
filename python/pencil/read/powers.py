@@ -149,8 +149,16 @@ class Power(object):
                     file_list.append(file_name)
 
         # Determine the file and data structure.
-        dim = read.dim(datadir=datadir)
-        block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
+        if (os.path.isfile(datadir + "/grid.h5")):
+            grid=h5py.File('data/grid.h5','r')
+            nxgrid = np.array(grid['settings']['nx'])
+            grid.close()
+        else:
+            dim=pc.read.dim()
+            nxgrid = dim.nx
+
+        #dim = read.dim(datadir=datadir)
+        block_size = np.ceil(int(nxgrid / 2) / 8.0) + 1
 
         # Read the power spectra.
         for power_idx, file_name in enumerate(file_list):
@@ -318,7 +326,7 @@ class Power(object):
 
                 time = np.array(time)
                 power_array = np.array(power_array).reshape(
-                    [n_blocks, int(dim.nxgrid / 2)]
+                    [n_blocks, int(nxgrid / 2)]
                 )
                 self.t = time
                 setattr(self, power_list[power_idx], power_array)
@@ -331,7 +339,7 @@ class Power(object):
                             power_array.append(float(value_string))
                 power_array = (
                     np.array(power_array)
-                    .reshape([int(dim.nxgrid / 2)])
+                    .reshape([int(nxgrid / 2)])
                     .astype(np.float32)
                 )
                 setattr(self, power_list[power_idx], power_array)
@@ -340,6 +348,7 @@ class Power(object):
                 power_array = []
                 for line_idx, line in enumerate(line_list):
                     if np.mod(line_idx, block_size) == 0:
+                        print(line.strip())
                         time.append(float(line.strip()))
                     else:
                         for value_string in line.strip().split():
@@ -349,7 +358,7 @@ class Power(object):
                 time = np.array(time)
                 power_array = (
                     np.array(power_array)
-                    .reshape([n_blocks, int(dim.nxgrid / 2)])
+                    .reshape([n_blocks, int(nxgrid / 2)])
                     .astype(np.float32)
                 )
                 self.t = time.astype(np.float32)
