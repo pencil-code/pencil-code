@@ -105,6 +105,7 @@ class Power(object):
         import os
         import os.path as op
         import numpy as np
+        import h5py
         from pencil import read
         from pencil.util import ffloat
 
@@ -150,7 +151,7 @@ class Power(object):
 
         # Determine the file and data structure.
         if (os.path.isfile(datadir + "/grid.h5")):
-            grid=h5py.File('data/grid.h5','r')
+            grid=h5py.File(datadir + "/grid.h5",'r')
             nxgrid = np.array(grid['settings']['nx'])
             grid.close()
         else:
@@ -348,7 +349,6 @@ class Power(object):
                 power_array = []
                 for line_idx, line in enumerate(line_list):
                     if np.mod(line_idx, block_size) == 0:
-                        print(line.strip())
                         time.append(float(line.strip()))
                     else:
                         for value_string in line.strip().split():
