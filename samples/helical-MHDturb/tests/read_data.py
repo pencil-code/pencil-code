@@ -15,8 +15,8 @@ import pencil as pc
 
 datadir = '../data'
 
-ts = pc.read_ts(datadir=datadir, plot_data=False, quiet=True)
-var = pc.read_var(datadir=datadir, trimall=True, quiet=True)
+ts = pc.read.ts(datadir=datadir, quiet=True)
+var = pc.read.var(datadir=datadir, trimall=True, quiet=True)
 
 
 # Now write to file
