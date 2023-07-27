@@ -36,6 +36,7 @@ module Special
 !
   integer :: iaxi_Q=0, iaxi_Qdot=0, iaxi_chi=0, iaxi_chidot=0, Ndivt=100
   integer :: iaxi_psi=0, iaxi_psidot=0, iaxi_TR=0, iaxi_TRdot=0
+  integer :: iaxi_impsi=0, iaxi_impsidot=0, iaxi_imTR=0, iaxi_imTRdot=0
 !
   ! input parameters
   real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
@@ -43,6 +44,9 @@ module Special
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
   real :: Mpl2=1., Hdot=0., lamf, Hscript
   real, dimension (nx) :: grand, grant, dgrant
+  real, dimension (nx) :: xmask_axion
+  real, dimension (2) :: axion_sum_range
+  integer, dimension (nx) :: kindex_array
   real :: grand_sum, grant_sum, dgrant_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
   real :: lnkmin0, lnkmax0, dlnk
@@ -51,18 +55,19 @@ module Special
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
+  logical :: lim_psi_TR=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
-    lconf_time, Ndivt, lanalytic, lvariable_k, &
-    llnk_spacing_adjustable, llnk_spacing
+    lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
+    llnk_spacing_adjustable, llnk_spacing, lim_psi_TR
 !
   ! run parameters
   namelist /special_run_pars/ &
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
-    nmin0, nmax0
+    nmin0, nmax0, axion_sum_range
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -81,6 +86,7 @@ module Special
   integer :: idiag_TR_anal  =0 ! DIAG_DOC: $T_R^{\rm anal}$
 ! integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
 ! integer :: idiag_grant=0 ! DIAG_DOC: ${\cal T}^\chi$
+  integer :: idiag_dgrant_up=0 ! DIAG_DOC: ${\cal T}^\chi$
   integer :: idiag_grand2=0 ! DIAG_DOC: ${\cal T}^Q$ (test)
   integer :: idiag_dgrant=0 ! DIAG_DOC: $\dot{\cal T}^\chi$
   integer :: idiag_fact=0   ! DIAG_DOC: $\Theta(t)$
@@ -121,6 +127,13 @@ module Special
       call farray_register_pde('axi_TR'    ,iaxi_TR)
       call farray_register_pde('axi_TRdot' ,iaxi_TRdot)
 !
+      if (lim_psi_TR) then
+        call farray_register_pde('axi_impsi'   ,iaxi_impsi)
+        call farray_register_pde('axi_impsidot',iaxi_impsidot)
+        call farray_register_pde('axi_imTR'    ,iaxi_imTR)
+        call farray_register_pde('axi_imTRdot' ,iaxi_imTRdot)
+      endif
+!
     endsubroutine register_special
 !***********************************************************************
     subroutine initialize_special(f)
@@ -152,6 +165,20 @@ module Special
         lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
         k(ik)=exp(lnk(ik))
       enddo
+      kindex_array=nint((lnk-lnkmin0)/dlnk)
+!
+!  Compute mask for error diagnostics
+!
+      if (l1 == l2) then
+        xmask_axion = 1.
+      else
+        where (      kindex_array >= nint(mx*axion_sum_range(1)-1) &
+               .and. kindex_array <= nint(mx*axion_sum_range(2)-1))
+          xmask_axion = 1.
+        elsewhere
+          xmask_axion = 0.
+        endwhere
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -167,6 +194,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: psi, psidot, TR, TRdot
+      real, dimension (nx) :: impsi, impsidot, imTR, imTRdot
       real :: chi0
       real :: lnt, lnH, lna, a
       real :: kmax=2., lnkmax, lnk0=1.
@@ -203,6 +231,7 @@ module Special
           k(ik)=k0+dk*(ik-1+iproc*nx)
         enddo
       endif
+      kindex_array=nint((lnk-lnkmin0)/dlnk)
 !
 !  Initial condition; depends on k, which is here set to x.
 !
@@ -217,6 +246,12 @@ module Special
             TR=(1./sqrt(2.*k))*cos(-k*t)
             TRdot=(k/sqrt(2.*k))*sin(-k*t)
             chi0=chi_prefactor*pi*fdecay
+            if (lim_psi_TR) then
+              impsi=(1./sqrt(2.*k))*sin(-k*t)
+              impsidot=(-k/sqrt(2.*k))*cos(-k*t)
+              imTR=(1./sqrt(2.*k))*sin(-k*t)
+              imTRdot=(-k/sqrt(2.*k))*cos(-k*t)
+            endif
           else
             print*,'k=',k
             a=exp(H*t)
@@ -236,6 +271,12 @@ module Special
             f(l1:l2,m,n,iaxi_psidot)=psidot
             f(l1:l2,m,n,iaxi_TR)=TR
             f(l1:l2,m,n,iaxi_TRdot)=TRdot
+            if (lim_psi_TR) then
+              f(l1:l2,m,n,iaxi_impsi)=impsi
+              f(l1:l2,m,n,iaxi_impsidot)=impsidot
+              f(l1:l2,m,n,iaxi_imTR)=imTR
+              f(l1:l2,m,n,iaxi_imTRdot)=imTRdot
+            endif
           enddo
           enddo 
 !
@@ -312,6 +353,7 @@ module Special
       real, dimension (nx) :: Q, Qdot, Qddot, chi, chidot, chiddot
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
+      real, dimension (nx) :: impsi, impsidot, imTR, imTRdot
       real, dimension (nx) :: Uprime, mQ, xi, epsQE, epsQB
       real :: fact=1.
       integer :: ik
@@ -338,6 +380,13 @@ module Special
       TR=f(l1:l2,m,n,iaxi_TR)
       TRdot=f(l1:l2,m,n,iaxi_TRdot)
 !
+      if (lim_psi_TR) then
+        impsi=f(l1:l2,m,n,iaxi_impsi)
+        impsidot=f(l1:l2,m,n,iaxi_impsidot)
+        imTR=f(l1:l2,m,n,iaxi_imTR)
+        imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
+      endif
+!
 !  initialize
 !
       Qddot=0.
@@ -357,13 +406,16 @@ module Special
       endif
       epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
       epsQB=g**2*Q**4/(Mpl2*H**2)
-      if (lfirst.and.lvariable_k) then
-        k0=exp(-1.0)*a*H
-        dk=(k0*(exp(2*1.0)-1))/(ncpus*nx)
-        do ik=1,nx
-          k(ik)=k0+dk*(ik-1+iproc*nx)
-        enddo
-      endif
+!
+!  for Ramkishor to delete when ok, and clean-up
+!
+   !  if (lfirst.and.lvariable_k) then
+   !    k0=exp(-1.0)*a*H
+   !    dk=(k0*(exp(2*1.0)-1))/(ncpus*nx)
+   !    do ik=1,nx
+   !      k(ik)=k0+dk*(ik-1+iproc*nx)
+   !    enddo
+   !  endif
 !
 !  background
 !
@@ -421,6 +473,15 @@ module Special
           df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
             -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
             +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
+          if (lim_psi_TR) then
+            df(l1:l2,m,n,iaxi_impsi)=df(l1:l2,m,n,iaxi_impsi)+impsidot
+            df(l1:l2,m,n,iaxi_impsidot)=df(l1:l2,m,n,iaxi_impsidot) &
+              -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi+(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
+            df(l1:l2,m,n,iaxi_imTR)=df(l1:l2,m,n,iaxi_imTR)+imTRdot
+            df(l1:l2,m,n,iaxi_imTRdot)=df(l1:l2,m,n,iaxi_imTRdot) &
+              -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
+              +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
+          endif
         endif
       else
         if (lanalytic) then
@@ -518,7 +579,7 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call sum_mn_name(psi,idiag_psi)
         call sum_mn_name(TR,idiag_TR)
 !       call sum_mn_name(grand,idiag_grand)  !redundant
-!       call sum_mn_name(grant,idiag_grant)  !redundant
+        call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
         call save_name(grand_sum,idiag_grand2)
         call save_name(dgrant_sum,idiag_dgrant)
         call save_name(fact,idiag_fact)
@@ -600,7 +661,8 @@ endif
       real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: mQ, xi, epsQE, epsQB
-      real, dimension (nx) :: psi, psidot, TR, TRdot, TReff, TRdoteff
+      real, dimension (nx) :: psi, psidot, TR, TRdot, TReff2, TRdoteff2
+      real, dimension (nx) :: impsi, impsidot, imTR, imTRdot
       real :: lnt, lnH, lna, a, lnkmin, lnkmax
       integer :: ik, nswitch
 !
@@ -614,6 +676,11 @@ endif
       chidot=f(l1:l2,m,n,iaxi_chidot)
       TR=f(l1:l2,m,n,iaxi_TR)
       TRdot=f(l1:l2,m,n,iaxi_TRdot)
+!
+      if (lim_psi_TR) then
+        imTR=f(l1:l2,m,n,iaxi_imTR)
+        imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
+      endif
 !
       mQ=g*Q/H
       if (lconf_time) then
@@ -643,10 +710,12 @@ endif
 !
           do ik=1,nx
             lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx+nswitch)
+            lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx+nswitch)
             k(ik)=exp(lnk(ik))
           enddo
+          kindex_array=nint((lnk-lnkmin0)/dlnk)
 !
-!  move f array
+!  move f array. Compute new initial point for the last entry.
 !
           !f(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_psi:iaxi_TRdot)
           tmp(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_psi:iaxi_TRdot)
@@ -663,6 +732,16 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
             f(l2,m,n,iaxi_psidot)=psidot(nx)
             f(l2,m,n,iaxi_TR)=TR(nx)
             f(l2,m,n,iaxi_TRdot)=TRdot(nx)
+            if (lim_psi_TR) then
+              impsi=(1./sqrt(2.*k))*sin(-k*t)
+              impsidot=(-k/sqrt(2.*k))*cos(-k*t)
+              imTR=(1./sqrt(2.*k))*sin(-k*t)
+              imTRdot=(-k/sqrt(2.*k))*cos(-k*t)
+              f(l2,m,n,iaxi_impsi)=impsi(nx)
+              f(l2,m,n,iaxi_impsidot)=impsidot(nx)
+              f(l2,m,n,iaxi_imTR)=imTR(nx)
+              f(l2,m,n,iaxi_imTRdot)=imTRdot(nx)
+            endif
           endif
 !
 !  output
@@ -685,12 +764,17 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
 !
 !  integrand (for diagnostics)
 !
-      TReff=TR
-      TRdoteff=TRdot
-      where (abs(TR)<1./sqrt(2.*a*H))
+      TReff2=TR**2
+      TRdoteff2=TR*TRdot
+      if (lim_psi_TR) then
+        TReff2=TR**2+imTR**2
+        TRdoteff2=TR*TRdot+imTR*imTRdot
+      endif
+!
+      where (TReff2<1./(2.*a*H))
 !      where (k>(a*H*2.7))
-        TReff=0.
-        TRdoteff=0.
+        TReff2=0.
+        TRdoteff2=0.
 !        TReff=(1./sqrt(2.*k))*cos(-k*t)
 !        TRdoteff=(k/sqrt(2.*k))*sin(-k*t)
       endwhere
@@ -698,29 +782,29 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
       !grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
       !grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
 !
-      grand=(4.*pi*k**3*dlnk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
-      grant=(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
+      grand=(4.*pi*k**3*dlnk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
+      grant=(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TReff2*(-lamf/(2.*a**2))/twopi**3
 !
       !if (llog_spacing) then
 !AB: bug, right?
       if (llnk_spacing) then
         if (lconf_time) then
           dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
-          (a*mQ*H**2+g*Qdot)*TReff**2+(mQ*H-k/a)*2*TReff*TRdoteff &
+          (a*mQ*H**2+g*Qdot)*TReff2+(mQ*H-k/a)*2*TRdoteff2 &
           )/twopi**3
         else 
           dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
-          (a*mQ*H**2+a*g*Qdot)*TReff**2+(a*mQ*H-k)*2*TReff*TRdoteff &
+          (a*mQ*H**2+a*g*Qdot)*TReff2+(a*mQ*H-k)*2*TRdoteff2 &
           )/twopi**3
         endif
       else
         if (lconf_time) then
           dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
-          (a*mQ*H**2+g*Qdot)*TReff**2+(mQ*H-k/a)*2*TReff*TRdoteff &
+          (a*mQ*H**2+g*Qdot)*TReff2+(mQ*H-k/a)*2*TRdoteff2 &
           )/twopi**3
         else 
           dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
-          (a*mQ*H**2+a*g*Qdot)*TReff**2+(a*mQ*H-k)*2*TReff*TRdoteff &
+          (a*mQ*H**2+a*g*Qdot)*TReff2+(a*mQ*H-k)*2*TRdoteff2 &
           )/twopi**3
         endif
       endif
@@ -728,7 +812,7 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
       call mpiallreduce_sum(sum(grand),grand_sum,1)
       call mpiallreduce_sum(sum(grant),grant_sum,1)
       call mpiallreduce_sum(sum(dgrant),dgrant_sum,1)
-!print*,'AXEL2: iproc,t,dgrant, sum(dgrant),dgrant_sum=',iproc,t,dgrant, sum(dgrant),dgrant_sum
+!print*,'AXEL2: iproc,t,dgrant, sum(dgrant),dgrant_sum=',iproc,t,sum(dgrant),dgrant_sum
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -757,7 +841,7 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
       if (lreset) then
         idiag_Q=0; idiag_Qdot=0; idiag_Qddot=0; idiag_chi=0; idiag_chidot=0; idiag_chiddot=0
         idiag_psi=0; idiag_TR=0; idiag_psi_anal=0; idiag_TR_anal=0
-        idiag_grand2=0; idiag_dgrant=0; idiag_fact=0
+        idiag_grand2=0; idiag_dgrant=0; idiag_dgrant_up=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0; idiag_k0=0; idiag_dk=0
       endif
 !
@@ -774,6 +858,7 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
         call parse_name(iname,cname(iname),cform(iname),'TR_anal' ,idiag_TR_anal)
 !       call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
 !       call parse_name(iname,cname(iname),cform(iname),'grant' ,idiag_grant)
+        call parse_name(iname,cname(iname),cform(iname),'dgrant_up' ,idiag_dgrant_up)
         call parse_name(iname,cname(iname),cform(iname),'grand2' ,idiag_grand2)
         call parse_name(iname,cname(iname),cform(iname),'dgrant' ,idiag_dgrant)
         call parse_name(iname,cname(iname),cform(iname),'fact' ,idiag_fact)
