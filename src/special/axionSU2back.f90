@@ -55,7 +55,7 @@ module Special
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
-  logical :: lim_psi_TR=.false.
+  logical :: lim_psi_TR=.false., lkeep_mQ_const=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
@@ -67,7 +67,7 @@ module Special
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
-    nmin0, nmax0, axion_sum_range
+    nmin0, nmax0, axion_sum_range, lkeep_mQ_const
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -82,6 +82,7 @@ module Special
   integer :: idiag_chiddot =0 ! DIAG_DOC: $\ddot{\chi}$
   integer :: idiag_psi =0 ! DIAG_DOC: $\psi$
   integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
+  integer :: idiag_imTR=0 ! DIAG_DOC: $\Im T_R$
   integer :: idiag_psi_anal =0 ! DIAG_DOC: $\psi^{\rm anal}$
   integer :: idiag_TR_anal  =0 ! DIAG_DOC: $T_R^{\rm anal}$
 ! integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
@@ -144,6 +145,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: lnH, lna, a
+      real :: kmax=2., lnkmax, lnk0=1.
       integer :: ik
 !
       lamf=lam/fdecay
@@ -157,15 +159,26 @@ module Special
         lnkmin0=nmin0+lnH+lna
         lnkmax0=nmax0+lnH+lna
         dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
+        do ik=1,nx
+          lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
+          k(ik)=exp(lnk(ik))
+        enddo
+        kindex_array=nint((lnk-lnkmin0)/dlnk)
+      elseif (llnk_spacing) then
+        lnkmax=alog(kmax)
+        dlnk=lnkmax/(ncpus*nx)
+        lnk0=dlnk
+        do ik=1,nx
+          lnk(ik)=lnk0+dlnk*(ik-1+iproc*nx)
+          k(ik)=exp(lnk(ik))
+        enddo
+        kindex_array=nint((lnk-lnk0)/dlnk)
+      else
+        do ik=1,nx
+          k(ik)=k0+dk*(ik-1+iproc*nx)
+        enddo
+        kindex_array=nint((k-k0)/dk)
       endif
-!
-!  calculate k array
-!
-      do ik=1,nx
-        lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
-        k(ik)=exp(lnk(ik))
-      enddo
-      kindex_array=nint((lnk-lnkmin0)/dlnk)
 !
 !  Compute mask for error diagnostics
 !
@@ -204,9 +217,12 @@ module Special
 !
 !  Initialize any module variables which are parameter dependent
 !
+      tstart=-1./(ascale_ini*H)
+      t=tstart
+!
+!  Different k prescriptions
+!
       if (llnk_spacing_adjustable) then
-        tstart=-1./(ascale_ini*H)
-        t=tstart
         a=-1./(H*t)
         lna=alog(a)
         lnH=alog(H)
@@ -218,6 +234,7 @@ module Special
           k(ik)=exp(lnk(ik))
         enddo
         print*,'iproc,lnk=',iproc,lnk
+        kindex_array=nint((lnk-lnkmin0)/dlnk)
       elseif (llnk_spacing) then
         lnkmax=alog(kmax)
         dlnk=lnkmax/(ncpus*nx)
@@ -226,12 +243,13 @@ module Special
           lnk(ik)=lnk0+dlnk*(ik-1+iproc*nx)
           k(ik)=exp(lnk(ik))
         enddo
+        kindex_array=nint((lnk-lnk0)/dlnk)
       else
         do ik=1,nx
           k(ik)=k0+dk*(ik-1+iproc*nx)
         enddo
+        kindex_array=nint((k-k0)/dk)
       endif
-      kindex_array=nint((lnk-lnkmin0)/dlnk)
 !
 !  Initial condition; depends on k, which is here set to x.
 !
@@ -392,10 +410,17 @@ module Special
       Qddot=0.
       chiddot=0.
 !
-!  Set parameters
+!  Possibility of keeping mQ constant
+!
+      if (lkeep_mQ_const) then
+        mQ=g*Q0/H
+      else
+        mQ=g*Q/H
+      endif
+!
+!  Set other parameters
 !
       Uprime=-mu**4/fdecay*sin(chi/fdecay)
-      mQ=g*Q/H
       if (lconf_time) then
         a=-1./(H*t)
         Hscript=a*H
@@ -578,6 +603,7 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call sum_mn_name(TR_anal,idiag_TR_anal)
         call sum_mn_name(psi,idiag_psi)
         call sum_mn_name(TR,idiag_TR)
+        call sum_mn_name(imTR,idiag_imTR)
 !       call sum_mn_name(grand,idiag_grand)  !redundant
         call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
         call save_name(grand_sum,idiag_grand2)
@@ -682,7 +708,14 @@ endif
         imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
       endif
 !
-      mQ=g*Q/H
+!  Possibility of keeping mQ constant
+!
+      if (lkeep_mQ_const) then
+        mQ=g*Q0/H
+      else
+        mQ=g*Q/H
+      endif
+!
       if (lconf_time) then
         a=-1./(H*t)
         xi=lamf*chidot*(-0.5*t)
@@ -709,7 +742,6 @@ endif
 !  calculate new k array (because nswitch=1)
 !
           do ik=1,nx
-            lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx+nswitch)
             lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx+nswitch)
             k(ik)=exp(lnk(ik))
           enddo
@@ -854,6 +886,7 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
         call parse_name(iname,cname(iname),cform(iname),'chiddot' ,idiag_chiddot)
         call parse_name(iname,cname(iname),cform(iname),'psi' ,idiag_psi)
         call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
+        call parse_name(iname,cname(iname),cform(iname),'imTR' ,idiag_imTR)
         call parse_name(iname,cname(iname),cform(iname),'psi_anal' ,idiag_psi_anal)
         call parse_name(iname,cname(iname),cform(iname),'TR_anal' ,idiag_TR_anal)
 !       call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
