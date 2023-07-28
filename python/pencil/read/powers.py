@@ -155,7 +155,7 @@ class Power(object):
             nxgrid = np.array(grid['settings']['nx'])
             grid.close()
         else:
-            dim=pc.read.dim()
+            dim = read.dim(datadir=datadir)
             nxgrid = dim.nx
 
         #dim = read.dim(datadir=datadir)
