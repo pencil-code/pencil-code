@@ -799,8 +799,10 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
       TReff2=TR**2
       TRdoteff2=TR*TRdot
       if (lim_psi_TR) then
-        TReff2=TR**2+imTR**2
-        TRdoteff2=TR*TRdot+imTR*imTRdot
+        !TReff2=TR**2+imTR**2
+        !TRdoteff2=TR*TRdot+imTR*imTRdot
+        TReff2=TReff2+imTR**2
+        TRdoteff2=TRdoteff2+imTR*imTRdot
       endif
 !
       where (TReff2<1./(2.*a*H))
@@ -817,8 +819,6 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
       grand=(4.*pi*k**3*dlnk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
       grant=(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TReff2*(-lamf/(2.*a**2))/twopi**3
 !
-      !if (llog_spacing) then
-!AB: bug, right?
       if (llnk_spacing) then
         if (lconf_time) then
           dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
@@ -839,6 +839,14 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
           (a*mQ*H**2+a*g*Qdot)*TReff2+(a*mQ*H-k)*2*TRdoteff2 &
           )/twopi**3
         endif
+      endif
+!
+!  output of integrand
+!
+      if (nswitch>0) then
+        open (1, file=trim(directory_snap)//'/backreact.dat', form='unformatted', position='append')
+        write(1,*) t, lnk, grand, dgrant
+        close(1)
       endif
 !
       call mpiallreduce_sum(sum(grand),grand_sum,1)
