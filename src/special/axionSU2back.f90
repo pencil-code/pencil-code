@@ -50,7 +50,7 @@ module Special
   real :: grand_sum, grant_sum, dgrant_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
   real :: lnkmin0, lnkmax0, dlnk
-  real :: nmin0=-1., nmax0=3.
+  real :: nmin0=-1., nmax0=3., horizon_factor=1.
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
@@ -67,7 +67,7 @@ module Special
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
-    nmin0, nmax0, axion_sum_range, lkeep_mQ_const
+    nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -687,8 +687,9 @@ endif
       real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: mQ, xi, epsQE, epsQB
-      real, dimension (nx) :: psi, psidot, TR, TRdot, TReff2, TRdoteff2
-      real, dimension (nx) :: impsi, impsidot, imTR, imTRdot
+      real, dimension (nx) :: TR, TRdot, imTR, imTRdot, TReff2, TRdoteff2
+      real, dimension (nx) :: tmp_psi, tmp_psidot, tmp_TR, tmp_TRdot
+      real, dimension (nx) :: tmp_impsi, tmp_impsidot, tmp_imTR, tmp_imTRdot
       real :: lnt, lnH, lna, a, lnkmin, lnkmax
       integer :: ik, nswitch
 !
@@ -700,13 +701,6 @@ endif
       Q=f(l1:l2,m,n,iaxi_Q)
       Qdot=f(l1:l2,m,n,iaxi_Qdot)
       chidot=f(l1:l2,m,n,iaxi_chidot)
-      TR=f(l1:l2,m,n,iaxi_TR)
-      TRdot=f(l1:l2,m,n,iaxi_TRdot)
-!
-      if (lim_psi_TR) then
-        imTR=f(l1:l2,m,n,iaxi_imTR)
-        imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
-      endif
 !
 !  Possibility of keeping mQ constant
 !
@@ -750,29 +744,40 @@ endif
 !  move f array. Compute new initial point for the last entry.
 !
           !f(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_psi:iaxi_TRdot)
+!
           tmp(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_psi:iaxi_TRdot)
           f(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=tmp(l1:l2,:,:,iaxi_psi:iaxi_TRdot)
+!
+          if (lim_psi_TR) then
+            tmp(l1:l2,:,:,iaxi_impsi:iaxi_imTRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_impsi:iaxi_imTRdot)
+            f(l1:l2,:,:,iaxi_impsi:iaxi_imTRdot)=tmp(l1:l2,:,:,iaxi_impsi:iaxi_imTRdot)
+          endif
+!
+!  move f array. Compute new initial point for the last entry.
+!  Compute still for the full array (but only on the last processor),
+!  but only use the last point below. (TR is therefore no longer ok after this.)
+!
           if (ipx==nprocx-1) then
 print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
-            psi=(1./sqrt(2.*k))*cos(-k*t)
-            psidot=(k/sqrt(2.*k))*sin(-k*t)
-            TR=(1./sqrt(2.*k))*cos(-k*t)
-            TRdot=(k/sqrt(2.*k))*sin(-k*t)
+            tmp_psi   =(1./sqrt(2.*k))*cos(-k*t)
+            tmp_psidot= (k/sqrt(2.*k))*sin(-k*t)
+            tmp_TR    =(1./sqrt(2.*k))*cos(-k*t)
+            tmp_TRdot = (k/sqrt(2.*k))*sin(-k*t)
             n=n1
             m=m1
-            f(l2,m,n,iaxi_psi)=psi(nx)
-            f(l2,m,n,iaxi_psidot)=psidot(nx)
-            f(l2,m,n,iaxi_TR)=TR(nx)
-            f(l2,m,n,iaxi_TRdot)=TRdot(nx)
+            f(l2,m,n,iaxi_psi)   =tmp_psi(nx)
+            f(l2,m,n,iaxi_psidot)=tmp_psidot(nx)
+            f(l2,m,n,iaxi_TR)    =tmp_TR(nx)
+            f(l2,m,n,iaxi_TRdot) =tmp_TRdot(nx)
             if (lim_psi_TR) then
-              impsi=(1./sqrt(2.*k))*sin(-k*t)
-              impsidot=(-k/sqrt(2.*k))*cos(-k*t)
-              imTR=(1./sqrt(2.*k))*sin(-k*t)
-              imTRdot=(-k/sqrt(2.*k))*cos(-k*t)
-              f(l2,m,n,iaxi_impsi)=impsi(nx)
-              f(l2,m,n,iaxi_impsidot)=impsidot(nx)
-              f(l2,m,n,iaxi_imTR)=imTR(nx)
-              f(l2,m,n,iaxi_imTRdot)=imTRdot(nx)
+              tmp_impsi=(1./sqrt(2.*k))*sin(-k*t)
+              tmp_impsidot=(-k/sqrt(2.*k))*cos(-k*t)
+              tmp_imTR=(1./sqrt(2.*k))*sin(-k*t)
+              tmp_imTRdot=(-k/sqrt(2.*k))*cos(-k*t)
+              f(l2,m,n,iaxi_impsi)   =tmp_impsi(nx)
+              f(l2,m,n,iaxi_impsidot)=tmp_impsidot(nx)
+              f(l2,m,n,iaxi_imTR)    =tmp_imTR(nx)
+              f(l2,m,n,iaxi_imTRdot) =tmp_imTRdot(nx)
             endif
           endif
 !
@@ -794,6 +799,15 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
         endif
       endif
 !
+!  Now set TR, TRdot, and imaginary parts, after they have been updated.
+!
+      TR=f(l1:l2,m,n,iaxi_TR)
+      TRdot=f(l1:l2,m,n,iaxi_TRdot)
+      if (lim_psi_TR) then
+        imTR=f(l1:l2,m,n,iaxi_imTR)
+        imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
+      endif
+!
 !  integrand (for diagnostics)
 !
       TReff2=TR**2
@@ -805,13 +819,19 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
         TRdoteff2=TRdoteff2+imTR*imTRdot
       endif
 !
-      where (TReff2<1./(2.*a*H))
-!      where (k>(a*H*2.7))
+!open (1, file=trim(directory_snap)//'/TReff2_orig.dat', form='formatted', position='append')
+!write(1,*) nint(t), TReff2 ; close(1)
+!
+!      where (TReff2<1./(2.*a*H))
+      where (k>(a*H*horizon_factor))
         TReff2=0.
         TRdoteff2=0.
 !        TReff=(1./sqrt(2.*k))*cos(-k*t)
 !        TRdoteff=(k/sqrt(2.*k))*sin(-k*t)
       endwhere
+!
+!open (1, file=trim(directory_snap)//'/TReff2_orig2.dat', form='formatted', position='append')
+!write(1,*) nint(t), TReff2 ; close(1)
 !
       !grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
       !grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
@@ -844,10 +864,19 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
 !  output of integrand
 !
       if (nswitch>0) then
-        open (1, file=trim(directory_snap)//'/backreact.dat', form='unformatted', position='append')
+        open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
         write(1,*) t, lnk, grand, dgrant
         close(1)
       endif
+!
+   !  open (1, file=trim(directory_snap)//'/grand.dat', form='formatted', position='append')
+   !  write(1,*) nint(t), grand ; close(1)
+!
+   !  open (1, file=trim(directory_snap)//'/dgrant.dat', form='formatted', position='append')
+   !  write(1,*) nint(t), dgrant ; close(1)
+!
+   !  open (1, file=trim(directory_snap)//'/TReff2.dat', form='formatted', position='append')
+   !  write(1,*) nint(t), TReff2 ; close(1)
 !
       call mpiallreduce_sum(sum(grand),grand_sum,1)
       call mpiallreduce_sum(sum(grant),grant_sum,1)
