@@ -1,0 +1,38 @@
+!                              -*-f90-*-     (for emacs)
+!
+!  Initialization parameters for linear streaming instability.
+!
+&init_pars
+    xyz0 = -1.0, -1.0, -1.0 
+    Lxyz = 2.0, 2.0, 2.0 
+    lwrite_aux = .true.
+/
+&eos_init_pars
+    gamma = 1.0
+    rho0 = 1.0
+    cs0 = 1.0 
+/
+&hydro_init_pars
+    inituu='nothing'
+    Omega = 1.0 
+/
+&density_init_pars
+    ldensity_nolog = .true.
+    beta_glnrho_global = -0.1, 0.0, 0.0
+/
+&shear_init_pars
+    qshear = 1.5
+/
+&particles_init_pars
+    lcalc_uup = .true.
+
+    initxxp='random'
+    initvvp='dragforce_equilibrium'
+
+    lparticlemesh_tsc=T
+    ldragforce_dust_par=T, ldragforce_gas_par=T
+    lmigration_redo=T
+
+    tausp = 1.0
+    eps_dtog =0.2
+/
