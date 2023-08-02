@@ -8,17 +8,9 @@
 ! COMMUNICATED AUXILIARIES 3
 !
 integer, parameter :: ncpus=8, nprocx=4, nprocy=1, nprocz=2
-integer, parameter :: nxgrid=32, nygrid=1, nzgrid=32
-integer, parameter :: npar=1000, mpar_loc=100, npar_mig=100
+integer, parameter :: nxgrid=64, nygrid=1, nzgrid=64
+integer, parameter :: npar=5000, mpar_loc=1000, npar_mig=100
 ! brick / proc = 4
 ! nblockmax = 2*(nbrickx/nprocx)*(nbricky/nprocy)*(nbrickz/nprocz)
 integer, parameter :: nbrickx=16, nbricky=1, nbrickz=8, nblockmax=128
-
-! Recommended resolution
-!integer, parameter :: ncpus=256, nprocx=16, nprocz=ncpus/nprocx, nprocy=1
-!integer, parameter :: nxgrid=512, nygrid=1, nzgrid=512
-!integer, parameter :: npar=nxgrid*nzgrid, mpar_loc=50000, npar_mig=1000
-!! brick / proc = 4
-!! nblockmax = 2*(nbrickx/nprocx)*(nbricky/nprocy)*(nbrickz/nprocz)
-!integer, parameter :: nbrickx=64, nbricky=1, nbrickz=64, nblockmax=64
 

@@ -3,7 +3,7 @@
 !  Runtime parameters for linear streaming instability.
 !
 &run_pars
-    nt = 10000000, it1 = 50
+    nt = 100, it1 = 10
     tmax = 628.4, dsnap = 6.2831853071795864 !dvid = 0.1
     lpencil_check=T
     isave = 5000
