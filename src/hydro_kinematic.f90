@@ -108,6 +108,10 @@ module Hydro
   logical, target :: lpressuregradient_gas=.false.
   logical :: lkinflow_as_comaux=.false.
   logical :: lrandom_ampl=.false.
+  logical :: ltime_old_kinflow=.false.
+!
+  namelist /hydro_start_pars/ &
+      lkinflow_as_comaux, lkinflow_as_uudat
 !
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
@@ -131,7 +135,8 @@ module Hydro
       sigma_uukin, tau_uukin, time_uukin, sigma1_uukin_scl_yz, &
       binary_radius, radius_kinflow, width_kinflow, &
       power1_kinflow, power2_kinflow, kpeak_kinflow, &
-      cs21_kinflow, diff_rot_a2, diff_rot_a4
+      cs21_kinflow, diff_rot_a2, diff_rot_a4, &
+      ltime_old_kinflow
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -183,6 +188,18 @@ module Hydro
 !
       call put_shared_variable('lpressuregradient_gas',&
           lpressuregradient_gas,caller='register_hydro')
+!
+   !AB: not sure why this doesn't work
+   !  if (lkinflow_as_aux.or.lkinflow_as_comaux) then
+   !    if (lkinflow_as_comaux) then
+   !      call farray_register_auxiliary('uu',iuu,vector=3,communicated=.true.)
+   !    else
+   !      call farray_register_auxiliary('uu',iuu,vector=3)
+   !    endif
+   !    iux=iuu
+   !    iuy=iuu+1
+   !    iuz=iuu+2
+   !  endif
 !
       kinflow=kinematic_flow
 
@@ -2642,6 +2659,7 @@ module Hydro
 !print*, 'PENCIL FMAX' , iproc, maxval(abs(f(:,:,:,iux:iuz)))
 !
       elseif (kinematic_flow=='sound3D') then
+!AB: to add parameter
         call sound3D(f)
       endif
 !
@@ -2679,8 +2697,11 @@ module Hydro
 !  Store uu as auxiliary variable in f-array if requested by lkinflow_as_aux.
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
+!  Changed lkinflow_as_aux -> (lkinflow_as_aux.or.lkinflow_as_comaux)
 !
      if (lpencil(i_uu).and.lkinflow_as_aux.and.(lupdate_aux.or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
+     !if (lpencil(i_uu).and.(lkinflow_as_aux.or.lkinflow_as_comaux).and. &
+     !    (lupdate_aux.or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
      if (.not.lpencil_check_at_work) lfirst_aux=.false.
 !
 !  Calculate maxima and rms values for diagnostic purposes.
@@ -3803,11 +3824,13 @@ module Hydro
 !  Set velocity to zero, because power_randomphase_hel only *adds*
 !  to what was there previously.
 !
+!AB: to add parameter
       f(:,:,:,iux:iuz)=0.
       call power_randomphase_hel(ampl_kinflow,power1_kinflow,power2_kinflow, &
           cutoff,ncutoff,kpeak_kinflow,f,iux,iuz,relhel_kinflow,kgaussian, &
           lskip_projection, lvectorpotential, lscale_tobox, &
-          qirro=qirro_kinflow, time=real(t), cs=1./sqrt(cs21_kinflow))
+          qirro=qirro_kinflow, time=real(t), cs=1./sqrt(cs21_kinflow), &
+          ltime_old=ltime_old_kinflow)
 !
     endsubroutine sound3D
 !***********************************************************************

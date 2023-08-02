@@ -5104,7 +5104,8 @@ module Initcond
       lskip_projection,lvectorpotential,lscale_tobox, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
-      kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,time,cs,lreinit)
+      kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,time,cs,lreinit, &
+      ltime_old)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5132,11 +5133,11 @@ module Initcond
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest
 !
-      logical, intent(in), optional :: lscale_tobox, lremain_in_fourier
+      logical, intent(in), optional :: lscale_tobox, lremain_in_fourier, ltime_old
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
       logical, intent(in), optional :: llogbranch0,ldouble0, lreinit
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
-      logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime
+      logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
       real, intent(in), optional :: initpower_med0, kpeak_log0, kbreak0
@@ -5167,6 +5168,14 @@ module Initcond
         lremain_in_fourier1 = lremain_in_fourier
       else
         lremain_in_fourier1 = .false.
+      endif
+!
+!  Check whether or not we want ltime_old
+!
+      if (present(ltime_old)) then
+        ltime_old1 = ltime_old
+      else
+        ltime_old1 = .false.
       endif
 !
 !  Check whether we want no_noise or not
@@ -5756,11 +5765,14 @@ module Initcond
                         +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
 !
 !  Possibility of a kinematic time dependence.
+!  Commented out for now. This does not seem correct here and would overwrite r
+!  when the keyword is set. There is another ltime implementation below which
+!  seems to be the correct one.
 !
-                    if (ltime) then
-                      om=cs1*sqrt(k2(ikx,iky,ikz))
-                      r(ikx,iky,ikz)=r(ikx,iky,ikz)*sin(om*time1)
-                    endif
+!                    if (ltime) then
+!                      om=cs1*sqrt(k2(ikx,iky,ikz))
+!                      r(ikx,iky,ikz)=r(ikx,iky,ikz)*sin(om*time1)
+!                    endif
 !
                     v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
                     v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
@@ -5874,8 +5886,13 @@ module Initcond
               do iky=1,ny
                 do ikx=1,nx
                   om=cs1*sqrt(k2(ikx,iky,ikz))
-                  u_re(ikx,iky,ikz,1:3)=+u_re(ikx,iky,ikz,1:3)*sin(om*time1)
-                  u_im(ikx,iky,ikz,1:3)=-u_im(ikx,iky,ikz,1:3)*cos(om*time1)
+                  if (ltime_old1) then
+                    u_re(ikx,iky,ikz,1:3)=+u_re(ikx,iky,ikz,1:3)*sin(om*time1)
+                    u_im(ikx,iky,ikz,1:3)=-u_im(ikx,iky,ikz,1:3)*cos(om*time1)
+                  else
+                    u_re(ikx,iky,ikz,1:3)=+u_re(ikx,iky,ikz,1:3)*cos(om*time1)
+                    u_im(ikx,iky,ikz,1:3)=+u_im(ikx,iky,ikz,1:3)*cos(om*time1)
+                  endif
                 enddo
               enddo
             enddo
@@ -5902,6 +5919,7 @@ module Initcond
 !  notification
 !
         if (lroot.and..not.ltime) then
+print*,'AXEL ltime3: time1=',time1
           if (cutoff==0) then
             print*,'power_randomphase_hel: k^',initpower,' spectrum : var  i=',i
           else
