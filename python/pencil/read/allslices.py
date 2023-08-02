@@ -173,16 +173,14 @@ class SliceSeries(object):
         from scipy.io import FortranFile
         from pencil import read
 
-        param = read.param(datadir=datadir)
-        if param.io_strategy == 'HDF5':
-            l_h5 = True
-            import h5py
+        lh5 = False
+        param = read.param(datadir=datadir, quiet=True)
+        if hasattr(param, "io_strategy"):
+            if param.io_strategy == "HDF5":
+                lh5 = True
         # Keep this for sims that were converted from Fortran to hdf5
-        elif os.path.exists(os.path.join(datadir, "grid.h5")):
-            l_h5 = True
-            import h5py
-        else:
-            l_h5 = False
+        if os.path.exists(os.path.join(datadir, "grid.h5")):
+            lh5 = True
         if not isinstance(iter_list, list):
             if not isinstance(iter_list, (int,np.int32,np.int64)):
                 print("iter_list must be an integer or integer list, ignoring")
@@ -190,7 +188,8 @@ class SliceSeries(object):
             else:
                 iter_list = [iter_list]
 
-        if l_h5:
+        if lh5:
+            import h5py
             # Define the directory that contains the slice files.
             slice_dir = os.path.join(datadir, "slices")
             # Initialize the fields list.

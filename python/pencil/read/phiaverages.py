@@ -89,13 +89,20 @@ class Averages(object):
         import numpy as np
         from pencil import read
 
-        l_h5 = False
+        lh5 = False
+        if not param:
+            param = read.param(datadir=datadir, quiet=True)
+        if hasattr(param, "io_strategy"):
+            if param.io_strategy == "HDF5":
+                lh5 = True
+        # Keep this for sims that were converted from Fortran to hdf5
+        if os.path.exists(os.path.join(datadir, "grid.h5")):
+            lh5 = True
 
         # Determine which average files to read.
         in_file_name_list = []
         aver_file_name_list = []
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
-            l_h5 = True
+        if lh5:
             print("read.ogrid: not implemented for hdf5")
             #
             # Not implemented
@@ -151,7 +158,7 @@ class Averages(object):
                 var_index,
                 iter_list,
                 precision=precision,
-                l_h5=l_h5,
+                lh5=lh5,
             )
 
             t_list[ii] = t
@@ -191,7 +198,7 @@ class Averages(object):
         var_index,
         iter_list,
         precision="f",
-        l_h5=False,
+        lh5=False,
     ):
         """
         Read the PHIAVG file
@@ -204,7 +211,7 @@ class Averages(object):
         from pencil import read
 
         # Read the data
-        if l_h5:
+        if lh5:
             import h5py
 
             #

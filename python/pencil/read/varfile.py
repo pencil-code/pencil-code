@@ -310,11 +310,18 @@ class DataCube(object):
             total_vars = dim.mvar
 
         lh5 = False
-        if param.io_strategy == "HDF5":
+        if not param:
+            param = read.param(datadir=datadir, quiet=True)
+        if hasattr(param, "io_strategy"):
+            if param.io_strategy == "HDF5":
+                lh5 = True
+        # Keep this for sims that were converted from Fortran to hdf5
+        if os.path.exists(os.path.join(datadir, "grid.h5")):
+            lh5 = True
+        if lh5:
             #
             #  Read HDF5 files.
             #
-            lh5 = True
             import h5py
 
             run2D = param.lwrite_2d
@@ -354,7 +361,8 @@ class DataCube(object):
                         self.__setattr__(
                             key, (tmp["persist"][key][0]).astype(precision)
                         )
-        elif param.io_strategy == "dist":
+        elif (hasattr(param, "io_strategy") and param.io_strategy == "dist"
+             ) or not hasattr(param, "io_strategy"):
             #
             #  Read scattered Fortran binary files.
             #
@@ -741,7 +749,7 @@ class DataCube(object):
                 key = uutest[j*3][:-1]
                 value = index.__dict__[uutest[j*3]]
                 setattr(self, key, self.f[value - 1 : value + 2, ...])
-            
+
 
         self.t = t
         self.dx = dx

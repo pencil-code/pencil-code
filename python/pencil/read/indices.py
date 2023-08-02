@@ -79,7 +79,11 @@ class Index(object):
         if param is None:
             param = read.param(datadir=datadir, quiet=True)
         lh5 = False
-        if param.io_strategy == "HDF5":
+        if hasattr(param, "io_strategy"):
+            if param.io_strategy == "HDF5":
+                lh5 = True
+        # Keep this for sims that were converted from Fortran to hdf5
+        if os.path.exists(os.path.join(datadir, "grid.h5")):
             lh5 = True
         if dim is None:
             dim = read.dim(datadir=datadir)
