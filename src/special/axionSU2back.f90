@@ -731,6 +731,7 @@ endif
         if (lnkmin >= (lnkmin0+dlnk)) then
           nswitch=int((lnkmin-lnkmin0)/dlnk)
           print*,'nswitch: ',a, lnkmin0, nswitch
+          if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
           if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
 !
 !  calculate new k array (because nswitch=1)
@@ -863,10 +864,12 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
 !
 !  output of integrand
 !
-      if (nswitch>0) then
-        open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
-        write(1,*) t, lnk, grand, dgrant
-        close(1)
+      if (llnk_spacing_adjustable .and. lfirst) then
+        if (nswitch>0) then
+          open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
+          write(1,*) t, lnk, grand, dgrant
+          close(1)
+        endif
       endif
 !
    !  open (1, file=trim(directory_snap)//'/grand.dat', form='formatted', position='append')
