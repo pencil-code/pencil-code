@@ -3397,9 +3397,9 @@ module Interstellar
         frackin=min(kin_max,frackin)
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
+        if (lroot.and.ip==1963) print &
+            "(1x,'explode_SN: Reset fractions SNE frackin',f7.4)",frackin
       endif
-      if (lroot.and.ip==1963) print &
-          "(1x,'explode_SN: Reset fractions SNE frackin',f7.4)",frackin
       if (lroot.and.ip==1963) print &
           "(1x,'explode_SN: SNE fractional energy kampl_SN, eampl_SN',2e9.2)", &
           ktmp, etmp
