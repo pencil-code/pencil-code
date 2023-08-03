@@ -60,7 +60,8 @@ module Special
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
-    llnk_spacing_adjustable, llnk_spacing, lim_psi_TR
+    llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, &
+    nmin0, nmax0
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -165,14 +166,26 @@ module Special
         enddo
         kindex_array=nint((lnk-lnkmin0)/dlnk)
       elseif (llnk_spacing) then
-        lnkmax=alog(kmax)
-        dlnk=lnkmax/(ncpus*nx)
-        lnk0=dlnk
+        a=1.  !(initial value)
+        lna=alog(a)
+        lnH=alog(H)
+        lnkmin0=nmin0+lnH+lna
+        lnkmax0=nmax0+lnH+lna
+        dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
         do ik=1,nx
-          lnk(ik)=lnk0+dlnk*(ik-1+iproc*nx)
+          lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
           k(ik)=exp(lnk(ik))
         enddo
-        kindex_array=nint((lnk-lnk0)/dlnk)
+        kindex_array=nint((lnk-lnkmin0)/dlnk)
+!  old
+!       lnkmax=alog(kmax)
+!       dlnk=lnkmax/(ncpus*nx)
+!       lnk0=dlnk
+!       do ik=1,nx
+!         lnk(ik)=lnk0+dlnk*(ik-1+iproc*nx)
+!         k(ik)=exp(lnk(ik))
+!       enddo
+!       kindex_array=nint((lnk-lnk0)/dlnk)
       else
         do ik=1,nx
           k(ik)=k0+dk*(ik-1+iproc*nx)
@@ -236,14 +249,27 @@ module Special
         print*,'iproc,lnk=',iproc,lnk
         kindex_array=nint((lnk-lnkmin0)/dlnk)
       elseif (llnk_spacing) then
-        lnkmax=alog(kmax)
-        dlnk=lnkmax/(ncpus*nx)
-        lnk0=dlnk
+        a=-1./(H*t)
+        lna=alog(a)
+        lnH=alog(H)
+        lnkmin0=nmin0+lnH+lna
+        lnkmax0=nmax0+lnH+lna
+        dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
         do ik=1,nx
-          lnk(ik)=lnk0+dlnk*(ik-1+iproc*nx)
+          lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
           k(ik)=exp(lnk(ik))
         enddo
-        kindex_array=nint((lnk-lnk0)/dlnk)
+        print*,'iproc,lnk=',iproc,lnk
+        kindex_array=nint((lnk-lnkmin0)/dlnk)
+!  old
+!       lnkmax=alog(kmax)
+!       dlnk=lnkmax/(ncpus*nx)
+!       lnk0=dlnk
+!       do ik=1,nx
+!         lnk(ik)=lnk0+dlnk*(ik-1+iproc*nx)
+!         k(ik)=exp(lnk(ik))
+!       enddo
+!       kindex_array=nint((lnk-lnk0)/dlnk)
       else
         do ik=1,nx
           k(ik)=k0+dk*(ik-1+iproc*nx)
@@ -790,11 +816,27 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
 !
 !  reset lnkmin0
 !
-     !    a=-1./(H*t)
-     !    lna=alog(a)
-     !    lnH=alog(H)
-     !    lnkmin0=nmin0+lnH+lna
           lnkmin0=lnkmin0+dlnk
+        else
+          nswitch=0
+        endif
+!
+!  for llnk_spacing=T, we still want output at the same times as in
+!  the adjustable case, so her nswitch means just "output", but no switch
+!
+      elseif (llnk_spacing .and. lfirst) then
+        lna=alog(a)
+        lnH=alog(H)
+        lnkmin=nmin0+lnH+lna
+        lnkmax=nmax0+lnH+lna
+        if (lnkmin >= (lnkmin0+dlnk)) then
+          nswitch=int((lnkmin-lnkmin0)/dlnk)
+          print*,'nswitch: ',a, lnkmin0, nswitch
+          if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
+          if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
+          open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
+          write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psi)
+          close(1)
         else
           nswitch=0
         endif
@@ -864,7 +906,7 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
 !
 !  output of integrand
 !
-      if (llnk_spacing_adjustable .and. lfirst) then
+      if ((llnk_spacing_adjustable.or.llnk_spacing) .and. lfirst) then
         if (nswitch>0) then
           open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
           write(1,*) t, lnk, grand, dgrant
