@@ -1107,13 +1107,13 @@ module Io
       lpar_loc = .true.
 !
       offset = get_disp_to_par_real(npar_tot)
-      call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, mpi_precision, "native", io_info, mpi_err)
+      call MPI_FILE_SET_VIEW(handle, offset + (ixp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
+                             mpi_precision, mpi_precision, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
 !
       inx: if (lactive_dimension(1)) then
         xp: if (lroot) then
-          call MPI_FILE_READ_AT(handle, (ixp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), rbuf, npar_tot, &
-                                mpi_precision, status, mpi_err)
+          call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
           call check_success_local("input_part", "read xp of")
         endif xp
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
@@ -1123,8 +1123,7 @@ module Io
 !
       iny: if (lactive_dimension(2)) then
         yp: if (lroot) then
-          call MPI_FILE_READ_AT(handle, (iyp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), rbuf, npar_tot, &
-                                mpi_precision, status, mpi_err)
+          call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
           call check_success_local("input_part", "read yp of")
         endif yp
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
@@ -1134,8 +1133,7 @@ module Io
 !
       inz: if (lactive_dimension(3)) then
         zp: if (lroot) then
-          call MPI_FILE_READ_AT(handle, (izp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), rbuf, npar_tot, &
-                                mpi_precision, status, mpi_err)
+          call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
           call check_success_local("input_part", "read zp of")
         endif zp
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
