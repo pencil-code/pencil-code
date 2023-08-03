@@ -49,7 +49,7 @@ module Special
   integer, dimension (nx) :: kindex_array
   real :: grand_sum, grant_sum, dgrant_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
-  real :: lnkmin0, lnkmax0, dlnk
+  real :: lnkmin0, lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=1.
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
@@ -176,16 +176,8 @@ module Special
           lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
           k(ik)=exp(lnk(ik))
         enddo
+        lnkmin0_dummy=lnkmin0
         kindex_array=nint((lnk-lnkmin0)/dlnk)
-!  old
-!       lnkmax=alog(kmax)
-!       dlnk=lnkmax/(ncpus*nx)
-!       lnk0=dlnk
-!       do ik=1,nx
-!         lnk(ik)=lnk0+dlnk*(ik-1+iproc*nx)
-!         k(ik)=exp(lnk(ik))
-!       enddo
-!       kindex_array=nint((lnk-lnk0)/dlnk)
       else
         do ik=1,nx
           k(ik)=k0+dk*(ik-1+iproc*nx)
@@ -261,15 +253,6 @@ module Special
         enddo
         print*,'iproc,lnk=',iproc,lnk
         kindex_array=nint((lnk-lnkmin0)/dlnk)
-!  old
-!       lnkmax=alog(kmax)
-!       dlnk=lnkmax/(ncpus*nx)
-!       lnk0=dlnk
-!       do ik=1,nx
-!         lnk(ik)=lnk0+dlnk*(ik-1+iproc*nx)
-!         k(ik)=exp(lnk(ik))
-!       enddo
-!       kindex_array=nint((lnk-lnk0)/dlnk)
       else
         do ik=1,nx
           k(ik)=k0+dk*(ik-1+iproc*nx)
@@ -829,14 +812,18 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
         lnH=alog(H)
         lnkmin=nmin0+lnH+lna
         lnkmax=nmax0+lnH+lna
-        if (lnkmin >= (lnkmin0+dlnk)) then
-          nswitch=int((lnkmin-lnkmin0)/dlnk)
-          print*,'nswitch: ',a, lnkmin0, nswitch
+        if (lnkmin >= (lnkmin0_dummy+dlnk)) then
+          nswitch=int((lnkmin-lnkmin0_dummy)/dlnk)
+          print*,'nswitch: ',a, lnkmin0_dummy, nswitch
           if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
           if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
           open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
           write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psi)
           close(1)
+!
+!  reset lnkmin0_dummy (but now it is a dummy)
+!
+          lnkmin0_dummy=lnkmin0_dummy+dlnk
         else
           nswitch=0
         endif
