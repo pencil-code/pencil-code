@@ -871,7 +871,10 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
 !
       if (llnk_spacing) then
         if (lconf_time) then
-          dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+    !     dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+    !     (a*mQ*H**2+g*Qdot)*TReff2+(mQ*H-k/a)*2*TRdoteff2 &
+    !     )/twopi**3
+          dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+g*Qdot)*TReff2+(mQ*H-k/a)*2*TRdoteff2 &
           )/twopi**3
         else 
