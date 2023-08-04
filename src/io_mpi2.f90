@@ -1073,10 +1073,10 @@ module Io
       logical, allocatable, dimension(:) :: lpar_loc
       integer, allocatable, dimension(:) :: indices
 !
-      real, dimension(mv*ncpus) :: rbuf
+      real, dimension(:), allocatable :: rbuf
       character(len=fnlen) :: fpath
       integer(KIND=MPI_OFFSET_KIND) :: offset, dsize
-      integer :: handle, ftype, i, k
+      integer :: istat, handle, ftype, i, k
 !
       if (present(label)) call warning("input_part_snap", "The argument label has no effects. ")
 !
@@ -1099,6 +1099,9 @@ module Io
         if (lroot) print *, "input_part_snap: npar_tot, mv = ", npar_tot, mv
         call fatal_error("input_part_snap", "too many particles")
       endif cknp
+!
+      allocate(rbuf(npar_tot), stat=istat)
+      if (istat /= 0) call fatal_error_local("input_part_snap", "cannot allocate buffer")
 !
 !  Identify local particles.
 !
@@ -1207,6 +1210,8 @@ module Io
 !
       call MPI_FILE_CLOSE(handle, mpi_err)
       call check_success("input_part", "close", fpath)
+!
+      deallocate(rbuf)
 !
     endsubroutine input_part_snap
 !***********************************************************************
