@@ -650,10 +650,12 @@ module Io
 !
       call MPI_TYPE_CREATE_SUBARRAY(2, sizes, subsizes, starts, order, mpi_precision, dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create subarray type")
+      call fatal_error_local_collect()
 !
       dsize = int(product(sizes), KIND=MPI_OFFSET_KIND) * size_of_real
       call MPI_TYPE_CREATE_STRUCT(2, (/ 1, nadd /), (/ 0_MPI_OFFSET_KIND, dsize /), (/ dtype, mpi_precision /), dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create struct type")
+      call fatal_error_local_collect()
       dsize = dsize + int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
 !
 !  Open the slice file for write.
@@ -666,6 +668,7 @@ module Io
 !
       call MPI_FILE_GET_SIZE(handle, fsize, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot get file size")
+      call fatal_error_local_collect()
 !
       ckfsize: if (mod(fsize, dsize) /= 0) then
         if (lroot) print *, "output_slice: fsize, dsize = ", fsize, dsize
@@ -685,7 +688,7 @@ module Io
         enddo bscan
         offset = offset + int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
       endif master
-      call fatal_error_local_collect
+      call fatal_error_local_collect()
       call MPI_BCAST(offset, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "unable to broadcast offset")
 !
@@ -703,6 +706,7 @@ module Io
 !
       call MPI_TYPE_COMMIT(dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot commit data type")
+      call fatal_error_local_collect()
 !
       call MPI_FILE_SET_VIEW(handle, fsize, mpi_precision, dtype, "native", io_info, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot set local view")
@@ -716,6 +720,7 @@ module Io
 !
       call MPI_TYPE_FREE(dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot free MPI data type")
+      call fatal_error_local_collect()
 !
 !  Write time and slice position.
 !
@@ -779,6 +784,7 @@ module Io
         call MPI_FILE_WRITE(handle, npar_tot, 1, MPI_INTEGER, status, mpi_err)
         call check_success_local("output_part", "write number of particles")
       endif wnpar
+      call fatal_error_local_collect()
 !
 !  Write particle IDs.
 !
@@ -786,9 +792,11 @@ module Io
       nv1 = max(nv, 1)
       call MPI_TYPE_CREATE_SUBARRAY(1, (/ npar_tot /), (/ nv1 /), (/ ip0 /), order, MPI_INTEGER, ftype, mpi_err)
       call check_success_local("output_part", "create MPI subarray")
+      call fatal_error_local_collect()
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("output_part", "commit MPI data type")
+      call fatal_error_local_collect()
 !
       call MPI_FILE_SET_VIEW(handle, size_of_int, MPI_INTEGER, ftype, "native", io_info, mpi_err)
       call check_success("output_part", "set view of", fpath)
@@ -798,15 +806,18 @@ module Io
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("output_part", "free MPI data type")
+      call fatal_error_local_collect()
 !
 !  Write particle data.
 !
       call MPI_TYPE_CREATE_SUBARRAY(2, (/ npar_tot, mparray /), (/ nv1, mparray /), (/ ip0, 0 /), &
                                     order, mpi_precision, ftype, mpi_err)
       call check_success_local("output_part", "create MPI subarray")
+      call fatal_error_local_collect()
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("output_part", "commit MPI data type")
+      call fatal_error_local_collect()
 !
       offset = get_disp_to_par_real(npar_tot)
       call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
@@ -817,6 +828,7 @@ module Io
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("output_part", "free subarray type")
+      call fatal_error_local_collect()
 !
 !  Write additional data.
 !
@@ -1092,6 +1104,7 @@ module Io
         call MPI_FILE_READ(handle, npar_tot, 1, MPI_INTEGER, status, mpi_err)
         call check_success_local("input_part", "read total number of particles")
       endif nptot
+      call fatal_error_local_collect()
       call MPI_BCAST(npar_tot, 1, MPI_INTEGER, root, MPI_COMM_WORLD, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast total number of particles")
 !
@@ -1102,11 +1115,13 @@ module Io
 !
       allocate(rbuf(npar_tot), stat=istat)
       if (istat /= 0) call fatal_error_local("input_part_snap", "cannot allocate buffer")
+      call fatal_error_local_collect()
 !
 !  Identify local particles.
 !
       allocate(lpar_loc(npar_tot), stat=mpi_err)
       call check_success_local("input_part", "allocate lpar_loc")
+      call fatal_error_local_collect()
       lpar_loc = .true.
 !
       offset = get_disp_to_par_real(npar_tot)
@@ -1119,6 +1134,7 @@ module Io
           call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
           call check_success_local("input_part", "read xp of")
         endif xp
+        call fatal_error_local_collect()
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast xp. ")
         lpar_loc = lpar_loc .and. procx_bounds(ipx) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procx_bounds(ipx+1)
@@ -1129,6 +1145,7 @@ module Io
           call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
           call check_success_local("input_part", "read yp of")
         endif yp
+        call fatal_error_local_collect()
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast yp. ")
         lpar_loc = lpar_loc .and. procy_bounds(ipy) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procy_bounds(ipy+1)
@@ -1139,6 +1156,7 @@ module Io
           call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
           call check_success_local("input_part", "read zp of")
         endif zp
+        call fatal_error_local_collect()
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast zp. ")
         lpar_loc = lpar_loc .and. procz_bounds(ipz) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procz_bounds(ipz+1)
@@ -1151,9 +1169,11 @@ module Io
         print *, "input_part_snap: iproc, nv, mv = ", iproc, nv, mv
         call fatal_error_local("input_part_snap", "too many local particles")
       endif cknv
+      call fatal_error_local_collect()
 !
       allocate(indices(nv), stat=mpi_err)
       call check_success_local("input_part", "allocate indices")
+      call fatal_error_local_collect()
       k = 0
       par: do i = 1, npar_tot
         loc: if (lpar_loc(i)) then
@@ -1168,9 +1188,11 @@ module Io
 !
       call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, MPI_INTEGER, ftype, mpi_err)
       call check_success_local("input_part", "create MPI data type")
+      call fatal_error_local_collect()
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("input_part", "commit MPI data type")
+      call fatal_error_local_collect()
 !
       call MPI_FILE_SET_VIEW(handle, size_of_int, MPI_INTEGER, ftype, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
@@ -1180,14 +1202,17 @@ module Io
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("input_part", "free MPI data type")
+      call fatal_error_local_collect()
 !
 !  Decompose the real data domain and read.
 !
       call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, mpi_precision, ftype, mpi_err)
       call check_success_local("input_part", "create MPI data type")
+      call fatal_error_local_collect()
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("input_part", "commit MPI data type")
+      call fatal_error_local_collect()
 !
       dsize = int(npar_tot, KIND=MPI_OFFSET_KIND) * size_of_real
       real1: do i = 1, mparray
@@ -1203,6 +1228,7 @@ module Io
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("input_part", "free MPI data type")
+      call fatal_error_local_collect()
 !
       deallocate(lpar_loc, indices)
 !
@@ -2162,6 +2188,7 @@ module Io
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds", "could not write procz_bounds")
 !
       endif wproc
+      call fatal_error_local_collect()
 !
 ! Close file.
 !
