@@ -53,6 +53,7 @@ module Special
   real :: nmin0=-1., nmax0=3., horizon_factor=1.
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
+  logical :: ldo_adjust_krange=.true.
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   logical :: lim_psi_TR=.false., lkeep_mQ_const=.false.
@@ -61,14 +62,14 @@ module Special
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, &
-    nmin0, nmax0
+    nmin0, nmax0, ldo_adjust_krange
 !
   ! run parameters
   namelist /special_run_pars/ &
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
-    nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const
+    nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, ldo_adjust_krange
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
@@ -745,49 +746,49 @@ endif
 !
 !  calculate new k array (because nswitch=1)
 !
-          do ik=1,nx
-            lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx+nswitch)
-            k(ik)=exp(lnk(ik))
-          enddo
-          kindex_array=nint((lnk-lnkmin0)/dlnk)
+          if (ldo_adjust_krange) then
+            do ik=1,nx
+              lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx+nswitch)
+              k(ik)=exp(lnk(ik))
+            enddo
+            kindex_array=nint((lnk-lnkmin0)/dlnk)
 !
 !  move f array. Compute new initial point for the last entry.
 !
-          !f(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_psi:iaxi_TRdot)
+            tmp(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_psi:iaxi_TRdot)
+            f(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=tmp(l1:l2,:,:,iaxi_psi:iaxi_TRdot)
 !
-          tmp(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_psi:iaxi_TRdot)
-          f(l1:l2,:,:,iaxi_psi:iaxi_TRdot)=tmp(l1:l2,:,:,iaxi_psi:iaxi_TRdot)
-!
-          if (lim_psi_TR) then
-            tmp(l1:l2,:,:,iaxi_impsi:iaxi_imTRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_impsi:iaxi_imTRdot)
-            f(l1:l2,:,:,iaxi_impsi:iaxi_imTRdot)=tmp(l1:l2,:,:,iaxi_impsi:iaxi_imTRdot)
-          endif
+            if (lim_psi_TR) then
+              tmp(l1:l2,:,:,iaxi_impsi:iaxi_imTRdot)=f(l1+nswitch:l2+nswitch,:,:,iaxi_impsi:iaxi_imTRdot)
+              f(l1:l2,:,:,iaxi_impsi:iaxi_imTRdot)=tmp(l1:l2,:,:,iaxi_impsi:iaxi_imTRdot)
+            endif
 !
 !  move f array. Compute new initial point for the last entry.
 !  Compute still for the full array (but only on the last processor),
 !  but only use the last point below. (TR is therefore no longer ok after this.)
 !
-          if (ipx==nprocx-1) then
+            if (ipx==nprocx-1) then
 print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
-            tmp_psi   =(1./sqrt(2.*k))*cos(-k*t)
-            tmp_psidot= (k/sqrt(2.*k))*sin(-k*t)
-            tmp_TR    =(1./sqrt(2.*k))*cos(-k*t)
-            tmp_TRdot = (k/sqrt(2.*k))*sin(-k*t)
-            n=n1
-            m=m1
-            f(l2,m,n,iaxi_psi)   =tmp_psi(nx)
-            f(l2,m,n,iaxi_psidot)=tmp_psidot(nx)
-            f(l2,m,n,iaxi_TR)    =tmp_TR(nx)
-            f(l2,m,n,iaxi_TRdot) =tmp_TRdot(nx)
-            if (lim_psi_TR) then
-              tmp_impsi=(1./sqrt(2.*k))*sin(-k*t)
-              tmp_impsidot=(-k/sqrt(2.*k))*cos(-k*t)
-              tmp_imTR=(1./sqrt(2.*k))*sin(-k*t)
-              tmp_imTRdot=(-k/sqrt(2.*k))*cos(-k*t)
-              f(l2,m,n,iaxi_impsi)   =tmp_impsi(nx)
-              f(l2,m,n,iaxi_impsidot)=tmp_impsidot(nx)
-              f(l2,m,n,iaxi_imTR)    =tmp_imTR(nx)
-              f(l2,m,n,iaxi_imTRdot) =tmp_imTRdot(nx)
+              tmp_psi   =(1./sqrt(2.*k))*cos(-k*t)
+              tmp_psidot= (k/sqrt(2.*k))*sin(-k*t)
+              tmp_TR    =(1./sqrt(2.*k))*cos(-k*t)
+              tmp_TRdot = (k/sqrt(2.*k))*sin(-k*t)
+              n=n1
+              m=m1
+              f(l2,m,n,iaxi_psi)   =tmp_psi(nx)
+              f(l2,m,n,iaxi_psidot)=tmp_psidot(nx)
+              f(l2,m,n,iaxi_TR)    =tmp_TR(nx)
+              f(l2,m,n,iaxi_TRdot) =tmp_TRdot(nx)
+              if (lim_psi_TR) then
+                tmp_impsi=(1./sqrt(2.*k))*sin(-k*t)
+                tmp_impsidot=(-k/sqrt(2.*k))*cos(-k*t)
+                tmp_imTR=(1./sqrt(2.*k))*sin(-k*t)
+                tmp_imTRdot=(-k/sqrt(2.*k))*cos(-k*t)
+                f(l2,m,n,iaxi_impsi)   =tmp_impsi(nx)
+                f(l2,m,n,iaxi_impsidot)=tmp_impsidot(nx)
+                f(l2,m,n,iaxi_imTR)    =tmp_imTR(nx)
+                f(l2,m,n,iaxi_imTRdot) =tmp_imTRdot(nx)
+              endif
             endif
           endif
 !
