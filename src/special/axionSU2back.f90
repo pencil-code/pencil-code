@@ -50,7 +50,7 @@ module Special
   real :: grand_sum, grant_sum, dgrant_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
   real :: lnkmin0, lnkmin0_dummy, lnkmax0, dlnk
-  real :: nmin0=-1., nmax0=3., horizon_factor=1.
+  real :: nmin0=-1., nmax0=3., horizon_factor=0.
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: ldo_adjust_krange=.true.
@@ -853,13 +853,19 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
 !open (1, file=trim(directory_snap)//'/TReff2_orig.dat', form='formatted', position='append')
 !write(1,*) nint(t), TReff2 ; close(1)
 !
-!      where (TReff2<1./(2.*a*H))
-      where (k>(a*H*horizon_factor))
-        TReff2=0.
-        TRdoteff2=0.
-!        TReff=(1./sqrt(2.*k))*cos(-k*t)
-!        TRdoteff=(k/sqrt(2.*k))*sin(-k*t)
-      endwhere
+      if (horizon_factor==0.) then
+        where (TReff2<1./(2.*a*H))
+          TReff2=0.
+          TRdoteff2=0.
+!         TReff=(1./sqrt(2.*k))*cos(-k*t)
+!         TRdoteff=(k/sqrt(2.*k))*sin(-k*t)
+        endwhere
+      else
+        where (k>(a*H*horizon_factor))
+          TReff2=0.
+          TRdoteff2=0.
+        endwhere
+      endif
 !
 !open (1, file=trim(directory_snap)//'/TReff2_orig2.dat', form='formatted', position='append')
 !write(1,*) nint(t), TReff2 ; close(1)
