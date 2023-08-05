@@ -946,8 +946,10 @@ module Special
 !
                  if (lactivate_reservoir .and. (f(l1-ig,m,n,iqx) .lt. 0.0)) then
                    rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
-                   f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)+ &
-                   (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+!                   f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)+ &
+!                   (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                    f(l1-ig,m,n,ilnrho)=log(exp(f(l1-ig,m,n,ilnrho))+rhob(m,n))
+                    f(l1-ig,m,n,ilnTT)=log(cs0p**2*cp1/(gamma-1))
                 endif
               enddo
 !
