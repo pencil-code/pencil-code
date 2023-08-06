@@ -239,7 +239,7 @@ module Special
           lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
           k(ik)=exp(lnk(ik))
         enddo
-        print*,'iproc,lnk=',iproc,lnk
+        if (ip<10) print*,'iproc,lnk=',iproc,lnk
         kindex_array=nint((lnk-lnkmin0)/dlnk)
       elseif (llnk_spacing) then
         a=-1./(H*t)
@@ -252,7 +252,7 @@ module Special
           lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
           k(ik)=exp(lnk(ik))
         enddo
-        print*,'iproc,lnk=',iproc,lnk
+        if (ip<10) print*,'iproc,lnk=',iproc,lnk
         kindex_array=nint((lnk-lnkmin0)/dlnk)
       else
         do ik=1,nx
@@ -268,7 +268,7 @@ module Special
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
           if (lconf_time) then
-            print*,'k=',k
+            if (ip<10) print*,'k=',k
             psi=(1./sqrt(2.*k))*cos(-k*t)
             psidot=(k/sqrt(2.*k))*sin(-k*t)
             TR=(1./sqrt(2.*k))*cos(-k*t)
@@ -281,7 +281,7 @@ module Special
               imTRdot=(-k/sqrt(2.*k))*cos(-k*t)
             endif
           else
-            print*,'k=',k
+            if (ip<10) print*,'k=',k
             a=exp(H*t)
             psi=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
             psidot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
@@ -442,16 +442,6 @@ module Special
       epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
       epsQB=g**2*Q**4/(Mpl2*H**2)
 !
-!  for Ramkishor to delete when ok, and clean-up
-!
-   !  if (lfirst.and.lvariable_k) then
-   !    k0=exp(-1.0)*a*H
-   !    dk=(k0*(exp(2*1.0)-1))/(ncpus*nx)
-   !    do ik=1,nx
-   !      k(ik)=k0+dk*(ik-1+iproc*nx)
-   !    enddo
-   !  endif
-!
 !  background
 !
       if (lconf_time) then
@@ -593,9 +583,6 @@ module Special
         df(l1:l2,m,n,iaxi_chidot)=df(l1:l2,m,n,iaxi_chidot)+chiddot
       endif
 !
-if (ip<10) print*,'xi,H,k,a,TR,g,a',xi,H,k,a,TR,g,a
-if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))
-!
       if (lfirst.and.ldt.and.lconf_time) then
         dt1_special = Ndivt*abs(Hscript)
         dt1_max=max(dt1_max,dt1_special)
@@ -621,10 +608,6 @@ if (ip<10) print*,'k**2,(xi*H-k/a),TR**2,(+   g/(3.*a**2))',k**2,(xi*H-k/a),TR**
         call save_name(fact,idiag_fact)
         call save_name(k0,idiag_k0)
         call save_name(dk,idiag_dk)
-if (ip<10) then
-print*,'AXEL: iproc,t,Q=',iproc,t,Q
-print*,'AXEL: iproc,t,grand_sum=',iproc,t,grand_sum
-endif
       endif
 !
       if (l2davgfirst) then
@@ -740,7 +723,7 @@ endif
         lnkmax=nmax0+lnH+lna
         if (lnkmin >= (lnkmin0+dlnk)) then
           nswitch=int((lnkmin-lnkmin0)/dlnk)
-          print*,'nswitch: ',a, lnkmin0, nswitch
+          if (ip<10) print*,'nswitch: ',a, lnkmin0, nswitch
           if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
           if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
 !
@@ -768,7 +751,6 @@ endif
 !  but only use the last point below. (TR is therefore no longer ok after this.)
 !
             if (ipx==nprocx-1) then
-print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
               tmp_psi   =(1./sqrt(2.*k))*cos(-k*t)
               tmp_psidot= (k/sqrt(2.*k))*sin(-k*t)
               tmp_TR    =(1./sqrt(2.*k))*cos(-k*t)
@@ -815,7 +797,6 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
         lnkmax=nmax0+lnH+lna
         if (lnkmin >= (lnkmin0_dummy+dlnk)) then
           nswitch=int((lnkmin-lnkmin0_dummy)/dlnk)
-          print*,'nswitch: ',a, lnkmin0_dummy, nswitch
           if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
           if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
           open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
@@ -854,6 +835,7 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
 !write(1,*) nint(t), TReff2 ; close(1)
 !
       if (horizon_factor==0.) then
+        if (headt.and.lfirst) print*,'horizon_factor=',horizon_factor
         where (TReff2<1./(2.*a*H))
           TReff2=0.
           TRdoteff2=0.
@@ -911,19 +893,9 @@ print*,'nswitch,lna,iproc,lnk=',nswitch,lna,iproc,lnk
         endif
       endif
 !
-   !  open (1, file=trim(directory_snap)//'/grand.dat', form='formatted', position='append')
-   !  write(1,*) nint(t), grand ; close(1)
-!
-   !  open (1, file=trim(directory_snap)//'/dgrant.dat', form='formatted', position='append')
-   !  write(1,*) nint(t), dgrant ; close(1)
-!
-   !  open (1, file=trim(directory_snap)//'/TReff2.dat', form='formatted', position='append')
-   !  write(1,*) nint(t), TReff2 ; close(1)
-!
       call mpiallreduce_sum(sum(grand),grand_sum,1)
       call mpiallreduce_sum(sum(grant),grant_sum,1)
       call mpiallreduce_sum(sum(dgrant),dgrant_sum,1)
-!print*,'AXEL2: iproc,t,dgrant, sum(dgrant),dgrant_sum=',iproc,t,sum(dgrant),dgrant_sum
 !
     endsubroutine special_after_boundary
 !***********************************************************************
