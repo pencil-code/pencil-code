@@ -156,9 +156,9 @@ module Io
       else
         if (lstart .and. lastaroth_output .and. icall==0) then
           if (astaroth_dest=='') then
-            call safe_character_assign(file1,trim(datadir)//'/allprocs/field-')
+            call safe_character_assign(file1,trim(datadir)//'/allprocs/VTXBUF-')
           else
-            call safe_character_assign(file1,trim(astaroth_dest)//'/field-')
+            call safe_character_assign(file1,trim(astaroth_dest)//'/VTXBUF-')
           endif
           call safe_character_assign(file2,'-segment-'// &
                trim(itoa(ipx*nx))//'-'//trim(itoa(ipy*ny))//'-'//trim(itoa(ipz*nz))//'.mesh')
@@ -180,8 +180,10 @@ module Io
               else
                 vnm=vname
               endif
- 
-!print*, 'rank,j,file=', iproc,j,trim(file1)//trim(upper_case(vnm))//trim(file2)
+              if (trim(vnm)=='aax') vnm='ax'
+              if (trim(vnm)=='aay') vnm='ay'
+              if (trim(vnm)=='aaz') vnm='az'
+!if (lroot) print*, 'rank,j,file=', iproc,j,nc,trim(file1)//trim(upper_case(vnm))//trim(file2)
               open(lun_output+1,file=trim(file1)//trim(upper_case(vnm))//trim(file2),form='unformatted', &
                    access='direct',recl=out_size)
               write(lun_output+1,rec=1) a(l1:l2,m1:m2,n1:n2,j)
