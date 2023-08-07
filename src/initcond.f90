@@ -1355,7 +1355,7 @@ module Initcond
 !
     endsubroutine modeb
 !***********************************************************************
-    subroutine jump(f,i,fleft,fright,width,dir)
+    subroutine jump(f,i,fleft,fright,width,dir,qmiddle)
 !
 !  jump
 !
@@ -1367,24 +1367,31 @@ module Initcond
       real, dimension (mx) :: profx
       real, dimension (my) :: profy
       real, dimension (mz) :: profz
-      real :: fleft,fright,width
+      real :: fleft,fright,width,qmid
+      real, optional :: qmiddle
       character(len=*) :: dir
       integer :: l,m
+!
+       if (present(qmiddle)) then
+        qmid=qmiddle
+      else
+        qmid=0.0
+      endif
 !
 !  jump; check direction
 !
       select case (dir)
 !
       case ('x')
-        profx=fleft+(fright-fleft)*.5*(1.+tanh(x/width))
+        profx=fleft+(fright-fleft)*.5*(1.+tanh((x-qmid)/width))
         f(:,:,:,i)=f(:,:,:,i)+spread(spread(profx,2,my),3,mz)
 !
       case ('y')
-        profy=fleft+(fright-fleft)*.5*(1.+tanh(y/width))
+        profy=fleft+(fright-fleft)*.5*(1.+tanh((y-qmid)/width))
         f(:,:,:,i)=f(:,:,:,i)+spread(spread(profy,1,mx),3,mz)
 !
       case ('z')
-        profz=fleft+(fright-fleft)*.5*(1.+tanh(z/width))
+        profz=fleft+(fright-fleft)*.5*(1.+tanh((z-qmid)/width))
         f(:,:,:,i)=f(:,:,:,i)+spread(spread(profz,1,mx),2,my)
 !
 !  2-D shocks
