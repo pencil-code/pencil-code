@@ -1355,7 +1355,7 @@ module Initcond
 !
     endsubroutine modeb
 !***********************************************************************
-    subroutine jump(f,i,fleft,fright,width,dir,qmiddle)
+    subroutine jump(f,i,fleft,fright,width,xjump_mid,yjump_mid,zjump_mid,dir)
 !
 !  jump
 !
@@ -1367,15 +1367,28 @@ module Initcond
       real, dimension (mx) :: profx
       real, dimension (my) :: profy
       real, dimension (mz) :: profz
-      real :: fleft,fright,width,qmid
-      real, optional :: qmiddle
+      real :: fleft,fright,width
+      real :: xmid,ymid,zmid
+      real, optional :: xjump_mid,yjump_mid,zjump_mid
       character(len=*) :: dir
       integer :: l,m
 !
-       if (present(qmiddle)) then
-        qmid=qmiddle
+      if (present(xjump_mid)) then
+        xmid=xjump_mid
       else
-        qmid=0.0
+        xmid=0.0
+      endif
+!
+      if (present(yjump_mid)) then
+        ymid=yjump_mid
+      else
+        ymid=0.0
+      endif
+!
+      if (present(zjump_mid)) then
+        zmid=zjump_mid
+      else
+        zmid=0.0
       endif
 !
 !  jump; check direction
@@ -1383,15 +1396,15 @@ module Initcond
       select case (dir)
 !
       case ('x')
-        profx=fleft+(fright-fleft)*.5*(1.+tanh((x-qmid)/width))
+        profx=fleft+(fright-fleft)*.5*(1.+tanh((x-xmid)/width))
         f(:,:,:,i)=f(:,:,:,i)+spread(spread(profx,2,my),3,mz)
 !
       case ('y')
-        profy=fleft+(fright-fleft)*.5*(1.+tanh((y-qmid)/width))
+        profy=fleft+(fright-fleft)*.5*(1.+tanh((y-ymid)/width))
         f(:,:,:,i)=f(:,:,:,i)+spread(spread(profy,1,mx),3,mz)
 !
       case ('z')
-        profz=fleft+(fright-fleft)*.5*(1.+tanh((z-qmid)/width))
+        profz=fleft+(fright-fleft)*.5*(1.+tanh((z-zmid)/width))
         f(:,:,:,i)=f(:,:,:,i)+spread(spread(profz,1,mx),2,my)
 !
 !  2-D shocks
@@ -1400,7 +1413,7 @@ module Initcond
         do l=1,mx
         do m=1,my
           profxy(l,m)=fleft+(fright-fleft)*.25* &
-            (1.+tanh(x(l)/width))*(1.+tanh(y(m)/width))
+            (1.+tanh((x(l)-xmid)/width))*(1.+tanh((y(m)-ymid)/width))
         enddo
         enddo
         f(:,:,:,i)=f(:,:,:,i)+spread(profxy,3,mz)
@@ -1410,7 +1423,7 @@ module Initcond
       case ('x-y')
         do l=1,mx
         do m=1,my
-          profxy(l,m)=fleft+(fright-fleft)*.5*(1.+tanh((x(l)+y(m))/width))
+          profxy(l,m)=fleft+(fright-fleft)*.5*(1.+tanh(((x(l)-xmid)+(y(m)-ymid))/width))
         enddo
         enddo
         f(:,:,:,i)=f(:,:,:,i)+spread(profxy,3,mz)
