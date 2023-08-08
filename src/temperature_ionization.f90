@@ -38,6 +38,7 @@ module Energy
   real :: zheat_uniform_range=0.
   real :: heat_source_offset=0., heat_source_sigma=1.0, heat_source=0.0
   real :: pthresh=0., pbackground=0., pthreshnorm
+  real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
   logical, pointer :: lpressuregradient_gas
@@ -57,7 +58,8 @@ module Energy
   namelist /entropy_init_pars/ &
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
-      kx_lnTT,ky_lnTT,kz_lnTT,ltemperature_nolog
+      kx_lnTT,ky_lnTT,kz_lnTT,ltemperature_nolog,&
+      xjump_mid,yjump_mid,zjump_mid
 !
   namelist /entropy_run_pars/ &
       lupw_lnTT, ladvection_temperature, lviscosity_heat, &
@@ -334,9 +336,9 @@ module Energy
             do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,ilnTT)=f(l1:l2,m,n,ilnTT)+ampl_lnTT*sin(kz_lnTT*z(n))
             enddo; enddo
-          case ('xjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'x')
-          case ('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'y')
-          case ('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'z')
+          case ('xjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,xjump_mid,yjump_mid,zjump_mid,'x')
+          case ('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,xjump_mid,yjump_mid,zjump_mid,'y')
+          case ('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,xjump_mid,yjump_mid,zjump_mid,'z')
           case ('gaussian-noise'); call gaunoise(ampl_lnTT,f,ilnTT)
 !
           case default
