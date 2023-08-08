@@ -112,6 +112,7 @@ module Hydro
   real :: z1_uu=0., z2_uu=0.
   real :: ABC_A=1., ABC_B=1., ABC_C=1.
   real :: vwall=.0, alpha_hless=.0
+  real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   integer :: nb_rings=0
   integer :: neddy=0
   integer :: iTij=0, ilorentz=0, ihless=0, jhless=0, nhless=0
@@ -189,7 +190,8 @@ module Hydro
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
       lfactors_uu, qirro_uu, lno_noise_uu, lpower_profile_file_uu, llorentz_limiter, &
-      lhiggsless, lhiggsless_old, vwall, alpha_hless
+      lhiggsless, lhiggsless_old, vwall, alpha_hless, &
+      xjump_mid, yjump_mid, zjump_mid
 !
 !  Run parameters.
 !
@@ -1788,8 +1790,8 @@ module Hydro
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(ampluu(j),f,iux,iuz,rnoise_int,rnoise_ext)
         case ('xjump')
-          call jump(f,iux,uu_left,uu_right,widthuu,'x')
-          call jump(f,iuy,uy_left,uy_right,widthuu,'x')
+          call jump(f,iux,uu_left,uu_right,widthuu,xjump_mid,yjump_mid,zjump_mid,'x')
+          call jump(f,iuy,uy_left,uy_right,widthuu,xjump_mid,yjump_mid,zjump_mid,'x')
         case ('Beltrami-x'); call beltrami(ampluu(j),f,iuu,kx=kx_uu,sigma=relhel_uu)
         case ('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu,sigma=relhel_uu)
         case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu,sigma=relhel_uu)
