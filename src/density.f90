@@ -96,6 +96,7 @@ module Density
   real :: rss_coef1=1.0, rss_coef2=1.0
   real :: total_mass=-1.
   real :: rescale_rho=1.0
+  real :: xjump_mid=0.0,yjump_mid=0.0,zjump_mid=0.0
   real, target :: reduce_cs2 = 1.0
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
@@ -162,7 +163,7 @@ module Density
       lscale_to_cs2top, density_zaver_range, &
       ieos_profile, width_eos_prof, &
       lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux,&
-      ldensity_linearstart
+      ldensity_linearstart, xjump_mid, yjump_mid, zjump_mid
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -1117,15 +1118,15 @@ module Density
         case ('hydrostatic-z', '1')
           if (lroot) print*, 'init_lnrho: use polytropic_simple instead!'
         case ('xjump')
-          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'x')
+          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),xjump_mid,yjump_mid,zjump_mid,'x')
         case ('yjump')
-          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'y')
+          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),xjump_mid,yjump_mid,zjump_mid,'y')
         case ('zjump')
-          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'z')
+          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),xjump_mid,yjump_mid,zjump_mid,'z')
         case ('xyjump')
-          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'xy')
+          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),xjump_mid,yjump_mid,zjump_mid,'xy')
         case ('x-y-jump')
-          call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'x-y')
+           call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),xjump_mid,yjump_mid,zjump_mid,'x-y')
         case ('soundwave-x')
           call soundwave(ampllnrho(j),f,ilnrho,kx=kx_lnrho(j),width=widthlnrho(j))
         case ('soundwave-y')
