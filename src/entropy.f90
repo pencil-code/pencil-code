@@ -101,6 +101,7 @@ module Energy
   real :: Pr_smag1=1.
   real :: cs2top_ini=impossible, dcs2top_ini=impossible, TTbot_factor=1.
   real :: nheat_rho=1.0, nheat_TT=1.0
+  real :: xjump_mid=0.0,yjump_mid=0.0,zjump_mid=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -160,6 +161,7 @@ module Energy
   logical :: lsmooth_ss_run_aver=.false.
   real :: h_sld_ene=2.0, nlf_sld_ene=1.0, w_sldchar_ene2=0.1
   real :: w_sldchar_ene_r0=1.0, w_sldchar_ene_p=8.0
+  real :: xmid
   logical :: lheat_cool_gravz=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing', div_sld_ene='2nd'
@@ -203,7 +205,8 @@ module Energy
       rho0hs, tau_cool2, lconvection_gravx, Fbot, cs2top_ini, dcs2top_ini, &
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
       limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz, lss_running_aver_as_aux, &
-      lss_running_aver_as_var, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux
+      lss_running_aver_as_var, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux, &
+      xjump_mid, yjump_mid, zjump_mid
 !
 !  Run parameters.
 !
@@ -1524,11 +1527,11 @@ module Energy
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
-          case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
-          case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
-          case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
-          case('xyjump'); call jump(f,iss,ss_left,ss_right,widthss,'xy')
-          case('x-y-jump'); call jump(f,iss,ss_left,ss_right,widthss,'x-y')
+          case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,xjump_mid,yjump_mid,zjump_mid,'x')
+          case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,xjump_mid,yjump_mid,zjump_mid,'y')
+          case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,xjump_mid,yjump_mid,zjump_mid,'z')
+          case('xyjump'); call jump(f,iss,ss_left,ss_right,widthss,xjump_mid,yjump_mid,zjump_mid,'xy')
+          case('x-y-jump'); call jump(f,iss,ss_left,ss_right,widthss,xjump_mid,yjump_mid,zjump_mid,'x-y')
           case('sinxsinz'); call sinxsinz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
           case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
           case('hor-fluxtube')
