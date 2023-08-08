@@ -152,27 +152,29 @@ module Special
 !
       lamf=lam/fdecay
 !
+!  Compute lnkmin0 and lnkmax0. Even for a linear k-range, dlnk
+!  is needed to determine the output of k-range and grand etc.
+!
+      if (lconf_time) then
+        a=-1./(H*t)
+      else
+        a=exp(H*t)
+      endif
+      lna=alog(a)
+      lnH=alog(H)
+      lnkmin0=nmin0+lnH+lna
+      lnkmax0=nmax0+lnH+lna
+      dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
+!
 !  Initialize lnkmin0 and lnkmax0
 !
       if (llnk_spacing_adjustable .and. .not.lstart) then
-        a=-1./(H*t)
-        lna=alog(a)
-        lnH=alog(H)
-        lnkmin0=nmin0+lnH+lna
-        lnkmax0=nmax0+lnH+lna
-        dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
         do ik=1,nx
           lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
           k(ik)=exp(lnk(ik))
         enddo
         kindex_array=nint((lnk-lnkmin0)/dlnk)
       elseif (llnk_spacing) then
-        a=1.  !(initial value)
-        lna=alog(a)
-        lnH=alog(H)
-        lnkmin0=nmin0+lnH+lna
-        lnkmax0=nmax0+lnH+lna
-        dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
         do ik=1,nx
           lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
           k(ik)=exp(lnk(ik))
@@ -183,6 +185,8 @@ module Special
         do ik=1,nx
           k(ik)=k0+dk*(ik-1+iproc*nx)
         enddo
+        lnk=impossible
+        lnkmin0_dummy=nmin0+lnH+lna
         kindex_array=nint((k-k0)/dk)
       endif
 !
@@ -222,18 +226,23 @@ module Special
       intent(inout) :: f
 !
 !  Initialize any module variables which are parameter dependent
+!  Compute lnkmin0. Reset tstart if conformal time.
 !
-      tstart=-1./(ascale_ini*H)
-      t=tstart
+      if (lconf_time) then
+        tstart=-1./(ascale_ini*H)
+        t=tstart
+        a=-1./(H*t)
+      else
+        a=exp(H*t)
+      endif
+      lna=alog(a)
+      lnH=alog(H)
+      lnkmin0=nmin0+lnH+lna
+      lnkmax0=nmax0+lnH+lna
 !
 !  Different k prescriptions
 !
       if (llnk_spacing_adjustable) then
-        a=-1./(H*t)
-        lna=alog(a)
-        lnH=alog(H)
-        lnkmin0=nmin0+lnH+lna
-        lnkmax0=nmax0+lnH+lna
         dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
         do ik=1,nx
           lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
@@ -242,11 +251,6 @@ module Special
         if (ip<10) print*,'iproc,lnk=',iproc,lnk
         kindex_array=nint((lnk-lnkmin0)/dlnk)
       elseif (llnk_spacing) then
-        a=-1./(H*t)
-        lna=alog(a)
-        lnH=alog(H)
-        lnkmin0=nmin0+lnH+lna
-        lnkmax0=nmax0+lnH+lna
         dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
         do ik=1,nx
           lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
@@ -790,11 +794,10 @@ module Special
 !  for llnk_spacing=T, we still want output at the same times as in
 !  the adjustable case, so her nswitch means just "output", but no switch
 !
-      elseif (llnk_spacing .and. lfirst) then
+      elseif (lfirst) then
         lna=alog(a)
         lnH=alog(H)
         lnkmin=nmin0+lnH+lna
-        lnkmax=nmax0+lnH+lna
         if (lnkmin >= (lnkmin0_dummy+dlnk)) then
           nswitch=int((lnkmin-lnkmin0_dummy)/dlnk)
           if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
@@ -809,6 +812,9 @@ module Special
         else
           nswitch=0
         endif
+!
+      else
+        call fatal_error('special_after_boundary','no valid k range chosen')
       endif
 !
 !  Now set TR, TRdot, and imaginary parts, after they have been updated.
@@ -849,35 +855,30 @@ module Special
         endwhere
       endif
 !
-!open (1, file=trim(directory_snap)//'/TReff2_orig2.dat', form='formatted', position='append')
-!write(1,*) nint(t), TReff2 ; close(1)
+!  Calculation of grand and grant is different for logarithmic and
+!  uniform spacings.
 !
-      !grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff**2*(+   g/(3.*a**2))/twopi**3
-      !grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff**2*(-lamf/(2.*a**2))/twopi**3
-!
-      grand=(4.*pi*k**3*dlnk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
-      grant=(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TReff2*(-lamf/(2.*a**2))/twopi**3
-!
-      if (llnk_spacing) then
+      if (llnk_spacing_adjustable .or. llnk_spacing) then
+        grand=(4.*pi*k**3*dlnk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
+        grant=(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TReff2*(-lamf/(2.*a**2))/twopi**3
         if (lconf_time) then
-    !     dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
-    !     (a*mQ*H**2+g*Qdot)*TReff2+(mQ*H-k/a)*2*TRdoteff2 &
-    !     )/twopi**3
           dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+g*Qdot)*TReff2+(mQ*H-k/a)*2*TRdoteff2 &
           )/twopi**3
-        else 
-          dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
+        else
+          dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+a*g*Qdot)*TReff2+(a*mQ*H-k)*2*TRdoteff2 &
           )/twopi**3
         endif
       else
+        grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
+        grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff2*(-lamf/(2.*a**2))/twopi**3
         if (lconf_time) then
-          dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
+          dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+g*Qdot)*TReff2+(mQ*H-k/a)*2*TRdoteff2 &
           )/twopi**3
         else 
-          dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
+          dgrant=(4.*pi*k**2*dk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+a*g*Qdot)*TReff2+(a*mQ*H-k)*2*TRdoteff2 &
           )/twopi**3
         endif
@@ -889,6 +890,12 @@ module Special
         if (nswitch>0) then
           open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
           write(1,*) t, lnk, grand, dgrant
+          close(1)
+        endif
+      elseif (lfirst) then
+        if (nswitch>0) then
+          open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
+          write(1,*) t, k, grand, dgrant
           close(1)
         endif
       endif
