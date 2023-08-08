@@ -100,6 +100,7 @@ class Averages(object):
         proc=-1,
         precision="f",
         comp_time=False,
+        quiet=True,
     ):
         """
         read(plane_list=None, datadir='data', proc=-1, var_index=-1, proc=-1):
@@ -153,6 +154,10 @@ class Averages(object):
 
         precision : string
             Float (f), double (d) or half (half).
+
+        quiet : bool
+            Whether to suppress diagnostic output.
+            Default: True
 
         Returns
         -------
@@ -264,7 +269,9 @@ class Averages(object):
             class Foo(object):
                 pass
 
-            print(plane_list, in_file_name_list, aver_file_name_list)
+            if not quiet:
+                print(plane_list, in_file_name_list, aver_file_name_list)
+            
             for plane, in_file_name, aver_file_name in zip(
                 plane_list, in_file_name_list, aver_file_name_list
             ):
@@ -279,7 +286,8 @@ class Averages(object):
                     v.strip("\n") for v in variables if v[0] != "#" and not v.isspace()
                 ]  # Ignore commented variables and blank lines in the .in file.
                 n_vars = len(variables)
-                print(variables)
+                if not quiet:
+                    print(variables)
                 if len(var_names) > 0:
                     if isinstance(var_names, list):
                         plane_var_names = var_names
@@ -328,7 +336,8 @@ class Averages(object):
                 var_idx = 0
                 if not isinstance(var_index,list):
                     for var in variables:
-                        print('var_index',var_index)
+                        if not quiet:
+                            print('var_index',var_index)
                         if var_index >= 0:
                             if var_idx == var_index:
                                 setattr(ext_object, var.strip(), raw_data[:, ...])
@@ -411,7 +420,8 @@ class Averages(object):
                     sys.stdout.flush()
                     return -1
 
-            print(av_files_in)
+            if not quiet:
+                print(av_files_in)
             for av_file, plane in zip(av_files_in, plane_list):
 
                 # Get the averaged quantities
