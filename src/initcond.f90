@@ -1355,7 +1355,7 @@ module Initcond
 !
     endsubroutine modeb
 !***********************************************************************
-    subroutine jump(f,i,fleft,fright,width,xjump_mid,yjump_mid,zjump_mid,dir)
+    subroutine jump(f,i,fleft,fright,width,xmid,ymid,zmid,dir)
 !
 !  jump
 !
@@ -1369,27 +1369,8 @@ module Initcond
       real, dimension (mz) :: profz
       real :: fleft,fright,width
       real :: xmid,ymid,zmid
-      real, optional :: xjump_mid,yjump_mid,zjump_mid
       character(len=*) :: dir
       integer :: l,m
-!
-      if (present(xjump_mid)) then
-        xmid=xjump_mid
-      else
-        xmid=0.0
-      endif
-!
-      if (present(yjump_mid)) then
-        ymid=yjump_mid
-      else
-        ymid=0.0
-      endif
-!
-      if (present(zjump_mid)) then
-        zmid=zjump_mid
-      else
-        zmid=0.0
-      endif
 !
 !  jump; check direction
 !
