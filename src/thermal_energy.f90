@@ -35,6 +35,7 @@ module Energy
   real :: rk_eps = 1.e-3
   real :: nu_z=0., cs_z=0.
   real :: TTref = 0., tau_cool = 1.
+  real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   integer :: rk_nmax = 100
   integer :: njeans = 4
   logical :: lsplit_update=.false.
@@ -54,7 +55,8 @@ module Energy
 !  Input parameters.
 !
   namelist /entropy_init_pars/ &
-      initeth, eth_left, eth_right, widtheth, eth_const
+      initeth, eth_left, eth_right, widtheth, eth_const,&
+      xjump_mid, yjump_mid, zjump_mid
 !
 !  Run parameters.
 !
@@ -292,7 +294,7 @@ module Energy
 !
           case ('zero', '0'); f(:,:,:,ieth) = 0.0
 !
-          case ('xjump'); call jump(f,ieth,eth_left,eth_right,widtheth,'x')
+          case ('xjump'); call jump(f,ieth,eth_left,eth_right,widtheth,xjump_mid,yjump_mid,zjump_mid,'x')
 !
           case ('const_eth'); f(:,:,:,ieth)=f(:,:,:,ieth)+eth_const
 !
