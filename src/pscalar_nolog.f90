@@ -41,6 +41,7 @@ module Pscalar
   real :: kxx_cc=0.0, kyy_cc=0.0, kzz_cc=0.0
   real :: epsilon_cc=0.0, cc_const=1.0
   real :: zoverh=1.0, hoverr=0.05, powerlr=3.0
+  real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   logical :: nopscalar=.false., reinitialize_cc=.false.
   logical :: reinitialize_lncc=.false.
   character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
@@ -53,7 +54,8 @@ module Pscalar
       cc_left, cc_right, &
       epsilon_cc, widthcc, cc_min, cc_const, initlncc, initlncc2, ampllncc, &
       ampllncc2, kx_lncc, ky_lncc, kz_lncc, radius_lncc, epsilon_lncc, &
-      widthlncc, kxx_cc, kyy_cc, kzz_cc, hoverr, powerlr, zoverh, ll_sh, mm_sh, n_xprof
+      widthlncc, kxx_cc, kyy_cc, kzz_cc, hoverr, powerlr, zoverh, ll_sh, mm_sh, n_xprof, &
+      xjump_mid, yjump_mid, zjump_mid 
 !
 !  Run parameters.
 !
@@ -298,11 +300,11 @@ module Pscalar
             f(l1:l2,m,n,icc)=-1.0+2*.5*(1.+tanh(z(n)/widthcc))
           enddo; enddo
         case ('hor-tube'); call htube2(amplcc,f,icc,icc,radius_cc,epsilon_cc)
-        case ('jump-x'); call jump(f,icc,cc_left,cc_right,widthcc,'x')
-        case ('jump-x-neg'); call jump(f,icc,0.,cc_const,widthcc,'x')
-        case ('jump-y-neg'); call jump(f,icc,0.,cc_const,widthcc,'y')
-        case ('jump-z-neg'); call jump(f,icc,0.,cc_const,widthcc,'z')
-        case ('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
+        case ('jump-x'); call jump(f,icc,cc_left,cc_right,widthcc,xjump_mid,yjump_mid,zjump_mid,'x')
+        case ('jump-x-neg'); call jump(f,icc,0.,cc_const,widthcc,xjump_mid,yjump_mid,zjump_mid,'x')
+        case ('jump-y-neg'); call jump(f,icc,0.,cc_const,widthcc,xjump_mid,yjump_mid,zjump_mid,'y')
+        case ('jump-z-neg'); call jump(f,icc,0.,cc_const,widthcc,xjump_mid,yjump_mid,zjump_mid,'z')
+        case ('jump'); call jump(f,icc,cc_const,0.,widthcc,xjump_mid,yjump_mid,zjump_mid,'z')
         case('spher-harm')
           if (.not.lspherical_coords) call fatal_error("init_lncc", &
               'initial condition "spher-harm" only meaningful for spherical coordinates'//trim(initcc))
