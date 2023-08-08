@@ -812,9 +812,6 @@ module Special
         else
           nswitch=0
         endif
-!
-      else
-        call fatal_error('special_after_boundary','no valid k range chosen')
       endif
 !
 !  Now set TR, TRdot, and imaginary parts, after they have been updated.
