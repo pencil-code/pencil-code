@@ -541,7 +541,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call keep_compiler_quiet(f)
+      call ioncalc(f)
 !
     endsubroutine ioninit
 !***********************************************************************
