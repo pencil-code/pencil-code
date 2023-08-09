@@ -218,7 +218,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: impsi, impsidot, imTR, imTRdot
-      real :: chi0
+      real :: chi0, Uprime0
       real :: lnt, lnH, lna, a
       real :: kmax=2., lnkmax, lnk0=1.
       integer :: ik
@@ -271,13 +271,16 @@ module Special
       select case (init_axionSU2back)
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
+          chi0=chi_prefactor*pi*fdecay
+          Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+          Q0=(-Uprime0/(3.*g*lamf*H))**onethird
+          print*,'AXEL: Q0=',Q0
           if (lconf_time) then
             if (ip<10) print*,'k=',k
             psi=(1./sqrt(2.*k))*cos(-k*t)
             psidot=(k/sqrt(2.*k))*sin(-k*t)
             TR=(1./sqrt(2.*k))*cos(-k*t)
             TRdot=(k/sqrt(2.*k))*sin(-k*t)
-            chi0=chi_prefactor*pi*fdecay
             if (lim_psi_TR) then
               impsi=(1./sqrt(2.*k))*sin(-k*t)
               impsidot=(-k/sqrt(2.*k))*cos(-k*t)
@@ -291,7 +294,6 @@ module Special
             psidot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
             TR=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
             TRdot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
-            chi0=chi_prefactor*pi*fdecay
           endif
           do n=n1,n2
           do m=m1,m2
