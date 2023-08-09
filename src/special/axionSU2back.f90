@@ -783,7 +783,8 @@ module Special
 !  output
 !
           open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
-          write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psi)
+          write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psi), f(l1:l2,m,n,iaxi_impsi), &
+                             f(l1:l2,m,n,iaxi_TR), f(l1:l2,m,n,iaxi_imTR)
           close(1)
 !
 !  reset lnkmin0
