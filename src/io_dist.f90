@@ -156,12 +156,12 @@ module Io
       else
         if (lstart .and. lastaroth_output .and. icall==0) then
           if (astaroth_dest=='') then
-            call safe_character_assign(file1,trim(datadir)//'/allprocs/VTXBUF-')
+            call safe_character_assign(file1,trim(datadir)//'/allprocs/VTXBUF_')
           else
-            call safe_character_assign(file1,trim(astaroth_dest)//'/VTXBUF-')
+            call safe_character_assign(file1,trim(astaroth_dest)//'/VTXBUF_')
           endif
           call safe_character_assign(file2,'-segment-'// &
-               trim(itoa(ipx*nx))//'-'//trim(itoa(ipy*ny))//'-'//trim(itoa(ipz*nz))//'.mesh')
+               trim(itoa(ipx*nx))//'-'//trim(itoa(ipy*ny))//'-'//trim(itoa(ipz*nz))//'-0.mesh')
           inquire (IOLENGTH=bytes) t_sp
           out_size=nw*bytes
 
