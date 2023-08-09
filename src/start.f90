@@ -57,7 +57,7 @@ program start
   use Dustdensity,      only: init_nd
   use Dustvelocity,     only: init_uud
   use Energy,           only: init_energy
-  use EquationOfState
+  use EquationOfState,  only: ioninit
   use FArrayManager,    only: farray_clean_up
   use Filter
   use General
@@ -448,7 +448,6 @@ program start
 !  Check whether we want ionization.
 !
   if (leos_ionization) call ioninit(f)
-  if (leos_temperature_ionization) call ioncalc(f)
   if (lradiation_ray) then
     call update_ghosts(f)
     call radtransfer(f)

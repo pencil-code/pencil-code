@@ -59,7 +59,7 @@ program run
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
   use Equ,             only: debug_imn_arrays,initialize_pencils
-  use EquationOfState, only: ioninit,ioncalc
+  use EquationOfState, only: ioninit
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use Filter
@@ -431,8 +431,7 @@ program run
 !
 !  Initialize ionization array.
 !
-!AXEL  if (leos_ionization) call ioninit(f)
-  if (leos_temperature_ionization) call ioncalc(f)
+  if (leos_ionization) call ioninit(f)
 !
 !  Prepare particles.
 !
