@@ -5,7 +5,6 @@
 !
 module Timestep
 !
-  use Cparam
   use Cdata
 !
   implicit none
@@ -30,10 +29,11 @@ module Timestep
         alpha_ts=(/   0.0, -5/9.0 , -153/128.0, 0., 0. /)
         beta_ts =(/ 1/3.0, 15/16.0,    8/15.0, 0., 0.  /)
       else
-        call fatal_error('initialize_timestep','Not implemented: itorder= '// &
-                         trim(itoa(itorder)))
+        call not_implemented('initialize_timestep','itorder= '//trim(itoa(itorder)))
       endif
-      
+     
+      ldt = (dt==0.)
+ 
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)

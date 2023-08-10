@@ -20,7 +20,6 @@
 
 module Timestep
 
-    use Cparam
     use Cdata
     use Equ
 
@@ -34,6 +33,9 @@ contains
 
 !***********************************************************************
     subroutine initialize_timestep
+
+      ldt = (dt==0.)
+
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)

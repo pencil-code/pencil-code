@@ -10,7 +10,6 @@
 !
 module Timestep
 !
-  use Cparam
   use Cdata
 !
   implicit none
@@ -22,6 +21,9 @@ module Timestep
   contains
 !***********************************************************************
     subroutine initialize_timestep
+      
+      ldt = (dt==0.)
+
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)

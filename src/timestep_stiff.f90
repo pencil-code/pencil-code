@@ -3,7 +3,6 @@
 !
 module Timestep
 !
-  use Cparam
   use Cdata
 !
   implicit none
@@ -66,6 +65,9 @@ module Timestep
 !
 !***********************************************************************
     subroutine initialize_timestep
+!
+      ldt=.false.
+
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
@@ -85,20 +87,18 @@ module Timestep
       integer :: j,i
       logical :: dtnotok
 !
-      ldt=.false.
       dtnotok=.true.
 !
-      if (itorder/=4) &
-        call fatal_error('time_step','itorder must be 4 for stiff solver')
-!
+      if (itorder/=4) then
+        call warning('time_step','itorder set to 4 for stiff solver')
+        itorder=4
+      endif
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
 !
 !      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
-!
-      if (linterstellar.or.lshear.or.lparticles) &
-            call fatal_error("time_step", &
+      if (linterstellar.or.lshear.or.lparticles) call fatal_error("time_step", &
                    "Shear, interstellar and particles are not" // &
                    " yet supported by the adaptive rkf scheme")
 !

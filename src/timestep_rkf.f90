@@ -2,7 +2,6 @@
 !
 module Timestep
 !
-  use Cparam
   use Cdata
 !
   implicit none
@@ -21,6 +20,9 @@ module Timestep
 !
 !***********************************************************************
     subroutine initialize_timestep
+!
+      ldt=.false.
+
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
@@ -30,7 +32,7 @@ module Timestep
 !
 !  22-jun-06/tony: coded
 !
-      use Messages, only: fatal_error
+      use Messages, only: warning, fatal_error
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -40,25 +42,20 @@ module Timestep
       real :: dt_temp, dt_next
       integer :: j,i
 !
-      ldt=.false.
-!
       ! General error condition
       errcon = (5.0/safety)**(1.0/dt_increase)
 !
-      if (itorder/=5) &
-        call fatal_error('time_step','itorder must be 5 for Runge-Kutta-Fehlberg')
-!
+      if (itorder/=5) then
+        call warning('time_step','itorder set to 5 for Runge-Kutta-Fehlberg')
+        itorder=5
+      endif
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
 !
 !      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
-!
-      if (linterstellar .or. lshear .or. lparticles) &
-            call fatal_error("time_step", &
-                   "Shear, interstellar and particles are not" // &
-                   " yet supported by the adaptive rkf scheme")
-!
+      if (lshear .or. lparticles) call fatal_error("time_step", "Shear and particles are not" // &
+                                                   " yet supported by the adaptive rkf scheme")
       lfirst=.true.
       do i=1,10
         ! Do a Runge-Kutta step

@@ -20,7 +20,6 @@
 
 module Timestep
 
-    use Cparam
     use Cdata
     use Equ
 
@@ -34,6 +33,9 @@ contains
 
 !***********************************************************************
     subroutine initialize_timestep
+
+      ldt = (dt==0.)
+
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
@@ -77,14 +79,14 @@ contains
         ! Only do this on root processor, then broadcast dt to all others.
         !
         if (ldt) then
-            dt1_local=maxval(dt1_max(1:nx))
+          dt1_local=maxval(dt1_max(1:nx))
 
-            ! Timestep growth limiter
-            if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
-            call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
-            dt=1.0/dt1
-            ! Timestep growth limiter
-            if (ddt/=0.) dt1_last=dt1_local/ddt
+          ! Timestep growth limiter
+          if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
+          call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
+          dt=1.0/dt1
+          ! Timestep growth limiter
+          if (ddt/=0.) dt1_last=dt1_local/ddt
         endif
         !
         ! IMPLEMENT ME:

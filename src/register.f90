@@ -260,7 +260,7 @@ module Register
       call units_general
       call units_eos
 !
-!  Calculated derived units.
+!  Calculate derived units.
 !
       unit_mass=unit_density*unit_length**3
       unit_energy=unit_mass*unit_velocity**2
@@ -356,15 +356,14 @@ module Register
 !  run_hooks_timestep(), because maybe not, because initialize_modules
 !  can also be run from start.f90, which has no knowledge of timestep.f90
 !
-!  The calculation of ldt needs to be done calculate dt dynamically,
+!  The calculation of ldt needs to be done for calculating dt dynamically,
 !  because the time step can be changed after a reload.
 !
-      ldt = (dt==0.)
-      if (lroot .and. ip<14) then
+      if (lrun.and.lroot .and. ip<14) then
         if (ldt) then
           print*,'timestep based on CFL cond; cdt=',cdt
         else
-          print*, 'absolute timestep dt=', dt
+          print*, 'fixed timestep or initial guess for timestep, dt=', dt
         endif
       endif
 !
