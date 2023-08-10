@@ -466,13 +466,11 @@ class Averages(object):
         import h5py
 
         print(av_file)
-        file_id = open(os.path.join(simdir, plane+"aver.in"))
-        variables = file_id.readlines()
-        file_id.close()
+        with open(os.path.join(simdir, plane+"aver.in")) as file_id:
+            variables = file_id.readlines()
         variables = [
-            v.strip("\n") for v in variables if v[0] != "#" and not v.isspace()
+            v.strip() for v in variables if v[0] != "#" and not v.isspace()
         ]  # Ignore commented variables and blank lines in the .in file.
-        sys.stdout.flush()
         with h5py.File(av_file, "r") as tmp:
             n_times = len(tmp.keys()) - 1
             if tmp['last'][()].item() < n_times-2:
@@ -522,6 +520,7 @@ class Averages(object):
                     itlist = tmplist
             # Determine the structure of the xy/xz/yz/y/z averages.
             if len(var_names) > 0:
+                var_names = [v.strip() for v in var_names]
                 if isinstance(var_names, list):
                     var_names = var_names
                 else:
@@ -544,10 +543,7 @@ class Averages(object):
                 pass
 
             # This one will store the data.
-            if not hasattr(self, plane):
-                ext_object = Foo()
-            else:
-                ext_object = self.__getattribute__(plane)
+            ext_object = getattr(self, plane, Foo())
             if comp_time:
                 start_time = time.time()
                 data_shape = None
@@ -555,8 +551,8 @@ class Averages(object):
                     if not data_shape:
                         data_shape = list()
                         data_shape.append(len(itlist))
-                        if var.strip() in tmp[str(itlist[0])].keys():
-                            dshape = tmp[str(itlist[0])+ "/" + var.strip()].shape
+                        if var in tmp[str(itlist[0])].keys():
+                            dshape = tmp[str(itlist[0])+ "/" + var].shape
                         for dsh in dshape:
                             data_shape.append(dsh)
                     raw_data = np.zeros(data_shape, dtype=precision)
@@ -564,10 +560,10 @@ class Averages(object):
                     for t_idx, tmp_idx in zip(range(len(itlist)),itlist):
                         t[int(t_idx)] = tmp[str(tmp_idx) + "/time"][()]
 
-                        if var.strip() in tmp[str(tmp_idx)].keys():
-                            raw_data[int(t_idx)] = tmp[str(tmp_idx) + "/" + var.strip()][()]
+                        if var in tmp[str(tmp_idx)].keys():
+                            raw_data[int(t_idx)] = tmp[str(tmp_idx) + "/" + var][()]
 
-                    setattr(ext_object, var.strip(), raw_data)
+                    setattr(ext_object, var, raw_data)
             else:
                 start_time = time.time()
                 tmpkeys = list(tmp[str(itlist[0])].keys())
@@ -577,12 +573,12 @@ class Averages(object):
                     data_shape.append(dshape)
                 t = np.zeros(data_shape[0], dtype=precision)
                 for var in var_names:
-                    setattr(ext_object, var.strip(), np.zeros(data_shape, dtype=precision))
+                    setattr(ext_object, var, np.zeros(data_shape, dtype=precision))
                 for t_idx, tmp_idx in zip(range(len(itlist)),itlist):
                     t[int(t_idx)] = tmp[str(tmp_idx) + "/time"][()]
                     for var in var_names:
-                        if var.strip() in tmp[str(tmp_idx)].keys():
-                            ext_object.__getattribute__(var.strip())[int(t_idx)] = tmp[str(tmp_idx) + "/" + var.strip()][()]
+                        if var in tmp[str(tmp_idx)].keys():
+                            getattr(ext_object, var)[int(t_idx)] = tmp[str(tmp_idx) + "/" + var][()]
             plane_keys = list(ext_object.__dict__.keys())
             if "keys" in plane_keys:
                 plane_keys.remove("keys")
