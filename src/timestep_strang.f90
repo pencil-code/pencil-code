@@ -21,7 +21,7 @@ module Timestep
 ! 
 !  Coefficients for up to order 3.
 !    
-      use Messages, only: fatal_error
+      use Messages, only: not_implemented
       use General, only: itoa
 !
       if (itorder==1) then

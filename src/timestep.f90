@@ -23,7 +23,7 @@ module Timestep
 !                   in the code for the number of stages, it should be 5
 !                   to use it. 
 !
-      use Messages, only: fatal_error
+      use Messages, only: not_implemented
       use General, only: itoa
 !
       if (itorder==1) then
