@@ -183,9 +183,10 @@ module Energy
 !  Check any module dependencies
 !
       if (.not.leos_temperature_ionization) then
-        if (.not.leos_chemistry) call fatal_error('initialize_energy','EOS/=noeos but'// &
-                                                  'temperature_ionization already include'// &
-                                                  'an EQUATION OF STATE for the fluid')
+        if (.not.leos_chemistry) &
+          call fatal_error('initialize_energy','EOS/=noeos but'// &
+                           'temperature_ionization already includes'// &
+                           achar(10)//'an EQUATION OF STATE for the fluid')
       endif
 !
 !  Check whether we want heating/cooling
@@ -770,9 +771,9 @@ module Energy
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet.
 !
-     call get_gamma_etc(gamma,cp); gamma_m1=gamma-1.
-
      if (lslope_limit_diff .and. llast) then
+
+       call get_gamma_etc(gamma,cp); gamma_m1=gamma-1.
        do m=m1,m2
        do n=n1,m2
          if (ltemperature_nolog) then
@@ -783,6 +784,7 @@ module Energy
          f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_ene*sqrt(cs2)
        enddo
        enddo
+
      endif
 !
     endsubroutine energy_before_boundary

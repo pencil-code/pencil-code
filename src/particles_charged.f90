@@ -167,7 +167,6 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use EquationOfState, only: rho0, cs0
-      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp

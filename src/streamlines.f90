@@ -224,8 +224,7 @@ module Streamlines
     y_proc = ipy + floor((grid_pos(2)-1)/real(ny))
     z_proc = ipz + floor((grid_pos(3)-1)/real(nz))
     proc_id = x_proc + nprocx*y_proc + nprocx*nprocy*z_proc
-    if (proc_id > ncpus-1) &
-        call fatal_error("streamlines", "proc_id > ncpus")
+    if (proc_id > ncpus-1) call fatal_error("streamlines", "proc_id > ncpus")
 !
 !   find the grid position in the other core
     grid_pos_send(1) = grid_pos(1) - (x_proc - ipx)*nx
@@ -561,6 +560,7 @@ module Streamlines
 !
         if (receive == 1) exit
     enddo
+
   endsubroutine send_vec
 !***********************************************************************
   subroutine wtracers(f,path)
@@ -624,6 +624,7 @@ module Streamlines
 !
     deallocate(tracers)
     deallocate(vv)
+
   end subroutine wtracers
 !***********************************************************************
     subroutine read_streamlines_init_pars(iostat)

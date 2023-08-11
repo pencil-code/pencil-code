@@ -593,7 +593,7 @@ module Energy
 !
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas)
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_energy')
 !
 !  real variable PrRa shared with hydro modules, used for Boussinesq
 !
@@ -602,8 +602,7 @@ module Energy
 !  Check if reduced sound speed is used
 !
       if (ldensity) then
-        call get_shared_variable('lreduced_sound_speed', lreduced_sound_speed)  !lrss)
-        !!!lreduced_sound_speed=lrss
+        call get_shared_variable('lreduced_sound_speed', lreduced_sound_speed)
         if (lreduced_sound_speed) then
           call get_shared_variable('reduce_cs2',reduce_cs2)
 !          call get_shared_variable('lscale_to_cs2top',lscale_to_cs2top)

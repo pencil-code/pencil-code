@@ -2341,7 +2341,8 @@ module Chemistry
 !
 !  Density and temperature
 !
-!     call timing('calc_for_chem_mixture','entered')
+      call timing('calc_for_chem_mixture','entered')
+!
       call getdensity(f,EE,TT,yH,rho_full)
       call gettemperature(f,TT_full)
 !
@@ -2626,9 +2627,7 @@ module Chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
 
-      if (ldustdensity) then
-        call chemspec_normalization(f)
-      endif
+      if (ldustdensity) call chemspec_normalization(f)
 !
 !  Remove unphysical values of the mass fractions. This must be done
 !  before the call to update_solid_cells in order to avoid corrections

@@ -692,8 +692,8 @@ module EquationOfState
       real, intent(OUT) :: gamma
       real, optional, intent(OUT) :: cp,cv
 !
-      call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_chemistry.'// &
-                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
+      if (headt) call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_chemistry.'// &
+                              achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
       gamma=5./3.
       if (present(cp)) cp=1.
       if (present(cv)) cv=3./5.
@@ -1524,8 +1524,7 @@ module EquationOfState
       if ((ind_glob==0)) then
         found_specie=.false.
      !  if (lroot) print*,' no species has been found  ',' species index= ', ind_glob,ind_chem,species_name
-     !   call fatal_error('find_species_index',&
-      !                 'no species has been found')
+        !call fatal_error('find_species_index','index for '//trim(species_name)//'not found')
       else
         found_specie=.true.
     !    if (lroot) print*,species_name,'   species index= ',ind_chem

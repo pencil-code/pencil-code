@@ -3002,7 +3002,7 @@ print*,'interp_default=',interp_default,particle_mesh
           if (ldraglaw_steadystate.or.lbrownian_forces) then
             allocate(stocunn(k1_imn(imn):k2_imn(imn)))
             if (.not.allocated(stocunn)) then
-              call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for stocunn', .true.)
+              call fatal_error('dvvp_dt_pencil','unable to allocate stocunn', .true.)
             endif
 !
             call calc_stokes_cunningham(fp,stocunn)
@@ -3053,7 +3053,6 @@ print*,'interp_default=',interp_default,particle_mesh
             call get_shared_variable('pscalar_diff',pscalar_diff,caller='dvvp_dt_pencil')
 !
           endif
-
 !
 !  Loop over all particles in current pencil.
 !
@@ -3064,6 +3063,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  Calculate required pencils
 !  NILS: Could this be moved to calc_pencils_particles
+!
               if (lpenc_requested(i_npvz) .or. lpenc_requested(i_npvz2) .or. &
                   lpenc_requested(i_np_rad) .or. lpenc_requested(i_npuz)) then
                 call get_shared_variable('ap0',ap0,caller='dvvp_dt_pencil')
