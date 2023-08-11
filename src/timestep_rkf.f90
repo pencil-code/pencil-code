@@ -21,7 +21,27 @@ module Timestep
 !***********************************************************************
     subroutine initialize_timestep
 !
+      use Messages, only: fatal_error, warning
+
+      if (lshear.or.lparticles) call fatal_error("initialize_timestep", "Shear and particles are"// &
+                                                 " not yet supported by the adaptive rkf scheme")
+      if (itorder/=5) then
+        call warning('initialize_timestep','itorder set to 5 for Runge-Kutta-Fehlberg')
+        itorder=5
+      endif
+!
+      if (dt==0.) then
+        call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
+                     'set to 1e-4')
+        dt=1e-4
+      endif
+!
+! General error condition
+!
+      errcon = (5.0/safety)**(1.0/dt_increase)
+!
       ldt=.false.
+      dt0=dt
 
     endsubroutine initialize_timestep
 !***********************************************************************
@@ -32,8 +52,8 @@ module Timestep
 !
 !  22-jun-06/tony: coded
 !
-      use Messages, only: warning, fatal_error
-!
+      use Messages, only: warning
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -42,20 +62,10 @@ module Timestep
       real :: dt_temp, dt_next
       integer :: j,i
 !
-      ! General error condition
-      errcon = (5.0/safety)**(1.0/dt_increase)
-!
-      if (itorder/=5) then
-        call warning('time_step','itorder set to 5 for Runge-Kutta-Fehlberg')
-        itorder=5
-      endif
-!
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
 !
 !      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
-      if (lshear .or. lparticles) call fatal_error("time_step", "Shear and particles are not" // &
-                                                   " yet supported by the adaptive rkf scheme")
       lfirst=.true.
       do i=1,10
         ! Do a Runge-Kutta step
@@ -68,11 +78,12 @@ module Timestep
         ! Don't decrease the time step by more than a factor of ten
         dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
 !print*,'AXEL: ',dt,dt_temp,errmax,safety
-        ! New time
-        tnew = t+dt
+        tnew=t+dt
         if (tnew == t) then
           ! Guard against infinitesimal time steps
-          print*, 'WARNING: Timestep underflow in rkqs()'
+          call warning('time_step','Timestep underflow in Runge-Kutta-Fehlberg')
+          ! Increase dt???
+          exit
         endif
       enddo
 !
@@ -85,11 +96,11 @@ module Timestep
       endif
 !print*,'AXEL2: ',dt,dt_temp,errmax,safety
 !
-      if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt  !(all have same dt?)
+      if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt
 ! Increase time
       t = t+dt
 ! Time step to try next time
-      if (lfirst.and.ldt) dt = dt_next
+      dt = dt_next
 !
 !  Time evolution of grid variables
 !  (do this loop in pencils, for cache efficiency)

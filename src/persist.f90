@@ -149,12 +149,13 @@ module Persist
       integer, intent(in) :: id
       logical, intent(inout) :: done
 !
-      real :: dely
+      real :: dely, dtmp
 !
       select case (id)
         case (id_record_RANDOM_SEEDS)
           call random_seed_wrapper (GET=seed,CHANNEL=1)
           done=read_persist ('RANDOM_SEEDS', seed(1:nseed))
+!print*, 'persist-in: seed=', seed(1:nseed)
           if (.not.done) call random_seed_wrapper (PUT=seed,CHANNEL=1)
         case (id_record_RANDOM_SEEDS2)
           call random_seed_wrapper (GET=seed2,CHANNEL=2)
@@ -163,6 +164,9 @@ module Persist
         case (id_record_SHEAR_DELTA_Y)
           done=read_persist ('SHEAR_DELTA_Y', dely)
           if (.not.done) deltay=dely
+        case (id_record_TIME_STEP)
+          done=read_persist ('TIME_STEP', dtmp)
+          if (.not.done) dt=dtmp
       endselect
 !
     endsubroutine input_persist_general_by_id
@@ -203,11 +207,16 @@ module Persist
           call warning('input_persist_general_by_label','no persistent value of deltay found')
       endif
 !
+      if (.not.ldt.and.dt0/=0.) then
+        if (read_persist ('TIME_STEP', dt)) &
+          call warning('input_persist_general_by_label','no persistent value of dt found')
+      endif
+!
     endsubroutine input_persist_general_by_label
 !***********************************************************************
     logical function output_persistent_general()
 !
-!  Writes seed to a snapshot.
+!  Writes general persistent variables to a snapshot.
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
@@ -220,6 +229,7 @@ module Persist
       ! Don't write the seeds, if they are unchanged from their default value.
       call random_seed_wrapper (GET=seed,CHANNEL=1)
       if (any (seed(1:nseed) /= seed0)) then
+print*, 'persist-out: seed=', seed(1:nseed)
         if (write_persist ('RANDOM_SEEDS', id_record_RANDOM_SEEDS, seed(1:nseed))) &
             output_persistent_general = .true.
       endif
@@ -232,7 +242,13 @@ module Persist
 !
       if (lshear) then
         if (write_persist ('SHEAR_DELTA_Y', id_record_SHEAR_DELTA_Y, deltay)) &
+!print*, 'persist-out: deltay=', deltay
             output_persistent_general = .true.
+      endif
+!
+      if (.not.ldt.and.dt0/=0.) then
+        if (write_persist ('TIME_STEP', id_record_TIME_STEP, dt)) &
+          output_persistent_general = .true.
       endif
 !
     endfunction output_persistent_general

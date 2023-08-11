@@ -22,6 +22,7 @@ module Timestep
     subroutine initialize_timestep
 
       ldt = .false.
+      dt0=dt
 
     endsubroutine initialize_timestep
 !***********************************************************************
