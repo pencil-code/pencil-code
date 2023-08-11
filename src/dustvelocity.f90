@@ -179,11 +179,11 @@ module Dustvelocity
 !  Output grain mass discretization type. ldustcoagulation must also
 !  be turned on for pure condensation, because we need the k bins.
 !
-      if (lroot .and. ldustcoagulation) then
+      if (lroot .and. ldustcoagulation .and. .not.ldustdensity) then
         if (lmdvar) then
-          print*, 'register_dustvelocity: variable grain mass'
+          print*, 'initialize_dustvelocity: variable grain mass'
         else
-          print*, 'register_dustvelocity: constant grain mass'
+          print*, 'initialize_dustvelocity: constant grain mass'
         endif
       endif
 !
@@ -236,7 +236,7 @@ module Dustvelocity
       case ('simplified')
 
       case default
-        call fatal_error('initialize_dustvelocity','No valid dust chemistry specified')
+        call fatal_error('initialize_dustvelocity','no valid dust chemistry specified')
 
       endselect
 
@@ -310,7 +310,7 @@ module Dustvelocity
         elseif (mu_ext/=0) then
           betad=4.5*mu_ext/(rhods*ad**2)
         else
-          call fatal_error('initialize_dustvelocity','No betad calculation for draglaw='//trim(draglaw))
+          call fatal_error('initialize_dustvelocity','no betad calculation for draglaw='//trim(draglaw))
         endif
         if (lroot) print*,'initialize_dustvelocity: betad=',betad
 !
@@ -332,7 +332,7 @@ module Dustvelocity
         surfmon = surfd(1)*(mmon/(md(1)*unit_md))**(1.-dimd1)
 
       case default
-        call fatal_error('initialize_dustvelocity','no such dust geometry: '//trim(dust_geometry))
+        call fatal_error('initialize_dustvelocity','no such dust_geometry: '//trim(dust_geometry))
       endselect
 !
 !  Auxiliary variables necessary for different drag laws
@@ -504,7 +504,7 @@ module Dustvelocity
         endif
       enddo
 !
-      if (lroot) print*, 'copy_bcs_dust: '//'Copied bcs on first dust species to all others'
+      if (lroot) print*, 'copy_bcs_dust: Copied bcs on first dust species to all others'
     endif
 !
     endsubroutine copy_bcs_dust
@@ -685,33 +685,30 @@ module Dustvelocity
             endif
 
             if (beta_glnrho_scaled(1)/=0.0) then
-              f(l,m,n,iux) = f(l,m,n,iux) - &
-                  cs20*beta_glnrho_scaled(1)*eps*tausd(1)/ &
-                  (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
-              f(l,m,n,iuy) = f(l,m,n,iuy) + &
-                  cs20*beta_glnrho_scaled(1)* &
-                  (1+eps+(Omega*tausd(1))**2)/ &
-                  (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
-              f(l,m,n,iudx(1)) = f(l,m,n,iudx(1)) + &
-                  cs20*beta_glnrho_scaled(1)*tausd(1)/ &
-                  (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
-              f(l,m,n,iudy(1)) = f(l,m,n,iudy(1)) + &
-                  cs20*beta_glnrho_scaled(1)*(1+eps)/ &
-                  (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
+              f(l,m,n,iux) = f(l,m,n,iux) - cs20*beta_glnrho_scaled(1)*eps*tausd(1)/ &
+                                            (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
+
+              f(l,m,n,iuy) = f(l,m,n,iuy) + cs20*beta_glnrho_scaled(1)*(1+eps+(Omega*tausd(1))**2)/ &
+                                            (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
+
+              f(l,m,n,iudx(1)) = f(l,m,n,iudx(1)) + cs20*beta_glnrho_scaled(1)*tausd(1)/ &
+                                                    (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
+
+              f(l,m,n,iudy(1)) = f(l,m,n,iudy(1)) + cs20*beta_glnrho_scaled(1)*(1+eps)/ &
+                                                    (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
             elseif (beta_dPdr_dust_scaled/=0.0) then
-              f(l,m,n,iux) = f(l,m,n,iux) - &
-                  cs20*beta_dPdr_dust_scaled*eps*tausd(1)/ &
-                  (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
-              f(l,m,n,iuy) = f(l,m,n,iuy) - &
-                  cs20*beta_dPdr_dust_scaled*(eps+eps**2)/ &
-                  (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
-              f(l,m,n,iudx(1)) = f(l,m,n,iudx(1)) + &
-                  cs20*beta_dPdr_dust_scaled*tausd(1)/ &
-                  (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
-              f(l,m,n,iudy(1)) = f(l,m,n,iudy(1)) - &
-                  cs20*beta_dPdr_dust_scaled* &
-                  (eps+eps**2+(Omega*tausd(1))**2)/ &
-                  (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
+              f(l,m,n,iux) = f(l,m,n,iux) - cs20*beta_dPdr_dust_scaled*eps*tausd(1)/ &
+                                            (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
+
+              f(l,m,n,iuy) = f(l,m,n,iuy) - cs20*beta_dPdr_dust_scaled*(eps+eps**2)/ &
+                                            (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
+
+              f(l,m,n,iudx(1)) = f(l,m,n,iudx(1)) + cs20*beta_dPdr_dust_scaled*tausd(1)/ &
+                                                    (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
+
+              f(l,m,n,iudy(1)) = f(l,m,n,iudy(1)) - cs20*beta_dPdr_dust_scaled* &
+                                                    (eps+eps**2+(Omega*tausd(1))**2)/ &
+                                                    (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
             endif
           enddo; enddo; enddo
 !
@@ -770,44 +767,35 @@ module Dustvelocity
             f(l1:l2,m,n,ind(1)) = 0.0*f(l1:l2,m,n,ind(1)) + &
                 eps*ampluud*cos(kz_uud*z(n))*cos(kx_uud*x(l1:l2))
 !
-            f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
-                ampluud* &
+            f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + ampluud* &
                 ( real(coeff(7))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(7))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
 !
-            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
-                eta_glnrho*v_Kepler*ampluud* &
+            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + eta_glnrho*v_Kepler*ampluud* &
                 ( real(coeff(4))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(4))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
 !
-            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-                eta_glnrho*v_Kepler*ampluud* &
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + eta_glnrho*v_Kepler*ampluud* &
                 ( real(coeff(5))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(5))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
 !
-            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + &
-                eta_glnrho*v_Kepler*(-ampluud)* &
+            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + eta_glnrho*v_Kepler*(-ampluud)* &
                 (aimag(coeff(6))*cos(kx_uud*x(l1:l2)) + &
                   real(coeff(6))*sin(kx_uud*x(l1:l2)))*sin(kz_uud*z(n))
 !
-            f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
-                eta_glnrho*v_Kepler*ampluud* &
+            f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + eta_glnrho*v_Kepler*ampluud* &
                 ( real(coeff(1))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(1))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
 !
-            f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
-                eta_glnrho*v_Kepler*ampluud* &
+            f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + eta_glnrho*v_Kepler*ampluud* &
                 ( real(coeff(2))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(2))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
 !
-            f(l1:l2,m,n,iudz(1)) = f(l1:l2,m,n,iudz(1)) + &
-                eta_glnrho*v_Kepler*(-ampluud)* &
+            f(l1:l2,m,n,iudz(1)) = f(l1:l2,m,n,iudz(1)) + eta_glnrho*v_Kepler*(-ampluud)* &
                 (aimag(coeff(3))*cos(kx_uud*x(l1:l2)) + &
                   real(coeff(3))*sin(kx_uud*x(l1:l2)))*sin(kz_uud*z(n))
 !
           enddo; enddo
-!
-!  Catch unknown values
 !
         case default
           call fatal_error('init_uud','no such inituud: '//trim(inituud(j)))
@@ -1021,10 +1009,10 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use Debug_IO
-      use Diagnostics
       use General
       use Sub
       use Deriv, only: der6
+      use Diagnostics, only: max_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1115,8 +1103,7 @@ module Dustvelocity
 !
           if (ldragforce_dust) then
             do i=1,3
-              df(l1:l2,m,n,iudx(k)-1+i) = df(l1:l2,m,n,iudx(k)-1+i) - &
-                                          tausd1(:,k)*(p%uud(:,i,k)-p%uu(:,i))
+              df(l1:l2,m,n,iudx(k)-1+i)=df(l1:l2,m,n,iudx(k)-1+i) - tausd1(:,k)*(p%uud(:,i,k)-p%uu(:,i))
             enddo
 !
 !  Add drag force on gas (back-reaction from dust)
@@ -1299,13 +1286,24 @@ module Dustvelocity
 !  End loop over dust species
 !
       enddo
+
+      call calc_diagnostics_dustvelocity(p)
+!
+    endsubroutine duud_dt
+!***********************************************************************
+    subroutine calc_diagnostics_dustvelocity(p)
+
+      use Diagnostics
+!
+      type (pencil_case) :: p
+!
+      integer :: k
 !
 !  Calculate diagnostic variables
 !
       if (ldiagnos) then
         do k=1,ndustspec
-          if ((headtt.or.ldebug) .and. (ip<6)) &
-              print*, 'duud_dt: Calculate diagnostic values...'
+          if ((headtt.or.ldebug) .and. (ip<6)) print*, 'duud_dt: Calculate diagnostic values...'
           call sum_mn_name(p%ud2(:,k),idiag_udrms(k),lsqrt=.true.)
           call max_mn_name(p%ud2(:,k),idiag_udmax(k),lsqrt=.true.)
           if (idiag_rdudmax(k)/=0) &
@@ -1354,7 +1352,7 @@ module Dustvelocity
         enddo
       endif
 !
-    endsubroutine duud_dt
+    endsubroutine calc_diagnostics_dustvelocity
 !***********************************************************************
     subroutine set_border_dustvelocity(f,df,p,k)
 !
@@ -1482,53 +1480,40 @@ module Dustvelocity
             do col = 2,max_cols-1
               radiusx = .5*(radius(col)+radius(col+1))
               radiusy = .5*(radius(col)+radius(col-1))
-              if (adx<=radiusy .and. adx>radiusx) then
-                ey = col
-              end if
+              if (adx<=radiusy .and. adx>radiusx) ey = col
             end do
 !
 !  lower end
 !
             col = 1
             radiusx = .5*(radius(col)+radius(col+1))
-            if (adx>radiusx) then
-              ey = col
-            end if
+            if (adx>radiusx) ey = col
 !
 !  upper end
 !
             col = max_cols
             radiusy = .5*(radius(col)+radius(col-1))
-            if (adx<=radiusy) then
-              ey = col
-            end if
+            if (adx<=radiusy) ey = col
 !
 !  ratio within interval
 !
-              
             do row = 2,max_rows-1
               ratiox = .5*(ratio(row)+ratio(row+1))
               ratioy = .5*(ratio(row)+ratio(row-1))
-              if (radius_ratio>=ratioy .and. radius_ratio<ratiox) then
-                ex = row
-              end if
+              if (radius_ratio>=ratioy .and. radius_ratio<ratiox) ex = row
             end do
 !
 !  lower end
 !
             row = 1
             ratiox = .5*(ratio(row)+ratio(row+1))
-            if (radius_ratio<ratiox) then
-              ex = row
-            end if
+            if (radius_ratio<ratiox) ex = row
 !
 !  upper end
 !
             row = max_rows
             ratioy = .5*(ratio(row)+ratio(row-1))
-            if (radius_ratio>=ratioy) then
-              ex = row
-            end if
+            if (radius_ratio>=ratioy) ex = row
 !
 !  set efficiency
 !
@@ -1676,62 +1661,38 @@ module Dustvelocity
 !
         if (lroot.and.ip<14) print*,'rprint_dustvelocity: run through parse list'
         do iname=1,nname
-          sdust=itoa(k)
-          if (ndustspec == 1) sdust=''
-          call parse_name(iname,cname(iname),cform(iname), &
-              'dtud'//trim(sdust),idiag_dtud(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'dtnud'//trim(sdust),idiag_dtnud(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udxm'//trim(sdust),idiag_udxm(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udym'//trim(sdust),idiag_udym(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udzm'//trim(sdust),idiag_udzm(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'ud2m'//trim(sdust),idiag_ud2m(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'ekintot_dust'//trim(sdust),idiag_ekintot_dust)
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udx2m'//trim(sdust),idiag_udx2m(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udy2m'//trim(sdust),idiag_udy2m(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udz2m'//trim(sdust),idiag_udz2m(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udm2'//trim(sdust),idiag_udm2(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'od2m'//trim(sdust),idiag_od2m(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'oudm'//trim(sdust),idiag_oudm(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udrms'//trim(sdust),idiag_udrms(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udmax'//trim(sdust),idiag_udmax(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'rdudmax'//trim(sdust),idiag_rdudmax(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'rdudxm'//trim(sdust),idiag_rdudxm(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'rdudym'//trim(sdust),idiag_rdudym(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'rdudzm'//trim(sdust),idiag_rdudzm(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'rdudx2m'//trim(sdust),idiag_rdudx2m(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'odrms'//trim(sdust),idiag_odrms(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'odmax'//trim(sdust),idiag_odmax(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udmx'//trim(sdust),idiag_udmx(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udmy'//trim(sdust),idiag_udmy(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'udmz'//trim(sdust),idiag_udmz(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'divud2m'//trim(sdust),idiag_divud2m(k))
-          call parse_name(iname,cname(iname),cform(iname), &
-              'epsKd'//trim(sdust),idiag_epsKd(k))
+          if (ndustspec == 1) then
+            sdust=''
+          else
+            sdust=itoa(k)
+          endif
+          call parse_name(iname,cname(iname),cform(iname),'dtud'//trim(sdust),idiag_dtud(k))
+          call parse_name(iname,cname(iname),cform(iname),'dtnud'//trim(sdust),idiag_dtnud(k))
+          call parse_name(iname,cname(iname),cform(iname),'udxm'//trim(sdust),idiag_udxm(k))
+          call parse_name(iname,cname(iname),cform(iname),'udym'//trim(sdust),idiag_udym(k))
+          call parse_name(iname,cname(iname),cform(iname),'udzm'//trim(sdust),idiag_udzm(k))
+          call parse_name(iname,cname(iname),cform(iname),'ud2m'//trim(sdust),idiag_ud2m(k))
+          call parse_name(iname,cname(iname),cform(iname),'ekintot_dust'//trim(sdust),idiag_ekintot_dust)
+          call parse_name(iname,cname(iname),cform(iname),'udx2m'//trim(sdust),idiag_udx2m(k))
+          call parse_name(iname,cname(iname),cform(iname),'udy2m'//trim(sdust),idiag_udy2m(k))
+          call parse_name(iname,cname(iname),cform(iname),'udz2m'//trim(sdust),idiag_udz2m(k))
+          call parse_name(iname,cname(iname),cform(iname),'udm2'//trim(sdust),idiag_udm2(k))
+          call parse_name(iname,cname(iname),cform(iname),'od2m'//trim(sdust),idiag_od2m(k))
+          call parse_name(iname,cname(iname),cform(iname),'oudm'//trim(sdust),idiag_oudm(k))
+          call parse_name(iname,cname(iname),cform(iname),'udrms'//trim(sdust),idiag_udrms(k))
+          call parse_name(iname,cname(iname),cform(iname),'udmax'//trim(sdust),idiag_udmax(k))
+          call parse_name(iname,cname(iname),cform(iname),'rdudmax'//trim(sdust),idiag_rdudmax(k))
+          call parse_name(iname,cname(iname),cform(iname),'rdudxm'//trim(sdust),idiag_rdudxm(k))
+          call parse_name(iname,cname(iname),cform(iname),'rdudym'//trim(sdust),idiag_rdudym(k))
+          call parse_name(iname,cname(iname),cform(iname),'rdudzm'//trim(sdust),idiag_rdudzm(k))
+          call parse_name(iname,cname(iname),cform(iname),'rdudx2m'//trim(sdust),idiag_rdudx2m(k))
+          call parse_name(iname,cname(iname),cform(iname),'odrms'//trim(sdust),idiag_odrms(k))
+          call parse_name(iname,cname(iname),cform(iname),'odmax'//trim(sdust),idiag_odmax(k))
+          call parse_name(iname,cname(iname),cform(iname),'udmx'//trim(sdust),idiag_udmx(k))
+          call parse_name(iname,cname(iname),cform(iname),'udmy'//trim(sdust),idiag_udmy(k))
+          call parse_name(iname,cname(iname),cform(iname),'udmz'//trim(sdust),idiag_udmz(k))
+          call parse_name(iname,cname(iname),cform(iname),'divud2m'//trim(sdust),idiag_divud2m(k))
+          call parse_name(iname,cname(iname),cform(iname),'epsKd'//trim(sdust),idiag_epsKd(k))
         enddo
 !
 !  Check for those quantities for which we want xy-averages.
@@ -1748,12 +1709,9 @@ module Dustvelocity
 !  Check for those quantities for which we want z-averages.
 !
         do inamexy=1,nnamexy
-          call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
-              'udxmxy'//trim(sdust),idiag_udxmxy(k))
-          call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
-              'udymxy'//trim(sdust),idiag_udymxy(k))
-          call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
-              'udzmxy'//trim(sdust),idiag_udzmxy(k))
+          call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'udxmxy'//trim(sdust),idiag_udxmxy(k))
+          call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'udymxy'//trim(sdust),idiag_udymxy(k))
+          call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'udzmxy'//trim(sdust),idiag_udzmxy(k))
         enddo
 !
 !  End loop over dust layers
