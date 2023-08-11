@@ -740,6 +740,7 @@ contains
   subroutine setup_tanh(f)
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
     real, dimension (mz) :: TT,z_SI,TT_var
     integer :: i,j
 !
