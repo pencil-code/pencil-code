@@ -206,8 +206,8 @@ module Boundcond
       if (gamma==impossible) then
         call warning('initialize_boundcond','invalid value of gamma, set it to 5/3')
         gamma=5./3.
-        gamma1=1./gamma; gamma_m1=gamma-1.
       endif
+      gamma1=1./gamma; gamma_m1=gamma-1.
 
       if (leos_idealgas) then
         call get_shared_variable('cp',cp); cp1=1./cp
