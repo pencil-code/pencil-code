@@ -42,7 +42,7 @@ module ImplicitPhysics
 !
   contains
 !***********************************************************************
-    subroutine register_implicit_physics()
+    subroutine register_implicit_physics
 !
 !  Initialise variables which should know that we solve the
 !  compressible hydro equations: ilnrho; increase nvar accordingly.
@@ -64,17 +64,13 @@ module ImplicitPhysics
 !
     endsubroutine register_implicit_physics
 !***********************************************************************
-    subroutine initialize_implicit_physics(f)
+    subroutine initialize_implicit_physics
 !
       use EquationOfState, only: get_gamma_etc
       use SharedVariables, only: get_shared_variable
       use Gravity, only: z1, z2
       use Sub, only: step,der_step,write_zprof
 !
-      implicit none
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mz) :: profz
       real :: cp
 !
       call get_shared_variable('hcond0', hcond0, caller='initialize_implicit_physics')
@@ -83,6 +79,7 @@ module ImplicitPhysics
       call get_shared_variable('widthlnTT', widthlnTT)
       call get_shared_variable('lmultilayer', lmultilayer)
       print*,'***********************************'
+      print*, 'initialize_implicit_physics: hcond0, hcond1, hcond2, widthlnTT, lmultilayer='
       print*, hcond0, hcond1, hcond2, widthlnTT, lmultilayer
       print*,'***********************************'
       call get_shared_variable('Fbot', Fbot)
@@ -91,33 +88,27 @@ module ImplicitPhysics
       call get_gamma_etc(gamma,cp)
       gamma_m1=gamma-1.; cp1=1./cp
 !
-! hcondADI is dynamically shared with boundcond for the 'c3' BC. Initialized here.
-! Requires that initialize_implicit_physics is called *after* initialize_energy!
-!
-      call heatcond_TT(f(:,m1,n1,ilnTT), hcondADI)
-!
 ! variables that are needed everywhere in this module
 !
       if (dx>0.) then
-         dx_2 = 1.0 / dx**2
+        dx_2 = 1.0 / dx**2
       else
-         dx_2 = 0.0
+        dx_2 = 0.0
       endif
       if (dy>0.) then
-         dy_2 = 1.0 / dy**2
+        dy_2 = 1.0 / dy**2
       else
-         dy_2 = 0.0
+        dy_2 = 0.0
       endif
       if (dz>0.) then
-         dz_2 = 1.0 / dz**2
+        dz_2 = 1.0 / dz**2
       else
-         dz_2 = 0.0
+        dz_2 = 0.0
       endif
 !
       if (lrun) then
         if (lmultilayer) then
-          profz = 1. + (hcond1-1.)*step(z,z1,-widthlnTT) + (hcond2-1.)*step(z,z2,widthlnTT)
-          hcondz = hcond0*profz
+          hcondz  = hcond0*(1. + (hcond1-1.)*step(z,z1,-widthlnTT) + (hcond2-1.)*step(z,z2,widthlnTT))
           dhcondz = (hcond1-1.)*der_step(z,z1,-widthlnTT) + (hcond2-1.)*der_step(z,z2,widthlnTT)
           dhcondz = hcond0*dhcondz
         else
@@ -130,14 +121,23 @@ module ImplicitPhysics
 !
     endsubroutine initialize_implicit_physics
 !***********************************************************************
+    subroutine init_implicit_physics(f)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+! hcondADI is dynamically shared with boundcond for the 'c3' BC. Initialized here.
+! Requires that init_implicit_physics is called *after* init_energy!
+!
+      call heatcond_TT(f(:,m1,n1,ilnTT), hcondADI)
+!
+    endsubroutine init_implicit_physics
+!***********************************************************************
     subroutine calc_heatcond_ADI(f)
 !
 !  10-sep-07/gastine+dintrans: wrapper to the two possible ADI subroutines
 !  ADI_Kconst: constant radiative conductivity
 !  ADI_Kprof: radiative conductivity depends on T, i.e. hcond(T)
 !  02/05/14-dintrans: added the polytropic superposed layers (MPI or not)
-!
-      implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -209,8 +209,6 @@ module ImplicitPhysics
 !
       use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
-!
-      implicit none
 !
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
@@ -308,8 +306,6 @@ module ImplicitPhysics
 !    T^(n+1) = T^n + dt*beta
 !
 !    where J_x and J_y denote Jacobian matrices df/dT.
-!
-      implicit none
 !
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
@@ -439,8 +435,6 @@ module ImplicitPhysics
 !
       use Mpicomm, only: transp_xz, transp_zx
       use Boundcond, only: update_ghosts
-!
-      implicit none
 !
       integer, parameter :: mzt=nzgrid+2*nghost
       integer, parameter :: n1t=nghost+1, n2t=n1t+nzgrid-1
@@ -579,8 +573,6 @@ module ImplicitPhysics
 !     - Possibility to choose between 'cT' and 'c3' in z direction
 ! Note: 'c3' means that the flux is constant at the *bottom only*
 !
-      implicit none
-!
       real, dimension(mx,mz) :: f_2d
       real, dimension(mx), optional :: hcond
 !
@@ -618,8 +610,6 @@ module ImplicitPhysics
       use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
 !
-      implicit none
-!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: TT
       real, dimension(nz) :: az, bz, cz, rhsz, wz
@@ -653,8 +643,6 @@ module ImplicitPhysics
 ! 18-sep-07/dintrans: coded
 ! Implicit 1-D case for a temperature-dependent conductivity K(T).
 ! Not really an ADI but keep the generic name for commodity.
-!
-      implicit none
 !
       integer :: j, jj
       real, dimension(mx,my,mz,mfarray) :: f
@@ -718,8 +706,6 @@ module ImplicitPhysics
       use EquationOfState, only: cs2bot, cs2top
       use Mpicomm, only: transp_xz, transp_zx
       use Boundcond, only: update_ghosts
-!
-      implicit none
 !
       integer, parameter :: nxt=nx/nprocz
       integer :: i,j
@@ -796,8 +782,6 @@ module ImplicitPhysics
 ! Simpler version where a part of the radiative diffusion term is
 ! computed during the explicit advance.
 !
-      implicit none
-!
       integer :: j, jj
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: source, TT, hcond, dhcond, dLnhcond, chi
@@ -869,8 +853,6 @@ module ImplicitPhysics
 !    where J_x and J_y denote Jacobian matrices df/dT.
 !
       use Boundcond, only: update_ghosts
-!
-      implicit none
 !
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
@@ -979,8 +961,6 @@ module ImplicitPhysics
       use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
 !
-      implicit none
-!
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,mz) :: finter, TT, rho1
@@ -1057,8 +1037,6 @@ module ImplicitPhysics
       use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
 !
-      implicit none
-!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: TT, rho1
       real, dimension(nz) :: az, bz, cz, rhsz, chi, dchi
@@ -1103,8 +1081,6 @@ module ImplicitPhysics
 !
       use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
-!
-      implicit none
 !
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
@@ -1179,8 +1155,6 @@ module ImplicitPhysics
       use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
       use Mpicomm, only: transp_xz, transp_zx
-!
-      implicit none
 !
       integer :: i,j
       integer, parameter :: nxt=nx/nprocz
@@ -1272,8 +1246,6 @@ module ImplicitPhysics
 !
       use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
-!
-      implicit none
 !
       integer :: l,m,n
       real, dimension(mx,my,mz,mfarray) :: f
@@ -1381,8 +1353,6 @@ module ImplicitPhysics
       use EquationOfState, only: cs2bot, cs2top
       use Boundcond, only: update_ghosts
       use Mpicomm, only: transp_xz, transp_zx
-!
-      implicit none
 !
       integer, parameter :: nxt=nx/nprocz
       integer :: l,m,n

@@ -2985,7 +2985,7 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, c_sld_im12, c_sld_ip12, DD
+      real, dimension (nx) :: tmp, DD
       real, dimension (nx,3) :: tmp3
       real, dimension (nx,3,3) :: tmp33
       real :: cs201
@@ -3442,7 +3442,7 @@ module Hydro
       real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2
       real :: nygrid1,nzgrid1, dely, delz
       real :: cs201, cs2011
-      integer :: i, j, iter_relB, l
+      integer ::  j, iter_relB
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -3720,7 +3720,7 @@ module Hydro
       intent(inout) :: p
       intent(inout) :: f,df
 
-      real, dimension (nx,3) :: tmpv, uu1
+      real, dimension (nx,3) :: uu1
       real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
       real, dimension (nx,3,3) :: puij_Schur
       integer :: i, j, ju

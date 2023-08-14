@@ -182,8 +182,6 @@ module Persist
       use IO, only: persist_exists, read_persist
       use Messages, only: warning
 !
-      real :: dely
-!
       if (persist_exists ('RANDOM_SEEDS')) then
         call random_seed_wrapper(GET=seed,CHANNEL=1)
         if (.not. read_persist('RANDOM_SEEDS', seed(1:nseed))) then

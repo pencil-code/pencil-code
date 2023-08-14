@@ -412,7 +412,7 @@ module Register
       call initialize_special(f)
       call initialize_border_profiles
       call initialize_solid_cells(f)
-      call initialize_implicit_physics(f)
+      call initialize_implicit_physics
       call initialize_heatflux(f)
       call initialize_pointmasses(f)
 !
@@ -858,9 +858,8 @@ module Register
 !
       logical, intent(IN) :: lreset
 !
-      integer :: i,iadd,ios,irz
+      integer :: ios,irz
       logical :: ldummy
-      character (len=30) :: cname_tmp
 !
       character (LEN=15)           :: print_in_file
       character (LEN=*), parameter :: video_in_file    = 'video.in'

@@ -67,6 +67,7 @@ program start
   use Hydro,            only: init_uu
   use Hyperresi_strict, only: hyperresistivity_strict
   use Hypervisc_strict, only: hyperviscosity_strict
+  use ImplicitPhysics,  only: init_implicit_physics
   use Initcond
   use InitialCondition, only: initial_condition_all, initial_condition_clean_up
   use Interstellar,     only: init_interstellar
@@ -415,6 +416,7 @@ program start
       call init_lnrho(f)
     endif
     call init_energy(f)
+    call init_implicit_physics(f)
     call init_aa(f)
     call init_lorenz_gauge(f)
     call init_poly(f)
@@ -496,7 +498,7 @@ program start
 !
   call update_ghosts(f)
   if (lsmooth_farray .and. dimensionality>0 .and. (iux/=0.or.iax/=0)) then
-    !Why not all avriables?
+    !Why not all variables?
     call smooth(f,merge(iux,iax,iux>0),merge(iaz,iuz,iaz>0),.true.,farray_smooth_width)
     call update_ghosts(f)
   endif

@@ -213,7 +213,7 @@ module Boundcond
         call get_shared_variable('cp',cp); cp1=1./cp
         call get_shared_variable('cv',cv)
       endif
-      if (lADI) call get_shared_variable('hcondADI', hcondADI, caller='initialize_boundcond')
+      if (lADI) call get_shared_variable('hcondADI', hcondADI)
 !
 ! Set proper BC code for Yin-Yang grid
 !
@@ -7489,8 +7489,6 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j,jsrc
 
-      integer :: i
-!
       select case (topbot)
 !
 !  Bottom boundary.
@@ -7518,8 +7516,6 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j,jsrc
 
-      integer :: i
-!
       select case (topbot)
 !
 !  Bottom boundary.
@@ -7547,8 +7543,6 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j,jsrc
 
-      integer :: i
-!
       select case (topbot)
 !
 !  Bottom boundary.

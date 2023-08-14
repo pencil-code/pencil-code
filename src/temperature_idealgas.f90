@@ -352,7 +352,6 @@ module Energy
       real, dimension (nx) :: dhcond
       logical :: lnothing
       integer :: i
-      logical, pointer :: lrss
       real :: star_cte, cp
 
       if (lstart .and. .not.leos) call warning('initialize_energy', &
@@ -2407,7 +2406,7 @@ module Energy
       real, dimension  (nx) :: part_den2
       real, dimension  (nx) :: lgT
 !
-      real                  :: a0=1., a1=1., a2=1., a3=0., a4=0., a5=0.
+      real                  :: a0=1., a1=1., a2=1.
 !
       character (len=3) :: channel
 !
@@ -3011,8 +3010,6 @@ module Energy
 ! 07-Sep-07/gastine: computes 2-D radiative conductivity hcond(T) with
 ! its derivative dhcond=dhcond(T)/dT for radiative conductivity hole (kappa-mechanism problem).
 !
-      implicit none
-!
       real, dimension(:,:), intent(in) :: TT
       real, dimension(:,:), intent(out) :: hcond
       real, dimension(:,:), optional :: dhcond
@@ -3031,8 +3028,6 @@ module Energy
 ! 18-Sep-07/dintrans: computes 1-D radiative conductivity with
 ! its derivative dhcond=dhcond(T)/dT for radiative conductivity hole (kappa-mechanism problem).
 !
-      implicit none
-!
       real, dimension(:), intent(in) :: TT
       real, dimension(:), intent(out) :: hcond
       real, dimension(:), optional :: dhcond
@@ -3040,7 +3035,6 @@ module Energy
       real :: hole_alpha
 
       hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
-!print*, 'hole_alpha=', hole_alpha, Tbump, TT-Tbump-hole_width,(TT+hole_width)
       hcond=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       if (present(dhcond)) dhcond=2.*hole_alpha/(1.+hcond**2)*hole_slope*(TT-Tbump)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(hcond))
@@ -3051,8 +3045,6 @@ module Energy
 !
 ! 07-Sep-07/gastine: computes the radiative conductivity hcond(T) with
 ! its derivative dhcond=dhcond(T)/dT for radiative conductivity hole (kappa-mechanism problem).
-!
-      implicit none
 !
       real, intent(in) :: TT
       real, intent(out) :: hcond
