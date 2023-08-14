@@ -3980,7 +3980,7 @@ module Hydro
 !
 !  Fred: Option to constrain timestep for large forces
 !
-      if (lfirst.and.ldt.and.(lcdt_tauf.or.idiag_taufmin/=0.or.idiag_dtF/=0)) then
+      if (lfirst.and.ldt.and.(lcdt_tauf.or.idiag_dtF/=0)) then
         where (abs(p%uu)>1)
           uu1=1./p%uu
         elsewhere
@@ -3989,7 +3989,17 @@ module Hydro
         do j=1,3
           ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
           if (lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
-          if (idiag_taufmin/=0.or.idiag_dtF/=0) Fmax=max(Fmax,ftot)
+          if (idiag_dtF/=0.or.idiag_taufmin/=0) Fmax=max(Fmax,ftot)
+        enddo
+      elseif (idiag_taufmin/=0.and.ldiagnos) then
+        where (abs(p%uu)>1)
+          uu1=1./p%uu
+        elsewhere
+          uu1=1.
+        endwhere
+        do j=1,3
+          ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
+          Fmax=max(Fmax,ftot)
         enddo
       endif
 
@@ -4645,7 +4655,7 @@ module Hydro
 !
 !  phi-z averages
 !
-        if (idiag_Remz/=0) then
+        if (idiag_Remz/=0.and.ldt) then
           Remz = sqrt(p%ugu2/p%diffus_total**2)
           where (p%diffus_total < tini) Remz = 0.
           call xysum_mn_name_z(Remz,idiag_Remz)

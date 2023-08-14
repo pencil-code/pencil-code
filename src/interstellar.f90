@@ -1871,6 +1871,8 @@ module Interstellar
 !
       f(l1:l2,m,n,icooling) = cool
       f(l1:l2,m,n,inetheat) = heatcool
+      !df(l1:l2,m,n,icooling) = cool
+      !df(l1:l2,m,n,inetheat) = heatcool
 !
 !  Prepare diagnostic output
 !  Since these variables are divided by Temp when applied it is useful to
@@ -1916,8 +1918,10 @@ module Interstellar
 !  Limit timestep by the cooling time (having subtracted any heating)
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
-      if (lfirst.and.ldt) then
-        Hmax=Hmax+heatcool*p%TT
+      if (ldt) then
+        if (lfirst) Hmax=Hmax+heatcool*p%TT
+      else
+        if (ldiagnos) Hmax=Hmax+heatcool*p%TT
       endif
 !
 !  Apply heating/cooling to temperature/entropy variable

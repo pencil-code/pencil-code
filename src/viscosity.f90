@@ -2466,7 +2466,11 @@ module Viscosity
 !  Calculate maximum heating (for time step constraint), so it is
 !  only done on the first of the 3 substeps.
 !
-      if (lfirst .and. ldt) Hmax=Hmax+p%visc_heat
+      if (ldt) then
+        if (lfirst) Hmax=Hmax+p%visc_heat
+      else
+        if (ldiagnos) Hmax=Hmax+p%visc_heat
+      endif
 !
     endsubroutine calc_viscous_heat
 !***********************************************************************

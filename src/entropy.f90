@@ -2942,7 +2942,13 @@ module Energy
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
       if (idiag_dtH/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_Hmax/=0) lpenc_diagnos(i_ee)=.true.
-      if (idiag_tauhmin/=0) lpenc_diagnos(i_cv1)=.true.
+      if (idiag_tauhmin/=0) then
+        if (lthdiff_Hmax) then
+          lpenc_diagnos(i_cv1)=.true.
+        else
+          lpenc_diagnos(i_ee)=.true.
+        endif
+      endif
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_cgam/=0) then
         lpenc_diagnos(i_TT)=.true.
@@ -3424,15 +3430,15 @@ module Energy
 !
 !  Enforce maximum heating rate timestep constraint
 !
-      if ((lthdiff_Hmax.or.(ldiagnos.and.(idiag_dtH/=0.or.idiag_tauhmin/=0))) &
-          .and.(lfirst.and.ldt)) ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
-
-      if (lfirst.and.ldt) then
+      if (lfirst.and.ldt.and.(lthdiff_Hmax.or.idiag_dtH/=0)) then
         if (lthdiff_Hmax) then
+          ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
           dt1_max=max(dt1_max,ssmax/cdts)
         elseif (lrhs_max) then
           dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
         endif
+      elseif (ldiagnos.and.idiag_tauhmin/=0) then
+        ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
       endif
 !
 !  Calculate entropy related diagnostics.
@@ -5923,7 +5929,11 @@ module Energy
 !  Add heating/cooling to entropy equation.
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%rho1*heat
-      if (lfirst.and.ldt) Hmax=Hmax+heat*p%rho1
+      if (ldt) then
+        if (lfirst) Hmax=Hmax+heat*p%rho1
+      else
+        if (ldiagnos) Hmax=Hmax+heat*p%rho1
+      endif
 !
 !  Volume heating/cooling term on the mean entropy with respect to ss_const.
 !  Allow for local heating/cooling w.r.t. ss when lcalc_ss_volaverage=F
