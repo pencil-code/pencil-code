@@ -1,7 +1,7 @@
 ! $Id$
 !
-!  Initial conditions for 3D equilibrium supernova driven turbulence 
-!  simulations. First run 1D simulation using identical z grid with 
+!  Initial conditions for 3D equilibrium supernova driven turbulence
+!  simulations. First run 1D simulation using identical z grid with
 !  initial_condition/ths1D_equilibrium_ism.f90.
 !  This module will load the converged 1D profiles derived and saved to
 !  init_ism.dat (now init_ism.in).
@@ -83,14 +83,14 @@ module InitialCondition
   include '../initial_condition.h'
 !
 !  Observed number density per cubic cm parameters from Dickey & Lockman
-!  Includes neutral hydrogen and warm ionized hydrogen plus helium 
+!  Includes neutral hydrogen and warm ionized hydrogen plus helium
 !  proportionately. Multiply by m_u_cgs for gas density
 !
-  real, parameter, dimension(5) :: nfraction_cgs = & ! particles per cm cubed normalized to 1 at midplane 
+  real, parameter, dimension(5) :: nfraction_cgs = & ! particles per cm cubed normalized to 1 at midplane
                                       (/0.6541, 0.1775, 0.1028, 0.0245, 0.0411/)
   real, parameter, dimension(5) :: hscale_cgs = & ! scale height in cm
                        (/3.9188e20, 9.8125e20, 1.2435e21, 2.1600e20, 2.7771e21/)
-  real, dimension(5) :: rho_fraction, hscale 
+  real, dimension(5) :: rho_fraction, hscale
 !
 !  Heating function, cooling function and mass movement
 !  method selection.
@@ -111,7 +111,7 @@ module InitialCondition
 !  Magnetic profile - the magnetic field is propto sqrt density
 !  Diffusivities propto sqrt(T)
 !
-  real, parameter :: amplaa_cgs=1e-21  ! 1 nano Gauss (G g^{1/2} cm^-{3/2})
+  real, parameter :: amplaa_cgs=1e-9 ! 1 nano Gauss dx
   real :: amplaa=impossible
   real :: ybias_aa = 1.0 ! adjust angle of field default 45deg
 !
@@ -161,7 +161,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
       real, dimension (:,:),              optional, intent(out)  :: profiles
-! 
+!
 !  SAMPLE IMPLEMENTATION
 !
       call keep_compiler_quiet(f)
@@ -260,7 +260,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT 
+      use EquationOfState, only: eoscalc, ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: lnrho, ss
@@ -284,8 +284,8 @@ module InitialCondition
 !
 !  Initialize the magnetic vector potential.
 !
-!  This routine sets up an initial magnetic field y-parallel(azimuthal) 
-!  with a magnitude directly proportional to the density. 
+!  This routine sets up an initial magnetic field y-parallel(azimuthal)
+!  with a magnitude directly proportional to the density.
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use General, only: random_number_wrapper
@@ -298,9 +298,10 @@ module InitialCondition
       if (.not. lmagnetic) then
 !
         call keep_compiler_quiet(f)
-      else     
+      else
+        if (amplaa==impossible) amplaa = amplaa_cgs/unit_magnetic*dx
         do j=1,ninit
-!  
+!
           select case (initaa(j))
           case ('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
           case ('zero', '0'); f(:,:,:,iax:iaz) = 0.0
@@ -337,16 +338,16 @@ module InitialCondition
             enddo
             enddo
           case default
-!  
+!
 !  Catch unknown values.
-!  
+!
             call fatal_error('inititial_condition_aa', &
                 'init_aa value "' // trim(initaa(j)) // '" not recognised')
-!  
+!
           endselect
-!  
+!
 !  End loop over initial conditions.
-!  
+!
         enddo
 !
       endif
