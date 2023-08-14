@@ -22,7 +22,11 @@ module ImplicitPhysics
 !
     endsubroutine register_implicit_physics
 !***********************************************************************
-    subroutine initialize_implicit_physics
+    subroutine initialize_implicit_physics(f)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_implicit_physics
 !***********************************************************************

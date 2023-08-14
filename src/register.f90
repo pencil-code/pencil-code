@@ -412,7 +412,7 @@ module Register
       call initialize_special(f)
       call initialize_border_profiles
       call initialize_solid_cells(f)
-      call initialize_implicit_physics
+      call initialize_implicit_physics(f)
       call initialize_heatflux(f)
       call initialize_pointmasses(f)
 !

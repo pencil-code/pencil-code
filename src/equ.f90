@@ -86,7 +86,6 @@ module Equ
 !
       logical :: early_finalize
       real, dimension(1)  :: mass_per_proc
-      integer :: iv
 !
 !  Print statements when they are first executed.
 !

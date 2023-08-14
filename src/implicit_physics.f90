@@ -64,12 +64,14 @@ module ImplicitPhysics
 !
     endsubroutine register_implicit_physics
 !***********************************************************************
-    subroutine initialize_implicit_physics
+    subroutine initialize_implicit_physics(f)
 !
       use EquationOfState, only: get_gamma_etc
       use SharedVariables, only: get_shared_variable
       use Gravity, only: z1, z2
       use Sub, only: step,der_step,write_zprof
+!
+      real, dimension(mx,my,mz,mfarray) :: f
 !
       real :: cp
 !
@@ -107,6 +109,11 @@ module ImplicitPhysics
       endif
 !
       if (lrun) then
+!
+! hcondADI is dynamically shared with boundcond for the 'c3' BC. Initialized here.
+!
+        call heatcond_TT(f(:,m1,n1,ilnTT), hcondADI)
+
         if (lmultilayer) then
           hcondz  = hcond0*(1. + (hcond1-1.)*step(z,z1,-widthlnTT) + (hcond2-1.)*step(z,z2,widthlnTT))
           dhcondz = (hcond1-1.)*der_step(z,z1,-widthlnTT) + (hcond2-1.)*der_step(z,z2,widthlnTT)
@@ -125,7 +132,7 @@ module ImplicitPhysics
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
-! hcondADI is dynamically shared with boundcond for the 'c3' BC. Initialized here.
+! hcondADI is dynamically shared with boundcond for the 'c3' BC. Initialized here when starting.
 ! Requires that init_implicit_physics is called *after* init_energy!
 !
       call heatcond_TT(f(:,m1,n1,ilnTT), hcondADI)
