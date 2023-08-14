@@ -198,8 +198,12 @@ indices = [ $
   { name:'iaxi_chidot', label:'axi_chidot', dims:1 }, $
   { name:'iaxi_psi', label:'axi_psi', dims:1 }, $
   { name:'iaxi_psidot', label:'axi_psidot', dims:1 }, $
+  { name:'iaxi_impsi', label:'axi_impsi', dims:1 }, $
+  { name:'iaxi_impsidot', label:'axi_impsidot', dims:1 }, $
   { name:'iaxi_TR', label:'axi_TR', dims:1 }, $
-  { name:'iaxi_TRdot', label:'axi_TRdot', dims:1 }, $
+  { name:'iaxi_imTR', label:'axi_imTR', dims:1 }, $
+  { name:'iaxi_TRdot', label:'axi_imTRdot', dims:1 }, $
+  { name:'iaxi_imTRdot', label:'axi_TRdot', dims:1 }, $
   { name:'ialpm', label:'alpm', dims:1 }, $
   { name:'ietat', label:'etat', dims:1 }, $
   { name:'ieta', label:'Dust resistivity', dims:1 }, $
