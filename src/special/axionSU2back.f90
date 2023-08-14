@@ -83,7 +83,11 @@ module Special
   integer :: idiag_chidot =0 ! DIAG_DOC: $\dot{\chi}$
   integer :: idiag_chiddot =0 ! DIAG_DOC: $\ddot{\chi}$
   integer :: idiag_psi =0 ! DIAG_DOC: $\psi$
+  integer :: idiag_psidot =0 ! DIAG_DOC: $\dot\psi$
+  integer :: idiag_psiddot=0 ! DIAG_DOC: $\ddot\psi$
   integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
+  integer :: idiag_TRdot =0 ! DIAG_DOC: $\dot T_R$
+  integer :: idiag_TRddot=0 ! DIAG_DOC: $\ddot T_R$
   integer :: idiag_imTR=0 ! DIAG_DOC: $\Im T_R$
   integer :: idiag_psi_anal =0 ! DIAG_DOC: $\psi^{\rm anal}$
   integer :: idiag_TR_anal  =0 ! DIAG_DOC: $T_R^{\rm anal}$
@@ -385,7 +389,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: Q, Qdot, Qddot, chi, chidot, chiddot
-      real, dimension (nx) :: psi, psidot, TR, TRdot
+      real, dimension (nx) :: psi, psidot, psiddot, TR, TRdot, TRddot
       real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
       real, dimension (nx) :: impsi, impsidot, imTR, imTRdot
       real, dimension (nx) :: Uprime, mQ, xi, epsQE, epsQB
@@ -488,18 +492,21 @@ module Special
             f(l1:l2,m,n,iaxi_TRdot)=TRdot_anal
           elsewhere
 !
-            df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
-            df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-              -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi+(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
-            df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
-            df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
-              -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
+            psiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi &
+              +(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
+            TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
               +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
+!
+            df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+            df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot)+psiddot
+            df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
+            df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot)+TRddot
           endwhere
         else
           df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
           df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-            -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi+(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
+            -(k**2-2.*(1.-Q**2*(mQ**2-1.))/t**2)*psi &
+            +(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
           df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
           df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
             -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
@@ -507,7 +514,8 @@ module Special
           if (lim_psi_TR) then
             df(l1:l2,m,n,iaxi_impsi)=df(l1:l2,m,n,iaxi_impsi)+impsidot
             df(l1:l2,m,n,iaxi_impsidot)=df(l1:l2,m,n,iaxi_impsidot) &
-              -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi+(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
+              -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi+(2.*Q/t)*imTRdot &
+              +((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
             df(l1:l2,m,n,iaxi_imTR)=df(l1:l2,m,n,iaxi_imTR)+imTRdot
             df(l1:l2,m,n,iaxi_imTRdot)=df(l1:l2,m,n,iaxi_imTRdot) &
               -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
@@ -537,23 +545,21 @@ module Special
           endwhere
         else
           df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+          df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
           if (lwith_eps) then
-            df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-              -H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
+            psiddot=-H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
           else
-            df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-              -H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
+            psiddot=-H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
           endif
-            df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
           if (lwith_eps) then
-            df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
-              -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
+            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
               +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
           else
-            df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
-              -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
+            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
               +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
           endif
+          df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot)+psiddot
+          df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot)+TRddot
         endif
       endif
 !
@@ -605,7 +611,11 @@ module Special
         call sum_mn_name(psi_anal,idiag_psi_anal)
         call sum_mn_name(TR_anal,idiag_TR_anal)
         call sum_mn_name(psi,idiag_psi)
+        call sum_mn_name(psidot,idiag_psidot)
+        call sum_mn_name(psiddot,idiag_psiddot)
         call sum_mn_name(TR,idiag_TR)
+        call sum_mn_name(TRdot,idiag_TRdot)
+        call sum_mn_name(TRddot,idiag_TRddot)
         call sum_mn_name(imTR,idiag_imTR)
 !       call sum_mn_name(grand,idiag_grand)  !redundant
         call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
@@ -930,7 +940,8 @@ module Special
 !
       if (lreset) then
         idiag_Q=0; idiag_Qdot=0; idiag_Qddot=0; idiag_chi=0; idiag_chidot=0; idiag_chiddot=0
-        idiag_psi=0; idiag_TR=0; idiag_psi_anal=0; idiag_TR_anal=0
+        idiag_psi=0; idiag_psidot=0; idiag_psiddot=0
+        idiag_TR=0; idiag_TRdot=0; idiag_TRddot=0; idiag_psi_anal=0; idiag_TR_anal=0
         idiag_grand2=0; idiag_dgrant=0; idiag_dgrant_up=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0; idiag_k0=0; idiag_dk=0
       endif
@@ -943,7 +954,11 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'chidot' ,idiag_chidot)
         call parse_name(iname,cname(iname),cform(iname),'chiddot' ,idiag_chiddot)
         call parse_name(iname,cname(iname),cform(iname),'psi' ,idiag_psi)
+        call parse_name(iname,cname(iname),cform(iname),'psidot' ,idiag_psidot)
+        call parse_name(iname,cname(iname),cform(iname),'psiddot' ,idiag_psiddot)
         call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
+        call parse_name(iname,cname(iname),cform(iname),'TRdot' ,idiag_TRdot)
+        call parse_name(iname,cname(iname),cform(iname),'TRddot' ,idiag_TRddot)
         call parse_name(iname,cname(iname),cform(iname),'imTR' ,idiag_imTR)
         call parse_name(iname,cname(iname),cform(iname),'psi_anal' ,idiag_psi_anal)
         call parse_name(iname,cname(iname),cform(iname),'TR_anal' ,idiag_TR_anal)
