@@ -1871,8 +1871,6 @@ module Interstellar
 !
       f(l1:l2,m,n,icooling) = cool
       f(l1:l2,m,n,inetheat) = heatcool
-      !df(l1:l2,m,n,icooling) = cool
-      !df(l1:l2,m,n,inetheat) = heatcool
 !
 !  Prepare diagnostic output
 !  Since these variables are divided by Temp when applied it is useful to
