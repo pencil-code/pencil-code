@@ -23,7 +23,7 @@ module Timestep
 !
       use Messages, only: fatal_error, warning
 
-      if (lshear.or.lparticles) call fatal_error("initialize_timestep", "Shear and particles are"// &
+      if (lparticles) call fatal_error("initialize_timestep", "Particles are"// &
                                                  " not yet supported by the adaptive rkf scheme")
       if (itorder/=5) then
         call warning('initialize_timestep','itorder set to 5 for Runge-Kutta-Fehlberg')
@@ -117,6 +117,7 @@ module Timestep
 !
       use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
       use Equ, only: pde
+      use Shear, only: advance_shear
 !
 ! RK parameters by Cash and Karp
 !
@@ -164,7 +165,7 @@ module Timestep
 !   call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
       real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension(nx) :: scal, err
-      real :: errmax, errmaxs
+      real :: errmax, errmaxs,dt_tmp
       integer :: j
 !
       df=0.
@@ -173,6 +174,11 @@ module Timestep
       k=0.
 !
       call pde(f, k(:,:,:,:,1), p)
+      if (lshear) then
+        tmp = f
+        dt_tmp = dt*c1
+        call advance_shear(tmp, k(:,:,:,:,1), dt_tmp)
+      endif
       do j=1,mvar; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,j,1) = dt*k(l1:l2,m,n,j,1)
       enddo; enddo; enddo
@@ -187,13 +193,17 @@ module Timestep
 !
       call pde(tmp, k(:,:,:,:,2), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
+        k(l1:l2,m,n,j,2) = dt*k(l1:,m,n,j,2)
       enddo; enddo; enddo
 !
       tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b31*k(:,:,:,:,1) &
                                           + b32*k(:,:,:,:,2)
 !
       call pde(tmp, k(:,:,:,:,3), p)
+      if (lshear) then
+        dt_tmp = dt*c2
+        call advance_shear(tmp, k(:,:,:,:,3), dt_tmp)
+      endif
       do j=1,mvar; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
       enddo; enddo; enddo
@@ -203,6 +213,10 @@ module Timestep
                                           + b43*k(:,:,:,:,3)
 !
       call pde(tmp, k(:,:,:,:,4), p)
+      if (lshear) then
+        dt_tmp = dt*c3
+        call advance_shear(tmp, k(:,:,:,:,4), dt_tmp)
+      endif
       do j=1,mvar; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,j,4) = dt*k(l1:l2,m,n,j,4)
       enddo; enddo; enddo
@@ -213,6 +227,10 @@ module Timestep
                                           + b54*k(:,:,:,:,4)
 !
       call pde(tmp, k(:,:,:,:,5), p)
+      if (lshear) then
+        dt_tmp = dt*c4
+        call advance_shear(tmp, k(:,:,:,:,5), dt_tmp)
+      endif
       do j=1,mvar; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
       enddo; enddo; enddo
@@ -260,7 +278,7 @@ module Timestep
           ! No error check
         endselect
 !
-      enddo; enddo; 
+      enddo; enddo;
 
 !print*, 'j,errmaxs=', j,errmaxs
       enddo
