@@ -9,12 +9,13 @@
   xyz0=-0.032,-0.032,-1.998
   xyz1=+0.032,+0.032,+1.998
   lperi=T,T,F
-  bcz = 's','s','ubs','ism','ism','s','s'
+  bcz = 's','s','ubs','ism','ism','s','s','a','s','s'
   lwrite_aux=T
   lfix_unit_std=T
   ip=1963
 /
 &initial_condition_pars
+  initaa='gaussian-noise'
 /
 &eos_init_pars
   mu=0.531
@@ -28,10 +29,13 @@
   ldensity_nolog=T
 /
 &grav_init_pars
-  gravz_profile='Ferriere' 
+  gravz_profile='Ferriere'
 /
 &entropy_init_pars
   initss='nothing'
+/
+&magnetic_init_pars
+  initaa='nothing'
 /
 &interstellar_init_pars
   initinterstellar='multiple'

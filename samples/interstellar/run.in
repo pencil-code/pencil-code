@@ -4,13 +4,14 @@
 !
 &run_pars
   cvsid='$Id$',
-!  nt=645000, it1=250, isave=1000, it1d=5000, itorder=3, tmax=0.5
-  nt=5, it1=1, isave=1000, it1d=5000, itorder=3, tmax=0.5
-  cdt=0.2, cdtv=0.2, dtmin=1e-10, cdts=0.2
-  dsnap=.0005, dvid=.00025, slice_position='m' 
-  !for magnetic take at least 20 snapshots up to first Myr fluctuation dynamo? 
-  !dsnap=2., dvid=2., slice_position='m' 
-  bcz = 's','s','ubs','ism','ism','cop','cop'
+  !nt=25000, it1=50, isave=1000, it1d=2000, itorder=5, tmax=0.5, dt=1e-5
+  nt=5, it1=1, isave=1000, it1d=5000, itorder=5, tmax=0.5, dt=1e-5
+  eps_rkf = 0.9, timestep_scaling='cons_err',dtmin=1e-10
+  !cdt=0.2, cdtv=0.2, dtmin=1e-10, cdts=0.2
+  dsnap=.0005, dvid=.00025, slice_position='m'
+  !for magnetic take at least 20 snapshots up to first Myr fluctuation dynamo?
+  !dsnap=2., dvid=2., slice_position='m'
+  bcz = 's','s','ubs','ism','ism','s','s','a','cop','cop'
   ip=1963
   lpencil_check=T
   lpencil_check_small=T
@@ -20,9 +21,6 @@
 /
 &hydro_run_pars
   Omega=25.0
-  cdt_tauf=1.0
-  lcdt_tauf=T !time constraint on magnitude of RHS
-  ulev = 20.0
 /
 &viscosity_run_pars
   ivisc='nu-shock', 'nu-const', 'hyper3-nu-const'
@@ -40,7 +38,11 @@
   iheatcond='shock','hyper3'
   chi_hyper3=5e-12
   chi_shock=2.0
-  lthdiff_Hmax=T !time constraint on magnitude of RHS
+/
+&magnetic_run_pars
+  iresistivity='eta-const','hyper3'
+  eta_hyper3=5e-12
+  eta=8e-4
 /
 &interstellar_run_pars
 !! adjust SN radius above rfactor_SN for diffuse ISM
@@ -49,20 +51,15 @@
   rfactor_SN=5.0
 !! override persistent variables read in from varfile
 !  lSNII=T, l_persist_overwrite_lSNII=T
-!  lSNI=T, l_persist_overwrite_lSNI=T 
+!  lSNI=T, l_persist_overwrite_lSNI=T
 !  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
 !  t_next_SNII=9e-4, l_persist_overwrite_tSNII=T
-!! rest random number after crash for new SN site 
+!! rest random number after crash for new SN site
 !  lreset_ism_seed=T
 !  seed_reset=1245
-!! if 1D profile uses average heating decrease smoothly for stable disk
-  laverage_SNII_heating=F
-  laverage_SNI_heating=T
-  heatingfunction_scalefactor=5.0
-  heatingfunction_fadefactor=25.0
 /
 &shear_run_pars
-  Sshear = -25.0
+  qshear = 1
 /
 &shock_run_pars
   ishock_max=2
