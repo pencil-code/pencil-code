@@ -227,7 +227,7 @@ module Persist
       ! Don't write the seeds, if they are unchanged from their default value.
       call random_seed_wrapper (GET=seed,CHANNEL=1)
       if (any (seed(1:nseed) /= seed0)) then
-print*, 'persist-out: seed=', seed(1:nseed)
+!print*, 'persist-out: seed=', seed(1:nseed)
         if (write_persist ('RANDOM_SEEDS', id_record_RANDOM_SEEDS, seed(1:nseed))) &
             output_persistent_general = .true.
       endif
