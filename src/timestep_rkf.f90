@@ -193,7 +193,7 @@ module Timestep
 !
       call pde(tmp, k(:,:,:,:,2), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,j,2) = dt*k(l1:,m,n,j,2)
+        k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       enddo; enddo; enddo
 !
       tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b31*k(:,:,:,:,1) &
