@@ -878,8 +878,8 @@ module Special
 !  uniform spacings.
 !
       if (llnk_spacing_adjustable .or. llnk_spacing) then
-        TRdoteff2km=(4.*pi*k**3*dlnk)*TReff2*(k/a)
-        TRdoteff2m=(4.*pi*k**3*dlnk)*TReff2
+        TRdoteff2km=(4.*pi*k**3*dlnk)*TRdoteff2*(k/a)
+        TRdoteff2m=(4.*pi*k**3*dlnk)*TRdoteff2
         TReff2km=(4.*pi*k**3*dlnk)*TReff2*(k/a)
         TReff2m=(4.*pi*k**3*dlnk)*TReff2
         grand=(4.*pi*k**3*dlnk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
@@ -894,8 +894,8 @@ module Special
           )/twopi**3
         endif
       else
-        TRdoteff2km=(4.*pi*k**2*dk)*TReff2*(k/a)
-        TRdoteff2m=(4.*pi*k**2*dk)*TReff2
+        TRdoteff2km=(4.*pi*k**2*dk)*TRdoteff2*(k/a)
+        TRdoteff2m=(4.*pi*k**2*dk)*TRdoteff2
         TReff2km=(4.*pi*k**2*dk)*TReff2*(k/a)
         TReff2m=(4.*pi*k**2*dk)*TReff2
         grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
