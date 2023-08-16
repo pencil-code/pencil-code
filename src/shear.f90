@@ -23,10 +23,9 @@
 !***************************************************************
 module Shear
 !
-  use Cparam, only: ltestflow
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, fatal_error, warning, not_implemented, information
 !
   implicit none
 !
@@ -83,7 +82,8 @@ module Shear
 !
 !  Share lshearadvection_as_shift.
 !
-      call put_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift, caller='register_shear')
+      call put_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift, &
+                               caller='register_shear')
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -107,8 +107,7 @@ module Shear
 !
       use Sub, only: bspline_precondition, ludcmp
 !
-      if (lyinyang) &
-        call fatal_error('initialize_shear', 'Shear not implemented for Yin-Yang grid')
+      if (lyinyang) call not_implemented('initialize_shear','shear for Yin-Yang grid')
 !
 !  Calculate the shear velocity.
 !
@@ -130,10 +129,10 @@ module Shear
 !
       if (sini /= 0.) then
         lmagnetic_tilt=.true.
-        if (lroot) then
+        if (lroot) &
           print*, 'initialize_shear: turn on tilt of magnetic stretching with sini = ', sini
-          if (abs(sini) > .1) print*, 'Warning: current formulation only allows for small sini. '
-        endif
+        if (abs(sini)>.1) call warning('initialize_shear', &
+                                       'current formulation allows only for small sini but it is >0.1')
         Sshear_sini=Sshear*sini
       endif
 !
@@ -150,17 +149,18 @@ module Shear
 !
 !  Set up B-spline interpolation if requested.
 !
-      bsplines: if (nygrid > 1 .and. lshearadvection_as_shift .and. shear_method == 'bspline') then
+      if (nygrid > 1 .and. lshearadvection_as_shift .and. shear_method == 'bspline') then
         call bspline_precondition(nygrid, bspline_k, bspline_ay)
         call ludcmp(bspline_ay, bspline_iy)
-      endif bsplines
+      endif
 !
 !  Hand over shear acceleration to Particles_drag.
 !
-      drag: if (lparticles_drag .and. lshear_acceleration) then
+      if (lparticles_drag .and. lshear_acceleration) then
         lshear_acceleration = .false.
-        if (lroot) print *, 'initialize_shear: turned off and hand over shear acceleration to Particles_drag. '
-      endif drag
+        call information('initialize_shear', &
+                         'turned shear acceleration off and handed it over to Particles_drag')
+      endif
 !
     endsubroutine initialize_shear
 !***********************************************************************
@@ -220,7 +220,7 @@ module Shear
             call random_number_wrapper(x0_shear)
             x0_shear=x0_shear*Lxyz(1)+xyz0(1)
           endif
-          call mpibcast_real(x0_shear,0)
+          call mpibcast_real(x0_shear)
           uy0 = Sshear * (x(l1:l2) - x0_shear)
         endif
       endif
@@ -337,8 +337,7 @@ module Shear
 !
       if (ldustvelocity) then
         do k=1,ndustspec
-          df(l1:l2,m,n,iudy(k))=df(l1:l2,m,n,iudy(k)) &
-            -Sshear1*f(l1:l2,m,n,iudx(k))
+          df(l1:l2,m,n,iudy(k))=df(l1:l2,m,n,iudy(k)) - Sshear1*f(l1:l2,m,n,iudx(k))
         enddo
       endif
 !
@@ -353,7 +352,7 @@ module Shear
       endif
 !
 !  Testfield stretching term.
-!  Loop through all the dax/dt equations and add -S*ay contribution.
+!  Loop through all the daatest/dt equations and add -S*ay contribution.
 !
       if (ltestfield) then
         do j=iaatest,iaztestpq,3
@@ -367,27 +366,23 @@ module Shear
       endif
 !
 !  Mean magnetic field stretching term.
-!  Loop through all the dax/dt equations and add -S*ay contribution.
+!  Loop through all the dam/dt equations and add -S*ay contribution.
 !
-      if (iam/=0) then
-        df(l1:l2,m,n,iamx)=df(l1:l2,m,n,iamx)-Sshear*f(l1:l2,m,n,iamy)
-      endif
+      if (iam/=0) df(l1:l2,m,n,iamx)=df(l1:l2,m,n,iamx)-Sshear*f(l1:l2,m,n,iamy)
 !
 !  Take shear into account for calculating time step.
 !
       if (lfirst .and. ldt .and. (lhydro .or. ldensity) .and. &
-        nygrid > 1 .and. .not. lshearadvection_as_shift) then
+          nygrid > 1 .and. .not. lshearadvection_as_shift) then
+
         advec_shear = abs(uy0 * dy_1(m))
         maxadvec=maxadvec+advec_shear
-      else
-        advec_shear=0.
-      endif
 !
 !  Calculate shearing related diagnostics.
 !
-      if (ldiagnos) then
-        if (idiag_dtshear/=0) &
-            call max_mn_name(advec_shear/cdt,idiag_dtshear,l_dt=.true.)
+        if (ldiagnos) then
+          if (idiag_dtshear/=0) call max_mn_name(advec_shear/cdt,idiag_dtshear,l_dt=.true.)
+        endif
       endif
 !
     endsubroutine shearing
@@ -473,8 +468,7 @@ module Shear
 !
 !  Must currently use lshearadvection_as_shift=T when Sshear is positive.
 !
-      if (Sshear>0. .and. .not. lshearadvection_as_shift &
-        .and. ncpus/=1 .and. headt) then
+      if (Sshear>0. .and. .not. lshearadvection_as_shift .and. ncpus/=1 .and. headt) then
         if (lroot) then
           print*
           print*, 'NOTE: for Sshear > 0, MPI is not completely correct.'
@@ -501,23 +495,25 @@ module Shear
         comp: do ivar = 1, mvar
 !         bfield module handles its own shearing.
           if (lbfield .and. ibx <= ivar .and. ivar <= ibz) cycle comp
-          method: select case (shear_method)
-          case ('fft') method
+
+          select case (shear_method)
+          case ('fft')
             call sheared_advection_fft(f, ivar, ivar, dt_shear)
             if (.not. llast) call sheared_advection_fft(df, ivar, ivar, dt_shear)
-          case ('bspline', 'spline', 'poly') method
+          case ('bspline', 'spline', 'poly')
             posdef = lposdef_advection .and. lposdef(ivar)
             call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, posdef)
-            notlast: if (.not. llast) then
-              dfgcx: if (u0_advec(1) /= 0.0) then
+            if (.not. llast) then
+              if (u0_advec(1) /= 0.0) then
                 call isendrcv_bdry_x(df, ivar, ivar)
                 call shift_ghostzones_nonfft(df, ivar, ivar, dt_shear, ldf=.true.)
-              endif dfgcx
+              endif
               call sheared_advection_nonfft(df, ivar, ivar, dt_shear, shear_method, ltvd_advection, .false.)
-            endif notlast
-          case default method
-            call fatal_error('advance_shear', 'unknown method')
-          end select method
+            endif
+          case default
+            call fatal_error('advance_shear', 'no such shear_method: '//trim(shear_method))
+          endselect
+
         enddo comp
       endif shear
 !
@@ -555,7 +551,7 @@ module Shear
 !
 !  Sanity check
 !
-      if (any(u0_advec /= 0.0)) call fatal_error('sheared_advection_fft', 'uniform background advection is not implemented.')
+      if (any(u0_advec /= 0.0)) call not_implemented('sheared_advection_fft','uniform background advection')
 !
 !  Find the sheared length as a function of x.
 !
@@ -595,7 +591,6 @@ module Shear
 !    method: interpolation method
 !
       use General, only: cspline, polynomial_interpolation
-      use Messages, only: warning
       use Mpicomm, only: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
       use Sub, only: bspline_interpolation
 !
@@ -617,7 +612,6 @@ module Shear
       real, dimension(mygrid) :: by
       real, dimension(3) :: advec
       character(len=256) :: message
-      logical :: error
       integer :: istat
       integer :: ic, j, k
       real :: shift, avg
@@ -632,7 +626,7 @@ module Shear
         ynew = ygrid - advec(2)
         scalex: if (method == 'spline') then
           if (.not. lequidist(1)) &
-              call fatal_error('sheared_advection_nonfft', 'Non-uniform x grid is not implemented for tvd spline. ')
+              call not_implemented('sheared_advection_nonfft','non-uniform x grid for tvd spline')
           xnew = (xnew - xglobal(1)) / dx
         endif scalex
       endif newcoord
@@ -640,7 +634,7 @@ module Shear
 !  Check positive definiteness.
 !
       if (posdef .and. any(a(l1:l2,m1:m2,n1:n2,ic1:ic2) < 0.0)) &
-          call warning('sheared_advection_nonfft', 'negative value(s) before interpolation')
+          call warning('sheared_advection_nonfft','negative value(s) before interpolation')
 !
 !  Loop through each component.
 !
@@ -659,15 +653,14 @@ module Shear
                 else perx
                   call cspline(b(:,j,k), xnew, px, nonperiodic=.true., tvd=tvd, posdef=posdef)
                 endif perx
-                error = .false.
               case ('poly') xmethod
                 call polynomial_interpolation(xglobal, b(:,j,k), xnew, px, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
-                error = istat /= 0
+                if (istat /= 0) &
+                  call warning('sheared_advection_nonfft','error in x interpolation; '//trim(message))
               case default xmethod
-                call fatal_error('sheared_advection_nonfft', 'unknown method')
+                call fatal_error('sheared_advection_nonfft','no such method: '//trim(method))
               endselect xmethod
-              if (error) call warning('sheared_advection_nonfft', 'error in x interpolation; ' // trim(message))
               b(nghost+1:nghost+nxgrid,j,k) = px
             enddo scan_xy
           enddo scan_xz
@@ -693,23 +686,21 @@ module Shear
               case ('bspline') ymethod
                 py = bt(:,j,k)
                 call bspline_interpolation(nygrid, bspline_k, py, bspline_ay, bspline_iy, shift)
-                error = .false.
               case ('spline') ymethod
                 if (.not. lequidist(2)) &
-                    call fatal_error('sheared_advection_nonfft', 'Non-uniform y grid is not implemented for tvd spline. ')
+                    call not_implemented('sheared_advection_nonfft','non-uniform y grid for tvd spline')
                 call cspline(bt(:,j,k), (ynew1 - ygrid(1)) / dy, py, tvd=tvd, posdef=posdef)
-                error = .false.
               case ('poly') ymethod
                 by(mm1:mm2) = bt(:,j,k)
                 by(1:nghost) = by(mm2i:mm2)
                 by(mm2+1:mygrid) = by(mm1:mm1i)
                 call polynomial_interpolation(yglobal, by, ynew1, py, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
-                error = istat /= 0
+                if (istat /= 0) &
+                  call warning('sheared_advection_nonfft','error in y interpolation; '//trim(message))
               case default ymethod
-                call fatal_error('sheared_advection_nonfft', 'unknown method')
+                call fatal_error('sheared_advection_nonfft','no such method: '//trim(method))
               endselect ymethod
-              if (error) call warning('sheared_advection_nonfft', 'error in y interpolation; ' // trim(message))
 !
               bt(:,j,k) = avg + py
             enddo scan_yz
@@ -721,7 +712,7 @@ module Shear
 !
 !  Currently no interpolation in z
 !
-        if (u0_advec(3) /= 0.0) call fatal_error('sheared_advection_nonfft', 'Advection in z is not implemented.')
+        if (u0_advec(3) /= 0.0) call not_implemented('sheared_advection_nonfft','advection in z')
 !
       enddo comp
 !
@@ -734,22 +725,20 @@ module Shear
 !  02-oct-07/anders: coded
 !
       use Mpicomm, only: initiate_shearing, finalize_shearing
-      use Messages, only: warning
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
       logical, save :: lfirstcall=.true.
 !
       if (ldownsampling) then
-        if (lroot.and.lfirstcall) then
-          call warning('boundcond_shear','Not available for downsampling - ignored!')
+        if (lfirstcall) then
+          call warning('boundcond_shear','not available for downsampling - ignored')
           lfirstcall=.false.
         endif
         return
       endif
 
-      if (ip<12.and.headtt) print*, &
-          'boundcond_shear: use shearing sheet boundary condition'
+      if (ip<12.and.headtt) print*,'boundcond_shear: use shearing sheet boundary condition'
 !
       shear_advec: if (lshearadvection_as_shift) then
         method: select case (shear_method)
@@ -758,7 +747,7 @@ module Shear
         case ('bspline', 'spline', 'poly') method
           call shift_ghostzones_nonfft(f,ivar1,ivar2)
         case default method
-          call fatal_error('boundcond_shear', 'unknown method')
+          call fatal_error('boundcond_shear', 'no such shear_method: '//trim(shear_method))
         end select method
       else shear_advec
         call initiate_shearing(f,ivar1,ivar2)
@@ -864,7 +853,6 @@ module Shear
 !  28-jul-15/ccyang: add method 'bspline'.
 !
       use General, only: cspline, polynomial_interpolation
-      use Messages, only: warning
       use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
       use Sub, only: bspline_interpolation
 !
@@ -877,7 +865,6 @@ module Shear
       real, dimension(nygrid) :: ynew, penc
       real, dimension(mygrid) :: worky
       character(len=256) :: message
-      logical :: error
       integer :: istat
       integer :: i, k
       real :: s, avg
@@ -888,13 +875,13 @@ module Shear
         s = shift / dy
       else shifty
         ynew = ygrid - shift
-        newy: if (method == 'spline') then
+        if (method == 'spline') then
           if (.not. lequidist(2)) &
-              call fatal_error('shift_ghostzones_nonfft_subtask', 'Non-uniform y grid is not implemented for TVD spline. ')
+              call not_implemented('shift_ghostzones_nonfft_subtask','non-uniform y grid for TVD spline')
           ynew = (ynew - ygrid(1)) / dy
-        elseif (method == 'poly') then newy
+        elseif (method == 'poly') then
           ynew = ynew - floor((ynew - y0) / Ly) * Ly
-        endif newy
+        endif
       endif shifty
 !
 !  Check positive definiteness.
@@ -919,18 +906,16 @@ module Shear
           case ('bspline') dispatch
             penc = work(i,:,k)
             call bspline_interpolation(nygrid, bspline_k, penc, bspline_ay, bspline_iy, s)
-            error = .false.
           case ('spline') dispatch
             call cspline(work(i,:,k), ynew, penc, tvd=ltvd_advection, posdef=posdef)
-            error = .false.
           case ('poly') dispatch
-            call polynomial_interpolation(yglobal, worky, ynew, penc, norder_poly, tvd=ltvd_advection, posdef=posdef, &
-                                          istatus=istat, message=message)
-            error = istat /= 0
+            call polynomial_interpolation(yglobal, worky, ynew, penc, norder_poly, tvd=ltvd_advection, &
+                                          posdef=posdef, istatus=istat, message=message)
+            if (istat /= 0) &
+              call warning('shift_ghostzones_nonfft_subtask','error in interpolation; '//trim(message))
           case default dispatch
-            call fatal_error('shift_ghostzones_nonfft_subtask', 'unknown method')
+            call fatal_error('shift_ghostzones_nonfft_subtask','no such method: '//trim(method))
           endselect dispatch
-          if (error) call warning('shift_ghostzones_nonfft_subtask', 'error in interpolation; ' // trim(message))
 !
           work(i,:,k) = avg + penc
         enddo scan_x
@@ -969,12 +954,6 @@ module Shear
         call parse_name(iname,cname(iname),cform(iname),'deltay',idiag_deltay)
       enddo
 !
-!  Write column where which shear variable is stored.
-!
-      if (lwr) then
-!
-      endif
-!
     endsubroutine rprint_shear
 !***********************************************************************
     subroutine get_uy0_shear(uy0_shear, x)
@@ -989,7 +968,7 @@ module Shear
       if (present(x)) then
         uy0_shear = Sshear * (x - x0_shear)
       else
-        if (size(uy0_shear) /= nx) call fatal_error('get_uy0_shear', 'unconformable output array uy0_shear')
+        if (size(uy0_shear) /= nx) call fatal_error('get_uy0_shear','unconformable array uy0_shear')
         uy0_shear = uy0
       endif
 !
@@ -1038,7 +1017,7 @@ module Shear
         a(l2+1:mx,:,:,ivar1:ivar2) = a(l1:l1i,:,:,ivar1:ivar2)
       else perx
         allocate(send_buf(nghost,my,mz,nvar), recv_buf(nghost,my,mz,nvar), stat=istat)
-        if (istat /= 0) call fatal_error('bcx_periodic', 'allocation failed. ')
+        if (istat /= 0) call fatal_error('bcx_periodic','could not allocate send_buf or recv_buf')
         commun: if (lfirst_proc_x) then
           send_buf = a(l1:l1i,:,:,ivar1:ivar2)
           call mpirecv_real(recv_buf, nbcast, xlneigh, rtag)
@@ -1065,24 +1044,20 @@ module Shear
 !  10-dec-21/hongzhe: using fft to shift, allowing for nprocy>1
 !
       use Fourier, only: fourier_shift_yz_y
+      use General, only: roptest
 !
       real, dimension(nx,ny,nz), intent(inout) :: a
       real, intent(in), optional :: tshift
 !
-      real :: nshear, ttmp
+      real :: nshear
       real, dimension(ny,nz) :: tmp
       integer :: ikx
 !
 !  Need to use S*t directly rather than deltay, because the latter has
 !  already modulo'ed Ly
 !
-      if (present(tshift)) then
-        ttmp=tshift
-      else
-        ttmp=t
-      endif
       do ikx=l1,l2
-        nshear=-Sshear*ttmp*x(ikx)
+        nshear=-Sshear*roptest(tshift,real(t))*x(ikx)
         tmp=a(ikx-nghost,:,:)
         call fourier_shift_yz_y(tmp,nshear)
         a(ikx-nghost,:,:)=tmp
