@@ -48,6 +48,7 @@ module Special
   real, dimension (2) :: axion_sum_range
   integer, dimension (nx) :: kindex_array
   real :: grand_sum, grant_sum, dgrant_sum
+  real :: TRdoteff2km_sum, TRdoteff2m_sum, TReff2km_sum, TReff2m_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
   real :: lnkmin0, lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=0.
@@ -91,6 +92,10 @@ module Special
   integer :: idiag_imTR=0 ! DIAG_DOC: $\Im T_R$
   integer :: idiag_psi_anal =0 ! DIAG_DOC: $\psi^{\rm anal}$
   integer :: idiag_TR_anal  =0 ! DIAG_DOC: $T_R^{\rm anal}$
+  integer :: idiag_TReff2m  =0 ! DIAG_DOC: $|T_R|^2_{\rm eff}$
+  integer :: idiag_TReff2km  =0 ! DIAG_DOC: $k|T_R|^2_{\rm eff}$
+  integer :: idiag_TRdoteff2m  =0 ! DIAG_DOC: $|T_R\dot{T}_R|_{\rm eff}$
+  integer :: idiag_TRdoteff2km  =0 ! DIAG_DOC: $k|T_R\dot{T}_R|_{\rm eff}$
 ! integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
 ! integer :: idiag_grant=0 ! DIAG_DOC: ${\cal T}^\chi$
   integer :: idiag_dgrant_up=0 ! DIAG_DOC: ${\cal T}^\chi$
@@ -617,10 +622,13 @@ module Special
         call sum_mn_name(TRdot,idiag_TRdot)
         call sum_mn_name(TRddot,idiag_TRddot)
         call sum_mn_name(imTR,idiag_imTR)
-!       call sum_mn_name(grand,idiag_grand)  !redundant
-        call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
+        call save_name(TReff2m_sum,idiag_TReff2m)
+        call save_name(TReff2km_sum,idiag_TReff2km)
+        call save_name(TRdoteff2m_sum,idiag_TRdoteff2m)
+        call save_name(TRdoteff2km_sum,idiag_TRdoteff2km)
         call save_name(grand_sum,idiag_grand2)
         call save_name(dgrant_sum,idiag_dgrant)
+        call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
         call save_name(fact,idiag_fact)
         call save_name(k0,idiag_k0)
         call save_name(dk,idiag_dk)
@@ -697,6 +705,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: mQ, xi, epsQE, epsQB
       real, dimension (nx) :: TR, TRdot, imTR, imTRdot, TReff2, TRdoteff2
+      real, dimension (nx) :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
       real, dimension (nx) :: tmp_psi, tmp_psidot, tmp_TR, tmp_TRdot
       real, dimension (nx) :: tmp_impsi, tmp_impsidot, tmp_imTR, tmp_imTRdot
       real :: lnt, lnH, lna, a, lnkmin, lnkmax
@@ -869,6 +878,10 @@ module Special
 !  uniform spacings.
 !
       if (llnk_spacing_adjustable .or. llnk_spacing) then
+        TRdoteff2km=(4.*pi*k**3*dlnk)*TReff2*(k/a)
+        TRdoteff2m=(4.*pi*k**3*dlnk)*TReff2
+        TReff2km=(4.*pi*k**3*dlnk)*TReff2*(k/a)
+        TReff2m=(4.*pi*k**3*dlnk)*TReff2
         grand=(4.*pi*k**3*dlnk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
         grant=(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TReff2*(-lamf/(2.*a**2))/twopi**3
         if (lconf_time) then
@@ -881,6 +894,10 @@ module Special
           )/twopi**3
         endif
       else
+        TRdoteff2km=(4.*pi*k**2*dk)*TReff2*(k/a)
+        TRdoteff2m=(4.*pi*k**2*dk)*TReff2
+        TReff2km=(4.*pi*k**2*dk)*TReff2*(k/a)
+        TReff2m=(4.*pi*k**2*dk)*TReff2
         grand=(4.*pi*k**2*dk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
         grant=(4.*pi*k**2*dk)*(mQ*H-k/a)*TReff2*(-lamf/(2.*a**2))/twopi**3
         if (lconf_time) then
@@ -910,9 +927,18 @@ module Special
         endif
       endif
 !
+!  Compute the sum over all processors.
+!
       call mpiallreduce_sum(sum(grand),grand_sum,1)
       call mpiallreduce_sum(sum(grant),grant_sum,1)
       call mpiallreduce_sum(sum(dgrant),dgrant_sum,1)
+!
+!  These 4 lines are only needed for diagnostics and could be escaped.
+!
+      call mpiallreduce_sum(sum(TRdoteff2km),TRdoteff2km_sum,1)
+      call mpiallreduce_sum(sum(TRdoteff2m),TRdoteff2m_sum,1)
+      call mpiallreduce_sum(sum(TReff2km),TReff2km_sum,1)
+      call mpiallreduce_sum(sum(TReff2m),TReff2m_sum,1)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -942,6 +968,7 @@ module Special
         idiag_Q=0; idiag_Qdot=0; idiag_Qddot=0; idiag_chi=0; idiag_chidot=0; idiag_chiddot=0
         idiag_psi=0; idiag_psidot=0; idiag_psiddot=0
         idiag_TR=0; idiag_TRdot=0; idiag_TRddot=0; idiag_psi_anal=0; idiag_TR_anal=0
+        idiag_TReff2m=0; idiag_TReff2km=0; idiag_TRdoteff2m=0; idiag_TRdoteff2km=0
         idiag_grand2=0; idiag_dgrant=0; idiag_dgrant_up=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0; idiag_k0=0; idiag_dk=0
       endif
@@ -962,6 +989,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'imTR' ,idiag_imTR)
         call parse_name(iname,cname(iname),cform(iname),'psi_anal' ,idiag_psi_anal)
         call parse_name(iname,cname(iname),cform(iname),'TR_anal' ,idiag_TR_anal)
+        call parse_name(iname,cname(iname),cform(iname),'TReff2m' ,idiag_TReff2m)
+        call parse_name(iname,cname(iname),cform(iname),'TReff2km' ,idiag_TReff2km)
+        call parse_name(iname,cname(iname),cform(iname),'TRdoteff2m' ,idiag_TRdoteff2m)
+        call parse_name(iname,cname(iname),cform(iname),'TRdoteff2km' ,idiag_TRdoteff2km)
 !       call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
 !       call parse_name(iname,cname(iname),cform(iname),'grant' ,idiag_grant)
         call parse_name(iname,cname(iname),cform(iname),'dgrant_up' ,idiag_dgrant_up)
