@@ -2712,7 +2712,7 @@ module Initcond
 !NS: added this switch for avoiding ghost cells from stratification file
 !
        if (lnoghost_strati) then
-          print*,'ghost cells are not needed in stratification.dat'
+          if (lroot) print*,'ghost cells are not needed in stratification.dat'
           do n=1,nzgrid
             read(19,*,iostat=stat) tmp,var1,var2
             if (stat==0) then
@@ -2724,7 +2724,7 @@ module Initcond
             endif
           enddo
        else
-          print*,'ghost cells are needed in stratification.dat'
+          if (lroot) print*,'ghost cells are needed in stratification.dat'
           do n=1,mzgrid
             read(19,*,iostat=stat) tmp,var1,var2
             if (stat==0) then
