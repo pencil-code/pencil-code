@@ -3379,7 +3379,7 @@ module Magnetic
       real, dimension(nx,3) :: aamx,bb,jj
       real, dimension(ny,3) :: aamy
       real, dimension(nx,3,3) :: aij, bij
-      real, dimension(nx) :: rho1, b2, tmp, tmp2, diva
+      real, dimension(nx) :: rho1, b2, tmp, tmp2
       real, dimension(3) :: b_ext
 !
 !  Compute mean field (xy verage) for each component. Do not include the ghost zones.

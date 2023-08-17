@@ -75,8 +75,6 @@ module Hydro
       use Mpicomm, only: lroot
       use SharedVariables, only: put_shared_variable
 !
-      integer :: ierr
-!
 !  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
@@ -249,7 +247,6 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical, dimension(:) :: lpenc_loc
-      integer :: kk
 !
       intent(in) :: f, lpenc_loc
       intent(inout) :: p

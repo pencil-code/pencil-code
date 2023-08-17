@@ -791,7 +791,6 @@ module Hydro
   real, dimension(3) :: Omegav=0.
   real, dimension(nx) :: Fmax,advec_uu=0.
   real :: t_vart=0., fade_fact
-!$omp THREADPRIVATE(advec_uu)
 !
   real, dimension (nx) :: prof_amp1, prof_amp2
   real, dimension (mz) :: prof_amp3
@@ -2635,7 +2634,6 @@ module Hydro
         lpenc_requested(i_uij) = .true.
       if (ladvection_velocity) then
         if (lweno_transport) then
-          lpenc_requested(i_uu)=.true.
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_transprho)=.true.
           lpenc_requested(i_transpurho)=.true.
@@ -2644,9 +2642,6 @@ module Hydro
         endif
       endif
       if (lprecession) lpenc_requested(i_rr)=.true.
-      if (ldt.or.(ekman_friction/=0)) lpenc_requested(i_uu)=.true.
-      if (Omega/=0.0) lpenc_requested(i_uu)=.true.
-      if (idiag_uzcx10m/=0.0.or.idiag_uzsx10m/=0.0) lpenc_requested(i_uu)=.true.
 !
 !  Damping terms for lcylinder_in_a_box
 !
@@ -3980,26 +3975,17 @@ module Hydro
 !
 !  Fred: Option to constrain timestep for large forces
 !
-      if (lfirst.and.ldt.and.(lcdt_tauf.or.idiag_dtF/=0)) then
-        where (abs(p%uu)>1)
+      if ( lfirst.and.ldt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
+           ldiagnos.and.idiag_taufmin/=0 ) then
+        where (abs(p%uu)>1)   !MR: What would in general be the significance of 1 here?
           uu1=1./p%uu
         elsewhere
           uu1=1.
         endwhere
         do j=1,3
           ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
-          if (lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
-          if (idiag_dtF/=0.or.idiag_taufmin/=0) Fmax=max(Fmax,ftot)
-        enddo
-      elseif (idiag_taufmin/=0.and.ldiagnos) then
-        where (abs(p%uu)>1)
-          uu1=1./p%uu
-        elsewhere
-          uu1=1.
-        endwhere
-        do j=1,3
-          ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
-          Fmax=max(Fmax,ftot)
+          if (ldt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
+          if (ldiagnos.and.(idiag_dtF/=0.or.idiag_taufmin/=0)) Fmax=max(Fmax,ftot)
         enddo
       endif
 
@@ -4039,9 +4025,11 @@ module Hydro
           call sum_mn_name(p%u2-2.*p%uu(:,2)*uref+uref**2,idiag_durms)
         endif
         if (.not.lgpu) then
-          if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
-          if (lcdt_tauf.and.idiag_dtF/=0) call max_mn_name(Fmax/cdtf,idiag_dtF,l_dt=.true.)
-          if (idiag_taufmin/=0) call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
+          if (ldt) then
+            if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
+          endif
+          if (idiag_dtF/=0) call max_mn_name(Fmax/cdtf,idiag_dtF,l_dt=.true.)
+          call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
         endif
 !
 ! urlm
@@ -4655,7 +4643,7 @@ module Hydro
 !
 !  phi-z averages
 !
-        if (idiag_Remz/=0.and.ldt) then
+        if (idiag_Remz/=0) then
           Remz = sqrt(p%ugu2/p%diffus_total**2)
           where (p%diffus_total < tini) Remz = 0.
           call xysum_mn_name_z(Remz,idiag_Remz)
@@ -4969,7 +4957,6 @@ module Hydro
 !  12-sep-13/MR  : use finalize_aver
 !
       use Sub, only: finalize_aver, vecout_initialize
-      use Magnetic, only: calc_pencils_magnetic
 
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
