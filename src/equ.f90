@@ -491,9 +491,13 @@ module Equ
 !
       use Density, only: calc_diagnostics_density
       use Energy, only: calc_diagnostics_energy
+      use Forcing, only: calc_diagnostics_forcing
       use Hydro, only: calc_diagnostics_hydro
       use Magnetic, only: calc_diagnostics_magnetic
-      use Forcing, only: calc_diagnostics_forcing
+      use NeutralDensity, only: calc_diagnostics_neutraldens
+      use NeutralVelocity, only: calc_diagnostics_neutralvel
+      use Pscalar, only: calc_diagnostics_pscalar
+      use Shock, only: calc_diagnostics_shock
       use Viscosity, only: calc_diagnostics_viscosity
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
@@ -520,6 +524,10 @@ module Equ
         call calc_diagnostics_energy(f,p)
         call calc_diagnostics_hydro(f,p)
         call calc_diagnostics_magnetic(f,p)
+        call calc_diagnostics_neutraldens(p)
+        call calc_diagnostics_neutralvel(p)
+        call calc_diagnostics_pscalar(p)
+        call calc_diagnostics_shock(p)
         call calc_diagnostics_viscosity(p)
         if (lforcing_cont) call calc_diagnostics_forcing(p)
 

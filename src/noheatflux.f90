@@ -125,6 +125,14 @@ module Heatflux
 !
     endsubroutine dheatflux_dt
 !***********************************************************************
+    subroutine calc_diagnostics_heatflux(p)
+
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_heatflux
+!***********************************************************************
     subroutine read_heatflux_run_pars(iostat)
 !
       integer, intent(out) :: iostat

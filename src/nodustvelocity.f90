@@ -105,6 +105,14 @@ module Dustvelocity
 !
     endsubroutine duud_dt
 !***********************************************************************
+    subroutine calc_diagnostics_dustvelocity(p)
+!
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_dustvelocity
+!***********************************************************************
     subroutine read_dustvelocity_init_pars(iostat)
 !
       integer, intent(out) :: iostat
