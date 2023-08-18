@@ -64,7 +64,7 @@ source $PENCIL_HOME/sourceme.csh
   You may also want to inspect the activity of [Pencil Code Steering Committee][PCSC].
   Please contact them with your ideas.
 * The [Pencil Code User Meeting][meetings] will be held every year.
-  The 2022 meeting will be organized from India by Piyali Chatterjee online: [Pencil Code User Meeting 2022](https://www.iiap.res.in/pcum2022/).
+  The 2023 meeting will be organized in Austria by Vartika Pandey and Johannes Tschernitz: [Pencil Code User Meeting 2023](http://pencil-code.nordita.org/UserMeetings/2023/).
 * See the [Scientific Usage of the Pencil Code][citations] for papers using or discussing the code.
 
 ## List of Contributors
@@ -106,8 +106,8 @@ source $PENCIL_HOME/sourceme.csh
 [wiki]: https://github.com/pencil-code/pencil-code/wiki
 [PythonCodingStyle]: https://github.com/pencil-code/pencil-code/wiki/PythonCodingStyle
 [PythonForPencil]: https://github.com/pencil-code/pencil-code/wiki/PythonForPencil
-[newsletter]: http://www.nordita.org/~brandenb/pencil-code/newsletter
+[newsletter]: https://github.com/pencil-code/website/blob/master/NewsLetters/
 [citations]: https://github.com/pencil-code/website/raw/master/doc/citations.pdf
-[PCSC]: https://www.nordita.org/~brandenb/pencil-code/PCSC/
+[PCSC]: http://norlx65.nordita.org/~brandenb/pencil-code/PCSC/
 [meetings]: http://pencil-code.nordita.org/meetings.php
 
