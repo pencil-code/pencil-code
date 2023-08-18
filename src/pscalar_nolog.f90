@@ -176,7 +176,7 @@ module Pscalar
 !
 !  read H and Bunit arrays and keep them in memory
 !
-        open(1,file=trim(directory)//'/bunit.dat',form='unformatted')
+        open(1,file=trim(directory)//'/bunit.dat',form='unformatted')  !MR: better only root!
         print*,'read bunit.dat with dimension: ',nx,ny,nz,3
         read(1) bunit,hhh
         close(1)

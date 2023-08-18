@@ -3870,7 +3870,7 @@ module Sub
         lout=.true.
 !
 !  Write corresponding value of tout to file to make sure we have it, in case
-!  the code craches. If the disk is full, however, we need to reset the values
+!  the code crashes. If the disk is full, however, we need to reset the values
 !  manually.
 !
         if (lroot .and. lwrite) then

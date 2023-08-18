@@ -257,8 +257,8 @@ module EquationOfState
       real, intent(OUT) :: gamma
       real, optional, intent(OUT) :: cp,cv
 !
-      call warning('get_gamma_etc','gamma, cp, and cv are undefined in noeos.'// &
-                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
+      if (headt) call warning('get_gamma_etc','gamma, cp, and cv are undefined in noeos.'// &
+                              achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
       gamma=5./3.
       if (present(cp)) cp=1.
       if (present(cv)) cv=3./5.
