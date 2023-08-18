@@ -134,16 +134,26 @@ def get_value_from_file(
         for ii, line in enumerate(data_raw):
             if line.strip().startswith("&"):
                 continue  # filter out lines with &something, e.g. &density_run_pars
-            quantity_match_tmp = re.search(
-                "[^0-9a-zA-Z_]*{0}[^0-9a-zA-Z_]".format(quantity),
-                line.split(SYM_COMMENT)[0],
+            matches = list(
+                re.finditer(
+                    # Does it appear after a comma?
+                    f"[, ]+{quantity}[^0-9a-zA-Z_]",
+                    line.split(SYM_COMMENT)[0],
+                )
             )
-            # Check if this substring occurs as a string.
-            if quantity_match_tmp:
-                quantity_match = quantity_match_tmp
+            matches.extend(
+                list(
+                    re.finditer(
+                        # Does it appear at the beginning of a line (ignoring whitespace)?
+                        f"^[\s]*{quantity}[^0-9a-zA-Z_]",
+                        line.split(SYM_COMMENT)[0],
+                    )
+                )
+            )
+            for m in matches:
                 if (
-                    str.count(line[0 : quantity_match.start()], "'") % 2 == 0
-                    and str.count(line[0 : quantity_match.start()], '"') % 2 == 0
+                    str.count(line[0 : m.start()], "'") % 2 == 0
+                    and str.count(line[0 : m.start()], '"') % 2 == 0
                 ):
                     if (
                         "run" in filename
@@ -151,18 +161,12 @@ def get_value_from_file(
                         or ".local" in filename
                         or "print" in filename
                     ):
-                        if (
-                            "="
-                            in quantity_match_tmp.string[
-                                quantity_match_tmp.start()
-                                + 2 : quantity_match_tmp.end()
-                            ]
-                        ):
+                        if "=" in m.string[m.start() + 2 : m.end()]:
                             if line_matches:
                                 line_matches[0] = ii
                             else:
                                 line_matches.append(ii)
-                        quantity_match = quantity_match_tmp
+                            quantity_match = m
 
     elif filename.startswith("submit") and filename.split(".")[-1] in ["csh", "sh"]:
         FILE_IS = "SUBMIT"
