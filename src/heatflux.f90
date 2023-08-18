@@ -225,13 +225,12 @@ contains
 !
     if (idiag_qmax/=0 .or. idiag_qrms/=0) then
        lpenc_diagnos(i_q2)=.true.
-       lpenc_requested(i_q2)=.true.
-       lpenc_requested(i_lnrho)=.true.
+       lpenc_diagnos(i_lnrho)=.true.
     endif
 !
-    if (idiag_qxmax/=0 .or. idiag_qxmin/=0) lpenc_requested(i_qq)=.true.
-    if (idiag_qymax/=0 .or. idiag_qymin/=0) lpenc_requested(i_qq)=.true.
-    if (idiag_qzmax/=0 .or. idiag_qzmin/=0) lpenc_requested(i_qq)=.true.
+    if (idiag_qxmax/=0 .or. idiag_qxmin/=0) lpenc_diagnos(i_qq)=.true.
+    if (idiag_qymax/=0 .or. idiag_qymin/=0) lpenc_diagnos(i_qq)=.true.
+    if (idiag_qzmax/=0 .or. idiag_qzmin/=0) lpenc_diagnos(i_qq)=.true.
 !
   endsubroutine pencil_criteria_heatflux
 !***********************************************************************

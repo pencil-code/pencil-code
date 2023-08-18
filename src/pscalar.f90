@@ -282,7 +282,7 @@ module Pscalar
       if (idiag_uudcm/=0) lpenc_diagnos(i_uglncc)=.true.
       if (idiag_lnccmz/=0 .or. idiag_lnccmy/=0 .or. idiag_lnccmx/=0) lpenc_diagnos(i_lncc)=.true.
       if (idiag_ccmz/=0 .or. idiag_ccmy/=0 .or. idiag_ccmx/=0) lpenc_diagnos(i_cc)=.true.
-      if (idiag_ccglnrm/=0) lpenc_requested(i_glnrho)=.true.
+      if (idiag_ccglnrm/=0) lpenc_diagnos(i_glnrho)=.true.
 !
     endsubroutine pencil_criteria_pscalar
 !***********************************************************************

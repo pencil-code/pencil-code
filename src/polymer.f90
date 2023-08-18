@@ -224,7 +224,7 @@ module Polymer
 !
 ! Diagnostic pencils
 !
-      if (idiag_polytrm/=0) lpenc_requested(i_trp)=.true.
+      if (idiag_polytrm/=0) lpenc_diagnos(i_trp)=.true.
 !
     endsubroutine pencil_criteria_polymer
 !***********************************************************************

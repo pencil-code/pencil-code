@@ -3286,12 +3286,12 @@ module Solid_Cells
 !
 !  mar-2009/kragset: coded
 !
-!  Request p and sij-pencils here
-!  Request rho-pencil
+!  Request needed pencils here.
+!  
       lpenc_requested(i_pp) = .true.
       lpenc_requested(i_sij) = .true.
       lpenc_requested(i_rho) = .true.
-      if (idiag_Nusselt /= 0) lpenc_requested(i_gTT) = .true.
+      if (idiag_Nusselt /= 0) lpenc_diagnos(i_gTT) = .true.
 !
     endsubroutine pencil_criteria_solid_cells
 !***********************************************************************
