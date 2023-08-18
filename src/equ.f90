@@ -490,6 +490,7 @@ module Equ
 !  10-sep-2019/MR: coded
 !
       use Density, only: calc_diagnostics_density
+      use Dustvelocity, only: calc_diagnostics_dustvelocity
       use Energy, only: calc_diagnostics_energy
       use Forcing, only: calc_diagnostics_forcing
       use Hydro, only: calc_diagnostics_hydro
@@ -521,6 +522,7 @@ module Equ
 
         call calc_all_pencils(f,p)
         call calc_diagnostics_density(f,p)
+        call calc_diagnostics_dustvelocity(p)
         call calc_diagnostics_energy(f,p)
         call calc_diagnostics_hydro(f,p)
         call calc_diagnostics_magnetic(f,p)
