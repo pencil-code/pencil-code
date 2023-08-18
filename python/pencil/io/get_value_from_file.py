@@ -156,6 +156,7 @@ def get_value_from_file(
                     and str.count(line[0 : m.start()], '"') % 2 == 0
                 ):
                     if (
+                        # TODO: why this separate if? Isn't this already ensured by filename.endswith... above? Anyway, the wrong comment char is used here for print.in
                         "run" in filename
                         or "start" in filename
                         or ".local" in filename
@@ -167,6 +168,7 @@ def get_value_from_file(
                             else:
                                 line_matches.append(ii)
                             quantity_match = m
+                            # TODO: should we break here? Note that in what follows, only the last match will be used.
 
     elif filename.startswith("submit") and filename.split(".")[-1] in ["csh", "sh"]:
         FILE_IS = "SUBMIT"
