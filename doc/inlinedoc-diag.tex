@@ -564,6 +564,8 @@
   \var{bym}       & $\left<B_y\right>$ \\
   \var{bzm}       & $\left<B_z\right>$ \\
   \var{bxbym}     & $\left<B_x B_y\right>$ \\
+  \var{bxbzm}     & $\left<B_x B_z\right>$ \\
+  \var{bybzm}     & $\left<B_y B_z\right>$ \\
   \var{bij_cov_diffmax} & difference between two implementations of covariant derivatives \\
   \var{bmx}       & $\left<\left<\Bv\right>_{yz}^2
                     \right>^{1/2}$
@@ -665,6 +667,8 @@
   \var{phibmz}    & $\left<\phi\Bv\right>|_z$ \\
   \var{b2divum}   & $\left<\Bv^2\nabla\cdot\uv\right>$ \\
   \var{jdel2am}   & $\left<\Jv\cdot\nabla^2\Av)\right>$ \\
+  \var{jem}       & $\left<\jv\cdot\Ev\right>$ \\
+  \var{aem}       & $\left<\Av\cdot\Ev\right>$ \\
   \var{ujxbm}     & $\left<\uv\cdot(\Jv\times\Bv)\right>$ \\
   \var{WL2D}      & $\left<J_i u_j A_{i,j} \right>$ \\
   \var{WL3D}      & $-\left<J_i u_j A_{j,i} \right>$ \\
@@ -763,11 +767,21 @@
   \var{chidot}    & $\dot{\chi}$ \\
   \var{chiddot}   & $\ddot{\chi}$ \\
   \var{psi}       & $\psi$ \\
+  \var{psidot}    & $\dot\psi$ \\
+  \var{psiddot}   & $\ddot\psi$ \\
   \var{TR}        & $T_R$ \\
+  \var{TRdot}     & $\dot T_R$ \\
+  \var{TRddot}    & $\ddot T_R$ \\
+  \var{imTR}      & $\Im T_R$ \\
   \var{psi_anal}  & $\psi^{\rm anal}$ \\
   \var{TR_anal}   & $T_R^{\rm anal}$ \\
+  \var{TReff2m}   & $|T_R|^2_{\rm eff}$ \\
+  \var{TReff2km}  & $k|T_R|^2_{\rm eff}$ \\
+  \var{TRdoteff2m} & $|T_R\dot{T}_R|_{\rm eff}$ \\
+  \var{TRdoteff2km} & $k|T_R\dot{T}_R|_{\rm eff}$ \\
   \var{grand}     & ${\cal T}^Q$ \\
   \var{grant}     & ${\cal T}^\chi$ \\
+  \var{dgrant_up} & ${\cal T}^\chi$ \\
   \var{grand2}    & ${\cal T}^Q$ (test) \\
   \var{dgrant}    & $\dot{\cal T}^\chi$ \\
   \var{fact}      & $\Theta(t)$ \\
@@ -927,6 +941,10 @@
   \var{a0rms}     & $\left<A_0^2\right>^{1/2}$ \\
   \var{grms}      & $\left<C-\nabla\cdot\Av\right>^{1/2}$ \\
   \var{da0rms}    & $\left<C-\nabla\cdot\Av\right>^{1/2}$ \\
+  \var{BcurlEm}   & $\left<\Bv\cdot\nabla\times\Ev\right>$ \\
+  \var{mfpf}      & $-f'/f$ \\
+  \var{fppf}      & $f''/f$ \\
+  \var{afact}     & $a$ (scale factor) \\
 \midrule
   \multicolumn{2}{c}{Module \file{dustdensity.f90}} \\
 \midrule
