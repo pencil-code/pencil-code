@@ -51,6 +51,51 @@ def partial_derivatives() -> None:
 
 
 @test
+def partial_derivatives_nonequi() -> None:
+    """Partial derivatives of scalar fields on nonequidistant grids"""
+    grid = generate_xyz_nonequi_grid()
+
+    x = grid["x_grid"]
+    y = grid["y_grid"]
+    z = grid["z_grid"]
+
+    f = sin(x)
+    df_ana = cos(x)
+    df_num = pcd.xder(f, dx_1=grid["dx_1"])
+    check_arr_close(df_ana, df_num)
+
+    f = sin(2 * x) * cos(y) * exp(z)
+    df_ana = 2 * cos(2 * x) * cos(y) * exp(z)
+    df_num = pcd.xder(f, dx_1=grid["dx_1"])
+    check_arr_close(df_ana, df_num)
+
+    f = sin(2 * x) * cos(y) * exp(z)
+    df_ana = -sin(2 * x) * sin(y) * exp(z)
+    df_num = pcd.yder(f, dy_1=grid["dy_1"])
+    check_arr_close(df_ana, df_num)
+
+    f = sin(2 * x) * cos(y) * exp(z)
+    df_ana = sin(2 * x) * cos(y) * exp(z)
+    df_num = pcd.zder(f, dz_1=grid["dz_1"])
+    check_arr_close(df_ana, df_num)
+
+    f = sin(2 * x) * cos(y) * exp(2 * z)
+    df_ana = 2 * sin(2 * x) * cos(y) * exp(2 * z)
+    df_num = pcd.zder(f, dz_1=grid["dz_1"])
+    check_arr_close(df_ana, df_num)
+
+    f = sin(2 * x) * cos(y) * exp(2 * z)
+    df_ana = 4 * sin(2 * x) * cos(y) * exp(2 * z)
+    df_num = pcd.zder2(f, dz_1=grid["dz_1"], dz_tilde=grid["dz_tilde"])
+    check_arr_close(df_ana, df_num)
+
+    f = sin(2 * x) * cos(y) * exp(2 * z)
+    df_ana = -4 * sin(2 * x) * cos(y) * exp(2 * z)
+    df_num = pcd.xder2(f, dx_1=grid["dx_1"], dx_tilde=grid["dx_tilde"])
+    check_arr_close(df_ana, df_num)
+
+
+@test
 def derivatives_lap_grad() -> None:
     """Laplacian and gradient of scalar fields"""
     z, y, x = generate_xyz_grid()
@@ -351,3 +396,41 @@ def generate_spherical_grid():
     phi = np.linspace(1, 2, 15)
     phi_grid, theta_grid, r_grid = np.meshgrid(phi, theta, r, indexing="ij")
     return phi_grid, theta_grid, r_grid
+
+
+def generate_xyz_nonequi_grid():
+    """
+    Generate the grid on which we can construct arrays to test various derivative operators.
+    """
+    x = np.logspace(-1, 0, 50)
+    y = np.linspace(0, 1, 15)
+    z = np.linspace(0, 1, 16)
+
+    L = np.log(x[-1] / x[0])
+    N = len(x)
+    x_prim = (L / (N - 1)) * x
+    x_prim2 = (L / (N - 1)) ** 2 * x
+    dx_1 = 1 / x_prim
+    dx_tilde = -x_prim2 / x_prim**2
+
+    dy_1 = np.full_like(y, 1 / (y[1] - y[0]))
+    dy_tilde = np.full_like(y, 0)
+
+    dz_1 = np.full_like(z, 1 / (z[1] - z[0]))
+    dz_tilde = np.full_like(z, 0)
+
+    z_grid, y_grid, x_grid = np.meshgrid(z, y, x, indexing="ij")
+    return {
+        "x": x,
+        "dx_1": dx_1,
+        "dx_tilde": dx_tilde,
+        "x_grid": x_grid,
+        "y": y,
+        "dy_1": dy_1,
+        "dy_tilde": dy_tilde,
+        "y_grid": y_grid,
+        "z": z,
+        "dz_1": dz_1,
+        "dz_tilde": dz_tilde,
+        "z_grid": z_grid,
+    }
