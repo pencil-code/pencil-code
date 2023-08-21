@@ -136,7 +136,7 @@ def der2_6th(f, dx_1, dx_tilde, axis):
             + der2_coef3 * (f_t[..., l1 + 3 : l2 + 3] + f_t[..., l1 - 3 : l2 - 3])
         )
 
-        d2f_t[..., l1:l2] += dx_tilde[l1:l2] * der_6th(f_t, dx_1, axis=axis)[..., l1:l2]
+        d2f_t[..., l1:l2] += dx_tilde[l1:l2] * der_6th(f_t, dx_1, axis=-1)[..., l1:l2]
 
         d2f_t[..., :l1] = d2f_t[..., l2 - nghost : l2]
         d2f_t[..., l2:] = d2f_t[..., l1 : l1 + nghost]
