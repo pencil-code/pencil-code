@@ -165,8 +165,10 @@ module Persist
           done=read_persist ('SHEAR_DELTA_Y', dely)
           if (.not.done) deltay=dely
         case (id_record_TIME_STEP)
-          done=read_persist ('TIME_STEP', dtmp)
-          if (.not.done) dt=dtmp
+          if (dt0==0) then
+            done=read_persist ('TIME_STEP', dtmp)
+            if (.not.done) dt=dtmp
+          endif
       endselect
 !
     endsubroutine input_persist_general_by_id
@@ -181,6 +183,8 @@ module Persist
       use General, only: random_seed_wrapper
       use IO, only: persist_exists, read_persist
       use Messages, only: warning
+!
+      real :: dtmp
 !
       if (persist_exists ('RANDOM_SEEDS')) then
         call random_seed_wrapper(GET=seed,CHANNEL=1)
@@ -205,9 +209,13 @@ module Persist
           call warning('input_persist_general_by_label','no persistent value of deltay found')
       endif
 !
-      if (.not.ldt.and.dt0/=0.) then
-        if (read_persist ('TIME_STEP', dt)) &
+      if (dt0==0.) then
+        dtmp=0.
+        if (read_persist ('TIME_STEP', dtmp)) then
           call warning('input_persist_general_by_label','no persistent value of dt found')
+        else
+          dt=dtmp
+        endif
       endif
 !
     endsubroutine input_persist_general_by_label
@@ -244,7 +252,7 @@ module Persist
             output_persistent_general = .true.
       endif
 !
-      if (.not.ldt.and.dt0/=0.) then
+      if (.not.ldt) then
         if (write_persist ('TIME_STEP', id_record_TIME_STEP, dt)) &
           output_persistent_general = .true.
       endif
