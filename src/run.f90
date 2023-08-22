@@ -103,7 +103,7 @@ program run
   character(len=fnlen) :: fproc_bounds
   double precision :: time1, time2, tvar1
   double precision :: time_last_diagnostic, time_this_diagnostic
-  real :: wall_clock_time=0.0, time_per_step=0.0
+  real :: wall_clock_time=0.0, time_per_step=0.0, dtmp
   integer :: icount, mvar_in, isave_shift=0
   integer :: it_last_diagnostic, it_this_diagnostic, memuse, memory, memcpu
   logical :: lstop=.false., timeover=.false., resubmit=.false.
@@ -415,6 +415,7 @@ program run
 !  (must be done before need_XXXX can be used, for example)
 !
   call initialize_timestep
+if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
   call initialize_modules(f)
   call initialize_boundcond
 !
@@ -560,9 +561,19 @@ program run
 !
       if (lreloading) then
         if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
+!
 !  Re-read configuration
-        dt=0.0
+!
+! If rkf timestep retain the current dt for continuity rather than reset
+! with option to initialize_timestep to dt0/=0 from run.in if intended.
+!
+        if (ldt) then
+          dt=0.0
+        else
+          dtmp=dt
+        endif
         call read_all_run_pars
+        if (.not.ldt) dt=dtmp
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
