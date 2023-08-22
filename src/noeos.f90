@@ -28,7 +28,7 @@ module EquationOfState
   implicit none
 !
   include 'eos.h'
-  include 'eos_parms.h'
+  include 'eos_params.h'
 !
   integer :: imass=1
 !
