@@ -45,6 +45,7 @@
   lSN_scale_rad=T
   N_mass=100.0
   rfactor_SN=5.0
+  SNII_factor=1.0
 /
 &shear_init_pars
   Sshear=-25.0

@@ -4,17 +4,17 @@
 !
 &run_pars
   cvsid='$Id$',
-  !nt=25000, it1=50, isave=1000, it1d=2000, itorder=5, tmax=0.5, dt=1e-5
-  nt=5, it1=1, isave=1000, it1d=5000, itorder=5, tmax=0.5, dt=1e-5
-  eps_rkf = 0.9, timestep_scaling='cons_err',dtmin=1e-10
-  !cdt=0.2, cdtv=0.2, dtmin=1e-10, cdts=0.2
+  !nt=25000, it1=50, isave=1000, it1d=2000, itorder=5, tmax=0.05, dtmin=1e-15
+  nt=5, it1=1, isave=1000, it1d=5000, itorder=5, tmax=0.5, dtmin=1e-15
+  eps_rkf = 0.05, timestep_scaling='cons_err', dt=1e-6
+  cdt=0.1, cdtv=0.1, cdts=0.1, cdtf=0.1
   dsnap=.0005, dvid=.00025, slice_position='m'
   !for magnetic take at least 20 snapshots up to first Myr fluctuation dynamo?
   !dsnap=2., dvid=2., slice_position='m'
   bcz = 's','s','ubs','ism','ism','s','s','a','cop','cop'
   ip=1963
-  lpencil_check=T
-  lpencil_check_small=T
+  lpencil_check=F
+  lpencil_check_small=F
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
@@ -26,7 +26,7 @@
   ivisc='nu-shock', 'nu-const', 'hyper3-nu-const'
   nu_shock=5.0
   nu=4e-3
-  nu_hyper3=5e-12 !~dx^5
+  nu_hyper3=5e-11 !~dx^5*umax
 /
 &density_run_pars
   idiff='shock'
@@ -36,12 +36,12 @@
 /
 &entropy_run_pars
   iheatcond='shock','hyper3'
-  chi_hyper3=5e-12
+  chi_hyper3=5e-11
   chi_shock=2.0
 /
 &magnetic_run_pars
   iresistivity='eta-const','hyper3'
-  eta_hyper3=5e-12
+  eta_hyper3=5e-11
   eta=8e-4
 /
 &interstellar_run_pars
@@ -59,7 +59,7 @@
 !  seed_reset=1245
 /
 &shear_run_pars
-  qshear = 1
+  qshear = 1.0
 /
 &shock_run_pars
   ishock_max=2
