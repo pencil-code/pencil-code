@@ -755,7 +755,7 @@ module Equ
           if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
               (ltestfield_z.and.iuutest>0)) &
             advec2=0.
-          if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy) &
+          if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy.or.ldustvelocity.or.ldustdensity) &
             advec2_hypermesh=0.0
           maxdiffus=0.
           maxdiffus2=0.
@@ -1290,7 +1290,8 @@ module Equ
         if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
             (ltestfield_z.and.iuutest>0)) maxadvec=maxadvec+sqrt(advec2)
 
-        if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) maxadvec=maxadvec+sqrt(advec2_hypermesh)
+        if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy.or.ldustvelocity.or.ldustdensity) &
+            maxadvec=maxadvec+sqrt(advec2_hypermesh)
 !
 !  Time step constraints from each module. (At the moment, magnetic and testfield use the same variable.)
 !  cdt, cdtv, and cdtc are empirical non-dimensional coefficients.
