@@ -23,7 +23,7 @@ module Heatflux
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, fatal_error, not_implemented
 !
   implicit none
 !
@@ -38,8 +38,6 @@ module Heatflux
       tau1_eighthm,Kspitzer_para,tau_inv_spitzer, &
       hyper3_coeff, lnfs2, ltau_spitzer_va, &
       Kc, va2max_tau_boris
-  real, dimension(:), pointer :: B_ext
-  real :: nu_ee, e_m
 !
 !  variables for video slices:
 !
@@ -67,7 +65,12 @@ module Heatflux
 !
   include 'heatflux.h'
 !
-  real :: gamma
+! Auxiliaries
+!
+  real, pointer :: z_cutoff, cool_wid
+  real :: nu_ee, e_m
+! Variable slot indices
+  integer :: iqx=0,iqy=0,iqz=0,iqq=0
 
 contains
 !***********************************************************************
@@ -78,7 +81,6 @@ contains
 !  24-apr-13/bing: coded
 !
     use FArrayManager, only: farray_register_pde
-    use SharedVariables, only: put_shared_variable
 !
     call farray_register_pde('qq',iqq,vector=3)
     iqx=iqq; iqy=iqq+1; iqz=iqq+2
@@ -106,18 +108,18 @@ contains
 !
 !  07-sept-17/bingert: updated
 !
-    use EquationOfState, only: get_gamma_etc
     use Slices_methods, only: alloc_slice_buffers
     use SharedVariables, only: get_shared_variable
 !
     real, dimension (mx,my,mz,mfarray) :: f
     real :: eps0,unit_ampere,e_charge
 !
-    call get_gamma_etc(gamma)
-!
 !  Get the external magnetic field if exists.
 !
-    if (lmagnetic) call get_shared_variable('B_ext', B_ext)
+    if (iheatflux=='noadvection-spitzer'.and.lradiation) then
+      call get_shared_variable('z_cutoff',z_cutoff,caller='initialize_heatflux')
+      call get_shared_variable('cool_wid',cool_wid)
+    endif
 !
 !  Set up some important constants
 !
@@ -133,12 +135,19 @@ contains
 !  compute the constant for the collision frequency
 !  nu_ee = constant
     nu_ee = 4.D0/3. *sqrt(pi) * 20.D0/ sqrt(m_e) * &
-        ((e_charge**2./(4.D0*pi*eps0))**2.D0)/(k_B**1.5) * 0.872 /m_p
+            ((e_charge**2./(4.D0*pi*eps0))**2.D0)/(k_B**1.5) * 0.872 /m_p
 !
     if (lreset_heatflux) f(:,:,:,iqx:iqz)=0.
 !
     if (ivid_divq/=0) &
-      call alloc_slice_buffers(divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2,divq_r)
+        call alloc_slice_buffers(divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2,divq_r)
+
+    if (any(iheatflux==(/'spitzer            ','noadvection-spitzer','eighth             '/))) then
+      if (.not.ltemperature.or.ltemperature_nolog) &
+          call not_implemented('initialize_heatflux','for current set of thermodynamic variables')
+    elseif (.not.lstart) then
+      call fatal_error('initialize_heatflux','no such iheatflux: '//trim(iheatflux))
+    endif
 
   endsubroutine initialize_heatflux
 !***********************************************************************
@@ -178,7 +187,7 @@ contains
       lpenc_requested(i_divq)=.true.
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_b2)=.true.
-      lpenc_requested(i_cp1)=.true.
+      lpenc_requested(i_cv1)=.true.
       lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_glnTT)=.true.
       lpenc_requested(i_lnrho)=.true.
@@ -190,7 +199,7 @@ contains
     if (iheatflux == 'spitzer') then
       lpenc_requested(i_qq)=.true.
       lpenc_requested(i_divq)=.true.
-      lpenc_requested(i_cp1)=.true.
+      lpenc_requested(i_cv1)=.true.
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_bunit)=.true.
       lpenc_requested(i_b2)=.true.
@@ -206,7 +215,6 @@ contains
     if (iheatflux == 'noadvection-spitzer') then
       lpenc_requested(i_qq)=.true.
       lpenc_requested(i_divq)=.true.
-      lpenc_requested(i_cp1)=.true.
       lpenc_requested(i_cv1)=.true.
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_bunit)=.true.
@@ -220,7 +228,6 @@ contains
       lpenc_requested(i_rho1)=.true.
       lpenc_requested(i_TT)=.true.
       lpenc_requested(i_TT1)=.true.
-      lpenc_requested(i_gamma)=.true.
     endif
 !
     if (idiag_qmax/=0 .or. idiag_qrms/=0) then
@@ -252,7 +259,6 @@ contains
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  07-sept-17/bingert: updated
-
 !
     use Sub, only: dot2_mn, div
 !
@@ -272,7 +278,6 @@ contains
 !
 !  26-apr-13/bing: coded
 !
-    use Diagnostics, only: max_mn_name,sum_mn_name
     use Sub, only: identify_bcs, del6
 !
     real, dimension (mx,my,mz,mfarray) :: f
@@ -306,24 +311,34 @@ contains
     endselect
 !
     if (hyper3_coeff /= 0.) then
-       call del6(f,iqx,hc,IGNOREDX=.true.)
-       df(l1:l2,m,n,iqx) = df(l1:l2,m,n,iqx) + hyper3_coeff*hc
-       call del6(f,iqy,hc,IGNOREDX=.true.)
-       df(l1:l2,m,n,iqy) = df(l1:l2,m,n,iqy) + hyper3_coeff*hc
-       call del6(f,iqz,hc,IGNOREDX=.true.)
-       df(l1:l2,m,n,iqz) = df(l1:l2,m,n,iqz) + hyper3_coeff*hc
+      call del6(f,iqx,hc,IGNOREDX=.true.)
+      df(l1:l2,m,n,iqx) = df(l1:l2,m,n,iqx) + hyper3_coeff*hc
+      call del6(f,iqy,hc,IGNOREDX=.true.)
+      df(l1:l2,m,n,iqy) = df(l1:l2,m,n,iqy) + hyper3_coeff*hc
+      call del6(f,iqz,hc,IGNOREDX=.true.)
+      df(l1:l2,m,n,iqz) = df(l1:l2,m,n,iqz) + hyper3_coeff*hc
     endif
 !
-    if (idiag_qmax/=0) call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
-    if (idiag_qrms/=0) call sum_mn_name(p%q2,idiag_qrms,lsqrt=.true.)
+    call calc_diagnostics_heatflux(p)
+!
+  endsubroutine dheatflux_dt
+!***********************************************************************
+  subroutine calc_diagnostics_heatflux(p)
+
+    use Diagnostics, only: max_mn_name,sum_mn_name
+
+    type (pencil_case) :: p
+
+    call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
+    call sum_mn_name(p%q2,idiag_qrms,lsqrt=.true.)
     if (idiag_qxmin/=0) call max_mn_name(-p%qq(:,1),idiag_qxmin,lneg=.true.)
     if (idiag_qymin/=0) call max_mn_name(-p%qq(:,2),idiag_qymin,lneg=.true.)
     if (idiag_qzmin/=0) call max_mn_name(-p%qq(:,3),idiag_qzmin,lneg=.true.)
-    if (idiag_qxmax/=0) call max_mn_name(p%qq(:,1),idiag_qxmax)
-    if (idiag_qymax/=0) call max_mn_name(p%qq(:,2),idiag_qymax)
-    if (idiag_qzmax/=0) call max_mn_name(p%qq(:,3),idiag_qzmax)
+    call max_mn_name(p%qq(:,1),idiag_qxmax)
+    call max_mn_name(p%qq(:,2),idiag_qymax)
+    call max_mn_name(p%qq(:,3),idiag_qzmax)
 !
-  endsubroutine dheatflux_dt
+  endsubroutine calc_diagnostics_heatflux
 !***********************************************************************
     subroutine read_heatflux_run_pars(iostat)
 !
@@ -428,26 +443,19 @@ contains
       else
         slices%index=slices%index+1
         if (lwrite_slice_yz) &
-          slices%yz=f(ix_loc,m1:m2 ,n1:n2,iqx-1+slices%index) * &
-                    exp(-f(ix_loc,m1:m2 ,n1:n2  ,ilnrho))
+          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,iqx-1+slices%index)*exp(-f(ix_loc,m1:m2,n1:n2,ilnrho))
         if (lwrite_slice_xz) &
-          slices%xz=f(l1:l2 ,iy_loc,n1:n2,iqx-1+slices%index) * &
-                    exp(-f(l1:l2,iy_loc,n1:n2  ,ilnrho))
+          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,iqx-1+slices%index)*exp(-f(l1:l2,iy_loc,n1:n2,ilnrho))
         if (lwrite_slice_xy) &
-          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc,iqx-1+slices%index) * &
-                    exp(-f(l1:l2,m1:m2 ,iz_loc ,ilnrho))
+          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,iqx-1+slices%index)*exp(-f(l1:l2,m1:m2,iz_loc,ilnrho))
         if (lwrite_slice_xy2) &
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iqx-1+slices%index) * &
-                     exp(-f(l1:l2,m1:m2 ,iz2_loc,ilnrho))
+          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,iqx-1+slices%index)*exp(-f(l1:l2,m1:m2,iz2_loc,ilnrho))
         if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2,m1:m2,iz3_loc,iqx-1+slices%index) * &
-                       exp(-f(l1:l2,m1:m2,iz3_loc,ilnrho))
+          slices%xy3=f(l1:l2,m1:m2 ,iz3_loc,iqx-1+slices%index)*exp(-f(l1:l2,m1:m2,iz3_loc,ilnrho))
         if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2,m1:m2,iz4_loc,iqx-1+slices%index) * &
-                       exp(-f(l1:l2,m1:m2,iz4_loc,ilnrho))
+          slices%xy4=f(l1:l2,m1:m2 ,iz4_loc,iqx-1+slices%index)*exp(-f(l1:l2,m1:m2,iz4_loc,ilnrho))
         if (lwrite_slice_xz2) &
-          slices%xz2=f(l1:l2 ,iy_loc,n1:n2  ,iqx-1+slices%index) * &
-                     exp(-f(l1:l2,iy2_loc,n1:n2,ilnrho))
+          slices%xz2=f(l1:l2,iy_loc,n1:n2  ,iqx-1+slices%index)*exp(-f(l1:l2,iy2_loc,n1:n2,ilnrho))
         if (slices%index<=3) slices%ready=.true.
       endif
 !
@@ -464,7 +472,6 @@ contains
 !
     use Slices_methods, only: store_slices
     use Diagnostics, only: max_mn_name,sum_mn_name, max_name
-    use EquationOfState
     use Sub
 !
     real, dimension (mx,my,mz,mvar) :: df
@@ -492,11 +499,8 @@ contains
 !    Kc should be on the order of unity or smaler
 !
       if (Kc /= 0.) then
-        K_clight = Kc*c_light*dxmin_pencil/(p%cp1*gamma)
-!
-        where (Kspitzer > K_clight)
-          Kspitzer=K_clight
-        endwhere
+        K_clight = Kc*c_light*dxmin_pencil/p%cv1
+        Kspitzer = min(Kspitzer,K_clight)
       endif
     else
 !
@@ -508,11 +512,8 @@ contains
 !    Kc should be on the order of unity or smaler
 !
       if (Kc /= 0.) then
-        K_clight = Kc*c_light*dxmin_pencil*exp(2*p%lnrho)/(p%cp1*gamma)
-!
-        where (Kspitzer > K_clight)
-          Kspitzer=K_clight
-        endwhere
+        K_clight = Kc*c_light*dxmin_pencil*exp(2*p%lnrho)/p%cv1
+        Kspitzer = min(Kspitzer,K_clight)
       endif
     endif
 
@@ -547,11 +548,9 @@ contains
         tmp = qsat/(qabs+sqrt(tini))
         where (tmp > 1d50) tmp = 1d50
         if (idiag_qsatmin/=0) call max_mn_name(-tmp,idiag_qsatmin,lneg=.true.)
-        if (idiag_qsatrms/=0) call sum_mn_name(tmp,idiag_qsatrms)
+        call sum_mn_name(tmp,idiag_qsatrms)
       endif
     endif
-!
-!
 !
     if (ltau_spitzer_va) then
 !
@@ -566,8 +565,7 @@ contains
 !     heat diffusivity, however diffspitz is the one entering the timestep
 !     see EQ 24 in the manual.
 !
-      diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
-                 gamma*p%cp1*abs(cosgT_b)
+      diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*p%cv1*abs(cosgT_b)
 !
       if (va2max_tau_boris /= 0) then
 !
@@ -583,13 +581,8 @@ contains
       endif
 !
       uplim=max(maxval(dt1_va),maxval(maxadvec))
-      where (tau_inv_va > uplim)
-        tau_inv_va=uplim
-      endwhere
-!
-      where (tau_inv_va < tau_inv_spitzer)
-        tau_inv_va=tau_inv_spitzer
-      endwhere
+      tau_inv_va = min(tau_inv_va,uplim)
+      tau_inv_va = max(tau_inv_va,tau_inv_spitzer)
     endif
 !
     if (lnfs2) then
@@ -597,20 +590,17 @@ contains
       do i=1,3
         if (ltau_spitzer_va) then
           df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-          tau_inv_va*(p%qq(:,i) + spitzer_vec(:,i))  +  &
-          p%qq(:,i)*(p%uglnrho + p%divu)
+          tau_inv_va*(p%qq(:,i) + spitzer_vec(:,i))  + p%qq(:,i)*(p%uglnrho + p%divu)
         else
           df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  +  &
-          p%qq(:,i)*(p%uglnrho + p%divu)
+          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  +  p%qq(:,i)*(p%uglnrho + p%divu)
         endif
       enddo
     else
 !     for pp=qq*rho, it is '-qq*(uglnrho+divu)'
       do i=1,3
         df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  -  &
-          p%qq(:,i)*(p%uglnrho + p%divu)
+          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  - p%qq(:,i)*(p%uglnrho + p%divu)
       enddo
     endif
 !
@@ -621,33 +611,19 @@ contains
     if (lnfs2) then
 !     for pp=qq/rho, the 1/rho factor is vanishing
 !     and there it is '+ tmp'
-      rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)    
+      rhs = p%cv1*(p%divq + tmp)*exp(-p%lnTT)    
     else
 !     for pp=qq*rho, there is an additional 1/rho factor
 !     and there it is '- tmp'
-      rhs = gamma*p%cp1*(p%divq - tmp)*exp(-p%lnTT-2*p%lnrho)
+      rhs = p%cv1*(p%divq - tmp)*exp(-p%lnTT-2*p%lnrho)
     endif
 !
-!
-    if (ltemperature) then
-       if (ltemperature_nolog) then
-          call fatal_error('non_fourier_spitzer', &
-               'not implemented for current set of thermodynamic variables')
-       else
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
-       endif
-    else if (lentropy.and.pretend_lnTT) then
-       call fatal_error('non_fourier_spitzer', &
-            'not implemented for current set of thermodynamic variables')
-    else if (lthermal_energy .and. ldensity) then
-       call fatal_error('non_fourier_spitzer', &
-            'not implemented for current set of thermodynamic variables')
-    else
-       call fatal_error('non_fourier_spitzer', &
-            'not implemented for current set of thermodynamic variables')
-    endif
+    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
     if (lfirst.and.ldt) then
+!
+!     timestep constraints due to tau directly
+!
       if (ltau_spitzer_va) then
 !
 !       Define propagation speed c_spitzer
@@ -673,45 +649,35 @@ contains
 !       In case tau_inv_va = tau_inv_spitzer is c_spitzer = c_spitzer0 and we get:
 !       maxadvec = maxadvec + c_spitzer/dxmin_pencil
 !
+        dt1_max=max(dt1_max,maxval(tau_inv_va)/cdts)
       else
         call unit_vector(p%glnTT,unit_glnTT)
         call dot(unit_glnTT,p%bunit,cosgT_b)
-        diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
-                   gamma*p%cp1*abs(cosgT_b)
+        diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*p%cv1*abs(cosgT_b)
         c_spitzer = sqrt(diffspitz*tau_inv_spitzer)
         maxadvec = maxadvec + c_spitzer/dxmin_pencil
-      endif
-!
-      if (ldiagnos.and.idiag_dtq/=0) then
-        call max_mn_name(c_spitzer/dxmin_pencil/cdt,idiag_dtq,l_dt=.true.)
-      endif
-!
-!     put into dtspitzer, how the time_step would be
-!     using the spitzer heatconductivity
-!
-      if (ldiagnos.and.idiag_dtspitzer/=0) then
-        call max_mn_name(diffspitz*dxyz_2/cdtv,idiag_dtspitzer,l_dt=.true.)
-      endif
-!
-!     timestep constraints due to tau directly
-!
-      if (ltau_spitzer_va) then
-        dt1_max=max(dt1_max,maxval(tau_inv_va)/cdts)
-      else
         dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
       endif
 !
-      if (ldiagnos.and.idiag_dtq2/=0) then
+      if (ldiagnos) then
+        if (idiag_dtq/=0) call max_mn_name(c_spitzer/dxmin_pencil/cdt,idiag_dtq,l_dt=.true.)
+!  
+!       put into dtspitzer, how the time_step would be
+!       using the spitzer heat conductivity
+!  
+        if (idiag_dtspitzer/=0) call max_mn_name(diffspitz*dxyz_2/cdtv,idiag_dtspitzer,l_dt=.true.)
+
         if (ltau_spitzer_va) then
-          call max_mn_name(tau_inv_va/cdts,idiag_dtq2,l_dt=.true.)
-          if (idiag_tauqmax/=0) then
-            call max_mn_name(1./tau_inv_va,idiag_tauqmax)
-          endif
+          if (idiag_dtq2/=0) call max_mn_name(tau_inv_va/cdts,idiag_dtq2,l_dt=.true.)
         else
-          call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
+          if (idiag_dtq2/=0) call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
         endif
+
       endif
 !
+    endif
+    if (ldiagnos) then
+      if (ltau_spitzer_va .and. idiag_tauqmax/=0) call max_mn_name(1./tau_inv_va,idiag_tauqmax)
     endif
 !
     if (lvideo.and.lfirst) then
@@ -735,8 +701,9 @@ contains
     type (pencil_case) :: p
     real, dimension(nx) :: b2_1,rhs
     real, dimension(nx,3) :: K1
-    real, dimension(nx) :: dt_1_8th,nu_coll
-    real :: coeff,nu_coll_max=1e3
+    real, dimension(nx) :: dt_1_8th,nu_coll,advec_uu
+    real :: coeff
+    real, parameter :: nu_coll_max=1e3  !MR: unit system?
     integer :: i
 !
     real, dimension(nx,3,3) ::  qij
@@ -760,35 +727,31 @@ contains
 !
     tmp_hf = tmp_hf - K1
 !
-    nu_coll = 16./35.*nu_ee*exp(p%lnrho-1.5*p%lnTT)
-    where (nu_coll > nu_coll_max)
-      nu_coll = nu_coll_max
-    endwhere
+    nu_coll = min(16./35.*nu_ee*exp(p%lnrho-1.5*p%lnTT),nu_coll_max)
 !
     do i=1,3
       tmp_hf(:,i) = tmp_hf(:,i) - nu_coll*p%qq(:,i)
-      !
-      df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) + tmp_hf(:,i)
     enddo
+    df(l1:l2,m,n,iqx:iqz) = df(l1:l2,m,n,iqx:iqz) + tmp_hf
 !
 ! Add divergence of the flux to the energy equation
 !
     rhs = exp(-p%lnrho-p%lnTT)*p%divq
 !
-   df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma*p%cp1*rhs
+    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%cv1*rhs
 
-   if (lvideo.and.lfirst) then
-     if (ivid_divq/=0) call store_slices(rhs,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
-   endif
+    if (lvideo.and.lfirst) then
+      if (ivid_divq/=0) call store_slices(rhs,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
+    endif
 !
     if (lfirst.and.ldt) then
 !      b2_1=1./(p%b2+tini)
       dt_1_8th = nu_coll !+ e_m /sqrt(b2_1)
 
       dt1_max=max(dt1_max,dt_1_8th/cdts)
-!      advec_uu = max(advec_uu,advec_uu*7./5.)
-      maxadvec = maxadvec*7./5.
-!     advec_uu = max(advec_uu,sqrt(coeff*exp(p%lnTT)*gamma*p%cp1)/dxmax_pencil)
+!     advec_uu = sqrt(coeff*exp(p%lnTT)*p%cv1)/dxmax_pencil
+!     maxadvec = max(maxadvec,advec_uu*7./5.)
+      maxadvec = maxadvec*7./5.  !!! not OK!
     endif
 !
   endsubroutine eighth_moment_approx
@@ -800,8 +763,6 @@ contains
 !
     use Slices_methods, only: store_slices
     use Diagnostics, only: max_mn_name,max_name
-    use EquationOfState
-    use SharedVariables, only: get_shared_variable
     use Sub
 !
     real, dimension (mx,my,mz,mvar) :: df
@@ -812,7 +773,6 @@ contains
     real, dimension(nx,3) :: K1,unit_glnTT
     real, dimension(nx,3) :: spitzer_vec
     real, dimension(nx) :: tmp
-    real, pointer :: z_cutoff, cool_wid
     integer :: ierr
     integer :: i
 !
@@ -830,80 +790,42 @@ contains
 !
     if (Kc /= 0.) then
       chi_clight = Kc * c_light/max(dz_1(n),dx_1(l1:l2))
-      where (chi_spitzer > chi_clight)
-        chi_spitzer = chi_clight
-      endwhere
+      chi_spitzer=min(chi_spitzer,chi_clight)
     endif
+
     call multsv(chi_spitzer*p%TT*p%rho/p%cv1,p%glnTT,K1)
     call dot(K1,p%bb,tmp)
     call multsv(b2_1*tmp,p%bb,spitzer_vec)
-    tau1_spitzer_penc=cdtv**2/(1.0d-6*max(dz_1(n),dx_1(l1:l2)))**2/ &
-                      chi_spitzer
+    tau1_spitzer_penc=cdtv**2/(1.e-6*max(dz_1(n),dx_1(l1:l2)))**2/chi_spitzer
+
     if (lradiation) then
-      call get_shared_variable('z_cutoff',&
-               z_cutoff,ierr)
-      if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
-             'failed to get z_cutoff from radiation_ray')
-      call get_shared_variable('cool_wid',&
-             cool_wid,ierr)
-      if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
-               'failed to get cool_wid from radiation_ray')
-      do i=1,3
-        df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-            tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))* &
-            step(z(n),z_cutoff,cool_wid)
-      enddo
+      df(l1:l2,m,n,iqx:iqz) = df(l1:l2,m,n,iqx:iqz)-tau_inv_spitzer*(p%qq+spitzer_vec)* &
+                              step(z(n),z_cutoff,cool_wid)
     else
-      do i=1,3
-        df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-            tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i)) 
-      enddo
+      df(l1:l2,m,n,iqx:iqz) = df(l1:l2,m,n,iqx:iqz)-tau_inv_spitzer*(p%qq+spitzer_vec) 
     endif
 !
 ! Add to energy equation
 !
-
     rhs = p%cv1*p%divq*p%TT1*p%rho1
 !
-
-    if (ltemperature) then
-       if (ltemperature_nolog) then
-          call fatal_error('non_fourier_spitzer', &
-               'not implemented for current set of thermodynamic variables')
-       else
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
-          if (lfirst.and.ldt) then
-            dt1_max=max(dt1_max,maxval(abs(rhs))/cdts)
-          endif
-       endif
-    else if (lentropy.and.pretend_lnTT) then
-       call fatal_error('noadvection_non_fourier_spitzer', &
-            'not implemented for current set of thermodynamic variables')
-    else if (lthermal_energy .and. ldensity) then
-       call fatal_error('noadvection_non_fourier_spitzer', &
-            'not implemented for current set of thermodynamic variables')
-    else
-       call fatal_error('noadvection_non_fourier_spitzer', &
-            'not implemented for current set of thermodynamic variables')
-    endif
+    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
-
     if (lfirst.and.ldt) then
+
+      dt1_max=max(dt1_max,maxval(abs(rhs))/cdts)
       call unit_vector(p%glnTT,unit_glnTT)
       call dot(unit_glnTT,p%bunit,cosgT_b)
       rhs = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*p%cv1
 !
-      if (idiag_dtspitzer/=0) &
-           call max_mn_name(rhs/cdtv,idiag_dtspitzer,l_dt=.true.)
+      if (idiag_dtspitzer/=0) call max_mn_name(rhs/cdtv,idiag_dtspitzer,l_dt=.true.)
 !
-!
-!     timestep constraints due to tau directly
+! Timestep constraints due to tau directly
 !
       dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
 !
-      if (ldiagnos.and.idiag_dtq2/=0) then
-        call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
-      endif
+      if (ldiagnos.and.idiag_dtq2/=0) call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
+     
     endif
 !
     if (lvideo.and.lfirst) then
