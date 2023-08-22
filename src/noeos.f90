@@ -28,14 +28,9 @@ module EquationOfState
   implicit none
 !
   include 'eos.h'
+  include 'eos_parms.h'
 !
-! integers specifying which independent variables to use in eoscalc
-  integer, parameter :: ilnrho_ss=1, ilnrho_ee=2, ilnrho_pp=3, ilnrho_lnTT=4
-  integer, parameter :: irho_ss=7, ilnrho_TT=9, irho_TT=10, ipp_ss=11
-  integer, parameter :: ipp_cs2=12
-  integer, parameter :: irho_eth=13, ilnrho_eth=14
   integer :: imass=1
-  integer :: ics
 !
   real :: cs0=1.0, rho0=1.0, rho02
   real :: cs20=1.0, lnrho0=0.0 
