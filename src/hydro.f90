@@ -24,6 +24,7 @@
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
 ! PENCILS PROVIDED der6u_res(3,3)
+! PENCILS PROVIDED lorentz; hless
 !***************************************************************
 !
 module Hydro
@@ -111,7 +112,7 @@ module Hydro
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   real :: z1_uu=0., z2_uu=0.
   real :: ABC_A=1., ABC_B=1., ABC_C=1.
-  real :: vwall=.0, alpha_hless=.0
+  real :: vwall=.0, alpha_hless=.0, eps_hless=.0
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   integer :: nb_rings=0
   integer :: neddy=0
@@ -967,6 +968,7 @@ module Hydro
 !  shared variable of lconservative for density
 !
       call put_shared_variable('lconservative',lconservative)
+      call put_shared_variable('lhiggsless',lhiggsless)
 
       call put_shared_variable ('tdamp', tdamp)
       call put_shared_variable ('ldamp_fade', ldamp_fade)
@@ -982,6 +984,10 @@ module Hydro
 
       call put_shared_variable('lshear_rateofstrain',lshear_rateofstrain)
       if (lviscosity) call put_shared_variable ('lcalc_uuavg',lcalc_uuavg)
+      if (lhiggsless) then
+        eps_hless = alpha_hless/(1.+alpha_hless)
+        call put_shared_variable ('eps_hless',eps_hless,caller='register_hydro')
+      endif
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
 ! of gas velocity as auxiliary
@@ -2617,16 +2623,20 @@ module Hydro
 !  Initialize Higgsless field
 !
         if (lhiggsless) then
+          eps_hless = alpha_hless/(1.+alpha_hless)
           if (lhiggsless_old) then
-            f(:,:,:,ihless) = alpha_hless/(1.+alpha_hless)
+            f(:,:,:,ihless) = eps_hless
           else
             f(:,:,:,ihless)=huge1
             do jhless=1,nhless
               do n=1,mz
               do m=1,my
-                delx=2.*atan(tan(.5*(x   -xhless(jhless))))
-                dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
-                delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
+!                delx=2.*atan(tan(.5*(x   -xhless(jhless))))
+!                dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
+!                delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
+                delx=(Lxyz(1)/pi)*atan(tan(pi/Lxyz(1)*(x   -vwall*xhless(jhless))))
+                dely=(Lxyz(2)/pi)*atan(tan(pi/Lxyz(2)*(y(m)-vwall*yhless(jhless))))
+                delz=(Lxyz(3)/pi)*atan(tan(pi/Lxyz(3)*(z(n)-vwall*zhless(jhless))))
                 tau_hless=thless(jhless)+sqrt(delx**2+dely**2+delz**2)/vwall
                 where(tau_hless<f(:,m,n,ihless)) f(:,m,n,ihless)=tau_hless
               enddo
@@ -2998,6 +3008,7 @@ module Hydro
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, DD
+      real, dimension (nx) :: tmp_rho
       real, dimension (nx,3) :: tmp3
       real, dimension (nx,3,3) :: tmp33
       real :: cs201,outest
@@ -3019,6 +3030,10 @@ module Hydro
 !  We solve here Eq. (39) of the notes.
 !
             cs201=cs20+1.
+            tmp_rho=f(l1:l2,m,n,irho)
+            if (.not.lhiggsless_old.and.lhiggsless) then
+              where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
+            endif
             if (lmagnetic) then
 !print*,'AXEL6: need to have B_ext2'
 !XX
@@ -3031,7 +3046,7 @@ module Hydro
                 call multsv_mn(tmp,tmp3,p%uu)
               endif
             else
-              tmp=1./(f(l1:l2,m,n,irho)/(1.-.25/f(l1:l2,m,n,ilorentz)))
+              tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
               call multsv_mn(tmp,tmp3,p%uu)
             endif
 !print*,'AXEL7: used B_ext2'
@@ -3279,6 +3294,11 @@ module Hydro
 !
       if (lpenc_loc(i_uu_sph).and.luu_sph_as_aux) p%uu_sph=f(l1:l2,m,n,iuu_sphr:iuu_sphp)
 !
+      if (lconservative) then
+        if (ilorentz /= 0) p%lorentz = f(l1:l2,m,n,ilorentz)
+        if (.not.lhiggsless_old.and.lhiggsless) p%hless = f(l1:l2,m,n,ihless)
+      endif
+!
     endsubroutine calc_pencils_hydro_nonlinear
 !***********************************************************************
     subroutine calc_pencils_hydro_linearized(f,p,lpenc_loc)
@@ -3466,6 +3486,160 @@ module Hydro
           !if (lremove_mean_flow) call remove_mean_value(f,iux,iuz)  !(could use this one)
           if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
         endif
+      endif
+!
+!  Calculate the energy-momentum tensor.
+!  In the non-relativisitic case, then Tij=rho*ui*uj+delij*p,
+!  so with p=cs2*rho/3="press", we have Tij=Ti0*Tj0/rho+cs2*rho*delij/3.
+!  To deal with truly nonrelativistic eos and conservative formulation,
+!  we need to set rho_gam21=1/rho.
+!  Note that the loop below is over all my and mz, not ny and nz,
+!  so it includes the ghost zones.
+!  Allowed for possibility to save relativistic Lorentz factor as aux.
+!  The magnetic case can only be done iteratively, so we first compute
+!  gamma for the nonmagnetic case.
+!
+      if (lconservative) then
+        if (iTij==0) call fatal_error("hydro_before_boundary","must compute Tij for lconservative")
+        cs201=cs20+1.
+        cs2011=1./cs201
+!print*,'AXEL9: end of initialize; Bx=',f(:,4,4,ibb)
+B_ext2=0.
+        do n=1,mz
+        do m=1,my
+          if (ldensity) then
+            if (lmagnetic) then
+              if (B_ext2/=0.) then
+                hydro_energy=f(:,m,n,irho)-.5*B_ext2
+              else
+                hydro_energy=f(:,m,n,irho)
+              endif
+            else
+              hydro_energy=f(:,m,n,irho)
+            endif
+!
+!  Higgsless field
+!
+            if (lhiggsless) then
+              if (lhiggsless_old) then
+                do jhless=1,nhless
+                  delx=2.*atan(tan(.5*(x   -xhless(jhless))))
+                  dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
+                  delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
+                  where(sqrt(delx**2+dely**2+delz**2) &
+                       < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
+                  hydro_energy=hydro_energy-f(:,m,n,ihless)
+                enddo
+              else
+                where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-eps_hless
+              endif
+            endif
+            hydro_energy1=1./hydro_energy
+          else
+            hydro_energy=1.
+            hydro_energy1=1.
+          endif
+!
+!  Compute lorentz_gamma2.
+!
+          if (lrelativistic.or.llorentz_as_aux) then
+            ss=f(:,m,n,iux:iuz)
+            call dot2_mx(ss,ss2)
+            rat0=ss2*hydro_energy1**2
+            if (lmagnetic) then
+              vA2_pseudo=B_ext2*cs2011*hydro_energy1
+              rat=rat0/(1.+vA2_pseudo)**2
+            else
+              rat=rat0
+            endif
+            lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+!
+!  In the magnetic case, we need to solve lorentz_gamma2 iteratively; first initialize it:
+!  We also don't know rho yet (because it involves gamma^2), so we iterate for that, too.
+!  In the magnetic case, the equation for lorentz_gamma2 is no longer quadratic, because
+!  the term (1.+vA2_pseudo)**2 itself contains lorentz_gamma2.
+!  The expression rho_gam2 means the same as (4/3)*rho*gamma^2, and rho_gam21=1/rho_gam2.
+!  Now iterate (only works if relativistic)
+!
+            if (lmagnetic) then
+              do iter_relB=1,niter_relB
+                if (lrelativistic) then
+                  rho1=(cs201*lorentz_gamma2-cs20)/hydro_energy
+                  rho_gam20=cs2011*rho1/lorentz_gamma2
+                  vA2_pseudo=B_ext2*rho_gam20
+                  rat=rat0/(1.+vA2_pseudo)**2
+                  lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+                else
+                  if (llorentz_as_aux) lorentz_gamma2=1./(1.-rat)
+                endif
+              enddo
+              rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
+              rho_gam21=1./(cs201*rho*lorentz_gamma2+B_ext2)
+            else
+              rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
+              rho_gam21=1./(cs201*rho*lorentz_gamma2)
+            endif
+!
+!  If just conservative and non-relativistic, we just set rho and rho_gam21.
+!
+          else
+            if (lrelativistic_eos) then
+              rho=cs201*hydro_energy
+            else
+              rho=hydro_energy
+            endif
+            rho_gam21=1./(cs201*rho)
+          endif
+!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: rho_gam2(80:160)=',t,rho_gam2(80:160)
+!
+!  At the end, we put lorentz_gamma2 into the f array.
+!
+          if (ilorentz /= 0) f(:,m,n,ilorentz)=lorentz_gamma2
+          if (lhiggsless) then
+            if (lhiggsless_old) then
+              press=rho*cs20-f(:,m,n,ihless)
+            else
+              press=rho*cs20
+              where(real(t) < f(:,m,n,ihless)) press=press-eps_hless
+            endif
+          else
+            press=rho*cs20
+          endif
+!
+!  Now set the nonmagnetic stresses; begin with the diagonal components:
+!  Tii=(Ti0)^2/rho or Tii=(Ti0)^2/(4./3.*rho*gamma^2)
+!
+!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,irho)=',t,f(80:160,m,n,irho)
+!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,iuu)=',t,f(80:160,m,n,iuu)
+          do j=0,2
+            f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2+press
+          enddo
+!
+!  off-diagonal terms:
+!  "Tij4" = T12
+!  "Tij5" = T23
+!  "Tij6" = T31
+!
+          f(:,m,n,iTij+3+0)=rho_gam21*f(:,m,n,iuu+0)*f(:,m,n,iuu+1)
+          f(:,m,n,iTij+3+1)=rho_gam21*f(:,m,n,iuu+1)*f(:,m,n,iuu+2)
+          f(:,m,n,iTij+3+2)=rho_gam21*f(:,m,n,iuu+2)*f(:,m,n,iuu+0)
+!
+!  The following hasn't been prepared yet.
+!
+    !     if (lbraginsky) then
+    !       muparaB21=3.*muB*
+    !       do j=0,2
+    !         f(:,m,n,iTij+j)=muparaB21*f(:,m,n,ibb+j)**2
+    !       enddo
+    !       f(:,m,n,iTij+3+0)=muparaB21*f(:,m,n,ibb+0)*f(:,m,n,ibb+1)
+    !       f(:,m,n,iTij+3+1)=muparaB21*f(:,m,n,ibb+1)*f(:,m,n,ibb+2)
+    !       f(:,m,n,iTij+3+2)=muparaB21*f(:,m,n,ibb+2)*f(:,m,n,ibb+0)
+    !     endif
+        enddo
+        enddo
+!
+!  Here is the endif of lconservative.
+!
       endif
 !
 !  Calculate the vorticity field if required.

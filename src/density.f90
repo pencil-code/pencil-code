@@ -49,7 +49,7 @@ module Density
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, target :: mpoly=impossible
-  real, pointer :: mpoly0, mpoly1, mpoly2
+  real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
   real, dimension(nz) :: fprofile_z=1.
@@ -102,7 +102,7 @@ module Density
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
   logical :: lrelativistic_eos=.false., ladvection_density=.true.
-  logical, pointer :: lconservative
+  logical, pointer :: lconservative, lhiggsless
   logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -371,6 +371,7 @@ module Density
         call put_shared_variable('reference_state',reference_state)
         call put_shared_variable('reference_state_mass',reference_state_mass)
       endif
+
 
     endsubroutine register_density
 !***********************************************************************
@@ -974,6 +975,15 @@ module Density
         allocate(lconservative)
         lconservative=.false.
       endif
+!
+      if (lhydro) then
+        call get_shared_variable('lhiggsless', lhiggsless)
+      else
+        allocate(lhiggsless)
+        lhiggsless=.false.
+      endif
+!
+       if (lhydro.and.lhiggsless) call get_shared_variable('eps_hless',eps_hless)
 
       if (lcontinuity_gas.and..not.lweno_transport.and.ldensity_nolog.and.lconservative.and..not.lhydro) &
         call fatal_error_local('initialize_density','divss not available without hydro')
@@ -2068,6 +2078,11 @@ module Density
       if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
           idiag_inertiazz_car/=0 .or. idiag_sphmass/=0) lpenc_diagnos(i_r_mn)=.true.
 !
+      if (lconservative) then
+        lpenc_requested(i_lorentz)=.true.
+        if (lhiggsless)  lpenc_requested(i_hless)=.true.
+      endif
+!
     endsubroutine pencil_criteria_density
 !***********************************************************************
     subroutine pencil_interdep_density(lpencil_in)
@@ -2143,7 +2158,7 @@ module Density
 ! ekin
       if (lpenc_loc(i_ekin)) then
         if (lconservative) then
-          p%ekin=0.5*p%rho*p%u2
+          p%ekin=fourthird*p%rho*p%lorentz*p%u2
         else
           p%ekin=0.5*p%rho*p%u2
         endif
@@ -2285,6 +2300,15 @@ module Density
 ! divS, needed for relativistic calculations
 !
       if (lpenc_loc(i_divss)) call div(f,iux,p%divss)
+!
+      if (lconservative) then
+        if (lhiggsless) then
+          where(real(t) < p%hless) p%rho=p%rho-eps_hless
+          p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
+        else
+          p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
+        endif
+      endif
 !
     endsubroutine calc_pencils_linear_density_pnc
 !***********************************************************************
