@@ -12,6 +12,7 @@ from test_utils import test, assert_equal
 
 @test
 def test_get_value_from_file() -> None:
+    """Reading values from {start,run}.in"""
     rundir = get_run_dir()
 
     def get_s(quantity):
