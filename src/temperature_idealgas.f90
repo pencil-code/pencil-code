@@ -946,7 +946,7 @@ module Energy
       if ( lhydro .or. lhydro_kinematic ) then
         if ( idiag_guxgTm/=0 .or. idiag_guygTm/=0 .or. idiag_guzgTm/=0 ) lpenc_diagnos(i_uij)=.true.
         if ( idiag_Tugux_uxugTm/=0 .or. idiag_Tuguy_uyugTm/=0 .or. idiag_Tuguz_uzugTm/=0 ) then
-          lpenc_requested(i_ugu)=.true.; lpenc_requested(i_ugTT)=.true.
+          lpenc_diagnos(i_ugu)=.true.; lpenc_diagnos(i_ugTT)=.true.
         endif
       endif
 !
@@ -997,7 +997,7 @@ module Energy
         lpenc_diagnos(i_cv1) =.true.
       endif
       if (idiag_fpresxmz/=0 .or. idiag_fpresymz/=0 .or. &
-          idiag_fpreszmz/=0) lpenc_requested(i_fpres)=.true.
+          idiag_fpreszmz/=0) lpenc_diagnos(i_fpres)=.true.
 !
       if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) lpenc_diagnos2d(i_TT)=.true.
 !

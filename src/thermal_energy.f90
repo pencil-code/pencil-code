@@ -377,10 +377,10 @@ module Energy
       if (idiag_ethm/=0 .or. idiag_ethmin/=0 .or. idiag_ethmax/=0 .or. idiag_ethtot/=0) &
          lpenc_diagnos(i_eth)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
-      etot: if (idiag_etot /= 0) then
+      if (idiag_etot /= 0) then
         lpenc_diagnos(i_eth) = .true.
         lpenc_diagnos(i_ekin) = .true.
-      endif etot
+      endif
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_pdivum/=0) then
         lpenc_diagnos(i_pp)=.true.

@@ -1646,7 +1646,7 @@ if (lroot) print*,"lSN_list",lSN_list
       lpenc_requested(i_cv1)=.true.
       if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
 !
-      lpenc_diagnos(i_rho1)=.true.
+      if (idiag_Lamm/=0) lpenc_diagnos(i_rho1)=.true.
 !
 !  Diagnostic pencils
 !
@@ -1898,18 +1898,13 @@ if (lroot) print*,"lSN_list",lSN_list
             call max_mn_name(netcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
           endif
         endif
-        if (idiag_Lamm/=0) &
-          call sum_mn_name(p%rho1*cool,idiag_Lamm)
-        if (idiag_nrhom/=0) &
-          call sum_mn_name(cool/p%ee,idiag_nrhom)
-        if (idiag_rhoLm/=0) &
-          call sum_mn_name(cool,idiag_rhoLm)
-        if (idiag_Gamm/=0) &
-          call sum_mn_name(heat,idiag_Gamm)
+        if (idiag_Lamm/=0) call sum_mn_name(p%rho1*cool,idiag_Lamm)
+        if (idiag_nrhom/=0) call sum_mn_name(cool/p%ee,idiag_nrhom)
+        call sum_mn_name(cool,idiag_rhoLm)
+        call sum_mn_name(heat,idiag_Gamm)
       endif
       if (l1davgfirst) then
-        if (idiag_rhoHCmz/=0) &
-          call xysum_mn_name_z(heatcool,idiag_rhoHCmz)
+        call xysum_mn_name_z(heatcool,idiag_rhoHCmz)
       endif
 !
 !  Limit timestep by the cooling time (having subtracted any heating)
