@@ -22,7 +22,8 @@ module Timestep
     subroutine initialize_timestep
 
       ldt = .false.
-      dt0=dt
+      !overwrite the persistent time_step from dt0 in run.in
+      if (dt0/=0.) dt=dt0
 
     endsubroutine initialize_timestep
 !***********************************************************************
@@ -284,7 +285,7 @@ module Timestep
     endsubroutine rkck
 !***********************************************************************
     subroutine pushpars2c(p_par)
-        
+
     use Messages, only: fatal_error
 
     integer, parameter :: n_pars=0
