@@ -528,6 +528,7 @@ module Interstellar
 !
       use EquationOfState, only: getmu, get_gamma_etc
       use Mpicomm, only: stop_it
+      use General, only: random_seed_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, int1_list, stat
@@ -787,27 +788,23 @@ module Interstellar
 !
 !
 !
+if (lroot) print*,"lSN_list",lSN_list
       if (lSN_list) then
         inquire(file='sn_series.in',exist=exist)
         if (exist) then
           open(33,file='sn_series.in')
         else
-          inquire(file=trim(directory)//'/sn_series.ascii',exist=exist)
-          if (exist) then
-            open(33,file=trim(directory)//'/sn_series.ascii')
-          else
-            call fatal_error('initialize_interstellar','error - no sn_series input file')
-          endif
+          call fatal_error('initialize_interstellar','error - no sn_series input file')
         endif
 !
 !  Read profiles.
 !
-        nlist=-1
+        nlist=0
         read(33,*,iostat=stat)
         do while(1==1)
           read(33,*,iostat=stat) &
               int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
-          if (t >= t_list) nlist=nlist+1
+          if (t<=t_list.and.int1_list/=0) nlist=nlist+1
           if (stat<0) exit
         enddo
         close(33)
@@ -824,18 +821,20 @@ module Interstellar
           read(33,*,iostat=stat) &
               int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
           if (stat<0) exit
-          if (t_list>=t) then
+          if (t_list>=t.and.int1_list/=0) then
             SN_list(1,i)=t_list
             SN_list(2,i)=x_list
             SN_list(3,i)=y_list
             SN_list(4,i)=z_list
             SN_type(  i)=type_list
-            if (lroot) print*,i,t_list,t
+            if (lroot) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
             i=i+1
           endif
         enddo
         close(33)
         SNfirst=1
+        t_next_SNI = SN_list(1,1)
+        t_next_SNII = SN_list(1,1)
       endif
 
       if (leos_ionization) &
@@ -1516,7 +1515,7 @@ module Interstellar
 !        else the treatment of SN explosions shall diverge and the MPI will
 !        break or worse hang
 !
-      seed(1)=seed0
+      seed(1)=seed_reset
       call random_seed_wrapper(PUT=seed)
 !
       do j=1,ninit
@@ -2022,10 +2021,10 @@ module Interstellar
 !  If SN are listed in source file then obtain parameters from list
 !
       if (lSN_list) then
-        if (t>=t_next_SNI) then
+        if (t>=t_next_SNI.or.t>=t_next_SNII) then
           call tidy_SNRs
           do i=SNfirst,nlist-1
-            if (SN_list(1,i)>=t_next_SNI) then
+            if (SN_list(1,i)>=t_next_SNI.or.SN_list(1,i)>=t_next_SNII) then
               center_SN_x=SN_list(2,i)
               center_SN_y=SN_list(3,i)
               center_SN_z=SN_list(4,i)
@@ -2036,6 +2035,7 @@ module Interstellar
                 tmax=t
               endif
               t_next_SNI=SN_list(1,i+1)
+              t_next_SNII=SN_list(1,i+1)
               if (lroot) print &
                   "(1x,'check_SN: t_next_SNI on list =',e16.8)",t_next_SNI
               SNfirst=i+1
