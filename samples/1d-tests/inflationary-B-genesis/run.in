@@ -1,0 +1,30 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2023/07/31 20:56:01 brandenb Exp $',
+  nt=1000, it1=100, dsnap=1e9, dvid=.1, isave=100, ialive=1
+  lread_scl_factor_file_new=T, ip=15
+  lpencil_check_small=F
+  lread_aux=T
+  dt=1e-4
+  tmax=500.
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&magnetic_run_pars
+  iresistivity='eta-tdep', eta=1e-3, eta_tdep_t0=1., eta_tdep_toffset=.1
+  tdep_eta_type='linear-sigma', eta_max=1e9
+/
+&special_run_pars
+  eta_EE=0e-2, beta_inflation=1.
+  lcurlyA=F
+/
+&viscosity_run_pars
+  nu=5e-2
+/

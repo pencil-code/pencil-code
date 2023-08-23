@@ -1,0 +1,22 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2023/07/31 20:56:01 brandenb Exp $',
+  unit_system='set', c_light_set=1., wav1=1.
+  lwrite_aux=T
+  lwrite_ic=F
+  tstart=1e-6
+/
+&eos_init_pars
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  initaa='sinwave-phase', ampl_az=1e-18, kx_az=1.
+/
+&special_init_pars
+/
