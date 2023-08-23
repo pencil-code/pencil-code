@@ -1237,6 +1237,10 @@ module Magnetic
         lconservative=.false.
       endif
 !
+!  Share the external magnetic field with mean field module.
+!
+      if (lmagn_mf .or. (lhydro.and.lconservative)) call put_shared_variable('B_ext2', B_ext2)
+!
 !PJK: moved from register_magnetic at least temporarily
       if (lbb_sph_as_aux) &
         call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
