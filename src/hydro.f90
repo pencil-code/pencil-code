@@ -153,7 +153,8 @@ module Hydro
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
-  real, pointer :: B_ext2
+  !real, pointer :: B_ext2
+  real :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
   real :: amp_meri_circ = 0.0
@@ -352,6 +353,16 @@ module Hydro
   integer :: idiag_uxuy2m=0     ! DIAG_DOC: $\left<u_x^2u_y^2\right>$
   integer :: idiag_uyuz2m=0     ! DIAG_DOC: $\left<u_y^2u_z^2\right>$
   integer :: idiag_uzux2m=0     ! DIAG_DOC: $\left<u_z^2u_x^2\right>$
+  integer :: idiag_T00m=0       ! ZAVG_DOC: $\left< T_{00} \right>$
+  integer :: idiag_Txxm=0       ! ZAVG_DOC: $\left< T_{xx} \right>$
+  integer :: idiag_Tyym=0       ! ZAVG_DOC: $\left< T_{yy} \right>$
+  integer :: idiag_Tzzm=0       ! ZAVG_DOC: $\left< T_{zz} \right>$
+  integer :: idiag_Txym=0       ! ZAVG_DOC: $\left< T_{xy} \right>$
+  integer :: idiag_Tyzm=0       ! ZAVG_DOC: $\left< T_{yz} \right>$
+  integer :: idiag_Tzxm=0       ! ZAVG_DOC: $\left< T_{zx} \right>$
+  integer :: idiag_T0x2m=0      ! ZAVG_DOC: $\left< T_{0x}^2 \right>$
+  integer :: idiag_T0y2m=0      ! ZAVG_DOC: $\left< T_{0y}^2 \right>$
+  integer :: idiag_T0z2m=0      ! ZAVG_DOC: $\left< T_{0z}^2 \right>$
   integer :: idiag_ux2ccm=0     ! DIAG_DOC: $\left<u_x^2\cos^2kz\right>$
   integer :: idiag_ux2ssm=0     ! DIAG_DOC: $\left<u_x^2\sin^2kz\right>$
   integer :: idiag_uy2ccm=0     ! DIAG_DOC: $\left<u_y^2\cos^2kz\right>$
@@ -1473,10 +1484,6 @@ module Hydro
 !  But this only makes sense when we are are not already fully relativistic.
 !
       if (ldensity) call get_shared_variable('lrelativistic_eos', lrelativistic_eos)
-!
-!  Get B_ext2 from magnetic module.
-!
-      if (lmagnetic.and.lconservative) call get_shared_variable('B_ext2',B_ext2)
 !
       if (ltime_integrals) then
         if (.not.(ltime_integrals_always .or. dtcor<=0.)) call put_shared_variable('t_cor',t_cor)
@@ -3003,6 +3010,7 @@ module Hydro
 !
             cs201=cs20+1.
             if (lmagnetic) then
+!print*,'AXEL6: need to have B_ext2'
               if (full_3D) then
                 DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
                 call invmat_DB(DD,p%bb,tmp33)
@@ -3015,6 +3023,7 @@ module Hydro
               tmp=1./(f(l1:l2,m,n,irho)/(1.-.25/f(l1:l2,m,n,ilorentz)))
               call multsv_mn(tmp,tmp3,p%uu)
             endif
+!print*,'AXEL7: used B_ext2'
 !
 !  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
 !  so to get the velocity, we have to divide by it.
@@ -3467,6 +3476,8 @@ module Hydro
         if (iTij==0) call fatal_error("hydro_before_boundary","must compute Tij for lconservative")
         cs201=cs20+1.
         cs2011=1./cs201
+!print*,'AXEL9: end of initialize; Bx=',f(:,4,4,ibb)
+B_ext2=0.
         do n=1,mz
         do m=1,my
           if (ldensity) then
@@ -4130,6 +4141,16 @@ module Hydro
         if (idiag_rux2m/=0) call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
+        if (idiag_T00m/=0)  call sum_mn_name(f(l1:l2,m,n,irho),idiag_T00m)
+        if (idiag_T0x2m/=0) call sum_mn_name(f(l1:l2,m,n,iux)**2,idiag_T0x2m)
+        if (idiag_T0y2m/=0) call sum_mn_name(f(l1:l2,m,n,iuy)**2,idiag_T0y2m)
+        if (idiag_T0z2m/=0) call sum_mn_name(f(l1:l2,m,n,iuy)**2,idiag_T0z2m)
+        if (idiag_Txxm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+0),idiag_Txxm)
+        if (idiag_Tyym/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+1),idiag_Tyym)
+        if (idiag_Tzzm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+2),idiag_Tzzm)
+        if (idiag_Txym/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+3),idiag_Txym)
+        if (idiag_Tyzm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+4),idiag_Tyzm)
+        if (idiag_Tzxm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
         call sum_mn_name(p%ekin,idiag_ekin)
         call sum_mn_name(p%ekin,idiag_EEK)
         call integrate_mn_name(p%ekin,idiag_ekintot)
@@ -5939,6 +5960,16 @@ module Hydro
         idiag_rux2m=0
         idiag_ruy2m=0
         idiag_ruz2m=0
+        idiag_T00m=0
+        idiag_Txxm=0
+        idiag_Tyym=0
+        idiag_Tzzm=0
+        idiag_Txym=0
+        idiag_Tyzm=0
+        idiag_Tzxm=0
+        idiag_T0x2m=0
+        idiag_T0y2m=0
+        idiag_T0z2m=0
         idiag_uduum=0
         idiag_uxmx=0
         idiag_uymx=0
@@ -6348,6 +6379,16 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'rux2m',idiag_rux2m)
         call parse_name(iname,cname(iname),cform(iname),'ruy2m',idiag_ruy2m)
         call parse_name(iname,cname(iname),cform(iname),'ruz2m',idiag_ruz2m)
+        call parse_name(iname,cname(iname),cform(iname),'T00m',idiag_T00m)
+        call parse_name(iname,cname(iname),cform(iname),'Txxm',idiag_Txxm)
+        call parse_name(iname,cname(iname),cform(iname),'Tyym',idiag_Tyym)
+        call parse_name(iname,cname(iname),cform(iname),'Tzzm',idiag_Tzzm)
+        call parse_name(iname,cname(iname),cform(iname),'Txym',idiag_Txym)
+        call parse_name(iname,cname(iname),cform(iname),'Tyzm',idiag_Tyzm)
+        call parse_name(iname,cname(iname),cform(iname),'Tzxm',idiag_Tzxm)
+        call parse_name(iname,cname(iname),cform(iname),'T0x2m',idiag_T0x2m)
+        call parse_name(iname,cname(iname),cform(iname),'T0y2m',idiag_T0y2m)
+        call parse_name(iname,cname(iname),cform(iname),'T0z2m',idiag_T0z2m)
         call parse_name(iname,cname(iname),cform(iname),'uxuym',idiag_uxuym)
         call parse_name(iname,cname(iname),cform(iname),'uxuzm',idiag_uxuzm)
         call parse_name(iname,cname(iname),cform(iname),'uyuzm',idiag_uyuzm)
