@@ -5748,6 +5748,30 @@ Hence, for a very small $\lambda$ parameter, the Alfv\'en time step becomes extr
 More details on the numerical modeling of chiral MHD can be found in
 Schober et al.\ (2018).
 
+\subsection{Electromagnetism with displacement current}
+\index{Electromagnetism}
+
+In electromagnetism, the displacement current is not neglected, and so we solve
+the equation
+\begin{equation}
+\frac{1}{c^2} \frac{\partial\Ev}{\partial t}=\nabla\times\Bv-\mu_0\Jv,
+\label{dEdt}
+\end{equation}
+in addition to the induction equation $\partial\Bv/\partial t=-\nab\times\Ev$,
+or its uncurled version $\partial\Av/\partial t=-\Ev$.
+Solving this equation is invoked by putting
+\code{SPECIAL=special/disp_current}.
+
+In the code, there is the line
+\code{df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p\%curlb-mu0*p\%jj_ohm)}
+where \var{c_light2} is the speed of light squared as input parameter, so
+it is usually not computed self-consistently from the actual speed of light,
+which would be known once we use physical dimensions.
+Furthermore, \var{p\%curlb} is the curl of $\Bv$ (which is now {\em not} the
+electric current, while \var{p\%jj_ohm} is the Ohmic current, obtained
+by solving $\Jv=\sigma(\Ev+\uv\times\Bv)$, and $\sigma$ is the conductivity
+(which can be time-dependent).
+The vacuum permeability is \var{mu0}.
 
 \subsection{Particles}
 \label{S-particles-equations}
