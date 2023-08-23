@@ -721,6 +721,8 @@ module Magnetic
   integer :: idiag_uxjm=0       ! DIAG_DOC:
   integer :: idiag_b2divum=0    ! DIAG_DOC: $\left<\Bv^2\nabla\cdot\uv\right>$
   integer :: idiag_jdel2am=0    ! DIAG_DOC: $\left<\Jv\cdot\nabla^2\Av)\right>$
+  integer :: idiag_jem=0        ! DIAG_DOC: $\left<\jv\cdot\Ev\right>$
+  integer :: idiag_aem=0        ! DIAG_DOC: $\left<\Av\cdot\Ev\right>$
   integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv)\right>$
   integer :: idiag_WL2D=0       ! DIAG_DOC: $\left<J_i u_j A_{i,j} \right>$
   integer :: idiag_WL3D=0       ! DIAG_DOC: $-\left<J_i u_j A_{j,i} \right>$
@@ -1068,6 +1070,7 @@ module Magnetic
 !  This must not be involved when the displacement current is being solved for.
 !
       if (lee_as_aux) then
+        if (lroot) print*,'NOTE: lee_as_aux=',lee_as_aux
         call farray_register_auxiliary('ee',iee,vector=3)
         iex=iee; iey=iee+1; iez=iee+2
 !
@@ -1233,10 +1236,6 @@ module Magnetic
         allocate(lconservative)
         lconservative=.false.
       endif
-!
-!  Share the external magnetic field with mean field module.
-!
-      if (lmagn_mf .or. (lhydro.and.lconservative)) call put_shared_variable('B_ext2', B_ext2)
 !
 !PJK: moved from register_magnetic at least temporarily
       if (lbb_sph_as_aux) &
@@ -3918,20 +3917,23 @@ module Magnetic
 !  Check whether or not the displacement current is being computed.
 !  Note that the previously calculated p%jj would then be overwritten
 !  by the Ohmic current, J=sigma*(E+uxB)=(E+uxB)/(mu0*eta).
+!  When iex>0, etatotal is not set, so we should/could do it here.
 !
         if (iex>0) then
+          if (lresi_eta_tdep) then
+            etatotal=eta_tdep
+          else
+            etatotal=eta
+          endif
           if (lvacuum) then
             p%jj=0.
             p%jj_ohm=0.
           else
 !
 ! The Ohm's current is independent of loverride_ee2, etc.
+! AB: etatotal and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
 !
-            if (lresi_eta_tdep) then
-              p%jj_ohm=(p%el+p%uxb)*mu01/eta_tdep
-            else
-              p%jj_ohm=(p%el+p%uxb)*mu01/eta
-            endif
+            p%jj_ohm=(p%el+p%uxb)*mu01/etatotal(1)
 !
 !  Compute current for Lorentz force.
 !  Note that loverride_ee2 is a "permanent" switch,
@@ -4541,6 +4543,7 @@ module Magnetic
 !  Time-dependent resistivity
 !  If both z and t dependent, then use eta_tdep for del2 (in non-Weyl),
 !  and -(eta_zdep-1.)*eta_tdep*mu0*p%jj, where eta_zdep < 1 is assumed.
+!  Remember that none of this is accessed if displacement current is included.
 !
       if (lresi_eta_tdep) then
         if (lresi_eta_ztdep) then
@@ -5590,7 +5593,10 @@ module Magnetic
 !  This line must not be used when the displacement current is being solved for.
 !  But is might actually work correctly.
 !
-      if (lee_as_aux) f(l1:l2,m,n,iex:iez)= -dAdt
+      if (lee_as_aux) then
+        if (lroot) print*,'f(l1:l2,m,n,iex:iez)=-dAdt is set'
+        f(l1:l2,m,n,iex:iez)=-dAdt
+      endif
 !
 !  Magnetic field in spherical coordinates from a Cartesian simulation
 !  for sphere-in-a-box setups
@@ -5759,6 +5765,7 @@ module Magnetic
           call cross(p%uxb,p%bb,uxbxb)
           do j=1,3
             poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)  !!! etatotal invalid outside daa_dt!
+!AB: but etatotal is (now?) defined globally in this module, so it should work.
           enddo
           call store_slices(poynting,poynting_xy,poynting_xz,poynting_yz, &
                             poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2,poynting_r)
@@ -6318,6 +6325,20 @@ module Magnetic
       if (idiag_sijbibjm/=0) then
         call mult_mat_vv(p%sij,p%bb,p%bb,tmp)
         call sum_mn_name(tmp,idiag_sijbibjm)
+      endif
+!
+!  Calculate <j.E>.
+!
+      if (idiag_jem/=0) then
+        call dot(p%jj,p%el,tmp)
+        call sum_mn_name(tmp,idiag_jem)
+      endif
+!
+!  Calculate <A.E>.
+!
+      if (idiag_aem/=0) then
+        call dot(p%aa,p%el,tmp)
+        call sum_mn_name(tmp,idiag_aem)
       endif
 !
 !  Calculate <u.(jxb)>.
@@ -9568,7 +9589,7 @@ module Magnetic
         idiag_bxbzmz=0; idiag_bybzmz=0
         idiag_b2mx=0; idiag_a2mz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
         idiag_jbmz=0; idiag_abmz=0; idiag_ubmz=0; idiag_ujmz=0; idiag_obmz=0; idiag_uamz=0
-        idiag_bzdivamz=0; idiag_divamz=0; idiag_d6abmz=0; idiag_ujxbm=0
+        idiag_bzdivamz=0; idiag_divamz=0; idiag_d6abmz=0; idiag_jem=0; idiag_aem=0; idiag_ujxbm=0
         idiag_uxbxmz=0; idiag_uybxmz=0; idiag_uzbxmz=0
         idiag_uxbymz=0; idiag_uybymz=0; idiag_uzbymz=0
         idiag_uxbzmz=0; idiag_uybzmz=0; idiag_uzbzmz=0
@@ -9845,6 +9866,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'phibmz',idiag_phibmz)
         call parse_name(iname,cname(iname),cform(iname),'uxjm',idiag_uxjm)
         call parse_name(iname,cname(iname),cform(iname),'jdel2am',idiag_jdel2am)
+        call parse_name(iname,cname(iname),cform(iname),'jem',idiag_jem)
+        call parse_name(iname,cname(iname),cform(iname),'aem',idiag_aem)
         call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
         call parse_name(iname,cname(iname),cform(iname),'WL2D',idiag_WL2D)
         call parse_name(iname,cname(iname),cform(iname),'WL3D',idiag_WL3D)
