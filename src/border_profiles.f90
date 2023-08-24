@@ -240,6 +240,7 @@ module BorderProfiles
 !
       character (len=labellen) :: border_var
       logical :: lread=.true.
+      real :: t_old
 !
       lborder_driving=.true.
 !
@@ -249,7 +250,19 @@ module BorderProfiles
 !
 !  Read the data into an initial condition array f_init that will be saved
 !
+        t_old = t
         call input_snap ('VAR0', f_init(:,:,:,1:mvar), mvar, mode=0)
+        if (t_old /= t) then
+           if (lroot) then
+              print*,"You have requested to read VAR0 to set the border profile."
+              print*,"This action has modified the time stamp of the simulation."
+              print*,"This is probably not what you want. Likely you are starting,"
+              print*,"from a previous snapshot with less physics, and set ireset_start=0 in start.in."
+              print*,"You probably want to reset it to the default value in run.in."
+              print*,"Do it by setting ireset_start=2 in run_pars."
+           endif
+           call fatal_error("request_border_driving","")
+        endif
         call input_snap_finalize
         lread=.false.
 !
