@@ -775,6 +775,9 @@ module Hydro
   integer :: idiag_ux2mxy=0     ! ZAVG_DOC: $\left< u_x^2 \right>_{z}$
   integer :: idiag_uy2mxy=0     ! ZAVG_DOC: $\left< u_y^2 \right>_{z}$
   integer :: idiag_uz2mxy=0     ! ZAVG_DOC: $\left< u_z^2 \right>_{z}$
+  integer :: idiag_ox2mxy=0     ! ZAVG_DOC: $\left< \omega_x^2 \right>_{z}$
+  integer :: idiag_oy2mxy=0     ! ZAVG_DOC: $\left< \omega_y^2 \right>_{z}$
+  integer :: idiag_oz2mxy=0     ! ZAVG_DOC: $\left< \omega_z^2 \right>_{z}$
   integer :: idiag_rux2mxy=0    ! ZAVG_DOC: $\left< \rho u_x^2 \right>_{z}$
   integer :: idiag_ruy2mxy=0    ! ZAVG_DOC: $\left< \rho u_y^2 \right>_{z}$
   integer :: idiag_ruz2mxy=0    ! ZAVG_DOC: $\left< \rho u_z^2 \right>_{z}$
@@ -2774,7 +2777,7 @@ module Hydro
       if (idiag_oxmxy/=0 .or. idiag_oymxy/=0 .or. idiag_ozmxy/=0 .or. &
           idiag_oxmz/=0 .or. idiag_oymz/=0 .or. idiag_ozmz/=0 .or. &
           idiag_ox2mz/=0 .or. idiag_oy2mz/=0 .or. idiag_oz2mz/=0 .or. &
-          idiag_pvzmxy/=0) &
+          idiag_pvzmxy/=0 .or. idiag_ox2mxy/=0 .or. idiag_oy2mxy/=0 .or. idiag_oz2mxy/=0) &
           lpenc_diagnos2d(i_oo)=.true.
       if (idiag_pvzmxy/=0) lpenc_diagnos2d(i_rho)=.true.
       if (idiag_totangmom/=0 ) lpenc_diagnos(i_rcyl_mn)=.true.
@@ -4767,8 +4770,11 @@ B_ext2=0.
         call zsum_mn_name_xy(p%uu,idiag_ruymxy,(/0,1,0/),p%rho)
         call zsum_mn_name_xy(p%uu,idiag_ruzmxy,(/0,0,1/),p%rho)
         if (idiag_ux2mxy/=0) call zsum_mn_name_xy(p%uu(:,1)**2,idiag_ux2mxy)
-        call zsum_mn_name_xy(p%uu,idiag_uy2mxy,(/0,2,0/))
-        call zsum_mn_name_xy(p%uu,idiag_uz2mxy,(/0,0,2/))
+        if (idiag_uy2mxy/=0) call zsum_mn_name_xy(p%uu,idiag_uy2mxy,(/0,2,0/))
+        if (idiag_uz2mxy/=0) call zsum_mn_name_xy(p%uu,idiag_uz2mxy,(/0,0,2/))
+        if (idiag_ox2mxy/=0) call zsum_mn_name_xy(p%oo(:,1)**2,idiag_ox2mxy)
+        if (idiag_oy2mxy/=0) call zsum_mn_name_xy(p%oo,idiag_oy2mxy,(/0,2,0/))
+        if (idiag_oz2mxy/=0) call zsum_mn_name_xy(p%oo,idiag_oz2mxy,(/0,0,2/))
         if (idiag_rux2mxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1)**2,idiag_rux2mxy)
         call zsum_mn_name_xy(p%uu,idiag_ruy2mxy,(/0,2,0/),p%rho)
         call zsum_mn_name_xy(p%uu,idiag_ruz2mxy,(/0,0,2/),p%rho)
@@ -6159,6 +6165,9 @@ B_ext2=0.
         idiag_ux2mxy=0
         idiag_uy2mxy=0
         idiag_uz2mxy=0
+        idiag_ox2mxy=0
+        idiag_oy2mxy=0
+        idiag_oz2mxy=0
         idiag_rux2mxy=0
         idiag_ruy2mxy=0
         idiag_ruz2mxy=0
@@ -6747,6 +6756,9 @@ B_ext2=0.
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ux2mxy',idiag_ux2mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uy2mxy',idiag_uy2mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uz2mxy',idiag_uz2mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ox2mxy',idiag_ox2mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oy2mxy',idiag_oy2mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oz2mxy',idiag_oz2mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'rux2mxy',idiag_rux2mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruy2mxy',idiag_ruy2mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruz2mxy',idiag_ruz2mxy)
