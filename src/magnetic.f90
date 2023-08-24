@@ -1485,7 +1485,7 @@ module Magnetic
           elseif (eta1_aniso==impossible.and.eta1_aniso_ratio/=impossible) then
             eta1_aniso=eta1_aniso_ratio*eta
           endif
-        case ('etaSS')
+        case ('etaSS')   !MR: should add to other resistivities, not include a constant eta, see below
           if (lroot) print*, 'resistivity: etaSS (Shakura-Sunyaev)'
           lresi_etaSS=.true.
         case ('hyper2')
@@ -4397,7 +4397,7 @@ module Magnetic
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
       real, dimension (nx) :: sign_jo,rho1_jxb,tmp1
-      real, dimension (nx) :: eta_mn,etaSS
+      real, dimension (nx) :: eta_mn,etaSS,etaheat
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
       real, dimension(nx) :: eta_BB, prof
@@ -4520,7 +4520,7 @@ module Magnetic
 !
       fres=0.
       etatotal=0.
-      diffus_eta=0.; diffus_eta2=0.; diffus_eta3=0.
+      diffus_eta2=0.; diffus_eta3=0.
 !
 !  Uniform resistivity
 !
@@ -4539,7 +4539,6 @@ module Magnetic
              del2aa_ini = ampl_efield*(-2 + 8*tanhx2 - 6*tanhx2*tanhx2 )
              fres(:,3) = fres(:,3) - eta*mu0*del2aa_ini
           endif
-          if (lfirst .and. ldt) diffus_eta = diffus_eta + eta
         endif
         etatotal = etatotal + eta
       endif
@@ -4563,7 +4562,6 @@ module Magnetic
             fres = fres + eta_tdep * p%del2a
           endif
         endif
-        if (lfirst .and. ldt) diffus_eta = diffus_eta + eta_tdep
         etatotal = etatotal + eta_tdep
       endif
 !
@@ -4571,19 +4569,20 @@ module Magnetic
 !
       if (lresi_zdep) then
         if (.not. limplicit_resistivity) then
+
           if (lweyl_gauge) then
             fres = fres - eta_z(n) * mu0 * p%jj
           else
             forall(j = 1:3) fres(:,j) = fres(:,j) + eta_z(n) * p%del2a(:,j)
             fres(:,3) = fres(:,3) + geta_z(n) * p%diva
           endif
-          if (lfirst .and. ldt) diffus_eta = diffus_eta + eta_z(n)
+          etatotal = etatotal + eta_z(n)
+
         else    !MR: What about Weyl gauge here?
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
           fres(:,3) = fres(:,3) + geta_z(n) * p%diva
           if (lfirst .and. ldt) maxadvec = maxadvec + abs(geta_z(n)) * dz_1(n)
         endif
-        etatotal = etatotal + eta_z(n)
       endif
 !
       if (lresi_sqrtrhoeta_const) then
@@ -4596,7 +4595,6 @@ module Magnetic
             fres(:,j)=fres(:,j)+eta*sqrt(p%rho1) * (p%del2a(:,j)-0.5*p%diva*p%glnrho(:,j))
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta*sqrt(p%rho1)
         etatotal=etatotal+eta*sqrt(p%rho1)
       endif
 !
@@ -4614,7 +4612,7 @@ module Magnetic
         if (lquench_eta_aniso) prof=prof/(1.+quench_aniso*Arms)
         fres(:,1)=fres(:,1)-prof*cosalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
         fres(:,2)=fres(:,2)-prof*sinalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+abs(eta1_aniso)
+        etatotal=etatotal+abs(eta1_aniso)    !etatotal: added
       endif
 !
 !  Shakura-Sunyaev type resistivity (mainly just as a demo to show
@@ -4627,18 +4625,16 @@ module Magnetic
       if (lresi_etaSS) then
         etaSS=alphaSSm*p%cs2/OmegaSS
         do j=1,3
-          fres(:,j)=fres(:,j)+eta*p%del2a(:,j)-etaSS*p%jj(:,j)
+          fres(:,j)=fres(:,j)-etaSS*p%jj(:,j)
         enddo
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+etaSS+eta
-        etatotal=etatotal+etaSS+eta
+        etatotal=etatotal+etaSS
       endif
 !
       if (lresi_xydep) then
         do j=1,3
           fres(:,j)=fres(:,j)+eta_xy(l1:l2,m)*p%del2a(:,j)+geta_xy(l1:l2,m,j)*p%diva
         enddo
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_xy_max
-        etatotal=etatotal+eta_xy(l1,m)
+        etatotal=etatotal+eta_xy(l1:l2,m)
       endif
 !
       if (lresi_xdep) then
@@ -4652,7 +4648,6 @@ module Magnetic
           enddo
           fres(:,1)=fres(:,1)+geta_x(l1:l2)*p%diva
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_x(l1:l2)
         etatotal=etatotal+eta_x(l1:l2)
       endif
 !
@@ -4661,7 +4656,6 @@ module Magnetic
         do j=1,3
           fres(:,j)=fres(:,j)+eta_r*p%del2a(:,j)+geta_r(:,j)*p%diva
         enddo
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_r
         etatotal=etatotal+eta_r
       endif
 !
@@ -4674,7 +4668,6 @@ module Magnetic
         else
           fres(:,2)=fres(:,2)+geta_y(m)*p%diva
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_y(m)
         etatotal=etatotal+eta_y(m)
       endif
 !
@@ -4782,7 +4775,6 @@ module Magnetic
         do j=1,3
           fres(:,j)=fres(:,j)+eta_mn*p%del2a(:,j)+geta(:,j)*p%diva
         enddo
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_mn
         etatotal=etatotal+eta_mn
       endif
 !
@@ -4796,7 +4788,6 @@ module Magnetic
             fres(:,i)=fres(:,i)+eta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_shock*p%shock
         etatotal=etatotal+eta_shock*p%shock
       endif
 !
@@ -4810,7 +4801,6 @@ module Magnetic
             fres(:,i)=fres(:,i)+eta_shock2*(p%shock**2*p%del2a(:,i)+2*p%shock*p%diva*p%gshock(:,i))
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_shock2*p%shock**2
         etatotal=etatotal+eta_shock2*p%shock**2
       endif
 !
@@ -4834,7 +4824,6 @@ module Magnetic
                 peta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))+p%diva*p%shock*gradeta_shock(:,i)
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+peta_shock*p%shock
         etatotal=etatotal+peta_shock*p%shock
       endif
 !
@@ -4862,7 +4851,6 @@ module Magnetic
                                   p%diva*p%shock*gradeta_shock(:,i)
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+peta_shock*p%shock
         etatotal=etatotal+peta_shock*p%shock
       endif
 !
@@ -4876,7 +4864,6 @@ module Magnetic
             fres(:,i)=fres(:,i)+ eta_shock*(p%shock_perp*p%del2a(:,i)+p%diva*p%gshock_perp(:,i))
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_shock*p%shock_perp
         etatotal=etatotal+eta_shock*p%shock_perp
       endif
 !
@@ -4884,14 +4871,12 @@ module Magnetic
         if (lweyl_gauge) then
           forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
         endif
-        if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etava
         etatotal = etatotal + p%etava
       endif
 !
 !  Generalised Alfven speed dependent resistivity
 !
       if (lresi_vAspeed) then
-        etatotal = etatotal + p%etava
         if (lweyl_gauge) then
           forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
         else
@@ -4899,24 +4884,21 @@ module Magnetic
             fres(:,i) = fres(:,i) + mu0 * p%etava * p%del2a(:,i) + eta_va/vArms * p%diva * p%gva(:,i)
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etava
+        etatotal = etatotal + p%etava
       endif
 !
       if (lresi_etaj) then
         forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj * p%jj(:,i)
-        if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etaj
         etatotal = etatotal + p%etaj
       endif
 !
       if (lresi_etaj2) then
         forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj2 * p%jj(:,i)
-        if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etaj2
         etatotal = etatotal + p%etaj2
       endif
 !
       if (lresi_etajrho) then
         forall (i = 1:3) fres(:,i) = fres(:,i) - p%etajrho * p%jj(:,i)
-        if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etajrho
         etatotal = etatotal + p%etajrho
       endif
 !
@@ -4947,9 +4929,6 @@ module Magnetic
           enddo
 !
         endif
-!
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
-        etatotal=etatotal+eta_smag+eta
       endif
 !
       if (lresi_smagorinsky_nusmag) then
@@ -4960,9 +4939,6 @@ module Magnetic
          do j=1,3
            fres(:,j)=fres(:,j)+Pm_smag1*geta(:,j)*p%diva
          enddo
-!
-         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
-         etatotal=etatotal+eta_smag+eta
       endif
 !
       if (lresi_smagorinsky_cross) then
@@ -4972,9 +4948,9 @@ module Magnetic
         enddo
         eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
         call multsv(eta_smag+eta,p%del2a,fres)
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
-        etatotal=etatotal+eta_smag+eta
       endif
+      if (any((/lresi_smagorinsky,lresi_smagorinsky_nusmag,lresi_smagorinsky_cross/))) etatotal=etatotal+eta_smag+eta
+      !etatotal: danger of adding eta twice, as all resistivity contributions may accumulate
 !
 !  Anomalous resistivity. Sets in when the ion-electron drift speed is
 !  larger than some critical value.
@@ -4996,17 +4972,6 @@ module Magnetic
         else
           call fatal_error('daa_dt','must have Weyl gauge for anomalous resistivity')
         endif
-        if (lfirst.and.ldt) then
-          if (eta_anom_thresh/=0) then
-            where (eta_anom*vdrift > eta_anom_thresh*vcrit_anom)
-              diffus_eta=diffus_eta+eta_anom_thresh
-            elsewhere
-              diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
-            endwhere
-          else
-            where (vdrift>vcrit_anom) diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
-          endif
-        endif
         if (eta_anom_thresh/=0) then
           where (eta_anom*vdrift > eta_anom_thresh*vcrit_anom)
             etatotal=etatotal+eta_anom_thresh
@@ -5021,7 +4986,6 @@ module Magnetic
 ! Temperature dependent resistivity for the solar corona (Spitzer 1969)
 !
       if (lresi_spitzer) then
-        etatotal = etatotal + eta_spitzer*exp(-1.5*p%lnTT)
         if (lweyl_gauge) then
           do i=1,3
             fres(:,i)=fres(:,i)-eta_spitzer*exp(-1.5*p%lnTT)*mu0*p%jj(:,i)
@@ -5031,14 +4995,13 @@ module Magnetic
             fres(:,i)=fres(:,i)+eta_spitzer*exp(-1.5*p%lnTT)*(p%del2a(:,i)-1.5*p%diva*p%glnTT(:,i))
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_spitzer*exp(-1.5*p%lnTT)
+        etatotal = etatotal + eta_spitzer*exp(-1.5*p%lnTT)
       endif
 !
 ! Resistivity proportional to sound speed for stability of SN Turbulent ISM
 ! fred: 23.9.17 replaced 0.5 with eta_cspeed so exponent can be generalised
 !
       if (lresi_cspeed) then
-        etatotal = etatotal + eta*exp(eta_cspeed*p%lnTT)
         if (lweyl_gauge) then
           do i=1,3
             fres(:,i)=fres(:,i)-eta*exp(eta_cspeed*p%lnTT)*mu0*p%jj(:,i)
@@ -5048,13 +5011,12 @@ module Magnetic
             fres(:,i)=fres(:,i)+eta*exp(eta_cspeed*p%lnTT)*(p%del2a(:,i)+0.5*p%diva*p%glnTT(:,i))
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta*exp(eta_cspeed*p%lnTT)
+        etatotal = etatotal + eta*exp(eta_cspeed*p%lnTT)
       endif
 !
 ! Resistivity proportional to vertical velocity
 !
       if (lresi_eta_proptouz) then
-        etatotal = etatotal + eta*ampl_eta_uz*p%uu(:,3)
         if (lweyl_gauge) then
           do i=1,3
             fres(:,i)=fres(:,i)-eta*ampl_eta_uz*p%uu(:,3)*mu0*p%jj(:,i)
@@ -5064,7 +5026,7 @@ module Magnetic
             fres(:,i)=fres(:,i)+eta*ampl_eta_uz*(p%uu(:,3)*p%del2a(:,i)+p%uij(:,3,i)*p%diva)
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta*ampl_eta_uz*p%uu(:,3)
+        etatotal = etatotal + eta*ampl_eta_uz*p%uu(:,3)
       endif
 !
 ! Magnetic field dependent resistivity
@@ -5076,7 +5038,7 @@ module Magnetic
             fres(:,i)=fres(:,i)-mu0*eta_BB*p%jj(:,i)
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_BB
+        etatotal = etatotal + eta_BB   !etatotal: added
       endif
 !
 !  anisotropic B-dependent diffusivity
@@ -5092,7 +5054,7 @@ module Magnetic
           ju=j-1+iaa
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-tmp1*p%jb*p%bb(:,j)
         enddo
-      endif
+      endif !etatotal: Why not added here?
 !
 !  Ambipolar diffusion in the strong coupling approximation.
 !
@@ -5110,12 +5072,12 @@ module Magnetic
         elseif (ltemperature .and. lneutralion_heat) then
             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+p%nu_ni1*p%va2
+        etatotal = etatotal + p%nu_ni1*p%va2   !etatotal: added
       endif
 !
 !  Consider here the action of a mean friction term, -LLambda*Abar.
 !  Works only on one processor. Note that there is also the analogous case
-!  to to Ekman friction; see below.
+!  to Ekman friction; see below.
 !
       if (lmean_friction) then
         do j=1,3
@@ -5205,31 +5167,30 @@ module Magnetic
       if (lspecial) call special_calc_magnetic(f,df,p)
 !
 ! possibility to reduce ohmic heating near the boundary
-! currently implemented only for a profile in z above
-! a value no_ohmic_heat_z0
-! with the width no_ohmic_heat_zwidth
-! for reduction, width has to tbe negative.
+! currently implemented only for a profile in z above a value no_ohmic_heat_z0
+! with the width no_ohmic_heat_zwidth for reduction, width has to tbe negative.
+! Note that etaheat must not enter etatotal.
 !
       if (lno_ohmic_heat_bound_z.and.lohmic_heat) &
-         etatotal=etatotal*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
+         etaheat=etatotal*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
 !
 !  Add Ohmic heat to entropy or temperature equation.
 !
       if (.not.lkinematic.and.lohmic_heat) then
         if (lentropy) then
           if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*etaheat*mu0*p%j2*p%rho1*p%TT1
           else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + etatotal*mu0*p%j2*p%rho1*p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + etaheat*mu0*p%j2*p%rho1*p%TT1
           endif
         else if (ltemperature) then
           if (ltemperature_nolog) then
-            df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*etatotal*mu0*p%j2*p%rho1
+            df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*etaheat*mu0*p%j2*p%rho1
           else
-            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*etaheat*mu0*p%j2*p%rho1*p%TT1
           endif
         else if (lthermal_energy) then
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + etatotal*mu0*p%j2
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + etaheat*mu0*p%j2
         endif
       endif
 !
@@ -5427,8 +5388,8 @@ module Magnetic
 !  Add ambipolar diffusion in strong coupling approximation
 !
       if (lambipolar_strong_coupling.and.tauAD/=0.0) then
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+tauAD*mu01*p%b2
         dAdt=dAdt+tauAD*p%jxbxb
+        etatotal = etatotal + tauAD*mu01*p%b2  !etatotal: added
       endif
 !
 !  Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
@@ -5460,6 +5421,7 @@ module Magnetic
           eta_out1=(eta_out-eta)*.5*(1.+erfunc((z(n)-height_eta)/eta_zwidth))
         endif
         dAdt = dAdt-(eta_out1*mu0)*p%jj
+        !etatotal: Why not added here?
       endif
 !
 !  Ekman Friction, used only in two dimensional runs.
@@ -5566,7 +5528,7 @@ module Magnetic
 !
       if (lfirst.and.ldt.and.lrhs_max) then
         if (lhydro) then
-          where (abs(p%uu)>1)
+          where (abs(p%uu)>1)   !MR: What is the significance of unity in this criterion?
             uu1=1./p%uu
           elsewhere
             uu1=1.
@@ -5633,6 +5595,16 @@ module Magnetic
 !
       if (lfirst.and.ldt) then
 !
+        diffus_eta =etatotal *dxyz_2
+        if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
+        !etatotal: better above add to etatotal?
+        diffus_eta2=diffus_eta2*dxyz_4
+!
+        if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
+          diffus_eta3 = diffus_eta3 * sum(dline_1,2)
+        else
+          diffus_eta3 = diffus_eta3*dxyz_6
+        endif
         if (lpole(2) .and. lcoarse) then
 
           if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
@@ -5643,25 +5615,10 @@ module Magnetic
             nphi = 1
           endif
           !if (lroot .and. n==n1) print*,'fred: nphi, m',nphi, m
-          diffus_eta =diffus_eta *dxyz_2/nphi**2
-          diffus_eta2=diffus_eta2*dxyz_4/nphi**4
+          diffus_eta =diffus_eta /nphi**2
+          diffus_eta2=diffus_eta2/nphi**4
 !
-          if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
-            diffus_eta3 = diffus_eta3 * sum(dline_1,2)
-          else
-            diffus_eta3 = diffus_eta3*dxyz_6/nphi**6
-          endif
-          if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2/nphi**2
-        else
-          diffus_eta =diffus_eta *dxyz_2
-          diffus_eta2=diffus_eta2*dxyz_4
-!
-          if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
-            diffus_eta3 = diffus_eta3 * sum(dline_1,2)
-          else
-            diffus_eta3 = diffus_eta3*dxyz_6
-          endif
-          if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
+          if (.not.(ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3 = diffus_eta3/nphi**6
         endif
 !
         if (headtt.or.ldebug) then
@@ -5768,8 +5725,7 @@ module Magnetic
         if (.not.lgpu.and.ivid_poynting/=0) then
           call cross(p%uxb,p%bb,uxbxb)
           do j=1,3
-            poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)  !!! etatotal invalid outside daa_dt!
-!AB: but etatotal is (now?) defined globally in this module, so it should work.
+            poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)
           enddo
           call store_slices(poynting,poynting_xy,poynting_xz,poynting_yz, &
                             poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2,poynting_r)
@@ -5814,9 +5770,9 @@ module Magnetic
 !  These diagnostics rely upon mn-dependent quantities which are not in the pencil case.
 !
         if (lrhs_max) then
-          if (idiag_dtHr/=0) call max_mn_name(ssmax,idiag_dtHr,l_dt=.true.)
-          if (idiag_dtFr/=0) call max_mn_name(Fmax,idiag_dtFr,l_dt=.true.)
-          if (idiag_dtBr/=0) call max_mn_name(dAmax,idiag_dtBr,l_dt=.true.)
+          call max_mn_name(ssmax,idiag_dtHr,l_dt=.true.)
+          call max_mn_name(Fmax,idiag_dtFr,l_dt=.true.)
+          call max_mn_name(dAmax,idiag_dtBr,l_dt=.true.)
         endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
@@ -9991,6 +9947,9 @@ module Magnetic
       if (idiag_ubtm/=0) then
         if (ibbt==0) call fatal_error('rprint_magnetic',"Cannot calculate ubtm if ibbt==0")
       endif
+!
+      if (.not.lentropy) idiag_dtHr=0
+      if (.not.lhydro) idiag_dtFr=0
 !
 !  Quantities which are averaged over half (north-south) the box.
 !
