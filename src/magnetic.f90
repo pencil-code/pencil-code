@@ -4519,8 +4519,7 @@ module Magnetic
       if (headtt) print*, 'daa_dt: iresistivity=', iresistivity
 !
       fres=0.
-      etatotal=0.
-      diffus_eta2=0.; diffus_eta3=0.
+      etatotal=0.; diffus_eta2=0.; diffus_eta3=0.
 !
 !  Uniform resistivity
 !
@@ -5171,8 +5170,11 @@ module Magnetic
 ! with the width no_ohmic_heat_zwidth for reduction, width has to tbe negative.
 ! Note that etaheat must not enter etatotal.
 !
-      if (lno_ohmic_heat_bound_z.and.lohmic_heat) &
-         etaheat=etatotal*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
+      if (lno_ohmic_heat_bound_z.and.lohmic_heat) then
+        etaheat=etatotal*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
+      else
+        etaheat=etatotal
+      endif
 !
 !  Add Ohmic heat to entropy or temperature equation.
 !
@@ -6080,8 +6082,10 @@ module Magnetic
       call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
       if (.not.lgpu) then
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
-        if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
-        if (idiag_dteta3/=0)  call max_mn_name(diffus_eta3/cdtv3,idiag_dteta3,l_dt=.true.)
+        if (ldt) then
+          if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
+          if (idiag_dteta3/=0)  call max_mn_name(diffus_eta3/cdtv3,idiag_dteta3,l_dt=.true.)
+        endif
       endif
       call sum_mn_name(p%cosjb,idiag_cosjbm)
       call sum_mn_name(p%coshjb,idiag_coshjbm)
