@@ -454,7 +454,6 @@ An up to date list of Pencil Code contributors can be found at
 \htmladdnormallink{GitHub}
 {https://github.com/pencil-code/pencil-code/graphs/contributors}.
 
-%XXX
 {\footnotesize{
 \begin{tabular}{lll}
   xiang-yu & \htmladdnormallink{Xiang-Yu Li}{https://www.pnnl.gov/science/staff/staff_info.asp?staff_num=10102} & Pacific Northwest National Laboratory \\
@@ -5772,6 +5771,31 @@ electric current, while \var{p\%jj_ohm} is the Ohmic current, obtained
 by solving $\Jv=\sigma(\Ev+\uv\times\Bv)$, and $\sigma$ is the conductivity
 (which can be time-dependent).
 The vacuum permeability is \var{mu0}.
+
+The electric field obtained in this way,
+which we now call the pseudo-electric field, $\tilde{\Ev}$,
+does in general not obey the equation for the charge density, $\rho_{\rm e}$,
+\begin{equation}
+\Div\Ev=\rho_{\rm e}/\epsilon_0.
+\label{ChargeDensity}
+\end{equation}
+The actual electric field $\Ev$ can be obtained from $\tilde{\Ev}$ as
+\begin{equation}
+\Ev=\tilde{\Ev}-\grad\phi,
+\label{ActualEDef}
+\end{equation}
+where $\phi$ is obtained by solving a Poisson-like equation,
+\begin{equation}
+\nabla^2\phi=\Div\tilde{\Ev}-\rho_{\rm e}/\epsilon_0,
+\label{PoissonLikeForE}
+\end{equation}
+where $\rho_{\rm e}$ is obtained through time-integration of
+the charge continuity equation,
+\begin{equation}
+\frac{\partial\rho_{\rm e}}{\partial t}=-\Div\Jv,
+\label{dEdt}
+\end{equation}
+which, in turn, follows from Eq.~(\ref{dEdt}) by taking its divergence.
 
 \subsection{Particles}
 \label{S-particles-equations}
