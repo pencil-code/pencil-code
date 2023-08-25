@@ -165,7 +165,7 @@ module Cdata
   real, dimension (nx) :: advec_cs2=0.
   real, dimension (nx) :: maxadvec=0., advec2=0., advec2_hypermesh=0.
   real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
-  real, dimension (nx) :: dt1_max
+  real, target, dimension (nx) :: dt1_max
   real, dimension (nx) :: reac_chem, reac_dust
   real                 :: trelax_poly, reac_pchem
   real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
@@ -475,12 +475,12 @@ module Cdata
   integer, parameter :: mname=100
   real, dimension (mname) :: fweight=0.0
   integer, dimension(:)   , allocatable :: itype_name
-  real, dimension(:)      , allocatable :: fname,fname_keep
-  real, dimension(:,:)    , allocatable :: fnamer,fname_sound
-  real, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez, fnamexy, fnamexz
-  real, dimension(:,:,:,:), allocatable :: fnamerz
+  real, target, dimension(:)      , allocatable :: fname,fname_keep
+  real, target, dimension(:,:)    , allocatable :: fnamer,fname_sound
+  real, target, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez, fnamexy, fnamexz
+  real, target, dimension(:,:,:,:), allocatable :: fnamerz
   integer, dimension(:,:) , allocatable :: sound_coords_list
-  integer, dimension(:,:) , allocatable :: ncountsz
+  integer, target, dimension(:,:) , allocatable :: ncountsz
   character (len=fmtlen), allocatable :: cform(:),cformv(:),cform_sound(:), &
                                          cformxy(:),cformxz(:),cformrz(:), &
                                          cformz(:),cformy(:),cformx(:),cformr(:)
@@ -787,5 +787,9 @@ module Cdata
 !
   real :: lambda5 = 0.0
 !
+!$  integer :: num_cores = 0
+!$  integer :: num_threads = 0
+!$  logical :: lthread_safe 
+!$  include 'cdata_omp.inc'
 !***********************************************************************
 endmodule Cdata

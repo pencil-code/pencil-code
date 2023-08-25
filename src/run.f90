@@ -97,6 +97,7 @@ program run
   use Timeavg
   use Timestep,        only: time_step, initialize_timestep
 !$ use Omp_lib
+!$ include 'modules.inc'
 !
   implicit none
 !
@@ -533,8 +534,9 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
 !
 !  Do loop in time.
 !
+!  Copies values of all threadprivate variables to all threads from the master thread and starts a parallel region
+!
 !$ include "copyin.inc"
-!$omp parallel
 !$omp master
   Time_loop: do while (it<=nt)
 !

@@ -16,6 +16,15 @@ module Equ
   public :: impose_floors_ceilings
 !
   private
+  real, pointer, dimension (:) :: p_fname,p_fname_keep
+  real, pointer, dimension (:,:) :: p_fnamer,p_fname_sound
+  integer, pointer, dimension (:,:) :: p_ncountsz
+  real, pointer, dimension (:,:,:) :: p_fnamex,p_fnamey,p_fnamez,p_fnamexy,p_fnamexz
+  real, pointer, dimension(:,:,:,:) :: p_fnamerz
+  real, pointer, dimension(:) :: p_dt1_max
+  integer :: num_of_diagnostic_iterations_done=nyz
+  logical :: started_finalizing_diagnostics = .false., lfinalized_diagnostics = .true.
+  logical :: ldiagnos_save, l1davgfirst_save, l1dphiavg_save, l2davgfirst_save
 !
   contains
 !***********************************************************************
@@ -33,6 +42,7 @@ module Equ
 !  24-sep-16/MR: added offset manipulation for second derivatives in complete one-sided fornulation.
 !   5-jan-17/MR: removed mn-offset manipulation
 !  14-feb-17/MR: adaptations for use of GPU kernels in calculating the rhss of the pde
+!  25-aug-23/TP: adaptations for concurrent multithreading alongside GPU computation
 !
       use Chiral
       use Chemistry
@@ -330,6 +340,24 @@ module Equ
       if (lgpu) then
         call rhs_gpu(f,itsub,early_finalize)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+!
+!  Hotloop to wait for diagnostic calc to be done
+!
+!$        do while(num_of_diagnostic_iterations_done < nyz)
+!$        enddo
+
+!$        if (.not. lfinalized_diagnostics) then
+!$          if (.not. started_finalizing_diagnostics) then
+!$            call finalize_diagnostics()
+!$          else
+!
+!  Hotloop to wait for diagnostic finalization to be done
+!
+!$            do while(.not. lfinalized_diagnostics)
+!$            enddo
+
+!$          endif
+!$        endif
           call copy_farray_from_GPU(f)
           call calc_all_module_diagnostics(f,p)
         endif
@@ -420,6 +448,212 @@ module Equ
 !
       if (lnscbc) call nscbc_boundtreat(f,df)
 !
+!$    if (num_of_diagnostic_iterations_done == nyz .and. .not. lfinalized_diagnostics) then
+!$      if (lthread_safe) then
+!$omp task
+!$        call finalize_diagnostics
+!$omp end task
+!$      else
+          call finalize_diagnostics
+!$      endif
+!$    endif
+
+!  Reset lwrite_prof.
+!
+      lwrite_prof=.false.
+!
+    endsubroutine pde
+!****************************************************************************
+    subroutine calc_all_module_diagnostics(f,p)
+!
+!  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
+!
+!  10-sep-2019/MR: coded
+!
+!$    use Omp_lib
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      type (pencil_case)                ,intent(INOUT) :: p
+
+!$    if (omp_in_parallel()) then
+!$      call calc_all_module_diagnostics_multithreaded(f,p)
+!$    else
+        call calc_all_module_diagnostics_slice(1,nyz,f,p)
+!$    endif
+
+    endsubroutine calc_all_module_diagnostics
+!*****************************************************************************
+    subroutine calc_all_module_diagnostics_multithreaded(f,p)
+!
+!   Multithreaded version of diagnostics, using tasking
+!
+!   25-aug-2023/TP: coded  
+!
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      type (pencil_case)                ,intent(INOUT) :: p
+      integer :: i
+      integer :: num_of_threads_used
+
+!  Setup tracking params for multithreading 
+! 
+      lfinalized_diagnostics = .false.
+      started_finalizing_diagnostics = .false.
+      num_of_diagnostic_iterations_done = 0
+
+! Save the used options
+!
+      ldiagnos_save = ldiagnos
+      l1davgfirst_save = l1davgfirst
+      l2davgfirst_save = l2davgfirst
+      l1dphiavg_save = l1dphiavg
+
+!  Set reduced_variables to zero before diag since master thread won't take part in reduction
+!
+      call init_diagnostic_accumulators
+!$    num_of_threads_used = num_threads-2
+      do i=1,num_of_threads_used
+        if (i<num_of_threads_used) then
+          !$omp task
+          call calc_all_module_diagnostics_slice((i-1)*(nyz/num_of_threads_used)+1,i*(nyz/num_of_threads_used),f,p)
+          !$omp end task
+        else
+          !$omp task
+          call calc_all_module_diagnostics_slice((i-1)*(nyz/num_of_threads_used)+1,nyz,f,p)
+          !$omp end task
+        endif
+      enddo
+
+    endsubroutine calc_all_module_diagnostics_multithreaded
+!*****************************************************************************
+    subroutine calc_all_module_diagnostics_slice(start, end,f,p)
+!
+!   Calculates diagnostics from indexes (start,end) of mn-loop
+!
+!   25-aug-23/TP: refactored from calc_all_module_diagnostics
+!
+      use Density, only: calc_diagnostics_density
+      use Dustvelocity, only: calc_diagnostics_dustvelocity
+      use Energy, only: calc_diagnostics_energy
+      use Forcing, only: calc_diagnostics_forcing
+      use Hydro, only: calc_diagnostics_hydro
+      use Magnetic, only: calc_diagnostics_magnetic
+      use NeutralDensity, only: calc_diagnostics_neutraldens
+      use NeutralVelocity, only: calc_diagnostics_neutralvel
+      use Pscalar, only: calc_diagnostics_pscalar
+      use Shock, only: calc_diagnostics_shock
+      use Viscosity, only: calc_diagnostics_viscosity
+      use Diagnostics, only: prep_finalize_thread_diagnos
+
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      type (pencil_case)                ,intent(INOUT) :: p
+      integer :: start, end, imn
+
+      lfirstpoint=.true.
+
+!  Restore options that were used when calc_all_module_diagnostics was called
+!
+!$        l1davgfirst = l1davgfirst_save
+!$        ldiagnos = ldiagnos_save
+!$        l1dphiavg = l1dphiavg_save
+!$        l2davgfirst = l2davgfirst_save
+
+      do imn=start,end
+ 
+        n=nn(imn)
+        m=mm(imn)
+!
+!  Skip points not belonging to coarse grid.
+!
+        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        if (lcoarse_mn) then
+          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+          !$omp atomic
+          num_of_diagnostic_iterations_done = num_of_diagnostic_iterations_done + 1
+          if (ninds(0,m,n)<=0) cycle
+        endif
+
+        call calc_all_pencils(f,p)
+        call calc_diagnostics_density(f,p)
+        call calc_diagnostics_dustvelocity(p)
+        call calc_diagnostics_energy(f,p)
+        call calc_diagnostics_hydro(f,p)
+        call calc_diagnostics_magnetic(f,p)
+        call calc_diagnostics_neutraldens(p)
+        call calc_diagnostics_neutralvel(p)
+        call calc_diagnostics_pscalar(p)
+        call calc_diagnostics_shock(p)
+        call calc_diagnostics_viscosity(p)
+        if (lforcing_cont) call calc_diagnostics_forcing(p)
+
+        lfirstpoint=.false.
+        !$omp atomic
+        num_of_diagnostic_iterations_done = num_of_diagnostic_iterations_done + 1
+      enddo
+
+!$    call prep_finalize_thread_diagnos
+!$    call diagnostics_reductions
+
+    endsubroutine calc_all_module_diagnostics_slice
+!*****************************************************************************
+    subroutine finalize_diagnostics()
+!
+!  Finalizes calc_all_module_diagnostics with MPI communication
+!
+!  25-aug-23/TP: refactored from pde
+!
+      use Chiral
+      use Chemistry
+      use Density
+      use Detonate, only: detonate_before_boundary
+      use Diagnostics
+      use Dustdensity
+      use Energy
+      use EquationOfState
+      use Forcing, only: forcing_after_boundary
+!                         
+! To check ghost cell consistency, please uncomment the following line:
+!     use Ghost_check, only: check_ghosts_consistency
+      use General, only: ioptest, loptest
+      use GhostFold, only: fold_df, fold_df_3points
+      use Gpu
+      use Gravity
+      use Hydro
+      use Interstellar, only: interstellar_before_boundary
+      use Magnetic
+      use Magnetic_meanfield, only: meanfield_after_boundary
+      use Hypervisc_strict, only: hyperviscosity_strict
+      use Hyperresi_strict, only: hyperresistivity_strict
+      use NeutralDensity, only: neutraldensity_after_boundary
+      use NSCBC
+      use Particles_main
+      use Poisson
+      use Pscalar
+      use PointMasses
+      use Polymer
+      use Radiation
+      use Selfgravity
+      use Shear
+      use Shock, only: shock_before_boundary, calc_shock_profile_simple
+      use Solid_Cells, only: update_solid_cells, dsolid_dt_integrate
+      use Special, only: special_before_boundary,special_after_boundary
+      use Sub
+      use Testfield
+      use Testflow
+      use Testscalar
+      use Viscosity, only: viscosity_after_boundary
+      use Grid, only: coarsegrid_interp
+
+!  Set that the master thread nows we have started the finalization
+!
+!$    started_finalizing_diagnostics = .true.
+
+
+!  Restore options that were used when calc_all_module_diagnostics was called
+!
+!$    l1davgfirst = l1davgfirst_save
+!$    ldiagnos = ldiagnos_save
+!$    l1dphiavg = l1dphiavg_save
+!$    l2davgfirst = l2davgfirst_save
+
 !  0-D Diagnostics.
 !
       if (ldiagnos) then
@@ -458,86 +692,10 @@ module Equ
         if (lhydro)    call calc_mflow
         if (lpscalar)  call calc_mpscalar
       endif
-!
-!  Calculate rhoccm and cc2m (this requires that these are set in print.in).
-!  Broadcast result to other processors. This is needed for calculating PDFs.
-!
-!      if (idiag_rhoccm/=0) then
-!        if (iproc==0) rhoccm=fname(idiag_rhoccm)
-!        call mpibcast_real(rhoccm)
-!      endif
-!
-!      if (idiag_cc2m/=0) then
-!        if (iproc==0) cc2m=fname(idiag_cc2m)
-!        call mpibcast_real(cc2m)
-!      endif
-!
-!      if (idiag_gcc2m/=0) then
-!        if (iproc==0) gcc2m=fname(idiag_gcc2m)
-!        call mpibcast_real(gcc2m)
-!      endif
-!
-!  Reset lwrite_prof.
-!
-      lwrite_prof=.false.
-!
-    endsubroutine pde
-!****************************************************************************
-    subroutine calc_all_module_diagnostics(f,p)
-!
-!  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
-!
-!  10-sep-2019/MR: coded
-!
-      use Density, only: calc_diagnostics_density
-      use Dustvelocity, only: calc_diagnostics_dustvelocity
-      use Energy, only: calc_diagnostics_energy
-      use Forcing, only: calc_diagnostics_forcing
-      use Hydro, only: calc_diagnostics_hydro
-      use Magnetic, only: calc_diagnostics_magnetic
-      use NeutralDensity, only: calc_diagnostics_neutraldens
-      use NeutralVelocity, only: calc_diagnostics_neutralvel
-      use Pscalar, only: calc_diagnostics_pscalar
-      use Shock, only: calc_diagnostics_shock
-      use Viscosity, only: calc_diagnostics_viscosity
 
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
-      type (pencil_case)                ,intent(INOUT) :: p
-
-      integer :: imn
-
-      lfirstpoint=.true.
-      do imn=1,nyz
-
-        n=nn(imn)
-        m=mm(imn)
-!
-!  Skip points not belonging to coarse grid.
-!
-        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-        if (lcoarse_mn) then
-          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-          if (ninds(0,m,n)<=0) cycle
-        endif
-
-        call calc_all_pencils(f,p)
-        call calc_diagnostics_density(f,p)
-        call calc_diagnostics_dustvelocity(p)
-        call calc_diagnostics_energy(f,p)
-        call calc_diagnostics_hydro(f,p)
-        call calc_diagnostics_magnetic(f,p)
-        call calc_diagnostics_neutraldens(p)
-        call calc_diagnostics_neutralvel(p)
-        call calc_diagnostics_pscalar(p)
-        call calc_diagnostics_shock(p)
-        call calc_diagnostics_viscosity(p)
-        if (lforcing_cont) call calc_diagnostics_forcing(p)
-
-        lfirstpoint=.false.
-
-      enddo
-
-    endsubroutine calc_all_module_diagnostics
+!$    lfinalized_diagnostics = .true.
+ 
+    endsubroutine finalize_diagnostics
 !****************************************************************************
     subroutine calc_all_pencils(f,p)
 
@@ -1102,7 +1260,7 @@ module Equ
 !
       headtt = headt .and. lfirst .and. lroot
 !
-!$omp do private(p,pfreeze,iv,imn,n,m)
+!omp do private(p,pfreeze,iv,imn,n,m)
 !
       do imn=1,nyz
 
@@ -1256,8 +1414,8 @@ module Equ
 !
       enddo
 !
-!$omp end do
-!$omp end parallel
+!omp end do
+!omp end parallel
 
     endsubroutine freeze
 !***********************************************************************
@@ -1371,5 +1529,103 @@ module Equ
       endif
 
     endsubroutine set_dt1_max
+!***********************************************************************
+    subroutine init_reduc_pointers()
+!
+!  Initializes pointers used in diagnostics_reductions
+!
+!  30-mar-23/TP: Coded
+!  
+      use Solid_Cells
+      use omp_lib
+
+      p_fname => fname
+      p_fname_keep => fname_keep
+      p_fnamer => fnamer
+      p_fname_sound => fname_sound
+      p_fnamex => fnamex
+      p_fnamey => fnamey
+      p_fnamez => fnamez
+      p_fnamexy => fnamexy
+      p_fnamexz => fnamexz
+      p_fnamerz => fnamerz
+      p_dt1_max => dt1_max
+      p_ncountsz => ncountsz
+
+      if (lsolid_cells) call solid_cells_init_reduc_pointers
+ 
+    endsubroutine init_reduc_pointers
+!***********************************************************************
+    subroutine init_diagnostic_accumulators 
+!    
+!  Need to initialize accumulators since master thread does not take part in diagnostics
+!
+!  25-aug-23/TP: Coded
+!
+    use Solid_Cells
+    use omp_lib
+
+    p_fname = 0.
+    p_fnamex = 0.
+    p_fnamey = 0.
+    p_fnamez = 0.
+    p_fnamer = 0.
+    p_fnamexy = 0.
+    p_fnamexz = 0.
+    p_fnamerz = 0.
+
+    if (allocated(fname_keep)) p_fname_keep = 0.
+    if (allocated(fname_sound)) p_fname_sound= 0.
+    if (allocated(ncountsz)) p_ncountsz= 0
+ 
+    p_dt1_max = -impossible
+
+    if (lsolid_cells) call solid_cells_set_reduction_variables_to_zero
+ 
+    endsubroutine init_diagnostic_accumulators
+!***********************************************************************
+    subroutine diagnostics_reductions
+!
+!  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
+!
+!  30-mar-23/TP: Coded
+!
+    use Solid_Cells
+    use omp_lib
+
+    integer :: imn
+     
+      if (ldiagnos .and. allocated(fname)) then
+        do imn=1,size(fname)
+          if (any(inds_max_diags == imn) .and. fname(imn) /= 0.) then
+            p_fname(imn) = max(p_fname(imn),fname(imn))
+          else if (any(inds_sum_diags == imn)) then
+            p_fname(imn) = p_fname(imn) + fname(imn)
+          endif
+        enddo
+      endif
+
+      if (l1davgfirst) then
+        if (allocated(fnamex)) p_fnamex = p_fnamex + fnamex
+        if (allocated(fnamey)) p_fnamey = p_fnamey + fnamey
+        if (allocated(fnamez)) p_fnamez = p_fnamez + fnamez
+        if (allocated(fnamer)) p_fnamer = p_fnamer + fnamer
+      endif
+
+      if (l2davgfirst) then
+        if (allocated(fnamexy)) p_fnamexy = p_fnamexy + fnamexy
+        if (allocated(fnamexz)) p_fnamexz = p_fnamexz + fnamexz
+        if (allocated(fnamerz)) p_fnamerz = p_fnamerz + fnamerz
+      endif
+
+      if (allocated(fname_keep)) p_fname_keep = p_fname_keep + fname_keep
+      if (allocated(fname_sound)) p_fname_sound = p_fname_sound + fname_sound
+      if (allocated(ncountsz)) p_ncountsz = p_ncountsz + ncountsz
+
+      p_dt1_max = max(p_dt1_max,dt1_max)
+
+      if (lsolid_cells) call solid_cells_diagnostic_reductions
+
+    endsubroutine diagnostics_reductions
 !***********************************************************************
 endmodule Equ

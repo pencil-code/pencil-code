@@ -192,7 +192,13 @@ module Mpicomm
 
       lmpicomm = .true.
 !
-      call MPI_INIT(mpierr)
+!$    if (.false.) then
+        call MPI_INIT(mpierr)
+!$    else
+!$      call MPI_INIT_THREAD(MPI_THREAD_SERIALIZED, mpi_thread_provided, mpierr)
+!$      lthread_safe = mpi_thread_provided >= MPI_THREAD_SERIALIZED
+!$      if (.not. lthread_safe) call warning("mpi_init", "MPI implementation not threadsafe")
+!$    endif
 !
 ! Size and rank w.r.t. MPI_COMM_WORLD
 !
