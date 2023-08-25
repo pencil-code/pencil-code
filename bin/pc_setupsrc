@@ -732,6 +732,9 @@ if [ -f "$src/Makefile.local" ]; then
     make_astaroth_dir
     if [ "$link_all" -eq 1 ]; then link_astaroth_files; fi
   fi
+  if [ "`grep -i '^[^#]*= *openmp' $src/Makefile.local`" != "" ]; then 
+    if [ "$link_all" -eq 1 ]; then ln -s $PENCIL_HOME/src/multithread src/multithread; fi
+  fi
 fi
 if [ "$link_all" -eq 1 ]; then create_Makefile_inc; fi
 #copy_local_files
