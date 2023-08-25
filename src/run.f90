@@ -96,6 +96,7 @@ program run
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
   use Timestep,        only: time_step, initialize_timestep
+!$ use Omp_lib
 !
   implicit none
 !
@@ -122,6 +123,12 @@ program run
 !  Initialize GPU use.
 !
   call gpu_init
+!
+!   Initialize OpenMP use
+!
+!$ num_cores = OMP_get_num_procs()
+!$ num_threads = num_cores
+!$ call OMP_set_num_threads(num_threads)
 !
 !  Identify version.
 !
@@ -526,6 +533,9 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
 !
 !  Do loop in time.
 !
+!$ include "copyin.inc"
+!$omp parallel
+!$omp master
   Time_loop: do while (it<=nt)
 !
     lout = (mod(it-1,it1) == 0) .and. (it > it1start)
@@ -893,6 +903,9 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
     it=it+1
     headt=.false.
   enddo Time_loop
+
+  !$omp end master
+  !$omp end parallel
 !
   if (lroot) then
     print*
