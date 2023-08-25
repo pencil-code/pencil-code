@@ -4538,8 +4538,8 @@ module Magnetic
              del2aa_ini = ampl_efield*(-2 + 8*tanhx2 - 6*tanhx2*tanhx2 )
              fres(:,3) = fres(:,3) - eta*mu0*del2aa_ini
           endif
+          etatotal = etatotal + eta
         endif
-        etatotal = etatotal + eta
       endif
 !
 !  Time-dependent resistivity
