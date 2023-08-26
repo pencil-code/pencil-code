@@ -22,7 +22,7 @@ module Equ
   real, pointer, dimension (:,:,:) :: p_fnamex,p_fnamey,p_fnamez,p_fnamexy,p_fnamexz
   real, pointer, dimension(:,:,:,:) :: p_fnamerz
   real, pointer, dimension(:) :: p_dt1_max
-  integer :: num_of_diagnostic_iterations_done=nyz
+  integer :: num_of_diag_iter_done=nyz
   logical :: started_finalizing_diagnostics = .false., lfinalized_diagnostics = .true.
   logical :: ldiagnos_save, l1davgfirst_save, l1dphiavg_save, l2davgfirst_save
 !
@@ -343,7 +343,7 @@ module Equ
 !
 !  Hotloop to wait for diagnostic calc to be done
 !
-!$        do while(num_of_diagnostic_iterations_done < nyz)
+!$        do while(num_of_diag_iter_done < nyz)
 !$        enddo
 
 !$        if (.not. lfinalized_diagnostics) then
@@ -448,7 +448,7 @@ module Equ
 !
       if (lnscbc) call nscbc_boundtreat(f,df)
 !
-!$    if (num_of_diagnostic_iterations_done == nyz .and. .not. lfinalized_diagnostics) then
+!$    if (num_of_diag_iter_done == nyz .and. .not. lfinalized_diagnostics) then
 !$      if (lthread_safe) then
 !$omp task
 !$        call finalize_diagnostics
@@ -497,7 +497,7 @@ module Equ
 ! 
       lfinalized_diagnostics = .false.
       started_finalizing_diagnostics = .false.
-      num_of_diagnostic_iterations_done = 0
+      num_of_diag_iter_done = 0
 
 ! Save the used options
 !
@@ -567,7 +567,7 @@ module Equ
         if (lcoarse_mn) then
           lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
           !$omp atomic
-          num_of_diagnostic_iterations_done = num_of_diagnostic_iterations_done + 1
+          num_of_diag_iter_done = num_of_diag_iter_done + 1
           if (ninds(0,m,n)<=0) cycle
         endif
 
@@ -586,7 +586,7 @@ module Equ
 
         lfirstpoint=.false.
         !$omp atomic
-        num_of_diagnostic_iterations_done = num_of_diagnostic_iterations_done + 1
+        num_of_diag_iter_done = num_of_diag_iter_done + 1
       enddo
 
 !$    call prep_finalize_thread_diagnos
