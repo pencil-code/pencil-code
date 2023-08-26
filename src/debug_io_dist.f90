@@ -19,6 +19,7 @@
 module Debug_IO
 !
   use Cdata
+!$ use OMP_lib
 !
   implicit none
 !

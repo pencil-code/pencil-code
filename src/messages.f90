@@ -6,6 +6,7 @@ module Messages
 !
   use Cdata
   use Mpicomm
+!$ use OMP_lib
 !
   implicit none
 !
