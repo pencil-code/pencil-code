@@ -2988,14 +2988,14 @@ ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
   FFLAGS += $(OMPFFLAGS)
   LDFLAGS += $(OMPLFLAGS)
   OMP_PREREQ := copyin.inc
-copyin.inc:  *_omp.inc
+copyin.inc:  multithread/*_omp.inc
 	@echo '!$$omp parallel copyin( &' > copyin.inc
 	@rm -f threadpriv_modules.inc
 	@for file in $?; do \
 	  echo $$file; \
-	  obj=`echo $$file | sed -e's/_omp.inc$$/.o/'`; \
+	  obj=`echo $$file | sed -e's/multithread\///' -e's/_omp.inc$$/.o/'`; \
 	  if [ -f "$$obj" ]; then \
-	    modsrc=`echo $$file | sed -e's/_omp.inc *$$/.f90/'`; \
+	    modsrc=`echo $$obj | sed -e's/\.o/.f90/'`; \
 	    cat $$modsrc | grep '^ *module  *[a-zA-Z0-9_]*' | sed -e's/ //g' -e's/module/use /' >> threadpriv_modules.inc; \
 	    cat $$file | sed -e's/^!\$$omp threadprivate(\(.*\))$$/!\$$omp \1, \&/' >> copyin.inc; \
 	  fi \
