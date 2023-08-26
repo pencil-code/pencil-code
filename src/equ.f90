@@ -475,14 +475,14 @@ module Equ
       type (pencil_case)                ,intent(INOUT) :: p
 
 !$    if (omp_in_parallel()) then
-!$      call calc_all_module_diagnostics_multithreaded(f,p)
+!$      call all_modules_diag_threaded(f,p)
 !$    else
-        call calc_all_module_diagnostics_slice(1,nyz,f,p)
+        call all_modules_diag_slice(1,nyz,f,p)
 !$    endif
 
     endsubroutine calc_all_module_diagnostics
 !*****************************************************************************
-    subroutine calc_all_module_diagnostics_multithreaded(f,p)
+    subroutine all_modules_diag_threaded(f,p)
 !
 !   Multithreaded version of diagnostics, using tasking
 !
@@ -513,18 +513,18 @@ module Equ
       do i=1,num_of_threads_used
         if (i<num_of_threads_used) then
           !$omp task
-          call calc_all_module_diagnostics_slice((i-1)*(nyz/num_of_threads_used)+1,i*(nyz/num_of_threads_used),f,p)
+          call all_modules_diag_slice((i-1)*(nyz/num_of_threads_used)+1,i*(nyz/num_of_threads_used),f,p)
           !$omp end task
         else
           !$omp task
-          call calc_all_module_diagnostics_slice((i-1)*(nyz/num_of_threads_used)+1,nyz,f,p)
+          call all_modules_diag_slice((i-1)*(nyz/num_of_threads_used)+1,nyz,f,p)
           !$omp end task
         endif
       enddo
 
-    endsubroutine calc_all_module_diagnostics_multithreaded
+    endsubroutine all_modules_diag_threaded
 !*****************************************************************************
-    subroutine calc_all_module_diagnostics_slice(start, end,f,p)
+    subroutine all_modules_diag_slice(start, end,f,p)
 !
 !   Calculates diagnostics from indexes (start,end) of mn-loop
 !
@@ -592,7 +592,7 @@ module Equ
 !$    call prep_finalize_thread_diagnos
 !$    call diagnostics_reductions
 
-    endsubroutine calc_all_module_diagnostics_slice
+    endsubroutine all_modules_diag_slice
 !*****************************************************************************
     subroutine finalize_diagnostics()
 !
@@ -1552,7 +1552,7 @@ module Equ
       p_dt1_max => dt1_max
       p_ncountsz => ncountsz
 
-      if (lsolid_cells) call solid_cells_init_reduc_pointers
+      if (lsolid_cells) call sc_init_reduc_pointers
  
     endsubroutine init_reduc_pointers
 !***********************************************************************
@@ -1580,7 +1580,7 @@ module Equ
  
     p_dt1_max = -impossible
 
-    if (lsolid_cells) call solid_cells_set_reduction_variables_to_zero
+    if (lsolid_cells) call sc_init_diagnostic_accumulators
  
     endsubroutine init_diagnostic_accumulators
 !***********************************************************************
@@ -1624,7 +1624,7 @@ module Equ
 
       p_dt1_max = max(p_dt1_max,dt1_max)
 
-      if (lsolid_cells) call solid_cells_diagnostic_reductions
+      if (lsolid_cells) call sc_diagnostic_reductions
 
     endsubroutine diagnostics_reductions
 !***********************************************************************
