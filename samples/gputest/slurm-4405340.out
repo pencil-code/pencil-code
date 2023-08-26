@@ -1,0 +1,98 @@
+
+Lmod is automatically replacing "craype-accel-amd-gfx90a" with
+"craype-accel-host".
+
+
+Lmod is automatically replacing "craype-accel-host" with
+"craype-accel-amd-gfx90a".
+
+The following modules were not unloaded:
+  (Use "module --force purge" to unload all):
+
+  1) craype-x86-rome                         6) CrayEnv
+  2) craype-accel-host                       7) init-lumi/0.2
+  3) libfabric/1.15.2.0                      8) lumi-tools/23.04
+  4) craype-network-ofi                      9) ModuleLabel/label
+  5) xpmem/2.5.2-2.4_3.47__gd0f7936.shasta
+
+Lmod is automatically replacing "craype-accel-host" with
+"craype-accel-amd-gfx90a".
+
+rm: cannot remove './data/time*': No such file or directory
+Unmatched '"'.
+/pfs/lustrep2/users/purotouk/pencil-code/samples/gputest
+2 CPUs
+HOSTNAME = nid007956
+USER = purotouk
+Running under MPI
+masterhost=lumi
+Simple Linux Utility for Resource Management (SLURM) job
+SLURM_NODELIST = nid007956
+SLURM_TASKS_PER_NODE = 1
+Lumi - CSC, Kajaani, Finland
+Running job: 4405340
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <1>
+$ncpus          =  <2>
+$npops          =  <-n 2>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-59347>
+$hn             =  <nid007956>
+$masterhost     =  <lumi>
+$mpirun         =  <srun>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <nid007956>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <59347>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+PENCIL_HOME: Undefined variable.
+Unmatched '"'.
+2 CPUs
+HOSTNAME = nid007956
+USER = purotouk
+Running under MPI
+masterhost=lumi
+Simple Linux Utility for Resource Management (SLURM) job
+SLURM_NODELIST = nid007956
+SLURM_TASKS_PER_NODE = 1
+Lumi - CSC, Kajaani, Finland
+Running job: 4405340
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <1>
+$ncpus          =  <2>
+$npops          =  <-n 2>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-59396>
+$hn             =  <nid007956>
+$masterhost     =  <lumi>
+$mpirun         =  <srun>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <nid007956>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <59396>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+PENCIL_HOME: Undefined variable.
+timestr: Command not found.
+PENCIL_HOME: Undefined variable.

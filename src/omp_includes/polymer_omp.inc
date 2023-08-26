@@ -1,0 +1,1 @@
+!$omp threadprivate(frmax_local)

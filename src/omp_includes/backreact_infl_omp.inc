@@ -1,0 +1,1 @@
+!$omp threadprivate(iinfl_phi)

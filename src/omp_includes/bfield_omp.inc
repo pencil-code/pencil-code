@@ -1,0 +1,1 @@
+!$omp threadprivate(lcovariant_magnetic)

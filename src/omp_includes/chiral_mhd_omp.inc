@@ -1,0 +1,1 @@
+!$omp threadprivate(imu5)

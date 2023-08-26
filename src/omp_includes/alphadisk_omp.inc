@@ -1,0 +1,5 @@
+!$omp threadprivate(del2sigmanu)
+!$omp threadprivate(gsigmanu)
+!$omp threadprivate(psigma)
+!$omp threadprivate(pmdot)
+!$omp threadprivate(imdot)

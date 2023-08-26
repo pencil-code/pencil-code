@@ -1,0 +1,141 @@
+
+Lmod is automatically replacing "craype-accel-amd-gfx90a" with
+"craype-accel-host".
+
+
+Lmod is automatically replacing "craype-accel-host" with
+"craype-accel-amd-gfx90a".
+
+The following modules were not unloaded:
+  (Use "module --force purge" to unload all):
+
+  1) craype-x86-rome                         6) CrayEnv
+  2) craype-accel-host                       7) init-lumi/0.2
+  3) libfabric/1.15.2.0                      8) lumi-tools/23.04
+  4) craype-network-ofi                      9) ModuleLabel/label
+  5) xpmem/2.5.2-2.4_3.47__gd0f7936.shasta
+
+Lmod is automatically replacing "craype-accel-host" with
+"craype-accel-amd-gfx90a".
+
+Unmatched '"'.
+/pfs/lustrep2/users/purotouk/pencil-code/samples/conv-slab-noequi
+1 CPUs
+HOSTNAME = nid007956
+USER = purotouk
+masterhost=lumi
+Simple Linux Utility for Resource Management (SLURM) job
+SLURM_NODELIST = nid007956
+SLURM_TASKS_PER_NODE = 1
+Lumi - CSC, Kajaani, Finland
+Running job: 4406775
+Non-MPI version
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <0>
+$ncpus          =  <1>
+$npops          =  <>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-127464>
+$hn             =  <nid007956>
+$masterhost     =  <lumi>
+$mpirun         =  <>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <nid007956>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <127464>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+/bin/ls: No match.
+/bin/ls: No match.
+/bin/ls: No match.
+Revision: 7b0afa7f2
+ M samples/gputest/src/Makefile.local
+ M src/astaroth/gpu_astaroth.cc
+ M src/cdata.f90
+ M src/diagnostics.f90
+ M src/equ.f90
+ M src/mpicomm.f90
+ M src/run.f90
+ M src/solid_cells.f90
+Fri 25 Aug 20:21:35 EEST 2023
+    src/start.x 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ nxgrid, nygrid, nzgrid= 3*32
+ 
+ ------------------------------------------------------
+ W A R N I N G
+ warning_lperi: inconsistency, j= 3 , lperi(j)= F
+ bc=p      p      p      p      p      
+ any(bc=='p'.or. bc=='she'), .not.lperi(j) =  2*T
+ any(bcx/='p'.and.bcx/='she'), lperi(j) =  2*T
+ check_consistency_of_lperi(run.in): you better stop and check!
+ ------------------------------------------------------
+ 
+ units_general: unit_velocity= 1.
+ units_general: unit_density= 1.
+ units_general: unit_length= 1.
+ units_general: unit_magnetic= 3.544907808303833
+ units_eos: unit_temperature= 4.81088802356948079E-9
+ units_eos: cp, lnTT0, cs0, pp0, Rgas= 1.,  -0.693148017,  0.57735002,  0.199999824,  0.399999976
+WARNING: initialize_grid: Cartesian coords - no meaningful r_ext given. We set it to minval(xyz1)!
+ initialize_gravity: no x-gravity
+ initialize_gravity: no y-gravity
+ initialize_gravity: constant gravz= -1.
+ diffusion: nothing (i.e. no mass diffusion)
+ initialize_density: no need to read initial stratification for lanti_shockdiffusion=F.
+ select_eos_variable: Using lnrho and ss
+ initialize_energy: nheatc_max,iheatcond= 4 nothing                                 nothing                                 nothing                                 nothing                                 
+ heat conduction: nothing
+ init_uu: up-down
+ init_lnrho: piecewise polytropic vertical stratification (lnrho)
+ init_lnrho: initlnrho(1) = piecew-poly
+ init_lnrho: cs2bot,cs2top= 1.44999969,  0.333333045
+ init_energy: piecewise polytropic vertical stratification (ss)
+ ssint= 0.
+ init_energy: initss(1) = piecew-poly
+ 
+ start.x has completed successfully
+ 
+0.024u 0.398s 0:01.26 32.5%	0+0k 67960+4512io 677pf+0w
+
+Fri 25 Aug 20:21:36 EEST 2023
