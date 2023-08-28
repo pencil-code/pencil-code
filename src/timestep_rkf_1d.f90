@@ -14,7 +14,7 @@ module Timestep
   real, parameter :: safety           = 0.9
   real, parameter :: dt_decrease      = -0.25
   real, parameter :: dt_increase      = -0.20
-  real            :: errcon
+  real            :: errcon, dt_next
 !
   contains
 !
@@ -22,8 +22,16 @@ module Timestep
     subroutine initialize_timestep
 
       ldt = .false.
+!
+      if (dt==0.) then
+        call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
+                     'set to 1e-6')
+        dt=1e-6
+      endif
+!
       !overwrite the persistent time_step from dt0 in run.in
       if (dt0/=0.) dt=dt0
+      dt_next=dt
 
     endsubroutine initialize_timestep
 !***********************************************************************
@@ -61,6 +69,8 @@ module Timestep
                                                  " yet supported by the adaptive rkf scheme")
 !
       lfirst=.true.
+      ! Time step to try after previous time
+      dt = dt_next
       do i=1,10
         ! Do a Runge-Kutta step
         call rkck(f, df, p, errmax)
@@ -94,8 +104,6 @@ module Timestep
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt  !(all have same dt?)
       ! Increase time
       t = t+dt
-      ! Time step to try next time
-      dt = dt_next
 !
 !  Time evolution of grid variables
 !  (do this loop in pencils, for cache efficiency)

@@ -12,9 +12,9 @@ module Timestep
 !
 ! Parameters for adaptive time stepping
   real, parameter :: safety      =  0.9
-  real, parameter :: dt_decrease = -0.25
-  real, parameter :: dt_increase = -0.20
-  real            :: errcon, errcon25
+  real, parameter :: dt_decrease = -0.20
+  real, parameter :: dt_increase = -0.25
+  real            :: errcon, farraymin,farraymin1,dt_next
 !
   contains
 !
@@ -38,13 +38,18 @@ module Timestep
 !
 ! General error condition
 !
-      errcon = (5.0/safety)**(1.0/dt_increase)
-      errcon25 = (eps_rkf*errcon)**2.5
+!      errcon = (5.0/safety)**(1.0/dt_increase)
+! higher errcon tested for "err_con" timestep_scaling (err relative to df)
+      errcon = 0.1
+! prefactor for absolute floor on value of farray in calculating err
+      farraymin = 1e-8
+      farraymin1 = 1./farraymin/eps_rkf
 !
       !ldt is set after read_persistent in rsnap, so dt0==0 used to read, but ldt=F for write
       ldt=.false.
       !overwrite the persistent time_step from dt0 in run.in
       if (dt0/=0.) dt=dt0
+      dt_next=dt
 
     endsubroutine initialize_timestep
 !***********************************************************************
@@ -71,6 +76,7 @@ module Timestep
 !
       lfirst=.true.
       told=t
+      dt=dt_next
       do i=1,20
         ! Do a Runge-Kutta step
         call rkck(f, df, p, errmax)
@@ -90,7 +96,7 @@ module Timestep
         endif
         t=told
       enddo
-      !if (abs(t - (told + dt)) > errcon25) then
+      !if (abs(t - (told + dt)) > farraymin) then
       !  call warning('time_step','dt is not equal to sum of dtsub')
       !  if (lroot) print*,"t, told, dt, t-told",t, told, dt, t-told
       !endif
@@ -98,12 +104,12 @@ module Timestep
 !
 ! Time step to try next time
 !
-      if (errmax > errcon) then
-        ! Decrease the time step
-        dt = safety*dt*(errmax**dt_increase)
+      if (errmax < errcon) then
+        ! Increase the time step
+        dt_next = safety*dt*(errmax**dt_increase)
       else
         ! But not by more than a factor of 5
-        dt = 5.0*dt
+        dt_next = 5.0*dt
       endif
 !
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt
@@ -172,7 +178,7 @@ module Timestep
 !   call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
       real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension(nx) :: scal, err
-      real :: errmax, errmaxs, dtsub
+      real :: errmax, errmaxs, dtsub, farrayfloor
       integer :: j
 !
       df=0.
@@ -311,11 +317,13 @@ module Timestep
           ! Constant fractional error
           errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
         case ('cons_err')
-          ! Constant error
-          ! Constrain error below impossible and limit accuracy above errcon25
-          scal = min(max(abs(f(l1:l2,m,n,j)), errcon25),impossible)
-          errmaxs = max(maxval(abs(err/scal)),errmaxs)
-          !
+          ! Relative error constraint
+          ! Exclude division by zero
+          farrayfloor = max(farraymin*sum(abs(f(l1:l2,m,n,j)))/nx,tini)
+          scal = abs(f(l1:l2,m,n,j))
+          where (scal<farrayfloor) scal = farrayfloor
+          !Constrain error below farraymin1
+          errmaxs = min(max(maxval(abs(err)/scal),errmaxs),farraymin1)
         case ('none')
           ! No error check
         endselect
