@@ -2161,6 +2161,9 @@ if (lroot) print*,"lSN_list",lSN_list
               SNfirst=i+1
               if (lroot) print &
                   "(1x,'check_SN: SNfirst at t =',i7,e16.8)",SNfirst,t
+              if (i==nlist-2) then
+                call touch_file('FORCE_UPDATE')
+              endif
               exit
             endif
           enddo
