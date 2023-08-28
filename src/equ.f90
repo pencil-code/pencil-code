@@ -1557,7 +1557,7 @@ module Equ
 !
 !  25-aug-23/TP: Coded
 !
-    use Solid_Cells, only: sc_init_diagnostics_accumulators
+    use Solid_Cells, only: sc_init_diags_accumulators
 
     if (allocated(fname))      p_fname = 0.
     if (allocated(fnamex))     p_fnamex = 0.
@@ -1573,7 +1573,7 @@ module Equ
  
     p_dt1_max = -impossible
 
-    if (lsolid_cells) call sc_init_diagnostics_accumulators
+    if (lsolid_cells) call sc_init_diags_accumulators
  
     endsubroutine init_diagnostics_accumulators
 !***********************************************************************
@@ -1583,7 +1583,7 @@ module Equ
 !
 !  30-mar-23/TP: Coded
 !
-    use Solid_Cells, only: sc_diagnostics_reductions
+    use Solid_Cells, only: sc_diags_reductions
 
     integer :: imn
      
@@ -1616,7 +1616,7 @@ module Equ
 
       p_dt1_max = max(p_dt1_max,dt1_max)
 
-      if (lsolid_cells) call sc_diagnostics_reductions
+      if (lsolid_cells) call sc_diags_reductions
 
     endsubroutine diagnostics_reductions
 !***********************************************************************
