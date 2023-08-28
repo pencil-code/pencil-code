@@ -297,7 +297,7 @@ module Solid_Cells
 !
     endsubroutine interpolate_particles_ogrid
 !***********************************************************************
-  subroutine sc_init_diagnostic_accumulators
+  subroutine sc_init_diagnostics_accumulators
 !
 !  Need to initialize accumulators since master thread does not take part in diagnostics
 !  Dummy for solid cells ogrid
@@ -305,16 +305,16 @@ module Solid_Cells
 !  25-aug-23/TP: Coded
 !
 
-  endsubroutine sc_init_diagnostic_accumulators
+  endsubroutine sc_init_diagnostics_accumulators
 !***********************************************************************
-  subroutine sc_diagnostic_reductions
+  subroutine sc_diagnostics_reductions
 !
 !  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
 !  Dummy for solid cells ogrid
 !
 !  30-mar-23/TP: coded
 !
-  endsubroutine sc_diagnostic_reductions
+  endsubroutine sc_diagnostics_reductions
 !***********************************************************************
   subroutine sc_init_reduc_pointers
 !
