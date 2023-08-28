@@ -3811,7 +3811,7 @@ module Solid_Cells
 !
     endsubroutine interpolate_particles_ogrid
 !***********************************************************************
-  subroutine sc_init_diagnostics_accumulators
+  subroutine sc_init_diags_accumulators
 !
 !  Need to initialize accumulators since master thread does not take part in diagnostics
 !
@@ -3827,9 +3827,9 @@ module Solid_Cells
         if (allocated(c_dragy_p)) p_c_dragy_p = 0
         if (allocated(c_dragz_p)) p_c_dragz_p = 0
  
-  endsubroutine sc_init_diagnostics_accumulators
+  endsubroutine sc_init_diags_accumulators
 !***********************************************************************
-  subroutine sc_diagnostics_reductions
+  subroutine sc_diags_reductions
 !
 !  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
 !
@@ -3847,7 +3847,7 @@ module Solid_Cells
         if (allocated(c_dragz_p)) p_c_dragz_p = p_c_dragz_p + c_dragz_p
       endif
 
-  endsubroutine sc_diagnostics_reductions
+  endsubroutine sc_diags_reductions
 !***********************************************************************
   subroutine sc_init_reduc_pointers
 !
