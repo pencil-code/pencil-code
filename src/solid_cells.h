@@ -28,6 +28,6 @@ public ::  r_ogrid, r_int_outer
 public ::  xorigo_ogrid
 public ::  map_nearest_grid_ogrid
 public ::  interpolate_particles_ogrid
-public :: sc_init_diagnostics_accumulators
-public :: sc_diagnostics_reductions
+public :: sc_init_diags_accumulators
+public :: sc_diags_reductions
 public :: sc_init_reduc_pointers
