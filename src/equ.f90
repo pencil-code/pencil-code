@@ -28,7 +28,7 @@ module Equ
 !
   contains
 !***********************************************************************
-    include 'pencil_init.inc' ! defines subroutine initialize_pencils()
+    include 'pencil_init.inc' ! defines subroutine initialize_pencils
 !***********************************************************************
     subroutine pde(f,df,p)
 !
@@ -348,7 +348,7 @@ module Equ
 
 !$        if (.not. lfinalized_diagnostics) then
 !$          if (.not. started_finalizing_diagnostics) then
-!$            call finalize_diagnostics()
+!$            call finalize_diagnostics
 !$          else
 !
 !  Hotloop to wait for diagnostic finalization to be done
@@ -470,19 +470,19 @@ module Equ
 !
 !  10-sep-2019/MR: coded
 !
-!$    use Omp_lib
+!$    use OMP_lib
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
 
 !$    if (omp_in_parallel()) then
-!$      call all_modules_diag_threaded(f,p)
+!$      call all_module_diags_threaded(f,p)
 !$    else
-        call all_modules_diag_slice(1,nyz,f,p)
+        call all_module_diags_slice(1,nyz,f,p)
 !$    endif
 
     endsubroutine calc_all_module_diagnostics
 !*****************************************************************************
-    subroutine all_modules_diag_threaded(f,p)
+    subroutine all_module_diags_threaded(f,p)
 !
 !   Multithreaded version of diagnostics, using tasking
 !
@@ -490,15 +490,15 @@ module Equ
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
-      integer :: i
-      integer :: num_of_threads_used
+      integer :: i, istart, iend
+      integer :: num_of_threads_used, nper_thread
 
 !  Setup tracking params for multithreading 
 ! 
       lfinalized_diagnostics = .false.
       started_finalizing_diagnostics = .false.
       num_of_diag_iter_done = 0
-
+!
 ! Save the used options
 !
       ldiagnos_save = ldiagnos
@@ -508,23 +508,21 @@ module Equ
 
 !  Set reduced_variables to zero before diag since master thread won't take part in reduction
 !
-      call init_diagnostic_accumulators
+      call init_diagnostics_accumulators
 !$    num_of_threads_used = num_threads-2
+!$    nper_thread = nyz/num_of_threads_used
+      iend = 0
       do i=1,num_of_threads_used
-        if (i<num_of_threads_used) then
-          !$omp task
-          call all_modules_diag_slice((i-1)*(nyz/num_of_threads_used)+1,i*(nyz/num_of_threads_used),f,p)
-          !$omp end task
-        else
-          !$omp task
-          call all_modules_diag_slice((i-1)*(nyz/num_of_threads_used)+1,nyz,f,p)
-          !$omp end task
-        endif
+        istart = iend+1
+        iend = iend+nper_thread
+        !$omp task
+        call all_module_diags_slice(istart,min(iend,nyz),f,p)
+        !$omp end task
       enddo
 
-    endsubroutine all_modules_diag_threaded
+    endsubroutine all_module_diags_threaded
 !*****************************************************************************
-    subroutine all_modules_diag_slice(start, end,f,p)
+    subroutine all_module_diags_slice(start, end,f,p)
 !
 !   Calculates diagnostics from indexes (start,end) of mn-loop
 !
@@ -545,18 +543,18 @@ module Equ
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
-      integer :: start, end, imn
+      integer :: istart, iend, imn
 
       lfirstpoint=.true.
-
+!
 !  Restore options that were used when calc_all_module_diagnostics was called
 !
-!$        l1davgfirst = l1davgfirst_save
-!$        ldiagnos = ldiagnos_save
-!$        l1dphiavg = l1dphiavg_save
-!$        l2davgfirst = l2davgfirst_save
+!$    l1davgfirst = l1davgfirst_save
+!$    ldiagnos = ldiagnos_save
+!$    l1dphiavg = l1dphiavg_save
+!$    l2davgfirst = l2davgfirst_save
 
-      do imn=start,end
+      do imn=istart,iend
  
         n=nn(imn)
         m=mm(imn)
@@ -566,8 +564,6 @@ module Equ
         lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
         if (lcoarse_mn) then
           lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-          !$omp atomic
-          num_of_diag_iter_done = num_of_diag_iter_done + 1
           if (ninds(0,m,n)<=0) cycle
         endif
 
@@ -585,16 +581,16 @@ module Equ
         if (lforcing_cont) call calc_diagnostics_forcing(p)
 
         lfirstpoint=.false.
-        !$omp atomic
-        num_of_diag_iter_done = num_of_diag_iter_done + 1
       enddo
+      !$omp atomic
+      num_of_diag_iter_done = num_of_diag_iter_done + istart-iend+1
 
 !$    call prep_finalize_thread_diagnos
 !$    call diagnostics_reductions
 
-    endsubroutine all_modules_diag_slice
+    endsubroutine all_module_diags_slice
 !*****************************************************************************
-    subroutine finalize_diagnostics()
+    subroutine finalize_diagnostics
 !
 !  Finalizes calc_all_module_diagnostics with MPI communication
 !
@@ -844,7 +840,7 @@ module Equ
       use Testflow
       use Testscalar
       use Viscosity, only: calc_pencils_viscosity
-!!$    use Omp_lib
+!!$    use OMP_lib
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
@@ -1530,59 +1526,56 @@ module Equ
 
     endsubroutine set_dt1_max
 !***********************************************************************
-    subroutine init_reduc_pointers()
+    subroutine init_reduc_pointers
 !
 !  Initializes pointers used in diagnostics_reductions
 !
 !  30-mar-23/TP: Coded
 !  
-      use Solid_Cells
-      use omp_lib
+      use Solid_Cells, only: sc_init_reduc_pointers
 
-      p_fname => fname
-      p_fname_keep => fname_keep
-      p_fnamer => fnamer
-      p_fname_sound => fname_sound
-      p_fnamex => fnamex
-      p_fnamey => fnamey
-      p_fnamez => fnamez
-      p_fnamexy => fnamexy
-      p_fnamexz => fnamexz
-      p_fnamerz => fnamerz
+      if (allocated(fname))      p_fname => fname
+      if (allocated(fname_keep)) p_fname_keep => fname_keep
+      if (allocated(fnamer))     p_fnamer => fnamer
+      if (allocated(fname_sound))p_fname_sound => fname_sound
+      if (allocated(fnamex))     p_fnamex => fnamex
+      if (allocated(fnamey))     p_fnamey => fnamey
+      if (allocated(fnamez))     p_fnamez => fnamez
+      if (allocated(fnamexy))    p_fnamexy => fnamexy
+      if (allocated(fnamexz))    p_fnamexz => fnamexz
+      if (allocated(fnamerz))    p_fnamerz => fnamerz
+      if (allocated(ncountsz))   p_ncountsz => ncountsz
       p_dt1_max => dt1_max
-      p_ncountsz => ncountsz
 
       if (lsolid_cells) call sc_init_reduc_pointers
  
     endsubroutine init_reduc_pointers
 !***********************************************************************
-    subroutine init_diagnostic_accumulators 
+    subroutine init_diagnostics_accumulators 
 !    
 !  Need to initialize accumulators since master thread does not take part in diagnostics
 !
 !  25-aug-23/TP: Coded
 !
-    use Solid_Cells
-    use omp_lib
+    use Solid_Cells, only: sc_init_diagnostics_accumulators
 
-    p_fname = 0.
-    p_fnamex = 0.
-    p_fnamey = 0.
-    p_fnamez = 0.
-    p_fnamer = 0.
-    p_fnamexy = 0.
-    p_fnamexz = 0.
-    p_fnamerz = 0.
-
+    if (allocated(fname))      p_fname = 0.
+    if (allocated(fnamex))     p_fnamex = 0.
+    if (allocated(fnamey))     p_fnamey = 0.
+    if (allocated(fnamez))     p_fnamez = 0.
+    if (allocated(fnamer))     p_fnamer = 0.
+    if (allocated(fnamexy))    p_fnamexy = 0.
+    if (allocated(fnamexz))    p_fnamexz = 0.
+    if (allocated(fnamerz))    p_fnamerz = 0.
     if (allocated(fname_keep)) p_fname_keep = 0.
-    if (allocated(fname_sound)) p_fname_sound= 0.
-    if (allocated(ncountsz)) p_ncountsz= 0
+    if (allocated(fname_sound))p_fname_sound= 0.
+    if (allocated(ncountsz))   p_ncountsz= 0
  
     p_dt1_max = -impossible
 
-    if (lsolid_cells) call sc_init_diagnostic_accumulators
+    if (lsolid_cells) call sc_init_diagnostics_accumulators
  
-    endsubroutine init_diagnostic_accumulators
+    endsubroutine init_diagnostics_accumulators
 !***********************************************************************
     subroutine diagnostics_reductions
 !
@@ -1590,8 +1583,7 @@ module Equ
 !
 !  30-mar-23/TP: Coded
 !
-    use Solid_Cells
-    use omp_lib
+    use Solid_Cells, only: sc_diagnostics_reductions
 
     integer :: imn
      
@@ -1624,7 +1616,7 @@ module Equ
 
       p_dt1_max = max(p_dt1_max,dt1_max)
 
-      if (lsolid_cells) call sc_diagnostic_reductions
+      if (lsolid_cells) call sc_diagnostics_reductions
 
     endsubroutine diagnostics_reductions
 !***********************************************************************
