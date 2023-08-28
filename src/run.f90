@@ -109,7 +109,7 @@ program run
   logical :: lstop=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
-  logical :: lnoreset_tzero=.false.
+  logical :: lnoreset_tzero=.false., lforce_update=.false.
   logical :: lonemorestep = .false.
   logical :: lexist
 !
@@ -529,8 +529,9 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
   Time_loop: do while (it<=nt)
 !
     lout = (mod(it-1,it1) == 0) .and. (it > it1start)
+    lforce_update=control_file_exists('FORCE_UPDATE')
 !
-    if (lout .or. emergency_stop) then
+    if (lout .or. emergency_stop .or. lforce_update) then
 !
 !  Exit do loop if file `STOP' exists.
 !
@@ -543,6 +544,8 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
         endif
         resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
         if (resubmit) print*, 'Cannot be resubmitted'
+        lforce_update=control_file_exists('FORCE_UPDATE', DELETE=.true.)
+        lforce_update= .false.
         exit Time_loop
       endif
 !
@@ -557,7 +560,7 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
 !
       lreload_file       =control_file_exists('RELOAD')
       lreload_always_file=control_file_exists('RELOAD_ALWAYS')
-      lreloading         =lreload_file .or. lreload_always_file
+      lreloading         =lreload_file .or. lreload_always_file .or. lforce_update
 !
       if (lreloading) then
         if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
@@ -597,6 +600,8 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
         call write_all_run_pars('IDL')       ! data to param2.nml
         call write_all_run_pars              ! diff data to params.log
 !
+        lforce_update=control_file_exists('FORCE_UPDATE', DELETE=.true.)
+        lforce_update= .false.
         lreload_file=control_file_exists('RELOAD', DELETE=.true.)
         lreload_file        = .false.
         lreload_always_file = .false.
