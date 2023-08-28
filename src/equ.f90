@@ -522,7 +522,7 @@ module Equ
 
     endsubroutine all_module_diags_threaded
 !*****************************************************************************
-    subroutine all_module_diags_slice(start, end,f,p)
+    subroutine all_module_diags_slice(istart,iend,f,p)
 !
 !   Calculates diagnostics from indexes (start,end) of mn-loop
 !
