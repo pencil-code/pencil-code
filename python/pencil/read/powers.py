@@ -159,6 +159,9 @@ class Power(object):
             nxgrid = dim.nx
 
         #dim = read.dim(datadir=datadir)
+        # param is needed to figure out the options passed to power_xy
+        param = read.param(datadir=datadir)
+
         block_size = np.ceil(int(nxgrid / 2) / 8.0) + 1
 
         # Read the power spectra.
@@ -257,7 +260,11 @@ class Power(object):
                     setattr(self, "nzpos", nzpos)
                     setattr(self, "zpos", zpos)
                 else:
-                    nzpos = 1
+                    if param.lintegrate_z:
+                        nzpos = 1
+                    else:
+                        # TODO: dim may not exist due to the HDF5 spaghetti stuff above
+                        nzpos = dim.nzgrid
 
                 # Now read the rest of the file
                 line_list = line_list[ini:]
@@ -266,7 +273,10 @@ class Power(object):
                 linelen = len(line_list[1].strip().split())
 
                 # If more than one z-pos, the file will give the results concatenated for the 3 positions and the length of the block will increase
-                block_size = np.ceil(int(nk * nzpos) / 8) + 1
+                if param.lintegrate_shell:
+                    block_size = np.ceil(nk / 8) * nzpos + 1
+                else:
+                    block_size = np.ceil(int(nk * nzpos) / 8) + 1
                 n_blocks = int(len(line_list) / block_size)
 
                 for line_idx, line in enumerate(line_list):
