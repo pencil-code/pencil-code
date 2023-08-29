@@ -190,7 +190,20 @@ class Power(object):
 
                 # This files has the k vector, and irrational numbers
                 # Get k vectors:
-                if "k_x" in line_list[1]:
+                if param.lintegrate_shell:
+                    nk = int(
+                        line_list[1]
+                        .split()[line_list[1].split().index("k") + 1]
+                        .split(")")[0][1:]
+                    )
+                    ini = 2
+                    k = []
+                    for i in range(ini, int(np.ceil(nk / 8)) + ini):
+                        k.extend([float(j) for j in line_list[i].split()])
+                    k = np.array(k)
+                    setattr(self, "k", k)
+                    ini = i + 1
+                else:
                     nkx = int(
                         line_list[1]
                         .split()[line_list[1].split().index("k_x") + 1]
@@ -204,7 +217,6 @@ class Power(object):
                     setattr(self, "kx", kx)
                     ini = i + 1
 
-                if "k_y" in line_list[1]:
                     nky = int(
                         line_list[1]
                         .split()[line_list[1].split().index("k_y") + 1]
@@ -217,23 +229,7 @@ class Power(object):
                     setattr(self, "ky", ky)
                     ini = i + 1
 
-                if not param.lintegrate_shell:
                     nk = nkx*nky
-
-                if "Shell-wavenumbers k" in line_list[1]:
-                    #TODO: may be better to just check param.lintegrate_shell. Previous three ifs can be guarded by checking param.lcomplex.
-                    nk = int(
-                        line_list[1]
-                        .split()[line_list[1].split().index("k") + 1]
-                        .split(")")[0][1:]
-                    )
-                    ini = 2
-                    k = []
-                    for i in range(ini, int(np.ceil(nk / 8)) + ini):
-                        k.extend([float(j) for j in line_list[i].split()])
-                    k = np.array(k)
-                    setattr(self, "k", k)
-                    ini = i + 1
 
                 # Now read z-positions, if any
                 if "z-pos" in line_list[ini]:
