@@ -149,20 +149,11 @@ class Power(object):
                         power_list.append(file_name.split(".")[0][5:])
                     file_list.append(file_name)
 
-        # Determine the file and data structure.
-        if (os.path.isfile(datadir + "/grid.h5")):
-            grid=h5py.File(datadir + "/grid.h5",'r')
-            nxgrid = np.array(grid['settings']['nx'])
-            grid.close()
-        else:
-            dim = read.dim(datadir=datadir)
-            nxgrid = dim.nx
-
-        #dim = read.dim(datadir=datadir)
+        dim = read.dim(datadir=datadir)
         # param is needed to figure out the options passed to power_xy
         param = read.param(datadir=datadir)
 
-        block_size = np.ceil(int(nxgrid / 2) / 8.0) + 1
+        block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
 
         # Read the power spectra.
         for power_idx, file_name in enumerate(file_list):
@@ -244,7 +235,6 @@ class Power(object):
                     if param.lintegrate_z:
                         nzpos = 1
                     else:
-                        # TODO: dim may not exist due to the HDF5 spaghetti stuff above
                         nzpos = dim.nzgrid
 
                 # Now read the rest of the file
@@ -283,7 +273,6 @@ class Power(object):
                     power_array = np.array(power_array, dtype=complex)
 
                 if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
-                    #TODO: dim may not exist because of the HDF5 spaghetti above.
                     power_array = power_array.reshape([n_blocks, nzpos, nk])
                 else:
                     #TODO: how to populate power.k properly in this case? It should have two separate attributes, power.kx and power.ky.
@@ -324,7 +313,7 @@ class Power(object):
 
                 time = np.array(time)
                 power_array = np.array(power_array).reshape(
-                    [n_blocks, int(nxgrid / 2)]
+                    [n_blocks, int(dim.nxgrid / 2)]
                 )
                 self.t = time
                 setattr(self, power_list[power_idx], power_array)
@@ -337,7 +326,7 @@ class Power(object):
                             power_array.append(float(value_string))
                 power_array = (
                     np.array(power_array)
-                    .reshape([int(nxgrid / 2)])
+                    .reshape([int(dim.nxgrid / 2)])
                     .astype(np.float32)
                 )
                 setattr(self, power_list[power_idx], power_array)
@@ -355,7 +344,7 @@ class Power(object):
                 time = np.array(time)
                 power_array = (
                     np.array(power_array)
-                    .reshape([n_blocks, int(nxgrid / 2)])
+                    .reshape([n_blocks, int(dim.nxgrid / 2)])
                     .astype(np.float32)
                 )
                 self.t = time.astype(np.float32)
