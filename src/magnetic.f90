@@ -4611,7 +4611,7 @@ module Magnetic
         if (lquench_eta_aniso) prof=prof/(1.+quench_aniso*Arms)
         fres(:,1)=fres(:,1)-prof*cosalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
         fres(:,2)=fres(:,2)-prof*sinalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
-        etatotal=etatotal+abs(eta1_aniso)    !etatotal: added
+        etatotal=etatotal+abs(eta1_aniso)
       endif
 !
 !  Shakura-Sunyaev type resistivity (mainly just as a demo to show
@@ -4950,6 +4950,7 @@ module Magnetic
       endif
       if (any((/lresi_smagorinsky,lresi_smagorinsky_nusmag,lresi_smagorinsky_cross/))) etatotal=etatotal+eta_smag+eta
       !etatotal: danger of adding eta twice, as all resistivity contributions may accumulate
+      !PCUM to decide inclusion of eta or not and whether each is exclusive
 !
 !  Anomalous resistivity. Sets in when the ion-electron drift speed is
 !  larger than some critical value.
@@ -5037,7 +5038,7 @@ module Magnetic
             fres(:,i)=fres(:,i)-mu0*eta_BB*p%jj(:,i)
           enddo
         endif
-        etatotal = etatotal + eta_BB   !etatotal: added
+        etatotal = etatotal + eta_BB
       endif
 !
 !  anisotropic B-dependent diffusivity
@@ -5053,7 +5054,8 @@ module Magnetic
           ju=j-1+iaa
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-tmp1*p%jb*p%bb(:,j)
         enddo
-      endif !etatotal: Why not added here?
+        etatotal = etatotal + eta_aniso_BB
+      endif
 !
 !  Ambipolar diffusion in the strong coupling approximation.
 !
@@ -5071,7 +5073,7 @@ module Magnetic
         elseif (ltemperature .and. lneutralion_heat) then
             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
         endif
-        etatotal = etatotal + p%nu_ni1*p%va2   !etatotal: added
+        etatotal = etatotal + p%nu_ni1*p%va2
       endif
 !
 !  Consider here the action of a mean friction term, -LLambda*Abar.
@@ -5391,7 +5393,7 @@ module Magnetic
 !
       if (lambipolar_strong_coupling.and.tauAD/=0.0) then
         dAdt=dAdt+tauAD*p%jxbxb
-        etatotal = etatotal + tauAD*mu01*p%b2  !etatotal: added
+        etatotal = etatotal + tauAD*mu01*p%b2
       endif
 !
 !  Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
@@ -5423,7 +5425,7 @@ module Magnetic
           eta_out1=(eta_out-eta)*.5*(1.+erfunc((z(n)-height_eta)/eta_zwidth))
         endif
         dAdt = dAdt-(eta_out1*mu0)*p%jj
-        !etatotal: Why not added here?
+        etatotal = etatotal + eta_out1*mu0
       endif
 !
 !  Ekman Friction, used only in two dimensional runs.
@@ -5593,13 +5595,13 @@ module Magnetic
 !
       endif
 !
+      if (ietat/=0) etatotal=etatotal+maxval(f(l1:l2,m,n,ietat))
+!
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
       if (lfirst.and.ldt) then
 !
         diffus_eta =etatotal *dxyz_2
-        if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
-        !etatotal: better above add to etatotal?
         diffus_eta2=diffus_eta2*dxyz_4
 !
         if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
