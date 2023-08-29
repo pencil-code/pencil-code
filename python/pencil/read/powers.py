@@ -152,7 +152,6 @@ class Power(object):
         dim = read.dim(datadir=datadir)
         # param is needed to figure out the options passed to power_xy
         param = read.param(datadir=datadir)
-        grid = read.grid(datadir=datadir, trim=True, quiet=True)
 
         block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
 
@@ -236,6 +235,7 @@ class Power(object):
                         nzpos = 1
                     else:
                         nzpos = dim.nzgrid
+                        grid = read.grid(datadir=datadir, trim=True, quiet=True)
                         setattr(self, "zpos", grid.z)
                 setattr(self, "nzpos", nzpos)
 
