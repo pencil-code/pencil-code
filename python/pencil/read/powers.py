@@ -218,8 +218,7 @@ class Power(object):
                     ini = i + 1
 
                 if not param.lintegrate_shell:
-                    #TODO: this is only correct in 2D setups (either nkx or nky == 1)
-                    nk = max(nkx, nky)
+                    nk = nkx*nky
 
                 if "Shell-wavenumbers k" in line_list[1]:
                     #TODO: may be better to just check param.lintegrate_shell. Previous three ifs can be guarded by checking param.lcomplex.
@@ -286,7 +285,13 @@ class Power(object):
                     power_array = np.array(power_array, dtype=np.float32)
                 elif linelen == 16:
                     power_array = np.array(power_array, dtype=complex)
-                power_array = power_array.reshape([n_blocks, int(nzpos), int(nk)])
+
+                if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
+                    #TODO: dim may not exist because of the HDF5 spaghetti above.
+                    power_array = power_array.reshape([n_blocks, nzpos, nk])
+                else:
+                    #TODO: how to populate power.k properly in this case? It should have two separate attributes, power.kx and power.ky.
+                    power_array = power_array.reshape([n_blocks, nzpos, nkx, nky])
 
                 self.t = time.astype(np.float32)
                 setattr(self, power_list[power_idx], power_array)
