@@ -223,20 +223,20 @@ class Power(object):
                     nk = nkx*nky
 
                 # Now read z-positions, if any
-                if "z-pos" in line_list[ini]:
-                    print("More than 1 z-pos")
-                    nzpos = int(re.search(r"\((\d+)\)", line_list[ini])[1])
-                    ini += 1
-                    zpos = np.array([float(j) for j in line_list[ini].split()])
-                    ini += 1
-                    setattr(self, "zpos", zpos)
+                if param.lintegrate_z:
+                    nzpos = 1
                 else:
-                    if param.lintegrate_z:
-                        nzpos = 1
+                    if "z-pos" in line_list[ini]:
+                        print("More than 1 z-pos")
+                        nzpos = int(re.search(r"\((\d+)\)", line_list[ini])[1])
+                        ini += 1
+                        zpos = np.array([float(j) for j in line_list[ini].split()])
+                        ini += 1
                     else:
                         nzpos = dim.nzgrid
                         grid = read.grid(datadir=datadir, trim=True, quiet=True)
-                        setattr(self, "zpos", grid.z)
+                        zpos = grid.z
+                    setattr(self, "zpos", zpos)
                 setattr(self, "nzpos", nzpos)
 
                 # Now read the rest of the file
