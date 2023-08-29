@@ -190,7 +190,6 @@ class Power(object):
 
                 # This files has the k vector, and irrational numbers
                 # Get k vectors:
-                nk = 0
                 if "k_x" in line_list[1]:
                     nkx = int(
                         line_list[1]
@@ -204,7 +203,6 @@ class Power(object):
                     kx = np.array(kx)
                     setattr(self, "kx", kx)
                     ini = i + 1
-                    nk = max(nk, nkx)
 
                 if "k_y" in line_list[1]:
                     nky = int(
@@ -218,7 +216,10 @@ class Power(object):
                     ky = np.array(ky)
                     setattr(self, "ky", ky)
                     ini = i + 1
-                    nk = max(nk, nky)
+
+                if not param.lintegrate_shell:
+                    #TODO: this is only correct in 2D setups (either nkx or nky == 1)
+                    nk = max(nkx, nky)
 
                 if "Shell-wavenumbers k" in line_list[1]:
                     #TODO: may be better to just check param.lintegrate_shell. Previous three ifs can be guarded by checking param.lcomplex.
