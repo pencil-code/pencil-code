@@ -152,6 +152,7 @@ class Power(object):
         dim = read.dim(datadir=datadir)
         # param is needed to figure out the options passed to power_xy
         param = read.param(datadir=datadir)
+        grid = read.grid(datadir=datadir, trim=True, quiet=True)
 
         block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
 
@@ -229,13 +230,14 @@ class Power(object):
                     ini += 1
                     zpos = np.array([float(j) for j in line_list[ini].split()])
                     ini += 1
-                    setattr(self, "nzpos", nzpos)
                     setattr(self, "zpos", zpos)
                 else:
                     if param.lintegrate_z:
                         nzpos = 1
                     else:
                         nzpos = dim.nzgrid
+                        setattr(self, "zpos", grid.z)
+                setattr(self, "nzpos", nzpos)
 
                 # Now read the rest of the file
                 line_list = line_list[ini:]
@@ -275,7 +277,6 @@ class Power(object):
                 if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
                     power_array = power_array.reshape([n_blocks, nzpos, nk])
                 else:
-                    #TODO: how to populate power.k properly in this case? It should have two separate attributes, power.kx and power.ky.
                     power_array = power_array.reshape([n_blocks, nzpos, nkx, nky])
 
                 self.t = time.astype(np.float32)
