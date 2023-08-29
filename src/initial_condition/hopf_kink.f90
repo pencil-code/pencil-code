@@ -114,15 +114,18 @@ module InitialCondition
 
       do pair_idx=1,pair_final
         ! Add the field inside the sphere.
-        do m=m1,m2
-          do n=n1,n2
-            do l=l1,l2
+        do m=1,my
+          do n=1,mz
+            do l=1,mx
                 r = sqrt(x(l)**2 + y(m)**2 + (z(n)-z_shift)**2)
                 rho = sqrt(x(l)**2 + y(m)**2)
                 theta = atan2(rho, (z(n)-z_shift))
                 phi = atan2(y(m), x(l))
                 
                 omega = 2*pi*sin(pi*r**3/2)
+                if (r > 1) then
+                    omega = 2*pi
+                endif
                 
                 do s_idx = 1, 400, 1
                     s(s_idx) = r/400*s_idx
@@ -155,7 +158,7 @@ module InitialCondition
           z_shift = -z_shift
           
           ! Add the vertical field outside the spherefor div(B) = 0 condition.          
-          if bz_correction then
+          if (bz_correction .eqv. .true.) then
             ! Perform some preliminarycalculations on the equator
             ! We use these numbers for thecorrections outside the sphere.
             z_0_idx = Int(mz/2)
@@ -181,7 +184,7 @@ module InitialCondition
             ! Peroform the corrections for everyhorizontal slice.
             do n=n1,n2
                 ! Circular radius of the sphere on this xy-slice.
-                if (1**2 - z(n)**2 >= 0) then
+                if ((1**2 - z(n)**2) >= 0) then
                     rho_section = sqrt(1**2 - z(n)**2)
                 else
                     rho_section = 0.0
@@ -215,11 +218,11 @@ module InitialCondition
             enddo
           endif
       enddo
-!
-!   Removed the mean magnetic field in the z-direction for the uncurling.
+
+    ! Removed the mean magnetic field in the z-direction for the uncurling.
     write(*,*) "add mean B_z in start.in under &magnetic_init_pars as b_ext = 0, 0, ", sum(f(:,:,:,iaz))/size(f(:,:,:,iaz))
     f(:,:,:,iaz) = f(:,:,:,iaz) - sum(f(:,:,:,iaz))/size(f(:,:,:,iaz))
-!
+
 !  Compute curl(B) = J for the Poisson solver
       do m=m1,m2
          do n=n1,n2
