@@ -220,21 +220,6 @@ class Power(object):
                     ini = i + 1
                     nk = max(nk, nky)
 
-                #KG: is this block ever used anywhere? How is it possible for power_xy to output kz?
-                if "k_z" in line_list[1]:
-                    nkz = int(
-                        line_list[1]
-                        .split()[line_list[1].split().index("k_z") + 1]
-                        .split(")")[0][1:]
-                    )
-                    kz = []
-                    for i in range(ini, int(np.ceil(nkz / 8)) + ini):
-                        kz.extend([float(j) for j in line_list[i].split()])
-                    kz = np.array(kz)
-                    setattr(self, "kz", kz)
-                    ini = i + 1
-                    nk = max(nk, nkz)
-
                 if "Shell-wavenumbers k" in line_list[1]:
                     #TODO: may be better to just check param.lintegrate_shell. Previous three ifs can be guarded by checking param.lcomplex.
                     nk = int(
