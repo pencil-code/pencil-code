@@ -5595,7 +5595,9 @@ module Magnetic
 !
       endif
 !
-      if (ietat/=0) etatotal=etatotal+maxval(f(l1:l2,m,n,ietat))
+!  Add turbulent diffusivity, if provided.  (MR: should be done in MF module!)
+!
+      if (ietat/=0) etatotal=etatotal+f(l1:l2,m,n,ietat)
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
