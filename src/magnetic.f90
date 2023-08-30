@@ -1014,7 +1014,7 @@ module Magnetic
 !
   real, dimension(nx) :: etatotal=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
-  real, dimension(nx,3) :: fres
+  real, dimension(nx,3) :: fres,uxbb
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
   real :: eta_shock_jump1=1.0, eta_tdep=0.0, Arms=0.0
@@ -5670,7 +5670,7 @@ module Magnetic
       type(pencil_case) :: p
 
       integer :: isound,lspoint,mspoint,nspoint,j
-      real, dimension (nx,3) :: uxbb,uxbxb,poynting
+      real, dimension (nx,3) :: uxbxb,poynting
 
       if (lpencil(i_uxb)) call cross_mn(p%uu,p%bbb,uxbb)
 !
