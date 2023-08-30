@@ -5672,7 +5672,7 @@ module Magnetic
       integer :: isound,lspoint,mspoint,nspoint,j
       real, dimension (nx,3) :: uxbxb,poynting
 
-      if (lpencil(i_uxb)) call cross_mn(p%uu,p%bbb,uxbb)
+      if (lpencil(i_uxb)) call cross(p%uu,p%bbb,uxbb)
 !
 ! Magnetic field components at the list of points written out in sound.dat
 ! lwrite_sound is false if either no sound output is required, or if none of
