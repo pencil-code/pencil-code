@@ -225,9 +225,9 @@ module EquationOfState
 !
       if (ieosvar_count==0) ieosvar_selected=0
 !
-      if (ieosvar_count>=2) &
-        call fatal_error("select_eos_variable", &
-             "2 thermodynamic quantities have already been defined while attempting to add a 3rd: ") !//variable)
+      if (ieosvar_count>=2) call fatal_error("select_eos_variable", &
+           "2 thermodynamic quantities have already been defined while attempting to add a 3rd: "// &
+           trim(variable))
 !
       ieosvar_count=ieosvar_count+1
 !

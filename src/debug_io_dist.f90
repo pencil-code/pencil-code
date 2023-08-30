@@ -197,6 +197,8 @@ contains
 !
 !  15-feb-02/wolf: coded
 !
+!$    use OMP_lib, only: omp_in_parallel      
+!
       character (len=*), intent(in) :: file
       integer, intent(in) :: ndim
       real, dimension (nx,ndim), intent(in) :: a
@@ -204,7 +206,7 @@ contains
       real :: t_sp   ! t in single precision for backwards compatibility
       character (len=fnlen) :: filename
 !
-!$ if (omp_in_parallel()) return
+!$    if (omp_in_parallel()) return
 !
       filename = trim (datadir_snap)//'/'//trim (file)
       t_sp = t
@@ -227,6 +229,7 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Mpicomm, only: stop_it
+!$    use OMP_lib, only: omp_in_parallel      
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: ndim
@@ -235,7 +238,7 @@ contains
       real :: t_sp   ! t in single precision for backwards compatibility
       character (len=fnlen) :: filename
 !
-!$ if (omp_in_parallel()) return
+!$    if (omp_in_parallel()) return
 !
       t_sp = t
       filename = trim (datadir_snap)//'/'//trim (file)

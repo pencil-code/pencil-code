@@ -241,12 +241,16 @@ contains
 !
 !  15-feb-02/wolf: coded
 !
+!$    use OMP_lib, only: omp_in_parallel      
+!
       character (len=*), intent(in) :: file
       integer, intent(in) :: ndim
       real, dimension (nx,ndim), intent(in) :: a
 !
       real :: t_sp   ! t in single precision for backwards compatibility
       character (len=fnlen) :: filename
+!
+!$    if (omp_in_parallel()) return
 !
       t_sp = t
       if (ip<9.and.lroot.and.imn==1) &
@@ -271,6 +275,7 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Mpicomm, only: stop_it
+!$    use OMP_lib, only: omp_in_parallel      
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: ndim
@@ -278,6 +283,8 @@ contains
 !
       real :: t_sp   ! t in single precision for backwards compatibility
       character (len=fnlen) :: filename
+!
+!$    if (omp_in_parallel()) return
 !
       t_sp = t
       if ((ip<=8) .and. lroot .and. imn==1) &

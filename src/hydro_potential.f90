@@ -133,7 +133,6 @@ module Hydro
   real :: amp_meri_circ = 0.0
   real :: max_uu = 0.
 ! The following is useful to debug the forcing - Dhruba
-  real :: outest
   real :: omega_ini=0.0
   logical :: loutest
   real :: r_cyl = 1.0, skin_depth = 1e-1
@@ -1214,6 +1213,7 @@ module Hydro
 !
       real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmp3
+      real :: outest
       integer :: i, j, ju, ij, jj, kk, jk
 !
       intent(in) :: lpenc_loc
@@ -1274,14 +1274,12 @@ module Hydro
       if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
 ! Useful to debug forcing - Dhruba
       if (loutest.and.lpenc_loc(i_ou))then
-!      write(*,*) lpenc_loc(i_ou)
+!        write(*,*) lpenc_loc(i_ou)
         outest = minval(p%ou)
-        if (outest<(-1.0d-8))then
+        if (outest < -1d-8)then
           write(*,*) m,n,outest,maxval(p%ou),lpenc_loc(i_ou)
           call warning('calc_pencils_hydro_nonlinear','ou has different sign than relhel')
-        else
         endif
-      else
       endif
 ! ugu
       if (lpenc_loc(i_ugu)) then
