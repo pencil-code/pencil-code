@@ -76,7 +76,6 @@ module Special
 ! Declare any index variables necessary for main or
 !
   real :: c_light2
-  integer :: iinfl_phi, iinfl_dphi
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -150,9 +149,6 @@ module Special
 !
       if (c_light/=1.) call fatal_error('disp_current', "use unit_system='set'")
       c_light2=c_light**2
-!
-      iinfl_phi=farray_index_by_name('infl_phi')
-      iinfl_dphi=farray_index_by_name('infl_dphi')
 !
       if (lmagnetic) then
         call get_shared_variable('loverride_ee',loverride_ee)

@@ -68,15 +68,14 @@ module Special
   implicit none
 !
   include '../special.h'
-! Global arrays
+! Module variables.
   real :: rho01,cs201,gammam11,Bshear=0.,p0,p01,nw1
   logical :: lunstratified=.false.,lstratification=.true.
   logical :: lstatic_stratification=.false.
-  real, dimension (nx) :: strat
   real, dimension (nz) :: rtime_strat
+  real, dimension (nx) :: strat
 !
-  namelist /special_run_pars/ Bshear,lunstratified,&
-      lstatic_stratification
+  namelist /special_run_pars/ Bshear,lunstratified,lstatic_stratification
 !
   integer :: idiag_pstratm=0,idiag_pstratmax=0,idiag_pstratmin=0
 !
@@ -114,7 +113,7 @@ module Special
 !
 !  Define if we want stratification
 !
-      if (nzgrid==1.or.(nzgrid/=1.and.lunstratified)) lstratification=.false.
+      if (nzgrid==1.or.lunstratified) lstratification=.false.
 !
       call get_gamma_etc(gamma,cv=cv)
       gamma1=1./gamma; gamma_m1=gamma-1.; cv1=1./cv
@@ -147,12 +146,10 @@ module Special
       lpenc_requested(i_rho1)=.true.
       lpenc_requested(i_uu)=.true.
 !
-      if (lentropy.or.&
-          (ltemperature.and.(.not.ltemperature_nolog))) &
+      if (lentropy.or.(ltemperature.and.(.not.ltemperature_nolog))) &
           lpenc_requested(i_TT1)=.true.
 !
-      if (ltemperature.or.&
-          (lentropy.and.pretend_lnTT)) &
+      if (ltemperature.or.(lentropy.and.pretend_lnTT)) &
           lpenc_requested(i_cv1)=.true.
 !
     endsubroutine pencil_criteria_special
@@ -163,12 +160,11 @@ module Special
 !
       use Mpicomm
       use Gravity, only: potential
-      use EquationOfState, only: cs20
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+!
       real, dimension (nx) :: pot
-      integer :: i
 !
 !  Calculate the stratification pencil
 !
@@ -182,7 +178,7 @@ module Special
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           strat=exp(-gamma*pot*cs201)
         else
-          do i=1,nx;strat(i)=rtime_strat(n-n1+1);enddo
+          strat=rtime_strat(n-n1+1)
         endif
       else !no stratification
         strat=1.
@@ -209,12 +205,9 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !
       if (ldiagnos) then
-        if (idiag_pstratm/=0) &
-             call sum_mn_name(strat,idiag_pstratm)
-        if (idiag_pstratmax/=0) &
-             call max_mn_name(strat,idiag_pstratmax)
-        if (idiag_pstratmin/=0) &
-             call max_mn_name(-strat,idiag_pstratmin,lneg=.true.)
+        call sum_mn_name(strat,idiag_pstratm)
+        call max_mn_name(strat,idiag_pstratmax)
+        if (idiag_pstratmin/=0) call max_mn_name(-strat,idiag_pstratmin,lneg=.true.)
       endif
 !
       call keep_compiler_quiet(f)
@@ -251,8 +244,7 @@ module Special
       real, dimension (nz) :: pp_sum
       integer :: nn,i
 !
-      if (lstratification.and.&
-          (.not.lstatic_stratification)) then
+      if (lstratification.and.(.not.lstatic_stratification)) then
 !
 !  Calculate mean pressure stratification at each xy-level
 !
@@ -272,7 +264,7 @@ module Special
             endif
 !
             if (ltemperature.or.pretend_lnTT) then
-              call fatal_error("lazy wlad didn't want to code entropy","")
+              call not_implemented("special_before_boundary","for ltemperature or pretend_lnTT")
             else
               ss=f(l1:l2,m,n,iss)
             endif
@@ -426,10 +418,8 @@ module Special
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cv1*p%rho1*p%TT1*rhs
         endif
       else
-        print*,"You want to use a global baroclinic term but    "
-        print*,"you are NOT solving the energy equation. Better "
-        print*,"stop and check."
-        call fatal_error("global_baroclinic","")
+        call fatal_error("special_calc_energy", &
+                         "global baroclinic term used but are energy equation not solved")
       endif
 !
       call keep_compiler_quiet(f)

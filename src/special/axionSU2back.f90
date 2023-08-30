@@ -607,7 +607,7 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
-        call sum_mn_name(Q,idiag_Q)
+        call sum_mn_name(f(l1:l2,m,n,iaxi_Q),idiag_Q)
         call sum_mn_name(Qdot,idiag_Qdot)
         call sum_mn_name(Qddot,idiag_Qddot)
         call sum_mn_name(chi,idiag_chi)

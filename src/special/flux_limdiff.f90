@@ -416,17 +416,17 @@ module Special
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - q%divflux*p%rho1*p%TT1
 !
       if (ldiagnos) then 
-        if (idiag_kappam/=0)    call sum_mn_name(q%kappa,idiag_kappam)
-        if (idiag_kappamax/=0)  call max_mn_name(q%kappa,idiag_kappamax)
+        call sum_mn_name(q%kappa,idiag_kappam)
+        call max_mn_name(q%kappa,idiag_kappamax)
         if (idiag_kappamin/=0)  call max_mn_name(-q%kappa,idiag_kappamin,lneg=.true.)
 !
-        if (idiag_lambdam/=0)   call sum_mn_name(q%lambda,idiag_lambdam)
-        if (idiag_lambdamax/=0) call max_mn_name(q%lambda,idiag_lambdamax)
+        call sum_mn_name(q%lambda,idiag_lambdam)
+        call max_mn_name(q%lambda,idiag_lambdamax)
         if (idiag_lambdamin/=0) call max_mn_name(-q%lambda,idiag_lambdamin,lneg=.true.)
 !
-        if (idiag_divfluxm/=0)  call sum_mn_name(q%divflux,idiag_divfluxm)
+        call sum_mn_name(q%divflux,idiag_divfluxm)
+        call max_mn_name(q%divflux,idiag_divfluxmax)
         if (idiag_divflux2m/=0) call sum_mn_name(q%divflux**2,idiag_divflux2m)
-        if (idiag_divfluxmax/=0)  call max_mn_name(q%divflux,idiag_divfluxmax)
         if (idiag_divfluxmin/=0)  call max_mn_name(-q%divflux,idiag_divfluxmin,lneg=.true.)
       endif
 !

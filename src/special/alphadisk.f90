@@ -38,7 +38,6 @@ module Special
 !
 !  These are the needed internal "pencils".
 !
-  real, dimension(nx) :: del2sigmanu, gsigmanu, psigma, pmdot
   real, dimension(nx) :: c1, c2, c3
   real, dimension(nx) :: rr, rr1
   real, dimension(nx) :: swind
@@ -125,7 +124,7 @@ module Special
 !
   contains
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_special
 !
 !  Set up indices for variables in special modules.
 !
@@ -166,13 +165,13 @@ module Special
 !
 !  Set constants.
 !
-      msun_cgs             = 1.98892d33 !g
-      mearth_cgs           = 5.9722d27  !g
-      AU_cgs               = 1.49d13    !cm
-      yr_cgs               = 31556926.  !s
-      GNewton_cgs          = 6.67d-8
-      kB_cgs               = 1.380649d-16 !erg/K
-      munit_cgs            = 1.660538d-30 ! g
+      msun_cgs     = 1.98892d33 !g
+      mearth_cgs   = 5.9722d27  !g
+      AU_cgs       = 1.49d13    !cm
+      yr_cgs       = 31556926.  !s
+      GNewton_cgs  = 6.67d-8
+      kB_cgs       = 1.380649d-16 !erg/K
+      munit_cgs    = 1.660538d-30 ! g
 !
 !  Some shortcuts
 !
@@ -217,7 +216,7 @@ module Special
 !
 !  Set the wind profile.
 !
-      call get_wind()
+      call get_wind
 !
 !  Some variables need be re-initialized in runtime before the time loop.
 !
@@ -280,8 +279,7 @@ module Special
 !
           case('gaussian')
             do m=m1,m2; do n=n1,n2
-              f(l1:l2,m,n,isigma) = &
-                  sigma0*exp(-(x(l1:l2)-r0_gaussian)**2/(2*width_gaussian**2))
+              f(l1:l2,m,n,isigma) = sigma0*exp(-(x(l1:l2)-r0_gaussian)**2/(2*width_gaussian**2))
             enddo;enddo
 !
 !  Power law column density profile.
@@ -302,8 +300,7 @@ module Special
 !  Catch unknown initial conditions.
 !
           case default
-            call fatal_error('init_special','No such initial condition: '// &
-                initsigma(j))
+            call fatal_error('init_special','no such initial condition: '//trim(initsigma(j)))
           endselect
 !
         enddo
@@ -329,15 +326,13 @@ module Special
 !
         case('power-law')
           do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,itmid) = temperature0* &
-                (x(l1:l2)/plaw_r0)**(-plaw_temperature)
+            f(l1:l2,m,n,itmid) = temperature0*(x(l1:l2)/plaw_r0)**(-plaw_temperature)
           enddo;enddo
 !
 !  Store turbulent viscosity for use in evolution equation.
 !
-          nut_global=alpha* &
-              (kB_cgs*f(l1:l2,m1,n1,itmid)/(mumol*munit_cgs))/ &
-              sqrt(GNewton_cgs*msun_cgs/x(l1:l2)**3)
+          nut_global=alpha*(kB_cgs*f(l1:l2,m1,n1,itmid)/(mumol*munit_cgs))/ &
+                            sqrt(GNewton_cgs*msun_cgs/x(l1:l2)**3)
 !
 !  Constant turbulent viscosity (for testing).
 !
@@ -373,8 +368,7 @@ module Special
 !  Catch unknown initial conditions.
 !
         case default
-          call fatal_error('init_special','No such initial condition: '// &
-              inittmid(j))
+          call fatal_error('init_special','no such initial condition: '//trim(inittmid(j)))
         endselect
 !
       enddo
@@ -385,10 +379,8 @@ module Special
         call sigma_to_mdot(f(l1:l2,m,n,isigma),f(l1:l2,m,n,imdot))
       enddo; enddo
 !
-      if (lroot) then
-        print*,'minmax tmid = ',minval(f(l1:l2,m1:m2,n1:n2,itmid)),&
-                                maxval(f(l1:l2,m1:m2,n1:n2,itmid))
-      endif
+      if (lroot) print*,'minmax tmid = ',minval(f(l1:l2,m1:m2,n1:n2,itmid)), &
+                                         maxval(f(l1:l2,m1:m2,n1:n2,itmid))
 !
     endsubroutine init_special
 !***********************************************************************
@@ -461,15 +453,13 @@ module Special
       enddo
 !
       if (ldebug) then
-        print*,'minmax temperature table 1',minval(tmid1_table),&
-                                            maxval(tmid1_table)
-        print*,'minmax temperature table 2',minval(tmid2_table),&
-                                            maxval(tmid2_table)
+        print*,'minmax temperature table 1',minval(tmid1_table),maxval(tmid1_table)
+        print*,'minmax temperature table 2',minval(tmid2_table),maxval(tmid2_table)
       endif
 !
     endsubroutine precalc_temperatures
 !***********************************************************************
-    subroutine pencil_criteria_special()
+    subroutine pencil_criteria_special
 !
 !  All pencils that this special module depends on are specified here.
 !
@@ -497,25 +487,13 @@ module Special
 !  24-nov-04/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      use Sub, only: grad,del2
-!
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: tmp_vec
-      real, dimension (nx) :: tmp_scl
       type (pencil_case) :: p
 !
       intent(inout) :: f
       intent(inout) :: p
 !
-      psigma=f(l1:l2,m,n,isigma)
-      pmdot=f(l1:l2,m,n,imdot)
-!
-      call grad(f,imdot,tmp_vec)
-      gsigmanu = tmp_vec(:,1)*one_over_three_pi
-!
-      call del2(f,imdot,tmp_scl)
-      del2sigmanu = tmp_scl*one_over_three_pi
-!
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_special
@@ -536,11 +514,12 @@ module Special
 !  01-aug-11/wlad: adapted
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, yzsum_mn_name_x 
+      use Sub, only: grad,del2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: nu
-      real, dimension (nx) :: diffus_special
+      real, dimension (nx) :: nu,del2sigmanu,gsigmanu,psigma
+      real, dimension (nx,3) :: tmp_vec
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -552,8 +531,13 @@ module Special
 !
 !  Viscous diffusion equation for density (e.g. Pringle 1981).
 !
-      df(l1:l2,m,n,isigma) = df(l1:l2,m,n,isigma) + &
-          3*del2sigmanu + 4.5*rr1*gsigmanu
+      call del2(f,imdot,del2sigmanu)
+      del2sigmanu = del2sigmanu*one_over_three_pi
+
+      call grad(f,imdot,tmp_vec)
+      gsigmanu = tmp_vec(:,1)*one_over_three_pi
+!
+      df(l1:l2,m,n,isigma) = df(l1:l2,m,n,isigma) + 3*del2sigmanu + 4.5*rr1*gsigmanu
 !
 !  Add the photoevaporative wind.
 !
@@ -564,34 +548,31 @@ module Special
         endif
         df(l1:l2,m,n,isigma) = df(l1:l2,m,n,isigma) - swind
       endif
+
+      if (lfirst.and.ldt.or.ldiagnos.or.l1davgfirst) psigma=f(l1:l2,m,n,isigma)
+      if (lfirst.and.ldt.or.ldiagnos) nu=f(l1:l2,m,n,imdot)*one_over_three_pi/psigma
 !
 !  Contribution to the time-step from diffusion.
 !  (should the wind also play a role?).
 !
       if (lfirst.and.ldt) then
-        nu=pmdot*one_over_three_pi/psigma
-        diffus_special=nu*dxyz_2
-        maxdiffus=max(maxdiffus,diffus_special)
-        if (headtt.or.ldebug) &
-          print*,'dspecial_dt: max(diffus_special) =', maxval(diffus_special)
+        maxdiffus=max(maxdiffus,nu*dxyz_2)
+        if (headtt.or.ldebug) print*,'dspecial_dt: max(diffus_special) =', maxval(nu*dxyz_2)
       endif
 !
 !  Diagnostics.
 !
       if (ldiagnos) then
-        if (idiag_dtyear/=0) then
-          nu=pmdot*one_over_three_pi/psigma
-          call sum_mn_name(.4*dx**2/(3*nu),idiag_dtyear)
-        endif
-        if (idiag_sigmam/=0)   call sum_mn_name(psigma,idiag_sigmam)
-        if (idiag_sigmamax/=0) call max_mn_name(psigma,idiag_sigmamax)
+        if (idiag_dtyear/=0) call sum_mn_name(.4*dx**2/(3*nu),idiag_dtyear)
+        call sum_mn_name(psigma,idiag_sigmam)
+        call max_mn_name(psigma,idiag_sigmamax)
         if (idiag_sigmamin/=0) call max_mn_name(-psigma,idiag_sigmamin,lneg=.true.)
       endif
 !
 !  1-D averages.
 !
       if (l1davgfirst) then
-        if (idiag_sigmamx/=0) call yzsum_mn_name_x(psigma,idiag_sigmamx)
+        call yzsum_mn_name_x(psigma,idiag_sigmamx)
       endif
 !
       call keep_compiler_quiet(f)
@@ -675,8 +656,7 @@ module Special
 !  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'sigmamx', &
-            idiag_sigmamx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'sigmamx',idiag_sigmamx)
       enddo
 !
     endsubroutine rprint_special
@@ -708,7 +688,6 @@ module Special
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
-      real, dimension(nx) :: tmid
 !
       select case (temperature_model)
 !
@@ -725,9 +704,7 @@ module Special
 !  at this frequency.
 !
         do m=m1,m2 ; do n=n1,n2
-          call get_tmid(f(l1:l2,m,n,isigma),tmid)
-          f(l1:l2,m,n,itmid)=tmid
-!
+          call get_tmid(f(l1:l2,m,n,isigma),f(l1:l2,m,n,itmid))
           call sigma_to_mdot(f(l1:l2,m,n,isigma),f(l1:l2,m,n,imdot))
         enddo; enddo
 !
@@ -801,7 +778,7 @@ module Special
             lgsigma = (lgmdot - c3(i))/1.1
           else
             print*,'mdot=',mdot(i)
-            call fatal_error("mdot_to_sigma","")
+            call fatal_error("mdot_to_sigma","NaN in log(mdot)")
           endif
 !
           sigma(i)=10**lgsigma
@@ -849,7 +826,7 @@ module Special
           else
             print*,'sigma=',sigma(i)
             print*,'all sigmae=',sigma
-            call fatal_error("sigma_to_mdot","")
+            call fatal_error("sigma_to_mdot_mn","NaN in log(sigma)")
           endif
 !
           mdot(i)=10**lgmdot
@@ -895,8 +872,7 @@ module Special
           lgmdot=c3(i) + 1.1*lgsigma
         else
           print*,'sigma=',sigma
-          print*,'all sigmae=',sigma
-          call fatal_error("sigma_to_mdot","")
+          call fatal_error("sigma_to_mdot_pt","NaN in log(sigma)")
         endif
 !
         mdot=10**lgmdot
@@ -976,8 +952,7 @@ module Special
 !
         if (sig>maxsigma) then
           print*,'sigma,maxsigma=',sig,maxsigma
-          call fatal_error("get_tmid","sigma is greater than the maximum "//&
-               "value in the table")
+          call fatal_error("get_tmid","sigma is greater than maximum value in the table")
         else if ((sig>=sigma_middle).and.(sig<=maxsigma)) then
 !
           isig_do = floor((sigma(i) - minsigma)*dsig1) + 1
@@ -991,14 +966,14 @@ module Special
              print*,'get_tmid: isig_do is less than 1. That means the '
              print*,'tabled-temperature array is out of bounds. Stop and check.'
              print*,'sigma, isig_do, minsigma ',sig,isig_do,minsigma
-             call fatal_error("","")
+             call fatal_error("get_tmid","")
           endif
 !
           if (isig_up > nsigma_table) then
              print*,'get_tmid: isig_up is greater than nsigma_table. That means the '
              print*,'tabled-temperature array is out of bounds. Stop and check.'
              print*,'sigma, isig_up, maxsigma ',sig,isig_up,maxsigma
-             call fatal_error("","")
+             call fatal_error("get_tmid","")
           endif
 !
 !  Linear interpolation.
@@ -1020,8 +995,7 @@ module Special
 !
         else
           print*,'sigma,minsigma=',sig,sigma_floor
-          call fatal_error("get_tmid","sigma is less than the minimum "//&
-               "value in the table")
+          call fatal_error("get_tmid","sigma is less than the minimum value in the table")
         endif
 !
       enddo
@@ -1060,8 +1034,7 @@ module Special
 !
       x1=left ; x2=right
       if (x1==x2) then
-        call fatal_error('calc_tmid',&
-             'bad initial condition for newton-raphson')
+        call fatal_error('calc_tmid','bad initial condition for newton-raphson: left=right')
       endif
 !
 !  Phi is the LHS of the equation. When it is zero, the root
@@ -1106,8 +1079,7 @@ module Special
 !  Loop was exited, root is bracketed. Start the
 !  Newton-Raphson iterations.
 !
-      call newton_raphson(x1,x2,sigma,&
-           omega,mdot,phileft,phiright,temperature)
+      call newton_raphson(x1,x2,sigma,omega,mdot,phileft,phiright,temperature)
 !
     endsubroutine calc_tmid
 !***********************************************************************
@@ -1133,8 +1105,7 @@ module Special
 !
 !  Get the opacity and calculate the effective optical depth.
 !
-      call calc_opacity(temp,sigma,omega,&
-           kappa_cte,b_exp,a_exp,kappa)
+      call calc_opacity(temp,sigma,omega,kappa_cte,b_exp,a_exp,kappa)
 !
       tau  = .5*kappa*sigma
       tau1 = 1./tau
@@ -1159,8 +1130,7 @@ module Special
       grazing_irradiation = 2./(3*pi) * (radius_star/rr)**3
       flaring_term       = .5*( (radius_star/rr)**2 * (H/rr) * (dlnHdlnR - 1))
 !
-      temperature_irradiation = &
-           temperature_star * (max(grazing_irradiation + flaring_term,0.0))**0.25
+      temperature_irradiation = temperature_star * (max(grazing_irradiation + flaring_term,0.0))**0.25
 !
 ! Phi is the left-hand-side of the equation to solve.
 !
@@ -1180,14 +1150,13 @@ module Special
         if (present(d2phi)) then
           dtau2dt=(b_exp-.5*a_exp)*(b_exp-.5*a_exp-1)*tau*temp1**2
           d2phi = 24*stbz*temp**2 - .25*edot*dtau2dt*(1.5-tau1**2) + &
-               .5*edot*tau1**3*dtaudt**2
+                  .5*edot*tau1**3*dtaudt**2
         endif
       endif
 !
     endsubroutine get_phi
 !********************************************************************
-    subroutine newton_raphson(left,right,sigma,omega,mdot,&
-         phileft,phiright,temperature)
+    subroutine newton_raphson(left,right,sigma,omega,mdot,phileft,phiright,temperature)
 !
 !  01-aug-11/wlad: coded
 !
@@ -1279,9 +1248,8 @@ module Special
       enddo
 
       if (lroot) then
-        print*,'exceed maximum of iterations'
         print*,'left,right=',xl,xh
-        call fatal_error("newton_raphson","")
+        call fatal_error("newton_raphson","exceeds maximum of iterations")
       endif
 !
     endsubroutine newton_raphson
@@ -1313,9 +1281,8 @@ module Special
         endif
         icount=icount+1
         if (icount > maxit) then
-          print*,'exceed maximum of iterations'
           print*,'left,right=',left,right
-          call fatal_error("bisection","")
+          call fatal_error("bisection","exceeds maximum of iterations")
         endif
       enddo
 !
@@ -1335,9 +1302,7 @@ module Special
 !
       kk=0.0
 !
-      if (tt < 0.0) then
-        call fatal_error("calc_opacity", "Negative temperature")
-      endif
+      if (tt < 0.0) call fatal_error("calc_opacity", "negative temperature")
       if (TT <= T1) then
         k=2d-4 ; a=0 ; b= 2.1  ; kk=k*tt**b
       else if ((TT > T1) .and. (TT <= T2)) then
@@ -1367,10 +1332,9 @@ module Special
       else
         if (lroot) then
           print*,'calc_opacity: surface density ',sigma,' g/cm2'
-          print*,'calc_opacity: temperature ',TT,' K. Higher '//&
-               'than maximum allowed, ',T9
+          print*,'calc_opacity: temperature ',TT,' K. Higher than maximum allowed, ',T9
         endif
-        call fatal_error("","")
+        call fatal_error("calc_opacity","")
       endif
 !
     endsubroutine calc_opacity
