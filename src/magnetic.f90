@@ -1014,7 +1014,7 @@ module Magnetic
 !
   real, dimension(nx) :: etatotal=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
-  real, dimension(nx,3) :: fres,uxbb
+  real, dimension(nx,3) :: fres
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
   real :: eta_shock_jump1=1.0, eta_tdep=0.0, Arms=0.0
@@ -3801,7 +3801,6 @@ module Magnetic
 ! uxb
       if (lpenc_loc(i_uxb)) then
         call cross_mn(p%uu,p%bb,p%uxb)
-        call cross_mn(p%uu,p%bbb,uxbb)
 !  add external e-field.
         do j=1,3
           if (iglobal_eext(j)/=0) p%uxb(:,j)=p%uxb(:,j)+f(l1:l2,m,n,iglobal_eext(j))
@@ -5671,7 +5670,9 @@ module Magnetic
       type(pencil_case) :: p
 
       integer :: isound,lspoint,mspoint,nspoint,j
-      real, dimension (nx,3) :: uxbxb,poynting
+      real, dimension (nx,3) :: uxbb,uxbxb,poynting
+
+      if (lpencil(i_uxb)) call cross_mn(p%uu,p%bbb,uxbb)
 !
 ! Magnetic field components at the list of points written out in sound.dat
 ! lwrite_sound is false if either no sound output is required, or if none of

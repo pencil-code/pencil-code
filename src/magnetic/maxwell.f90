@@ -102,7 +102,7 @@ module Magnetic
   logical :: lcalc_aameanz=.false., lcalc_aamean=.false.
   logical :: reinitialize_aa=.false.
   logical, dimension(7) :: lresi_dep=.false. 
-  logical :: lcovariant_magnetic=.false., lcoulomb=.false.
+  logical :: lcoulomb=.false.
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
   integer :: iLam=0
 !
