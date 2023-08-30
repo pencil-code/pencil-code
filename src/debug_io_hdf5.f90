@@ -82,7 +82,6 @@ contains
 !
 !  write debug snapshot file from a scalar quantity
 !
-!
       integer, intent(in), optional :: nv
       real, dimension (mx,my,mz), intent(in) :: a
       character (len=*), intent(in) :: file
@@ -96,6 +95,7 @@ contains
 !  write debug snapshot file of penciled vector data
 !
       use General, only: itoa
+!$    use OMP_lib, only: omp_in_parallel      
 !
       integer, intent(in) :: nv
       real, dimension (nx,nv), intent(in) :: a
@@ -103,6 +103,8 @@ contains
 !
       character (len=fnlen) :: filename, dataset
       integer :: pos
+!
+!$    if (omp_in_parallel()) return
 !
       if (lroot .and. headt .and. (imn == 1)) &
           print *, 'output_pencil: Writing to ' // trim(file) // ' for debugging -- this may slow things down'
@@ -140,9 +142,13 @@ contains
 !
 !  write debug snapshot file of penciled scalar data
 !
+!$    use OMP_lib, only: omp_in_parallel      
+!
       integer, intent(in), optional :: nv
       real, dimension (nx), intent(in) :: a
       character (len=*), intent(in) :: file
+!
+!$    if (omp_in_parallel()) return
 !
       call output_pencil_vect (file, (/ a /), 1)
 !
