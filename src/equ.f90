@@ -509,7 +509,7 @@ module Equ
 !  Set reduced_variables to zero before diag since master thread won't take part in reduction
 !
       call init_diagnostics_accumulators
-!$    num_of_threads_used = num_threads-2
+!$    num_of_threads_used = min(num_threads-2,1)
 !$    nper_thread = nyz/num_of_threads_used
       iend = 0
       do i=1,num_of_threads_used
@@ -548,6 +548,7 @@ module Equ
       lfirstpoint=.true.
 !
 !  Restore options that were used when calc_all_module_diagnostics was called
+!  MR: Why needed?
 !
 !$    l1davgfirst = l1davgfirst_save
 !$    ldiagnos = ldiagnos_save
@@ -641,8 +642,7 @@ module Equ
 !  Set that the master thread nows we have started the finalization
 !
 !$    started_finalizing_diagnostics = .true.
-
-
+!
 !  Restore options that were used when calc_all_module_diagnostics was called
 !
 !$    l1davgfirst = l1davgfirst_save
