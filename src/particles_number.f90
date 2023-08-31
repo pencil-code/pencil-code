@@ -32,13 +32,12 @@ module Particles_number
   real :: depletion_rate=0.0
   logical :: lfragmentation_par=.false.,lbirthring_depletion=.false.
   character (len=labellen), dimension(ninit) :: initnpswarm='nothing'
-  character (len=intlen) :: sdust
+  logical :: llog10_for_admom_above10=.true.
 !
-  integer :: idiag_npswarmm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0, k
+  integer :: idiag_npswarmm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0
   integer :: idiag_dtfragp=0, idiag_npsm=0
   integer, parameter :: mmom=24
   integer, dimension(0:mmom) :: idiag_admom=0
-  logical :: llog10_for_admom_above10=.true.
 !
   namelist /particles_number_init_pars/ &
       initnpswarm, np_swarm0, rhop_swarm0, vthresh_coagulation, &
@@ -83,11 +82,11 @@ module Particles_number
       endif
 !
       if (lfragmentation_par .and..not.(lcartesian_coords.and.(all(lequidist)))) &
-           call fatal_error( 'initialize_particles_number', &
-           'fragmentation only '//'implemented for Cartesian equidistant grids.')
+           call not_implemented('initialize_particles_number', &
+                                'for other than Cartesian equidistant grids')
       if (lbirthring_depletion .and..not.(lcylindrical_coords.or.lspherical_coords)) &
            call fatal_error( 'initialize_particles_number', &
-           'birthring depletion only '//'implemented for cyl, sph polar grids.')
+                             'birthring depletion only implemented for cyl, sph polar grids.')
 !
       call keep_compiler_quiet(f)
 !
@@ -104,8 +103,6 @@ module Particles_number
 !
       call set_particle_number(f,fp,1,npar_loc,init=.true.)
 !
-      call keep_compiler_quiet(f)
-!
     endsubroutine init_particles_number
 !***********************************************************************
     subroutine set_particle_number(f,fp,npar_low,npar_high,init)
@@ -118,7 +115,7 @@ module Particles_number
       logical, optional :: init
 
       logical :: initial
-      integer :: j
+      integer :: j,k
 !
       initial=lroot.and.loptest(init)
 !
@@ -227,6 +224,7 @@ module Particles_number
         if (lfirst.and.ldt) dt1_fragmentation=0.0
 !
         if (npar_imn(imn)/=0) then
+
           do l=l1,l2
 !  Need to count collisions for diagnostics.
             if (ldiagnos) then
@@ -247,17 +245,13 @@ module Particles_number
 !  Consider neighbours one at a time.
                 do while (kneighbour(j)/=0)
                   j=kneighbour(j)
-                  if (ip<=6.and.lroot) then
-                    print*, &
-                        'dnpswarm_dt: collisions between particle ', k, 'and', j
-                  endif
+                  if (ip<=6.and.lroot) print*, 'dnpswarm_dt: collisions between particle ',k,'and',j
 !  Collision speed.
-                  deltavp=sqrt( &
-                      (fp(k,ivpx)-fp(j,ivpx))**2 + &
-                      (fp(k,ivpy)-fp(j,ivpy))**2 + &
-                      (fp(k,ivpz)-fp(j,ivpz))**2 )
-                  if (deltavp22_floor/=0.0) &
-                      deltavp=sqrt(deltavp**2+deltavp22_floor**2)
+                  deltavp=sqrt((fp(k,ivpx)-fp(j,ivpx))**2 + &
+                               (fp(k,ivpy)-fp(j,ivpy))**2 + &
+                               (fp(k,ivpz)-fp(j,ivpz))**2 )
+
+                  if (deltavp22_floor/=0.0) deltavp=sqrt(deltavp**2+deltavp22_floor**2)
 !  Collision cross section.
                   sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
 !  Collision rate between two superparticles.
@@ -267,23 +261,19 @@ module Particles_number
                     dfp(j,inpswarm) = dfp(j,inpswarm) - 0.5*cdot
                     dfp(k,inpswarm) = dfp(k,inpswarm) - 0.5*cdot
                     if (fp(k,inpswarm)/=0.0) &
-                        dfp(k,iap) = dfp(k,iap) + &
-                        1/3.*(0.5*cdot)*fp(k,iap)/fp(k,inpswarm)
+                        dfp(k,iap) = dfp(k,iap) + 1/3.*(0.5*cdot)*fp(k,iap)/fp(k,inpswarm)
                     if (fp(j,inpswarm)/=0.0) &
-                        dfp(j,iap) = dfp(j,iap) + &
-                        1/3.*(0.5*cdot)*fp(j,iap)/fp(j,inpswarm)
+                        dfp(j,iap) = dfp(j,iap) + 1/3.*(0.5*cdot)*fp(j,iap)/fp(j,inpswarm)
 !  ...or fragmentation.
                   else
                     dfp(j,inpswarm) = dfp(j,inpswarm) - cdot
                     dfp(k,inpswarm) = dfp(k,inpswarm) - cdot
                     if (lpscalar_nolog) then
-                      df(l,m,n,icc) = df(l,m,n,icc) + &
-                          p%rho1(l-nghost)*4/3.*pi*rhopmat* &
-                          (fp(j,iap)**3+fp(k,iap)**3)*cdot
+                      df(l,m,n,icc) = df(l,m,n,icc) + p%rho1(l-nghost)*4/3.*pi*rhopmat* &
+                                      (fp(j,iap)**3+fp(k,iap)**3)*cdot
                     else
-                      df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
-                          p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
-                          (fp(j,iap)**3+fp(k,iap)**3)*cdot
+                      df(l,m,n,ilncc) = df(l,m,n,ilncc) + p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
+                                        (fp(j,iap)**3+fp(k,iap)**3)*cdot
                     endif
                   endif  ! fragmentation or coagulation
 !  Time-step contribution
@@ -302,20 +292,17 @@ module Particles_number
                 enddo
 !  Subgrid model of collisions within a superparticle.
                 if (deltavp22_floor/=0.0) then
-                  if (ip<=6.and.lroot) then
-                    print*, 'dnpswarm_dt: collisions within particle ', k
-                  endif
+
+                  if (ip<=6.and.lroot) print*, 'dnpswarm_dt: collisions within particle ', k
                   deltavp=deltavp22_floor
                   sigma_jk=pi*(fp(k,iap)+fp(k,iap))**2
                   cdot = sigma_jk*fp(k,inpswarm)*fp(k,inpswarm)*deltavp
                   dfp(k,inpswarm) = dfp(k,inpswarm) - cdot
                   if (lpscalar_nolog) then
-                    df(l,m,n,icc) = df(l,m,n,icc) + &
-                        p%rho1(l-nghost)*4/3.*pi*rhopmat*fp(k,iap)**3*cdot
+                    df(l,m,n,icc) = df(l,m,n,icc) + p%rho1(l-nghost)*4/3.*pi*rhopmat*fp(k,iap)**3*cdot
                   else
-                    df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
-                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi* &
-                        rhopmat*fp(k,iap)**3*cdot
+                    df(l,m,n,ilncc) = df(l,m,n,ilncc) + p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi* &
+                                      rhopmat*fp(k,iap)**3*cdot
                   endif
 !  Need to count collisions for diagnostics.
                   if (ldiagnos) then
@@ -339,20 +326,17 @@ module Particles_number
             if (ldiagnos) then
 !  Average collision speed per particle
               if (idiag_dvp22mwnp/=0 .and. ncoll>=1) &
-                  call sum_weighted_name((/ deltavp_sum/ncoll /), &
-                                         (/ npswarm_sum /),idiag_dvp22mwnp)
+                  call sum_weighted_name((/ deltavp_sum/ncoll /),(/ npswarm_sum /),idiag_dvp22mwnp)
 !  Average collision speed per collision
               if (idiag_dvp22mwnp2/=0 .and. ncoll>=1) &
-                  call sum_weighted_name((/ deltavp_sum/ncoll /), &
-                                         (/ np2swarm_sum /),idiag_dvp22mwnp2)
+                  call sum_weighted_name((/ deltavp_sum/ncoll /),(/ np2swarm_sum /),idiag_dvp22mwnp2)
             endif
           enddo ! l1,l2
 !
-          if (lfirst.and.ldt) then
+          if (lfirst.and.ldt.or.ldiagnos) then
             dt1_fragmentation=dt1_fragmentation/cdtpf
-            dt1_max=max(dt1_max,dt1_fragmentation)
-            if (ldiagnos.and.idiag_dtfragp/=0) &
-                call max_mn_name(dt1_fragmentation,idiag_dtfragp,l_dt=.true.)
+            if (lfirst.and.ldt) dt1_max=max(dt1_max,dt1_fragmentation)
+            if (ldiagnos) call max_mn_name(dt1_fragmentation,idiag_dtfragp,l_dt=.true.)
           endif
 !
         endif ! npar_imn/=0
@@ -362,7 +346,7 @@ module Particles_number
       ! deplete particles within a certain radial range
       ! (as in collisional grain destruction in debris disks)
         where ((fp(1:npar_loc,ixp)>birthring_inner) .and. &
-          (fp(1:npar_loc,ixp)<birthring_outer)) &
+               (fp(1:npar_loc,ixp)<birthring_outer)) &
           dfp(1:npar_loc,inpswarm) = -depletion_rate
       endif
 !
@@ -386,13 +370,13 @@ module Particles_number
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
+      integer :: k
+!
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_npswarmm/=0) &
-            call sum_par_name(fp(1:npar_loc,inpswarm),idiag_npswarmm)
-        if (idiag_npsm/=0) &
-            call integrate_par_name(fp(1:npar_loc,inpswarm)/nwgrid,idiag_npsm)
+        call sum_par_name(fp(1:npar_loc,inpswarm),idiag_npswarmm)
+        if (idiag_npsm/=0) call integrate_par_name(fp(1:npar_loc,inpswarm)/nwgrid,idiag_npsm)
       endif
 
       if (ldiagnos) then
@@ -461,7 +445,8 @@ module Particles_number
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname
+      integer :: iname,k
+      character (len=intlen) :: sdust
 !
 !  Reset everything in case of reset.
 !
@@ -472,22 +457,18 @@ module Particles_number
 !
 !  Run through all possible names that may be listed in print.in.
 !
-      if (lroot.and.ip<14) &
-          print*, 'rprint_particles_number: run through parse list'
+      if (lroot.and.ip<14) print*, 'rprint_particles_number: run through parse list'
+
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname), &
-            'npswarmm',idiag_npswarmm)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'npsm',idiag_npsm)
+        call parse_name(iname,cname(iname),cform(iname),'npswarmm',idiag_npswarmm)
+        call parse_name(iname,cname(iname),cform(iname),'npsm',idiag_npsm)
         do k=0,mmom 
            sdust=itoa(k)
            call parse_name(iname,cname(iname),cform(iname),'admom',idiag_admom(k))
            call parse_name(iname,cname(iname),cform(iname),'admom'//trim(sdust),idiag_admom(k))
         enddo
-        call parse_name(iname,cname(iname),cform(iname), &
-            'dvp22mwnp',idiag_dvp22mwnp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'dvp22mwnp2',idiag_dvp22mwnp2)
+        call parse_name(iname,cname(iname),cform(iname),'dvp22mwnp',idiag_dvp22mwnp)
+        call parse_name(iname,cname(iname),cform(iname),'dvp22mwnp2',idiag_dvp22mwnp2)
         call parse_name(iname,cname(iname),cform(iname),'dtfragp',idiag_dtfragp)
       enddo
 !
