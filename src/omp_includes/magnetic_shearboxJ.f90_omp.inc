@@ -1,1 +1,0 @@
-!$omp threadprivate(va2max_beta)
