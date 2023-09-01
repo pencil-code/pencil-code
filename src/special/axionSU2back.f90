@@ -404,6 +404,7 @@ module Special
 !  efficiency.
 !
 !   2-dec-2022/axel: coded
+!   1-sep-2023/axel: implemented lwith_eps with conformal time.
 !
       use General, only: random_number_wrapper
       use Diagnostics
@@ -514,7 +515,8 @@ module Special
         TRdot_anal=(k/sqrt(2.*k))*sin(k/(a*H))
       endif
 !
-!  perturbation
+!  perturbation: when lwith_eps=T, we replace Q -> sqrt(epsQE)
+!  and mQ*Q -> sqrt(epsQB).
 !
       if (lconf_time) then
         if (lwith_eps) then
@@ -522,6 +524,12 @@ module Special
             +(2.*sqrt(epsQE)/t)*TRdot+((2.*sqrt(epsQB)*(mQ+k*t))/t**2)*TR
           TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*sqrt(epsQE))/t*psidot &
             +(2.*sqrt(epsQE))/t**2*psi+(2.*sqrt(epsQB))/t**2*(mQ+k*t)*psi
+          if (lim_psi_TR) then
+            impsiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi &
+              +(2.*sqrt(epsQE)/t)*imTRdot+((2.*sqrt(epsQB)*(mQ+k*t))/t**2)*imTR
+            imTRdot=--(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
+              +(2.*sqrt(epsQE))/t**2*impsi+(2.*sqrt(epsQB))/t**2*(mQ+k*t)*impsi
+          endif
         else
           psiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi &
             +(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
@@ -531,7 +539,7 @@ module Special
             impsiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi &
               +(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
             imTRdot=--(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
--             +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
+              +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
           endif
         endif
 !
@@ -555,18 +563,18 @@ module Special
             df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot)+TRddot
           endwhere
         else
-          df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+          df(l1:l2,m,n,iaxi_psi   )=df(l1:l2,m,n,iaxi_psi   )+psidot
           df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot)+psiddot
-          df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
-          df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot)+TRddot
+          df(l1:l2,m,n,iaxi_TR    )=df(l1:l2,m,n,iaxi_TR    )+TRdot
+          df(l1:l2,m,n,iaxi_TRdot )=df(l1:l2,m,n,iaxi_TRdot )+TRddot
           if (lim_psi_TR) then
-            df(l1:l2,m,n,iaxi_impsi)=df(l1:l2,m,n,iaxi_impsi)+impsidot
+            df(l1:l2,m,n,iaxi_impsi   )=df(l1:l2,m,n,iaxi_impsi   )+impsidot
             df(l1:l2,m,n,iaxi_impsidot)=df(l1:l2,m,n,iaxi_impsidot)+impsiddot
-            df(l1:l2,m,n,iaxi_imTR)=df(l1:l2,m,n,iaxi_imTR)+imTRdot
-            df(l1:l2,m,n,iaxi_imTRdot)=df(l1:l2,m,n,iaxi_imTRdot)+imTRddot
+            df(l1:l2,m,n,iaxi_imTR    )=df(l1:l2,m,n,iaxi_imTR    )+imTRdot
+            df(l1:l2,m,n,iaxi_imTRdot )=df(l1:l2,m,n,iaxi_imTRdot )+imTRddot
           endif
 !
-!  left-handed modes (to be checked)
+!  left-handed modes (to be checked, not finalized)
 !
           if (lleft_psiL_TL) then
             df(l1:l2,m,n,iaxi_psiL)=df(l1:l2,m,n,iaxi_psiL)+psiLdot
@@ -605,7 +613,7 @@ module Special
             f(l1:l2,m,n,iaxi_TR)=TR_anal
             f(l1:l2,m,n,iaxi_TRdot)=TRdot_anal
           elsewhere
-            df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+            df(l1:l2,m,n,iaxi_psi   )=df(l1:l2,m,n,iaxi_psi   )+psidot
             df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
               -H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
             df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
@@ -615,7 +623,7 @@ module Special
           endwhere
         else
           df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
-          df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
+          df(l1:l2,m,n,iaxi_TR )=df(l1:l2,m,n,iaxi_TR )+TRdot
           if (lwith_eps) then
             psiddot=-H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
           else
@@ -904,10 +912,10 @@ module Special
 !
 !  Now set TR, TRdot, and imaginary parts, after they have been updated.
 !
-      TR=f(l1:l2,m,n,iaxi_TR)
+      TR   =f(l1:l2,m,n,iaxi_TR)
       TRdot=f(l1:l2,m,n,iaxi_TRdot)
       if (lim_psi_TR) then
-        imTR=f(l1:l2,m,n,iaxi_imTR)
+        imTR   =f(l1:l2,m,n,iaxi_imTR)
         imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
       endif
 !
