@@ -36,7 +36,9 @@ module Special
 !
   integer :: iaxi_Q=0, iaxi_Qdot=0, iaxi_chi=0, iaxi_chidot=0, Ndivt=100
   integer :: iaxi_psi=0, iaxi_psidot=0, iaxi_TR=0, iaxi_TRdot=0
+  integer :: iaxi_psiL=0, iaxi_psiLdot=0, iaxi_TL=0, iaxi_TLdot=0
   integer :: iaxi_impsi=0, iaxi_impsidot=0, iaxi_imTR=0, iaxi_imTRdot=0
+  integer :: iaxi_impsiL=0, iaxi_impsiLdot=0, iaxi_imTL=0, iaxi_imTLdot=0
 !
   ! input parameters
   real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
@@ -57,12 +59,12 @@ module Special
   logical :: ldo_adjust_krange=.true.
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
-  logical :: lim_psi_TR=.false., lkeep_mQ_const=.false.
+  logical :: lim_psi_TR=.false., lleft_psiL_TL=.false., lkeep_mQ_const=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
-    llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, &
+    llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
     nmin0, nmax0, ldo_adjust_krange
 !
   ! run parameters
@@ -144,6 +146,13 @@ module Special
         call farray_register_pde('axi_impsidot',iaxi_impsidot)
         call farray_register_pde('axi_imTR'    ,iaxi_imTR)
         call farray_register_pde('axi_imTRdot' ,iaxi_imTRdot)
+      endif
+!
+      if (lleft_psiL_TL) then
+        call farray_register_pde('axi_impsiL'   ,iaxi_impsiL)
+        call farray_register_pde('axi_impsiLdot',iaxi_impsiLdot)
+        call farray_register_pde('axi_imTL'    ,iaxi_imTL)
+        call farray_register_pde('axi_imTLdot' ,iaxi_imTLdot)
       endif
 !
     endsubroutine register_special
@@ -320,6 +329,16 @@ module Special
               f(l1:l2,m,n,iaxi_imTR)=imTR
               f(l1:l2,m,n,iaxi_imTRdot)=imTRdot
             endif
+            if (lleft_psiL_TL) then
+              f(l1:l2,m,n,iaxi_psiL)=psi
+              f(l1:l2,m,n,iaxi_psiLdot)=psidot
+              f(l1:l2,m,n,iaxi_TL)=TR
+              f(l1:l2,m,n,iaxi_TLdot)=TRdot
+              f(l1:l2,m,n,iaxi_impsiL)=impsi
+              f(l1:l2,m,n,iaxi_impsiLdot)=impsidot
+              f(l1:l2,m,n,iaxi_imTL)=imTR
+              f(l1:l2,m,n,iaxi_imTLdot)=imTRdot
+            endif
           enddo
           enddo 
 !
@@ -394,9 +413,11 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: Q, Qdot, Qddot, chi, chidot, chiddot
-      real, dimension (nx) :: psi, psidot, psiddot, TR, TRdot, TRddot
+      real, dimension (nx) :: psi , psidot , psiddot , TR, TRdot, TRddot
+      real, dimension (nx) :: psiL, psiLdot, psiLddot, TL, TLdot, TLddot
       real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
-      real, dimension (nx) :: impsi, impsidot, imTR, imTRdot
+      real, dimension (nx) :: impsi , impsidot , impsiddot , imTR, imTRdot, imTRddot
+      real, dimension (nx) :: impsiL, impsiLdot, impsiLddot, imTL, imTLdot, imTLddot
       real, dimension (nx) :: Uprime, mQ, xi, epsQE, epsQB
       real :: fact=1.
       integer :: ik
@@ -430,6 +451,17 @@ module Special
         imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
       endif
 !
+      if (lleft_psiL_TL) then
+        psiL=f(l1:l2,m,n,iaxi_psiL)
+        psiLdot=f(l1:l2,m,n,iaxi_psiLdot)
+        TL=f(l1:l2,m,n,iaxi_TL)
+        TLdot=f(l1:l2,m,n,iaxi_TLdot)
+        impsiL=f(l1:l2,m,n,iaxi_impsiL)
+        impsiLdot=f(l1:l2,m,n,iaxi_impsiLdot)
+        imTL=f(l1:l2,m,n,iaxi_imTL)
+        imTLdot=f(l1:l2,m,n,iaxi_imTLdot)
+      endif
+!
 !  initialize
 !
       Qddot=0.
@@ -450,11 +482,12 @@ module Special
         a=-1./(H*t)
         Hscript=a*H
         xi=lamf*chidot*(-0.5*t)
+        epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
       else
         a=exp(H*t)
         xi=lamf*chidot/(2.*H)
+        epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
       endif
-      epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
       epsQB=g**2*Q**4/(Mpl2*H**2)
 !
 !  background
@@ -484,6 +517,26 @@ module Special
 !  perturbation
 !
       if (lconf_time) then
+        if (lwith_eps) then
+          psiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi &
+            +(2.*sqrt(epsQE)/t)*TRdot+((2.*sqrt(epsQB)*(mQ+k*t))/t**2)*TR
+          TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*sqrt(epsQE))/t*psidot &
+            +(2.*sqrt(epsQE))/t**2*psi+(2.*sqrt(epsQB))/t**2*(mQ+k*t)*psi
+        else
+          psiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi &
+            +(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
+          TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
+            +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
+          if (lim_psi_TR) then
+            impsiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi &
+              +(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
+            imTRdot=--(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
+-             +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
+          endif
+        endif
+!
+!  When lanalytic, overwrite corresponding points with zero.
+!
         if (lanalytic) then
 !          where (k>(a*H*4.5))
           where (k>(a*H*20.0))
@@ -496,12 +549,6 @@ module Special
             f(l1:l2,m,n,iaxi_TR)=TR_anal
             f(l1:l2,m,n,iaxi_TRdot)=TRdot_anal
           elsewhere
-!
-            psiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi &
-              +(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
-            TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
-              +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
-!
             df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
             df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot)+psiddot
             df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
@@ -509,25 +556,43 @@ module Special
           endwhere
         else
           df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
-          df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-            -(k**2-2.*(1.-Q**2*(mQ**2-1.))/t**2)*psi &
-            +(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
+          df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot)+psiddot
           df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
-          df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
-            -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
-            +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
+          df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot)+TRddot
           if (lim_psi_TR) then
             df(l1:l2,m,n,iaxi_impsi)=df(l1:l2,m,n,iaxi_impsi)+impsidot
-            df(l1:l2,m,n,iaxi_impsidot)=df(l1:l2,m,n,iaxi_impsidot) &
-              -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi+(2.*Q/t)*imTRdot &
-              +((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
+            df(l1:l2,m,n,iaxi_impsidot)=df(l1:l2,m,n,iaxi_impsidot)+impsiddot
             df(l1:l2,m,n,iaxi_imTR)=df(l1:l2,m,n,iaxi_imTR)+imTRdot
-            df(l1:l2,m,n,iaxi_imTRdot)=df(l1:l2,m,n,iaxi_imTRdot) &
-              -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
-              +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
+            df(l1:l2,m,n,iaxi_imTRdot)=df(l1:l2,m,n,iaxi_imTRdot)+imTRddot
+          endif
+!
+!  left-handed modes (to be checked)
+!
+          if (lleft_psiL_TL) then
+            df(l1:l2,m,n,iaxi_psiL)=df(l1:l2,m,n,iaxi_psiL)+psiLdot
+            df(l1:l2,m,n,iaxi_psiLdot)=df(l1:l2,m,n,iaxi_psiLdot) &
+              -(k**2-2.*(1.-Q**2*(mQ**2-1.))/t**2)*psi &
+              +(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
+            df(l1:l2,m,n,iaxi_TL)=df(l1:l2,m,n,iaxi_TL)+TLdot
+            df(l1:l2,m,n,iaxi_TLdot)=df(l1:l2,m,n,iaxi_TLdot) &
+              -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
+              +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
+            if (lim_psi_TR) then
+              df(l1:l2,m,n,iaxi_impsiL)=df(l1:l2,m,n,iaxi_impsiL)+impsidot
+              df(l1:l2,m,n,iaxi_impsiLdot)=df(l1:l2,m,n,iaxi_impsiLdot) &
+                -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi+(2.*Q/t)*imTRdot &
+                +((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
+              df(l1:l2,m,n,iaxi_imTL)=df(l1:l2,m,n,iaxi_imTL)+imTLdot
+              df(l1:l2,m,n,iaxi_imTLdot)=df(l1:l2,m,n,iaxi_imTLdot) &
+                -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
+                +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
+            endif
           endif
         endif
       else
+!
+!  same with cosmic time; should also write in terms of psiddot and TRddot
+!
         if (lanalytic) then
 !          where (k>(a*H*4.5))
           where (k>(a*H*20.0))
@@ -705,6 +770,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: mQ, xi, epsQE, epsQB
       real, dimension (nx) :: TR, TRdot, imTR, imTRdot, TReff2, TRdoteff2
+      real, dimension (nx) :: psiReff2
       real, dimension (nx) :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
       real, dimension (nx) :: tmp_psi, tmp_psidot, tmp_TR, tmp_TRdot
       real, dimension (nx) :: tmp_impsi, tmp_impsidot, tmp_imTR, tmp_imTRdot
@@ -846,6 +912,7 @@ module Special
       endif
 !
 !  integrand (for diagnostics)
+!  Here, "eff" refers to either just the real part squared, or the modulus
 !
       TReff2=TR**2
       TRdoteff2=TR*TRdot
