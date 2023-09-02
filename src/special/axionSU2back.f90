@@ -468,7 +468,7 @@ module Special
       Qddot=0.
       chiddot=0.
 !
-!  Possibility of keeping mQ constant
+!  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
 !
       if (lkeep_mQ_const) then
         mQ=g*Q0/H
@@ -527,7 +527,7 @@ module Special
           if (lim_psi_TR) then
             impsiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi &
               +(2.*sqrt(epsQE)/t)*imTRdot+((2.*sqrt(epsQB)*(mQ+k*t))/t**2)*imTR
-            imTRdot=--(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
+            imTRddot=--(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
               +(2.*sqrt(epsQE))/t**2*impsi+(2.*sqrt(epsQB))/t**2*(mQ+k*t)*impsi
           endif
         else
@@ -538,7 +538,7 @@ module Special
           if (lim_psi_TR) then
             impsiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi &
               +(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
-            imTRdot=--(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
+            imTRddot=--(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
               +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
           endif
         endif
@@ -600,6 +600,7 @@ module Special
       else
 !
 !  same with cosmic time; should also write in terms of psiddot and TRddot
+!  But this is not currently done because of mixed terms.
 !
         if (lanalytic) then
 !          where (k>(a*H*4.5))
@@ -656,10 +657,10 @@ module Special
 !  apply factor to switch on bachreaction gradually:
 !
         if (lconf_time) then
-          Qddot=Qddot-sbackreact_Q*fact*a**2*grand_sum
+          Qddot  =Qddot  -sbackreact_Q  *fact*a**2 *grand_sum
           chiddot=chiddot-sbackreact_chi*fact*a**2*dgrant_sum
         else
-          Qddot=Qddot-sbackreact_Q*fact*grand_sum
+          Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum
           chiddot=chiddot-sbackreact_chi*fact*dgrant_sum
         endif
       endif
@@ -776,9 +777,8 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: mQ, xi, epsQE, epsQB
+      real, dimension (nx) :: mQ, xi
       real, dimension (nx) :: TR, TRdot, imTR, imTRdot, TReff2, TRdoteff2
-      real, dimension (nx) :: psiReff2
       real, dimension (nx) :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
       real, dimension (nx) :: tmp_psi, tmp_psidot, tmp_TR, tmp_TRdot
       real, dimension (nx) :: tmp_impsi, tmp_impsidot, tmp_imTR, tmp_imTRdot
@@ -802,6 +802,8 @@ module Special
         mQ=g*Q/H
       endif
 !
+!  For conformal time, there is a 1/a factor in Qdot/a+H
+!
       if (lconf_time) then
         a=-1./(H*t)
         xi=lamf*chidot*(-0.5*t)
@@ -809,8 +811,6 @@ module Special
         a=exp(H*t)
         xi=lamf*chidot/(2.*H)
       endif
-      epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
-      epsQB=g**2*Q**4/(Mpl2*H**2)
 !
 !  decide about revising the k array
 !  a=exp(N), N=H*t (=lna).
