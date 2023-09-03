@@ -1571,34 +1571,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ## Axel on norlx51 (gfortran)
 ##
-#<<<<<<< .mine
-##FC=mpif90 #(norlx51)
-##FFLAGS=-O0 -finit-real=nan -fno-underscoring -fbacktrace -g -fcheck=bounds #(norlx51)
-##CC=mpicc #(norlx51)
-##CFLAGS=-O0 #(norlx51)
-##LD_MPI= #(norlx51)
-##LDFLAGS+= -L/usr/share/doc/libhdf5-openmpi-1.8.4 #(norlx51)
-#
-#FC = /home/wdobler/gcc-6.4.0/bin/gfortran -I/usr/include/mpi -I/home/wdobler/gcc-6.4.0/include -L/home/wdobler/gcc-6.4.0/lib -L/home/wdobler/gcc-6.4.0/libexec -I/usr/lib/openmpi/include -pthread -I/usr/lib/openmpi/lib -L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl
-#F77 = $(FC)
-#CC = /home/wdobler/gcc-6.4.0/bin/gcc -I/usr/include/mpi -I/home/wdobler/gcc-6.4.0/include -L/home/wdobler/gcc-6.4.0/lib -L/home/wdobler/gcc-6.4.0/libexec -ldl
-#CFLAGS = -DFUNDERSC=1
-#CFLAGS_DOUBLE = -DDOUBLE_PRECISION
-#LDFLAGS = -L/home/wdobler/gcc-6.4.0/lib
-#LDFLAGS_HELPER += -dynamic
-#FFLAGS_DOUBLE = -fdefault-real-8 -fdefault-double-8
-## GCC 6.4 does not work with signalling NaNs:
-#FFLAGS += -finit-real=NaN
-#FSTD_95 = -std=f95
-#FSTD_2003 = -std=f2003
-#LDMPI = -I/usr/lib/openmpi/include -pthread -I/usr/lib/openmpi/lib -L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl
-#FFLAGS += -finit-integer=-2147483648
-#FFLAGS += -g
-#FFLAGS += -fbacktrace
-#FFLAGS += -fimplicit-none
-#FFLAGS += -fcheck=all
-#FFLAGS += -ffpe-trap=invalid,zero,overflow
-#=======
 #FC=mpif90 #(norlx51)
 #FFLAGS=-O1 -finit-real=nan -fno-underscoring -fbacktrace -g -fcheck=bounds #(norlx51)
 ##FFLAGS=-O0 -Wall -finit-real=sNaN -finit-integer=-2147483648 -g -fbacktrace -fimplicit-none -fcheck=all -ffpe-trap=invalid,zero,overflow #(norlx51)
@@ -1607,7 +1579,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI= #(norlx51)
 #OMPLFLAGS+= -L/usr/share/doc/ #(norlx51)
 #LDFLAGS+= -L/usr/share/doc/libhdf5-openmpi-1.8.4 #(norlx51)
-#>>>>>>> .r83110
 ##
 ## Axel on norlx65 (gfortran)
 ##
