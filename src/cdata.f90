@@ -400,7 +400,7 @@ module Cdata
   integer, dimension(ndustspec) :: ilnnd=0, ind=0,imd=0,imi=0,idc=0,ilndc=0
   integer, dimension(ndustspec,ndustspec0) :: idcj=0,ilndcj=0
   integer, dimension(nchemspec) :: ichemspec=0
-  integer :: ilnrhon=0,irhon=0,iuun=0,iunx=0,iuny=0,iunz=0
+  integer :: ilnrhon=0,irhon=0, irhoe=0, iuun=0,iunx=0,iuny=0,iunz=0
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
   integer :: iglobal_ax_ext=0, iglobal_ay_ext=0, iglobal_az_ext=0
   integer, dimension(3) :: iglobal_jext=0, iglobal_eext
