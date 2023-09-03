@@ -163,6 +163,7 @@ module Sub
   interface dot2
     module procedure dot2_mn
     module procedure dot2_0
+    module procedure dot2_3D
   endinterface
 !
   interface dot_add
@@ -900,6 +901,22 @@ module Sub
       b=a(:,1)**2+a(:,2)**2+a(:,3)**2
 !
     endsubroutine dot2_mx
+!***********************************************************************
+    subroutine dot2_3D(a,b)
+!
+!  Dot product with itself.
+!
+!  21-aug-22/axel: adapted from dot2_mn
+!
+      real, dimension (mx,my,mz,3) :: a
+      real, dimension (mx,my,mz) :: b
+!
+      intent(in) :: a
+      intent(out) :: b
+!
+      b=a(:,:,:,1)**2+a(:,:,:,2)**2+a(:,:,:,3)**2
+!
+    endsubroutine dot2_3D
 !***********************************************************************
     subroutine dot2_0(a,b)
 !

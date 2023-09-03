@@ -141,7 +141,7 @@ module Equ
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or. &
-                     leos_ionization.or.lradiation_ray.or. &
+!AXEL                leos_ionization.or.lradiation_ray.or. &
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
                      lparticles_spin.or.lsolid_cells.or. &
@@ -282,7 +282,7 @@ module Equ
 !  is only used for visualization and only needed when lvideo
 !  (but this is decided in radtransfer itself)
 !
-      if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
+!AXEL if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
       if (lradiation_ray) call radtransfer(f)
 !
 !  Calculate shock profile (simple).

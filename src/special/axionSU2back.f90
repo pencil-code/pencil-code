@@ -572,7 +572,7 @@ module Special
               +(2.*Q)/t**2*psiL+(2.*mQ*Q)/t**2*(mQ-k*t)*psiL
             impsiLddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsiL &
               +(2.*Q/t)*imTLdot+((2.*mQ*Q*(mQ-k*t))/t**2)*imTL
-            imTRLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*imTL-(2.*Q)/t*impsiLdot &
+            imTLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*imTL-(2.*Q)/t*impsiLdot &
               +(2.*Q)/t**2*impsiL+(2.*mQ*Q)/t**2*(mQ-k*t)*impsiL
           endif
         endif
@@ -803,9 +803,13 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: mQ, xi
       real, dimension (nx) :: TR, TRdot, imTR, imTRdot, TReff2, TRdoteff2
+      real, dimension (nx) :: TL, TLdot, imTL, imTLdot, TLeff2, TLdoteff2
       real, dimension (nx) :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
-      real, dimension (nx) :: tmp_psi, tmp_psidot, tmp_TR, tmp_TRdot
+      real, dimension (nx) :: TLdoteff2km, TLdoteff2m, TLeff2km, TLeff2m
+      real, dimension (nx) :: tmp_psi , tmp_psidot , tmp_TR, tmp_TRdot
+      real, dimension (nx) :: tmp_psiL, tmp_psiLdot, tmp_TL, tmp_TLdot
       real, dimension (nx) :: tmp_impsi, tmp_impsidot, tmp_imTR, tmp_imTRdot
+      real, dimension (nx) :: tmp_impsiL, tmp_impsiLdot, tmp_imTL, tmp_imTLdot
       real :: lnt, lnH, lna, a, lnkmin, lnkmax
       integer :: ik, nswitch
 !
@@ -894,6 +898,29 @@ module Special
                 f(l2,m,n,iaxi_imTR)    =tmp_imTR(nx)
                 f(l2,m,n,iaxi_imTRdot) =tmp_imTRdot(nx)
               endif
+!
+!  Same for left-handed modes
+!
+              if (lleft_psiL_TL) then
+                tmp_psiL   =(1./sqrt(2.*k))*cos(-k*t)
+                tmp_psiLdot= (k/sqrt(2.*k))*sin(-k*t)
+                tmp_TL    =(1./sqrt(2.*k))*cos(-k*t)
+                tmp_TLdot = (k/sqrt(2.*k))*sin(-k*t)
+                n=n1
+                m=m1
+                f(l2,m,n,iaxi_psiL)   =tmp_psiL(nx)
+                f(l2,m,n,iaxi_psiLdot)=tmp_psiLdot(nx)
+                f(l2,m,n,iaxi_TL)    =tmp_TL(nx)
+                f(l2,m,n,iaxi_TLdot) =tmp_TLdot(nx)
+                tmp_impsiL=(1./sqrt(2.*k))*sin(-k*t)
+                tmp_impsiLdot=(-k/sqrt(2.*k))*cos(-k*t)
+                tmp_imTL=(1./sqrt(2.*k))*sin(-k*t)
+                tmp_imTLdot=(-k/sqrt(2.*k))*cos(-k*t)
+                f(l2,m,n,iaxi_impsiL)   =tmp_impsiL(nx)
+                f(l2,m,n,iaxi_impsiLdot)=tmp_impsiLdot(nx)
+                f(l2,m,n,iaxi_imTL)    =tmp_imTL(nx)
+                f(l2,m,n,iaxi_imTLdot) =tmp_imTLdot(nx)
+              endif
             endif
           endif
 !
@@ -903,6 +930,15 @@ module Special
           write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psi), f(l1:l2,m,n,iaxi_impsi), &
                              f(l1:l2,m,n,iaxi_TR), f(l1:l2,m,n,iaxi_imTR)
           close(1)
+!
+!  output for left-handed modes
+!
+          if (lleft_psiL_TL) then
+          open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
+          write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psiL), f(l1:l2,m,n,iaxi_impsiL), &
+                             f(l1:l2,m,n,iaxi_TL),   f(l1:l2,m,n,iaxi_imTL)
+          close(1)
+          endif
 !
 !  reset lnkmin0
 !
@@ -971,6 +1007,31 @@ module Special
           TReff2=0.
           TRdoteff2=0.
         endwhere
+      endif
+!
+!  Same for left-handed modes
+!
+      if (lleft_psiL_TL) then
+        TL   =f(l1:l2,m,n,iaxi_TL)
+        TLdot=f(l1:l2,m,n,iaxi_TLdot)
+        imTL   =f(l1:l2,m,n,iaxi_imTL)
+        imTLdot=f(l1:l2,m,n,iaxi_imTLdot)
+        TLeff2=TL**2
+        TLdoteff2=TL*TLdot
+        TLeff2=TLeff2+imTL**2
+        TLdoteff2=TLdoteff2+imTL*imTLdot
+        if (horizon_factor==0.) then
+          if (headt.and.lfirst) print*,'horizon_factor=',horizon_factor
+          where (TLeff2<1./(2.*a*H))
+            TLeff2=0.
+            TLdoteff2=0.
+          endwhere
+        else
+          where (k>(a*H*horizon_factor))
+            TLeff2=0.
+            TLdoteff2=0.
+          endwhere
+        endif
       endif
 !
 !  Calculation of grand and grant is different for logarithmic and

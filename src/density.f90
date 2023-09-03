@@ -2141,7 +2141,13 @@ module Density
         call calc_pencils_log_density_pnc(f,p,lpenc_loc)
       endif
 ! ekin
-      if (lpenc_loc(i_ekin)) p%ekin=0.5*p%rho*p%u2
+      if (lpenc_loc(i_ekin)) then
+        if (lconservative) then
+          p%ekin=0.5*p%rho*p%u2
+        else
+          p%ekin=0.5*p%rho*p%u2
+        endif
+      endif
 !
 !  Dummy pencils.
 !

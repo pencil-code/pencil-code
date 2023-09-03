@@ -117,6 +117,7 @@ module Hydro
   integer :: neddy=0
   integer :: iTij=0, ilorentz=0, ihless=0, jhless=0, nhless=0
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
+  real, dimension(:), allocatable :: Bsquared
 !
 ! variables for expansion into spherical harmonics
 !
@@ -153,7 +154,6 @@ module Hydro
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
-  !real, pointer :: B_ext2
   real :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -1496,14 +1496,23 @@ module Hydro
 
       if (lfargo_advection.and..not.lfargoadvection_as_shift) &
         call not_implemented("initialize_hydro","Fargo advection without Fourier shift")
-
+!
+!  Allocate Lorentz gamma squared as part of auxiliary f-array.
+!  In the magnetic case, also define Bsquared, if needed.
+!
       if (lconservative) then
         f(:,:,:,iTij:iTij+5)=0.
         if (llorentz_as_aux) f(:,:,:,ilorentz)=0.
+        if (lmagnetic) then
+          if (ibx==0) call fatal_error("hydro_before_boundary","must use lbb_as_comaux=T")
+          if (allocated(Bsquared)) deallocate(Bsquared)
+          allocate(Bsquared(mx))
+        endif
       endif
-
+!
+!  Allocate Higgsless field
+!
       if (lhiggsless) then
-
         open(1,file='higgsless.dat')
         read(1,*) nhless
         if (lroot.and.ip<14) print*,'initialize_hydro: nhless=',nhless
@@ -1513,7 +1522,6 @@ module Hydro
           read(1,*) thless(jhless), xhless(jhless), yhless(jhless), zhless(jhless)
         enddo
         close(1)
-
       endif
 
       endsubroutine initialize_hydro
@@ -3013,6 +3021,7 @@ module Hydro
             cs201=cs20+1.
             if (lmagnetic) then
 !print*,'AXEL6: need to have B_ext2'
+!XX
               if (full_3D) then
                 DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
                 call invmat_DB(DD,p%bb,tmp33)
@@ -3432,9 +3441,8 @@ module Hydro
 !  15-dec-10/MR: adapted from density for homogeneity
 !  19-oct-15/ccyang: add calculation of the vorticity field.
 !
-      use Sub, only: curl, dot2_mx
+      use Sub, only: curl
       use Mpicomm, only: mpiallreduce_sum
-      use EquationOfState, only: cs20
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -3442,13 +3450,10 @@ module Hydro
 !
       real, dimension (mx,mz) :: fsum_tmp_cyl
       real, dimension (mx,my) :: fsum_tmp_sph
-      real, dimension (mx) :: uphi, delx
-      real, dimension (mx,3) :: ss
-      real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
-      real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2
-      real :: nygrid1,nzgrid1, dely, delz
-      real :: cs201, cs2011
-      integer ::  j, iter_relB
+      real, dimension (mx) :: uphi
+      real :: nygrid1,nzgrid1
+      integer ::  j
+!XX
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -3461,160 +3466,6 @@ module Hydro
           !if (lremove_mean_flow) call remove_mean_value(f,iux,iuz)  !(could use this one)
           if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
         endif
-      endif
-!
-!  Calculate the energy-momentum tensor.
-!  In the non-relativisitic case, then Tij=rho*ui*uj+delij*p,
-!  so with p=cs2*rho/3="press", we have Tij=Ti0*Tj0/rho+cs2*rho*delij/3.
-!  To deal with truly nonrelativistic eos and conservative formulation,
-!  we need to set rho_gam21=1/rho.
-!  Note that the loop below is over all my and mz, not ny and nz,
-!  so it includes the ghost zones.
-!  Allowed for possibility to save relativistic Lorentz factor as aux.
-!  The magnetic case can only be done iteratively, so we first compute
-!  gamma for the nonmagnetic case.
-!
-      if (lconservative) then
-        if (iTij==0) call fatal_error("hydro_before_boundary","must compute Tij for lconservative")
-        cs201=cs20+1.
-        cs2011=1./cs201
-!print*,'AXEL9: end of initialize; Bx=',f(:,4,4,ibb)
-B_ext2=0.
-        do n=1,mz
-        do m=1,my
-          if (ldensity) then
-            if (lmagnetic) then
-              if (B_ext2/=0.) then
-                hydro_energy=f(:,m,n,irho)-.5*B_ext2
-              else
-                hydro_energy=f(:,m,n,irho)
-              endif
-            else
-              hydro_energy=f(:,m,n,irho)
-            endif
-!
-!  Higgsless field
-!
-            if (lhiggsless) then
-              if (lhiggsless_old) then
-                do jhless=1,nhless
-                  delx=2.*atan(tan(.5*(x   -xhless(jhless))))
-                  dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
-                  delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
-                  where(sqrt(delx**2+dely**2+delz**2) &
-                       < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
-                  hydro_energy=hydro_energy-f(:,m,n,ihless)
-                enddo
-              else
-                where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-alpha_hless/(1.+alpha_hless)
-              endif
-            endif
-            hydro_energy1=1./hydro_energy
-          else
-            hydro_energy=1.
-            hydro_energy1=1.
-          endif
-!
-!  Compute lorentz_gamma2.
-!
-          if (lrelativistic.or.llorentz_as_aux) then
-            ss=f(:,m,n,iux:iuz)
-            call dot2_mx(ss,ss2)
-            rat0=ss2*hydro_energy1**2
-            if (lmagnetic) then
-              vA2_pseudo=B_ext2*cs2011*hydro_energy1
-              rat=rat0/(1.+vA2_pseudo)**2
-            else
-              rat=rat0
-            endif
-            lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
-!
-!  In the magnetic case, we need to solve lorentz_gamma2 iteratively; first initialize it:
-!  We also don't know rho yet (because it involves gamma^2), so we iterate for that, too.
-!  In the magnetic case, the equation for lorentz_gamma2 is no longer quadratic, because
-!  the term (1.+vA2_pseudo)**2 itself contains lorentz_gamma2.
-!  The expression rho_gam2 means the same as (4/3)*rho*gamma^2, and rho_gam21=1/rho_gam2.
-!  Now iterate (only works if relativistic)
-!
-            if (lmagnetic) then
-              do iter_relB=1,niter_relB
-                if (lrelativistic) then
-                  rho1=(cs201*lorentz_gamma2-cs20)/hydro_energy
-                  rho_gam20=cs2011*rho1/lorentz_gamma2
-                  vA2_pseudo=B_ext2*rho_gam20
-                  rat=rat0/(1.+vA2_pseudo)**2
-                  lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
-                else
-                  if (llorentz_as_aux) lorentz_gamma2=1./(1.-rat)
-                endif
-              enddo
-              rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
-              rho_gam21=1./(cs201*rho*lorentz_gamma2+B_ext2)
-            else
-              rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
-              rho_gam21=1./(cs201*rho*lorentz_gamma2)
-            endif
-!
-!  If just conservative and non-relativistic, we just set rho and rho_gam21.
-!
-          else
-            if (lrelativistic_eos) then
-              rho=cs201*hydro_energy
-            else
-              rho=hydro_energy
-            endif
-            rho_gam21=1./(cs201*rho)
-          endif
-!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: rho_gam2(80:160)=',t,rho_gam2(80:160)
-!
-!  At the end, we put lorentz_gamma2 into the f array.
-!
-          if (ilorentz /= 0) f(:,m,n,ilorentz)=lorentz_gamma2
-          if (lhiggsless) then
-            if (lhiggsless_old) then
-              press=rho*cs20-f(:,m,n,ihless)
-            else
-              press=rho*cs20
-              where(real(t) < f(:,m,n,ihless)) press=press-alpha_hless/(1.+alpha_hless)
-            endif
-          else
-            press=rho*cs20
-          endif
-!
-!  Now set the nonmagnetic stresses; begin with the diagonal components:
-!  Tii=(Ti0)^2/rho or Tii=(Ti0)^2/(4./3.*rho*gamma^2)
-!
-!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,irho)=',t,f(80:160,m,n,irho)
-!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,iuu)=',t,f(80:160,m,n,iuu)
-          do j=0,2
-            f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2+press
-          enddo
-!
-!  off-diagonal terms:
-!  "Tij4" = T12
-!  "Tij5" = T23
-!  "Tij6" = T31
-!
-          f(:,m,n,iTij+3+0)=rho_gam21*f(:,m,n,iuu+0)*f(:,m,n,iuu+1)
-          f(:,m,n,iTij+3+1)=rho_gam21*f(:,m,n,iuu+1)*f(:,m,n,iuu+2)
-          f(:,m,n,iTij+3+2)=rho_gam21*f(:,m,n,iuu+2)*f(:,m,n,iuu+0)
-!
-!  The following hasn't been prepared yet.
-!
-    !     if (lbraginsky) then
-    !       muparaB21=3.*muB*
-    !       do j=0,2
-    !         f(:,m,n,iTij+j)=muparaB21*f(:,m,n,ibb+j)**2
-    !       enddo
-    !       f(:,m,n,iTij+3+0)=muparaB21*f(:,m,n,ibb+0)*f(:,m,n,ibb+1)
-    !       f(:,m,n,iTij+3+1)=muparaB21*f(:,m,n,ibb+1)*f(:,m,n,ibb+2)
-    !       f(:,m,n,iTij+3+2)=muparaB21*f(:,m,n,ibb+2)*f(:,m,n,ibb+0)
-    !     endif
-        enddo
-        enddo
-!
-!  Here is the endif of lconservative.
-!
       endif
 !
 !  Calculate the vorticity field if required.
@@ -4982,15 +4833,183 @@ B_ext2=0.
 !  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
 !  12-sep-13/MR  : use finalize_aver
 !
-      use Sub, only: finalize_aver, vecout_initialize
+      use Sub, only: finalize_aver, vecout_initialize, dot2_mx, dot2
+      use EquationOfState, only: cs20
 
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 
       real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
       real, dimension (3) :: OO, dOO, uum0
+      real, dimension (mx,3) :: ss
+      real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
+      real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2
+      real, dimension (mx) :: delx
+      real :: dely, delz
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
+      real :: cs201, cs2011
+      integer ::  iter_relB
       integer :: i,j,l
+!XXX
+!
+!  In the conservative case, we calculate the Lorentz gamma squared and Tij here,
+!  rather than in before_boundary, because the B-field is unknown otherwise.
+!  In the non-relativisitic case, then Tij=rho*ui*uj+delij*p,
+!  so with p=cs2*rho/3="press", we have Tij=Ti0*Tj0/rho+cs2*rho*delij/3.
+!  To deal with truly nonrelativistic eos and conservative formulation,
+!  we need to set rho_gam21=1/rho.
+!  Note that the loop below is over all my and mz, not ny and nz,
+!  so it includes the ghost zones.
+!  Allowed for possibility to save relativistic Lorentz factor as aux.
+!  The magnetic case can only be done iteratively, so we first compute
+!  gamma for the nonmagnetic case.
+!
+      if (lconservative) then
+        if (iTij==0) call fatal_error("hydro_before_boundary","must compute Tij for lconservative")
+        cs201=cs20+1.
+        cs2011=1./cs201
+        do n=1,mz
+        do m=1,my
+          if (ldensity) then
+            if (lmagnetic) then
+              if (ibx==0) call fatal_error("hydro_before_boundary","must use lbb_as_comaux=T")
+              call dot2(f(:,m,n,ibx:ibz),Bsquared)
+if (m==4.and.n==4) then
+  print*,'AXEL: after hydro: bb(:,1)=', f(:,4,4,ibx)
+  print*,'AXEL: Bsquared=',m,n,Bsquared(:)
+endif
+              if (B_ext2/=0.) then
+                hydro_energy=f(:,m,n,irho)-.5*B_ext2
+              else
+                hydro_energy=f(:,m,n,irho)
+              endif
+            else
+              hydro_energy=f(:,m,n,irho)
+            endif
+!
+!  Higgsless field
+!
+            if (lhiggsless) then
+              if (lhiggsless_old) then
+                do jhless=1,nhless
+                  delx=2.*atan(tan(.5*(x   -xhless(jhless))))
+                  dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
+                  delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
+                  where(sqrt(delx**2+dely**2+delz**2) &
+                       < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
+                  hydro_energy=hydro_energy-f(:,m,n,ihless)
+                enddo
+              else
+                where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-alpha_hless/(1.+alpha_hless)
+              endif
+            endif
+            hydro_energy1=1./hydro_energy
+          else
+            hydro_energy=1.
+            hydro_energy1=1.
+          endif
+!
+!  Compute lorentz_gamma2.
+!
+          if (lrelativistic.or.llorentz_as_aux) then
+            ss=f(:,m,n,iux:iuz)
+            call dot2_mx(ss,ss2)
+            rat0=ss2*hydro_energy1**2
+            if (lmagnetic) then
+              vA2_pseudo=B_ext2*cs2011*hydro_energy1
+              rat=rat0/(1.+vA2_pseudo)**2
+            else
+              rat=rat0
+            endif
+            lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+!
+!  In the magnetic case, we need to solve lorentz_gamma2 iteratively; first initialize it:
+!  We also don't know rho yet (because it involves gamma^2), so we iterate for that, too.
+!  In the magnetic case, the equation for lorentz_gamma2 is no longer quadratic, because
+!  the term (1.+vA2_pseudo)**2 itself contains lorentz_gamma2.
+!  The expression rho_gam2 means the same as (4/3)*rho*gamma^2, and rho_gam21=1/rho_gam2.
+!  Now iterate (only works if relativistic)
+!
+            if (lmagnetic) then
+              do iter_relB=1,niter_relB
+                if (lrelativistic) then
+                  rho1=(cs201*lorentz_gamma2-cs20)/hydro_energy
+                  rho_gam20=cs2011*rho1/lorentz_gamma2
+                  vA2_pseudo=B_ext2*rho_gam20
+                  rat=rat0/(1.+vA2_pseudo)**2
+                  lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+                else
+                  if (llorentz_as_aux) lorentz_gamma2=1./(1.-rat)
+                endif
+              enddo
+              rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
+              rho_gam21=1./(cs201*rho*lorentz_gamma2+B_ext2)
+            else
+              rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
+              rho_gam21=1./(cs201*rho*lorentz_gamma2)
+            endif
+!
+!  If just conservative and non-relativistic, we just set rho and rho_gam21.
+!
+          else
+            if (lrelativistic_eos) then
+              rho=cs201*hydro_energy
+            else
+              rho=hydro_energy
+            endif
+            rho_gam21=1./(cs201*rho)
+          endif
+!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: rho_gam2(80:160)=',t,rho_gam2(80:160)
+!
+!  At the end, we put lorentz_gamma2 into the f array.
+!
+          if (ilorentz /= 0) f(:,m,n,ilorentz)=lorentz_gamma2
+          if (lhiggsless) then
+            if (lhiggsless_old) then
+              press=rho*cs20-f(:,m,n,ihless)
+            else
+              press=rho*cs20
+              where(real(t) < f(:,m,n,ihless)) press=press-alpha_hless/(1.+alpha_hless)
+            endif
+          else
+            press=rho*cs20
+          endif
+!
+!  Now set the nonmagnetic stresses; begin with the diagonal components:
+!  Tii=(Ti0)^2/rho or Tii=(Ti0)^2/(4./3.*rho*gamma^2)
+!
+!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,irho)=',t,f(80:160,m,n,irho)
+!if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,iuu)=',t,f(80:160,m,n,iuu)
+          do j=0,2
+            f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2+press
+          enddo
+!
+!  off-diagonal terms:
+!  "Tij4" = T12
+!  "Tij5" = T23
+!  "Tij6" = T31
+!
+          f(:,m,n,iTij+3+0)=rho_gam21*f(:,m,n,iuu+0)*f(:,m,n,iuu+1)
+          f(:,m,n,iTij+3+1)=rho_gam21*f(:,m,n,iuu+1)*f(:,m,n,iuu+2)
+          f(:,m,n,iTij+3+2)=rho_gam21*f(:,m,n,iuu+2)*f(:,m,n,iuu+0)
+!
+!  The following hasn't been prepared yet.
+!
+    !     if (lbraginsky) then
+    !       muparaB21=3.*muB*
+    !       do j=0,2
+    !         f(:,m,n,iTij+j)=muparaB21*f(:,m,n,ibb+j)**2
+    !       enddo
+    !       f(:,m,n,iTij+3+0)=muparaB21*f(:,m,n,ibb+0)*f(:,m,n,ibb+1)
+    !       f(:,m,n,iTij+3+1)=muparaB21*f(:,m,n,ibb+1)*f(:,m,n,ibb+2)
+    !       f(:,m,n,iTij+3+2)=muparaB21*f(:,m,n,ibb+2)*f(:,m,n,ibb+0)
+    !     endif
+        enddo
+        enddo
+!
+!  Here is the endif of lconservative.
+!
+      endif
 !
 !  possibility of setting interior boundary conditions
 !

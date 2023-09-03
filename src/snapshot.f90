@@ -942,7 +942,7 @@ module Snapshot
         call calc_shock_profile(a)
         call calc_shock_profile_simple(a)
       endif
-      if (leos_ionization.or.leos_temperature_ionization) call ioncalc(a)
+!AB   if (leos_ionization.or.leos_temperature_ionization) call ioncalc(a)
       if (lradiation_ray)  call radtransfer(a)
       if (lvisc_hyper.or.lvisc_smagorinsky) then
         if (.not.lvisc_first.or.lfirst) call calc_viscosity(a)

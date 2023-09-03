@@ -2002,7 +2002,7 @@ module Magnetic
       real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old,x1,x2
       real, dimension (nx) :: beq2_pencil, prof, tmpx
       real, dimension (nx,ny) :: ax, ay
-      real, dimension(3) :: b_ext
+      real, dimension(3) :: B_ext
       real, dimension (:,:,:,:), allocatable :: ap
       real, dimension (:,:), allocatable :: yz
 
@@ -2609,6 +2609,7 @@ module Magnetic
       endif
 !
 !  jj pencil always needed when in Weyl gauge
+!  (unless we solve for the displacement current)
 !
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
           lweyl_gauge.or.lspherical_coords.or.lJ_ext.or.ljj_as_aux.or. &
@@ -3383,7 +3384,7 @@ module Magnetic
       real, dimension(ny,3) :: aamy
       real, dimension(nx,3,3) :: aij, bij
       real, dimension(nx) :: rho1, b2, tmp, tmp2
-      real, dimension(3) :: b_ext
+      real, dimension(3) :: B_ext
 !
 !  Compute mean field (xy verage) for each component. Do not include the ghost zones.
 !
@@ -3523,15 +3524,21 @@ module Magnetic
           call curl_mn(aij, bb, A=f(:,m,n,iax:iaz))
 !
 !  calculate jj if requested
+!  (but this is not correct when displacement current is invoked)
 !
-          if(ljj_as_comaux) then
-            if (lcartesian_coords) then
-              call gij_etc(f,iaa,BIJ=bij)
-              call curl_mn(bij,jj)
+          if (ljj_as_comaux) then
+            if (irhoe/=0.and.ibb/=0) then
+!             p%jj_ohm=(p%el+p%uxb)*mu01/etatotal(1)
+!  XXX
             else
-              call gij_etc(f,iaa,AA=f(:,m,n,iax:iaz),AIJ=aij,BIJ=bij, &
-                           LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
-              call curl_mn(bij,jj, A=bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+              if (lcartesian_coords) then
+                call gij_etc(f,iaa,BIJ=bij)
+                call curl_mn(bij,jj)
+              else
+                call gij_etc(f,iaa,AA=f(:,m,n,iax:iaz),AIJ=aij,BIJ=bij, &
+                             LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+                call curl_mn(bij,jj, A=bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+              endif
             endif
             f(l1:l2,m,n,ijx:ijz) = jj
           endif
@@ -3540,11 +3547,16 @@ module Magnetic
 !
           if (lbb_as_comaux) then
             if (lB_ext_in_comaux) then
-              call get_bext(b_ext)
-              forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
-              if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext = ', b_ext
+              call get_bext(B_ext)
+              forall(j = 1:3, B_ext(j) /= 0.0) bb(:,j) = bb(:,j) + B_ext(j)
+              if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext = ', B_ext
             endif
             f(l1:l2,m,n,ibx:ibz) = bb
+print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
+!
+!  compute here divJ
+!
+            !if (irhoe/=0.and.ibb/=0) then
           endif
 !
 !  Find Alfven speed as communicated auxiliary

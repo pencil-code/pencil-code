@@ -449,7 +449,7 @@ program start
 !
 !  Check whether we want ionization.
 !
-  if (leos_ionization) call ioninit(f)
+!AXEL if (leos_ionization) call ioninit(f)
   if (lradiation_ray) then
     call update_ghosts(f)
     call radtransfer(f)

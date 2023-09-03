@@ -270,8 +270,8 @@ module Register
 !  Convert physical constants to code units.
 !
       if (unit_system=='cgs') then
-        if (lroot.and.leos_ionization.and.ip<14) print*,'initialize_modules: ' &
-          //'unit_velocity, unit_density, etc, are in cgs'
+!AXEL   if (lroot.and.leos_ionization.and.ip<14) print*,'initialize_modules: ' &
+!AXEL     //'unit_velocity, unit_density, etc, are in cgs'
         hbar=hbar_cgs/(unit_energy*unit_time)
         mu0=mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2
         if (unit_temperature/=impossible) then
@@ -290,8 +290,8 @@ module Register
         c_light=c_light_cgs/unit_velocity
         G_Newton=G_Newton_cgs*unit_length**2*unit_density/unit_velocity**2
       elseif (unit_system=='SI') then
-        if (lroot.and.leos_ionization) print*, &
-            'initialize_modules: unit_velocity, unit_density, etc, are in SI'
+!AXEL   if (lroot.and.leos_ionization) print*, &
+!AXEL       'initialize_modules: unit_velocity, unit_density, etc, are in SI'
         hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
         mu0=1e-7*mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2
         if (unit_temperature/=impossible) then
@@ -326,8 +326,8 @@ module Register
 !  Print parameters in code units, but only when used.
 !
       if (lroot.and.ip<14) then
-         if (leos_ionization.or.lradiation.or.lradiation_ray.or.linterstellar) &
-            write(*,'(a,1p,4e14.6)') ' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
+!AXEL    if (leos_ionization.or.lradiation.or.lradiation_ray.or.linterstellar) &
+!AXEL       write(*,'(a,1p,4e14.6)') ' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
       endif
 !
 !  initialize time integrals
