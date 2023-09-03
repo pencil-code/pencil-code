@@ -141,6 +141,8 @@ module Special
       call farray_register_pde('axi_TR'    ,iaxi_TR)
       call farray_register_pde('axi_TRdot' ,iaxi_TRdot)
 !
+!  Possibility of including the imaginary parts.
+!
       if (lim_psi_TR) then
         call farray_register_pde('axi_impsi'   ,iaxi_impsi)
         call farray_register_pde('axi_impsidot',iaxi_impsidot)
@@ -148,11 +150,17 @@ module Special
         call farray_register_pde('axi_imTRdot' ,iaxi_imTRdot)
       endif
 !
+!  Possibility of including left-handed modes.
+!
       if (lleft_psiL_TL) then
+        call farray_register_pde('axi_psiL'   ,iaxi_psiL)
+        call farray_register_pde('axi_psiLdot',iaxi_psiLdot)
+        call farray_register_pde('axi_TL'     ,iaxi_TL)
+        call farray_register_pde('axi_TLdot'  ,iaxi_TLdot)
         call farray_register_pde('axi_impsiL'   ,iaxi_impsiL)
         call farray_register_pde('axi_impsiLdot',iaxi_impsiLdot)
-        call farray_register_pde('axi_imTL'    ,iaxi_imTL)
-        call farray_register_pde('axi_imTLdot' ,iaxi_imTLdot)
+        call farray_register_pde('axi_imTL'     ,iaxi_imTL)
+        call farray_register_pde('axi_imTLdot'  ,iaxi_imTLdot)
       endif
 !
     endsubroutine register_special
@@ -330,14 +338,14 @@ module Special
               f(l1:l2,m,n,iaxi_imTRdot)=imTRdot
             endif
             if (lleft_psiL_TL) then
-              f(l1:l2,m,n,iaxi_psiL)=psi
-              f(l1:l2,m,n,iaxi_psiLdot)=psidot
-              f(l1:l2,m,n,iaxi_TL)=TR
-              f(l1:l2,m,n,iaxi_TLdot)=TRdot
-              f(l1:l2,m,n,iaxi_impsiL)=impsi
+              f(l1:l2,m,n,iaxi_psiL     )=psi
+              f(l1:l2,m,n,iaxi_psiLdot  )=psidot
+              f(l1:l2,m,n,iaxi_TL       )=TR
+              f(l1:l2,m,n,iaxi_TLdot    )=TRdot
+              f(l1:l2,m,n,iaxi_impsiL   )=impsi
               f(l1:l2,m,n,iaxi_impsiLdot)=impsidot
-              f(l1:l2,m,n,iaxi_imTL)=imTR
-              f(l1:l2,m,n,iaxi_imTLdot)=imTRdot
+              f(l1:l2,m,n,iaxi_imTL     )=imTR
+              f(l1:l2,m,n,iaxi_imTLdot  )=imTRdot
             endif
           enddo
           enddo 
@@ -453,14 +461,14 @@ module Special
       endif
 !
       if (lleft_psiL_TL) then
-        psiL=f(l1:l2,m,n,iaxi_psiL)
-        psiLdot=f(l1:l2,m,n,iaxi_psiLdot)
-        TL=f(l1:l2,m,n,iaxi_TL)
-        TLdot=f(l1:l2,m,n,iaxi_TLdot)
-        impsiL=f(l1:l2,m,n,iaxi_impsiL)
+        psiL     =f(l1:l2,m,n,iaxi_psiL)
+        psiLdot  =f(l1:l2,m,n,iaxi_psiLdot)
+        TL       =f(l1:l2,m,n,iaxi_TL)
+        TLdot    =f(l1:l2,m,n,iaxi_TLdot)
+        impsiL   =f(l1:l2,m,n,iaxi_impsiL)
         impsiLdot=f(l1:l2,m,n,iaxi_impsiLdot)
-        imTL=f(l1:l2,m,n,iaxi_imTL)
-        imTLdot=f(l1:l2,m,n,iaxi_imTLdot)
+        imTL     =f(l1:l2,m,n,iaxi_imTL)
+        imTLdot  =f(l1:l2,m,n,iaxi_imTLdot)
       endif
 !
 !  initialize
@@ -530,8 +538,21 @@ module Special
             imTRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
               +(2.*sqrt(epsQE))/t**2*impsi+(2.*sqrt(epsQB))/t**2*(mQ+k*t)*impsi
           endif
+!
+!  Left-handed modes (conformal, with epsilon formulation)
+!
+          if (lleft_psiL_TL) then
+            psiLddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psiL &
+              +(2.*sqrt(epsQE)/t)*TLdot+((2.*sqrt(epsQB)*(mQ-k*t))/t**2)*TL
+            TLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*TL-(2.*sqrt(epsQE))/t*psiLdot &
+              +(2.*sqrt(epsQE))/t**2*psiL+(2.*sqrt(epsQB))/t**2*(mQ-k*t)*psiL
+            impsiLddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsiL &
+              +(2.*sqrt(epsQE)/t)*imTLdot+((2.*sqrt(epsQB)*(mQ-k*t))/t**2)*imTL
+            imTLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*imTL-(2.*sqrt(epsQE))/t*impsiLdot &
+              +(2.*sqrt(epsQE))/t**2*impsiL+(2.*sqrt(epsQB))/t**2*(mQ-k*t)*impsiL
+          endif
         else
-          psiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi &
+          psiddot=-(k**2-2.*(1.-Q**2*(mQ**2-1.))/t**2)*psi &
             +(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
           TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
             +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
@@ -540,6 +561,19 @@ module Special
               +(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
             imTRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
               +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
+          endif
+!
+!  Left-handed modes
+!
+          if (lleft_psiL_TL) then
+            psiLddot=-(k**2-2.*(1.-Q**2*(mQ**2-1.))/t**2)*psiL &
+              +(2.*Q/t)*TLdot+((2.*mQ*Q*(mQ-k*t))/t**2)*TL
+            TLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*TL-(2.*Q)/t*psiLdot &
+              +(2.*Q)/t**2*psiL+(2.*mQ*Q)/t**2*(mQ-k*t)*psiL
+            impsiLddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsiL &
+              +(2.*Q/t)*imTLdot+((2.*mQ*Q*(mQ-k*t))/t**2)*imTL
+            imTRLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*imTL-(2.*Q)/t*impsiLdot &
+              +(2.*Q)/t**2*impsiL+(2.*mQ*Q)/t**2*(mQ-k*t)*impsiL
           endif
         endif
 !
@@ -577,24 +611,14 @@ module Special
 !  left-handed modes (to be checked, not finalized)
 !
           if (lleft_psiL_TL) then
-            df(l1:l2,m,n,iaxi_psiL)=df(l1:l2,m,n,iaxi_psiL)+psiLdot
-            df(l1:l2,m,n,iaxi_psiLdot)=df(l1:l2,m,n,iaxi_psiLdot) &
-              -(k**2-2.*(1.-Q**2*(mQ**2-1.))/t**2)*psi &
-              +(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
-            df(l1:l2,m,n,iaxi_TL)=df(l1:l2,m,n,iaxi_TL)+TLdot
-            df(l1:l2,m,n,iaxi_TLdot)=df(l1:l2,m,n,iaxi_TLdot) &
-              -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
-              +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
-            if (lim_psi_TR) then
-              df(l1:l2,m,n,iaxi_impsiL)=df(l1:l2,m,n,iaxi_impsiL)+impsidot
-              df(l1:l2,m,n,iaxi_impsiLdot)=df(l1:l2,m,n,iaxi_impsiLdot) &
-                -(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi+(2.*Q/t)*imTRdot &
-                +((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
-              df(l1:l2,m,n,iaxi_imTL)=df(l1:l2,m,n,iaxi_imTL)+imTLdot
-              df(l1:l2,m,n,iaxi_imTLdot)=df(l1:l2,m,n,iaxi_imTLdot) &
-                -(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
-                +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
-            endif
+            df(l1:l2,m,n,iaxi_psiL     )=df(l1:l2,m,n,iaxi_psiL     )+psiLdot
+            df(l1:l2,m,n,iaxi_psiLdot  )=df(l1:l2,m,n,iaxi_psiLdot  )+psiLddot
+            df(l1:l2,m,n,iaxi_TL       )=df(l1:l2,m,n,iaxi_TL       )+TLdot
+            df(l1:l2,m,n,iaxi_TLdot    )=df(l1:l2,m,n,iaxi_TLdot    )+TLddot
+            df(l1:l2,m,n,iaxi_impsiL   )=df(l1:l2,m,n,iaxi_impsiL   )+impsidot
+            df(l1:l2,m,n,iaxi_impsiLdot)=df(l1:l2,m,n,iaxi_impsiLdot)+impsiddot
+            df(l1:l2,m,n,iaxi_imTL     )=df(l1:l2,m,n,iaxi_imTL     )+imTLdot
+            df(l1:l2,m,n,iaxi_imTLdot  )=df(l1:l2,m,n,iaxi_imTLdot  )+imTLddot
           endif
         endif
       else
@@ -959,14 +983,32 @@ module Special
         TReff2m=(4.*pi*k**3*dlnk)*TReff2
         grand=(4.*pi*k**3*dlnk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
         grant=(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TReff2*(-lamf/(2.*a**2))/twopi**3
+        if (lleft_psiL_TL) then
+          TLdoteff2km=(4.*pi*k**3*dlnk)*TLdoteff2*(k/a)
+          TLdoteff2m=(4.*pi*k**3*dlnk)*TLdoteff2
+          TLeff2km=(4.*pi*k**3*dlnk)*TLeff2*(k/a)
+          TLeff2m=(4.*pi*k**3*dlnk)*TLeff2
+          grand=grand+(4.*pi*k**3*dlnk)*(xi*H-k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
+          grant=grant+(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
+        endif
         if (lconf_time) then
           dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+g*Qdot)*TReff2+(mQ*H-k/a)*2*TRdoteff2 &
           )/twopi**3
+          if (lleft_psiL_TL) then
+            dgrant=dgrant+(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
+            (a*mQ*H**2+g*Qdot)*TLeff2+(mQ*H-k/a)*2*TLdoteff2 &
+            )/twopi**3
+          endif
         else
           dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+a*g*Qdot)*TReff2+(a*mQ*H-k)*2*TRdoteff2 &
           )/twopi**3
+          if (lleft_psiL_TL) then
+            dgrant=dgrant+(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
+            (a*mQ*H**2+a*g*Qdot)*TLeff2+(a*mQ*H-k)*2*TLdoteff2 &
+            )/twopi**3
+          endif
         endif
       else
         TRdoteff2km=(4.*pi*k**2*dk)*TRdoteff2*(k/a)
