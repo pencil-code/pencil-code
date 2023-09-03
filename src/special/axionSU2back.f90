@@ -527,7 +527,7 @@ module Special
           if (lim_psi_TR) then
             impsiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi &
               +(2.*sqrt(epsQE)/t)*imTRdot+((2.*sqrt(epsQB)*(mQ+k*t))/t**2)*imTR
-            imTRddot=--(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
+            imTRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
               +(2.*sqrt(epsQE))/t**2*impsi+(2.*sqrt(epsQB))/t**2*(mQ+k*t)*impsi
           endif
         else
@@ -538,7 +538,7 @@ module Special
           if (lim_psi_TR) then
             impsiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi &
               +(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
-            imTRddot=--(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
+            imTRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
               +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
           endif
         endif
