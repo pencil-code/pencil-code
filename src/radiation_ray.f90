@@ -464,7 +464,7 @@ module Radiation
 !
       call get_gamma_etc(gamma)
 
-      if (source_function_type='LTE') then
+      if (source_function_type=='LTE') then
         if (z_cutoff==impossible .or. cool_wid==impossible) &
           call fatal_error("source_function:","z_cutoff or cool_wid is not set")
       endif
