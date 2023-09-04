@@ -67,7 +67,6 @@ module Heatflux
 !
 ! Auxiliaries
 !
-  real, pointer :: z_cutoff, cool_wid
   real :: nu_ee, e_m
 ! Variable slot indices
   integer :: iqx=0,iqy=0,iqz=0,iqq=0
@@ -113,13 +112,6 @@ contains
 !
     real, dimension (mx,my,mz,mfarray) :: f
     real :: eps0,unit_ampere,e_charge
-!
-!  Get the external magnetic field if exists.
-!
-    if (iheatflux=='noadvection-spitzer'.and.lradiation) then
-      call get_shared_variable('z_cutoff',z_cutoff,caller='initialize_heatflux')
-      call get_shared_variable('cool_wid',cool_wid)
-    endif
 !
 !  Set up some important constants
 !
@@ -763,7 +755,9 @@ contains
 !
     use Slices_methods, only: store_slices
     use Diagnostics, only: max_mn_name,max_name
+    use EquationOfState
     use Sub
+    use SharedVariables, only: get_shared_variable
 !
     real, dimension (mx,my,mz,mvar) :: df
     type (pencil_case) :: p
@@ -773,6 +767,7 @@ contains
     real, dimension(nx,3) :: K1,unit_glnTT
     real, dimension(nx,3) :: spitzer_vec
     real, dimension(nx) :: tmp
+    real, pointer :: z_cutoff, cool_wid
     integer :: ierr
     integer :: i
 !
@@ -799,6 +794,15 @@ contains
     tau1_spitzer_penc=cdtv**2/(1.e-6*max(dz_1(n),dx_1(l1:l2)))**2/chi_spitzer
 
     if (lradiation) then
+      call get_shared_variable('z_cutoff',&
+               z_cutoff,ierr)
+      if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
+             'failed to get z_cutoff from radiation_ray')
+      call get_shared_variable('cool_wid',&
+             cool_wid,ierr)
+      if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
+               'failed to get cool_wid from radiation_ray')
+!
       df(l1:l2,m,n,iqx:iqz) = df(l1:l2,m,n,iqx:iqz)-tau_inv_spitzer*(p%qq+spitzer_vec)* &
                               step(z(n),z_cutoff,cool_wid)
     else
