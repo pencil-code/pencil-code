@@ -209,10 +209,10 @@ module Boundcond
       endif
       gamma1=1./gamma; gamma_m1=gamma-1.
 
-!AB   if (leos_idealgas) then
-!AB     call get_shared_variable('cp',cp); cp1=1./cp
-!AB     call get_shared_variable('cv',cv)
-!AB   endif
+      if (leos_idealgas) then
+        call get_shared_variable('cp',cp); cp1=1./cp
+        call get_shared_variable('cv',cv)
+      endif
       if (lADI) call get_shared_variable('hcondADI', hcondADI)
 !
 ! Set proper BC code for Yin-Yang grid
