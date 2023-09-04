@@ -207,7 +207,8 @@ module Hydro
   real :: othresh=0.,othresh_per_orms=0.,othresh_scl=1.
   real :: omega_out=0., omega_in=0., omega_fourier=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
-  real :: ekman_friction=0.0, uzjet=0.0
+  real :: ekman_friction=0.0, friction_tdep_toffset=0.0, friction_tdep_tau0=0.
+  real :: uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1.
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
@@ -242,7 +243,7 @@ module Hydro
   logical :: lSchur_2D2D3D_uu=.false.
   logical :: lSchur_2D2D1D_uu=.false.
   real :: dtcor=0., t_cor=0.
-  character (len=labellen) :: uuprof='nothing'
+  character (len=labellen) :: uuprof='nothing', friction_tdep='nothing'
 !
 !  Parameters for interior boundary conditions.
 !
@@ -278,7 +279,8 @@ module Hydro
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
       llorentz_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
-      velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
+      velocity_ceiling, ampl_Omega, lcoriolis_xdep, &
+      ekman_friction, friction_tdep, friction_tdep_toffset, friction_tdep_tau0, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
@@ -793,6 +795,7 @@ module Hydro
   integer :: idiag_fkinxdownmxy=0 ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
                                 ! ZAVG_DOC: u_{x\downarrow}\right>_{z}$
   integer :: idiag_nshift=0
+  integer :: idiag_frict=0
 !
 !  Video data.
 !
@@ -3756,6 +3759,7 @@ B_ext2=0.
       real, dimension (nx,3) :: uu1
       real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
       real, dimension (nx,3,3) :: puij_Schur
+      real :: frict
       integer :: i, j, ju
 !
       Fmax=1./impossible
@@ -3942,8 +3946,22 @@ B_ext2=0.
       endif
 !
 !  Ekman Friction, used only in two dimensional runs.
+!  But it can also be used as photon drag in 3-D, for example.
+!  In that case, it would be time dependent.
 !
-      if (ekman_friction/=0) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ekman_friction*p%uu
+      if (ekman_friction/=0) then
+        select case (friction_tdep)
+          case ('nothing')
+            frict=ekman_friction
+          case ('linear')
+            frict=ekman_friction &
+              *max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
+          case default
+        endselect
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-frict*p%uu
+        if (lroot.and.ldiagnos) call save_name(frict,idiag_frict)
+      endif
+
 !
 !  Boussinesq approximation: -g_z*alpha*(T-T_0) added.
 !  Use Rayleigh number only with ltemperature.
@@ -6504,6 +6522,7 @@ endif
         idiag_taufmin=0
         idiag_dtF=0
         idiag_nshift=0
+        idiag_frict=0
         ivid_oo=0; ivid_o2=0; ivid_ou=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0; ivid_uu_sph=0
       endif
 !
@@ -6703,6 +6722,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'dtF',idiag_dtF)
         call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
+        call parse_name(iname,cname(iname),cform(iname),'frict',idiag_frict)
       enddo
 !
       if (idiag_u2tm/=0) then

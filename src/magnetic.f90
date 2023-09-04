@@ -6991,7 +6991,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             call fatal_error('magnetic_after_boundary','eta_table not yet completed')
             eta_tdep=0.
           case default
-          endselect
+        endselect
         if (lroot.and.ldiagnos) call save_name(eta_tdep,idiag_eta_tdep)
       endif
 !

@@ -72,7 +72,8 @@ module Special
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
-    nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, ldo_adjust_krange
+    nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
+    ldo_adjust_krange, lswap_sign
 !
   ! k array
   real, dimension (nx) :: k, Q, Qdot, chi, chidot
