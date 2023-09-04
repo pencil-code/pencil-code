@@ -56,7 +56,7 @@ module Special
   real :: nmin0=-1., nmax0=3., horizon_factor=0.
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
-  logical :: ldo_adjust_krange=.true.
+  logical :: ldo_adjust_krange=.true., lswap_sign=.false.
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   logical :: lim_psi_TR=.false., lleft_psiL_TL=.false., lkeep_mQ_const=.false.
@@ -65,7 +65,7 @@ module Special
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
-    nmin0, nmax0, ldo_adjust_krange
+    nmin0, nmax0, ldo_adjust_krange, lswap_sign
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -428,7 +428,7 @@ module Special
       real, dimension (nx) :: impsi , impsidot , impsiddot , imTR, imTRdot, imTRddot
       real, dimension (nx) :: impsiL, impsiLdot, impsiLddot, imTL, imTLdot, imTLddot
       real, dimension (nx) :: Uprime, mQ, xi, epsQE, epsQB
-      real :: fact=1.
+      real :: fact=1., sign_swap=1.
       integer :: ik
       type (pencil_case) :: p
 !
@@ -552,15 +552,20 @@ module Special
               +(2.*sqrt(epsQE))/t**2*impsiL+(2.*sqrt(epsQB))/t**2*(mQ-k*t)*impsiL
           endif
         else
+          if (lswap_sign) then
+            sign_swap=-1.
+          else
+            sign_swap=+1.
+          endif
           psiddot=-(k**2-2.*(1.-Q**2*(mQ**2-1.))/t**2)*psi &
-            +(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
-          TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*Q)/t*psidot &
-            +(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
+            +sign_swap*(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
+          TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-sign_swap*(2.*Q)/t*psidot &
+            +sign_swap*(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
           if (lim_psi_TR) then
             impsiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi &
-              +(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
-            imTRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*Q)/t*impsidot &
-              +(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
+              +sign_swap*(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
+            imTRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-sign_swap*(2.*Q)/t*impsidot &
+              +sign_swap*(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
           endif
 !
 !  Left-handed modes
