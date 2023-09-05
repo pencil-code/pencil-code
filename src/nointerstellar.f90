@@ -8,6 +8,8 @@
 !
 ! CPARAM logical, parameter :: linterstellar = .false.
 !
+! PENCILS PROVIDED heat; cool; heatcool
+!
 !***************************************************************
 module Interstellar
 !
@@ -139,6 +141,55 @@ module Interstellar
 !  26-03-05/tony: coded
 !
     endsubroutine pencil_criteria_interstellar
+!***********************************************************************
+    subroutine pencil_interdep_interstellar(lpencil_in)
+!
+!  Interdependency among pencils from the Entropy module is specified here.
+!
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lpencil_in(i_cool)) then
+        lpencil_in(i_lnTT)=.true.
+        lpencil_in(i_lnrho)=.true.
+      endif
+      if (lpencil_in(i_heat)) then
+        lpencil_in(i_lnTT)=.true.
+      endif
+      if (lpencil_in(i_heatcool)) then
+        lpencil_in(i_cool)=.true.
+        lpencil_in(i_heat)=.true.
+      endif
+!
+    endsubroutine pencil_interdep_interstellar
+!***********************************************************************
+    subroutine calc_pencils_interstellar(f,p)
+!
+!  Calculate Interstellar pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!
+      real, dimension(mx,my,mz,mfarray), intent(IN)   :: f
+      type(pencil_case),                 intent(INOUT):: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!      if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho)
+!!
+!      if (lpencil(i_heat)) call calc_heat(p%heat,p%lnTT)
+!!
+!      if (lpencil(i_heatcool)) p%heatcool=p%heat-p%cool
+!
+    endsubroutine calc_pencils_interstellar
+!***********************************************************************
+    subroutine calc_diagnostics_interstellar(p)
+
+      type(pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_interstellar
 !***********************************************************************
     subroutine interstellar_after_boundary(f)
 !
