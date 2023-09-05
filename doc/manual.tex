@@ -11756,13 +11756,13 @@ where $a_n=1/(n+1)!=0.5$.
 In particular, for $n=1$ we have $a_1=1/2=0.2$ and
 for $n=3$ we have $a_3=1/24\approx0.04$.
 The advection operator leads to a diffusive error equal to
-$a1\delta t(\uv\cdot\nab)^2$ for $n=1$ and a
+$a_1\delta t(\uv\cdot\nab)^2$ for $n=1$ and a
 hyperdiffusive error equal to
-$a3\delta t^3(\uv\cdot\nab)^4$ for $n=3$.
+$a_3\delta t^3(\uv\cdot\nab)^4$ for $n=3$.
 Substituting $\delta t=c_{\rm CFL}\delta x/|\uv|$,
 where $c_{\rm CFL}$ is Courant-Friedrich-Lewy constant,
 we have a diffusive error $\nu\nabla^2$ with negative
-$\nu=-a1 c_{\rm CFL}|\uv|\delta x$ for $n=1$,
+$\nu=-a_1 c_{\rm CFL}|\uv|\delta x$ for $n=1$,
 and a hyperdiffusive error $-\nu_{\rm hyp}\nabla^4$ with positive
 $\nu_{\rm hyp}=a_3 c_{\rm CFL}^3 |\uv|\delta x^3$ for $n=3$.
 The fact that the hyperdiffusive error has a positive effective
