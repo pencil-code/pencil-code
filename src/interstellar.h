@@ -14,6 +14,9 @@
   public :: init_interstellar
 
   public :: pencil_criteria_interstellar
+  public :: calc_pencils_interstellar
+  public :: calc_diagnostics_interstellar
+  public :: pencil_interdep_interstellar
 
   public :: interstellar_before_boundary
   public :: interstellar_after_boundary

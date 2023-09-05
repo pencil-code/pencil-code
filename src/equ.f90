@@ -500,6 +500,7 @@ module Equ
       use Pscalar, only: calc_diagnostics_pscalar
       use Shock, only: calc_diagnostics_shock
       use Viscosity, only: calc_diagnostics_viscosity
+      use Interstellar, only: calc_diagnostics_interstellar
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
@@ -531,6 +532,7 @@ module Equ
         call calc_diagnostics_pscalar(p)
         call calc_diagnostics_shock(p)
         call calc_diagnostics_viscosity(p)
+        call calc_diagnostics_interstellar(p)
         if (lforcing_cont) call calc_diagnostics_forcing(p)
 
         lfirstpoint=.false.
@@ -576,6 +578,7 @@ module Equ
       use Testflow
       use Testscalar
       use Viscosity, only: calc_pencils_viscosity
+      use Interstellar, only: calc_pencils_interstellar
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
@@ -619,6 +622,7 @@ module Equ
         if (lchemistry)       call calc_pencils_chemistry(f,p)
                               call calc_pencils_energy(f,p)
         if (lviscosity)       call calc_pencils_viscosity(f,p)
+        if (linterstellar)    call calc_pencils_interstellar(f,p)
         if (lforcing_cont)    call calc_pencils_forcing(f,p)
         if (llorenz_gauge)    call calc_pencils_lorenz_gauge(f,p)
         if (lmagnetic)        call calc_pencils_magnetic(f,p)

@@ -10,7 +10,9 @@
 ! CPARAM logical, parameter :: linterstellar = .true.
 !
 ! MAUX CONTRIBUTION 2
-! COMMUNICATED AUXILIARIES 1
+!!! COMMUNICATED AUXILIARIES 1
+!
+! PENCILS PROVIDED heat; cool; heatcool
 !
 !*****************************************************************************
 module Interstellar
@@ -492,7 +494,8 @@ module Interstellar
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('netheat',inetheat,communicated=.true.)
+!      call farray_register_auxiliary('netheat',inetheat,communicated=.true.)
+      call farray_register_auxiliary('netheat',inetheat)
       call farray_register_auxiliary('cooling',icooling)
 !
 !  identify version number
@@ -507,10 +510,10 @@ module Interstellar
 !
 !  Writing files for use with IDL
 !
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netheat $'
-      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netheat'
-      aux_count=aux_count+1
-      if (lroot) write(15,*) 'netheat = fltarr(mx,my,mz)*one'
+!      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netheat $'
+!      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netheat'
+!      aux_count=aux_count+1
+!      if (lroot) write(15,*) 'netheat = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_interstellar
 !***********************************************************************
@@ -1641,11 +1644,15 @@ if (lroot) print*,"lSN_list",lSN_list
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_ee)=.true.
-      lpenc_requested(i_TT1)=.true.
-      lpenc_requested(i_TT)=.true.
-      lpenc_requested(i_cv1)=.true.
+      if (.not.(ltemperature_nolog.and.ltemperature).or.pretend_lnTT) then
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_TT1)=.true.
+      endif
+      if (ltemperature_nolog) lpenc_requested(i_cv1)=.true.
       if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
 !
+      if ((ltemperature_nolog.and.ltemperature).and.(idiag_taucmin/=0.or.idiag_Hmax_ism/=0)) &
+          lpenc_diagnos(i_TT1)=.true.
       if (idiag_Lamm/=0) lpenc_diagnos(i_rho1)=.true.
 !
 !  Diagnostic pencils
@@ -1654,6 +1661,45 @@ if (lroot) print*,"lSN_list",lSN_list
 !      if (idiag_nrhom/=0) lpenc_diagnos(i_rho)=.true.
 !
     endsubroutine pencil_criteria_interstellar
+!***********************************************************************
+    subroutine pencil_interdep_interstellar(lpencil_in)
+!
+!  Interdependency among pencils from the Entropy module is specified here.
+!
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lpencil_in(i_cool)) then
+        lpencil_in(i_lnTT)=.true.
+        lpencil_in(i_lnrho)=.true.
+      endif
+      if (lpencil_in(i_heat)) then
+        lpencil_in(i_lnTT)=.true.
+      endif
+      if (lpencil_in(i_heatcool)) then
+        lpencil_in(i_cool)=.true.
+        lpencil_in(i_heat)=.true.
+      endif
+!
+    endsubroutine pencil_interdep_interstellar
+!***********************************************************************
+    subroutine calc_pencils_interstellar(f,p)
+!
+!  Calculate Interstellar pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!
+      real, dimension(mx,my,mz,mfarray), intent(IN)   :: f
+      type(pencil_case),                 intent(INOUT):: p
+!
+      if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho)
+!
+      if (lpencil(i_heat)) call calc_heat(p%heat,p%lnTT)
+!
+      if (lpencil(i_heatcool)) p%heatcool=p%heat-p%cool
+!
+    endsubroutine calc_pencils_interstellar
 !***********************************************************************
     subroutine interstellar_after_boundary(f)
 !
@@ -1680,6 +1726,72 @@ if (lroot) print*,"lSN_list",lSN_list
       if (lfirst.and..not.lpencil_check_at_work) call check_SN(f)
 !
     endsubroutine interstellar_before_boundary
+!***********************************************************************
+    subroutine calc_0d_diag_interstellar(p)
+!
+!  Calculate entropy related diagnostics.
+!
+      use Diagnostics
+!
+      type(pencil_case) :: p
+!
+      real, dimension(nx) :: netheat, netcool
+!
+      if (ldiagnos) then
+        if (idiag_Hmax_ism/=0) then
+          netheat=p%heatcool
+          where (p%heatcool<0.0) netheat=0.0
+          if (ltemperature.and.ltemperature_nolog) then
+            call max_mn_name(netheat*p%TT1,idiag_Hmax_ism)
+          elseif (pretend_lnTT) then
+            call max_mn_name(netheat,idiag_Hmax_ism)
+          else
+            call max_mn_name(netheat*p%TT/p%ee,idiag_Hmax_ism)
+          endif
+        endif
+        if (idiag_taucmin/=0) then
+          netcool=-p%heatcool
+          where (p%heatcool>=0.0) netcool=1.0e-6
+          if (ltemperature.and.ltemperature_nolog) then
+            call max_mn_name(netcool*p%TT1,idiag_taucmin,lreciprocal=.true.)
+          elseif (pretend_lnTT) then
+            call max_mn_name(netcool,idiag_taucmin,lreciprocal=.true.)
+          else
+            call max_mn_name(netcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
+          endif
+        endif
+        if (idiag_Lamm/=0) call sum_mn_name(p%rho1*p%cool,idiag_Lamm)
+        if (idiag_nrhom/=0) call sum_mn_name(p%cool/p%ee,idiag_nrhom)
+        if (idiag_rhoLm/=0) call sum_mn_name(p%cool,idiag_rhoLm)
+        if (idiag_Gamm/=0) call sum_mn_name(p%heat,idiag_Gamm)
+      endif
+!
+    endsubroutine calc_0d_diag_interstellar
+!***********************************************************************
+    subroutine calc_1d_diag_interstellar(p)
+!
+      use Diagnostics
+      use Sub, only: cross, dot2
+!
+      type(pencil_case) :: p
+!
+!
+!  1-D averages.
+!
+      if (l1davgfirst) then
+        if (idiag_rhoHCmz/=0) call xysum_mn_name_z(p%heatcool,idiag_rhoHCmz)
+      endif
+!
+    endsubroutine calc_1d_diag_interstellar
+!***********************************************************************
+    subroutine calc_diagnostics_interstellar(p)
+
+      type(pencil_case) :: p
+
+      call calc_1d_diag_interstellar(p)
+      call calc_0d_diag_interstellar(p)
+
+    endsubroutine calc_diagnostics_interstellar
 !*****************************************************************************
     subroutine heat_interstellar(f,zheat)
 !
@@ -1875,45 +1987,58 @@ if (lroot) print*,"lSN_list",lSN_list
 !  Since these variables are divided by Temp when applied it is useful to
 !  monitor the actual applied values for diagnostics so TT1 included.
 !
-      if (ldiagnos) then
-        if (idiag_Hmax_ism/=0) then
-          netheat=heatcool
-          where (heatcool<0.0) netheat=0.0
-          if (ltemperature.and.ltemperature_nolog) then
-            call max_mn_name(netheat*p%TT1,idiag_Hmax_ism)
-          elseif (pretend_lnTT) then
-            call max_mn_name(netheat,idiag_Hmax_ism)
-          else
-            call max_mn_name(netheat*p%TT/p%ee,idiag_Hmax_ism)
-          endif
-        endif
-        if (idiag_taucmin/=0) then
-          netcool=-heatcool
-          where (heatcool>=0.0) netcool=1.0e-6
-          if (ltemperature.and.ltemperature_nolog) then
-            call max_mn_name(netcool*p%TT1,idiag_taucmin,lreciprocal=.true.)
-          elseif (pretend_lnTT) then
-            call max_mn_name(netcool,idiag_taucmin,lreciprocal=.true.)
-          else
-            call max_mn_name(netcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
-          endif
-        endif
-        if (idiag_Lamm/=0) call sum_mn_name(p%rho1*cool,idiag_Lamm)
-        if (idiag_nrhom/=0) call sum_mn_name(cool/p%ee,idiag_nrhom)
-        call sum_mn_name(cool,idiag_rhoLm)
-        call sum_mn_name(heat,idiag_Gamm)
-      endif
-      if (l1davgfirst) then
-        call xysum_mn_name_z(heatcool,idiag_rhoHCmz)
-      endif
+      call calc_diagnostics_interstellar(p)
+      !if (ldiagnos) then
+      !  if (idiag_Hmax_ism/=0) then
+      !    netheat=heatcool
+      !    where (heatcool<0.0) netheat=0.0
+      !    if (ltemperature.and.ltemperature_nolog) then
+      !      call max_mn_name(netheat*p%TT1,idiag_Hmax_ism)
+      !    elseif (pretend_lnTT) then
+      !      call max_mn_name(netheat,idiag_Hmax_ism)
+      !    else
+      !      call max_mn_name(netheat*p%TT/p%ee,idiag_Hmax_ism)
+      !    endif
+      !  endif
+      !  if (idiag_taucmin/=0) then
+      !    netcool=-heatcool
+      !    where (heatcool>=0.0) netcool=1.0e-6
+      !    if (ltemperature.and.ltemperature_nolog) then
+      !      call max_mn_name(netcool*p%TT1,idiag_taucmin,lreciprocal=.true.)
+      !    elseif (pretend_lnTT) then
+      !      call max_mn_name(netcool,idiag_taucmin,lreciprocal=.true.)
+      !    else
+      !      call max_mn_name(netcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
+      !    endif
+      !  endif
+      !  if (idiag_Lamm/=0) call sum_mn_name(p%rho1*cool,idiag_Lamm)
+      !  if (idiag_nrhom/=0) call sum_mn_name(cool/p%ee,idiag_nrhom)
+      !  call sum_mn_name(cool,idiag_rhoLm)
+      !  call sum_mn_name(heat,idiag_Gamm)
+      !endif
+      !if (l1davgfirst) then
+      !  call xysum_mn_name_z(heatcool,idiag_rhoHCmz)
+      !endif
 !
 !  Limit timestep by the cooling time (having subtracted any heating)
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
       if (ldt) then
-        if (lfirst) Hmax=Hmax+heatcool*p%TT
+        if (lfirst) then
+          if (ltemperature.or.pretend_lnTT) then
+            Hmax=Hmax+heatcool
+          else
+            Hmax=Hmax+heatcool*p%TT
+          endif
+        endif
       else
-        if (ldiagnos) Hmax=Hmax+heatcool*p%TT
+        if (ldiagnos) then
+          if (ltemperature.or.pretend_lnTT) then
+            Hmax=Hmax+heatcool
+          else
+            Hmax=Hmax+heatcool*p%TT
+          endif
+        endif
       endif
 !
 !  Apply heating/cooling to temperature/entropy variable
