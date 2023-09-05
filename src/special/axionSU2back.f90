@@ -51,6 +51,7 @@ module Special
   integer, dimension (nx) :: kindex_array
   real :: grand_sum, grant_sum, dgrant_sum
   real :: TRdoteff2km_sum, TRdoteff2m_sum, TReff2km_sum, TReff2m_sum
+  real :: TLdoteff2km_sum, TLdoteff2m_sum, TLeff2km_sum, TLeff2m_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
   real :: lnkmin0, lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=0.
@@ -86,10 +87,12 @@ module Special
   integer :: idiag_chi =0 ! DIAG_DOC: $\chi$
   integer :: idiag_chidot =0 ! DIAG_DOC: $\dot{\chi}$
   integer :: idiag_chiddot =0 ! DIAG_DOC: $\ddot{\chi}$
-  integer :: idiag_psi =0 ! DIAG_DOC: $\psi$
+  integer :: idiag_psi     =0 ! DIAG_DOC: $\psi$
+  integer :: idiag_psiL    =0 ! DIAG_DOC: $\psi_L$
   integer :: idiag_psidot =0 ! DIAG_DOC: $\dot\psi$
   integer :: idiag_psiddot=0 ! DIAG_DOC: $\ddot\psi$
-  integer :: idiag_TR  =0 ! DIAG_DOC: $T_R$
+  integer :: idiag_TR     =0 ! DIAG_DOC: $T_R$
+  integer :: idiag_TL     =0 ! DIAG_DOC: $T_L$
   integer :: idiag_TRdot =0 ! DIAG_DOC: $\dot T_R$
   integer :: idiag_TRddot=0 ! DIAG_DOC: $\ddot T_R$
   integer :: idiag_imTR=0 ! DIAG_DOC: $\Im T_R$
@@ -99,6 +102,10 @@ module Special
   integer :: idiag_TReff2km  =0 ! DIAG_DOC: $k|T_R|^2_{\rm eff}$
   integer :: idiag_TRdoteff2m  =0 ! DIAG_DOC: $|T_R\dot{T}_R|_{\rm eff}$
   integer :: idiag_TRdoteff2km  =0 ! DIAG_DOC: $k|T_R\dot{T}_R|_{\rm eff}$
+  integer :: idiag_TLeff2m  =0 ! DIAG_DOC: $|T_R|^2_{\rm eff}$
+  integer :: idiag_TLeff2km  =0 ! DIAG_DOC: $k|T_R|^2_{\rm eff}$
+  integer :: idiag_TLdoteff2m  =0 ! DIAG_DOC: $|T_R\dot{T}_R|_{\rm eff}$
+  integer :: idiag_TLdoteff2km  =0 ! DIAG_DOC: $k|T_R\dot{T}_R|_{\rm eff}$
 ! integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
 ! integer :: idiag_grant=0 ! DIAG_DOC: ${\cal T}^\chi$
   integer :: idiag_dgrant_up=0 ! DIAG_DOC: ${\cal T}^\chi$
@@ -719,10 +726,12 @@ module Special
         call sum_mn_name(chiddot,idiag_chiddot)
         call sum_mn_name(psi_anal,idiag_psi_anal)
         call sum_mn_name(TR_anal,idiag_TR_anal)
-        call sum_mn_name(psi,idiag_psi)
+        call sum_mn_name(psi ,idiag_psi)
+        call sum_mn_name(psiL,idiag_psiL)
         call sum_mn_name(psidot,idiag_psidot)
         call sum_mn_name(psiddot,idiag_psiddot)
         call sum_mn_name(TR,idiag_TR)
+        call sum_mn_name(TL,idiag_TL)
         call sum_mn_name(TRdot,idiag_TRdot)
         call sum_mn_name(TRddot,idiag_TRddot)
         call sum_mn_name(imTR,idiag_imTR)
@@ -730,6 +739,10 @@ module Special
         call save_name(TReff2km_sum,idiag_TReff2km)
         call save_name(TRdoteff2m_sum,idiag_TRdoteff2m)
         call save_name(TRdoteff2km_sum,idiag_TRdoteff2km)
+        call save_name(TLeff2m_sum,idiag_TLeff2m)
+        call save_name(TLeff2km_sum,idiag_TLeff2km)
+        call save_name(TLdoteff2m_sum,idiag_TLdoteff2m)
+        call save_name(TLdoteff2km_sum,idiag_TLdoteff2km)
         call save_name(grand_sum,idiag_grand2)
         call save_name(dgrant_sum,idiag_dgrant)
         call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
@@ -940,7 +953,7 @@ module Special
 !  output for left-handed modes
 !
           if (lleft_psiL_TL) then
-          open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
+          open (1, file=trim(directory_snap)//'/krange_left.dat', form='formatted', position='append')
           write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psiL), f(l1:l2,m,n,iaxi_impsiL), &
                              f(l1:l2,m,n,iaxi_TL),   f(l1:l2,m,n,iaxi_imTL)
           close(1)
@@ -1124,6 +1137,13 @@ module Special
       call mpiallreduce_sum(sum(TReff2km),TReff2km_sum,1)
       call mpiallreduce_sum(sum(TReff2m),TReff2m_sum,1)
 !
+!  Same for left-handed modes
+!
+      call mpiallreduce_sum(sum(TLdoteff2km),TLdoteff2km_sum,1)
+      call mpiallreduce_sum(sum(TLdoteff2m),TLdoteff2m_sum,1)
+      call mpiallreduce_sum(sum(TLeff2km),TLeff2km_sum,1)
+      call mpiallreduce_sum(sum(TLeff2m),TLeff2m_sum,1)
+!
     endsubroutine special_after_boundary
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -1150,9 +1170,10 @@ module Special
 !
       if (lreset) then
         idiag_Q=0; idiag_Qdot=0; idiag_Qddot=0; idiag_chi=0; idiag_chidot=0; idiag_chiddot=0
-        idiag_psi=0; idiag_psidot=0; idiag_psiddot=0
-        idiag_TR=0; idiag_TRdot=0; idiag_TRddot=0; idiag_psi_anal=0; idiag_TR_anal=0
+        idiag_psi=0; idiag_psiL=0; idiag_psidot=0; idiag_psiddot=0
+        idiag_TR=0; idiag_TL=0; idiag_TRdot=0; idiag_TRddot=0; idiag_psi_anal=0; idiag_TR_anal=0
         idiag_TReff2m=0; idiag_TReff2km=0; idiag_TRdoteff2m=0; idiag_TRdoteff2km=0
+        idiag_TLeff2m=0; idiag_TLeff2km=0; idiag_TLdoteff2m=0; idiag_TLdoteff2km=0
         idiag_grand2=0; idiag_dgrant=0; idiag_dgrant_up=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0; idiag_k0=0; idiag_dk=0
       endif
@@ -1165,9 +1186,11 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'chidot' ,idiag_chidot)
         call parse_name(iname,cname(iname),cform(iname),'chiddot' ,idiag_chiddot)
         call parse_name(iname,cname(iname),cform(iname),'psi' ,idiag_psi)
+        call parse_name(iname,cname(iname),cform(iname),'psiL',idiag_psiL)
         call parse_name(iname,cname(iname),cform(iname),'psidot' ,idiag_psidot)
         call parse_name(iname,cname(iname),cform(iname),'psiddot' ,idiag_psiddot)
         call parse_name(iname,cname(iname),cform(iname),'TR' ,idiag_TR)
+        call parse_name(iname,cname(iname),cform(iname),'TL' ,idiag_TL)
         call parse_name(iname,cname(iname),cform(iname),'TRdot' ,idiag_TRdot)
         call parse_name(iname,cname(iname),cform(iname),'TRddot' ,idiag_TRddot)
         call parse_name(iname,cname(iname),cform(iname),'imTR' ,idiag_imTR)
@@ -1177,6 +1200,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'TReff2km' ,idiag_TReff2km)
         call parse_name(iname,cname(iname),cform(iname),'TRdoteff2m' ,idiag_TRdoteff2m)
         call parse_name(iname,cname(iname),cform(iname),'TRdoteff2km' ,idiag_TRdoteff2km)
+        call parse_name(iname,cname(iname),cform(iname),'TLeff2m' ,idiag_TLeff2m)
+        call parse_name(iname,cname(iname),cform(iname),'TLeff2km' ,idiag_TLeff2km)
+        call parse_name(iname,cname(iname),cform(iname),'TLdoteff2m' ,idiag_TLdoteff2m)
+        call parse_name(iname,cname(iname),cform(iname),'TLdoteff2km' ,idiag_TLdoteff2km)
 !       call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
 !       call parse_name(iname,cname(iname),cform(iname),'grant' ,idiag_grant)
         call parse_name(iname,cname(iname),cform(iname),'dgrant_up' ,idiag_dgrant_up)
