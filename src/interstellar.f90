@@ -791,7 +791,6 @@ module Interstellar
 !
 !
 !
-if (lroot) print*,"lSN_list",lSN_list
       if (lSN_list) then
         inquire(file='sn_series.in',exist=exist)
         if (exist) then
@@ -807,11 +806,14 @@ if (lroot) print*,"lSN_list",lSN_list
         do while(1==1)
           read(33,*,iostat=stat) &
               int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
+          !Ignore int1_list=0, applying under START and t_list<t to avoid repeating previous explosions
           if (t<=t_list.and.int1_list/=0) nlist=nlist+1
           if (stat<0) exit
         enddo
         close(33)
         if (lroot) print*,"initialize_interstellar: nlist =",nlist
+        if (nlist<2) call fatal_error('initialize_interstellar',&
+            'sn_series.in list needs extending or set lSN_list=F to continue')
         if (allocated(SN_list) ) deallocate(SN_list)
         allocate(SN_list(4,nlist))
         if (allocated(SN_type) ) deallocate(SN_type)
@@ -824,6 +826,7 @@ if (lroot) print*,"lSN_list",lSN_list
           read(33,*,iostat=stat) &
               int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
           if (stat<0) exit
+          !Ignore int1_list=0, applying under START and t_list<t to avoid repeating previous explosions
           if (t_list>=t.and.int1_list/=0) then
             SN_list(1,i)=t_list
             SN_list(2,i)=x_list
@@ -2151,6 +2154,7 @@ if (lroot) print*,"lSN_list",lSN_list
               type_list=SN_type(i)
               SN_list(1,i)=0.
               if (i==nlist-1) then
+                !Exit run early if next on the list is the last
                 call touch_file('ENDTIME')
                 tmax=t
               endif
@@ -2162,7 +2166,8 @@ if (lroot) print*,"lSN_list",lSN_list
               if (lroot) print &
                   "(1x,'check_SN: SNfirst at t =',i7,e16.8)",SNfirst,t
               if (i==nlist-2) then
-                call touch_file('FORCE_UPDATE')
+                !Check whether the list has been extended since last reading
+                call touch_file('RELOAD')
               endif
               exit
             endif
