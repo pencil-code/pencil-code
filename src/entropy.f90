@@ -3297,7 +3297,7 @@ module Energy
         if (lpressuregradient_gas) then
           if (notanumber(p%fpres)) then
             print*, 'denergy_dt: p%fpres contains a NaN at iproc=', iproc
-            print*, 'p%fpres =',p%fpres
+            if (ip<6) print*, 'p%fpres =',p%fpres
             call fatal_error_local('denergy_dt','')
           endif
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
