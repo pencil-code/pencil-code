@@ -3,15 +3,15 @@
 !  run parameters for interstellar
 !
 &run_pars
-  cvsid='$Id$',
+  cvsid="fe0309a94"
   !nt=25000, it1=50, isave=1000, it1d=2000, itorder=5, tmax=0.05, dtmin=1e-15
   nt=5, it1=1, isave=1000, it1d=5000, itorder=5, tmax=0.5, dtmin=1e-15
-  eps_rkf = 0.05, timestep_scaling='cons_err', dt=1e-6
+  eps_rkf = 1e-5, timestep_scaling='cons_err', dt=1e-6
   cdt=0.1, cdtv=0.1, cdts=0.1, cdtf=0.1
   dsnap=.0005, dvid=.00025, slice_position='m'
   !for magnetic take at least 20 snapshots up to first Myr fluctuation dynamo?
   !dsnap=2., dvid=2., slice_position='m'
-  bcz = 's','s','ubs','ism','ism','s','s','a','cop','cop'
+  bcz = 's','s','ubs','ism','ism','s','s','a','cop'
   ip=1963
   lpencil_check=F
   lpencil_check_small=F
