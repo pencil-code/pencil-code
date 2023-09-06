@@ -8,7 +8,7 @@ Maintainer:
 Added:
     01-Dec-2008
 Status:
-    
+
 Recommended resolution:
     1x1x1 (zero-dimensional run)
 Comments:
@@ -18,4 +18,4 @@ Comments:
     Since the required timestep is not straight forward to determine
     when chemical reactions are involved we use the Runge-Kutta-Fehlberg
     method for the timestepping.
-
+    Following refinement of the RFK module the reference data has been updated FG 06-Sep-2023
