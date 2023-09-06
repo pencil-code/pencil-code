@@ -54,7 +54,7 @@ class SedovTaylor(object):
 
     def get_st(
         self,
-        t_sedov=0,
+        t_sedov=None,
         par=list(),
         time=list(),
         nt=5000,
@@ -62,7 +62,7 @@ class SedovTaylor(object):
         endt=0.005,
         dims=3,
         quiet=True,
-        rho0=1.6728e-24,
+        rho0=None,
         M0=10,
         lsnowplough=True,
         lcioffi=True,
@@ -108,6 +108,8 @@ class SedovTaylor(object):
             unit_energy = unit_energy_density * unit_length ** 3  # erg
             E0 = 1e51 / unit_energy  # erg
             M0 = 10
+            if not rho0:
+                rho0=1.
         else:
             unit_length = par.unit_length
             unit_time = par.unit_time
@@ -120,12 +122,16 @@ class SedovTaylor(object):
                 M0 = par.mass_sn
             else:
                 M0 = 10
+            if not rho0:
+                rho0=par.rho_const*par.unit_density/1.6728e-24
         if len(time) > 0:
             time = np.array(time)
+            t_sedov = time[0]
         else:
+            if not t_sedov:
+                t_sedov = read.ts("sn_series.dat").t_sedov[0]
             time = np.linspace(startt, endt, nt) + t_sedov
         xi = 2.026  # McKee/Ostriker 1988
-        rho0 /= unit_density
         setattr(self, "unit_density", unit_density)
         setattr(self, "unit_length", unit_length)
         setattr(self, "unit_time", unit_time)
