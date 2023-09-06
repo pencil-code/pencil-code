@@ -9103,7 +9103,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
         !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
 !
-!  logarithmic interpolation of appa_file
+!  non-logarithmic interpolation of appa_file
 !
         f1=appa_file(it_file)
         f2=appa_file(it_file+1)
