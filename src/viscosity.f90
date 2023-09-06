@@ -51,7 +51,7 @@ module Viscosity
   character (len=labellen) :: nnewton_type='none'
   character (len=labellen) :: div_sld_visc='2nd'
   real :: nnewton_tscale=0.0,nnewton_step_width=0.0
-  real, dimension(nx) :: xmask_vis=0, pnu=0.0
+  real, dimension(nx) :: xmask_vis=0.,pnu=0.
   real, dimension(2) :: vis_xaver_range=(/-max_real,max_real/)
   real, dimension(:), pointer :: etat_x, detat_x
   real, dimension(:), pointer :: etat_y, detat_y
@@ -636,12 +636,12 @@ module Viscosity
 !
 !  Write out viscosity z-profile.
 !  At present only correct for Cartesian geometry
-!  The actually profile is generated below and stored in pnu.
+!  The actually profile is generated below and written to disk.
 !
       if (lvisc_nu_prof) call write_zprof('visc',nu + (nu*(nu_jump-1.))*step(z(n1:n2),znu,-widthnu))
 !
 !  Write out viscosity y-profile
-!  The actually profile is generated below and stored in pnu.
+!  The actual profile is generated below and written to disk.
 !
       if (lvisc_nu_profy_bound) call write_yprof('visc_profy_bound', nu + (nu*(nu_jump-1.))* &
                (step(y(m1:m2),xyz1(2)-3*dynu, dynu) + step(y(m1:m2),xyz0(2)+3*dynu, -dynu)))
