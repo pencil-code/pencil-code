@@ -152,7 +152,7 @@ module Cdata
 !AB: this more carefully and discuss it first in the newsletter.
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtsrc=0.2, cdtf=0.9
-  real :: eps_rkf=1e-8, eps_stiff=1e-6
+  real :: eps_rkf=1e-5, eps_stiff=1e-6
   real :: ddt=0.0
   real :: dtmin=1.0e-6, dtmax=1.0e37
   real :: nu_sts=0.1

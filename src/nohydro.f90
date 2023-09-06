@@ -13,10 +13,20 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED uu(3); u2; oo(3); ou;  oxu(3); uij(3,3); sij(3,3); sij2
-! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3); ogu(3)
-! PENCILS PROVIDED del2u(3), curlo(3), uu_advec(3)
-! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel(3); divss_rel
+! PENCILS PROVIDED divu; oo(3); o2; ou; oxu2; oxu(3); u2; uij(3,3); uu(3); curlo(3)
+! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); ugu2; oij(3,3)
+! PENCILS PROVIDED d2uidxj(3,3), uijk(3,3,3); ogu(3)
+! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
+! PENCILS PROVIDED u2u31; u3u12; u1u23
+! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
+! PENCILS PROVIDED rhougu(3); der6u(3); transpurho(3)
+! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
+! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
+! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
+! PENCILS PROVIDED der6u_res(3,3)
+! PENCILS PROVIDED lorentz; hless
+! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel2; ss_rel(3)
+! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor; divss_rel
 !
 !***************************************************************
 module Hydro
@@ -281,10 +291,12 @@ module Hydro
 ! curlo
       if (lpenc_loc(i_curlo)) p%curlo=0.0
 ! relativistic stuff
-      if (lpenc_loc(i_lorentz_gamma2)) p%lorentz_gamma2=0.
+      if (lpenc_loc(i_lorentz_gamma2)) p%lorentz_gamma2=0.0
       if (lpenc_loc(i_lorentz_gamma)) p%lorentz_gamma=0.
+      if (lpenc_loc(i_lorentz)) p%lorentz=0.
       if (lpenc_loc(i_ss_rel)) p%ss_rel=0.
       if (lpenc_loc(i_divss_rel)) p%divss_rel=0.
+      if (lpenc_loc(i_hless)) p%hless=0.
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -1062,7 +1074,7 @@ module Hydro
 !***********************************************************************
     subroutine calc_gradu(f)
 !
-! Dummy 
+! Dummy
 !
     real, dimension (mx,my,mz,mfarray) :: f
 !
