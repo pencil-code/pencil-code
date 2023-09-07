@@ -95,7 +95,7 @@
 
     use General, only: parser
     use Messages, only: fatal_error
-    use Syscalls, only: extract_str
+    use Syscalls, only: extract_str, get_env_var
     use Cdata, only: lroot
 
     integer, parameter :: RTLD_LAZY=0, RTLD_NOW=1
@@ -106,7 +106,7 @@
     character(LEN=8) :: mod_prefix, mod_infix, mod_suffix
     integer(KIND=ikind8) :: sub_handle
 
-    call getenv("PC_MODULES_LIST", special_modules_list)
+    call get_env_var("PC_MODULES_LIST", special_modules_list)
     n_special_modules=parser(trim(special_modules_list),special_modules,' ')
 !if (lroot) print*, 'special_modules_list=', trim(special_modules_list)//'<<<'
 
