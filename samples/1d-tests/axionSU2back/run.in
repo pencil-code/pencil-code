@@ -1,0 +1,15 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Runtime parameters for harmonic oscillator
+!
+&run_pars
+  cvsid="76d6d658f"
+  lpencil_check_small=F, isave=500000, itorder=3
+  nt=40000000, it1=20000, d2davg=2000., ip=30, tmax=-1e-7, dtmin=1e-20
+  tmax=-1.0e-5
+/
+&special_run_pars
+  lbackreact=T, sbackreact_Q=1e-0, sbackreact_chi=1e-0
+  tback=0e6, dtback=1e6, lconf_time=T, Ndivt=1000000
+  axion_sum_range=.25,1., lwith_eps=T
+/
