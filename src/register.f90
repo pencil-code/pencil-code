@@ -26,7 +26,7 @@ module Register
 !
 !  6-nov-01/wolf: coded
 !
-      use FArrayManager,    only: farray_finalize_ode_variables
+      use FArrayManager,    only: farray_finalize_ode
       use General,          only: setup_mm_nn
       use Io,               only: register_io
       use Mpicomm,          only: stop_it
@@ -160,7 +160,7 @@ module Register
       call register_heatflux
       call register_solid_cells
       call register_pointmasses
-      call farray_finalize_ode_variables
+      call farray_finalize_ode
 !
 !  Writing files for use with IDL.
 !

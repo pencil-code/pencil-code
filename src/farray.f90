@@ -13,7 +13,7 @@ module FArrayManager
 !
   use Cparam, only: mvar,maux,mglobal,maux_com,mscratch
   use Cdata, only: nvar,naux,nscratch,nglobal,naux_com,datadir,lroot,lwrite_aux,lreloading, &
-                   n_odevars,f_odevars,df_odevars
+                   n_odevars,f_ode, df_ode
   use HDF5_IO
   use Messages
 !
@@ -25,8 +25,8 @@ module FArrayManager
   public :: farray_register_pde
   public :: farray_register_auxiliary
   public :: farray_register_global
-  public :: farray_register_ode_variable
-  public :: farray_finalize_ode_variables
+  public :: farray_register_ode
+  public :: farray_finalize_ode
   public :: farray_use_variable
   public :: farray_index_append
   public :: farray_index_reset
@@ -331,22 +331,24 @@ module FArrayManager
 !
     endsubroutine farray_register_variable
 !***********************************************************************
-    subroutine farray_register_ode_variable(varname,ivar,nvar)
+    subroutine farray_register_ode(varname,ivar,nvar)
+
+    use General, only: ioptest
 
     character (len=*), intent(in) :: varname
-    integer, target, intent(out)  :: ivar
-    integer, target, intent(in)  :: nvar
+    integer, intent(out)  :: ivar
+    integer, optional, intent(in)  :: nvar
 
       ivar = n_odevars+1
-      n_odevars = n_odevars+nvar
+      n_odevars = n_odevars+ioptest(nvar)
 
-    endsubroutine farray_register_ode_variable
+    endsubroutine farray_register_ode
 !***********************************************************************
-    subroutine farray_finalize_ode_variables
+    subroutine farray_finalize_ode
 
-      allocate(f_odevars(n_odevars),df_odevars(n_odevars))
+      allocate(f_ode(n_odevars),df_ode(n_odevars))
 
-    endsubroutine farray_finalize_ode_variables
+    endsubroutine farray_finalize_ode
 !***********************************************************************
     subroutine farray_index_append(varname,ivar,vector,array)
 !

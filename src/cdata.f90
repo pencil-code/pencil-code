@@ -335,7 +335,7 @@ module Cdata
 !  Type counters.
 !
   integer :: nvar,naux,naux_com,nscratch,nglobal,n_odevars=0
-  real, dimension(:), allocatable :: f_odevars, df_odevars
+  real, dimension(:), allocatable :: f_ode, df_ode
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
