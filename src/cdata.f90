@@ -334,7 +334,8 @@ module Cdata
 !
 !  Type counters.
 !
-  integer :: nvar,naux,naux_com,nscratch,nglobal
+  integer :: nvar,naux,naux_com,nscratch,nglobal,n_odevars=0
+  real, dimension(:), allocatable :: f_odevars, df_odevars
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
@@ -396,6 +397,7 @@ module Cdata
   integer :: igu11=0,igu12=0,igu13=0
   integer :: igu21=0,igu22=0,igu23=0
   integer :: igu31=0,igu32=0,igu33=0
+  integer :: icooling=0, inetheat=0
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0
   integer, dimension(ndustspec) :: ilnnd=0, ind=0,imd=0,imi=0,idc=0,ilndc=0
   integer, dimension(ndustspec,ndustspec0) :: idcj=0,ilndcj=0
@@ -404,7 +406,6 @@ module Cdata
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
   integer :: iglobal_ax_ext=0, iglobal_ay_ext=0, iglobal_az_ext=0
   integer, dimension(3) :: iglobal_jext=0, iglobal_eext
-  integer :: icooling=0, inetheat=0
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
   integer :: icp=0, igpx=0, igpy=0, iRR=0, iss_run_aver=0
   integer :: iFenth=0, iss_flucz=0, iTT_flucz=0, irho_flucz=0
@@ -444,7 +445,8 @@ module Cdata
 !  Pencil-related stuff.
 !
   integer :: imn
-  integer, target :: lglob=1,m,n
+  integer :: lglob=1
+  integer, target :: m,n
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
   integer :: necessary_imn=0
@@ -475,10 +477,10 @@ module Cdata
   integer, parameter :: mname=100
   real, dimension (mname) :: fweight=0.0
   integer, dimension(:)   , allocatable :: itype_name
-  real, dimension(:)      , allocatable :: fname,fname_keep
-  real, dimension(:,:)    , allocatable :: fnamer,fname_sound
-  real, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez, fnamexy, fnamexz
-  real, dimension(:,:,:,:), allocatable :: fnamerz
+  real, dimension(:)      , allocatable, target :: fname,fname_keep
+  real, dimension(:,:)    , allocatable, target :: fnamer,fname_sound
+  real, dimension(:,:,:)  , allocatable, target :: fnamex, fnamey, fnamez, fnamexy, fnamexz
+  real, dimension(:,:,:,:), allocatable, target :: fnamerz
   integer, dimension(:,:) , allocatable :: sound_coords_list
   integer, dimension(:,:) , allocatable :: ncountsz
   character (len=fmtlen), allocatable :: cform(:),cformv(:),cform_sound(:), &
@@ -786,6 +788,10 @@ module Cdata
 !  or not the chiral MHD special module is used.
 !
   real :: lambda5 = 0.0
+!
+! threadprivate definitions for OpenMP
+!
+!$ include 'cdata_omp.inc'
 !
 !***********************************************************************
 endmodule Cdata
