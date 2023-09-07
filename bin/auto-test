@@ -1,2 +1,2 @@
 #!/bin/bash
-pc_auto-test
+pc_auto-test $1
