@@ -44,7 +44,7 @@ module Special
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
   real, pointer :: eta, eta_tdep
-  integer :: ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0, irhoe=0
+  integer :: ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
