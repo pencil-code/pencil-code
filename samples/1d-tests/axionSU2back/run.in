@@ -5,7 +5,7 @@
 &run_pars
   cvsid="76d6d658f"
   lpencil_check_small=F, isave=500000, itorder=3
-  nt=40000000, it1=20000, d2davg=2000., ip=30, tmax=-1e-7, dtmin=1e-20
+  nt=10001, it1=2000, d2davg=2000., ip=30, tmax=-1e-7, dtmin=1e-20
   tmax=-1.0e-5
 /
 &special_run_pars
