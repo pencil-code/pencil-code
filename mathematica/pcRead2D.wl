@@ -32,6 +32,14 @@ Output:
 Example:
   readSlice[sim,\"uu1\",\"xy2\"]"
 
+read2DAve::usage="read2DAve[sim,sp] reads 1-dimensionally averaged 2-dimensional
+files, i.e., those variables specified in {xyz}aver.in.
+Input:
+  sim: String. Directory of the run.
+  sp: String, which direction is averaged out: x, y, or z.
+Output:
+  An Association object of time, grid, and fields."
+
 
 Begin["`Private`"]
 
@@ -41,7 +49,7 @@ Begin["`Private`"]
 
 
 (* ::Section:: *)
-(*Read slice files*)
+(*Read slice files (video.in)*)
 
 
 readStride[sim_,sl_]:=Module[{dim,dir,n,file,stride},
@@ -61,6 +69,8 @@ readStride[sim_,sl_]:=Module[{dim,dir,n,file,stride},
       6, ,
       _, Print["stride file bad structure. Failed."];Return@$Failed]
     ];
+    
+    stride=stride/.{"nxgrid"->dim["nx"],"nygrid"->dim["ny"],"nzgrid"->dim["nz"]};
     
     AssociationThread[
       Flatten[Table[i<>j,{i,dir},{j,{"min","max","step"}}]]->stride
@@ -96,6 +106,77 @@ readSlice[sim_,var_,sl_]:=Module[
 ]
 
 
+(* ::Section:: *)
+(*1D-averaged 2D files ({xyz}aver.in)*)
+
+
+read2DAve[sim_,sp_]:=Module[{
+    sp1,sp2,i,j,
+    nsnap,procs,vars,
+    file,n1,n2,pre,grid,t,f,out
+  },
+  
+  (* error and warning messages *)
+  read2DAve::noend="Warning: File did not reach EndofFile for proc `1`";
+  read2DAve::difft="Error: inconsistent times on processors. A list of proc id vs. time is returned.";
+  
+  (* determine which coordinates on the plane *)
+  {sp1,sp2}=DeleteCases[{"x","y","z"},sp];
+  {i,j}=Flatten[Position[{"x","y","z"},#]&/@{sp1,sp2}];
+  
+  (* global variables to all procs *)
+  (* number of snapshots *)
+  nsnap=Import[sim<>"/data/t2davg.dat"][[1,-1]]-1;
+  (* processors which have the data *)
+  procs=Cases[Range[0,Times@@(nProc[sim])-1],x_/;readDim[sim,x]["ip"<>sp]==0];
+  (* variables *)
+  vars=Cases[Flatten@Import[sim<>"/"<>sp<>"aver.in"],x_/;StringTake[x,1]!="#"];
+  
+  (* read data from each processor *)
+  Do[
+    file=sim<>"/data/proc"<>ToString[iproc]<>"/"<>sp<>"averages.dat";
+    Close[file]//Quiet;
+    {n1,n2,pre}=readDim[sim,iproc]/@{"n"<>sp1,"n"<>sp2,"precision"};
+    (* grid on this processor *)
+    grid=Outer[List,Sequence@@(readGrid[sim,iproc][[{i,j}]]),1]//Transpose//Flatten[#,1]&;
+    
+    (* loop over chunks of snapshots *)
+    t[iproc]={};
+    f[iproc]=Module[{tmp},Table[
+        BinaryRead[file,"Integer32"];
+        t[iproc]={t[iproc],BinaryRead[file,pre]};  (* time *)
+        BinaryRead[file,"Integer32"];
+        
+        BinaryRead[file,"Integer32"];
+        tmp=BinaryRead[file,ConstantArray[pre,n1*n2*Length[vars]]];  (* fields *)
+        BinaryRead[file,"Integer32"];
+        
+        Join[{grid},Partition[tmp,n1*n2]]
+        
+        ,nsnap]
+      ]; (* end of reading from this processor *)
+      t[iproc]=Flatten[t[iproc]];
+      
+      (* consistency check *)
+      If[BinaryRead[file,"Integer32"]=!=EndOfFile,Message[read2DAve::noend,iproc]];
+      Close[file]
+  ,{iproc,procs}];
+  
+  (* check if time on each processor agree *)
+  If[Not[Equal@@(t/@procs)],
+    Message[read2DAve::difft];Return[Transpose[{procs,t/@procs}]]
+  ];
+  
+  (* combine data into an Association *)
+  out=Apply[Join,Transpose[f/@procs,{4,2,1,3}],{2}];
+  Join[
+    AssociationThread[vars->Rest@out],
+    Association["grid"->Transpose[out[[1,1]]]],
+    Association["t"->t[procs[[1]]]]
+  ]
+]
+
+
 (* ::Chapter:: *)
 (*End*)
 
@@ -104,7 +185,7 @@ End[]
 
 
 Protect[
-  readStride,readSlice
+  readStride,readSlice,read2DAve
 ]
 
 
