@@ -4408,7 +4408,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
       real, dimension (nx) :: sign_jo,rho1_jxb,tmp1
-      real, dimension (nx) :: eta_mn,etaSS,etaheat
+      real, dimension (nx) :: eta_mn,etaSS,eta_heat
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
       real, dimension(nx) :: eta_BB, prof
@@ -5179,12 +5179,12 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 ! possibility to reduce ohmic heating near the boundary
 ! currently implemented only for a profile in z above a value no_ohmic_heat_z0
 ! with the width no_ohmic_heat_zwidth for reduction, width has to tbe negative.
-! Note that etaheat must not enter eta_total.
+! Note that eta_heat must not enter eta_total.
 !
       if (lno_ohmic_heat_bound_z.and.lohmic_heat) then
-        etaheat=eta_total*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
+        eta_heat=eta_total*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
       else
-        etaheat=eta_total
+        eta_heat=eta_total
       endif
 !
 !  Add Ohmic heat to entropy or temperature equation.
@@ -5192,18 +5192,18 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
       if (.not.lkinematic.and.lohmic_heat) then
         if (lentropy) then
           if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*etaheat*mu0*p%j2*p%rho1*p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*eta_heat*mu0*p%j2*p%rho1*p%TT1
           else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + etaheat*mu0*p%j2*p%rho1*p%TT1
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + eta_heat*mu0*p%j2*p%rho1*p%TT1
           endif
         else if (ltemperature) then
           if (ltemperature_nolog) then
-            df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*etaheat*mu0*p%j2*p%rho1
+            df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*eta_heat*mu0*p%j2*p%rho1
           else
-            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*etaheat*mu0*p%j2*p%rho1*p%TT1
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*eta_heat*mu0*p%j2*p%rho1*p%TT1
           endif
         else if (lthermal_energy) then
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + etaheat*mu0*p%j2
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + eta_heat*mu0*p%j2
         endif
       endif
 !
