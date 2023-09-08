@@ -209,6 +209,8 @@ module Io
       if (lserial_io) call end_serialize
       icall=modulo(icall+1,2)
 !
+      call output_ode('ode.dat')
+
     endsubroutine output_snap
 !***********************************************************************
     subroutine output_snap_finalize
@@ -408,6 +410,26 @@ module Io
       close (lun_output)
 !
     endsubroutine output_part_finalize
+!***********************************************************************
+    subroutine output_ode(file)
+!
+!  Write ODE snapshot file with time.
+!
+!  08-Sep-2023/MR: coded
+!
+      character (len=*), intent(in) :: file
+!
+      if (.not. lroot) return
+!
+      open(lun_output,FILE=trim(directory_collect)//'/'//trim(file),FORM='unformatted')
+      write(lun_output) n_odevars
+      if (n_odevars > 0) write(lun_output) f_ode
+      write(lun_output) t
+      close(lun_output)
+
+      if (ip<=10) print*,'written ODE snapshot ', trim (file)
+
+    endsubroutine output_ode
 !***********************************************************************
     subroutine output_pointmass(file, labels, fq, mv, nc)
 !
@@ -649,6 +671,8 @@ module Io
         call read_snap(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
       endif
 
+      call input_ode('ode.dat')
+
     endsubroutine input_snap
 !***********************************************************************
     subroutine read_snap_single(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
@@ -824,6 +848,26 @@ module Io
       call mpireduce_sum_int (nv, npar_total)
 !
     endsubroutine input_part_snap
+!***********************************************************************
+    subroutine input_ode(file)
+!
+!  Write ODE snapshot file with time.
+!
+!  08-Sep-2023/MR: coded
+!
+      character (len=*), intent(in) :: file
+      integer :: n_in
+
+      if (.not. lroot) return
+!
+      if (ip<=8) print*, 'read ODE snapshot', trim (file)
+      open(lun_input,FILE=trim(directory_collect)//'/'//trim(file),FORM='unformatted')
+      read(lun_input) n_in
+      if (n_in /= n_odevars) call fatal_error("input_ode","dimensions differ between file and 'f_ode' array")
+      if (n_in > 0) read(lun_input) f_ode
+      close(lun_input)
+
+    endsubroutine input_ode
 !***********************************************************************
     subroutine input_pointmass(file, labels, fq, mv, nc)
 !
