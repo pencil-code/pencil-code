@@ -100,6 +100,7 @@ module General
 !
   interface safe_character_prepend
     module procedure safe_character_prepend_2
+    module procedure safe_character_prepend_3
   endinterface
 !
   interface write_full_columns
@@ -1315,6 +1316,17 @@ module General
       call safe_character_assign(str1, trim(str2) // trim(str1))
 !
     endsubroutine safe_character_prepend_2
+!***********************************************************************
+    subroutine safe_character_prepend_3(str1,str2,str3)
+!
+!  26-Jun-2021/PABourdin: adapted from safe_character_prepend_2
+!
+      character (len=*), intent(inout):: str1
+      character (len=*), intent(in):: str2,str3
+!
+      call safe_character_assign(str1, trim(str2) // trim(str3) // trim(str1))
+!
+    endsubroutine safe_character_prepend_3
 !***********************************************************************
     subroutine safe_character_append_3(str1,str2,str3)
 !
