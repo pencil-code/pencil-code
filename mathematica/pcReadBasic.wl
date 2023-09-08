@@ -75,20 +75,20 @@ readDim[sim_,n_Integer:-1]:=Module[{file,data,precision,nxyz,names},
 ]
 
 Options[readGrid]={"ltrim"->True};
-readGrid[sim_,OptionsPattern[]]:=Module[{file,p,mx,my,mz,tmp},
-  file=StringJoin[sim,"/data/allprocs/grid.dat"];
-  {p,mx,my,mz}=readDim[sim]/@{"precision","mx","my","mz"};
+readGrid[sim_,iproc_Integer:-1,OptionsPattern[]]:=Module[{file,p,mx,my,mz,tmp},
+  file=If[iproc==-1,
+    StringJoin[sim,"/data/allprocs/grid.dat"],
+    StringJoin[sim,"/data/proc"<>ToString[iproc]<>"/grid.dat"]
+  ];
+  {p,mx,my,mz}=readDim[sim,iproc]/@{"precision","mx","my","mz"};
   
   file//Close//Quiet;
   BinaryRead[file,"Integer32"];
-  BinaryRead[file,"Real32"]; (* time *)
+  BinaryRead[file,p]; (* time *)
   tmp=BinaryRead[file,ConstantArray[p,#]]&/@{mx,my,mz};
   Close[file];
   
-  If[OptionValue["ltrim"],
-    #[[4;;-4]]&/@tmp,
-    tmp
-  ]
+  If[OptionValue["ltrim"],tmp[[;;,4;;-4]],tmp]
 ]
 
 nProc[sim_]:=Import[sim<>"/data/dim.dat"]//Last//Most
