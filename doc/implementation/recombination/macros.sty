@@ -1,0 +1,467 @@
+\ProvidesPackage{macros}[2022/10/11 v1.0 My own macros]
+
+%%%%%%%%% packages
+\usepackage{fancyhdr} % Required for custom headers
+\usepackage{extramarks} % Required for headers and footers
+\usepackage{graphicx} % Required to insert images
+\usepackage{amsmath, amssymb}
+\usepackage[usenames,dvipsnames]{color} % Required for custom colors
+\usepackage{listings} % Required for insertion of code
+\usepackage{courier} % Required for the courier font
+\usepackage{float}
+\usepackage[noadjust]{cite}
+\usepackage{enumerate}
+\graphicspath{{./fig/}}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{empheq}
+\usepackage[theorems,skins]{tcolorbox}
+\usepackage{amsfonts}
+\usepackage{bm}
+
+%%%%%% some redefinitions
+\def\red{\textcolor{red}}
+\newtcolorbox{mymathbox}[1][]{colback=white, sharp corners, #1}
+
+\renewcommand{\citedash}{--}
+\newcommand{\BoldVec}[1]{\mathchoice%
+  {\mbox{\boldmath $\displaystyle     #1$}}%
+  {\mbox{\boldmath $\textstyle        #1$}}%
+  {\mbox{\boldmath $\scriptstyle      #1$}}%
+  {\mbox{\boldmath $\scriptscriptstyle#1$}}%
+}
+
+\newcommand{\overbar}[1]{\mkern 1.5mu\overline{\mkern-1.5mu#1\mkern-1.5mu}\mkern 1.5mu}
+
+% Margins
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\textwidth=6.5in
+\textheight=9.0in
+\headsep=0.25in 
+
+\linespread{1.1} % Line spacing
+
+% Set up the header and footer
+\pagestyle{fancy}
+\fancypagestyle{plain}{%
+  \renewcommand{\headrulewidth}{0pt}%
+  \fancyhf{}%
+  \rfoot{Page\ \thepage\ of\ \pageref{RealLastPage}}
+}
+
+%\lhead{\Author} % Top left header
+%\chead{\firstxmark} % Top center header
+\rhead{\Titleshort} % Top right header
+\lfoot{\lastxmark} % Bottom left footer
+\cfoot{} % Bottom center footer
+\rfoot{Page\ \thepage\ of\ \pageref{RealLastPage}} % Bottom right footer
+\renewcommand\headrulewidth{0.4pt} % Size of the header rule
+\renewcommand\footrulewidth{0.4pt} % Size of the footer rule
+%\setlength\parindent{0pt} % Removes all indentation from paragraphs
+
+\title{
+\textbf{\Title}
+%by {\em \large \AuthorName}
+\\ 
+}
+
+\author{\textbf{\AuthorName}}
+\date{\Date}% Insert date here if you want it to appear below your name
+%\date{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% COMMANDS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%% fractions
+\def\half{{\textstyle{1\over2}}}
+\def\fourth{{\textstyle{1\over4}}}
+\def\fourthird{{\textstyle{4\over3}}}
+\def\threehalf{{\textstyle{3\over2}}}
+\def\threefourth{{\textstyle{3\over4}}}
+\def\oneovertwelve{{\textstyle{1\over12}}}
+\def\twothird{{\textstyle{2\over3}}}
+\def\onethird{{\textstyle{1\over3}}}
+\def\sixseventeenth{{\textstyle{6\over17}}}
+
+%%%%%%% commonly used variables
+\newcommand{\phy}{{\rm phys}}
+\newcommand{\kphy}{k_\phy}
+\newcommand{\Bphy}{B_\phy}
+
+%%%%%%% commonly used in cosmology
+%% Omegas
+\newcommand{\OmM}{\Omega_{\rm M}}
+\newcommand{\OmMmax}{{\Omega_{\rm M}^\ast}}
+\newcommand{\XiM}{\Xi_{\rm M}}
+\newcommand{\OmK}{\Omega_{\rm K}}
+\newcommand{\OmGW}{\Omega_{\rm GW}}
+\newcommand{\OmMK}{\Omega_{\rm M, K}}
+\newcommand{\XiGW}{\Xi_{\rm GW}}
+\newcommand{\OmT}{\Omega_{\rm T}}
+%% inflation
+\newcommand{\TR}{T_{\rm R}}
+%% early universe
+\newcommand{\Tg}{T_{\rm g}}
+\newcommand{\gS}{g_{\rm S}}
+\newcommand{\rad}{{\rm rad}}
+\newcommand{\crit}{{\rm crit}}
+\newcommand{\vac}{{\rm vac}}
+\newcommand{\tot}{{\rm tot}}
+%% phase transitions
+\newcommand{\GammaR}{\Gamma_{\rm R}}
+\newcommand{\Rc}{R_{\rm c}}
+\newcommand{\vw}{v_{\rm w}}
+\newcommand{\rhoK}{\rho_{\rm K}}
+
+%%%%%%% commonly used in MHD
+%% spectra
+\newcommand{\EM}{E_{\rm M}}
+\newcommand{\EMmax}{{E_{\rm M}^\ast}}
+\newcommand{\EK}{E_{\rm K}}
+\newcommand{\EMK}{E_{\rm M, K}}
+\newcommand{\ET}{E_{\rm T}}
+\newcommand{\EGW}{E_{\rm GW}}
+\newcommand{\HM}{H_{\rm M}}
+\newcommand{\HK}{H_{\rm K}}
+\newcommand{\eM}{\varepsilon_{\rm M}}
+\newcommand{\phiM}{\phi_{\rm M}}
+%% energy density
+\newcommand{\EEM}{{\cal E}_{\rm M}}
+\newcommand{\EEK}{{\cal E}_{\rm K}}
+\newcommand{\EEMK}{{\cal E}_{\rm M, K}}
+\newcommand{\EEGW}{{\cal E}_{\rm GW}}
+\newcommand{\EEi}{{\cal E}_i}
+\newcommand{\EES}{{\cal E}_{\rm S}}
+\newcommand{\emf}{\mbox{\boldmath ${\cal E}$} {}}
+\newcommand{\EErad}{{\cal E}_{\rm rad}}
+\newcommand{\HHM}{\HH_{\rm M}}
+\newcommand{\HHK}{\HH_{\rm K}}
+\newcommand{\HHi}{{\cal H}_i}
+\newcommand{\HHJ}{{\cal H}_{\rm J}}
+\newcommand{\EEcrit}{{\cal E}_{\rm crit}}
+\newcommand{\PM}{{\cal P}_{\rm M}}
+%% wave numbers
+\newcommand{\kp}{k_{\rm p}}
+\newcommand{\kH}{k_{\rm H}}
+\newcommand{\kf}{k_\ast}
+\newcommand{\ks}{k_{\rm s}}
+\newcommand{\kM}{k_{\rm M}}
+\newcommand{\kGW}{k_{\rm GW}}
+\newcommand{\kNy}{k_{\rm Ny}}
+\newcommand{\xiM}{\xi_{\rm M}}
+\newcommand{\xiK}{\xi_{\rm K}}
+\newcommand{\xiGW}{\xi_{\rm GW}}
+%% others
+\newcommand{\tmax}{t_{\rm max}}
+\newcommand{\vA}{v_{\rm A}}
+\newcommand{\Ma}{\mbox{\rm Ma}}
+\newcommand{\cs}{c_{\rm s}}
+\newcommand{\ts}{t_{\rm s}}
+\newcommand{\tini}{t_{\rm ini}}
+\newcommand{\tfin}{t_{\rm fin}}
+\newcommand{\omegaR}{\omega_{\rm R}}
+\newcommand{\omegaI}{\omega_{\rm I}}
+\newcommand{\chiH}{\chi_{\rm H}}
+
+%%%%%%% commonly used for GWs
+\newcommand{\hc}{h_{\rm c}}
+\newcommand{\hrms}{h_{\rm rms}}
+\renewcommand{\ij}{{ij}}
+\newcommand{\hij}{h_\ij}
+\renewcommand{\th}{\tilde{h}}
+\newcommand{\thij}{\tilde{h}_\ij}
+\newcommand{\hthij}{\hat{\tilde{h}}_\ij}
+\newcommand{\hijTT}{\hij^{\rm TT}}
+\newcommand{\thijTT}{\tilde{h}_{ij}^{\rm TT}}
+\newcommand{\hijm}{h_{ij}^{\rm m}}
+\newcommand{\Tij}{T_\ij}
+\newcommand{\tPij}{\tilde{\Pi}_\ij}
+\newcommand{\tTij}{\tilde{T}_\ij}
+\newcommand{\TijTT}{\Tij^{\rm TT}}
+\newcommand{\tTijTT}{\tilde{T}_{ij}^{\rm TT}}
+\newcommand{\htTij}{\hat{\tilde{T}}_\ij}
+\newcommand{\TT}{\tilde{T}_+}
+\newcommand{\tTT}{\tilde{T}_+}
+\newcommand{\tTTX}{\tilde{T}_{+, \times}}
+\newcommand{\Tx}{\tilde{T}_\times}
+\newcommand{\tT}{\tilde{T}}
+\newcommand{\tTX}{\tilde{T}_\times}
+\newcommand{\hT}{\tilde{h}_+}
+\newcommand{\hX}{\tilde{h}_\times}
+\newcommand{\eX}{e_{ij}^\times}
+\newcommand{\eT}{e_{ij}^+}
+\newcommand{\eTX}{e_{ij}^{+, \times}}
+\newcommand{\eA}{e_{ij}^{\rm A}}
+\newcommand{\Proj}{\bigl(P_{il} P_{jm} - \half P_{ij} P_{lm}\bigr)}
+\newcommand{\PPGW}{{\cal P}_{\rm GW}}
+\newcommand{\SGW}{{\cal S}_{\rm GW}}
+\newcommand{\Sh}{S_h}
+\newcommand{\Sdh}{S_{\dot{h}}}
+\newcommand{\Ah}{A_h}
+\newcommand{\Adh}{A_{\dot{h}}}
+\newcommand{\lambdabar}{{\mkern0.75mu\mathchar '26\mkern -9.75mu\lambda}}
+\newcommand{\lambdabarGW}{\lambdabar_{\rm GW}}
+%% Horndeski modified GR
+\def\alpM{\alpha_{\rm M}}
+\def\alpT{\alpha_{\rm T}}
+\def\alpB{\alpha_{\rm B}}
+\def\alpK{\alpha_{\rm K}}
+\newcommand{\cT}{c_{\rm T}}
+\def\mg{m_{\rm g}}
+\def\GR{{\rm GR}}
+%% LISA interferometry
+\newcommand{\Mon}{{\cal M}_{OO'}^\lambda}
+\newcommand{\Don}{{\cal D}_{OO'}^\lambda}
+\newcommand{\Qab}{{\cal Q}_{O}^{ab}}
+\newcommand{\Qcd}{{\cal Q}_{O'}^{cd}}
+\newcommand{\Qi}{{\cal Q}_{i}^{ab}}
+\newcommand{\Qone}{{\cal Q}_{1}^{ab}}
+\newcommand{\Qtwo}{{\cal Q}_{2}^{ab}}
+\newcommand{\Qthree}{{\cal Q}_{3}^{ab}}
+\newcommand{\SNR}{\rm SNR}
+
+%%%%%%% units and variables
+\newcommand{\TeV}{{\rm \, TeV}}
+\newcommand{\GeV}{{\rm \, GeV}}
+\newcommand{\MeV}{{\rm \, MeV}}
+\newcommand{\Mpc}{{\rm \, Mpc}}
+\newcommand{\J}{{\rm \, J}}
+\newcommand{\m}{{\rm \, m}}
+\newcommand{\cm}{{\rm \, cm}}
+\newcommand{\km}{{\rm \, km}}
+\newcommand{\picom}{{\rm \, pm}}
+\newcommand{\fm}{{\rm \, fm}}
+\newcommand{\s}{{\rm \, s}}
+\newcommand{\yr}{{\rm \, yr}}
+\newcommand{\Hz}{{\rm \, Hz}}
+\newcommand{\mHz}{{\rm \, mHz}}
+\newcommand{\Gauss}{{\rm \, G}}
+\newcommand{\K}{{\rm \, K}}
+\newcommand{\Mpl}{M_{\rm pl}}
+\newcommand{\Mp}{M_{\rm p}}
+\newcommand{\kB}{k_{\rm B}}
+\newcommand{\mW}{m_{\rm W}}
+\newcommand{\mH}{m_{\rm H}}
+
+%%%%%%% bold
+\newcommand{\xx}{\BoldVec{x}{}}
+\newcommand{\kk}{\BoldVec{k}{}}
+\newcommand{\vv}{\BoldVec{v}{}}
+\newcommand{\ww}{\BoldVec{w}{}}
+\newcommand{\QQ}{\BoldVec{Q} {}}
+\newcommand{\ff}{\BoldVec{f}{}}
+\newcommand{\FFF}{\BoldVec{F}{}}
+\newcommand{\tff}{\BoldVec{\tilde f}{}}
+\newcommand{\tSS}{\BoldVec{\tilde S}{}}
+\newcommand{\AAA}{\BoldVec{A}{}}
+\newcommand{\tAA}{\BoldVec{\tilde A}{}}
+\newcommand{\XX}{\BoldVec{X}{}}
+\newcommand{\tXX}{\BoldVec{\tilde X}{}}
+\newcommand{\PP}{\BoldVec{P}{}}
+\newcommand{\JJ}{\BoldVec{J}{}}
+\newcommand{\jj}{\BoldVec{j}{}}
+\newcommand{\tJJ}{\BoldVec{\tilde J}{}}
+\newcommand{\SSS}{\BoldVec{S}{}}
+\newcommand{\ee}{\BoldVec{e}{}}
+\newcommand{\uu}{\BoldVec{u}{}}
+\newcommand{\UU}{\BoldVec{U}{}}
+\newcommand{\aaa}{\BoldVec{a}{}}
+\newcommand{\oom}{\BoldVec{\omega}{}}
+\newcommand{\pp}{\BoldVec{p}{}}
+\newcommand{\qq}{\BoldVec{q}{}}
+\newcommand{\rr}{\BoldVec{r}{}}
+\newcommand{\II}{\BoldVec{I}{}}
+\newcommand{\DDD}{\BoldVec{D}{}}
+\newcommand{\nullvector}{{\bf0}}
+\newcommand{\SSSS}{\bm{\mathsf{S}}}
+\newcommand{\FL}{{\pmb F}_{\rm L}}
+%% magnetic field
+\newcommand{\BB}{\BoldVec{B}{}}
+\newcommand{\BBX}{\BoldVec{B}_{\rm X}{}}
+\newcommand{\tB}{\tilde{B}}
+\newcommand{\tBB}{\BoldVec{\tilde B}{}}
+\newcommand{\tBBX}{\BoldVec{\tilde B}_{\rm X}{}}
+\newcommand{\BX}{B_{\rm X}}
+\newcommand{\tBX}{\tilde B_{\rm X}}
+\newcommand{\Brms}{B_{\rm rms}}
+%% electric field
+\newcommand{\EE}{\BoldVec{E}{}}
+\newcommand{\EEX}{\BoldVec{E}_{\rm X}{}}
+\newcommand{\tEE}{\BoldVec{\tilde E}{}}
+\newcommand{\tEEX}{\BoldVec{\tilde E}_{\rm X}{}}
+\newcommand{\EX}{E_{\rm X}}
+\newcommand{\tEX}{\tilde E_{\rm X}}
+%% velocity field
+\newcommand{\urms}{u_{\rm rms}}
+
+%%%%%%% cal style letters
+\newcommand{\XXX}{{\cal X}}
+\newcommand{\DD}{{\cal D}}
+\newcommand{\FF}{{\cal F}}
+\newcommand{\LL}{{\cal L}}
+\newcommand{\EEE}{\BoldVec{{\cal E}}{}}
+\newcommand{\tEEE}{\BoldVec{\tilde {\cal E}}{}}
+\newcommand{\HH}{{\cal H}}
+
+%%%%%%% hats/tildes
+\newcommand{\bk}{\bar{k}}
+\newcommand{\bB}{\bar{B}}
+\newcommand{\teta}{\tilde \eta}
+\newcommand{\tphi}{\tilde \phi}
+\def\hatk{\hat k}
+\def\hatkk{\hat\kk}
+
+%%%%%%% couplings
+\newcommand{\gAA}{g_{\rm AA}}
+\newcommand{\gAX}{g_{\rm AX}}
+\newcommand{\gXX}{g_{\rm XX}}
+
+%%%%%%% general math
+\newcommand{\dd}{{\rm \, d}}
+\newcommand{\nab}{\BoldVec{\nabla} {}}
+\newcommand{\Ci}{{\rm Ci}}
+\newcommand{\Si}{{\rm Si}}
+\newcommand{\map}{\rightarrow}
+\newcommand{\ii}{{\rm i}}
+\newcommand{\sgn}{{\rm sgn}}
+
+%%%%%%% equations
+\newcommand{\EQb}{\begin{mymathbox}[ams equation]}
+\def\ENb{\end{mymathbox} \noindent}
+\newcommand{\EQgather}{\begin{mymathbox}[ams gather]}
+\def\EQ{\begin{equation}}
+\def\EN{\end{equation}}
+\def\la{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
+$\displaystyle##$\hfil\cr<\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\textstyle##$\hfil\cr<\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptstyle##$\hfil\cr<\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptscriptstyle##$\hfil\cr<\cr\sim\cr}}}}}
+\def\ga{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
+$\displaystyle##$\hfil\cr>\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\textstyle##$\hfil\cr>\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptstyle##$\hfil\cr>\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptscriptstyle##$\hfil\cr>\cr\sim\cr}}}}}
+
+%%%%%%% vectors and matrices
+\newcommand{\VecThreeD}[3]{\left( \begin{array}{c}
+#1 \\ #2 \\ #3 \end{array} \right)}
+\newcommand{\VecTwoD}[2]{\left( \begin{array}{c}
+#1 \\ #2 \end{array} \right)}
+\newcommand{\Vector}[3]{\left( \begin{array}{c} 
+#1 \\ #2 \\ #3 \end{array} \right)}
+\newcommand{\Matrixsym}[6]{\left(\begin{array}{c c c}
+#1 & #2 & #3 \\ #2 & #4 & #5 \\ #3 & #5 & #6
+\end{array} \right)}
+\newcommand{\MatTwoD}[4]{\left(\begin{array}{c c}
+#1 & #2 \\ #3 & #4 \end{array} \right)}
+\newcommand{\MatrixtwoDsym}[3]{\left(\begin{array}{c c}
+#1 & #2 \\ #2 & #3 \end{array} \right)}
+\newcommand{\MatrixfourD}[4]{\left(\begin{array}
+{c c c c} #1 \\ #2 \\ #3 \\ #4 \end{array}\right)}
+
+%%%%%%% brackets
+\newcommand{\bra}[1]{\langle #1\rangle}
+\newcommand{\bral}[1]{\langle #1}
+\newcommand{\brar}[1]{#1\rangle}
+\newcommand{\Bra}[1]{\bigl\langle #1 \bigr\rangle}
+\newcommand{\BBra}[1]{\Bigl\langle #1 \Bigr\rangle}
+\newcommand{\BBBra}[1]{\Biggl\langle #1 \Biggr\rangle}
+\newcommand{\Para}[1]{\bigl[ #1 \bigr]}
+\newcommand{\PPara}[1]{\Bigl[ #1 \Bigr]}
+\newcommand{\PPPara}[1]{\biggl[ #1 \biggr]}
+\newcommand{\PPPPara}[1]{\Biggl[ #1 \Biggr]}
+\newcommand{\Pare}[1]{\bigl( #1 \bigr)}
+\newcommand{\PPare}[1]{\Bigl( #1 \Bigr)}
+\newcommand{\PPPare}[1]{\biggl( #1 \biggr)}
+\newcommand{\PPPPare}[1]{\Biggl( #1 \Biggr)}
+
+%%%%%%% references to equations, sections, figures, appendices
+\newcommand{\Eq}[1]{Eq.~(\ref{#1})}
+\newcommand{\EEq}[1]{Equation~(\ref{#1})}
+\newcommand{\Eqs}[2]{Eqs.~(\ref{#1}) and (\ref{#2})}
+\newcommand{\Eqss}[2]{Eqs.~(\ref{#1}--\ref{#2})}
+\newcommand{\Fig}[1]{Fig.~(\ref{#1})}
+\newcommand{\Figs}[2]{Figures~\ref{#1} and \ref{#2}}
+\newcommand{\FFig}[1]{Figure~(\ref{#1})}
+\newcommand{\Figss}[2]{Figs.~\ref{#1}--\ref{#2}}
+\newcommand{\Sec}[1]{Sec.~(\ref{#1})}
+\newcommand{\Secs}[2]{Secs.~\ref{#1} and \ref{#2}}
+\newcommand{\App}[1]{App.~(\ref{#1})}
+\newcommand{\Tab}[1]{Table~\ref{#1}}
+
+%%%%%%% useful for GR/covariant notation (greek alp indices)
+\newcommand{\munu}{{\mu \nu}}
+\newcommand{\numu}{{\nu \mu}}
+\newcommand{\mumu}{{\mu \mu}}
+\newcommand{\musig}{{\mu \sigma}}
+\newcommand{\lamsig}{{\lambda \sigma}}
+\newcommand{\signu}{{\sigma \nu}}
+\newcommand{\sigmu}{{\sigma \mu}}
+\newcommand{\siglam}{{\sigma \lambda}}
+\newcommand{\nusig}{{\nu \sigma}}
+\newcommand{\lamnu}{{\lambda \nu}}
+\newcommand{\mulam}{{\mu \lambda}}
+\newcommand{\nulam}{{\nu \lambda}}
+\newcommand{\lammu}{{\lambda \mu}}
+\newcommand{\mugam}{{\mu \gamma}}
+\newcommand{\alpbet}{{\alpha \beta}}
+\newcommand{\betalp}{{\beta \alpha}}
+\newcommand{\updo}[3]{#1^{#2}_{\ \ #3}}
+\newcommand{\doup}[3]{#1_{#2}^{\ \ #3}}
+\newcommand{\updoup}[4]{#1^{#2 \ \ #4}_{\ #3}}
+\newcommand{\updodo}[4]{#1^{#2}_{\ #3 #4}}
+\newcommand{\dodoup}[4]{#1^{\ \ #4}_{#2 #3}}
+\newcommand{\upupdo}[4]{#1_{\ \ #4}^{#2 #3}}
+\newcommand{\doupdo}[4]{#1^{\ #3}_{#2 \ #4}}
+\newcommand{\uppdo}[3]{#1^{#2}_{\ \ \ \ #3}}
+%% GR tensors
+\newcommand{\Christoff}[3]{\Gamma^{#1}_{\ \, #2 #3}}
+\newcommand{\Rie}[4]{R^{#1}_{\ #2 #3 #4}}
+\newcommand{\Riem}[5]{\partial_{#3} \Gamma^{#1}_{#2 #4} -
+\partial_{#4} \Gamma^{#1}_{#2 #3} + \Gamma^{#1}_{#3 #5} \Gamma^{#5}_{#2 #4} - \Gamma^{#1}_{#4 #5} \Gamma^{#5}_{#2 #3}}
+\newcommand{\Riemfirst}[7]{\half #5^{#3 #4} \bigl(#6_{#1 #2} 
+#7_{#3 #4} + #6_{#3 #4} #7_{#1 #2} - #6_{#2 #3} #7_{#4 #1} -
+#6_{#1 #3} #7_{#4 #2} \bigr)}
+\newcommand{\Riemsecone}[6]{-\half \Bigl[\half #5_{#2} #6^{#3 #4}
+#5_{#1} #6_{#3 #4}}
+\newcommand{\Riemsectwo}[6]{+ #6^{#3 #4} \bigl(#5_{#1 #2} #6_{#4 #3} +
+#5_{#4 #3} #6_{#1 #2} - #5_{#2 #3} #6_{#4 #1} - #5_{#1 #3}
+#6_{#4 #2} \bigr)}
+\newcommand{\Riemsecthree}[6]{+ #5^{#3} \doup{#6}{#2}{#4} \bigl(#5_{#3} #6_{#4 #1} - #5_{#4} #6_{#3 #1} \bigr)}
+\newcommand{\Riemsecfour}[6]{- \bigl(#5_{#3} #6^{#3 #4} - \half #5^{#4} #6 \bigr) \bigl(#5_{#2} #6_{#4 #1} + 
+#5_{#1} #6_{#4 #2} - #5_{#4} #6_{#1 #2} \bigr) \Bigr]}
+\newcommand{\Riemseconeg}[9]{-\half #7^{#8 #3} #7^{#9 #4} \Bigl[\half #5_{#2} #6_{#8 #9}
+#5_{#1} #6_{#3 #4}}
+\newcommand{\Riemsectwog}[8]{+ #6_{#7 #8} \bigl(#5_{#1 #2} #6_{#4 #3} +
+#5_{#4 #3} #6_{#1 #2} - #5_{#2 #3} #6_{#4 #1} - #5_{#1 #3}
+#6_{#4 #2} \bigr)}
+\newcommand{\Riemsecthreeg}[8]{+ #5_{#7} #6_{#2 #8} \bigl(#5_{#3} #6_{#4 #1} - #5_{#4} #6_{#3 #1} \bigr)}
+\newcommand{\Riemsecfourg}[8]{- \bigl(#5_{#3} #6_{#7 #8} - \half #5_{#8} #6_{#3 #7} \bigr) \bigl(#5_{#2} #6_{#4 #1} + 
+#5_{#1} #6_{#4 #2} - #5_{#4} #6_{#1 #2} \bigr) \Bigr]}
+\newcommand{\Riemsec}[6]{-\half \Bigl[\half #5_{#2} #6^{#3 #4}
+#5_{#1} #6_{#3 #4} + #6^{#3 #4} \bigl(#5_{#1 #2} #6_{#4 #3} +
+#5_{#4 #3} #6_{#1 #2} - #5_{#2 #3} #6_{#4 #1} - #5_{#1 #3}
+#6_{#4 #2} \bigr) + #5^{#3} \doup{#6}{#2}{#4} \bigl(#5_{#3} #6_{#4 #1} - #5_{#4} #6_{#3 #1} \bigr) - \bigl(#5_{#3} #6^{#3 #4} - \half #5^{#4} #6 \bigr) \bigl(#5_{#2} #6_{#4 #1} + 
+#5_{#1} #6_{#4 #2} - #5_{#4} #6_{#1 #2} \bigr) \Bigr]}
+\newcommand{\covDerdo}[6]{\partial_{#1} #5_{#2 #3} - #6^{#4}_{#2 #1} #5_{#4 #3} - #6^{#4}_{#3 #1} #5_{#2 #4}}
+\newcommand{\covDerup}[6]{\partial_{#1} #5^{#2 #3} + #6^{#2}_{#4 #1} #5^{#4 #3} + #6^{#3}_{#1 #4} #5^{#2 #4}}
+\newcommand{\covDerdothree}[7]{\partial_{#1} #6_{#2 #3 #4} - 
+#7^{#5}_{#2 #1} #6_{#5 #3 #4} - #7^{#5}_{#3 #1} #6_{#2 #5 #4} -
+#7^{#5}_{#4 #1} #6_{#2 #3 #5}}
+
+%%%%%%%% useful for accuracy of GWs, iterative terms
+\newcommand{\hhfifthone}[1]{h^{#1} (k) + g^{#1} (k) \delta t}
+\newcommand{\hhfifthtwo}[1]{\frac{\delta t^2}{2} \biggl[
+T^{#1} (k) - k^2 h^{#1} (k) \biggr]}
+\newcommand{\hhfifththree}[1]{\frac{\delta t^3}{6} \biggl[
+{T'}^{#1} (k) - k^2 g^{#1} (k) \biggr]}
+\newcommand{\hhfifthfour}[1]{\frac{\delta t^4}{24} \biggl[
+{T''}^{#1} (k) -  k^2 T^{#1} (k) + k^4 h^{#1} (k) \biggr]}
+\newcommand{\ggfifthone}[1]{g^{#1} (k) + \delta t \biggl[ T^{#1} (k) - k^2 h^{#1} (k) \biggr]}
+\newcommand{\ggfifthtwo}[1]{\frac{\delta t^2}{2} \biggl[
+{T'}^{#1} (k) - k^2 g^{#1} (k) \biggr]}
+\newcommand{\ggfifththree}[1]{\frac{\delta t^3}{6} \biggl[
+{T''}^{#1} (k) - k^2 T^{#1} (k)  + k^4 h^{#1} (k) \biggr]}
+\newcommand{\ggfifthfour}[1]{\frac{\delta t^4}{24} \biggl[
+{T'''}^{#1} (k) -  k^2 {T'}^{#1} (k) + k^4 g^{#1} (k) \biggr]}
