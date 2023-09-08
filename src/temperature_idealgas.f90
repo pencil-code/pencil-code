@@ -57,6 +57,7 @@ module Energy
   logical, pointer :: lpressuregradient_gas
   logical :: ladvection_temperature=.true.
   logical :: lupw_lnTT=.false., lcalc_heat_cool=.false., lheatc_hyper3=.false.
+  logical :: lcalc_planet_atmosphere=.false.
   logical :: lheatc_Kconst=.false., lheatc_Kprof=.false., lheatc_Karctan=.false.
   logical :: lheatc_tensordiffusion=.false., lheatc_hyper3_mesh=.false.
   logical :: lheatc_chiconst=.false., lheatc_chiconst_accurate=.false.
@@ -110,7 +111,7 @@ module Energy
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
       temp_zaver_range, h_sld_ene, nlf_sld_ene, div_sld_ene, &
       gradTT0, w_sldchar_ene, chi_z0, chi_jump, chi_zwidth, &
-      hcond0_kramers, nkramers
+      hcond0_kramers, nkramers, lcalc_planet_atmosphere
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -1268,6 +1269,10 @@ module Energy
 !
       if (lcalc_heat_cool)  call calc_heat_cool(f,df,p)
 !
+!  Heating and cooling for hot jupiter
+!
+      if (lcalc_planet_atmosphere) call calc_planet_atmosphere(df,p)
+!
 !  Thermal conduction
 !
       diffus_chi=0.; diffus_chi3=0.
@@ -2001,6 +2006,31 @@ module Energy
       endif
 !
     endsubroutine calc_heat_cool
+!***********************************************************************
+    subroutine calc_planet_atmosphere(df,p)
+!
+!  08-sep-23/hongzhe: specific things for planet atmospheres.
+!                     Reference: Rogers & Komacek (2014)
+!
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: Teq
+      real :: taueq
+!
+!  the equations are formulated in T only
+!
+      if (.not.ltemperature_nolog) call fatal_error('calc_planet_atmosphere', &
+          'only allow for using T as the variable, not lnT')
+!
+!  for test purpose now
+!
+      Teq = x(l1:l2)**2. * sin(y(m))**4. * cos(z(n))**2.
+      taueq = 0.1
+!
+      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - (p%TT-Teq)/taueq
+!
+    endsubroutine calc_planet_atmosphere
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
 !
