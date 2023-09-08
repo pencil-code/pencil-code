@@ -65,9 +65,13 @@ For \name{Mac}, you first need to install \name{Xcode} from the
 website \url{http://developer.apple.com/}, where you have to register as a member.
 In addition to that it might be necessary to install a \name{fortran} \name{open-mpi} compiler which can be done by first installing \name{homebrew} (available at \url{https://brew.sh}) and then through the terminal command:
 \begin{verbatim}
-brew install open-mpi
+  brew install open-mpi
 \end{verbatim}
-Alternatively, a \command{gfortran} binary package can be found at the website \url{http://gcc.gnu.org/wiki/GFortranBinaries}. Just download the archive and use the installer contained therein.
+A \command{gfortran} binary package can also be found at the website:
+
+\url{http://gcc.gnu.org/wiki/GFortranBinaries}
+
+Just download the archive and use the installer contained therein.
 It installs into \directory{/usr/local/gfortran} with
 a symbolic link in \directory{/usr/local/bin/gfortran}. It might be necessary to add
 the following line to the \file{.cshrc}-file in your \directory{/home} folder:
@@ -76,7 +80,7 @@ the following line to the \file{.cshrc}-file in your \directory{/home} folder:
 \end{verbatim} 
 For the \name{python} users, moreover, new versions of the operating system often give conflicts with \name{anaconda} when compiling, so it might be necessary to use the terminal command 
 \begin{verbatim}
-conda deactivate
+  conda deactivate
 \end{verbatim}
 before compiling and running the Pencil Code.
 
