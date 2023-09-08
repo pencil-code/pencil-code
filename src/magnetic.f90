@@ -4959,9 +4959,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
         call multsv(eta_smag+eta,p%del2a,fres)
       endif
-      if (any((/lresi_smagorinsky,lresi_smagorinsky_nusmag,lresi_smagorinsky_cross/))) etatotal=etatotal+eta_smag+eta
-      !etatotal: danger of adding eta twice, as all resistivity contributions may accumulate
-      !PCUM to decide inclusion of eta or not and whether each is exclusive
+      if (any((/lresi_smagorinsky,lresi_smagorinsky_nusmag,lresi_smagorinsky_cross/))) etatotal = etatotal + eta_smag
 !
 !  Anomalous resistivity. Sets in when the ion-electron drift speed is
 !  larger than some critical value.
