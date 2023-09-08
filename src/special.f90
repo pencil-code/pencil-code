@@ -68,7 +68,7 @@
                            'get_slices_special          ', &
                            'init_special                ', &
                            'dspecial_dt                 ', &
-                           'special_dt_ode              ', &
+                           'dspecial_dt_ode             ', &
                            'calc_pencils_special        ', &
                            'pencil_criteria_special     ', &
                            'pencil_interdep_special     ', &
