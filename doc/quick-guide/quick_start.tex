@@ -70,7 +70,8 @@ the following line to the \file{.cshrc}-file in your \directory{/home} folder:
 \begin{verbatim}
   setenv PATH /usr/local/bin:\$PATH
 \end{verbatim}
-
+In case of errors preventing the user from compiling the code, it is suggested to install a \name{fortran} \name{open-mpi} compiler for running in parallel, for example through \name{homebrew}, as \name{Xcode} is usually not sufficient when it comes to compiling the \name{fortran} files. 
+For the \name{python} users, moreover, sometimes new released versions of the operating system may give conflicts with anaconda when compiling, so in order to make the compilation work one possible way is to use the command "conda deactivate" from the terminal before compiling (keeping in mind to then re-activate it after the run is complete, in case you want to use python in the post-processing).
 
 \section{Download the Pencil Code}
 The Pencil Code is an open source code written mainly in \name{Fortran} and available under GPL.
