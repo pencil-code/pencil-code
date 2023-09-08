@@ -1012,7 +1012,7 @@ module Magnetic
 !
 ! Auxiliary module variables
 !
-  real, dimension(nx) :: etatotal=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
+  real, dimension(nx) :: eta_total=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
   real, dimension(nx,3) :: fres,uxbb
   real, dimension(nzgrid) :: eta_zgrid=0.0
@@ -3528,7 +3528,7 @@ module Magnetic
 !
           if (ljj_as_comaux) then
             if (irhoe/=0.and.ibb/=0) then
-!             p%jj_ohm=(p%el+p%uxb)*mu01/etatotal(1)
+!             p%jj_ohm=(p%el+p%uxb)*mu01/eta_total(1)
 !  XXX
             else
               if (lcartesian_coords) then
@@ -3932,13 +3932,13 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !  Check whether or not the displacement current is being computed.
 !  Note that the previously calculated p%jj would then be overwritten
 !  by the Ohmic current, J=sigma*(E+uxB)=(E+uxB)/(mu0*eta).
-!  When iex>0, etatotal is not set, so we should/could do it here.
+!  When iex>0, eta_total is not set, so we should/could do it here.
 !
         if (iex>0) then
           if (lresi_eta_tdep) then
-            etatotal=eta_tdep
+            eta_total=eta_tdep
           else
-            etatotal=eta
+            eta_total=eta
           endif
           if (lvacuum) then
             p%jj=0.
@@ -3946,9 +3946,9 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
           else
 !
 ! The Ohm's current is independent of loverride_ee2, etc.
-! AB: etatotal and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
+! AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
 !
-            p%jj_ohm=(p%el+p%uxb)*mu01/etatotal(1)
+            p%jj_ohm=(p%el+p%uxb)*mu01/eta_total(1)
 !
 !  Compute current for Lorentz force.
 !  Note that loverride_ee2 is a "permanent" switch,
@@ -4012,7 +4012,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 ! exatotal
       if (lpenc_loc(i_exatotal)) then
         do j=1,3
-           tmp(:,j) = etatotal*p%jj(:,j)
+           tmp(:,j) = eta_total*p%jj(:,j)
         enddo
         call cross_mn(-p%uxb+tmp,p%aa,p%exatotal)
       endif
@@ -4530,7 +4530,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
       if (headtt) print*, 'daa_dt: iresistivity=', iresistivity
 !
       fres=0.
-      etatotal=0.; diffus_eta2=0.; diffus_eta3=0.
+      eta_total=0.; diffus_eta2=0.; diffus_eta3=0.
 !
 !  Uniform resistivity
 !
@@ -4549,7 +4549,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
              del2aa_ini = ampl_efield*(-2 + 8*tanhx2 - 6*tanhx2*tanhx2 )
              fres(:,3) = fres(:,3) - eta*mu0*del2aa_ini
           endif
-          etatotal = etatotal + eta
+          eta_total = eta_total + eta
         endif
       endif
 !
@@ -4572,7 +4572,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             fres = fres + eta_tdep * p%del2a
           endif
         endif
-        etatotal = etatotal + eta_tdep
+        eta_total = eta_total + eta_tdep
       endif
 !
 !  z-dependent resistivity
@@ -4586,7 +4586,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             forall(j = 1:3) fres(:,j) = fres(:,j) + eta_z(n) * p%del2a(:,j)
             fres(:,3) = fres(:,3) + geta_z(n) * p%diva
           endif
-          etatotal = etatotal + eta_z(n)
+          eta_total = eta_total + eta_z(n)
 
         else    !MR: What about Weyl gauge here?
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
@@ -4605,7 +4605,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             fres(:,j)=fres(:,j)+eta*sqrt(p%rho1) * (p%del2a(:,j)-0.5*p%diva*p%glnrho(:,j))
           enddo
         endif
-        etatotal=etatotal+eta*sqrt(p%rho1)
+        eta_total=eta_total+eta*sqrt(p%rho1)
       endif
 !
 !  Anisotropic tensor, eta_ij = eta*delta_ij + eta1*qi*qj; see
@@ -4622,7 +4622,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         if (lquench_eta_aniso) prof=prof/(1.+quench_aniso*Arms)
         fres(:,1)=fres(:,1)-prof*cosalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
         fres(:,2)=fres(:,2)-prof*sinalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
-        etatotal=etatotal+abs(eta1_aniso)
+        eta_total=eta_total+abs(eta1_aniso)
       endif
 !
 !  Shakura-Sunyaev type resistivity (mainly just as a demo to show
@@ -4637,14 +4637,14 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         do j=1,3
           fres(:,j)=fres(:,j)-etaSS*p%jj(:,j)
         enddo
-        etatotal=etatotal+etaSS
+        eta_total=eta_total+etaSS
       endif
 !
       if (lresi_xydep) then
         do j=1,3
           fres(:,j)=fres(:,j)+eta_xy(l1:l2,m)*p%del2a(:,j)+geta_xy(l1:l2,m,j)*p%diva
         enddo
-        etatotal=etatotal+eta_xy(l1:l2,m)
+        eta_total=eta_total+eta_xy(l1:l2,m)
       endif
 !
       if (lresi_xdep) then
@@ -4658,7 +4658,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
           enddo
           fres(:,1)=fres(:,1)+geta_x(l1:l2)*p%diva
         endif
-        etatotal=etatotal+eta_x(l1:l2)
+        eta_total=eta_total+eta_x(l1:l2)
       endif
 !
       if (lresi_rdep) then
@@ -4666,7 +4666,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         do j=1,3
           fres(:,j)=fres(:,j)+eta_r*p%del2a(:,j)+geta_r(:,j)*p%diva
         enddo
-        etatotal=etatotal+eta_r
+        eta_total=eta_total+eta_r
       endif
 !
       if (lresi_ydep) then
@@ -4678,7 +4678,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         else
           fres(:,2)=fres(:,2)+geta_y(m)*p%diva
         endif
-        etatotal=etatotal+eta_y(m)
+        eta_total=eta_total+eta_y(m)
       endif
 !
 !  Note that one has to use eta_hyper2 < 0 to have diffusion.
@@ -4785,7 +4785,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         do j=1,3
           fres(:,j)=fres(:,j)+eta_mn*p%del2a(:,j)+geta(:,j)*p%diva
         enddo
-        etatotal=etatotal+eta_mn
+        eta_total=eta_total+eta_mn
       endif
 !
       if (lresi_eta_shock) then
@@ -4798,7 +4798,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             fres(:,i)=fres(:,i)+eta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
           enddo
         endif
-        etatotal=etatotal+eta_shock*p%shock
+        eta_total=eta_total+eta_shock*p%shock
       endif
 !
       if (lresi_eta_shock2) then
@@ -4811,7 +4811,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             fres(:,i)=fres(:,i)+eta_shock2*(p%shock**2*p%del2a(:,i)+2*p%shock*p%diva*p%gshock(:,i))
           enddo
         endif
-        etatotal=etatotal+eta_shock2*p%shock**2
+        eta_total=eta_total+eta_shock2*p%shock**2
       endif
 !
 ! diffusivity: eta-shock with vertical profile
@@ -4834,7 +4834,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
                 peta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))+p%diva*p%shock*gradeta_shock(:,i)
           enddo
         endif
-        etatotal=etatotal+peta_shock*p%shock
+        eta_total=eta_total+peta_shock*p%shock
       endif
 !
 ! diffusivity: eta-shock with radial profile
@@ -4861,7 +4861,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
                                   p%diva*p%shock*gradeta_shock(:,i)
           enddo
         endif
-        etatotal=etatotal+peta_shock*p%shock
+        eta_total=eta_total+peta_shock*p%shock
       endif
 !
       if (lresi_eta_shock_perp) then
@@ -4874,14 +4874,14 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             fres(:,i)=fres(:,i)+ eta_shock*(p%shock_perp*p%del2a(:,i)+p%diva*p%gshock_perp(:,i))
           enddo
         endif
-        etatotal=etatotal+eta_shock*p%shock_perp
+        eta_total=eta_total+eta_shock*p%shock_perp
       endif
 !
       if (lresi_etava) then
         if (lweyl_gauge) then
           forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
         endif
-        etatotal = etatotal + p%etava
+        eta_total = eta_total + p%etava
       endif
 !
 !  Generalised Alfven speed dependent resistivity
@@ -4894,22 +4894,22 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             fres(:,i) = fres(:,i) + mu0 * p%etava * p%del2a(:,i) + eta_va/vArms * p%diva * p%gva(:,i)
           enddo
         endif
-        etatotal = etatotal + p%etava
+        eta_total = eta_total + p%etava
       endif
 !
       if (lresi_etaj) then
         forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj * p%jj(:,i)
-        etatotal = etatotal + p%etaj
+        eta_total = eta_total + p%etaj
       endif
 !
       if (lresi_etaj2) then
         forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj2 * p%jj(:,i)
-        etatotal = etatotal + p%etaj2
+        eta_total = eta_total + p%etaj2
       endif
 !
       if (lresi_etajrho) then
         forall (i = 1:3) fres(:,i) = fres(:,i) - p%etajrho * p%jj(:,i)
-        etatotal = etatotal + p%etajrho
+        eta_total = eta_total + p%etajrho
       endif
 !
       if (lresi_smagorinsky) then
@@ -4959,7 +4959,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
         call multsv(eta_smag+eta,p%del2a,fres)
       endif
-      if (any((/lresi_smagorinsky,lresi_smagorinsky_nusmag,lresi_smagorinsky_cross/))) etatotal = etatotal + eta_smag
+      if (any((/lresi_smagorinsky,lresi_smagorinsky_nusmag,lresi_smagorinsky_cross/))) eta_total = eta_total + eta_smag
 !
 !  Anomalous resistivity. Sets in when the ion-electron drift speed is
 !  larger than some critical value.
@@ -4983,12 +4983,12 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         endif
         if (eta_anom_thresh/=0) then
           where (eta_anom*vdrift > eta_anom_thresh*vcrit_anom)
-            etatotal=etatotal+eta_anom_thresh
+            eta_total=eta_total+eta_anom_thresh
           elsewhere
-            etatotal=etatotal+eta_anom*vdrift/vcrit_anom
+            eta_total=eta_total+eta_anom*vdrift/vcrit_anom
           endwhere
         else
-          where (vdrift>vcrit_anom) etatotal=etatotal+eta_anom*vdrift/vcrit_anom
+          where (vdrift>vcrit_anom) eta_total=eta_total+eta_anom*vdrift/vcrit_anom
         endif
       endif
 !
@@ -5004,7 +5004,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             fres(:,i)=fres(:,i)+eta_spitzer*exp(-1.5*p%lnTT)*(p%del2a(:,i)-1.5*p%diva*p%glnTT(:,i))
           enddo
         endif
-        etatotal = etatotal + eta_spitzer*exp(-1.5*p%lnTT)
+        eta_total = eta_total + eta_spitzer*exp(-1.5*p%lnTT)
       endif
 !
 ! Resistivity proportional to sound speed for stability of SN Turbulent ISM
@@ -5020,7 +5020,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             fres(:,i)=fres(:,i)+eta*exp(eta_cspeed*p%lnTT)*(p%del2a(:,i)+0.5*p%diva*p%glnTT(:,i))
           enddo
         endif
-        etatotal = etatotal + eta*exp(eta_cspeed*p%lnTT)
+        eta_total = eta_total + eta*exp(eta_cspeed*p%lnTT)
       endif
 !
 ! Resistivity proportional to vertical velocity
@@ -5035,7 +5035,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             fres(:,i)=fres(:,i)+eta*ampl_eta_uz*(p%uu(:,3)*p%del2a(:,i)+p%uij(:,3,i)*p%diva)
           enddo
         endif
-        etatotal = etatotal + eta*ampl_eta_uz*p%uu(:,3)
+        eta_total = eta_total + eta*ampl_eta_uz*p%uu(:,3)
       endif
 !
 ! Magnetic field dependent resistivity
@@ -5047,7 +5047,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             fres(:,i)=fres(:,i)-mu0*eta_BB*p%jj(:,i)
           enddo
         endif
-        etatotal = etatotal + eta_BB
+        eta_total = eta_total + eta_BB
       endif
 !
 !  anisotropic B-dependent diffusivity
@@ -5063,7 +5063,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
           ju=j-1+iaa
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-tmp1*p%jb*p%bb(:,j)
         enddo
-        etatotal = etatotal + eta_aniso_BB
+        eta_total = eta_total + eta_aniso_BB
       endif
 !
 !  Ambipolar diffusion in the strong coupling approximation.
@@ -5082,7 +5082,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         elseif (ltemperature .and. lneutralion_heat) then
             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
         endif
-        etatotal = etatotal + p%nu_ni1*p%va2
+        eta_total = eta_total + p%nu_ni1*p%va2
       endif
 !
 !  Consider here the action of a mean friction term, -LLambda*Abar.
@@ -5102,7 +5102,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !SLD        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2)
 !SLD        if (lohmic_heat) then
 !SLD          call dot(f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2),p%jj,phi)                !tb checked
-!SLD          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(etatotal*mu0)*p%rho1*p%TT1*phi
+!SLD          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(eta_total*mu0)*p%rho1*p%TT1*phi
 !   Slope limited diffusion for magnetic field
 !
       if (lmagnetic_slope_limited.and.llast) then
@@ -5179,12 +5179,12 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 ! possibility to reduce ohmic heating near the boundary
 ! currently implemented only for a profile in z above a value no_ohmic_heat_z0
 ! with the width no_ohmic_heat_zwidth for reduction, width has to tbe negative.
-! Note that etaheat must not enter etatotal.
+! Note that etaheat must not enter eta_total.
 !
       if (lno_ohmic_heat_bound_z.and.lohmic_heat) then
-        etaheat=etatotal*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
+        etaheat=eta_total*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
       else
-        etaheat=etatotal
+        etaheat=eta_total
       endif
 !
 !  Add Ohmic heat to entropy or temperature equation.
@@ -5402,7 +5402,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !
       if (lambipolar_strong_coupling.and.tauAD/=0.0) then
         dAdt=dAdt+tauAD*p%jxbxb
-        etatotal = etatotal + tauAD*mu01*p%b2
+        eta_total = eta_total + tauAD*mu01*p%b2
       endif
 !
 !  Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
@@ -5434,7 +5434,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
           eta_out1=(eta_out-eta)*.5*(1.+erfunc((z(n)-height_eta)/eta_zwidth))
         endif
         dAdt = dAdt-(eta_out1*mu0)*p%jj
-        etatotal = etatotal + eta_out1*mu0
+        eta_total = eta_total + eta_out1*mu0
       endif
 !
 !  Ekman Friction, used only in two dimensional runs.
@@ -5606,13 +5606,13 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !
 !  Add turbulent diffusivity, if provided.  (MR: should be done in MF module!)
 !
-      if (ietat/=0) etatotal=etatotal+f(l1:l2,m,n,ietat)
+      if (ietat/=0) eta_total=eta_total+f(l1:l2,m,n,ietat)
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
       if (lfirst.and.ldt) then
 !
-        diffus_eta =etatotal *dxyz_2
+        diffus_eta =eta_total *dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4
 !
         if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
@@ -5742,7 +5742,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         if (.not.lgpu.and.ivid_poynting/=0) then
           call cross(p%uxb,p%bb,uxbxb)
           do j=1,3
-            poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)
+            poynting(:,j) = eta_total*p%jxb(:,j) - mu01*uxbxb(:,j)
           enddo
           call store_slices(poynting,poynting_xy,poynting_xz,poynting_yz, &
                             poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2,poynting_r)
@@ -6126,7 +6126,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !  Not correct for hyperresistivity:
 !
       if (.not.lgpu) then
-        if (idiag_epsM/=0) call sum_mn_name(etatotal*mu0*p%j2,idiag_epsM)
+        if (idiag_epsM/=0) call sum_mn_name(eta_total*mu0*p%j2,idiag_epsM)
       endif
 !
 !  Heating by ion-neutrals friction.
@@ -6555,9 +6555,9 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         if (idiag_uzbzmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%bb(:,3),idiag_uzbzmz)
         call xysum_mn_name_z(p%ujxb,idiag_ujxbmz)
         if (.not.lgpu) then
-          if (idiag_epsMmz/=0) call xysum_mn_name_z(etatotal*mu0*p%j2,idiag_epsMmz)
-          call yzsum_mn_name_x(etatotal,idiag_etatotalmx)
-          call xysum_mn_name_z(etatotal,idiag_etatotalmz)
+          if (idiag_epsMmz/=0) call xysum_mn_name_z(eta_total*mu0*p%j2,idiag_epsMmz)
+          call yzsum_mn_name_x(eta_total,idiag_etatotalmx)
+          call xysum_mn_name_z(eta_total,idiag_etatotalmz)
         endif
         if (idiag_vmagfricmz/=0) then
           call dot2_mn(p%vmagfric,tmp1)
@@ -6604,7 +6604,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         call xysum_mn_name_z(p%bf2,idiag_bf2mz)
         call xysum_mn_name_z(p%j2,idiag_j2mz)
         if (.not.lgpu) then
-          if (idiag_poynzmz/=0) call xysum_mn_name_z(etatotal*p%jxb(:,3)-mu01* &
+          if (idiag_poynzmz/=0) call xysum_mn_name_z(eta_total*p%jxb(:,3)-mu01* &
             (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmz)
         endif
         call phizsum_mn_name_r(p%b2,idiag_b2mr)
@@ -6756,16 +6756,16 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         call zsum_mn_name_xy(p%uxb,idiag_Ezmxy,(/0,0,1/))
         if (.not.lgpu) then
           if (idiag_poynxmxy/=0) &
-              call zsum_mn_name_xy(etatotal*p%jxb(:,1)-mu01* &
+              call zsum_mn_name_xy(eta_total*p%jxb(:,1)-mu01* &
               (p%uxb(:,2)*p%bb(:,3)-p%uxb(:,3)*p%bb(:,2)),idiag_poynxmxy)
           if (idiag_poynymxy/=0.or.idiag_poynzmxy/=0) then
             tmp2(:,1)=0.
-            tmp2(:,2)=etatotal*p%jxb(:,2)-mu01*(p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3))
-            tmp2(:,3)=etatotal*p%jxb(:,3)-mu01*(p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1))
+            tmp2(:,2)=eta_total*p%jxb(:,2)-mu01*(p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3))
+            tmp2(:,3)=eta_total*p%jxb(:,3)-mu01*(p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1))
             call zsum_mn_name_xy(tmp2,idiag_poynymxy,(/0,1,0/))
             call zsum_mn_name_xy(tmp2,idiag_poynzmxy,(/0,0,1/))
           endif
-          if (idiag_etatotalmxy/=0) call zsum_mn_name_xy(etatotal,idiag_etatotalmxy)
+          if (idiag_etatotalmxy/=0) call zsum_mn_name_xy(eta_total,idiag_etatotalmxy)
         endif
         call zsum_mn_name_xy(p%beta1,idiag_beta1mxy)
 !
