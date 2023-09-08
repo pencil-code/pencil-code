@@ -10,6 +10,7 @@
   lread_aux=T
   dt=1e-4
   tmax=500.
+  ip=13
 /
 &eos_run_pars
 /
