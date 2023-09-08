@@ -349,6 +349,7 @@ module FArrayManager
       if (n_odevars>0) then
         lode=.true.
         allocate(f_ode(n_odevars),df_ode(n_odevars))
+        f_ode=0.
       endif
 
     endsubroutine farray_finalize_ode
