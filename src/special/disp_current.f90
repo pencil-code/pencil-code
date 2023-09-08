@@ -438,8 +438,8 @@ module Special
 !  gauge-independent.
 !
         if (beta_inflation/=0.) then
-          if (ip<14.and.lroot) print*,'scl_factor_target, Hp_target, appa_target=', &
-                                       scl_factor_target, Hp_target, appa_target
+          if (ip<14.and.lroot) print*,'scl_factor_target, Hp_target, appa_target, wweos_target=', &
+                                       scl_factor_target, Hp_target, appa_target, wweos_target
           mfpf=beta_inflation*Hp_target
           fppf=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
           if (lcurlyA) then

@@ -340,7 +340,7 @@ module FArrayManager
     integer, optional, intent(in)  :: nvar
 
       ivar = n_odevars+1
-      n_odevars = n_odevars+ioptest(nvar)
+      n_odevars = n_odevars+ioptest(nvar,1)
 
     endsubroutine farray_register_ode
 !***********************************************************************

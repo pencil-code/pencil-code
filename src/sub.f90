@@ -8949,10 +8949,10 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !  but omitted everything that had to do with "Om*"
 !
       use Cdata, only: lread_scl_factor_file_new, ip, lroot, t, tmax, &
-        scl_factor_target, Hp_target, appa_target
+        scl_factor_target, Hp_target, appa_target, wweos_target
       use Messages, only: fatal_error
 !
-      real, save, dimension(:), allocatable :: t_file, scl_factor, Hp_file, appa_file
+      real, save, dimension(:), allocatable :: t_file, scl_factor, Hp_file, appa_file, wweos_file
       real, save, dimension(:), allocatable :: lgt_file, lgff, lgff2, lgff3, lgff4, lgff5
       logical, save :: lread_scl_factor_file_exists
       integer, save :: idt_file_safety=12
@@ -8980,13 +8980,15 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
             open(9,file='a_vs_eta.dat',status='old')
             read(9,*) nt_file, lgt0, dlgt !, H0
             if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0=',nt_file,lgt0,dlgt,H0
-            if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, appa_file, &
+            if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, appa_file, wweos_file, &
                                               lgt_file, lgff, lgff2, lgff3, lgff4, lgff5)
-            allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), appa_file(nt_file), &
+            allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), appa_file(nt_file), wweos_file(nt_file), &
                      lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file), lgff4(nt_file), lgff5(nt_file))
             do it_file=1,nt_file
-              read(9,*) t_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file)
-              if (ip<14) print*,'AXEL: ',it_file, t_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file)
+              read(9,*) t_file(it_file), scl_factor(it_file), Hp_file(it_file), &
+                appa_file(it_file), wweos_file(it_file)
+              if (ip<14) print*,'AXEL: ',it_file, t_file(it_file), scl_factor(it_file), &
+                Hp_file(it_file), appa_file(it_file), wweos_file(it_file)
             enddo
             close(9)
             lgt_file=alog10(t_file)
@@ -9110,6 +9112,14 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         f=f1+(lgt_current-lgt1)*(f2-f1)/(lgt2-lgt1)
         appa_target=f !/Hp_ini**2
         if (ip<14) print*,'AXEL: f1 < appa < f2 ? ',f1, appa_target, f2
+!
+!  non-logarithmic interpolation of wweos_file
+!
+        f1=wweos_file(it_file)
+        f2=wweos_file(it_file+1)
+        f=f1+(lgt_current-lgt1)*(f2-f1)/(lgt2-lgt1)
+        wweos_target=f
+        if (ip<14) print*,'AXEL: f1 < ww < f2 ? ',f1, wweos_target, f2
       endif
 !
     endsubroutine calc_scl_factor
