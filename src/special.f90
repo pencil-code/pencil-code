@@ -30,6 +30,7 @@
                           I_GET_SLICES_SPECIAL=10,  &
                           I_INIT_SPECIAL=11,  &
                           I_DSPECIAL_DT=12,  &
+                          I_DSPECIAL_DT_ODE=31,  &
                           I_CALC_PENCILS_SPECIAL=13,  &
                           I_PENCIL_CRITERIA_SPECIAL=14,  &
                           I_PENCIL_INTERDEP_SPECIAL=15,  &
@@ -49,7 +50,7 @@
                           I_SET_INIT_PARAMETERS=29, &
                           I_SPECIAL_CALC_SPECTRA=30
     
-    integer, parameter :: n_subroutines=30
+    integer, parameter :: n_subroutines=31
     integer, parameter :: n_special_modules_max=2
 !
     integer :: n_special_modules
@@ -67,6 +68,7 @@
                            'get_slices_special          ', &
                            'init_special                ', &
                            'dspecial_dt                 ', &
+                           'special_dt_ode              ', &
                            'calc_pencils_special        ', &
                            'pencil_criteria_special     ', &
                            'pencil_interdep_special     ', &
@@ -264,6 +266,20 @@
       enddo
 !
     endsubroutine calc_pencils_special
+!***********************************************************************
+    subroutine dspecial_dt_ode
+!
+!  calculate right hand side of ONE OR MORE extra coupled ODEs
+!
+!  07-sep-23/MR: coded
+!
+      integer :: i
+!
+      do i=1,n_special_modules
+        call caller0(special_sub_handles(i,I_DSPECIAL_DT_ODE))
+      enddo
+!
+    endsubroutine dspecial_dt_ode
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !

@@ -13,7 +13,7 @@ module FArrayManager
 !
   use Cparam, only: mvar,maux,mglobal,maux_com,mscratch
   use Cdata, only: nvar,naux,nscratch,nglobal,naux_com,datadir,lroot,lwrite_aux,lreloading, &
-                   n_odevars,f_ode, df_ode
+                   n_odevars,f_ode, df_ode, lode
   use HDF5_IO
   use Messages
 !
@@ -346,7 +346,10 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_finalize_ode
 
-      allocate(f_ode(n_odevars),df_ode(n_odevars))
+      if (n_odevars>0) then
+        lode=.true.
+        allocate(f_ode(n_odevars),df_ode(n_odevars))
+      endif
 
     endsubroutine farray_finalize_ode
 !***********************************************************************

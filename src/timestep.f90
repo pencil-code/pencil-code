@@ -134,6 +134,10 @@ module Timestep
 !
         if (lpointmasses) call pointmasses_timestep_first(f)
 !
+!  Set up ODE derivatives array
+! 
+        if (lode) call ode_timestep_first
+!
 !  Set up solid_cells time advance
 !
         if (lsolid_cells) call solid_cells_timestep_first(f)
@@ -141,6 +145,8 @@ module Timestep
 !  Change df according to the chosen physics modules.
 !
         call pde(f,df,p)
+        if (lode) call ode
+
         ds=ds+1.0
 !
 !  If we are in the first time substep we need to calculate timestep dt.
@@ -171,6 +177,10 @@ module Timestep
 !  Time evolution of particle variables.
 !
         if (lparticles) call particles_timestep_second(f)
+!
+! Time evolution of ODE variables. 
+! 
+        if (lode) call ode_timestep_second
 !
 !  Time evolution of solid_cells.
 !
@@ -264,6 +274,34 @@ module Timestep
       ighosts_updated=-1
 !
     endsubroutine update_after_substep
+!***********************************************************************
+    subroutine ode_timestep_first
+
+     if (lroot) then
+        if (itsub==1) then
+          df_ode = 0.0
+        else
+          df_ode=alpha_ts(itsub)*df_ode
+        endif
+      endif
+ 
+    endsubroutine ode_timestep_first
+!***********************************************************************
+    subroutine ode
+
+      use Special, only: dspecial_dt_ode
+
+      if (lroot) then
+        call dspecial_dt_ode
+      endif
+
+    endsubroutine ode
+!***********************************************************************
+    subroutine ode_timestep_second
+
+      if (lroot) f_ode = f_ode + dt_beta_ts(itsub)*df_ode
+ 
+    endsubroutine ode_timestep_second
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

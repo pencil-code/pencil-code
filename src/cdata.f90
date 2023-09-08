@@ -336,6 +336,7 @@ module Cdata
 !
   integer :: nvar,naux,naux_com,nscratch,nglobal,n_odevars=0
   real, dimension(:), allocatable :: f_ode, df_ode
+  logical :: lode=.false.
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
