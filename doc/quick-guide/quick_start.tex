@@ -63,15 +63,22 @@ For HDF5 and MPI support, you need to install the package \directory{libhdf5-ope
 \subsection{\name{MacOS X}}
 For \name{Mac}, you first need to install \name{Xcode} from the
 website \url{http://developer.apple.com/}, where you have to register as a member.
-Alternatively, an easy to install \command{gfortran} binary package can be found at the website \url{http://gcc.gnu.org/wiki/GFortranBinaries}. Just download the archive and use the installer contained therein.
+In addition to that it might be necessary to install a \name{fortran} \name{open-mpi} compiler which can be done by first installing \name{homebrew} (available at \url{https://brew.sh}) and then through the terminal command:
+\begin{verbatim}
+brew install open-mpi
+\end{verbatim}
+Alternatively, a \command{gfortran} binary package can be found at the website \url{http://gcc.gnu.org/wiki/GFortranBinaries}. Just download the archive and use the installer contained therein.
 It installs into \directory{/usr/local/gfortran} with
 a symbolic link in \directory{/usr/local/bin/gfortran}. It might be necessary to add
 the following line to the \file{.cshrc}-file in your \directory{/home} folder:
 \begin{verbatim}
   setenv PATH /usr/local/bin:\$PATH
+\end{verbatim} 
+For the \name{python} users, moreover, new versions of the operating system often give conflicts with \name{anaconda} when compiling, so it might be necessary to use the terminal command 
+\begin{verbatim}
+conda deactivate
 \end{verbatim}
-In case of errors preventing the user from compiling the code, it is suggested to install a \name{fortran} \name{open-mpi} compiler for running in parallel, for example through \name{homebrew}, as \name{Xcode} is usually not sufficient when it comes to compiling the \name{fortran} files. 
-For the \name{python} users, moreover, sometimes new released versions of the operating system may give conflicts with anaconda when compiling, so in order to make the compilation work one possible way is to use the command "conda deactivate" from the terminal before compiling (keeping in mind to then re-activate it after the run is complete, in case you want to use python in the post-processing).
+before compiling and running the Pencil Code.
 
 \section{Download the Pencil Code}
 The Pencil Code is an open source code written mainly in \name{Fortran} and available under GPL.
