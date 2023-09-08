@@ -1509,7 +1509,8 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 #FC=ifort #(nl6)
 #FSTD_95=-std95 #(nl6)
-#FC=ifort #(nl6)
+##FC=ifort #(nl6)
+#FC=mpif90   #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include -CB #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include -L/usr/lib#(nl6)
@@ -1526,11 +1527,12 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ## Axel
 ##
-#FC=gfortran #(nl6)
+##FC=gfortran #(nl6)
 #FC=mpif90   #(nl6)
-#FFLAGS= -O0 -fallow-argument-mismatch #(nl6)
-#FFLAGS= -O3 #(nl6)
+##FFLAGS= -O0 -fallow-argument-mismatch #(nl6)
+##FFLAGS= -O3 #(nl6)
 #FFLAGS= -O0 #(nl6)
+#FFLAGS= -g -fbacktrace -O0 #(nl6)
 #FFLAGS_DOUBLE=-fdefault-real-8  #(nl6)
 #CC=gcc #(nl6)
 #CFLAGS=-O3 -DFUNDERSC=1 #(nl6)
@@ -3224,7 +3226,8 @@ file_io_common.inc:  Makefile.local $(FILE_IO).f90 file_io_common.f90
 energy_common.inc:  Makefile.local $(ENERGY).f90
 	scripts/mkdummyinc -d noentropy.f90 -s $(ENERGY).f90 -o energy_common.inc
 #
-MAIN_EXECUTABLES=start.x run.x
+#MAIN_EXECUTABLES=start.x run.x
+MAIN_EXECUTABLES=start.x run.x read_all_videofiles.x
 HELPER_EXECS_MIN=combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 HELPER_EXECUTABLES=$(HELPER_EXECS_MIN) \
 	pre_and_post_processing/pc_collect.x pre_and_post_processing/pc_collect_pvar.x pre_and_post_processing/pc_reduce.x pre_and_post_processing/pc_distribute.x pre_and_post_processing/pc_distribute_z.x pre_and_post_processing/pc_extract.x pre_and_post_processing/pc_configtest.x pre_and_post_processing/pc_tecplot.x pre_and_post_processing/pc_tecplot_solid.x
