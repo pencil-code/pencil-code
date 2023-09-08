@@ -116,7 +116,7 @@ module Special
   logical :: lstress=.true., lstress_ramp=.false., lstress_upscale=.false.
   logical :: lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
-  logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
+  logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false., lhorndeski_xi=.false.
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
   logical :: lno_noise_GW=.false., lfactors_GW=.false.,lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
@@ -180,7 +180,7 @@ module Special
     lstress, lstress_ramp, tstress_ramp, &
     lstress_upscale, stress_upscale_rate, stress_upscale_exp, &
     linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
-    lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
+    lturnoff, tturnoff, lhorndeski, lhorndeski_xi, horndeski_alpM, horndeski_alpT, &
     ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
@@ -1714,6 +1714,7 @@ module Special
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
       real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
+      real :: horndeski_alpM_eff3, alpM_prime=0.
       real :: horndeski_alpT_eff, Om_rat_Lam, Om_rat_Mat
       real :: Om_rat_matt, Om_rat_tot1
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
@@ -1966,7 +1967,9 @@ module Special
 !  Horndeski preparations
 !  Allow for different prescriptions for the time dependence of horndeski_alpT_eff and horndeski_alpM_eff
 !
-      if (lhorndeski) then
+! alberto (sep 8 2023), added option to solve for \xi in Horndeski theories
+!
+      if (lhorndeski.or.lhorndeski_xi) then
         select case (ihorndeski_time)
           case ('const')
             horndeski_alpT_eff=horndeski_alpT
@@ -2000,22 +2003,42 @@ module Special
               call fatal_error('dspecial_dt',"we need the file a_vs_eta.dat")
             endif
           case default
-            call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
-                ,trim(idelkt))
+            call fatal_error("compute_gT_and_gX_from_gij: No such value for ihorndeski_time" &
+                ,trim(ihorndeski_time))
         endselect
         if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
           !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp^2: ',Hp_target**2
           !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp: ',Hp_target
-          horndeski_alpM_eff=horndeski_alpM_eff*Hp_target
-          horndeski_alpM_eff2=horndeski_alpM_eff*Hp_target
+          if (lhorndeski) then
+            horndeski_alpM_eff=horndeski_alpM_eff*Hp_target
+            horndeski_alpM_eff2=horndeski_alpM_eff*Hp_target
+          else
+            horndeski_alpM_eff2=(1+.5*horndeski_alpM_eff)*Hp_target**2
+            horndeski_alpM_eff2=horndeski_alpM_eff2*.5*horndeski_alpM_eff
+            ! alpM_prime is set to zero for now (constant alpha),
+            ! to be changed for the different parameterizations
+            horndeski_alpM_eff3=.5*alpM_prime*Hp_target
+            horndeski_alpM_eff=1.+.5*horndeski_alpM_eff
+          endif
         else
-          horndeski_alpM_eff=horndeski_alpM_eff/scale_factor
-          horndeski_alpM_eff2=horndeski_alpM_eff/scale_factor
+          if (lhorndeski) then
+            horndeski_alpM_eff=horndeski_alpM_eff/scale_factor
+            horndeski_alpM_eff2=horndeski_alpM_eff/scale_factor
+          else
+            horndeski_alpM_eff2=(1+.5*horndeski_alpM_eff)/scale_factor**2
+            horndeski_alpM_eff2=horndeski_alpM_eff2*.5*horndeski_alpM_eff 
+            horndeski_alpM_eff3=.5*alpM_prime/scale_factor
+            horndeski_alpM_eff=1.+.5*horndeski_alpM_eff
+          endif 
         endif
       endif
       if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
         appa_om=appa_target
         !if (ip<14.and..not.lroot) print*,'ALBERTO, app/a: ',appa_target
+      endif
+      if (lhorndeski_xi) then
+        appa_om=appa_om*horndeski_alpM_eff+horndeski_alpM_eff2
+        appa_om=appa_om+horndeski_alpM_eff3
       endif
 !
 !  Set ST=SX=0 and reset all spectra.
@@ -2105,6 +2128,8 @@ module Special
                     om2=(1.+horndeski_alpT_eff)*ksqr+delkt**2-horndeski_alpM_eff2-appa_om
                     om_cmplx=sqrt(cmplx(om2,0.))
                     om=impossible
+                  elseif (lhorndeski_xi) then
+                    om2=(1.+horndeski_alpT_eff)*ksqr-appa_om
                   else
                     om2=ksqr+delkt**2-appa_om
                     om=sqrt(om2)
