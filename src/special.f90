@@ -68,7 +68,6 @@
                            'get_slices_special          ', &
                            'init_special                ', &
                            'dspecial_dt                 ', &
-                           'dspecial_dt_ode             ', &
                            'calc_pencils_special        ', &
                            'pencil_criteria_special     ', &
                            'pencil_interdep_special     ', &
@@ -86,7 +85,8 @@
                            'special_after_boundary      ', &
                            'special_after_timestep      ', &
                            'set_init_parameters         ', &
-                           'special_calc_spectra_byte   ' /)
+                           'special_calc_spectra_byte   ', &
+                           'dspecial_dt_ode             ' /)
 
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules_max,n_subroutines) :: special_sub_handles
