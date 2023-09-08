@@ -52,6 +52,7 @@ module Cdata
   logical :: luse_latitude=.false., luse_oldgrid=.true., luse_xyz1=.false.
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
+  logical :: lconcurrent=.true.
 !
 !  Simultaneous foreign code.
 !
