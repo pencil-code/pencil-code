@@ -611,6 +611,12 @@ module Energy
 !
       if (ivid_pp/=0) call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2,pp_r)
 !
+!  For planet atmospheres, the equations are formulated in T only
+!
+      if (lcalc_planet_atmosphere.and.(.not.ltemperature_nolog)) &
+          call fatal_error('initialize_energy', &
+          'calc_planet_atmosphere is formualted in T only')
+!
     endsubroutine initialize_energy
 !***********************************************************************
     subroutine init_energy(f)
@@ -2017,11 +2023,6 @@ module Energy
 !
       real, dimension(nx) :: Teq
       real :: taueq
-!
-!  the equations are formulated in T only
-!
-      if (.not.ltemperature_nolog) call fatal_error('calc_planet_atmosphere', &
-          'only allow for using T as the variable, not lnT')
 !
 !  for test purpose now
 !
