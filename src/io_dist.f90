@@ -877,7 +877,7 @@ module Io
       endif
 !
       if (n_odevars>0) then
-        if (file_exists(file_)) then
+        if (file_exists(trim(directory_collect)//'/'//trim(file_))) then
           if (ip<=8) print*, 'read ODE snapshot', trim (file_)
           open(lun_input,FILE=trim(directory_collect)//'/'//trim(file_),FORM='unformatted')
           read(lun_input) n_in
