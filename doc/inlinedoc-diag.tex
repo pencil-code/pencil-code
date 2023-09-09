@@ -13,6 +13,8 @@
 %%   advective_gauge.f90
 %%   anelastic.f90
 %%   axionSU2back.f90
+%%   axionSU2back_using_ode.f90
+%%   axionSU2back_using_ode2.f90
 %%   backreact_infl.f90
 %%   bfield.f90
 %%   chemistry.f90
@@ -760,6 +762,78 @@
   \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{axionSU2back.f90}} \\
+\midrule
+  \var{Q}         & $Q$ \\
+  \var{Qdot}      & $\dot{Q}$ \\
+  \var{Qddot}     & $\ddot{Q}$ \\
+  \var{chi}       & $\chi$ \\
+  \var{chidot}    & $\dot{\chi}$ \\
+  \var{chiddot}   & $\ddot{\chi}$ \\
+  \var{psi}       & $\psi$ \\
+  \var{psiL}      & $\psi_L$ \\
+  \var{psidot}    & $\dot\psi$ \\
+  \var{psiddot}   & $\ddot\psi$ \\
+  \var{TR}        & $T_R$ \\
+  \var{TL}        & $T_L$ \\
+  \var{TRdot}     & $\dot T_R$ \\
+  \var{TRddot}    & $\ddot T_R$ \\
+  \var{imTR}      & $\Im T_R$ \\
+  \var{psi_anal}  & $\psi^{\rm anal}$ \\
+  \var{TR_anal}   & $T_R^{\rm anal}$ \\
+  \var{TReff2m}   & $|T_R|^2_{\rm eff}$ \\
+  \var{TReff2km}  & $k|T_R|^2_{\rm eff}$ \\
+  \var{TRdoteff2m} & $|T_R\dot{T}_R|_{\rm eff}$ \\
+  \var{TRdoteff2km} & $k|T_R\dot{T}_R|_{\rm eff}$ \\
+  \var{TLeff2m}   & $|T_R|^2_{\rm eff}$ \\
+  \var{TLeff2km}  & $k|T_R|^2_{\rm eff}$ \\
+  \var{TLdoteff2m} & $|T_R\dot{T}_R|_{\rm eff}$ \\
+  \var{TLdoteff2km} & $k|T_R\dot{T}_R|_{\rm eff}$ \\
+  \var{grand}     & ${\cal T}^Q$ \\
+  \var{grant}     & ${\cal T}^\chi$ \\
+  \var{dgrant_up} & ${\cal T}^\chi$ \\
+  \var{grand2}    & ${\cal T}^Q$ (test) \\
+  \var{dgrant}    & $\dot{\cal T}^\chi$ \\
+  \var{fact}      & $\Theta(t)$ \\
+  \var{k0}        & $k0$ \\
+  \var{dk}        & $dk$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{axionSU2back_using_ode.f90}} \\
+\midrule
+  \var{Q}         & $Q$ \\
+  \var{Qdot}      & $\dot{Q}$ \\
+  \var{Qddot}     & $\ddot{Q}$ \\
+  \var{chi}       & $\chi$ \\
+  \var{chidot}    & $\dot{\chi}$ \\
+  \var{chiddot}   & $\ddot{\chi}$ \\
+  \var{psi}       & $\psi$ \\
+  \var{psiL}      & $\psi_L$ \\
+  \var{psidot}    & $\dot\psi$ \\
+  \var{psiddot}   & $\ddot\psi$ \\
+  \var{TR}        & $T_R$ \\
+  \var{TL}        & $T_L$ \\
+  \var{TRdot}     & $\dot T_R$ \\
+  \var{TRddot}    & $\ddot T_R$ \\
+  \var{imTR}      & $\Im T_R$ \\
+  \var{psi_anal}  & $\psi^{\rm anal}$ \\
+  \var{TR_anal}   & $T_R^{\rm anal}$ \\
+  \var{TReff2m}   & $|T_R|^2_{\rm eff}$ \\
+  \var{TReff2km}  & $k|T_R|^2_{\rm eff}$ \\
+  \var{TRdoteff2m} & $|T_R\dot{T}_R|_{\rm eff}$ \\
+  \var{TRdoteff2km} & $k|T_R\dot{T}_R|_{\rm eff}$ \\
+  \var{TLeff2m}   & $|T_R|^2_{\rm eff}$ \\
+  \var{TLeff2km}  & $k|T_R|^2_{\rm eff}$ \\
+  \var{TLdoteff2m} & $|T_R\dot{T}_R|_{\rm eff}$ \\
+  \var{TLdoteff2km} & $k|T_R\dot{T}_R|_{\rm eff}$ \\
+  \var{grand}     & ${\cal T}^Q$ \\
+  \var{grant}     & ${\cal T}^\chi$ \\
+  \var{dgrant_up} & ${\cal T}^\chi$ \\
+  \var{grand2}    & ${\cal T}^Q$ (test) \\
+  \var{dgrant}    & $\dot{\cal T}^\chi$ \\
+  \var{fact}      & $\Theta(t)$ \\
+  \var{k0}        & $k0$ \\
+  \var{dk}        & $dk$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{axionSU2back_using_ode2.f90}} \\
 \midrule
   \var{Q}         & $Q$ \\
   \var{Qdot}      & $\dot{Q}$ \\
@@ -2931,6 +3005,7 @@
                     viscous time step;
                     see \S~\ref{time-step}) \\
   \var{meshRemax} & Max mesh Reynolds number \\
+  \var{mesh3Remax} & Max hyper3 mesh Reynolds number \\
   \var{Reshock}   & Mesh Reynolds number at shock \\
 %
 \bottomrule
