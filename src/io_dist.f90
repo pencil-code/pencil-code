@@ -209,7 +209,7 @@ module Io
       if (lserial_io) call end_serialize
       icall=modulo(icall+1,2)
 !
-      call output_ode(file)
+      if (lode) call output_ode(file)
 
     endsubroutine output_snap
 !***********************************************************************
@@ -679,7 +679,7 @@ module Io
         call read_snap(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
       endif
 
-      call input_ode(file)
+      if (lode) call input_ode(file)
 
     endsubroutine input_snap
 !***********************************************************************
@@ -876,17 +876,15 @@ module Io
         file_='ode.dat'
       endif
 !
-      if (n_odevars>0) then
-        if (file_exists(trim(directory_collect)//'/'//trim(file_))) then
-          if (ip<=8) print*, 'read ODE snapshot', trim (file_)
-          open(lun_input,FILE=trim(directory_collect)//'/'//trim(file_),FORM='unformatted')
-          read(lun_input) n_in
-          if (n_in /= n_odevars) call fatal_error("input_ode","dimensions differ between file and 'f_ode' array")
-          if (n_in > 0) read(lun_input) f_ode
-          close(lun_input)
-        else
-          call warning('input_ode','no ODE data available')
-        endif
+      if (file_exists(trim(directory_collect)//'/'//trim(file_))) then
+        if (ip<=8) print*, 'read ODE snapshot', trim (file_)
+        open(lun_input,FILE=trim(directory_collect)//'/'//trim(file_),FORM='unformatted')
+        read(lun_input) n_in
+        if (n_in /= n_odevars) call fatal_error("input_ode","dimensions differ between file and 'f_ode' array")
+        if (n_in > 0) read(lun_input) f_ode
+        close(lun_input)
+      else
+        call warning('input_ode','no ODE data available')
       endif
 
     endsubroutine input_ode
