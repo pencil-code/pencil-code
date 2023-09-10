@@ -412,6 +412,30 @@ module Io
 !
     endsubroutine output_part_finalize
 !***********************************************************************
+    subroutine output_ode(file)
+!
+!  Write ODE snapshot file with time.
+!
+!  08-Sep-2023/MR: coded
+!
+      character (len=*), intent(in) :: file
+
+      call warning('output_ode','ODE var writing not implemented')
+
+    endsubroutine output_ode
+!***********************************************************************
+    subroutine input_ode(file)
+!
+!  Read ODE snapshot file with time.
+!
+!  08-Sep-2023/MR: coded
+!
+      character (len=*), intent(in) :: file
+
+      call warning('input_ode','ODE var reading not implemented')
+
+    endsubroutine input_ode
+!***********************************************************************
     subroutine output_pointmass(file, labels, fq, mv, nc)
 !
 !  Write pointmass snapshot file with time.
