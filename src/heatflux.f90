@@ -69,7 +69,6 @@ module Heatflux
 !
   real :: nu_ee, e_m
 ! Variable slot indices
-  integer :: iqx=0,iqy=0,iqz=0,iqq=0
 
 contains
 !***********************************************************************
