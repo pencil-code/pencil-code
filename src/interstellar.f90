@@ -1644,6 +1644,9 @@ module Interstellar
 !  26-mar-05/tony: coded
 !  11-mar-06/axel: added idiag_nrhom
 !
+      lpenc_requested(i_heat)=.true.
+      lpenc_requested(i_cool)=.true.
+      lpenc_requested(i_heatcool)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_ee)=.true.
@@ -1700,6 +1703,22 @@ module Interstellar
 !
       if (lpencil(i_heat)) call calc_heat(p%heat,p%lnTT)
 !
+      if (ltemperature) then
+        if (ltemperature_nolog) then
+          p%heat=p%heat*p%cv1
+          p%cool=p%cool*p%cv1
+        else
+          p%heat=p%heat/p%ee
+          p%cool=p%cool/p%ee
+        endif
+      elseif (pretend_lnTT) then
+        p%heat=p%heat*gamma
+        p%cool=p%cool*gamma
+      else
+        p%heat=p%heat*p%TT1
+        p%cool=p%cool*p%TT1
+        !heatcool=p%TT1*(heat-cool)
+      endif
       if (lpencil(i_heatcool)) p%heatcool=p%heat-p%cool
 !
     endsubroutine calc_pencils_interstellar
@@ -1912,8 +1931,10 @@ module Interstellar
 !  13-jul-15/fred
 !  Removed obsolete calls to spatial and temporal smoothing
 !
-      call calc_cool_func(cool,p%lnTT,p%lnrho)
-      call calc_heat(heat,p%lnTT)
+      !call calc_cool_func(cool,p%lnTT,p%lnrho)
+      !call calc_heat(heat,p%lnTT)
+      heat=p%heat
+      cool=p%cool
 !
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)
@@ -1959,25 +1980,25 @@ module Interstellar
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt] so therefore
 !  we now need to multiply by TT1.
 !
-      if (ltemperature) then
-        if (ltemperature_nolog) then
-          heat=heat*p%cv1
-          cool=cool*p%cv1
-          !heatcool=(heat-cool)*p%cv1
-        else
-          heat=heat/p%ee
-          cool=cool/p%ee
-          !heatcool=(heat-cool)/p%ee
-        endif
-      elseif (pretend_lnTT) then
-        heat=heat*gamma
-        cool=cool*gamma
-        !heatcool=p%TT1*(heat-cool)*gamma
-      else
-        heat=heat*p%TT1
-        cool=cool*p%TT1
-        !heatcool=p%TT1*(heat-cool)
-      endif
+      !if (ltemperature) then
+      !  if (ltemperature_nolog) then
+      !    heat=heat*p%cv1
+      !    cool=cool*p%cv1
+      !    !heatcool=(heat-cool)*p%cv1
+      !  else
+      !    heat=heat/p%ee
+      !    cool=cool/p%ee
+      !    !heatcool=(heat-cool)/p%ee
+      !  endif
+      !elseif (pretend_lnTT) then
+      !  heat=heat*gamma
+      !  cool=cool*gamma
+      !  !heatcool=p%TT1*(heat-cool)*gamma
+      !else
+      !  heat=heat*p%TT1
+      !  cool=cool*p%TT1
+      !  !heatcool=p%TT1*(heat-cool)
+      !endif
       heatcool=heat-cool
 !
 !  Save result in aux variables
@@ -2026,21 +2047,11 @@ module Interstellar
 !  Limit timestep by the cooling time (having subtracted any heating)
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
-      if (ldt) then
-        if (lfirst) then
-          if (ltemperature.or.pretend_lnTT) then
-            Hmax=Hmax+heatcool
-          else
-            Hmax=Hmax+heatcool*p%TT
-          endif
-        endif
-      else
-        if (ldiagnos) then
-          if (ltemperature.or.pretend_lnTT) then
-            Hmax=Hmax+heatcool
-          else
-            Hmax=Hmax+heatcool*p%TT
-          endif
+      if (ldt.and.lfirst) then
+        if (ltemperature.or.pretend_lnTT) then
+          Hmax=Hmax+heatcool
+        else
+          Hmax=Hmax+heatcool*p%TT
         endif
       endif
 !
