@@ -2685,7 +2685,7 @@ module Energy
         lpenc_requested(i_visc_heat)=.true.
         if (pretend_lnTT) lpenc_requested(i_cv1)=.true.
       endif
-      if (lthdiff_Hmax) lpenc_diagnos(i_cv1)=.true.
+      if (lthdiff_Hmax) lpenc_requested(i_cv1)=.true.
       if (lcalc_cs2mean) lpenc_requested(i_cv1)=.true.
       if (tau_cor>0.0) then
         lpenc_requested(i_cp1)=.true.
@@ -2975,8 +2975,6 @@ module Energy
       if (idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. idiag_ppmz/=0) &
         lpenc_diagnos(i_pp)=.true.
       if (idiag_ppmphi/=0) lpenc_diagnos2d(i_pp)=.true.
-      lpenc_diagnos(i_rho)=.true.
-      lpenc_diagnos(i_ee)=.true.
       if (idiag_ethm/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0 .or. idiag_ethmz/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_ee)=.true.
