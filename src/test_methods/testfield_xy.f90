@@ -54,7 +54,7 @@ module Testfield
 !
 ! diagnostic variables
 !
-  integer, parameter :: n_cdiags = 62, len_cdiags = 8
+  integer, parameter :: n_cdiags = 89, len_cdiags = 8
   character(LEN=len_cdiags), dimension(n_cdiags) :: cdiags = &
   (/ 'alp11   ','alp21   ','alp31   ','alp12   ','alp22   ','alp32   ','alp13   ','alp23   ','alp33   ',&   
 ! DIAG_DOC: $\alpha_{ij}$       
@@ -68,10 +68,14 @@ module Testfield
      'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     ',& 
 ! DIAG_DOC: ${\cal E}^i_j$
      'E14     ','E24     ','E34     ','E15     ','E25     ','E35     ','E16     ','E26     ','E36     ',&   
-     'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     ' /) 
+     'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     ',&
+     'b11     ','b21     ','b31     ','b12     ','b22     ','b32     ','b13     ','b23     ','b33     ',&   ! DIAG_DOC: ${\cal b}^j_i$
+     'b14     ','b24     ','b34     ','b15     ','b25     ','b35     ','b16     ','b26     ','b36     ',&
+     'b17     ','b27     ','b37     ','b18     ','b28     ','b38     ','b19     ','b29     ','b39     '  /)
 !
   integer, dimension(n_cdiags):: idiags=0, idiags_x=0, idiags_xy=0
-  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_end=idiag_Eij_start+27-1
+  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_end=idiag_Eij_start+27-1, &
+                                           idiag_bij_start=idiag_Eij_end+1, idiag_bij_end=idiag_bij_start+27-1
 !
   integer, dimension(4) :: idiag_alp11h, idiag_eta122h            
   equivalence(idiags(idiag_base_end+1),idiag_alp11h), (idiags(idiag_base_end+5),idiag_eta122h)      
@@ -283,11 +287,11 @@ module Testfield
 !
       headtt=headtt_save
 !
-      if (need_output) call calc_coeffs
+      if (need_output) call calc_coeffs(f)
 !
     endsubroutine testfield_after_boundary
 !***********************************************************************
-    subroutine calc_coeffs
+    subroutine calc_coeffs(f)
 !
 !  interface to enable use of of calc_coefficients originally developed for testfield_xz
 !
@@ -296,6 +300,7 @@ module Testfield
 !
       use Diagnostics, only: zsum_mn_name_xy_mpar_scal,yzsum_mn_name_x_mpar
 !
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer, dimension(idiag_base_end) :: idiags_map
       integer :: i,j
       real, dimension (nx,ny,3,njtest)  :: tmp
@@ -337,10 +342,10 @@ module Testfield
 
       call calc_coefficients( idiags(abs(idiags_map)),idiags_x(abs(idiags_map)),idiags_xy(abs(idiags_map)), &
                               idiags(idiag_Eij_start:idiag_Eij_end),idiags_x(idiag_Eij_start:idiag_Eij_end),   &
-                              idiags_xy(idiag_Eij_start:idiag_Eij_end), &
+                              idiags_xy(idiag_Eij_start:idiag_Eij_end), idiags_xy(idiag_bij_start:idiag_bij_end), &
                               idiag_alp11h, idiag_eta122h, &
                               tmp,Minv,zsum_mn_name_xy_mpar_scal,yzsum_mn_name_x_mpar, &
-                              twod_need_1d(abs(idiags_map)),twod_need_2d(abs(idiags_map)),needed2d,nz )
+                              twod_need_1d(abs(idiags_map)),twod_need_2d(abs(idiags_map)),needed2d,nz,f(:,:,:,iaatest) )
 !
 !  sign inversion if necessary
 !

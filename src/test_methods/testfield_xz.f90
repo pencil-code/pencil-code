@@ -67,10 +67,14 @@ module Testfield
                                                                                                             ! Diag_DOC: $\eta_{123,\rm hh}, {\rm h}={\rm c,s}$
      'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     ',&   ! DIAG_DOC: ${\cal E}^j_i$
      'E14     ','E24     ','E34     ','E15     ','E25     ','E35     ','E16     ','E26     ','E36     ',&   
-     'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     '  /) 
+     'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     ',& 
+     'b11     ','b21     ','b31     ','b12     ','b22     ','b32     ','b13     ','b23     ','b33     ',&   ! DIAG_DOC: ${\cal b}^j_i$
+     'b14     ','b24     ','b34     ','b15     ','b25     ','b35     ','b16     ','b26     ','b36     ',&   
+     'b17     ','b27     ','b37     ','b18     ','b28     ','b38     ','b19     ','b29     ','b39     '  /) 
 !
   integer, dimension(n_cdiags):: idiags=0, idiags_z=0, idiags_xz=0
-  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_end=idiag_Eij_start+27-1
+  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_end=idiag_Eij_start+27-1, &
+                                           idiag_bij_start=idiag_Eij_end+1, idiag_bij_end=idiag_bij_start+27-1
 !
   integer, dimension(4) :: idiag_alp11h, idiag_eta123h            
   equivalence(idiags(idiag_base_end+1),idiag_alp11h), (idiags(idiag_base_end+5),idiag_eta123h)      ! alias names for selected diagnostics
@@ -285,10 +289,10 @@ module Testfield
 !
       if (need_output) call calc_coefficients(idiags(1:idiag_base_end),idiags_z(1:idiag_base_end),idiags_xz(1:idiag_base_end), &
                                               idiags(idiag_Eij_start:idiag_Eij_end),idiags_z(idiag_Eij_start:idiag_Eij_end),   &
-                                              idiags_xz(idiag_Eij_start:idiag_Eij_end), &
+                                              idiags_xz(idiag_Eij_start:idiag_Eij_end), idiags_xz(idiag_bij_start:idiag_bij_end), &
                                               idiags(idiag_base_end+1:idiag_base_end+4),idiags(idiag_base_end+5:idiag_base_end+8),&
                                               uxbtestm,Minv,ysum_mn_name_xz_npar,xysum_mn_name_z_npar,  &
-                                              twod_need_1d,twod_need_2d,needed2d,ny)
+                                              twod_need_1d,twod_need_2d,needed2d,ny,f(:,:,:,iaatest)
 !
     endsubroutine testfield_after_boundary
 !***********************************************************************

@@ -709,9 +709,9 @@ module Testfield_general
 
       endsubroutine calc_inverse_matrix
 !***********************************************************************
-    subroutine calc_coefficients(idiags,idiags_z,idiags_xz,idiags_Eij,idiags_Eij_z,idiags_Eij_xz, &
+    subroutine calc_coefficients(idiags,idiags_z,idiags_xz,idiags_Eij,idiags_Eij_z,idiags_Eij_xz, idiags_bij_xz, &
                                  idiag_alp11h,idiag_eta123h, &
-                                 uxbtestm,Minv,ysum_xz,xysum_z,twod_need_1d,twod_need_2d,needed2d,ny)
+                                 uxbtestm,Minv,ysum_xz,xysum_z,twod_need_1d,twod_need_2d,needed2d,ny,f)
 !  
 !  calculation of the turbulent coefficients for an average over one coordinate.
 !  Note: symbols were chosen such as it were to be used in testfield_xz, that is
@@ -735,15 +735,16 @@ module Testfield_general
     Use Cdata, only: nghost, l1davgfirst, l2davgfirst, lfirstpoint, ldiagnos, lroot
     Use Sub, only: fourier_single_mode
 !
-    integer, dimension(:),      intent(in):: idiags, idiags_z, idiags_xz, idiags_Eij, idiags_Eij_z, idiags_Eij_xz, &
+    integer, dimension(:),      intent(in):: idiags, idiags_z, idiags_xz, idiags_Eij, idiags_Eij_z, idiags_Eij_xz, idiags_bij_xz, &
                                              idiag_alp11h, idiag_eta123h
     logical, dimension(2),      intent(in):: needed2d
     logical, dimension(:),      intent(in):: twod_need_1d, twod_need_2d
     real,    dimension(:,:,:,:),intent(in):: uxbtestm, Minv
     external                              :: ysum_xz,xysum_z
     integer                    ,intent(in):: ny
+    real, dimension(mx,my,mz,3*njtest),intent(IN)   :: f      
 !
-    integer :: i, j, ij, count, nl, jtest, nx, nz, n, n1, n2
+    integer :: i, j, ij, count, nl, jtest, nx, nz, n, n1, n2, m
     real, dimension(2,size(uxbtestm,1)) :: temp_fft_z
     real, dimension(2,2) :: temp_fft
     real, dimension (:,:,:), allocatable :: temp_array
@@ -774,6 +775,17 @@ module Testfield_general
 
         lfirstpoint=.false.
       enddo
+
+      do i=1,size(idiags_bij_xz),3
+      do n=n1,n2 
+      do m=m1,m2 
+      do j=1,3
+        call ysum_xz(f(:,m,n,i+j-1),n,idiags_bij_xz(i+j-1))
+      enddo
+      enddo
+      enddo
+      enddo
+
     endif
 !
     if (ldiagnos) then
