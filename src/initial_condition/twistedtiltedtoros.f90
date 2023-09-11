@@ -176,7 +176,7 @@ module InitialCondition
 !
 !  Initialize entropy.
 !
-      use EquationOfState, only: cs20
+      use EquationOfState, only: cs20, get_gamma_etc
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: cp,cp1,lnTT0,gamma,gamma_m1
