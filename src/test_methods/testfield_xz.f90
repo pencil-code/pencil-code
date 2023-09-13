@@ -156,6 +156,7 @@ module Testfield
 !                  calc_coefficients, completed
 !  20-oct-13/MR  : cases for itestfield='linear','1-alt' added
 !
+      use Diagnostics, only: ysum_mn_name_xz_npar
       use Hydro, only: uumxz
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -177,6 +178,8 @@ module Testfield
         case ('4','linear'); call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest4)
         case default       ; call fatal_error('daatest_dt','undefined itestfield')
       endselect
+
+      call calc_2d_diagnostics_testfield(f,n,idiags(idiag_bij_start),ysum_mn_name_xz_npar)
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -289,10 +292,10 @@ module Testfield
 !
       if (need_output) call calc_coefficients(idiags(1:idiag_base_end),idiags_z(1:idiag_base_end),idiags_xz(1:idiag_base_end), &
                                               idiags(idiag_Eij_start:idiag_Eij_end),idiags_z(idiag_Eij_start:idiag_Eij_end),   &
-                                              idiags_xz(idiag_Eij_start:idiag_Eij_end), idiags_xz(idiag_bij_start:idiag_bij_end), &
+                                              idiags_xz(idiag_Eij_start:idiag_Eij_end), &
                                               idiags(idiag_base_end+1:idiag_base_end+4),idiags(idiag_base_end+5:idiag_base_end+8),&
                                               uxbtestm,Minv,ysum_mn_name_xz_npar,xysum_mn_name_z_npar,  &
-                                              twod_need_1d,twod_need_2d,needed2d,ny,f(:,:,:,iaatest)
+                                              twod_need_1d,twod_need_2d,needed2d,ny)
 !
     endsubroutine testfield_after_boundary
 !***********************************************************************
