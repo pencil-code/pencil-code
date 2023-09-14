@@ -222,7 +222,7 @@ module Testfield
       use Diagnostics, only: ysum_mn_name_xz_npar,xysum_mn_name_z_npar
       use Hydro, only: calc_pencils_hydro
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx,3) :: btest,uxbtest
       integer :: jtest,j, nl
@@ -238,8 +238,7 @@ module Testfield
 !
       headtt_save=headtt
       fac=1./nygrid
-      need_output = (ldiagnos .and. needed2d(1)) .or. &
-                    (l2davgfirst .and. needed2d(2))
+      need_output = (ldiagnos .and. needed2d(1)) .or. (l2davgfirst .and. needed2d(2))
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -272,11 +271,9 @@ module Testfield
 !
               do j=1,3
                 if (lflucts_with_xyaver) then
-                  uxbtestm(:,nl,j,jtest)=spread(sum( &
-                    uxbtestm(:,nl,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
+                  uxbtestm(:,nl,j,jtest) = spread(sum(uxbtestm(:,nl,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
                 else
-                  uxbtestm(:,nl,j,jtest)= &
-                    uxbtestm(:,nl,j,jtest)+fac*uxbtest(:,j)
+                  uxbtestm(:,nl,j,jtest) = uxbtestm(:,nl,j,jtest)+fac*uxbtest(:,j)
                 endif
               enddo
               headtt=.false.

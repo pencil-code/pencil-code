@@ -217,7 +217,7 @@ module Testfield
       use Sub, only: curl, cross_mn, finalize_aver
       use Hydro, only:  calc_pencils_hydro
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx,3) :: btest,uxbtest
       integer :: jtest,j,ml
@@ -225,7 +225,6 @@ module Testfield
       real :: fac
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
-!
       logical :: need_output
 !
 !  In this routine we will reset headtt after the first pencil,
@@ -233,8 +232,7 @@ module Testfield
 !
       headtt_save=headtt
       fac=1./nzgrid
-      need_output = (ldiagnos .and. needed2d(1)) .or. &
-                    (l2davgfirst .and. needed2d(2))
+      need_output = (ldiagnos .and. needed2d(1)) .or. (l2davgfirst .and. needed2d(2))
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -257,7 +255,7 @@ module Testfield
 !
             do n=n1,n2
 !
-              call curl(f,iaxtest,btest)
+              call curl(f,iaxtest,btest)    ! communication finished?
               call calc_pencils_hydro(f,p,lpenc_loc)
 !
 ! U x btest = (\mean{U} + u') x btest
@@ -271,11 +269,9 @@ module Testfield
 !
               do j=1,3
                 if (lflucts_with_xyaver) then    !!! TBC
-                  uxbtestm(:,ml,j,jtest)=spread(sum( &
-                    uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
+                  uxbtestm(:,ml,j,jtest) = spread(sum(uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
                 else
-                  uxbtestm(:,ml,j,jtest)= &
-                    uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j)
+                  uxbtestm(:,ml,j,jtest) = uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j)
                 endif
               enddo
               headtt=.false.
