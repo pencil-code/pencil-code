@@ -17,6 +17,8 @@ pro pc_read_ode, file=file, object=obj
   readu, 11, lengs                     
   f_ode=make_array(nvar, type=type_idl)
   readu, 11, f_ode
+  t=0d0
+  readu, 11, t
   close, 11
 
   cmd='obj=create_struct('
@@ -25,8 +27,7 @@ pro pc_read_ode, file=file, object=obj
     iend(i+1)=iend(i)+lengs(i)
     cmd += '"'+strtrim(names(i))+'",f_ode(iend('+strtrim(string(i),2)+')+1:iend('+strtrim(string(i+1),2)+')),'
   endfor
-  cmd += ')'
-  cmd = cmd.replace(',)',')')
+  cmd += '"t",t)'
   
   res = execute(cmd)
 end
