@@ -27,6 +27,7 @@ module FArrayManager
   public :: farray_register_global
   public :: farray_register_ode
   public :: farray_finalize_ode
+  public :: farray_retrieve_metadata_ode
   public :: farray_use_variable
   public :: farray_index_append
   public :: farray_index_reset
@@ -92,6 +93,24 @@ module FArrayManager
 ! The head of the list (initially empty)
 !
   type (farray_contents_list), pointer :: thelist
+!
+  type ode_vars_list
+!
+! ode variable metadata
+!
+    character (len=30) :: varname
+    integer            :: narray
+    type(pp), dimension(:), pointer :: ivar
+!
+! Linked list link to next list element
+!
+    type (ode_vars_list), pointer :: next
+    type (ode_vars_list), pointer :: previous
+  endtype ode_vars_list
+!
+! The head of the list (initially empty)
+!
+  type (ode_vars_list), pointer :: odelist
 !
 ! Keep track of which spaces are currently in use.
 !
@@ -335,13 +354,39 @@ module FArrayManager
 
     use General, only: ioptest
 
-    character (len=*), intent(in) :: varname
-    integer, intent(out)  :: ivar
-    integer, optional, intent(in)  :: nvar
+    character (len=*),intent(in) :: varname
+    integer, target,  intent(out):: ivar
+    integer, optional,intent(in) :: nvar
 
-      ivar = n_odevars+1
-      n_odevars = n_odevars+ioptest(nvar,1)
+    type (ode_vars_list), pointer :: item, new
+    integer :: nvar_
 
+      item => find_by_name_ode(varname)
+!
+! Already existing variable.
+!
+      if (associated(item)) then
+        if (item%narray/=nvar) then
+          call warning("farray_register_ode", &
+            "Registering "//trim(varname)//" fails: Name already exists but with a different "// &
+            "array size")
+        elseif (.not.lreloading) then
+          call warning("farray_register_ode","Registering "//trim(varname)//" fails: Name already exists")
+        endif
+      else
+!
+! New variable.
+!
+        nvar_=ioptest(nvar,1) 
+        call new_odeitem_atstart(odelist,new=new)
+        new%varname     = varname
+        new%narray      = nvar_
+        allocate(new%ivar(nvar_))
+        new%ivar(1)%p => ivar
+        ivar = n_odevars+1
+        n_odevars = n_odevars+nvar_
+
+      endif
     endsubroutine farray_register_ode
 !***********************************************************************
     subroutine farray_finalize_ode
@@ -808,6 +853,49 @@ module FArrayManager
 !
     endfunction find_by_name
 !***********************************************************************
+    function find_by_name_ode(varname)
+!
+      character (len=*) :: varname
+      type (ode_vars_list), pointer :: find_by_name_ode
+!
+      intent(in) :: varname
+!
+      find_by_name_ode=>odelist
+      do while (associated(find_by_name_ode))
+!
+        if (find_by_name_ode%varname==varname) return
+        find_by_name_ode=>find_by_name_ode%next
+      enddo
+
+      NULLIFY(find_by_name_ode)
+      return
+!
+    endfunction find_by_name_ode
+!***********************************************************************
+    function farray_retrieve_metadata_ode(names,lengs) result (num)
+
+      character(LEN=*), dimension(n_odevars) :: names
+      integer, dimension(n_odevars) :: lengs
+      integer :: num
+
+      type (ode_vars_list), pointer :: item
+      integer :: i
+
+      item=>odelist
+      i=n_odevars
+      do while (associated(item))
+!
+        names(i) = item%varname
+        lengs(i) = item%narray
+        item=>item%next
+        i=i-1
+!
+      enddo
+
+      num=n_odevars-i
+
+    endfunction farray_retrieve_metadata_ode    
+!***********************************************************************
     function farray_size_by_name(varname)
 !
       character (len=*) :: varname
@@ -939,6 +1027,24 @@ module FArrayManager
       if (present(new)) new => new_
 !
     endsubroutine new_item_atstart
+!***********************************************************************
+    subroutine new_odeitem_atstart(list,new)
+!
+!  Insert new item at beginning of ode vars list
+!
+!  13-sep-2023/MR: aped from new_item_atstart
+!
+      type (ode_vars_list), pointer :: list
+      type (ode_vars_list), optional, pointer :: new
+      type (ode_vars_list), pointer :: new_
+!
+      allocate(new_)
+      new_%next => list
+      nullify(new_%previous)
+      list => new_
+      if (present(new)) new => new_
+!
+    endsubroutine new_odeitem_atstart
 !***********************************************************************
     subroutine farray_clean_up()
 !

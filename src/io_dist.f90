@@ -208,9 +208,9 @@ module Io
 !
       if (lserial_io) call end_serialize
       icall=modulo(icall+1,2)
-!
-      if (lode) call output_ode(file)
 
+      if (lode) call output_ode(file)
+!
     endsubroutine output_snap
 !***********************************************************************
     subroutine output_snap_finalize
@@ -417,9 +417,14 @@ module Io
 !
 !  08-Sep-2023/MR: coded
 !
+      use FarrayManager, only: farray_retrieve_metadata_ode
+
       character (len=*) :: file
 !
-      character (len=7) :: file_
+      character(len=7) :: file_
+      character(LEN=30), dimension(n_odevars) :: names
+      integer, dimension(n_odevars) :: lengs
+      integer :: num,lun
 !
       if (.not. lroot) return
 !
@@ -429,11 +434,17 @@ module Io
         file_='ode.dat'
       endif
 
-      open(lun_output,FILE=trim(directory_collect)//'/'//trim(file_),FORM='unformatted')
-      write(lun_output) n_odevars
-      if (n_odevars > 0) write(lun_output) f_ode
-      write(lun_output) t
-      close(lun_output)
+      lun = lun_output+10
+      open(lun,FILE=trim(directory_collect)//'/'//trim(file_),FORM='unformatted')
+      if (n_odevars > 0) then
+        num = farray_retrieve_metadata_ode(names,lengs)
+        write(lun) n_odevars,num
+        write(lun) names(n_odevars-num+1:)
+        write(lun) lengs(n_odevars-num+1:)
+        write(lun) f_ode
+        write(lun) t
+      endif
+      close(lun)
 
       if (ip<=10) print*,'written ODE snapshot ', trim (file_)
 
