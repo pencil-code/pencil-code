@@ -475,8 +475,7 @@ module Special
       advec2    = advec2 + advec_cg2
     endif
 !
-    call keep_compiler_quiet(f,df)
-    call keep_compiler_quiet(p)
+    call keep_compiler_quiet(f)
 !
   endsubroutine special_calc_hydro
 !***********************************************************************

@@ -251,7 +251,6 @@ module Magnetic
   real, dimension(mz) :: coskz,sinkz,eta_z,geta_z
   real, dimension(mx) :: eta_x,geta_x
   real, dimension(my) :: eta_y,geta_y
-  real, dimension(nx) :: va2max_beta
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
@@ -2549,7 +2548,7 @@ module Magnetic
       logical, dimension(:),              intent(in)   :: lpenc_loc
 !
 !      real, dimension (nx,3) :: bb_ext_pot
-      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr
+      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, va2max_beta
       real, dimension(3) :: B_ext
       real :: c,s
       integer :: i,j,ix
@@ -2801,8 +2800,7 @@ module Magnetic
         if (betamin_jxb>0) then
           va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
           if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
-          rho1_jxb = rho1_jxb &
-                   * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+          rho1_jxb = rho1_jxb * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
       endif
@@ -3051,6 +3049,7 @@ module Magnetic
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: uj,aj,phi,dub,dob
       real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
+      real, dimension (nx) :: va2max_beta
       real, dimension (nx) :: sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb,fxbx
       real, dimension (nx) :: b2t,bjt,jbt
@@ -3775,8 +3774,7 @@ module Magnetic
           if (betamin_jxb>0) then
             va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
             if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
-            rho1_jxb = rho1_jxb &
-                     * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
           advec_va2=sum((p%bb*dline_1)**2,2)*(mu01*rho1_jxb)
         endif

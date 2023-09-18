@@ -131,7 +131,6 @@ module Special
 !  19-feb-2019/axel: coded
 !
       use FArrayManager
-      use SharedVariables, only: put_shared_variable
 !
 !  Identify CVS/SVN version information.
 !
