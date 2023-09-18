@@ -439,9 +439,11 @@ module Io
       if (n_odevars > 0) then
         num = farray_retrieve_metadata_ode(names,lengs)
         write(lun) n_odevars,num
-        write(lun) names(n_odevars-num+1:)
-        write(lun) lengs(n_odevars-num+1:)
-        write(lun) f_ode
+        if (n_odevars>0) then
+          write(lun) names(n_odevars-num+1:)
+          write(lun) lengs(n_odevars-num+1:)
+          write(lun) f_ode
+        endif
         write(lun) t
       endif
       close(lun)
@@ -874,10 +876,17 @@ module Io
 !
 !  08-Sep-2023/MR: coded
 !
+      use FarrayManager, only: farray_retrieve_metadata_ode
+
       character (len=*), intent(IN) :: file
 
-      integer :: n_in
       character (len=7) :: file_
+      integer :: n_in, num_in, num
+      character(LEN=30), dimension(n_odevars) :: names
+      character(LEN=30), dimension(:), allocatable :: names_in
+      integer, dimension(n_odevars) :: lengs
+      integer, dimension(:), allocatable :: lengs_in
+      double precision :: t_in
 
       if (.not. lroot) return
 !
@@ -890,9 +899,24 @@ module Io
       if (file_exists(trim(directory_collect)//'/'//trim(file_))) then
         if (ip<=8) print*, 'read ODE snapshot', trim (file_)
         open(lun_input,FILE=trim(directory_collect)//'/'//trim(file_),FORM='unformatted')
-        read(lun_input) n_in
-        if (n_in /= n_odevars) call fatal_error("input_ode","dimensions differ between file and 'f_ode' array")
-        if (n_in > 0) read(lun_input) f_ode
+        num = farray_retrieve_metadata_ode(names,lengs)
+
+        read(lun_input) n_in, num_in
+        if (n_in /= n_odevars) call fatal_error("input_ode", &
+                               "numbers of slots differ between "//trim(file)//" and 'f_ode' array")
+        if (num_in /= num) call fatal_error("input_ode", &
+                                "numbers of variables differ between "//trim(file)//" and 'f_ode' array")
+        if (n_in > 0) then
+          allocate(lengs_in(num), names_in(num))
+          read(lun_input) names_in
+          if (any(names_in /= names(n_odevars-num+1:))) call fatal_error("input_ode","variable names differ")
+          read(lun_input) lengs_in
+          if (any(lengs_in /= lengs(n_odevars-num+1:))) call fatal_error("input_ode","variable lengths differ")
+          read(lun_input) f_ode
+        endif
+
+        read(lun_input) t_in
+        if (t_in/=t) call fatal_error("input_ode","times differ between "//trim(file)//" and var.dat")
         close(lun_input)
       else
         call warning('input_ode','no ODE data available')
