@@ -131,7 +131,7 @@ module Io
       character (len=30) :: vname, vnm
       integer, save :: icall=0
 !
-      t_sp = real (t)
+      t_sp = real(t)
 !
       if (lserial_io) call start_serialize
       if (present(file)) then
@@ -884,7 +884,7 @@ module Io
       character(LEN=30), dimension(:), allocatable :: names_in
       integer, dimension(n_odevars) :: lengs
       integer, dimension(:), allocatable :: lengs_in
-      double precision :: t_in
+      real :: t_in
 
       if (.not. lroot) return
 !
@@ -914,7 +914,7 @@ module Io
         endif
 
         read(lun_input) t_in
-        if (t_in/=t) call fatal_error("input_ode","times differ between "//trim(file)//" and var.dat")
+        if (t_in/=real(t)) call fatal_error("input_ode","times differ between "//trim(file)//" and var.dat")
         close(lun_input)
       else
         call warning('input_ode','no ODE data available')
@@ -1238,7 +1238,7 @@ module Io
 !
 !  Read globals snapshot file in double precision
 !
-!  23-oct-13/MR  : derived from input_globals
+!  23-oct-13/MR: derived from input_globals
 !
       real(KIND=rkind8), dimension (:,:,:,:) :: a
 !

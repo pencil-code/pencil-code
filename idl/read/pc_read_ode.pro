@@ -17,7 +17,7 @@ pro pc_read_ode, file=file, object=obj
   readu, 11, lengs                     
   f_ode=make_array(nvar, type=type_idl)
   readu, 11, f_ode
-  t=0d0
+  t=zero
   readu, 11, t
   close, 11
 
