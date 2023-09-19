@@ -931,6 +931,11 @@ module Energy
         lpenc_requested(i_del2lnTT)=.true.
       endif
 !
+      if (lcalc_planet_atmosphere) then
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_pp)=.true.
+      endif
+!
       if (ladvection_temperature) then
         if (ltemperature_nolog) then
           lpenc_requested(i_ugTT)=.true.
@@ -2016,18 +2021,47 @@ module Energy
     subroutine calc_planet_atmosphere(df,p)
 !
 !  08-sep-23/hongzhe: specific things for planet atmospheres.
+!                     Waiting Kuan to fill in.
 !                     Reference: Rogers & Komacek (2014)
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: Teq
-      real :: taueq
+      logical, save :: lread_TP_profile=.true.
+      real, dimension(nx) :: tmp=0.,Teq=0.,taueq=1.
+      real :: mu=0.
+      integer :: ix
 !
-!  for test purpose now
+!  these numbers are hard-coded for now
 !
-      Teq = x(l1:l2)**2. * sin(y(m))**4. * cos(z(n))**2.
-      taueq = 0.1
+      real :: lonss=0., latss=0.
+      real :: Tbot=0., Ttop=1000.
+!
+!  read in Tref
+!
+      if (lread_TP_profile) then
+        !  read file for Tref
+        lread_TP_profile=.false.
+      endif
+!
+!  interpolation for Tref
+!
+
+!
+!  get mu
+!
+      mu = cos(lonss-y(m))**2.*sin(latss+z(n))**2.
+!
+!  choose Teq and taueq profiles
+!
+      !Teq = x(l1:l2)**2. * sin(y(m))**4. * cos(z(n))**2.
+      tmp = 100.+(Tbot+Ttop*abs(log(p%pp)))*mu
+      do ix=1,nx
+        Teq(ix) = tmp(ix) * x(ix+nghost)**2 !  * function of Tref(ix)
+      enddo
+!
+      !taueq = 0.1
+      taueq = 0.1+abs(log(p%pp))
 !
       df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - (p%TT-Teq)/taueq
 !
