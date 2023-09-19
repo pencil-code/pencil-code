@@ -49,6 +49,11 @@ module Io
 !  integer, dimension(io_dims) :: local_size, local_start, global_size, global_start, subsize
   integer, dimension (:), allocatable :: local_size, local_start, global_size, global_start, subsize
 !
+  interface input_proc_bounds
+    module procedure input_proc_bounds_double
+    module procedure input_proc_bounds_single
+  endinterface
+!
   contains
 !***********************************************************************
     subroutine register_io
@@ -435,6 +440,9 @@ module Io
             write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
           endif
         endif
+
+        if (lode) call output_ode(file)
+
       endif
 !
     endsubroutine output_snap
@@ -997,8 +1005,11 @@ module Io
         endif
         call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
         t = t_sp
-      endif
 !
+        if (lode) call input_ode(file)
+
+      endif
+
     endsubroutine input_snap
 !***********************************************************************
     subroutine input_snap_finalize
@@ -2159,7 +2170,7 @@ module Io
 !
     endsubroutine rgrid
 !***********************************************************************
-    subroutine wproc_bounds(file)
+    subroutine wproc_bounds_mpi(file)
 !
 ! Export processor boundaries to file.
 !
@@ -2172,20 +2183,20 @@ module Io
 ! Open file.
 !
       call MPI_FILE_OPEN(MPI_COMM_WORLD, trim(file), ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds", "could not open file " // trim(file))
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds_mpi", "could not open file "//trim(file)//" for writing")
 !
 ! Write proc[xyz]_bounds.
 !
       wproc: if (lroot) then
 !
         call MPI_FILE_WRITE(handle, procx_bounds, nprocx + 1, mpi_precision, status, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds", "could not write procx_bounds")
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds_mpi", "could not write procx_bounds")
 !
         call MPI_FILE_WRITE(handle, procy_bounds, nprocy + 1, mpi_precision, status, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds", "could not write procy_bounds")
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds_mpi", "could not write procy_bounds")
 !
         call MPI_FILE_WRITE(handle, procz_bounds, nprocz + 1, mpi_precision, status, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds", "could not write procz_bounds")
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds_mpi", "could not write procz_bounds")
 !
       endif wproc
       call fatal_error_local_collect()
@@ -2193,11 +2204,11 @@ module Io
 ! Close file.
 !
       call MPI_FILE_CLOSE(handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds", "could not close file " // trim(file))
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds_mpi", "could not close file " // trim(file))
 !
-    endsubroutine wproc_bounds
+    endsubroutine wproc_bounds_mpi
 !***********************************************************************
-    subroutine rproc_bounds(file)
+    subroutine rproc_bounds_mpi(file)
 !
 ! Import processor boundaries from file.
 !
@@ -2210,27 +2221,29 @@ module Io
 ! Open file.
 !
       call MPI_FILE_OPEN(MPI_COMM_WORLD, trim(file), MPI_MODE_RDONLY, io_info, handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not open file " // trim(file))
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not open file "//trim(file)//" for reading")
 !
       call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, mpi_precision, mpi_precision, "native", io_info, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not set view")
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not set view")
 !
 ! Read proc[xyz]_bounds.
 !
       call MPI_FILE_READ_ALL(handle, procx_bounds, nprocx + 1, mpi_precision, status, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not read procx_bounds")
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not read procx_bounds")
 !
       call MPI_FILE_READ_ALL(handle, procy_bounds, nprocy + 1, mpi_precision, status, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not read procy_bounds")
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not read procy_bounds")
 !
       call MPI_FILE_READ_ALL(handle, procz_bounds, nprocz + 1, mpi_precision, status, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds", "could not read procz_bounds")
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not read procz_bounds")
 !
 ! Close file.
 !
       call MPI_FILE_CLOSE(handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds", "could not close file " // trim(file))
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not close file " // trim(file))
 !
-    endsubroutine rproc_bounds
+    endsubroutine rproc_bounds_mpi
+!***********************************************************************
+    include 'io_common.inc'
 !***********************************************************************
 endmodule Io

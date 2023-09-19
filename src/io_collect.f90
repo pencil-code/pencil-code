@@ -41,6 +41,11 @@ module Io
 !
   integer :: persist_last_id=-max_int
 !
+  interface input_proc_bounds
+    module procedure input_proc_bounds_double
+    module procedure input_proc_bounds_single
+  endinterface
+!
   contains
 !***********************************************************************
     subroutine register_io
@@ -57,7 +62,7 @@ module Io
       if (ldistribute_persist .and. .not. lseparate_persist) &
           call fatal_error ('io_collect', "For distibuted persistent variables, this module needs lseparate_persist=T")
       if (lread_from_other_prec) &
-        call warning('register_io','Reading from other precision not implemented')
+        call warning('register_io','Reading from other precision not fully implemented')
 !
       lmonolithic_io = .true.
 !
@@ -273,6 +278,8 @@ module Io
           write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
           deallocate (gx, gy, gz)
         endif
+
+        if (lode) call output_ode(file)
       endif
 !
     endsubroutine output_snap
@@ -412,30 +419,6 @@ module Io
 !
     endsubroutine output_part_finalize
 !***********************************************************************
-    subroutine output_ode(file)
-!
-!  Write ODE snapshot file with time.
-!
-!  08-Sep-2023/MR: coded
-!
-      character (len=*), intent(in) :: file
-
-      call warning('output_ode','ODE var writing not implemented')
-
-    endsubroutine output_ode
-!***********************************************************************
-    subroutine input_ode(file)
-!
-!  Read ODE snapshot file with time.
-!
-!  08-Sep-2023/MR: coded
-!
-      character (len=*), intent(in) :: file
-
-      call warning('input_ode','ODE var reading not implemented')
-
-    endsubroutine input_ode
-!***********************************************************************
     subroutine output_pointmass(file, labels, fq, mv, nc)
 !
 !  Write pointmass snapshot file with time.
@@ -537,6 +520,8 @@ module Io
         endif
         call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
         t = t_sp
+
+        if (lode) call input_ode(file)
       endif
 !
     endsubroutine input_snap
@@ -1572,53 +1557,6 @@ module Io
 !
     endsubroutine rgrid
 !***********************************************************************
-    subroutine wproc_bounds(file)
-!
-!  Export processor boundaries to file.
-!
-!  22-Feb-2012/PABourdin: adapted from io_dist
-!  27-nov-2020/ccyang: make the file single
-!
-      character(len=*), intent(in) :: file
-!
-      integer :: ierr
-!
-!  Only one process is needed.
-!
-      if (.not. lroot) return
-!
-!  Write proc[xyz]_bounds.
-!
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
-      if (ierr /= 0) call fatal_error("wproc_bounds", "Cannot open " // trim(file))
-      write (lun_output) procx_bounds
-      write (lun_output) procy_bounds
-      write (lun_output) procz_bounds
-      close (lun_output)
-!
-    endsubroutine wproc_bounds
-!***********************************************************************
-    subroutine rproc_bounds(file)
-!
-!   Import processor boundaries from file.
-!
-!   22-Feb-2012/PABourdin: adapted from io_dist
-!
-      use Mpicomm, only: stop_it
-!
-      character (len=*) :: file
-!
-      integer :: ierr
-!
-      open (lun_input, FILE=file, FORM='unformatted', IOSTAT=ierr, status='old')
-      if (ierr /= 0) call stop_it ( &
-          "Cannot open " // trim(file) // " (or similar) for reading" // &
-          " -- is data/ visible from all nodes?")
-      read (lun_input) procx_bounds
-      read (lun_input) procy_bounds
-      read (lun_input) procz_bounds
-      close (lun_input)
-!
-    endsubroutine rproc_bounds
+    include 'io_common.inc'
 !***********************************************************************
 endmodule Io

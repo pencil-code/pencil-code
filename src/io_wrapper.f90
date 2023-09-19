@@ -125,6 +125,21 @@ module Io
 
     endsubroutine input_snap
 !***********************************************************************
+    subroutine input_ode(file)
+!
+      use Io_in, only: input_ode_in => input_ode
+      use Io_out, only: input_ode_out => input_ode
+!
+      character (len=*), intent(in) :: file
+
+      if (lswitched_to_out) then
+        call input_ode_out(file)
+      else
+        call input_ode_in(file)
+      endif
+
+    endsubroutine input_ode
+!***********************************************************************
     subroutine input_snap_finalize
 !
       use Io_in, only: input_snap_finalize_in => input_snap_finalize
@@ -327,6 +342,21 @@ module Io
       call output_snap_(a,nv1,nv2,file)
 !
     endsubroutine output_snap
+!***********************************************************************
+    subroutine output_ode(file)
+!
+      use Io_in, only: output_ode_in => output_ode
+      use Io_out, only: output_ode_out => output_ode
+!
+      character (len=*), intent(in) :: file
+        
+      if (lswitched_to_out) then
+        call output_ode_out(file)
+      else
+        call output_ode_in(file)
+      endif
+
+    endsubroutine output_ode
 !***********************************************************************
     subroutine output_snap_finalize
 
@@ -722,4 +752,4 @@ module Io
 !
     endfunction write_persist_torus_rect
 !***********************************************************************
-end module Io
+endmodule Io
