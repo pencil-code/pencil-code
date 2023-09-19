@@ -151,6 +151,7 @@
 !  08-Sep-2023/MR: coded
 !
       use FarrayManager, only: farray_retrieve_metadata_ode
+      use File_Io, only: file_exists
 
       character (len=*), intent(IN) :: file
 
