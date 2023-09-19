@@ -439,12 +439,10 @@ module Io
       if (n_odevars > 0) then
         num = farray_retrieve_metadata_ode(names,lengs)
         write(lun) n_odevars,num
-        if (n_odevars>0) then
-          write(lun) names(n_odevars-num+1:)
-          write(lun) lengs(n_odevars-num+1:)
-          write(lun) f_ode
-        endif
-        write(lun) t
+        write(lun) names(n_odevars-num+1:)
+        write(lun) lengs(n_odevars-num+1:)
+        write(lun) f_ode
+        write(lun) real(t)
       endif
       close(lun)
 
