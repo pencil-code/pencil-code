@@ -10,7 +10,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
-! PENCILS PROVIDED cc; cc1; gcc(3)
+! PENCILS PROVIDED cc; cc1; gcc(3,0)
 !
 !***************************************************************
 module Pscalar
@@ -50,8 +50,6 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      cc_spec=.false.
-
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_pscalar
