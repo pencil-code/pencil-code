@@ -151,7 +151,8 @@ module Special
       lmu5divu_term, lmuSdivu_term, &
       reinitialize_mu5, rescale_mu5, gammaf5_tdep, t1_gammaf5, t2_gammaf5, &
       ldiffmu5_tdep, diffmu5_tdep_toffset, &
-      diffmu5_tdep_t0, diffmu5_tdep_exponent
+      diffmu5_tdep_t0, diffmu5_tdep_exponent, &
+      lupw_mu5, lupw_muS
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
