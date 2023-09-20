@@ -19,7 +19,6 @@
 module Polymer
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet, transpose_mn
   use Messages
   use Sub
@@ -148,8 +147,7 @@ module Polymer
 !
 !  Catch unknown values.
 !
-            call fatal_error('init_poly', &
-                'init_poly value "' // trim(initpoly(j)) // '" not recognised')
+            call fatal_error('init_poly','no such initpoly: '//trim(initpoly(j)))
         endselect
 !
 !  End loop over initial conditions.
@@ -168,12 +166,11 @@ module Polymer
           f(:,:,:,ipoly_fr) = 1.
         case ('FENE-P')
           do iz=1,mz; do iy=1,my; do ix=1,mx
-            rsqr = f(ix,iy,iz,ip11)+f(ix,iy,iz,ip22)+&
-                   f(ix,iy,iz,ip33)
+            rsqr = f(ix,iy,iz,ip11) + f(ix,iy,iz,ip22) + f(ix,iy,iz,ip33)
             f(ix,iy,iz,ipoly_fr) = (fenep_L**2-3)/(fenep_L**2-rsqr)
           enddo; enddo; enddo
         case default
-          call fatal_error('init_poly','no such polymer model')
+          call fatal_error('init_poly','no such poly_model: '//trim(poly_model))
       endselect
 !
     endsubroutine init_poly
@@ -212,14 +209,11 @@ module Polymer
 !
       select case(poly_algo)
         case('simple')
-          if (lroot) print*, 'poly_algo:no more pencils needed now'
         case('cholesky')
-          call fatal_error('pencil_criteria_polymer', &
-              'poly_algo: cholesky decomposition is not implemented yet')
+          call not_implemented('pencil_criteria_polymer','poly_algo: cholesky decomposition')
         case('nothing')
           call fatal_error('pencil_criteria_polymer', &
-              'poly_algo: please chosse an algorithm to solve the '// &
-              'polymer equations')
+              'poly_algo: please chosse an algorithm to solve the polymer equations')
       endselect
 !
 ! Diagnostic pencils
@@ -286,9 +280,8 @@ module Polymer
 ! Cijk
       if (lpencil(i_Cijk)) call gijl_symmetric(f,ipoly,p%Cijk)
 ! u_dot_gradC
-      if (lpencil(i_u_dot_gradC))&
-          call u_dot_grad_mat(f,ipoly,p%Cijk,p%uu,p%u_dot_gradC, &
-            UPWIND=lupw_poly)
+      if (lpencil(i_u_dot_gradC)) &
+          call u_dot_grad_mat(f,ipoly,p%Cijk,p%uu,p%u_dot_gradC, UPWIND=lupw_poly)
 !
       select case (poly_model)
         case ('oldroyd-B')
@@ -296,10 +289,8 @@ module Polymer
         case ('FENE-P')
           call calc_pencils_fene_p(f,p)
         case default
-          call fatal_error('calc_pencils_polymer','no such polymer model')
+          call fatal_error('calc_pencils_polymer','no such poly_model: '//trim(poly_model))
       endselect
-!
-      if (ldiagnos) call polymer_diagnostic(f,p)
 
     endsubroutine calc_pencils_polymer
 !***********************************************************************
@@ -350,11 +341,8 @@ module Polymer
       call keep_compiler_quiet(f)
 !
 ! f(r_p)
-!
       if (lpencil(i_fr)) p%fr(:) = 1.
-!
 ! frC
-!
       if (lpencil(i_frC)) p%frC = p%poly
 ! div C
       if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
@@ -365,24 +353,23 @@ module Polymer
 !
     endsubroutine calc_pencils_oldroyd_b
 !***********************************************************************
-    subroutine polymer_diagnostic(f,p)
+    subroutine calc_diagnostics_polymer(f,p)
 !
 !  Calculates the diagnostic quantities for polymer module
 !  Most basic pencils should come first, as others may depend on them.
 !
-      use Diagnostics, only: sum_mn_name
+      use Diagnostics, only: sum_mn_name, max_mn_name
       use Sub, only: max_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      call keep_compiler_quiet(f)
-!   Always calculate the maximum value of fr
-      call  max_mn(p%fr,frmax_local)
-      if (idiag_frmax/=0 ) fname(idiag_frmax) =  frmax_local
-      if (idiag_polytrm/=0)   call sum_mn_name(p%trp,idiag_polytrm)
+      call max_mn_name(p%fr,idiag_frmax)
+      call sum_mn_name(p%trp,idiag_polytrm)
 !
-    endsubroutine polymer_diagnostic
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_diagnostics_polymer
 !***********************************************************************
     subroutine dpoly_dt(f,df,p)
 !
@@ -412,10 +399,8 @@ module Polymer
 !  Add backreaction due to the polymer to momentum equation (default).
 !
       if (lhydro.and.lpolyback) then
-        if (tau_poly/=0.0) then
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ &
-              mu_poly*tau_poly1*p%div_frC
-        endif
+        if (tau_poly/=0.0) &
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) + mu_poly*tau_poly1*p%div_frC
       endif
 !
 !  If we are advecting the polymer (which is default).
@@ -424,8 +409,7 @@ module Polymer
         ipk=0
         do ipi=1,3
           do ipj=ipi,3
-            df(l1:l2,m,n,ipoly+ipk)= df(l1:l2,m,n,ipoly+ipk) - &
-                p%u_dot_gradC(:,ipi,ipj)
+            df(l1:l2,m,n,ipoly+ipk)= df(l1:l2,m,n,ipoly+ipk) - p%u_dot_gradC(:,ipi,ipj)
             ipk=ipk+1
           enddo
         enddo
@@ -443,12 +427,10 @@ module Polymer
       case('simple')
         call simple_dpoly_dt (f,df,p)
       case('cholesky')
-        call fatal_error('pencil_criteria_polymer', &
-            'poly_algo: cholesky decomposition is not implemented yet')
+        call not_implemented('dpoly_dt','poly_algo: cholesky decomposition')
       case('nothing')
-        call fatal_error('pencil_criteria_polymer', &
-            'poly_algo: please chosse an algorithm to solve '// &
-            'the polymer equations')
+        call fatal_error('dpoly_dt', &
+            'poly_algo: please choose an algorithm to solve the polymer equations')
       endselect
 !
 !  polymer diffusion (sometime only for numerical stability)
@@ -473,13 +455,18 @@ module Polymer
         endif
       endif
 !
-! Time step constrant from relaxation time of polymer
+! Time step constraint from relaxation time of polymer
+!
       if (lfirst.and.ldt) then
+!
+        call max_mn(p%fr,frmax_local)
+!MR: max_mn used within the mn-loop produces a "running maximum" - tb simplified?
         trelax_poly=tau_poly/frmax_local
-        if (headtt.or.ldebug) &
-          print*, 'dpoly_dt: max(trelax_poly) =', trelax_poly
+        if (headtt.or.ldebug) print*, 'dpoly_dt: max(trelax_poly) =', trelax_poly
       endif
 !
+      if (ldiagnos) call calc_diagnostics_polymer(f,p)
+
     endsubroutine dpoly_dt
 !***********************************************************************
     subroutine simple_dpoly_dt(f,df,p)
@@ -521,8 +508,7 @@ module Polymer
           call keep_compiler_quiet(f)
         case ('FENE-P')
           do iz=1,mz; do iy=1,my; do ix=1,mx
-            rsqr = f(ix,iy,iz,ip11)+f(ix,iy,iz,ip22)+&
-                f(ix,iy,iz,ip33)
+            rsqr = f(ix,iy,iz,ip11) + f(ix,iy,iz,ip22) + f(ix,iy,iz,ip33)
             f(ix,iy,iz,ipoly_fr) = (fenep_L**2-3)/(fenep_L**2-rsqr)
           enddo; enddo; enddo
         case default
