@@ -124,6 +124,7 @@ module Special
    logical :: lmu5divu_term=.true., lmuSdivu_term=.true.
    logical :: ldt_chiral_mhd=.true., ldiffmu5_tdep=.false.
    logical :: reinitialize_mu5=.false.
+   logical :: lupw_mu5=.false., lupw_muS=.false.
 !
   character (len=labellen) :: initspecial='nothing'
   character (len=labellen) :: gammaf5_tdep='const'
@@ -443,14 +444,18 @@ module Special
       if (lmuS) then
         if (lpencil(i_muS)) p%muS=f(l1:l2,m,n,imuS)
         if (lpencil(i_gmuS)) call grad(f,imuS,p%gmuS)
-        if (lpencil(i_ugmuS)) call dot(p%uu,p%gmuS,p%ugmuS)
+        if (lpencil(i_ugmuS)) then
+          call u_dot_grad(f,imuS,p%gmuS,p%uu,p%ugmuS,UPWIND=lupw_muS)
+        endif
         if (lpencil(i_del2muS)) call del2(f,imuS,p%del2muS)
         if (lpencil(i_del4muS)) call del4(f,imuS,p%del4muS)
         if (lpencil(i_del6muS)) call del6(f,imuS,p%del6muS)
       endif
       if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
-      if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
+      if (lpencil(i_ugmu5)) then
+        call u_dot_grad(f,imu5,p%gmu5,p%uu,p%ugmu5,UPWIND=lupw_mu5)
+      endif
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
       if (lpencil(i_del4mu5)) call del4(f,imu5,p%del4mu5)
       if (lpencil(i_del6mu5)) call del6(f,imu5,p%del6mu5)
