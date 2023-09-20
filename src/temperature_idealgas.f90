@@ -462,9 +462,8 @@ module Energy
         call farray_register_global("glhc",iglobal_glhc)
         do n=n1,n2
         do m=m1,m2
-          hcond = 1. + (hcond1-1.)*step(x(l1:l2),r_bcz,-widthlnTT)
-          hcond = hcond0*hcond
-          dhcond = hcond0*(hcond1-1.)*der_step(x(l1:l2),r_bcz,-widthlnTT)
+          hcond  = hcond0*(1. + (hcond1-1.)*    step(x(l1:l2),r_bcz,-widthlnTT))
+          dhcond = hcond0*      (hcond1-1.)*der_step(x(l1:l2),r_bcz,-widthlnTT)
           f(l1:l2,m,n,iglobal_hcond)=hcond
           f(l1:l2,m,n,iglobal_glhc)=dhcond
         enddo
@@ -613,9 +612,8 @@ module Energy
 !
 !  For planet atmospheres, the equations are formulated in T only
 !
-      if (lcalc_planet_atmosphere.and.(.not.ltemperature_nolog)) &
-          call fatal_error('initialize_energy', &
-          'calc_planet_atmosphere is formualted in T only')
+      if (lcalc_planet_atmosphere.and.(.not.ltemperature_nolog)) call fatal_error('initialize_energy', &
+          'calc_planet_atmosphere is formulated in linear temperature only')
 !
     endsubroutine initialize_energy
 !***********************************************************************
@@ -2321,6 +2319,7 @@ module Energy
       intent(inout) :: df
 !
       call heatcond_TT(p%TT, hcond, dhcond)
+!
 !  must specify the new bottom value of hcond for the 'c1' BC
 !     if (n == n1) hcond0=hcond(1)
       if (lADI_mixed) then
@@ -2328,14 +2327,15 @@ module Energy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*p%rho1*p%cp1*dhcond*g1
         chix=0.
       else
+!
 !  grad LnK=grad_T Ln K.grad(TT)
+!
         dhcond=dhcond/hcond
         call multsv(dhcond, p%gTT, gLnhcond)
         call dot(gLnhcond, p%gTT, g1)
         chix=p%rho1*p%cp1*hcond
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+p%del2TT)
       endif
-!
 !
 !  Check maximum diffusion from thermal diffusion.
 !

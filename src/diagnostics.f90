@@ -1591,7 +1591,7 @@ module Diagnostics
       real :: a
       integer :: iname
 !
-      if (iname/=0) fname(iname)=a
+      if (lroot.and.iname/=0) fname(iname)=a
 !
    endsubroutine save_name
 !***********************************************************************

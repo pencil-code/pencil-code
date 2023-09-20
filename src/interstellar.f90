@@ -145,8 +145,6 @@ module Interstellar
   real :: zdisk, maxrho !varying location of centre of mass of the disk
   logical :: lfirst_zdisk
 !
-!
-!
   logical :: lfirst_warning=.true.
 !  normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
 !  ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
@@ -1761,8 +1759,7 @@ module Interstellar
 !
       if (ldiagnos) then
         if (idiag_Hmax_ism/=0) then
-          netheat=p%heatcool
-          where (p%heatcool<0.0) netheat=0.0
+          netheat=max(p%heatcool,0.)
           if (ltemperature.and.ltemperature_nolog) then
             call max_mn_name(netheat*p%TT1,idiag_Hmax_ism)
           elseif (pretend_lnTT) then
@@ -1784,15 +1781,15 @@ module Interstellar
         endif
         if (idiag_Lamm/=0) call sum_mn_name(p%rho1*p%cool,idiag_Lamm)
         if (idiag_nrhom/=0) call sum_mn_name(p%cool/p%ee,idiag_nrhom)
-        if (idiag_rhoLm/=0) call sum_mn_name(p%cool,idiag_rhoLm)
-        if (idiag_Gamm/=0) call sum_mn_name(p%heat,idiag_Gamm)
+        call sum_mn_name(p%cool,idiag_rhoLm)
+        call sum_mn_name(p%heat,idiag_Gamm)
       endif
 !
     endsubroutine calc_0d_diag_interstellar
 !***********************************************************************
     subroutine calc_1d_diag_interstellar(p)
 !
-      use Diagnostics
+      use Diagnostics, only: max_mn_name, sum_mn_name, xysum_mn_name_z
       use Sub, only: cross, dot2
 !
       type(pencil_case) :: p
@@ -1906,7 +1903,6 @@ module Interstellar
 !  10-aug-03/axel: TT is used as input
 !   3-apr-06/axel: add ltemperature switch
 !
-      use Diagnostics, only: max_mn_name, sum_mn_name, xysum_mn_name_z
       use Sub, only: dot2
       use Messages, only: fatal_error
 !
@@ -1915,7 +1911,7 @@ module Interstellar
       type (pencil_case) :: p
 !
       real, dimension (nx), intent(inout) :: Hmax
-      real, dimension (nx) :: heat,cool,heatcool,netheat,netcool
+      real, dimension (nx) :: heat,cool,heatcool
       real, dimension (nx) :: damp_profile, gsh2
 !
 !  Identifier
@@ -2047,7 +2043,7 @@ module Interstellar
 !  Limit timestep by the cooling time (having subtracted any heating)
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
-      if (ldt.and.lfirst) then
+      if (ldt.and.lfirst .or. ldiagnos) then
         if (ltemperature.or.pretend_lnTT) then
           Hmax=Hmax+heatcool
         else

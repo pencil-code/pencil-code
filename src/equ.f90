@@ -149,9 +149,7 @@ module Equ
 !                     lslope_limit_diff .or. lvisc_smag .or. &
                      lvisc_smag .or. &
                      lyinyang .or. lgpu .or. &   !!!
-                     ncoarse>1 .or. &
-                     .not.lconcurrent
-
+                     ncoarse>1 
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -692,7 +690,6 @@ module Equ
       use Testflow
       use Testscalar
       use Viscosity, only: calc_pencils_viscosity
-!!$    use Omp_lib
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
@@ -702,10 +699,6 @@ module Equ
 
       real, dimension (nx,3) :: df_iuu_pencil
       logical :: lcommunicate
-!$    integer :: num_omp_ranks, omp_rank
-!
-!$    num_omp_ranks = OMP_get_num_procs()
-!$    call OMP_set_num_threads(num_omp_ranks)
 !
       lfirstpoint=.true.
       lcommunicate=.not.early_finalize
@@ -1097,7 +1090,10 @@ module Equ
       real, dimension(nx) :: pfreeze
       integer :: imn,iv
 !
-      !if (lgpu) call freeze_gpu
+      !if (lgpu) then
+      !  call freeze_gpu
+      !  return
+      !endif  
 
       lpenc_loc=.false. 
       if (lcylinder_in_a_box.or.lcylindrical_coords) then 
@@ -1108,7 +1104,7 @@ module Equ
 !
       headtt = headt .and. lfirst .and. lroot
 !
-!$omp do private(p,pfreeze,iv,imn,n,m)
+!!$omp do private(p,pfreeze,iv)
 !
       do imn=1,nyz
 
@@ -1262,9 +1258,8 @@ module Equ
 !
       enddo
 !
-!$omp end do
-!$omp end parallel
-
+!!$omp end do
+!
     endsubroutine freeze
 !***********************************************************************
     subroutine set_dt1_max(p)
