@@ -2789,7 +2789,7 @@ module Magnetic
 !  In that case, use only the magnetic pressure.
 !
       if (lhydro .and. llorentzforce) then
-        if (iphiuu==0) then
+        if (iphiuu==0) then   !MR???
           lpenc_requested(i_jxbr)=.true.
         else
           lpenc_requested(i_b2)=.true.
@@ -4096,14 +4096,15 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !  limiting term,
 !
         if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-        if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) then
+        if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) &
           rho1_jxb = rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
-        endif
+
         if (betamin_jxb>0) then
           va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
           if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
           rho1_jxb = rho1_jxb * (1.+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
+        !MR: Why no Boris correction here? See calc of advec_va2 below!
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
       endif
 ! jxbr2
@@ -5476,21 +5477,21 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !
       if (lfirst.and.ldt) then
         advec_va2=0.
-        if (lhydro) then
+        if (lhydro.and.llorentzforce) then
           rho1_jxb=p%rho1
           if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-          if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) then
+          if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) &
             rho1_jxb = rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
-          endif
+
           if (betamin_jxb>0) then
             va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
             if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
             rho1_jxb = rho1_jxb * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
-          if (lboris_correction .and. va2max_boris>0) &
-            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
-          if (lboris_correction .and. cmin>0) rho1_jxb = rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
-
+          if (lboris_correction) then
+            if (va2max_boris>0) rho1_jxb = rho1_jxb * (1+(p%va2/va2max_boris)**2.)**(-0.5)
+            if (cmin>0)         rho1_jxb = rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
+          endif
           advec_va2=sum((p%bb*dline_1)**2,2)*mu01*rho1_jxb
         endif
 !
@@ -5509,19 +5510,14 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !  This is the generalization for Hall-MHD.
 !  This is not used in EMHD simulations.
 !
-        if (lhydro.and.hall_term/=0.0) then
-          advec_va2 = ( &
-                        (p%bb(:,1)*dline_1(:,1)*( &
-                        hall_term*pi*dline_1(:,1)*mu01 &
-                        +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,1)*mu01)**2 ) ))**2 &
-                       +(p%bb(:,2)*dline_1(:,2)*( &
-                        hall_term*pi*dline_1(:,2)*mu01 &
-                        +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,2)*mu01)**2 ) ))**2 &
-                       +(p%bb(:,3)*dline_1(:,3)*( &
-                        hall_term*pi*dline_1(:,3)*mu01 &
-                        +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,3)*mu01)**2 ) ))**2 &
-                      )
-        endif
+        if (lhydro.and.hall_term/=0.0) advec_va2 = ( (p%bb(:,1)*dline_1(:,1)*( hall_term*pi*dline_1(:,1)*mu01 &
+                                                      +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,1)*mu01)**2 ) ))**2 &
+                                                    +(p%bb(:,2)*dline_1(:,2)*( hall_term*pi*dline_1(:,2)*mu01 &
+                                                      +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,2)*mu01)**2 ) ))**2 &
+                                                    +(p%bb(:,3)*dline_1(:,3)*( hall_term*pi*dline_1(:,3)*mu01 &
+                                                      +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,3)*mu01)**2 ) ))**2 &
+                                                   )
+!MR: Why is advec_va2 not cumulative?
         if (notanumber(advec_va2)) print*, 'advec_va2  =',advec_va2
         advec2=advec2+advec_va2
         if (lmagneto_friction) then
