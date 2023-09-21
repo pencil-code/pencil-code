@@ -71,7 +71,6 @@ module Hydro
   logical :: lforcing_cont_uu=.false., lrandom_location=.false.
   logical :: lwrite_random_location=.false., lwrite_random_wavenumber=.false.
   logical :: lrandom_wavenumber=.false., lwrite_random_ampl=.false.
-  real, dimension(nx) :: ck_r,ck_rsqr
   integer :: ll_sh=0, mm_sh=0, n_xprof=-1
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
@@ -186,8 +185,8 @@ module Hydro
       !if (lroot) call svn_id( &
       !    "$Id$")
 !
-      call put_shared_variable('lpressuregradient_gas',&
-          lpressuregradient_gas,caller='register_hydro')
+      call put_shared_variable('lpressuregradient_gas', &
+                               lpressuregradient_gas,caller='register_hydro')
 !
    !AB: not sure why this doesn't work
    !  if (lkinflow_as_aux.or.lkinflow_as_comaux) then
@@ -224,7 +223,7 @@ module Hydro
       use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: exp_kinflow1, sph, sph_har_der
+      real :: sph, sph_har_der
       real, dimension (nx) :: vel_prof, tmp_mn
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (:,:), allocatable :: yz
@@ -234,22 +233,23 @@ module Hydro
 !  different flow profiles later on in pencil_case.
 !
       select case (kinematic_flow)
-!
-!  Spoke-like differential rotation profile.
-!  The minus sign is needed for equatorward acceleration.
-!
       case ('ABC')
         kx_uukin1=kx_uukin+dkx_uukin
         ky_uukin1=ky_uukin+dky_uukin
         kz_uukin1=kz_uukin+dkz_uukin
       case ('Brandt')
         if (lcylindrical_coords) then
-          exp_kinflow1=1./exp_kinflow
-          profx_kinflow1=+1./(1.+(x(l1:l2)/uphi_rbot)**exp_kinflow)**exp_kinflow1
+          profx_kinflow1=+1./(1.+(x(l1:l2)/uphi_rbot)**exp_kinflow)**(1./exp_kinflow)
           profy_kinflow1=-1.
           profz_kinflow1=+1.
+        elseif (.not.lcartesian_coords) then
+          call not_implemented("initialize_hydro","Brandt profile for other than Cartesian or cylindrical")
         endif
       case ('spoke-like')
+!
+!  Spoke-like differential rotation profile.
+!  The minus sign is needed for equatorward acceleration.
+!
         profx_kinflow1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
         profy_kinflow1=-1.5*(5.*cos(y)**2-1.)
         profz_kinflow1=+1.
@@ -274,6 +274,13 @@ module Hydro
       case ('t-dep_flow')
         coskx=cos(kx_uukin*x(l1:l2))
         sinkx=sin(kx_uukin*x(l1:l2))
+      case ('Tilgner-orig')
+        kx_uukin=2.*pi
+        ky_uukin=2.*pi
+      case ('potential')
+        if (nxgrid==1) kx_uukin=0.
+        if (nygrid==1) ky_uukin=0.
+        if (nzgrid==1) kz_uukin=0.
       case default;
         if (lroot .and. (ip < 14)) call information('initialize_hydro','no preparatory profile needed')
       end select
@@ -651,6 +658,7 @@ module Hydro
 !   15-sep-14/MR  : div for case 'roberts' corrected; div u, du_i/dx_j for case
 !                   'roberts_xz' added
 !   02-nov-20/IL  : added Sound wave
+!
       use Diagnostics
       use General
       use Sub
@@ -666,7 +674,7 @@ module Hydro
       real, dimension(nx) :: div_vel_prof
       real, dimension(nx) :: vel_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn, tmp1, tmp2
-      real, dimension(nx) :: rone, argx, pom2
+      real, dimension(nx) :: rone, argx, pom2, ck_r
       real, dimension(nx) :: psi1, psi2, psi3, psi4, rho_prof, prof, prof1
       real, dimension(nx) :: random_r, random_p, random_tmp
 !      real :: random_r_pt, random_p_pt
@@ -678,7 +686,6 @@ module Hydro
       real :: ro
       real :: xi, slopei, zl1, zlm1, zmax, kappa_kinflow_n, nn_eff
       real :: theta,theta1
-      real :: exp_kinflow1,exp_kinflow2
       real :: xpos1, ypos1, xpos2, ypos2
       integer :: modeN, ell, ll, nn, ii, nn_max, kk
 !
@@ -856,15 +863,11 @@ module Hydro
         ell=kinflow_ck_ell
         Balpha=kinflow_ck_Balpha
         ck_r = x(l1:l2)
-        ck_rsqr = x(l1:l2)*x(l1:l2)
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=ampl_kinflow*Pl(m)*(  &
-              (ell*(ell+1)/(Balpha*ck_rsqr))*Zl(l1:l2) &
-              -(2./(Balpha*ck_r))*dZldr(l1:l2)  )
-          p%uu(:,2)=ampl_kinflow*( &
-              dZldr(l1:l2)/Balpha- Zl(l1:l2)/(Balpha*ck_r) &
-              )*dPldtheta(m)
-          p%uu(:,3)=-ampl_kinflow*Zl(l1:l2)*dPldtheta(m)
+          p%uu(:,1) = ampl_kinflow*Pl(m)*( &
+                      (ell*(ell+1)/(Balpha*ck_r**2))*Zl(l1:l2) -(2./(Balpha*ck_r))*dZldr(l1:l2) )
+          p%uu(:,2) = ampl_kinflow*(dZldr(l1:l2)/Balpha- Zl(l1:l2)/(Balpha*ck_r))*dPldtheta(m)
+          p%uu(:,3) =-ampl_kinflow*Zl(l1:l2)*dPldtheta(m)
         endif
 ! divu
         if (lpenc_loc(i_divu)) p%divu= 0.
@@ -1192,9 +1195,6 @@ module Hydro
         if (headtt) print*,'Roberts flow with cosinusoidal helicity;',&
             'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
-        ky_uukin=1.
-        kx_uukin=ky_uukin*(mod(.5-eps_kinflow*t,1.D0)-.5)
-        if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         eps1=cos(omega_kinflow*t)
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -1208,11 +1208,9 @@ module Hydro
 !  Must use shear module and set eps_kinflow equal to shear
 !
       case ('ShearRoberts2')
-        if (headtt) print*,'Roberts flow with cosinusoidal helicity;',&
+        if (headtt) print*,'Roberts flow with cosinusoidal helicity;', &
             'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
-        ky_uukin=1.
-        kx_uukin=ky_uukin*(mod(.5-eps_kinflow*t,1.D0)-.5)
         if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         eps1=cos(omega_kinflow*t)
 ! uu
@@ -1369,8 +1367,7 @@ module Hydro
 !  Time-dependent, nearly symmetric flow
 !
       case ('Herreman')
-        if (headtt) print*,'Herreman flow;',&
-            'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+        if (headtt) print*,'Herreman flow;','kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
         eps1=ampl_kinflow*eps_kinflow*cos(omega_kinflow*t)
 ! uu
@@ -1568,8 +1565,7 @@ module Hydro
 !  This makes sense only for kx_uukin=ky_uukin
 !
       case ('Galloway-Proctor-nohel')
-        if (headtt) print*,'nonhelical Galloway-Proctor flow;',&
-            'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+        if (headtt) print*,'nonhelical Galloway-Proctor flow;','kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow*sqrt(1.5)
         fac2=ampl_kinflow*sqrt(6.)
         ecost=eps_kinflow*cos(omega_kinflow*t)
@@ -1626,8 +1622,6 @@ module Hydro
         if (headtt) print*,'original Tilgner flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow
         epst=eps_kinflow*t
-        kx_uukin=2.*pi
-        ky_uukin=2.*pi
         sqrt2=sqrt(2.)
         WW=0.25
 ! uu
@@ -1731,18 +1725,12 @@ module Hydro
       case ('Galloway-Proctor-RandomTemporalPhase')
         if (headtt) print*,'GP-RandomTemporalPhase; kx,ky=',kx_uukin,ky_uukin
         fac=ampl_kinflow
-        if (t>tphase_kinflow) then
-          call random_number_wrapper(fran1)
-          tphase_kinflow=t+dtphase_kinflow
-          phase1=pi*(2*fran1(1)-1.)
-          phase2=pi*(2*fran1(2)-1.)
-        endif
         ecost=eps_kinflow*cos(omega_kinflow*t+phase1)
         esint=eps_kinflow*sin(omega_kinflow*t+phase2)
 ! uu
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=-fac*sin(ky_uukin*y(m)    +esint)
-          p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2)+ecost)
+          p%uu(:,1)=-fac* sin(ky_uukin*y(m)    +esint)
+          p%uu(:,2)=+fac* sin(kx_uukin*x(l1:l2)+ecost)
           p%uu(:,3)=-fac*(cos(kx_uukin*x(l1:l2)+ecost)+cos(ky_uukin*y(m)+esint))
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
@@ -1752,16 +1740,10 @@ module Hydro
       case ('Galloway-Proctor-RandomPhase')
         if (headtt) print*,'Galloway-Proctor-RandomPhase; kx,ky=',kx_uukin,ky_uukin
         fac=ampl_kinflow
-        if (t>tphase_kinflow) then
-          call random_number_wrapper(fran1)
-          tphase_kinflow=t+dtphase_kinflow
-          phase1=eps_kinflow*pi*(2*fran1(1)-1.)
-          phase2=eps_kinflow*pi*(2*fran1(2)-1.)
-        endif
 ! uu
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=-fac*sin(ky_uukin*y(m)    +phase1)*ky_uukin
-          p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2)+phase2)*kx_uukin
+          p%uu(:,1)=-fac* sin(ky_uukin*y(m)    +phase1)*ky_uukin
+          p%uu(:,2)=+fac* sin(kx_uukin*x(l1:l2)+phase2)*kx_uukin
           p%uu(:,3)=-fac*(cos(kx_uukin*x(l1:l2)+phase2)+cos(ky_uukin*y(m)+phase1))
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
@@ -1801,9 +1783,6 @@ module Hydro
 !  Possibility of gaussian distributed random amplitudes if lrandom_ampl.
 !
       case ('potential')
-        if (nxgrid==1) kx_uukin=0.
-        if (nygrid==1) ky_uukin=0.
-        if (nzgrid==1) kz_uukin=0.
 !
 !  Allow for harmonic phase changes.
 !
@@ -2022,8 +2001,6 @@ module Hydro
 !
       case ('ShearingWave')
         if (headtt) print*,'ShearingWave flow; Sshear,eps_kinflow=',Sshear,eps_kinflow
-        ky_uukin=1.
-        kx_uukin=-ky_uukin*Sshear*t
         k21=1./(kx_uukin**2+ky_uukin**2)
 ! uu
         if (lpenc_loc(i_uu)) then
@@ -2037,8 +2014,6 @@ module Hydro
 !
       case ('HelicalShearingWave')
         if (headtt) print*,'ShearingWave flow; Sshear,eps_kinflow=',Sshear,eps_kinflow
-        ky_uukin=1.
-        kx_uukin=-ky_uukin*Sshear*t
         k21=1./(kx_uukin**2+ky_uukin**2)
         fac=ampl_kinflow
         eps1=1.-eps_kinflow
@@ -2124,11 +2099,7 @@ module Hydro
       case ('Brandt')
         if (lcylindrical_coords) then
           if (headtt) print*,'Brandt (cylindrical coords)',ampl_kinflow
-          exp_kinflow1=1./exp_kinflow
-          exp_kinflow2=.5*exp_kinflow
           local_Omega=ampl_kinflow*profx_kinflow1
-          pom2=x(l1:l2)**2
-          profx_kinflow1=+1./(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
           if (wind_radius/=0.) then
             if (headtt) print*,'also add BDMSST93-wind along r'
             tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
@@ -2142,20 +2113,18 @@ module Hydro
             p%uu(:,2)=local_Omega*x(l1:l2)
             p%uu(:,3)=tmp_mn*z(n)
           endif
-        else
+        elseif (lcartesian_coords) then
 !
 !  Outer cutoff for r>radius_kinflow possible when width_kinflow/=0.
 !
           if (headtt) print*,'Brandt (Cartesian)',ampl_kinflow
-          exp_kinflow1=1./exp_kinflow
-          exp_kinflow2=.5*exp_kinflow
           pom2=x(l1:l2)**2+y(m)**2
           if (width_kinflow/=0.) then
             tmp_mn=.5*(1.-erfunc((sqrt(pom2)-radius_kinflow)/width_kinflow))
           else
             tmp_mn=1.
           endif
-          profx_kinflow1=tmp_mn/(1.+(pom2/uphi_rbot**2)**exp_kinflow2)**exp_kinflow1
+          profx_kinflow1=tmp_mn/(1.+(pom2/uphi_rbot**2)**(.5*exp_kinflow))**(1./exp_kinflow)
           if (wind_radius/=0.) then
             if (headtt) print*,'also add BDMSST93-wind along r'
             tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
@@ -2630,6 +2599,7 @@ module Hydro
 !
       use Mpicomm, only: update_foreign_data
       use Sub, only: smooth, eulag_filter
+      use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -2661,6 +2631,27 @@ module Hydro
       elseif (kinematic_flow=='sound3D') then
 !AB: to add parameter
         call sound3D(f)
+      elseif (kinematic_flow=='Galloway-Proctor-RandomTemporalPhase'.or. &
+              kinematic_flow=='Galloway-Proctor-RandomPhase') then
+        if (t>tphase_kinflow) then
+
+          call random_number_wrapper(fran1)
+          tphase_kinflow=t+dtphase_kinflow
+          phase1=pi*(2.*fran1(1)-1.)
+          phase2=pi*(2.*fran1(2)-1.)
+          if (kinematic_flow=='Galloway-Proctor-RandomPhase') then
+            phase1=eps_kinflow*phase1
+            phase2=eps_kinflow*phase2
+          endif
+
+        endif
+      elseif (kinematic_flow=='ShearRoberts2'.or.kinematic_flow=='ShearRoberts1') then
+        ky_uukin=1.
+        kx_uukin=ky_uukin*(mod(.5-eps_kinflow*t,1.D0)-.5)
+        if (ip==11) write(21,*) t,kx_uukin
+      elseif (kinematic_flow=='HelicalShearingWave'.or.kinematic_flow=='ShearingWave') then
+        ky_uukin=1.
+        kx_uukin=-ky_uukin*Sshear*t
       endif
 !
     endsubroutine hydro_before_boundary
@@ -2848,7 +2839,7 @@ module Hydro
 !
 !  Pick 4 random angles for each mode.
 !
-        call random_number_wrapper(r);
+        call random_number_wrapper(r)
         theta=pi*(r(1) - 0.)
         phi=pi*(2*r(2) - 0.)
         alpha=pi*(2*r(3) - 0.)
