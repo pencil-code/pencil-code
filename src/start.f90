@@ -392,6 +392,10 @@ program start
     if (ichannel2>1) call random_seed_wrapper(PUT=seed2,CHANNEL=2)
   endif
 !
+!  calculate scale factor of the universe
+!
+  if (lread_scl_factor_file_new) call calc_scl_factor
+!
 !  The following init routines only need to add to f.
 !  wd: also in the case where we have read in an existing snapshot??
 !

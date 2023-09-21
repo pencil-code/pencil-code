@@ -125,7 +125,9 @@ module Special
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1.
   real :: tstress_ramp=0., stress_upscale_rate=0., stress_upscale_exp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost=0., vy_boost=0., vz_boost=0.
-  real :: horndeski_alpM=0., horndeski_alpT=0.
+  real :: horndeski_alpM=0., horndeski_alpM_prime=0., horndeski_alpT=0.
+  real :: horndeski_alpM_eff, horndeski_alpM_eff2, horndeski_alpM_eff3
+  real :: horndeski_alpT_eff
   real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
   real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, OmM0=0.3158, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
   real :: initpower_med_GW=1., kpeak_log_GW=1., kbreak_GW=0.5, nfactd_GW=4.
@@ -180,8 +182,8 @@ module Special
     lstress, lstress_ramp, tstress_ramp, &
     lstress_upscale, stress_upscale_rate, stress_upscale_exp, &
     linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
-    lturnoff, tturnoff, lhorndeski, lhorndeski_xi, horndeski_alpM, horndeski_alpT, &
-    ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
+    lturnoff, tturnoff, lhorndeski, lhorndeski_xi, horndeski_alpM, horndeski_alpM_prime, &
+    horndeski_alpT, ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
     lread_scl_factor_file, t_ini, OmL0, OmM0, idt_file_safety, &
@@ -616,7 +618,9 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real :: initpower_GWs,initpower2_GWs,initpower_med_GWs,compks,compkh,amplGWs
       real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt, om, om2
+      real :: hhTre, hhTim
       integer :: ikx,iky,ikz
+      complex :: om_cmplx, gcomplex_new
 !
       intent(inout) :: f
 !
@@ -721,6 +725,40 @@ module Special
           enddo
           enddo
           enddo
+! alberto: added initGW condition where h is initialized and h' is self-consistent
+        case ('power_randomphase_hel_selfcons')
+          call power_randomphase_hel(amplGW,initpower_GW,initpower2_GW, &
+            cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
+            lskip_projection_GW, lvectorpotential, &
+            lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
+            lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
+            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
+            kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
+            nfactd0=nfact_GW)
+          
+          appa_om=appa_target
+          if (lhorndeski_xi) then
+            horndeski_alpM_eff=(1+.5*horndeski_alpM)
+            horndeski_alpM_eff2=horndeski_alpM_eff*.5*horndeski_alpM
+            horndeski_alpM_eff3=.5*horndeski_alpM_prime
+            appa_om=appa_om*horndeski_alpM_eff+horndeski_alpM_eff2
+            appa_om=appa_om+horndeski_alpM_eff3
+          endif  
+          hhTre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
+          !hhXre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
+          hhTim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)
+          !hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
+          
+          om2=(1.+horndeski_alpT)*ksqr+delk**2-appa_om
+          om_cmplx=sqrt(cmplx(om2,0.))
+          !hcomplex_new= cosoth*coefA+sinoth*coefB+om12*cmplx(S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz))
+          gcomplex_new=om_cmplx*cmplx(hhTre,hhTim)
+          
+          !f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )= real(gcomplex_new)
+          !f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=aimag(gcomplex_new)
+          f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=real(gcomplex_new)
+          f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=aimag(gcomplex_new)
         case default
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))
@@ -1713,9 +1751,11 @@ module Special
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
-      real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
-      real :: horndeski_alpM_eff3, alpM_prime=0.
-      real :: horndeski_alpT_eff, Om_rat_Lam, Om_rat_Mat
+      real :: discrim2
+      !real :: horndeski_alpM_eff, horndeski_alpM_eff2
+      !real :: horndeski_alpM_eff3
+      !real :: horndeski_alpT_eff
+      real :: Om_rat_Lam, Om_rat_Mat
       real :: Om_rat_matt, Om_rat_tot1
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx
@@ -2017,7 +2057,7 @@ module Special
             horndeski_alpM_eff2=horndeski_alpM_eff2*.5*horndeski_alpM_eff
             ! alpM_prime is set to zero for now (constant alpha),
             ! to be changed for the different parameterizations
-            horndeski_alpM_eff3=.5*alpM_prime*Hp_target
+            horndeski_alpM_eff3=.5*horndeski_alpM_prime*Hp_target
             horndeski_alpM_eff=1.+.5*horndeski_alpM_eff
           endif
         else
@@ -2027,7 +2067,7 @@ module Special
           else
             horndeski_alpM_eff2=(1+.5*horndeski_alpM_eff)/scale_factor**2
             horndeski_alpM_eff2=horndeski_alpM_eff2*.5*horndeski_alpM_eff 
-            horndeski_alpM_eff3=.5*alpM_prime/scale_factor
+            horndeski_alpM_eff3=.5*horndeski_alpM_prime/scale_factor
             horndeski_alpM_eff=1.+.5*horndeski_alpM_eff
           endif 
         endif
@@ -2129,7 +2169,7 @@ module Special
                     om_cmplx=sqrt(cmplx(om2,0.))
                     om=impossible
                   elseif (lhorndeski_xi) then
-                    om2=(1.+horndeski_alpT_eff)*ksqr-appa_om
+                    om2=(1.+horndeski_alpT_eff)*ksqr+delkt**2-appa_om
                   else
                     om2=ksqr+delkt**2-appa_om
                     om=sqrt(om2)
