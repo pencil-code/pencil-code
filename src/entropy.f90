@@ -3264,6 +3264,7 @@ module Energy
 !
       Hmax = 1./impossible
       ssmax = 1./impossible
+      if (n==nn(1).and.m==mm(1)) lproc_print=.true.
 !
 !  Identify module and boundary conditions.
 !
@@ -3294,7 +3295,10 @@ module Energy
       if (lhydro) then
         if (lpressuregradient_gas) then
           if (notanumber(p%fpres)) then
-            print*, 'denergy_dt: p%fpres contains a NaN at iproc=', iproc
+            if (lproc_print) then
+              print*, 'denergy_dt: p%fpres contains a NaN at iproc=', iproc
+              if (.not.allproc_print) lproc_print=.false.
+            endif
             if (ip<6) print*, 'p%fpres =',p%fpres
             call fatal_error_local('denergy_dt','')
           endif
@@ -5161,7 +5165,10 @@ module Energy
 !  Most of these should trigger the following trap.
 !
         if (notanumber(thdiff)) then
-          print*, 'calc_heatcond_kramers: m,n,y(m),z(n)=', m, n, y(m), z(n)
+          if (lproc_print) then
+            print*, 'calc_heatcond_kramers: m,n,y(m),z(n)=', m, n, y(m), z(n)
+            if (.not.allproc_print) lproc_print=.false.
+          endif
           call fatal_error_local('calc_heatcond_kramers','NaNs in thdiff')
         endif
       endif
@@ -5265,7 +5272,10 @@ module Energy
 !  Most of these should trigger the following trap.
 !
         if (notanumber(thdiff)) then
-          print*, 'calc_heatcond_smagorinsky: m,n,y(m),z(n)=', m, n, y(m), z(n)
+          if (lproc_print) then
+            print*, 'calc_heatcond_smagorinsky: m,n,y(m),z(n)=', m, n, y(m), z(n)
+            if (.not.allproc_print) lproc_print=.false.
+          endif
           call fatal_error_local('calc_heatcond_smagorinsky','NaNs in thdiff')
         endif
       endif
@@ -5492,8 +5502,11 @@ module Energy
 !  Most of these should trigger the following trap.
 !
           if (notanumber(thdiff)) then
-            print*,'calc_heatcond: NaNs in thdiff'
-            print*, 'calc_heatcond: m,n,y(m),z(n)=', m, n, y(m), z(n)
+            if (lproc_print) then
+              print*,'calc_heatcond: NaNs in thdiff'
+              print*, 'calc_heatcond: m,n,y(m),z(n)=', m, n, y(m), z(n)
+              if (.not.allproc_print) lproc_print=.false.
+            endif
             call fatal_error_local('calc_heatcond','NaNs in thdiff')
           endif
         endif

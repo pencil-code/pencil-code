@@ -4448,6 +4448,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
       Fmax=1./impossible
       dAmax=1./impossible
       ssmax=1./impossible
+      if (n==nn(1).and.m==mm(1)) lproc_print=.true.
 !
 !  Replace B_ext locally to accommodate its time dependence.
 !
@@ -5379,7 +5380,12 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         dAdt=dAdt-hall_term_*p%jxb
         if (lfirst.and.ldt) then
           advec_hall=sum(abs(p%uu-hall_term_*p%jj)*dline_1,2)
-          if (notanumber(advec_hall)) print*, 'advec_hall =',advec_hall
+          if (notanumber(advec_hall)) then
+            if (lproc_print) then
+              print*, 'daa_dt: advec_hall =',advec_hall
+              if (.not.allproc_print) lproc_print=.false.
+            endif
+          endif
           advec2=advec2+advec_hall**2
           if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =', maxval(advec_hall)
         endif
@@ -5518,7 +5524,12 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
                                                       +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,3)*mu01)**2 ) ))**2 &
                                                    )
 !MR: Why is advec_va2 not cumulative?
-        if (notanumber(advec_va2)) print*, 'advec_va2  =',advec_va2
+        if (notanumber(advec_va2)) then
+          if (lproc_print) then
+            print*, 'daa_dt: advec_va2  =',advec_va2
+            if (.not.allproc_print) lproc_print=.false.
+          endif
+        endif
         advec2=advec2+advec_va2
         if (lmagneto_friction) then
           call dot2(p%vmagfric,tmp1)

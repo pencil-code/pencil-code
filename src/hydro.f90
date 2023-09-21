@@ -3609,6 +3609,7 @@ module Hydro
       integer :: i, j, ju
 !
       Fmax=1./impossible
+      if (n==nn(1).and.m==mm(1)) lproc_print=.true.
 !
 !  Identify module and boundary conditions.
 !
@@ -3786,7 +3787,12 @@ module Hydro
           if (dimensionality<3) advec_uu=sqrt(p%u2*dxyz_2)
         endif
 
-        if (notanumber(advec_uu)) print*, 'advec_uu   =',advec_uu
+        if (notanumber(advec_uu)) then
+          if (lproc_print) then
+            print*, 'denergy_dt: advec_uu =',advec_uu
+            if (.not.allproc_print) lproc_print=.false.
+          endif
+        endif
         maxadvec=maxadvec+advec_uu
         if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
       endif
