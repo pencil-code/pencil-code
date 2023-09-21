@@ -34,6 +34,7 @@ contains
 !***********************************************************************
     subroutine initialize_timestep
 
+      if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
 
     endsubroutine initialize_timestep

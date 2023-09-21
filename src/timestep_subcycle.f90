@@ -16,9 +16,9 @@ module Timestep
   contains
 !***********************************************************************
     subroutine initialize_timestep
-! 
+!
 !  Coefficients for order 3.
-!     
+!
       use Messages, only: not_implemented
       use General, only: itoa
 !
@@ -31,9 +31,10 @@ module Timestep
       else
         call not_implemented('initialize_timestep','itorder= '//trim(itoa(itorder)))
       endif
-     
+
+      if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
- 
+
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
@@ -306,7 +307,7 @@ module Timestep
 !
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
-! Sven.Bingert: routine not existing      
+! Sven.Bingert: routine not existing
 !  call impose_entropy_floor(f)
 !
 !  Call "before_boundary" hooks (for f array precalculation)

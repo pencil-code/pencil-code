@@ -34,6 +34,7 @@ contains
 !***********************************************************************
     subroutine initialize_timestep
 
+      if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
 
     endsubroutine initialize_timestep
@@ -643,7 +644,7 @@ contains
     endsubroutine swap
 !***********************************************************************
     subroutine pushpars2c(p_par)
-        
+
     use Messages, only: fatal_error
 
     integer, parameter :: n_pars=0

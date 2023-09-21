@@ -34,6 +34,7 @@ contains
 !***********************************************************************
     subroutine initialize_timestep
 
+      if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
 
     endsubroutine initialize_timestep
@@ -385,12 +386,12 @@ contains
     subroutine pushpars2c(p_par)
 
     use Messages, only: fatal_error
-    
+
     integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(:) :: p_par
-    
+
     call fatal_error('time_step_RKC-20','alpha_ts, beta_ts not defined')
-    
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Timestep
