@@ -145,7 +145,7 @@ module Cdata
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
-  double precision :: t=0., toutoff=0.
+  real(KIND=rkind8) :: t=0., toutoff=0.
   real :: dt=0.0, dt_incr=0.0, dt0=0.
   real :: cdt=0.9, cdts=1.0, cdtr=1.0, cdtc=1.0, cdt_poly=1.0
  !real :: cdtv=0.15, cdtv2=0.03, cdtv3=0.01
@@ -218,7 +218,8 @@ module Cdata
   logical :: lread_oldsnap_noisothmhd=.false.
   logical :: lread_oldsnap_nosink=.false.
   logical :: lnamelist_error=.false., ltolerate_namelist_errors=.false., lparam_nml=.false.
-  logical :: lwrite_dim_again=.true.
+  logical :: lwrite_dim_again=.true., allproc_print=.true.
+  logical :: lproc_print=.true.
   logical :: lseparate_persist=.false., ldistribute_persist=.false., lpersist=.true.
   logical :: lomit_add_data=.false.
   logical :: save_lastsnap=.true.
@@ -248,26 +249,26 @@ module Cdata
 !
   integer :: ip=14
 !
-!  Units (need to be in double precision).
+!  Units (need to be in real(KIND=rkind8)).
 !
   character (len=3) :: unit_system='cgs'
   logical :: lfix_unit_std=.false.
-  double precision :: unit_length=impossible,unit_velocity=impossible
-  double precision :: unit_density=impossible,unit_temperature=impossible
-  double precision :: unit_magnetic=impossible
+  real(KIND=rkind8) :: unit_length=impossible,unit_velocity=impossible
+  real(KIND=rkind8) :: unit_density=impossible,unit_temperature=impossible
+  real(KIND=rkind8) :: unit_magnetic=impossible
 !
 !  Derived units
 !
-  double precision :: unit_mass,unit_energy,unit_time,unit_flux
-  double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
+  real(KIND=rkind8) :: unit_mass,unit_energy,unit_time,unit_flux
+  real(KIND=rkind8) :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es
-  double precision :: c_light=impossible,G_Newton=impossible,hbar=impossible
+  real(KIND=rkind8) :: c_light=impossible,G_Newton=impossible,hbar=impossible
   real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
 !
 !  Derived units
 !
-  double precision :: sigmaSB_set=1., c_light_set=1., cp_set=1.
-  double precision :: k_B_set=1., m_u_set=1.
+  real(KIND=rkind8) :: sigmaSB_set=1., c_light_set=1., cp_set=1.
+  real(KIND=rkind8) :: k_B_set=1., m_u_set=1.
 !
 !  Rotation and shear parameters.
 !
