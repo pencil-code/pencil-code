@@ -24,7 +24,6 @@
 !***********************************************************************
 module Hydro
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -659,7 +658,6 @@ module Hydro
 !                   'roberts_xz' added
 !   02-nov-20/IL  : added Sound wave
 !
-      use Diagnostics
       use General
       use Sub
       use Mpicomm
@@ -1901,7 +1899,6 @@ module Hydro
           p%uu(:,1)=-fac*kx_uukin*sin(argx)*cos(argy)*cos(argz)
           p%uu(:,2)=-fac*ky_uukin*cos(argx)*sin(argy)*cos(argz)
           p%uu(:,3)=-fac*kz_uukin*cos(argx)*cos(argy)*sin(argz)
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=fac
 !
@@ -2099,7 +2096,6 @@ module Hydro
       case ('Brandt')
         if (lcylindrical_coords) then
           if (headtt) print*,'Brandt (cylindrical coords)',ampl_kinflow
-          local_Omega=ampl_kinflow*profx_kinflow1
           if (wind_radius/=0.) then
             if (headtt) print*,'also add BDMSST93-wind along r'
             tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
@@ -2117,23 +2113,23 @@ module Hydro
 !
 !  Outer cutoff for r>radius_kinflow possible when width_kinflow/=0.
 !
-          if (headtt) print*,'Brandt (Cartesian)',ampl_kinflow
-          pom2=x(l1:l2)**2+y(m)**2
-          if (width_kinflow/=0.) then
-            tmp_mn=.5*(1.-erfunc((sqrt(pom2)-radius_kinflow)/width_kinflow))
-          else
-            tmp_mn=1.
-          endif
-          profx_kinflow1=tmp_mn/(1.+(pom2/uphi_rbot**2)**(.5*exp_kinflow))**(1./exp_kinflow)
-          if (wind_radius/=0.) then
-            if (headtt) print*,'also add BDMSST93-wind along r'
-            tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
-          else
-            tmp_mn=0.
-          endif
-! uu
           if (lpenc_loc(i_uu)) then
-            local_Omega=ampl_kinflow*profx_kinflow1
+
+            if (headtt) print*,'Brandt (Cartesian)',ampl_kinflow
+            pom2=x(l1:l2)**2+y(m)**2
+            if (width_kinflow/=0.) then
+              tmp_mn=.5*(1.-erfunc((sqrt(pom2)-radius_kinflow)/width_kinflow))
+            else
+              tmp_mn=1.
+            endif
+            local_Omega=ampl_kinflow*tmp_mn/(1.+(pom2/uphi_rbot**2)**(.5*exp_kinflow))**(1./exp_kinflow)
+            if (wind_radius/=0.) then
+              if (headtt) print*,'also add BDMSST93-wind along r'
+              tmp_mn=wind_amp*(1.-wind_ampz*exp(-(z(n)/wind_z)**2))/wind_radius
+            else
+              tmp_mn=0.
+            endif
+! uu
             p%uu(:,1)=-local_Omega*y(m)    +tmp_mn*x(l1:l2)
             p%uu(:,2)=+local_Omega*x(l1:l2)+tmp_mn*y(m)
             p%uu(:,3)=0.                   +tmp_mn*z(n)
@@ -2542,43 +2538,64 @@ module Hydro
       if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
       if (lpenc_loc(i_oxu)) call cross(p%oo,p%uu,p%oxu)
       if (lpenc_loc(i_oxu2)) call dot2_mn(p%oxu,p%oxu2)
-!
-!  Calculate maxima and rms values for diagnostic purposes
-!
-      if (ldiagnos) then
-        if (idiag_urms/=0)  call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
-        if (idiag_orms/=0)  call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
-        if (idiag_umax/=0)  call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
-        if (idiag_omax/=0)  call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
-        if (idiag_uzrms/=0) &
-            call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
-        if (idiag_uzmax/=0) &
-            call max_mn_name(p%uu(:,3)**2,idiag_uzmax,lsqrt=.true.)
-        if (idiag_u2m/=0)   call sum_mn_name(p%u2,idiag_u2m)
-        if (idiag_um2/=0)   call max_mn_name(p%u2,idiag_um2)
-        if (idiag_oum/=0)   call sum_mn_name(p%ou,idiag_oum)
-        if (idiag_ourms/=0) call sum_mn_name(p%ou**2,idiag_ourms,lsqrt=.true.)
-        if (idiag_oxurms/=0) call sum_mn_name(p%oxu2,idiag_oxurms,lsqrt=.true.)
-!
-        if (idiag_EEK/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_EEK)
-        if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
-        if (idiag_ekintot/=0) &
-            call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
-        call sum_mn_name(p%divu,idiag_divum)
-      endif
-!
-      call keep_compiler_quiet(f)
-!
+
     endsubroutine calc_pencils_hydro_pencpar
 !***********************************************************************
     subroutine calc_diagnostics_hydro(f,p)
 
+      use Diagnostics
+      use Slices_methods, only: store_slices
+
       real, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
+!
+!  Calculate maxima and rms values for diagnostic purposes.
+!
+      if (ldiagnos) then
+        if (headtt.or.ldebug) print*,'duu_dt: diagnostics ...'
+        call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
+        call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
+        call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
+        call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
+        if (idiag_uzrms/=0)  call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
+        if (idiag_uzmax/=0)  call max_mn_name(p%uu(:,3)**2,idiag_uzmax,lsqrt=.true.)
+        call sum_mn_name(p%u2,idiag_u2m)
+        call max_mn_name(p%u2,idiag_um2)
+        call sum_mn_name(p%ou,idiag_oum)
+        if (idiag_ourms/=0)  call sum_mn_name(p%ou**2,idiag_ourms,lsqrt=.true.)
+        call sum_mn_name(p%oxu2,idiag_oxurms,lsqrt=.true.)
+        if (idiag_EEK/=0)    call sum_mn_name(.5*p%rho*p%u2,idiag_EEK)
+        if (idiag_ekin/=0)   call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
+        if (idiag_ekintot/=0)call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
+        call sum_mn_name(p%divu,idiag_divum)
+!
+!  Kinetic field components at one point (=pt).
+!
+        if (lroot.and.m==mpoint.and.n==npoint) then
+          if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
+          if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
+          if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
+          if (idiag_phase1/=0) call save_name(phase1,idiag_phase1)
+          if (idiag_phase2/=0) call save_name(phase2,idiag_phase2)
+        endif
+      endif
 
+      if (l2davgfirst) then
+        call zsum_mn_name_xy(p%ou,idiag_oumxy)
+        call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
+        call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
+        call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+      endif
+!
+!  store slices for output in wvid in run.f90
+!  This must be done outside the diagnostics loop (accessed at different times).
+!
+      if (lvideo.and.lfirst) then
+        if (ivid_uu/=0.and..not.lkinflow_as_aux) call store_slices(p%uu,uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
+      endif
+!
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-
+!
     endsubroutine calc_diagnostics_hydro
 !******************************************************************************
     subroutine df_diagnos_hydro(df,p)
@@ -2664,7 +2681,6 @@ module Hydro
 !
       use Diagnostics
       use FArrayManager
-      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2695,34 +2711,8 @@ module Hydro
      !    (lupdate_aux.or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
      if (.not.lpencil_check_at_work) lfirst_aux=.false.
 !
-!  Calculate maxima and rms values for diagnostic purposes.
-!
-      if (ldiagnos) then
-        if (headtt.or.ldebug) print*,'duu_dt: diagnostics ...'
-!
-!  Kinetic field components at one point (=pt).
+      call calc_diagnostics_hydro(f,p)
 
-        if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
-          if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
-          if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
-          if (idiag_phase1/=0) call save_name(phase1,idiag_phase1)
-          if (idiag_phase2/=0) call save_name(phase2,idiag_phase2)
-        endif
-      endif
-      if (l2davgfirst) then     
-        call zsum_mn_name_xy(p%ou,idiag_oumxy)
-        call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
-        call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
-        call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
-      endif
-!  store slices for output in wvid in run.f90
-!  This must be done outside the diagnostics loop (accessed at different times).
-!
-      if (lvideo.and.lfirst) then
-        if (ivid_uu/=0.and..not.lkinflow_as_aux) call store_slices(p%uu,uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
-      endif
-!
       call keep_compiler_quiet(df)
 !
     endsubroutine duu_dt
@@ -3791,14 +3781,14 @@ module Hydro
 
     endsubroutine update_char_vel_hydro
 !***********************************************************************
-    subroutine sound3D (f)
+    subroutine sound3D(f)
 !
 !  Call power_randomphase_hel with time dependence to emulate sound waves analytically.
 !
 !    5-dec-22/axel: added
 !
       use Initcond
-      use General,         only: random_seed_wrapper
+      use General, only: random_seed_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kgaussian=0., cutoff=1e9, relhel_kinflow=0., qirro_kinflow=1., ncutoff=1.

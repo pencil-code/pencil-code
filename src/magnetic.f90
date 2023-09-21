@@ -317,7 +317,6 @@ module Magnetic
   real, dimension(my) :: eta_y,geta_y
   real, dimension(nx) :: eta_r
   real, dimension(nx,3) :: geta_r
-  real, dimension(nx) :: va2max_beta=1.
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
@@ -3687,7 +3686,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
       logical, dimension(:),              intent(in)   :: lpenc_loc
 !
       real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
-      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb
+      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
       integer :: i, j, ix, iedotx, iedotz
@@ -4410,7 +4409,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
       real, dimension (nx) :: peta_shock
       real, dimension (nx) :: sign_jo,rho1_jxb,tmp1
       real, dimension (nx) :: eta_mn,etaSS,eta_heat
-      real, dimension (nx) :: vdrift
+      real, dimension (nx) :: vdrift, va2max_beta
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
       real, dimension(nx) :: eta_BB, prof
       real, dimension(3) :: B_ext

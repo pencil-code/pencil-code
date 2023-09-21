@@ -275,8 +275,6 @@ module Special
 !      
       q%divflux = -16*sigmaSB*q%lambda*p%TT**3*p%rho1*q%kappa1*(p%del2TT+q%gTTgksi)
 !
-      call keep_compiler_quiet(p)
-!
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine calc_opacity(TT,rho,kk)

@@ -4440,9 +4440,8 @@ module Chemistry
 !
 !  Find density and mass fraction dependent terms
 !
-      term1 = (f(l1:l2,m,n,i_C3H8)*p%rho &
-          /species_constants(i_C3H8,imass))**0.856
-      term2 = (f(l1:l2,m,n,i_O2)*p%rho /species_constants(i_O2,imass))**0.503
+      term1 = (f(l1:l2,m,n,i_C3H8)*p%rho/species_constants(i_C3H8,imass))**0.856
+      term2 = (f(l1:l2,m,n,i_O2)*p%rho/species_constants(i_O2,imass))**0.503
 !
 !  Use the above to find reaction terms
 !
