@@ -129,7 +129,7 @@ module Param_IO
       ldirect_access, ltolerate_namelist_errors, &
       lyinyang, cyinyang_intpol_type, yy_biquad_weights, &
       lcutoff_corners, nycut, nzcut, rel_dang, &
-      lcubed_sphere, &
+      lcubed_sphere, allproc_print, &
       sigmaSB_set, c_light_set, cp_set, k_B_set, m_u_set, &
       lnoghost_strati, ichannel1, ichannel2, tag_foreign, &
       lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
@@ -144,7 +144,7 @@ module Param_IO
       cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, cdtf, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, &
-      iwig, ldivu_perp, &
+      iwig, ldivu_perp, allproc_print, &
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, &
