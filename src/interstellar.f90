@@ -210,8 +210,8 @@ module Interstellar
 !
 !  SNI per (x,y)-area explosion rate
 !
-  double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56
-  double precision, parameter :: OB_area_rate_cgs=1.576417151D-57
+  real(KIND=rkind8), parameter :: SNI_area_rate_cgs=1.330982784D-56
+  real(KIND=rkind8), parameter :: OB_area_rate_cgs=1.576417151D-57
   real :: SNI_area_rate=impossible, SNII_area_rate=impossible
   real :: OB_area_rate=impossible
   real :: SNI_factor=1.0, SNII_factor=1.0
@@ -255,7 +255,7 @@ module Interstellar
 !
 !  Total SNe energy
 !
-  double precision, parameter :: ampl_SN_cgs=1D51
+  real(KIND=rkind8), parameter :: ampl_SN_cgs=1D51
   real :: frac_ecr=0.0, frac_eth=1.0, frac_kin=0.0, kin_max=0.075
   real :: ampl_SN=impossible, campl_SN=0.0, eampl_SN=0.0, kampl_SN=0.0, &
       kperp=0.05, kpara=0.025
@@ -335,7 +335,7 @@ module Interstellar
 !  Amended cool dim from 7 to 11 to accomodate WSW dimension.
 !  Appended null last term to all arrays for RBN and SS cooling
 !
-  double precision, dimension(11) :: lncoolH, coolH_cgs
+  real(KIND=rkind8), dimension(11) :: lncoolH, coolH_cgs
   real, dimension(11) :: coolT_cgs
   real, dimension(11) :: coolB, lncoolT
   integer :: ncool
@@ -831,7 +831,8 @@ module Interstellar
             SN_list(3,i)=y_list
             SN_list(4,i)=z_list
             SN_type(  i)=type_list
-            if (lroot) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
+            if (lroot.and.i==1) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
+            if (lroot.and.i>=nlist-10) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
             i=i+1
           endif
         enddo
@@ -865,7 +866,7 @@ module Interstellar
 !
       character (len=labellen), intent(IN) :: cooling_select
       real, dimension (:), intent(OUT)  :: lncoolT, coolB
-      double precision, dimension (:), intent(OUT)  :: lncoolH
+      real(KIND=rkind8), dimension (:), intent(OUT)  :: lncoolH
       real :: lnmu2
 !
 !  Scale rho^2 to gas number density^2 with mu^2
@@ -4046,7 +4047,7 @@ module Interstellar
 !
 !  inner rad defined to determine mean density inside rad and smooth if desired
 !
-      radius2 = energy_Nsigma2*remnant%feat%radius**2
+      radius2 = remnant%feat%radius**2
       tmp=0.0
       rhomin=1e20
       rhomax=0.0
