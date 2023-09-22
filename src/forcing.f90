@@ -54,7 +54,7 @@ module Forcing
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1.,qdouble_profile=1.
-  integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
+  integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz,iff_aux
   integer :: kzlarge=1
   integer :: iforcing_zsym=0, nlocation=1
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
@@ -80,12 +80,14 @@ module Forcing
 ! For helical forcing in spherical polar coordinate system
   real, allocatable, dimension(:,:,:) :: psif
   real, allocatable, dimension(:,:) :: cklist
-  logical :: lfastCK=.false.,lsamesign=.true.,lisotropize_SR=.false., SR_alpha_shift=.false., &
-             SR_ell_shift=.false.
+  logical :: lfastCK=.false.,lsamesign=.true.
+  logical :: lisotropize_SR=.false., SR_alpha_shift=.false., SR_ell_shift=.false., lfastSR=.false.
 ! allocated only if we have lfastCK=T
   real,allocatable,dimension(:,:,:) :: Zpsi_list
   real,allocatable,dimension(:,:,:) :: RYlm_list,IYlm_list
-  integer :: nlist_ck=25, ell_shift=0, helsign=0., ncol=7
+! allocated only if we have lfastSR=T
+  real,allocatable,dimension(:,:,:,:) :: RYlm_rot,IYlm_rot
+  integer :: nlist_ck=25, ell_shift=0, helsign=0., ncol=7, n_axisrot_angles=10
   real :: fpre = 1.0,ck_equator_gap=0.,ck_gap_step=0.,alpha_shift=5.
   integer :: icklist,jtest_aa0=5,jtest_uu0=1
 ! For random forcing
@@ -173,8 +175,8 @@ module Forcing
        n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex, &
        lrandom_time,laniso_forcing_old, &
        lforcing_osc, lforcing_osc2, lforcing_osc_double, &
-       tcor_GP, kmin_GP,kmax_GP,nk_GP,beta_GP, &
-       SR_alpha_shift, alpha_shift, ell_shift, SR_ell_shift, ncol
+       tcor_GP, kmin_GP,kmax_GP,nk_GP,beta_GP, n_axisrot_angles, &
+       SR_alpha_shift, alpha_shift, ell_shift, SR_ell_shift, ncol, lfastSR
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -209,11 +211,17 @@ module Forcing
 !
 !  add forcing in timestep
 !  11-may-2002/wolf: coded
+
+      use FarrayManager, only: farray_register_auxiliary
 !
 !  identify version number
 !
       if (lroot) call svn_id( &
            "$Id$")
+
+      if (iforce=='spherical_radial') then
+        if (lisotropize_SR.and.lfastSR) call farray_register_auxiliary('force',iff_aux)
+      endif
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -233,17 +241,19 @@ module Forcing
 !                  -> nk, kav, kk[xyz] and nk2, kav2, kk2[xyz], respectively, now module 
 !                  variables.
 !  16-Aug-2023/MR+ABa: Added a non-helical spherical forcing acting only in the 
-!                       radial direction that consists of Bessel functions in the 
-!                       radial and randomized spherical Harmonics around the x-axis
-!                       in the horizontal direction.  
+!                      radial direction that consists of Bessel functions in the 
+!                      radial and randomized spherical Harmonics around the x-axis
+!                      in the horizontal direction.  
 !
       use General, only: bessj,itoa
       use SharedVariables, only: get_shared_variable
       use Sub, only: step,erfunc,stepdown,register_report_aux
       use EquationOfState, only: cs0
 !
-      real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm
-      integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex,Legendrel
+      real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm,intv_rotang
+      real :: ang_intv,sthphase,cthphase,costhprime,phprime
+
+      integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex,Legendrel,iangle
       logical :: lk_dot_dat_exists
 !
       if (lstart) then
@@ -835,21 +845,56 @@ module Forcing
       elseif (iforce=='spherical_radial') then  
 !
         if (.not. lspherical_coords) call fatal_error('initialize_forcing', &
-                        'spherical_radial forcing works only in spherical coordinates!')
+                                     'spherical_radial forcing works only in spherical coordinates!')
 !
-        if (.not.allocated(psif)) allocate(psif(mx,my,mz),cklist(nlist_ck,ncol))
-! Read the list of values for emm, ell and alpha from file "alpha_in.dat". The number of given alpha for each lm 
-! pair should be ncol-2. 
+! Read the list of values for emm, ell and alpha from file "alpha_in.dat". 
+! The number of given alpha for each lm pair should be ncol-2. 
+!
         open(unit=76,file="alpha_in.dat",status="old")
         read(76,*) ckno,rmin,rmax
-        if (ckno/=nlist_ck) call fatal_error("initialize_forcing", &
+        if (ckno/=nlist_ck) then
+          call warning("initialize_forcing", &
           "Number of entries in alpha_in.dat "//trim(itoa(ckno))//" unequal nlist_ck="//trim(itoa(nlist_ck)))
-
+          nlist_ck=ckno
+        endif
         do ilread=1,nlist_ck
           read(76,*) (cklist(ilread,ilm),ilm=1,ncol)
         enddo
         close(76)
 !
+        if (.not.allocated(psif)) allocate(psif(mx,my,mz),cklist(nlist_ck,ncol))
+!
+        if (lfastSR.and.lisotropize_SR) then
+          if (.not.allocated(RYlm_rot)) then
+            allocate(RYlm_rot(my,mz,nlist_ck,n_axisrot_angles))
+            allocate(IYlm_rot(my,mz,nlist_ck,n_axisrot_angles))
+          endif
+          ang_intv=pi/n_axisrot_angles
+          do ilist=1,nlist_ck
+            emm = cklist(ilist,1)
+            Legendrel = cklist(ilist,2)
+            do iangle=1,n_axisrot_angles
+              do n=1,mz
+                do m=1,my
+                 
+                  sthphase=sin(ang_intv*iangle); cthphase=cos(ang_intv*iangle)
+                  costhprime=sthphase*cosph(n)*sinth(m)+cthphase*costh(m)
+                  if (abs(costhprime)==1.) then
+                    phprime=0.
+                  else
+                    phprime=acos((cthphase*cosph(n)*sinth(m)-sthphase*costh(m))/sqrt(1.-costhprime**2))
+                  endif
+                
+                  call sp_harm_real_costh(RYlm,Legendrel,emm,costhprime,phprime)
+                  call sp_harm_imag_costh(IYlm,Legendrel,emm,costhprime,phprime)
+                  RYlm_rot(m,n,ilist,iangle)=RYlm
+                  IYlm_rot(m,n,ilist,iangle)=IYlm
+                enddo
+              enddo
+            enddo
+          enddo
+        endif 
+ 
       elseif (iforce=='chandra_kendall'.or.iforce=='cktest') then 
 !
         if (.not. lspherical_coords) call fatal_error('initialize_forcing', &
@@ -1135,7 +1180,7 @@ module Forcing
         case ('blobs');           call forcing_blobs(f)
         case ('blobHS_random');   call forcing_blobHS_random(f)
         case ('chandra_kendall','cktest'); call forcing_chandra_kendall(f)
-        case ('spherical_radial'); call forcing_spherical_radial(f)    
+        case ('spherical_radial');call forcing_spherical_radial(f)    
         case ('diffrot');         call forcing_diffrot(f,force)
         case ('fountain', '3');   call forcing_fountain(f)
         case ('hillrain');        call forcing_hillrain(f,force)
@@ -2936,9 +2981,8 @@ module Forcing
       aindex=nint(ralpha*2)
       Balpha = cklist(lmindex,3+aindex)
 !
-! Now calculate the "potential" for the helical forcing. The expression
-! is taken from Chandrasekhar and Kendall.
-! Now construct Z_psi(r)
+! Calculate the "potential" for the helical forcing according to Chandrasekhar & Kendall.
+! Construct Z_psi(r).
 !
       call random_number_wrapper(rphase1,CHANNEL=channel_force)
       rphase1=rphase1*2*pi
@@ -3043,10 +3087,10 @@ module Forcing
       real, dimension(3) :: ee
       real, dimension(nx,3) :: capitalT,capitalS,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
-      integer :: emm,l,j,jf,Legendrel,lmindex,aindex, ell_rand
+      integer :: emm,l,j,jf,Legendrel,lmindex,aindex,ell_rand,raindex
       real :: a_ell,anum,adenom,jlm_ff,ylm_ff,rphase1,fnorm,alphar,Balpha,psilm,RYlm,IYlm
       real :: rz,rindex,ralpha,rphase2,thphase,sthphase,cthphase,costhprime,phprime,alphap,&
-              ralpha2,ellSR,fmaxloc,fmax
+              ralpha2,ellSR,fmaxloc,fmax,gindex,crphase1,srphase1
       real, dimension(mx) :: Z_psi
       real, dimension(nx) :: Smod
 !
@@ -3068,105 +3112,113 @@ module Forcing
       Balpha = cklist(lmindex,3+aindex)
 !
       if (SR_alpha_shift) then
-       call random_number_wrapper(ralpha2,CHANNEL=channel_force)
-       alphap=alpha_shift*2*ralpha2-alpha_shift
-       Balpha=Balpha+alphap
+        call random_number_wrapper(ralpha2,CHANNEL=channel_force)
+        alphap=alpha_shift*2*ralpha2-alpha_shift
+        Balpha=Balpha+alphap
       endif
 ! 
       if (SR_ell_shift) then
-       call random_number_wrapper(ellSR,CHANNEL=channel_force)
-       ell_rand=nint(ellSR*2*ell_shift)-ell_shift
-       Legendrel=Legendrel+ell_rand 
+        call random_number_wrapper(ellSR,CHANNEL=channel_force)
+        ell_rand=nint(ellSR*2*ell_shift)-ell_shift
+        Legendrel=Legendrel+ell_rand 
       endif
 !
-! Now calculate the "potential" for the non-helical forcing. The expression
-! is taken from Chandrasekhar and Kendall.
-! Now construct Z_psi(r)
+! Calculate the "potential" for the non-helical forcing according to Chandrasekhar & Kendall.
+! Construct Z_psi(r)
 !
-      call random_number_wrapper(rphase1,CHANNEL=channel_force)
-      rphase1=rphase1*2*pi
+      call sp_bessely_l(anum,Legendrel,Balpha*xyz0(1))
+      call sp_besselj_l(adenom,Legendrel,Balpha*xyz0(1))
+      a_ell = -anum/adenom
+!
+      do l=1,mx
+        alphar=Balpha*x(l)
+        call sp_besselj_l(jlm_ff,Legendrel,alphar)
+        call sp_bessely_l(ylm_ff,Legendrel,alphar)
+        Z_psi(l) = (a_ell*jlm_ff+ylm_ff)
+      enddo
 
-        call sp_bessely_l(anum,Legendrel,Balpha*xyz0(1))
-        call sp_besselj_l(adenom,Legendrel,Balpha*xyz0(1))
-        a_ell = -anum/adenom
+      if (lisotropize_SR) then
+
+        call random_number_wrapper(rphase1,CHANNEL=channel_force)
+        rphase1=rphase1*2*pi
+
+        if (lfastSR) then
+          call random_number_wrapper(gindex,CHANNEL=channel_force)
+          raindex=nint(gindex*(n_axisrot_angles-1))+1
+          crphase1=cos(rphase1)
+          srphase1=sin(rphase1)
+          do n=1,mz
+            do m=1,my
+              psilm = RYlm_rot(m,n,lmindex,raindex)*crphase1 - &
+                      IYlm_rot(m,n,lmindex,raindex)*srphase1
+              psif(:,m,n) = Z_psi*psilm
+            enddo
+          enddo
+        else
 !
-        do l=1,mx
-          alphar=Balpha*x(l)
-          call sp_besselj_l(jlm_ff,Legendrel,alphar)
-          call sp_bessely_l(ylm_ff,Legendrel,alphar)
-          Z_psi(l) = (a_ell*jlm_ff+ylm_ff)
-        enddo
+! Randomize axis of spherical harmonic by rotation about the x direction.
 !
-!Now randomize spherical harmonic around the x direction.
-!
-        if (lisotropize_SR) then
           call random_number_wrapper(thphase,CHANNEL=channel_force)
-            thphase = pi*thphase
+          thphase = pi*thphase
+!
+          do n=1,mz
+            do m=1,my
+              if (lisotropize_SR) then
+                sthphase=sin(thphase); cthphase=cos(thphase)
+                costhprime=sthphase*cosph(n)*sinth(m)+cthphase*costh(m)
+                if (abs(costhprime)==1.) then
+                  phprime=0.
+                else
+                  phprime=acos((cthphase*cosph(n)*sinth(m)-sthphase*costh(m))/sqrt(1.-costhprime**2))
+                endif
+              else
+                costhprime=costh(m); phprime=z(n)
+              endif
+              call sp_harm_real_costh(RYlm,Legendrel,emm,costhprime,phprime)
+              call sp_harm_imag_costh(IYlm,Legendrel,emm,costhprime,phprime)
+              psilm = RYlm*cos(rphase1)-IYlm*sin(rphase1)
+              psif(:,m,n) = Z_psi*psilm
+            enddo
+          enddo
+
         endif
 !
-        do n=1,mz
-          do m=1,my
-            if (lisotropize_SR) then
-              sthphase=sin(thphase); cthphase=cos(thphase)
-              costhprime=sthphase*cosph(n)*sinth(m)+cthphase*costh(m)
-              if (abs(costhprime)==1.) then
-                phprime=0.
-              else
-                phprime=acos((cthphase*cosph(n)*sinth(m)-sthphase*costh(m))/sqrt(1.-costhprime**2))
-              endif
-            else
-              costhprime=costh(m); phprime=z(n)
-            endif
-            call sp_harm_real_costh(RYlm,Legendrel,emm,costhprime,phprime)
-            call sp_harm_imag_costh(IYlm,Legendrel,emm,costhprime,phprime)
-            psilm = RYlm*cos(rphase1)-IYlm*sin(rphase1)
-            psif(:,m,n) = Z_psi*psilm
-          enddo
-        enddo
+! Calculate the force from the potential and store it as an auxiliary (except in test branches).
 !
-! ----- Now calculate the force from the potential and add this to velocity.
-! ----------now generate and add the force ------------
-!
-      ee(1) = 1
-      fnorm = cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
-      fmaxloc=0
-      do n=n1,n2
-        do m=m1,m2
-          psi(:,1) = psif(l1:l2,m,n)*ee(1)
-          call gij_psi(psif,ee,psi_ij)
-          call curl_mn(psi_ij,capitalT,psi)
-          call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
-          call curl_mn(Tij,capitalS,capitalT)
-          capitalS = (1./Balpha)*capitalS 
-          Smod=0
-            if (r_ff /= 0.)  capitalS(:,1)=profx_ampl*capitalS(:,1)
-            Smod=Smod+capitalS(:,1)**2
-          fmaxloc=max(fmaxloc,fnorm*sqrt(maxval(Smod)))
-        enddo
-      enddo 
-      call mpiallreduce_max(fmaxloc,fmax)
-      do n=n1,n2
-        do m=m1,m2
-          psi(:,1) = psif(l1:l2,m,n)*ee(1)
-          call gij_psi(psif,ee,psi_ij)
-          call curl_mn(psi_ij,capitalT,psi)
-          call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
-          call curl_mn(Tij,capitalS,capitalT)
-          capitalS = (1./Balpha)*capitalS
-            jf = iuu
+        ee = (/1.,0.,0./)
+        fnorm = cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
+        fmaxloc=0.
+        do n=n1,n2
+          do m=m1,m2
+            psi(:,1) = psif(l1:l2,m,n)*ee(1)
+            call gij_psi(psif,ee,psi_ij)
+            call curl_mn(psi_ij,capitalT,psi)
+            call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
+            call curl_mn(Tij,capitalS,capitalT)
+            capitalS(:,1) = (1./Balpha)*capitalS(:,1)
             if (r_ff /= 0.) capitalS(:,1)=profx_ampl*capitalS(:,1)
             if (lhelical_test) then
               if (lwrite_psi) then
-                f(l1:l2,m,n,jf) = psif(l1:l2,m,n)
+                f(l1:l2,m,n,iux) = psif(l1:l2,m,n)
               else
-                f(l1:l2,m,n,jf) = (fpre/fmax)*fnorm*capitalS(:,1)
+                f(l1:l2,m,n,iux) = fpre*fnorm*capitalS(:,1)
               endif
-            else                                                          
-! stochastic euler scheme of integration [sqrt(dt) is already included in fnorm]  
-              f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf) + (fpre/fmax)*fnorm*capitalS(:,1)
+            else
+              fmaxloc=max(fmaxloc,maxval(abs(capitalS(:,1))))
+              f(l1:l2,m,n,iff_aux) = fpre*capitalS(:,1)
             endif
+          enddo
         enddo
-      enddo
+  
+        if (.not.lhelical_test) then
+          call mpiallreduce_max(fmaxloc,fmax)
+!
+! Stochastic euler scheme of integration [sqrt(dt) is already included in fnorm].
+!
+          f(l1:l2,m1:m2,n1:n2,iux) = (1./fmax)*f(l1:l2,m1:m2,n1:n2,iff_aux)
+        endif
+      endif
+
     endsubroutine forcing_spherical_radial
 !***********************************************************************
     subroutine forcing_GP(f)
