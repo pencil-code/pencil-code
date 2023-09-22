@@ -3393,7 +3393,10 @@ clean:  slender
 cleann: clean
 	rm -f Makefile src/Makefile Makefile_inc TAGS
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
-	rm -f *.inc && touch Makefile.inc Makefile-standard.inc
+	@for file in *.inc; do \
+	  if [ ! -L $$file ]; then rm -f $$file; fi \
+	done
+	@touch Makefile.inc Makefile-standard.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
 #
 #  Same thing.
