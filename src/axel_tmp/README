@@ -29,3 +29,35 @@ make[1]: *** [Makefile:3203: legacy_code] Error 2
 make[1]: Leaving directory '/cfs/klemming/scratch/b/brandenb/oksana/axionSU2back/mu1p5em4_2048a_lam500_wleft2_ode3/src'
 make: *** [Makefile:15: legacy_default] Error 2
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+after using axel_tmp/cparam.f90
+
+sub.f90:8112:20:
+
+ 8109 |             do i=l1-2,l2+2
+      |                          2
+......
+ 8112 |               delfx(i) = minmod_alt(tmp1,tmp2)
+      |                    1
+Warning: Array reference at (1) out of bounds (0 < 1) in loop beginning at (2)
+make[2]: *** [Makefile:2754: sub.o] Error 1
+make[2]: Leaving directory '/cfs/klemming/scratch/b/brandenb/oksana/axionSU2back/mu1p5em4_2048a_lam500_wleft2_ode3/src'
+make[1]: *** [Makefile:3203: legacy_code] Error 2
+make[1]: Leaving directory '/cfs/klemming/scratch/b/brandenb/oksana/axionSU2back/mu1p5em4_2048a_lam500_wleft2_ode3/src'
+make: *** [Makefile:15: legacy_default] Error 2
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+cp axel_tmp/cdata.f90 .
+
+cp axel_tmp/param_io.f90 .
+
+make[2]: Entering directory '/cfs/klemming/scratch/b/brandenb/oksana/axionSU2back/mu1p5em4_2048a_lam500_wleft2_ode3/src'
+Compiler: ftn
+GCC version: 11.2.0
+Makefile:2687: GCC version > 9 ==> allowing argument mismatch in mpicomm.f90, noparticles_mpicomm.f90, syscalls.f90 and fftpack.f90.
+make[2]: *** No rule to make target 'io_common.inc', needed by 'io_dist.o'.  Stop.
+make[2]: Leaving directory '/cfs/klemming/scratch/b/brandenb/oksana/axionSU2back/mu1p5em4_2048a_lam500_wleft2_ode3/src'
+make[1]: *** [Makefile:3203: legacy_code] Error 2
+make[1]: Leaving directory '/cfs/klemming/scratch/b/brandenb/oksana/axionSU2back/mu1p5em4_2048a_lam500_wleft2_ode3/src'
+make: *** [Makefile:15: legacy_default] Error 2
+
