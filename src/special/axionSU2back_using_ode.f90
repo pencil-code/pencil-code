@@ -78,7 +78,6 @@ module Special
 !
   ! k array
   real, dimension (nx) :: k
-  real :: Q, Qdot, chi, chidot
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -107,8 +106,6 @@ module Special
   integer :: idiag_TLeff2km  =0 ! DIAG_DOC: $k|T_R|^2_{\rm eff}$
   integer :: idiag_TLdoteff2m  =0 ! DIAG_DOC: $|T_R\dot{T}_R|_{\rm eff}$
   integer :: idiag_TLdoteff2km  =0 ! DIAG_DOC: $k|T_R\dot{T}_R|_{\rm eff}$
-! integer :: idiag_grand=0 ! DIAG_DOC: ${\cal T}^Q$
-! integer :: idiag_grant=0 ! DIAG_DOC: ${\cal T}^\chi$
   integer :: idiag_dgrant_up=0 ! DIAG_DOC: ${\cal T}^\chi$
   integer :: idiag_grand2=0 ! DIAG_DOC: ${\cal T}^Q$ (test)
   integer :: idiag_dgrant=0 ! DIAG_DOC: $\dot{\cal T}^\chi$
@@ -303,7 +300,6 @@ module Special
 !
 !  Initial condition; depends on k, which is here set to x.
 !
-      write(6,1000) 'iproc,k=',iproc,k
       select case (init_axionSU2back)
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
@@ -328,7 +324,7 @@ module Special
             TRdot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
           endif
 !
-!  ODE variables
+!  ODE variables (exist only on root processor)
 !
           if (lroot) then
             chi0=chi_prefactor*pi*fdecay
@@ -366,6 +362,7 @@ module Special
             endif
           enddo
           enddo 
+          write(6,1000) 'iproc,TR=',iproc,TR
 !
         case default
           !
@@ -375,7 +372,7 @@ module Special
           call stop_it("")
       endselect
 !
-1000  format(a,2x,i3,80f8.4)
+1000  format(a,2x,i3,1p80e14.6)
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
@@ -444,6 +441,7 @@ module Special
       real, dimension (nx) :: impsi , impsidot , impsiddot , imTR, imTRdot, imTRddot
       real, dimension (nx) :: impsiL, impsiLdot, impsiLddot, imTL, imTLdot, imTLddot
       real, dimension (nx) :: Uprime, mQ, xi, epsQE, epsQB
+      real :: Q, Qdot, chi, chidot
       real :: fact=1., sign_swap=1.
       integer :: ik
       type (pencil_case) :: p
@@ -483,6 +481,13 @@ module Special
         imTLdot  =f(l1:l2,m,n,iaxi_imTLdot)
       endif
 !
+!  make ODE variables available (should exist on all processors)
+!
+      Q=f_ode(iaxi_Q)
+      Qdot=f_ode(iaxi_Qdot)
+      chi=f_ode(iaxi_chi)
+      chidot=f_ode(iaxi_chidot)
+!
 !  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
 !  Need to have Q on all processors.
 !
@@ -507,16 +512,6 @@ module Special
       endif
       epsQB=g**2*Q**4/(Mpl2*H**2)
 !
-!  background
-!
-  !   if (lconf_time) then
-  !     Qddot=g*lamf*a*chidot*Q**2-2.*Hscript*Qdot-(Hdot*a**2+2*Hscript**2)*Q-2.*g**2*a**2*Q**3
-  !     chiddot=-3.*g*lamf*a*Q**2*(Qdot+Hscript*Q)-2.*Hscript*chidot-a**2*Uprime
-  !   else
-  !     Qddot=g*lamf*chidot*Q**2-3.*H*Qdot-(Hdot+2*H**2)*Q-2.*g**2*Q**3
-  !     chiddot=-3.*g*lamf*Q**2*(Qdot+H*Q)-3.*H*chidot-Uprime
-  !   endif
-!
 !  analytical solution
 !
       if (lconf_time) then
@@ -536,12 +531,12 @@ module Special
 !
       if (lconf_time) then
         if (lwith_eps) then
-          psiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psi &
+          psiddot=-(k**2-2./t**2)*psi &
             +(2.*sqrt(epsQE)/t)*TRdot+((2.*sqrt(epsQB)*(mQ+k*t))/t**2)*TR
           TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*sqrt(epsQE))/t*psidot &
             +(2.*sqrt(epsQE))/t**2*psi+(2.*sqrt(epsQB))/t**2*(mQ+k*t)*psi
           if (lim_psi_TR) then
-            impsiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi &
+            impsiddot=-(k**2-2./t**2)*impsi &
               +(2.*sqrt(epsQE)/t)*imTRdot+((2.*sqrt(epsQB)*(mQ+k*t))/t**2)*imTR
             imTRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
               +(2.*sqrt(epsQE))/t**2*impsi+(2.*sqrt(epsQB))/t**2*(mQ+k*t)*impsi
@@ -550,11 +545,11 @@ module Special
 !  Left-handed modes (conformal, with epsilon formulation)
 !
           if (lleft_psiL_TL) then
-            psiLddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*psiL &
+            psiLddot=-(k**2-2./t**2)*psiL &
               +(2.*sqrt(epsQE)/t)*TLdot+((2.*sqrt(epsQB)*(mQ-k*t))/t**2)*TL
             TLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*TL-(2.*sqrt(epsQE))/t*psiLdot &
               +(2.*sqrt(epsQE))/t**2*psiL+(2.*sqrt(epsQB))/t**2*(mQ-k*t)*psiL
-            impsiLddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsiL &
+            impsiLddot=-(k**2-2./t**2)*impsiL &
               +(2.*sqrt(epsQE)/t)*imTLdot+((2.*sqrt(epsQB)*(mQ-k*t))/t**2)*imTL
             imTLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*imTL-(2.*sqrt(epsQE))/t*impsiLdot &
               +(2.*sqrt(epsQE))/t**2*impsiL+(2.*sqrt(epsQB))/t**2*(mQ-k*t)*impsiL
@@ -653,7 +648,8 @@ module Special
           elsewhere
             df(l1:l2,m,n,iaxi_psi   )=df(l1:l2,m,n,iaxi_psi   )+psidot
             df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot) &
-              -H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
+              -H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi &
+              -2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
             df(l1:l2,m,n,iaxi_TR)=df(l1:l2,m,n,iaxi_TR)+TRdot
             df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot) &
               -H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
@@ -663,12 +659,15 @@ module Special
           df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
           df(l1:l2,m,n,iaxi_TR )=df(l1:l2,m,n,iaxi_TR )+TRdot
           if (lwith_eps) then
-            psiddot=-H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot+2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
+            psiddot=-H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot &
+              +2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
           else
-            psiddot=-H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi-2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
+            psiddot=-H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi &
+              -2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
           endif
           if (lwith_eps) then
-            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*sqrt(epsQE)*psidot &
+            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR &
+              +2.*H*sqrt(epsQE)*psidot &
               +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
           else
             TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
@@ -719,6 +718,7 @@ module Special
         if (idiag_grantxy/=0)   call zsum_mn_name_xy(grant,idiag_grantxy)
       endif
 !
+1000  format(a,2x,i3,1p80e14.6)
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine dspecial_dt_ode
@@ -742,14 +742,14 @@ module Special
       use Sub
 !
       real :: Q, Qdot, Qddot, chi, chidot, chiddot
-      real :: Uprime, mQ, xi, epsQE, epsQB
+      real :: Uprime, mQ, xi
       real :: fact=1., sign_swap=1.
 !
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !
-!  Set the 8 variable
+!  Set the all variable
 !
       Q=f_ode(iaxi_Q)
       Qdot=f_ode(iaxi_Qdot)
@@ -771,13 +771,10 @@ module Special
         a=-1./(H*t)
         Hscript=a*H
         xi=lamf*chidot*(-0.5*t)
-        epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
       else
         a=exp(H*t)
         xi=lamf*chidot/(2.*H)
-        epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
       endif
-      epsQB=g**2*Q**4/(Mpl2*H**2)
 !
 !  background
 !
@@ -814,10 +811,6 @@ module Special
 !
 !  Choice whether or not we want to update the background
 !
-!Qdot=1.
-!chidot=0.
-!Qddot=0.
-!chiddot=0.
       if (lupdate_background) then
         df_ode(iaxi_Q)     =df_ode(iaxi_Q     )+Qdot
         df_ode(iaxi_chi)   =df_ode(iaxi_chi   )+chidot
@@ -908,42 +901,34 @@ module Special
       real, dimension (nx) :: tmp_psiL, tmp_psiLdot, tmp_TL, tmp_TLdot
       real, dimension (nx) :: tmp_impsi, tmp_impsidot, tmp_imTR, tmp_imTRdot
       real, dimension (nx) :: tmp_impsiL, tmp_impsiLdot, tmp_imTL, tmp_imTLdot
+      real :: Q, Qdot, chi, chidot
       real :: mQ, xi
       real :: lnt, lnH, lna, a, lnkmin, lnkmax
       integer :: ik, nswitch
 !
-!  Set parameters
+!  make ODE variables available (should exist on all processors)
 !
-      m=m1
-      n=n1
-!
-      if (lroot) then
-        Q=f_ode(iaxi_Q)
-        Qdot=f_ode(iaxi_Qdot)
-        chidot=f_ode(iaxi_chidot)
+      Q=f_ode(iaxi_Q)
+      Qdot=f_ode(iaxi_Qdot)
+      chidot=f_ode(iaxi_chidot)
 !
 !  Possibility of keeping mQ constant
 !
-        if (lkeep_mQ_const) then
-          mQ=g*Q0/H
-        else
-          mQ=g*Q/H
-        endif
+      if (lkeep_mQ_const) then
+        mQ=g*Q0/H
+      else
+        mQ=g*Q/H
+      endif
 !
 !  For conformal time, there is a 1/a factor in Qdot/a+H
 !
-        if (lconf_time) then
-          a=-1./(H*t)
-          xi=lamf*chidot*(-0.5*t)
-        else
-          a=exp(H*t)
-          xi=lamf*chidot/(2.*H)
-        endif
+      if (lconf_time) then
+        a=-1./(H*t)
+        xi=lamf*chidot*(-0.5*t)
+      else
+        a=exp(H*t)
+        xi=lamf*chidot/(2.*H)
       endif
-      call mpibcast(a)
-      call mpibcast(Q)
-      call mpibcast(mQ)
-      call mpibcast(xi)
 !
 !  decide about revising the k array
 !  a=exp(N), N=H*t (=lna).
@@ -1032,16 +1017,16 @@ module Special
 !  output
 !
           open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
-          write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psi), f(l1:l2,m,n,iaxi_impsi), &
-                             f(l1:l2,m,n,iaxi_TR), f(l1:l2,m,n,iaxi_imTR)
+          write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi), f(l1:l2,m1,n1,iaxi_impsi), &
+                             f(l1:l2,m1,n1,iaxi_TR), f(l1:l2,m1,n1,iaxi_imTR)
           close(1)
 !
 !  output for left-handed modes
 !
           if (lleft_psiL_TL) then
           open (1, file=trim(directory_snap)//'/krange_left.dat', form='formatted', position='append')
-          write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psiL), f(l1:l2,m,n,iaxi_impsiL), &
-                             f(l1:l2,m,n,iaxi_TL),   f(l1:l2,m,n,iaxi_imTL)
+          write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiL), f(l1:l2,m1,n1,iaxi_impsiL), &
+                             f(l1:l2,m1,n1,iaxi_TL),   f(l1:l2,m1,n1,iaxi_imTL)
           close(1)
           endif
 !
@@ -1064,7 +1049,7 @@ module Special
           if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
           if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
           open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
-          write(1,*) t, lnk, f(l1:l2,m,n,iaxi_psi)
+          write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi)
           close(1)
 !
 !  reset lnkmin0_dummy (but now it is a dummy)
@@ -1077,11 +1062,11 @@ module Special
 !
 !  Now set TR, TRdot, and imaginary parts, after they have been updated.
 !
-      TR   =f(l1:l2,m,n,iaxi_TR)
-      TRdot=f(l1:l2,m,n,iaxi_TRdot)
+      TR   =f(l1:l2,m1,n1,iaxi_TR)
+      TRdot=f(l1:l2,m1,n1,iaxi_TRdot)
       if (lim_psi_TR) then
-        imTR   =f(l1:l2,m,n,iaxi_imTR)
-        imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
+        imTR   =f(l1:l2,m1,n1,iaxi_imTR)
+        imTRdot=f(l1:l2,m1,n1,iaxi_imTRdot)
       endif
 !
 !  integrand (for diagnostics)
@@ -1096,8 +1081,7 @@ module Special
         TRdoteff2=TRdoteff2+imTR*imTRdot
       endif
 !
-!open (1, file=trim(directory_snap)//'/TReff2_orig.dat', form='formatted', position='append')
-!write(1,*) nint(t), TReff2 ; close(1)
+!  Apply horizon factor
 !
       if (horizon_factor==0.) then
         if (headt.and.lfirst) print*,'horizon_factor=',horizon_factor
@@ -1107,7 +1091,7 @@ module Special
 !         TReff=(1./sqrt(2.*k))*cos(-k*t)
 !         TRdoteff=(k/sqrt(2.*k))*sin(-k*t)
         endwhere
-      else
+      elseif (horizon_factor>0.) then
         where (k>(a*H*horizon_factor))
           TReff2=0.
           TRdoteff2=0.
@@ -1117,10 +1101,10 @@ module Special
 !  Same for left-handed modes
 !
       if (lleft_psiL_TL) then
-        TL   =f(l1:l2,m,n,iaxi_TL)
-        TLdot=f(l1:l2,m,n,iaxi_TLdot)
-        imTL   =f(l1:l2,m,n,iaxi_imTL)
-        imTLdot=f(l1:l2,m,n,iaxi_imTLdot)
+        TL   =f(l1:l2,m1,n1,iaxi_TL)
+        TLdot=f(l1:l2,m1,n1,iaxi_TLdot)
+        imTL   =f(l1:l2,m1,n1,iaxi_imTL)
+        imTLdot=f(l1:l2,m1,n1,iaxi_imTLdot)
         TLeff2=TL**2
         TLdoteff2=TL*TLdot
         TLeff2=TLeff2+imTL**2
@@ -1131,7 +1115,7 @@ module Special
             TLeff2=0.
             TLdoteff2=0.
           endwhere
-        else
+        elseif (horizon_factor>0.) then
           where (k>(a*H*horizon_factor))
             TLeff2=0.
             TLdoteff2=0.
@@ -1291,8 +1275,6 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'TLeff2km' ,idiag_TLeff2km)
         call parse_name(iname,cname(iname),cform(iname),'TLdoteff2m' ,idiag_TLdoteff2m)
         call parse_name(iname,cname(iname),cform(iname),'TLdoteff2km' ,idiag_TLdoteff2km)
-!       call parse_name(iname,cname(iname),cform(iname),'grand' ,idiag_grand)
-!       call parse_name(iname,cname(iname),cform(iname),'grant' ,idiag_grant)
         call parse_name(iname,cname(iname),cform(iname),'dgrant_up' ,idiag_dgrant_up)
         call parse_name(iname,cname(iname),cform(iname),'grand2' ,idiag_grand2)
         call parse_name(iname,cname(iname),cform(iname),'dgrant' ,idiag_dgrant)

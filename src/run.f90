@@ -339,6 +339,7 @@ program run
   f=0.
   if (ip<=12.and.lroot) tvar1=mpiwtime()
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
+  if (lode) call mpibcast(f_ode,n_odevars)
   if (ip<=12.and.lroot) print*,'rsnap: read snapshot var.dat in ',&
                                mpiwtime()-tvar1,' seconds'
 !

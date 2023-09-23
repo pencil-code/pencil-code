@@ -506,7 +506,15 @@ module Equ
       type (pencil_case)                ,intent(INOUT) :: p
 
       integer :: imn
-
+!
+!  This is the beginning of the famous mn-loop!
+!  Here, m and n don't start with m1 and n1, as one would naively expect,
+!  but they start at m1+nghost and n1+nghost, because those have not don't
+!  rely on the correct calculation of any of the derivatives.
+!  Once we reach m2-nghost and n2-nghost, this is the last moment
+!  before we really need to make sure all the (concurrent) communication
+!  has finished.
+!
       lfirstpoint=.true.
       do imn=1,nyz
 
