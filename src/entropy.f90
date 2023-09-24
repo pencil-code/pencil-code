@@ -2357,14 +2357,14 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: absz
-      double precision, dimension(nx) :: n_c,n_w,n_i,n_h
+      real(KIND=rkind8), dimension(nx) :: n_c,n_w,n_i,n_h
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
       real, parameter :: T_c_cgs=500.0,T_w_cgs=8.0e3,T_i_cgs=8.0e3,T_h_cgs=1.0e6
       real :: T_c,T_w,T_i,T_h
       real, dimension(nx) :: rho,pp
       real :: kpc,fmpi1
-      double precision ::  rhoscale
+      real(KIND=rkind8) :: rhoscale
 !
       if (lroot) print*,'ferriere: Ferriere density and entropy profile'
 !
@@ -2453,8 +2453,8 @@ module Energy
       real :: rho0hs,muhs,fmpi1
       real :: g_A, g_C
       real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
-      double precision :: g_B, g_D
-      double precision, parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
+      real(KIND=rkind8) :: g_B, g_D
+      real(KIND=rkind8), parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
 !
 !  Set up physical units.
 !
@@ -6576,19 +6576,19 @@ module Energy
 !
 !  Parameters for subroutine cool_RTV in SI units (from Cook et al. 1989).
 !
-      double precision, parameter, dimension (10) :: &
+      real(KIND=rkind8), parameter, dimension (10) :: &
           intlnT_1 =(/4.605, 8.959, 9.906, 10.534, 11.283, 12.434, 13.286, 14.541, 17.51, 20.723 /)
-      double precision, parameter, dimension (9) :: &
+      real(KIND=rkind8), parameter, dimension (9) :: &
           lnH_1 = (/ -542.398,  -228.833, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
        B_1   = (/     50.,      15.,      0.,      2.0,      0.,    -2.,      0., -twothird,    0.5 /)
 !
 !  A second set of parameters for cool_RTV (from interstellar.f90).
 !
-      double precision, parameter, dimension(7) :: &
+      real(KIND=rkind8), parameter, dimension(7) :: &
           intlnT_2 = (/ 5.704,7.601 , 8.987 , 11.513 , 17.504 , 20.723, 24.0 /)
-      double precision, parameter, dimension(6) :: &
+      real(KIND=rkind8), parameter, dimension(6) :: &
           lnH_2 = (/-102.811, -99.01, -111.296, -70.804, -90.934, -80.572 /)
-      double precision, parameter, dimension(6) :: &
+      real(KIND=rkind8), parameter, dimension(6) :: &
           B_2   = (/    2.0,     1.5,   2.867,  -0.65,   0.5, 0.0 /)
 !
       intent(in) :: p
