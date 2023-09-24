@@ -392,7 +392,7 @@ module Sub
           enddo
         else
           res=sum(dble(a))     ! sum at double precision to improve accuracy
-        endif
+        endif                  ! but how to avoid promotion to quad precision?
       else
         if (lspherical_coords) then
           do isum=l1,l2
@@ -403,8 +403,7 @@ module Sub
         endif
       endif
 !
-      if (lcylindrical_coords) &
-          call fatal_error('mean_mn','not implemented for cylindrical')
+      if (lcylindrical_coords) call fatal_error('mean_mn','not implemented for cylindrical')
 !
     endsubroutine mean_mn
 !***********************************************************************
@@ -3744,13 +3743,13 @@ module Sub
       real, intent(out) :: tout
       integer, intent(out) :: nout
       real, intent(in) :: dtout
-      double precision, intent(in) :: t_temp
+      real(KIND=rkind8), intent(in) :: t_temp
 !
       integer, parameter :: lun = 31
       logical :: exist, exist1
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
-      double precision :: t0
+      real(KIND=rkind8) :: t0
       integer ::  ntsnap=0, jtsnap=0
       real, dimension(:), allocatable :: tsnap_list
 !
@@ -3846,7 +3845,7 @@ module Sub
       real, intent(inout) :: tout
       integer, intent(inout) :: nout
       real, intent(in) :: dtout
-      double precision, intent(in) :: t
+      real(KIND=rkind8), intent(in) :: t
       logical, intent(inout) :: lout
       logical, intent(in), optional :: nowrite
       logical :: exist

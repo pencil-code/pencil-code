@@ -2852,7 +2852,6 @@ start.x: start.o | $(SPECIAL_DEPS)
 #
 run.o: copyin.inc $(OMP_PREREQ) $(run) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS)
-	echo OMP: $(OMP_PREREQ)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #needs LIBGPU as prerequisite, this in turn needs a rule
 #$(LIBGPU):
