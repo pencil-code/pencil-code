@@ -65,7 +65,7 @@ module Timestep
       type (pencil_case) :: p
 !
       real :: errmax, dt_temp
-      double precision :: tnew, told!, time1, time2
+      real(KIND=rkind8) :: tnew, told!, time1, time2
       integer :: j,i
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt

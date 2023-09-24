@@ -48,7 +48,7 @@ module Forcing
   real :: zff_hel=0.,max_force=impossible
   real :: dtforce=0., dtforce_ampl=.5, dtforce_duration=-1.0, force_strength=0.
   real :: b0_mode=0.
-  double precision :: tforce_ramp_down=1.1, tauforce_ramp_down=1.
+  real(KIND=rkind8) :: tforce_ramp_down=1.1, tauforce_ramp_down=1.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(3,2) :: location_fixed=0.
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.

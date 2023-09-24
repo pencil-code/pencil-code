@@ -2517,7 +2517,7 @@ module Particles_mpicomm
       integer, dimension(3,ncpus) :: narray  ! (/ nblock_loc, nproc_parent, nproc_foster /) stacked
       integer, dimension(MPI_STATUS_SIZE) :: istat
       character(len=fnlen) :: fpath
-      double precision :: tfile
+      real(KIND=rkind8) :: tfile
       integer :: handle, mpi_type, ierr
       integer :: nblock_cum, nparent_cum, nfoster_cum, n
       integer(KIND=MPI_OFFSET_KIND) :: offset

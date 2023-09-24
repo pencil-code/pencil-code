@@ -430,7 +430,7 @@ module Particles_diagnos_dv
       real, dimension(3) :: dx_c !collision grid dx
       integer, dimension(3) :: n_c
 !
-      double precision, save :: dx1, dy1, dz1 !inverse dx
+      real(KIND=rkind8), save :: dx1, dy1, dz1 !inverse dx
       logical, save :: lfirstcall=.true. !only calculate dx1 once
       integer :: k
 !

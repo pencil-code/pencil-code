@@ -40,8 +40,8 @@ module Gravity
     module procedure acceleration_point
   endinterface
 !
-  double precision, parameter :: g_B_cgs=6.172d20, g_D_cgs=3.086d21
-  double precision :: g_B, g_D, g_B_factor=1.0, g_D_factor=1.0
+  real(KIND=rkind8), parameter :: g_B_cgs=6.172d20, g_D_cgs=3.086d21
+  real(KIND=rkind8) :: g_B, g_D, g_B_factor=1.0, g_D_factor=1.0
   real :: gravitational_const=0., mass_cent_body=0.
   real, dimension(mx) :: gravx_xpencil=0.0, potx_xpencil=0.0
   real, dimension(my) :: gravy_ypencil=0.0, poty_ypencil=0.0

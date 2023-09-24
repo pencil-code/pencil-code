@@ -1862,7 +1862,7 @@ module HDF5_IO
     subroutine output_hdf5_double_0D(name, data)
 !
       character (len=*), intent(in) :: name
-      double precision, intent(in) :: data
+      real(KIND=rkind8), intent(in) :: data
 !
       call output_hdf5_double_1D (name, (/ data /), 1)
 !
@@ -1872,7 +1872,7 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
-      double precision, dimension (nv), intent(in) :: data
+      real(KIND=rkind8), dimension (nv), intent(in) :: data
 !
       call output_local_hdf5_double_1D (name, data, nv)
 !
@@ -1882,7 +1882,7 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
-      double precision, dimension (nv), intent(in) :: data
+      real(KIND=rkind8), dimension (nv), intent(in) :: data
 !
       integer(KIND=ikind8), dimension(1) :: size
 !

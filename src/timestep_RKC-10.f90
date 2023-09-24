@@ -55,7 +55,7 @@ contains
         type (pencil_case) :: p
         real :: dt1, dt1_local
         real, save :: dt1_last=0.0
-        double precision :: t0
+        real(KIND=rkind8) :: t0
         integer :: iv
 
         ! Use pointers for cheaply flipping fn and fn1 after each substep
