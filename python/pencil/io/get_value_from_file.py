@@ -137,7 +137,7 @@ def get_value_from_file(
             matches = list(
                 re.finditer(
                     # Does it appear after a comma?
-                    f"[, ]+{quantity}[^0-9a-zA-Z_]",
+                    f"[, ]+{quantity}[^0-9a-zA-Z_=]*=",
                     line.split(SYM_COMMENT)[0],
                 )
             )
@@ -145,7 +145,7 @@ def get_value_from_file(
                 list(
                     re.finditer(
                         # Does it appear at the beginning of a line (ignoring whitespace)?
-                        f"^[\s]*{quantity}[^0-9a-zA-Z_]",
+                        f"^[\s]*{quantity}[^0-9a-zA-Z_=]*=",
                         line.split(SYM_COMMENT)[0],
                     )
                 )
