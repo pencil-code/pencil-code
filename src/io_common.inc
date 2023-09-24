@@ -152,6 +152,7 @@
 !
       use FarrayManager, only: farray_retrieve_metadata_ode
       use File_Io, only: file_exists
+      use Mpicomm, only: mpibcast
 
       character (len=*), intent(IN) :: file
 
@@ -163,40 +164,43 @@
       integer, dimension(:), allocatable :: lengs_in
       real :: t_in
         
-      if (.not. lroot) return
+      if (lroot) then
 !
-      if (file(1:3)=='VAR') then
-        file_='ODE'//file(4:)
-      else
-        file_='ode.dat'
-      endif
-!
-      if (file_exists(trim(directory_collect)//'/'//trim(file_))) then
-        if (ip<=8) print*, 'read ODE snapshot', trim (file_)
-        open(lun_input,FILE=trim(directory_collect)//'/'//trim(file_),FORM='unformatted')
-        num = farray_retrieve_metadata_ode(names,lengs)
-      
-        read(lun_input) n_in, num_in
-        if (n_in /= n_odevars) call fatal_error("input_ode", &
-                               "numbers of slots differ between "//trim(file)//" and 'f_ode' array")
-        if (num_in /= num) call fatal_error("input_ode", &
-                                "numbers of variables differ between "//trim(file)//" and 'f_ode' array")
-        if (n_in > 0) then
-          allocate(lengs_in(num), names_in(num))
-          read(lun_input) names_in
-          if (any(names_in /= names(n_odevars-num+1:))) call fatal_error("input_ode","variable names differ")
-          read(lun_input) lengs_in
-          if (any(lengs_in /= lengs(n_odevars-num+1:))) call fatal_error("input_ode","variable lengths differ")
-          read(lun_input) f_ode
+        if (file(1:3)=='VAR') then
+          file_='ODE'//file(4:)
+        else
+          file_='ode.dat'
         endif
-      
-        read(lun_input) t_in
-        if (t_in/=real(t)) call fatal_error("input_ode","times differ between "//trim(file)//" and var.dat")
-        close(lun_input) 
-      else
-        call warning('input_ode','no ODE data available')
-      endif
+!
+        if (file_exists(trim(directory_collect)//'/'//trim(file_))) then
+          if (ip<=8) print*, 'read ODE snapshot', trim (file_)
+          open(lun_input,FILE=trim(directory_collect)//'/'//trim(file_),FORM='unformatted')
+          num = farray_retrieve_metadata_ode(names,lengs)
         
+          read(lun_input) n_in, num_in
+          if (n_in /= n_odevars) call fatal_error("input_ode", &
+                                 "numbers of slots differ between "//trim(file)//" and 'f_ode' array")
+          if (num_in /= num) call fatal_error("input_ode", &
+                                  "numbers of variables differ between "//trim(file)//" and 'f_ode' array")
+          if (n_in > 0) then
+            allocate(lengs_in(num), names_in(num))
+            read(lun_input) names_in
+            if (any(names_in /= names(n_odevars-num+1:))) call fatal_error("input_ode","variable names differ")
+            read(lun_input) lengs_in
+            if (any(lengs_in /= lengs(n_odevars-num+1:))) call fatal_error("input_ode","variable lengths differ")
+            read(lun_input) f_ode
+          endif
+        
+          read(lun_input) t_in
+          if (t_in/=real(t)) call fatal_error("input_ode","times differ between "//trim(file)//" and var.dat")
+          close(lun_input) 
+        else
+          call warning('input_ode','no ODE data available')
+        endif
+      endif
+
+      call mpibcast(f_ode,n_odevars)
+  
     endsubroutine input_ode
 !***********************************************************************
 
