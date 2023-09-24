@@ -111,7 +111,7 @@ module Cparam
   integer(KIND=ikind4), parameter :: int_sgl=0
   integer, parameter :: max_int=huge(int_sgl)
   real, parameter :: huge_real=huge(0.)
-  real(KIND=rkind8), parameter :: huge_double=huge(0.d0)
+  real(KIND=rkind8), parameter :: zero_double=0., huge_double=huge(zero_double)
   real, parameter :: max_real=huge_real/10.    ! division necessary as INTEL compiler considers
                                                ! huge(0.) illegal when reading it from a namelist
 !
