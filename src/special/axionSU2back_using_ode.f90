@@ -52,6 +52,7 @@ module Special
   real :: grand_sum, grant_sum, dgrant_sum
   real :: TRdoteff2km_sum, TRdoteff2m_sum, TReff2km_sum, TReff2m_sum
   real :: TLdoteff2km_sum, TLdoteff2m_sum, TLeff2km_sum, TLeff2m_sum
+  real :: TRpsim_sum, TRpsikm_sum, TRpsidotm_sum, TRdotpsim_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
   real :: lnkmin0, lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=0.
@@ -102,6 +103,10 @@ module Special
   integer :: idiag_TReff2km  =0 ! DIAG_DOC: $k|T_R|^2_{\rm eff}$
   integer :: idiag_TRdoteff2m  =0 ! DIAG_DOC: $|T_R\dot{T}_R|_{\rm eff}$
   integer :: idiag_TRdoteff2km  =0 ! DIAG_DOC: $k|T_R\dot{T}_R|_{\rm eff}$
+  integer :: idiag_TRpsim  =0 ! DIAG_DOC: $\langle T_R^* \psi\rangle$
+  integer :: idiag_TRpsikm  =0 ! DIAG_DOC: $\langle T_R^* \psi (k/a)\rangle$
+  integer :: idiag_TRpsidotm  =0 ! DIAG_DOC: $\langle T_R^* \psi'\rangle$
+  integer :: idiag_TRdotpsim  =0 ! DIAG_DOC: $\langle T_R^*' \psi\rangle$
   integer :: idiag_TLeff2m  =0 ! DIAG_DOC: $|T_R|^2_{\rm eff}$
   integer :: idiag_TLeff2km  =0 ! DIAG_DOC: $k|T_R|^2_{\rm eff}$
   integer :: idiag_TLdoteff2m  =0 ! DIAG_DOC: $|T_R\dot{T}_R|_{\rm eff}$
@@ -701,6 +706,10 @@ module Special
         call save_name(TReff2km_sum,idiag_TReff2km)
         call save_name(TRdoteff2m_sum,idiag_TRdoteff2m)
         call save_name(TRdoteff2km_sum,idiag_TRdoteff2km)
+        call save_name(TRpsim_sum,idiag_TRpsim)
+        call save_name(TRpsikm_sum,idiag_TRpsikm)
+        call save_name(TRpsidotm_sum,idiag_TRpsidotm)
+        call save_name(TRdotpsim_sum,idiag_TRdotpsim)
         call save_name(TLeff2m_sum,idiag_TLeff2m)
         call save_name(TLeff2km_sum,idiag_TLeff2km)
         call save_name(TLdoteff2m_sum,idiag_TLdoteff2m)
@@ -895,7 +904,10 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: TR, TRdot, imTR, imTRdot, TReff2, TRdoteff2
       real, dimension (nx) :: TL, TLdot, imTL, imTLdot, TLeff2, TLdoteff2
+      real, dimension (nx) :: psi, psidot, impsi , impsidot
       real, dimension (nx) :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
+      real, dimension (nx) :: TRpsi , TRpsik , TRpsidot , TRdotpsi
+      real, dimension (nx) :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
       real, dimension (nx) :: TLdoteff2km, TLdoteff2m, TLeff2km, TLeff2m
       real, dimension (nx) :: tmp_psi , tmp_psidot , tmp_TR, tmp_TRdot
       real, dimension (nx) :: tmp_psiL, tmp_psiLdot, tmp_TL, tmp_TLdot
@@ -1062,9 +1074,13 @@ module Special
 !
 !  Now set TR, TRdot, and imaginary parts, after they have been updated.
 !
+      psi   =f(l1:l2,m,n,iaxi_psi)
+      psidot=f(l1:l2,m,n,iaxi_psidot)
       TR   =f(l1:l2,m1,n1,iaxi_TR)
       TRdot=f(l1:l2,m1,n1,iaxi_TRdot)
       if (lim_psi_TR) then
+        impsi   =f(l1:l2,m,n,iaxi_impsi)
+        impsidot=f(l1:l2,m,n,iaxi_impsidot)
         imTR   =f(l1:l2,m1,n1,iaxi_imTR)
         imTRdot=f(l1:l2,m1,n1,iaxi_imTRdot)
       endif
@@ -1074,11 +1090,17 @@ module Special
 !
       TReff2=TR**2
       TRdoteff2=TR*TRdot
+      TRpsi=TR*psi
+      TRpsidot=TR*psidot
+      TRdotpsi=TRdot*psi
       if (lim_psi_TR) then
         !TReff2=TR**2+imTR**2
         !TRdoteff2=TR*TRdot+imTR*imTRdot
         TReff2=TReff2+imTR**2
         TRdoteff2=TRdoteff2+imTR*imTRdot
+        TRpsi=TRpsi+imTR*impsi
+        TRpsidot=TRpsidot+imTR*impsidot
+        TRdotpsi=TRdotpsi+imTRdot*impsi
       endif
 !
 !  Apply horizon factor
@@ -1090,11 +1112,17 @@ module Special
           TRdoteff2=0.
 !         TReff=(1./sqrt(2.*k))*cos(-k*t)
 !         TRdoteff=(k/sqrt(2.*k))*sin(-k*t)
+          TRpsi=0.
+          TRpsidot=0.
+          TRdotpsi=0.
         endwhere
       elseif (horizon_factor>0.) then
         where (k>(a*H*horizon_factor))
           TReff2=0.
           TRdoteff2=0.
+          TRpsi=0.
+          TRpsidot=0.
+          TRdotpsi=0.
         endwhere
       endif
 !
@@ -1127,6 +1155,10 @@ module Special
 !  uniform spacings.
 !
       if (llnk_spacing_adjustable .or. llnk_spacing) then
+        TRpsim=(4.*pi*k**3*dlnk)*TRpsi
+        TRpsikm=(4.*pi*k**3*dlnk)*TRpsi*(k/a)
+        TRpsidotm=(4.*pi*k**3*dlnk)*TRpsidot
+        TRdotpsim=(4.*pi*k**3*dlnk)*TRdotpsi
         TRdoteff2km=(4.*pi*k**3*dlnk)*TRdoteff2*(k/a)
         TRdoteff2m=(4.*pi*k**3*dlnk)*TRdoteff2
         TReff2km=(4.*pi*k**3*dlnk)*TReff2*(k/a)
@@ -1161,6 +1193,8 @@ module Special
           endif
         endif
       else
+        TRpsidotm=(4.*pi*k**2*dk)*TRpsidot
+        TRdotpsim=(4.*pi*k**2*dk)*TRdotpsi
         TRdoteff2km=(4.*pi*k**2*dk)*TRdoteff2*(k/a)
         TRdoteff2m=(4.*pi*k**2*dk)*TRdoteff2
         TReff2km=(4.*pi*k**2*dk)*TReff2*(k/a)
@@ -1201,7 +1235,12 @@ module Special
       call mpireduce_sum(sum(grant),grant_sum,1)
       call mpireduce_sum(sum(dgrant),dgrant_sum,1)
 !
-!  These 4 lines are only needed for diagnostics and could be escaped.
+!  These 8 lines are only needed for diagnostics and could be escaped.
+!
+      call mpireduce_sum(sum(TRpsim),TRpsim_sum,1)
+      call mpireduce_sum(sum(TRpsikm),TRpsikm_sum,1)
+      call mpireduce_sum(sum(TRpsidotm),TRpsidotm_sum,1)
+      call mpireduce_sum(sum(TRdotpsim),TRdotpsim_sum,1)
 !
       call mpireduce_sum(sum(TRdoteff2km),TRdoteff2km_sum,1)
       call mpireduce_sum(sum(TRdoteff2m),TRdoteff2m_sum,1)
@@ -1244,6 +1283,7 @@ module Special
         idiag_psi=0; idiag_psiL=0; idiag_psidot=0; idiag_psiddot=0
         idiag_TR=0; idiag_TL=0; idiag_TRdot=0; idiag_TRddot=0; idiag_psi_anal=0; idiag_TR_anal=0
         idiag_TReff2m=0; idiag_TReff2km=0; idiag_TRdoteff2m=0; idiag_TRdoteff2km=0
+        idiag_TRpsim=0; idiag_TRpsikm=0; idiag_TRpsidotm=0; idiag_TRdotpsim=0
         idiag_TLeff2m=0; idiag_TLeff2km=0; idiag_TLdoteff2m=0; idiag_TLdoteff2km=0
         idiag_grand2=0; idiag_dgrant=0; idiag_dgrant_up=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0; idiag_k0=0; idiag_dk=0
@@ -1271,6 +1311,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'TReff2km' ,idiag_TReff2km)
         call parse_name(iname,cname(iname),cform(iname),'TRdoteff2m' ,idiag_TRdoteff2m)
         call parse_name(iname,cname(iname),cform(iname),'TRdoteff2km' ,idiag_TRdoteff2km)
+        call parse_name(iname,cname(iname),cform(iname),'TRpsim' ,idiag_TRpsim)
+        call parse_name(iname,cname(iname),cform(iname),'TRpsikm' ,idiag_TRpsikm)
+        call parse_name(iname,cname(iname),cform(iname),'TRpsidotm' ,idiag_TRpsidotm)
+        call parse_name(iname,cname(iname),cform(iname),'TRdotpsim' ,idiag_TRdotpsim)
         call parse_name(iname,cname(iname),cform(iname),'TLeff2m' ,idiag_TLeff2m)
         call parse_name(iname,cname(iname),cform(iname),'TLeff2km' ,idiag_TLeff2km)
         call parse_name(iname,cname(iname),cform(iname),'TLdoteff2m' ,idiag_TLdoteff2m)
