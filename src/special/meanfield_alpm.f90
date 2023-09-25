@@ -264,7 +264,7 @@ module Special
       real, dimension (nx) :: kf_tmp,meanfield_etat_tmp
       real, dimension (nx) :: alpmejec_uu, der_alpmejec_uu
       real, dimension (nx) :: del2alpmx,del2alpmy,del2alpmz,tmp
-      double precision :: dtalpm_double
+      real(KIND=rkind8) :: dtalpm_double
       type (pencil_case) :: p
       integer :: modulot
 !
