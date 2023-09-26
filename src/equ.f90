@@ -448,7 +448,8 @@ module Equ
 !
       if (lnscbc) call nscbc_boundtreat(f,df)
 !
-!$    if (num_of_diag_iter_done == nyz .and. .not. lfinalized_diagnostics) then
+!$    if (num_of_diag_iter_done == nyz .and. .not. lfinalized_diagnostics &
+          .and. .not. lwriting_diagnostics) then
 !$      if (lthread_safe) then
 !$omp task
 !$        call finalize_diagnostics
