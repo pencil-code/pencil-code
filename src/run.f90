@@ -714,20 +714,6 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
 !
     lrmv=.false.
 !
-!  Print diagnostic averages to screen and file.
-!
-    if (lout) then
-      call prints
-      if (lchemistry_diag) call write_net_reaction
-    endif
-    if (l1davg) call write_1daverages
-    if (l2davg) call write_2daverages
-!
-    if (lout_sound) then
-      call write_sound(tsound)
-      lout_sound = .false.
-    endif
-!
 !  Ensure better load balancing of particles by giving equal number of
 !  particles to each CPU. This only works when block domain decomposition of
 !  particles is activated.
@@ -794,9 +780,34 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
     if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
 !
+!   Diagnostic output in concurrent thread.
+!
+!$  if (lfinalized_diagnostics) then
+!$    lwriting_diagnostics = .true.
+!
+!  Print diagnostic averages to screen and file.
+!
+!$omp task
+      if (lout) then
+        call prints
+        if (lchemistry_diag) call write_net_reaction
+      endif
+!
+      if (l1davg) call write_1daverages
+      if (l2davg) call write_2daverages
+!
+      if (lout_sound) then
+        call write_sound(tsound)
+        lout_sound = .false.
+      endif
+!
 !  Write slices (for animation purposes).
 !
-    if (lvideo .and. lwrite_slices) call wvid(f)
+      if (lvideo .and. lwrite_slices) call wvid(f)
+!$omp end task
+!
+!$    lwriting_diagnostics = .false.
+!$  endif
 !
 !  Write tracers (for animation purposes).
 !
