@@ -787,9 +787,16 @@ module Cdata
 !
   real :: lambda5 = 0.0
 !
-!$  integer :: num_cores = 0
-!$  integer :: num_threads = 0
-!$  logical :: lthread_safe 
+!  Variables for concurrency
+!
+!$ integer :: num_cores = 0
+!$ integer :: num_threads = 0
+!$ logical :: lthread_safe 
+! 
+!$ logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
+!
+! threadprivate definitions for OpenMP
+!
 !$  include 'cdata_omp.inc'
 !***********************************************************************
 endmodule Cdata
