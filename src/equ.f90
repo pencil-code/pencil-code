@@ -23,7 +23,7 @@ module Equ
   real, pointer, dimension(:,:,:,:) :: p_fnamerz
   real, pointer, dimension(:) :: p_dt1_max
   integer :: num_of_diag_iter_done=nyz
-  logical :: started_finalizing_diagnostics = .false., lfinalized_diagnostics = .true.
+  logical :: started_finalizing_diagnostics = .false.
   logical :: ldiagnos_save, l1davgfirst_save, l1dphiavg_save, l2davgfirst_save
 !
   contains
