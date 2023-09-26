@@ -793,7 +793,7 @@ module Cdata
 !$ integer :: num_threads = 0
 !$ logical :: lthread_safe 
 ! 
-!$ logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
+  logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
 !
 ! threadprivate definitions for OpenMP
 !
