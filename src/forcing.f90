@@ -857,12 +857,13 @@ module Forcing
           "Number of entries in alpha_in.dat "//trim(itoa(ckno))//" unequal nlist_ck="//trim(itoa(nlist_ck)))
           nlist_ck=ckno
         endif
+        if (.not.allocated(cklist)) allocate(cklist(nlist_ck,ncol))
         do ilread=1,nlist_ck
           read(76,*) (cklist(ilread,ilm),ilm=1,ncol)
         enddo
         close(76)
 !
-        if (.not.allocated(psif)) allocate(psif(mx,my,mz),cklist(nlist_ck,ncol))
+        if (.not.allocated(psif)) allocate(psif(mx,my,mz))
 !
         if (lfastSR.and.lisotropize_SR) then
           if (.not.allocated(RYlm_rot)) then
