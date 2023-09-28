@@ -598,47 +598,10 @@ module Equ
 !
 !  25-aug-23/TP: refactored from pde
 !
-      use Chiral
-      use Chemistry
-      use Density
-      use Detonate, only: detonate_before_boundary
       use Diagnostics
-      use Dustdensity
-      use Energy
-      use EquationOfState
-      use Forcing, only: forcing_after_boundary
-!                         
-! To check ghost cell consistency, please uncomment the following line:
-!     use Ghost_check, only: check_ghosts_consistency
-      use General, only: ioptest, loptest
-      use GhostFold, only: fold_df, fold_df_3points
-      use Gpu
-      use Gravity
       use Hydro
-      use Interstellar, only: interstellar_before_boundary
       use Magnetic
-      use Magnetic_meanfield, only: meanfield_after_boundary
-      use Hypervisc_strict, only: hyperviscosity_strict
-      use Hyperresi_strict, only: hyperresistivity_strict
-      use NeutralDensity, only: neutraldensity_after_boundary
-      use NSCBC
-      use Particles_main
-      use Poisson
       use Pscalar
-      use PointMasses
-      use Polymer
-      use Radiation
-      use Selfgravity
-      use Shear
-      use Shock, only: shock_before_boundary, calc_shock_profile_simple
-      use Solid_Cells, only: update_solid_cells, dsolid_dt_integrate
-      use Special, only: special_before_boundary,special_after_boundary
-      use Sub
-      use Testfield
-      use Testflow
-      use Testscalar
-      use Viscosity, only: viscosity_after_boundary
-      use Grid, only: coarsegrid_interp
 
 !  Set that the master thread nows we have started the finalization
 !
