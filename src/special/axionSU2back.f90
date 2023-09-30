@@ -251,7 +251,6 @@ module Special
 !  initialise special condition; called from start.f90
 !   2-dec-2022/axel: coded
 !
-      use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -371,14 +370,10 @@ module Special
           write(6,1000) 'iproc,TR=',iproc,TR
 !
         case default
-          !
-          !  Catch unknown values
-          !
-          if (lroot) print*,'init_axionSU2back: No such value for init_axionSU2back: ', trim(init_axionSU2back)
-          call stop_it("")
+          call fatal_error("init_special","no such init_axionSU2back: "//trim(init_axionSU2back))
       endselect
 !
-1000  format(a,2x,i3,1p80e14.6)
+1000  format(a,2x,i3,1p,80e14.6)
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
@@ -436,7 +431,6 @@ module Special
 !
       use General, only: random_number_wrapper
       use Diagnostics
-      use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -728,7 +722,6 @@ module Special
         if (idiag_grantxy/=0)   call zsum_mn_name_xy(grant,idiag_grantxy)
       endif
 !
-1000  format(a,2x,i3,1p80e14.6)
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine dspecial_dt_ode
@@ -974,7 +967,7 @@ module Special
 !  Compute still for the full array (but only on the last processor),
 !  but only use the last point below. (TR is therefore no longer ok after this.)
 !
-            if (ipx==nprocx-1) then
+            if (llast_proc_x) then
               tmp_psi   =(1./sqrt(2.*k))*cos(-k*t)
               tmp_psidot= (k/sqrt(2.*k))*sin(-k*t)
               tmp_TR    =(1./sqrt(2.*k))*cos(-k*t)
@@ -1071,6 +1064,8 @@ module Special
 !
 !  Now set TR, TRdot, and imaginary parts, after they have been updated.
 !
+      n=n1
+      m=m1
       psi   =f(l1:l2,m,n,iaxi_psi)
       psidot=f(l1:l2,m,n,iaxi_psidot)
       TR   =f(l1:l2,m1,n1,iaxi_TR)
