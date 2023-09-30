@@ -733,15 +733,9 @@ module Special
 !***********************************************************************
     subroutine dspecial_dt_ode
 !
-!  calculate right hand side of ONE OR MORE extra coupled PDEs
-!  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
-!  m,n are global variables looped over in equ.f90
-!
+!  Calculate right hand side(s) of one or more extra coupled ODEs.
 !  Due to the multi-step Runge Kutta timestepping used one MUST always
-!  add to the present contents of the df array.  NEVER reset it to zero.
-!
-!  several precalculated Pencils of information are passed if for
-!  efficiency.
+!  add to the present contents of the df_ode array.  NEVER reset it to zero.
 !
 !   2-dec-2022/axel: coded
 !   1-sep-2023/axel: implemented lwith_eps with conformal time.
