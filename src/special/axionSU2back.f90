@@ -59,6 +59,7 @@ module Special
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: ldo_adjust_krange=.true., lswap_sign=.false.
+  logical :: lwrite_krange=.true., lwrite_backreact=.true.
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   logical :: lim_psi_TR=.false., lleft_psiL_TL=.false., lkeep_mQ_const=.false.
@@ -75,7 +76,7 @@ module Special
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
     nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
-    ldo_adjust_krange, lswap_sign
+    ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact
 !
   ! k array
   real, dimension (nx) :: k
@@ -1028,18 +1029,20 @@ module Special
 !
 !  output
 !
-          open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
-          write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi), f(l1:l2,m1,n1,iaxi_impsi), &
-                             f(l1:l2,m1,n1,iaxi_TR), f(l1:l2,m1,n1,iaxi_imTR)
-          close(1)
+          if (lwrite_krange) then
+            open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
+            write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi), f(l1:l2,m1,n1,iaxi_impsi), &
+                               f(l1:l2,m1,n1,iaxi_TR), f(l1:l2,m1,n1,iaxi_imTR)
+            close(1)
 !
 !  output for left-handed modes
 !
-          if (lleft_psiL_TL) then
-          open (1, file=trim(directory_snap)//'/krange_left.dat', form='formatted', position='append')
-          write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiL), f(l1:l2,m1,n1,iaxi_impsiL), &
-                             f(l1:l2,m1,n1,iaxi_TL),   f(l1:l2,m1,n1,iaxi_imTL)
-          close(1)
+            if (lleft_psiL_TL) then
+              open (1, file=trim(directory_snap)//'/krange_left.dat', form='formatted', position='append')
+              write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiL), f(l1:l2,m1,n1,iaxi_impsiL), &
+                                 f(l1:l2,m1,n1,iaxi_TL),   f(l1:l2,m1,n1,iaxi_imTL)
+              close(1)
+            endif
           endif
 !
 !  reset lnkmin0
@@ -1214,17 +1217,19 @@ module Special
 !
 !  output of integrand
 !
-      if ((llnk_spacing_adjustable.or.llnk_spacing) .and. lfirst) then
-        if (nswitch>0) then
-          open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
-          write(1,*) t, lnk, grand, dgrant
-          close(1)
-        endif
-      elseif (lfirst) then
-        if (nswitch>0) then
-          open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
-          write(1,*) t, k, grand, dgrant
-          close(1)
+      if (lwrite_backreact) then
+        if ((llnk_spacing_adjustable.or.llnk_spacing) .and. lfirst) then
+          if (nswitch>0) then
+            open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
+            write(1,*) t, lnk, grand, dgrant
+            close(1)
+          endif
+        elseif (lfirst) then
+          if (nswitch>0) then
+            open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
+            write(1,*) t, k, grand, dgrant
+            close(1)
+          endif
         endif
       endif
 !
