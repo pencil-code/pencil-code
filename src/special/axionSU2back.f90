@@ -189,40 +189,50 @@ module Special
       real :: kmax=2., lnkmax, lnk0=1.
       integer :: ik
 !
+!  Initialize any module variables which are parameter dependent
+!
       lamf=lam/fdecay
+!
+      if (lconf_time) then
+!
+!  Reset tstart if conformal time.
+!
+        tstart=-1./(ascale_ini*H)
+        t=tstart
+        a=ascale_ini
+      else
+        a=exp(H*t)
+      endif
 !
 !  Compute lnkmin0 and lnkmax0. Even for a linear k-range, dlnk
 !  is needed to determine the output of k-range and grand etc.
 !
-      if (lconf_time) then
-        a=-1./(H*t)
-      else
-        a=exp(H*t)
-      endif
       lna=alog(a)
       lnH=alog(H)
       lnkmin0=nmin0+lnH+lna
       lnkmax0=nmax0+lnH+lna
-      dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
+      dlnk=(lnkmax0-lnkmin0)/(nxgrid-1)
 !
 !  Initialize lnkmin0 and lnkmax0
 !
-      if (llnk_spacing_adjustable .and. .not.lstart) then
+      if (llnk_spacing_adjustable) then
         do ik=1,nx
-          lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
+          lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
           k(ik)=exp(lnk(ik))
         enddo
+        if (ip<10) print*,'iproc,lnk=',iproc,lnk
         kindex_array=nint((lnk-lnkmin0)/dlnk)
       elseif (llnk_spacing) then
         do ik=1,nx
-          lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
+          lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
           k(ik)=exp(lnk(ik))
         enddo
         lnkmin0_dummy=lnkmin0
+        if (ip<10) print*,'iproc,lnk=',iproc,lnk
         kindex_array=nint((lnk-lnkmin0)/dlnk)
       else
         do ik=1,nx
-          k(ik)=k0+dk*(ik-1+iproc*nx)
+          k(ik)=k0+dk*(ik-1+ipx*nx)
         enddo
         lnk=impossible
         lnkmin0_dummy=nmin0+lnH+lna
@@ -262,46 +272,6 @@ module Special
       integer :: ik
 !
       intent(inout) :: f
-!
-!  Initialize any module variables which are parameter dependent
-!  Compute lnkmin0. Reset tstart if conformal time.
-!
-      if (lconf_time) then
-        tstart=-1./(ascale_ini*H)
-        t=tstart
-        a=-1./(H*t)
-      else
-        a=exp(H*t)
-      endif
-      lna=alog(a)
-      lnH=alog(H)
-      lnkmin0=nmin0+lnH+lna
-      lnkmax0=nmax0+lnH+lna
-!
-!  Different k prescriptions
-!
-      if (llnk_spacing_adjustable) then
-        dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
-        do ik=1,nx
-          lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
-          k(ik)=exp(lnk(ik))
-        enddo
-        if (ip<10) print*,'iproc,lnk=',iproc,lnk
-        kindex_array=nint((lnk-lnkmin0)/dlnk)
-      elseif (llnk_spacing) then
-        dlnk=(lnkmax0-lnkmin0)/(ncpus*nx-1)
-        do ik=1,nx
-          lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx)
-          k(ik)=exp(lnk(ik))
-        enddo
-        if (ip<10) print*,'iproc,lnk=',iproc,lnk
-        kindex_array=nint((lnk-lnkmin0)/dlnk)
-      else
-        do ik=1,nx
-          k(ik)=k0+dk*(ik-1+iproc*nx)
-        enddo
-        kindex_array=nint((k-k0)/dk)
-      endif
 !
 !  Initial condition; depends on k, which is here set to x.
 !
@@ -948,7 +918,7 @@ module Special
 !
           if (ldo_adjust_krange) then
             do ik=1,nx
-              lnk(ik)=lnkmin0+dlnk*(ik-1+iproc*nx+nswitch)
+              lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx+nswitch)
               k(ik)=exp(lnk(ik))
             enddo
             kindex_array=nint((lnk-lnkmin0)/dlnk)
