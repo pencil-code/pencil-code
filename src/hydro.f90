@@ -151,7 +151,7 @@ module Hydro
   logical :: lskip_projection=.false.
   logical :: lconservative=.false., lrelativistic=.false.
   logical, pointer :: lrelativistic_eos
-  logical :: lno_noise_uu=.false.
+  logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
@@ -190,8 +190,8 @@ module Hydro
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
-      lfactors_uu, qirro_uu, lno_noise_uu, lpower_profile_file_uu, llorentz_limiter, &
-      lhiggsless, lhiggsless_old, vwall, alpha_hless, &
+      lfactors_uu, qirro_uu, lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
+      llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, &
       xjump_mid, yjump_mid, zjump_mid
 !
 !  Run parameters.
@@ -1065,7 +1065,8 @@ module Hydro
               cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
               lskip_projection, lvectorpotential,lscale_tobox, &
               nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, &
-              lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu, lreinit=lreinitialize_uu)
+              lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu, lreinit=lreinitialize_uu, &
+              lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho)
           endselect
         enddo
       endif
