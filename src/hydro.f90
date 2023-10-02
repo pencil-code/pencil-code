@@ -2291,7 +2291,8 @@ module Hydro
             cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
             lskip_projection, lvectorpotential,lscale_tobox, &
             nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, &
-            lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu)
+            lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu, &
+            lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)
