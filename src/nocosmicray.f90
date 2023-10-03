@@ -155,6 +155,14 @@ module Cosmicray
 !
     endsubroutine decr_dt
 !***********************************************************************
+    subroutine calc_diagnostics_cosmicray(p)
+!
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_cosmicray
+!***********************************************************************
     subroutine rprint_cosmicray(lreset,lwrite)
 !
 !  Reads and registers print parameters relevant for cosmic rays.

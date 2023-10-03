@@ -79,6 +79,12 @@ module Chiral
   integer :: idiag_jbmEP=0
   integer :: idiag_R2tdep=0
 !
+! Auxiliary variables.
+!
+  real, dimension (nx,3) :: gXX_chiral, gYY_chiral, gZZ_chiral
+  real, dimension (nx) :: del2XX_chiral, del2YY_chiral,del2ZZ_chiral
+  real :: chiral_fisherR2_tdep
+!
   contains
 !***********************************************************************
     subroutine register_chiral()
@@ -130,7 +136,6 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
-      use Mpicomm
       use Sub
       use Initcond
       use InitialCondition, only: initial_condition_chiral
@@ -159,7 +164,7 @@ module Chiral
         case ('cosx_cosz'); call cosx_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,kz_XX_chiral)
         case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,ky_XX_chiral,kz_XX_chiral)
         case ('cosx_siny_cosz'); call cosx_siny_cosz(amplXX_chiral,f,iXX_chiral,kx_XX_chiral,ky_XX_chiral,kz_XX_chiral)
-        case default; call stop_it('init_chiral: bad init_chiral='//trim(initXX_chiral))
+        case default; call fatal_error('init_chiral','no such initXX_chiral: '//trim(initXX_chiral))
       endselect
 !
 !  check next for initYY_chiral
@@ -185,7 +190,7 @@ module Chiral
         case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('cosx_siny_cosz'); call cosx_siny_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('chiral_list'); call chiral_list(amplYY_chiral,f,iYY_chiral,'chiral_list')
-        case default; call stop_it('init_chiral: bad init_chiral='//trim(initYY_chiral))
+        case default; call fatal_error('init_chiral','no such initYY_chiral: '//trim(initYY_chiral))
       endselect
 !
 !  check next for initZZ_chiral
@@ -195,7 +200,7 @@ module Chiral
           case ('zero'); f(:,:,:,iZZ_chiral)=0.
           case ('const'); f(:,:,:,iZZ_chiral)=amplZZ_chiral
           case ('chiral_list'); call chiral_list(amplZZ_chiral,f,iZZ_chiral,'chiral_listZZ')
-          case default; call stop_it('init_chiral: bad init_chiral='//trim(initZZ_chiral))
+          case default; call fatal_error('init_chiral','no such initZZ_chiral: '//trim(initZZ_chiral))
         endselect
       endif
 !
@@ -282,31 +287,27 @@ module Chiral
 !  28-may-04/axel: adapted from pscalar
 !   1-jul-09/axel: included gradX, gradY, and allowed for different reactions
 !
-      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3,3) :: gXXij_chiral,gYYij_chiral
-      real, dimension (nx,3) :: gXX_chiral, gYY_chiral, gZZ_chiral, bbEP, jjEP, jxbEP
-      real, dimension (nx) :: bbEP2, jjEP2, jbEP
-      real, dimension (nx) :: XX_chiral, ugXX_chiral, del2XX_chiral, dXX_chiral
-      real, dimension (nx) :: YY_chiral, ugYY_chiral, del2YY_chiral, dYY_chiral
-      real, dimension (nx) :: ZZ_chiral, ugZZ_chiral, del2ZZ_chiral, dZZ_chiral
-      real, dimension (nx) :: RRXX_chiral,XX2_chiral
-      real, dimension (nx) :: RRYY_chiral,YY2_chiral
-      real, dimension (nx) :: RR21_chiral
-      real, dimension (nx) :: QQ_chiral,QQ21_chiral,QQ21QQ_chiral
-      real, dimension (nx) :: diffus_chiral
-      real :: chiral_fisherR2_tdep
-      real :: pp,qq,lamchiral
-      integer :: j
-!
       intent(in)  :: p
       intent(inout) :: f
       intent(inout) :: df
+!
+      real, dimension (nx,3) :: bbEP, jjEP, jxbEP
+      real, dimension (nx) :: XX_chiral, YY_chiral, ZZ_chiral
+      real, dimension (nx) :: ugXX_chiral, dXX_chiral
+      real, dimension (nx) :: ugYY_chiral, dYY_chiral
+      real, dimension (nx) :: ugZZ_chiral, dZZ_chiral
+      real, dimension (nx) :: RRXX_chiral,XX2_chiral
+      real, dimension (nx) :: RRYY_chiral,YY2_chiral
+      real, dimension (nx) :: RR21_chiral
+      real, dimension (nx) :: diffus_chiral
+      real :: pp,qq
+      integer :: j
 !
 !  identify module and boundary conditions
 !
@@ -424,16 +425,6 @@ module Chiral
       if (headtt) print*,"chiral_reaction='SIR equation'"
       if (headtt) print*,"growth rate=", chiral_fishernu,"carrying capacity=",chiral_fisherK
 !
-!  time-dependent reinfection rate
-!
-      if (chiral_fisherR2_tend==0.) then
-        chiral_fisherR2_tdep=chiral_fisherR2
-      else
-        chiral_fisherR2_tdep=chiral_fisherR2*( &
-          max(0.,1.-(max(0.,real(t)-chiral_fisherR2_tstart)/ &
-          (chiral_fisherR2_tend-chiral_fisherR2_tstart))**2)**2)
-      endif
-!
       XX_chiral=f(l1:l2,m,n,iXX_chiral)
       YY_chiral=f(l1:l2,m,n,iYY_chiral)
 !
@@ -460,56 +451,76 @@ module Chiral
         if (lroot.and.ip<=5) print*,"chiral_reaction='nothing'"
 !
       case default
-        write(unit=errormsg,fmt=*) &
-             'dXY_chiral_dt: No such value for chiral_reaction: ', &
-             trim(chiral_reaction)
-        call fatal_error('chiral_reaction',errormsg)
+        call fatal_error('chiral_reaction','no such chiral_reaction: '//trim(chiral_reaction))
       endselect
 !
 !  For the timestep calculation, need maximum diffusion
 !
       if (lfirst.and.ldt) then
         diffus_chiral=max(chiral_diffXX,chiral_diff)*dxyz_2
-        if (headtt.or.ldebug) print*,'dXY_chiral_dt: max(diffus_chiral) =', &
-                                      maxval(diffus_chiral)
+        if (headtt.or.ldebug) print*,'dXY_chiral_dt: max(diffus_chiral) =',maxval(diffus_chiral)
         maxdiffus=max(maxdiffus,diffus_chiral)
       endif
+
+      call calc_diagnostics_chiral(f,p)
+
+    endsubroutine dXY_chiral_dt
+!***********************************************************************
+    subroutine calc_diagnostics_chiral(f,p)
 !
 !  diagnostics
 !
 !  output for double and triple correlators (assume z-gradient of cc)
 !  <u_k u_j d_j c> = <u_k c uu.gradXX_chiral>
 !
+      use Diagnostics
+      use Sub
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+
+      real, dimension (nx) :: XX_chiral,YY_chiral,ZZ_chiral,QQ_chiral,QQ21QQ_chiral,bbEP2,jjEP2,jbEP
+      real, dimension (nx,3) :: bbEP, jjEP
+      real, dimension (nx,3,3) :: gXXij_chiral,gYYij_chiral
+      real :: lamchiral
+      integer :: j
+
       if (ldiagnos) then
-        if (idiag_XX_chiralmax/=0) call max_mn_name(XX_chiral,idiag_XX_chiralmax)
-        if (idiag_YY_chiralmax/=0) call max_mn_name(YY_chiral,idiag_YY_chiralmax)
-        if (idiag_ZZ_chiralmax/=0) call max_mn_name(ZZ_chiral,idiag_ZZ_chiralmax)
-        if (idiag_XX_chiralm/=0) call sum_mn_name(XX_chiral,idiag_XX_chiralm)
-        if (idiag_YY_chiralm/=0) call sum_mn_name(YY_chiral,idiag_YY_chiralm)
-        if (idiag_ZZ_chiralm/=0) call sum_mn_name(ZZ_chiral,idiag_ZZ_chiralm)
-        if (idiag_R2tdep/=0) call save_name(chiral_fisherR2_tdep,idiag_R2tdep)
+
+        XX_chiral=f(l1:l2,m,n,iXX_chiral)
+        YY_chiral=f(l1:l2,m,n,iYY_chiral)
+
+        call max_mn_name(XX_chiral,idiag_XX_chiralmax)
+        call max_mn_name(YY_chiral,idiag_YY_chiralmax)
+        call sum_mn_name(XX_chiral,idiag_XX_chiralm)
+        call sum_mn_name(YY_chiral,idiag_YY_chiralm)
+        if (lZZ_chiral) then
+          ZZ_chiral=f(l1:l2,m,n,iZZ_chiral)
+          call sum_mn_name(ZZ_chiral,idiag_ZZ_chiralm)
+          call max_mn_name(ZZ_chiral,idiag_ZZ_chiralmax)
+        endif
+        call save_name(chiral_fisherR2_tdep,idiag_R2tdep)
 !
-!  extra diagnostics
-!
-        lamchiral=2.*chiral_fidelity-1.
-        QQ_chiral=XX_chiral-YY_chiral
-        QQ21_chiral=1.-QQ_chiral**2
-        QQ21QQ_chiral=(lamchiral-QQ_chiral**2)/(1.+QQ_chiral**2)*QQ_chiral
-        if (idiag_QQm_chiral/=0) call sum_mn_name(QQ_chiral,idiag_QQm_chiral)
-        if (idiag_QQ21m_chiral/=0) &
-            call sum_mn_name(QQ21_chiral,idiag_QQ21m_chiral)
-        if (idiag_QQ21QQm_chiral/=0) &
+        if (idiag_QQm_chiral/=0 .or. idiag_QQ21m_chiral/=0 .or. idiag_QQ21QQm_chiral/=0) then
+          QQ_chiral=XX_chiral-YY_chiral
+          call sum_mn_name(QQ_chiral,idiag_QQm_chiral)
+          if (idiag_QQ21m_chiral/=0) call sum_mn_name(1.-QQ_chiral**2,idiag_QQ21m_chiral)
+          if (idiag_QQ21QQm_chiral/=0) then
+            lamchiral=2.*chiral_fidelity-1.
+            QQ21QQ_chiral=(lamchiral-QQ_chiral**2)/(1.+QQ_chiral**2)*QQ_chiral
             call sum_mn_name(QQ21QQ_chiral,idiag_QQ21QQm_chiral)
+          endif
+        endif
 !
 !  Calculate BB = gXX_chiral x gYY_chiral
 !
-        if (idiag_brmsEP/=0.or.idiag_bmaxEP/=0) then
+        if (idiag_brmsEP/=0.or.idiag_bmaxEP/=0.or.idiag_jbmEP/=0) then
           call cross(gXX_chiral,gYY_chiral,bbEP)
-          call dot2(bbEP,bbEP2)
-          if (idiag_brmsEP/=0) &
-              call sum_mn_name(bbEP2,idiag_brmsEP,lsqrt=.true.)
-          if (idiag_bmaxEP/=0) &
-              call max_mn_name(bbEP2,idiag_bmaxEP,lsqrt=.true.)
+          if (idiag_brmsEP/=0.or.idiag_bmaxEP/=0) then
+            call dot2(bbEP,bbEP2)
+            call sum_mn_name(bbEP2,idiag_brmsEP,lsqrt=.true.)
+            call max_mn_name(bbEP2,idiag_bmaxEP,lsqrt=.true.)
+          endif
         endif
 !
 !  Calculate Ji = Xi*del2Y - Yi*del2X + Xij Yj - Yij Xj
@@ -525,24 +536,19 @@ module Chiral
           call multmv_mn(+gXXij_chiral,gYY_chiral,jjEP,ladd=.true.)
           call multmv_mn(-gYYij_chiral,gXX_chiral,jjEP,ladd=.true.)
           call dot2(jjEP,jjEP2)
-          if (idiag_jrmsEP/=0) &
-              call sum_mn_name(jjEP2,idiag_jrmsEP,lsqrt=.true.)
-          if (idiag_jmaxEP/=0) &
-              call max_mn_name(jjEP2,idiag_jmaxEP,lsqrt=.true.)
+          call sum_mn_name(jjEP2,idiag_jrmsEP,lsqrt=.true.)
+          call max_mn_name(jjEP2,idiag_jmaxEP,lsqrt=.true.)
 !
 !  For J.B, we need B, but only if not already calculated.
 !
           if (idiag_jbmEP/=0) then
-            if (idiag_brmsEP/=0.or.idiag_bmaxEP/=0) then
-              call cross(gXX_chiral,gYY_chiral,bbEP)
-            endif
             call dot(jjEP,bbEP,jbEP)
             call sum_mn_name(jbEP,idiag_jbmEP)
           endif
         endif
       endif
 !
-    endsubroutine dXY_chiral_dt
+    endsubroutine calc_diagnostics_chiral
 !***********************************************************************
     subroutine chiral_before_boundary(f)
 !
@@ -583,9 +589,8 @@ module Chiral
                 elseif (linitialize_aa_from_EP_betgrad) then
                   f(l1:l2,m,n,j+iaa-1)=-f(l1:l2,m,n,iYY_chiral)*gXX_chiral(:,j)
                 else
-                  f(l1:l2,m,n,j+iaa-1)=.5*( &
-                    f(l1:l2,m,n,iXX_chiral)*gYY_chiral(:,j) &
-                   -f(l1:l2,m,n,iYY_chiral)*gXX_chiral(:,j))
+                  f(l1:l2,m,n,j+iaa-1)=.5*( f(l1:l2,m,n,iXX_chiral)*gYY_chiral(:,j) &
+                                           -f(l1:l2,m,n,iYY_chiral)*gXX_chiral(:,j))
                 endif
               enddo
             enddo
@@ -594,6 +599,16 @@ module Chiral
         endif
       endif
 !
+!
+!  time-dependent reinfection rate
+!
+      if (chiral_fisherR2_tend==0.) then
+        chiral_fisherR2_tdep=chiral_fisherR2
+      else
+        chiral_fisherR2_tdep = chiral_fisherR2*(max(0.,1.-(max(0.,real(t)-chiral_fisherR2_tstart)/ &
+                               (chiral_fisherR2_tend-chiral_fisherR2_tstart))**2)**2)
+      endif
+
     endsubroutine chiral_before_boundary
 !***********************************************************************
     subroutine read_chiral_init_pars(iostat)
@@ -710,7 +725,7 @@ module Chiral
 !
 !  26-jul-06/tony: coded
 !
-      use Slices_methods, only:assign_slices_scal
+      use Slices_methods, only: assign_slices_scal
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices

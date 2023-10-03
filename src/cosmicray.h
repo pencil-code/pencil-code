@@ -7,6 +7,6 @@
   public :: rprint_cosmicray, get_slices_cosmicray
   public :: init_ecr, decr_dt
   public :: pencil_criteria_cosmicray, pencil_interdep_cosmicray
-  public :: calc_pencils_cosmicray
+  public :: calc_pencils_cosmicray, calc_diagnostics_cosmicray
   public :: impose_ecr_floor
 
