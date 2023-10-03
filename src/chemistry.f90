@@ -3186,19 +3186,26 @@ module Chemistry
                   max(f(l1:l2,m,n,ichemspec(k)),0.001))
               !sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
             enddo
-            if (maxval(reac_chem) > 1e11) then
-              reac_chem = 1e11
-            endif
+            if (maxval(reac_chem) > 1e11) reac_chem = 1e11   !MR: not where(...)?
           endif
         endif
       endif
+
+      call timing('dchemistry_dt','before ldiagnos',mnloop=.true.)
+      call calc_diagnostics_chemistry(f,p)
+      call timing('dchemistry_dt','finished',mnloop=.true.)
+!
+    endsubroutine dchemistry_dt
+!***********************************************************************
+    subroutine calc_diagnostics_chemistry(f,p)
 !
 !  Calculate diagnostic quantities
 !
-      call timing('dchemistry_dt','before ldiagnos',mnloop=.true.)
+      real, dimension(mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+
       if (ldiagnos) then
-        if (idiag_dtchem /= 0) &
-          call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
+        if (idiag_dtchem /= 0) call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
 !
 !  WL: instead of hardcoding Y1-Y9, wouldn't it be possible
 !      to have them all in the same array? The nbody
@@ -3216,8 +3223,7 @@ module Chemistry
             call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           if (idiag_TYm(ii)/= 0) &
             call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
-          if (idiag_diffm(ii)/= 0) &
-            call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
+          call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
         enddo
 !
         call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
@@ -3229,6 +3235,16 @@ module Chemistry
 !  Sample for hard coded diffusion diagnostics
 !
 !        call sum_mn_name(Diff_full(l1:l2,m,n,i1),idiag_diff1m)
+
+        if (lreactions .and. lpencil(i_DYDt_reac .and. (.not. llsode .or. lchemonly)) then
+          do ii=1,nchemspec
+            call sum_mn_name(p%DYDt_reac(:,ii),idiag_dYm(ii))
+            if (idiag_dYmax(ii) /= 0) call max_mn_name(abs(p%DYDt_reac(:,ii)),idiag_dYmax(ii))
+            if (idiag_hm(ii)    /= 0) call sum_mn_name(p%H0_RT(:,ii)*Rgas* &
+                                           p%TT(:)/species_constants(ii,imass),idiag_hm(ii))
+          enddo
+        endif
+!
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -3238,9 +3254,8 @@ module Chemistry
           call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymz(ii))
         enddo
       endif
-      call timing('dchemistry_dt','finished',mnloop=.true.)
-!
-    endsubroutine dchemistry_dt
+
+    endsubroutine calc_diagnostics_chemistry
 !***********************************************************************
     subroutine read_chemistry_init_pars(iostat)
 !
@@ -3385,8 +3400,7 @@ module Chemistry
       do iname=1,nnamev
         sname=trim(cnamev(iname))
         if (sname(1:8)=='chemspec') then
-          if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) &
-            cformv(iname)='DEFINED'
+          if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) cformv(iname)='DEFINED'
         endif
       enddo
 !
@@ -4464,8 +4478,6 @@ module Chemistry
 !
 !  Calculation of the reaction term
 !
-      use Diagnostics, only: sum_mn_name, max_mn_name
-!
       real :: alpha, eps
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,mreactions) :: vreactions, vreactions_p, vreactions_m
@@ -4556,17 +4568,6 @@ module Chemistry
       !  sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))
       !  sum_Y=sum_Y+maxval(f(l1:l2,m,n,ichemspec(k)))
       !enddo
-!
-!  Calculate diagnostic quantities
-!
-      if (ldiagnos) then
-        do ii=1,nchemspec
-          call sum_mn_name(p%DYDt_reac(:,ii),idiag_dYm(ii))
-          if (idiag_dYmax(ii) /= 0) call max_mn_name(abs(p%DYDt_reac(:,ii)),idiag_dYmax(ii))
-          if (idiag_hm(ii)    /= 0) call sum_mn_name(p%H0_RT(:,ii)*Rgas* &
-                                         p%TT(:)/species_constants(ii,imass),idiag_hm(ii))
-        enddo
-      endif
 !
     endsubroutine calc_reaction_term
 !***********************************************************************

@@ -10,4 +10,4 @@
   public :: dacc_dt
   public :: init_acc
   public :: pencil_criteria_ascalar, pencil_interdep_ascalar
-  public :: calc_pencils_ascalar
+  public :: calc_pencils_ascalar, calc_diagnostics_ascalar

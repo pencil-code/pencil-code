@@ -102,7 +102,6 @@ module Ascalar
 !
     endsubroutine init_acc
 !***********************************************************************
-
     subroutine dacc_dt(f,df,p)
 !
 !  Passive scalar evolution.
@@ -120,6 +119,16 @@ module Ascalar
       call keep_compiler_quiet(p)
 !
     endsubroutine dacc_dt
+!***********************************************************************
+    subroutine calc_diagnostics_ascalar(p)
+!
+      type (pencil_case) :: p
+!
+      intent(inout) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_ascalar
 !***********************************************************************
     subroutine read_ascalar_init_pars(iostat)
 !
