@@ -2920,7 +2920,6 @@ module Chemistry
 !                     constant Lewis numbers
 !   10-jan-11/julien: modified to solve chemistry with LSODE
 !
-      use Diagnostics
       use Sub, only: grad,dot_mn
       use Special, only: special_calc_chemistry
 !
@@ -3153,8 +3152,7 @@ module Chemistry
 !  This expression should be discussed
 !--------------------------------------
 !
-              diffus_chem(j) = diffus_chem(j)+ &
-                  maxval(Diff_full_add(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
+              diffus_chem(j) = diffus_chem(j)+maxval(Diff_full_add(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
             else
               diffus_chem(j) = 0.
             endif
@@ -3201,8 +3199,12 @@ module Chemistry
 !
 !  Calculate diagnostic quantities
 !
+      use Diagnostics
+!
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+
+      integer :: ii
 
       if (ldiagnos) then
         if (idiag_dtchem /= 0) call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
@@ -3223,7 +3225,7 @@ module Chemistry
             call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           if (idiag_TYm(ii)/= 0) &
             call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
-          call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
+          if (idiag_diffm(ii)/= 0) call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
         enddo
 !
         call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
@@ -3236,7 +3238,7 @@ module Chemistry
 !
 !        call sum_mn_name(Diff_full(l1:l2,m,n,i1),idiag_diff1m)
 
-        if (lreactions .and. lpencil(i_DYDt_reac .and. (.not. llsode .or. lchemonly)) then
+        if (lreactions .and. lpencil(i_DYDt_reac) .and. (.not. llsode .or. lchemonly)) then
           do ii=1,nchemspec
             call sum_mn_name(p%DYDt_reac(:,ii),idiag_dYm(ii))
             if (idiag_dYmax(ii) /= 0) call max_mn_name(abs(p%DYDt_reac(:,ii)),idiag_dYmax(ii))
