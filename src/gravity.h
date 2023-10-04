@@ -12,7 +12,7 @@
   public :: get_xgravity
   public :: potential,acceleration
   public :: set_consistent_gravity, is_constant_zgrav
-  public :: gravity_after_boundary
+  public :: gravity_after_boundary, calc_diagnostics_gravity
 !ajwm SHOULDN'T BE SHARED
 !MR: can be made protected
   public :: gravz,nu_epicycle,g0,gravz_const

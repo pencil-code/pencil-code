@@ -909,8 +909,6 @@ module Gravity
 !   5-dec-06/petri: added Boussinesq approximation
 !  20-jan-15/MR: changes for use of reference state
 !
-      use Diagnostics
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -973,6 +971,19 @@ module Gravity
           if (lgravz_dust) df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + p%gg(:,3)
         enddo
       endif
+
+      call calc_diagnostics_gravity(p)
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine duu_dt_grav
+!***********************************************************************
+    subroutine calc_diagnostics_gravity(p)
+
+      use Diagnostics
+!
+      type (pencil_case) :: p
+      intent(in) :: p
 !
 !  Gravity diagnostics.
 !
@@ -987,22 +998,20 @@ module Gravity
 !
       if (l1davgfirst) then
         call yzsum_mn_name_x(p%epot,idiag_epotmx)
-        call yzsum_mn_name_x(p%epot*p%uu(:,1),idiag_epotuxmx)
+        if (idiag_epotuxmx/=0) call yzsum_mn_name_x(p%epot*p%uu(:,1),idiag_epotuxmx)
         call xzsum_mn_name_y(p%epot,idiag_epotmy)
         call xysum_mn_name_z(p%epot,idiag_epotmz)
-        call xysum_mn_name_z(p%epot*p%uu(:,3),idiag_epotuzmz)
+        if (idiag_epotuzmz/=0) call xysum_mn_name_z(p%epot*p%uu(:,3),idiag_epotuzmz)
       endif
 !
 !  Gravity 2-D diagnostics.
 !
       if (l2davgfirst) then
         call zsum_mn_name_xy(p%epot,idiag_epotmxy)
-        call zsum_mn_name_xy(p%epot*p%uu(:,1),idiag_epotuxmxy)
+        if (idiag_epotuxmxy/=0) call zsum_mn_name_xy(p%epot*p%uu(:,1),idiag_epotuxmxy)
       endif
 !
-      call keep_compiler_quiet(f)
-!
-    endsubroutine duu_dt_grav
+    endsubroutine calc_diagnostics_gravity
 !***********************************************************************
     subroutine gravity_after_boundary(f)
 !
@@ -1194,7 +1203,7 @@ module Gravity
 !
 !  Calculate acceleration from master pencils defined in initialize_gravity.
 !
-      call fatal_error('acceleration_penc_1D','Not implemented')
+      call not_implemented('gravity_simple','acceleration_penc_1D')
 !
       call keep_compiler_quiet(gr)
 !
@@ -1212,7 +1221,7 @@ module Gravity
       intent(in)  :: x,y,z,r
       intent(out) :: g_r
 !
-      call fatal_error('gravity_simple','acceleration_point not implemented')
+      call not_implemented('gravity_simple','acceleration_point')
 !
       g_r=0.0
 !

@@ -556,13 +556,21 @@ module Gravity
 !
       if (lcorotational_frame) call indirect_plus_inertial_terms(df,p)
 !
+      call calc_diagnostics_gravity(p)
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine duu_dt_grav
+!***********************************************************************
+    subroutine calc_diagnostics_gravity(p)
+
+      type (pencil_case) :: p
+
       if (ldiagnos) then
          if (idiag_torque/=0) call calc_torque(p)
       endif
 !
-      call keep_compiler_quiet(f)
-!
-    endsubroutine duu_dt_grav
+    endsubroutine calc_diagnostics_gravity
 !***********************************************************************
     subroutine gravity_after_boundary(f)
 !
@@ -1185,6 +1193,7 @@ module Gravity
       use Diagnostics
 !
       type (pencil_case) :: p
+
       real, dimension(nx) :: torque
       real, dimension(nx) :: rr2,rpre
 !
@@ -1197,8 +1206,7 @@ module Gravity
         rpre = x(l1:l2)*rp1*sinth(m)*sinph(n)
         rr2  = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*sinth(m)*cosph(n)
       else
-        call fatal_error("calc_torque",&
-             "the world is flat and we should never gotten here")
+        call fatal_error("calc_torque", "unsupported coordinate system")
       endif
 !
 !  Define separate torques for gas and dust/particles
