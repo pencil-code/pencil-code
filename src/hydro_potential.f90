@@ -632,8 +632,7 @@ module Hydro
 !  the density is computed, i.e. not with lboussinesq nor lanelastic.
 !
       if (.not.ldensity.or.lanelastic) lpressuregradient_gas=.false.
-      call put_shared_variable('lpressuregradient_gas', &
-          lpressuregradient_gas,caller='register_hydro')
+      call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='register_hydro')
 !
 !!  Special settings for lboussinesq.
 !!
@@ -746,12 +745,9 @@ module Hydro
         endif
       endif
 !
-      if (ivid_oo/=0) &
-        call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
-      if (ivid_o2/=0) &
-        call alloc_slice_buffers(o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
-      if (ivid_u2/=0) &
-        call alloc_slice_buffers(u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
+      if (ivid_oo/=0) call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
+      if (ivid_o2/=0) call alloc_slice_buffers(o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
+      if (ivid_u2/=0) call alloc_slice_buffers(u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
       if (ivid_divu/=0) &
         call alloc_slice_buffers(divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
       if (ivid_Ma2 /=0) &
@@ -864,11 +860,7 @@ module Hydro
           enddo; enddo
 !
         case default
-          !
-          !  Catch unknown values
-          !
           call fatal_error("init_uu","no such inituu: "//trim(inituu(j)))
-!
         endselect
 !
 !  End loop over initial conditions
@@ -932,8 +924,7 @@ module Hydro
 !
 !  20-nov-04/anders: coded
 !
-      if (lparticles_lyapunov .or. lparticles_caustics) & 
-        lpenc_requested(i_uij) = .true.
+      if (lparticles_lyapunov .or. lparticles_caustics) lpenc_requested(i_uij) = .true.
 !AXEL if (ladvection_velocity) then
 !       if (lweno_transport) then
 !         lpenc_requested(i_uu)=.true.
@@ -1141,8 +1132,7 @@ module Hydro
       if (lpencil_in(i_sij2)) lpencil_in(i_sij)=.true.
 !     if (lpencil_in(i_del2u)) lpencil_in(i_curlo)=.true.
       if (lpencil_in(i_curlo)) lpencil_in(i_oij)=.true.
-      if (lpencil_in(i_oij).and.(.not.lcartesian_coords)) &
-          lpencil_in(i_oo)=.true.
+      if (lpencil_in(i_oij).and.(.not.lcartesian_coords)) lpencil_in(i_oo)=.true.
 !
       if (lpencil_in(i_uu_advec)) lpencil_in(i_uu)=.true.
       if (lpencil_in(i_uuadvec_guu)) then
@@ -1473,7 +1463,7 @@ module Hydro
       if (lpenc_loc(i_ugu2)) call fatal_error('calc_pencils_hydro_linearized','does not calculate ugu2 pencil')
 ! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
       if (lpenc_loc(i_u3u21).or.lpenc_loc(i_u1u32).or.lpenc_loc(i_u2u13)  &
-        .or.lpenc_loc(i_u2u31).or.lpenc_loc(i_u3u12).or.lpenc_loc(i_u1u23) ) then
+          .or.lpenc_loc(i_u2u31).or.lpenc_loc(i_u3u12).or.lpenc_loc(i_u1u23) ) then
         call fatal_error('calc_pencils_hydro_linearized','ujukl pencils not calculated')
       endif
 ! del4u, del6u, and del4graddivu
@@ -1557,16 +1547,6 @@ module Hydro
         call fatal_error('calc_pencils_hydro_linearized','no linearized weno transport ')
 !
     endsubroutine calc_pencils_hydro_linearized
-!***********************************************************************
-    subroutine calc_diagnostics_hydro(f,p)
-
-      real, dimension(:,:,:,:) :: f
-      type(pencil_case), intent(in) :: p
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-
-    endsubroutine calc_diagnostics_hydro
 !******************************************************************************
     subroutine df_diagnos_hydro(df,p)
 
@@ -1643,11 +1623,9 @@ module Hydro
 !
 !  26-dec-18/axel: adapted from hydro
 !
-      use Diagnostics
       use Special, only: special_calc_hydro
       use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
       use General, only: transform_thph_yy, notanumber
-      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1656,14 +1634,9 @@ module Hydro
       intent(in) :: p
       intent(inout) :: f,df
 !
-      real, dimension (nx,3) :: curlru,uxo
-      real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
-      real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
-      real, dimension (nx) :: uus,ftot,Fmax,advec_uu
+      real, dimension (nx) :: advec_uu
       real :: kx
       integer :: j, ju, k
-!
-      Fmax=tini
 !
 !  Identify module and boundary conditions.
 !
@@ -1709,12 +1682,31 @@ module Hydro
 !
 !  Ekman Friction, used only in two dimensional runs.
 !
-      if (ekman_friction/=0) &
-        df(l1:l2,m,n,iphiuu)=df(l1:l2,m,n,iphiuu)-ekman_friction*f(l1:l2,m,n,iphiuu)
+      if (ekman_friction/=0) df(l1:l2,m,n,iphiuu)=df(l1:l2,m,n,iphiuu)-ekman_friction*f(l1:l2,m,n,iphiuu)
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
       if (lforcing_cont_uu) df(l1:l2,m,n,iphiuu)=df(l1:l2,m,n,iphiuu)+ ampl_fcont_uu*p%fcont(:,1,1)
+!
+      call timing('duu_dt','just before diagnostics',mnloop=.true.)
+
+      call calc_diagnostics_hydro(f,p)
+
+      call timing('duu_dt','finished',mnloop=.true.)
+!
+    endsubroutine duu_dt
+!***********************************************************************
+    subroutine calc_diagnostics_hydro(f,p)
+
+      use Diagnostics
+      use Slices_methods, only: store_slices
+!
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: space_part_re,space_part_im,u2t,fu,uus,ftot
+      real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
+      real, dimension (nx,3) :: curlru, uxo
 !
 !  store slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
@@ -1725,19 +1717,19 @@ module Hydro
 
         if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
         if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
-        if (othresh_per_orms/=0) call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
         if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
+        if (othresh_per_orms/=0) call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
       endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
-      call timing('duu_dt','just before ldiagnos',mnloop=.true.)
       if (ldiagnos) then
+
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
         if (idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         if (idiag_urms/=0) call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_durms/=0) then
-          uref=ampluu(1)*cos(kx_uu*x(l1:l2))
+          uref=ampluu(1)*cos(kx_uu*x(l1:l2))    !MR: very specific
           call sum_mn_name(p%u2-2.*p%uu(:,2)*uref+uref**2,idiag_durms)
         endif
 !
@@ -1817,28 +1809,28 @@ module Hydro
 !  Velocity components at one point (=pt).
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
-          if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
-          if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
+          call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
+          call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
+          call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
         endif
 !
 !  Velocity components at point 2 (=p2).
 !
         if (lroot.and.m==mpoint2.and.n==npoint2) then
-          if (idiag_uxp2/=0) call save_name(p%uu(lpoint2-nghost,1),idiag_uxp2)
-          if (idiag_uyp2/=0) call save_name(p%uu(lpoint2-nghost,2),idiag_uyp2)
-          if (idiag_uzp2/=0) call save_name(p%uu(lpoint2-nghost,3),idiag_uzp2)
+          call save_name(p%uu(lpoint2-nghost,1),idiag_uxp2)
+          call save_name(p%uu(lpoint2-nghost,2),idiag_uyp2)
+          call save_name(p%uu(lpoint2-nghost,3),idiag_uzp2)
         endif
 !
 !  mean squared velocity and vorticity
 !
         call xysum_mn_name_z(p%u2,idiag_u2mz)
         call xysum_mn_name_z(p%o2,idiag_o2mz)
-        call xysum_mn_name_z(p%divu**2,idiag_divu2mz)
+        if (idiag_divu2mz/=0) call xysum_mn_name_z(p%divu**2,idiag_divu2mz)
 !
 !  mean squared mass flux divergence
 !
-        call xysum_mn_name_z((p%rho*p%divu+p%ugrho)**2,idiag_divru2mz)
+        if (idiag_divru2mz/=0) call xysum_mn_name_z((p%rho*p%divu+p%ugrho)**2,idiag_divru2mz)
 !
 !  mean squared curl of mass flux
 !
@@ -1862,10 +1854,8 @@ module Hydro
         if (idiag_rlym/=0) call sum_mn_name(p%rho*(z(n)*p%uu(:,1)-x(l1:l2)*p%uu(:,3)),idiag_rlym)
         if (idiag_rlzm/=0) call sum_mn_name(p%rho*(x(l1:l2)*p%uu(:,2)-y(m)*p%uu(:,1)),idiag_rlzm)
         if (idiag_rlx2m/=0) call sum_mn_name((p%rho*(y(m)*p%uu(:,3)-z(n)*p%uu(:,2)))**2,idiag_rlx2m)
-        if (idiag_rly2m/=0) call sum_mn_name( &
-            (p%rho*(z(n)*p%uu(:,1)-x(l1:l2)*p%uu(:,3)))**2,idiag_rly2m)
-        if (idiag_rlz2m/=0) call sum_mn_name( &
-            (p%rho*(x(l1:l2)*p%uu(:,2)-y(m)*p%uu(:,1)))**2,idiag_rlz2m)
+        if (idiag_rly2m/=0) call sum_mn_name((p%rho*(z(n)*p%uu(:,1)-x(l1:l2)*p%uu(:,3)))**2,idiag_rly2m)
+        if (idiag_rlz2m/=0) call sum_mn_name((p%rho*(x(l1:l2)*p%uu(:,2)-y(m)*p%uu(:,1)))**2,idiag_rlz2m)
 !
 !  Total angular momentum in spherical coordinates
 !
@@ -1888,8 +1878,8 @@ module Hydro
 !
 !  Things related to vorticity.
 !
-        if (idiag_ou_int/=0)  call integrate_mn_name(p%ou,idiag_ou_int)
-        if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
+        call integrate_mn_name(p%ou,idiag_ou_int)
+        call sum_mn_name(p%ou,idiag_oum)
         if (idiag_oumh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%ou,idiag_oumh)
           if (lequatorz) call sum_mn_name_halfz(p%ou,idiag_oumh)
@@ -1898,7 +1888,7 @@ module Hydro
           itype_name(idiag_oumn)=ilabel_sum
           itype_name(idiag_oums)=ilabel_sum
         endif
-        if (idiag_orms/=0) call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
+        call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
         if (idiag_ormsh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%o2,idiag_ormsh)
           if (lequatorz) call sum_mn_name_halfz(p%o2,idiag_ormsh)
@@ -1922,9 +1912,9 @@ module Hydro
         if (idiag_ox2m/=0) call sum_mn_name(p%oo(:,1)**2,idiag_ox2m)
         if (idiag_oy2m/=0) call sum_mn_name(p%oo(:,2)**2,idiag_oy2m)
         if (idiag_oz2m/=0) call sum_mn_name(p%oo(:,3)**2,idiag_oz2m)
-        call sum_mn_name(p%oo(:,1)   ,idiag_oxm)
-        call sum_mn_name(p%oo(:,2)   ,idiag_oym)
-        call sum_mn_name(p%oo(:,3)   ,idiag_ozm)
+        call sum_mn_name(p%oo(:,1),idiag_oxm)
+        call sum_mn_name(p%oo(:,2),idiag_oym)
+        call sum_mn_name(p%oo(:,3),idiag_ozm)
         if (idiag_oxuzxm/=0) call sum_mn_name(p%oo(:,1)*p%uij(:,3,1),idiag_oxuzxm)
         if (idiag_oyuzym/=0) call sum_mn_name(p%oo(:,2)*p%uij(:,3,2),idiag_oyuzym)
         if (idiag_oxoym/=0) call sum_mn_name(p%oo(:,1)*p%oo(:,2),idiag_oxoym)
@@ -1981,7 +1971,8 @@ module Hydro
           call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),u2t)
           call sum_mn_name(u2t,idiag_u2tm)
         endif
-!
+
+!MR: in the following, space_part_* are undefined!!!!
         if (idiag_uxfampm/=0) call sum_mn_name(p%uu(:,1)*space_part_re,idiag_uxfampm)
         if (idiag_uyfampm/=0) call sum_mn_name(p%uu(:,2)*space_part_re,idiag_uyfampm)
         if (idiag_uzfampm/=0) call sum_mn_name(p%uu(:,3)*space_part_re,idiag_uzfampm)
@@ -2192,9 +2183,8 @@ module Hydro
           call zsum_mn_name_xy(p%uu,idiag_uzmxy,(/0,0,1/))
         endif
       endif
-      call timing('duu_dt','finished',mnloop=.true.)
-!
-    endsubroutine duu_dt
+
+    endsubroutine calc_diagnostics_hydro
 !***********************************************************************
     subroutine time_integrals_hydro(f,p)
 !
@@ -2218,9 +2208,9 @@ module Hydro
 !
       fact_cos=cos(omega_fourier*t)
       fact_sin=sin(omega_fourier*t)
-      if (iuut/=0) f(l1:l2,m,n,iuxt:iuzt)=f(l1:l2,m,n,iuxt:iuzt)+dt*p%uu*fact_cos
+      if (iuut /=0) f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iuxt:iuzt)+dt*p%uu*fact_cos
       if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=f(l1:l2,m,n,iuxst:iuzst)+dt*p%uu*fact_sin
-      if (ioot/=0) f(l1:l2,m,n,ioxt:iozt)=f(l1:l2,m,n,ioxt:iozt)+dt*p%oo*fact_cos
+      if (ioot /=0) f(l1:l2,m,n,ioxt:iozt)  =f(l1:l2,m,n,ioxt:iozt)+dt*p%oo*fact_cos
       if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=f(l1:l2,m,n,ioxst:iozst)+dt*p%oo*fact_sin
 !
     endsubroutine time_integrals_hydro
@@ -2276,8 +2266,7 @@ module Hydro
      if (lslope_limit_diff .and. llast) then
        do m=1,my
        do n=1,mz
-           f(:,m,n,isld_char)=w_sldchar_hyd* &
-            sqrt(f(:,m,n,iux)**2.+f(:,m,n,iuy)**2.+f(:,m,n,iuz)**2.)
+           f(:,m,n,isld_char)=w_sldchar_hyd*sqrt(f(:,m,n,iux)**2.+f(:,m,n,iuy)**2.+f(:,m,n,iuz)**2.)
        enddo
        enddo
      endif
@@ -2850,24 +2839,15 @@ module Hydro
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruxuymx',idiag_ruxuymx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruxuzmx',idiag_ruxuzmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ruyuzmx',idiag_ruyuzmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'ux2mx',idiag_ux2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uy2mx',idiag_uy2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uz2mx',idiag_uz2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'ox2mx',idiag_ox2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'oy2mx',idiag_oy2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'oz2mx',idiag_oz2mx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uxuymx',idiag_uxuymx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uxuzmx',idiag_uxuzmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
-            'uyuzmx',idiag_uyuzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ux2mx',idiag_ux2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uy2mx',idiag_uy2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uz2mx',idiag_uz2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ox2mx',idiag_ox2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'oy2mx',idiag_oy2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'oz2mx',idiag_oz2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uxuymx',idiag_uxuymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uxuzmx',idiag_uxuzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uyuzmx',idiag_uyuzmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'oumx',idiag_oumx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ekinmx',idiag_ekinmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fkinxmx',idiag_fkinxmx)
@@ -2879,18 +2859,12 @@ module Hydro
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'uxmy',idiag_uxmy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'uymy',idiag_uymy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'uzmy',idiag_uzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'ux2my',idiag_ux2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uy2my',idiag_uy2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uz2my',idiag_uz2my)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uxuymy',idiag_uxuymy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uxuzmy',idiag_uxuzmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uyuzmy',idiag_uyuzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'ux2my',idiag_ux2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uy2my',idiag_uy2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uz2my',idiag_uz2my)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uxuymy',idiag_uxuymy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uxuzmy',idiag_uxuzmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'uyuzmy',idiag_uyuzmy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'oumy',idiag_oumy)
       enddo
 !
@@ -2961,24 +2935,15 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxdivu2mz',idiag_oxdivu2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oydivu2mz',idiag_oydivu2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ozdivu2mz',idiag_ozdivu2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-             'u3u21mz',idiag_u3u21mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-             'u1u32mz',idiag_u1u32mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-             'u2u13mz',idiag_u2u13mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-             'u2u31mz',idiag_u2u31mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-             'u3u12mz',idiag_u3u12mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-             'u1u23mz',idiag_u1u23mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-             'accpowzmz',idiag_accpowzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-             'accpowzupmz',idiag_accpowzupmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-             'accpowzdownmz',idiag_accpowzdownmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'u3u21mz',idiag_u3u21mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'u1u32mz',idiag_u1u32mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'u2u13mz',idiag_u2u13mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'u2u31mz',idiag_u2u31mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'u3u12mz',idiag_u3u12mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'u1u23mz',idiag_u1u23mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'accpowzmz',idiag_accpowzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'accpowzupmz',idiag_accpowzupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'accpowzdownmz',idiag_accpowzdownmz)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
@@ -3310,8 +3275,7 @@ module Hydro
             call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
-          if (lfirst_proc_yz) &
-            call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=1)
+          if (lfirst_proc_yz) call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=1)
           umx=sqrt(sum(umx2)/nxgrid)
         endif
         call save_name(umx,idiag_umx)
@@ -3334,8 +3298,7 @@ module Hydro
             call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
-          if (lfirst_proc_xz) &
-            call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,ny,idir=2)
+          if (lfirst_proc_xz) call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,ny,idir=2)
           umy=sqrt(sum(umy2)/nygrid)
         endif
         call save_name(umy,idiag_umy)
@@ -3638,41 +3601,28 @@ module Hydro
       integer,                            intent (in)    :: indux
 !
       real, dimension (indux:indux+2) :: um, um_tmp
-      integer :: m,n,j
-      real    :: fac
+      integer :: j
 !
 !  initialize um and compute normalization factor fac
 !
         um = 0.0
-        fac = 1.0/nwgrid
-!
-!  Go through all pencils.
-!
-        do n = n1,n2
-        do m = m1,m2
 !
 !  Compute mean flow in each of the 3 directions.
 !
-          do j=indux,indux+2
-            um(j) = um(j) + fac*sum(f(l1:l2,m,n,j))
-          enddo
-        enddo
+        do j=indux,indux+2
+          um(j) = um(j) + sum(f(l1:l2,m1:m2,n1:n2,j))
         enddo
 !
 !  Compute total sum for all processors
 !
         call mpiallreduce_sum(um,um_tmp,3)
-        um = um_tmp
+        um = um_tmp/nwgrid
 !
 !  Go through all pencils and subtract out the mean flow
 !  separately for each direction.
 !
-        do n = n1,n2
-        do m = m1,m2
-          do j=indux,indux+2
-            f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - um(j)
-          enddo
-        enddo
+        do j=indux,indux+2
+          f(l1:l2,m1:m2,n1:n2,j) = f(l1:l2,m1:m2,n1:n2,j) - um(j)
         enddo
 !
         if (lroot.and.ip<6) print*,'remove_mean_flow: um=',um
@@ -3757,11 +3707,7 @@ module Hydro
         l1bc=(l1+l2)/2
         l2bc=l1bc+1
         do n=n1,n2
-          if (z(n)<z1_interior_bc_hydro) then
-            do m=m1,m2
-              f(l1bc:l2bc,m,n,iux:iuz)=0.
-            enddo
-          endif
+          if (z(n)<z1_interior_bc_hydro) f(l1bc:l2bc,m1:m2,n,iux:iuz)=0.
         enddo
 !
 !  no profile
@@ -3783,51 +3729,59 @@ module Hydro
 !
 !  23-oct-18/pjk: added
 !
+      use Mpicomm, only: mpibcast
+
       real, dimension(nz,3), intent(out) :: uumz_prof
-      integer, parameter :: nztotal=nz*nprocz
-      real, dimension(nz*nprocz) :: tmp1z,tmp2z,tmp3z
+      real, dimension(nzgrid) :: tmp1z,tmp2z,tmp3z
       real :: var1,var2,var3
       logical :: exist
-      integer :: stat
-!
-!  Read hcond and glhc and write into an array.
-!  If file is not found in run directory, search under trim(directory).
-!
-      inquire(file='uumz.dat',exist=exist)
-      if (exist) then
-        open(31,file='uumz.dat')
-      else
-        inquire(file=trim(directory)//'/uumz.ascii',exist=exist)
-        if (exist) then
-          open(31,file=trim(directory)//'/uumz.ascii')
-        else
-          call fatal_error('read_uumz_profile','no input file')
-        endif
-      endif
-!
-!  Read profiles.
+      integer :: stat,n
 !
 !  Gravity in the z-direction
 !
       if (lgravz) then
-        do n=1,nztotal
-          read(31,*,iostat=stat) var1,var2,var3
-          if (stat<0) exit
-          if (ip<5) print*,'uxmz, uymz, uzmz: ',var1,var2,var3
-          tmp1z(n)=var1
-          tmp2z(n)=var2
-          tmp3z(n)=var3
-        enddo
+!
+!  Read uumz_prof into an array.
+!  If file is not found in run directory, search under directory.
+!
+        if (lroot) then
+ 
+          inquire(file='uumz.dat',exist=exist)
+          if (exist) then
+            open(31,file='uumz.dat')
+          else
+            inquire(file=trim(directory)//'/uumz.ascii',exist=exist)
+            if (exist) then
+              open(31,file=trim(directory)//'/uumz.ascii')
+            else
+              call fatal_error('read_uumz_profile','no input file')
+            endif
+          endif
+!
+!  Read profiles.
+!
+          do n=1,nzgrid
+            read(31,*,iostat=stat) var1,var2,var3
+            if (stat<0) exit
+            if (ip<5) print*,'uxmz, uymz, uzmz: ',var1,var2,var3
+            tmp1z(n)=var1
+            tmp2z(n)=var2
+            tmp3z(n)=var3
+          enddo
+
+          close(31)
+!
+        endif
+
+        call mpibcast(tmp1z)    ! better mpi_scatter
+        call mpibcast(tmp2z)
+        call mpibcast(tmp3z)
 !
 !  Assuming no ghost zones in uumz.dat.
 !
-        do n=n1,n2
-          uumz_prof(n-nghost,1)=tmp1z(ipz*nz+n-nghost)
-          uumz_prof(n-nghost,2)=tmp2z(ipz*nz+n-nghost)
-          uumz_prof(n-nghost,3)=tmp3z(ipz*nz+n-nghost)
-        enddo
-!
-        close(31)
+        uumz_prof(:,1)=tmp1z(ipz*nz+1:(ipz+1)*nz)
+        uumz_prof(:,2)=tmp2z(ipz*nz+1:(ipz+1)*nz)
+        uumz_prof(:,3)=tmp3z(ipz*nz+1:(ipz+1)*nz)
 !
       endif
 !
@@ -3916,35 +3870,9 @@ module Hydro
     subroutine pushdiags2c(p_diag)
 
     use Syscalls, only: copy_addr
-    use Diagnostics, only: set_type
 
-    integer, parameter :: n_diags=12
+    integer, parameter :: n_diags=0
     integer(KIND=ikind8), dimension(n_diags) :: p_diag
-
-    call copy_addr(idiag_urms,p_diag(1))
-    call set_type(idiag_urms,lsqrt=.true.)
-    call copy_addr(idiag_uxrms,p_diag(2))
-    call set_type(idiag_uxrms,lsqrt=.true.)
-    call copy_addr(idiag_uyrms,p_diag(3))
-    call set_type(idiag_uyrms,lsqrt=.true.)
-    call copy_addr(idiag_uzrms,p_diag(4))
-    call set_type(idiag_uzrms,lsqrt=.true.)
-    call copy_addr(idiag_umax,p_diag(5))
-    call set_type(idiag_umax,lmax=.true.)
-    call copy_addr(idiag_umin,p_diag(6))
-    call set_type(idiag_umin,lmin=.true.)
-    call copy_addr(idiag_uxmin,p_diag(7))
-    call set_type(idiag_uxmin,lmin=.true.)
-    call copy_addr(idiag_uymin,p_diag(8))
-    call set_type(idiag_uymin,lmin=.true.)
-    call copy_addr(idiag_uzmin,p_diag(9))
-    call set_type(idiag_uzmin,lmin=.true.)
-    call copy_addr(idiag_uxmax,p_diag(10))
-    call set_type(idiag_uxmax,lmax=.true.)
-    call copy_addr(idiag_uymax,p_diag(11))
-    call set_type(idiag_uymax,lmax=.true.)
-    call copy_addr(idiag_uzmax,p_diag(12))
-    call set_type(idiag_uzmax,lmax=.true.)
 
     endsubroutine pushdiags2c
 !***********************************************************************
