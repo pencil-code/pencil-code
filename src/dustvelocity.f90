@@ -121,6 +121,10 @@ module Dustvelocity
   integer, dimension(ndustspec) :: idiag_rdudxm=0, idiag_rdudym=0
   integer, dimension(ndustspec) :: idiag_rdudzm=0, idiag_rdudx2m=0
 !
+! Auxiliary variables:
+!
+  real, dimension (nx) :: diffus_nud,diffus_nud3,advec_uud,advec_hypermesh_uud
+
   contains
 !***********************************************************************
     subroutine register_dustvelocity()
@@ -1020,7 +1024,6 @@ module Dustvelocity
 !
       real, dimension (nx,3) :: fviscd, AA_sfta, BB_sfta, tmp, tmp2
       real, dimension (nx) :: tausg1, mudrhod1, tmp3
-      real, dimension (nx) :: diffus_nud,diffus_nud3,advec_uud,advec_hypermesh_uud
       real :: c2, s2
       integer :: i, j, k, ju
 !
@@ -1267,8 +1270,6 @@ module Dustvelocity
           if (lfirst .and. ldt) then
             advec_uud=sum(abs(p%uud(:,:,k))*dline_1,2)
             maxadvec=maxadvec+advec_uud
-            if (idiag_dtud(k)/=0) call max_mn_name(advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
-            if (idiag_dtnud(k)/=0) call max_mn_name(diffus_nud/cdtv,idiag_dtnud(k),l_dt=.true.)
             if ((headtt.or.ldebug) .and. (ip<6)) then
               print*,'duud_dt: max(advec_uud) =',maxval(advec_uud)
               print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
@@ -1326,6 +1327,10 @@ module Dustvelocity
           call max_mn_name(p%od2,idiag_odmax(k),lsqrt=.true.)
           call sum_mn_name(p%od2(:,1),idiag_od2m(k))
           call sum_mn_name(p%oud(:,1),idiag_oudm(k))
+          if (lfirst .and. ldt) then
+            if (idiag_dtud(k)/=0) call max_mn_name(advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
+            if (idiag_dtnud(k)/=0) call max_mn_name(diffus_nud/cdtv,idiag_dtnud(k),l_dt=.true.)
+          endif
         enddo
       endif
 !

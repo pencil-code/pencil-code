@@ -278,9 +278,9 @@ module Density
   logical :: lupdate_mass_source
   real, dimension(nx) :: diffus_diffrho
   real, dimension(nx) :: diffus_diffrho3
-  real :: density_floor_log
+  real :: density_floor_log, density_ceiling_log
   real :: gamma, gamma1, gamma_m1, cp1
-
+!
   contains
 !***********************************************************************
     subroutine register_density
@@ -994,6 +994,7 @@ module Density
                           ' in density_run_pars for some density fluctuation diagnostics')
 !
       if (density_floor>0.) density_floor_log=alog(density_floor)
+      if (density_ceiling>0.) density_ceiling_log=alog(density_ceiling)
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -3901,21 +3902,14 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, save :: density_ceiling_log
-      logical, save :: lfirstcall=.true.
-!
 !  Impose the density ceiling
 !
       if (density_ceiling>0.) then
-        if (lfirstcall) then
-          density_ceiling_log=alog(density_ceiling)
-          lfirstcall=.false.
-        endif
 !
-        if (ldensity_nolog.and..not.lreference_state) then
-          where (f(:,:,:,irho)>density_ceiling) f(:,:,:,irho)=density_ceiling
+        if (ldensity_nolog) then
+          if (.not.lreference_state) f(:,:,:,irho) = min(f(:,:,:,irho),density_ceiling)
         else
-          where (f(:,:,:,ilnrho)>density_ceiling_log) f(:,:,:,ilnrho)=density_ceiling_log
+         f(:,:,:,ilnrho) = min(f(:,:,:,ilnrho),density_ceiling_log)
         endif
       endif
 !
