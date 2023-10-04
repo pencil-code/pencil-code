@@ -6323,9 +6323,9 @@ module Energy
       endselect
 !
       if (l2davgfirst) then
-         if (idiag_dcoolmphi/=0) call phisum_mn_name_rz(heat,idiag_dcoolmphi)
-         if (idiag_divcoolmphi/=0) call phisum_mn_name_rz(div_cool,idiag_divcoolmphi)
-         if (idiag_divheatmphi/=0) call phisum_mn_name_rz(div_heat,idiag_divheatmphi)
+         call phisum_mn_name_rz(heat,idiag_dcoolmphi)
+         call phisum_mn_name_rz(div_cool,idiag_divcoolmphi)
+         call phisum_mn_name_rz(div_heat,idiag_divheatmphi)
       endif
 !
     endsubroutine get_heat_cool_gravr
