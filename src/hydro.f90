@@ -807,12 +807,13 @@ module Hydro
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: Omegav=0.
   real, dimension(nx) :: Fmax,advec_uu=0.
-  real :: t_vart=0., fade_fact
+  real :: t_vart=0., fade_fact, frict
 !
   real, dimension (nx) :: prof_amp1, prof_amp2
   real, dimension (mz) :: prof_amp3
   real, dimension (my) :: prof_amp4
   real, dimension (nz,3) :: uumz_prof
+  real, dimension (nx,3) :: fint,fext
   real, dimension (nx,ny) :: omega_prof
 
   contains
@@ -3607,7 +3608,6 @@ module Hydro
       real, dimension (nx,3) :: uu1
       real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
       real, dimension (nx,3,3) :: puij_Schur
-      real :: frict
       integer :: i, j, ju
 !
       Fmax=1./impossible
@@ -3808,14 +3808,11 @@ module Hydro
           case ('nothing')
             frict=ekman_friction
           case ('linear')
-            frict=ekman_friction &
-              *max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
+            frict=ekman_friction*max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
           case default
         endselect
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-frict*p%uu
-        if (lroot.and.ldiagnos) call save_name(frict,idiag_frict)
       endif
-
 !
 !  Boussinesq approximation: -g_z*alpha*(T-T_0) added.
 !  Use Rayleigh number only with ltemperature.
@@ -4295,6 +4292,15 @@ module Hydro
         endif
         if (othresh_per_orms/=0.) call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
 
+        if ((tdamp/=0.or.dampuext/=0.or.dampuint/=0).and.lOmega_int) then
+          if (idiag_fextm/=0) call sum_mn_name(sum(f(l1:l2,m,n,iux:iuz)*fext,2),idiag_fextm)
+          if (dampuint > 0.) then
+            if (idiag_fintm/=0) call sum_mn_name(sum(f(l1:l2,m,n,iux:iuz)*fint,2),idiag_fintm)
+          endif
+        endif
+
+        if (ekman_friction/=0) call save_name(frict,idiag_frict)
+
       elseif (lcorr_zero_dt) then
 !
 !  Here all quantities should be updated the calculation of which requires dt which
@@ -4571,10 +4577,10 @@ module Hydro
         if (idiag_u2mr/=0) call phizsum_mn_name_r(p%u2,idiag_u2mr)
         if (idiag_urmr/=0) call phizsum_mn_name_r(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmr)
         if (idiag_upmr/=0) call phizsum_mn_name_r(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmr)
-        if (idiag_uzmr/=0) call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
+        call phizsum_mn_name_r(p%uu(:,3),idiag_uzmr)
         if (idiag_ormr/=0) call phizsum_mn_name_r(p%oo(:,1)*p%pomx+p%oo(:,2)*p%pomy,idiag_ormr)
         if (idiag_opmr/=0) call phizsum_mn_name_r(p%oo(:,1)*p%phix+p%oo(:,2)*p%phiy,idiag_opmr)
-        if (idiag_ozmr/=0) call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
+        call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
       endif
 
     endsubroutine calc_1d_diagnostics_hydro
@@ -4777,13 +4783,9 @@ module Hydro
       real, dimension(:,:,:,:) :: df
 
       real, dimension (nx) :: uduu
-      integer :: i
 
       if (idiag_uduum/=0) then
-        uduu=0.
-        do i = 1,3
-          uduu=uduu+p%uu(:,i)*df(l1:l2,m,n,iux-1+i)
-        enddo
+        uduu=sum(p%uu*df(l1:l2,m,n,iux:iuz),2)   ! = dot product
         call sum_mn_name(p%rho*uduu,idiag_uduum)
       endif
 
@@ -5736,10 +5738,10 @@ endif
 !  inform about the damping term
 !
           if (ldamp_fade) then
-            print*, 'udamping: Damping velocities until time ', tdamp
-            print*, 'udamping: with a smooth fade starting at ', tfade_start
+            print*, 'update_fade_fact: Damping velocities until time ', tdamp
+            print*, 'update_fade_fact: with a smooth fade starting at ', tfade_start
           else
-            print*, 'udamping: Damping velocities constantly until time ', tdamp
+            print*, 'update_fade_fact: Damping velocities constantly until time ', tdamp
           endif
         endif
 
@@ -5780,7 +5782,7 @@ endif
             elseif (tau <= 0.5) then
               fade_fact = 0.5 - tau * (1.5 - 2.0*tau**2)
             else
-              call fatal_error("udamping","tau is invalid as > 0.5)")
+              call fatal_error("update_fade_fact","tau is invalid as > 0.5)")
             endif
           endif
 
@@ -5803,7 +5805,6 @@ endif
       type (pencil_case) :: p
 !
       real, dimension (nx) :: pdamp,fint_work,fext_work
-      real, dimension (nx,3) :: fint,fext
       integer :: i,j
 !
 !  1. damp motion during time interval 0<t<tdamp.
@@ -5860,10 +5861,6 @@ endif
             fext(:,i)=-dampuext*pdamp*f(l1:l2,m,n,j)
           enddo
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fext
-          if (ldiagnos.and.idiag_fextm/=0) then
-            fext_work=sum(f(l1:l2,m,n,iux:iuz)*fext,2)
-            call sum_mn_name(fext_work,idiag_fextm)
-          endif
 !
 !  internal angular velocity, uref=(-y,x,0)*Omega_int, and
 !  calculate work done to sustain uniform rotation on inner cylinder/sphere
@@ -5878,10 +5875,6 @@ endif
             fint(:,2)=-dampuint*pdamp*(f(l1:l2,m,n,iuy)-x(l1:l2)*Omega_int)
             fint(:,3)=-dampuint*pdamp*(f(l1:l2,m,n,iuz))
             df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fint
-            if (ldiagnos.and.idiag_fintm/=0) then
-              fint_work = sum(f(l1:l2,m,n,iux:iuz)*fint,2)
-              call sum_mn_name(fint_work,idiag_fintm)
-            endif
           endif
 !
         endif
