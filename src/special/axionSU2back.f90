@@ -55,7 +55,7 @@ module Special
   real :: TRpsim_sum, TRpsikm_sum, TRpsidotm_sum, TRdotpsim_sum
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
   real :: lnkmin0, lnkmin0_dummy, lnkmax0, dlnk
-  real :: nmin0=-1., nmax0=3., horizon_factor=0.
+  real :: nmin0=-1., nmax0=3., horizon_factor=0., sgn=1.
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: ldo_adjust_krange=.true., lswap_sign=.false.
@@ -68,7 +68,7 @@ module Special
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
-    nmin0, nmax0, ldo_adjust_krange, lswap_sign
+    nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -76,7 +76,7 @@ module Special
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
     nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
-    ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact
+    ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn
 !
   ! k array
   real, dimension (nx) :: k
@@ -211,7 +211,11 @@ module Special
       lnH=alog(H)
       lnkmin0=nmin0+lnH+lna
       lnkmax0=nmax0+lnH+lna
-      dlnk=(lnkmax0-lnkmin0)/(nxgrid-1)
+      if (nxgrid==1) then
+        dlnk=1.
+      else
+        dlnk=(lnkmax0-lnkmin0)/(nxgrid-1)
+      endif
 !
 !  Initialize lnkmin0 and lnkmax0
 !
@@ -502,27 +506,27 @@ module Special
       if (lconf_time) then
         if (lwith_eps) then
           psiddot=-(k**2-2./t**2)*psi &
-            +(2.*sqrt(epsQE)/t)*TRdot+((2.*sqrt(epsQB)*(mQ+k*t))/t**2)*TR
-          TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-(2.*sqrt(epsQE))/t*psidot &
-            +(2.*sqrt(epsQE))/t**2*psi+(2.*sqrt(epsQB))/t**2*(mQ+k*t)*psi
+            +(2.*sqrt(epsQE)/t)*TRdot+((2.*sqrt(epsQB)*(mQ+sgn*k*t))/t**2)*TR
+          TRddot=-(k**2+(2.*(mQ*xi+sgn*k*t*(mQ+xi)))/t**2)*TR-(2.*sqrt(epsQE))/t*psidot &
+            +(2.*sqrt(epsQE))/t**2*psi+(2.*sqrt(epsQB))/t**2*(mQ+sgn*k*t)*psi
           if (lim_psi_TR) then
             impsiddot=-(k**2-2./t**2)*impsi &
-              +(2.*sqrt(epsQE)/t)*imTRdot+((2.*sqrt(epsQB)*(mQ+k*t))/t**2)*imTR
-            imTRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
-              +(2.*sqrt(epsQE))/t**2*impsi+(2.*sqrt(epsQB))/t**2*(mQ+k*t)*impsi
+              +(2.*sqrt(epsQE)/t)*imTRdot+((2.*sqrt(epsQB)*(mQ+sgn*k*t))/t**2)*imTR
+            imTRddot=-(k**2+(2.*(mQ*xi+sgn*k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
+              +(2.*sqrt(epsQE))/t**2*impsi+(2.*sqrt(epsQB))/t**2*(mQ+sgn*k*t)*impsi
           endif
 !
 !  Left-handed modes (conformal, with epsilon formulation)
 !
           if (lleft_psiL_TL) then
             psiLddot=-(k**2-2./t**2)*psiL &
-              +(2.*sqrt(epsQE)/t)*TLdot+((2.*sqrt(epsQB)*(mQ-k*t))/t**2)*TL
-            TLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*TL-(2.*sqrt(epsQE))/t*psiLdot &
-              +(2.*sqrt(epsQE))/t**2*psiL+(2.*sqrt(epsQB))/t**2*(mQ-k*t)*psiL
+              +(2.*sqrt(epsQE)/t)*TLdot+((2.*sqrt(epsQB)*(mQ-sgn*k*t))/t**2)*TL
+            TLddot=-(k**2+(2.*(mQ*xi-sgn*k*t*(mQ+xi)))/t**2)*TL-(2.*sqrt(epsQE))/t*psiLdot &
+              +(2.*sqrt(epsQE))/t**2*psiL+(2.*sqrt(epsQB))/t**2*(mQ-sgn*k*t)*psiL
             impsiLddot=-(k**2-2./t**2)*impsiL &
-              +(2.*sqrt(epsQE)/t)*imTLdot+((2.*sqrt(epsQB)*(mQ-k*t))/t**2)*imTL
-            imTLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*imTL-(2.*sqrt(epsQE))/t*impsiLdot &
-              +(2.*sqrt(epsQE))/t**2*impsiL+(2.*sqrt(epsQB))/t**2*(mQ-k*t)*impsiL
+              +(2.*sqrt(epsQE)/t)*imTLdot+((2.*sqrt(epsQB)*(mQ-sgn*k*t))/t**2)*imTL
+            imTLddot=-(k**2+(2.*(mQ*xi-sgn*k*t*(mQ+xi)))/t**2)*imTL-(2.*sqrt(epsQE))/t*impsiLdot &
+              +(2.*sqrt(epsQE))/t**2*impsiL+(2.*sqrt(epsQB))/t**2*(mQ-sgn*k*t)*impsiL
           endif
         else
           if (lswap_sign) then
@@ -531,27 +535,27 @@ module Special
             sign_swap=+1.
           endif
           psiddot=-(k**2-2.*(1.-Q**2*(mQ**2-1.))/t**2)*psi &
-            +sign_swap*(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*TR
-          TRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*TR-sign_swap*(2.*Q)/t*psidot &
-            +sign_swap*(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+k*t)*psi
+            +sign_swap*(2.*Q/t)*TRdot+((2.*mQ*Q*(mQ+sgn*k*t))/t**2)*TR
+          TRddot=-(k**2+(2.*(mQ*xi+sgn*k*t*(mQ+xi)))/t**2)*TR-sign_swap*(2.*Q)/t*psidot &
+            +sign_swap*(2.*Q)/t**2*psi+(2.*mQ*Q)/t**2*(mQ+sgn*k*t)*psi
           if (lim_psi_TR) then
             impsiddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsi &
-              +sign_swap*(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+k*t))/t**2)*imTR
-            imTRddot=-(k**2+(2.*(mQ*xi+k*t*(mQ+xi)))/t**2)*imTR-sign_swap*(2.*Q)/t*impsidot &
-              +sign_swap*(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+k*t)*impsi
+              +sign_swap*(2.*Q/t)*imTRdot+((2.*mQ*Q*(mQ+sgn*k*t))/t**2)*imTR
+            imTRddot=-(k**2+(2.*(mQ*xi+sgn*k*t*(mQ+xi)))/t**2)*imTR-sign_swap*(2.*Q)/t*impsidot &
+              +sign_swap*(2.*Q)/t**2*impsi+(2.*mQ*Q)/t**2*(mQ+sgn*k*t)*impsi
           endif
 !
 !  Left-handed modes
 !
           if (lleft_psiL_TL) then
             psiLddot=-(k**2-2.*(1.-Q**2*(mQ**2-1.))/t**2)*psiL &
-              +(2.*Q/t)*TLdot+((2.*mQ*Q*(mQ-k*t))/t**2)*TL
-            TLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*TL-(2.*Q)/t*psiLdot &
-              +(2.*Q)/t**2*psiL+(2.*mQ*Q)/t**2*(mQ-k*t)*psiL
+              +(2.*Q/t)*TLdot+((2.*mQ*Q*(mQ-sgn*k*t))/t**2)*TL
+            TLddot=-(k**2+(2.*(mQ*xi-sgn*k*t*(mQ+xi)))/t**2)*TL-(2.*Q)/t*psiLdot &
+              +(2.*Q)/t**2*psiL+(2.*mQ*Q)/t**2*(mQ-sgn*k*t)*psiL
             impsiLddot=-(k**2-2.*(1-Q**2*(mQ**2-1.))/t**2)*impsiL &
-              +(2.*Q/t)*imTLdot+((2.*mQ*Q*(mQ-k*t))/t**2)*imTL
-            imTLddot=-(k**2+(2.*(mQ*xi-k*t*(mQ+xi)))/t**2)*imTL-(2.*Q)/t*impsiLdot &
-              +(2.*Q)/t**2*impsiL+(2.*mQ*Q)/t**2*(mQ-k*t)*impsiL
+              +(2.*Q/t)*imTLdot+((2.*mQ*Q*(mQ-sgn*k*t))/t**2)*imTL
+            imTLddot=-(k**2+(2.*(mQ*xi-sgn*k*t*(mQ+xi)))/t**2)*imTL-(2.*Q)/t*impsiLdot &
+              +(2.*Q)/t**2*impsiL+(2.*mQ*Q)/t**2*(mQ-sgn*k*t)*impsiL
           endif
         endif
 !
@@ -1114,7 +1118,7 @@ module Special
       endif
 !
 !  Calculation of grand and grant is different for logarithmic and
-!  uniform spacings.
+!  uniform spacings. Currently, "left" is only implemented for llnk_spacing_adjustable.
 !
       if (llnk_spacing_adjustable .or. llnk_spacing) then
         TRpsim=(4.*pi*k**3*dlnk)*TRpsi
@@ -1132,8 +1136,10 @@ module Special
           TLdoteff2m=(4.*pi*k**3*dlnk)*TLdoteff2
           TLeff2km=(4.*pi*k**3*dlnk)*TLeff2*(k/a)
           TLeff2m=(4.*pi*k**3*dlnk)*TLeff2
-          grand=grand+(4.*pi*k**3*dlnk)*(xi*H-k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
-          grant=grant+(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
+          !grand=grand+(4.*pi*k**3*dlnk)*(xi*H-k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
+          !grant=grant+(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
+          grand=grand+(4.*pi*k**3*dlnk)*(xi*H+k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
+          grant=grant+(4.*pi*k**3*dlnk)*(mQ*H+k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
         endif
         if (lconf_time) then
           dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
@@ -1141,7 +1147,8 @@ module Special
           )/twopi**3
           if (lleft_psiL_TL) then
             dgrant=dgrant+(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
-            (a*mQ*H**2+g*Qdot)*TLeff2+(mQ*H-k/a)*2*TLdoteff2 &
+            !(a*mQ*H**2+g*Qdot)*TLeff2+(mQ*H-k/a)*2*TLdoteff2 &
+            (a*mQ*H**2+g*Qdot)*TLeff2+(mQ*H+k/a)*2*TLdoteff2 &
             )/twopi**3
           endif
         else
