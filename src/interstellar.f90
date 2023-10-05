@@ -1795,11 +1795,10 @@ module Interstellar
 !
       type(pencil_case) :: p
 !
-!
 !  1-D averages.
 !
       if (l1davgfirst) then
-        if (idiag_rhoHCmz/=0) call xysum_mn_name_z(p%heatcool,idiag_rhoHCmz)
+        call xysum_mn_name_z(p%heatcool,idiag_rhoHCmz)
       endif
 !
     endsubroutine calc_1d_diag_interstellar

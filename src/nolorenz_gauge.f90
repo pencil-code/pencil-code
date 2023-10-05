@@ -131,6 +131,16 @@ module Lorenz_gauge
 !
     endsubroutine dlorenz_gauge_dt
 !***********************************************************************
+    subroutine calc_diagnostics_lorenz_gauge(f,p)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_lorenz_gauge
+!***********************************************************************
     subroutine read_lorenz_gauge_init_pars(iostat)
 !
       integer, intent(out) :: iostat
