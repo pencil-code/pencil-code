@@ -90,7 +90,7 @@ module NeutralVelocity
 !
 ! Auxiliaries
 !
-  real, dimension(nx) :: cions_rhon,cneut_rho
+  real, dimension(nx) :: cions_rhon,cneut_rho,diffus_nun,advec_csn2,advec_uun
 
   contains
 !***********************************************************************
@@ -453,7 +453,7 @@ module NeutralVelocity
       intent(out) :: df
       intent(inout) :: p
 !
-      real, dimension (nx) :: ionization,recombination,advec_csn2,advec_uun
+      real, dimension (nx) :: ionization,recombination
 !
       real :: c2,s2
       integer :: j,jn,ji
@@ -572,8 +572,6 @@ module NeutralVelocity
         if (headtt.or.ldebug) print*,'duun_dt: max(advec_uun) =',maxval(advec_uun)
         maxadvec=maxadvec+advec_uun
 !
-        if (idiag_dtun/=0) call max_mn_name(advec_uun/cdt,idiag_dtun,l_dt=.true.)
-        if (idiag_dtcn/=0) call max_mn_name(sqrt(advec_csn2)/cdt,idiag_dtcn,l_dt=.true.)
       endif
 !
 !  Apply border profiles
@@ -594,6 +592,7 @@ module NeutralVelocity
       type (pencil_case) :: p
 
       real, dimension (nx) :: udelu_neut, udelu_ions
+
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duun_dt: Calculate maxima and rms values...'
         call sum_mn_name(p%un2,idiag_unrms,lsqrt=.true.)
@@ -637,6 +636,17 @@ module NeutralVelocity
           call save_name(p%uun(lpoint-nghost,1),idiag_unxpt)
           call save_name(p%uun(lpoint-nghost,2),idiag_unypt)
           call save_name(p%uun(lpoint-nghost,3),idiag_unzpt)
+        endif
+!
+        if (lfirst.and.ldt) then
+          if (lviscneutral) then
+            if (idiag_dtnun/=0) call max_mn_name(diffus_nun/cdtv,idiag_dtnun,l_dt=.true.)
+          endif
+
+          if (dimensionality>0) then
+            if (idiag_dtun/=0) call max_mn_name(advec_uun/cdt,idiag_dtun,l_dt=.true.)
+            if (idiag_dtcn/=0) call max_mn_name(sqrt(advec_csn2)/cdt,idiag_dtcn,l_dt=.true.)
+          endif
         endif
 !
 !  this doesn't need to be as frequent (check later)
@@ -758,7 +768,7 @@ module NeutralVelocity
       intent(inout) :: df
 
       real, dimension(nx,3) :: fvisc,unij5glnrhon
-      real, dimension(nx) :: munrhon1,tmp,diffus_nun,diffus_nun3
+      real, dimension(nx) :: munrhon1,tmp,diffus_nun3
       integer :: i,j,jj,ju
 !
       fvisc=0.
@@ -848,7 +858,7 @@ module NeutralVelocity
          case ('')
             ! do nothing
          case default
-            call fatal_error('calc_viscous_force_neutral','No such value for iviscn('// &
+            call fatal_error('calc_viscous_force_neutral','no such iviscn('// &
                              trim(itoa(i))//'): '//trim(iviscn(i)))
          endselect
       enddo
@@ -861,10 +871,6 @@ module NeutralVelocity
 ! Add viscosity to the equation of motion
 !
      df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) + fvisc
-!
-     if (ldiagnos) then
-       if (idiag_dtnun/=0) call max_mn_name(diffus_nun/cdtv,idiag_dtnun,l_dt=.true.)
-     endif
 !
     endsubroutine calc_viscous_force_neutral
 !***********************************************************************

@@ -1013,7 +1013,7 @@ module Magnetic
 !
   real, dimension(nx) :: eta_total=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
-  real, dimension(nx,3) :: fres,uxbb
+  real, dimension(nx,3) :: fres,uxbb,forcing_rhs
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
   real :: eta_shock_jump1=1.0, eta_tdep=0.0, Arms=0.0
@@ -1241,8 +1241,7 @@ module Magnetic
       if (lmagn_mf .or. (lhydro.and.lconservative)) call put_shared_variable('B_ext2', B_ext2)
 !
 !PJK: moved from register_magnetic at least temporarily
-      if (lbb_sph_as_aux) &
-        call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
+      if (lbb_sph_as_aux) call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
 !
 !  Set ljj_as_comaux=T and get kernels
 !   if lsmooth_jj is used
@@ -1484,7 +1483,7 @@ module Magnetic
           elseif (eta1_aniso==impossible.and.eta1_aniso_ratio/=impossible) then
             eta1_aniso=eta1_aniso_ratio*eta
           endif
-        case ('etaSS')   !MR: should add to other resistivities, not include a constant eta, see below
+        case ('etaSS')
           if (lroot) print*, 'resistivity: etaSS (Shakura-Sunyaev)'
           lresi_etaSS=.true.
         case ('hyper2')
@@ -1717,8 +1716,7 @@ module Magnetic
       if (tau_relprof/=0.0) then
 
         if (lyinyang) then
-          if (A_relaxprofile/='') &
-            call not_implemented('initialize_magnetic', &
+          if (A_relaxprofile/='') call not_implemented('initialize_magnetic', &
                                  'z dependent relaxation profiles for A on Yin-Yang grid')
         endif
 
@@ -1741,7 +1739,7 @@ module Magnetic
           enddo
           A_relprof(:,:,:,3)=0.
         case('aa_from_global')
-        if (lroot) print*, 'initialize_mag: Set A_relaxprofile to: ', A_relaxprofile
+          if (lroot) print*, 'initialize_mag: Set A_relaxprofile to: ', A_relaxprofile
           if (iglobal_ax_ext/=0 .or. iglobal_ay_ext/=0 .or. iglobal_az_ext/=0) &
               A_relprof(:,:,:,1:3)=amp_relprof*f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext:iglobal_az_ext)
         endselect
@@ -2030,8 +2028,7 @@ module Magnetic
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
             lskip_projection_aa, lvectorpotential, lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
-            lpower_profile_file=lpower_profile_file, qexp=qexp_aa, &
-            nfact0=nfact_aa, lfactors0=lfactors_aa)
+            lpower_profile_file=lpower_profile_file, qexp=qexp_aa,nfact0=nfact_aa, lfactors0=lfactors_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')
@@ -3551,7 +3548,6 @@ module Magnetic
               if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext = ', B_ext
             endif
             f(l1:l2,m,n,ibx:ibz) = bb
-print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !
 !  compute here divJ
 !
@@ -4627,7 +4623,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
       endif
 !
 !  Shakura-Sunyaev type resistivity (mainly just as a demo to show
-!  how resistivity can be made depend on temperature.
+!  how resistivity can be made dependent on temperature.
 !  Since etaSS is nonuniform, we use this contribution only for -etaSS*JJ
 !  and keep the constant piece with +eta*del2A. (The divA term is eliminated
 !  by a suitable gauge transformation.) A sample run is checked in under
@@ -5764,8 +5760,8 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !
       use Diagnostics
       use Sub, only: dot, dot2, multvs, cross_mn, multmv_transp, dot2_mn, &
-        cross_mn, dot2_mn, dot_mn_sv, dot_mn_vm_trans, grad, &
-        multsm_mn, multvv_smat_add, multm2_mn, mult_mat_vv,vecout
+                     cross_mn, dot_mn, dot2_mn, dot_mn_sv, dot_mn_vm_trans, grad, &
+                     multsm_mn, multvv_smat_add, multm2_mn, mult_mat_vv,vecout
 
       real, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
@@ -6121,9 +6117,9 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         call sum_mn_name(eta_smag,idiag_etasmagm)
         if (idiag_etasmagmin/=0) call max_mn_name(-eta_smag,idiag_etasmagmin,lneg=.true.)
         call max_mn_name(eta_smag,idiag_etasmagmax)
-        call save_name(eta1_aniso/(1.+quench_aniso*Arms),idiag_etaaniso)
-        call save_name(eta_aniso_BB/(1.+quench_aniso*Arms),idiag_etaanisoBB)
       endif
+      call save_name(eta1_aniso/(1.+quench_aniso*Arms),idiag_etaaniso)
+      call save_name(eta_aniso_BB/(1.+quench_aniso*Arms),idiag_etaanisoBB)
       call max_mn_name(p%etava,idiag_etavamax)
       call max_mn_name(p%etaj,idiag_etajmax)
       call max_mn_name(p%etaj2,idiag_etaj2max)
@@ -6350,10 +6346,10 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         call sum_mn_name(jxbb(:,2),idiag_jxbmy)
         call sum_mn_name(jxbb(:,3),idiag_jxbmz)
       endif
-      call max_mn_name(p%vmagfric,idiag_vmagfricmax)
-      if (idiag_vmagfricrms/=0) then
+      if (idiag_vmagfricrms/=0 .or. idiag_vmagfricmax/=0) then
         call dot2_mn(p%vmagfric,tmp1)
         call sum_mn_name(tmp1,idiag_vmagfricrms,lsqrt=.true.)
+        call max_mn_name(tmp1,idiag_vmagfricmax)
       endif
 !
 !  Maximum difference of covariant B_i,j from bij and from bijtilde+bij_cov_corr
@@ -6457,6 +6453,13 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         if (idiag_jxpt/=0) call save_name(p%jj(lpoint-nghost,1),idiag_jxpt)
         if (idiag_jypt/=0) call save_name(p%jj(lpoint-nghost,2),idiag_jypt)
         if (idiag_jzpt/=0) call save_name(p%jj(lpoint-nghost,3),idiag_jzpt)
+      endif
+!
+      if (lforcing_cont_aa_local) then
+        if (idiag_jfm/=0) then
+          call dot_mn(p%jj,forcing_rhs,tmp)
+          call sum_mn_name(tmp,idiag_jfm)
+        endif
       endif
 !
 !  current density components at point 2 (=p2).
@@ -6653,9 +6656,9 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
       if (l2davgfirst) then
         if (idiag_brmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmphi)
         if (idiag_br2mphi/=0) call phisum_mn_name_rz((p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy)**2,idiag_br2mphi)
-        if (idiag_brsphmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%evr(:,1)+&
+        if (idiag_brsphmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%evr(:,1)+ &
             p%bb(:,2)*p%evr(:,2)+p%bb(:,3)*p%evr(:,3),idiag_brsphmphi)
-        if (idiag_bthmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%evth(:,1)+&
+        if (idiag_bthmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%evth(:,1)+ &
             p%bb(:,2)*p%evth(:,2)+p%bb(:,3)*p%evth(:,3),idiag_bthmphi)
         if (idiag_bpmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmphi)
         if (idiag_bp2mphi/=0) call phisum_mn_name_rz((p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy)**2,idiag_bp2mphi)
@@ -6987,10 +6990,10 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             endif
           case ('log-switch-on')
             eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
-                *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
+                     *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
           case ('linear-sigma')
             eta_tdep=1./(1./eta_max+(1./eta-1./eta_max) &
-                *max(min(real(t-eta_tdep_toffset)/eta_tdep_t0,1.),0.))
+                     *max(min(real(t-eta_tdep_toffset)/eta_tdep_t0,1.),0.))
           case ('eta_table')
             call fatal_error('magnetic_after_boundary','eta_table not yet completed')
             eta_tdep=0.
@@ -7421,8 +7424,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: forcing_rhs
-      real, dimension (nx) :: jf,phi
+      real, dimension (nx) :: phi
       real :: fact
 !
 !  calculate forcing
@@ -7463,15 +7465,6 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !  apply forcing in uncurled induction equation
 !
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+forcing_rhs
-!
-!  diagnostics
-!
-      if (ldiagnos) then
-        if (idiag_jfm/=0) then
-          call dot_mn(p%jj,forcing_rhs,jf)
-          call sum_mn_name(jf,idiag_jfm)
-        endif
-      endif
 !
     endsubroutine forcing_continuous
 !***********************************************************************
@@ -8601,11 +8594,9 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !
       if (lroot.and.ip<=5) print*,'FORCE_FREE_JET: calculating normalization'
 !
-      B1r_=sin(pi*mu/2)*gamma_function(   abs(mu) /2) / &
-                        gamma_function((1+abs(mu))/2)
+      B1r_=sin(pi*mu/2)*gamma_function(   abs(mu) /2) / gamma_function((1+abs(mu))/2)
 !
-      B1z_=cos(pi*mu/2)*gamma_function((1+abs(mu))/2) / &
-                        gamma_function((2+abs(mu))/2)
+      B1z_=cos(pi*mu/2)*gamma_function((1+abs(mu))/2) / gamma_function((2+abs(mu))/2)
 !
       B1=sqrt(4/pi)*r_ref**(mu-1)*sqrt(B1r_**2+B1z_**2)
 !
@@ -8773,7 +8764,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
                      + 2./25.*r_int**2*r_ext**2*r_mn                        &
                      + 3./5.*r_int**2*r_ext**2*r_mn*log(r_mn) )
                 aphi=ampl_B0*5./8.*sin(theta_mn)*                           &
-                   ( 4.*r_ext*r_mn - 3.*r_mn**2 - r_int**4/r_mn**2 )
+                     ( 4.*r_ext*r_mn - 3.*r_mn**2 - r_int**4/r_mn**2 )
               endwhere
 !
               where (r_mn > r_ext)
@@ -8923,11 +8914,13 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
           endif
           zoh = z / h
           z2 = zoh**2
+!
 !  resistivity profile from Fleming & Stone (ApJ 585:908-920)
 !          eta_z = eta*exp(-z2/2.+sigma_ratio*erfcc(abs(z))/4.)
           eta_z = eta * exp(-0.5 * z2 + 0.25 * sigma_ratio * erfcc(abs(zoh)))
 !
 ! its gradient:
+!
           if (present(geta_z)) &
             geta_z = -eta_z * (zoh + (0.5 * sigma_ratio / sqrt(pi)) * sign(1.,z) * exp(-z2)) / h
 !
@@ -8962,6 +8955,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
           eta_z = eta + eta*(eta_jump-1.)*cubic_step(z,eta_z0,-eta_zwidth)
 !
 ! its gradient:
+!
           if (present(geta_z)) geta_z = eta*(eta_jump-1.)*cubic_der_step(z,eta_z0,-eta_zwidth)
 !
 ! zlayer: eta is peaked within eta_z0 and eta_z1 and decreases outside.
@@ -8982,7 +8976,6 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
             geta_z = (eta-eta*eta_jump)*(exp(((z-eta_z0)**2)/(eta_zwidth**2)) &
                     - exp(((z-eta_z1)**2)/(eta_zwidth**2)))/(eta_zwidth*sqrt(pi))
 !
-!
 !  Two-step function
 !
         case ('two-step','two_step')
@@ -8991,7 +8984,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !
           if (eta_zwidth == 0.) eta_zwidth = 5.*dz
           eta_z = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
-            (step(z,eta_z0,eta_zwidth)-step(z,eta_z1,eta_zwidth))
+                  (step(z,eta_z0,eta_zwidth)-step(z,eta_z1,eta_zwidth))
 !
 !  ... and its gradient. Note that the sign of the second term enters
 !  with the opposite sign, because we have used negative eta_zwidth.
@@ -9054,9 +9047,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !
         case ('cos(y)')
           eta_y=eta*(1.+eta_ampl*cos(y))
-          if (present(geta_y)) then
-            geta_y=-eta*eta_ampl*sin(y)
-          endif
+          if (present(geta_y)) geta_y=-eta*eta_ampl*sin(y)
 !
 !
 !  Two-step function
@@ -9067,14 +9058,14 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !
           if (eta_ywidth == 0.) eta_ywidth = 5.*dy
           eta_y = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
-            (step(y,eta_y0,eta_ywidth)-step(y,eta_y1,eta_ywidth))
+                  (step(y,eta_y0,eta_ywidth)-step(y,eta_y1,eta_ywidth))
 !
 !  ... and its gradient. Note that the sign of the second term enters
 !  with the opposite sign, because we have used negative eta_ywidth.
 !
           if (present(geta_y)) then
             geta_y = eta*(eta_jump-two_step_factor)*( &
-              der_step(y,eta_y0,-eta_ywidth)+der_step(y,eta_y1,eta_ywidth))
+                     der_step(y,eta_y0,-eta_ywidth)+der_step(y,eta_y1,eta_ywidth))
           endif
 !
         case ('bound')
@@ -9187,7 +9178,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
         case ('two_step','two-step')
 !
            eta_x = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
-             (step(x,eta_x0,eta_xwidth0)-step(x,eta_x1,eta_xwidth1))
+                   (step(x,eta_x0,eta_xwidth0)-step(x,eta_x1,eta_xwidth1))
 !
 !  ... and its gradient. Note that the sign of the second term enters
 !  with the opposite sign, because we have used negative eta_xwidth.
@@ -9950,15 +9941,15 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
       if (lactive_dimension(3)) idiag_bij_cov_diffmax=0
       if (idiag_b2tm/=0) then
         if (ibbt==0) call fatal_error('rprint_magnetic',"Cannot calculate b2tm if ibbt==0")
-        !idiag_b2tm=0
+        idiag_b2tm=0
       endif
       if (idiag_jbtm/=0) then
         if (ibbt==0) call fatal_error('rprint_magnetic',"Cannot calculate jbtm if ibbt==0")
-        !idiag_jbtm=0
+        idiag_jbtm=0
       endif
       if (idiag_bjtm/=0) then
         if (ijjt==0) call fatal_error('rprint_magnetic',"Cannot calculate bjtm if ijjt==0")
-        !idiag_bjtm=0
+        idiag_bjtm=0
       endif
       if (idiag_jutm/=0) then
         if (iuut==0) call fatal_error('rprint_magnetic',"Cannot calculate jutm if iuut==0")
@@ -10375,7 +10366,7 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
 !****************************************************************************
     subroutine braginsky
 !
-      call not_implemented('braginsky','')
+      call not_implemented('braginsky','in magnetic')
 
     endsubroutine braginsky
 !***********************************************************************
@@ -10685,25 +10676,8 @@ print*,'AXEL: before magnetic: bb(:,1)=',bb(:,1)
     use Syscalls, only: copy_addr
     use Diagnostics, only: set_type
 
-    integer, parameter :: n_diags=8
+    integer, parameter :: n_diags=0
     integer(KIND=ikind8), dimension(n_diags) :: p_diag
-
-    call copy_addr(idiag_brms,p_diag(1))
-    call set_type(idiag_brms,lsqrt=.true.)
-    call copy_addr(idiag_bmax,p_diag(2))
-    call set_type(idiag_bmax,lmax=.true.)
-    call copy_addr(idiag_bxmin,p_diag(3))
-    call set_type(idiag_bxmin,lmin=.true.)
-    call copy_addr(idiag_bymin,p_diag(4))
-    call set_type(idiag_bymin,lmin=.true.)
-    call copy_addr(idiag_bzmin,p_diag(5))
-    call set_type(idiag_bzmin,lmin=.true.)
-    call copy_addr(idiag_bxmax,p_diag(6))
-    call set_type(idiag_bxmax,lmax=.true.)
-    call copy_addr(idiag_bymax,p_diag(7))
-    call set_type(idiag_bymax,lmax=.true.)
-    call copy_addr(idiag_bzmax,p_diag(8))
-    call set_type(idiag_bzmax,lmax=.true.)
 
     endsubroutine pushdiags2c
 !***********************************************************************
