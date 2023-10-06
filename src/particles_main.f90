@@ -877,7 +877,7 @@ module Particles_main
 !
     endsubroutine particles_pde_pencil
 !***********************************************************************
-    subroutine particles_calc_pencil_diagnostics(fp,p,ineargrid)
+    subroutine particles_calc_pencil_diags(fp,p,ineargrid)
 
       real, dimension (mpar_loc,mparray) :: fp
       type (pencil_case) :: p
@@ -890,7 +890,7 @@ module Particles_main
       if (lparticles_number)      call calc_diagnostics_particles_num(p)
       if (lparticles_chemistry)   call calc_diagnostics_particles_chem(p)
 
-    endsubroutine particles_calc_pencil_diagnostics
+    endsubroutine particles_calc_pencil_diags
 !***********************************************************************
     subroutine particles_pde_blocks(f,df)
 !
