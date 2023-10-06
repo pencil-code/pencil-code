@@ -463,7 +463,7 @@ module Polymer
         if (headtt.or.ldebug) print*, 'dpoly_dt: max(trelax_poly) =', trelax_poly
       endif
 !
-      call calc_diagnostics_polymer(f,p)
+      call calc_diagnostics_polymer(p)
 
     endsubroutine dpoly_dt
 !***********************************************************************
