@@ -66,7 +66,7 @@ module Shear
   integer, parameter :: bspline_k = 7
   real, dimension(nygrid,nygrid) :: bspline_ay = 0.0
   integer, dimension(nygrid) :: bspline_iy = 0
-  real, dimension(nx) :: uy0 = 0.0
+  real, dimension(nx) :: uy0 = 0.0, advec_shear
 !
   contains
 !***********************************************************************
@@ -129,8 +129,7 @@ module Shear
 !
       if (sini /= 0.) then
         lmagnetic_tilt=.true.
-        if (lroot) &
-          print*, 'initialize_shear: turn on tilt of magnetic stretching with sini = ', sini
+        if (lroot) print*, 'initialize_shear: turn on tilt of magnetic stretching with sini = ', sini
         if (abs(sini)>.1) call warning('initialize_shear', &
                                        'current formulation allows only for small sini but it is >0.1')
         Sshear_sini=Sshear*sini
@@ -281,13 +280,12 @@ module Shear
 ! 20-Mar-11/MR:   testflow variables now completely processed in testflow module
 !
       use Deriv, only: der, der6
-      use Diagnostics, only: max_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: dfdy,penc,diffus_shear3,advec_shear
+      real, dimension(nx) :: dfdy,penc,diffus_shear3
       integer :: j,k
       real :: d
 !
@@ -374,18 +372,28 @@ module Shear
 !
       if (lfirst .and. ldt .and. (lhydro .or. ldensity) .and. &
           nygrid > 1 .and. .not. lshearadvection_as_shift) then
-
         advec_shear = abs(uy0 * dy_1(m))
         maxadvec=maxadvec+advec_shear
+      endif
+
+      call calc_diagnostics_shear
+
+    endsubroutine shearing
+!***********************************************************************
+    subroutine calc_diagnostics_shear
 !
 !  Calculate shearing related diagnostics.
 !
-        if (ldiagnos) then
+      use Diagnostics, only: max_mn_name
+
+      if (ldiagnos) then
+        if (lfirst .and. ldt .and. (lhydro .or. ldensity) .and. &
+            nygrid > 1 .and. .not. lshearadvection_as_shift) then
           if (idiag_dtshear/=0) call max_mn_name(advec_shear/cdt,idiag_dtshear,l_dt=.true.)
         endif
       endif
 !
-    endsubroutine shearing
+    endsubroutine calc_diagnostics_shear
 !***********************************************************************
     subroutine shear_variables(f,df,nvars,jstart,jstep,shear1)
 !
