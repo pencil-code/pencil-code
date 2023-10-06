@@ -109,6 +109,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
+      use EquationOfState, only: get_gamma_etc
       real, dimension (mx,my,mz,mfarray) :: f
 
       real :: cp
@@ -145,7 +146,7 @@ module InitialCondition
 !/mayank
 
       use Mpicomm, only: mpibcast
-      use EquationOfState, only: cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
+      use EquationOfState, only: cs0, cs20, cs2bot, cs2top, rho0, lnrho0
       use FArrayManager,   only: farray_use_global
       use Sub,             only: get_radial_distance, location_in_proc
       use SharedVariables, only: get_shared_variable
