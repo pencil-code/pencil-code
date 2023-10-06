@@ -37,7 +37,7 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 4
+! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED infl_phi; infl_dphi; infl_a2; infl_a21; gphi(3)
@@ -96,6 +96,7 @@ module Special
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all, edotbm, edotbm_all
+  real :: Hscript0=0.
   real, target :: ddotam_all
   real, pointer :: alpf
   real, dimension (nx) :: dt1_special
@@ -104,7 +105,7 @@ module Special
   logical :: lskip_projection_phi=.false., lvectorpotential=.false.
   logical, pointer :: lphi_hom
 !
-  character (len=labellen) :: Vprime_choice='quadratic'
+  character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
@@ -113,12 +114,12 @@ module Special
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
-      ncutoff_phi, lscale_tobox
+      ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, c_light_axion, lambda_axion, Vprime_choice, &
-      lzeroHubble, ldt_backreact_infl, Ndiv
+      lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -149,8 +150,10 @@ module Special
 !
       call farray_register_pde('infl_phi',iinfl_phi)
       call farray_register_pde('infl_dphi',iinfl_dphi)
-!      call farray_register_pde('infl_hubble',iinfl_hubble)
-      call farray_register_pde('infl_lna',iinfl_lna)
+!
+!     if (...)
+!     call farray_register_pde('infl_hubble',iinfl_hubble)
+!     call farray_register_pde('infl_lna',iinfl_lna)
 !
 !  for power spectra, it is convenient to use ispecialvar and
 !
@@ -202,6 +205,9 @@ module Special
           case ('phi=sinkx')
             f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi) &
               +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
+          case ('phi=tanhkx')
+            f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi) &
+              +spread(spread(.5*amplphi*(1.+tanh(kx_phi*(x-offset))),2,my),3,mz)
           case ('nophi')
             Vpotential=.5*axionmass2*phi0**2
             dphi0=0.
@@ -210,7 +216,7 @@ module Special
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
 !            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
-            f(:,:,:,iinfl_lna)=f(:,:,:,iinfl_lna)+lnascale
+!            f(:,:,:,iinfl_lna)=f(:,:,:,iinfl_lna)+lnascale
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
             dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
@@ -221,7 +227,7 @@ module Special
             f(:,:,:,iinfl_phi)   =f(:,:,:,iinfl_phi)   +phi0
             f(:,:,:,iinfl_dphi)  =f(:,:,:,iinfl_dphi)  +dphi0
 !            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
-            f(:,:,:,iinfl_lna)   =f(:,:,:,iinfl_lna)   +lnascale
+!           f(:,:,:,iinfl_lna)   =f(:,:,:,iinfl_lna)   +lnascale
           case ('gaussian-noise')
             call gaunoise(amplphi,f,iinfl_phi)
           case ('sinwave-phase')
@@ -290,14 +296,14 @@ module Special
       if (lpencil(i_infl_dphi)) p%infl_dphi=f(l1:l2,m,n,iinfl_dphi)
 !
 ! infl_a2
-      if (lpencil(i_infl_a2)) p%infl_a2=exp(2.*f(l1:l2,m,n,iinfl_lna))
+  !   if (lpencil(i_infl_a2)) p%infl_a2=exp(2.*f(l1:l2,m,n,iinfl_lna))
 !
 ! infl_a21
       if (lpencil(i_infl_a21)) then
         if (lpencil(i_infl_a2)) then
           p%infl_a21=1./p%infl_a2
         else
-          p%infl_a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
+   !      p%infl_a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
         endif
       endif
 !
@@ -340,9 +346,19 @@ module Special
 !
       phi=f(l1:l2,m,n,iinfl_phi)
       dphi=f(l1:l2,m,n,iinfl_dphi)
-!      Hscript=f(l1:l2,m,n,iinfl_hubble)
-      Hscript=sqrt((8.*pi/3.)*a2rhom_all)
-      lnascale=f(l1:l2,m,n,iinfl_lna)
+!
+!  Choice of prescription for Hscript
+!
+      select case (Hscript_choice)
+!       Hscript=f(l1:l2,m,n,iinfl_hubble)
+        case ('default'); Hscript=sqrt((8.*pi/3.)*a2rhom_all)
+        case ('set'); Hscript=Hscript0
+        case default
+          call fatal_error("dspecial_dt: No such Hscript_choice: ", trim(Hscript_choice))
+      endselect
+      
+  !   lnascale=f(l1:l2,m,n,iinfl_lna)
+      lnascale=1.
       ascale=exp(lnascale)
       a2scale=ascale**2
 !     a2rhop=dphi**2
@@ -374,7 +390,7 @@ module Special
         df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2scale*Vprime
 !        df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+Hscript**2
 !        df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+(8.*pi/3.)*a2rhom_all
-        df(l1:l2,m,n,iinfl_lna)=df(l1:l2,m,n,iinfl_lna)+Hscript
+   !    df(l1:l2,m,n,iinfl_lna)=df(l1:l2,m,n,iinfl_lna)+Hscript
 !
 !  speed of light term
 !
@@ -555,7 +571,7 @@ module Special
         ddotam=ddotam+sum(ddota)
         a2rho=a2rho+a2*Vpotential
         a2rhom=a2rhom+sum(a2rho)
-        if (lphi_hom) then
+        if (lmagnetic.and.lphi_hom) then
           call dot_mn(el,bb,edotb)
           edotbm=edotbm+sum(edotb)
         endif
@@ -565,7 +581,7 @@ module Special
       a2rhopm=a2rhopm/nwgrid
       a2rhom=a2rhom/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
-      if (lphi_hom) then
+      if (lmagnetic.and.lphi_hom) then
           edotbm=edotbm/nwgrid
           call mpiallreduce_sum(edotbm,edotbm_all)
       endif
