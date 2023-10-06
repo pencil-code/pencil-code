@@ -89,6 +89,7 @@ module Particles_radius
   integer :: idiag_ieffp=0
 !
   real :: gamma
+  real, dimension(nx) :: dt1_sweepup
 !
   contains
 !***********************************************************************
@@ -145,9 +146,7 @@ module Particles_radius
 !
         npart_radii=0
         do pos = 1,ndustrad
-          if (ap0(pos) /= 0) then
-            npart_radii = npart_radii+1
-          endif
+          if (ap0(pos) /= 0) npart_radii = npart_radii+1
         enddo
 !
         do j = 1,ninit
@@ -167,9 +166,7 @@ module Particles_radius
             if (lroot .and. j == 1)  print*, 'set_particles_radius: nothing'
 !
           case default
-            if (lroot) print*, 'initialize_particles_radius: '// &
-                'No such such value for initap: ', trim(initap(j))
-            call fatal_error('initialize_particles_radius','')
+            call fatal_error('initialize_particles_radius','no such initap: '//trim(initap(j)))
           endselect
         enddo
       endif
@@ -178,16 +175,14 @@ module Particles_radius
 !
       if (npart_radii > 1 .and. &
           (.not. lcartesian_coords .or. lparticles_number .or. lparticles_spin)) then
-        call fatal_error('initialize_particles_radius: npart_radii > 1','')
+        call fatal_error('initialize_particles_radius','npart_radii > 1')
       else
         mpmat = 4/3.0*pi*rhopmat*ap0(1)**3
-        if (lroot) print*, 'initialize_particles_radius: '// &
-            'mass per dust grain mpmat=', mpmat
+        if (lroot) print*, 'initialize_particles_radius: mass per dust grain mpmat=', mpmat
       endif
 !
       if ((lsweepup_par .or. lcondensation_par).and. .not. lpscalar &
-          .and. .not. lascalar &
-          .and. .not. lcondensation_simplified) then
+          .and. .not. lascalar .and. .not. lcondensation_simplified) then
         call fatal_error('initialize_particles_radius', &
             'must have passive scalar module for sweep-up and condensation')
       endif
@@ -207,14 +202,11 @@ module Particles_radius
 ! we should not have any process that changes the radius.
 !
       if (lfixed_particles_radius) then
-        if (lsweepup_par) &
-            call fatal_error('initialize_particles_radius', &
+        if (lsweepup_par) call fatal_error('initialize_particles_radius', &
             'incosistency: lfixed_particles_radius and lsweepup_par cannot both be true')
-        if (lcondensation_par) &
-            call fatal_error('initialize_particles_radius', &
+        if (lcondensation_par) call fatal_error('initialize_particles_radius', &
             'incosistency: lfixed_particles_radius and lcondensation_par cannot both be true')
-        if (lparticles_chemistry) &
-            call fatal_error('initialize_particles_radius', &
+        if (lparticles_chemistry) call fatal_error('initialize_particles_radius', &
             'incosistency: lfixed_particles_radius and lparticles_chemistry cannot both be true')
       endif
 !
@@ -351,8 +343,7 @@ module Particles_radius
 ! exponential distribution, which could be extended to the Gamma distribution
         case ('exponential')
 !
-          if (initial .and. lroot) print*, 'set_particles_radius: '// &
-              'exponential=', a0_initdist
+          if (initial .and. lroot) print*, 'set_particles_radius: exponential=', a0_initdist
           call random_number_wrapper(fp(npar_low:npar_high,iap))
           fp(npar_low:npar_high,iap) = lambda*exp(-lambda*(fp(npar_low:npar_high,iap)-a0_initdist))
         
@@ -360,8 +351,7 @@ module Particles_radius
 ! exponential distribution, which could be extended to the Gamma distribution
         case ('weibull')
 !
-          if (initial .and. lroot) print*, 'set_particles_radius: '// &
-              'weibull=', a0_initdist
+          if (initial .and. lroot) print*, 'set_particles_radius: weibull=', a0_initdist
           call random_number_wrapper(fp(npar_low:npar_high,iap))
           fp_sum_temp = sum(fp(npar_low:npar_high,iap))
           fp(npar_low:npar_high,iap) = a0_initdist*(1./alpha)*(-log(fp(npar_low:npar_high,iap)))**(1./b)/fp_sum_temp
@@ -372,8 +362,7 @@ module Particles_radius
 !
         case ('lognormal')
 !
-          if (initial .and. lroot) print*, 'set_particles_radius: '// &
-              'lognormal=', a0_initdist
+          if (initial .and. lroot) print*, 'set_particles_radius: lognormal=', a0_initdist
           call random_number_wrapper(r_mpar_loc)
           call random_number_wrapper(p_mpar_loc)
           tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
@@ -384,8 +373,7 @@ module Particles_radius
 !
         case ('old_lognormal')
 !
-          if (initial .and. lroot) print*, 'set_particles_radius: '// &
-              'lognormal=', ap0(1), ap1
+          if (initial .and. lroot) print*, 'set_particles_radius: lognormal=', ap0(1), ap1
           lna0 = log(ap0(1))
           lna1 = log(ap1)
           lna0_initdist = log(a0_initdist)
@@ -498,9 +486,7 @@ module Particles_radius
               *fp(npar_low:npar_high,iap)+aplow**(qplaw+1.0))**(1.0/(qplaw+1.0))
 !
         case default
-          if (lroot) print*, 'init_particles_radius: '// &
-              'No such such value for initap: ', trim(initap(j))
-          call fatal_error('init_particles_radius','')
+          call fatal_error('init_particles_radius','no such initap: '//trim(initap(j)))
         endselect
       enddo
 !
@@ -582,9 +568,7 @@ module Particles_radius
       if (lheader) print*,'dap_dt_pencil: Calculate dap/dt'
 !
       if (lsweepup_par) call dap_dt_sweepup_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lcondensation_par) &
-          call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
-!
+      if (lcondensation_par) call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
 !
       lfirstcall = .false.
 !
@@ -643,7 +627,6 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      use Diagnostics, only: max_mn_name
       use Particles_number
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -653,7 +636,6 @@ module Particles_radius
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
 !
-      real, dimension(nx) :: dt1_sweepup
       real :: deltavp
       integer :: k, ix0, ix
 !
@@ -664,19 +646,16 @@ module Particles_radius
 !
       if (t >= tstart_sweepup_par) then
 !
-!
         if (npar_imn(imn) /= 0) then
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
             ix = ix0-nghost
 !  No interpolation needed here.
 !  Relative speed.
-            deltavp = sqrt( &
-                (fp(k,ivpx)-p%uu(ix,1))**2 + &
-                (fp(k,ivpy)-p%uu(ix,2))**2 + &
-                (fp(k,ivpz)-p%uu(ix,3))**2 )
-            if (deltavp12_floor /= 0.0) &
-                deltavp = sqrt(deltavp**2+deltavp12_floor**2)
+            deltavp = sqrt( (fp(k,ivpx)-p%uu(ix,1))**2 + &
+                            (fp(k,ivpy)-p%uu(ix,2))**2 + &
+                            (fp(k,ivpz)-p%uu(ix,3))**2 )
+            if (deltavp12_floor /= 0.0) deltavp = sqrt(deltavp**2+deltavp12_floor**2)
 !  Allow boulders to sweep up small grains if relative velocity not too high.
             if (deltavp <= vthresh_sweepup .or. vthresh_sweepup < 0.0) then
 !  Radius increase due to sweep-up.
@@ -686,19 +665,14 @@ module Particles_radius
 !
               if (lparticles_number) np_swarm = fp(k,inpswarm)
               if (lpscalar_nolog) then
-                df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
-                    np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
+                df(ix0,m,n,icc) = df(ix0,m,n,icc) - np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
               else
-                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
-                    np_swarm*pi*fp(k,iap)**2*deltavp
+                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - np_swarm*pi*fp(k,iap)**2*deltavp
               endif
 !
 !  Time-step contribution of sweep-up.
 !
-              if (lfirst .and. ldt) then
-                dt1_sweepup(ix) = dt1_sweepup(ix) + &
-                    np_swarm*pi*fp(k,iap)**2*deltavp
-              endif
+              if (lfirst.and.ldt) dt1_sweepup(ix) = dt1_sweepup(ix) + np_swarm*pi*fp(k,iap)**2*deltavp
 !
             endif
 !
@@ -713,15 +687,28 @@ module Particles_radius
         if (lfirst .and. ldt) then
           dt1_sweepup = dt1_sweepup/cdtps
           dt1_max = max(dt1_max,dt1_sweepup)
-          if (ldiagnos .and. idiag_dtsweepp /= 0) &
-              call max_mn_name(dt1_sweepup,idiag_dtsweepp,l_dt=.true.)
         endif
 !
       endif
 !
+      call calc_diagnostics_particles_radius(p)
+
       call keep_compiler_quiet(f)
 !
     endsubroutine dap_dt_sweepup_pencil
+!***********************************************************************
+    subroutine calc_diagnostics_particles_radius(p)
+
+      use Diagnostics, only: max_mn_name
+
+      type (pencil_case) :: p
+
+      if (ldiagnos) then
+        if (ldt .and. t >= tstart_sweepup_par .and. npar_imn(imn)/= 0) &
+          call max_mn_name(dt1_sweepup,idiag_dtsweepp,l_dt=.true.)
+      endif
+
+    endsubroutine calc_diagnostics_particles_radius
 !***********************************************************************
     subroutine dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
 !
@@ -793,12 +780,10 @@ module Particles_radius
             case ('constant')
               alpha_cond_par = alpha_cond
             case ('size-dependent')
-              alpha_cond_par = 1/(vth(ix)*fp(k,iap)*diffusion_coefficient1+ &
-                  alpha_cond1)
+              alpha_cond_par = 1/(vth(ix)*fp(k,iap)*diffusion_coefficient1+alpha_cond1)
             case default
-              if (lroot) print*, 'dap_dt_condensation_pencil: '// &
-                  'invalid condensation coefficient type'
-              call fatal_error('dap_dt_condensation_pencil','')
+              call fatal_error('dap_dt_condensation_pencil','no such condensation_coefficient_type: '// &
+                               trim(condensation_coefficient_type))
               alpha_cond_par = 0.
             endselect
 !
@@ -837,8 +822,7 @@ module Particles_radius
                 endif
                 if (lcondensation_rate .and. ldust_condensation) dapdt = G_condensation*f(ix,m,n,issat)
               else
-                dapdt = 0.25*vth(ix)*rhopmat1* &
-                (rhovap(ix)-rhosat(ix))*alpha_cond_par
+                dapdt = 0.25*vth(ix)*rhopmat1*(rhovap(ix)-rhosat(ix))*alpha_cond_par
               endif
 !            
 !  Damp approach to minimum size. The radius decreases linearly with time in
@@ -848,8 +832,7 @@ module Particles_radius
               if (dapdt < 0.0) then
                 dapdt = dapdt*min(1.0,(fp(k,iap)/apmin-1.0)**2)
                 if (lfirst .and. ldt) then
-                  dt1_condensation(ix) = max(dt1_condensation(ix), &
-                      abs(dapdt/(fp(k,iap)-apmin)))
+                  dt1_condensation(ix) = max(dt1_condensation(ix), abs(dapdt/(fp(k,iap)-apmin)))
                 endif
               endif
             endif
@@ -869,9 +852,7 @@ module Particles_radius
 !  with "ocean" at the box bottom.
 !
             if (lborder_driving_ocean) then
-              if (fp(k,izp) < ztop_ocean) then
-                drhocdt = drhocdt + tau_ocean_driving1*(rhosat(ix)-rhovap(ix))
-              endif
+              if (fp(k,izp) < ztop_ocean) drhocdt = drhocdt + tau_ocean_driving1*(rhosat(ix)-rhovap(ix))
             endif
 !
 !  feedback, but should not be used if we don't have density
@@ -885,24 +866,19 @@ module Particles_radius
             endif
 !
             if (lpscalar_nolog) then
-              df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + &
-                  (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
+              df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
             elseif (lpscalar) then
-              df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + &
-                  (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
+              df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
             endif
 !
 !  Release latent heat to gas / remove heat from gas.
 !
-            if (ltemperature .and. llatent_heat) then
-              df(ix0,m,n,ilnTT) = df(ix0,m,n,ilnTT) - &
-                  latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
-            endif
+            if (ltemperature .and. llatent_heat) &
+              df(ix0,m,n,ilnTT) = df(ix0,m,n,ilnTT) - latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
 !
 !            if (lfirst .and. ldt) then
             if (lfirst .and. ldt .and. .not. lascalar .and. .not. lcondensation_simplified) then
-              total_surface_area(ix) = total_surface_area(ix)+ &
-                  4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
+              total_surface_area(ix) = total_surface_area(ix)+ 4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
               np_total(ix) = np_total(ix)+np_swarm
             elseif (lfirst .and. ldt .and. lascalar .and. ldt_condensation) then
               tau_phase1(ix) = tau_phase1(ix)+4.0*pi*modified_vapor_diffusivity*fp(k,iap)*fp(k, inpswarm)
@@ -917,8 +893,7 @@ module Particles_radius
 !          if (lfirst .and. ldt) then
           if (lfirst .and. ldt .and. .not. lascalar .and. .not. lcondensation_simplified) then
 
-            ap_equi = ((p%rhop+(rhovap-rhosat))/ &
-                (4.0/3.0*pi*rhopmat*np_swarm*p%np))**(1.0/3.0)
+            ap_equi = ((p%rhop+(rhovap-rhosat))/(4.0/3.0*pi*rhopmat*np_swarm*p%np))**(1.0/3.0)
             do ix = 1,nx
               if (rhocond_tot(ix) > rhosat(ix)) then
                 dt1_condensation(ix) = max(total_surface_area(ix)*vth(ix), &
@@ -945,10 +920,8 @@ module Particles_radius
         endif
 !
         if (lborder_driving_ocean) then
-          if (z(n) < ztop_ocean) then
-            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - &
-                (1.0-TTocean*p%TT1)*tau_ocean_driving1
-          endif
+          if (z(n) < ztop_ocean) &
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - (1.0-TTocean*p%TT1)*tau_ocean_driving1
         endif
 !
 !  Time-step contribution of condensation.
@@ -983,14 +956,11 @@ module Particles_radius
         if (idiag_apm /= 0) call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
         if (idiag_ap2m /= 0) call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
         if (idiag_ap3m /= 0) call sum_par_name(fp(1:npar_loc,iap)**3,idiag_ap3m)
-        if (idiag_apmin /= 0) &
-            call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.)
+        if (idiag_apmin /= 0) call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.)
         if (idiag_apmax /= 0) call max_par_name(fp(1:npar_loc,iap),idiag_apmax)
-        if (idiag_npswarmm /= 0) &
-            call sum_par_name(rhop_swarm/ &
+        if (idiag_npswarmm /= 0) call sum_par_name(rhop_swarm/ &
             (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3),idiag_npswarmm)
-        if (idiag_ieffp /= 0) &
-            call sum_par_name(fp(1:npar_loc,ieffp),idiag_ieffp)
+        if (idiag_ieffp /= 0) call sum_par_name(fp(1:npar_loc,ieffp),idiag_ieffp)
       endif
 !
       call keep_compiler_quiet(f,df)
@@ -1075,8 +1045,7 @@ module Particles_radius
 !
 !  Run through all possible names that may be listed in print.in.
 !
-      if (lroot .and. ip < 14) &
-          print*, 'rprint_particles_radius: run through parse list'
+      if (lroot .and. ip < 14) print*, 'rprint_particles_radius: run through parse list'
       do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'apm',idiag_apm)
         call parse_name(iname,cname(iname),cform(iname),'ap2m',idiag_ap2m)
@@ -1084,11 +1053,10 @@ module Particles_radius
         call parse_name(iname,cname(iname),cform(iname),'apmin',idiag_apmin)
         call parse_name(iname,cname(iname),cform(iname),'apmax',idiag_apmax)
         call parse_name(iname,cname(iname),cform(iname),'dvp12m',idiag_dvp12m)
-        call parse_name(iname,cname(iname),cform(iname),'dtsweepp', &
-            idiag_dtsweepp)
+        call parse_name(iname,cname(iname),cform(iname),'dtsweepp',idiag_dtsweepp)
         call parse_name(iname,cname(iname),cform(iname),'ieffp',idiag_ieffp)
-        if (.not. lparticles_number) call parse_name(iname,cname(iname), &
-            cform(iname),'npswarmm',idiag_npswarmm)
+        if (.not. lparticles_number) &
+          call parse_name(iname,cname(iname),cform(iname),'npswarmm',idiag_npswarmm)
       enddo
 !
     endsubroutine rprint_particles_radius

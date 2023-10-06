@@ -119,6 +119,14 @@ module Particles_selfgravity
 !
     endsubroutine dvvp_dt_selfgrav_pencil
 !***********************************************************************
+    subroutine calc_diagnostics_particles_selfgrav(p)
+
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_particles_selfgrav
+!***********************************************************************
     subroutine dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
 !
 !  Add self-gravity to particle equation of motion.

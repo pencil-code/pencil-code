@@ -76,8 +76,6 @@ module Particles_selfgravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      integer :: ierr
-!
 !  For particle block domain decomposition we need to fill blocks with
 !  information about the gravitational acceleration.
 !
@@ -196,9 +194,6 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: coded
 !
-      use Diagnostics
-      use Messages, only: fatal_error
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mparray) :: fp
@@ -208,18 +203,27 @@ module Particles_selfgravity
 !
       intent (in) :: f, df, p, fp, dfp, ineargrid
 !
-      if (ldiagnos) then
-        if (idiag_gpotenp/=0) call sum_mn_name(p%potself*p%rhop,idiag_gpotenp)
-      endif
+      call calc_diagnostics_particles_selfgrav(p)
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
-      call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_selfgrav_pencil
+!***********************************************************************
+    subroutine calc_diagnostics_particles_selfgrav(p)
+!
+      use Diagnostics
+
+      type (pencil_case) :: p
+!
+      if (ldiagnos) then
+        if (idiag_gpotenp/=0) call sum_mn_name(p%potself*p%rhop,idiag_gpotenp)
+      endif
+
+    endsubroutine calc_diagnostics_particles_selfgrav
 !***********************************************************************
     subroutine dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
 !
@@ -282,17 +286,12 @@ module Particles_selfgravity
 !  Polynomial interpolation can lead to self acceleration of isolated particle,
 !  since one must use the same assignment and interpolation function.
 !
-                  if (lroot) then
-                    print*, 'dvvp_dt_selfgrav: polynomial interpolation not '// &
-                            'allowed'
-                    print*, '                  for interpolating self-gravity'
-                  endif
-                  call fatal_error('dvvp_dt_selfgrav','')
+                  call fatal_error('dvvp_dt_selfgrav','polynomial interpolation not allowed'// &
+                                   'for interpolating self-gravity')
                 endif
               else
                 gpotself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),igpotselfx:igpotselfz)
               endif
-            
 !
 !  Add gravitational acceleration to particles
 !
@@ -335,14 +334,12 @@ module Particles_selfgravity
                   call interpolate_quadratic_spline(f,ipotself,ipotself, &
                       fp(k,ixp:izp),potself,ineargrid(k,:),0,ipar(k))
                 else
-                  potself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3), &
-                      ipotself)
+                  potself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),ipotself)
                 endif
                 if (lparticles_density) then
                   call sum_par_name(potself*fp(k,irhopswarm),idiag_potselfpm)
                 else
-                  call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:), &
-                      rhop_swarm_par)
+                  call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
                   call sum_par_name(potself*rhop_swarm_par,idiag_potselfpm)
                 endif
               endif
@@ -419,8 +416,7 @@ module Particles_selfgravity
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'gpotenp',idiag_gpotenp)
-        call parse_name(iname,cname(iname),cform(iname),'potselfpm', &
-            idiag_potselfpm)
+        call parse_name(iname,cname(iname),cform(iname),'potselfpm',idiag_potselfpm)
       enddo
 !
     endsubroutine rprint_particles_selfgrav

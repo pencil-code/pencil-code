@@ -8,3 +8,4 @@
   public :: read_particles_num_init_pars, write_particles_num_init_pars
   public :: read_particles_num_run_pars, write_particles_num_run_pars
   public :: rprint_particles_number
+  public :: calc_diagnostics_particles_number

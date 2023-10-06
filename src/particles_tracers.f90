@@ -501,8 +501,6 @@ module Particles
 !
 !  25-apr-06/anders: coded
 !
-      use Diagnostics
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -569,6 +567,18 @@ module Particles
         enddo
       endif
 !
+      call calc_diagnostics_particles(fp,p,ineargrid)
+!
+    endsubroutine dxxp_dt_pencil
+!***********************************************************************
+    subroutine calc_diagnostics_particles(fp,p,ineargrid)
+
+      use Diagnostics
+
+      real, dimension (mpar_loc,mparray) :: fp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
       if (ldiagnos) then
         call max_mn_name(p%np,idiag_npmax)
         if (idiag_npmin/=0) call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
@@ -587,7 +597,7 @@ module Particles
 !
       call keep_compiler_quiet(df)
 !
-    endsubroutine dxxp_dt_pencil
+    endsubroutine calc_diagnostics_particles
 !***********************************************************************
     subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !

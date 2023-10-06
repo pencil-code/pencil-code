@@ -95,6 +95,14 @@ module Particles_radius
 !
     endsubroutine dap_dt_pencil
 !***********************************************************************
+    subroutine calc_diagnostics_particles_radius(p)
+
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_particles_radius
+!***********************************************************************
     subroutine dap_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of particle radius.

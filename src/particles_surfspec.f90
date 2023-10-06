@@ -123,8 +123,10 @@ module Particles_surfspec
       character(len=10), dimension(40) :: reactants
 !
       if (nsurfreacspec /= N_surface_species) then
-        print*,'N_surface_species: ', N_surface_species
-        print*,'NSURFREACSPEC :', nsurfreacspec
+        if (lroot) then
+          print*,'N_surface_species: ', N_surface_species
+          print*,'NSURFREACSPEC :', nsurfreacspec
+        endif
         call fatal_error('register_indep_psurfspec', &
                          'wrong size of storage for surface species allocated')
       endif
@@ -230,12 +232,10 @@ module Particles_surfspec
       endif
 !
       if (allocated(weight_array)) deallocate(weight_array)
-      if (lparticlemesh_gab .or. lparticlemesh_tsc .or. lparticlemesh_cic) then
+      if (lparticlemesh_gab .or. lparticlemesh_tsc .or. lparticlemesh_cic) &
         allocate(weight_array(dimx,dimy,dimz))
-      endif
-      if (.not. allocated(weight_array)) then
-        allocate(weight_array(1,1,1))
-      endif
+
+      if (.not. allocated(weight_array)) allocate(weight_array(1,1,1))
       call precalc_weights(weight_array)
 
       if (lpreactions) call get_shared_variable('true_density_carbon', &
@@ -328,14 +328,14 @@ module Particles_surfspec
 !  The starting particle surface mole fraction is equal to the
 !  gas phase composition at the particles position.
 !  This is not functional, and this would need the initialization of
-!  The gas field before
+!  the gas field before.
+!
           do k = 1,mpar_loc
             mean_molar_mass = 0.0
 !
             do i = 1,nchemspec
               mean_molar_mass = mean_molar_mass + species_constants(i,imass) * f(4,4,4,ichemspec(i))
             enddo
-!
 !
             do i = 1, N_surface_species
               igas = ichemspec(jmap(i))
@@ -445,17 +445,15 @@ module Particles_surfspec
 !
 !  23-sep-14/Nils: coded
 !
-      use Diagnostics
-!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mpar_loc,mpvar) :: dfp
+      type (pencil_case) :: p
       real, dimension(nx,nchemspec) :: chem_reac
       real, dimension(:,:), allocatable :: term, ndot
       real, dimension(:), allocatable :: Cg_surf, mass_loss
       real :: porosity
-      type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
       integer :: k, k1, k2, i, ix0, iy0, iz0
       real :: weight, volume_cell, rho1_point
@@ -528,13 +526,13 @@ module Particles_surfspec
                 diffusion_transfer = mass_trans_coeff_reactants(k,i) * (interp_species(k,jmap(i)) / &
                     species_constants(jmap(i),imass) * mean_molar_mass-fp(k,isurf+i-1))
                 term(k,i) = ndot(k,i) - fp(k,isurf+i-1) * sum(ndot(k,:)) + diffusion_transfer
-                if (lparticles_adsorbed) then
+                if (lroot.and.lparticles_adsorbed) then
                   print*, '---------------------------'
                   print*, ' mass_trans_', mass_trans_coeff_reactants(k,i)
                   print*, ' ndot(k,i)  ', ndot(k,i)
                   print*, 'fp(k,isurf+)',fp(k,isurf+i-1)
                   print*, 'sum(ndot(k,:',sum(ndot(k,:))
-                  print*, 'x_spec      ',interp_species(k,jmap(i)) / species_constants(jmap(i),imass) * &
+                  print*, 'x_spec      ',interp_species(k,jmap(i))/species_constants(jmap(i),imass)*&
                       mean_molar_mass
                   print*, '---------------------------'
                 endif
@@ -551,12 +549,11 @@ module Particles_surfspec
             else
               if (linfinite_diffusion .or. lbaum_and_street) then
                 do i = 1,N_surface_reactants
-                  fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
-                      species_constants(jmap(i),imass) * mean_molar_mass
+                  fp(k,isurf+i-1) = interp_species(k,jmap(i)) / species_constants(jmap(i),imass) * mean_molar_mass
                   dfp(k,isurf+i-1) = 0.
                 enddo
               else
-                print*,'Must set linfinite_diffusion=T if lboundary_explicit=F.'
+                if (lroot) print*,'Must set linfinite_diffusion=T if lboundary_explicit=F.'
                 call not_implemented('dpsurf_dt_pencil','implicit solver for surface concentrations')
               endif
             endif
@@ -567,8 +564,7 @@ module Particles_surfspec
               ix0 = ineargrid(k,1)
               iy0 = ineargrid(k,2)
               iz0 = ineargrid(k,3)
-              call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
-                  fp,k,ix0,iy0,iz0)
+              call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,fp,k,ix0,iy0,iz0)
 !
 ! positive dmass means particle is losing mass
 ! jmap: gives the ichemspec of a surface specie
@@ -714,8 +710,7 @@ module Particles_surfspec
 !
 !  Compare the current maximum reaction rate to the previous one
 !
-              if (lfirst .and. ldt) max_reac_pchem = &
-                  max(max_reac_pchem, reac_pchem_weight)
+              if (lfirst .and. ldt) max_reac_pchem = max(max_reac_pchem, reac_pchem_weight)
 !
 !  Enthalpy transfer via mass transfer!
 !
@@ -770,10 +765,8 @@ module Particles_surfspec
 !            if (lparticles_adsorbed) print*, 'values in surfspec end',fp(k,isurf:isurf_end)
           enddo
 !
-          if (ldiagnos) then
-            if (idiag_dtpchem /= 0 ) call max_name(reac_pchem/cdtc,idiag_dtpchem,l_dt=.true.)
-          endif
-!
+          call calc_diagnostics_particles_surfspec
+
           if (allocated(term)) deallocate(term)
           if (allocated(ndot)) deallocate(ndot)
           if (allocated(Cg_surf)) deallocate(Cg_surf)
@@ -783,6 +776,20 @@ module Particles_surfspec
       endif
 !
     endsubroutine dpsurf_dt_pencil
+! ******************************************************************************
+    subroutine calc_diagnostics_particles_surfspec
+  
+      use Diagnostics
+
+      type (pencil_case) :: p
+!
+      if (ldiagnos) then
+        if (lpreactions) then
+          if (idiag_dtpchem /= 0 ) call max_name(reac_pchem/cdtc,idiag_dtpchem,l_dt=.true.)
+        endif
+      endif
+
+    endsubroutine calc_diagnostics_particles_surfspec
 ! ******************************************************************************
     subroutine rprint_particles_surf(lreset,lwrite)
 !

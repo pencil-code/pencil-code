@@ -232,6 +232,7 @@ module Particles
   integer :: idiag_omegapm=0
 !
   real, dimension(:), pointer :: beta_glnrho_global, beta_glnrho_scaled
+  real, dimension (nx) :: dt1_drag
 
   contains
 !***********************************************************************
@@ -2580,7 +2581,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  25-apr-06/anders: coded
 !
-      use Diagnostics
       use EquationOfState, only: cs20, ics
 !AXEL use Magnetic, only: get_bext
       use Particles_diagnos_dv, only: collisions
@@ -2594,7 +2594,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
+      real, dimension (nx) :: dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
       real, dimension (3) :: grad_omega, group_vel, bforce, uup, bbp
       real, dimension (3) :: kkp, vAvec !, bb_ext
@@ -2879,6 +2879,29 @@ k_loop:   do while (.not. (k>npar_loc))
       if (ldragforce_stiff .and. .not. lpencil_check_at_work) &
         f(l1:l2,m,n,ifgx:ifgz)=p%fpres+p%jxbr+p%fvisc
 !
+!  particle-particle separation and relative velocity diagnostics
+!
+      if (lparticles_diagnos_dv .and. lfirstpoint .and. lfirst) then
+        if (t > t_nextcol) call collisions(fp)
+      endif
+
+      call calc_diagnostics_particles(fp,p,ineargrid)
+!
+!  Clean up (free allocated memory).
+!
+      if (allocated(rep)) deallocate(rep)
+      if (allocated(stocunn)) deallocate(stocunn)
+!
+    endsubroutine dvvp_dt_pencil
+!***********************************************************************
+    subroutine calc_diagnostics_particles(fp,p,ineargrid)
+
+      use Diagnostics
+
+      real, dimension (mpar_loc,mparray) :: fp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
 !  Diagnostic output.
 !
       if (ldiagnos) then
@@ -2895,9 +2918,10 @@ k_loop:   do while (.not. (k>npar_loc))
         call max_mn_name(p%epsp,idiag_epspmax)
         if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
         call sum_mn_name(drag_heat,idiag_dedragp)
+
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
-            idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
-            call calculate_rms_speed(fp,ineargrid,p)
+            idiag_dvpm  /=0 .or. idiag_dvpmax/=0) call calculate_rms_speed(fp,ineargrid,p)
+
         if (lfirst.and.ldt)  call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
       endif
 !
@@ -2922,19 +2946,8 @@ k_loop:   do while (.not. (k>npar_loc))
         call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
         call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
       endif
-!
-!  particle-particle separation and relative velocity diagnostics
-!
-      if (lparticles_diagnos_dv .and. lfirstpoint .and. lfirst) then
-        if (t > t_nextcol) call collisions(fp)
-      endif
-!
-!  Clean up (free allocated memory).
-!
-      if (allocated(rep)) deallocate(rep)
-      if (allocated(stocunn)) deallocate(stocunn)
-!
-    endsubroutine dvvp_dt_pencil
+
+    endsubroutine calc_diagnostics_particles
 !***********************************************************************
     subroutine dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
 !

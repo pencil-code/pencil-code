@@ -50,6 +50,8 @@ module Particles_number
       lbirthring_depletion, birthring_inner, birthring_outer, &
       depletion_rate, llog10_for_admom_above10
 !
+  real, dimension (nx) :: dt1_fragmentation
+
   contains
 !***********************************************************************
     subroutine register_particles_number()
@@ -201,21 +203,15 @@ module Particles_number
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: dt1_fragmentation
       real :: deltavp, sigma_jk, cdot, deltavp_sum, npswarm_sum, np2swarm_sum
       integer :: j, k, l, ncoll=-1
-      logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp
       intent (out) :: dfp
 !
-!  Print out header information in first time step.
-!
-      lheader=lfirstcall .and. lroot
-!
 !  Identify module and boundary conditions.
 !
-      if (lheader) print*,'dnpswarm_dt_pencil: Calculate dnpswarm_dt'
+      if (headtt) print*,'dnpswarm_dt_pencil: Calculate dnpswarm_dt'
 !
 !  Collisional fragmentation inside each superparticle.
 !
@@ -243,6 +239,7 @@ module Particles_number
               do while (k/=0)
                 j=k
 !  Consider neighbours one at a time.
+!
                 do while (kneighbour(j)/=0)
                   j=kneighbour(j)
                   if (ip<=6.and.lroot) print*, 'dnpswarm_dt: collisions between particle ',k,'and',j
@@ -336,7 +333,6 @@ module Particles_number
           if (lfirst.and.ldt.or.ldiagnos) then
             dt1_fragmentation=dt1_fragmentation/cdtpf
             if (lfirst.and.ldt) dt1_max=max(dt1_max,dt1_fragmentation)
-            if (ldiagnos) call max_mn_name(dt1_fragmentation,idiag_dtfragp,l_dt=.true.)
           endif
 !
         endif ! npar_imn/=0
@@ -350,11 +346,26 @@ module Particles_number
           dfp(1:npar_loc,inpswarm) = -depletion_rate
       endif
 !
-      lfirstcall=.false.
-!
+      call calc_diagnostics_particles_number(p)
+
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dnpswarm_dt_pencil
+!***********************************************************************
+    subroutine calc_diagnostics_particles_number(p)
+
+      use Diagnostics
+
+      type (pencil_case) :: p
+
+      if (ldiagnos) then
+
+        if (lfragmentation_par.and.npar_imn(imn)/=0) &
+          call max_mn_name(dt1_fragmentation,idiag_dtfragp,l_dt=.true.)
+
+      endif
+
+    endsubroutine calc_diagnostics_particles_number
 !***********************************************************************
     subroutine dnpswarm_dt(f,df,fp,dfp,ineargrid)
 !

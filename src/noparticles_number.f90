@@ -122,6 +122,14 @@ module Particles_number
 !
     endsubroutine dnpswarm_dt
 !***********************************************************************
+    subroutine calc_diagnostics_particles_number(p)
+
+      use Diagnostics
+
+      type (pencil_case) :: p
+
+    endsubroutine calc_diagnostics_particles_number
+!***********************************************************************
     subroutine read_particles_num_init_pars(iostat)
 !
       integer, intent(out) :: iostat

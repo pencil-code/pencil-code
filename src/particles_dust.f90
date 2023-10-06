@@ -336,6 +336,7 @@ module Particles
   integer, dimension(ndustrad) :: idiag_npuzmz=0
 !
   real, dimension(:), pointer :: beta_glnrho_global, beta_glnrho_scaled
+  real, dimension(nx) :: dt1_drag=0., urel_sum, drag_heat
 !
   contains
 !***********************************************************************
@@ -3905,7 +3906,6 @@ module Particles
 !
 !  25-apr-06/anders: coded
 !
-      use Diagnostics
       use Particles_spin, only: calc_liftforce
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check
@@ -3921,8 +3921,7 @@ module Particles
       real, dimension(mpar_loc,mpvar), intent(inout) :: dfp
       integer, dimension(mpar_loc,3), intent(inout) :: ineargrid
 !
-      real, dimension(nx) :: dt1_drag = 0.0, dt1_drag_gas, dt1_drag_dust
-      real, dimension(nx) :: drag_heat, urel_sum
+      real, dimension(nx) :: dt1_drag_gas, dt1_drag_dust
       real, dimension(3) :: dragforce, liftforce, bforce, thermforce, uup, xxp
       real, dimension(3) :: adv_der_uup = 0.0
       real, dimension(:), allocatable :: rep, stocunn
@@ -4893,6 +4892,31 @@ module Particles
         f(l1:l2,m,n,ifgx:ifgz) = p%fpres+p%jxbr+p%fvisc
       endif
 !
+!  particle-particle separation and relative velocity diagnostics
+!
+      if (lparticles_diagnos_dv .and. lfirstpoint .and. lfirst) then
+        if (t > t_nextcol) call collisions(fp)
+      endif
+!
+!  Clean up (free allocated memory).
+!
+      if (allocated(rep)) deallocate(rep)
+      if (allocated(stocunn)) deallocate(stocunn)
+!
+      call calc_diagnostics_particles(fp,p,ineargrid)
+
+    endsubroutine dvvp_dt_pencil
+!***********************************************************************
+    subroutine calc_diagnostics_particles(fp,p,ineargrid)
+
+      use Diagnostics
+
+      real, dimension (mpar_loc,mparray) :: fp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+
+      integer :: k
+!
 !  Diagnostic output.
 !
       if (ldiagnos) then
@@ -4933,9 +4957,9 @@ module Particles
         call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
         call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
         call xysum_mn_name_z(p%rhop,idiag_rhopmz)
-        if (idiag_rhop2mx /= 0)  call yzsum_mn_name_x(p%rhop**2,idiag_rhop2mx)
-        if (idiag_rhop2my /= 0)  call xzsum_mn_name_y(p%rhop**2,idiag_rhop2my)
-        if (idiag_rhop2mz /= 0)  call xysum_mn_name_z(p%rhop**2,idiag_rhop2mz)
+        if (idiag_rhop2mx /= 0) call yzsum_mn_name_x(p%rhop**2,idiag_rhop2mx)
+        if (idiag_rhop2my /= 0) call xzsum_mn_name_y(p%rhop**2,idiag_rhop2my)
+        if (idiag_rhop2mz /= 0) call xysum_mn_name_z(p%rhop**2,idiag_rhop2mz)
         call yzsum_mn_name_x(p%epsp,idiag_epspmx)
         call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         call xysum_mn_name_z(p%epsp,idiag_epspmz)
@@ -4963,19 +4987,8 @@ module Particles
         call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
         call zsum_mn_name_xy(p%rhop, idiag_sigmap, lint=.true.)
       endif
-!
-!  particle-particle separation and relative velocity diagnostics
-!
-      if (lparticles_diagnos_dv .and. lfirstpoint .and. lfirst) then
-        if (t > t_nextcol) call collisions(fp)
-      endif
-!
-!  Clean up (free allocated memory).
-!
-      if (allocated(rep)) deallocate(rep)
-      if (allocated(stocunn)) deallocate(stocunn)
-!
-    endsubroutine dvvp_dt_pencil
+
+    endsubroutine calc_diagnostics_particles
 !***********************************************************************
     subroutine dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
 !

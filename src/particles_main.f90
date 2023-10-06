@@ -584,23 +584,13 @@ module Particles_main
 !
         if (lparticles_blocks) then
           call sort_particles_iblock(fp,ineargrid,ipar)
-          if (lparticles_collisions) then
-            call particles_collisions_blocks(fp,ineargrid)
-          endif
-          if (lparticles_coagulation) then
-            call particles_coagulation_blocks(fp,ineargrid)
-          endif
+          if (lparticles_collisions) call particles_collisions_blocks(fp,ineargrid)
+          if (lparticles_coagulation) call particles_coagulation_blocks(fp,ineargrid)
         else
           call sort_particles_imn(fp,ineargrid,ipar)
-          if (lparticles_collisions) then
-            call particles_collisions_pencils(fp,ineargrid)
-          endif
-          if (lparticles_coagulation) then
-            call particles_coagulation_pencils(fp,ineargrid)
-          endif
-          if (lparticles_condensation) then
-            call particles_condensation_pencils(fp,ineargrid)
-          endif
+          if (lparticles_collisions) call particles_collisions_pencils(fp,ineargrid)
+          if (lparticles_coagulation) call particles_coagulation_pencils(fp,ineargrid)
+          if (lparticles_condensation) call particles_condensation_pencils(fp,ineargrid)
         endif
 !
       endif
@@ -846,8 +836,7 @@ module Particles_main
 !  Create shepherd/neighbour list of required.
 !
       call timing('particles_pde_pencil','entered',mnloop=.true.)
-      if (lshepherd_neighbour) &
-          call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
+      if (lshepherd_neighbour) call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
 !
 !  Interpolate required quantities using the predefined policies. Variables
 !  are found in interp.
@@ -857,38 +846,29 @@ module Particles_main
 !
 !  If reactive particles are enabled, needed quantities are calculated
 !
-     if (lparticles_chemistry) then
-        call calc_pchemistry_pencils(f,fp,p,ineargrid)
-     endif
-     if (lparticles_surfspec) then
-       call calc_psurf_pencils(f,fp,p,ineargrid)
-     endif
-
+     if (lparticles_chemistry) call calc_pchemistry_pencils(f,fp,p,ineargrid)
+     if (lparticles_surfspec) call calc_psurf_pencils(f,fp,p,ineargrid)
 !
 !  Dynamical equations.
 !
-      if (lparticles)        call dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles)        call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_lyapunov) call dlyapunov_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_radius)   call dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_spin)     call dps_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_mass)     call dpmass_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles)             call dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles)             call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_lyapunov)    call dlyapunov_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_radius)      call dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_spin)        call dps_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_mass)        call dpmass_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_temperature) call dpTT_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_adsorbed) call dpads_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_surfspec) call dpsurf_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_number) call dnpswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_density)   call drhopswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_selfgravity) &
-          call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
-!      if (lparticles_polymer) &
-!          call dRR_dt_pencil(f,df,fp,dfp,ineargrid)
+      if (lparticles_adsorbed)    call dpads_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_surfspec)    call dpsurf_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_number)      call dnpswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_density)     call drhopswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_selfgravity) call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
+!      if (lparticles_polymer)     call dRR_dt_pencil(f,df,fp,dfp,ineargrid)
 !
 !  Time-step contribution from discrete particle collisions.
 !
-      if (lparticles_collisions) &
-          call particles_collisions_timestep(fp,ineargrid)
-      if (lparticles_coagulation) &
-          call particles_coagulation_timestep(fp,ineargrid)
+      if (lparticles_collisions)  call particles_collisions_timestep(fp,ineargrid)
+      if (lparticles_coagulation) call particles_coagulation_timestep(fp,ineargrid)
 !
       call cleanup_chemistry_pencils
       call cleanup_surf_pencils
@@ -896,6 +876,21 @@ module Particles_main
       call timing('particles_pde_pencil','finished',mnloop=.true.)
 !
     endsubroutine particles_pde_pencil
+!***********************************************************************
+    subroutine particles_calc_pencil_diagnostics(fp,p,ineargrid)
+
+      real, dimension (mpar_loc,mparray) :: fp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+
+      if (lparticles)             call calc_diagnostics_particles(fp,p,ineargrid)
+      if (lparticles_selfgravity) call calc_diagnostics_particles_selfgrav(p)
+      if (lparticles_surfspec)    call calc_diagnostics_particles_surfspec(p)
+      if (lparticles_radius)      call calc_diagnostics_particles_radius(p)
+      if (lparticles_number)      call calc_diagnostics_particles_number(p)
+      if (lparticles_chemistry)   call calc_diagnostics_particles_chemistry(p)
+
+    endsubroutine particles_calc_pencil_diagnostics
 !***********************************************************************
     subroutine particles_pde_blocks(f,df)
 !

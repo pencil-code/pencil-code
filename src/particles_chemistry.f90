@@ -286,13 +286,8 @@ module Particles_chemistry
 !
 !  16.09.2015/jonas + nils: coded
 !
-      if (lthiele) then
-        lpenc_requested(i_Diff_penc_add) = .true.
-      endif
-!
-      if (idiag_Shchm /= 0) then
-        lpenc_requested(i_sherwood) = .true.
-      endif
+      if (lthiele) lpenc_requested(i_Diff_penc_add) = .true.
+      if (idiag_Shchm /= 0) lpenc_diagnos(i_sherwood) = .true.
 !
     endsubroutine pencil_criteria_par_chem
 !***********************************************************************
@@ -1169,13 +1164,11 @@ module Particles_chemistry
 !
     endsubroutine calc_enthalpy_of_reaction
 ! ******************************************************************************
+    subroutine calc_RR_hat(f,fp,ineargrid,p)
+!
 !  01-oct-2014/jonas:coded
 !
 !  Calculates the area specific molar reaction rate from K_k
-!
-    subroutine calc_RR_hat(f,fp,ineargrid,p)
-!
-      use Diagnostics
 !
       type (pencil_case) :: p
       real, dimension(mpar_loc,mparray), intent(in) :: fp
@@ -1192,13 +1185,9 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      if (idiag_Shchm /= 0) then
-        call find_sh_counter(sh_counter)
-      endif
-!
 !  Initialize pencils that are calculated in this routine
 !
-      if (lpenc_requested(i_sherwood)) p%sherwood = 0.0
+      if (lpencil(i_sherwood)) p%sherwood = 0.0
 !
       if (npar_imn(imn) /= 0) then
 !
@@ -1255,9 +1244,7 @@ module Particles_chemistry
               call fatal_error('particles_chemistry','particle consumed')
             else
 !
-              if (idiag_Shchm /= 0) then
-                Sh_mean = 0.0
-              endif
+              if (lpencil(i_sherwood)) Sh_mean = 0.0
 !
               RR_hat(k,1:N_surface_reactions) = K_k(k,1:N_surface_reactions) &
                   *reaction_enhancement(1:N_surface_reactions)
@@ -1291,11 +1278,8 @@ module Particles_chemistry
 !  Sh = 2+0.69*Re_rel**0.5 * Sc**0.33
 !
                         if (.not. lsherwood_const) then
-                          Sh = 2.0 + 0.69 * rep(k)**0.5 * &
-                              (nuvisc(k)/p%Diff_penc_add(ix0-nghost,jmap(i)))**0.33
-                          if (idiag_Shchm /= 0) then
-                            Sh_mean = Sh_mean + Sh
-                          endif
+                          Sh = 2.0 + 0.69 * rep(k)**0.5 * (nuvisc(k)/p%Diff_penc_add(ix0-nghost,jmap(i)))**0.33
+                          if (lpencil(i_sherwood)) Sh_mean = Sh_mean + Sh
                         endif
 !
                         k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))*Sh/(2.0*fp(k,iap))
@@ -1382,9 +1366,7 @@ module Particles_chemistry
 !
 !  Add diagnostic output for the Sherwood number
 !
-            if (idiag_Shchm /= 0) then
-              p%sherwood(ix0-nghost) = p%sherwood(ix0-nghost)+Sh_mean
-            endif
+            if (lpencil(i_sherwood)) p%sherwood(ix0-nghost) = p%sherwood(ix0-nghost)+Sh_mean
           enddo
         endif
 !
@@ -1457,8 +1439,7 @@ module Particles_chemistry
           do k = k1,k2
             print*, 'k, RR_hat: ',k, RR_hat(k,:)
           enddo
-          call fatal_error('particles_chemistry after effectiveness', &
-              'RR_hat is negative')
+          call fatal_error('particles_chemistry after effectiveness','RR_hat is negative')
         endif
 !
         if (.not. lsherwood_const) then
@@ -1468,20 +1449,32 @@ module Particles_chemistry
 !
       endif
 !
+      call calc_diagnostics_particles_chemistry(p)
+!
+    endsubroutine calc_RR_hat
+! ******************************************************************************
+    subroutine calc_diagnostics_particles_chemistry(p)
+
+      use Diagnostics
+
+      type (pencil_case) :: p
+
       if (ldiagnos) then
         if (idiag_Shchm /= 0) then
+          call find_sh_counter(sh_counter)
           call sum_mn_name(p%sherwood/npar/sh_counter*nwgrid,idiag_Shchm)
         endif
       endif
 !
-    endsubroutine calc_RR_hat
+    endsubroutine calc_diagnostics_particles_chemistry
 ! ******************************************************************************
+    subroutine calc_ndot_mdot_R_j_hat(fp)
+!
 ! Then find the carbon consumption rate and molar flux of each gaseous
 ! species at the particle surface
 !
 !  oct-14/jonas (coded)
 !
-    subroutine calc_ndot_mdot_R_j_hat(fp)
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: n, i, j, k, l, k1, k2, index1
 !
