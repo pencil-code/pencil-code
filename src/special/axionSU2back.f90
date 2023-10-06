@@ -467,6 +467,9 @@ module Special
 !
       if (lkeep_mQ_const) then
         mQ=g*Q0/H
+        xi=mQ+1./mQ
+        epsQE=(mQ*H/g)**2
+        epsQB=epsQE*mQ**2
       else
         mQ=g*Q/H
       endif
@@ -477,14 +480,20 @@ module Special
       if (lconf_time) then
         a=-1./(H*t)
         Hscript=a*H
-        xi=lamf*chidot*(-0.5*t)
-        epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
+        if (.not.lkeep_mQ_const) then
+          xi=lamf*chidot*(-0.5*t)
+          epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
+        endif
       else
         a=exp(H*t)
-        xi=lamf*chidot/(2.*H)
-        epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
+        if (.not.lkeep_mQ_const) then
+          xi=lamf*chidot/(2.*H)
+          epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
+        endif
       endif
-      epsQB=g**2*Q**4/(Mpl2*H**2)
+      if (.not.lkeep_mQ_const) then
+        epsQB=g**2*Q**4/(Mpl2*H**2)
+      endif
 !
 !  analytical solution
 !
@@ -597,8 +606,8 @@ module Special
             df(l1:l2,m,n,iaxi_psiLdot  )=df(l1:l2,m,n,iaxi_psiLdot  )+psiLddot
             df(l1:l2,m,n,iaxi_TL       )=df(l1:l2,m,n,iaxi_TL       )+TLdot
             df(l1:l2,m,n,iaxi_TLdot    )=df(l1:l2,m,n,iaxi_TLdot    )+TLddot
-            df(l1:l2,m,n,iaxi_impsiL   )=df(l1:l2,m,n,iaxi_impsiL   )+impsidot
-            df(l1:l2,m,n,iaxi_impsiLdot)=df(l1:l2,m,n,iaxi_impsiLdot)+impsiddot
+            df(l1:l2,m,n,iaxi_impsiL   )=df(l1:l2,m,n,iaxi_impsiL   )+impsiLdot
+            df(l1:l2,m,n,iaxi_impsiLdot)=df(l1:l2,m,n,iaxi_impsiLdot)+impsiLddot
             df(l1:l2,m,n,iaxi_imTL     )=df(l1:l2,m,n,iaxi_imTL     )+imTLdot
             df(l1:l2,m,n,iaxi_imTLdot  )=df(l1:l2,m,n,iaxi_imTLdot  )+imTLddot
           endif
