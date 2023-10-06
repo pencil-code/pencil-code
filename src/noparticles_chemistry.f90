@@ -148,13 +148,13 @@ module Particles_chemistry
     call keep_compiler_quiet(p)
   endsubroutine calc_pchemistry_pencils
 ! ******************************************************************************
-    subroutine calc_diagnostics_particles_chemistry(p)
+    subroutine calc_diagnostics_particles_chem(p)
 
       type (pencil_case) :: p
 
       call keep_compiler_quiet(p)
 
-    endsubroutine calc_diagnostics_particles_chemistry
+    endsubroutine calc_diagnostics_particles_chem
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 

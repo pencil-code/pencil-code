@@ -1449,11 +1449,11 @@ module Particles_chemistry
 !
       endif
 !
-      call calc_diagnostics_particles_chemistry(p)
+      call calc_diagnostics_particles_chem(p)
 !
     endsubroutine calc_RR_hat
 ! ******************************************************************************
-    subroutine calc_diagnostics_particles_chemistry(p)
+    subroutine calc_diagnostics_particles_chem(p)
 
       use Diagnostics
 
@@ -1466,7 +1466,7 @@ module Particles_chemistry
         endif
       endif
 !
-    endsubroutine calc_diagnostics_particles_chemistry
+    endsubroutine calc_diagnostics_particles_chem
 ! ******************************************************************************
     subroutine calc_ndot_mdot_R_j_hat(fp)
 !
