@@ -4,7 +4,7 @@
   public :: register_pointmasses, initialize_pointmasses
   public :: init_pointmasses
   public :: pencil_criteria_pointmasses, pencil_interdep_pointmasses
-  public :: calc_pencils_pointmasses
+  public :: calc_pencils_pointmasses, calc_diagnostics_pointmasses
   public :: pointmasses_pde_pencil,pointmasses_pde
   public :: rprint_pointmasses
   public :: read_pointmasses_init_pars, write_pointmasses_init_pars

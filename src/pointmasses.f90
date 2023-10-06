@@ -292,7 +292,7 @@ module PointMasses
       if (rsmooth/=r_smooth(iprimary)) then
         print*,'rsmooth from cdata=',rsmooth
         print*,'r_smooth(iprimary)=',r_smooth(iprimary)
-        call fatal_error('initialize_pointmasses','inconsistency '//&
+        call fatal_error('initialize_pointmasses','inconsistency '// &
             'between rsmooth from cdata and from pointmass')
       endif
 !
@@ -702,7 +702,8 @@ module PointMasses
 !  Define isecondary. iprimary=1 and isecondary=2 is default.
 !
         if (iprimary == 2) isecondary=1
-        velocity(isecondary,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(  iprimary)/totmass
+        velocity(isecondary,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) &
+                                 * pmass(iprimary)/totmass
 !
 !  Correct secondary by gas gravity 
 !
@@ -857,11 +858,30 @@ module PointMasses
             endif integrategas
           enddo pointmasses1
         endif  ! llive_secondary
+      endif lhydroif
+!
+      call calc_diagnostics_pointmasses(p)
+
+      call keep_compiler_quiet(f)
+!      
+    endsubroutine dvvq_dt_pointmasses_pencil
+!***********************************************************************
+    subroutine calc_diagnostics_pointmasses(p)
+!
+      use Diagnostics
+      use Sub
+
+      type (pencil_case) :: p
+!
+      real, dimension(nx,nqpar) :: rp_mn, rpcyl_mn
+      real, dimension (nx) :: pot_energy
+      integer :: ks
 !
 !  Diagnostic
 !
-        diagnos: if (ldiagnos) then
-          pointmasses2: do ks=1,nqpar
+      if (ldiagnos) then
+        if (lhydro) then
+          do ks=1,nqpar
 !
             if (idiag_totenergy/=0.or.&
                 idiag_torqext(ks)/=0.or.&
@@ -884,16 +904,15 @@ module PointMasses
 !
 !  Calculate torques splitting inner and outer, for backward compatibility
 !
-            if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
+            if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0))  &
+            !if ((idiag_torqext_gas(ks)/=0).or.(idiag_torqint_gas(ks)/=0) .or.  &
+            !    (idiag_torqext_par(ks)/=0).or.(idiag_torqint_par(ks)/=0)     ) &
                  call calc_torque_split_int_ext(p,rpcyl_mn(:,ks),ks)
-!
-          enddo pointmasses2
-        endif diagnos
-      endif lhydroif
-!
-      call keep_compiler_quiet(f)
-!      
-    endsubroutine dvvq_dt_pointmasses_pencil
+          enddo
+        endif 
+      endif
+
+    endsubroutine calc_diagnostics_pointmasses
 !***********************************************************************
     subroutine gas_accretion_by_pointmass(df,p)
 !
@@ -924,8 +943,7 @@ module PointMasses
         if (lgas_removal) then
            mass_removal_rate  = - prefactor * p%rho
            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + mass_removal_rate
-           if (ldiagnos.and.idiag_mdot_pt/=0) &
-                call sum_lim_mn_name(mass_removal_rate,idiag_mdot_pt,p)
+           if (ldiagnos.and.idiag_mdot_pt/=0) call sum_lim_mn_name(mass_removal_rate,idiag_mdot_pt,p)
         endif
 !
         if (lmomentum_removal) then
@@ -1196,8 +1214,7 @@ module PointMasses
           if (lcallpointmass) then 
             dfq_cart(k,:) = dfq_cart(k,:) - Omega2_pm*evr_cart(1:3)
           else
-            dfp_pt(ivpx_cart:ivpz_cart) = &
-                 dfp_pt(ivpx_cart:ivpz_cart) - Omega2_pm*evr_cart(1:3)
+            dfp_pt(ivpx_cart:ivpz_cart) = dfp_pt(ivpx_cart:ivpz_cart) - Omega2_pm*evr_cart(1:3)
           endif
 !
           if (ladd_dragforce) call dragforce_pointmasses(k)
@@ -1544,9 +1561,9 @@ module PointMasses
         rr    = fq(ks,ixq); phip = fq(ks,iyq)
         rpre  = rr_mn*rr*sin(phi-phip)
       elseif (lspherical_coords) then
-        call not_implemented("calc_torque","for spherical coordinates")
+        call not_implemented("calc_torque_split_int_ext","for spherical coordinates")
       else
-        call fatal_error("calc_torque",'wrong coordinate system')
+        call fatal_error("calc_torque_split_int_ext",'wrong coordinate system')
       endif
 !
       w2    = fq(ks,ivxq)**2 + fq(ks,ivyq)**2 + fq(ks,ivzq)**2
@@ -1563,7 +1580,7 @@ module PointMasses
         torque_par=0.
       endif
 !
-      if (ldustdensity) call not_implemented("calc_torque","for dust fluid approximation")
+      if (ldustdensity) call not_implemented("calc_torque_split_int_ext","for dust fluid approximation")
 !
 !  Zero torque outside r_int and r_ext in Cartesian coordinates
 !
@@ -1707,7 +1724,7 @@ module PointMasses
 !
 !  Potential of a Plummer sphere
 !
-          if (ks==iprimary .and. headtt) call warning("get_total_gravity",&
+          if (ks==iprimary .and. headtt) call warning("get_total_gravity", &
                   "The primary is not newtonian, make sure you know what you are doing.")
           Omega2_pm =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
 !
@@ -1715,7 +1732,7 @@ module PointMasses
 !
 !  Correct potential outside Hill sphere
 !
-          if (ks==iprimary .and. headtt) call warning("get_total_gravity",&
+          if (ks==iprimary .and. headtt) call warning("get_total_gravity", &
                "The primary is not newtonian, make sure you know what you are doing.")
           do i=1,mx
             if (rrp(i) .gt. rhill) then
@@ -1729,7 +1746,7 @@ module PointMasses
 !
 !  Newtonian potential; same as boley but constant inside rsmooth
 !
-          if (ks==iprimary.and.r_smooth(ks)/=0) call fatal_error("get_total_gravity",&
+          if (ks==iprimary.and.r_smooth(ks)/=0) call fatal_error("get_total_gravity", &
                "Use r_smooth=0 for the primary's potential")
 !
           do i=1,mx
@@ -2374,22 +2391,14 @@ module PointMasses
         enddo
 !
         do iname=1,nname
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqint_'//trim(sks),idiag_torqint(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqext_'//trim(sks),idiag_torqext(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqext_gas_'//trim(sks),idiag_torqext_gas(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqext_par_'//trim(sks),idiag_torqext_par(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqint_gas_'//trim(sks),idiag_torqint_gas(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torqint_par_'//trim(sks),idiag_torqint_par(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'period'//trim(sks),idiag_period(ks))
-          call parse_name(iname,cname(iname),cform(iname),&
-               'torque_'//trim(sks),idiag_torque(ks))
+          call parse_name(iname,cname(iname),cform(iname),'torqint_'//trim(sks),idiag_torqint(ks))
+          call parse_name(iname,cname(iname),cform(iname),'torqext_'//trim(sks),idiag_torqext(ks))
+          call parse_name(iname,cname(iname),cform(iname),'torqext_gas_'//trim(sks),idiag_torqext_gas(ks))
+          call parse_name(iname,cname(iname),cform(iname),'torqext_par_'//trim(sks),idiag_torqext_par(ks))
+          call parse_name(iname,cname(iname),cform(iname),'torqint_gas_'//trim(sks),idiag_torqint_gas(ks))
+          call parse_name(iname,cname(iname),cform(iname),'torqint_par_'//trim(sks),idiag_torqint_par(ks))
+          call parse_name(iname,cname(iname),cform(iname),'period'//trim(sks),idiag_period(ks))
+          call parse_name(iname,cname(iname),cform(iname),'torque_'//trim(sks),idiag_torque(ks))
         enddo
 !
         if (lwr) then

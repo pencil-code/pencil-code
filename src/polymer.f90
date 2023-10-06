@@ -353,21 +353,19 @@ module Polymer
 !
     endsubroutine calc_pencils_oldroyd_b
 !***********************************************************************
-    subroutine calc_diagnostics_polymer(f,p)
+    subroutine calc_diagnostics_polymer(p)
 !
 !  Calculates the diagnostic quantities for polymer module
 !  Most basic pencils should come first, as others may depend on them.
 !
       use Diagnostics, only: sum_mn_name, max_mn_name
-      use Sub, only: max_mn
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      call max_mn_name(p%fr,idiag_frmax)
-      call sum_mn_name(p%trp,idiag_polytrm)
-!
-      call keep_compiler_quiet(f)
+      if (ldiagnos) then
+        call max_mn_name(p%fr,idiag_frmax)
+        call sum_mn_name(p%trp,idiag_polytrm)
+      endif
 !
     endsubroutine calc_diagnostics_polymer
 !***********************************************************************
@@ -465,7 +463,7 @@ module Polymer
         if (headtt.or.ldebug) print*, 'dpoly_dt: max(trelax_poly) =', trelax_poly
       endif
 !
-      if (ldiagnos) call calc_diagnostics_polymer(f,p)
+      call calc_diagnostics_polymer(f,p)
 
     endsubroutine dpoly_dt
 !***********************************************************************
