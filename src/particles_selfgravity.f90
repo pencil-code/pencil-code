@@ -203,7 +203,7 @@ module Particles_selfgravity
 !
       intent (in) :: f, df, p, fp, dfp, ineargrid
 !
-      call calc_diagnostics_particles_selfgrav(p)
+      call calc_diagnostics_particles_selg(p)
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -213,7 +213,7 @@ module Particles_selfgravity
 !
     endsubroutine dvvp_dt_selfgrav_pencil
 !***********************************************************************
-    subroutine calc_diagnostics_particles_selfgrav(p)
+    subroutine calc_diagnostics_particles_selg(p)
 !
       use Diagnostics
 
@@ -223,7 +223,7 @@ module Particles_selfgravity
         if (idiag_gpotenp/=0) call sum_mn_name(p%potself*p%rhop,idiag_gpotenp)
       endif
 
-    endsubroutine calc_diagnostics_particles_selfgrav
+    endsubroutine calc_diagnostics_particles_selg
 !***********************************************************************
     subroutine dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
 !

@@ -765,7 +765,7 @@ module Particles_surfspec
 !            if (lparticles_adsorbed) print*, 'values in surfspec end',fp(k,isurf:isurf_end)
           enddo
 !
-          call calc_diagnostics_particles_surfspec
+          call calc_diagnostics_particles_surf(p)
 
           if (allocated(term)) deallocate(term)
           if (allocated(ndot)) deallocate(ndot)
@@ -777,7 +777,7 @@ module Particles_surfspec
 !
     endsubroutine dpsurf_dt_pencil
 ! ******************************************************************************
-    subroutine calc_diagnostics_particles_surfspec
+    subroutine calc_diagnostics_particles_surf(p)
   
       use Diagnostics
 
@@ -789,7 +789,7 @@ module Particles_surfspec
         endif
       endif
 
-    endsubroutine calc_diagnostics_particles_surfspec
+    endsubroutine calc_diagnostics_particles_surf
 ! ******************************************************************************
     subroutine rprint_particles_surf(lreset,lwrite)
 !

@@ -12,4 +12,4 @@
   public :: read_particles_selfg_run_pars
   public :: write_particles_selfg_run_pars
   public :: rprint_particles_selfgrav
-  public :: calc_diagnostics_particles_selfgrav
+  public :: calc_diagnostics_particles_selg

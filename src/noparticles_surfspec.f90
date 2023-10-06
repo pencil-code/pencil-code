@@ -173,12 +173,12 @@ module Particles_surfspec
   subroutine particles_surfspec_clean_up()
   endsubroutine particles_surfspec_clean_up
 ! ******************************************************************************
-    subroutine calc_diagnostics_particles_surfspec(p)
+    subroutine calc_diagnostics_particles_surf(p)
 
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(p)
 !
-    endsubroutine calc_diagnostics_particles_surfspec
+    endsubroutine calc_diagnostics_particles_surf
 !***********************************************************************
 endmodule Particles_surfspec
