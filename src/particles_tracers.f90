@@ -595,7 +595,8 @@ module Particles
         call xysum_mn_name_z(p%epsp,idiag_epspmz)
       endif
 !
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine calc_diagnostics_particles
 !***********************************************************************
