@@ -346,13 +346,13 @@ module Particles_number
           dfp(1:npar_loc,inpswarm) = -depletion_rate
       endif
 !
-      call calc_diagnostics_particles_number(p)
+      call calc_diagnostics_particles_num(p)
 
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dnpswarm_dt_pencil
 !***********************************************************************
-    subroutine calc_diagnostics_particles_number(p)
+    subroutine calc_diagnostics_particles_num(p)
 
       use Diagnostics
 
@@ -365,7 +365,7 @@ module Particles_number
 
       endif
 
-    endsubroutine calc_diagnostics_particles_number
+    endsubroutine calc_diagnostics_particles_num
 !***********************************************************************
     subroutine dnpswarm_dt(f,df,fp,dfp,ineargrid)
 !

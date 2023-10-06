@@ -887,7 +887,7 @@ module Particles_main
       if (lparticles_selfgravity) call calc_diagnostics_particles_selfgrav(p)
       if (lparticles_surfspec)    call calc_diagnostics_particles_surfspec(p)
       if (lparticles_radius)      call calc_diagnostics_particles_radius(p)
-      if (lparticles_number)      call calc_diagnostics_particles_number(p)
+      if (lparticles_number)      call calc_diagnostics_particles_num(p)
       if (lparticles_chemistry)   call calc_diagnostics_particles_chemistry(p)
 
     endsubroutine particles_calc_pencil_diagnostics
