@@ -148,4 +148,12 @@ module SGS_hydro
 !
     endsubroutine calc_SGS_hydro_force
 !***********************************************************************
+    subroutine calc_diagnostics_SGS_hydro(p)
+
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_SGS_hydro
+!***********************************************************************
 endmodule SGS_hydro
