@@ -95,13 +95,13 @@ module Particles_radius
 !
     endsubroutine dap_dt_pencil
 !***********************************************************************
-    subroutine calc_diagnostics_particles_radius(p)
+    subroutine calc_diagnostics_particles_rad(p)
 
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(p)
 !
-    endsubroutine calc_diagnostics_particles_radius
+    endsubroutine calc_diagnostics_particles_rad
 !***********************************************************************
     subroutine dap_dt(f,df,fp,dfp,ineargrid)
 !

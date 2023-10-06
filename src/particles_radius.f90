@@ -691,13 +691,13 @@ module Particles_radius
 !
       endif
 !
-      call calc_diagnostics_particles_radius(p)
+      call calc_diagnostics_particles_rad(p)
 
       call keep_compiler_quiet(f)
 !
     endsubroutine dap_dt_sweepup_pencil
 !***********************************************************************
-    subroutine calc_diagnostics_particles_radius(p)
+    subroutine calc_diagnostics_particles_rad(p)
 
       use Diagnostics, only: max_mn_name
 
@@ -708,7 +708,7 @@ module Particles_radius
           call max_mn_name(dt1_sweepup,idiag_dtsweepp,l_dt=.true.)
       endif
 
-    endsubroutine calc_diagnostics_particles_radius
+    endsubroutine calc_diagnostics_particles_rad
 !***********************************************************************
     subroutine dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
 !
