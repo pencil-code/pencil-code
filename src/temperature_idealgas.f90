@@ -253,7 +253,7 @@ module Energy
 !
   integer :: ivid_pp=0
 !
-  real, dimension(nx) :: diffus_chi,diffus_chi3,hcond
+  real, dimension(nx) :: diffus_chi,diffus_chi3,hcond,cooling
   real :: gamma, gamma1, gamma_m1, cp1
 !
   contains
@@ -522,18 +522,12 @@ module Energy
 !
 !  A word of warning...
 !
-      if (lheatc_Kconst .and. hcond0==0.0) &
-        call warning('initialize_energy', 'hcond0 is zero')
-      if (lheatc_Ktherm .and. hcond0==0.0) &
-        call warning('initialize_energy','hcond0 is zero')
-      if (lheatc_Kprof .and. hcond0==0.0) &
-        call warning('initialize_energy', 'hcond0 is zero')
-      if (lheatc_chiconst .and. chi==0.0) &
-        call warning('initialize_energy','chi is zero')
-      if (lheatc_chicubicstep .and. chi==0.0) &
-        call warning('initialize_energy','chi is zero')
-      if (lheatc_kramers .and. hcond0==0.0) &
-        call warning('initialize_energy','hcond0 is zero')
+      if (lheatc_Kconst .and. hcond0==0.0) call warning('initialize_energy', 'hcond0 is zero')
+      if (lheatc_Ktherm .and. hcond0==0.0) call warning('initialize_energy','hcond0 is zero')
+      if (lheatc_Kprof .and. hcond0==0.0) call warning('initialize_energy', 'hcond0 is zero')
+      if (lheatc_chiconst .and. chi==0.0) call warning('initialize_energy','chi is zero')
+      if (lheatc_chicubicstep .and. chi==0.0) call warning('initialize_energy','chi is zero')
+      if (lheatc_kramers .and. hcond0==0.0) call warning('initialize_energy','hcond0 is zero')
       if (lrun) then
         if (lheatc_hyper3 .and. chi_hyper3==0.0) &
             call fatal_error('initialize_energy','Conductivity coefficient chi_hyper3 is zero')
@@ -1276,7 +1270,7 @@ module Energy
 !
 !  Various heating conduction contributions.
 !
-      if (lcalc_heat_cool)  call calc_heat_cool(f,df,p)
+      if (lcalc_heat_cool) call calc_heat_cool(f,df,p)
 !
 !  Heating and cooling for hot jupiter
 !
@@ -1652,6 +1646,13 @@ module Energy
           call surf_mn_name(fradbot,idiag_fradbot,n1)
         endif
 !
+! Cooling power - energy radiated away (luminosity)
+!
+        if (lcalc_heat_cool .and. idiag_thcool/=0) call sum_lim_mn_name(cooling*p%rho,idiag_thcool,p)
+!
+        if (ldt) then
+          if (idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
       endif
 
     endsubroutine calc_0d_diagnostics_energy
@@ -1866,7 +1867,6 @@ module Energy
         else
           diffus_chi=diffus_chi+(chi_shock*p%shock)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond_shock
@@ -1889,8 +1889,7 @@ module Energy
       if (.not. leos) call fatal_error('rad_equil', &
             'EOS=noeos, but radiative equilibrium requires an EQUATION OF STATE')
 
-      if (.not. ltemperature_nolog) &
-          call not_implemented('temperature_idealgas','rad_equil for lnTT')
+      if (.not. ltemperature_nolog) call not_implemented('temperature_idealgas','rad_equil for lnTT')
       if (lroot) print*,'init_energy: rad_equil for kappa-mechanism pb'
 !
       if (nzgrid == 1) call not_implemented('rad_equil', "for nzgrid=1")
@@ -1950,7 +1949,7 @@ module Energy
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: tau, cooling, kappa, a1, a3, prof, heat
+      real, dimension (nx) :: tau, kappa, a1, a3, prof, heat
       real :: a2, kappa0, kappa0_cgs
 !
 !  Initialize
@@ -2009,11 +2008,6 @@ module Energy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%cv1*p%TT1*cooling
       endif
 !
-      if (ldiagnos) then
-         !cooling power - energy radiated away (luminosity)
-         if (idiag_thcool/=0) call sum_lim_mn_name(cooling*p%rho,idiag_thcool,p)
-      endif
-!
     endsubroutine calc_heat_cool
 !***********************************************************************
     subroutine calc_planet_atmosphere(df,p)
@@ -2043,8 +2037,6 @@ module Energy
       endif
 !
 !  interpolation for Tref
-!
-
 !
 !  get mu
 !
@@ -2095,16 +2087,12 @@ module Energy
 !
 !  Add heat conduction to RHS of temperature equation.
 !
-      ! [PAB]: Is the following correct for ltemperature_nolog=T?
-      ! [PAB]: Should we then not use "iTT" instead of "ilnTT"?
+      ! Note that ilnTT=iTT for nonlog temperature.
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*g2
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chi*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
 !
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
@@ -2153,10 +2141,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chi_z*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chi_z*dxyz_2
 !
     endsubroutine calc_heatcond_cubicstepchi
 !***********************************************************************
@@ -2199,10 +2184,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+chix*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+chix*dxyz_2
 !
     endsubroutine calc_heatcond_constK
 !***********************************************************************
@@ -2248,10 +2230,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+chix*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+chix*dxyz_2
 !
     endsubroutine calc_heatcond_Ktherm
 !***********************************************************************
@@ -2339,10 +2318,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chix*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chix*dxyz_2
 !
     endsubroutine calc_heatcond_arctan
 !***********************************************************************
@@ -2413,10 +2389,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chix*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chix*dxyz_2
 !
     endsubroutine calc_heatcond
 !***********************************************************************
@@ -2453,10 +2426,7 @@ module Energy
         cosbgT=cosbgT/sqrt(gT2*b2)
       endwhere
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+cosbgT*gamma*Kgpara*p%rho1*p%cp1*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+cosbgT*gamma*Kgpara*p%rho1*p%cp1*dxyz_2
 !
     endsubroutine calc_heatcond_tensor
 !***********************************************************************
@@ -2532,7 +2502,6 @@ module Energy
        a2=0.1
 !
   endselect
-!
 !
 !  Construct the reponse function
 !
