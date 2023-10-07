@@ -4,13 +4,15 @@
 !
 &init_pars
   cvsid="76d6d658f"
-  bcx='p','p','p','p','no','no','no','no','no','no','no','no'
-  lpoint2=1, mpoint2=1, npoint2=1
+  bcx='no','no','no','no','no','no','no','no','no','no','no','no','no','no','no','no'
+  !lpoint2=1, mpoint2=1, npoint2=1
   lwrite_ic=F
 /
 &special_init_pars
   fdecay=.003, g=1.11e-2, lam=500., Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
+  !mu=2.45e-4, lconf_time=T
   mu=1.5e-4, lconf_time=T
   llnk_spacing_adjustable=T, ldo_adjust_krange=F, lim_psi_TR=T, lleft_psiL_TL=T
+  !nmin0=2.8, nmax0=3.2
   nmin0=-0, nmax0=12
 /

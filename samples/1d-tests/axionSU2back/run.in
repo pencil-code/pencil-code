@@ -5,11 +5,15 @@
 &run_pars
   cvsid="76d6d658f"
   lpencil_check_small=F, isave=500000, itorder=3
-  nt=10001, it1=2000, d2davg=2000., ip=30, tmax=-1e-7, dtmin=1e-20
-  tmax=-1.0e-5
+  nt=10001, it1=2000, d2davg=2000., tmax=-1e-7, dtmin=1e-20
+  tmax=-1.0e-5, dsnap=0
+  lconcurrent=T
 /
 &special_run_pars
+  lwrite_krange=F, lwrite_backreact=F
   lbackreact=T, sbackreact_Q=1e-0, sbackreact_chi=1e-0
   tback=0e6, dtback=1e6, lconf_time=T, Ndivt=1000000
+  !tback=0e6, dtback=1e6, lconf_time=T, Ndivt=10000
   axion_sum_range=.25,1., lwith_eps=T
+  !horizon_factor=-1.
 /

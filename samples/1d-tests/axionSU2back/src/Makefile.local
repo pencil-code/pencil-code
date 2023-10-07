@@ -13,6 +13,7 @@ DENSITY  = nodensity
 EOS      = noeos
 VISCOSITY= noviscosity
 DERIV    =   deriv_2nd
+#SPECIAL  = special/axionSU2back_using_ode
 SPECIAL  = special/axionSU2back
 TIMESTEP =   timestep
 #GRID     = nogrid
