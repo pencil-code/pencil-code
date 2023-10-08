@@ -429,29 +429,29 @@ module Special
 !  interpolation for Teq_local at height coordinate (could have arbitrary pressure)
 !
 !!! %HZ: need to convert p%pp to [Pa]
-        log10pp = log10(p%pp*pp2Pa)
-        do ix=l1,l2
-          ! index of the logp_ref that is just smaller than log10(pressure)
-          index = 1+floor((log10pp(ix)-logp_ref_min)/dlogp_ref)
-          if (index>=nref) then
-            Teq_x(ix) = Teq_local(nref)
-            tau_rad_x(ix) = tau_rad(nref)
-          elseif (index<= 1) then 
-            Teq_x(ix) = Teq_local(1)
-            tau_rad_x(ix) = tau_rad(1)
-          else
-            ! interpolate T in log10(p) space
-            Teq_x(ix) = Teq_local(index)+(Teq_local(index+1)-Teq_local(index))*   &
-                            (log10pp(ix)-logp_ref(index))/   &
-                            (logp_ref(index+1)-logp_ref(index))   ! unit of K
-            ! interpolate log10(tau_rad) in log10 p space
-            tau_rad_x(ix) = log10(tau_rad(index))+  &
-                                (log10(tau_rad(index+1))-log10(tau_rad(index)))*   &
-                                (log10pp(ix)-logp_ref(index))/   &
-                                (logp_ref(index+1)-logp_ref(index))
-            tau_rad_x(ix) = 10**tau_rad_x(ix)  ! unit of s
-          endif
-        enddo
+      log10pp = log10(p%pp*pp2Pa)
+      do ix=1,nx
+        ! index of the logp_ref that is just smaller than log10(pressure)
+        index = 1+floor((log10pp(ix)-logp_ref_min)/dlogp_ref)
+        if (index>=nref) then
+          Teq_x(ix) = Teq_local(nref)
+          tau_rad_x(ix) = tau_rad(nref)
+        elseif (index<= 1) then
+          Teq_x(ix) = Teq_local(1)
+          tau_rad_x(ix) = tau_rad(1)
+        else
+          ! interpolate T in log10(p) space
+          Teq_x(ix) = Teq_local(index)+(Teq_local(index+1)-Teq_local(index))*   &
+                          (log10pp(ix)-logp_ref(index))/   &
+                          (logp_ref(index+1)-logp_ref(index))   ! unit of K
+          ! interpolate log10(tau_rad) in log10 p space
+          tau_rad_x(ix) = log10(tau_rad(index))+  &
+                              (log10(tau_rad(index+1))-log10(tau_rad(index)))*   &
+                              (log10pp(ix)-logp_ref(index))/   &
+                              (logp_ref(index+1)-logp_ref(index))
+          tau_rad_x(ix) = 10**tau_rad_x(ix)  ! unit of s
+        endif
+      enddo
 !
       if (tau_slow_heating>0) then
         ! slowly turn on heating term
