@@ -224,6 +224,7 @@ module Viscosity
 ! Other module Variables
 !
   real, dimension(mz) :: eth0z = 0.0
+  real, dimension(nx) :: diffus_nu, diffus_nu3
 !
   contains
 !***********************************************************************
@@ -772,8 +773,8 @@ module Viscosity
         LV0_rprof=step(x,rzero_lambda+roffset_lambda,wlambda)-step(x,rmax_lambda+roffset_lambda,wlambda)
         LV1_rprof=step(x,rzero_lambda,wlambda)-step(x,rmax_lambda,wlambda)
         LH1_rprof=step(x,rzero_lambda,wlambda)-step(x,rmax_lambda,wlambda)
-        der_LV0_rprof=der_step(x,rzero_lambda+roffset_lambda,wlambda) &
-            -der_step(x,rmax_lambda+roffset_lambda,wlambda)
+        der_LV0_rprof = der_step(x,rzero_lambda+roffset_lambda,wlambda) &
+                       -der_step(x,rmax_lambda+roffset_lambda,wlambda)
         der_LV1_rprof=der_step(x,rzero_lambda,wlambda)-der_step(x,rmax_lambda,wlambda)
       case ('V1H1_roff')
         LV0_rprof=1.;der_LV0_rprof=0.
@@ -2139,8 +2140,8 @@ module Viscosity
           if (lcylindrical_coords .or. lspherical_coords) then
             do i=1,3
               call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp2(:,i),div_sld_visc, &
-                                      HEAT=tmp4,HEAT_TYPE='viscose', &
-                                      FLUX1=d_sld_flux(:,1,i),FLUX2=d_sld_flux(:,2,i),FLUX3=d_sld_flux(:,3,i))
+                                        HEAT=tmp4,HEAT_TYPE='viscose', &
+                                        FLUX1=d_sld_flux(:,1,i),FLUX2=d_sld_flux(:,2,i),FLUX3=d_sld_flux(:,3,i))
               if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
             enddo
             if (lcylindrical_coords) then
@@ -2496,7 +2497,6 @@ module Viscosity
       intent (in) :: p
       intent (inout) :: df
 !
-      real, dimension (nx) :: diffus_nu, diffus_nu3
       integer :: i
 !
 !  Add viscosity to equation of motion
@@ -2513,7 +2513,7 @@ module Viscosity
 !
       if (lfirst.and.ldt) then
 
-        diffus_nu = p%diffus_total *dxyz_2
+        diffus_nu = p%diffus_total*dxyz_2
         if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
           diffus_nu3 = p%diffus_total3 * sum(abs(dline_1),2)
         else
@@ -2522,11 +2522,6 @@ module Viscosity
         maxdiffus =max(maxdiffus ,diffus_nu)
         maxdiffus2=max(maxdiffus2,p%diffus_total2*dxyz_4)
         maxdiffus3=max(maxdiffus3,diffus_nu3)
-
-        if (ldiagnos) then
-          if (idiag_dtnu/=0) call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
-          if (idiag_dtnu3/=0) call max_mn_name(diffus_nu3/cdtv3,idiag_dtnu3,l_dt=.true.)
-        endif
 
       endif
 
@@ -2548,7 +2543,7 @@ module Viscosity
 !
       if (ldiagnos) then
 !
-        if (idiag_nu_tdep/=0)  call sum_mn_name(spread(nu_tdep,1,nx),idiag_nu_tdep)
+        if (idiag_nu_tdep/=0) call sum_mn_name(spread(nu_tdep,1,nx),idiag_nu_tdep)
 !        if (lvisc_smag_simplified) nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
 !        if (lvisc_smag_cross_simplified) nu_smag=(C_smag*dxmax)**2.*p%ss12
         if (idiag_meshRemax/=0) call max_mn_name(sqrt(p%u2(:))*dxmax_pencil/p%diffus_total,idiag_meshRemax)
@@ -2575,10 +2570,10 @@ module Viscosity
 !
 !  Calculate sijoiojm = S_{ij} o_i o_j.
 !
-      if (idiag_sijoiojm/=0) then
-        call mult_mat_vv(p%sij,p%oo,p%oo,tmp)
-        call sum_mn_name(tmp,idiag_sijoiojm)
-      endif
+        if (idiag_sijoiojm/=0) then
+          call mult_mat_vv(p%sij,p%oo,p%oo,tmp)
+          call sum_mn_name(tmp,idiag_sijoiojm)
+        endif
 !
 !  correlation of viscous term with b-field; relevant for MTA
 !  (MTA: minimal tau approximation)
@@ -2600,8 +2595,8 @@ module Viscosity
                                                p%uu(:,2)*p%fvisc(:,2)+ &
                                                p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
 
-        if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
-        if (idiag_fviscmax/=0) call max_mn_name(p%fvisc,idiag_fviscmax)
+        if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)  !???fvisc is vector
+        call max_mn_name(p%fvisc,idiag_fviscmax)  !???
 
         if (idiag_fviscrmsx/=0) call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
         call sum_mn_name(p%visc_heat,idiag_visc_heatm)
@@ -2618,8 +2613,12 @@ module Viscosity
           call dot(p%curlo,p%fvisc,qfvisc)
           call sum_mn_name(qfvisc,idiag_qfviscm)
         endif
+        if (ldt) then
+          if (idiag_dtnu/=0) call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
+          if (idiag_dtnu3/=0) call max_mn_name(diffus_nu3/cdtv3,idiag_dtnu3,l_dt=.true.)
+        endif
 !
-! For slope-limted diffusion viscocity diagnostics need to be written
+! For slope-limited diffusion viscosity diagnostics need to be written
 ! out at the last time step
 !
       endif
@@ -2890,5 +2889,4 @@ module Viscosity
 
     endsubroutine pushpars2c
 !***********************************************************************
-!
 endmodule Viscosity

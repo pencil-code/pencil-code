@@ -4773,6 +4773,8 @@ module Hydro
                                                        uu_sph_xy3,uu_sph_xy4,uu_sph_xz2,uu_sph_r)
       endif
 
+      if (lSGS_hydro) call calc_diagnostics_SGS_hydro(p)
+
     endsubroutine calc_diagnostics_hydro
 !******************************************************************************
     subroutine df_diagnos_hydro(df,p)
