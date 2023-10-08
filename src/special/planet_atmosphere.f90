@@ -45,11 +45,18 @@ module Special
   real :: tauradtop=1.d4, tauradbot=1.d7  ! unit: [s]
   real :: pradtop=1.d3, pradbot=1.d6 ! unit:[ Pa]
 !
+! Run parameters
+!
+  real :: tau_slow_heating=-1.
+!
 !
 !
   namelist /special_init_pars/ &
       lon_ss,lat_ss,Tbot,Ttop,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot
+!
+  namelist /special_run_pars/ &
+      tau_slow_heating
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -249,9 +256,11 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
+      use File_io, only: parallel_unit
+!
       integer, intent(out) :: iostat
 !
-      iostat = 0
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -259,15 +268,17 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      call keep_compiler_quiet(unit)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
+      use File_io, only: parallel_unit
+!
       integer, intent(out) :: iostat
 !
-      iostat = 0
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -275,7 +286,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      call keep_compiler_quiet(unit)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -407,6 +418,7 @@ module Special
 !
       real, dimension(nx) :: Teq_x,tau_rad_x,log10pp
       real ,dimension(:), allocatable :: Teq_local
+      real :: f_slow_heating
       integer :: ix,index
 !
 !  The local equilibrium T; still in pressure coordinate
@@ -420,7 +432,7 @@ module Special
         log10pp = log10(p%pp*pp2Pa)
         do ix=l1,l2
           ! index of the logp_ref that is just smaller than log10(pressure)
-          index = ceiling(log10pp(ix)-logp_ref_min)/dlogp_ref
+          index = 1+floor((log10pp(ix)-logp_ref_min)/dlogp_ref)
           if (index>=nref) then
             Teq_x(ix) = Teq_local(nref)
             tau_rad_x(ix) = tau_rad(nref)
@@ -441,7 +453,14 @@ module Special
           endif
         enddo
 !
-      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - (p%TT-Teq_x)/tau_rad_x
+      if (tau_slow_heating>0) then
+        ! slowly turn on heating term
+        f_slow_heating = min(1.d0,t/tau_slow_heating)
+      else
+        f_slow_heating = 1.
+      endif
+  !
+      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - f_slow_heating*(p%TT-Teq_x/TT2K)/tau_rad_x
 !
       deallocate(Teq_local)
 !
@@ -721,6 +740,7 @@ module Special
 !
 !  read in Tref, in physical unit.
 !
+!!HZ: need use a less specific file name
       inquire(FILE='iro-teq-tint100K-regrid-Pa.txt', EXIST=lTref_file_exists)
       if (.not.lTref_file_exists) call fatal_error('initialize_special', &
           'Must provide a Tref file')
