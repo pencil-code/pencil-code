@@ -208,6 +208,9 @@ module Special
           case ('phi=tanhkx')
             f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi) &
               +spread(spread(.5*amplphi*(1.+tanh(kx_phi*(x-offset))),2,my),3,mz)
+          case ('phi=atan_exp_kx')
+            f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi) &
+              +spread(spread(4.*amplphi*atan(exp(kx_phi*(x-offset))),2,my),3,mz)
           case ('nophi')
             Vpotential=.5*axionmass2*phi0**2
             dphi0=0.
@@ -358,7 +361,8 @@ module Special
       endselect
       
   !   lnascale=f(l1:l2,m,n,iinfl_lna)
-      lnascale=1.
+  !AB: temporary fix for now; should solve as ode in future; we should then have lnascale=0. as default
+      lnascale=0.
       ascale=exp(lnascale)
       a2scale=ascale**2
 !     a2rhop=dphi**2

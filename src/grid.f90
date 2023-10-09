@@ -1278,8 +1278,9 @@ module Grid
         
         if (lroot.and.ip<14) print*,'initialize_grid, r_int,r_ext=',r_int,r_ext
       elseif (r_ext == impossible) then
-        call warning('initialize_grid','Cartesian coords - no meaningful r_ext given.'// &
-                     ' We set it to minval(xyz1)')
+!       call warning('initialize_grid','Cartesian coords - no meaningful r_ext given.'// &
+!                    ' We set it to minval(xyz1)')
+!AB: commented out. Calling this a "warning" is misleading; we are already in cartesian coordinates.
         r_ext=minval(xyz1)
       endif
 !
