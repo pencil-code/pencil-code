@@ -302,6 +302,12 @@ nohydro_visc_message:
 
   endif
 endif
+ifneq ($(HYDRO),hydro)
+  ifneq ($(SGSHYDRO),noSGS_hydro)
+    $(warning SGS_hydro only meaningful with HYDRO = hydro - suppressed!)
+    SGSHYDRO = noSGS_hydro
+  endif
+endif
 ifeq ($(HYDRO),nohydro)
   ifneq ($(SHOCK),noshock)
 nohydro_shock_message:
