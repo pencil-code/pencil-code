@@ -8,6 +8,9 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
+! CPARAM logical, parameter :: ltestfield_xy = .false.
+! CPARAM logical, parameter :: ltestfield_z = .false.
+! CPARAM logical, parameter :: ltestfield_xz  = .false.
 ! CPARAM   integer, parameter :: njtest=2
 !
 ! MVAR CONTRIBUTION 6
@@ -17,7 +20,7 @@
 
 module Testfield
 
-  use Cparam
+  use Cdata
   use Messages
 
   implicit none
@@ -103,24 +106,24 @@ module Testfield
   integer :: idiag_b1rms=0      ! DIAG_DOC: $\left<b_{1}^2\right>^{1/2}$
   integer :: idiag_b2rms=0      ! DIAG_DOC: $\left<b_{2}^2\right>^{1/2}$
   integer :: idiag_b3rms=0      ! DIAG_DOC: $\left<b_{3}^2\right>^{1/2}$
+  integer :: idiag_bcosphz=0, idiag_bsinphz=0
 !
   integer :: ivid_bb1=0
 !
 !  arrays for horizontally averaged uxb and jxb
 !
   real, dimension (mz,3,njtest) :: uxbtestm,jxbtestm
-
+  real, dimension (nx,3,njtest) :: Eipq,bpq
+!
   contains
-
 !***********************************************************************
-    subroutine register_testfield()
+    subroutine register_testfield
 !
 !  Initialise variables which should know that we solve for the vector
 !  potential: iaatest, etc; increase nvar accordingly
 !
 !   3-jun-05/axel: adapted from register_magnetic
 !
-      use Cdata
       use FArrayManager
       use Mpicomm
       use Sub
@@ -165,7 +168,6 @@ module Testfield
 !
 !   2-jun-05/axel: adapted from magnetic
 !
-      use Cdata
       use FArrayManager
       use Slices_methods, only: alloc_slice_buffers
 !
@@ -298,6 +300,7 @@ module Testfield
         else
           if (lroot) print*, 'initialize_testfield: iuxbtest = ', iuxbtest
           call farray_index_append('iuxbtest',iuxbtest)
+        endif
       endif
 !
 !  possibility of using jxb as auxiliary array (is intended to be
@@ -309,6 +312,7 @@ module Testfield
         else
           if (lroot) print*, 'initialize_testfield: ijxbtest = ', ijxbtest
           call farray_index_append('ijxbtest',ijxbtest)
+        endif
       endif
 !
       if (ivid_bb1/=0) &
@@ -339,7 +343,6 @@ module Testfield
 !
 !   2-jun-05/axel: adapted from magnetic
 !
-      use Cdata
       use Mpicomm
       use Initcond
       use Sub
@@ -370,12 +373,7 @@ module Testfield
       case ('nothing'); !(do nothing)
 
       case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'init_aatest: check initaatest: ', trim(initaatest(j))
-        call stop_it("")
-
+        call fatal_error("init_aatest","no such init_aatest: "//trim(initaatest(j)))
       endselect
       enddo
 !
@@ -385,13 +383,12 @@ module Testfield
 !
     endsubroutine init_aatest
 !***********************************************************************
-    subroutine pencil_criteria_testfield()
+    subroutine pencil_criteria_testfield
 !
 !   All pencils that the Testfield module depends on are specified here.
 !
 !  26-jun-05/anders: adapted from magnetic
 !
-      use Cdata
 !
       lpenc_requested(i_uu)=.true.
       if (lforcing_cont_aatest) lpenc_requested(i_fcont)=.true.
@@ -462,12 +459,8 @@ module Testfield
 !  16-mar-08/axel: Lorentz force added for testfield method
 !  25-jan-09/axel: added Maxwell stress tensor calculation
 !
-      use Cdata
-      use Diagnostics
-      use Hydro, only: uumz,lcalc_uumean
-      use Mpicomm, only: stop_it
+      use Hydro, only: uumz,lcalc_uumeanz
       use Sub
-      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -477,12 +470,12 @@ module Testfield
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest,eetest
       real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
       real, dimension (nx,3,3,njtest) :: Mijpq
-      real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
+      real, dimension (nx,3,njtest) :: jpq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest
-      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
-      integer :: jtest,j, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest
+      real, dimension (nx) :: jbpq,Epq2,s2kzDF1,s2kzDF2,unity=1.
+      integer :: jtest,j, iuxtest, iuytest, iuztest
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -501,7 +494,7 @@ module Testfield
 !
 !  calculate uufluct=U-Umean
 !
-      if (lcalc_uumean) then
+      if (lcalc_uumeanz) then
         do j=1,3
           uufluct(:,j)=p%uu(:,j)-uumz(n,j)
         enddo
@@ -513,8 +506,7 @@ module Testfield
 !  Allow also for linearly increasing testfields
 !  Keep bamp1=1 for oscillatory fields.
 !
-      if (lam_testfield/=0..or.lin_testfield/=0. .or. &
-          om_testfield/=0..or.delta_testfield/=0.) then
+      if (lam_testfield/=0..or.lin_testfield/=0. .or. om_testfield/=0..or.delta_testfield/=0.) then
         if (lam_testfield/=0.) then
           taainit_previous=taainit-daainit
           bamp=exp(lam_testfield*(t-taainit_previous))
@@ -556,8 +548,8 @@ module Testfield
           case ('sxsysz'); call set_bbtest_sxsysz(B0test,jtest)
           case ('sinkz'); call set_bbtest_sinkz(B0test,jtest)
           case ('B=0') !(dont do anything)
-        case default
-          call fatal_error('daatest_dt','undefined itestfield value')
+          case default
+            call fatal_error('daatest_dt','no such itestfield: '//trim(itestfield))
         endselect
 !
 !  add an external field, if present
@@ -568,8 +560,7 @@ module Testfield
 !
         call cross_mn(uufluct,B0test,uxB)
         if (lsoca) then
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +uxB+etatest*del2Atest
+          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) + uxB+etatest*del2Atest
         else
 !
 !  use f-array for uxb (if space has been allocated for this) and
@@ -603,8 +594,7 @@ module Testfield
 !  add possibility of forcing that is not delta-correlated in time
 !
         if (lforcing_cont_aatest) &
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-              +ampl_fcont_aatest*p%fcont
+          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) + ampl_fcont_aatest*p%fcont(:,:,0)  ! MR: or 1?
 !
 !  add possibility of artificial friction
 !
@@ -633,6 +623,21 @@ module Testfield
         diffus_eta=etatest*dxyz_2
         maxdiffus=max(maxdiffus,diffus_eta)
       endif
+
+      call calc_diagnostics_testfield(p)
+!
+    endsubroutine daatest_dt
+!***********************************************************************
+    subroutine calc_diagnostics_testfield(p)
+
+      use Diagnostics
+      use Slices_methods, only: store_slices
+      use Sub, only: dot2
+!
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: bpq2
+      integer :: i1=1, i2=2, i3=3, i4=4
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !  The g95 compiler doesn't like to see an index that is out of bounds,
@@ -725,7 +730,7 @@ module Testfield
       if (lvideo.and.lfirst.and.ivid_bb1/=0) &
         call store_slices(bpq(:,:,1),bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2,bb1_r)
 !
-    endsubroutine daatest_dt
+    endsubroutine calc_diagnostics_testfield
 !***********************************************************************
     subroutine get_slices_testfield(f,slices)
 !
@@ -759,22 +764,22 @@ module Testfield
 !
 !    4-oct-18/axel+nishant: adapted from testflow
 !
+      use General, only: keep_compiler_quiet
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine testfield_before_boundary
 !***********************************************************************
-    subroutine testfield_after_boundary(f,p)
+    subroutine testfield_after_boundary(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
 !  21-jan-06/axel: coded
 !
-      use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
-      use Magnetic, only: idiag_bcosphz, idiag_bsinphz
       use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -963,7 +968,6 @@ module Testfield
 !
 !  18-may-08/axel: rewrite from rescaling as used in magnetic
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -971,6 +975,7 @@ module Testfield
       logical :: ltestfield_out
       logical, save :: lfirst_call=.true.
       integer :: j,jtest
+      real(KIND=rkind8) :: tltestfield_out
 !
       intent(inout) :: f
 !
@@ -1001,7 +1006,7 @@ module Testfield
               enddo
             enddo
           enddo
-          call update_snaptime(file,taainit,naainit,daainit,tltestfield_out)
+          call update_snaptime(file,taainit,naainit,daainit,tltestfield_out,ltestfield_out)
         endif
       endif
 !
@@ -1013,7 +1018,6 @@ module Testfield
 !
 !  12-feb-10/axel: adapted from testfield_z
 !
-      use Cdata
 !
       real, dimension (nx,3) :: B0test
       integer :: jtest
@@ -1038,8 +1042,6 @@ module Testfield
 !
 !  12-feb-10/axel: adapted from testfield_z
 !
-      use Cdata
-!
       real, dimension (nx,3) :: B0test
       integer :: jtest
 !
@@ -1063,8 +1065,6 @@ module Testfield
 !
 !  12-feb-10/axel: adapted from testfield_z
 !
-      use Cdata
-!
       real, dimension (nx,3) :: B0test
       integer :: jtest
 !
@@ -1087,7 +1087,6 @@ module Testfield
 !
 !   3-jun-05/axel: adapted from rprint_magnetic
 !
-      use Cdata
       use Diagnostics
 !
       integer :: iname,inamez
@@ -1124,6 +1123,8 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'b1rms',idiag_b1rms)
         call parse_name(iname,cname(iname),cform(iname),'b2rms',idiag_b2rms)
         call parse_name(iname,cname(iname),cform(iname),'b3rms',idiag_b3rms)
+        call parse_name(iname,cname(iname),cform(iname),'bcosphz',idiag_bcosphz)
+        call parse_name(iname,cname(iname),cform(iname),'bsinphz',idiag_bsinphz)
       enddo
 !
 !  check for those quantities for which we want xy-averages

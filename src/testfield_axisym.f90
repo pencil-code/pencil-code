@@ -21,7 +21,7 @@
 
 module Testfield
 
-  use Cparam
+  use Cdata
   use Messages
 
   implicit none
@@ -117,13 +117,15 @@ module Testfield
   integer :: idiag_b2rms=0      ! DIAG_DOC: $\left<b_{2}^2\right>^{1/2}$
   integer :: idiag_b3rms=0      ! DIAG_DOC: $\left<b_{3}^2\right>^{1/2}$
   integer :: ivid_bb1=0
+  integer :: idiag_bcosphz=0
+  integer :: idiag_bsinphz=0
 !
 !  arrays for horizontally averaged uxb and jxb
 !
   real, dimension (nz,3,njtest) :: uxbtestm,jxbtestm
+  real, dimension (nx,3,njtest) :: Eipq,bpq
 
   contains
-
 !***********************************************************************
     subroutine register_testfield()
 !
@@ -392,12 +394,7 @@ module Testfield
       case ('nothing'); !(do nothing)
 
       case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'init_aatest: check initaatest: ', trim(initaatest(j))
-        call stop_it("")
-
+        call fatal_error("init_aatest","no such initaatest: "//trim(initaatest(j)))
       endselect
       enddo
 !
@@ -484,12 +481,8 @@ module Testfield
 !  16-mar-08/axel: Lorentz force added for testfield method
 !  25-jan-09/axel: added Maxwell stress tensor calculation
 !
-      use Cdata
-      use Diagnostics
       use Hydro, only: uumz,lcalc_uumeanz
-      use Mpicomm, only: stop_it
       use Sub
-      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -499,12 +492,12 @@ module Testfield
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest,eetest
       real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
       real, dimension (nx,3,3,njtest) :: Mijpq
-      real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
+      real, dimension (nx,3,njtest) :: jpq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest
-      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
-      integer :: jtest,j,nl, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest
+      real, dimension (nx) :: jbpq,Epq2,s2kzDF1,s2kzDF2,unity=1.
+      integer :: jtest,j,nl
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
       real, dimension(nx) :: diffus_eta
 !
@@ -580,7 +573,7 @@ module Testfield
           case ('sinkz'); call set_bbtest_sinkz(B0test,jtest)
           case ('B=0') !(dont do anything)
         case default
-          call fatal_error('daatest_dt','undefined itestfield value')
+          call fatal_error('daatest_dt','no such itestfield: '//trim(itestfield))
         endselect
 !
 !  add an external field, if present
@@ -591,8 +584,7 @@ module Testfield
 !
         call cross_mn(uufluct,B0test,uxB)
         if (lsoca) then
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +uxB+etatest*del2Atest
+          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxB+etatest*del2Atest
         else
 !
 !  use f-array for uxb (if space has been allocated for this) and
@@ -656,6 +648,21 @@ module Testfield
         diffus_eta=etatest*dxyz_2
         maxdiffus=max(maxdiffus,diffus_eta)
       endif
+
+      call calc_diagnostics_testfield(p)
+!
+    endsubroutine daatest_dt
+!***********************************************************************
+    subroutine calc_diagnostics_testfield(p)
+!
+      use Diagnostics
+      use Slices_methods, only: store_slices
+      use Sub, only:dot2
+!
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: bpq2
+      integer :: i1=1, i2=2, i3=3, i4=4
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !  The g95 compiler doesn't like to see an index that is out of bounds,
@@ -775,14 +782,14 @@ module Testfield
           call xysum_mn_name_z(-8*sx* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             ,idiag_kapPARAz)
 !
         case default
-          call fatal_error('daatest_dt','undefined itestfield value')
+          call fatal_error('daatest_dt','no such itestfield: '//trim(itestfield))
         endselect
 !
 !  diagnostics for single points
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_bx1pt/=0) call save_name(bpq(lpoint-nghost,1,i1),idiag_bx1pt)
-          if (idiag_bx2pt/=0) call save_name(bpq(lpoint-nghost,1,i2),idiag_bx2pt)
+          call save_name(bpq(lpoint-nghost,1,i1),idiag_bx1pt)
+          call save_name(bpq(lpoint-nghost,1,i2),idiag_bx2pt)
         endif
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
@@ -805,12 +812,11 @@ module Testfield
       endif
 !
 !  write B-slices for output in wvid in run.f90
-!  Note: ix is the index with respect to array with ghost zones.
 !
       if (lvideo.and.lfirst.and.ivid_bb1/=0) &
         call store_slices(bpq(:,:,1),bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2,bb1_r)
 !
-    endsubroutine daatest_dt
+    endsubroutine calc_diagnostics_testfield
 !***********************************************************************
     subroutine get_slices_testfield(f,slices)
 !
@@ -845,6 +851,8 @@ module Testfield
 !
 !    4-oct-18/axel+nishant: adapted from testflow
 !
+      use General, only: keep_compiler_quiet
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -860,7 +868,6 @@ module Testfield
       use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
-      use Magnetic, only: idiag_bcosphz, idiag_bsinphz
       use Mpicomm, only: mpiallreduce_sum, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1222,6 +1229,8 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'b1rms',idiag_b1rms)
         call parse_name(iname,cname(iname),cform(iname),'b2rms',idiag_b2rms)
         call parse_name(iname,cname(iname),cform(iname),'b3rms',idiag_b3rms)
+        call parse_name(iname,cname(iname),cform(iname),'bcosphz',idiag_bcosphz)
+        call parse_name(iname,cname(iname),cform(iname),'bsinphz',idiag_bsinphz)
       enddo
 !
 !  check for those quantities for which we want xy-averages

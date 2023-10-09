@@ -25,7 +25,7 @@
 
 module Testfield
 
-  use Cparam
+  use Cdata
   use General, only: keep_compiler_quiet
   use Messages
   implicit none
@@ -96,7 +96,6 @@ module Testfield
 !
 !   3-jun-05/axel: adapted from register_magnetic
 !
-      use Cdata
       use FArrayManager
       use Mpicomm
       use Sub
@@ -132,8 +131,6 @@ module Testfield
 !
 !   2-jun-05/axel: adapted from magnetic
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  set to zero and then rescale the testfield
@@ -163,11 +160,6 @@ module Testfield
 !
 !   2-jun-05/axel: adapted from magnetic
 !
-      use Cdata
-      use Mpicomm
-      use Gravity, only: gravz
-      use Sub
-      use Initcond
       use InitialCondition, only: initial_condition_aatest
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -177,12 +169,7 @@ module Testfield
       case ('zero', '0'); f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
 
       case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'init_aatest: check initaatest: ', trim(initaatest)
-        call stop_it("")
-
+        call fatal_error("init_aatest",'no such initaatest: '//trim(initaatest))
       endselect
 !
 !  Interface for user's own subroutine
@@ -197,8 +184,6 @@ module Testfield
 !
 !  26-jun-05/anders: adapted from magnetic
 !
-      use Cdata
-!
       lpenc_requested(i_uu)=.true.
 !
     endsubroutine pencil_criteria_testfield
@@ -208,8 +193,6 @@ module Testfield
 !  Interdependency among pencils from the Testfield module is specified here.
 !
 !  26-jun-05/anders: adapted from magnetic
-!
-      use Cdata
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -260,9 +243,6 @@ module Testfield
 !
 !   3-jun-05/axel: coded
 !
-      use Cdata
-      use Diagnostics
-      use Mpicomm, only: stop_it
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -343,12 +323,42 @@ module Testfield
             diffus_eta=etatest*dxyz_2
             maxdiffus = max(maxdiffus,diffus_eta)
           endif
+        endif
+      enddo
+
+      call calc_diagnostics_testfield(f,p)
+!
+    endsubroutine daatest_dt
+!***********************************************************************
+    subroutine calc_diagnostics_testfield(f,p)
+!
+      use Diagnostics
+      use Sub, only: cross_mn, curl
+
+      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      real, dimension (nx,3) :: btest,uxbtest
+      integer :: jtest
+
+      do jtest=1,njtest
+
+        if ((jtest>= 1.and.jtest<= 3) &
+        .or.(jtest>= 4.and.jtest<= 6.and.zextent) &
+        .or.(jtest>=10.and.jtest<=12.and.xextent.and.(.not.lset_bbtest2)) &
+        .or.(jtest>= 7.and.jtest<= 9.and.xextent)) then
+!       if ((jtest>= 1.and.jtest<= 3)&
+!       .or.(jtest>= 4.and.jtest<= 6.and.xextent)&
+!       .or.(jtest>=10.and.jtest<=12.and.xextent.and.(.not.lset_bbtest2))&
+!       .or.(jtest>= 7.and.jtest<= 9.and.zextent)) then
+          iaxtest=iaatest+3*(jtest-1)
+          iaztest=iaxtest+2
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
 !
           if ((ldiagnos.or.l1davgfirst).and.lsoca) then
-              call curl(f,iaxtest,btest)
-              call cross_mn(p%uu,btest,uxbtest)
+            call curl(f,iaxtest,btest)
+            call cross_mn(p%uu,btest,uxbtest)
            endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
@@ -460,7 +470,9 @@ module Testfield
         endif
       enddo
 !
-    endsubroutine daatest_dt
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_testfield
 !***********************************************************************
     subroutine get_slices_testfield(f,slices)
 ! 
@@ -492,10 +504,8 @@ module Testfield
 !
 !  21-jan-06/axel: coded
 !
-      use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       type (pencil_case) :: p
@@ -567,7 +577,6 @@ module Testfield
 !
 !  18-may-08/axel: rewrite from rescaling as used in magnetic
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -614,7 +623,6 @@ module Testfield
 !
 !   3-jun-05/axel: coded
 !
-      use Cdata
       use Sub
 !
       real, dimension (nx,3) :: bbtest
@@ -658,7 +666,6 @@ module Testfield
 !
 !  10-jun-05/axel: adapted from set_bbtest
 !
-      use Cdata
       use Sub
 !
       real, dimension (nx,3) :: bbtest
@@ -699,7 +706,6 @@ module Testfield
 !
 !  15-jun-05/axel: adapted from set_bbtest3
 !
-      use Cdata
       use Sub
 !
       real, dimension (nx,3) :: bbtest
@@ -737,7 +743,6 @@ module Testfield
 !
 !  10-jun-05/axel: adapted from set_bbtest
 !
-      use Cdata
       use Sub
 !
       real, dimension (nx,3) :: bbtest
@@ -777,7 +782,6 @@ module Testfield
 !
 !   3-jun-05/axel: adapted from rprint_magnetic
 !
-      use Cdata
       use Diagnostics
 !
       integer :: iname,inamez,inamexz
