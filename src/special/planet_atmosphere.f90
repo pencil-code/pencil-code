@@ -48,6 +48,7 @@ module Special
 ! Run parameters
 !
   real :: tau_slow_heating=-1.
+  real :: Bext_dipole=0.
 !
 !
 !
@@ -56,7 +57,7 @@ module Special
       pradtop,pradbot
 !
   namelist /special_run_pars/ &
-      tau_slow_heating
+      tau_slow_heating,Bext_dipole
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -176,6 +177,7 @@ module Special
 !
     lpenc_requested(i_rho)=.true.
     lpenc_requested(i_pp)=.true.
+    lpenc_requested(i_uu)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -408,7 +410,6 @@ module Special
     subroutine special_calc_energy(f,df,p)
 !
 !  08-sep-23/hongzhe: specific things for planet atmospheres.
-!                     Waiting Kuan to fill in.
 !                     Reference: Rogers & Komacek (2014)
 !  27-sep-23/hongzhe: outsourced from temperature_idealgas.f90
 !
@@ -468,26 +469,24 @@ module Special
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
 !
-!  Calculate an additional 'special' term on the right hand side of the
-!  induction equation.
+!  09-oct-23/hongzhe: add a background dipole field
 !
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
-!
-!  06-oct-03/tony: coded
+      use Sub, only: cross_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+!
+      real, dimension (nx,3) :: uxb_ext,Bdipole
+!
+!  the r,theta,phi components of the dipole filed
+!
+      Bdipole(:,1) = Bext_dipole / (x(l1:l2)**3.)
+      Bdipole(:,2) = Bext_dipole / (x(l1:l2)**3.)
+      Bdipole(:,3) = Bext_dipole / (x(l1:l2)**3.)
+!
+      call cross_mn(p%uu,Bdipole,uxb_ext)
+      df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_ext
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
