@@ -477,12 +477,13 @@ module Energy
   real, dimension(:,:), pointer :: reference_state
   !real, pointer :: rho0,cs0
 
-  real, dimension (nx) :: Hmax,ssmax,diffus_chi,diffus_chi3,cs2cool_x,chit_prof,chit_prof_fluct
+  real, dimension (nx) :: Hmax,ssmax,diffus_chi,diffus_chi3,cs2cool_x, &
+                          chit_prof,chit_prof_fluct,hcond,K_kramers
   real, dimension (nx,3) :: gss1, gss0
   integer, parameter :: prof_nz=150
   real, dimension (prof_nz) :: prof_lnT,prof_z
   logical :: lcalc_heat_cool
-  real :: tau1_cool,rho01,gamma,gamma_m1,gamma1,cv,cv1,cp1    !,lnrho0,cs20
+  real :: tau1_cool,rho01,gamma,gamma_m1,gamma1,cv,cv1,cp1,hcond_Kconst    !,lnrho0,cs20
   real, dimension(:), pointer :: beta_glnrho_scaled
 !
   contains
@@ -1310,6 +1311,8 @@ module Energy
         idiag_fradz_kramers=0; idiag_fradx_kramers=0; idiag_fradxy_kramers=0
         idiag_chikrammin=0; idiag_chikrammax=0
       endif
+
+      if (lheatc_Kconst) hcond_Kconst=merge(Kbot,Kbot/tau_diff,tau_diff==0)
 
       if (.not.(lheatc_Kprof.or.lheatc_kramers)) idiag_fturbxy=0
       if (.not.(lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers.or.lheatc_smagorinsky)) idiag_fturbz=0
@@ -3457,7 +3460,7 @@ module Energy
       type(pencil_case) :: p
 
       real, dimension(nx) :: ufpres, glnTT2, Ktmp
-      real, dimension(nx) :: gT2,gs2,gTxgs2
+      real, dimension(nx) :: gT2,gs2,gTxgs2,chix
       real, dimension(nx,3) :: gTxgs
       real :: uT,fradz,TTtop
       integer :: i
@@ -3584,7 +3587,14 @@ module Energy
 !  Calculate integrated temperature in limited radial range.
 !
         if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma1,idiag_TTp,p)
-
+!
+!from calc_heatcond_kramers
+        call sum_mn_name(K_kramers,idiag_Kkramersm)
+        if (idiag_chikrammax/=0 .or. idiag_chikrammin/=0) then
+          chix = p%cp1*K_kramers*p%rho1
+          call max_mn_name(chix,idiag_chikrammax)
+          if (idiag_chikrammin/=0) call max_mn_name(-chix,idiag_chikrammin,lneg=.true.)
+        endif
       endif
 
     endsubroutine calc_0d_diagnostics_energy
@@ -3722,14 +3732,11 @@ module Energy
         endif
 !
         if (idiag_fturbz>0) then
-! The following incorrect as conductivities are cumulative?
-          if (lheatc_smagorinsky) then
 ! from calc_heatcond_smagorinsky
-            call xysum_mn_name_z(-Pr_smag1*p%nu_smag*p%rho*p%TT*gss1(:,3),idiag_fturbz)
-          else
+          if (lheatc_smagorinsky) call xysum_mn_name_z(-Pr_smag1*p%nu_smag*p%rho*p%TT*gss1(:,3),idiag_fturbz)
 ! from calc_heatcond_constchi, calc_heatcond_kramers, calc_heatcond
+          if (lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers) &
             call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
-          endif
         endif
 
 ! from calc_heatcond_chit
@@ -3740,6 +3747,21 @@ module Energy
         if (idiag_fturbfz/=0) call xysum_mn_name_z(-chit_prof_fluct*p%rho*p%TT*gss1(:,3),idiag_fturbfz)
 ! from calc_heatcond_chit
         if (idiag_fturbmz/=0) call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*gss0(:,3),idiag_fturbmz)
+!
+!  Radiative flux.
+!
+! from calc_heatcond
+        if (hcond0/=0.) then 
+          if (idiag_fradz_Kprof/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
+          if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
+        endif
+! from calc_heatcond_constK
+        if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond_Kconst*p%TT*p%glnTT(:,1),idiag_fradmx)
+! from calc_heatcond_kramers
+        if (idiag_fradz_kramers/=0) call xysum_mn_name_z(-K_kramers*p%TT*p%glnTT(:,3),idiag_fradz_kramers)
+        call xysum_mn_name_z(K_kramers, idiag_Kkramersmz)
+        call yzsum_mn_name_x(K_kramers, idiag_Kkramersmx)
+        if (idiag_fradx_kramers/=0) call yzsum_mn_name_x(-K_kramers*p%rho*p%TT*p%glnTT(:,1),idiag_fradx_kramers)
 
       endif
 !
@@ -3809,21 +3831,35 @@ module Energy
 ! from calc_heatcond_chit
         if (idiag_fturbrsphmphi/=0) call phisum_mn_name_rz(-chi_t1*p%rho*(gss0(:,1)*p%evr(:,1)+ &
                                     gss0(:,2)*p%evr(:,2)+gss0(:,3)*p%evr(:,3)),idiag_fturbrsphmphi)
+! from calc_heatcond
+        if (hcond0/=0.) then 
+          if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
+          if (idiag_fradymxy_Kprof/=0) call zsum_mn_name_xy(p%glnTT,idiag_fradymxy_Kprof,(/0,1,0/),-hcond*p%TT)
+        endif
+! from calc_heatcond_constK
+        if (idiag_fradrsphmphi_Kconst/=0) &
+           call phisum_mn_name_rz(-hcond_Kconst*p%TT*(p%glnTT(:,1)*p%evr(:,1)+ &
+              p%glnTT(:,2)*p%evr(:,2)+p%glnTT(:,3)*p%evr(:,3)),idiag_fradrsphmphi_Kconst)
+
+! from calc_heatcond_kramers
+        if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-K_kramers*p%TT*p%glnTT(:,1),idiag_fradxy_kramers)
+        if (idiag_fradrsphmphi_kramers/=0) call phisum_mn_name_rz(-K_kramers*p%TT*(p%glnTT(:,1)*p%evr(:,1)+ &
+            p%glnTT(:,2)*p%evr(:,2)+p%glnTT(:,3)*p%evr(:,3)),idiag_fradrsphmphi_kramers)
 !
 !  2D averages of the baroclinic term.
 !
-         if (idiag_gTxgsxmxy/=0 .or. idiag_gTxgsx2mxy/=0 .or. &
-             idiag_gTxgsymxy/=0 .or. idiag_gTxgsy2mxy/=0 .or. &
-             idiag_gTxgszmxy/=0 .or. idiag_gTxgsz2mxy/=0) then
-           call cross(p%gTT,p%gss,gTxgs)
-           call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
-           call zsum_mn_name_xy(gTxgs,idiag_gTxgsymxy,(/0,1,0/))
-           call zsum_mn_name_xy(gTxgs,idiag_gTxgszmxy,(/0,0,1/))
-           if (idiag_gTxgsx2mxy/=0) call zsum_mn_name_xy(gTxgs(:,1)**2,idiag_gTxgsxmxy)
-           if (idiag_gTxgsy2mxy/=0) call zsum_mn_name_xy(gTxgs**2,idiag_gTxgsymxy,(/0,1,0/))
-           if (idiag_gTxgsz2mxy/=0) call zsum_mn_name_xy(gTxgs**2,idiag_gTxgszmxy,(/0,0,1/))
-         endif
-       endif
+        if (idiag_gTxgsxmxy/=0 .or. idiag_gTxgsx2mxy/=0 .or. &
+            idiag_gTxgsymxy/=0 .or. idiag_gTxgsy2mxy/=0 .or. &
+            idiag_gTxgszmxy/=0 .or. idiag_gTxgsz2mxy/=0) then
+          call cross(p%gTT,p%gss,gTxgs)
+          call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
+          call zsum_mn_name_xy(gTxgs,idiag_gTxgsymxy,(/0,1,0/))
+          call zsum_mn_name_xy(gTxgs,idiag_gTxgszmxy,(/0,0,1/))
+          if (idiag_gTxgsx2mxy/=0) call zsum_mn_name_xy(gTxgs(:,1)**2,idiag_gTxgsxmxy)
+          if (idiag_gTxgsy2mxy/=0) call zsum_mn_name_xy(gTxgs**2,idiag_gTxgsymxy,(/0,1,0/))
+          if (idiag_gTxgsz2mxy/=0) call zsum_mn_name_xy(gTxgs**2,idiag_gTxgszmxy,(/0,0,1/))
+        endif
+      endif
 
     endsubroutine calc_2d_diagnostics_energy
 !***********************************************************************
@@ -4836,20 +4872,14 @@ module Energy
 !
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: chix
-      real, dimension (nx) :: thdiff,g2
-      real, dimension (nx) :: hcond
 !
       intent(in) :: p
       intent(inout) :: df
+
+      real, dimension (nx) :: chix
+      real, dimension (nx) :: thdiff,g2
 !
 !  This particular version assumes a simple polytrope, so mpoly is known.
-!
-      if (tau_diff==0) then
-        hcond=Kbot
-      else
-        hcond=Kbot/tau_diff
-      endif
 !
       if (headtt) print*,'calc_heatcond_constK: hcond=', maxval(hcond)
 !
@@ -4871,7 +4901,7 @@ module Energy
 !
 ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
 !
-      chix = p%rho1*hcond*p%cp1
+      chix = p%rho1*hcond_Kconst*p%cp1
 !
 !  Put empirical heat transport suppression by the B-field.
 !
@@ -4881,27 +4911,13 @@ module Energy
       if (pretend_lnTT) then
         thdiff = gamma*chix * (p%del2lnTT + g2)
       else
-        thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+        thdiff = p%rho1*hcond_Kconst * (p%del2lnTT + g2)
       endif
 !
 !  Add heat conduction to entropy equation.
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
       if (headtt) print*,'calc_heatcond_constK: added thdiff'
-!
-!  1-D averages.
-!
-      if (l1davgfirst) then
-        if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
-      endif
-!
-!  2d-averages
-!
-      if (l2davgfirst) then
-         if (idiag_fradrsphmphi_Kconst/=0) &
-            call phisum_mn_name_rz(-hcond*p%TT*(p%glnTT(:,1)*p%evr(:,1)+ &
-               p%glnTT(:,2)*p%evr(:,2)+p%glnTT(:,3)*p%evr(:,3)),idiag_fradrsphmphi_Kconst)
-      endif
 !
 !  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for entropy is
@@ -5091,11 +5107,14 @@ module Energy
 !      K = K_0*(T**6.5/rho**2)**n.
 !  In reality n=1, but we may need to use n\=1 for numerical reasons.
 !
-      Krho1 = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)   ! = K/rho
+      K_kramers = hcond0_kramers*p%rho1**(2.*nkramers)*p%TT**(6.5*nkramers)
+      Krho1 = K_kramers*p%rho1   ! = K/rho
       !Krho1 = hcond0_kramers*exp(-p%lnrho*(2.*nkramers+1.)+p%lnTT*(6.5*nkramers))   ! = K/rho
       if (chimax_kramers>0.) Krho1 = max(min(Krho1,chimax_kramers/p%cp1),chimin_kramers/p%cp1)
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
       thdiff = Krho1*(p%del2lnTT+g2)
+!
+! MR: Why here? conductivities are cumulative!
 !
       if (chi_t/=0.0) then
 !
@@ -5119,41 +5138,11 @@ module Energy
 !
       if (pretend_lnTT) thdiff = p%cv1*thdiff
 !
-!  Here chix = K/(cp rho) is needed for diffus_chi calculation.
-!  and for some diagnostics
-!
-      chix = p%cp1*Krho1
-
-      if (ldiagnos.or.l1davgfirst.or.l2davgfirst) Krho1 = Krho1*p%rho      ! now Krho1=K
-
-      if (ldiagnos) then
-        call sum_mn_name(Krho1,idiag_Kkramersm)
-        call max_mn_name(chix,idiag_chikrammax)
-        if (idiag_chikrammin/=0) call max_mn_name(-chix,idiag_chikrammin,lneg=.true.)
-      endif
-!
-!  Write radiative flux array.
-!
-      if (l1davgfirst) then
-        if (idiag_fradz_kramers/=0) call xysum_mn_name_z(-Krho1*p%TT*p%glnTT(:,3),idiag_fradz_kramers)
-        call xysum_mn_name_z( Krho1, idiag_Kkramersmz)
-        call yzsum_mn_name_x( Krho1, idiag_Kkramersmx)
-        if (idiag_fradx_kramers/=0) call yzsum_mn_name_x(-Krho1*p%rho*p%TT*p%glnTT(:,1),idiag_fradx_kramers)
-      endif
-!
-!  2d-averages
-!
-      if (l2davgfirst) then
-        if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-Krho1*p%TT*p%glnTT(:,1),idiag_fradxy_kramers)
-        if (idiag_fradrsphmphi_kramers/=0) call phisum_mn_name_rz(-Krho1*p%TT*(p%glnTT(:,1)*p%evr(:,1)+ &
-            p%glnTT(:,2)*p%evr(:,2)+p%glnTT(:,3)*p%evr(:,3)),idiag_fradrsphmphi_kramers)
-      endif
-!
 !  Check for NaNs initially.
 !
       if (headt .and. (hcond0_kramers/=0.0)) then
         if (notanumber(p%rho1))   print*,'calc_heatcond_kramers: NaNs in rho1'
-        if (notanumber(chix))     print*,'calc_heatcond_kramers: NaNs in chix'
+        if (notanumber(Krho1))    print*,'calc_heatcond_kramers: NaNs in K/rho'
         if (notanumber(p%del2ss)) print*,'calc_heatcond_kramers: NaNs in del2ss'
         if (notanumber(p%TT))     print*,'calc_heatcond_kramers: NaNs in TT'
         if (notanumber(p%glnTT))  print*,'calc_heatcond_kramers: NaNs in glnT'
@@ -5183,7 +5172,7 @@ module Energy
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+(gamma*chix+chi_t)*dxyz_2
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+(p%cv1*Krho1+chi_t)*dxyz_2
 !
     endsubroutine calc_heatcond_kramers
 !***********************************************************************
@@ -5309,7 +5298,6 @@ module Energy
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2,del2ss1
       real, dimension (nx) :: glnrhoglnT
-      real, dimension (nx) :: hcond
       real, dimension (nx,3) :: gradchit_prof
       real, dimension (nx,3,3) :: tmp
       !real, save :: z_prev=-1.23e20
@@ -5357,19 +5345,6 @@ module Energy
 ! than the ones above.
 !      if (lgravz) call write_zprof('hcond',hcond)
 !
-!  Write radiative flux array.
-!
-        if (l1davgfirst) then
-          if (idiag_fradz_Kprof/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
-          if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
-        endif
-!
-!  2d-averages
-!
-        if (l2davgfirst) then
-          if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
-          if (idiag_fradymxy_Kprof/=0) call zsum_mn_name_xy(p%glnTT,idiag_fradymxy_Kprof,(/0,1,0/),-hcond*p%TT)
-        endif
       endif  ! hcond0/=0.
 !
 !  "Turbulent" entropy diffusion.
@@ -7125,7 +7100,7 @@ module Energy
       use Gravity, only: z1, z2
       use Sub, only: step,der_step
 !
-      if (.not.lmultilayer) call fatal_error('get_gravz_heatcond:', &
+      if (.not.lmultilayer) call fatal_error('get_gravz_heatcond', &
            "don't call if you have only one layer")
 !
       if (.not.allocated(hcond_prof)) allocate(hcond_prof(nz),dlnhcond_prof(nz))
@@ -7157,7 +7132,7 @@ module Energy
       real, dimension (nx) :: dTTdxc,mpoly_xprof,dmpoly_dx
       real :: Lum
 !
-      if (.not.lmultilayer) call fatal_error('get_gravx_heatcond: ', &
+      if (.not.lmultilayer) call fatal_error('get_gravx_heatcond', &
            "don't call if you have only one layer")
 
       !!call get_shared_variable('xb',xb, caller='get_gravx_heatcond')
