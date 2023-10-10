@@ -44,7 +44,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3); jj(3)
+! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; uxb(3); jj(3)
 ! PENCILS PROVIDED el(3); e2; a2; b2; bf2
 ! PENCILS PROVIDED aa(3); diva; del2a(3); aij(3,3); bunit(3); va2
 !
@@ -176,12 +176,12 @@ module Magnetic
   integer :: iakx, iaky, iakz, iakxim, iakyim, iakzim
   integer :: iekx, ieky, iekz, iekxim, iekyim, iekzim
   integer, parameter :: nk=nxgrid/2
-  type, public :: magpectra
+  type :: magspectra
     real, dimension(nk) :: mag   ,ele
     real, dimension(nk) :: maghel,elehel
-  endtype magpectra
+  endtype magspectra
 
-  type(magpectra) :: spectra
+  type(magspectra) :: spectra
 
   contains
 !***********************************************************************
@@ -257,8 +257,7 @@ module Magnetic
         case ('1'); c_light2=1.
         case ('cgs'); c_light2=c_light_cgs**2
         case default
-          call fatal_error("initialize_magnetic: No such value for cc_light:" &
-              ,trim(cc_light))
+          call fatal_error("initialize_magnetic","no such cc_light: "//trim(cc_light))
       endselect
       if (headt) print*,'c_light2=',c_light2
 !
@@ -287,7 +286,7 @@ module Magnetic
 !
       if (lpolarization_basis) then
         allocate(epol(nx,ny,nz,3),stat=stat)
-        if (stat>0) call fatal_error('initialize_magnetic','Could not allocate memory for epol')
+        if (stat>0) call fatal_error('initialize_magnetic','could not allocate epol')
         do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
@@ -420,8 +419,7 @@ module Magnetic
             lremain_in_fourier=.true.)
         case ('Alfven-x'); call alfvenk_x(amplaa,f,iuu,iaak,kx_aa)
         case default
-          call fatal_error("init_magnetic: No such value for initaak:" &
-              ,trim(initaak))
+          call fatal_error("init_magnetic","no such initaak: "//trim(initaak))
       endselect
 !
 !  initial condition for eek
@@ -463,11 +461,10 @@ module Magnetic
               enddo
             enddo
           enddo
-        case ('powerlow??>')
+        case ('powerlaw??>')
           !call powerlaw ...
         case default
-          call fatal_error("init_magnetic: No such value for initeek:" &
-              ,trim(initeek))
+          call fatal_error("init_magnetic","no such initeek: "//trim(initeek))
       endselect
 !
     endsubroutine init_aa
@@ -519,11 +516,8 @@ module Magnetic
 !  06-oct-03/tony: coded
 !  07-feb-18/axel: added nscale_factor=0 (no expansion), =.5 (radiation era)
 !
-      use Diagnostics
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real :: scale_factor, stress_prefactor2, fac_stress_comp
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -532,30 +526,25 @@ module Magnetic
 !  Identify module and boundary conditions.
 !
       if (lfirst) then
-        if (headtt.or.ldebug) print*,'daa_dt: SOLVE daa_dt using aak and eek'
+        if (headtt.or.ldebug) print*,'daa_dt: SOLVE daa_dt using aak and eek in 1st substep'
+
+        call calc_diagnostics_magnetic(f,p)
+
+      else
+        if (headtt.or.ldebug) print*,'daa_dt: DONT SOLVE aa_dt in other substeps'
+      endif
 !
-!  Choice of conductivity profiles.
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(f,df)
+
+    endsubroutine daa_dt
+!***********************************************************************
+    subroutine calc_diagnostics_magnetic(f,p)
 !
-      select case (conductivity)
-        case ('const')
-          if (headtt.or.ldebug) print*,'sigma=const=',sigma
-!
-!  Time-dependent profile for sigma.
-!
-        case ('t-dep')
-          if (t<=t1_sigma) then
-            sigma=sigma_t1
-          elseif (t<=t2_sigma) then
-            sigma=sigma_t1+(sigma_t2-sigma_t1)*(t-t1_sigma)/(t2_sigma-t1_sigma)
-          else
-            sigma=sigma_t2
-          endif
-!
-!  Default.
-!
-        case default
-          call fatal_error("daa_dt: No such value for conductivity:",trim(conductivity))
-      endselect
+      use Diagnostics
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
 !
 !  diagnostics
 !
@@ -579,36 +568,22 @@ module Magnetic
               f(l1:l2,m,n,iakxim)**2+f(l1:l2,m,n,iakyim)**2+f(l1:l2,m,n,iakzim)**2 &
                                               )*nwgrid,idiag_aa2m)
         endif
-          if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
-          call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
-          call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
-          call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
-          call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
-          call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
-          call sum_mn_name(p%bf2,idiag_bfrms,lsqrt=.true.)
+
+        if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
+        call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
+        call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
+        call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
+        call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
+        if (idiag_EEEM/=0) call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
+        call sum_mn_name(p%bf2,idiag_bfrms,lsqrt=.true.)
 !
-          if (lproc_pt.and.m==mpoint.and.n==npoint) then
-            if (idiag_akxpt/=0) call save_name(f(lpoint,m,n,iakx),idiag_akxpt)
-            if (idiag_ekxpt/=0) call save_name(f(lpoint,m,n,iekx),idiag_ekxpt)
-            if (idiag_sigma/=0) call save_name(sigma,idiag_sigma)
-          endif
+        if (lproc_pt.and.m==mpoint.and.n==npoint) then
+          if (idiag_akxpt/=0) call save_name(f(lpoint,m,n,iakx),idiag_akxpt)
+          if (idiag_ekxpt/=0) call save_name(f(lpoint,m,n,iekx),idiag_ekxpt)
+          if (idiag_sigma/=0) call save_name(sigma,idiag_sigma)
         endif
-      else
-        if (headtt.or.ldebug) print*,'daa_dt: DONT SOLVE aa_dt'
       endif
 !
-    endsubroutine daa_dt
-!***********************************************************************
-    subroutine calc_diagnostics_magnetic(f,p)
-!
-!  Dummy routine
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      intent(in) :: f, p
-!
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
     endsubroutine calc_diagnostics_magnetic
@@ -775,6 +750,29 @@ module Magnetic
 !  07-aug-17/axel: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
+      if (lfirst) then
+!
+!  Choice of conductivity profiles.
+!
+        select case (conductivity)
+          case ('const')
+            if (headtt.or.ldebug) print*,'sigma=const=',sigma
+!
+!  Time-dependent profile for sigma.
+!
+          case ('t-dep')
+            if (t<=t1_sigma) then
+              sigma=sigma_t1
+            elseif (t<=t2_sigma) then
+              sigma=sigma_t1+(sigma_t2-sigma_t1)*(t-t1_sigma)/(t2_sigma-t1_sigma)
+            else
+              sigma=sigma_t2
+            endif
+!
+          case default; call fatal_error('daa_dt','no such conductivity: '//trim(conductivity))
+        endselect
+      endif
 !
     endsubroutine magnetic_after_boundary
 !***********************************************************************
@@ -903,7 +901,7 @@ module Magnetic
       select case(kind)
       case ('mag'); spectrum=spectra%mag; spectrum_hel=spectra%maghel
       case ('ele'); spectrum=spectra%ele; spectrum_hel=spectra%elehel
-      case default; if (lroot) call warning('magnetic_calc_spectra', &
+      case default; call warning('magnetic_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
       endselect
 !
@@ -933,7 +931,7 @@ module Magnetic
       select case(kindstr)
       case ('mag'); spectrum=spectra%mag; spectrum_hel=spectra%maghel
       case ('ele'); spectrum=spectra%ele; spectrum_hel=spectra%elehel
-      case default; if (lroot) call warning('magnetic_calc_spectra', &
+      case default; call warning('magnetic_calc_spectra', &
                       'kind of spectrum "'//kindstr//'" not implemented')
       endselect
 
@@ -969,10 +967,10 @@ module Magnetic
 !  Allocate memory for arrays.
 !
       allocate(bbkre(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate memory for bbkre')
+      if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate bbkre')
 !
       allocate(bbkim(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate memory for bbkim')
+      if (stat>0) call fatal_error('compute_bb_from_aak_and_eek','Could not allocate bbkim')
 !
 !  Compute electromotive force in real space, and go then to Fourier space.
 !  We use the temporary variables bbkre,bbkim for this.
@@ -1034,8 +1032,8 @@ module Magnetic
 !
               if (lbeta_inflation) then
                 if (lpolarization_basis) then
-                  ksqr_eff=ksqr-quench*(beta2_inflation/(t+1.)**2 &
-                    -2.*ksign*k*beta1_inflation/(t+1.))
+                  ksqr_eff= ksqr-quench*(beta2_inflation/(t+1.)**2 &
+                           -2.*ksign*k*beta1_inflation/(t+1.))
                 else
                   ksqr_eff=ksqr-quench*beta2_inflation/(t+1.)**2
                 endif
@@ -1396,6 +1394,7 @@ module Magnetic
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(quench)
       call keep_compiler_quiet(task)
+!
       call fatal_error('bdry_magnetic','not to be called w/o B-field')
 !
     endsubroutine bdry_magnetic
