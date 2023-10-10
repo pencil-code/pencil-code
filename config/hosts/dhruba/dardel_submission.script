@@ -1,0 +1,30 @@
+#!/bin/bash -l
+#The -l above is required to get the full environment with modules
+
+#SBATCH -A naiss2023-5-318 
+
+# The name of the script is myjob
+#SBATCH -J conv-slab 
+
+#SBATCH -t 00:05:00
+
+# Number of nodes
+#SBATCH -p shared
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=2
+# files for error and output 
+#SBATCH -e error.o
+#SBATCH -o error.o
+
+##module swap PrgEnv-cray/8.3.3 PrgEnv-gnu/8.3.3
+#cat $HOME/.cshrc
+##source /opt/cray/pe/cpe/22.06/restore_lmod_system_defaults.csh
+##echo 'sourcing .cshrc'
+#source $HOME/.cshrc
+#setenv PENCIL_HOME /cfs/klemming/projects/snic/snic2020-4-18/dmitra/pencil-code/
+#alias phome 'cd $PENCIL_HOME; source $PENCIL_HOME/sourceme.csh'
+set _sourceme_quiet; source $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
+pwd
+echo $path
+pc_start
+pc_run
