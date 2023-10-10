@@ -877,11 +877,9 @@ module Particles_main
 !
     endsubroutine particles_pde_pencil
 !***********************************************************************
-    subroutine particles_calc_pencil_diags(fp,p,ineargrid)
+    subroutine particles_calc_pencil_diags(p)
 
-      real, dimension (mpar_loc,mparray) :: fp
       type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
 
       if (lparticles)             call calc_diagnostics_particles(fp,p,ineargrid)
       if (lparticles_selfgravity) call calc_diagnostics_particles_selg(p)
