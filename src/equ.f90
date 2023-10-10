@@ -529,17 +529,29 @@ module Equ
 !
 !   25-aug-23/TP: refactored from calc_all_module_diagnostics
 !
+      use Ascalar, only: calc_diagnostics_ascalar
+      use Chemistry, only: calc_diagnostics_chemistry
+      use Chiral, only: calc_diagnostics_chiral
+      use Cosmicray, only: calc_diagnostics_cosmicray
       use Density, only: calc_diagnostics_density
       use Dustvelocity, only: calc_diagnostics_dustvelocity
       use Energy, only: calc_diagnostics_energy
       use Forcing, only: calc_diagnostics_forcing
+      use Gravity, only: calc_diagnostics_gravity
       use Hydro, only: calc_diagnostics_hydro
+      use Interstellar, only: calc_diagnostics_interstellar
+      use Lorenz_gauge, only: calc_diagnostics_lorenz_gauge
       use Magnetic, only: calc_diagnostics_magnetic
       use NeutralDensity, only: calc_diagnostics_neutraldens
       use NeutralVelocity, only: calc_diagnostics_neutralvel
+      use Polymer, only: calc_diagnostics_polymer
       use Pscalar, only: calc_diagnostics_pscalar
+      use Selfgravity, only: calc_diagnostics_selfgrav
+      use Shear, only: calc_diagnostics_shear
       use Shock, only: calc_diagnostics_shock
+      use Solid_cells, only: calc_diagnostics_solid
       use Viscosity, only: calc_diagnostics_viscosity
+      
       use Diagnostics, only: prep_finalize_thread_diagnos
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
