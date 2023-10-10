@@ -195,12 +195,58 @@ module Magnetic_meanfield
 !
 !  Identify version number.
 !
+      use SharedVariables, only: put_shared_variable
+
       if (lroot) call svn_id( &
           "$Id$")
 !
 !  Register secondary mean-field modules.
 !
       if (lmagn_mf_demfdt) call register_magn_mf_demfdt()
+!
+!  if meanfield theory is invoked, we want to send meanfield_etat to
+!  other subroutines
+!
+      if (lrun) then
+        call put_shared_variable('meanfield_etat',meanfield_etat,caller='initialize_magn_mf')
+!
+!  Quenching parameters: lmeanfield_chitB and chi_t0.
+!
+        call put_shared_variable('lmeanfield_chitB',lmeanfield_chitB)
+        if (lmeanfield_chitB) call put_shared_variable('chi_t0',chi_t0)
+!
+!  chit_quenching for flux boundary condition
+!
+        !dummy=meanfield_Beq_profile
+        !call put_shared_variable('meanfield_Beq_profile',dummy)
+        call put_shared_variable('meanfield_Beq',meanfield_Beq)
+        call put_shared_variable('chit_quenching',chit_quenching)
+        call put_shared_variable('uturb',uturb)
+!
+      endif
+!
+!  share etat profile with viscosity module
+!
+      if (meanfield_etat/=0.0.and.lviscosity) then
+        call put_shared_variable('etat_x',etat_x)
+        call put_shared_variable('etat_y',etat_y)
+        call put_shared_variable('etat_z',etat_z)
+        call put_shared_variable('detat_x',detat_x)
+        call put_shared_variable('detat_y',detat_y)
+        call put_shared_variable('detat_z',detat_z)
+      endif
+!
+!  Initialize secondary mean-field modules:
+!
+      if (lmagn_mf_demfdt .or. lalpm .or. lalpm_alternate ) then
+        call put_shared_variable('kf_x',kf_x)
+        call put_shared_variable('kf_y',kf_y)
+        call put_shared_variable('kf_z',kf_z)
+        call put_shared_variable('kf_x1',kf_x1)
+        call put_shared_variable('etat_x',etat_x)
+        call put_shared_variable('etat_y',etat_y)
+        call put_shared_variable('etat_z',etat_z)
+      endif
 !
     endsubroutine register_magn_mf
 !***********************************************************************
@@ -211,8 +257,7 @@ module Magnetic_meanfield
 !  20-may-03/axel: reinitialize_aa added
 !
       use Sub, only: erfunc
-      use Mpicomm, only: stop_it
-      use SharedVariables, only: put_shared_variable, get_shared_variable
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp
@@ -347,28 +392,6 @@ module Magnetic_meanfield
         rhs_termz=.25*rhs_term_amplz*(.75-(1.-.25*x(l1:l2)**2)*x(l1:l2)**2)
       endif
 !
-!  if meanfield theory is invoked, we want to send meanfield_etat to
-!  other subroutines
-!
-      !if (lmagn_mf .and. lrun) then
-      if (lrun) then
-        call put_shared_variable('meanfield_etat',meanfield_etat,caller='initialize_magn_mf')
-!
-!  Quenching parameters: lmeanfield_chitB and chi_t0.
-!
-        call put_shared_variable('lmeanfield_chitB',lmeanfield_chitB)
-        if (lmeanfield_chitB) call put_shared_variable('chi_t0',chi_t0)
-!
-!  chit_quenching for flux boundary condition
-!
-        !dummy=meanfield_Beq_profile
-        !call put_shared_variable('meanfield_Beq_profile',dummy)
-        call put_shared_variable('meanfield_Beq',meanfield_Beq)
-        call put_shared_variable('chit_quenching',chit_quenching)
-        call put_shared_variable('uturb',uturb)
-!
-      endif
-!
 !  Compute etat profile and share with other routines.
 !  Here we also set the etat_i and getat_i profiles.
 !
@@ -500,18 +523,10 @@ module Magnetic_meanfield
           detat_z= 0.
         case default;
           call inevitably_fatal_error('initialize_magnetic', &
-          'no such meanfield_etat_profile profile')
+          'no such meanfield_etat_profile: '//trim(meanfield_etat_profile))
         endselect
 !
-!  share etat profile with viscosity module
-!
         if (lviscosity) then
-          call put_shared_variable('etat_x',etat_x)
-          call put_shared_variable('etat_y',etat_y)
-          call put_shared_variable('etat_z',etat_z)
-          call put_shared_variable('detat_x',detat_x)
-          call put_shared_variable('detat_y',detat_y)
-          call put_shared_variable('detat_z',detat_z)
           print*,'ipz,z(n),etat_z(n),detat_z(n)'
           do n=n1,n2
             print*,ipz,z(n),etat_z(n),detat_z(n)
@@ -583,18 +598,7 @@ module Magnetic_meanfield
 !       if (.not.lweyl_gauge) call get_shared_variable('eta',eta)
       endif
 !
-!  Initialize secondary mean-field modules:
-!
-      if (lmagn_mf_demfdt .or. lalpm .or. lalpm_alternate ) then
-        call put_shared_variable('kf_x',kf_x)
-        call put_shared_variable('kf_y',kf_y)
-        call put_shared_variable('kf_z',kf_z)
-        call put_shared_variable('kf_x1',kf_x1)
-        call put_shared_variable('etat_x',etat_x)
-        call put_shared_variable('etat_y',etat_y)
-        call put_shared_variable('etat_z',etat_z)
-        call initialize_magn_mf_demfdt(f)
-      endif
+      if (lmagn_mf_demfdt .or. lalpm .or. lalpm_alternate) call initialize_magn_mf_demfdt(f)
 !
 !  compute GW tensor
 !
@@ -1603,8 +1607,6 @@ endif
 !
 !  27-jul-10/axel: coded
 !
-      use Diagnostics
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1678,13 +1680,28 @@ if (ip<10) print*,'AXEL3, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
         df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)+rhs_termz
       endif
 !
+!  Time-advance of secondary mean-field modules.
+!
+      if (lmagn_mf_demfdt) call demf_dt_meanfield(f,df,p)
+!
+      call calc_diagnostics_meanfield(f,p)
+!
+    endsubroutine daa_dt_meanfield
+!***********************************************************************
+    subroutine calc_diagnostics_meanfield(f,p)
+!
 !  Calculate diagnostic quantities.
 !  Diagnostic output for mean field dynamos.
+!
+      use Diagnostics
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
 !
       if (ldiagnos) then
         if (idiag_EMFdotBm/=0) call sum_mn_name(p%mf_EMFdotB,idiag_EMFdotBm)
         if (idiag_EMFdotB_int/=0) call integrate_mn_name(p%mf_EMFdotB,idiag_EMFdotB_int)
-      endif ! endif (ldiagnos)
+      endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -1702,9 +1719,7 @@ if (ip<10) print*,'AXEL3, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
 !  only makes sense for the 'uturbconst' profile
 !
       if (l2davgfirst) then
-        if (idiag_peffmxz/=0)  then
-          call ysum_mn_name_xz(.5*(1.-p%mf_qp)*p%b2*p%mf_Beq21,idiag_peffmxz)
-        endif
+        if (idiag_peffmxz/=0) call ysum_mn_name_xz(.5*(1.-p%mf_qp)*p%b2*p%mf_Beq21,idiag_peffmxz)
       endif
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
@@ -1720,11 +1735,11 @@ if (ip<10) print*,'AXEL3, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
 !       endif
 !     endif
 !
-!  Time-advance of secondary mean-field modules.
+!  Diagnostics of secondary mean-field modules.
 !
-      if (lmagn_mf_demfdt) call demf_dt_meanfield(f,df,p)
+      if (lmagn_mf_demfdt) call calc_diagnostics_dt_meanfield(f)
 !
-    endsubroutine daa_dt_meanfield
+    endsubroutine  calc_diagnostics_meanfield
 !***********************************************************************
     subroutine meanfield_chitB(rho,b2,quench)
 !

@@ -5752,6 +5752,8 @@ module Magnetic
 !
       endif
 
+      call calc_diagnostics_meanfield(f,p)
+
     endsubroutine calc_diagnostics_magnetic
 !******************************************************************************
     subroutine calc_0d_diagnostics_magnetic(f,p)
