@@ -1,0 +1,22 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for a inflationary setup
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2021/05/30 06:57:57 brandenb Exp $'
+  unit_system='set'
+  lwrite_aux=T
+  lwrite_ic=F
+  tstart=-.9
+  wav1=1.
+/
+&magnetic_init_pars
+  initaak='power_randomphase_hel', amplaa=3e-17,, relhel_aa=0. !(gives EEEM=)
+  initpower_aa=1., lscale_tobox=F
+  kpeak_aa=141., initpower2_aa=-31.4  !(corresponds to -(4*beta+2) with beta=6.8.
+  lpolarization_basis=T, laa_as_aux=T
+  initeek='ikA'
+/
+&special_init_pars
+  lreal_space_hTX_as_aux=T, lreal_space_gTX_as_aux=T
+/
