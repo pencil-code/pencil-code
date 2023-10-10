@@ -412,7 +412,6 @@ program run
 !  (must be done before need_XXXX can be used, for example)
 !
   call initialize_timestep
-if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
   call initialize_modules(f)
   call initialize_boundcond
 !
@@ -770,6 +769,9 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
     if (ialive /= 0) then
       if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
     endif
+!
+!$omp task
+!$  lwriting_snapshots = .true.
     if (lparticles) call write_snapshot_particles(f,ENUM=.true.)
     if (lpointmasses) call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
 !
@@ -779,6 +781,8 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
     if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
+!$  lwriting_snapshots = .false.
+!$omp end task
 !
 !   Diagnostic output in concurrent thread.
 !
@@ -857,9 +861,8 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
 !  Save global variables.
 !
     if (isaveglobal/=0) then
-      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) then
+      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) &
         call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
-      endif
     endif
 !
 !  Do exit when timestep has become too short.

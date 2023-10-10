@@ -792,6 +792,10 @@ module Cdata
 !  or not the chiral MHD special module is used.
 !
   real :: lambda5 = 0.0
+! 
+!  Variables for concurrency
+! 
+  logical :: lwriting_snapshots=.false.
 !
 ! threadprivate definitions for OpenMP
 !
