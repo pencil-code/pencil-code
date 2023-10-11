@@ -40,7 +40,7 @@ module Special
 ! Init parameters
 !
   real :: lon_ss=0., lat_ss=0.  ! unit: [degree]
-  real :: Tbot=0., Ttop=100., dTeqbot=0., dTeqtop=100.  ! unit: [K]
+  real :: dTeqbot=0., dTeqtop=100.  ! unit: [K]
   real :: peqtop=1.d2, peqbot=1.d6  ! unit: [Pa]
   real :: tauradtop=1.d4, tauradbot=1.d7  ! unit: [s]
   real :: pradtop=1.d3, pradbot=1.d6 ! unit:[ Pa]
@@ -53,8 +53,8 @@ module Special
 !
 !
   namelist /special_init_pars/ &
-      lon_ss,lat_ss,Tbot,Ttop,peqtop,peqbot,tauradtop,tauradbot,&
-      pradtop,pradbot
+      lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
+      pradtop,pradbot,dTeqbot,dTeqtop
 !
   namelist /special_run_pars/ &
       tau_slow_heating,Bext_dipole
