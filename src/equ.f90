@@ -489,6 +489,7 @@ module Equ
 !
 !  10-sep-2019/MR: coded
 !
+      use Cosmicray, only: calc_diagnostics_cosmicray
       use Density, only: calc_diagnostics_density
       use Dustvelocity, only: calc_diagnostics_dustvelocity
       use Energy, only: calc_diagnostics_energy
@@ -530,6 +531,8 @@ module Equ
         endif
 
         call calc_all_pencils(f,p)
+
+        call calc_diagnostics_cosmicray(p)
         call calc_diagnostics_density(f,p)
         call calc_diagnostics_dustvelocity(p)
         call calc_diagnostics_energy(f,p)
@@ -849,10 +852,6 @@ module Equ
 !
         if (lchiral) call dXY_chiral_dt(f,df,p)
 !
-!  Evolution of radiative energy
-!
-        if (lradiation_fld) call de_dt(f,df,p)
-!
 !  Evolution of chemical species
 !
         if (lchemistry) call dchemistry_dt(f,df,p)
@@ -871,10 +870,7 @@ module Equ
 !
 !  Add radiative cooling and radiative pressure (for ray method)
 !
-        if (lradiation_ray.and.lenergy) then
-          call radiative_cooling(f,df,p)
-          call radiative_pressure(f,df,p)
-        endif
+        if (lradiation_ray.and.lenergy) dradiation_dt(f,df,p)
 !
 !  Find diagnostics related to solid cells (e.g. drag and lift).
 !  Integrating to the full result is done after loops over m and n.
