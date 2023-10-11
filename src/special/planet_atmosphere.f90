@@ -29,7 +29,7 @@ module Special
   real, dimension(my,mz) :: mu_ss=0.
   real, dimension(my) :: lat
   real, dimension(mz) :: lon
-  real :: pp2Pa=1., TT2K=1.  !  convert pc units to [Pa] and [K]
+  real :: pp2Pa=1., TT2K=1., tt2s=1.  !  convert pc units to [Pa] and [K] and [s]
 !
 ! variables in the reference profile
 !
@@ -54,7 +54,7 @@ module Special
 !
   namelist /special_init_pars/ &
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
-      pradtop,pradbot,dTeqbot,dTeqtop
+      pradtop,pradbot,dTeqbot,dTeqtop,pp2Pa,TT2K,tt2s
 !
   namelist /special_run_pars/ &
       tau_slow_heating,Bext_dipole
@@ -461,7 +461,7 @@ module Special
         f_slow_heating = 1.
       endif
   !
-      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - f_slow_heating*(p%TT-Teq_x/TT2K)/tau_rad_x
+      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - f_slow_heating*(p%TT-Teq_x/TT2K)/(tau_rad_x/tt2s)
 !
       deallocate(Teq_local)
 !
@@ -709,17 +709,17 @@ module Special
 !
 !  28-sep-23/hongzhe: coded
 !
-      use EquationOfState, only: getmu
+ !     use EquationOfState, only: getmu
 !
-      real :: mu  !  mean molecular weight
+!      real :: mu  !  mean molecular weight
 !
-      call getmu(mu_tmp=mu)
+!      call getmu(mu_tmp=mu)
 !
       if (unit_system=='SI') then
         ! %HZ: need to code correctly!!
         ! m_u is atomic mass unit, not mean molecular weight
-        pp2Pa=k_B_cgs/m_u_cgs*1.0e-4/mu*unit_density*unit_temperature
-        TT2K=1.*unit_temperature
+        !pp2Pa=k_B_cgs/m_u_cgs*1.0e-4/mu*unit_density*unit_temperature
+        !TT2K=1.*unit_temperature
       else
         call fatal_error('prepare_unit_conversion','please use SI system')
       endif
