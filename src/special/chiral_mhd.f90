@@ -125,6 +125,7 @@ module Special
    logical :: ldt_chiral_mhd=.true., ldiffmu5_tdep=.false.
    logical :: reinitialize_mu5=.false.
    logical :: lupw_mu5=.false., lupw_muS=.false.
+   real :: widthmu5=0.5, widthmuS=0.5
 !
   character (len=labellen) :: initspecial='nothing'
   character (len=labellen) :: gammaf5_tdep='const'
@@ -137,7 +138,7 @@ module Special
       coef_muS, coef_mu5, initpower_mu5, cutoff_mu5, &
       initpower_muS, cutoff_muS, lremove_mean_mu5, lremove_mean_muS, &
       kgaussian_mu5, kpeak_mu5, kgaussian_muS, kpeak_muS, &
-      radius_mu5, sigma_mu5
+      radius_mu5, sigma_mu5, widthmu5, widthmuS
 !
   namelist /special_run_pars/ &
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, ldt_chiral_mhd, &
@@ -326,6 +327,10 @@ module Special
         case ('mu5const-muSsin')
           f(:,:,:,imu5) = mu5_const
           if (lmuS) call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
+!
+        case ('hatwave-x')
+          call hatwave(amplmu5,f,imu5,widthmu5,kx=kx_mu5)
+          if (lmuS) call hatwave(amplmuS,f,imuS,widthmuS,kx=kx_muS)
 !
         case ('power_randomphase')
           call power_randomphase(amplmu5,initpower_mu5,kgaussian_mu5,kpeak_mu5,cutoff_mu5,&
