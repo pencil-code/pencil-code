@@ -136,9 +136,7 @@ module Radiation
 !
     endsubroutine calc_pencils_radiation
 !***********************************************************************
-   subroutine de_dt(f,df,p)
-!
-!  15-jul-2002/nils: dummy routine
+   subroutine dradiation_dt(f,df,p)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -146,8 +144,8 @@ module Radiation
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-!
-    endsubroutine de_dt
+
+    endsubroutine dradiation_dt
 !***********************************************************************
     subroutine read_radiation_init_pars(iostat)
 !
