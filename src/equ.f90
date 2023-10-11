@@ -870,7 +870,7 @@ module Equ
 !
 !  Add radiative cooling and radiative pressure (for ray method)
 !
-        if (lradiation_ray.and.lenergy) dradiation_dt(f,df,p)
+        if (lradiation_ray.and.lenergy) call dradiation_dt(f,df,p)
 !
 !  Find diagnostics related to solid cells (e.g. drag and lift).
 !  Integrating to the full result is done after loops over m and n.
