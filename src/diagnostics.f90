@@ -365,7 +365,7 @@ module Diagnostics
       character(LEN=512) :: text
       character(LEN=512) :: sedstring
 
-      sedstring=''
+      sedstring=''   !H;1h;$!d;x; '
       text='WARNING:'; ind=-1
       do i=1,len
         if (cname(i)/=''.and.cform(i)=='') then
@@ -689,7 +689,7 @@ module Diagnostics
 !
       real, dimension (nlname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
       real :: vol
-      integer :: iname, imax_count, isum_count, nmax_count, nsum_count, itype
+      integer :: iname, imax_count, isum_count, nmax_count, nsum_count, itype, maxreq
       logical :: lweight_comm, lalways
       integer, parameter :: lun=1
       character (len=fnlen) :: datadir='data',path=''
@@ -745,8 +745,9 @@ module Diagnostics
 !  Communicate over all processors.
 !
       call mpireduce_max(fmax_tmp,fmax,nmax_count,MPI_COMM_WORLD)
-      call mpireduce_sum(fsum_tmp,fsum,nsum_count,comm=MPI_COMM_WORLD)    ! wrong for Yin-Yang due to overlap
+      call mpireduce_sum(fsum_tmp,fsum,nsum_count,comm=MPI_COMM_WORLD)  !,nonblock=maxreq)        ! wrong for Yin-Yang due to overlap
       if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count,comm=MPI_COMM_WORLD)!   ~
+      !call mpiwait(maxreq)
 !
 !  The result is present only on the root processor.
 !
@@ -1807,10 +1808,10 @@ module Diagnostics
 !
       use Cdata, only: fname
 !
-      real, dimension(nx), intent(IN) :: a
-      integer,             intent(IN) :: iname
-      integer, optional,   intent(IN) :: ipart
-      logical, optional,   intent(IN) :: lsqrt, llog10, lint, lplain
+      real, dimension(:), intent(IN) :: a
+      integer,            intent(IN) :: iname
+      integer, optional,  intent(IN) :: ipart
+      logical, optional,  intent(IN) :: lsqrt, llog10, lint, lplain
 
       call sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart,lplain)
 
@@ -1839,7 +1840,7 @@ module Diagnostics
 !
       use Yinyang, only: in_overlap_mask
 
-      real, dimension(nx) :: a,a_scaled
+      real, dimension(:) :: a
       real, dimension(nname) :: fname
 !
       real :: ppart,qpart
@@ -1849,6 +1850,7 @@ module Diagnostics
 !
       intent(in) :: iname
 
+      real, dimension(size(a)) :: a_scaled
 !
 !  Only do something if iname is not zero.
 !

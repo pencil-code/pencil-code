@@ -487,7 +487,6 @@ module Energy
   real, dimension(:), pointer :: beta_glnrho_scaled
 !
   contains
-!
 !***********************************************************************
     subroutine register_energy
 !
@@ -787,7 +786,7 @@ module Energy
 !
           if (Fbot==impossible) then
             if (bcz12(iss,1)=='c1') then
-              Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
+              Fbot=-gamma/(gamma_m1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, 'initialize_energy: Calculated Fbot = ', Fbot
             else
               Fbot=0.
@@ -804,7 +803,7 @@ module Energy
 !
           if (Ftop==impossible) then
             if (bcz12(iss,2)=='c1') then
-              Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
+              Ftop=-gamma/(gamma_m1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, 'initialize_energy: Calculated Ftop = ',Ftop
             else
               Ftop=0.
@@ -827,7 +826,7 @@ module Energy
 !
           if (Fbot==impossible) then
             if (bcz12(iss,1)=='c1') then
-              Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
+              Fbot=-gamma/(gamma_m1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, 'initialize_energy: Calculated Fbot = ', Fbot
 !
               Kbot=gamma_m1/gamma*(mpoly+1.)*Fbot
@@ -855,7 +854,7 @@ module Energy
 !
           if (Ftop==impossible) then
             if (bcz12(iss,2)=='c1') then
-              Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
+              Ftop=-gamma/(gamma_m1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, 'initialize_energy: Calculated Ftop = ', Ftop
               Ktop=gamma_m1/gamma*(mpoly+1.)*Ftop
               FtopKtop=gamma/gamma_m1/(mpoly+1.)
@@ -1405,7 +1404,7 @@ module Energy
 !
       call calc_ssmeanxy(f,ssmxy)
 !
-      fac = alog(rescale_TTmeanxy)/(cp1*gamma)
+      fac = alog(rescale_TTmeanxy)*cv
 !
       do n=n1,n2
         f(:,:,n,iss) = (f(:,:,n,iss)-ssmxy)/rescale_TTmeanxy + ssmxy + fac
@@ -4298,7 +4297,7 @@ module Energy
 !
 !  The two lines above reduce to the one below
 !
-        f_target = ss_init - gamma_m1/(gamma*cp1)*(p%lnrho-lnrho_init)
+        f_target = ss_init - gamma_m1*cv*(p%lnrho-lnrho_init)
 !
       case ('nothing')
         return
@@ -4989,7 +4988,7 @@ module Energy
 !
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,maxval(abs(thdiff)*gamma)/(cdts))
-        diffus_chi=diffus_chi+gamma*Kgpara*exp(2.5*p%lnTT-p%lnrho)/p%cp*dxyz_2
+        diffus_chi=diffus_chi+p%cv1*Kgpara*exp(2.5*p%lnTT-p%lnrho)*dxyz_2
       endif
 !
     endsubroutine calc_heatcond_spitzer
@@ -5029,7 +5028,7 @@ module Energy
       endwhere
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+ cosbgT*gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2
+        diffus_chi=diffus_chi + cosbgT*p%cv1*Kgpara*exp(-p%lnrho)*dxyz_2
       endif
 !
     endsubroutine calc_heatcond_tensor
@@ -5269,7 +5268,7 @@ module Energy
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+(gamma*chix)*dxyz_2
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+(p%cv1/p%cp1*chix)*dxyz_2
 !
     endsubroutine calc_heatcond_smagorinsky
 !***********************************************************************
@@ -5488,7 +5487,7 @@ module Energy
 !    gamma*chix*del2ss.
 !
       if (lfirst.and.ldt) then
-        if (hcond0/=0..or.lread_hcond) diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        if (hcond0/=0..or.lread_hcond) diffus_chi=diffus_chi+p%rho1*hcond*cv1*dxyz_2
         if (chi_t/=0.) diffus_chi=diffus_chi+chi_t*chit_prof*dxyz_2
       endif
 !
@@ -5812,7 +5811,7 @@ module Energy
           Rgas=(1.0-gamma1)/cp1
           xi=(z(n)-z_cor)/(xyz1(3)-z_cor)
           profile_buffer=xi**2*(3-2*xi)
-          TT_drive=(cs0**2*(exp(gamma*cp1*p%initss + gamma_m1*(p%initlnrho-lnrho0))))/(gamma*Rgas)
+          TT_drive=(cs0**2*(exp(p%cv1*p%initss + gamma_m1*(p%initlnrho-lnrho0))))/(gamma*Rgas)
           if (z(n).gt.-1.0) heat=heat-cool_newton*p%cp*p%rho*profile_buffer*(p%TT-TT_drive)
              !MR: condition too specific!
         else
@@ -5830,7 +5829,7 @@ module Energy
             TT_drive=TTref_cool
           endif
           if (TT_floor /= impossible) call apply_floor(TT_drive)
-          heat=heat-p%rho*p%cp*gamma1*(p%TT-TT_drive)/tau_cool
+          heat=heat-p%rho*p%cv*(p%TT-TT_drive)/tau_cool
         else
           call calc_heat_cool_variable(heat,p)
         endif
@@ -5964,7 +5963,7 @@ module Energy
 !  tau_cool = tau_cool_0 * Omega0/Omega
 !  tau_cool1 = 1/tau_cool_0 * Omega/Omega0
 !
-      heat=heat-p%rho*p%cp*gamma1*(p%TT-TT_drive)*tau1_cool*OO*pborder
+      heat=heat-p%rho*p%cv*(p%TT-TT_drive)*tau1_cool*OO*pborder
 !
     endsubroutine calc_heat_cool_variable
 !***********************************************************************
