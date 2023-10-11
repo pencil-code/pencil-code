@@ -34,7 +34,7 @@ module Special
 ! variables in the reference profile
 !
   real :: dlogp_ref, logp_ref_min, logp_ref_max
-  real, dimension(:), allocatable :: p_temp_ref,tau_rad,temp_ref,logp_ref,dteq,Teq_night
+  real, dimension(:), allocatable :: p_temp_ref,tau_rad,temp_ref,logp_ref,dTeq,Teq_night
   integer :: nref
 !
 ! Init parameters
@@ -425,11 +425,10 @@ module Special
 !  The local equilibrium T; still in pressure coordinate
 !
       allocate(Teq_local(nref))
-      Teq_local = Teq_night + dteq*max(0.,mu_ss(nghost+m,nghost+n))
+      Teq_local = Teq_night + dTeq*max(0.,mu_ss(m,n))
 !
 !  interpolation for Teq_local at height coordinate (could have arbitrary pressure)
 !
-!!! %HZ: need to convert p%pp to [Pa]
       log10pp = log10(p%pp*pp2Pa)
       do ix=1,nx
         ! index of the logp_ref that is just smaller than log10(pressure)
@@ -455,7 +454,6 @@ module Special
       enddo
 !
       if (tau_slow_heating>0) then
-        ! slowly turn on heating term
         f_slow_heating = min(1.d0,t/tau_slow_heating)
       else
         f_slow_heating = 1.
@@ -763,30 +761,35 @@ module Special
       endif
       close(1)
 !
-!  convert units, and calculate tau_rad, dteq, and Teq_night
+!  convert units, and calculate tau_rad, dTeq, and Teq_night
 !
       if(allocated(p_temp_ref)) deallocate(p_temp_ref)
       if(allocated(tau_rad))    deallocate(tau_rad)
-      if(allocated(dteq))       deallocate(dteq)
+      if(allocated(dTeq))       deallocate(dTeq)
       if(allocated(Teq_night))  deallocate(Teq_night)
-      allocate( p_temp_ref(nref), tau_rad(nref), dteq(nref),Teq_night(nref) )
+      allocate( p_temp_ref(nref), tau_rad(nref), dTeq(nref),Teq_night(nref) )
       p_temp_ref = 10.**logp_ref
+  !
+      where (p_temp_ref>=peqtop .and. p_temp_ref<=peqbot)
+        dTeq = dTeqbot + (dTeqtop - dTeqbot) * log(p_temp_ref/peqbot)/log(peqtop/peqbot)
+      elsewhere (p_temp_ref < peqtop)
+        dTeq = dTeqtop
+      elsewhere
+        dTeq = dTeqbot
+      endwhere
 !
       alpha=log(tauradtop/tauradbot)/log(pradtop/pradbot)
       where (p_temp_ref>=pradtop .and. p_temp_ref<=pradbot)
         tau_rad = tauradbot * (p_temp_ref/pradbot)**alpha
-        dteq = dTeqbot + (dTeqtop - dTeqbot) * log(p_temp_ref/peqbot)/log(peqtop/peqbot)
       elsewhere (p_temp_ref < pradtop)
         tau_rad = tauradtop
-        dteq = dTeqtop
       elsewhere
         tau_rad = tauradbot
-        dteq = dteqbot
       endwhere
 !
-      Teq_night = temp_ref - 0.5*dteq
+      Teq_night = temp_ref - 0.5*dTeq
 !
-      deallocate(p_temp_ref)
+      deallocate(temp_ref,p_temp_ref)
 !
     endsubroutine  prepare_Tref_and_tau
 !***********************************************************************
