@@ -532,7 +532,7 @@ module Equ
 
         call calc_all_pencils(f,p)
 
-        call calc_diagnostics_cosmicray(p)
+        !call calc_diagnostics_cosmicray(p)
         call calc_diagnostics_density(f,p)
         call calc_diagnostics_dustvelocity(p)
         call calc_diagnostics_energy(f,p)
