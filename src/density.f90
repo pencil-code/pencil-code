@@ -1084,6 +1084,7 @@ module Density
         case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
         case ('linear_lnrho'); f(:,:,:,ilnrho)=lnrho_const-spread(spread(z,1,mx),2,my)/Hrho
         case ('exp_zbot'); f(:,:,:,ilnrho)=alog(rho_left(j))-spread(spread(z-zbot,1,mx),2,my)/Hrho
+        case ('exp_rbot'); f(:,:,:,ilnrho)=lnrho_const-spread(spread(x-xyz0(1),2,my),3,mz)/Hrho
         case ('invsqr')
           do ix=1,mx
             if (x(ix)<=r0_rho) then
