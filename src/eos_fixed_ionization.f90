@@ -29,14 +29,10 @@ module EquationOfState
   implicit none
 !
   include 'eos.h'
+  include 'eos_params.h'
 !
-! integers specifying which independent variables to use in eoscalc
-! (only relevant in ionization.f90)
-  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
-  integer, parameter :: irho_ss=7, ilnrho_TT=9, irho_TT=10, ipp_ss=11
-  integer, parameter :: ipp_cs2=12
-  integer, parameter :: irho_eth=13, ilnrho_eth=14
 ! Constants use in calculation of thermodynamic quantities
+!
   real :: lnTTss,lnTTlnrho,lnTT0
 !
 ! secondary parameters calculated in initialize
@@ -58,7 +54,7 @@ module EquationOfState
   real :: gamma=5./3., gamma_m1,gamma1, nabla_ad
 !ajwm  can't use impossible else it breaks reading param.nml
   real :: cs2bot=1., cs2top=1.
-  integer :: imass=1, ics
+  integer :: imass=1
 !
   real, dimension(nchemspec,18) :: species_constants
 !
