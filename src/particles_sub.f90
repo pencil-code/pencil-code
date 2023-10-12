@@ -615,7 +615,7 @@ module Particles_sub
         icount(iname)=icount(iname)+size(a)
         if (icount(iname)==npar_loc) then
           icount(iname)=0
-        elseif (icount(iname)>=npar_loc) then
+        elseif (icount(iname)>npar_loc) then
           print*, 'sum_par_name: Too many particles entered this sub.'
           print*, 'sum_par_name: Can only do statistics on npar_loc particles!'
           call fatal_error('sum_par_name','')
@@ -691,7 +691,7 @@ module Particles_sub
         icount=icount+size(a)
         if (icount==npar_loc) then
           icount=0
-        elseif (icount>=npar_loc) then
+        elseif (icount>npar_loc) then
           print*, 'integral_par_name: Too many particles entered this sub.'
           print*, 'integral_par_name: Can only do statistics on npar_loc particles!'
           call fatal_error('integral_par_name','')

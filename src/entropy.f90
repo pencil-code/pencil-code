@@ -2789,7 +2789,7 @@ module Energy
         lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
-        lpenc_requested(i_cp)=.true.
+        lpenc_requested(i_cv1)=.true.
       endif
       if (lheatc_hubeny) then
         lpenc_requested(i_rho)=.true.
@@ -2862,7 +2862,7 @@ module Energy
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_cp)=.true.
+        lpenc_requested(i_cv1)=.true.
       endif
       if (lheatc_shock.or.lheatc_shock2) then
         lpenc_requested(i_glnrho)=.true.
@@ -2892,9 +2892,11 @@ module Energy
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_nu_smag)=.true.
+        lpenc_requested(i_cv1)=.true.
       endif
-      if (tau_cool/=0.0 .or. cool_uniform/=0.0) then
-        lpenc_requested(i_cp)=.true.
+      if (lcalc_heat_cool) then
+        lpenc_requested(i_cv1)=.true.
+        lpenc_requested(i_cv)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_rho)=.true.
 !
