@@ -1229,7 +1229,7 @@ module Magnetic
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
-      if (lhydro) then
+      if (lhydro.and..not.lhydro_potential) then
         call get_shared_variable('lconservative', lconservative, caller='initialize_magnetic')
       else
         allocate(lconservative)

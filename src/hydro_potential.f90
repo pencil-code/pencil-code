@@ -27,6 +27,7 @@
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3)
 ! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel2; ss_rel(3)
 ! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor; divss_rel
+! PENCILS PROVIDED lorentz; hless
 !
 !***************************************************************
 !
@@ -601,6 +602,7 @@ module Hydro
 !  Auxiliary variables
 !
   real, dimension(:,:), pointer :: reference_state
+  real, dimension (nx) :: advec_uu
 !
   contains
 !***********************************************************************
@@ -721,7 +723,7 @@ module Hydro
 !  boussinesq).
 !
       if (ldensity) then
-        call get_shared_variable('lffree',lffree,'initialize_hydro')
+        call get_shared_variable('lffree',lffree,caller='initialize_hydro')
         if (lffree) then
           call get_shared_variable('profx_ffree',profx_ffree)
           call get_shared_variable('profy_ffree',profy_ffree)
@@ -732,7 +734,7 @@ module Hydro
 !  Get the reference state if requested
 !
       if (lreference_state) &
-        call get_shared_variable('reference_state',reference_state,'initialize_hydro')
+        call get_shared_variable('reference_state',reference_state,caller='initialize_hydro')
 !
       lcalc_uumeanz = lcalc_uumeanz .or. lcalc_uumean .or. ltestfield_xz      ! lcalc_uumean for compatibility
 !
@@ -1624,7 +1626,7 @@ module Hydro
 !  26-dec-18/axel: adapted from hydro
 !
       use Special, only: special_calc_hydro
-      use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
+      use Sub, only: identify_bcs
       use General, only: transform_thph_yy, notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1634,7 +1636,6 @@ module Hydro
       intent(in) :: p
       intent(inout) :: f,df
 !
-      real, dimension (nx) :: advec_uu
       real :: kx
       integer :: j, ju, k
 !
@@ -1700,6 +1701,7 @@ module Hydro
 
       use Diagnostics
       use Slices_methods, only: store_slices
+      use Sub, only: vecout, dot, dot2, cross, multsv_mn_add
 !
       real, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
@@ -1726,8 +1728,9 @@ module Hydro
 !
       if (ldiagnos) then
 
+        if (othresh_per_orms/=0) call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
-        if (idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
+        if (ldt.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         if (idiag_urms/=0) call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_durms/=0) then
           uref=ampluu(1)*cos(kx_uu*x(l1:l2))    !MR: very specific
@@ -2270,23 +2273,19 @@ module Hydro
 
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      intent(inout) :: f
+       intent(inout) :: f
 !
 !  possibility of setting interior boundary conditions
 !
-      if (lhydro_bc_interior) call interior_bc_hydro(f)
+       if (lhydro_bc_interior) call interior_bc_hydro(f)
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
-     if (lslope_limit_diff .and. llast) then
-       do m=1,my
-       do n=1,mz
-           f(:,m,n,isld_char)=w_sldchar_hyd*sqrt(sum(f(:,m,n,:)**2,4))
-       enddo
-       enddo
-     endif
-     if (ldiagnos.and.othresh_per_orms/=0) call vecout_initialize(trim(directory)//'/ovec',41,novec)
+     if (lslope_limit_diff .and. llast) &
+       f(:,:,:,isld_char)=w_sldchar_hyd*sqrt(sum(f(:,:,:,:)**2,4))
+!
+     if (ldiagnos.and.othresh_per_orms/=0) call vecout_initialize(41,trim(directory)//'/ovec',novec)
 !
     endsubroutine hydro_after_boundary
 !***********************************************************************
@@ -3440,7 +3439,7 @@ module Hydro
       if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_bxmz==0.or.idiag_bymz==0) then
         if (first) &
           call warning("calc_umbmz","to get umbmz, set uxmz, uymz, bxmz, and bymz in xyaver"// & 
-                       achar(10)//"We proceed, but you'll get umbmz=0"
+                       achar(10)//"We proceed, but you'll get umbmz=0")
         umbmz=0.
       else
         umbmz=sum(fnamez(:,:,idiag_uxmz)*fnamez(:,:,idiag_bxmz) &
@@ -3475,7 +3474,7 @@ module Hydro
       if (idiag_uxmz==0.or.idiag_uymz==0.or.idiag_bxmz==0.or.idiag_bymz==0) then
         if (first) &
           call warning("calc_umxbmz","to get umxbmz, set uxmz, uymz, bxmz, and bymz in xyaver."// &
-                       achar(10)//"We proceed, but you'll get umxbmz=0"
+                       achar(10)//"We proceed, but you'll get umxbmz=0")
         umxbmz=0.
       else
         umxbmz=sum(fnamez(:,:,idiag_uxmz)*fnamez(:,:,idiag_bymz) &
@@ -3790,9 +3789,9 @@ module Hydro
 !
         endif
 
-        call mpibcast(tmp1z)    ! better mpi_scatter
-        call mpibcast(tmp2z)
-        call mpibcast(tmp3z)
+        call mpibcast(tmp1z,nzgrid)    ! better mpi_scatter
+        call mpibcast(tmp2z,nzgrid)
+        call mpibcast(tmp3z,nzgrid)
 !
 !  Assuming no ghost zones in uumz.dat.
 !

@@ -969,14 +969,14 @@ module Density
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
-      if (lhydro.and.iphiuu==0) then
+      if (lhydro.and..not.lhydro_potential.and.iphiuu==0) then
         call get_shared_variable('lconservative', lconservative)
       else
         allocate(lconservative)
         lconservative=.false.
       endif
 !
-      if (lhydro) then
+      if (lhydro.and..not.lhydro_potential) then
         call get_shared_variable('lhiggsless', lhiggsless)
       else
         allocate(lhiggsless)
