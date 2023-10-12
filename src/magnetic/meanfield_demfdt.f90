@@ -260,16 +260,17 @@ module Magnetic_meanfield_demfdt
 !  Diagnostic output for mean field dynamos.
 !
       use Diagnostics
+      use Sub, only: dot2
 
       real, dimension (mx,my,mz,mfarray) :: f
 
-      real, dimension (nx,3) :: emf
+      real, dimension (nx) :: emf
 
       if (ldiagnos) then
-        emf=f(l1:l2,m,n,iemfx:iemfz)
-        if (idiag_EMFrms/=0) call sum_mn_name(+emf,idiag_EMFrms)
-        if (idiag_EMFmax/=0) call max_mn_name(+emf,idiag_EMFmax)
-        if (idiag_EMFmin/=0) call max_mn_name(-emf,idiag_EMFmax,lneg=.true.)
+        call dot2(f(l1:l2,m,n,iemfx:iemfz),emf)
+        if (idiag_EMFrms/=0) call sum_mn_name(+emf,idiag_EMFrms,lsqrt=.true.)
+        if (idiag_EMFmax/=0) call max_mn_name(+emf,idiag_EMFmax,lsqrt=.true.)
+        if (idiag_EMFmin/=0) call max_mn_name(-emf,idiag_EMFmax,lneg=.true.,lsqrt=.true.)
       endif
 !
     endsubroutine calc_diagnostics_dt_meanfield

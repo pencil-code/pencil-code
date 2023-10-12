@@ -2587,7 +2587,8 @@ module Viscosity
           endif
         endif
 
-        if (idiag_fviscm/=0 .or. idiag_fviscrmsx/=0) call dot2(p%fvisc,fvisc2)
+        if (idiag_fviscm/=0 .or. idiag_fviscrmsx/=0 .or. idiag_fviscmin/=0 .or. idiag_fviscmax/=0) &
+           call dot2(p%fvisc,fvisc2)
 
         call sum_mn_name(fvisc2,idiag_fviscm,lsqrt=.true.)
 
@@ -2595,8 +2596,8 @@ module Viscosity
                                                p%uu(:,2)*p%fvisc(:,2)+ &
                                                p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
 
-        if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)  !???fvisc is vector
-        call max_mn_name(p%fvisc,idiag_fviscmax)  !???
+        if (idiag_fviscmin/=0) call max_mn_name(-fvisc2,idiag_fviscmin,lneg=.true.,lsqrt=.true.)
+        call max_mn_name(fvisc2,idiag_fviscmax,lsqrt=.true.)
 
         if (idiag_fviscrmsx/=0) call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
         call sum_mn_name(p%visc_heat,idiag_visc_heatm)
