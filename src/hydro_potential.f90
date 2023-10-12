@@ -1075,7 +1075,7 @@ module Hydro
       if (idiag_urmsn/=0 .or. idiag_ormsn/=0 .or. idiag_oumn/=0) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
           call fatal_error("pencil_criteria_hydro","You have to set either of "// &
-              "lequatory or lequatorz to true to calculate averages over half the box")
+                           "lequatory or lequatorz to true to calculate averages over half the box")
         else
           if (lequatory) write(*,*) 'pencil-criteria_hydro: box divided along y dirn'
           if (lequatorz) write(*,*) 'pencil-criteria_hydro: box divided along z dirn'
@@ -1718,8 +1718,9 @@ module Hydro
         if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
         if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
         if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
-        if (othresh_per_orms/=0) call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
       endif
+
+      call calc_2d_diagnostics_hydro(f,p)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -1973,12 +1974,16 @@ module Hydro
         endif
 
 !MR: in the following, space_part_* are undefined!!!!
-        if (idiag_uxfampm/=0) call sum_mn_name(p%uu(:,1)*space_part_re,idiag_uxfampm)
-        if (idiag_uyfampm/=0) call sum_mn_name(p%uu(:,2)*space_part_re,idiag_uyfampm)
-        if (idiag_uzfampm/=0) call sum_mn_name(p%uu(:,3)*space_part_re,idiag_uzfampm)
+        if (idiag_uxfampm/=0)  call sum_mn_name(p%uu(:,1)*space_part_re,idiag_uxfampm)
+        if (idiag_uyfampm/=0)  call sum_mn_name(p%uu(:,2)*space_part_re,idiag_uyfampm)
+        if (idiag_uzfampm/=0)  call sum_mn_name(p%uu(:,3)*space_part_re,idiag_uzfampm)
         if (idiag_uxfampim/=0) call sum_mn_name(p%uu(:,1)*space_part_im,idiag_uxfampim)
         if (idiag_uyfampim/=0) call sum_mn_name(p%uu(:,2)*space_part_im,idiag_uyfampim)
         if (idiag_uzfampim/=0) call sum_mn_name(p%uu(:,3)*space_part_im,idiag_uzfampim)
+      
+        if (othresh_per_orms/=0) call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
+
+      endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -2112,17 +2117,30 @@ module Hydro
         if (idiag_ormr/=0) call phizsum_mn_name_r(p%oo(:,1)*p%pomx+p%oo(:,2)*p%pomy,idiag_ormr)
         if (idiag_opmr/=0) call phizsum_mn_name_r(p%oo(:,1)*p%phix+p%oo(:,2)*p%phiy,idiag_opmr)
         call phizsum_mn_name_r(p%oo(:,3),idiag_ozmr)
-        endif
+!
+      endif
+
+    endsubroutine calc_diagnostics_hydro
+!******************************************************************************
+    subroutine calc_2d_diagnostics_hydro(f,p)
+!
+!   6-sep-19/MR: taken out from duu_dt
+!
+      use Diagnostics
+
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case), intent(in) :: p
 !
 !  2-D averages.
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
+
         if (idiag_urmphi/=0) call phisum_mn_name_rz(p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy,idiag_urmphi)
         if (idiag_ursphmphi/=0) call phisum_mn_name_rz(p%uu(:,1)*p%evr(:,1)+ &
-              p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3),idiag_ursphmphi)
+                                p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3),idiag_ursphmphi)
         if (idiag_uthmphi/=0) call phisum_mn_name_rz(p%uu(:,1)*p%evth(:,1)+ &
-              p%uu(:,2)*p%evth(:,2)+p%uu(:,3)*p%evth(:,3),idiag_uthmphi)
+                              p%uu(:,2)*p%evth(:,2)+p%uu(:,3)*p%evth(:,3),idiag_uthmphi)
         if (idiag_upmphi/=0) call phisum_mn_name_rz(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy,idiag_upmphi)
         call phisum_mn_name_rz(p%uu(:,3),idiag_uzmphi)
         call phisum_mn_name_rz(p%u2,idiag_u2mphi)
@@ -2132,9 +2150,9 @@ module Hydro
         call ysum_mn_name_xz(p%uu(:,1),idiag_uxmxz)
         call ysum_mn_name_xz(p%uu(:,2),idiag_uymxz)
         call ysum_mn_name_xz(p%uu(:,3),idiag_uzmxz)
-        if (idiag_ux2mxz/=0) call ysum_mn_name_xz(p%uu(:,1)**2,idiag_ux2mxz)
-        if (idiag_uy2mxz/=0) call ysum_mn_name_xz(p%uu(:,2)**2,idiag_uy2mxz)
-        if (idiag_uz2mxz/=0) call ysum_mn_name_xz(p%uu(:,3)**2,idiag_uz2mxz)
+        if (idiag_ux2mxz/=0)  call ysum_mn_name_xz(p%uu(:,1)**2,idiag_ux2mxz)
+        if (idiag_uy2mxz/=0)  call ysum_mn_name_xz(p%uu(:,2)**2,idiag_uy2mxz)
+        if (idiag_uz2mxz/=0)  call ysum_mn_name_xz(p%uu(:,3)**2,idiag_uz2mxz)
         if (idiag_uxuymxz/=0) call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,2),idiag_uxuymxz)
         if (idiag_uxuzmxz/=0) call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,3),idiag_uxuzmxz)
         if (idiag_uyuzmxz/=0) call ysum_mn_name_xz(p%uu(:,2)*p%uu(:,3),idiag_uyuzmxz)
@@ -2184,7 +2202,7 @@ module Hydro
         endif
       endif
 
-    endsubroutine calc_diagnostics_hydro
+    endsubroutine calc_2d_diagnostics_hydro
 !***********************************************************************
     subroutine time_integrals_hydro(f,p)
 !
@@ -2248,11 +2266,9 @@ module Hydro
 !  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
 !  12-sep-13/MR  : use finalize_aver
 !
+      use Sub, only: vecout_initialize
+
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
-      real, dimension (3) :: OO, dOO
-      real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
-      integer :: i,j
 !
       intent(inout) :: f
 !
@@ -2266,10 +2282,11 @@ module Hydro
      if (lslope_limit_diff .and. llast) then
        do m=1,my
        do n=1,mz
-           f(:,m,n,isld_char)=w_sldchar_hyd*sqrt(f(:,m,n,iux)**2.+f(:,m,n,iuy)**2.+f(:,m,n,iuz)**2.)
+           f(:,m,n,isld_char)=w_sldchar_hyd*sqrt(sum(f(:,m,n,:)**2,4))
        enddo
        enddo
      endif
+     if (ldiagnos.and.othresh_per_orms/=0) call vecout_initialize(trim(directory)//'/ovec',41,novec)
 !
     endsubroutine hydro_after_boundary
 !***********************************************************************
@@ -3123,8 +3140,8 @@ module Hydro
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_sub
 !
-      if (othresh_per_orms/=0) then
-        call vecout_finalize(trim(directory)//'/ovec',41,novec)
+      if (ldiagnos.and.othresh_per_orms/=0.) then
+        call vecout_finalize(41,trim(directory)//'/ovec',novec)
         call calc_othresh
       endif
 
