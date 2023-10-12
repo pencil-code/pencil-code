@@ -42,8 +42,6 @@ module Particles_map
 !
   include 'particles_map.h'
 !
-  !include 'mpif.h'
-!
   contains
 !***********************************************************************
     subroutine initialize_particles_map()
@@ -851,8 +849,7 @@ module Particles_map
 !
       if (nreq>0) then
         do ireq=1,nreq
-          call mpiwait(ireq_array(ireq))!,stat,ierr)
-          !call MPI_WAIT(ireq_array(ireq),stat,ierr)
+          call mpiwait(ireq_array(ireq))
         enddo
       endif
 !
