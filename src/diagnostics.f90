@@ -11,7 +11,7 @@ module Diagnostics
   use Cdata
   use Messages
   use Mpicomm
-  use General, only: safe_sum
+  use General, only: safe_sum, loptest
 !
   implicit none
 !
@@ -681,7 +681,7 @@ module Diagnostics
 !  26-aug-13/MR:   moved calculation of dVol_rel1 to initialize_diagnostics
 !                  added optional parameter lcomplex for use with imaginary part
 !
-      use General, only: loptest, itoa, safe_character_assign
+      use General, only: itoa, safe_character_assign
 !
       integer,                 intent(in)   :: nlname
       real, dimension(nlname), intent(inout):: vname
@@ -1549,40 +1549,43 @@ module Diagnostics
 !
     endsubroutine expand_cname_full
 !***********************************************************************
-    subroutine set_type(iname, lsqrt, llog10, lint, lsum, lmax, lmin, lsurf)
+    subroutine set_type(iname, lsqrt, llog10, lint, lsum, lmax, lmin, lsurf, ldt)
 !
 !  Sets the diagnostic type in itype_name.
 !
 !  21-sep-17/MR: coded
 !
+
       integer :: iname
-      logical, optional :: lsqrt, llog10, lint, lsum, lmax, lmin, lsurf
+      logical, optional :: lsqrt, llog10, lint, lsum, lmax, lmin, lsurf, ldt
 
       if (iname==0) return
 
-      if (present(lsqrt)) &
+      if (loptest(lsqrt)) &
         itype_name(iname)=ilabel_sum_sqrt
-      if (present(lsqrt)) then
+      if (loptest(lsqrt)) then
         itype_name(iname)=ilabel_sum_sqrt
-      elseif (present(llog10)) then
+      elseif (loptest(llog10)) then
         itype_name(iname)=ilabel_sum_log10
-      elseif (present(lint)) then
+      elseif (loptest(lint)) then
         itype_name(iname)=ilabel_integrate
-      elseif (present(lsurf)) then
+      elseif (loptest(lsurf)) then
         itype_name(iname)=ilabel_surf
-      elseif (present(lsum)) then
+      elseif (loptest(lsum)) then
         itype_name(iname)=ilabel_sum
-      elseif (present(lmax)) then
+      elseif (loptest(lmax)) then
         itype_name(iname)=ilabel_max
-      elseif (present(lmin)) then
+      elseif (loptest(lmin)) then
         itype_name(iname)=ilabel_max_neg
+      elseif (loptest(ldt)) then
+        itype_name(iname)=ilabel_max_dt
       else
         itype_name(iname)=ilabel_save
       endif
 
     endsubroutine set_type
 !***********************************************************************
-    subroutine save_name(a,iname)
+    subroutine save_name(a,iname,ldt)
 !
 !  Sets the value of a (must be treated as real) in fname array
 !
@@ -1591,8 +1594,12 @@ module Diagnostics
 !
       real :: a
       integer :: iname
+      logical, optional :: ldt
 !
-      if (lroot.and.iname/=0) fname(iname)=a
+      if (lroot.and.iname/=0) then
+        fname(iname)=a
+        if (loptest(ldt)) itype_name(iname)=ilabel_max_dt
+      endif
 !
    endsubroutine save_name
 !***********************************************************************
@@ -1639,19 +1646,20 @@ module Diagnostics
 !
       if (iname==0) return
 
-      if (present(lneg)) then
-        if (lneg) then
-          if (a<fname(iname)) fname(iname)=a
-        else
-          if (a>fname(iname)) fname(iname)=a
-        endif
-      else
-        if (a>fname(iname)) fname(iname)=a
-      endif
+!!!      if (present(lneg)) then
+!!!        if (lneg) then
+!!!          if (a<fname(iname)) fname(iname)=a
+!!!        else
+!!!          if (a>fname(iname)) fname(iname)=a
+!!!        endif
+!!!      else
+!!!        if (a>fname(iname)) fname(iname)=a
+!!!      endif
+      fname(iname) = max(fname(iname),real(a))
 !
 !  Set corresponding entry in itype_name.
 !
-      if (present(lneg)) then
+      if (loptest(lneg)) then
         itype_name(iname)=ilabel_max_neg
       else
         itype_name(iname)=ilabel_max
@@ -1671,21 +1679,22 @@ module Diagnostics
 !
       if (iname==0) return
 
-      if (present(lneg)) then
-        if (lneg) then
-          if (a<fname(iname)) fname(iname)=a
-        else
-          if (a>fname(iname)) fname(iname)=a
-        endif
-      else
-        if (a>fname(iname)) fname(iname)=a
-      endif
+!!!      if (present(lneg)) then
+!!!        if (lneg) then
+!!!          if (a<fname(iname)) fname(iname)=a
+!!!        else
+!!!          if (a>fname(iname)) fname(iname)=a
+!!!        endif
+!!!      else
+!!!        if (a>fname(iname)) fname(iname)=a
+!!!      endif
+      fname(iname) = max(fname(iname),a)
 !
 !  Set corresponding entry in itype_name.
 !
-      if (present(lneg)) then
+      if (loptest(lneg)) then
         itype_name(iname)=ilabel_max_neg
-      elseif (present(l_dt)) then
+      elseif (loptest(l_dt)) then
         itype_name(iname)=ilabel_max_dt
       else
         itype_name(iname)=ilabel_max
@@ -1762,13 +1771,13 @@ module Diagnostics
 !
 !  Set corresponding entry in itype_name.
 !
-      if (present(lsqrt)) then
+      if (loptest(lsqrt)) then
         itype_name(iname)=ilabel_max_sqrt
-      elseif (present(l_dt)) then
+      elseif (loptest(l_dt)) then
         itype_name(iname)=ilabel_max_dt
-      elseif (present(lneg)) then
+      elseif (loptest(lneg)) then
         itype_name(iname)=ilabel_max_neg
-      elseif (present(lreciprocal)) then
+      elseif (loptest(lreciprocal)) then
         itype_name(iname)=ilabel_max_reciprocal
       else
         itype_name(iname)=ilabel_max
@@ -1862,13 +1871,13 @@ module Diagnostics
 !
 !  Set corresponding entry in itype_name.
 !
-        if (present(lsqrt)) then
+        if (loptest(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt
-        elseif (present(llog10)) then
+        elseif (loptest(llog10)) then
           itype_name(iname)=ilabel_sum_log10
-        elseif (present(lint)) then
+        elseif (loptest(lint)) then
           itype_name(iname)=ilabel_integrate
-        elseif (present(lplain)) then
+        elseif (loptest(lplain)) then
           itype_name(iname)=ilabel_sum_plain
         else
           itype_name(iname)=ilabel_sum
@@ -1903,7 +1912,7 @@ module Diagnostics
 !
 !  Scale "a" with volume differential if integration option is set.
 !
-            if (present(lint)) then
+            if (loptest(lint)) then
               a_scaled=a*xprim(l1:l2)*yprim(m)*zprim(n)
             else
               a_scaled=a
@@ -1913,7 +1922,7 @@ module Diagnostics
 !  Initialize if one is on the first point, or add up otherwise.
 !
             if (lfirstpoint) then
-              if (lcartesian_coords.or.lpipe_coords.or.present(lplain)) then
+              if (lcartesian_coords.or.lpipe_coords.or.loptest(lplain)) then
                 fname(iname)=sum(a_scaled)
               elseif (lspherical_coords) then
                 fname(iname)=sum(r2_weight*a_scaled)*sinth_weight(m)
@@ -1923,7 +1932,7 @@ module Diagnostics
                 call not_implemented('sum_mn_name_real','coordinate system')
               endif
             else
-              if (lcartesian_coords.or.lpipe_coords.or.present(lplain)) then
+              if (lcartesian_coords.or.lpipe_coords.or.loptest(lplain)) then
                 fname(iname)=fname(iname)+sum(a_scaled)
               elseif (lspherical_coords) then
                 fname(iname)=fname(iname)+sum(r2_weight*a_scaled)*sinth_weight(m)
@@ -2046,7 +2055,7 @@ module Diagnostics
 !
 !  Set corresponding entry in itype_name.
 !
-        if (present(lsqrt)) then
+        if (loptest(lsqrt)) then
           itype_name(iname)=ilabel_sum_weighted_sqrt
         else
           itype_name(iname)=ilabel_sum_weighted
@@ -2536,7 +2545,6 @@ module Diagnostics
 !  08-feb-12/ccyang: add option for integration
 !   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
 !     
-      use General, only: loptest
       use Cdata,   only: n,m,nzgrid_eff 
 !
       real, dimension(nx), intent(in) :: a
@@ -2616,7 +2624,6 @@ module Diagnostics
 !   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
 !  31-mar-16/MR: derived from zsum_mn_name_xy
 !
-      use General, only: loptest
       use Cdata,   only: n,m
 !
       real,    dimension(nx,3),        intent(in) :: avec
