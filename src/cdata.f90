@@ -415,6 +415,7 @@ module Cdata
   integer :: iFenth=0, iss_flucz=0, iTT_flucz=0, irho_flucz=0
   integer :: iuu_fluc=0, iuu_flucx=0, iuu_flucy=0, iuu_flucz=0
   integer :: iuu_sph=0, iuu_sphr=0, iuu_spht=0, iuu_sphp=0
+  integer :: ics=0
 !
 !  Parameters related to message passing.
 !

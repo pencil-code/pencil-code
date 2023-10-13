@@ -32,7 +32,7 @@ module EquationOfState
   include 'eos.h'
   include 'eos_params.h'
 !
-  integer :: iglobal_cs2, iglobal_glnTT, ics
+  integer :: iglobal_cs2, iglobal_glnTT
   real :: lnTT0=impossible, TT0=impossible
   real :: xHe=0.0
   real :: mu=1.0

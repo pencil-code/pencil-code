@@ -22,7 +22,6 @@
 !***************************************************************
 module EquationOfState
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -32,7 +31,7 @@ module EquationOfState
   include 'eos.h'
   include 'eos_params.h'
 !
-  integer :: icv, ics, idelta, igamma, inabad
+  integer :: icv, idelta, igamma, inabad
 !  integer :: icp, icv, ics, idelta, igamma, inabad
   integer :: imass = 1
   !  secondary parameters calculated in initialize

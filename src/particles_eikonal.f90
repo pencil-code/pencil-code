@@ -2581,7 +2581,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  25-apr-06/anders: coded
 !
-      use EquationOfState, only: cs20, ics
+      use EquationOfState, only: cs20
 !AXEL use Magnetic, only: get_bext
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check
@@ -4203,7 +4203,6 @@ k_loop:   do while (.not. (k>npar_loc))
     subroutine omega_disper(f,fp,k,ineargrid,grad_omega,local_omega)
 !
       use Sub, only: dot,dot2
-      use EquationOfState, only: ics
 !AXEL use Magnetic, only: get_bext
 !
       real, dimension(mx,my,mz,mfarray) :: f
