@@ -428,8 +428,8 @@ module EquationOfState
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpenc_in(i_cv1)) lpenc_in(i_cv) = .true.
-      if (lpenc_in(i_cp1)) lpenc_in(i_cp) = .true.
+      if (lpencil_in(i_cv1)) lpencil_in(i_cv) = .true.
+      if (lpencil_in(i_cp1)) lpencil_in(i_cp) = .true.
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
