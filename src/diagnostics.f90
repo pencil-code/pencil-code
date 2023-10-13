@@ -1646,16 +1646,12 @@ module Diagnostics
 !
       if (iname==0) return
 
-!!!      if (present(lneg)) then
-!!!        if (lneg) then
-!!!          if (a<fname(iname)) fname(iname)=a
-!!!        else
-!!!          if (a>fname(iname)) fname(iname)=a
-!!!        endif
-!!!      else
-!!!        if (a>fname(iname)) fname(iname)=a
-!!!      endif
-      fname(iname) = max(fname(iname),real(a))
+      if (loptest(lneg)) then
+        if (a<fname(iname)) fname(iname)=a
+      else
+        if (a>fname(iname)) fname(iname)=a
+      endif
+!!      fname(iname) = max(fname(iname),real(a))
 !
 !  Set corresponding entry in itype_name.
 !
@@ -1679,12 +1675,8 @@ module Diagnostics
 !
       if (iname==0) return
 
-!!!      if (present(lneg)) then
-!!!        if (lneg) then
-!!!          if (a<fname(iname)) fname(iname)=a
-!!!        else
-!!!          if (a>fname(iname)) fname(iname)=a
-!!!        endif
+!!!      if (loptest(lneg)) then
+!!!        if (a<fname(iname)) fname(iname)=a
 !!!      else
 !!!        if (a>fname(iname)) fname(iname)=a
 !!!      endif
