@@ -12,6 +12,7 @@
 !
 ! CPARAM logical, parameter :: lhydro = .false.
 ! CPARAM logical, parameter :: lhydro_kinematic = .true.
+! CPARAM logical, parameter :: lhydro_potential = .false.
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
