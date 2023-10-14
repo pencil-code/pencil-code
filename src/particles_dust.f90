@@ -3421,7 +3421,7 @@ module Particles
           call save_name(float(npar_found),idiag_npar_found)
         endif
         if (idiag_deshearbcsm /= 0) &
-          call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm) %MR: What to sum here?
+          call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm) !MR: What to sum here?
 
       endif
       if (lfirstcall) lfirstcall = .false.
