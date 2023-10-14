@@ -666,11 +666,8 @@ module Particles
           endif
         endif
         if (rhop_swarm == 0.0) rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
-        if (mp_swarm == 0.0) then
-          mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
-        endif
-        if (lroot) print*, 'initialize_particles: '// &
-            'dust-to-gas ratio eps_dtog=', eps_dtog
+        if (mp_swarm == 0.0) mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
+        if (lroot) print*, 'initialize_particles: dust-to-gas ratio eps_dtog=', eps_dtog
       endif
 !
       if (lroot) then
@@ -787,8 +784,8 @@ module Particles
 !  Die if lcompensate_sedimentation is used and the vertical direction is present.
 !
       if (lcompensate_sedimentation .and. &
-          ( (nzgrid /= 1 .and.(lcartesian_coords .or. lcylindrical_coords)).or. &
-          (nygrid /= 1 .and. lspherical_coords) &
+          ( (nzgrid /= 1 .and. (lcartesian_coords .or. lcylindrical_coords)).or. &
+            (nygrid /= 1 .and. lspherical_coords) &
           )) call fatal_error("initialize_particles", &
           "compensate_sedimentation can only be used when vertical dimension is not present")
 !
@@ -955,8 +952,8 @@ module Particles
         call fatal_error('initialize_particles','Cond ratio=0 with thermophoretic force')
 
       if (any(gravr_profile==(/'newtonian-central','newtonian        '/).and.lpointmasses.and. &
-          lparticle_gravity.and. tstart_grav_r_par>0)) &
-        call fatal_error('initialize_particles','You are using massive particles. '// &
+          lparticle_gravity)) &
+        call fatal_error('initialize_particles','you are using massive particles. '// &
              achar(10)//'The N-body code should take care of the stellar-like gravity on the dust.'// &
              achar(10)//'Switch off the gravr_profile="newtonian*" in particles_init')
 !
@@ -1184,18 +1181,16 @@ module Particles
         case ('random-sphere')
           if (lroot) print*, 'init_particles: Random particle positions '// &
               'in a sphere around (0,0,0) with radius=',rad_sphere
-          if (rad_sphere == 0) then
-            call fatal_error('init_particles','random-sphere '// &
-                'radius needs to be larger than zero')
-          endif
+          if (rad_sphere == 0) &
+            call fatal_error('init_particles','random-sphere radius needs to be larger than zero')
+
           if (-rad_sphere+pos_sphere(1) < xyz0(1) .or. &
               +rad_sphere+pos_sphere(1) > xyz1(1) .or. &
               -rad_sphere+pos_sphere(2) < xyz0(2) .or. &
               +rad_sphere+pos_sphere(2) > xyz1(2) .or. &
               -rad_sphere+pos_sphere(3) < xyz0(3) .or. &
               +rad_sphere+pos_sphere(3) > xyz1(3)) then
-            call fatal_error('init_particles','random-sphere '// &
-                'sphere needs to fit in the box')
+            call fatal_error('init_particles','random-sphere needs to fit in the box')
           endif
           if (lcartesian_coords) then
             do k = 1,npar_loc
@@ -1283,8 +1278,7 @@ module Particles
           fp(1:npar_loc,izp) = zp0
 !
         case ('random-hole')
-          if (lroot) print*, 'init_particles: Random particle positions '// &
-              'with inner hole'
+          if (lroot) print*, 'init_particles: Random particle positions with inner hole'
           do k = 1,npar_loc
             rp2 = -1.0
             do while (rp2 < rp_int**2)
@@ -1308,8 +1302,7 @@ module Particles
           enddo
 !
         case ('random-box')
-          if (lroot) print*, 'init_particles: Random particle positions '// &
-              'within a box'
+          if (lroot) print*, 'init_particles: Random particle positions within a box'
           do k = 1,npar_loc
             if (nxgrid /= 1) then
               call random_number_wrapper(r)
@@ -1351,7 +1344,7 @@ module Particles
             elseif (lspherical_coords) then
               tmp = 3-dustdensity_powerlaw
             else
-              call fatal_error("init_particles","the world is flat, and we never got here")
+              call fatal_error("init_particles","unsupported coordinate system")
             endif
 !
             if (lcartesian_coords) then
@@ -1624,8 +1617,7 @@ module Particles
                 if (lfirst_proc_z) fp(k,izp) = -abs(zp0*(fp(k,ixp)/r0gaussz)**qgaussz*sqrt(-2*alog(r))*cos(2*pi*p))
                 if (llast_proc_z) fp(k,izp) = abs(zp0*(fp(k,ixp)/r0gaussz)**qgaussz*sqrt(-2*alog(r))*cos(2*pi*p))
               else
-                fp(k,izp) = zp0*(fp(k,ixp)/r0gaussz)**qgaussz* &
-                    sqrt(-2*alog(r))*cos(2*pi*p)
+                fp(k,izp) = zp0*(fp(k,ixp)/r0gaussz)**qgaussz*sqrt(-2*alog(r))*cos(2*pi*p)
               endif
               if ((fp(k,izp) >= xyz0(3)) .and. (fp(k,izp) <= xyz1(3))) exit
             enddo
@@ -1649,10 +1641,8 @@ module Particles
               if ((fp(k,ixp) >= xyz0(1)).and.(fp(k,ixp) <= xyz1(1))) exit
             enddo
           enddo
-          if (nygrid /= 1) &
-              fp(1:npar_loc,iyp) = xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
-          if (nzgrid /= 1) &
-              fp(1:npar_loc,izp) = xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+          if (nygrid /= 1) fp(1:npar_loc,iyp) = xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid /= 1) fp(1:npar_loc,izp) = xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
 !
         case ('gaussian-x+random')
           if (lroot) print*, 'init_particles: Gaussian particle positions+random'
@@ -1678,10 +1668,8 @@ module Particles
             call random_number_wrapper(r)
             fp(k,ixp) = xyz0_par(1)+r*Lxyz_par(1)
           enddo
-          if (nygrid /= 1) &
-              fp(1:npar_loc,iyp) = xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
-          if (nzgrid /= 1) &
-              fp(1:npar_loc,izp) = xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+          if (nygrid /= 1) fp(1:npar_loc,iyp) = xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid /= 1) fp(1:npar_loc,izp) = xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
 !
         case ('gaussian-z-pure')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
@@ -1757,10 +1745,10 @@ module Particles
               fp(1:npar_loc,izp) = az_tmp(1:npar_loc)
             endif
           endif
-          if (lroot .and. nzgrid /= 0) print*,"Warning, birthring only implemented for 2D"
+          if (nzgrid /= 0) call warning('init_particles',"birthring only implemented for 2D(xy)")
 !
         case default
-          call fatal_error('init_particles','no such initxxp="'//trim(initxxp(j))//'"')
+          call fatal_error('init_particles','no such initxxp: "'//trim(initxxp(j))//'"')
 !
         endselect
 !
@@ -1824,9 +1812,7 @@ module Particles
           endif
 !
         case ('constant-1')
-          if (lroot) &
-              print*, 'init_particles: Particle 1 velocity vx,vy,vz=', &
-              vpx1, vpy1, vpz1
+          if (lroot) print*, 'init_particles: Particle 1 velocity; vx,vy,vz=', vpx1, vpy1, vpz1
           do k = 1,npar_loc
             if (ipar(k) == 1) then
               fp(k,ivpx) = vpx1
@@ -1836,9 +1822,7 @@ module Particles
           enddo
 !
         case ('constant-2')
-          if (lroot) &
-              print*, 'init_particles: Particle 2 velocity vx,vy,vz=', &
-              vpx2, vpy2, vpz2
+          if (lroot) print*, 'init_particles: Particle 2 velocity; vx,vy,vz=', vpx2, vpy2, vpz2
           do k = 1,npar_loc
             if (ipar(k) == 2) then
               fp(k,ivpx) = vpx2
@@ -1848,9 +1832,7 @@ module Particles
           enddo
 !
         case ('constant-3')
-          if (lroot) &
-              print*, 'init_particles: Particle 3 velocity vx,vy,vz=', &
-              vpx3, vpy3, vpz3
+          if (lroot) print*, 'init_particles: Particle 3 velocity; vx,vy,vz=', vpx3, vpy3, vpz3
           do k = 1,npar_loc
             if (ipar(k) == 3) then
               fp(k,ivpx) = vpx3
@@ -1860,8 +1842,7 @@ module Particles
           enddo
 !
         case ('sinwave-phase')
-          if (lroot) print*, 'init_particles: sinwave-phase'
-          if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lroot) print*, 'init_particles: sinwave-phase; vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           do k = 1,npar_loc
             fp(k,ivpx) = fp(k,ivpx)+vpx0*sin(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
             fp(k,ivpy) = fp(k,ivpy)+vpy0*sin(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
@@ -1869,8 +1850,7 @@ module Particles
           enddo
 !
         case ('coswave-phase')
-          if (lroot) print*, 'init_particles: coswave-phase'
-          if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lroot) print*, 'init_particles: coswave-phase; vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           do k = 1,npar_loc
             fp(k,ivpx) = fp(k,ivpx)+vpx0*cos(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
             fp(k,ivpy) = fp(k,ivpy)+vpy0*cos(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
@@ -1878,8 +1858,7 @@ module Particles
           enddo
 !
         case ('random')
-          if (lroot) print*, 'init_particles: Random particle velocities; '// &
-              'delta_vp0=', delta_vp0
+          if (lroot) print*, 'init_particles: Random particle velocities; delta_vp0=', delta_vp0
           do k = 1,npar_loc
             call random_number_wrapper(r)
             fp(k,ivpx) = fp(k,ivpx) + delta_vp0*(2*r-1)
@@ -1984,12 +1963,10 @@ module Particles
               endif
             endif
 !
-            fp(k,ivpx) = fp(k,ivpx) + &
-                beta_glnrho_global(1)*Omega*tausp/ &
-                ((1.0+eps)**2+(Omega*tausp)**2)*cs
-            fp(k,ivpy) = fp(k,ivpy) + &
-                beta_glnrho_global(1)*(1+eps)/ &
-                (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+            fp(k,ivpx) = fp(k,ivpx) + beta_glnrho_global(1)*Omega*tausp/ &
+                         ((1.0+eps)**2+(Omega*tausp)**2)*cs
+            fp(k,ivpy) = fp(k,ivpy) + beta_glnrho_global(1)*(1+eps)/ &
+                         (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
           enddo
 !
         case ('dragforce_equi_nohydro')
@@ -2031,8 +2008,8 @@ module Particles
 !
           if (lroot) then
             print*, 'init_particles: Keplerian velocity'
-            if (lshear) call fatal_error("init_particles", &
-                "Keplerian initial condition is not for shearing boxes")
+            if (lshear) call not_implemented("init_particles", &
+                "Keplerian initial condition for shearing boxes")
           endif
 !
           do k = 1,npar_loc
@@ -2067,10 +2044,8 @@ module Particles
             fp(k,ivpz) = delta_vp0*fp(k,izp)/rp_ext
           enddo
 !
-!
         case default
           call fatal_error('init_particles','no such initvvp: "'//trim(initvvp(j))//'"')
-!
         endselect
 !
       enddo ! do j=1,ninit
@@ -2157,7 +2132,7 @@ module Particles
       if (t >= tstart_insert_particles+particles_insert_ramp_time) then
         particles_insert_rate_tmp = particles_insert_rate
       else
-        particles_insert_rate_tmp = int(real(particles_insert_rate)&
+        particles_insert_rate_tmp = int(real(particles_insert_rate) &
             *(t-tstart_insert_particles)/particles_insert_ramp_time)
       endif
       call mpireduce_sum_int(npar_loc,npar_total)
@@ -2247,7 +2222,7 @@ module Particles
               elseif (lspherical_coords) then
                 tmp = 3-dustdensity_powerlaw
               else
-                call fatal_error("init_particles","The world is flat, and we never got here")
+                call fatal_error("init_particles","unsupported coordinate system")
               endif
 !
               call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
@@ -3205,7 +3180,7 @@ module Particles
           elseif (lcylindrical_coords) then
             dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
           else
-            call not_implemented('dvvp_dt','Centrifugal force on particles for spherical coordinates')
+            call not_implemented('dvvp_dt','centrifugal force on particles for spherical coordinates')
           endif
         endif
 !
@@ -3314,8 +3289,7 @@ module Particles
                 call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
                     sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
               else
-                call sum_par_name(0.5*mp_swarm* &
-                    sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+                call sum_par_name(0.5*mp_swarm*sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
               endif
             endif
           endif
@@ -3423,8 +3397,7 @@ module Particles
         endif
         if (idiag_rhopvpysm /= 0) then
           if (lparticles_density) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)* &
-                Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
           elseif (lparticles_radius .and. lparticles_number) then
             call sum_par_name(four_pi_rhopmat_over_three* &
                 fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
@@ -3447,9 +3420,9 @@ module Particles
           call count_particles(ipar,npar_found)
           call save_name(float(npar_found),idiag_npar_found)
         endif
-        if (idiag_deshearbcsm /= 0) then
-          call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
-        endif
+        if (idiag_deshearbcsm /= 0) &
+          call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm) %MR: What to sum here?
+
       endif
       if (lfirstcall) lfirstcall = .false.
 !
@@ -3511,14 +3484,12 @@ module Particles
 !
         case ('linear')
           if (lheader) print*, 'particle_gravity: Linear gravity field in x-direction.'
-          dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) - &
-              nu_epicycle2*fp(1:npar_loc,ixp)
+          dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) - nu_epicycle2*fp(1:npar_loc,ixp)
 !
         case ('sinusoidal')
           if (lheader) &
               print*, 'particle_gravity: Sinusoidal gravity field in x-direction.'
-          dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + &
-              gravx*sin(kx_gg*fp(1:npar_loc,ixp))
+          dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + gravx*sin(kx_gg*fp(1:npar_loc,ixp))
 !
         case default
           call fatal_error('particle_gravity','no such gravx_profile: '//trim(gravx_profile))
@@ -3541,14 +3512,11 @@ module Particles
 !
         case ('linear')
           if (lheader) print*, 'particle_gravity: Linear gravity field in z-direction.'
-          dfp(1:npar_loc,ivpz) = dfp(1:npar_loc,ivpz) - &
-              nu_epicycle2*fp(1:npar_loc,izp)
+          dfp(1:npar_loc,ivpz) = dfp(1:npar_loc,ivpz) - nu_epicycle2*fp(1:npar_loc,izp)
 !
         case ('sinusoidal')
-          if (lheader) &
-              print*, 'particle_gravity: Sinusoidal gravity field in z-direction.'
-          dfp(1:npar_loc,ivpz) = dfp(1:npar_loc,ivpz) + &
-              gravz*sin(kz_gg*fp(1:npar_loc,izp))
+          if (lheader) print*, 'particle_gravity: Sinusoidal gravity field in z-direction.'
+          dfp(1:npar_loc,ivpz) = dfp(1:npar_loc,ivpz) + gravz*sin(kz_gg*fp(1:npar_loc,izp))
 !
         case default
           call fatal_error('particle_gravity','no such gravz_profile: '//trim(gravz_profile))
@@ -3723,7 +3691,7 @@ module Particles
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
       real :: c2, s2, g2, rrcyl, rr2, gp
       real :: sint, cost, sinp, cosp
-      logical :: lcentrifugal_force_gravity=.true., lcoriolis_force_gravity=.true., lindirect_terms=.true.
+      logical :: lcentrifugal_force_gravity=.true.,lcoriolis_force_gravity=.true.,lindirect_terms=.true.
       real, dimension(3) :: ggp
       integer :: k
 !
@@ -3802,17 +3770,16 @@ module Particles
 !
 !  Centrifugal force
 !
-          if (lcentrifugal_force_gravity) &
-              dfp(k,ivpx)  = dfp(k,ivpx) + fp(k,ixp)*Omega_corot**2
+          if (lcentrifugal_force_gravity) dfp(k,ivpx) = dfp(k,ivpx) + fp(k,ixp)*Omega_corot**2
 !
         elseif (lspherical_coords) then
 !
 !  Indirect terms
 !
           if (lindirect_terms) then
-            dfp(k,ivpx) =  dfp(k,ivpx) - g2*sint*cosp
-            dfp(k,ivpy) =  dfp(k,ivpy) - g2*cost*cosp
-            dfp(k,ivpz) =  dfp(k,ivpz) + g2*     sinp
+            dfp(k,ivpx) = dfp(k,ivpx) - g2*sint*cosp
+            dfp(k,ivpy) = dfp(k,ivpy) - g2*cost*cosp
+            dfp(k,ivpz) = dfp(k,ivpz) + g2*     sinp
           endif
 !
 !  Coriolis force
@@ -3971,6 +3938,8 @@ module Particles
       if (lascalar) f(:,m,n,icondensationRate) = 0.0
       if (lascalar) f(:,m,n,iwaterMixingRatio) = 0.0
       if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
+      if (ldiffuse_passive .and. ilncc == 0) &
+          call fatal_error('particles_dust','ldiffuse_passive needs pscalar_nolog=F')
 !
 !  Initialize the pencils that are calculated within this subroutine
 !
@@ -3993,15 +3962,13 @@ module Particles
 !
         if (ldraglaw_steadystate .or. lparticles_spin .or. ldraglaw_stokesschiller) then
           allocate(rep(k1_imn(imn):k2_imn(imn)))
-          if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', &
-              'unable to allocate memory for rep', .true.)
+          if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil','unable to allocate rep',.true.)
           call calc_pencil_rep(fp, rep)
         endif
 !
 !  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple  or ldraglaw_purestokes)
 !
-        if (.not. (ldraglaw_simple .or. ldraglaw_purestokes &
-            .or. ldraglaw_stokesschiller)) then
+        if (.not. (ldraglaw_simple .or. ldraglaw_purestokes .or. ldraglaw_stokesschiller)) then
           if (ldraglaw_steadystate .or. lbrownian_forces) then
             allocate(stocunn(k1_imn(imn):k2_imn(imn)))
             if (.not. allocated(stocunn)) &
@@ -4191,8 +4158,7 @@ module Particles
 !
 ! If we are using the module particles_caustics, then we call for them here:
 !
-              if (lparticles_caustics) &
-                   call dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid,k,tausp1_par)
+              if (lparticles_caustics) call dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid,k,tausp1_par)
 !
 ! If we are using the module particles_tetrad, then we call for them here:
 !
@@ -4273,8 +4239,7 @@ module Particles
                   endif
 !
                   mass_trans_coeff = Sherwood*pscalar_diff/ (2*fp(k,iap))
-                  lambda_tilde = pscalar_sink_rate*mass_trans_coeff/ &
-                      (pscalar_sink_rate+mass_trans_coeff)
+                  lambda_tilde = pscalar_sink_rate*mass_trans_coeff/(pscalar_sink_rate+mass_trans_coeff)
                   dthetadt = lambda_tilde*4.*pi*fp(k,iap)**2
                 endif
 !
@@ -4344,8 +4309,12 @@ module Particles
 !
                         if (lpscalar_sink .and. lpscalar) then
                           if (.not. ldiffuse_passive) then
-                            call find_grid_volume(ixx,iyy,izz,volume_cell)
-                            df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - weight*dthetadt/volume_cell
+                            if (ilncc == 0) then
+                              call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog')
+                            else
+                              call find_grid_volume(ixx,iyy,izz,volume_cell)
+                              df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - weight*dthetadt/volume_cell
+                            endif
                           endif
                         endif
                       enddo
@@ -4451,14 +4420,13 @@ module Particles
                             endif
                           endif
                           if (lpscalar_sink .and. lpscalar) then
-                            if (ilncc == 0) then
-                              call fatal_error('dvvp_dt_pencil', &
-                                  'lpscalar_sink not allowed for pscalar_nolog!')
-                            else
-                              if (.not. ldiffuse_passive) then
+                            if (.not. ldiffuse_passive) then
+                              if (ilncc == 0) then
+                                call fatal_error('dvvp_dt_pencil', &
+                                                 'lpscalar_sink not allowed for pscalar_nolog!')
+                              else
                                 call find_grid_volume(ixx,iyy,izz,volume_cell)
-                                df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                                    weight*dthetadt/volume_cell
+                                df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc)-weight*dthetadt/volume_cell
                               endif
                             endif
                           endif
@@ -4558,14 +4526,13 @@ module Particles
                             endif
                           endif
                           if (lpscalar_sink .and. lpscalar) then
-                            if (ilncc == 0) then
-                              call fatal_error('dvvp_dt_pencil', &
-                                  'lpscalar_sink not allowed for pscalar_nolog!')
-                            else
-                              if (.not. ldiffuse_passive) then
+                            if (.not. ldiffuse_passive) then
+                              if (ilncc == 0) then
+                                call fatal_error('dvvp_dt_pencil', &
+                                                 'lpscalar_sink not allowed for pscalar_nolog')
+                              else
                                 call find_grid_volume(ixx,iyy,izz,volume_cell)
-                                df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                                    weight*dthetadt/volume_cell
+                                df(ixx,iyy,izz,ilncc)=df(ixx,iyy,izz,ilncc)-weight*dthetadt/volume_cell
                               endif
                             endif
                           endif
@@ -4577,8 +4544,6 @@ module Particles
 !  GAussian Box (GAB) scheme.
 !
                 elseif (lparticlemesh_gab) then
-!
-!
 !
                   call find_grid_volume(ix0,iy0,iz0,volume_cell)
 !
@@ -4596,8 +4561,8 @@ module Particles
                         mp_vcell = 4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                       endif
                     else
-                      call fatal_error('particles_dust','diffusion of dragforce needs &
-                          & ldragforce_gas_par and ldraglaw_steadystate')
+                      call fatal_error('particles_dust', &
+                        'diffusion of dragforce needs ldragforce_gas_par and ldraglaw_steadystate')
                     endif
                   else
 !
@@ -4638,16 +4603,15 @@ module Particles
                             endif
                             if (.not. ldiffuse_dragf) then
                               df(ixx,iyy,izz,iux:iuz) = df(ixx,iyy,izz,iux:iuz) - &
-                                  mp_vcell*rho1_point*dragforce*weight
+                                                        mp_vcell*rho1_point*dragforce*weight
                             endif
                           endif
                           if (lpscalar_sink .and. lpscalar) then
-                            if (ilncc == 0) then
-                              call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog!')
-                            else
-                              if (.not. ldiffuse_passive) then
-                                df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                                    weight*dthetadt/volume_cell
+                            if (.not. ldiffuse_passive) then
+                              if (ilncc == 0) then
+                                call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog')
+                              else
+                                df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - weight*dthetadt/volume_cell
                               endif
                             endif
                           endif
@@ -4678,19 +4642,17 @@ module Particles
                       call get_rhopswarm(mp_swarm,fp,k,l,m,n,mp_vcell)
                     endif
                     if (.not. lcompensate_sedimentation) then
-                      df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                          mp_vcell*p%rho1(l-nghost)*dragforce
+                      df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - mp_vcell*p%rho1(l-nghost)*dragforce
                     else
                       df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                          mp_vcell*p%rho1(l-nghost)*dragforce*compensate_sedimentation
+                                          mp_vcell*p%rho1(l-nghost)*dragforce*compensate_sedimentation
                     endif
                   endif
                   if (lpscalar_sink .and. lpscalar) then
-                    if (ilncc == 0) then
-                      call fatal_error('dvvp_dt_pencil', &
-                          'lpscalar_sink not allowed for pscalar_nolog!')
-                    else
-                      if (.not. ldiffuse_passive) then
+                    if (.not. ldiffuse_passive) then
+                      if (ilncc == 0) then
+                        call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog')
+                      else
                         call find_grid_volume(l,m,n,volume_cell)
                         df(l,m,n,ilncc) = df(l,m,n,ilncc) - dthetadt/volume_cell
                       endif
@@ -4700,19 +4662,16 @@ module Particles
 !
 !  Adding the passive scalar contribution to the auxiliary grid
 !
-                if (ldiffuse_passive .and. lpscalar_sink .and. &
-                    .not. lpencil_check_at_work) then
+                if (ldiffuse_passive .and. lpscalar_sink .and. .not. lpencil_check_at_work) then
                   call find_grid_volume(ix0,iy0,iz0,volume_cell)
                   f(ix0,iy0,iz0,idlncc) = f(ix0,iy0,iz0,idlncc) - dthetadt/volume_cell
                 endif
 !
 !  Adding the particle dragforce contribution to the auxiliary grid
 !
-                if (ldiffuse_dragf .and. ldragforce_gas_par .and. &
-                    .not. lpencil_check_at_work) then
+                if (ldiffuse_dragf .and. ldragforce_gas_par .and. .not. lpencil_check_at_work) then
                   call find_grid_volume(ix0,iy0,iz0,volume_cell)
-                  f(ix0,iy0,iz0,idfx:idfz) =  f(ix0,iy0,iz0,idfx:idfz) &
-                      -mp_vcell*rho1_point*dragforce
+                  f(ix0,iy0,iz0,idfx:idfz) = f(ix0,iy0,iz0,idfx:idfz) - mp_vcell*rho1_point*dragforce
                 endif
 !
               endif
@@ -4742,8 +4701,7 @@ module Particles
 !
 ! WL: Check if this is right. drag_heat is of dimension nx, not a scalar
 !
-                drag_heat(ix0-nghost) = drag_heat(ix0-nghost) + &
-                    mp_vcell*tausp1_par*up2
+                drag_heat(ix0-nghost) = drag_heat(ix0-nghost) + mp_vcell*tausp1_par*up2
               endif
 !
 !  The minimum friction time of particles in a grid cell sets the local friction
@@ -4888,9 +4846,8 @@ module Particles
 !  For stiff drag force equations we need to store the forces that are
 !  unique to the gas.
 !
-      if (ldragforce_stiff .and. .not. lpencil_check_at_work) then
-        f(l1:l2,m,n,ifgx:ifgz) = p%fpres+p%jxbr+p%fvisc
-      endif
+      if (ldragforce_stiff .and. .not. lpencil_check_at_work) &
+          f(l1:l2,m,n,ifgx:ifgz) = p%fpres+p%jxbr+p%fvisc
 !
 !  particle-particle separation and relative velocity diagnostics
 !
@@ -5059,8 +5016,7 @@ module Particles
       if (lsinkpoint) then
         k = 1
         do while (k <= npar_loc)
-          rp = sqrt((fp(k,ixp)-xsinkpoint)**2+(fp(k,iyp)-ysinkpoint)**2+ &
-              (fp(k,izp)-zsinkpoint)**2)
+          rp = sqrt((fp(k,ixp)-xsinkpoint)**2+(fp(k,iyp)-ysinkpoint)**2+(fp(k,izp)-zsinkpoint)**2)
           if (rp < rsinkpoint) then
             call remove_particle(fp,ipar,k,dfp,ineargrid)
           else
@@ -5134,13 +5090,11 @@ module Particles
             do iy = iy1,iy2
               do ix = ix1,ix2
                 if (lshear) then
-                  rp_box = sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2+ &
-                      (fp(k,iyp)+Ly*iy-deltay*ix-ysinkpar)**2+ &
-                          (fp(k,izp)+Lz*iz-zsinkpar)**2)
+                  rp_box = sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2 + &
+                      (fp(k,iyp)+Ly*iy-deltay*ix-ysinkpar)**2 + (fp(k,izp)+Lz*iz-zsinkpar)**2)
                 else
-                  rp_box = sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2+ &
-                      (fp(k,iyp)+Ly*iy-ysinkpar)**2+ &
-                          (fp(k,izp)+Lz*iz-zsinkpar)**2)
+                  rp_box = sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2 + &
+                           (fp(k,iyp)+Ly*iy-ysinkpar)**2+(fp(k,izp)+Lz*iz-zsinkpar)**2)
                 endif
                 if (rp < 0.0) then
                   rp = rp_box
@@ -5153,8 +5107,7 @@ module Particles
           if (ipar(k) /= 1 .and. rp < rsinkparticle_1) then
             if (lparticles_density) then
               rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm)
-              momp_swarm_removed = momp_swarm_removed + &
-                  fp(k,ivpx:ivpz)*fp(k,irhopswarm)
+              momp_swarm_removed = momp_swarm_removed + fp(k,ivpx:ivpz)*fp(k,irhopswarm)
 !              if (lshear) then
 !                momp_swarm_removed(2) = momp_swarm_removed(2) + &
 !                    Sshear*fp(k,ixp)*fp(k,irhopswarm)
@@ -5205,9 +5158,8 @@ module Particles
 !                  fp(ksink,irhopswarm) + momp_swarm_removed(3))/ &
 !                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
 !            else
-            fp(ksink,ivpx:ivpz) = (fp(ksink,ivpx:ivpz)* &
-                fp(ksink,irhopswarm) + momp_swarm_removed)/ &
-                (fp(ksink,irhopswarm) + rhop_swarm_removed)
+            fp(ksink,ivpx:ivpz) = (fp(ksink,ivpx:ivpz)*fp(ksink,irhopswarm) + momp_swarm_removed)/ &
+                                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
 !            endif
             fp(ksink,irhopswarm) = fp(ksink,irhopswarm) + rhop_swarm_removed
           endif
@@ -5294,8 +5246,7 @@ module Particles
 !
       if (ldraglaw_epstein) then
         if (iap /= 0) then
-          if (fp(k,iap) /= 0.0) then
-            tausp1_par = (sqrt(p%cs2(inx0))*p%rho(inx0))/(fp(k,iap)*rhopmat)
+          if (fp(k,iap) /= 0.0) tausp1_par = (sqrt(p%cs2(inx0))*p%rho(inx0))/(fp(k,iap)*rhopmat)
 !
 ! DM : 10 Nov  2016
 ! For the usual Epstein drag we need also the thermal velocity and the
@@ -5304,7 +5255,6 @@ module Particles
 ! a better prescription for flows with shocks if the particle sits very close to
 ! a shock.
 !
-          endif
         else
 !  Check if we are using multiple or single particle species.
           if (npar_species > 1) then
@@ -5331,7 +5281,7 @@ module Particles
             elseif (lspherical_coords) then
               OO = (fp(k,ixp)*sin(fp(k,iyp)))**(-1.5)
             else
-              call fatal_error("get_frictiontime", "no valid coord system")
+              call fatal_error("get_frictiontime", "no valid coordinate system")
               OO = 0.
             endif
             tausp1_par = tmp*OO
@@ -5365,7 +5315,7 @@ module Particles
 !  when Sigmag is given in g/cm^2.
 !
         if (iap == 0) &
-          call fatal_error('get_frictiontime','need particle radius as dynamical variable for Stokes law.')
+          call fatal_error('get_frictiontime','need particle radius as dynamical variable for Stokes law')
 
         if (fp(k,iap) < 2.25*mean_free_path_gas) then
           tausp1_par = 1/(fp(k,iap)*rhopmat)
@@ -5397,20 +5347,17 @@ module Particles
       elseif (ldraglaw_stokesschiller) then
         if (.not. present(rep)) then
           call fatal_error('get_frictiontime','need particle reynolds '// &
-              'number, rep, to calculate the stokes_schiller drag '// &
-                  'relaxation time!')
+              'number, rep, to calculate the stokes_schiller drag relaxation time')
         else
           call calc_draglaw_steadystate(fp,k,rep,1.0,tausp1_par)
         endif
       elseif (ldraglaw_steadystate) then
         if (.not. present(rep)) then
           call fatal_error('get_frictiontime','need particle reynolds '// &
-              'number, rep, to calculate the steady state drag '// &
-                  'relaxation time!')
+              'number, rep, to calculate the steady state drag relaxation time')
         elseif (.not. present(stocunn)) then
           call fatal_error('get_frictiontime','need particle stokes '// &
-              'cunningham factor, stocunn, to calculate the steady '// &
-                  ' state drag relaxation time!')
+              'cunningham factor, stocunn, to calculate the steady state drag relaxation time')
         else
           call calc_draglaw_steadystate(fp,k,rep,stocunn,tausp1_par)
         endif
@@ -5438,8 +5385,7 @@ module Particles
 !
         if (tausg_min /= 0.0) then
           tausg1_point = tausp1_par*p%epsp(ix0-nghost)
-          if (tausg1_point > tausg1_max) &
-              tausp1_par = tausg1_max/p%epsp(ix0-nghost)
+          if (tausg1_point > tausg1_max) tausp1_par = tausg1_max/p%epsp(ix0-nghost)
         endif
 !
 !  Increase friction time linearly with dust density where the dust-to-gas
@@ -5597,10 +5543,9 @@ module Particles
 !  and sigma_coll its cross section (2e-15 cm^2).
 !  Assume that (mu/sigma_coll) is the input parameter mean_free_path_gas
 !
-        if (mean_free_path_gas == 0) then
-          call fatal_error("calc_draglaw_parameters","You want to use Stokes drag"// &
-              "but you forgot to set 'mean_free_path_gas' in the *.in files.")
-        endif
+        if (mean_free_path_gas == 0) &
+          call fatal_error("calc_draglaw_parameters","You use Stokes drag"// &
+              "but you forgot to set 'mean_free_path_gas' in the *.in files")
 !
         if (nzgrid == 1) then
           !the sqrt(2pi) factor is inside the mean_free_path_gas constant
@@ -5646,7 +5591,7 @@ module Particles
         elseif (reynolds > 1500) then
           kd = 0.11*reynolds
         else
-          call fatal_error_local("calc_draglaw_parameters", "'reynolds' seems to be NaN!")
+          call fatal_error_local("calc_draglaw_parameters", "'reynolds' seems to be NaN")
           kd = 0.
         endif
 !
@@ -5680,13 +5625,12 @@ module Particles
           if (nzgrid == 1 .and. OO/=0.) then
             tausp1_par = 2*pi_1*OO* p%rho(inx0)*fac/(fp(k,iap)*rhopmat)
           else
-            tausp1_par = sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)* &
-                fac/(fp(k,iap)*rhopmat)
+            tausp1_par = sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)*fac/(fp(k,iap)*rhopmat)
           endif
         endif
       else
-!normalize to make tausp1 not dependent on cs0 or rho0
-!bad because it comes at the expense of evil divisions
+! normalize to make tausp1 not dependent on cs0 or rho0
+! bad because it comes at the expense of evil divisions
         if (nzgrid == 1 .and. OO/=0.) then
           if (luse_tau_ap) then
             tausp1_par = tmp1*2*pi_1*OO*p%rho(inx0)*fac/(rho0*rhopmat)
@@ -5752,8 +5696,7 @@ module Particles
 !
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-                taucool1*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - taucool1*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
           enddo
 !
           if (lfirst .and. ldt) dt1_max = max(dt1_max,taucool1/cdtp)
@@ -5770,8 +5713,7 @@ module Particles
           if (npar_species > 1) then
             tausp1m = 0.0
           else
-            call get_frictiontime(f,fp,p,ineargrid,1,tausp1_par, &
-                nochange_opt = .true.)
+            call get_frictiontime(f,fp,p,ineargrid,1,tausp1_par, nochange_opt = .true.)
           endif
 !  Need vpm=<|vvp-<vvp>|> to calculate the collisional time-scale.
           vvpm = 0.0
@@ -5780,8 +5722,7 @@ module Particles
             ix0 = ineargrid(k,1)
             vvpm(ix0-nghost,:) = vvpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
             if (npar_species > 1) then
-              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par, &
-                  nochange_opt = .true.)
+              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,nochange_opt = .true.)
               tausp1m(ix0-nghost) = tausp1m(ix0-nghost) + tausp1_par
             endif
           enddo
@@ -5794,10 +5735,9 @@ module Particles
 !  vpm
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
-            vpm(ix0-nghost) = vpm(ix0-nghost) + &
-                sqrt( (fp(k,ivpx)-vvpm(ix0-nghost,1))**2 + &
-                (fp(k,ivpy)-vvpm(ix0-nghost,2))**2 + &
-                (fp(k,ivpz)-vvpm(ix0-nghost,3))**2 )
+            vpm(ix0-nghost) = vpm(ix0-nghost) + sqrt( (fp(k,ivpx)-vvpm(ix0-nghost,1))**2 + &
+                                                      (fp(k,ivpy)-vvpm(ix0-nghost,2))**2 + &
+                                                      (fp(k,ivpz)-vvpm(ix0-nghost,3))**2 )
           enddo
           do l = 1,nx
             if (p%np(l) > 1.0) then
@@ -5822,9 +5762,8 @@ module Particles
                 tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
             if (lcollisional_heat .or. ldiagnos) then
               call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
-              coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + &
-                  rhop_swarm_par*tau_coll1(ix0-nghost)* &
-                  sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
+              coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + rhop_swarm_par*tau_coll1(ix0-nghost)* &
+                                      sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
             endif
           enddo
 !
@@ -5843,39 +5782,31 @@ module Particles
 !  Limit inverse time-step of collisional cooling if requested.
             do while (k /= 0)
               dt1_cool = 0.0
-              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_park, &
-                  nochange_opt = .true.)
+              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_park, nochange_opt = .true.)
               tausp_park = 1/tausp1_park
               tausp_park3 = tausp_park**3
               j = k
               do while (kneighbour(j) /= 0)
 !  Collide with the neighbours of k and their neighbours.
                 j = kneighbour(j)
-                call get_frictiontime(f,fp,p,ineargrid,j,tausp1_parj, &
-                    nochange_opt = .true.)
+                call get_frictiontime(f,fp,p,ineargrid,j,tausp1_parj, nochange_opt = .true.)
                 tausp_parj = 1/tausp1_parj
                 tausp_parj3 = tausp_parj**3
 !  Collision velocity.
                 deltavp_vec = fp(k,ivpx:ivpz)-fp(j,ivpx:ivpz)
-                deltavp = sqrt( deltavp_vec(1)**2 + deltavp_vec(2)**2 + &
-                    deltavp_vec(3)**2 )
-                vbar_jk = &
-                    (tausp_parj3*fp(k,ivpx:ivpz)+tausp_park3*fp(j,ivpx:ivpz))/ &
+                deltavp = sqrt( deltavp_vec(1)**2 + deltavp_vec(2)**2 + deltavp_vec(3)**2 )
+                vbar_jk = (tausp_parj3*fp(k,ivpx:ivpz)+tausp_park3*fp(j,ivpx:ivpz))/ &
                     (tausp_parj3+tausp_park3)
 !  Cooling time-scale.
                 call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
-                tau_cool1_par = &
-                    (1.0-coeff_restitution)* &
-                    rhop_swarm_par*deltavp*(tausp_parj+tausp_park)**2/ &
-                    (tausp_parj3+tausp_park3)
+                tau_cool1_par = (1.0-coeff_restitution)* &
+                    rhop_swarm_par*deltavp*(tausp_parj+tausp_park)**2/(tausp_parj3+tausp_park3)
                 dt1_cool = dt1_cool+tau_cool1_par
 !                if (tau_coll_min>0.0) then
 !                  if (tau_cool1_par>tau_coll1_max) tau_cool1_par=tau_coll1_max
 !                endif
-                dfp(j,ivpx:ivpz) = dfp(j,ivpx:ivpz) - &
-                    tau_cool1_par*(fp(j,ivpx:ivpz)-vbar_jk)
-                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-                    tau_cool1_par*(fp(k,ivpx:ivpz)-vbar_jk)
+                dfp(j,ivpx:ivpz) = dfp(j,ivpx:ivpz) - tau_cool1_par*(fp(j,ivpx:ivpz)-vbar_jk)
+                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tau_cool1_par*(fp(k,ivpx:ivpz)-vbar_jk)
               enddo
               if (lfirst .and. ldt) dt1_max = max(dt1_max(l),dt1_cool/cdtp)
 !  Go through all possible k.
@@ -5894,14 +5825,14 @@ module Particles
           vvpm_species = 0.0
           vpm_species = 0.0
           np_species = 0.0
+!
 !  Calculate mean velocity and number of particles for each species.
+!
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
             ispecies = assign_species(ipar(k))
-            vvpm_species(ix0-nghost,:,ispecies) = &
-                vvpm_species(ix0-nghost,:,ispecies) + fp(k,ivpx:ivpz)
-            np_species(ix0-nghost,ispecies)  = &
-                np_species(ix0-nghost,ispecies) + 1.0
+            vvpm_species(ix0-nghost,:,ispecies) = vvpm_species(ix0-nghost,:,ispecies) + fp(k,ivpx:ivpz)
+            np_species(ix0-nghost,ispecies) = np_species(ix0-nghost,ispecies) + 1.0
           enddo
           do l = 1,nx
             do ispecies = 1,npar_species
@@ -5914,8 +5845,7 @@ module Particles
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
             ispecies = assign_species(ipar(k))
-            vpm_species(ix0-nghost,ispecies) = &
-                vpm_species(ix0-nghost,ispecies) + sqrt( &
+            vpm_species(ix0-nghost,ispecies) = vpm_species(ix0-nghost,ispecies) + sqrt( &
                 (fp(k,ivpx)-vvpm_species(ix0-nghost,1,ispecies))**2 + &
                 (fp(k,ivpy)-vvpm_species(ix0-nghost,2,ispecies))**2 + &
                 (fp(k,ivpz)-vvpm_species(ix0-nghost,3,ispecies))**2 )
@@ -5942,8 +5872,7 @@ module Particles
                   (vvpm_species(:,3,ispecies)-vvpm_species(:,3,jspecies))**2)
               call get_rhopswarm(mp_swarm,fp,k,m,n,rhop_swarm_mn)
               tau_coll1_species(:,jspecies,ispecies) = &
-                  vcoll*np_species(:,ispecies)*rhop_swarm_mn*p%rho1 / ( &
-                  tausp_species(jspecies)**3/ &
+                  vcoll*np_species(:,ispecies)*rhop_swarm_mn*p%rho1 / (tausp_species(jspecies)**3/ &
                   (tausp_species(ispecies)+tausp_species(jspecies))**2 )
               where (np_species(:,ispecies) /= 0.0) &
                   tau_coll1_species(:,ispecies,jspecies) = &
@@ -5963,7 +5892,7 @@ module Particles
               do l = 1,nx
                 if (tau_coll1_tot(l,ispecies) > tau_coll1_max) then
                   tau_coll1_species(l,ispecies,:) = tau_coll1_species(l,ispecies,:)* &
-                      tau_coll1_max/tau_coll1_tot(l,ispecies)
+                                                    tau_coll1_max/tau_coll1_tot(l,ispecies)
                 endif
               enddo
             enddo
@@ -5989,8 +5918,7 @@ module Particles
                   (fp(k,ivpx:ivpz)-vvpm_species(ix0-nghost,:,jspecies))
               if (lcollisional_heat .or. ldiagnos) then
                 call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
-                coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + &
-                    rhop_swarm_par* &
+                coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + rhop_swarm_par* &
                     tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
                     sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz) - &
                     vvpm_species(ix0-nghost,:,jspecies)))
@@ -6005,6 +5933,7 @@ module Particles
       if (lentropy .and. lcollisional_heat) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%rho1*p%TT1*coll_heat
 !
 !  Diagnostics.
+!
       if (ldiagnos) call sum_mn_name(coll_heat,idiag_decollp)
 !
     endsubroutine collisional_cooling
@@ -6027,7 +5956,9 @@ module Particles
       integer :: k, l, ix0
 !
       if (npar_imn(imn) /= 0) then
+!
 !  Calculate mean particle velocity.
+!
         vvpm = 0.0
         do k = k1_imn(imn),k2_imn(imn)
           ix0 = ineargrid(k,1)
@@ -6159,8 +6090,7 @@ module Particles
         elseif (ivis == 'nu-therm') then
           nu = nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
         elseif (ivis == 'mu-therm') then
-          nu = nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn))) &
-              /interp_rho(k1_imn(imn):k2_imn(imn))
+          nu = nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))/interp_rho(k1_imn(imn):k2_imn(imn))
         else
           call fatal_error('calc_pencil_rep','no such ivis: '//trim(ivis))
         endif
@@ -6177,7 +6107,8 @@ module Particles
       elseif (particle_radius > 0.0) then
         rep = rep * particle_radius
       else
-        call fatal_error('calc_pencil_rep', 'unable to calculate particle Reynolds number without a particle radius')
+        call fatal_error('calc_pencil_rep', &
+             'unable to calculate the particle Reynolds number without a particle radius')
       endif
 !
     endsubroutine calc_pencil_rep
@@ -6205,8 +6136,7 @@ module Particles
         if (lstocunn1) then
           stocunn(k) = 1.
         else
-          stocunn(k) = 1.+2.*mean_free_path_gas/dia* &
-                      (1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
+          stocunn(k) = 1.+2.*mean_free_path_gas/dia*(1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
         endif
 !
       enddo
@@ -6263,9 +6193,8 @@ module Particles
 !
 !  Particle diameter
 !
-      if (.not. lparticles_radius) &
-        call fatal_error('calc_draglaw_purestokes', &
-            'need particles_radius module to calculate the relaxation time!')
+      if (.not. lparticles_radius) call fatal_error('calc_draglaw_purestokes', &
+               'need particles_radius module to calculate the relaxation time')
 !
       dia = 2.0*fp(k,iap)
 !
@@ -6315,16 +6244,14 @@ module Particles
         elseif (ivis == 'mu-therm') then
           nu = nu_*sqrt(interp_TT(k)) /interp_rho(k)
         else
-          call fatal_error('calc_draglaw_steadystate','no such ivis'//trim(ivis))
+          call fatal_error('calc_draglaw_steadystate','no such ivis: '//trim(ivis))
         endif
       endif
 !
 !  Particle diameter
 !
-      if (.not. lparticles_radius) then
-        call fatal_error('calc_draglaw_steadystate', &
-            'need particles_radius module to calculate the relaxation time!')
-      endif
+      if (.not. lparticles_radius) call fatal_error('calc_draglaw_steadystate', &
+            'need particles_radius module to calculate the relaxation time')
 !
       dia = 2.0*fp(k,iap)
 !
@@ -6383,7 +6310,7 @@ module Particles
       elseif (ivis == 'mu-therm') then
         nu = nu_*sqrt(interp_TT(k)) /interp_rho(k)
       else
-        call fatal_error('calc_brownian_force','no such ivis'//trim(ivis))
+        call fatal_error('calc_brownian_force','no such ivis: '//trim(ivis))
       endif
 !
 !  Particle diameter:
@@ -6485,11 +6412,11 @@ module Particles
         phi_therm = -9*pi/cond_ratio
       elseif (thermophoretic_eq == 'transition') then
         phi_therm = -12.0*pi*(Ktc*(1.0+cond_ratio*Ce*Kn)+3.0*Cm*Kn*(1.0-cond_ratio+cond_ratio*Ce*Kn)) &
-            /((1.0+3.0*Kn*exp(-Cint/Kn))*(1.0+3.0*Cm*Kn)*(2.0+cond_ratio+2.0*cond_ratio*Ce*Kn))
+                    /((1.0+3.0*Kn*exp(-Cint/Kn))*(1.0+3.0*Cm*Kn)*(2.0+cond_ratio+2.0*cond_ratio*Ce*Kn))
       elseif (thermophoretic_eq == 'free_molecule') then
         phi_therm = 0.0
       else
-        call fatal_error('calc_thermophoretic_force','No such thermophoretic equation: '// &
+        call fatal_error('calc_thermophoretic_force','no such thermophoretic equation: '// &
                          trim(thermophoretic_eq))
       endif
 !
