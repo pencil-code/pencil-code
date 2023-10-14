@@ -1232,7 +1232,8 @@ module Equ
 !
       headtt = headt .and. lfirst .and. lroot
 !
-!omp do private(p,pfreeze,iv,imn,n,m)
+!$omp parallel num_threads(num_threads-2)
+!$omp do private(p,pfreeze,iv,imn,n,m)
 !
       do imn=1,nyz
 
@@ -1386,8 +1387,8 @@ module Equ
 !
       enddo
 !
-!omp end do
-!omp end parallel
+!$omp end do
+!$omp end parallel
 
     endsubroutine freeze
 !***********************************************************************
