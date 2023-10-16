@@ -324,6 +324,7 @@ module Energy
   integer :: idiag_gTrms=0      ! DIAG_DOC: $(\nabla T)_{\rm rms}$
   integer :: idiag_gsrms=0      ! DIAG_DOC: $(\nabla s)_{\rm rms}$
   integer :: idiag_gTxgsrms=0   ! DIAG_DOC: $(\nabla T\times\nabla s)_{\rm rms}$
+  integer :: idiag_gTxgSom=0    ! DIAG_DOC: $\left<  (\nabla T\times\nabla s)\cdot\boldsymbol{\omega} \right>$
   integer :: idiag_fconvm=0     ! DIAG_DOC: $\left< c_p \varrho u_z T \right>$
   integer :: idiag_TTp=0        ! DIAG_DOC:
   integer :: idiag_ssmr=0       ! DIAG_DOC:
@@ -3081,7 +3082,7 @@ module Energy
 !
 !  diagnostics for baroclinic term
 !
-      if (idiag_gTrms/=0.or.idiag_gTxgsrms/=0) &
+      if (idiag_gTrms/=0.or.idiag_gTxgsrms/=0.or.idiag_gTxgsom/=0) &
         lpenc_diagnos(i_gTT)=.true.
       if (idiag_gTxmxy/=0 .or. idiag_gTymxy/=0 .or. idiag_gTzmxy/=0 .or. &
           idiag_gTxgsxmz/=0 .or. idiag_gTxgsymz/=0 .or. idiag_gTxgszmz/=0 .or. &
@@ -3089,8 +3090,8 @@ module Energy
           idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. idiag_gTxgszmxy/=0 .or. &
           idiag_gTxgsx2mxy/=0 .or. idiag_gTxgsy2mxy/=0 .or. idiag_gTxgsz2mxy/=0) &
         lpenc_diagnos2d(i_gTT)=.true.
-      if (idiag_gsrms/=0 .or. idiag_gTxgsrms/=0 .or. idiag_gss2mz/=0) &
-          lpenc_diagnos(i_gss)=.true.
+      if (idiag_gsrms/=0 .or. idiag_gTxgsrms/=0 .or. idiag_gss2mz/=0 .or. &
+          idiag_gTxgsom/=0) lpenc_diagnos(i_gss)=.true.
       if (idiag_gsxmxy/=0 .or. idiag_gsymxy/=0 .or. idiag_gszmxy/=0 .or. &
           idiag_gTxgsxmz/=0 .or. idiag_gTxgsymz/=0 .or. idiag_gTxgszmz/=0 .or. &
           idiag_gTxgsx2mz/=0 .or. idiag_gTxgsy2mz/=0 .or. idiag_gTxgsz2mz/=0 .or. &
@@ -3456,12 +3457,12 @@ module Energy
 !  Calculate entropy related diagnostics.
 !
       use Diagnostics
-      use Sub, only: cross, dot2
+      use Sub, only: cross, dot, dot2
 
       type(pencil_case) :: p
 
       real, dimension(nx) :: ufpres, glnTT2, Ktmp
-      real, dimension(nx) :: gT2,gs2,gTxgs2,chix
+      real, dimension(nx) :: gT2,gs2,gTxgso,gTxgs2,chix
       real, dimension(nx,3) :: gTxgs
       real :: uT,fradz,TTtop
       integer :: i
@@ -3548,6 +3549,12 @@ module Energy
           call cross(p%gTT,p%gss,gTxgs)
           call dot2(gTxgs,gTxgs2)
           call sum_mn_name(gTxgs2,idiag_gTxgsrms,lsqrt=.true.)
+        endif
+
+        if (idiag_gTxgsom/=0) then
+          call cross(p%gTT,p%gss,gTxgs)
+          call dot(p%oo,gTxgS,gTxgso)
+          call sum_mn_name(gTxgso,idiag_gTxgsom)
         endif
 !
 !  Radiative heat flux at the bottom (assume here that hcond=hcond0=const).
@@ -6703,7 +6710,7 @@ module Energy
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_ssmax=0; idiag_ssmin=0; idiag_gTmax=0; idiag_csmax=0
-        idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0
+        idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0; idiag_gTxgsom=0
         idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_heatmz=0; idiag_fradz=0
         idiag_Fenthz=0; idiag_Fenthupz=0; idiag_Fenthdownz=0
         idiag_fturbz=0; idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
@@ -6777,6 +6784,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'gTrms',idiag_gTrms)
         call parse_name(iname,cname(iname),cform(iname),'gsrms',idiag_gsrms)
         call parse_name(iname,cname(iname),cform(iname),'gTxgsrms',idiag_gTxgsrms)
+        call parse_name(iname,cname(iname),cform(iname),'gTxgsom',idiag_gTxgsom)
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_TTp)
         call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
