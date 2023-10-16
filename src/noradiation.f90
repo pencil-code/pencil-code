@@ -13,7 +13,6 @@
 !
 module Radiation
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -23,7 +22,6 @@ module Radiation
   include 'radiation.h'
 !
   contains
-!
 !***********************************************************************
     subroutine register_radiation
 !
@@ -50,42 +48,11 @@ module Radiation
 !***********************************************************************
     subroutine initialize_radiation
 !
-!  Perform any post-parameter-read initialization i.e. calculate derived
-!  parameters.
+      !!real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-!  24-nov-02/tony: coded
+      !!call keep_compiler_quiet(f)
 !
     endsubroutine initialize_radiation
-!***********************************************************************
-    subroutine radiative_cooling(f,df,p)
-!
-!  dummy routine
-!
-! 25-mar-03/axel+tobi: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine radiative_cooling
-!***********************************************************************
-    subroutine radiative_pressure(f,df,p)
-!
-!  dummy routine
-!
-!  25-mar-03/axel+tobi: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine radiative_pressure
 !***********************************************************************
     subroutine init_rad(f)
 !
@@ -146,6 +113,18 @@ module Radiation
       call keep_compiler_quiet(p)
 
     endsubroutine dradiation_dt
+!***********************************************************************
+    subroutine calc_diagnostics_radiation(f,p)
+
+      use Diagnostics
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_radiation
 !***********************************************************************
     subroutine read_radiation_init_pars(iostat)
 !

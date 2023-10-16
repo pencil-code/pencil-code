@@ -1016,6 +1016,7 @@ module Hydro
 !
       use BorderProfiles, only: request_border_driving
       use Initcond
+      use Mpicomm, only: mpibcast
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Sub, only: step, erfunc, register_report_aux
       use Slices_methods, only: alloc_slice_buffers
@@ -1287,7 +1288,7 @@ module Hydro
       if (lcalc_uumeanxy .or. lcalc_ruumeanxy) then
         myl=my
         if (lyinyang) then
-          call fatal_error('initialize_hydro','Calculation of z average not implmented for Yin-Yang')
+          call not_implemented('initialize_hydro','calculation of z average for Yin-Yang grid')
           !call initialize_zaver_yy(myl,nycap)
         endif
         allocate(uumxy(mx,myl,3))
@@ -1471,8 +1472,7 @@ module Hydro
       case ('nothing')
 
       case default
-         if (lroot) print*,'initialize_hydro: No profile of mean flow "'//trim(uuprof)//'"'
-
+         call fatal_error("initialize_hydro","no such profile of mean flow: "//trim(uuprof))
       endselect
 !
       if (ivid_oo/=0) call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
@@ -1516,7 +1516,7 @@ module Hydro
         f(:,:,:,iTij:iTij+5)=0.
         if (llorentz_as_aux) f(:,:,:,ilorentz)=0.
         if (lmagnetic) then
-          if (ibx==0) call fatal_error("hydro_before_boundary","must use lbb_as_comaux=T")
+          if (ibx==0) call fatal_error("hydro_before_boundary","must use lbb_as_comaux=T for lconservative=T")
           if (allocated(Bsquared)) deallocate(Bsquared)
           allocate(Bsquared(mx))
         endif
@@ -1525,15 +1525,26 @@ module Hydro
 !  Allocate Higgsless field
 !
       if (lhiggsless) then
-        open(1,file='higgsless.dat')
-        read(1,*) nhless
-        if (lroot.and.ip<14) print*,'initialize_hydro: nhless=',nhless
         if (allocated(thless)) deallocate(thless, xhless, yhless, zhless)
+
+        if (lroot) then
+          open(1,file='higgsless.dat')
+          read(1,*) nhless
+        endif
+        call mpibcast(nhless)
         allocate(thless(nhless), xhless(nhless), yhless(nhless), zhless(nhless))
-        do jhless=1,nhless
-          read(1,*) thless(jhless), xhless(jhless), yhless(jhless), zhless(jhless)
-        enddo
-        close(1)
+        if (lroot) then
+          do jhless=1,nhless
+            read(1,*) thless(jhless), xhless(jhless), yhless(jhless), zhless(jhless)
+          enddo
+          close(1)
+          if (ip<14) print*,'initialize_hydro: nhless=',nhless
+        endif
+
+        call mpibcast(thless,nhless)
+        call mpibcast(xhless,nhless)
+        call mpibcast(yhless,nhless)
+        call mpibcast(zhless,nhless)
       endif
 
       endsubroutine initialize_hydro
