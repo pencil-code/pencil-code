@@ -2750,7 +2750,7 @@ module Hydro
           idiag_oxm /=0 .or. idiag_oym /=0 .or. idiag_ozm /=0 .or. &
           idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0 .or. &
           idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. &
-          idiag_pvzm /=0 .or. idiag_quxom/=0) &
+          idiag_pvzm /=0 .or. idiag_quxom/=0 .or. idiag_qezxum/=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. idiag_o2u2m/=0 .or. idiag_o2sphm/=0 .or. &
           idiag_ormsh/=0 .or. idiag_o2mz/=0 ) lpenc_diagnos(i_o2)=.true.
@@ -6299,6 +6299,7 @@ endif
         idiag_qmax=0
         idiag_qom=0
         idiag_quxom=0
+        idiag_qezxum=0
         idiag_pvzm=0
         idiag_oumx=0
         idiag_oumy=0
@@ -6507,6 +6508,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
         call parse_name(iname,cname(iname),cform(iname),'qom',idiag_qom)
         call parse_name(iname,cname(iname),cform(iname),'quxom',idiag_quxom)
+        call parse_name(iname,cname(iname),cform(iname),'qezxum',idiag_qezxum)
         call parse_name(iname,cname(iname),cform(iname),'ormsn',idiag_ormsn)
         call parse_name(iname,cname(iname),cform(iname),'ormss',idiag_ormss)
         call parse_name(iname,cname(iname),cform(iname),'omax',idiag_omax)
