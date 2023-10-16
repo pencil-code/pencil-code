@@ -512,6 +512,7 @@ module Hydro
   integer :: idiag_qom=0        ! DIAG_DOC: $\left<\qv\cdot\omv\right>$
   integer :: idiag_quxom=0      ! DIAG_DOC: $\left<\qv\cdot(\uv\times\omv)\right>$
   integer :: idiag_qezxum=0     ! DIAG_DOC: $\left< (\boldsymbol{e_z} \times \mathbf{u}) \cdot \mathbf{q} \right>$
+  integer :: idiag_quysm=0      ! DIAG_DOC: $\left< \frac{1}{\tau} (u_y^S - u_y) \mathbf{\hat{y}} \cdot \mathbf{q} \right>$
   integer :: idiag_pvzm=0       ! DIAG_DOC: $\left<\omega_z + 2\Omega/\varrho\right>$
                                 ! DIAG_DOC: \quad(z component of potential vorticity)
   integer :: idiag_oumphi=0     ! DIAG_DOC: $\left<\omv\cdot\uv\right>_\varphi$
@@ -2749,13 +2750,13 @@ module Hydro
           idiag_ox4m/=0 .or. idiag_oy4m/=0 .or. idiag_oz4m/=0 .or. &
           idiag_oxm /=0 .or. idiag_oym /=0 .or. idiag_ozm /=0 .or. &
           idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0 .or. &
-          idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. &
-          idiag_pvzm /=0 .or. idiag_quxom/=0 .or. idiag_qezxum/=0) &
+          idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. &.or. 
+          idiag_pvzm /=0 .or. idiag_quxom/=0 .or. idiag_qezxum/=0 .or. idiag_quysm/=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. idiag_o2u2m/=0 .or. idiag_o2sphm/=0 .or. &
           idiag_ormsh/=0 .or. idiag_o2mz/=0 ) lpenc_diagnos(i_o2)=.true.
       if (idiag_q2m/=0 .or. idiag_qrms/=0 .or. idiag_qmax/=0 .or. &
-          idiag_qfm/=0 .or. idiag_qom/=0 .or. idiag_quxom/=0 .or. idiag_qezxum/=0) &
+          idiag_qfm/=0 .or. idiag_qom/=0 .or. idiag_quxom/=0 .or. idiag_qezxum/=0 .or. idiag_quysm/=0) &
           lpenc_diagnos(i_curlo)=.true.
       if (idiag_divu2m/=0 .or. idiag_divu2mz/=0 .or. idiag_divru2mz/=0 .or. &
           idiag_divum/=0 .or. idiag_rdivum/=0) lpenc_diagnos(i_divu)=.true.
@@ -4224,6 +4225,10 @@ module Hydro
 
         if (idiag_qezxum/=0) then
           call sum_mn_name( -p%curlo(:,1)*p%uu(:,2) + p%curlo(:,2)*p%uu(:,1),idiag_qezxum)
+        endif
+
+        if (idiag_quysm/=0) then
+          call sum_mn_name( tau_diffrot1*(prof_amp3-p%uu(:,2))*p%curlo(:,2),idiag_quysm)
         endif
 
 !
@@ -6300,6 +6305,7 @@ endif
         idiag_qom=0
         idiag_quxom=0
         idiag_qezxum=0
+        idiag_quysm=0
         idiag_pvzm=0
         idiag_oumx=0
         idiag_oumy=0
@@ -6509,6 +6515,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'qom',idiag_qom)
         call parse_name(iname,cname(iname),cform(iname),'quxom',idiag_quxom)
         call parse_name(iname,cname(iname),cform(iname),'qezxum',idiag_qezxum)
+        call parse_name(iname,cname(iname),cform(iname),'quysm',idiag_quysm)
         call parse_name(iname,cname(iname),cform(iname),'ormsn',idiag_ormsn)
         call parse_name(iname,cname(iname),cform(iname),'ormss',idiag_ormss)
         call parse_name(iname,cname(iname),cform(iname),'omax',idiag_omax)
