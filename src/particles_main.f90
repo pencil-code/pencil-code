@@ -74,7 +74,7 @@ module Particles_main
       call register_particles_ads          
       call register_particles_surfspec     
       call register_pars_diagnos_state     
-      call register_particles_special (npvar)
+      call register_particles_special(npvar)
 !
 !  Print summary of variable names.
 !
@@ -134,7 +134,7 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (lyinyang) &
-        call fatal_error('particles_initialize_modules','particles not implemented on Yin-Yang grid')
+        call not_implemented('particles_initialize_modules','particles on Yin-Yang grid')
 !
 !  Check if there is enough total space allocated for particles.
 !
@@ -164,24 +164,23 @@ module Particles_main
         if (all(lequidist).and.lcartesian_coords) then
           mp_swarm = rhop_swarm * dVol(1)
         else
-          call fatal_error('particles_initialize_modules',&
+          call fatal_error('particles_initialize_modules', &
                            'dVol only defined for equidistant Cartesian coordinates')
         endif
         if (mpmat /= 0.0 .or. np_swarm /= 0.0) then
-          if (lparticles_radius) &
-              call fatal_error('particles_initialize_modules', 'may not set mpmat or np_swarm when setting rhop_const')
-          if (mpmat /= 0.0 .and. np_swarm /= 0.0) &
-              call fatal_error('particles_initialize_modules', 'must set only mpmat or np_swarm when using rhop_const')
+          if (lparticles_radius) call fatal_error('particles_initialize_modules', &
+                                 'may not set mpmat or np_swarm when setting rhop_const')
+          if (mpmat /= 0.0 .and. np_swarm /= 0.0) call fatal_error('particles_initialize_modules', &
+                                         'must set only mpmat or np_swarm when using rhop_const')
           if (mpmat == 0.0) mpmat = rhop_swarm / np_swarm
           if (np_swarm == 0.0) np_swarm = rhop_swarm / mpmat
         endif
       elseif (np_const/=0.0) then
-        if (lparticles_number) &
-          call fatal_error('particles_initialize_modules', &
-                           'cannot use np_const together with Particles_number module')
+        if (lparticles_number) call fatal_error('particles_initialize_modules', &
+                               'cannot use np_const together with Particles_number module')
         if (.not.lparticles_radius) then
           if (mpmat==0.0) &
-            call fatal_error('particles_initialize_modules','must have mpmat/=0 when setting np_const')
+            call fatal_error('particles_initialize_modules','must have mpmat /=0 when setting np_const')
         endif
         np_swarm=np_const/(real(npar)/nwgrid)
         rhop_swarm=np_swarm*mpmat
@@ -190,9 +189,8 @@ module Particles_main
       endif
 !
       if (lparticles_radius .and. rhopmat>0.0 .and. &
-        (np_swarm>0.0 .or. lparticles_number .or. particles_module .eq. "lagrangian")) &
-          lignore_rhop_swarm=.true.
-
+        (np_swarm>0.0 .or. lparticles_number .or. particles_module == "lagrangian")) &
+        lignore_rhop_swarm=.true.
 !
 !  Initialize individual modules.
 !
@@ -239,7 +237,7 @@ module Particles_main
         if (lroot) then
           print*, 'particles_initialize_modules: rhop_swarm is zero'
           print*, 'particles_initialize_modules: '// &
-              'np_swarm, mpmat, rhop_swarm=', np_swarm, mpmat, rhop_swarm
+                  'np_swarm, mpmat, rhop_swarm=', np_swarm, mpmat, rhop_swarm
         endif
         call fatal_error('particles_initialize_modules','rhop_swarm is zero')
       endif
@@ -329,22 +327,22 @@ module Particles_main
 !
       use File_io, only: read_namelist
 !
-      call read_namelist(read_particles_init_pars      ,'particles'         ,lparticles)
-      call read_namelist(read_particles_rad_init_pars  ,'particles_radius'  ,lparticles_radius)
-      call read_namelist(read_particles_cond_init_pars ,'particles_cond'    ,lparticles_condensation)
-      call read_namelist(read_particles_spin_init_pars ,'particles_spin'    ,lparticles_spin)
-      call read_namelist(read_particles_sink_init_pars ,'particles_sink'    ,lparticles_sink)
-      call read_namelist(read_particles_num_init_pars  ,'particles_number'  ,lparticles_number)
-      call read_namelist(read_particles_dens_init_pars ,'particles_dens'    ,lparticles_density)
-      call read_namelist(read_particles_selfg_init_pars,'particles_selfgrav',lparticles_selfgravity)
-      call read_namelist(read_particles_mass_init_pars ,'particles_mass'    ,lparticles_mass)
-      call read_namelist(read_particles_drag_init_pars ,'particles_drag'    ,lparticles_drag)
-      call read_namelist(read_particles_TT_init_pars   ,'particles_TT'      ,lparticles_temperature)
-      call read_namelist(read_particles_ads_init_pars  ,'particles_ads'     ,lparticles_adsorbed)
-      call read_namelist(read_particles_surf_init_pars ,'particles_surf'    ,lparticles_surfspec)
-      call read_namelist(read_particles_chem_init_pars ,'particles_chem'    ,lparticles_chemistry)
-      call read_namelist(read_pstalker_init_pars       ,'particles_stalker' ,lparticles_stalker)
-      call read_namelist(read_plyapunov_init_pars      ,'particles_lyapunov',lparticles_lyapunov)
+      call read_namelist(read_particles_init_pars      , 'particles'         ,lparticles)
+      call read_namelist(read_particles_rad_init_pars  , 'particles_radius'  ,lparticles_radius)
+      call read_namelist(read_particles_cond_init_pars , 'particles_cond'    ,lparticles_condensation)
+      call read_namelist(read_particles_spin_init_pars , 'particles_spin'    ,lparticles_spin)
+      call read_namelist(read_particles_sink_init_pars , 'particles_sink'    ,lparticles_sink)
+      call read_namelist(read_particles_num_init_pars  , 'particles_number'  ,lparticles_number)
+      call read_namelist(read_particles_dens_init_pars , 'particles_dens'    ,lparticles_density)
+      call read_namelist(read_particles_selfg_init_pars, 'particles_selfgrav',lparticles_selfgravity)
+      call read_namelist(read_particles_mass_init_pars , 'particles_mass'    ,lparticles_mass)
+      call read_namelist(read_particles_drag_init_pars , 'particles_drag'    ,lparticles_drag)
+      call read_namelist(read_particles_TT_init_pars   , 'particles_TT'      ,lparticles_temperature)
+      call read_namelist(read_particles_ads_init_pars  , 'particles_ads'     ,lparticles_adsorbed)
+      call read_namelist(read_particles_surf_init_pars , 'particles_surf'    ,lparticles_surfspec)
+      call read_namelist(read_particles_chem_init_pars , 'particles_chem'    ,lparticles_chemistry)
+      call read_namelist(read_pstalker_init_pars       , 'particles_stalker' ,lparticles_stalker)
+      call read_namelist(read_plyapunov_init_pars      , 'particles_lyapunov',lparticles_lyapunov)
 !
     endsubroutine read_all_particles_init_pars
 !***********************************************************************
@@ -619,7 +617,7 @@ module Particles_main
 !
       if  (.not.lpencil_check_at_work) then
         if (lparticles) call remove_particles_sink_simple(f,fp,dfp,ineargrid)
-        if (lparticles_sink)  call remove_particles_sink(f,fp,dfp,ineargrid)
+        if (lparticles_sink) call remove_particles_sink(f,fp,dfp,ineargrid)
       endif
 !
 !  Find nearest grid point for each particle.
@@ -792,7 +790,7 @@ module Particles_main
 !
       if  (.not.lpencil_check_at_work) then
         if (lparticles) call create_particles_sink_simple(f,fp,dfp,ineargrid)
-        if (lparticles_sink)  call create_particles_sink(f,fp,dfp,ineargrid)
+        if (lparticles_sink) call create_particles_sink(f,fp,dfp,ineargrid)
       endif
 !
 !  Correct for curvilinear geometry.
@@ -832,8 +830,8 @@ module Particles_main
 !
 !  If reactive particles are enabled, needed quantities are calculated
 !
-     if (lparticles_chemistry) call calc_pchemistry_pencils(f,fp,p,ineargrid)
-     if (lparticles_surfspec)  call calc_psurf_pencils(f,fp,p,ineargrid)
+     if (lparticles_chemistry)    call calc_pchemistry_pencils(f,fp,p,ineargrid)
+     if (lparticles_surfspec)     call calc_psurf_pencils(f,fp,p,ineargrid)
 !
 !  Dynamical equations.
 !
@@ -970,7 +968,7 @@ module Particles_main
 !
           elseif (lspherical_coords) then
 !
-            rp1    = 1./max(fp(k,ixp),tini)
+            rp1 = 1./max(fp(k,ixp),tini)
             if (luse_latitude) then
               lat=pi/2-fp(k,iyp)
               costhp=sin(lat)
@@ -1002,21 +1000,21 @@ module Particles_main
       integer, intent (in) :: unit
 !
       call write_particles_init_pars(unit)
-      if (lparticles_radius)      call write_particles_rad_init_pars(unit)
-      if (lparticles_condensation)call write_particles_cond_init_pars(unit)
-      if (lparticles_spin)        call write_particles_spin_init_pars(unit)
-      if (lparticles_sink)        call write_particles_sink_init_pars(unit)
-      if (lparticles_number)      call write_particles_num_init_pars(unit)
-      if (lparticles_density)     call write_particles_dens_init_pars(unit)
-      if (lparticles_selfgravity) call write_particles_selfg_init_pars(unit)
-      if (lparticles_stalker)     call write_pstalker_init_pars(unit)
-      if (lparticles_mass)        call write_particles_mass_init_pars(unit)
-      if (lparticles_drag)        call write_particles_drag_init_pars(unit)
-      if (lparticles_temperature) call write_particles_TT_init_pars(unit)
-      if (lparticles_adsorbed)    call write_particles_ads_init_pars(unit)
-      if (lparticles_surfspec)    call write_particles_surf_init_pars(unit)
-      if (lparticles_chemistry)   call write_particles_chem_init_pars(unit)
-      if (lparticles_lyapunov)    call write_plyapunov_init_pars(unit)
+      if (lparticles_radius)       call write_particles_rad_init_pars(unit)
+      if (lparticles_condensation) call write_particles_cond_init_pars(unit)
+      if (lparticles_spin)         call write_particles_spin_init_pars(unit)
+      if (lparticles_sink)         call write_particles_sink_init_pars(unit)
+      if (lparticles_number)       call write_particles_num_init_pars(unit)
+      if (lparticles_density)      call write_particles_dens_init_pars(unit)
+      if (lparticles_selfgravity)  call write_particles_selfg_init_pars(unit)
+      if (lparticles_stalker)      call write_pstalker_init_pars(unit)
+      if (lparticles_mass)         call write_particles_mass_init_pars(unit)
+      if (lparticles_drag)         call write_particles_drag_init_pars(unit)
+      if (lparticles_temperature)  call write_particles_TT_init_pars(unit)
+      if (lparticles_adsorbed)     call write_particles_ads_init_pars(unit)
+      if (lparticles_surfspec)     call write_particles_surf_init_pars(unit)
+      if (lparticles_chemistry)    call write_particles_chem_init_pars(unit)
+      if (lparticles_lyapunov)     call write_plyapunov_init_pars(unit)
 !
     endsubroutine write_all_particles_init_pars
 !***********************************************************************
@@ -1026,26 +1024,26 @@ module Particles_main
 !
       integer, intent (in) :: unit
 !
-      if (lparticles)                call write_particles_run_pars(unit)
-      if (lparticles_radius)         call write_particles_rad_run_pars(unit)
-      if (lparticles_spin)           call write_particles_spin_run_pars(unit)
-      if (lparticles_sink)           call write_particles_sink_run_pars(unit)
-      if (lparticles_number)         call write_particles_num_run_pars(unit)
-      if (lparticles_selfgravity)    call write_particles_selfg_run_pars(unit)
-      if (lparticles_coagulation)    call write_particles_coag_run_pars(unit)
-      if (lparticles_condensation)   call write_particles_coag_run_pars(unit)
-      if (lparticles_collisions)     call write_particles_coll_run_pars(unit)
-      if (lparticles_stirring)       call write_particles_stir_run_pars(unit)
-      if (lparticles_stalker)        call write_pstalker_run_pars(unit)
-      if (lparticles_diagnos_dv)     call write_pars_diagnos_dv_run_pars(unit)
-      if (lparticles_diagnos_state)  call write_pars_diag_state_run_pars(unit)
-      if (lparticles_mass)           call write_particles_mass_run_pars(unit)
-      if (lparticles_drag)           call write_particles_drag_run_pars(unit)
-      if (lparticles_temperature)    call write_particles_TT_run_pars(unit)
-      if (lparticles_adsorbed)       call write_particles_ads_run_pars(unit)
-      if (lparticles_surfspec)       call write_particles_surf_run_pars(unit)
-      if (lparticles_chemistry)      call write_particles_chem_run_pars(unit)
-      if (lparticles_lyapunov)       call write_plyapunov_run_pars(unit)
+      if (lparticles)               call write_particles_run_pars(unit)
+      if (lparticles_radius)        call write_particles_rad_run_pars(unit)
+      if (lparticles_spin)          call write_particles_spin_run_pars(unit)
+      if (lparticles_sink)          call write_particles_sink_run_pars(unit)
+      if (lparticles_number)        call write_particles_num_run_pars(unit)
+      if (lparticles_selfgravity)   call write_particles_selfg_run_pars(unit)
+      if (lparticles_coagulation)   call write_particles_coag_run_pars(unit)
+      if (lparticles_condensation)  call write_particles_coag_run_pars(unit)
+      if (lparticles_collisions)    call write_particles_coll_run_pars(unit)
+      if (lparticles_stirring)      call write_particles_stir_run_pars(unit)
+      if (lparticles_stalker)       call write_pstalker_run_pars(unit)
+      if (lparticles_diagnos_dv)    call write_pars_diagnos_dv_run_pars(unit)
+      if (lparticles_diagnos_state) call write_pars_diag_state_run_pars(unit)
+      if (lparticles_mass)          call write_particles_mass_run_pars(unit)
+      if (lparticles_drag)          call write_particles_drag_run_pars(unit)
+      if (lparticles_temperature)   call write_particles_TT_run_pars(unit)
+      if (lparticles_adsorbed)      call write_particles_ads_run_pars(unit)
+      if (lparticles_surfspec)      call write_particles_surf_run_pars(unit)
+      if (lparticles_chemistry)     call write_particles_chem_run_pars(unit)
+      if (lparticles_lyapunov)      call write_plyapunov_run_pars(unit)
 !
     endsubroutine write_all_particles_run_pars
 !***********************************************************************
@@ -1268,71 +1266,69 @@ module Particles_main
       integer :: k, ix0, iy0, iz0
 !
       if (remove_particle_at_time > 0) then
-          !
-          ! Should this be moved to particles_dust.f90 and _blocks.f90 respectivly? (signed who?)
-          !
+        !
+        ! Should this be moved to particles_dust.f90 and _blocks.f90 respectivly? (signed who?)
+        !
         if (remove_particle_at_time-dt < t) then
           if (t < remove_particle_at_time+2*dt) then
             select case (remove_particle_criteria)
 
             case ('all')
-                k=1
-                do while (k <= npar_loc)
-                    call remove_particle(fp,ipar,k,dfp,ineargrid)
+              k=1
+              do while (k <= npar_loc)
+                call remove_particle(fp,ipar,k,dfp,ineargrid)
                 k=k+1
-                enddo
-                remove_particle_at_time = -1.
+              enddo
+              remove_particle_at_time = -1.
 
             case ('none')
-                remove_particle_at_time = -1.
+              remove_particle_at_time = -1.
 
             case ('sphere')
-                k=1
-                do while (k <= npar_loc)
-                    rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
-                    if ( rp > remove_particle_criteria_size) then
-                        call remove_particle(fp,ipar,k,dfp,ineargrid)
-                    else
-                        k=k+1
-                    endif
-                enddo
-                remove_particle_at_time = -1.
+              k=1
+              do while (k <= npar_loc)
+                rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
+                if ( rp > remove_particle_criteria_size) then
+                  call remove_particle(fp,ipar,k,dfp,ineargrid)
+                else
+                  k=k+1
+                endif
+              enddo
+              remove_particle_at_time = -1.
 
             case ('density-threshold')
-                k=1
-                do while (k <= npar_loc)
-                   ! find closest cell
-                   ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-                   ! dust-to-gas ratio of closest cell
-                   epsd2g_tmp = f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,irho)
-                   ! if dust-to-gas-ratio of closest cell is bigger than threshold, remove
-                   if (epsd2g_tmp  > remove_particle_criteria_edtog) then
-                        call remove_particle(fp,ipar,k,dfp,ineargrid)
-                    else
-                        k=k+1
-                    endif
-                enddo
-                remove_particle_at_time = -1.
+              k=1
+              do while (k <= npar_loc)
+                ! find closest cell
+                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+                ! dust-to-gas ratio of closest cell
+                epsd2g_tmp = f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,irho)
+                ! if dust-to-gas-ratio of closest cell is bigger than threshold, remove
+                if (epsd2g_tmp  > remove_particle_criteria_edtog) then
+                  call remove_particle(fp,ipar,k,dfp,ineargrid)
+                else
+                  k=k+1
+                endif
+              enddo
+              remove_particle_at_time = -1.
                 
             case ('xycylinder')
-                k=1
-                do while (k<=npar_loc)
-                    rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
-                    if ( rp > remove_particle_criteria_size ) then
-                        call remove_particle(fp,ipar,k,dfp,ineargrid)
-                    else
-                        k=k+1
-                    endif
-                enddo
-                remove_particle_at_time = -1.
+              k=1
+              do while (k<=npar_loc)
+                rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
+                if ( rp > remove_particle_criteria_size ) then
+                  call remove_particle(fp,ipar,k,dfp,ineargrid)
+                else
+                  k=k+1
+                endif
+              enddo
+              remove_particle_at_time = -1.
 
             endselect
           else
             remove_particle_at_time = -1.
           endif
         endif
-
-
       endif
 !
     endsubroutine particles_remove_continuously
