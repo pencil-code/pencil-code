@@ -23,6 +23,7 @@ def test_get_value_from_file() -> None:
 
     assert_equal(get_s("gravz"), -1)
     assert_equal(get_s("gravz_profile"), "const")
+    assert_equal(get_s('bcz'), ['s','s','a','a2','a2:cT'])
     assert_equal(get_r("wcool"), 0.2)
     assert_equal(get_r("cool"), 15)
     assert_equal(get_r("gravz"), -1)

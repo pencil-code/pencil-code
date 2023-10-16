@@ -36,12 +36,14 @@ module Lorenz_gauge
   ! input parameters
   real :: cphi=1.,etaphi=0.,ampl=1e-3,kx=1.,ky=0.,kz=0.
   character(len=50) :: init='zero'
+  logical :: ladvect_phi=.false.
+
   namelist /lorenz_gauge_init_pars/ &
     cphi,etaphi,init,ampl,kx,ky,kz
 
   ! run parameters
   namelist /lorenz_gauge_run_pars/ &
-    cphi,etaphi
+    cphi,etaphi,ladvect_phi
 !
 ! Declare any index variables necessary for main or
 !
@@ -178,8 +180,6 @@ module Lorenz_gauge
 !
 !   06-oct-03/tony: coded
 !
-      use Diagnostics
-      use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -187,7 +187,7 @@ module Lorenz_gauge
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: gphi
-      real, dimension (nx) :: phi,del2phi,ugphi
+      real, dimension (nx) :: del2phi,ugphi
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -217,11 +217,25 @@ module Lorenz_gauge
         endif
       endif
 !
+      call calc_diagnostics_lorenz_gauge(f,p)
+
+    endsubroutine dlorenz_gauge_dt
+!***********************************************************************
+    subroutine calc_diagnostics_lorenz_gauge(f,p)
+
+      use Diagnostics
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+
+      real, dimension (nx) :: phi
+!
 !  diagnostics
 !
       if (ldiagnos) then
+!
         phi=f(l1:l2,m,n,iphi)
-        if (idiag_phim/=0) call sum_mn_name(phi,idiag_phim)
+        call sum_mn_name(phi,idiag_phim)
         if (idiag_phibzm/=0) call sum_mn_name(phi*p%bb(:,3),idiag_phibzm)
 !
 !  check for point 1
@@ -241,7 +255,7 @@ module Lorenz_gauge
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) &
         call xysum_mn_name_z(p%bb(:,3),idiag_phibzmz)
 !
-    endsubroutine dlorenz_gauge_dt
+    endsubroutine calc_diagnostics_lorenz_gauge
 !***********************************************************************
     subroutine read_lorenz_gauge_init_pars(iostat)
 !

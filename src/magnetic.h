@@ -36,7 +36,6 @@
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !
   public :: lresi_dep
-  public :: lcovariant_magnetic
   public :: lcoulomb, iLam
 
   interface calc_pencils_magnetic

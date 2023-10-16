@@ -63,6 +63,8 @@ module Cosmicray
   integer :: idiag_ecrdivum=0
   integer :: idiag_kmax=0
 !
+  real, dimension(nx) :: vKperp
+
   contains
 !
 !***********************************************************************
@@ -242,8 +244,7 @@ module Cosmicray
 ! gecr
       if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
 ! ugecr
-      if (lpencil(i_ugecr)) &
-        call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr)
+      if (lpencil(i_ugecr)) call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr)
 ! bgecr
       if (lpencil(i_bgecr)) call dot_mn(p%bb,p%gecr,p%bgecr)
 ! bglnrho
@@ -261,14 +262,13 @@ module Cosmicray
 !
 !   09-oct-03/tony: coded
 !
-      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: del2ecr,vKperp,vKpara,divfcr,wgecr,divw,tmp,diffus_cr
+      real, dimension (nx) :: del2ecr,vKpara,divfcr,wgecr,divw,tmp,diffus_cr
       integer :: j
 !
       intent (in) :: f,p
@@ -358,11 +358,21 @@ module Cosmicray
         maxdiffus=max(maxdiffus,diffus_cr)
         if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
       endif
+
+      call calc_diagnostics_cosmicray(p)
+
+    endsubroutine decr_dt
+!***********************************************************************
+    subroutine calc_diagnostics_cosmicray(p)
 !
 !  diagnostics
 !
 !  output for double and triple correlators (assume z-gradient of cc)
 !  <u_k u_j d_j c> = <u_k c uu.gradecr>
+!
+      use Diagnostics
+!
+      type (pencil_case) :: p
 !
       if (ldiagnos) then
         if (idiag_ecrdivum/=0) call sum_mn_name(p%ecr*p%divu,idiag_ecrdivum)
@@ -373,7 +383,7 @@ module Cosmicray
         call max_mn_name(vKperp,idiag_kmax)
       endif
 !
-    endsubroutine decr_dt
+    endsubroutine calc_diagnostics_cosmicray
 !***********************************************************************
     subroutine read_cosmicray_init_pars(iostat)
 !
@@ -632,15 +642,13 @@ module Cosmicray
           enddo
         enddo
 !
-        df(l1:l2,m,n,iecr) =  df(l1:l2,m,n,iecr) &
-                            + vKperp*del2ecr + (vKpara-vKperp)*tmp + tmpj
+        df(l1:l2,m,n,iecr) =  df(l1:l2,m,n,iecr) + vKperp*del2ecr + (vKpara-vKperp)*tmp + tmpj
       else
 !
 !  for constant tensor (or otherwise), just add result into
 !  the decr/dt equation without tmpj
 !
-        df(l1:l2,m,n,iecr) =  df(l1:l2,m,n,iecr) &
-                            + K_perp*del2ecr + (K_para-K_perp)*tmp
+        df(l1:l2,m,n,iecr) =  df(l1:l2,m,n,iecr) + K_perp*del2ecr + (K_para-K_perp)*tmp
       endif
 !
     endsubroutine tensor_diffusion

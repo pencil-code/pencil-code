@@ -131,6 +131,16 @@ module Chiral
 
     endsubroutine dXY_chiral_dt
 !***********************************************************************
+    subroutine calc_diagnostics_chiral(f,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(f)
+
+    endsubroutine calc_diagnostics_chiral
+!***********************************************************************
     subroutine chiral_before_boundary(f)
 !
 !  dummy routine

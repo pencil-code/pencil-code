@@ -7,6 +7,8 @@
 !
 ! 16-May-20/MR: coded
 !
+  use Cparam, only: rkind8
+
   implicit none
 !
   private
@@ -52,7 +54,7 @@
     subroutine torus_precess(torus,t)
 
     type(torus_rect) :: torus
-    double precision :: t
+    real(KIND=rkind8) :: t
 
     if (torus%Omega_prec==0.) return
     torus%ph=torus%ph0+torus%Omega_prec*t
@@ -62,7 +64,7 @@
     subroutine torus_wobble(torus,t)
 
     type(torus_rect) :: torus
-    double precision :: t
+    real(KIND=rkind8) :: t
 
     if (all(torus%wob_om.eq.0.)) return
 
@@ -73,7 +75,7 @@
     subroutine torus_extend_r(torus,t)
 
     type(torus_rect) :: torus
-    double precision :: t
+    real(KIND=rkind8) :: t
 
     if (torus%extr_rate.eq.0.) return
 
@@ -84,7 +86,7 @@
     subroutine torus_extend_z(torus,t)
 
     type(torus_rect) :: torus
-    double precision :: t
+    real(KIND=rkind8) :: t
 
     if (torus%extz_rate.eq.0.) return
 

@@ -131,7 +131,7 @@ module Io
       character (len=30) :: vname, vnm
       integer, save :: icall=0
 !
-      t_sp = real (t)
+      t_sp = real(t)
 !
       if (lserial_io) call start_serialize
       if (present(file)) then
@@ -208,6 +208,8 @@ module Io
 !
       if (lserial_io) call end_serialize
       icall=modulo(icall+1,2)
+
+      if (lode) call output_ode(file)
 !
     endsubroutine output_snap
 !***********************************************************************
@@ -648,6 +650,8 @@ module Io
       else
         call read_snap(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
       endif
+
+      if (lode) call input_ode(file)
 
     endsubroutine input_snap
 !***********************************************************************
@@ -1141,7 +1145,7 @@ module Io
 !
 !  Read globals snapshot file in double precision
 !
-!  23-oct-13/MR  : derived from input_globals
+!  23-oct-13/MR: derived from input_globals
 !
       real(KIND=rkind8), dimension (:,:,:,:) :: a
 !
@@ -1420,99 +1424,6 @@ module Io
 !
     endsubroutine rgrid
 !***********************************************************************
-    subroutine wproc_bounds(file)
-!
-!  Export processor boundaries to file.
-!
-!  22-Feb-2012/PABourdin: adapted from io_dist
-!  27-nov-2020/ccyang: make the file single
-!
-      character(len=*), intent(in) :: file
-!
-      integer :: ierr
-!
-!  Only one process is needed.
-!
-      if (.not. lroot) return
-!
-!  Write proc[xyz]_bounds.
-!
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
-      if (ierr /= 0) call fatal_error("wproc_bounds", "Cannot open " // trim(file))
-      write (lun_output) procx_bounds
-      write (lun_output) procy_bounds
-      write (lun_output) procz_bounds
-      close (lun_output)
-!
-    endsubroutine wproc_bounds
-!***********************************************************************
-    subroutine rproc_bounds(file)
-!
-!   Import processor boundaries from file.
-!
-!   10-jul-08/kapelrud: coded
-!   16-Feb-2012/Bourdin.KIS: rewritten
-!
-      character (len=*) :: file
-!
-      real(KIND=rkind4), dimension(0:nprocx):: procx_boundssg
-      real(KIND=rkind4), dimension(0:nprocy):: procy_boundssg
-      real(KIND=rkind4), dimension(0:nprocz):: procz_boundssg
-!
-      real(KIND=rkind8), dimension(0:nprocx):: procx_boundsdb
-      real(KIND=rkind8), dimension(0:nprocy):: procy_boundsdb
-      real(KIND=rkind8), dimension(0:nprocz):: procz_boundsdb
-!
-      open(lun_input,FILE=file,FORM='unformatted',status='old',action='read')
-
-      if (lread_from_other_prec) then
-        if (kind(x)==rkind4) then
-          call input_proc_bounds(procx_boundsdb,procy_boundsdb,procz_boundsdb)
-          procx_bounds=procx_boundsdb; procy_bounds=procy_boundsdb; procz_bounds=procz_boundsdb
-        elseif (kind(x)==rkind8) then
-          call input_proc_bounds(procx_boundssg,procy_boundssg,procz_boundssg)
-          procx_bounds=procx_boundssg; procy_bounds=procy_boundssg; procz_bounds=procz_boundssg
-        endif
-      else
-        call input_proc_bounds(procx_bounds,procy_bounds,procz_bounds)
-      endif
-
-      close(lun_output)
-!
-    endsubroutine rproc_bounds
-!***********************************************************************
-    subroutine input_proc_bounds_double(procx_bounds,procy_bounds,procz_bounds)
-!
-!   Import processor boundaries from file.in double precision
-!
-!   23-oct-13/MR: derivced from rproc_bounds
-!
-      real(KIND=rkind8), dimension(0:nprocx), intent(OUT):: procx_bounds
-      real(KIND=rkind8), dimension(0:nprocy), intent(OUT):: procy_bounds
-      real(KIND=rkind8), dimension(0:nprocz), intent(OUT):: procz_bounds
-!
-      read(lun_input) procx_bounds
-      read(lun_input) procy_bounds
-      read(lun_input) procz_bounds
-!
-    endsubroutine input_proc_bounds_double
-!***********************************************************************
-    subroutine input_proc_bounds_single(procx_bounds,procy_bounds,procz_bounds)
-!
-!   Import processor boundaries from file.in single precision
-!
-!   23-oct-13/MR: derived from rproc_bounds
-!
-      real(KIND=rkind4), dimension(0:nprocx), intent(OUT):: procx_bounds
-      real(KIND=rkind4), dimension(0:nprocy), intent(OUT):: procy_bounds
-      real(KIND=rkind4), dimension(0:nprocz), intent(OUT):: procz_bounds
-!
-      read(lun_input) procx_bounds
-      read(lun_input) procy_bounds
-      read(lun_input) procz_bounds
-!
-    endsubroutine input_proc_bounds_single
-!***********************************************************************
     function read_part_double(lun,a,omit) result (ios)
 !
 !  Reads part of array, stored on disk, defined by range of variable indices ivar_omit(1):ivar_omit(2)
@@ -1554,5 +1465,7 @@ module Io
       endif
 
     endfunction read_part_single
+!***********************************************************************
+    include 'io_common.inc'
 !***********************************************************************
 endmodule Io

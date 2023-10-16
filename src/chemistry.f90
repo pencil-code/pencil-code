@@ -28,7 +28,6 @@
 !***************************************************************
 module Chemistry
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet, itoa
   use EquationOfState
@@ -139,7 +138,7 @@ module Chemistry
   real, allocatable, dimension(:,:,:,:) :: Diff_full, Diff_full_add
   real, dimension(mx,my,mz,nchemspec) :: XX_full
   real, dimension(mx,my,mz,nchemspec) :: species_viscosity
-  real, dimension(mx,my,mz,nchemspec), save :: RHS_Y_full
+  real, dimension(mx,my,mz,nchemspec) :: RHS_Y_full
   real, dimension(nchemspec) :: nu_spec=0., mobility=1.
 !
 !  Chemkin related parameters
@@ -345,8 +344,7 @@ module Chemistry
 !
       if (lcheminp) then
         if (unit_temperature /= 1) &
-          call fatal_error('initialize_chemistry', &
-                           'unit_temperature must be unity for chemistry')
+          call fatal_error('initialize_chemistry','unit_temperature must be unity for chemistry')
 !
 !  calculate universal gas constant based on Boltzmann constant
 !  and the proton mass
@@ -470,11 +468,19 @@ module Chemistry
         call init_chemistry(f)
       endif
 !
+!  Find initial mass fractions
+!
+      if (reac_rate_method=='roux') then
+        do i = 1, nchemspec
+          initial_massfractions(i)=f(l1,m1,n1,ichemspec(i))
+        enddo
+!
+        if (lroot) print*,'initial_massfractions=',initial_massfractions
+      endif
+!
 !  allocate memory for net_reaction diagnostics
 !
-      if (allocated(net_react_p) .and. .not. lreloading) then
-        print*, 'this should not be here'
-      endif
+      if (allocated(net_react_p) .and. .not. lreloading) print*, 'this should not be here'
 
       if (lchemistry_diag .and. .not. lreloading) then
         allocate(net_react_p(nchemspec,nreactions),STAT=stat)
@@ -508,6 +514,24 @@ module Chemistry
       else
         call warning('initialize_chemistry','mu1_full not provided by eos')
       endif
+!
+!  04-18-11/Julien: Modified the computation of simple heat conductivity according
+!                   to Smooke & Giovangigli 1991. lambda_const is now equal 
+!                   to 2.58e-4 instead of 1e4, and represents the ratio \lambda0/cp0. 
+!                   Formula:
+!                   \lambda = lambda_const*cp*(T/T0)**0.7, with T0 now = 298K
+!
+      if (lThCond_simple .and. lambda_const == impossible) lambda_const = 2.58e-4
+!MR: Is it guaranteed that lambda_const is nowhere used with value impossible?
+!
+!  04-18-11/Julien: Changed the value of Diff_coef_const from 10 to 2.58e-4
+!                   according to Smooke & Giovangigli 1991. Now Diff_coef_const
+!                   does not represent a constant diffusion coefficient, 
+!                   but \rho0 D0.
+!                   Diff_penc_add are still the diffusion coefficients. Formula:
+!                   D = Diff_coef_const/\rho*(T/T0)**n0.7, with T0 now = 298K.
+!
+      if (lDiff_simple .and. Diff_coef_const == impossible) Diff_coef_const = 2.58e-4  !MR: the same as lambda_const?
 !
 !  write array dimension to chemistry diagnostics file
 !
@@ -595,7 +619,7 @@ module Chemistry
           if (air_exist) then
             call air_field(f,PP)
           else
-            call fatal_error('init_chemistry','there is no air.in or air.dat file')
+            call fatal_error('init_chemistry','no air.in or air.dat file found')
           endif
         case ('flame_front')
           call flame_front(f)
@@ -624,7 +648,7 @@ module Chemistry
 !
 !  Catch unknown values
 !
-          call fatal_error('init_chemistry','No such initchem: '//trim(initchem(j)))
+          call fatal_error('init_chemistry','no such initchem: '//trim(initchem(j)))
         endselect
       enddo
 !
@@ -945,21 +969,13 @@ module Chemistry
         if ((lThCond_simple) .or. (lambda_const < impossible)) then
           if (lThCond_simple) then
 !
-!  04-18-11/Julien: Modified the computation of simple heat conductivity according
-!                   to Smooke & Giovangigli 1991. lambda_const is now equal 
-!                   to 2.58e-4
-!                   instead of 1e4, and represents the ratio \lambda0/cp0. 
-!                   Formula:
-!                   \lambda = lambda_const*cp*(T/T0)**0.7, with T0 now = 298K
-!
-            if (lambda_const == impossible) lambda_const = 2.58e-4
             p%lambda = lambda_const*p%cp*exp(0.7*log(p%TT(:)/298.))
             if (lpencil(i_glambda))  then
               do i = 1,3
                 p%glambda(:,i) = p%lambda(:)*(0.7*p%glnTT(:,i)+p%glncp(:,i))
               enddo
             endif
-          elseif ((.not. lThCond_simple) .and. (lambda_const < impossible)) then
+          else
             p%lambda = lambda_const
             if (lpencil(i_glambda)) p%glambda = 0.
           endif
@@ -970,6 +986,8 @@ module Chemistry
 ! probably it should be moved to viscosity module
 !
           p%lambda=(0.15*dxmax)**2.*sqrt(2*p%sij2)/Pr_turb*p%cv*p%rho
+          if (lpencil(i_glambda)) &
+            call not_implemented('calc_pencils_chemistry','glambda pencil for lSmag_heat_transport=T')
         else
           p%lambda = lambda_full(l1:l2,m,n)
           if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
@@ -990,15 +1008,6 @@ module Chemistry
 !
         if (lpencil(i_Diff_penc_add)) then
           if (lDiff_simple) then
-!
-!  04-18-11/Julien: Changed the value of Diff_coef_const from 10 to 2.58e-4
-!                   according to Smooke & Giovangigli 1991. Now Diff_coef_const
-!                   does not represent a constant diffusion coefficient, 
-!                   but \rho0 D0.
-!                   Diff_penc_add are still the diffusion coefficients. Formula:
-!                   D = Diff_coef_const/\rho*(T/T0)**n0.7, with T0 now = 298K.
-!
-            if (Diff_coef_const == impossible) Diff_coef_const = 2.58e-4
             do k = 1,nchemspec
               p%Diff_penc_add(:,k) = &
                   Diff_coef_const*p%rho1*exp(0.7*log(p%TT(:)/298.))
@@ -1988,9 +1997,9 @@ module Chemistry
 !
       initial_mu1 &
           = initial_massfractions(ichem_H2)/(mH2) &
-          +initial_massfractions(ichem_O2)/(mO2) &
-          +initial_massfractions(ichem_H2O)/(mH2O) &
-          +initial_massfractions(ichem_N2)/(mN2)
+           +initial_massfractions(ichem_O2)/(mO2) &
+           +initial_massfractions(ichem_H2O)/(mH2O) &
+           +initial_massfractions(ichem_N2)/(mN2)
       if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
       if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
       log_inlet_density = &
@@ -2058,7 +2067,7 @@ module Chemistry
 !
       final_massfrac_O2 &
           = (initial_massfractions(ichem_O2)/mO2 &
-          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
+            -initial_massfractions(ichem_H2)/(2*mH2))*mO2
 !
 !  Initialize temperature and species in air_field(f)
 !
@@ -2071,9 +2080,9 @@ module Chemistry
 !
       initial_mu1 &
           = initial_massfractions(ichem_H2)/(mH2) &
-          +initial_massfractions(ichem_O2)/(mO2) &
-          +initial_massfractions(ichem_H2O)/(mH2O) &
-          +initial_massfractions(ichem_N2)/(mN2)
+           +initial_massfractions(ichem_O2)/(mO2) &
+           +initial_massfractions(ichem_H2O)/(mH2O) &
+           +initial_massfractions(ichem_N2)/(mN2)
 !
       call getmu_array(f,mu1_full)
 !
@@ -2911,7 +2920,6 @@ module Chemistry
 !                     constant Lewis numbers
 !   10-jan-11/julien: modified to solve chemistry with LSODE
 !
-      use Diagnostics
       use Sub, only: grad,dot_mn
       use Special, only: special_calc_chemistry
 !
@@ -3144,8 +3152,7 @@ module Chemistry
 !  This expression should be discussed
 !--------------------------------------
 !
-              diffus_chem(j) = diffus_chem(j)+ &
-                  maxval(Diff_full_add(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
+              diffus_chem(j) = diffus_chem(j)+maxval(Diff_full_add(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
             else
               diffus_chem(j) = 0.
             endif
@@ -3177,19 +3184,30 @@ module Chemistry
                   max(f(l1:l2,m,n,ichemspec(k)),0.001))
               !sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
             enddo
-            if (maxval(reac_chem) > 1e11) then
-              reac_chem = 1e11
-            endif
+            if (maxval(reac_chem) > 1e11) reac_chem = 1e11   !MR: not where(...)?
           endif
         endif
       endif
+
+      call timing('dchemistry_dt','before ldiagnos',mnloop=.true.)
+      call calc_diagnostics_chemistry(f,p)
+      call timing('dchemistry_dt','finished',mnloop=.true.)
+!
+    endsubroutine dchemistry_dt
+!***********************************************************************
+    subroutine calc_diagnostics_chemistry(f,p)
 !
 !  Calculate diagnostic quantities
 !
-      call timing('dchemistry_dt','before ldiagnos',mnloop=.true.)
+      use Diagnostics
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+
+      integer :: ii
+
       if (ldiagnos) then
-        if (idiag_dtchem /= 0) &
-          call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
+        if (idiag_dtchem /= 0) call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
 !
 !  WL: instead of hardcoding Y1-Y9, wouldn't it be possible
 !      to have them all in the same array? The nbody
@@ -3207,8 +3225,7 @@ module Chemistry
             call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           if (idiag_TYm(ii)/= 0) &
             call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
-          if (idiag_diffm(ii)/= 0) &
-            call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
+          if (idiag_diffm(ii)/= 0) call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
         enddo
 !
         call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
@@ -3220,6 +3237,16 @@ module Chemistry
 !  Sample for hard coded diffusion diagnostics
 !
 !        call sum_mn_name(Diff_full(l1:l2,m,n,i1),idiag_diff1m)
+
+        if (lreactions .and. lpencil(i_DYDt_reac) .and. (.not. llsode .or. lchemonly)) then
+          do ii=1,nchemspec
+            call sum_mn_name(p%DYDt_reac(:,ii),idiag_dYm(ii))
+            if (idiag_dYmax(ii) /= 0) call max_mn_name(abs(p%DYDt_reac(:,ii)),idiag_dYmax(ii))
+            if (idiag_hm(ii)    /= 0) call sum_mn_name(p%H0_RT(:,ii)*Rgas* &
+                                           p%TT(:)/species_constants(ii,imass),idiag_hm(ii))
+          enddo
+        endif
+!
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -3229,9 +3256,8 @@ module Chemistry
           call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymz(ii))
         enddo
       endif
-      call timing('dchemistry_dt','finished',mnloop=.true.)
-!
-    endsubroutine dchemistry_dt
+
+    endsubroutine calc_diagnostics_chemistry
 !***********************************************************************
     subroutine read_chemistry_init_pars(iostat)
 !
@@ -3376,8 +3402,7 @@ module Chemistry
       do iname=1,nnamev
         sname=trim(cnamev(iname))
         if (sname(1:8)=='chemspec') then
-          if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) &
-            cformv(iname)='DEFINED'
+          if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) cformv(iname)='DEFINED'
         endif
       enddo
 !
@@ -4376,23 +4401,20 @@ module Chemistry
       type (pencil_case) :: p
 !
       real :: mC3H8, mO2, Rcal, f_phi, E_a
-      real, save :: init_C3H8, init_O2
+      real :: init_C3H8, init_O2
       integer :: i_O2, i_C3H8, ichem_O2, ichem_C3H8, j
       logical :: lO2, lC3H8
-      logical, save :: lfirsttime=.true.
       real, dimension(nx) :: activation_energy, pre_exp, term1, term2
 !
-      if (nreactions /= 1) &
-          call fatal_error('roux','nreactions should always be 1')
+      if (nreactions /= 1) call fatal_error('roux','nreactions should always be 1')
 !
 !  Check that a global equivalence ratio is given at input
 !
-      if (global_phi == impossible) call fatal_error('roux', &
-          'global_phi must be given as input')
+      if (global_phi == impossible) call fatal_error('roux','global_phi must be given as input')
 !
       Rcal = Rgas_unit_sys/4.14*1e-7
 !
-!  Find indeces for oxygen and propane
+!  Find indices for oxygen and propane
 !
       call find_species_index('O2',i_O2,ichem_O2,lO2)
       call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)
@@ -4402,31 +4424,29 @@ module Chemistry
       if (lO2) then
         mO2 = species_constants(ichem_O2,imass)
       else
-        call fatal_error('roux','O2 is not defined!')
+        call fatal_error('roux','O2 is not defined')
       endif
       if (lC3H8) then
         mC3H8 = species_constants(ichem_C3H8,imass)
       else
-        call fatal_error('roux','C3H8 is not defined!')
+        call fatal_error('roux','C3H8 is not defined')
       endif
 !
-!  Find initial mass fractions
+!  Print debugging output
 !
-      if (lfirsttime) then
-        do j = 1,nchemspec
-          initial_massfractions(j) = f(l1,m1,n1,ichemspec(j))
-          if (lroot) print*,'initial_massfractions=',initial_massfractions
-        enddo
+      if (headtt) then
         init_O2 = initial_massfractions(ichem_O2)
         init_C3H8 = initial_massfractions(ichem_C3H8)
+        print*,'i_O2, i_C3H8, ichem_O2, ichem_C3H8=', i_O2, i_C3H8, ichem_O2, ichem_C3H8
+        print*,'lO2, lC3H8=',lO2, lC3H8
+        print*,'init_C3H8,init_O2,mO2,mC3H8=',init_C3H8,init_O2,mO2,mC3H8
       endif
 !
 !  Find Laminar flame speed corrector based on equivalence ratio phi
 !
-      f_phi &
-          = 0.5*(1+tanh((0.8-global_phi)/1.5)) &
-          +2.11/4*(1+tanh((global_phi-0.11)/0.2)) &
-          *(1+tanh((1.355-global_phi)/0.24))
+      f_phi = 0.5*(1+tanh((0.8-global_phi)/1.5)) &
+             +2.11/4*(1+tanh((global_phi-0.11)/0.2)) &
+             *(1+tanh((1.355-global_phi)/0.24))
 !
 !  Find the classical Arrhenius terms
 !
@@ -4436,9 +4456,8 @@ module Chemistry
 !
 !  Find density and mass fraction dependent terms
 !
-      term1 = (f(l1:l2,m,n,i_C3H8)*p%rho &
-          /species_constants(i_C3H8,imass))**0.856
-      term2 = (f(l1:l2,m,n,i_O2)*p%rho /species_constants(i_O2,imass))**0.503
+      term1 = (f(l1:l2,m,n,i_C3H8)*p%rho/species_constants(i_C3H8,imass))**0.856
+      term2 = (f(l1:l2,m,n,i_O2)*p%rho/species_constants(i_O2,imass))**0.503
 !
 !  Use the above to find reaction terms
 !
@@ -4455,24 +4474,11 @@ module Chemistry
       endwhere
       vreact_m(:,1) = 0.
 !
-!  Print debugging output
-!
-      if (lfirsttime .and. lroot) then
-        print*,'i_O2, i_C3H8, ichem_O2, ichem_C3H8=', &
-            i_O2, i_C3H8, ichem_O2, ichem_C3H8
-        print*,'lO2, lC3H8=',lO2, lC3H8
-        print*,'init_C3H8,init_O2,mO2,mC3H8=',init_C3H8,init_O2,mO2,mC3H8
-      endif
-!
-      if (lfirsttime) lfirsttime = .false.
-!
     endsubroutine roux
 !***********************************************************************
     subroutine calc_reaction_term(f,p)
 !
 !  Calculation of the reaction term
-!
-      use Diagnostics, only: sum_mn_name, max_mn_name
 !
       real :: alpha, eps
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -4548,10 +4554,8 @@ module Chemistry
       if (lchemistry_diag) then
         do k = 1,nchemspec
           do j = 1,nreactions
-            net_react_p(k,j) = net_react_p(k,j)+stoichio(k,j) &
-                *sum(vreactions_p(:,j))
-            net_react_m(k,j) = net_react_m(k,j)+stoichio(k,j) &
-                *sum(vreactions_m(:,j))
+            net_react_p(k,j) = net_react_p(k,j)+stoichio(k,j)*sum(vreactions_p(:,j))
+            net_react_m(k,j) = net_react_m(k,j)+stoichio(k,j)*sum(vreactions_m(:,j))
           enddo
         enddo
       endif
@@ -4566,17 +4570,6 @@ module Chemistry
       !  sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))
       !  sum_Y=sum_Y+maxval(f(l1:l2,m,n,ichemspec(k)))
       !enddo
-!
-!  Calculate diagnostic quantities
-!
-      if (ldiagnos) then
-        do ii=1,nchemspec
-          call sum_mn_name(p%DYDt_reac(:,ii),idiag_dYm(ii))
-          if (idiag_dYmax(ii) /= 0) call max_mn_name(abs(p%DYDt_reac(:,ii)),idiag_dYmax(ii))
-          if (idiag_hm(ii)    /= 0) call sum_mn_name(p%H0_RT(:,ii)*Rgas* &
-                                         p%TT(:)/species_constants(ii,imass),idiag_hm(ii))
-        enddo
-      endif
 !
     endsubroutine calc_reaction_term
 !***********************************************************************
@@ -4932,8 +4925,7 @@ module Chemistry
 !
             if (lDiff_simple) then
               do i = 1,3
-                gDiff_full_add(:,i) = p%Diff_penc_add(:,k) &
-                    *(0.7*p%glnTT(:,i)-p%glnrho(:,i))
+                gDiff_full_add(:,i) = p%Diff_penc_add(:,k) *(0.7*p%glnTT(:,i)-p%glnrho(:,i))
               enddo
             elseif (lDiff_lewis .and. lew_exist) then
               do i = 1,3
@@ -5757,7 +5749,7 @@ module Chemistry
       imid = 0
       do ii = 2, m22-1
         cc(ii) = (exp(a(ii,m1,n1,iuz+2)) - exp(a(l1,m1,n1,iuz+2)))/ &
-            (exp(a(m22-1,m1,n1,iuz+2)) - exp(a(l1,m1,n1,iuz+2)))
+                 (exp(a(m22-1,m1,n1,iuz+2)) - exp(a(l1,m1,n1,iuz+2)))
         if (cc(ii) > 0.7 .and. cc(ii-1) <= 0.7) imid = ii
         if (grid(ii,1,1) > flame_pos .and. grid(ii-1,1,1) <= flame_pos) ipos = ii
         if (ipos > 0 .and. imid > 0) exit
@@ -5801,8 +5793,7 @@ module Chemistry
             do ii = 1, nchemspec
               sum = sum + f(i,j,k,ichemspec(ii))
             enddo
-            f(i,j,k,ichemspec(1):ichemspec(nchemspec)) = &
-                f(i,j,k,ichemspec(1):ichemspec(nchemspec))/sum
+            f(i,j,k,ichemspec(1):ichemspec(nchemspec)) = f(i,j,k,ichemspec(1):ichemspec(nchemspec))/sum
 !
           enddo
         enddo
@@ -5885,8 +5876,7 @@ module Chemistry
               do ii = 2, m22-1
                 if (x(i)-x1 > grid(ii,1,1)-xfl .and. x(i)-x1 <= grid(ii+1,1,1)-xfl) then
                   f(i,j,k,iuz+1:mvar) = a(ii,m1,n1,iuz+1:mvar)+((x(i)-x1)-(grid(ii,1,1)-xfl))* &
-                      (a(ii+1,m1,n1,iuz+1:mvar)-a(ii,m1,n1,iuz+1:mvar))/            &
-                      (grid(ii+1,1,1)-grid(ii,1,1))
+                      (a(ii+1,m1,n1,iuz+1:mvar)-a(ii,m1,n1,iuz+1:mvar))/(grid(ii+1,1,1)-grid(ii,1,1))
                   exit
                 elseif (x(i)-x1 <= grid(l1,1,1)-xfl) then
                   f(i,j,k,iuz+1:mvar) = a(l1,m1,n1,iuz+1:mvar)
@@ -6217,7 +6207,7 @@ module Chemistry
 !
 ! Stop if lewis.dat is empty
 !
-1000  if (emptyFile)  call fatal_error('read_Lewis','end of file "lewis.dat"')
+1000  if (emptyFile) call fatal_error('read_Lewis','end of file "lewis.dat"')
 !
       if (i == 0) call warning('read_Lewis','File "lewis.dat" empty => Lewis numbers set to unity')
 !
@@ -6281,23 +6271,17 @@ module Chemistry
               StartInd=StartInd+1
             else
               if (VarNumber==1) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  &
-                    tran_data(ind_chem,VarNumber)
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  tran_data(ind_chem,VarNumber)
               elseif (VarNumber==2) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
               elseif (VarNumber==3) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
               elseif (VarNumber==4) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
               elseif (VarNumber==5) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
               elseif (VarNumber==6) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
               else
                 call fatal_error("read_transport_data","no such VarNumber: "//trim(itoa(VarNumber)))
               endif

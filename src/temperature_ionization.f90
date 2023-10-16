@@ -106,7 +106,7 @@ module Energy
 !
 ! Auxiliaries
 !
-      real, dimension (nx) :: diffus_chi,diffus_chi3
+  real, dimension (nx) :: diffus_chi,diffus_chi3
 !
   contains
 !***********************************************************************
@@ -119,8 +119,6 @@ module Energy
 !
       use FArrayManager
       use SharedVariables, only: put_shared_variable
-!
-      integer :: ierr
 !
       if (ltemperature_nolog) then
         call farray_register_pde('TT',iTT)
@@ -456,26 +454,26 @@ module Energy
 !  Diagnostics
 !
       if (idiag_puzmz/=0) then
-          lpenc_diagnos(i_uu)=.true.
-          lpenc_diagnos(i_pp)=.true.
+        lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_pp)=.true.
       endif
 !
       if (idiag_pr1mz/=0) then
-          lpenc_diagnos(i_pp)=.true.
-          lpenc_diagnos(i_rho1)=.true.
+        lpenc_diagnos(i_pp)=.true.
+        lpenc_diagnos(i_rho1)=.true.
       endif
 !
       if (idiag_eruzmz/=0) then
-          lpenc_diagnos(i_ee)=.true.
-          lpenc_diagnos(i_rho)=.true.
-          lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_ee)=.true.
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_uu)=.true.
       endif
 !
       if (idiag_ffakez/=0) then
-          lpenc_diagnos(i_rho)=.true.
-          lpenc_diagnos(i_uu)=.true.
-          lpenc_diagnos(i_cp)=.true.
-          lpenc_diagnos(i_TT)=.true.
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_cp)=.true.
+        lpenc_diagnos(i_TT)=.true.
       endif
 !
       if (idiag_TTmax/=0) lpenc_diagnos(i_TT)=.true.
@@ -738,6 +736,9 @@ module Energy
         if (idiag_ppmin/=0) call max_mn_name(-p%pp,idiag_ppmin,lneg=.true.)
         call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_mum/=0) call sum_mn_name(1./p%mu1,idiag_mum)
+        if (ldt) then
+          if (idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
       endif
 !
 !  1-D averages.
@@ -821,10 +822,7 @@ module Energy
 !
 !  check maximum diffusion from thermal diffusion
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chi*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
 !
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
@@ -841,10 +839,7 @@ module Energy
 !
 !  check maximum diffusion from thermal diffusion
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+chi_hyper3*dxyz_6
-        if (ldiagnos.and.idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-      endif
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+chi_hyper3*dxyz_6
 !
     endsubroutine calc_heatcond_hyper3
 !***********************************************************************

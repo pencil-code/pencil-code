@@ -5106,7 +5106,7 @@ module Initcond
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,time,cs,lreinit, &
-      ltime_old)
+      ltime_old,ltime_new,lrho_nonuni,ilnr)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5135,16 +5135,19 @@ module Initcond
       use General, only: loptest
 !
       logical, intent(in), optional :: lscale_tobox, lremain_in_fourier, ltime_old
+      logical, intent(in), optional :: ltime_new, lrho_nonuni
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
       logical, intent(in), optional :: llogbranch0,ldouble0, lreinit
       logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
-      integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk
+      logical :: ltime_new1, lrho_nonuni1
+      integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
+      integer, intent(in), optional :: ilnr
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
       real, intent(in), optional :: initpower_med0, kpeak_log0, kbreak0
       real, intent(in), optional :: nfactd0, qirro, time, cs
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
-      real, dimension (:,:,:), allocatable :: k2, r, r2
+      real, dimension (:,:,:), allocatable :: k2, r, r2, lnr_re, lnr_im
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (:), allocatable :: kk, lgkk, power_factor, lgff
       real, dimension (mx,my,mz,mfarray) :: f
@@ -5153,7 +5156,7 @@ module Initcond
       real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, D3, compk
       real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
       real :: nfactd,nexp3,nexp4
-      real :: qirro1, p, time1, cs1, om
+      real :: qirro1, p, time1, cs1, cs2, cs21, om
 !
 !  By default, don't scale wavenumbers to the box size.
 !
@@ -5179,6 +5182,27 @@ module Initcond
         ltime_old1 = .false.
       endif
 !
+!  Check whether or not we want ltime_new
+!
+      if (present(ltime_new)) then
+        ltime_new1 = ltime_new
+      else
+        ltime_new1 = .false.
+      endif
+!
+!  Check whether or not we want lrho_nonuni
+!
+      if (present(lrho_nonuni)) then
+        lrho_nonuni1 = lrho_nonuni
+        if (present(ilnr)) then
+          ilnr1 = ilnr
+        else
+          call fatal_error('power_randomphase_hel','must define ilnr')
+        endif
+      else
+        lrho_nonuni1 = .false.
+      endif
+!
 !  Check whether we want no_noise or not
 !
       if (present(lno_noise)) then
@@ -5187,7 +5211,7 @@ module Initcond
         lno_noise1 = .false.
       endif
 !
-!  qirro
+!  qirro, is the vortical contribution, qirro=1 for fully irrotational.
 !
      if (present(qirro)) then
        qirro1 = qirro     
@@ -5209,8 +5233,12 @@ module Initcond
 !
      if (present(cs)) then
        cs1 = cs     
+       cs2 = cs**2
+       cs21 = 1./cs2
      else
        cs1 = 1.
+       cs2 = 1.
+       cs21 = 1.
      endif 
 !
 !  alberto: added option to compesate spectral shape by a power of k
@@ -5346,6 +5374,13 @@ module Initcond
       allocate(kz(nzgrid),stat=stat)
       if (stat>0) call fatal_error('power_randomphase_hel', &
           'Could not allocate memory for kz')
+!
+      if (lrho_nonuni1) then
+        allocate(lnr_re(nx,ny,nz),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for lnr_re')
+        allocate(lnr_im(nx,ny,nz),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for lnr_im')
+      endif
 !
       if (ampl==0) then
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
@@ -5769,6 +5804,7 @@ module Initcond
 !  Commented out for now. This does not seem correct here and would overwrite r
 !  when the keyword is set. There is another ltime implementation below which
 !  seems to be the correct one.
+!  AB: Out-commented part to be deleted.
 !
 !                    if (ltime) then
 !                      om=cs1*sqrt(k2(ikx,iky,ikz))
@@ -5882,12 +5918,46 @@ module Initcond
 !
 !  Possibility of a kinematic time dependence.
 !
+          if (lrho_nonuni1) then
+            do ikz=1,nz
+              do iky=1,ny
+                do ikx=1,nx
+                  lnr_re(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                                      +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
+                                      +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3) &
+                                      )/sqrt(cs2*k2(ikx,iky,ikz))
+                  lnr_im(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                                      +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
+                                      +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3) &
+                                      )/sqrt(cs2*k2(ikx,iky,ikz))
+                enddo
+              enddo
+            enddo
+          endif
+!
+!  Possibility of a kinematic time dependence.
+!
           if (ltime) then
+            if (ltime_new1.and..not.lskip_projection) &
+              call fatal_error('power_randomphase_hel','must have lskip_projection=T')
             do ikz=1,nz
               do iky=1,ny
                 do ikx=1,nx
                   om=cs1*sqrt(k2(ikx,iky,ikz))
-                  if (ltime_old1) then
+                  if (ltime_new1) then
+!
+!  Pretent that u_re(ikx,iky,ikz,1) and u_im(ikx,iky,ikz,1) is a complex random number,
+!  then, after multiplying by i, we have i*z = i*(z'+i*z") = -z" + i*z'.
+!
+                    u_re(ikx,iky,ikz,1)=-kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1)*cos(om*time1)
+                    u_im(ikx,iky,ikz,1)=+kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1)*cos(om*time1)
+                    u_re(ikx,iky,ikz,2)=-ky(iky+ipy*ny)*u_im(ikx,iky,ikz,1)*cos(om*time1)
+                    u_im(ikx,iky,ikz,2)=+ky(iky+ipy*ny)*u_re(ikx,iky,ikz,1)*cos(om*time1)
+                    u_re(ikx,iky,ikz,3)=-kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,1)*cos(om*time1)
+                    u_im(ikx,iky,ikz,3)=+kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,1)*cos(om*time1)
+!no need            lnr_re(ikx,iky,ikz)=-kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,1)*sin(om*time1)*cs21
+!no need            lnr_im(ikx,iky,ikz)=+kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,1)*sin(om*time1)*cs21
+                  elseif (ltime_old1) then
                     u_re(ikx,iky,ikz,1:3)=+u_re(ikx,iky,ikz,1:3)*sin(om*time1)
                     u_im(ikx,iky,ikz,1:3)=-u_im(ikx,iky,ikz,1:3)*cos(om*time1)
                   else
@@ -5909,10 +5979,15 @@ module Initcond
             do i=1,3
               call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
             enddo !i
+!no need    if (ltime_new1) call fft_xyz_parallel(lnr_re(:,:,:),lnr_im(:,:,:),linv=.true.)
             if (loptest(lreinit)) then
               f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
             else
               f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
+            endif
+            if (lrho_nonuni1) then
+              call fft_xyz_parallel(lnr_re,lnr_im,linv=.true.)
+              f(l1:l2,m1:m2,n1:n2,ilnr1)=lnr_re
             endif
           endif
         endif

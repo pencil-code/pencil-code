@@ -31,7 +31,7 @@ module solid_cells_ogrid_chemistry
   use General, only: keep_compiler_quiet
   use EquationOfState
   use Chemistry, only: Rgas, lreactions, lchemistry_diag
-  use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error
+  use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error, not_implemented
   use Mpicomm, only: stop_it
   use solid_cells_ogrid_cdata
   use solid_cells_ogrid_sub
@@ -235,10 +235,8 @@ module solid_cells_ogrid_chemistry
 !
 !  Reinitialize if required
 !
-      if (reinitialize_chemistry) then
-          call fatal_error('initialize_chemistry_og', &
-              'Reinitialize chemistry - not implemented on the ogrid!')
-      endif
+      if (reinitialize_chemistry) call not_implemented('initialize_chemistry_og', &
+              'reinitialize chemistry on ogrid')
 !
 !      call getmu_array_ogrid(f_og,mu1_full_og)
 !      f_og(:,:,:,iRR) = mu1_full_og*Rgas
@@ -258,8 +256,7 @@ module solid_cells_ogrid_chemistry
 !        net_react_m = 0.
 !      endif
 !
-!
-        call get_shared_variable('ldiffusion',ldiffusion)
+        call get_shared_variable('ldiffusion',ldiffusion,caller='initialize_chemistry_og')
         call get_shared_variable('ldiff_corr',ldiff_corr)
         call get_shared_variable('lcheminp',lcheminp)
         call get_shared_variable('lThCond_simple',lThCond_simple)
@@ -321,7 +318,6 @@ module solid_cells_ogrid_chemistry
 !      open (1,file=trim(datadir)//'/net_reactions.dat',position='append')
 !      write (1,*) nchemspec,nreactions
 !      close (1)
-!
 !
     endsubroutine initialize_chemistry_og
 !***********************************************************************

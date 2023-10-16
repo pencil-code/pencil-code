@@ -30,7 +30,7 @@ module EquationOfState
   include 'eos.h'
   include 'eos_params.h'
 !
-  integer :: ics, imass=1
+  integer :: imass=1
 !
   real :: cs0=1.0, rho0=1.0, rho02
   real :: cs20=1.0, lnrho0=0.0 

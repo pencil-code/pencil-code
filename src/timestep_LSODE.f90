@@ -20,9 +20,9 @@ module Timestep
   contains
 !***********************************************************************
     subroutine initialize_timestep
-! 
+!
 !  Coefficients for up to order 3.
-!    
+!
       use Messages, only: not_implemented
       use General, only: itoa
 !
@@ -42,6 +42,7 @@ module Timestep
         call not_implemented('initialize_timestep','itorder= '//trim(itoa(itorder)))
       endif
 
+      if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
 
     endsubroutine initialize_timestep

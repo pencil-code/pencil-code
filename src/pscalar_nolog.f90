@@ -722,7 +722,6 @@ module Pscalar
 !
         if (lspecial) call special_calc_pscalar(f,df,p)
 !
-!
 ! AH: notpassive, an angular momentum+gravity workaround
 !
         if (lnotpassive.and.lhydro) then
@@ -731,6 +730,8 @@ module Pscalar
           df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz)+(-hoverr*zoverh - z(n)+3*hoverr*zoverh*x(l1:l2))*scalaracc
         endif
 !
+        call calc_diagnostics_pscalar(p)
+
       endif evolve
 
     endsubroutine dlncc_dt

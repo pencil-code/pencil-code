@@ -52,6 +52,7 @@ module Cdata
   logical :: luse_latitude=.false., luse_oldgrid=.true., luse_xyz1=.false.
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
+  logical :: lconcurrent=.true.
 !
 !  Simultaneous foreign code.
 !
@@ -144,7 +145,7 @@ module Cdata
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
-  double precision :: t=0., toutoff=0.
+  real(KIND=rkind8) :: t=0., toutoff=0.
   real :: dt=0.0, dt_incr=0.0, dt0=0.
   real :: cdt=0.9, cdts=1.0, cdtr=1.0, cdtc=1.0, cdt_poly=1.0
  !real :: cdtv=0.15, cdtv2=0.03, cdtv3=0.01
@@ -152,7 +153,7 @@ module Cdata
 !AB: this more carefully and discuss it first in the newsletter.
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtsrc=0.2, cdtf=0.9
-  real :: eps_rkf=1e-8, eps_stiff=1e-6
+  real :: eps_rkf=1e-5, eps_stiff=1e-6
   real :: ddt=0.0
   real :: dtmin=1.0e-6, dtmax=1.0e37
   real :: nu_sts=0.1
@@ -217,7 +218,8 @@ module Cdata
   logical :: lread_oldsnap_noisothmhd=.false.
   logical :: lread_oldsnap_nosink=.false.
   logical :: lnamelist_error=.false., ltolerate_namelist_errors=.false., lparam_nml=.false.
-  logical :: lwrite_dim_again=.true.
+  logical :: lwrite_dim_again=.true., allproc_print=.true.
+  logical :: lproc_print=.true.
   logical :: lseparate_persist=.false., ldistribute_persist=.false., lpersist=.true.
   logical :: lomit_add_data=.false.
   logical :: save_lastsnap=.true.
@@ -241,32 +243,32 @@ module Cdata
 !  Entries related to the scale factor of the universe
 !
   logical :: lread_scl_factor_file=.false., lread_scl_factor_file_new=.false.
-  real :: scl_factor_target, Hp_target, appa_target
+  real :: scl_factor_target, Hp_target, appa_target, wweos_target
 !
 ! Debugging
 !
   integer :: ip=14
 !
-!  Units (need to be in double precision).
+!  Units (need to be in real(KIND=rkind8)).
 !
   character (len=3) :: unit_system='cgs'
   logical :: lfix_unit_std=.false.
-  double precision :: unit_length=impossible,unit_velocity=impossible
-  double precision :: unit_density=impossible,unit_temperature=impossible
-  double precision :: unit_magnetic=impossible
+  real(KIND=rkind8) :: unit_length=impossible,unit_velocity=impossible
+  real(KIND=rkind8) :: unit_density=impossible,unit_temperature=impossible
+  real(KIND=rkind8) :: unit_magnetic=impossible
 !
 !  Derived units
 !
-  double precision :: unit_mass,unit_energy,unit_time,unit_flux
-  double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
+  real(KIND=rkind8) :: unit_mass,unit_energy,unit_time,unit_flux
+  real(KIND=rkind8) :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es
-  double precision :: c_light=impossible,G_Newton=impossible,hbar=impossible
+  real(KIND=rkind8) :: c_light=impossible,G_Newton=impossible,hbar=impossible
   real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
 !
 !  Derived units
 !
-  double precision :: sigmaSB_set=1., c_light_set=1., cp_set=1.
-  double precision :: k_B_set=1., m_u_set=1.
+  real(KIND=rkind8) :: sigmaSB_set=1., c_light_set=1., cp_set=1.
+  real(KIND=rkind8) :: k_B_set=1., m_u_set=1.
 !
 !  Rotation and shear parameters.
 !
@@ -334,7 +336,9 @@ module Cdata
 !
 !  Type counters.
 !
-  integer :: nvar,naux,naux_com,nscratch,nglobal
+  integer :: nvar,naux,naux_com,nscratch,nglobal,n_odevars=0
+  real, dimension(:), allocatable :: f_ode, df_ode
+  logical :: lode=.false.
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
@@ -368,6 +372,7 @@ module Cdata
   integer :: ihhTim=0,ihhXim=0,iggTim=0,iggXim=0,iStressTim=0,iStressXim=0
   integer :: iaatest=0,iaztestpq=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: iuutest=0,iuztestpq=0,ihhtestpq=0
+  integer :: iqx=0,iqy=0,iqz=0,iqq=0
   integer :: ntestscalar=0,ntestfield=0,ntestflow=0,ntestlnrho=0
   integer :: icctest=0,icctestpq=0,iug=0
   integer :: iam=0,iamx=0,iamy=0,iamz=0
@@ -396,20 +401,21 @@ module Cdata
   integer :: igu11=0,igu12=0,igu13=0
   integer :: igu21=0,igu22=0,igu23=0
   integer :: igu31=0,igu32=0,igu33=0
+  integer :: icooling=0, inetheat=0
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0
   integer, dimension(ndustspec) :: ilnnd=0, ind=0,imd=0,imi=0,idc=0,ilndc=0
   integer, dimension(ndustspec,ndustspec0) :: idcj=0,ilndcj=0
   integer, dimension(nchemspec) :: ichemspec=0
-  integer :: ilnrhon=0,irhon=0,iuun=0,iunx=0,iuny=0,iunz=0
+  integer :: ilnrhon=0,irhon=0, irhoe=0, iuun=0,iunx=0,iuny=0,iunz=0
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
   integer :: iglobal_ax_ext=0, iglobal_ay_ext=0, iglobal_az_ext=0
   integer, dimension(3) :: iglobal_jext=0, iglobal_eext
-  integer :: icooling=0, inetheat=0
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
   integer :: icp=0, igpx=0, igpy=0, iRR=0, iss_run_aver=0
   integer :: iFenth=0, iss_flucz=0, iTT_flucz=0, irho_flucz=0
   integer :: iuu_fluc=0, iuu_flucx=0, iuu_flucy=0, iuu_flucz=0
   integer :: iuu_sph=0, iuu_sphr=0, iuu_spht=0, iuu_sphp=0
+  integer :: ics=0
 !
 !  Parameters related to message passing.
 !
@@ -444,7 +450,8 @@ module Cdata
 !  Pencil-related stuff.
 !
   integer :: imn
-  integer, target :: lglob=1,m,n
+  integer :: lglob=1
+  integer, target :: m,n
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
   integer :: necessary_imn=0
@@ -475,10 +482,10 @@ module Cdata
   integer, parameter :: mname=100
   real, dimension (mname) :: fweight=0.0
   integer, dimension(:)   , allocatable :: itype_name
-  real, target, dimension(:)      , allocatable :: fname,fname_keep
-  real, target, dimension(:,:)    , allocatable :: fnamer,fname_sound
-  real, target, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez, fnamexy, fnamexz
-  real, target, dimension(:,:,:,:), allocatable :: fnamerz
+  real, dimension(:)      , allocatable, target :: fname,fname_keep
+  real, dimension(:,:)    , allocatable, target :: fnamer,fname_sound
+  real, dimension(:,:,:)  , allocatable, target :: fnamex, fnamey, fnamez, fnamexy, fnamexz
+  real, dimension(:,:,:,:), allocatable, target :: fnamerz
   integer, dimension(:,:) , allocatable :: sound_coords_list
   integer, target, dimension(:,:) , allocatable :: ncountsz
   character (len=fmtlen), allocatable :: cform(:),cformv(:),cform_sound(:), &
@@ -786,6 +793,14 @@ module Cdata
 !  or not the chiral MHD special module is used.
 !
   real :: lambda5 = 0.0
+! 
+!  Variables for concurrency
+! 
+  logical :: lwriting_snapshots=.false.
+!
+! threadprivate definitions for OpenMP
+!
+!$ include 'cdata_omp.inc'
 !
 !  Variables for concurrency
 !

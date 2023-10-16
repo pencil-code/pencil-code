@@ -156,6 +156,14 @@ module Solid_Cells
 !
     endsubroutine dsolid_dt
 !***********************************************************************
+    subroutine calc_diagnostics_solid(p)
+!
+      type (pencil_case), intent(in) :: p
+
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_solid
+!***********************************************************************
     subroutine dsolid_dt_integrate
 !
 ! dummy routine

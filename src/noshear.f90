@@ -141,6 +141,9 @@ module Shear
 !
     endsubroutine shearing
 !***********************************************************************
+    subroutine calc_diagnostics_shear
+    endsubroutine calc_diagnostics_shear
+!***********************************************************************
     subroutine advance_shear(f,df,dt_shear)
 !
 !  Dummy routine: deltay remains unchanged.

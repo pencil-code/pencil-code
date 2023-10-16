@@ -1,0 +1,15 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+HYDRO     = nohydro
+DENSITY   = nodensity
+MAGNETIC  =   magnetic/maxwell
+VISCOSITY = noviscosity
+EOS       = noeos
+FOURIER  =   fourier_fftpack
+POWER    =   power_spectrum
+SPECIAL  =   special/gravitational_waves_hTXk
+REAL_PRECISION=double

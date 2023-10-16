@@ -103,8 +103,8 @@ program run
 !
   type (pencil_case) :: p
   character(len=fnlen) :: fproc_bounds
-  double precision :: time1, time2, tvar1
-  double precision :: time_last_diagnostic, time_this_diagnostic
+  real(KIND=rkind8) :: time1, time2, tvar1
+  real(KIND=rkind8) :: time_last_diagnostic, time_this_diagnostic
   real :: wall_clock_time=0.0, time_per_step=0.0, dtmp
   integer :: icount, mvar_in, isave_shift=0
   integer :: it_last_diagnostic, it_this_diagnostic, memuse, memory, memcpu
@@ -169,8 +169,7 @@ program run
 !
 !  Check whether quad precision is supported
 !
-  if (rkind16<0) &
-    call warning('run','quad precision not supported, switch to double')
+  if (rkind16<0) call warning('run','quad precision not supported, switch to double')
 !
   if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !
@@ -185,8 +184,7 @@ program run
     call get_downpars(3,nz,ipz)
 !
     if (any(ndown==0)) &
-      call fatal_error('run','zero points in processor ' &
-                       //trim(itoa(iproc))//' for downsampling')
+      call fatal_error('run','zero points in processor '//trim(itoa(iproc))//' for downsampling')
       ! MR: better a warning and continue w. ldownsampl=.false.?
 
     call mpiallreduce_sum_int(ndown(1),ngrid_down(1),comm=MPI_COMM_XBEAM)
@@ -347,8 +345,7 @@ program run
   f=0.
   if (ip<=12.and.lroot) tvar1=mpiwtime()
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
-  if (ip<=12.and.lroot) print*,'rsnap: read snapshot var.dat in ',&
-                               mpiwtime()-tvar1,' seconds'
+  if (ip<=12.and.lroot) print*,'rsnap: read snapshot var.dat in ',mpiwtime()-tvar1,' seconds'
 !
 !  If we decided to use a new grid, we need to overwrite the data
 !  that we just read in from var.dat. (Note that grid information
@@ -423,7 +420,6 @@ program run
 !  (must be done before need_XXXX can be used, for example)
 !
   call initialize_timestep
-if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
   call initialize_modules(f)
   call initialize_boundcond
 !
@@ -476,8 +472,7 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
   call choose_pencils
   call write_pencil_info
 !
-  if (mglobal/=0) call output_globals('global.dat', &
-      f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+  if (mglobal/=0) call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Update ghost zones, so rprint works corrected for at the first
 !  time step even if we didn't read ghost zones.
@@ -673,8 +668,7 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
       if (t == 0.0 .and. lwrite_ic) lvideo = .true.
     endif
 !
-    if (lwrite_2daverages) &
-      call write_2daverages_prepare(t == 0.0 .and. lwrite_ic)
+    if (lwrite_2daverages) call write_2daverages_prepare(t == 0.0 .and. lwrite_ic)
 !
 !  Exit do loop if maximum simulation time is reached; allow one extra
 !  step if any diagnostic output needs to be produced.
@@ -730,20 +724,6 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
     if (lsolid_cells) call time_step_ogrid(f)
 !
     lrmv=.false.
-!
-!  Print diagnostic averages to screen and file.
-!
-    if (lout) then
-      call prints
-      if (lchemistry_diag) call write_net_reaction
-    endif
-    if (l1davg) call write_1daverages
-    if (l2davg) call write_2daverages
-!
-    if (lout_sound) then
-      call write_sound(tsound)
-      lout_sound = .false.
-    endif
 !
 !  Ensure better load balancing of particles by giving equal number of
 !  particles to each CPU. This only works when block domain decomposition of
@@ -801,10 +781,11 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
     if (ialive /= 0) then
       if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
     endif
-    if (lparticles) &
-        call write_snapshot_particles(f,ENUM=.true.)
-    if (lpointmasses) &
-        call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
+!
+!$omp task
+!$  lwriting_snapshots = .true.
+    if (lparticles) call write_snapshot_particles(f,ENUM=.true.)
+    if (lpointmasses) call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
 !
 !  Added possibility of outputting only the chunks starting
 !  from nv1_capitalvar in the capitalvar file.
@@ -812,10 +793,37 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
     if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
+!$  lwriting_snapshots = .false.
+!$omp end task
+!
+!   Diagnostic output in concurrent thread.
+!
+!$  if (lfinalized_diagnostics) then
+!$    lwriting_diagnostics = .true.
+!
+!  Print diagnostic averages to screen and file.
+!
+!$omp task
+      if (lout) then
+        call prints
+        if (lchemistry_diag) call write_net_reaction
+      endif
+!
+      if (l1davg) call write_1daverages
+      if (l2davg) call write_2daverages
+!
+      if (lout_sound) then
+        call write_sound(tsound)
+        lout_sound = .false.
+      endif
 !
 !  Write slices (for animation purposes).
 !
-    if (lvideo .and. lwrite_slices) call wvid(f)
+      if (lvideo .and. lwrite_slices) call wvid(f)
+!$omp end task
+!
+!$    lwriting_diagnostics = .false.
+!$  endif
 !
 !  Write tracers (for animation purposes).
 !
@@ -835,11 +843,10 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
         lsave = .false.
         if (ip<=12.and.lroot) tvar1=mpiwtime()
         call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
-        if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ',&
+        if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
                                      mpiwtime()-tvar1,' seconds'
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
-        if (lparticles) &
-            call write_snapshot_particles(f,ENUM=.false.)
+        if (lparticles) call write_snapshot_particles(f,ENUM=.false.)
         if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
         if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
         if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
@@ -866,10 +873,8 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
 !  Save global variables.
 !
     if (isaveglobal/=0) then
-      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) then
-        call output_globals('global.dat', &
-            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
-      endif
+      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) &
+        call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
     endif
 !
 !  Do exit when timestep has become too short.
@@ -935,8 +940,7 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
     endif
 
     if (save_lastsnap) then
-      if (lparticles) &
-          call write_snapshot_particles(f,ENUM=.false.)
+      if (lparticles) call write_snapshot_particles(f,ENUM=.false.)
       if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
       if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
 !
@@ -972,18 +976,15 @@ if (lroot) print*,"run.f90 after initialize_time: dt,dt0",dt,dt0
   if (lroot) then
     wall_clock_time=time2-time1
     print*
-    write(*,'(A,1pG10.3,A,1pG11.4,A)') &
-        ' Wall clock time [hours] = ', wall_clock_time/3600.0, &
-        ' (+/- ', real(mpiwtick())/3600.0, ')'
+    write(*,'(A,1pG10.3,A,1pG11.4,A)') ' Wall clock time [hours] = ', wall_clock_time/3600.0, &
+                                       ' (+/- ', real(mpiwtick())/3600.0, ')'
     if (it>1) then
       if (lparticles) then
-        write(*,'(A,1pG10.3)') &
-            ' Wall clock time/timestep/(meshpoint+particle) [microsec] =', &
-            wall_clock_time/icount/(nw+npar/ncpus)/ncpus/1.0e-6
+        write(*,'(A,1pG10.3)') ' Wall clock time/timestep/(meshpoint+particle) [microsec] =', &
+                               wall_clock_time/icount/(nw+npar/ncpus)/ncpus/1.0e-6
       else
-        write(*,'(A,1pG14.7)') &
-            ' Wall clock time/timestep/meshpoint [microsec] =', &
-            wall_clock_time/icount/nw/ncpus/1.0e-6
+        write(*,'(A,1pG14.7)') ' Wall clock time/timestep/meshpoint [microsec] =', &
+                               wall_clock_time/icount/nw/ncpus/1.0e-6
       endif
     endif
   endif

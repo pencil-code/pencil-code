@@ -2581,23 +2581,15 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Need to wait till all communication has been recived.
 !
-        if (lastlastyb/=iproc) &
-            call MPI_WAIT(irecv_rq_fromlastlastyb,irecv_stat_fbll,mpierr)
-        if (lastyb/=iproc) &
-            call MPI_WAIT(irecv_rq_fromlastyb,irecv_stat_fbl,mpierr)
-        if (nextyb/=iproc) &
-            call MPI_WAIT(irecv_rq_fromnextyb,irecv_stat_fbn,mpierr)
-        if (nextnextyb/=iproc) &
-            call MPI_WAIT(irecv_rq_fromnextnextyb,irecv_stat_fbnn,mpierr)
+        if (lastlastyb/=iproc) call MPI_WAIT(irecv_rq_fromlastlastyb,irecv_stat_fbll,mpierr)
+        if (lastyb/=iproc) call MPI_WAIT(irecv_rq_fromlastyb,irecv_stat_fbl,mpierr)
+        if (nextyb/=iproc) call MPI_WAIT(irecv_rq_fromnextyb,irecv_stat_fbn,mpierr)
+        if (nextnextyb/=iproc) call MPI_WAIT(irecv_rq_fromnextnextyb,irecv_stat_fbnn,mpierr)
 !
-        if (lastlastya/=iproc) &
-            call MPI_WAIT(irecv_rq_fromlastlastya,irecv_stat_fall,mpierr)
-        if (lastya/=iproc) &
-            call MPI_WAIT(irecv_rq_fromlastya,irecv_stat_fal,mpierr)
-        if (nextya/=iproc) &
-            call MPI_WAIT(irecv_rq_fromnextya,irecv_stat_fan,mpierr)
-        if (nextnextya/=iproc) &
-            call MPI_WAIT(irecv_rq_fromnextnextya,irecv_stat_fann,mpierr)
+        if (lastlastya/=iproc) call MPI_WAIT(irecv_rq_fromlastlastya,irecv_stat_fall,mpierr)
+        if (lastya/=iproc) call MPI_WAIT(irecv_rq_fromlastya,irecv_stat_fal,mpierr)
+        if (nextya/=iproc) call MPI_WAIT(irecv_rq_fromnextya,irecv_stat_fan,mpierr)
+        if (nextnextya/=iproc) call MPI_WAIT(irecv_rq_fromnextnextya,irecv_stat_fann,mpierr)
 !
 !  Reading communicated information into f.
 !
@@ -4257,7 +4249,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       use General, only: ioptest
 
-      double precision :: bcast_array
+      real(KIND=rkind8) :: bcast_array
       integer, optional :: proc,comm
 !
       call MPI_BCAST(bcast_array,1,MPI_DOUBLE_PRECISION,ioptest(proc,root), &
@@ -4270,7 +4262,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Communicate real array between processors.
 !
       integer :: nbcast_array
-      double precision, dimension(nbcast_array) :: bcast_array
+      real(KIND=rkind8), dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
       integer :: ibcast_proc
 !
@@ -11281,8 +11273,8 @@ goto 125!!!
 !
 ! 20-oct-21/MR: coded
 ! 
-      double precision, intent(IN) :: t
-      real,             intent(OUT):: t_foreign
+      real(KIND=rkind8), intent(IN) :: t
+      real,              intent(OUT):: t_foreign
 
       if (t-frgn_setup%t_last_recvd>0.) then
         frgn_setup%t_last_recvd=frgn_setup%t_last_recvd+frgn_setup%dt_out

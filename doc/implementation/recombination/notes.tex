@@ -1,0 +1,82 @@
+\documentclass[prd, aps]{article}
+
+\usepackage{macros}
+
+\newcommand{\Titleshort}{MHD through recombination}
+\newcommand{\Author}{Alberto Roper Pol}
+\newcommand{\Title}{\Titleshort}
+\newcommand{\AuthorName}{Alberto Roper Pol}
+\newcommand{\Date}{\today}
+
+%---------------------------------------------------------------------------------------
+
+\begin{document}
+\maketitle
+
+\section{MHD equations}
+
+\subsection{Continuity equation}
+\begin{equation}
+    \boxed{
+    \partial_\tau \tilde T^{00} + \partial_i \tilde T^{0i} + \frac{a'}{a}
+    \tilde \rho \, (3w - 1) = 0.}
+\end{equation}
+
+\begin{align}
+    \biggl[1 - \frac{w}{(1 + w) \gamma^2}
+    \biggr]
+    \partial_\tau \ln \tilde \rho &\, +  \bigl(1 - \gamma^{-2} \bigr) \partial_\tau \ln (1 + w) + \partial_\tau \ln \gamma^2 \nonumber \\
+    &\, = - \nab \cdot \uu
+    - \uu \cdot \nab \ln \bigl(\tilde \rho \gamma^2 \bigr) + \frac{\tilde f^0}{(1 + w) \tilde \rho \gamma^2} - \frac{a'}{a}
+    \frac{3w - 1}
+    {(1 + w) \, \gamma^2}.
+\end{align}
+
+Subrelativistic regime $\gamma^2 \ll 1$,
+\begin{align}
+    \partial_\tau \ln \tilde \rho = - (1 + w) \Bigl[ \nab \cdot \uu
+    + \uu \cdot \nab \ln \tilde \rho \Bigr]  + \frac{\tilde f^0}{\tilde \rho} - \frac{a'}{a}
+    (3w - 1).
+    \label{cont_sub}
+\end{align}
+
+\subsection{Momentum equation}
+
+\begin{equation}
+    \boxed{\partial_\tau \tilde T^{0i} 
+    + \partial_j \tilde T^{ij} = 0.}
+\end{equation}
+
+\begin{align}
+    \partial_\tau \uu + \uu \Bigl[ \partial_\tau \ln \tilde \rho \,
+    + &\, \partial_\tau \ln (1 + w) + \partial_\tau \ln \gamma^2 + 
+    \bigl(\uu \cdot \nab\bigr)
+    \ln \bigl( \tilde \rho \gamma^2\bigr) + \nab \cdot \uu \Bigr] \nonumber \\
+    &\, = - \bigl(\uu \cdot \nab \bigr) \uu - \frac{w}{1 + w} \frac{\nab \ln \tilde \rho}{\gamma^2} + \frac{\tff}{\tilde \rho\, (1 + w) \gamma^2}.
+    \label{mom_1}
+\end{align}
+
+Subrelativistic regime $\gamma^2 \ll 1$,
+\begin{align}
+    \partial_\tau \uu + \uu \Bigl[ \partial_\tau \ln \tilde \rho \,
+    + \partial_\tau \ln (1 + w) + 
+    \bigl(\uu \cdot \nab\bigr)
+    \ln \tilde \rho + \nab \cdot \uu \Bigr]
+    = - \bigl(\uu \cdot \nab \bigr) \uu - \frac{w}{1 + w} \nab \ln \tilde \rho + \frac{\tff}{\tilde \rho\, (1 + w)}.
+    \label{mom_1}
+\end{align}
+Introducing \Eq{cont_sub}, one gets
+\begin{align}
+    \partial_\tau \uu = &\, - \uu \cdot \nab \uu  + w \uu
+    \Bigl(\uu \cdot \nab \ln \tilde \rho + \nab \cdot \uu
+    \Bigr)
+     - \frac{w}{1 + w} \nab \ln \tilde \rho + 
+     \frac{\tff}{\tilde \rho\, (1 + w)} \nonumber \\
+     &\, - \uu \biggl[
+    \frac{\tilde f_0}{\tilde \rho} - \frac{a'}{a} (3w - 1) + \partial_\tau \ln (1 + w) + \alpha \biggr].
+    \label{mom_2}
+\end{align}
+
+\label{RealLastPage}
+
+\end{document}

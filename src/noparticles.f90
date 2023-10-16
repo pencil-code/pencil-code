@@ -142,6 +142,18 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
+    subroutine calc_diagnostics_particles(fp,p,ineargrid)
+
+      real, dimension (mpar_loc,mparray) :: fp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
+
+    endsubroutine calc_diagnostics_particles
+!***********************************************************************
     subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
 !
 !  Evolution of particle velocity.

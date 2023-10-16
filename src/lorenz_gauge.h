@@ -10,6 +10,6 @@
 
   public :: dlorenz_gauge_dt
 
-  public :: calc_pencils_lorenz_gauge
+  public :: calc_pencils_lorenz_gauge, calc_diagnostics_lorenz_gauge
   public :: pencil_criteria_lorenz_gauge
   public :: pencil_interdep_lorenz_gauge

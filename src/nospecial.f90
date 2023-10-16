@@ -218,6 +218,10 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
+    subroutine dspecial_dt_ode
+
+    endsubroutine dspecial_dt_ode
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs

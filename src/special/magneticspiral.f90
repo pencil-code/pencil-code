@@ -64,8 +64,8 @@ module Special
   namelist /special_run_pars/ B0,etamu0,Omega0,r0
 !
   type InternalPencils
-     real, dimension(nx)   :: beta
-     real, dimension(nx,3)   :: jxbr
+    real, dimension(nx)   :: beta
+    real, dimension(nx,3) :: jxbr
   endtype InternalPencils
 !
   type (InternalPencils) :: q

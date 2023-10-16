@@ -54,7 +54,7 @@ module Testfield
 !
 ! diagnostic variables
 !
-  integer, parameter :: n_cdiags = 62, len_cdiags = 8
+  integer, parameter :: n_cdiags = 89, len_cdiags = 8
   character(LEN=len_cdiags), dimension(n_cdiags) :: cdiags = &
   (/ 'alp11   ','alp21   ','alp31   ','alp12   ','alp22   ','alp32   ','alp13   ','alp23   ','alp33   ',&   
 ! DIAG_DOC: $\alpha_{ij}$       
@@ -68,10 +68,14 @@ module Testfield
      'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     ',& 
 ! DIAG_DOC: ${\cal E}^i_j$
      'E14     ','E24     ','E34     ','E15     ','E25     ','E35     ','E16     ','E26     ','E36     ',&   
-     'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     ' /) 
+     'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     ',&
+     'b11     ','b21     ','b31     ','b12     ','b22     ','b32     ','b13     ','b23     ','b33     ',&   ! DIAG_DOC: ${\cal b}^j_i$
+     'b14     ','b24     ','b34     ','b15     ','b25     ','b35     ','b16     ','b26     ','b36     ',&
+     'b17     ','b27     ','b37     ','b18     ','b28     ','b38     ','b19     ','b29     ','b39     '  /)
 !
   integer, dimension(n_cdiags):: idiags=0, idiags_x=0, idiags_xy=0
-  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_end=idiag_Eij_start+27-1
+  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_end=idiag_Eij_start+27-1, &
+                                           idiag_bij_start=idiag_Eij_end+1, idiag_bij_end=idiag_bij_start+27-1
 !
   integer, dimension(4) :: idiag_alp11h, idiag_eta122h            
   equivalence(idiags(idiag_base_end+1),idiag_alp11h), (idiags(idiag_base_end+5),idiag_eta122h)      
@@ -152,6 +156,7 @@ module Testfield
 !                  moved calculation of xy-averaged quantities to 
 !                  calc_coefficients, completed
 !
+      use Diagnostics, only: zsum_mn_name_xy_mpar_scal
       use Hydro, only: uumxy
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -164,6 +169,7 @@ module Testfield
       integer :: ml
 !
         ml=m-m1+1
+
         select case (itestfield)
           case ('1','1-alt') ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest )
           case ('2')         ; call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest2)
@@ -171,6 +177,8 @@ module Testfield
           case ('4','linear'); call rhs_daatest(f,df,p,uumxy(l1:l2,m,:),uxbtestm(:,ml,:,:),set_bbtest4)
           case default       ; call fatal_error('daatest_dt','undefined itestfield')
         endselect
+
+        call calc_2d_diagnostics_testfield(f,m,idiags_xy(idiag_bij_start),zsum_mn_name_xy_mpar_scal)
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -217,7 +225,6 @@ module Testfield
       real :: fac
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
-!
       logical :: need_output
 !
 !  In this routine we will reset headtt after the first pencil,
@@ -225,8 +232,7 @@ module Testfield
 !
       headtt_save=headtt
       fac=1./nzgrid
-      need_output = (ldiagnos .and. needed2d(1)) .or. &
-                    (l2davgfirst .and. needed2d(2))
+      need_output = (ldiagnos .and. needed2d(1)) .or. (l2davgfirst .and. needed2d(2))
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -249,7 +255,7 @@ module Testfield
 !
             do n=n1,n2
 !
-              call curl(f,iaxtest,btest)
+              call curl(f,iaxtest,btest)    ! communication finished?
               call calc_pencils_hydro(f,p,lpenc_loc)
 !
 ! U x btest = (\mean{U} + u') x btest
@@ -263,11 +269,9 @@ module Testfield
 !
               do j=1,3
                 if (lflucts_with_xyaver) then    !!! TBC
-                  uxbtestm(:,ml,j,jtest)=spread(sum( &
-                    uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
+                  uxbtestm(:,ml,j,jtest) = spread(sum(uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
                 else
-                  uxbtestm(:,ml,j,jtest)= &
-                    uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j)
+                  uxbtestm(:,ml,j,jtest) = uxbtestm(:,ml,j,jtest)+fac*uxbtest(:,j)
                 endif
               enddo
               headtt=.false.
@@ -337,27 +341,30 @@ module Testfield
 
       call calc_coefficients( idiags(abs(idiags_map)),idiags_x(abs(idiags_map)),idiags_xy(abs(idiags_map)), &
                               idiags(idiag_Eij_start:idiag_Eij_end),idiags_x(idiag_Eij_start:idiag_Eij_end),   &
-                              idiags_xy(idiag_Eij_start:idiag_Eij_end), &
-                              idiag_alp11h, idiag_eta122h, &
+                              idiags_xy(idiag_Eij_start:idiag_Eij_end), idiag_alp11h, idiag_eta122h, &
                               tmp,Minv,zsum_mn_name_xy_mpar_scal,yzsum_mn_name_x_mpar, &
-                              twod_need_1d(abs(idiags_map)),twod_need_2d(abs(idiags_map)),needed2d,nz )
+                              twod_need_1d(abs(idiags_map)),twod_need_2d(abs(idiags_map)),needed2d,nz)
 !
 !  sign inversion if necessary
 !
       if (ldiagnos .and. needed2d(1)) then
         where(idiags(1:idiag_base_end)/=0) fname(idiags(1:idiag_base_end)) =  sign(1.,float(idiags_map)) &
                                                                              *fname(idiags(1:idiag_base_end))
-        do i=1,nprocz; do j=1,nz
-          where(idiags_x(1:idiag_base_end)/=0) &
-            fnamex(j,i,idiags_x(1:idiag_base_end)) = sign(1.,float(idiags_map))*fnamex(j,i,idiags_x(1:idiag_base_end))
-        enddo; enddo
+        if (allocated(fnamex)) then
+          do i=1,nprocz; do j=1,nz
+            where(idiags_x(1:idiag_base_end)/=0) &
+              fnamex(j,i,idiags_x(1:idiag_base_end)) = sign(1.,float(idiags_map))*fnamex(j,i,idiags_x(1:idiag_base_end))
+          enddo; enddo
+        endif
       endif
       
       if (l2davgfirst .and. needed2d(2)) then
-        do i=1,ny; do j=1,nx
-          where(idiags_xy(1:idiag_base_end)/=0) &
-            fnamexy(idiags_xy(1:idiag_base_end),j,i) = sign(1.,float(idiags_map))*fnamexy(idiags_xy(1:idiag_base_end),j,i)
-        enddo; enddo
+        if (allocated(fnamexy)) then
+          do i=1,ny; do j=1,nx
+            where(idiags_xy(1:idiag_base_end)/=0) &
+              fnamexy(idiags_xy(1:idiag_base_end),j,i) = sign(1.,float(idiags_map))*fnamexy(idiags_xy(1:idiag_base_end),j,i)
+          enddo; enddo
+        endif
       endif
 
     endsubroutine calc_coeffs

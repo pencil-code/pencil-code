@@ -26,6 +26,7 @@ module Register
 !
 !  6-nov-01/wolf: coded
 !
+      use FArrayManager,    only: farray_finalize_ode
       use General,          only: setup_mm_nn
       use Io,               only: register_io
       use Mpicomm,          only: stop_it
@@ -159,6 +160,7 @@ module Register
       call register_heatflux
       call register_solid_cells
       call register_pointmasses
+      call farray_finalize_ode
 !
 !  Writing files for use with IDL.
 !
@@ -326,8 +328,8 @@ module Register
 !  Print parameters in code units, but only when used.
 !
       if (lroot.and.ip<14) then
-         if (leos_ionization.or.lradiation.or.lradiation_ray.or.linterstellar) &
-            write(*,'(a,1p,4e14.6)') ' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
+        if (leos_ionization.or.lradiation.or.lradiation_ray.or.linterstellar) &
+        write(*,'(a,1p,4e14.6)') ' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
       endif
 !
 !  initialize time integrals

@@ -120,7 +120,7 @@ module Special
 !
       integer :: ll, nn
       real, dimension(nx) :: Krad, g2
-      double precision :: SIGMA,CKAPPA,QJ,SIGMAT,CKAPPAT,QJT,SIGMAH,CKAPPAH,QJH
+      real(KIND=rkind8) :: SIGMA,CKAPPA,QJ,SIGMAT,CKAPPAT,QJT,SIGMAH,CKAPPAH,QJH
       real, parameter :: Zion=26,CMI=56,Zimp=0.1
 !
       if (lpotekhin_cond) then

@@ -48,7 +48,7 @@ module Detonate
 !
   contains
 !***********************************************************************
-    subroutine register_detonate()
+    subroutine register_detonate
 !
 !  Set up indices for variables.
 !
@@ -207,18 +207,19 @@ module Detonate
 !  14-feb-14/ccyang: coded
 !
       use Boundcond, only: zero_ghosts, update_ghosts
+      use Diagnostics, only: sum_mn_name
       use Mpicomm, only: mpiallreduce_or, mpireduce_sum_int, mpireduce_sum
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       logical, dimension(mx,my,mz) :: mask
       logical :: flag
-      integer :: ndet = 0, ndet_tot
-      real :: esum = 0.0, esum_tot
+      integer :: ndet
+      real :: esum
 !
 !  Detonate only before one full time-step.
 !
-      first: if (lfirst .and. .not. lpencil_check_at_work) then
+      if (lfirst .and. .not. lpencil_check_at_work) then
 !
 !  Initialize the detonation energy field to zero.
 !
@@ -228,15 +229,9 @@ module Detonate
 !
         call zero_ghosts(f, ieth)
         call update_ghosts(f, ieth)
-        jeans: if (ldensity_nolog) then
-          call zero_ghosts(f, irho)
-          call update_ghosts(f, irho)
-          mask = jeans_unstable(f(:,:,:,irho), f(:,:,:,ieth))
-        else jeans
-          call zero_ghosts(f, ilnrho)
-          call update_ghosts(f, ilnrho)
-          mask = jeans_unstable(exp(f(:,:,:,ilnrho)), f(:,:,:,ieth))
-        endif jeans
+        call zero_ghosts(f, ilnrho)
+        call update_ghosts(f, ilnrho)
+        mask = jeans_unstable(exp(f(:,:,:,ilnrho)), f(:,:,:,ieth))
 !
 !  Sift out collapsing sites.
 !
@@ -245,33 +240,16 @@ module Detonate
 !  Detonate them.
 !
         call mpiallreduce_or(any(mask), flag)
-        if (flag) call set_detonations(f, mask)
+        if (flag) then
+          call set_detonations(f, mask)
+          if (ldiagnos) then
+            call sum_mn_name((/real(count(mask))/),idiag_detn,lplain=.true.)
+            call sum_mn_name((/total_energy(f)/),idiag_dettot,lplain=.true.)
+          endif
+        endif
 !
-!  Diagnostics
-!
-        accumulate: if (flag) then
-          if (idiag_detn /= 0) ndet = ndet + count(mask)
-          if (idiag_dettot /= 0) esum = esum + total_energy(f)
-        endif accumulate
-!
-        diagnos: if (ldiagnos) then
-!
-          detn: if (idiag_detn /= 0) then
-            call mpireduce_sum_int(ndet, ndet_tot)
-            if (lroot) fname(idiag_detn) = real(ndet_tot)
-            ndet = 0
-          endif detn
-!
-          dettot: if (idiag_dettot /= 0) then
-            call mpireduce_sum(esum, esum_tot)
-            if (lroot) fname(idiag_dettot) = esum_tot
-            esum = 0.0
-          endif dettot
-!
-        endif diagnos
-!
-      endif first
-!
+      endif
+
     endsubroutine detonate_before_boundary
 !***********************************************************************
 !***********************************************************************

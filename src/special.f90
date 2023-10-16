@@ -30,6 +30,7 @@
                           I_GET_SLICES_SPECIAL=10,  &
                           I_INIT_SPECIAL=11,  &
                           I_DSPECIAL_DT=12,  &
+                          I_DSPECIAL_DT_ODE=31,  &
                           I_CALC_PENCILS_SPECIAL=13,  &
                           I_PENCIL_CRITERIA_SPECIAL=14,  &
                           I_PENCIL_INTERDEP_SPECIAL=15,  &
@@ -49,7 +50,7 @@
                           I_SET_INIT_PARAMETERS=29, &
                           I_SPECIAL_CALC_SPECTRA=30
     
-    integer, parameter :: n_subroutines=30
+    integer, parameter :: n_subroutines=31
     integer, parameter :: n_special_modules_max=2
 !
     integer :: n_special_modules
@@ -84,7 +85,8 @@
                            'special_after_boundary      ', &
                            'special_after_timestep      ', &
                            'set_init_parameters         ', &
-                           'special_calc_spectra_byte   ' /)
+                           'special_calc_spectra_byte   ', &
+                           'dspecial_dt_ode             ' /)
 
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules_max,n_subroutines) :: special_sub_handles
@@ -95,7 +97,7 @@
 
     use General, only: parser
     use Messages, only: fatal_error
-    use Syscalls, only: extract_str
+    use Syscalls, only: extract_str, get_env_var
     use Cdata, only: lroot
 
     integer, parameter :: RTLD_LAZY=0, RTLD_NOW=1
@@ -106,7 +108,7 @@
     character(LEN=8) :: mod_prefix, mod_infix, mod_suffix
     integer(KIND=ikind8) :: sub_handle
 
-    call getenv("PC_MODULES_LIST", special_modules_list)
+    call get_env_var("PC_MODULES_LIST", special_modules_list)
     n_special_modules=parser(trim(special_modules_list),special_modules,' ')
 !if (lroot) print*, 'special_modules_list=', trim(special_modules_list)//'<<<'
 
@@ -264,6 +266,20 @@
       enddo
 !
     endsubroutine calc_pencils_special
+!***********************************************************************
+    subroutine dspecial_dt_ode
+!
+!  calculate right hand side of ONE OR MORE extra coupled ODEs
+!
+!  07-sep-23/MR: coded
+!
+      integer :: i
+!
+      do i=1,n_special_modules
+        call caller0(special_sub_handles(i,I_DSPECIAL_DT_ODE))
+      enddo
+!
+    endsubroutine dspecial_dt_ode
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !

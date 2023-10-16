@@ -14,7 +14,8 @@ Status:
                          longer affect code stability. Stability is now 
                          controlled by shock mass diffusion and shock viscosity
     revised 09-Feb-2023: moved check_SN to before_boundary and only in first
-                         time substep, skipped check_SN during pencil checks 
+                         time substep, skipped check_SN during pencil checks
+    revised 06-Sep-2023: netheat not communicated and timestep uses RKF 
 Recommended resolution:
     at least 16x16x1000 (maintain grid resolution <= 0.004 for larger Lx,Ly)
 Comments:

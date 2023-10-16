@@ -78,15 +78,14 @@ module Particles_adaptation
 !
 !  We must be flexible about the particle number.
 !
-      if (mpar_loc<2*npar_loc) &
-          call fatal_error_local('initialize_particles_adaptation', &
-          'must have mpar_loc > 2*npar_loc for particle adaptation')
+      if (mpar_loc<2*npar_loc) call fatal_error_local('initialize_particles_adaptation', &
+                                    'must have mpar_loc > 2*npar_loc for particle adaptation')
       call fatal_error_local_collect
 !
       chknpar: if (npar_max < npar_target) then
         if (lroot) print *, "initialize_particles_adaptation: npar_max = ", npar_max, ", npar_target = ", npar_target
         call fatal_error("initialize_particles_adaptation", &
-                         "npar_max >= npar_target is required in particles_adaptation_pencils(). ")
+                         "npar_max >= npar_target is required in particles_adaptation_pencils")
       endif chknpar
 !
       setdvp: if (adaptation_method /= "random" .and. &
@@ -145,9 +144,8 @@ module Particles_adaptation
         np = 0
         count: do k = k1_imn(imn), k2_imn(imn)
           ix = ineargrid(k,1) - nghost
-          if (ix < 1 .or. ix > nx) &
-            call fatal_error_local('particles_adaptation_pencils', &
-                'a particle is detected outside the processor boundary. ')
+          if (ix < 1 .or. ix > nx) call fatal_error_local('particles_adaptation_pencils', &
+                                   'a particle is detected outside the processor boundary')
           np(ix) = np(ix) + 1
         enddo count
 !
@@ -188,15 +186,13 @@ module Particles_adaptation
               call new_population_interpolated(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2, f)
 !
             case ('k-means') merge
-              call ppcvq(1, 6, 1, 6, np(ix), &
-                  transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
-                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, &
-                  fp3(ixp:ivpz,:), fp3(iparmass,:), &
+              call ppcvq(1, 6, 1, 6, np(ix), transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
+                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, fp3(ixp:ivpz,:), fp3(iparmass,:), &
                   np(ix) < npar_min, .false., .false.)
               fp2(1:npar_adapted,:) = transpose(fp3)
 !
             case default merge
-              call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
+              call fatal_error('particles_adaptation_pencils','unknown adaptation method')
 !
             endselect merge
 !
@@ -210,16 +206,14 @@ module Particles_adaptation
             split: select case (adaptation_method)
 !
             case ('random') split
-              call new_population_random(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2)
+              call new_population_random(ix,iy,iz,np(ix),fp1(k1_l(ix):k2_l(ix),:),npar_adapted,fp2)
 !
             case ('interpolated') split
-              call new_population_interpolated(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2, f)
+              call new_population_interpolated(ix,iy,iz,np(ix),fp1(k1_l(ix):k2_l(ix),:),npar_adapted,fp2,f)
 !
             case ('k-means') split
-              call ppcvq(1, 6, 1, 6, np(ix), &
-                  transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
-                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, &
-                  fp3(ixp:ivpz,:), fp3(iparmass,:), &
+              call ppcvq(1, 6, 1, 6, np(ix), transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
+                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, fp3(ixp:ivpz,:), fp3(iparmass,:), &
                   np(ix) < npar_min, .false., .false.)
               fp2(1:npar_adapted,:) = transpose(fp3)
 !
@@ -396,13 +390,12 @@ module Particles_adaptation
       mtot = sum(fp_old(:,iparmass))
       fp_new(1:npar_new,iparmass) = mtot / real(npar_new)
 !
-      dir: do i = 1, 3
+      do i = 1, 3
         call random_cell(ix+nghost, iy, iz, i, fp_new(1:npar_new,ipx(i)))
-      enddo dir
+      enddo
 !
       do k=1,npar_new
-        call interpolate_linear(f,iupx,iupz,fp_new(k,ixp:izp),vp_new, &
-            (/ix+nghost,iy,iz/),0,0)
+        call interpolate_linear(f,iupx,iupz,fp_new(k,ixp:izp),vp_new,(/ix+nghost,iy,iz/),0,0)
         fp_new(k,ivpx:ivpz)=vp_new
       enddo
 !
@@ -505,8 +498,7 @@ module Particles_adaptation
       a = mean + width * sqrt(-2.0 * log(r)) * sin(2.0 * pi * p)
 !
       if (notanumber(a)) then
-        print*, 'random_normal: NaN in distribution, mean, width=', &
-            mean, width
+        print*, 'random_normal: NaN in distribution, mean, width=', mean, width
         print*, 'random_normal: a=', a
         print*, 'random_normal: r=', r
         print*, 'random_normal: p=', p

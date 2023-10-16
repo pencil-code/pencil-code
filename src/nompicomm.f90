@@ -201,7 +201,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      double precision :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
+      real(KIND=rkind8) :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
       integer :: ivar1, ivar2, displs
 !
       ivar1=1; ivar2=mcom
@@ -963,7 +963,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_double_scl(bcast_array,proc,comm)
 !
-      double precision :: bcast_array
+      real(KIND=rkind8) :: bcast_array
       integer, optional :: proc,comm
 !
       if (ALWAYS_FALSE) print*, bcast_array,proc,comm
@@ -973,7 +973,7 @@ module Mpicomm
     subroutine mpibcast_double_arr(bcast_array,nbcast_array,proc)
 !
       integer :: nbcast_array
-      double precision, dimension(nbcast_array) :: bcast_array
+      real(KIND=rkind8), dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
@@ -1466,7 +1466,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpireduce_sum_double_scl(dsum_tmp,dsum)
 !
-      double precision :: dsum_tmp,dsum
+      real(KIND=rkind8) :: dsum_tmp,dsum
 !
       dsum=dsum_tmp
 !
@@ -1475,7 +1475,7 @@ module Mpicomm
     subroutine mpireduce_sum_double_arr(dsum_tmp,dsum,nreduce)
 !
       integer :: nreduce
-      double precision, dimension(nreduce) :: dsum_tmp,dsum
+      real(KIND=rkind8), dimension(nreduce) :: dsum_tmp,dsum
 !
       dsum=dsum_tmp
 !
@@ -1484,7 +1484,7 @@ module Mpicomm
     subroutine mpireduce_sum_double_arr2(dsum_tmp,dsum,nreduce)
 !
       integer, dimension(2) :: nreduce
-      double precision, dimension(nreduce(1),nreduce(2)) :: dsum_tmp,dsum
+      real(KIND=rkind8), dimension(nreduce(1),nreduce(2)) :: dsum_tmp,dsum
 !
       dsum=dsum_tmp
 !
@@ -1493,7 +1493,7 @@ module Mpicomm
     subroutine mpireduce_sum_double_arr3(dsum_tmp,dsum,nreduce)
 !
       integer, dimension(3) :: nreduce
-      double precision, dimension(nreduce(1),nreduce(2),nreduce(3)) :: dsum_tmp,dsum
+      real(KIND=rkind8), dimension(nreduce(1),nreduce(2),nreduce(3)) :: dsum_tmp,dsum
 !
       dsum=dsum_tmp
 !
@@ -1502,7 +1502,7 @@ module Mpicomm
     subroutine mpireduce_sum_double_arr4(dsum_tmp,dsum,nreduce)
 !
       integer, dimension(4) :: nreduce
-      double precision, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: dsum_tmp,dsum
+      real(KIND=rkind8), dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: dsum_tmp,dsum
 !
       dsum=dsum_tmp
 !
@@ -1578,7 +1578,7 @@ module Mpicomm
 !
 !   5-oct-2002/wolf: coded
 !
-      double precision :: mpiwtime
+      real(KIND=rkind8) :: mpiwtime
       integer :: count_rate,time
 !
       call system_clock(COUNT_RATE=count_rate)
@@ -1598,7 +1598,7 @@ module Mpicomm
 !
 !   5-oct-2002/wolf: coded
 !
-      double precision :: mpiwtick
+      real(KIND=rkind8) :: mpiwtick
       integer :: count_rate
 !
       call system_clock(COUNT_RATE=count_rate)
@@ -3031,7 +3031,7 @@ module Mpicomm
 !
 ! 20-oct-21/MR: coded
 ! 
-      double precision :: t
+      real(KIND=rkind8) :: t
       real :: dt_foreign
       
       update_foreign_data=.false.

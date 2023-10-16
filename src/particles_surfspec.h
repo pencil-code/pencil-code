@@ -13,3 +13,4 @@
   public :: calc_psurf_pencils
   public :: cleanup_surf_pencils
   public :: particles_surfspec_clean_up
+  public :: calc_diagnostics_particles_surf

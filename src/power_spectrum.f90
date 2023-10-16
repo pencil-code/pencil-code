@@ -5122,7 +5122,7 @@ endsubroutine pdf
     elseif (sp=='saffman_aa') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
       a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
-      h_re=h_re+a_re**2  !  vector potential squred
+      h_re=h_re+a_re**2  !  vector potential squared
       h_im=0.
     elseif (sp=='saffman_aa_c') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
@@ -5135,7 +5135,7 @@ endsubroutine pdf
       enddo; enddo
       a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
       a_re=a_re-gLam  !  vector potential in Coulomb gauge
-      h_re=h_re+a_re**2  !  vector potential squred in Coulomb gauge
+      h_re=h_re+a_re**2  !  vector potential squared in Coulomb gauge
       h_im=0.
     elseif (sp=='saffman_bb') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')

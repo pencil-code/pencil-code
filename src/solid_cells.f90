@@ -131,8 +131,7 @@ module Solid_Cells
           objects(icyl)%T    = cylinder_temp(icyl)
           objects(icyl)%form = 'cylinder'
         else
-          call fatal_error('initialize_solid_cells', &
-              'All cylinders must have non-zero radii!')
+          call fatal_error('initialize_solid_cells','all cylinders must have non-zero radii')
         endif
       enddo
 !
@@ -147,8 +146,7 @@ module Solid_Cells
           objects(isph+ncylinders)%T   = sphere_temp(isph)
           objects(isph+ncylinders)%form = 'sphere'
         else
-          call fatal_error('initialize_solid_cells', &
-              'All spheres must have non-zero radii!')
+          call fatal_error('initialize_solid_cells','all spheres must have non-zero radii')
         endif
       enddo
       nobjects = ncylinders+nspheres
@@ -227,27 +225,21 @@ module Solid_Cells
       if (fbcz(3,1) > 0) flow_dir = 3
       if (fbcz(3,2) < 0) flow_dir = -3
       if (flow_dir > 0) then
-        if (lroot) then
-          print*,'By using fbc[x,y,z] I found the flow direction to be in the ', &
-              flow_dir,' direction.'
-        endif
+        if (lroot) &
+          print*,'By using fbc[x,y,z] I found the flow direction to be in the ',flow_dir,' direction.'
       else
         do i = 1,3
           if (lperi(i)) then
             if (.not. lperi(mod(i,3)+1) .and. .not. lperi(mod(i+1,3)+1)) then
               flow_dir = i
-              if (lroot) then
-                print*,'By using lperi I found the flow direction to be in the ', &
-                    flow_dir,' direction.'
-              endif
+              if (lroot) &
+                print*,'By using lperi I found the flow direction to be in the ',flow_dir,' direction.'
             endif
           endif
         enddo
         if (lset_flow_dir) flow_dir = flow_dir_set
-        if (flow_dir == 0) then
-          call fatal_error('initialize_solid_cells', &
-              'I was not able to determine the flow direction!')
-        endif
+        if (flow_dir == 0) &
+          call fatal_error('initialize_solid_cells','not able to determine the flow direction')
       endif
 !
 ! Find inlet temperature
@@ -307,14 +299,12 @@ module Solid_Cells
                       wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
                       f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT) &
                           +objects(icyl)%T*(1-wall_smoothing_temp)
-                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
-                          *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
+                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
                     endif
                   else
                     if (ilnTT /= 0) then
                       f(i,j,k,ilnTT) = objects(icyl)%T
-                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
-                          *f(l2,m2,n2,ilnTT)/objects(icyl)%T
+                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/objects(icyl)%T
                     endif
                   endif
                 enddo
@@ -336,9 +326,8 @@ module Solid_Cells
                   a2 = objects(icyl)%r**2
                   xr = x(i)-objects(icyl)%x(1)
                   if (objects(icyl)%x(2) /= 0) then
-                    print*,'When using cylinderstream_x all cylinders must have'
-                    print*,'zero offset in y-direction!'
-                    call fatal_error('init_solid_cells:','')
+                    call fatal_error('init_solid_cells', &
+                    'when using cylinderstream_x, all cylinders must have zero offset in y-direction')
                   endif
                   yr = y(j)
                   rr2 = xr**2+yr**2
@@ -349,14 +338,12 @@ module Solid_Cells
                         f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu* &
                             2*xr*yr*a2/rr2**2*wall_smoothing
                         f(i,j,k,iux) = f(i,j,k,iux)+init_uu* &
-                            (0. - a2/rr2 + 2*yr**2*a2/rr2**2) &
-                            *wall_smoothing
+                            (0. - a2/rr2 + 2*yr**2*a2/rr2**2)*wall_smoothing
                         if (ilnTT /= 0) then
                           wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
                           f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT) &
                               +objects(icyl)%T*(1-wall_smoothing_temp)
-                          f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
-                              *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
+                          f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
                         endif
                       else
                         shifty = cyl*Lxyz(2)
@@ -375,8 +362,7 @@ module Solid_Cells
                   else
                     if (ilnTT /= 0) then
                       f(i,j,k,ilnTT) = objects(icyl)%T
-                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
-                          *f(l2,m2,n2,ilnTT)/objects(icyl)%T
+                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/objects(icyl)%T
                     endif
                   endif
                 enddo
@@ -396,9 +382,8 @@ module Solid_Cells
                   yr = y(j)-objects(icyl)%x(2)
                   if (objects(icyl)%x(1) /= 0) then
 !              write(*,*) 'DM',objects(icyl)%x(1),icyl
-                    print*,'When using cylinderstream_y all cylinders must have'
-                    print*,'zero offset in x-direction!'
-                    call fatal_error('init_solid_cells:','')
+                    call fatal_error('init_solid_cells', &
+                    'when using cylinderstream_y, all cylinders must have zero offset in x-direction')
                   endif
                   xr = x(i)
                   rr2 = xr**2+yr**2
@@ -406,17 +391,14 @@ module Solid_Cells
                     do cyl = 0,100
                       if (cyl == 0) then
                         wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
-                        f(i,j,k,iux) = f(i,j,k,iux)-init_uu* &
-                            2*xr*yr*a2/rr2**2*wall_smoothing
+                        f(i,j,k,iux) = f(i,j,k,iux)-init_uu * 2*xr*yr*a2/rr2**2*wall_smoothing
                         f(i,j,k,iuy) = f(i,j,k,iuy)+init_uu* &
-                            (0. - a2/rr2 + 2*xr**2*a2/rr2**2) &
-                            *wall_smoothing
+                            (0. - a2/rr2 + 2*xr**2*a2/rr2**2)*wall_smoothing
                         if (ilnTT /= 0) then
                           wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
                           f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT) &
                               +objects(icyl)%T*(1-wall_smoothing_temp)
-                          f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
-                              *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
+                          f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
                         endif
                       else
                         shiftx = cyl*Lxyz(1)
@@ -435,8 +417,7 @@ module Solid_Cells
                   else
                     if (ilnTT /= 0) then
                       f(i,j,k,ilnTT) = objects(icyl)%T
-                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
-                          *f(l2,m2,n2,ilnTT)/objects(icyl)%T
+                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho)*f(l2,m2,n2,ilnTT)/objects(icyl)%T
                     endif
                   endif
                 enddo
@@ -445,12 +426,7 @@ module Solid_Cells
           enddo
           if (llast_proc_y) f(:,m2-5:m2,:,iux) = 0
         case default
-!
-!  Catch unknown values
-!
-          if (lroot) print*,'No such value for init_solid_cells:', &
-              trim(initsolid_cells(jj))
-          call fatal_error('init_solid_cells','')
+          call fatal_error('init_solid_cells','no such init_solid_cells: '//trim(initsolid_cells(jj)))
         endselect
       enddo
 !
@@ -500,8 +476,8 @@ module Solid_Cells
 !  Assume a minimum radius for the forcepoints
           robj = robj+dxmin*ineargridshift
         else
-          print*, "Warning: Subroutine fp_nearest_grid not implemented ", &
-              "for this objectform."
+          call warning('subroutine fp_nearest_grid not implemented ', &
+              "for this objectform: "//trim(objectform))
         endif
 !
 !
@@ -559,7 +535,7 @@ module Solid_Cells
               interiorpoint = .false.
             endif
           else
-            print*,"WARNING: Solid cells need nxgrid > 1."
+            call warning('fp_nearest_grid',",solid cells need nxgrid > 1")
           endif
 !
 !  Find nearest grid point in y-direction
@@ -590,7 +566,7 @@ module Solid_Cells
               interiorpoint = .false.
             endif
           else
-            print*,"WARNING: Solid cells need nygrid > 1."
+            call warning('fp_nearest_grid',",solid cells need nygrid > 1")
           endif
 !
 !  Find nearest grid point in z-direction
@@ -665,9 +641,7 @@ module Solid_Cells
               if (dist_to_cent2(ipoint) > robj**2 .and. inearest == 0) then
                 inearest = ipoint
               elseif (dist_to_cent2(ipoint) > robj**2) then
-                if (dist_to_fp2(ipoint) <= dist_to_fp2(inearest)) then
-                  inearest = ipoint
-                endif
+                if (dist_to_fp2(ipoint) <= dist_to_fp2(inearest)) inearest = ipoint
               endif
             enddo
 !
@@ -675,12 +649,13 @@ module Solid_Cells
             if (inearest > 0) then
               fpnearestgrid(iobj,iforcepoint,:) = icoord(inearest,:)
             else
-              print*, "WARNING: Could not find fpnearestgrid!"
+              print*, "WARNING: Could not find fpnearestgrid! iproc=", iproc
             endif
 !
           else
 !
-! fp is outside local domain and fpnearestgrid shouldn't exist
+! fp is outside local domain and fpnearestgrid shouldn't exist.
+!
             fpnearestgrid(iobj,iforcepoint,:) = 0
           endif
         enddo
@@ -697,13 +672,23 @@ module Solid_Cells
 !  okt-2009/kragset: updated to include multiple objects
 !  nov-2010/kragset: updated to include spheres
 !
-      use Sub, only: dot
-      use Viscosity, only: getnu
-!
       real, dimension(mx,my,mz,mfarray), intent(in):: f
       real, dimension(mx,my,mz,mvar), intent(in)   :: df
-      type (pencil_case), intent(in)                :: p
+      type (pencil_case), intent(in)               :: p
+
+      call calc_diagnostics_solid(p)
 !
+      call keep_compiler_quiet(df,f)
+!
+    endsubroutine dsolid_dt
+!***********************************************************************
+    subroutine calc_diagnostics_solid(p)
+!
+      use Sub, only: dot
+      use Viscosity, only: getnu
+
+      type (pencil_case), intent(in) :: p
+
       real    :: fp_pressure, fp_gradT
       real    :: fp_stress(3,3)
       integer :: iobj, ifp, ix0, iy0, iz0, i, ilong, ilat
@@ -756,15 +741,16 @@ module Solid_Cells
             elseif (objectform == 'sphere') then
               dlong = twopi/nlong
               dlat  = pi/(nlat+1)
+!
 !  Surface term, normalized by the squared radius of the object.
 !  Additional normalizing factors can be found in subroutine
 !  dsolid_dt_integrate.
+!
               surfacecoeff = dlong*dlat*rforce**2
               drag_norm = 1./(pi*robj**2)
               nusselt_norm = 1./(4*pi*robj**2)
             else
-              print*, "Warning: Subroutine dsolid_dt not implemented ", &
-                  "for this objectform."
+              call warning('dsolid_dt','not implemented for objectform '//trim(objectform))
             endif
             do ifp = 1,nforcepoints
               iy0 = fpnearestgrid(iobj,ifp,2)
@@ -807,8 +793,7 @@ module Solid_Cells
                       idiag_c_dragz /= 0 .or. idiag_c_dragx_p /= 0 .or. &
                       idiag_c_dragy_p /= 0 .or. idiag_c_dragz_p /= 0) then
                     fp_pressure = p%pp(ix0-nghost)
-                    fp_stress(:,:) = twonu(ix0-nghost)*p%rho(ix0-nghost) &
-                        *p%sij(ix0-nghost,:,:)
+                    fp_stress(:,:) = twonu(ix0-nghost)*p%rho(ix0-nghost)*p%sij(ix0-nghost,:,:)
 !
 !  Force in x-,y-, and z-directions
 !
@@ -845,15 +830,11 @@ module Solid_Cells
                     c_dragx(iobj) = c_dragx(iobj) + force_x * drag_norm
                     c_dragy(iobj) = c_dragy(iobj) + force_y * drag_norm
                     c_dragz(iobj) = c_dragz(iobj) + force_z * drag_norm
-                    c_dragx_p(iobj) = c_dragx_p(iobj) - &
-                        fp_pressure*nvec(1) * drag_norm * surfaceelement
-                    c_dragy_p(iobj) = c_dragy_p(iobj) - &
-                        fp_pressure*nvec(2) * drag_norm * surfaceelement
-                    c_dragz_p(iobj) = c_dragz_p(iobj) - &
-                        fp_pressure*nvec(3) * drag_norm * surfaceelement
+                    c_dragx_p(iobj) = c_dragx_p(iobj) - fp_pressure*nvec(1) * drag_norm * surfaceelement
+                    c_dragy_p(iobj) = c_dragy_p(iobj) - fp_pressure*nvec(2) * drag_norm * surfaceelement
+                    c_dragz_p(iobj) = c_dragz_p(iobj) - fp_pressure*nvec(3) * drag_norm * surfaceelement
                   endif
-                  if (idiag_Nusselt /= 0) Nusselt(iobj) = Nusselt(iobj) &
-                      + loc_Nus * nusselt_norm
+                  if (idiag_Nusselt /= 0) Nusselt(iobj) = Nusselt(iobj) + loc_Nus * nusselt_norm
                 endif
               endif
             enddo
@@ -870,9 +851,7 @@ module Solid_Cells
         endif
       endif
 !
-      call keep_compiler_quiet(df,f)
-!
-    endsubroutine dsolid_dt
+    endsubroutine calc_diagnostics_solid
 !***********************************************************************
     subroutine dsolid_dt_integrate
 !
@@ -902,6 +881,7 @@ module Solid_Cells
             .or. idiag_c_dragz_p /= 0) then
 !
 !  Collect and sum rhosum, irhocount, c_dragx, c_dragz, and c_dragy.
+!
           call mpireduce_sum(rhosum,rhosum_all)
           call mpireduce_sum_int(irhocount,irhocount_all)
           if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
@@ -952,9 +932,7 @@ module Solid_Cells
 !
 !  Find Nusselt number
 !
-            if (idiag_Nusselt /= 0) then
-              Nusselt = Nusselt_all
-            endif
+            if (idiag_Nusselt /= 0) Nusselt = Nusselt_all
           endif
         endif
         if (idiag_c_dragx /= 0) fname(idiag_c_dragx) = c_dragx(1)
@@ -1055,8 +1033,7 @@ module Solid_Cells
                   if (objects(iobj)%form == 'cylinder') then
                     r_point = sqrt(((x(i)-x_obj)**2+(y(j)-y_obj)**2))
                   elseif (objects(iobj)%form == 'sphere') then
-                    r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+&
-                        (z(k)-z_obj)**2)
+                    r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
                   endif
                   dr = r_point-r_obj
                   if ((dr > 0) .and. (dr < dxmin*limit_close_linear)) then
@@ -1082,13 +1059,10 @@ module Solid_Cells
               iobj = ba(i,j,k,4)
               if (iobj > 0) then
                 form = objects(iobj)%form
-                bax = (ba(i,j,k,1) /= 0).and.(ba(i,j,k,1) /= 9).and.&
-                    (ba(i,j,k,1) /= 10)
-                bay = (ba(i,j,k,2) /= 0).and.(ba(i,j,k,2) /= 9).and.&
-                    (ba(i,j,k,2) /= 10)
+                bax = (ba(i,j,k,1) /= 0).and.(ba(i,j,k,1) /= 9).and.(ba(i,j,k,1) /= 10)
+                bay = (ba(i,j,k,2) /= 0).and.(ba(i,j,k,2) /= 9).and.(ba(i,j,k,2) /= 10)
                 if (form == 'sphere') then
-                  baz = (ba(i,j,k,3) /= 0).and.(ba(i,j,k,3) /= 9).and.&
-                      (ba(i,j,k,3) /= 10)
+                  baz = (ba(i,j,k,3) /= 0).and.(ba(i,j,k,3) /= 9).and.(ba(i,j,k,3) /= 10)
                 else
                   baz = .false.
                 endif
@@ -1148,25 +1122,21 @@ module Solid_Cells
                   ppp(1) = xmirror
                   ppp(2) = ymirror
                   ppp(3) = zmirror
-                  call find_near_indeces( &
-                      lower_i,upper_i, &
-                      lower_j,upper_j, &
-                      lower_k,upper_k,x,y,z,ppp)
+                  call find_near_indeces( lower_i,upper_i, &
+                                          lower_j,upper_j, &
+                                          lower_k,upper_k,x,y,z,ppp)
 !
 !  Issue with domain borders: A mirror point can be outside a
 !  processor's local domain (including ghost points). Some sort
 !  communication has to be implemented!
 !
-                  if (lower_i == 0 .or. upper_i == 0) then
+                  if (lower_i == 0 .or. upper_i == 0) &
                     call fatal_error('update_solid_cells:','lower_i==0 or upper_i==0')
-                  endif
-                  if (lower_j == 0 .or. upper_j == 0) then
+                  if (lower_j == 0 .or. upper_j == 0) &
                     call fatal_error('update_solid_cells:','lower_j==0 or upper_j==0')
-                  endif
                   if (form == 'sphere') then
-                    if (lower_k == 0 .or. upper_k == 0) then
+                    if (lower_k == 0 .or. upper_k == 0) &
                       call fatal_error('update_solid_cells:','lower_k==0 or upper_k==0')
-                    endif
                   endif
 !
 !  First we use interpolations to find the value of the mirror point.
@@ -1202,8 +1172,7 @@ module Solid_Cells
 !
                     if (ilnTT > 0) then
                       call interpolate_point(f,phi,ilnTT,lower_i,upper_i, &
-                          lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror, &
-                          zmirror,ndims)
+                          lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
                       f(i,j,k,ilnTT) = 2*objects(iobj)%T-phi(1)
                       mirror_temperature = phi(1)
                     endif
@@ -1212,16 +1181,13 @@ module Solid_Cells
 !
                     if (ilnrho > 0) then
                       call interpolate_point(f,phi,ilnrho,lower_i,upper_i, &
-                          lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror, &
-                          zmirror,ndims)
+                          lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
                       f(i,j,k,ilnrho) = phi(1)
                       if (ilnTT > 0 .or. iTT > 0) then
                         if (ltemperature_nolog) then
-                          f(i,j,k,ilnrho) = phi(1) &
-                              *mirror_temperature/f(i,j,k,ilnTT)
+                          f(i,j,k,ilnrho) = phi(1)*mirror_temperature/f(i,j,k,ilnTT)
                         else
-                          f(i,j,k,ilnrho) = phi(1) &
-                              *exp(mirror_temperature-f(i,j,k,ilnTT))
+                          f(i,j,k,ilnrho) = phi(1)*exp(mirror_temperature-f(i,j,k,ilnTT))
                         endif
                       else
                         f(i,j,k,ilnrho) = phi(1)
@@ -1229,7 +1195,7 @@ module Solid_Cells
                     endif
                   else
                     call fatal_error('update_solid_cells', &
-                        'No such interpolation method!')
+                                     'no such interpolation_method: '//trim(interpolation_method))
                   endif
                 endif
               endif
@@ -1255,8 +1221,7 @@ module Solid_Cells
                   elseif (idir == 3) then
                     zind = k-ba_shift(i,j,k,idir)
                   else
-                    print*,'No such idir!...exiting!'
-                    call fatal_error('update_solid_cells','No such idir!')
+                    call fatal_error('update_solid_cells','no such idir')
                   endif
 !
 !  Only update the solid cell "ghost points" if all indeces are non-zero.
@@ -1273,8 +1238,7 @@ module Solid_Cells
 !
 !  Set constant temperature, equal to the solid temperature, at the solid surface
 !
-                    if (ilnTT > 0) f(i,j,k,ilnTT) = &
-                        2*objects(iobj)%T-f(xind,yind,zind,ilnTT)
+                    if (ilnTT > 0) f(i,j,k,ilnTT) = 2*objects(iobj)%T-f(xind,yind,zind,ilnTT)
 !
 !  Set pressure gradient to zero at the solid surface
 !
@@ -1298,7 +1262,8 @@ module Solid_Cells
           enddo
         enddo
       else
-        call fatal_error('update_solid_cells','No such interpolation_method')
+        call fatal_error('update_solid_cells','no such interpolation_method: '// &
+                         trim(interpolation_method))
       endif
 !
     endsubroutine update_solid_cells
@@ -1330,8 +1295,7 @@ module Solid_Cells
 !  find ghost points to be modified for this pencil
 !
         do i = l1,l2
-          bax = ((ba(i,m,n,1) /= 0).and.(ba(i,m,n,1) /= 9).and.&
-              (ba(i,m,n,1) /= 10))
+          bax = ((ba(i,m,n,1) /= 0).and.(ba(i,m,n,1) /= 9).and.(ba(i,m,n,1) /= 10))
 !
 !  set ghost points in x-direction first
 !
@@ -1417,8 +1381,8 @@ module Solid_Cells
           do j = -3,3
             if (j /= 0) then
               bay = (ba(i,m+j,n,2) /= 0).and.(ba(i,m+j,n,2) /= 9).and. &
-                  (ba(i,m+j,n,2) /= 10).and. &
-                  (ba(i,m,n,2)==0 .or. ba(i,m,n,2)==10)
+                    (ba(i,m+j,n,2) /= 10).and. &
+                    (ba(i,m,n,2)==0 .or. ba(i,m,n,2)==10)
               if (bay) then
                 iobj = ba(i,m+j,n,4)
                 r_obj = objects(iobj)%r
@@ -1432,10 +1396,9 @@ module Solid_Cells
 !
                 sign_ba = sign(1,ba(i,m+j,n,2))
                 if (form == 'sphere') then
-                  ys = y_obj &
-                      -sign_ba*sqrt(r_obj**2-(x(i)-x_obj)**2-(z(n)-z_obj)**2)
+                  ys = y_obj - sign_ba*sqrt(r_obj**2-(x(i)-x_obj)**2-(z(n)-z_obj)**2)
                 else
-                  ys = y_obj -sign_ba*sqrt(r_obj**2-(x(i)-x_obj)**2)
+                  ys = y_obj - sign_ba*sqrt(r_obj**2-(x(i)-x_obj)**2)
                 endif
 !
 ! Find mirror point
@@ -1506,8 +1469,8 @@ module Solid_Cells
               if (iobj > 0) then
                 if (objects(iobj)%form == 'sphere') then
                   baz = (ba(i,m,k+n,3) /= 0).and.(ba(i,m,k+n,3) /= 9).and. &
-                      (ba(i,m,k+n,3) /= 10).and.&
-                      (ba(i,m,n,3)==0 .or. ba(i,m,n,3)==10)
+                        (ba(i,m,k+n,3) /= 10).and.&
+                        (ba(i,m,n,3)==0 .or. ba(i,m,n,3)==10)
                 else
                   baz = .false.
                 endif
@@ -1581,7 +1544,7 @@ module Solid_Cells
 !  Do nothing, this is done in update_solid_cells
 !
                   else
-                    call fatal_error('update_solid_cells_pencil','No such ivar')
+                    call fatal_error('update_solid_cells_pencil','no such ivar')
                   endif
                 enddo
               endif
@@ -1589,7 +1552,6 @@ module Solid_Cells
           enddo
 !
         enddo
-!
 !
       endif
 !
@@ -1679,9 +1641,8 @@ module Solid_Cells
 !
       xxp = (/xmirror,ymirror,zmirror/)
       inear = (/lower_i,lower_j,lower_k/)
-      if ( .not. linear_interpolate(f,ivar,ivar,xxp,gp(1),inear,.false.) ) then
+      if ( .not. linear_interpolate(f,ivar,ivar,xxp,gp(1),inear,.false.) ) &
         call fatal_error('linear_interpolate','')
-      endif
       phi_(1) = gp(1)
 !
 !  If the mirror point is very close to the surface of the object
@@ -1689,8 +1650,7 @@ module Solid_Cells
 !
       if (lclose_interpolation .and. (ivar < 4 .or. ivar == ilnTT)) then
         f_tmp(ivar) = phi_(1)
-        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp, &
-            f_tmp,.false.)
+        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,f_tmp,.false.)
         phi_(1) = f_tmp(ivar)
       endif
 !
@@ -1746,21 +1706,16 @@ module Solid_Cells
         if (objects(iobj)%form == 'cylinder') then
           rp = sqrt( (xxp(1)-o_global(1))**2 + (xxp(2)-o_global(2))**2 )
         elseif (objects(iobj)%form == 'sphere') then
-          rp = sqrt( &
-              (xxp(1)-o_global(1))**2 + &
-              (xxp(2)-o_global(2))**2 + &
-              (xxp(3)-o_global(3))**2   )
+          rp = sqrt( (xxp(1)-o_global(1))**2 + &
+                     (xxp(2)-o_global(2))**2 + &
+                     (xxp(3)-o_global(3))**2   )
         endif
         rs = objects(iobj)%r
         r_sp = rp-rs
-        call r_theta_phi_velocity_in_point(f,xxp,inear,iobj, &
-            o_global,rs,r_sp,vp_r,vp_theta,vp_phi)
+        call r_theta_phi_velocity_in_point(f,xxp,inear,iobj,o_global,rs,r_sp,vp_r,vp_theta,vp_phi)
         call find_unit_vectors(xxp_local,rp,iobj,nr_hat,nphi_hat,ntheta_hat)
         f_tmp(iux:iuz) = vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
-        if (lclose_interpolation) then
-          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp, &
-              f_tmp,.false.)
-        endif
+        if (lclose_interpolation) call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,f_tmp,.false.)
 !
 !  What is the boundary conditions at the surface
 !  For itest_method=1 antisymmetric boundaries are used for velocity
@@ -1907,8 +1862,7 @@ module Solid_Cells
 !  Find the corner points of the grid cell we are in based on one of the
 !  corner points (given by ix0_,iy0_,iz0_)
 !
-        call find_corner_points(fluid_point,cornervalue,cornerindex, &
-            ix0_,iy0_,iz0_,p_global,o_global)
+        call find_corner_points(fluid_point,cornervalue,cornerindex,ix0_,iy0_,iz0_,p_global,o_global)
 !
 !  Find the x, y and z coordinates of "p" in a coordiante system with origin
 !  in the center of the object
@@ -1983,8 +1937,7 @@ module Solid_Cells
       rg = rs+(limit_close_linear)*dxmin
       g_local = p_local*rg/rp
       g_global = g_local+o_global
-      call find_near_indeces(lower_i,upper_i,lower_j,upper_j, &
-          lower_k,upper_k,x,y,z,g_global)
+      call find_near_indeces(lower_i,upper_i,lower_j,upper_j,lower_k,upper_k,x,y,z,g_global)
       inear = (/lower_i,lower_j,lower_k/)
 !
     endsubroutine find_g_global_circle
@@ -2032,8 +1985,7 @@ module Solid_Cells
       elseif (close_interpolation_method == 4) then
         call find_g_global_circle(g_global,inear,rg,p_local,o_global,rs,rp)
       else
-        call fatal_error('close_inter_new', &
-            'No such close_interpolation_method!')
+        call fatal_error('close_inter_new','no such close_interpolation_method')
       endif
 !
 !  For quadratic interpolation the unit vectors in "p" is needed.
@@ -2094,10 +2046,9 @@ module Solid_Cells
 !  Find temperature
 !
       if (ilnTT > 0) then
-        if (.not. ltemperature_nolog) then
-          call fatal_error('close_inter_new', &
-              'Due to interpolation it is not correc to use lnTT!')
-        endif
+        if (.not. ltemperature_nolog) &
+          call fatal_error('close_inter_new','due to interpolation it is not correct to use lnTT')
+
         surf_val = objects(iobj)%T
         f_tmp(ilnTT) = (fvar(ilnTT)*r_sp+surf_val*r_pg)/r_sg
       endif
@@ -2275,11 +2226,11 @@ module Solid_Cells
 !
       if ( &
           (cornervalue(1,1) <= g_global(1).and. &
-          cornervalue(1,2) >= g_global(1).or. nxgrid == 1).and. &
+           cornervalue(1,2) >= g_global(1).or. nxgrid == 1).and. &
           (cornervalue(2,1) <= g_global(2).and. &
-          cornervalue(2,2) >= g_global(2).or. nygrid == 1).and. &
+           cornervalue(2,2) >= g_global(2).or. nygrid == 1).and. &
           (cornervalue(3,1) <= g_global(3).and. &
-          cornervalue(3,2) >= g_global(3).or. nzgrid == 1)) then
+           cornervalue(3,2) >= g_global(3).or. nzgrid == 1)) then
         ! Everything okay
       else
         if (g_global(1) > cornervalue(1,2)) g_global(1) = cornervalue(1,2)
@@ -2426,9 +2377,7 @@ module Solid_Cells
 !  The object_skin is the closest a particle can get to the solid
 !  cell before it is captured (this variable is normally zero).
 !
-        if (sqrt(distance2) < obj_rad+rad_part+object_skin) then
-          in_solid_cell = .true.
-        endif
+        if (sqrt(distance2) < obj_rad+rad_part+object_skin) in_solid_cell = .true.
       enddo
 !
     endfunction in_solid_cell
@@ -2556,12 +2505,11 @@ module Solid_Cells
             if (form == 'cylinder') then
               x2 = objects(iobj)%r**2 -(y(j)-objects(iobj)%x(2))**2
             elseif (form == 'sphere') then
-              x2 &
-                  = objects(iobj)%r**2 &
+              x2 = objects(iobj)%r**2 &
                   -(y(j)-objects(iobj)%x(2))**2 &
                   -(z(k)-objects(iobj)%x(3))**2
             else
-              call fatal_error('find_solid_cell_boundaries','No such form!')
+              call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
             endif
             if (x2 > 0) then
 !
@@ -2674,12 +2622,11 @@ module Solid_Cells
             if (form == 'cylinder') then
               y2 = objects(iobj)%r**2 -(x(i)-objects(iobj)%x(1))**2
             elseif (form == 'sphere') then
-              y2 &
-                  = objects(iobj)%r**2 &
+              y2 = objects(iobj)%r**2 &
                   -(x(i)-objects(iobj)%x(1))**2 &
                   -(z(k)-objects(iobj)%x(3))**2
             else
-              call fatal_error('find_solid_cell_boundaries','No such form!')
+              call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
             endif
             if (y2 > 0) then
 !
@@ -2788,15 +2735,13 @@ module Solid_Cells
 !  Check if we are inside the object for y(j) and x(i) (i.e. if z2>0)
 !
               if (form == 'cylinder') then
-                call fatal_error('find_solid_cell_boundaries', &
-                    'no cylinders when variable z')
+                call fatal_error('find_solid_cell_boundaries','no cylinders when variable z')
               elseif (form == 'sphere') then
-                z2 &
-                    = objects(iobj)%r**2 &
+                z2 = objects(iobj)%r**2 &
                     -(y(j)-objects(iobj)%x(2))**2 &
                     -(x(i)-objects(iobj)%x(1))**2
               else
-                call fatal_error('find_solid_cell_boundaries','No such form!')
+                call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
               endif
               if (z2 > 0) then
 !
@@ -2928,7 +2873,7 @@ module Solid_Cells
                 elseif (form == 'sphere') then
                   r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
                 else
-                  call fatal_error('find_solid_cell_boundaries','No such form!')
+                  call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
                 endif
                 dr = r_point-r_obj
                 if ((dr >= 0) .and. (dr < limit_close_linear*dxmin)) then
@@ -2955,7 +2900,7 @@ module Solid_Cells
               elseif (form == 'sphere') then
                 r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
               else
-                call fatal_error('find_solid_cell_boundaries','No such form!')
+                call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
               endif
               if (r_point < r_obj) then
                 ba(i,j,k,1:3) = 11
@@ -2965,10 +2910,9 @@ module Solid_Cells
               if (form == 'cylinder') then
                 r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
               elseif (form == 'sphere') then
-                r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2 &
-                    +(z(mz-nghost+k)-z_obj)**2)
+                r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2 +(z(mz-nghost+k)-z_obj)**2)
               else
-                call fatal_error('find_solid_cell_boundaries','No such form!')
+                call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
               endif
               if (r_point < r_obj) then
                 ba(i,j,mz-nghost+k,1:3) = 11
@@ -2989,7 +2933,7 @@ module Solid_Cells
               elseif (form == 'sphere') then
                 r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
               else
-                call fatal_error('find_solid_cell_boundaries','No such form!')
+                call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
               endif
               if (r_point < r_obj) then
                 ba(i,j,k,1:3) = 11
@@ -2999,10 +2943,9 @@ module Solid_Cells
               if (form == 'cylinder') then
                 r_point = sqrt((x(i)-x_obj)**2+(y(my-nghost+j)-y_obj)**2)
               elseif (form == 'sphere') then
-                r_point = sqrt((x(i)-x_obj)**2+(y(my-nghost+j)-y_obj)**2 &
-                    +(z(k)-z_obj)**2)
+                r_point = sqrt((x(i)-x_obj)**2+(y(my-nghost+j)-y_obj)**2+(z(k)-z_obj)**2)
               else
-                call fatal_error('find_solid_cell_boundaries','No such form!')
+                call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
               endif
               if (r_point < r_obj) then
                 ba(i,my-nghost+j,k,1:3) = 11
@@ -3023,7 +2966,7 @@ module Solid_Cells
               elseif (form == 'sphere') then
                 r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
               else
-                call fatal_error('find_solid_cell_boundaries','No such form!')
+                call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
               endif
               if (r_point < r_obj) then
                 ba(i,j,k,1:3) = 11
@@ -3033,10 +2976,9 @@ module Solid_Cells
               if (form == 'cylinder') then
                 r_point = sqrt((x(mx-nghost+i)-x_obj)**2+(y(j)-y_obj)**2)
               elseif (form == 'sphere') then
-                r_point = sqrt((x(mx-nghost+i)-x_obj)**2+(y(j)-y_obj)**2 &
-                    +(z(k)-z_obj)**2)
+                r_point = sqrt((x(mx-nghost+i)-x_obj)**2+(y(j)-y_obj)**2 + (z(k)-z_obj)**2)
               else
-                call fatal_error('find_solid_cell_boundaries','No such form!')
+                call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
               endif
 !
               if (r_point < r_obj) then
@@ -3081,7 +3023,7 @@ module Solid_Cells
                 elseif (form == 'sphere') then
                   r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
                 else
-                  call fatal_error('find_solid_cell_boundaries','No such form!')
+                  call fatal_error('find_solid_cell_boundaries','no such form: '//trim(form))
                 endif
                 if (r_point > r_obj) then
                   if ((ba(i,j,k,1) /= 0 ) .and. (ba(i,j,k,1) /= 10)) then
@@ -3090,7 +3032,7 @@ module Solid_Cells
                     print*,'r_point,r_obj=',r_point,r_obj
                     print*,'x(i),y(j),z(k)=',x(i),y(j),z(k)
                     call fatal_error('find_solid_cell_boundaries', &
-                        'Point marked as fluid point but seems not to be...')
+                        'point marked as fluid point but seems not to be')
                   endif
                 else
                   if ((ba(i,j,k,1) == 0).or.(ba(i,j,k,1) == 10).or. &
@@ -3103,7 +3045,7 @@ module Solid_Cells
                     print*,'r_point,r_obj=',r_point,r_obj
                     print*,'x(i),y(j),z(k)=',x(i),y(j),z(k)
                     call fatal_error('find_solid_cell_boundaries', &
-                        'Point marked as a solid point but seems not to be...')
+                        'point marked as a solid point but seems not to be')
                   endif
                 endif
               enddo
@@ -3489,14 +3431,14 @@ module Solid_Cells
 !!        real, intent(in) :: rs, rp, r_plane
 !!        integer, intent(in) :: constdir ! Need this variable from gridplane computation
 !!  
-!!        if(constdir .eq. 1) then
-!!          if(y(j) < o_global(2)) then
+!!        if (constdir .eq. 1) then
+!!          if (y(j) < o_global(2)) then
 !!            y(j) = - sqrt(rs**2 - x(i)**2)
 !!          else
 !!            y(j) = sqrt(rs**2 - x(i)**2)
 !!          endif
 !!        elseif (constdir .eq. 2) then
-!!          if(x(i) < o_global(1)) then
+!!          if (x(i) < o_global(1)) then
 !!            x(i) = - sqrt(rs**2 - y(j)**2)
 !!          else
 !!            x(i) = sqrt(rs**2 - y(j)**2)
@@ -3509,7 +3451,7 @@ module Solid_Cells
 !!              'No constant direction found!')
 !!        endif
 !!  
-!!        if(x(i)**2 + y(j)**2 + < rs) then
+!!        if (x(i)**2 + y(j)**2 + < rs) then
 !!          call fatal_error('move_interpolation_point', &
 !!              'Point not moved outside solid!')
 !!        endif
@@ -3536,9 +3478,8 @@ module Solid_Cells
       integer, dimension(3), intent(in) :: inear
       real, intent(out) :: vg_r, vg_phi, vg_theta
 !
-      if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) then
+      if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
         call fatal_error('close_interpolate_ordinary','')
-      endif
 !
 !  If lclose_quad_rad_inter = true we must find the velocities in the r,
 !  theta and phi directions at the point "g".
@@ -3615,8 +3556,7 @@ module Solid_Cells
         ! Everything okay
       else
         call fatal_error('g_interpolate_extraordinary', &
-          'Interpolation point does not lie within the calculated' // &
-          'grid point interval!')
+          'Interpolation point does not lie within the calculated grid point interval')
       endif
 !
 !  Locate and move the interpolation points that are inside the solid.
@@ -3656,8 +3596,7 @@ module Solid_Cells
         dX1 = 1/(x1-x0)
         g_Xp = g_global(1)-x0
       else 
-        call fatal_error('g_interpolate_extraordinary', &
-            'Not implemented for spheres!')
+        call not_implemented('g_interpolate_extraordinary','for spheres')
       endif
 !
 ! In case of 2D flow
@@ -3734,8 +3673,7 @@ module Solid_Cells
         ((x(inear(1)+1)-o_global(1))**2 + (y(inear(2))-o_global(2))**2 < rspow2)) then
         gridplane_need_adjust= .true.
       elseif (constdir == 3) then
-        call fatal_error('gridplane_need_adjust', &
-            'Cannot use close_interpolation_method=1 for spheres!')
+        call not_implemented('gridplane_need_adjust','close_interpolation_method=1 for spheres')
       endif
     endfunction gridplane_need_adjust
 !***********************************************************************
@@ -3786,7 +3724,7 @@ module Solid_Cells
       intent(in)  :: xxp, rthz
       intent(out) :: ineargrid_ogrid
 !      
-      if(ALWAYS_FALSE) print*, xxp, rthz
+      if (ALWAYS_FALSE) print*, xxp, rthz
       ineargrid_ogrid=0
 !      
     endsubroutine map_nearest_grid_ogrid

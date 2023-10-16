@@ -34,6 +34,7 @@ contains
 !***********************************************************************
     subroutine initialize_timestep
 
+      if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
 
     endsubroutine initialize_timestep
@@ -54,7 +55,7 @@ contains
         type (pencil_case) :: p
         real :: dt1, dt1_local
         real, save :: dt1_last=0.0
-        double precision :: t0
+        real(KIND=rkind8) :: t0
         integer :: iv
 
         ! Use pointers for cheaply flipping fn and fn1 after each substep
@@ -385,12 +386,12 @@ contains
     subroutine pushpars2c(p_par)
 
     use Messages, only: fatal_error
-    
+
     integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(:) :: p_par
-    
+
     call fatal_error('time_step_RKC-20','alpha_ts, beta_ts not defined')
-    
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Timestep

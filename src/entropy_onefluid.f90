@@ -451,14 +451,14 @@ module Energy
 !
       if (lspecial) call special_calc_energy(f,df,p)
 !
-      call calc_diagnostics_energy(f,p)
-!
 !  ``cs2/dx^2'' for timestep
 !
       if (lhydro.and.ldensity.and.lfirst.and.ldt) then
         advec_cs2=p%cs2*dxyz_2
         if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
       endif
+!
+      call calc_diagnostics_energy(f,p)
 
     endsubroutine denergy_dt
 !***********************************************************************

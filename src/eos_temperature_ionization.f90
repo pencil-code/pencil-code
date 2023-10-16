@@ -22,7 +22,6 @@
 !***************************************************************
 module EquationOfState
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -30,13 +29,9 @@ module EquationOfState
   implicit none
 !
   include 'eos.h'
+  include 'eos_params.h'
 !
-! integers specifying which independent variables to use in eoscalc
-  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
-  integer, parameter :: ilnrho_TT=5, irho_ss=7, irho_TT=10, ipp_ss=11
-  integer, parameter :: ipp_cs2=12
-  integer, parameter :: irho_eth=13, ilnrho_eth=14
-  integer :: icv, ics, idelta, igamma, inabad
+  integer :: icv, idelta, igamma, inabad
 !  integer :: icp, icv, ics, idelta, igamma, inabad
   integer :: imass = 1
   !  secondary parameters calculated in initialize

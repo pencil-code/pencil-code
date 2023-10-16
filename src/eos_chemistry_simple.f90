@@ -33,14 +33,9 @@ module EquationOfState
   implicit none
 !
   include 'eos.h'
+  include 'eos_params.h'
 !
-  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
-  integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
-  integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
-  integer, parameter :: ipp_ss=11, irho_TT=10, ipp_cs2=12
-  integer, parameter :: irho_eth=13, ilnrho_eth=14
-!
-  integer :: iglobal_cs2, iglobal_glnTT, ics
+  integer :: iglobal_cs2, iglobal_glnTT
 !
   real :: lnTT0=impossible
 !
@@ -433,7 +428,8 @@ module EquationOfState
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      call keep_compiler_quiet(lpencil_in)
+      if (lpencil_in(i_cv1)) lpencil_in(i_cv) = .true.
+      if (lpencil_in(i_cp1)) lpencil_in(i_cp) = .true.
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
@@ -475,7 +471,10 @@ module EquationOfState
 !
 ! Cp/Cv pencils
 !
-          if (lpencil(i_cp)) p%cp = f(l1:l2,m,n,icp)
+          if (lpencil(i_cp)) then
+            p%cp = f(l1:l2,m,n,icp)
+            if (lpencil(i_cp1)) p%cp1 = 1./p%cp
+          endif
 !
           if (lpencil(i_cv))  then
             p%cv = 0.
@@ -491,7 +490,6 @@ module EquationOfState
               p%cv = p%cp - R_mix
             endif
             if (lpencil(i_cv1)) p%cv1 = 1./p%cv
-            if (lpencil(i_cp1)) p%cp1 = 1./p%cp
           endif
 !
 !  Temperature

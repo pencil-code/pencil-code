@@ -225,7 +225,7 @@ module Density
           call gaunoise(amplrho(j), f, irho, irho)
 !
         case default init_cond
-          call fatal_error('init_lnrho', 'no such initial condition '// trim(initrho(j)))
+          call fatal_error('init_lnrho', 'no such initrho: '//trim(initrho(j)))
 !
         endselect init_cond
 !
@@ -426,7 +426,6 @@ module Density
       use Sub, only: identify_bcs, dot_mn, del2
       use Deriv, only: der6
       use Special, only: special_calc_density
-      use Diagnostics
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -498,20 +497,37 @@ module Density
       maxdiffus=max(maxdiffus,diffus_diffrho)
       maxdiffus3=max(maxdiffus3,diffus_diffrho3)
 !
+      call calc_diagnostics_density(f,p)
+!
+!  Stop the clock.
+!
+      call timing('dlnrho_dt', 'finished', mnloop=.true.)
+!
+    endsubroutine dlnrho_dt
+!***********************************************************************
+    subroutine calc_diagnostics_density(f,p)
+
+      use Diagnostics
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+!
+      real, dimension(nx) :: penc
+!
 !  2D averages
 !
-      avg_2d: if (l2davgfirst) then
+      if (l2davgfirst) then
         penc = f(l1:l2,m,n,irho)
         call ysum_mn_name_xz(penc, idiag_drhomxz)
         if (idiag_drho2mxz /= 0) call ysum_mn_name_xz(penc**2, idiag_drho2mxz)
         call zsum_mn_name_xy(penc, idiag_drhomxy)
         if (idiag_drho2mxy /= 0) call zsum_mn_name_xy(penc**2, idiag_drho2mxy)
         call zsum_mn_name_xy(p%rho, idiag_sigma, lint=.true.)
-      endif avg_2d
+      endif
 !
 !  1D averages
 !
-      avg_1d: if (l1davgfirst) then
+      if (l1davgfirst) then
         penc = f(l1:l2,m,n,irho)
 !       xy-averages
         call xysum_mn_name_z(penc, idiag_drhomz)
@@ -522,18 +538,15 @@ module Density
 !       yz-averages
         call yzsum_mn_name_x(penc, idiag_drhomx)
         if (idiag_drho2mx /= 0) call yzsum_mn_name_x(penc**2, idiag_drho2mx)
-      endif avg_1d
+      endif
 !
 !  Diagnostics
 !
-      diagnos: if (ldiagnos) then
+      if (ldiagnos) then
 !
-        if (idiag_mass /= 0 .or. idiag_rhomin /= 0 .or. idiag_rhomax /= 0) then
-          penc = p%rho
-          call integrate_mn_name(penc, idiag_mass)
-          if (idiag_rhomin /= 0) call max_mn_name(-penc, idiag_rhomin, lneg=.true.)
-          call max_mn_name(penc, idiag_rhomax)
-        endif
+        call integrate_mn_name(p%rho, idiag_mass)
+        if (idiag_rhomin /= 0) call max_mn_name(-p%rho, idiag_rhomin, lneg=.true.)
+        call max_mn_name(p%rho, idiag_rhomax)
 !
         if (idiag_drhom /= 0 .or. idiag_drho2m /= 0 .or. idiag_drhorms /= 0 .or. idiag_drhomax /= 0) then
           penc = f(l1:l2,m,n,irho)
@@ -543,21 +556,7 @@ module Density
           if (idiag_drhomax /= 0) call max_mn_name(abs(penc), idiag_drhomax)
         endif
 !
-      endif diagnos
-!
-!  Stop the clock.
-!
-      call timing('dlnrho_dt', 'finished', mnloop=.true.)
-!
-    endsubroutine dlnrho_dt
-!***********************************************************************
-    subroutine calc_diagnostics_density(f,p)
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      type(pencil_case) :: p
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
+      endif
 
     endsubroutine calc_diagnostics_density
 !***********************************************************************

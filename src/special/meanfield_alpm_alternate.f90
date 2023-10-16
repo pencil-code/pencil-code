@@ -246,7 +246,7 @@ module Special
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: abf,alpm,ugalpm,divflux,del2alpm,alpm_divu
       real, dimension (nx) :: temp_sum
-      double precision :: dtalpm_double
+      real(KIND=rkind8) :: dtalpm_double
       type (pencil_case) :: p
       integer :: modulot
 !     integer :: ierr

@@ -1815,7 +1815,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  25-apr-06/anders: coded
 !
-      use Diagnostics
       use Particles_spin, only: calc_liftforce
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1830,6 +1829,18 @@ k_loop:   do while (.not. (k>npar_loc))
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
+
+      call calc_diagnostics_particles(fp,p,ineargrid)
+
+    endsubroutine dvvp_dt_pencil
+!***********************************************************************
+    subroutine calc_diagnostics_particles(fp,p,ineargrid)
+
+      use Diagnostics
+
+      real, dimension (mpar_loc,mparray) :: fp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
 !  Diagnostic output
 !
@@ -1876,7 +1887,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call zsum_mn_name_xy(p%rhop,idiag_sigmap,lint=.true.)
       endif
 !
-    endsubroutine dvvp_dt_pencil
+    endsubroutine calc_diagnostics_particles
 !***********************************************************************
     subroutine dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
 !

@@ -110,6 +110,14 @@ module PointMasses
       call keep_compiler_quiet(f,df)
 !
     endsubroutine  pointmasses_pde
+!***********************************************************************
+    subroutine calc_diagnostics_pointmasses(p)
+!
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_pointmasses
 !***********************************************************************         
     subroutine read_pointmasses_init_pars(iostat)
 !

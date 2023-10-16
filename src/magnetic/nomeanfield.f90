@@ -97,6 +97,16 @@ module Magnetic_meanfield
 !
     endsubroutine daa_dt_meanfield
 !***********************************************************************
+    subroutine  calc_diagnostics_meanfield(f,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine  calc_diagnostics_meanfield
+!***********************************************************************
     subroutine read_magn_mf_init_pars(iostat)
 !
       integer, intent(out) :: iostat

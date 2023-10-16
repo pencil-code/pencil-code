@@ -7,6 +7,10 @@ git:
   quiet: true
   submodules: false
 
+branches:
+  only:
+  - master
+
 cache:
   directories:
   - $HOME/build/pencil-code/pencil-code/samples/no-modules/src

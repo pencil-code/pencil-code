@@ -163,6 +163,7 @@ module Sub
   interface dot2
     module procedure dot2_mn
     module procedure dot2_0
+    module procedure dot2_3D
   endinterface
 !
   interface dot_add
@@ -391,7 +392,7 @@ module Sub
           enddo
         else
           res=sum(dble(a))     ! sum at double precision to improve accuracy
-        endif
+        endif                  ! but how to avoid promotion to quad precision?
       else
         if (lspherical_coords) then
           do isum=l1,l2
@@ -402,8 +403,7 @@ module Sub
         endif
       endif
 !
-      if (lcylindrical_coords) &
-          call fatal_error('mean_mn','not implemented for cylindrical')
+      if (lcylindrical_coords) call fatal_error('mean_mn','not implemented for cylindrical')
 !
     endsubroutine mean_mn
 !***********************************************************************
@@ -900,6 +900,22 @@ module Sub
       b=a(:,1)**2+a(:,2)**2+a(:,3)**2
 !
     endsubroutine dot2_mx
+!***********************************************************************
+    subroutine dot2_3D(a,b)
+!
+!  Dot product with itself.
+!
+!  21-aug-22/axel: adapted from dot2_mn
+!
+      real, dimension (mx,my,mz,3) :: a
+      real, dimension (mx,my,mz) :: b
+!
+      intent(in) :: a
+      intent(out) :: b
+!
+      b=a(:,:,:,1)**2+a(:,:,:,2)**2+a(:,:,:,3)**2
+!
+    endsubroutine dot2_3D
 !***********************************************************************
     subroutine dot2_0(a,b)
 !
@@ -3727,24 +3743,51 @@ module Sub
       real, intent(out) :: tout
       integer, intent(out) :: nout
       real, intent(in) :: dtout
-      double precision, intent(in) :: t_temp
+      real(KIND=rkind8), intent(in) :: t_temp
 !
       integer, parameter :: lun = 31
-      logical :: exist
+      logical :: exist, exist1
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
-      double precision :: t0
+      real(KIND=rkind8) :: t0
+      integer ::  ntsnap=0, jtsnap=0
+      real, dimension(:), allocatable :: tsnap_list
 !
       if (lroot) then
 !
 !  Depending on whether or not file exists, we need to
 !  either read or write tout and nout from or to the file.
 !
+!  14-sep-2023/Ramkishor: Added the posibility to get the snapshots at
+!  fixed time (provided as an input file tsnap_list.dat)
+!
         inquire(FILE=trim(file),EXIST=exist)
         open(lun,FILE=trim(file))
-        if (exist) then
-          read(lun,*) tout,nout
+        inquire(FILE='tsnap_list.dat',EXIST=exist1)
+        if (exist1) then
+          open(1,FILE='tsnap_list.dat')
+          read(1,*) ntsnap
+          if (allocated(tsnap_list)) deallocate(tsnap_list)
+          allocate(tsnap_list(ntsnap))
+          do jtsnap=1,ntsnap
+            read(1,*) tsnap_list(jtsnap)
+          enddo
+          close(1)
+          if (exist) then
+            read(lun,*) tout,nout
+          else
+            nout=1
+          endif
+          if (nout > ntsnap) then
+            tout=impossible
+          else
+            tout=tsnap_list(nout)
+          endif
+          write(lun,*) tout,nout
         else
+          if (exist) then
+            read(lun,*) tout,nout
+          else
 !
 !  Special treatment when dtout is negative.
 !  Now tout and nout refer to the next snapshopt to be written.
@@ -3752,24 +3795,25 @@ module Sub
 !  abs(dtout) is then the first output time.
 !  Replaced t0 = max(t - dt, 0.0D0) -> t0 = t, in case t < 0.
 !
-          settout: if (dtout < 0.0) then
-            tout = abs(dtout)+toutoff
-          elseif (dtout > 0.0) then settout
-            !  make sure the tout is a good time
-            t0 = t_temp
-            tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
-            if (t0 == 0.0) then
-              if (file==trim(trim(datadir)//'/t2davg.dat') .or.  &
+            settout: if (dtout < 0.0) then
+              tout = abs(dtout)+toutoff
+            elseif (dtout > 0.0) then settout
+              !  make sure the tout is a good time
+              t0 = t_temp
+              tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
+              if (t0 == 0.0) then
+                if (file==trim(trim(datadir)//'/t2davg.dat') .or.  &
                   file==trim(trim(datadir)//'/t1davg.dat')) tout = 0.0
-            endif
-          else settout
-            call warning("read_snaptime", "Writing snapshot every time step. ")
-            tout = 0.0
-          endif settout
-          nout=1
-          write(lun,*) tout,nout
+              endif
+            else settout
+              call warning("read_snaptime", "Writing snapshot every time step. ")
+              tout = 0.0
+            endif settout
+            nout=1
+            write(lun,*) tout,nout
+          endif
+          close(lun)
         endif
-        close(lun)
 !
 !  Broadcast tout and nout in one go.
 !
@@ -3801,16 +3845,19 @@ module Sub
       real, intent(inout) :: tout
       integer, intent(inout) :: nout
       real, intent(in) :: dtout
-      double precision, intent(in) :: t
+      real(KIND=rkind8), intent(in) :: t
       logical, intent(inout) :: lout
       logical, intent(in), optional :: nowrite
+      logical :: exist
       character (len=intlen), intent(out), optional :: ch
 !
       integer, parameter :: lun = 31
+      integer ::  ntsnap=0, jtsnap=0
       logical :: lwrite
       real :: t_sp   ! t in single precision for backwards compatibility
       logical, save :: lfirstcall=.true.
       real, save :: deltat_threshold
+      real, dimension(:), allocatable :: tsnap_list
 !
       if (notanumber_0d(t)) then
         lout=.false.
@@ -3852,18 +3899,31 @@ module Sub
       if ((t_sp >= tout) .or. &
 !      if (lout.or.t_sp    >= tout             .or. &
           (abs(t_sp-tout) <  deltat_threshold)) then
+        inquire(FILE='tsnap_list.dat',EXIST=exist)
+        if (exist) then
+          open(1,FILE='tsnap_list.dat')
+          read(1,*) ntsnap
+          if (allocated(tsnap_list)) deallocate(tsnap_list)
+          allocate(tsnap_list(ntsnap))
+          do jtsnap=1,ntsnap
+            read(1,*) tsnap_list(jtsnap)
+          enddo
+          close(1)
+          tout=tsnap_list(nout+1)
+        else
 !
 !  Set next output time tout. If dtout<0, we interprete this as
 !  log-spaced output in intervals increasing by a factor 10^(1/ldt1),
 !  where ldt1 is the inverse logarithmic interval, currently ldt1=3.
 !  When toutoff=1., the output times would be 1.1, 1.2, 1.5, etc.
 !
-        if (dtout<0.0) then
-          !tout=toutoff+(tout-toutoff)*10.**onethird
-          tout=toutoff+(tout-toutoff)*10.**onesixth
-        else
-          tout=tout+abs(dtout)
-!         if (.not.lout) tout=tout+abs(dtout)
+          if (dtout<0.0) then
+            !tout=toutoff+(tout-toutoff)*10.**onethird
+            tout=toutoff+(tout-toutoff)*10.**onesixth
+          else
+            tout=tout+abs(dtout)
+!           if (.not.lout) tout=tout+abs(dtout)
+          endif
         endif
 !
         nout=nout+1
@@ -8932,10 +8992,10 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !  but omitted everything that had to do with "Om*"
 !
       use Cdata, only: lread_scl_factor_file_new, ip, lroot, t, tmax, &
-        scl_factor_target, Hp_target, appa_target
+        scl_factor_target, Hp_target, appa_target, wweos_target
       use Messages, only: fatal_error
 !
-      real, save, dimension(:), allocatable :: t_file, scl_factor, Hp_file, appa_file
+      real, save, dimension(:), allocatable :: t_file, scl_factor, Hp_file, appa_file, wweos_file
       real, save, dimension(:), allocatable :: lgt_file, lgff, lgff2, lgff3, lgff4, lgff5
       logical, save :: lread_scl_factor_file_exists
       integer, save :: idt_file_safety=12
@@ -8963,13 +9023,15 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
             open(9,file='a_vs_eta.dat',status='old')
             read(9,*) nt_file, lgt0, dlgt !, H0
             if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0=',nt_file,lgt0,dlgt,H0
-            if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, appa_file, &
+            if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, appa_file, wweos_file, &
                                               lgt_file, lgff, lgff2, lgff3, lgff4, lgff5)
-            allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), appa_file(nt_file), &
+            allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), appa_file(nt_file), wweos_file(nt_file), &
                      lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file), lgff4(nt_file), lgff5(nt_file))
             do it_file=1,nt_file
-              read(9,*) t_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file)
-              if (ip<14) print*,'AXEL: ',it_file, t_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file)
+              read(9,*) t_file(it_file), scl_factor(it_file), Hp_file(it_file), &
+                appa_file(it_file), wweos_file(it_file)
+              if (ip<14) print*,'AXEL: ',it_file, t_file(it_file), scl_factor(it_file), &
+                Hp_file(it_file), appa_file(it_file), wweos_file(it_file)
             enddo
             close(9)
             lgt_file=alog10(t_file)
@@ -9086,13 +9148,21 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
         !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
 !
-!  logarithmic interpolation of appa_file
+!  non-logarithmic interpolation of appa_file
 !
         f1=appa_file(it_file)
         f2=appa_file(it_file+1)
         f=f1+(lgt_current-lgt1)*(f2-f1)/(lgt2-lgt1)
         appa_target=f !/Hp_ini**2
         if (ip<14) print*,'AXEL: f1 < appa < f2 ? ',f1, appa_target, f2
+!
+!  non-logarithmic interpolation of wweos_file
+!
+        f1=wweos_file(it_file)
+        f2=wweos_file(it_file+1)
+        f=f1+(lgt_current-lgt1)*(f2-f1)/(lgt2-lgt1)
+        wweos_target=f
+        if (ip<14) print*,'AXEL: f1 < ww < f2 ? ',f1, wweos_target, f2
       endif
 !
     endsubroutine calc_scl_factor

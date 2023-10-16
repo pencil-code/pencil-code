@@ -8,7 +8,7 @@
   public :: get_slices_polymer
   public :: init_poly
   public :: dpoly_dt
-  public :: calc_pencils_polymer
+  public :: calc_pencils_polymer, calc_diagnostics_polymer
   public :: pencil_criteria_polymer
   public :: pencil_interdep_polymer
   public :: calc_polymer_after_boundary

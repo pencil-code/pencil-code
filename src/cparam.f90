@@ -111,7 +111,7 @@ module Cparam
   integer(KIND=ikind4), parameter :: int_sgl=0
   integer, parameter :: max_int=huge(int_sgl)
   real, parameter :: huge_real=huge(0.)
-  double precision, parameter :: huge_double=huge(0.d0)
+  real(KIND=rkind8), parameter :: zero_double=0., huge_double=huge(zero_double)
   real, parameter :: max_real=huge_real/10.    ! division necessary as INTEL compiler considers
                                                ! huge(0.) illegal when reading it from a namelist
 !
@@ -183,26 +183,26 @@ module Cparam
 !  Physical constants, taken from
 !  http://physics.nist.gov/cuu/Constants/index.html.
 !
-  double precision, parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
-  double precision, parameter :: k_B_cgs=1.3806505d-16     ! [erg/K]
-  double precision, parameter :: m_u_cgs=1.66053886d-24    ! [g]
-  double precision, parameter :: mu0_cgs=4*pi              ! [cgs]
+  real(KIND=rkind8), parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
+  real(KIND=rkind8), parameter :: k_B_cgs=1.3806505d-16     ! [erg/K]
+  real(KIND=rkind8), parameter :: m_u_cgs=1.66053886d-24    ! [g]
+  real(KIND=rkind8), parameter :: mu0_cgs=4*pi              ! [cgs]
   ! Better express R_cgs as a derived quantity (i.e. don't define here...)
   ! (Not done yet since it breaks the interstellar test)
-  !double precision, parameter :: R_cgs=k_B_cgs/m_u_cgs    ! [erg/g/K]
-  double precision, parameter :: R_cgs=8.3144D7            ! [erg/g/K]
+  !real(KIND=rkind8), parameter :: R_cgs=k_B_cgs/m_u_cgs    ! [erg/g/K]
+  real(KIND=rkind8), parameter :: R_cgs=8.3144D7            ! [erg/g/K]
   ! It would be better to specify the following masses in units of m_u:
-  double precision, parameter :: m_p_cgs=1.67262158d-24    ! [g]
-  double precision, parameter :: m_e_cgs=9.10938188d-28    ! [g]
-  double precision, parameter :: m_H_cgs=m_e_cgs+m_p_cgs   ! [g]
-  double precision, parameter :: eV_cgs=1.602176462d-12    ! [erg]
-  double precision, parameter :: sigmaSB_cgs=5.670400d-5   ! [erg/cm^2/s/K^4]
+  real(KIND=rkind8), parameter :: m_p_cgs=1.67262158d-24    ! [g]
+  real(KIND=rkind8), parameter :: m_e_cgs=9.10938188d-28    ! [g]
+  real(KIND=rkind8), parameter :: m_H_cgs=m_e_cgs+m_p_cgs   ! [g]
+  real(KIND=rkind8), parameter :: eV_cgs=1.602176462d-12    ! [erg]
+  real(KIND=rkind8), parameter :: sigmaSB_cgs=5.670400d-5   ! [erg/cm^2/s/K^4]
 ! unclear source (probably just guessing?)
-  double precision, parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
-  double precision, parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
-  double precision, parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
-  double precision, parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
-  double precision, parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
+  real(KIND=rkind8), parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
+  real(KIND=rkind8), parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
+  real(KIND=rkind8), parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
+  real(KIND=rkind8), parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
+  real(KIND=rkind8), parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
 !
   logical, parameter :: ALWAYS_FALSE=.false.
 !

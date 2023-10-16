@@ -278,10 +278,10 @@ def src2dst_remesh(
         Destination simulation file to be written.
 
     multxyz : list
-        Factors by which to multiply old sim dimensions yxz order.
+        Factors by which to multiply old sim dimensions xyz order.
 
     fracxyz : list
-        Factors by which to divide old sim dimensions yxz order.
+        Factors by which to divide old sim dimensions xyz order.
 
     srcghost : int
         Number of ghost zones from the source order of accuracy (mx-nx)/2.

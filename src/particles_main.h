@@ -23,3 +23,4 @@
   public :: particles_stochastic
   public :: fetch_nparloc,fetch_fp_array,return_fp_array
   public :: append_particle_index
+  public :: particles_calc_pencil_diags

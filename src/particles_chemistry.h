@@ -41,7 +41,7 @@
   public :: sort_compounds
   public :: count_reactions, count_max_elements
   public :: particles_chemistry_clean_up
-  public :: calc_pencils_par_chem
+  public :: calc_pencils_par_chem, calc_diagnostics_particles_chem
   public :: pencil_criteria_par_chem
   public :: rprint_particles_chem
 !

@@ -98,6 +98,18 @@ module Chemistry
 !
     endsubroutine dchemistry_dt
 !***********************************************************************
+    subroutine calc_diagnostics_chemistry(f,p)
+!
+!  Calculate diagnostic quantities
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_chemistry
+!***********************************************************************
     subroutine read_chemistry_init_pars(iostat)
 !
       integer, intent(out) :: iostat

@@ -139,7 +139,7 @@ REAL_PRECISION = default
 #
 # Multithreading.
 #
-MULTITHREAD = 
+MULTITHREADING = 
 #
 # Default compiler settings.
 #
@@ -149,7 +149,8 @@ FFLAGS       =
 F90FLAGS     =
 F77          = f90
 F77FLAGS     =
-OMPFLAGS     = -fopenmp
+OMPFFLAGS    = -fopenmp
+OMPLFLAGS    = -lgomp
 CFLAGS       =
 FCCLEANER    =
 MAKEOPTS     =
@@ -175,7 +176,6 @@ PPFLAGS = -cpp
 #
 # Default double flags (can be overwritten in machine-specific section).
 #
-FFLAGS_DOUBLE = -r8
 CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 #
 # Default linker flags.
@@ -300,6 +300,12 @@ nohydro_visc_message:
 	@echo ";;; Please adapt the settings in Makefile.local."
 	exit 1
 
+  endif
+endif
+ifneq ($(HYDRO),hydro)
+  ifneq ($(SGSHYDRO),noSGS_hydro)
+    $(warning SGS_hydro only meaningful with HYDRO = hydro - suppressed!)
+    SGSHYDRO = noSGS_hydro
   endif
 endif
 ifeq ($(HYDRO),nohydro)
@@ -1573,9 +1579,11 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 #FC=mpif90 #(norlx51)
 #FFLAGS=-O1 -finit-real=nan -fno-underscoring -fbacktrace -g -fcheck=bounds #(norlx51)
+##FFLAGS=-O0 -Wall -finit-real=sNaN -finit-integer=-2147483648 -g -fbacktrace -fimplicit-none -fcheck=all -ffpe-trap=invalid,zero,overflow #(norlx51)
 #CC=mpicc #(norlx51)
-#CFLAGS=-O1 #(norlx51)
+##CFLAGS=-O1 -DFUNDERSC=1 #(norlx51)
 #LD_MPI= #(norlx51)
+#OMPLFLAGS+= -L/usr/share/doc/ #(norlx51)
 #LDFLAGS+= -L/usr/share/doc/libhdf5-openmpi-1.8.4 #(norlx51)
 ##
 ## Axel on norlx65 (gfortran)
@@ -2792,6 +2800,9 @@ endef
 .f90.o:
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $*.o -c $*.f90
 
+#%_omp.inc : %.f90
+#       python preprocessor.py 
+
 special/%.o : special/%.f90
 ifneq ($(SPECIAL_MULT),1)
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90
@@ -2845,7 +2856,7 @@ start.o: $(start) Makefile.local
 start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 #
-run.o: $(run) Makefile.local
+run.o: copyin.inc $(OMP_PREREQ) $(run) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #needs LIBGPU as prerequisite, this in turn needs a rule
@@ -2978,8 +2989,28 @@ endif
 #
 #  Compiler setting for OpenMP (gfortran and ifort only at the moment).
 #
-ifneq ($(filter openmp OpenMP,$(MULTITHREAD)),)
-  FFLAGS += $(OMPFLAGS)
+ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
+  FFLAGS += $(OMPFFLAGS)
+  LDFLAGS += $(OMPLFLAGS)
+  OMP_PREREQ := copyin.inc
+copyin.inc:  multithread/*_omp.inc
+	@echo '!$$omp parallel copyin( &' > copyin.inc
+	@rm -f threadpriv_modules.inc
+	@for file in $?; do \
+	  echo $$file; \
+	  obj=`echo $$file | sed -e's/multithread\///' -e's/_omp.inc$$/.o/'`; \
+	  if [ -f "$$obj" ]; then \
+	    modsrc=`echo $$obj | sed -e's/\.o/.f90/'`; \
+	    cat $$modsrc | grep '^ *module  *[a-zA-Z0-9_]*' | sed -e's/ //g' -e's/module/use /' >> threadpriv_modules.inc; \
+	    cat $$file | sed -e's/^!\$$omp threadprivate(\(.*\))$$/!\$$omp \1, \&/' >> copyin.inc; \
+	  fi \
+	done
+	@sed -i '$$ s/, *\& *$$/)/' copyin.inc
+else
+  MULTITHREADING = 
+  OMP_PREREQ := 
+copyin.inc:  
+	touch copyin.inc
 endif
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
@@ -3367,7 +3398,10 @@ clean:  slender
 cleann: clean
 	rm -f Makefile src/Makefile Makefile_inc TAGS
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
-	rm -f *.inc && touch Makefile.inc Makefile-standard.inc
+	@for file in *.inc; do \
+	  if [ ! -L $$file ]; then rm -f $$file; fi \
+	done
+	@touch Makefile.inc Makefile-standard.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
 #
 #  Same thing.

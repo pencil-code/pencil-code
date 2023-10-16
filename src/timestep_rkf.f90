@@ -12,9 +12,11 @@ module Timestep
 !
 ! Parameters for adaptive time stepping
   real, parameter :: safety      =  0.9
-  real, parameter :: dt_decrease = -0.25
-  real, parameter :: dt_increase = -0.20
-  real            :: errcon, errcon25
+!  maxerr typically ~1, so Cash-Karp index of -1/5 too slow to converge
+  real, parameter :: dt_decrease = -2.5!-0.2
+  real, parameter :: dt_increase = -0.1!-0.25
+  real, parameter :: dt_increase_factor = 1.91!5.0
+  real            :: errcon, farraymin, dt_next
 !
   contains
 !
@@ -36,15 +38,16 @@ module Timestep
         dt=1e-6
       endif
 !
-! General error condition
-!
-      errcon = (5.0/safety)**(1.0/dt_increase)
-      errcon25 = (eps_rkf*errcon)**2.5
+      !General error condition: errcon ~1e-4 redundant with maxerr ~1. 0.1 more effective accelerator
+      errcon = 0.1!(5.0/safety)**(1.0/dt_increase)
+      !prefactor for absolute floor on value of farray in calculating err
+      farraymin = 1e-8
 !
       !ldt is set after read_persistent in rsnap, so dt0==0 used to read, but ldt=F for write
       ldt=.false.
-      !overwrite the persistent time_step from dt0 in run.in
+      !overwrite the persistent time_step from dt0 in run.in if dt too high to initialize run
       if (dt0/=0.) dt=dt0
+      dt_next=dt
 
     endsubroutine initialize_timestep
 !***********************************************************************
@@ -62,7 +65,7 @@ module Timestep
       type (pencil_case) :: p
 !
       real :: errmax, dt_temp
-      double precision :: tnew, told
+      real(KIND=rkind8) :: tnew, told!, time1, time2
       integer :: j,i
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
@@ -71,16 +74,17 @@ module Timestep
 !
       lfirst=.true.
       told=t
+      dt=dt_next
       do i=1,20
         ! Do a Runge-Kutta step
         call rkck(f, df, p, errmax)
         ! Step succeeded so exit
         if (errmax <= safety) exit
         ! Step didn't succeed so decrease the time step
-        dt_temp = safety*dt*(errmax**dt_decrease)
+        dt_temp = safety*dt*((errmax/safety)**dt_decrease)
         !if (lroot) print*,"Decreasing dt, dt_temp, errmax",dt,dt_temp,errmax
         ! Don't decrease the time step by more than a factor of ten
-        dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+        dt = sign(max(abs(dt_temp), 0.3/eps_rkf**0.05*abs(dt)), dt)
         tnew=told+dt
         if (tnew == told) then
           ! Guard against infinitesimal time steps
@@ -90,20 +94,22 @@ module Timestep
         endif
         t=told
       enddo
-      !if (abs(t - (told + dt)) > errcon25) then
-      !  call warning('time_step','dt is not equal to sum of dtsub')
-      !  if (lroot) print*,"t, told, dt, t-told",t, told, dt, t-told
-      !endif
+      if (lroot.and.ip==6) then
+        print*,"time_step: rkck took",i,"iterations to converge to errmax",errmax
+        print*,"time_step: tried time",dt_next,"reducing to",dt,"reduction rate",dt/dt_next
+      endif
       call update_after_substep(f,df,dt,.true.)
 !
 ! Time step to try next time
 !
-      if (errmax > errcon) then
-        ! Decrease the time step
-        dt = safety*dt*(errmax**dt_increase)
+!
+      if (errmax < errcon) then
+        ! Increase the time step > dt_increase_factor
+        dt_next = safety*dt*((errmax/2.)**dt_increase)
       else
-        ! But not by more than a factor of 5
-        dt = 5.0*dt
+        ! But not by more than a factor of 1.9 (dt_increase_factor)
+        ! Previous try 5.0 inefficient: excessive decrease interations
+        dt_next = dt_increase_factor*dt
       endif
 !
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt
@@ -155,6 +161,11 @@ module Timestep
       real, parameter :: dc4 = c4 - 13525.0 / 55296.0
       real, parameter :: dc5 = c5 - 277.0 / 14336.0
       real, parameter :: dc6 = c6 - 0.25
+      real, parameter :: substep1 = 0.2
+      real, parameter :: substep2 = 0.3
+      real, parameter :: substep3 = 0.6
+      real, parameter :: substep4 = 1.0
+      real, parameter :: substep5 = 0.875
 !
 ! Note: f is intent(inout), as pde may change it due to
 !   lshift_datacube_x, density floor, or velocity ceiling.
@@ -172,18 +183,20 @@ module Timestep
 !   call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
       real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension(nx) :: scal, err
-      real :: errmax, errmaxs, dtsub
+      real :: errmax, errmaxs, dtsub, told
       integer :: j
+      logical :: llogarithmic
 !
       df=0.
       errmax=0.
       errmaxs=0.
       k=0.
+      told=t
 !
 !  FIRST SUBSTEP
 !
       call pde(f, k(:,:,:,:,1), p)
-      dtsub = dt*(c1-dc1)
+      dtsub = dt*substep1
       if (lshear) then
         tmp = f
         call impose_floors_ceilings(tmp)
@@ -202,11 +215,12 @@ module Timestep
       tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b21*k(:,:,:,:,1)
 !
       call update_after_substep(tmp,k(:,:,:,:,1),dtsub,.false.)
-      t = t + dtsub
+      t = told + dtsub
 !
-!  DUMMY SUBSTEP
+!  SECOND SUBSTEP
 !
       call pde(tmp, k(:,:,:,:,2), p)
+      dtsub = dt*substep2
       do j=1,mvar; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       enddo; enddo; enddo
@@ -214,12 +228,13 @@ module Timestep
       tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b31*k(:,:,:,:,1) &
                                           + b32*k(:,:,:,:,2)
       call update_after_substep(tmp,k(:,:,:,:,2),0.,.false.)
+      t = told + dtsub
 !
 !
-!  SECOND SUBSTEP
+!  THIRD SUBSTEP
 !
       call pde(tmp, k(:,:,:,:,3), p)
-      dtsub = dt*(c3-dc3)
+      dtsub = dt*substep3
       if (lshear) then
         call impose_floors_ceilings(tmp)
         call update_ghosts(tmp)
@@ -234,12 +249,12 @@ module Timestep
                                           + b43*k(:,:,:,:,3)
 !
       call update_after_substep(tmp,k(:,:,:,:,3),dtsub,.false.)
-      t = t + dtsub
+      t = told + dtsub
 !
-!  THIRD SUBSTEP
+!  FOURTH SUBSTEP
 !
       call pde(tmp, k(:,:,:,:,4), p)
-      dtsub = dt*(c4-dc4)
+      dtsub = dt*substep4
       if (lshear) then
         call impose_floors_ceilings(tmp)
         call update_ghosts(tmp)
@@ -255,12 +270,12 @@ module Timestep
                                           + b54*k(:,:,:,:,4)
 !
       call update_after_substep(tmp,k(:,:,:,:,4),dtsub,.false.)
-      t = t + dtsub
+      t = told + dtsub
 !
-!  FOURTH SUBSTEP
+!  FIFTH SUBSTEP
 !
       call pde(tmp, k(:,:,:,:,5), p)
-      dtsub = dt*(c5-dc5)
+      dtsub = dt*substep5
       if (lshear) then
         call impose_floors_ceilings(tmp)
         call update_ghosts(tmp)
@@ -277,24 +292,25 @@ module Timestep
                                           + b65*k(:,:,:,:,5)
 !
       call update_after_substep(tmp,k(:,:,:,:,5),dtsub,.false.)
-      t = t + dtsub
+      t = told + dtsub
 !
-!  FIFTH SUBSTEP
+!  FINALIZE STEP
 !
       call pde(tmp, df, p)
-      dtsub = dt*(c6-dc6)
-      t = t + dtsub
+      t = told + dt
 !
       do j=1,mvar; do n=n1,n2; do m=m1,m2
+        llogarithmic=((j==ilnrho.and..not.ldensity_nolog).or.(j==iss).or.(j==ilnTT))
         df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
 !
-        err = dc1*k(l1:l2,m,n,j,1) + dc2*k(l1:l2,m,n,j,2) + &
+        err = dc1*k(l1:l2,m,n,j,1) + &!dc2*k(l1:l2,m,n,j,2) + &
               dc3*k(l1:l2,m,n,j,3) + dc4*k(l1:l2,m,n,j,4) + &
               dc5*k(l1:l2,m,n,j,5) + dc6*df(l1:l2,m,n,j)
 !
-        df(l1:l2,m,n,j) = c1*k(l1:l2,m,n,j,1) + c2*k(l1:l2,m,n,j,2) + &
+        df(l1:l2,m,n,j) = c1*k(l1:l2,m,n,j,1) + &!c2*k(l1:l2,m,n,j,2) + &
                           c3*k(l1:l2,m,n,j,3) + c4*k(l1:l2,m,n,j,4) + &
-                          c5*k(l1:l2,m,n,j,5) + c6*df(l1:l2,m,n,j)
+                          !c5*k(l1:l2,m,n,j,5) +
+                          c6*df(l1:l2,m,n,j)
 !
 ! Get the maximum error over the whole field
 !
@@ -308,14 +324,18 @@ module Timestep
           scal=  sqrt(f(l1:l2,m,n,j)**2  + k(l1:l2,m,n,j,1)**2 + 1e-30)
           errmaxs = max(maxval(abs(err/scal)),errmaxs)
         case ('cons_frac_err')
-          ! Constant fractional error
-          errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
-        case ('cons_err')
-          ! Constant error
-          ! Constrain error below impossible and limit accuracy above errcon25
-          scal = min(max(abs(f(l1:l2,m,n,j)), errcon25),impossible)
+          ! Constant fractional error, prone to division by zero
+          scal = abs(f(l1:l2,m,n,j)) + abs(df(l1:l2,m,n,j))
           errmaxs = max(maxval(abs(err/scal)),errmaxs)
-          !
+        case ('rel_err')
+          ! Relative error constraint with farraymin=1e-8 floor
+          scal=max(abs(f(l1:l2,m,n,j)),farraymin)
+          errmaxs = max(maxval(abs(err)/scal),errmaxs)
+        case ('cons_err')
+          ! Relative error constraint for f>1 or abs error
+          scal = abs(f(l1:l2,m,n,j))
+          scal = max(scal,1.)
+          errmaxs = max(maxval(abs(err)/scal),errmaxs)
         case ('none')
           ! No error check
         endselect

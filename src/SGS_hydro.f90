@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 9
 ! COMMUNICATED AUXILIARIES 9
 !
-!! PENCILS PROVIDED fSGS(3)
+! PENCILS PROVIDED SGS_force(3)
 ! PENCILS PROVIDED SGS_heat
 !
 !***************************************************************
@@ -154,14 +154,8 @@ print*, 'aasmooth=', iaasmooth
 !
       if (lreset) then
         !idiag_dtnu=0; idiag_nu_LES=0; idiag_Sij2m=0
-        !idiag_visc_heatm=0; 
         idiag_fSGSm=0
-        !idiag_fSGSmsx=0
-        !idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
-        !idiag_fviscymxy=0
-        !idiag_fviscsmmz=0; idiag_fviscsmmxy=0; idiag_ufviscm=0
-        !idiag_fviscmax=0; idiag_fviscmin=0; idiag_fviscrsphmphi=0
-        !idiag_viscforcezmz=0; idiag_viscforcezupmz=0; idiag_viscforcezdownmz=0
+        idiag_fSGSrmsx=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -169,6 +163,7 @@ print*, 'aasmooth=', iaasmooth
       if (lroot.and.ip<1400) print*,'rprint_SGS_hydro: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'fSGSm',idiag_fSGSm)
+        !call parse_name(iname,cname(iname),cform(iname),'fSGSrmsx',idiag_fSGSrmsx)
       enddo
 !     
       call keep_compiler_quiet(lreset,lwrite)
@@ -182,9 +177,6 @@ print*, 'aasmooth=', iaasmooth
 !  20-11-04/anders: coded
 !
       lpenc_requested(i_rho)=.true.
-      lpenc_requested(i_uij)=.true.
-      lpenc_requested(i_sij2)=.true.
-      if (lmagnetic) lpenc_requested(i_bij)=.true.
 
     endsubroutine pencil_criteria_SGS_hydro
 !***********************************************************************
@@ -218,38 +210,48 @@ print*, 'aasmooth=', iaasmooth
       intent(inout) :: f,p
       intent(out) :: df
 
-      real, dimension(nx) :: mij2
-      real, dimension(nx,3) :: tmp,tmp1
-      real, dimension(nx,3,3) :: mij
+      real, dimension(nx,3) :: tmp1
       integer :: j
-      real, dimension(nx) :: dtp
 !
 !  Divergence of tensor tau.
 !  Correct only for Cartesian coordinates.
 !
-      call div(f,itauSGSRey,tmp(:,1))
-      call div_other(f(:,:,:,(/itauSGSRey+1,itauSGSRey+3,itauSGSRey+4/)),tmp(:,2))
-      call div_other(f(:,:,:,(/itauSGSRey+2,itauSGSRey+4,itauSGSRey+5/)),tmp(:,3))
+      call div(f,itauSGSRey,p%SGS_force(:,1))
+      call div_other(f(:,:,:,(/itauSGSRey+1,itauSGSRey+3,itauSGSRey+4/)),p%SGS_force(:,2))
+      call div_other(f(:,:,:,(/itauSGSRey+2,itauSGSRey+4,itauSGSRey+5/)),p%SGS_force(:,3))
       if (lmagnetic) then
         call div(f,itauSGSMax,tmp1(:,1))
         call div_other(f(:,:,:,(/itauSGSMax+1,itauSGSMax+3,itauSGSMax+4/)),tmp1(:,2))
         call div_other(f(:,:,:,(/itauSGSMax+2,itauSGSMax+4,itauSGSMax+5/)),tmp1(:,3))
-        tmp=tmp+tmp1
+        p%SGS_force=p%SGS_force+tmp1
       endif
 
-      if (lSGS_forc_as_aux) f(l1:l2,m,n,iSGS_force:iSGS_force+2)=-tmp
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - tmp
+      if (lSGS_forc_as_aux) f(l1:l2,m,n,iSGS_force:iSGS_force+2)=-p%SGS_force
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%SGS_force
 !
 !  define SGS_heat
 !
       if (lpencil(i_SGS_heat)) p%SGS_heat=0.0
 !
+      call calc_diagnostics_SGS_hydro(p)
+!
+    endsubroutine calc_SGS_hydro_force
+!***********************************************************************
+    subroutine calc_diagnostics_SGS_hydro(p)
+
+      use Diagnostics
+      use Sub, only: dot2
+
+      type (pencil_case) :: p
+
+      real, dimension(nx) :: dtp
+
       if (idiag_fSGSm/=0) then
-        call dot2(tmp,dtp)
+        call dot2(p%SGS_force,dtp)
         call sum_mn_name(dtp,idiag_fSGSm,lsqrt=.true.)
       endif
 
-    endsubroutine calc_SGS_hydro_force
+    endsubroutine calc_diagnostics_SGS_hydro
 !***********************************************************************
     subroutine SGS_hydro_after_boundary(f)
 

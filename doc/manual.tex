@@ -11756,13 +11756,13 @@ where $a_n=1/(n+1)!=0.5$.
 In particular, for $n=1$ we have $a_1=1/2=0.2$ and
 for $n=3$ we have $a_3=1/24\approx0.04$.
 The advection operator leads to a diffusive error equal to
-$a1\delta t(\uv\cdot\nab)^2$ for $n=1$ and a
+$a_1\delta t(\uv\cdot\nab)^2$ for $n=1$ and a
 hyperdiffusive error equal to
-$a3\delta t^3(\uv\cdot\nab)^4$ for $n=3$.
+$a_3\delta t^3(\uv\cdot\nab)^4$ for $n=3$.
 Substituting $\delta t=c_{\rm CFL}\delta x/|\uv|$,
 where $c_{\rm CFL}$ is Courant-Friedrich-Lewy constant,
 we have a diffusive error $\nu\nabla^2$ with negative
-$\nu=-a1 c_{\rm CFL}|\uv|\delta x$ for $n=1$,
+$\nu=-a_1 c_{\rm CFL}|\uv|\delta x$ for $n=1$,
 and a hyperdiffusive error $-\nu_{\rm hyp}\nabla^4$ with positive
 $\nu_{\rm hyp}=a_3 c_{\rm CFL}^3 |\uv|\delta x^3$ for $n=3$.
 The fact that the hyperdiffusive error has a positive effective
@@ -13216,15 +13216,15 @@ double precision, $\varepsilon\approx10^{-15}$.
                  variables are actually not calculated at each timestep (e.g., when 
                  you set \code{kinematic_flow='from-snap'} in \name{hydro_run_pars}).\\
   \var{lread_oldsnap} [\code{F}]
-               & if set \code{T}, the old snapshot will be read in before
+               & if set \code{T}, the old snapshot will be read in by start.csh before
                  producing (overwriting) initial conditions. For example, if
                  you just want to add a perturbation to the magnetic field,
                  you'd give no initial condition for density and velocity
                  (so you keep the data from a hopefully relaxed run),
                  and just add whatever you need for the magnetic field.
                  In this connection you may want to \cmd{touch NOERASE},
-                 so as not to erase the previous data. Also, put:
-                 \cmd{ireset_tstart=0,lread_oldsnap=T,lwrite_var_anyway=T} \\
+                 so as not to erase the previous data. Also, in file{start.in}, put:
+                 \cmd{ireset_tstart=0, lread_oldsnap=T, lwrite_var_anyway=T} \\
   \var{lread_oldsnap_nomag} [\code{F}]
                & if set \code{T}, the old snapshot from a non-magnetic run
                  will be read in before producing (overwriting) initial

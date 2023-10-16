@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
+! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE; divJ
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3), infl_a2
 !***************************************************************
 !
@@ -49,7 +49,7 @@ module Special
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: loverride_ee_prev=.false.
-  logical :: leedot_as_aux=.false.
+  logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
   logical, pointer :: loverride_ee, lresi_eta_tdep
   character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
@@ -65,18 +65,17 @@ module Special
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
     ampla0, initpower_a0, initpower2_a0, &
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
-    leedot_as_aux
+    leedot_as_aux, lsolve_chargedensity
 !
   ! run parameters
   real :: beta_inflation=0.
   namelist /special_run_pars/ &
     alpf, llorenz_gauge_disp, lphi_hom, &
-    leedot_as_aux, eta_ee, beta_inflation
+    leedot_as_aux, eta_ee, lcurlyA, beta_inflation
 !
 ! Declare any index variables necessary for main or
 !
   real :: c_light2
-  integer :: iinfl_phi, iinfl_dphi
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -88,6 +87,7 @@ module Special
   integer :: idiag_grms=0       ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
   integer :: idiag_da0rms=0     ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
   integer :: idiag_BcurlEm=0    ! DIAG_DOC: $\left<\Bv\cdot\nabla\times\Ev\right>$
+  integer :: idiag_mfpf=0       ! DIAG_DOC: $-f'/f$
   integer :: idiag_fppf=0       ! DIAG_DOC: $f''/f$
   integer :: idiag_afact=0      ! DIAG_DOC: $a$ (scale factor)
 !
@@ -120,6 +120,9 @@ module Special
       if (leedot_as_aux) &
         call register_report_aux('eedot', ieedot, iedotx, iedoty, iedotz)
 !
+      if (lsolve_chargedensity) &
+        call farray_register_pde('rhoe',irhoe)
+!
       if (llorenz_gauge_disp) then
         call farray_register_pde('a0',ia0)
         call farray_register_pde('diva_name',idiva_name)
@@ -150,9 +153,6 @@ module Special
 !
       if (c_light/=1.) call fatal_error('disp_current', "use unit_system='set'")
       c_light2=c_light**2
-!
-      iinfl_phi=farray_index_by_name('infl_phi')
-      iinfl_dphi=farray_index_by_name('infl_dphi')
 !
       if (lmagnetic) then
         call get_shared_variable('loverride_ee',loverride_ee)
@@ -260,6 +260,12 @@ module Special
 !
       if (llorenz_gauge_disp) then
         lpenc_requested(i_diva)=.true.
+      endif
+!
+!  charge density
+!
+      if (lsolve_chargedensity) then
+        lpenc_requested(i_divJ)=.true.
       endif
 !
 !  diffusion term.
@@ -400,7 +406,7 @@ module Special
 !
       real, dimension (nx,3) :: gtmp
       real, dimension (nx) :: tmp, del2a0
-      real :: inflation_factor
+      real :: inflation_factor=0., mfpf=0., fppf=0.
 !
       intent(in) :: p
       intent(inout) :: f, df
@@ -418,13 +424,31 @@ module Special
         if (.not.loverride_ee) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
 !
-!  magneto-genesis from reheating
+!  Solve for charge density
+!
+        if (lsolve_chargedensity) then
+          df(l1:l2,m,n,irhoe)=df(l1:l2,m,n,irhoe)-p%divJ
+        endif
+!
+!  Magneto-genesis from reheating. In the papers by Subramanian (2010) and Sharma+17,
+!  as well as BS21, the calliographic variable curly-A=f*A was introduced to get
+!  rid of the first derivative of A. But the disadvantage is that the generation
+!  term, (f"/f)*<A.E> is then gauge-dependent. Because of this and other reasons,
+!  it is better to work with the original 2(f'/f)*A' = -2(f'/f)*E term, which is
+!  gauge-independent.
 !
         if (beta_inflation/=0.) then
-          if (ip<14.and.lroot) print*,'scl_factor_target, Hp_target, appa_target=', &
-                                       scl_factor_target, Hp_target, appa_target
-          inflation_factor=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
-          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*inflation_factor
+          if (ip<14.and.lroot) print*,'scl_factor_target, Hp_target, appa_target, wweos_target=', &
+                                       scl_factor_target, Hp_target, appa_target, wweos_target
+          mfpf=beta_inflation*Hp_target
+          fppf=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
+          if (lcurlyA) then
+            inflation_factor=fppf
+            df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*inflation_factor*p%aa
+          else
+            inflation_factor=-2.*mfpf
+            df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*inflation_factor*p%el
+          endif
           if (ip<15.and.lroot.and.lfirst) print*,'t, inflation_factor=',t, inflation_factor
         endif
 !
@@ -482,7 +506,8 @@ module Special
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
         call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
         call sum_mn_name(p%BcurlE,idiag_BcurlEm)
-        call save_name(inflation_factor,idiag_fppf)
+        call save_name(mfpf,idiag_mfpf)
+        call save_name(fppf,idiag_fppf)
         call save_name(scl_factor_target,idiag_afact)
         if (idiva_name>0) then
           call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
@@ -558,7 +583,7 @@ module Special
       if (lreset) then
         idiag_EEEM=0; idiag_erms=0; idiag_edotrms=0; idiag_emax=0
         idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
-        idiag_fppf=0; idiag_afact=0
+        idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         cformv=''
       endif
 !
@@ -573,6 +598,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'grms',idiag_grms)
         call parse_name(iname,cname(iname),cform(iname),'da0rms',idiag_da0rms)
         call parse_name(iname,cname(iname),cform(iname),'BcurlEm',idiag_BcurlEm)
+        call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)
         call parse_name(iname,cname(iname),cform(iname),'fppf',idiag_fppf)
         call parse_name(iname,cname(iname),cform(iname),'afact',idiag_afact)
       enddo

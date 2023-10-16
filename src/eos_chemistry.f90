@@ -33,14 +33,9 @@ module EquationOfState
   implicit none
 !
   include 'eos.h'
+  include 'eos_params.h'
 !
-  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
-  integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
-  integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
-  integer, parameter :: ipp_ss=11, irho_TT=10, ipp_cs2=12
-  integer, parameter :: irho_eth=13, ilnrho_eth=14
-!
-  integer :: iglobal_cs2, iglobal_glnTT, ics
+  integer :: iglobal_cs2, iglobal_glnTT
 !
   real :: lnTT0=impossible
 !
@@ -225,9 +220,9 @@ module EquationOfState
 !
       if (ieosvar_count==0) ieosvar_selected=0
 !
-      if (ieosvar_count>=2) &
-        call fatal_error("select_eos_variable", &
-             "2 thermodynamic quantities have already been defined while attempting to add a 3rd: ") !//variable)
+      if (ieosvar_count>=2) call fatal_error("select_eos_variable", &
+           "2 thermodynamic quantities have already been defined while attempting to add a 3rd: "// &
+           trim(variable))
 !
       ieosvar_count=ieosvar_count+1
 !

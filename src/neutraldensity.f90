@@ -790,7 +790,9 @@ module NeutralDensity
         if (idiag_rhon2m/=0)   call sum_mn_name(p%rhon**2,idiag_rhon2m)
         if (idiag_lnrhon2m/=0) call sum_mn_name(p%lnrhon**2,idiag_lnrhon2m)
         call sum_mn_name(p%unglnrhon,idiag_unglnrhonm)
-        if (idiag_dtnd/=0)     call max_mn_name(diffus_diffrhon/cdtv,idiag_dtnd,l_dt=.true.)
+        if (dimensionality>0) then
+          if (idiag_dtnd/=0)   call max_mn_name(diffus_diffrhon/cdtv,idiag_dtnd,l_dt=.true.)
+        endif
       endif
 !
     endsubroutine calc_diagnostics_neutraldens

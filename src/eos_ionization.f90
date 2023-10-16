@@ -29,17 +29,11 @@ module EquationOfState
   implicit none
 !
   include 'eos.h'
-! integers specifying which independent variables to use in eoscalc
-  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
-  integer, parameter :: irho_ss=7, ilnrho_TT=9, irho_TT=10, ipp_ss=11
-  integer, parameter :: ipp_cs2=12
-  integer, parameter :: irho_eth=13, ilnrho_eth=14
+  include 'eos_params.h'
 !  secondary parameters calculated in initialize
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
   real :: lnrho_e,lnrho_e_,lnrho_H,lnrho_He,Rgas,mu1yHxHe
-!  integer :: icp,ics
-  integer :: ics
 ! namelist parameters
   real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1

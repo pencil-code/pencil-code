@@ -11,7 +11,7 @@ module Diagnostics
   use Cdata
   use Messages
   use Mpicomm
-  use General, only: safe_sum
+  use General, only: safe_sum, loptest
 !
   implicit none
 !
@@ -365,7 +365,7 @@ module Diagnostics
       character(LEN=512) :: text
       character(LEN=512) :: sedstring
 
-      sedstring=''
+      sedstring=''   !H;1h;$!d;x; '
       text='WARNING:'; ind=-1
       do i=1,len
         if (cname(i)/=''.and.cform(i)=='') then
@@ -681,7 +681,7 @@ module Diagnostics
 !  26-aug-13/MR:   moved calculation of dVol_rel1 to initialize_diagnostics
 !                  added optional parameter lcomplex for use with imaginary part
 !
-      use General, only: loptest, itoa, safe_character_assign
+      use General, only: itoa, safe_character_assign
 !
       integer,                 intent(in)   :: nlname
       real, dimension(nlname), intent(inout):: vname
@@ -689,7 +689,7 @@ module Diagnostics
 !
       real, dimension (nlname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
       real :: vol
-      integer :: iname, imax_count, isum_count, nmax_count, nsum_count, itype
+      integer :: iname, imax_count, isum_count, nmax_count, nsum_count, itype, maxreq
       logical :: lweight_comm, lalways
       integer, parameter :: lun=1
       character (len=fnlen) :: datadir='data',path=''
@@ -745,8 +745,9 @@ module Diagnostics
 !  Communicate over all processors.
 !
       call mpireduce_max(fmax_tmp,fmax,nmax_count,MPI_COMM_WORLD)
-      call mpireduce_sum(fsum_tmp,fsum,nsum_count,comm=MPI_COMM_WORLD)    ! wrong for Yin-Yang due to overlap
+      call mpireduce_sum(fsum_tmp,fsum,nsum_count,comm=MPI_COMM_WORLD)  !,nonblock=maxreq)        ! wrong for Yin-Yang due to overlap
       if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count,comm=MPI_COMM_WORLD)!   ~
+      !call mpiwait(maxreq)
 !
 !  The result is present only on the root processor.
 !
@@ -1548,40 +1549,43 @@ module Diagnostics
 !
     endsubroutine expand_cname_full
 !***********************************************************************
-    subroutine set_type(iname, lsqrt, llog10, lint, lsum, lmax, lmin, lsurf)
+    subroutine set_type(iname, lsqrt, llog10, lint, lsum, lmax, lmin, lsurf, ldt)
 !
 !  Sets the diagnostic type in itype_name.
 !
 !  21-sep-17/MR: coded
 !
+
       integer :: iname
-      logical, optional :: lsqrt, llog10, lint, lsum, lmax, lmin, lsurf
+      logical, optional :: lsqrt, llog10, lint, lsum, lmax, lmin, lsurf, ldt
 
       if (iname==0) return
 
-      if (present(lsqrt)) &
+      if (loptest(lsqrt)) &
         itype_name(iname)=ilabel_sum_sqrt
-      if (present(lsqrt)) then
+      if (loptest(lsqrt)) then
         itype_name(iname)=ilabel_sum_sqrt
-      elseif (present(llog10)) then
+      elseif (loptest(llog10)) then
         itype_name(iname)=ilabel_sum_log10
-      elseif (present(lint)) then
+      elseif (loptest(lint)) then
         itype_name(iname)=ilabel_integrate
-      elseif (present(lsurf)) then
+      elseif (loptest(lsurf)) then
         itype_name(iname)=ilabel_surf
-      elseif (present(lsum)) then
+      elseif (loptest(lsum)) then
         itype_name(iname)=ilabel_sum
-      elseif (present(lmax)) then
+      elseif (loptest(lmax)) then
         itype_name(iname)=ilabel_max
-      elseif (present(lmin)) then
+      elseif (loptest(lmin)) then
         itype_name(iname)=ilabel_max_neg
+      elseif (loptest(ldt)) then
+        itype_name(iname)=ilabel_max_dt
       else
         itype_name(iname)=ilabel_save
       endif
 
     endsubroutine set_type
 !***********************************************************************
-    subroutine save_name(a,iname)
+    subroutine save_name(a,iname,ldt)
 !
 !  Sets the value of a (must be treated as real) in fname array
 !
@@ -1590,8 +1594,12 @@ module Diagnostics
 !
       real :: a
       integer :: iname
+      logical, optional :: ldt
 !
-      if (iname/=0) fname(iname)=a
+      if (lroot.and.iname/=0) then
+        fname(iname)=a
+        if (loptest(ldt)) itype_name(iname)=ilabel_max_dt
+      endif
 !
    endsubroutine save_name
 !***********************************************************************
@@ -1638,19 +1646,16 @@ module Diagnostics
 !
       if (iname==0) return
 
-      if (present(lneg)) then
-        if (lneg) then
-          if (a<fname(iname)) fname(iname)=a
-        else
-          if (a>fname(iname)) fname(iname)=a
-        endif
+      if (loptest(lneg)) then
+        if (a<fname(iname)) fname(iname)=a
       else
         if (a>fname(iname)) fname(iname)=a
       endif
+!!      fname(iname) = max(fname(iname),real(a))
 !
 !  Set corresponding entry in itype_name.
 !
-      if (present(lneg)) then
+      if (loptest(lneg)) then
         itype_name(iname)=ilabel_max_neg
       else
         itype_name(iname)=ilabel_max
@@ -1670,21 +1675,18 @@ module Diagnostics
 !
       if (iname==0) return
 
-      if (present(lneg)) then
-        if (lneg) then
-          if (a<fname(iname)) fname(iname)=a
-        else
-          if (a>fname(iname)) fname(iname)=a
-        endif
-      else
-        if (a>fname(iname)) fname(iname)=a
-      endif
+!!!      if (loptest(lneg)) then
+!!!        if (a<fname(iname)) fname(iname)=a
+!!!      else
+!!!        if (a>fname(iname)) fname(iname)=a
+!!!      endif
+      fname(iname) = max(fname(iname),a)
 !
 !  Set corresponding entry in itype_name.
 !
-      if (present(lneg)) then
+      if (loptest(lneg)) then
         itype_name(iname)=ilabel_max_neg
-      elseif (present(l_dt)) then
+      elseif (loptest(l_dt)) then
         itype_name(iname)=ilabel_max_dt
       else
         itype_name(iname)=ilabel_max
@@ -1761,13 +1763,13 @@ module Diagnostics
 !
 !  Set corresponding entry in itype_name.
 !
-      if (present(lsqrt)) then
+      if (loptest(lsqrt)) then
         itype_name(iname)=ilabel_max_sqrt
-      elseif (present(l_dt)) then
+      elseif (loptest(l_dt)) then
         itype_name(iname)=ilabel_max_dt
-      elseif (present(lneg)) then
+      elseif (loptest(lneg)) then
         itype_name(iname)=ilabel_max_neg
-      elseif (present(lreciprocal)) then
+      elseif (loptest(lreciprocal)) then
         itype_name(iname)=ilabel_max_reciprocal
       else
         itype_name(iname)=ilabel_max
@@ -1807,10 +1809,10 @@ module Diagnostics
 !
       use Cdata, only: fname
 !
-      real, dimension(nx), intent(IN) :: a
-      integer,             intent(IN) :: iname
-      integer, optional,   intent(IN) :: ipart
-      logical, optional,   intent(IN) :: lsqrt, llog10, lint, lplain
+      real, dimension(:), intent(IN) :: a
+      integer,            intent(IN) :: iname
+      integer, optional,  intent(IN) :: ipart
+      logical, optional,  intent(IN) :: lsqrt, llog10, lint, lplain
 
       call sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart,lplain)
 
@@ -1839,7 +1841,7 @@ module Diagnostics
 !
       use Yinyang, only: in_overlap_mask
 
-      real, dimension(nx) :: a,a_scaled
+      real, dimension(:) :: a
       real, dimension(nname) :: fname
 !
       real :: ppart,qpart
@@ -1849,6 +1851,7 @@ module Diagnostics
 !
       intent(in) :: iname
 
+      real, dimension(size(a)) :: a_scaled
 !
 !  Only do something if iname is not zero.
 !
@@ -1860,13 +1863,13 @@ module Diagnostics
 !
 !  Set corresponding entry in itype_name.
 !
-        if (present(lsqrt)) then
+        if (loptest(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt
-        elseif (present(llog10)) then
+        elseif (loptest(llog10)) then
           itype_name(iname)=ilabel_sum_log10
-        elseif (present(lint)) then
+        elseif (loptest(lint)) then
           itype_name(iname)=ilabel_integrate
-        elseif (present(lplain)) then
+        elseif (loptest(lplain)) then
           itype_name(iname)=ilabel_sum_plain
         else
           itype_name(iname)=ilabel_sum
@@ -1901,7 +1904,7 @@ module Diagnostics
 !
 !  Scale "a" with volume differential if integration option is set.
 !
-            if (present(lint)) then
+            if (loptest(lint)) then
               a_scaled=a*xprim(l1:l2)*yprim(m)*zprim(n)
             else
               a_scaled=a
@@ -1911,7 +1914,7 @@ module Diagnostics
 !  Initialize if one is on the first point, or add up otherwise.
 !
             if (lfirstpoint) then
-              if (lcartesian_coords.or.lpipe_coords.or.present(lplain)) then
+              if (lcartesian_coords.or.lpipe_coords.or.loptest(lplain)) then
                 fname(iname)=sum(a_scaled)
               elseif (lspherical_coords) then
                 fname(iname)=sum(r2_weight*a_scaled)*sinth_weight(m)
@@ -1921,7 +1924,7 @@ module Diagnostics
                 call not_implemented('sum_mn_name_real','coordinate system')
               endif
             else
-              if (lcartesian_coords.or.lpipe_coords.or.present(lplain)) then
+              if (lcartesian_coords.or.lpipe_coords.or.loptest(lplain)) then
                 fname(iname)=fname(iname)+sum(a_scaled)
               elseif (lspherical_coords) then
                 fname(iname)=fname(iname)+sum(r2_weight*a_scaled)*sinth_weight(m)
@@ -2044,7 +2047,7 @@ module Diagnostics
 !
 !  Set corresponding entry in itype_name.
 !
-        if (present(lsqrt)) then
+        if (loptest(lsqrt)) then
           itype_name(iname)=ilabel_sum_weighted_sqrt
         else
           itype_name(iname)=ilabel_sum_weighted
@@ -2534,7 +2537,6 @@ module Diagnostics
 !  08-feb-12/ccyang: add option for integration
 !   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
 !     
-      use General, only: loptest
       use Cdata,   only: n,m,nzgrid_eff 
 !
       real, dimension(nx), intent(in) :: a
@@ -2614,7 +2616,6 @@ module Diagnostics
 !   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
 !  31-mar-16/MR: derived from zsum_mn_name_xy
 !
-      use General, only: loptest
       use Cdata,   only: n,m
 !
       real,    dimension(nx,3),        intent(in) :: avec

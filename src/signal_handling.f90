@@ -59,7 +59,7 @@ subroutine signal_prepare()
 !
 !  integer, parameter :: SIGFPE=8, SIGINT=2, SIGHUP=1, SIGTERM=15, SIGUSR1=10
 !  Signal numbers are arch dependent.
-! Instead, should be declared by user in start.in, signal_init_pars section
+!  Instead, should be declared by user in start.in, signal_init_pars section
 !  integer, parameter :: USER=-1
   integer :: i,sigret,signal
 !

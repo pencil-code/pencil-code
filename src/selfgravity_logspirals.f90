@@ -74,6 +74,7 @@ module Selfgravity
 !  Module Variables
 !
   real, dimension(mz) :: rho0z = 0.0
+  real :: gm1, c
 !
   contains
 !***********************************************************************
@@ -84,6 +85,7 @@ module Selfgravity
 !  15-may-06/anders+jeff: adapted
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
 !  Set indices for auxiliary variables
 !
@@ -103,6 +105,20 @@ module Selfgravity
       if (lroot) call svn_id( &
           "$Id$")
 !
+!  Share the variable tstart_selfgrav so that it can be used by other
+!  self-gravity modules.
+!
+      call put_shared_variable('tstart_selfgrav',tstart_selfgrav,caller='register_selfgravity')
+!
+!  Share rhs_poisson_const and gravitational_const.
+!
+      call put_shared_variable('rhs_poisson_const',rhs_poisson_const)
+      call put_shared_variable('gravitational_const',gravitational_const)
+!
+!  Share tselfgrav_gentle.
+!
+      call put_shared_variable('tselfgrav_gentle', tselfgrav_gentle)
+!
     endsubroutine register_selfgravity
 !***********************************************************************
     subroutine initialize_selfgravity(f)
@@ -113,7 +129,6 @@ module Selfgravity
 !  15-may-06/anders+jeff: adapted
 !
       use EquationOfState, only: get_stratz
-      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ierr=0
@@ -140,25 +155,8 @@ module Selfgravity
 !
       if (gravitational_const==0) gravitational_const=rhs_poisson_const/(4*pi)
 !
-      if (.not.lpoisson) then
-        if (lroot) print*, 'initialize_selfgravity: must choose a Poisson '// &
-            'solver in Makefile.local for self-gravity'
-        call fatal_error('initialize_selfgravity','')
-      endif
-!
-!  Share the variable tstart_selfgrav so that it can be used by other
-!  self-gravity modules.
-!
-      call put_shared_variable('tstart_selfgrav',tstart_selfgrav,caller='initialize_selfgravity')
-!
-!  Share rhs_poisson_const and gravitational_const.
-!
-      call put_shared_variable('rhs_poisson_const',rhs_poisson_const)
-      call put_shared_variable('gravitational_const',gravitational_const)
-!
-!  Share tselfgrav_gentle.
-!
-      call put_shared_variable('tselfgrav_gentle', tselfgrav_gentle)
+      if (.not.lpoisson) &
+        call fatal_error('initialize_selfgravity','must choose a Poisson solver in Makefile.local')
 !
 !  Check that density and self-potential have consistent boundary conditions.
 !
@@ -292,12 +290,20 @@ module Selfgravity
           kappa_mn = 1./x(l1:l2)**1.5
         endif
       endif
-      if (lroot.and.kappa/=0.0) &
-          print*, 'initialize_selfgravity: epicycle frequency kappa = ', kappa
+      if (lroot.and.kappa/=0.0) print*, 'initialize_selfgravity: epicycle frequency kappa = ', kappa
 !
 !  Get the background density stratification, if any.
 !
       if (lstratz) call get_stratz(z, rho0z)
+!
+      if (ljeans_stiffening) then
+        gm1 = stiff_gamma - 1.
+        if (dimensionality == 2) then
+          c = gravitational_const * real(nj_stiff) * dxmax
+        else
+          c = gravitational_const * (real(nj_stiff) * dxmax)**2 / pi
+        endif
+      endif
 !
     endsubroutine initialize_selfgravity
 !***********************************************************************
@@ -361,9 +367,6 @@ module Selfgravity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      logical :: first=.true.
-      real, save :: gm1, c
-!
       intent(inout) :: f, p
 !
       if (lpencil(i_potself)) p%potself = f(l1:l2,m,n,ipotself)
@@ -372,9 +375,8 @@ module Selfgravity
         !if (igpotselfx/=0) f(l1:l2,m,n,igpotselfx:igpotselfz)=p%gpotself
       !endif
 !
-      if (ldiagnos.and.(idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_qtoomremax/=0)) then
+      if (ldiagnos.and.(idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_qtoomremax/=0)) &
         q%qtoomre=kappa_mn*sqrt(p%cs2)/(gravitational_const*pi*p%rho)
-      endif
 !
 !  Apply Jeans stiffening to the EOS
 !
@@ -382,15 +384,6 @@ module Selfgravity
         if (headtt) then
           print*, 'calc_pencils_selfgravity: stiffening is applied to the EOS with '
           print*, 'calc_pencils_selfgravity: ', nj_stiff, ' points per Jeans length and adiabatic index ', stiff_gamma
-        endif
-        if (first) then
-          gm1 = stiff_gamma - 1.
-          if (dimensionality == 2) then
-            c = gravitational_const * real(nj_stiff) * dxmax
-          else
-            c = gravitational_const * (real(nj_stiff) * dxmax)**2 / pi
-          endif
-          first = .false.
         endif
         p%fpres = p%fpres * spread(1. + stiff_gamma * (c * p%rho / p%cs2)**gm1, 2, 3)
       endif
@@ -408,7 +401,7 @@ module Selfgravity
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension (nx,ny,nz)   :: rhs_poisson=0.0
+      real, dimension (nx,ny,nz)   :: rhs_poisson
       real, dimension (nx,ny,nz,3) :: acceleration
 !
       integer :: k
@@ -417,6 +410,8 @@ module Selfgravity
 !
 !  Consider self-gravity from gas and dust density or from either one.
 !
+        rhs_poisson=0.0
+
         if (ldensity.and.lselfgravity_gas) then
           if (lstratz) then
             forall(k = n1:n2) rhs_poisson(:,:,k-nghost) = rho0z(k) * (1.0 + f(l1:l2,m1:m2,k,irho))
@@ -502,8 +497,6 @@ module Selfgravity
 !
 !  15-may-06/anders+jeff: coded
 !
-      use Diagnostics
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -514,42 +507,43 @@ module Selfgravity
 !  Add self-gravity acceleration on the gas and on the dust.
 !
       if (t>=tstart_selfgrav) then
-        if (lhydro.and.lselfgravity_gas) &
-            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%gpotself
+        if (lhydro.and.lselfgravity_gas) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%gpotself
         if ( ldustvelocity.and.lselfgravity_dust) &
             df(l1:l2,m,n,iudx(1):iudz(1)) = df(l1:l2,m,n,iudx(1):iudz(1)) - p%gpotself
         if (lneutralvelocity.and.lselfgravity_neutrals) &
             df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) - p%gpotself
       endif
 !
+      call calc_diagnostics_selfgrav(p)
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine duu_dt_selfgrav
+!***********************************************************************
+    subroutine calc_diagnostics_selfgrav(p)
+
+      use Diagnostics
+!
+      type (pencil_case) :: p
+!
 !  Diagnostic averages.
 !
       if (ldiagnos) then
-        if (idiag_potselfm/=0) call sum_mn_name(p%potself,idiag_potselfm)
+        call sum_mn_name(p%potself,idiag_potselfm)
         if (idiag_potself2m/=0) call sum_mn_name(p%potself**2,idiag_potself2m)
-        if (idiag_gpotselfxm/=0) &
-            call sum_mn_name(p%gpotself(:,1),idiag_gpotselfxm)
-        if (idiag_gpotselfym/=0) &
-            call sum_mn_name(p%gpotself(:,2),idiag_gpotselfym)
-        if (idiag_gpotselfzm/=0) &
-            call sum_mn_name(p%gpotself(:,3),idiag_gpotselfzm)
-        if (idiag_gpotselfx2m/=0) &
-            call sum_mn_name(p%gpotself(:,1)**2,idiag_gpotselfx2m)
-        if (idiag_gpotselfy2m/=0) &
-            call sum_mn_name(p%gpotself(:,2)**2,idiag_gpotselfy2m)
-        if (idiag_gpotselfz2m/=0) &
-            call sum_mn_name(p%gpotself(:,3)**2,idiag_gpotselfz2m)
-        if (idiag_gxgym/=0) &
-             call sum_mn_name(p%gpotself(:,1)*p%gpotself(:,2),idiag_gxgym)
-        if (idiag_gxgzm/=0) &
-             call sum_mn_name(p%gpotself(:,1)*p%gpotself(:,3),idiag_gxgzm)
-        if (idiag_gygzm/=0) &
-             call sum_mn_name(p%gpotself(:,2)*p%gpotself(:,3),idiag_gygzm)
-        if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) &
-             call calc_cylgrav_stresses(p)
+        call sum_mn_name(p%gpotself(:,1),idiag_gpotselfxm)
+        call sum_mn_name(p%gpotself(:,2),idiag_gpotselfym)
+        call sum_mn_name(p%gpotself(:,3),idiag_gpotselfzm)
+        if (idiag_gpotselfx2m/=0) call sum_mn_name(p%gpotself(:,1)**2,idiag_gpotselfx2m)
+        if (idiag_gpotselfy2m/=0) call sum_mn_name(p%gpotself(:,2)**2,idiag_gpotselfy2m)
+        if (idiag_gpotselfz2m/=0) call sum_mn_name(p%gpotself(:,3)**2,idiag_gpotselfz2m)
+        if (idiag_gxgym/=0) call sum_mn_name(p%gpotself(:,1)*p%gpotself(:,2),idiag_gxgym)
+        if (idiag_gxgzm/=0) call sum_mn_name(p%gpotself(:,1)*p%gpotself(:,3),idiag_gxgzm)
+        if (idiag_gygzm/=0) call sum_mn_name(p%gpotself(:,2)*p%gpotself(:,3),idiag_gygzm)
+        if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) call calc_cylgrav_stresses(p)
         if (idiag_qtoomre/=0) call sum_mn_name(q%qtoomre,idiag_qtoomre)
         if (idiag_qtoomremin/=0) call max_mn_name(-q%qtoomre,idiag_qtoomremin,lneg=.true.)
-        if (idiag_qtoomremax/=0) call max_mn_name( q%qtoomre,idiag_qtoomremax)
+        call max_mn_name( q%qtoomre,idiag_qtoomremax)
         if (idiag_jeanslength/=0) call max_mn_name(-sqrt(pi*p%cs2/ &
             (gravitational_const*p%rho)),idiag_jeanslength,lneg=.true.)
         if (idiag_ljeans2d/=0) call max_mn_name(-p%cs2/ &
@@ -567,14 +561,10 @@ module Selfgravity
 !  2-D averages.
 !
       if (l2davgfirst) then
-        if (idiag_potselfmxy/=0) &
-            call zsum_mn_name_xy(p%potself*p%rho,idiag_potselfmxy)
+        if (idiag_potselfmxy/=0) call zsum_mn_name_xy(p%potself*p%rho,idiag_potselfmxy)
       endif
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine duu_dt_selfgrav
+    endsubroutine calc_diagnostics_selfgrav
 !***********************************************************************
     subroutine calc_cylgrav_stresses(p)
 !
@@ -699,29 +689,25 @@ module Selfgravity
 !  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'potselfmx', &
-            idiag_potselfmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'potselfmx',idiag_potselfmx)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
 !
       do inamey=1,nnamey
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'potselfmy', &
-            idiag_potselfmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'potselfmy',idiag_potselfmy)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'potselfmz', &
-            idiag_potselfmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'potselfmz',idiag_potselfmz)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
 !
       do inamexy=1,nnamexy
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
-            'potselfmxy', idiag_potselfmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'potselfmxy',idiag_potselfmxy)
       enddo
 !
 !  Write column where which variable is stored.

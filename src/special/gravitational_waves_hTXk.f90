@@ -116,7 +116,7 @@ module Special
   logical :: lstress=.true., lstress_ramp=.false., lstress_upscale=.false.
   logical :: lturnoff=.false., ldelkt=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
-  logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false.
+  logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false., lhorndeski_xi=.false.
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
   logical :: lno_noise_GW=.false., lfactors_GW=.false.,lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
@@ -125,9 +125,11 @@ module Special
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1.
   real :: tstress_ramp=0., stress_upscale_rate=0., stress_upscale_exp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost=0., vy_boost=0., vz_boost=0.
-  real :: horndeski_alpM=0., horndeski_alpT=0.
+  real :: horndeski_alpM=0., horndeski_alpM_prime=0., horndeski_alpT=0.
+  real :: horndeski_alpM_eff, horndeski_alpM_eff2, horndeski_alpM_eff3
+  real :: horndeski_alpT_eff
   real :: scale_factor0=1., horndeski_alpT_exp=0., horndeski_alpM_exp=0.
-  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, OmM0=0.3158, OmT0=1.0, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
+  real :: scale_factor, slope_linphase_in_stress, OmL0=0.6841, OmM0=0.3158, nfact_GW=0., nfact_GWs=4., nfact_GWh=4.
   real :: initpower_med_GW=1., kpeak_log_GW=1., kbreak_GW=0.5, nfactd_GW=4.
 ! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
@@ -135,17 +137,13 @@ module Special
   logical :: lread_scl_factor_file_exists
   integer :: nt_file, it_file, iTij=0
   real :: lgt0, dlgt, H0, dummy
-  real :: lgt1, lgt2, lgf1, lgf2, lgf
-  !real :: scl_factor_target, Hp_target, app_target, OmM_target, OmT_target, lgt_current
-!AB: now in cdata
-  real :: app_target, OmM_target, OmT_target, lgt_current
-  real :: lgt_ini, a_ini, Hp_ini, app_om=0
-! real :: OmM_ini, OmT_ini
+  real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
+  real :: lgt_ini, a_ini, Hp_ini, appa_om=0
 ! added variables
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
-  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file, OmM_file, OmT_file
-  real, dimension(:), allocatable :: app_file, lgt_file, lgff, lgff2, lgff3, lgff4, lgff5
+  real, dimension(:), allocatable :: t_file, scl_factor, Hp_file
+  real, dimension(:), allocatable :: appa_file, lgt_file, lgff, lgff2, lgff3
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
@@ -184,11 +182,11 @@ module Special
     lstress, lstress_ramp, tstress_ramp, &
     lstress_upscale, stress_upscale_rate, stress_upscale_exp, &
     linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
-    lturnoff, tturnoff, lhorndeski, horndeski_alpM, horndeski_alpT, &
-    ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
+    lturnoff, tturnoff, lhorndeski, lhorndeski_xi, horndeski_alpM, horndeski_alpM_prime, &
+    horndeski_alpT, ihorndeski_time, scale_factor0, horndeski_alpT_exp, horndeski_alpM_exp, &
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
-    lread_scl_factor_file, t_ini, OmL0, OmM0, OmT0, idt_file_safety, &
+    lread_scl_factor_file, t_ini, OmL0, OmM0, idt_file_safety, &
     lconstmod_in_stress, k_in_stress, itorder_GW, lLighthill
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -498,25 +496,21 @@ module Special
         if (lread_scl_factor_file_exists) then
           if (lroot.and.ip<14) print*,'initialize_forcing: opening a_vs_eta.dat'
           open(9,file='a_vs_eta.dat',status='old')
-          read(9,*) nt_file, lgt0, dlgt, H0, OmM0, OmT0
-          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0,OmM0,OmT0=',nt_file,lgt0,dlgt,H0,OmM0,OmT0
-          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, app_file, OmM_file, OmT_file, &
-                                            lgt_file, lgff, lgff2, lgff3, lgff4, lgff5)
-          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), app_file(nt_file), &
-                   OmM_file(nt_file), OmT_file(nt_file), &
-                   lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file), lgff4(nt_file), lgff5(nt_file))
+          read(9,*) nt_file, lgt0, dlgt, H0, OmM0
+          if (lroot) print*,'initialize_special: nt_file,lgt0,dlgt,H0,OmM0=',nt_file,lgt0,dlgt,H0,OmM0
+          if (allocated(t_file)) deallocate(t_file, scl_factor, Hp_file, appa_file, &
+                                            lgt_file, lgff, lgff2, lgff3)
+          allocate(t_file(nt_file), scl_factor(nt_file), Hp_file(nt_file), appa_file(nt_file), &
+                   lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file))
           do it_file=1,nt_file
-            read(9,*) dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file), &
-                      OmM_file(it_file), OmT_file(it_file)
-          !if (ip<14) print*,'AXEL: ',dummy, t_file(it_file), scl_factor(it_file), Hp_file(it_file), app_file(it_file), OmM_file(it_file), OmT_file(it_file)
+            read(9,*) t_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file), dummy
+          !if (ip<14) print*,'AXEL: 't_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file), dummy
           enddo
           close(9)
           lgt_file=alog10(t_file)
           lgff=alog10(scl_factor)
           lgff2=alog10(Hp_file)
-          lgff3=alog10(app_file)
-          lgff4=alog10(OmM_file)
-          lgff5=alog10(OmT_file)
+          lgff3=alog10(appa_file)
 !
 !  Calculate and set tmax, i.e., the end time of the simulation, so as
 !  to have a regular exit. Note that tmax=max(t_file)/t_ini.
@@ -547,23 +541,6 @@ module Special
           lgf2=lgff2(it_file+1)
           lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
           Hp_ini=10**lgf
-          !lgf1=lgff4(it_file)
-          !lgf2=lgff4(it_file+1)
-          !lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          !OmM_ini=10**lgf
-          !lgf1=lgff5(it_file)
-          !lgf2=lgff5(it_file+1)
-          !lgf=lgf1+(lgt_ini-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          !OmT_ini=10**lgf
-          !if (ip<14) print*,'ALBERTO, print a_*, H_*, OmM_*, OmT_*: ',a_ini,Hp_ini,OmM_ini,OmT_ini
-!
-!  Divide by a_ini to have a/a_ini and recompute log(a) and log(t) after dividing, respectively
-!  by a_ini and t_ini.
-!
-          !scl_factor=scl_factor/a_ini
-          !lgff=lgff-lgf
-          !lgt_file=lgt_file-lgt_ini
-          !lgt0=lgt0-lgt_ini
 !
 !  t is given as t/t_ini by default, so to compare it with the stored values in the file, we
 !  need to use t*t_ini.
@@ -593,16 +570,8 @@ module Special
           lgf1=lgff3(it_file)
           lgf2=lgff3(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          app_target=10**lgf/Hp_ini**2
-          !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',app_target
-          lgf1=lgff4(it_file)
-          lgf2=lgff4(it_file+1)
-          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          OmM_target=10**lgf
-          lgf1=lgff5(it_file)
-          lgf2=lgff5(it_file+1)
-          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          OmT_target=10**lgf
+          appa_target=10**lgf/Hp_ini**2
+          !if (ip<14) print*,'ALBERTO appa/HH_*^2: ',appa_target
         else
           if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
           call fatal_error('initialize_special','we need the file a_vs_eta.dat')
@@ -649,7 +618,9 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real :: initpower_GWs,initpower2_GWs,initpower_med_GWs,compks,compkh,amplGWs
       real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt, om, om2
+      real :: hhTre, hhTim
       integer :: ikx,iky,ikz
+      complex :: om_cmplx, gcomplex_new
 !
       intent(inout) :: f
 !
@@ -754,6 +725,40 @@ module Special
           enddo
           enddo
           enddo
+! alberto: added initGW condition where h is initialized and h' is self-consistent
+        case ('power_randomphase_hel_selfcons')
+          call power_randomphase_hel(amplGW,initpower_GW,initpower2_GW, &
+            cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
+            lskip_projection_GW, lvectorpotential, &
+            lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
+            lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
+            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
+            kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
+            nfactd0=nfact_GW)
+          
+          appa_om=appa_target
+          if (lhorndeski_xi) then
+            horndeski_alpM_eff=(1+.5*horndeski_alpM)
+            horndeski_alpM_eff2=horndeski_alpM_eff*.5*horndeski_alpM
+            horndeski_alpM_eff3=.5*horndeski_alpM_prime
+            appa_om=appa_om*horndeski_alpM_eff+horndeski_alpM_eff2
+            appa_om=appa_om+horndeski_alpM_eff3
+          endif  
+          hhTre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
+          !hhXre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
+          hhTim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)
+          !hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
+          
+          om2=(1.+horndeski_alpT)*ksqr+delk**2-appa_om
+          om_cmplx=sqrt(cmplx(om2,0.))
+          !hcomplex_new= cosoth*coefA+sinoth*coefB+om12*cmplx(S_T_re(ikx,iky,ikz),S_T_im(ikx,iky,ikz))
+          gcomplex_new=om_cmplx*cmplx(hhTre,hhTim)
+          
+          !f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )= real(gcomplex_new)
+          !f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=aimag(gcomplex_new)
+          f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=real(gcomplex_new)
+          f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=aimag(gcomplex_new)
         case default
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))
@@ -994,7 +999,7 @@ module Special
       if (lread_scl_factor_file) then
         inquire(FILE="a_vs_eta.dat", EXIST=lread_scl_factor_file_exists)
         if (lread_scl_factor_file_exists) then
-      !
+
 !  t is given as t/t_ini by default, so to compare it with the stored values in the file, we
 !  need to use t*t_ini.
 !  So, lgt_current is not the log10 of the current time t, but of t/t_ini.
@@ -1027,12 +1032,8 @@ module Special
           lgf1=lgff3(it_file)
           lgf2=lgff3(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          app_target=10**lgf/Hp_ini**2
-          !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',app_target
-          lgf1=lgff3(it_file)
-          lgf2=lgff3(it_file+1)
-          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          OmM_target=10**lgf
+          appa_target=10**lgf/Hp_ini**2
+          !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',appa_target
         else
           if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
           call fatal_error('dspecial_dt','we need the file a_vs_eta.dat')
@@ -1750,8 +1751,11 @@ module Special
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
-      real :: discrim2, horndeski_alpM_eff, horndeski_alpM_eff2
-      real :: horndeski_alpT_eff, Om_rat_Lam, Om_rat_Mat
+      real :: discrim2
+      !real :: horndeski_alpM_eff, horndeski_alpM_eff2
+      !real :: horndeski_alpM_eff3
+      !real :: horndeski_alpT_eff
+      real :: Om_rat_Lam, Om_rat_Mat
       real :: Om_rat_matt, Om_rat_tot1
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx
@@ -2003,7 +2007,9 @@ module Special
 !  Horndeski preparations
 !  Allow for different prescriptions for the time dependence of horndeski_alpT_eff and horndeski_alpM_eff
 !
-      if (lhorndeski) then
+! alberto (sep 8 2023), added option to solve for \xi in Horndeski theories
+!
+      if (lhorndeski.or.lhorndeski_xi) then
         select case (ihorndeski_time)
           case ('const')
             horndeski_alpT_eff=horndeski_alpT
@@ -2020,7 +2026,6 @@ module Special
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
               Om_rat_matt=(scale_factor*a_ini/scale_factor0)**(-3)*OmM0
               Om_rat_tot1=(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
-              !horndeski_alpM_eff=horndeski_alpM*(1-OmM_target/OmT_target)/(1-OmM0)
               horndeski_alpM_eff=horndeski_alpM*(1-Om_rat_matt*Om_rat_tot1)/(1-OmM0)
             else
               if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
@@ -2030,36 +2035,50 @@ module Special
           case ('dark_energy')
             horndeski_alpT_eff=horndeski_alpT
             if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
-              !Om_rat_Lam=OmL0*(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
               Om_rat_tot1=(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
-              !Om_rat_Lam=(a_ini*H0*scale_factor/Hp_target/Hp_ini)**2
-              !Om_rat_Lam=1./OmT_target
-              !horndeski_alpM_eff=horndeski_alpM*Om_rat_Lam
               horndeski_alpM_eff=horndeski_alpM*Om_rat_tot1
-              !!if ((lroot).and.(Om_rat_Lam==0)) print*,"the ratio Om_rat_Lam is too small", &
-              !!    " for single precision, consider using double precision"
             else
               if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
               if (lroot) print*,'set lread_scl_factor_file=T in run parameters'
               call fatal_error('dspecial_dt',"we need the file a_vs_eta.dat")
             endif
           case default
-            call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
-                ,trim(idelkt))
+            call fatal_error("compute_gT_and_gX_from_gij: No such value for ihorndeski_time" &
+                ,trim(ihorndeski_time))
         endselect
         if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
           !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp^2: ',Hp_target**2
           !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp: ',Hp_target
-          horndeski_alpM_eff=horndeski_alpM_eff*Hp_target
-          horndeski_alpM_eff2=horndeski_alpM_eff*Hp_target
+          if (lhorndeski) then
+            horndeski_alpM_eff=horndeski_alpM_eff*Hp_target
+            horndeski_alpM_eff2=horndeski_alpM_eff*Hp_target
+          else
+            horndeski_alpM_eff2=(1+.5*horndeski_alpM_eff)*Hp_target**2
+            horndeski_alpM_eff2=horndeski_alpM_eff2*.5*horndeski_alpM_eff
+            ! alpM_prime is set to zero for now (constant alpha),
+            ! to be changed for the different parameterizations
+            horndeski_alpM_eff3=.5*horndeski_alpM_prime*Hp_target
+            horndeski_alpM_eff=1.+.5*horndeski_alpM_eff
+          endif
         else
-          horndeski_alpM_eff=horndeski_alpM_eff/scale_factor
-          horndeski_alpM_eff2=horndeski_alpM_eff/scale_factor
+          if (lhorndeski) then
+            horndeski_alpM_eff=horndeski_alpM_eff/scale_factor
+            horndeski_alpM_eff2=horndeski_alpM_eff/scale_factor
+          else
+            horndeski_alpM_eff2=(1+.5*horndeski_alpM_eff)/scale_factor**2
+            horndeski_alpM_eff2=horndeski_alpM_eff2*.5*horndeski_alpM_eff 
+            horndeski_alpM_eff3=.5*horndeski_alpM_prime/scale_factor
+            horndeski_alpM_eff=1.+.5*horndeski_alpM_eff
+          endif 
         endif
       endif
       if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
-        app_om=app_target
-        !if (ip<14.and..not.lroot) print*,'ALBERTO, app: ',app_target
+        appa_om=appa_target
+        !if (ip<14.and..not.lroot) print*,'ALBERTO, app/a: ',appa_target
+      endif
+      if (lhorndeski_xi) then
+        appa_om=appa_om*horndeski_alpM_eff+horndeski_alpM_eff2
+        appa_om=appa_om+horndeski_alpM_eff3
       endif
 !
 !  Set ST=SX=0 and reset all spectra.
@@ -2146,15 +2165,17 @@ module Special
               else
                 if (delkt/=0. .or. lhorndeski) then
                   if (lhorndeski) then
-                    om2=(1.+horndeski_alpT_eff)*ksqr+delkt**2-horndeski_alpM_eff2-app_om
+                    om2=(1.+horndeski_alpT_eff)*ksqr+delkt**2-horndeski_alpM_eff2-appa_om
                     om_cmplx=sqrt(cmplx(om2,0.))
                     om=impossible
+                  elseif (lhorndeski_xi) then
+                    om2=(1.+horndeski_alpT_eff)*ksqr+delkt**2-appa_om
                   else
-                    om2=ksqr+delkt**2-app_om
+                    om2=ksqr+delkt**2-appa_om
                     om=sqrt(om2)
                   endif
                 else
-                  om2=ksqr-app_om
+                  om2=ksqr-appa_om
                   om=sqrt(om2)
                 endif
                 lsign_om2=.true.

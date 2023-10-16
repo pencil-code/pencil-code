@@ -9,7 +9,7 @@
   public :: pencil_criteria_radiation, pencil_interdep_radiation
   public :: calc_pencils_radiation
 
-  public :: init_rad, radtransfer, de_dt, radiative_cooling, radiative_pressure
+  public :: init_rad, radtransfer, dradiation_dt
 
 !ajwm SHOULDN'T BE EXPORTED
 ! public :: DFF_new

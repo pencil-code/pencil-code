@@ -52,7 +52,6 @@ module Magnetic
   character(len=8) :: eta_zdep_prof = ''
   logical :: lbext = .false.
   logical :: limplicit_resistivity = .false.
-  logical :: lcovariant_magnetic= .false.
   logical :: lresis_const = .false.
   logical :: lresis_zdep = .false.
   logical :: lresis_shock = .false.
@@ -188,6 +187,7 @@ module Magnetic
 !  25-oct-13/ccyang: coded.
 !
       use FArrayManager, only: farray_register_pde, farray_register_auxiliary
+      use SharedVariables, only: put_shared_variable
 !
       integer :: istat
 !
@@ -198,7 +198,7 @@ module Magnetic
 !  Request variable for the magnetic field.
 !
       call farray_register_pde('bb', ibb, vector=3, ierr=istat)
-      if (istat /= 0) call fatal_error('register_magnetic', 'cannot register the variable bb. ')
+      if (istat /= 0) call fatal_error('register_magnetic', 'cannot register the variable bb')
       ibx = ibb
       iby = ibx + 1
       ibz = iby + 1
@@ -206,7 +206,7 @@ module Magnetic
 !  Request auxiliary variable for the effective electric field.
 !
       call farray_register_auxiliary('ee', iee, vector=3, communicated=.true., ierr=istat)
-      if (istat /= 0) call fatal_error('register_magnetic', 'cannot register the variable ee. ')
+      if (istat /= 0) call fatal_error('register_magnetic', 'cannot register the variable ee')
       iex = iee
       iey = iex + 1
       iez = iey + 1
@@ -214,10 +214,14 @@ module Magnetic
 !  Request auxiliary variable for the current density.
 !
       call farray_register_auxiliary('jj', ijj, vector=3, communicated=.true., ierr=istat)
-      if (istat /= 0) call fatal_error('register_magnetic', 'cannot register the variable jj. ')
+      if (istat /= 0) call fatal_error('register_magnetic', 'cannot register the variable jj')
       ijx = ijj
       ijy = ijx + 1
       ijz = ijy + 1
+!
+!  Share external field.
+!
+      call put_shared_variable('B_ext', B_ext, caller='register_magnetic')
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -227,22 +231,15 @@ module Magnetic
 !
 !  29-aug-13/ccyang: coded.
 !
-      use SharedVariables, only: put_shared_variable
       use Shear, only: get_hyper3x_mesh
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-!
-      integer :: ierr
 !
       call keep_compiler_quiet(f)
 !
 !  Check the existence of external field.
 !
       lbext = any(b_ext /= 0.0) .or. any(b0_ext /= 0.0)
-!
-!  Share it.
-!
-      call put_shared_variable('B_ext', B_ext, caller='initialize_magnetic')
 !
 !  Calculates variables required by Magnetic and possibly other module(s).
 !
@@ -257,7 +254,7 @@ module Magnetic
       if (eta /= 0.0) lresis_const = .true.
       zdep: if (eta_zdep_prof /= '') then
         call get_eta_zdep(z, eta_zdep, detadz)
-        if (all(eta_zdep == 0.0)) call fatal_error('initialize_magnetic', 'unknown eta_zdep_prof ' // eta_zdep_prof)
+        if (all(eta_zdep == 0.0)) call fatal_error('initialize_magnetic','unknown eta_zdep_prof '//eta_zdep_prof)
         lresis_zdep = .true.
       endif zdep
       if (eta_shock /= 0.0) lresis_shock = .true.
@@ -271,7 +268,7 @@ module Magnetic
 !  Sanity check
 !
       if (lresis_shock .and. .not. lshock) &
-        call fatal_error('initialize_magnetic', 'Shock module is required for shock resistivity. ')
+        call fatal_error('initialize_magnetic','shock module is required for shock resistivity')
 !
 !  Determine if any resistivity by explicit solver is present.
 !
@@ -299,7 +296,7 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       if (.not. linitial_condition) &
-        call fatal_error('init_aa', 'Please use the InitialCondition module to set up your initial conditions. ')
+        call fatal_error('init_aa', 'use InitialCondition module to set up your initial conditions')
 !
       call initial_condition_aa(f)
 !
@@ -612,12 +609,12 @@ module Magnetic
 !
 !  Dummy pencils
 !
-      if (lpenc_loc(i_aa)) call fatal_error('calc_pencils_magnetic', 'pencil aa is not implemented. ')
+      if (lpenc_loc(i_aa)) call not_implemented('calc_pencils_magnetic', 'pencil aa')
 !
-      if (lpenc_loc(i_ss12)) call fatal_error('calc_pencils_magnetic', 'pencil ss12 is not implemented. ')
+      if (lpenc_loc(i_ss12)) call not_implemented('calc_pencils_magnetic', 'pencil ss12')
 !
-      if (lpenc_loc(i_el).or.lpenc_loc(i_e2)) call fatal_error("calc_pencils_magnetic_pencpar",&
-          "Electric field is not currently computed in magnetic")
+      if (lpenc_loc(i_el).or.lpenc_loc(i_e2)) call not_implemented("calc_pencils_magnetic_pencpar", &
+          "pencil e2 (electric field)")
 !
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
@@ -671,16 +668,8 @@ module Magnetic
         maxdiffus3 = max(maxdiffus3,maxdiffus_eta3)
       endif timestep
 !
-!  Evaluate Magnetic diagnostics.
-!
-      if (ldiagnos) call diagnostic_magnetic(p)
-!
-      avg1d: if (l1davgfirst) then
-        call xyaverages_magnetic(p)
-        call xzaverages_magnetic(p)
-        call yzaverages_magnetic(p)
-      endif avg1d
-!
+      call calc_diagnostics_magnetic(f,p)
+
     endsubroutine daa_dt
 !******************************************************************************
     subroutine calc_diagnostics_magnetic(f,p)
@@ -690,8 +679,18 @@ module Magnetic
 !
       intent(in) :: f, p
 
+!
+!  Evaluate Magnetic diagnostics.
+!
+      if (ldiagnos) call diagnostic_magnetic(p)
+!
+      if (l1davgfirst) then
+        call xyaverages_magnetic(p)
+        call xzaverages_magnetic(p)
+        call yzaverages_magnetic(p)
+      endif 
+
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine calc_diagnostics_magnetic
 !***********************************************************************
@@ -1054,8 +1053,7 @@ module Magnetic
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !
-      if (lslope_limit_diff) &
-        f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2)+sum(f(:,:,:,ibx:ibz)**2,4)
+      if (lslope_limit_diff) f(:,:,:,iFF_diff2)=f(:,:,:,iFF_diff2)+sum(f(:,:,:,ibx:ibz)**2,4)
       
     endsubroutine update_char_vel_magnetic
 !***********************************************************************
@@ -1075,17 +1073,17 @@ module Magnetic
 !
       type(pencil_case), intent(in) :: p
 !
-      if (idiag_bmax /= 0) call max_mn_name(p%b2, idiag_bmax, lsqrt=.true.)
+      call max_mn_name(p%b2, idiag_bmax, lsqrt=.true.)
       if (idiag_bmin /= 0) call max_mn_name(-sqrt(p%b2), idiag_bmin, lneg=.true.)
-      if (idiag_brms /= 0) call sum_mn_name(p%b2, idiag_brms, lsqrt=.true.)
+      call sum_mn_name(p%b2, idiag_brms, lsqrt=.true.)
       if (idiag_bm /= 0) call sum_mn_name(sqrt(p%b2), idiag_bm)
-      if (idiag_b2m /= 0) call sum_mn_name(p%b2, idiag_b2m)
+      call sum_mn_name(p%b2, idiag_b2m)
       if (idiag_bxmax /= 0) call max_mn_name(abs(p%bb(:,1)), idiag_bxmax)
       if (idiag_bymax /= 0) call max_mn_name(abs(p%bb(:,2)), idiag_bymax)
       if (idiag_bzmax /= 0) call max_mn_name(abs(p%bb(:,3)), idiag_bzmax)
-      if (idiag_bxm /= 0) call sum_mn_name(p%bb(:,1), idiag_bxm)
-      if (idiag_bym /= 0) call sum_mn_name(p%bb(:,2), idiag_bym)
-      if (idiag_bzm /= 0) call sum_mn_name(p%bb(:,3), idiag_bzm)
+      call sum_mn_name(p%bb(:,1), idiag_bxm)
+      call sum_mn_name(p%bb(:,2), idiag_bym)
+      call sum_mn_name(p%bb(:,3), idiag_bzm)
       if (idiag_bx2m /= 0) call sum_mn_name(p%bb(:,1)**2, idiag_bx2m)
       if (idiag_by2m /= 0) call sum_mn_name(p%bb(:,2)**2, idiag_by2m)
       if (idiag_bz2m /= 0) call sum_mn_name(p%bb(:,3)**2, idiag_bz2m)
@@ -1095,32 +1093,32 @@ module Magnetic
       if (idiag_dbxmax /= 0) call max_mn_name(abs(p%bbb(:,1)), idiag_dbxmax)
       if (idiag_dbymax /= 0) call max_mn_name(abs(p%bbb(:,2)), idiag_dbymax)
       if (idiag_dbzmax /= 0) call max_mn_name(abs(p%bbb(:,3)), idiag_dbzmax)
-      if (idiag_dbxm /= 0) call sum_mn_name(p%bbb(:,1), idiag_dbxm)
-      if (idiag_dbym /= 0) call sum_mn_name(p%bbb(:,2), idiag_dbym)
-      if (idiag_dbzm /= 0) call sum_mn_name(p%bbb(:,3), idiag_dbzm)
+      call sum_mn_name(p%bbb(:,1), idiag_dbxm)
+      call sum_mn_name(p%bbb(:,2), idiag_dbym)
+      call sum_mn_name(p%bbb(:,3), idiag_dbzm)
       if (idiag_dbx2m /= 0) call sum_mn_name(p%bbb(:,1)**2, idiag_dbx2m)
       if (idiag_dby2m /= 0) call sum_mn_name(p%bbb(:,2)**2, idiag_dby2m)
       if (idiag_dbz2m /= 0) call sum_mn_name(p%bbb(:,3)**2, idiag_dbz2m)
-      if (idiag_jmax /= 0) call max_mn_name(p%j2, idiag_jmax, lsqrt=.true.)
+      call max_mn_name(p%j2, idiag_jmax, lsqrt=.true.)
       if (idiag_jmin /= 0) call max_mn_name(-sqrt(p%j2), idiag_jmin, lneg=.true.)
-      if (idiag_jrms /= 0) call sum_mn_name(p%j2, idiag_jrms, lsqrt=.true.)
+      call sum_mn_name(p%j2, idiag_jrms, lsqrt=.true.)
       if (idiag_jm /= 0) call sum_mn_name(sqrt(p%j2), idiag_jm)
-      if (idiag_j2m /= 0) call sum_mn_name(p%j2, idiag_j2m)
+      call sum_mn_name(p%j2, idiag_j2m)
       if (idiag_jxmax /= 0) call max_mn_name(abs(p%jj(:,1)), idiag_jxmax)
       if (idiag_jymax /= 0) call max_mn_name(abs(p%jj(:,2)), idiag_jymax)
       if (idiag_jzmax /= 0) call max_mn_name(abs(p%jj(:,3)), idiag_jzmax)
-      if (idiag_jxm /= 0) call sum_mn_name(p%jj(:,1), idiag_jxm)
-      if (idiag_jym /= 0) call sum_mn_name(p%jj(:,2), idiag_jym)
-      if (idiag_jzm /= 0) call sum_mn_name(p%jj(:,3), idiag_jzm)
+      call sum_mn_name(p%jj(:,1), idiag_jxm)
+      call sum_mn_name(p%jj(:,2), idiag_jym)
+      call sum_mn_name(p%jj(:,3), idiag_jzm)
       if (idiag_jx2m /= 0) call sum_mn_name(p%jj(:,1)**2, idiag_jx2m)
       if (idiag_jy2m /= 0) call sum_mn_name(p%jj(:,2)**2, idiag_jy2m)
       if (idiag_jz2m /= 0) call sum_mn_name(p%jj(:,3)**2, idiag_jz2m)
       if (idiag_divbmax /= 0) call max_mn_name(abs(p%divb), idiag_divbmax)
       if (idiag_divbrms /= 0) call sum_mn_name(p%divb**2, idiag_divbrms, lsqrt=.true.)
-      if (idiag_betamax /= 0) call max_mn_name(p%beta, idiag_betamax)
+      call max_mn_name(p%beta, idiag_betamax)
       if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
-      if (idiag_betam /= 0) call sum_mn_name(p%beta, idiag_betam)
-      if (idiag_vAmax /= 0) call max_mn_name(p%va2, idiag_vAmax, lsqrt=.true.)
+      call sum_mn_name(p%beta, idiag_betam)
+      call max_mn_name(p%va2, idiag_vAmax, lsqrt=.true.)
       if (idiag_vAmin /= 0) call max_mn_name(-sqrt(p%va2), idiag_vAmin, lneg=.true.)
       if (idiag_vAm /= 0) call sum_mn_name(sqrt(p%va2), idiag_vAm)
 !
@@ -1137,17 +1135,17 @@ module Magnetic
       type(pencil_case), intent(in) :: p
 !
       if (idiag_bmz /= 0) call xysum_mn_name_z(sqrt(p%b2), idiag_bmz)
-      if (idiag_b2mz /= 0) call xysum_mn_name_z(p%b2, idiag_b2mz)
-      if (idiag_bxmz /= 0) call xysum_mn_name_z(p%bb(:,1), idiag_bxmz)
-      if (idiag_bymz /= 0) call xysum_mn_name_z(p%bb(:,2), idiag_bymz)
-      if (idiag_bzmz /= 0) call xysum_mn_name_z(p%bb(:,3), idiag_bzmz)
+      call xysum_mn_name_z(p%b2, idiag_b2mz)
+      call xysum_mn_name_z(p%bb(:,1), idiag_bxmz)
+      call xysum_mn_name_z(p%bb(:,2), idiag_bymz)
+      call xysum_mn_name_z(p%bb(:,3), idiag_bzmz)
       if (idiag_bx2mz /= 0) call xysum_mn_name_z(p%bb(:,1)**2, idiag_bx2mz)
       if (idiag_by2mz /= 0) call xysum_mn_name_z(p%bb(:,2)**2, idiag_by2mz)
       if (idiag_bz2mz /= 0) call xysum_mn_name_z(p%bb(:,3)**2, idiag_bz2mz)
       if (idiag_bxbymz /= 0) call xysum_mn_name_z(p%bb(:,1) * p%bb(:,2), idiag_bxbymz)
       if (idiag_bxbzmz /= 0) call xysum_mn_name_z(p%bb(:,1) * p%bb(:,3), idiag_bxbzmz)
       if (idiag_bybzmz /= 0) call xysum_mn_name_z(p%bb(:,2) * p%bb(:,3), idiag_bybzmz)
-      if (idiag_betamz /= 0) call xysum_mn_name_z(p%beta, idiag_betamz)
+      call xysum_mn_name_z(p%beta, idiag_betamz)
       if (idiag_beta2mz /= 0) call xysum_mn_name_z(p%beta**2, idiag_beta2mz)
 !
     endsubroutine xyaverages_magnetic
@@ -1175,17 +1173,17 @@ module Magnetic
       type(pencil_case), intent(in) :: p
 !
       if (idiag_bmx /= 0) call yzsum_mn_name_x(sqrt(p%b2), idiag_bmx)
-      if (idiag_b2mx /= 0) call yzsum_mn_name_x(p%b2, idiag_b2mx)
-      if (idiag_bxmx /= 0) call yzsum_mn_name_x(p%bb(:,1), idiag_bxmx)
-      if (idiag_bymx /= 0) call yzsum_mn_name_x(p%bb(:,2), idiag_bymx)
-      if (idiag_bzmx /= 0) call yzsum_mn_name_x(p%bb(:,3), idiag_bzmx)
+      call yzsum_mn_name_x(p%b2, idiag_b2mx)
+      call yzsum_mn_name_x(p%bb(:,1), idiag_bxmx)
+      call yzsum_mn_name_x(p%bb(:,2), idiag_bymx)
+      call yzsum_mn_name_x(p%bb(:,3), idiag_bzmx)
       if (idiag_bx2mx /= 0) call yzsum_mn_name_x(p%bb(:,1)**2, idiag_bx2mx)
       if (idiag_by2mx /= 0) call yzsum_mn_name_x(p%bb(:,2)**2, idiag_by2mx)
       if (idiag_bz2mx /= 0) call yzsum_mn_name_x(p%bb(:,3)**2, idiag_bz2mx)
       if (idiag_bxbymx /= 0) call yzsum_mn_name_x(p%bb(:,1) * p%bb(:,2), idiag_bxbymx)
       if (idiag_bxbzmx /= 0) call yzsum_mn_name_x(p%bb(:,1) * p%bb(:,3), idiag_bxbzmx)
       if (idiag_bybzmx /= 0) call yzsum_mn_name_x(p%bb(:,2) * p%bb(:,3), idiag_bybzmx)
-      if (idiag_betamx /= 0) call yzsum_mn_name_x(p%beta, idiag_betamx)
+      call yzsum_mn_name_x(p%beta, idiag_betamx)
       if (idiag_beta2mx /= 0) call yzsum_mn_name_x(p%beta**2, idiag_beta2mx)
 !
     endsubroutine yzaverages_magnetic
@@ -1470,7 +1468,7 @@ module Magnetic
 !
     endfunction output_persistent_magnetic
 !***********************************************************************
-    subroutine expand_shands_magnetic()
+    subroutine expand_shands_magnetic
 !
 !  Dummy
 !

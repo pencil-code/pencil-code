@@ -195,6 +195,7 @@ module Radiation
 !  24-mar-03/axel+tobi: coded
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
       lradiation_ray=.true.
 !
@@ -245,6 +246,9 @@ module Radiation
         if (naux == maux) aux_var(aux_count)=',KR_Frad'
         aux_count=aux_count+3
       endif
+
+      call put_shared_variable('z_cutoff',z_cutoff,caller='register_radiation')
+      call put_shared_variable('cool_wid',cool_wid)
 !
 !  Output.
 !
@@ -459,6 +463,11 @@ module Radiation
       endif
 !
       call get_gamma_etc(gamma)
+
+      if (source_function_type=='LTE'.and.lcutoff_opticallythin) then
+        if (z_cutoff==impossible .or. cool_wid==impossible) &
+          call fatal_error("source_function:","z_cutoff or cool_wid is not set")
+      endif
 
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -1780,7 +1789,6 @@ module Radiation
 !
       use EquationOfState, only: eoscalc
       use Debug_IO, only: output
-      use SharedVariables, only: put_shared_variable
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -1801,10 +1809,6 @@ module Radiation
 !
 ! This works for stratification in the z-direction
 !
-          if (z_cutoff==impossible .or. cool_wid==impossible) &
-          call fatal_error("source_function:","z_cutoff or cool_wid is not set")
-          call put_shared_variable('z_cutoff',z_cutoff,caller='source_function')
-          call put_shared_variable('cool_wid',cool_wid)
           z_cutoff1=z_cutoff
           if (.not. lcutoff_zconst) then
             do l=l1-radx,l2+radx 
@@ -2399,20 +2403,16 @@ module Radiation
 !
     endsubroutine calc_pencils_radiation
 !***********************************************************************
-   subroutine de_dt(f,df,p)
-!
-!  Dummy routine for Flux Limited Diffusion routine
-!
-!  15-jul-2002/nils: dummy routine
+   subroutine dradiation_dt(f,df,p)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+      call radiative_cooling(f,df,p)
+      call radiative_pressure(f,df,p)
 !
-    endsubroutine de_dt
+    endsubroutine dradiation_dt
 !***********************************************************************
     subroutine read_radiation_init_pars(iostat)
 !

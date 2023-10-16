@@ -109,6 +109,14 @@ module Polymer
 !
     endsubroutine dpoly_dt
 !***********************************************************************
+    subroutine calc_diagnostics_polymer(p)
+!
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_polymer
+!***********************************************************************
     subroutine calc_polymer_after_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f

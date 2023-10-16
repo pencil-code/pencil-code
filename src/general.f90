@@ -100,6 +100,7 @@ module General
 !
   interface safe_character_prepend
     module procedure safe_character_prepend_2
+    module procedure safe_character_prepend_3
   endinterface
 !
   interface write_full_columns
@@ -1316,6 +1317,17 @@ module General
 !
     endsubroutine safe_character_prepend_2
 !***********************************************************************
+    subroutine safe_character_prepend_3(str1,str2,str3)
+!
+!  26-Jun-2021/PABourdin: adapted from safe_character_prepend_2
+!
+      character (len=*), intent(inout):: str1
+      character (len=*), intent(in):: str2,str3
+!
+      call safe_character_assign(str1, trim(str2) // trim(str3) // trim(str1))
+!
+    endsubroutine safe_character_prepend_3
+!***********************************************************************
     subroutine safe_character_append_3(str1,str2,str3)
 !
 !  08-oct-02/wolf: coded
@@ -1563,10 +1575,10 @@ module General
 !
       implicit none
       real, dimension(:) :: z
-      double precision, dimension(:), intent(in) :: f
-      double precision, dimension(size(z)) :: w1,w2,w3
-      double precision, dimension(size(z)) :: d,spline_derivative_double
-      double precision :: c
+      real(KIND=rkind8), dimension(:), intent(in) :: f
+      real(KIND=rkind8), dimension(size(z)) :: w1,w2,w3
+      real(KIND=rkind8), dimension(size(z)) :: d,spline_derivative_double
+      real(KIND=rkind8) :: c
       integer :: mz,k
 !
       mz=size(z)
@@ -1674,11 +1686,11 @@ module General
 !
       implicit none
       real, dimension(:) :: z
-      double precision, dimension(:) :: f
+      real(KIND=rkind8), dimension(:) :: f
       real, dimension(size(z)) :: dz
-      double precision, dimension(size(z)) :: df
-      double precision, dimension(size(z)) :: q,spline_integral_double
-      double precision, optional :: q0
+      real(KIND=rkind8), dimension(size(z)) :: df
+      real(KIND=rkind8), dimension(size(z)) :: q,spline_integral_double
+      real(KIND=rkind8), optional :: q0
       integer :: mz,k
 !
       mz=size(z)
@@ -1762,12 +1774,12 @@ module General
 !  |          0    a_n  b_n  | | un   |   | rn   |
 !
       implicit none
-      double precision, dimension(:), intent(in) :: a,b,c,r
-      double precision, dimension(:), intent(out) :: u
-      double precision, dimension(size(b)) :: gam
+      real(KIND=rkind8), dimension(:), intent(in) :: a,b,c,r
+      real(KIND=rkind8), dimension(:), intent(out) :: u
+      real(KIND=rkind8), dimension(size(b)) :: gam
       logical, intent(out), optional :: err
       integer :: n,j
-      double precision :: bet
+      real(KIND=rkind8) :: bet
 !
       if (present(err)) err=.false.
       n=size(b)
@@ -5543,7 +5555,7 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
 !  27-Jul-15/MR: adapted
 !  07-oct-20/ccyang: revised
 !
-     double precision, intent(in) :: f
+     real(KIND=rkind8), intent(in) :: f
 !
      notanumber_0d = f > huge_double .or. f /= f
 !

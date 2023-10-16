@@ -59,6 +59,9 @@ module Cosmicray
   integer :: idiag_ecrm=0,idiag_ecrmax=0
   integer :: idiag_kmax=0
 !
+  real :: ecr_floor_log
+  real, dimension (nx) :: vKperp
+
   contains
 !***********************************************************************
     subroutine register_cosmicray
@@ -69,6 +72,7 @@ module Cosmicray
 !  09-oct-03/tony: coded
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 
       call farray_register_pde('ecr',iecr)
 !
@@ -89,14 +93,18 @@ module Cosmicray
         write(15,*) 'ecr = fltarr(mx,my,mz)*one'
       endif
 !
+!     Shares diffusivities allowing the cosmicrayflux module to know them
+!
+     call put_shared_variable('K_perp', K_perp, caller='register_cosmicray')
+     call put_shared_variable('K_para', K_para)
+!
     endsubroutine register_cosmicray
 !***********************************************************************
     subroutine initialize_cosmicray(f)
 !
 !  Perform any necessary post-parameter read initialization
 !
-      use SharedVariables, only: put_shared_variable
-      use Messages, only: warning
+      use Messages, only: fatal_error
 
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -107,13 +115,10 @@ module Cosmicray
 !
       gammacr1=gammacr-1.
       if (lroot) print*,'gammacr1=',gammacr1
-!
-!     Shares diffusivities allowing the cosmicrayflux module to know them
-!
-     call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
-     call put_shared_variable('K_para', K_para)
 
-     call keep_compiler_quiet(f)
+      if (ecr_floor>0.) ecr_floor_log=alog(ecr_floor)
+
+      call keep_compiler_quiet(f)
 
     endsubroutine initialize_cosmicray
 !***********************************************************************
@@ -230,8 +235,7 @@ module Cosmicray
 ! gecr
       if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
 ! ugecr
-      if (lpencil(i_ugecr)) &
-        call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr)
+      if (lpencil(i_ugecr)) call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr)
 !
     endsubroutine calc_pencils_cosmicray
 !***********************************************************************
@@ -250,14 +254,13 @@ module Cosmicray
 !   09-oct-03/tony: coded
 !   04-dec-03/snod: modified for lnecr (=ecr)
 !
-      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: del2ecr,vKperp,vKpara,gecr2,diffus_cr
+      real, dimension (nx) :: del2ecr,vKpara,gecr2,diffus_cr
       integer :: j
 !
       intent(in) :: f,p
@@ -281,7 +284,7 @@ module Cosmicray
       if (.not.lnegl .and. lhydro) then
         do j=0,2
           df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - &
-              gammacr1*p%rho1*p%gecr(:,1+j)*exp(p%ecr(:))
+                                gammacr1*p%rho1*p%gecr(:,1+j)*exp(p%ecr(:))
         enddo
       endif
 !
@@ -314,11 +317,21 @@ module Cosmicray
         if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
         maxdiffus=max(maxdiffus,diffus_cr)
       endif
+
+      call calc_diagnostics_cosmicray(p)
+
+    endsubroutine decr_dt
+!***********************************************************************
+    subroutine calc_diagnostics_cosmicray(p)
 !
 !  diagnostics
 !
 !  output for double and triple correlators (assume z-gradient of cc)
 !  <u_k u_j d_j c> = <u_k c uu.gradecr>
+!
+      use Diagnostics
+
+      type (pencil_case) :: p
 !
       if (ldiagnos) then
         call sum_mn_name(p%ecr,idiag_ecrm)
@@ -326,7 +339,7 @@ module Cosmicray
         call max_mn_name(vKperp,idiag_kmax)
       endif
 !
-    endsubroutine decr_dt
+    endsubroutine calc_diagnostics_cosmicray
 !***********************************************************************
     subroutine read_cosmicray_init_pars(iostat)
 !
@@ -523,19 +536,19 @@ module Cosmicray
 !  Currently, gvKperp/gvKpara are are set to 0, leading to no
 !  effects.
 !
-      if (lvariable_tensor_diff)then
+      if (lvariable_tensor_diff) then
 !
 !  set vKpara, vKperp
 !
 !  if (luse_diff  _coef)
 !
-        vKpara(:)=K_para
-        vKperp(:)=K_perp
+        vKpara=K_para
+        vKperp=K_perp
 !
 !  set gvKpara, gvKperp
 !
-        gvKperp(:,:)=0.0
-        gvKpara(:,:)=0.0
+        gvKperp=0.
+        gvKpara=0.
 !
 !  put d_i ecr d_i vKperp into tmpj
 !
@@ -544,24 +557,22 @@ module Cosmicray
 !  add further terms into tmpj
 !
         do i=1,3
-          tmpi(:)=bunit(:,i)*(gvKpara(:,i)-gvKperp(:,i))
+          tmpi=bunit(:,i)*(gvKpara(:,i)-gvKperp(:,i))
           do j=1,3
-            tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi
-            tmpj(:)=tmpj(:)+gecr(:,j)*gvKperp(:,j)
+            tmpj=tmpj+bunit(:,j)*gecr(:,j)*tmpi
+            tmpj=tmpj+gecr(:,j)*gvKperp(:,j)
           enddo
         enddo
 !
 !  apply CR diffusion
 !
-        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
-        + vKperp*(del2ecr+gecr2) + (vKpara-vKperp)*tmp + tmpj
+        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) + vKperp*(del2ecr+gecr2) + (vKpara-vKperp)*tmp + tmpj
       else
 !
 !  for constant tensor (or otherwise), just add result into
 !  the decr/dt equation without tmpj
 !
-        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
-        + K_perp*(del2ecr+gecr2) + (K_para-K_perp)*tmp
+        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) + K_perp*(del2ecr+gecr2) + (K_para-K_perp)*tmp
 !
       endif
 !
@@ -576,21 +587,9 @@ module Cosmicray
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, save :: ecr_floor_log
-      logical, save :: lfirstcall=.true.
-!
 !  Impose the cosmic energy density floor.
 !
-      if (ecr_floor>0.) then
-
-        if (lfirstcall) then
-          ecr_floor_log=alog(ecr_floor)
-          lfirstcall=.false.
-        endif
-!
-        where (f(:,:,:,iecr)<ecr_floor_log) f(:,:,:,ilnrho)=ecr_floor_log
-!
-      endif
+      if (ecr_floor>0.) f(:,:,:,iecr) = max(ecr_floor_log,f(:,:,:,ilnrho))
 !
     endsubroutine impose_ecr_floor
 !***********************************************************************

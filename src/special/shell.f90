@@ -265,7 +265,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nshell) :: random_phase_uu_init
-      double precision, dimension(nshell) ::randomd
+      real(KIND=rkind8), dimension(nshell) ::randomd
       integer :: ns, ncount=1
       logical :: ncount_out
       real :: noneoverthree=-1./3.

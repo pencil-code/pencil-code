@@ -40,6 +40,11 @@ module Io
 !
   integer :: persist_last_id=-max_int
 !
+  interface input_proc_bounds
+    module procedure input_proc_bounds_double
+    module procedure input_proc_bounds_single
+  endinterface
+!
   contains
 !***********************************************************************
     subroutine register_io
@@ -192,8 +197,11 @@ module Io
           write (lun_output) t_sp
           if (lroot) write (lun_output) gx, gy, gz, dx, dy, dz
         endif
-      endif
 !
+        if (lode) call output_ode(file)
+
+      endif
+
     endsubroutine output_snap
 !***********************************************************************
     subroutine output_snap_finalize
@@ -438,8 +446,11 @@ module Io
             write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
         call stop_it_if_any ((t_test /= t_sp), '')
         t = t_sp
-      endif
 !
+        if (lode) call input_ode(file)
+
+      endif
+
     endsubroutine input_snap
 !***********************************************************************
     subroutine input_snap_finalize
@@ -1428,53 +1439,6 @@ module Io
 !
     endsubroutine rgrid
 !***********************************************************************
-    subroutine wproc_bounds(file)
-!
-!  Export processor boundaries to file.
-!
-!  22-Feb-2012/PABourdin: adapted from io_dist
-!  27-nov-2020/ccyang: make the file single
-!
-      character(len=*), intent(in) :: file
-!
-      integer :: ierr
-!
-!  Only one process is needed.
-!
-      if (.not. lroot) return
-!
-!  Write proc[xyz]_bounds.
-!
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
-      if (ierr /= 0) call fatal_error("wproc_bounds", "Cannot open " // trim(file))
-      write (lun_output) procx_bounds
-      write (lun_output) procy_bounds
-      write (lun_output) procz_bounds
-      close (lun_output)
-!
-    endsubroutine wproc_bounds
-!***********************************************************************
-    subroutine rproc_bounds(file)
-!
-!   Import processor boundaries from file.
-!
-!   22-Feb-2012/Bourdin.KIS: adapted from io_dist
-!
-      use Mpicomm, only: stop_it
-!
-      character (len=*) :: file
-!
-      integer :: ierr
-!
-      open (lun_input, FILE=file, FORM='unformatted', IOSTAT=ierr, status='old')
-      if (ierr /= 0) call stop_it ( &
-          "Cannot open " // trim(file) // " (or similar) for reading" // &
-          " -- is data/ visible from all nodes?")
-      read (lun_input) procx_bounds
-      read (lun_input) procy_bounds
-      read (lun_input) procz_bounds
-      close (lun_input)
-!
-    endsubroutine rproc_bounds
+    include 'io_common.inc'
 !***********************************************************************
 endmodule Io

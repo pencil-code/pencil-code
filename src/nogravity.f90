@@ -173,6 +173,14 @@ module Gravity
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
+    subroutine calc_diagnostics_gravity(p)
+
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_gravity
+!***********************************************************************
     subroutine gravity_after_boundary(f)
 !
 !  For actions outside mn-loop. 

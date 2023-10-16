@@ -774,6 +774,7 @@ module Testfield_general
 
         lfirstpoint=.false.
       enddo
+
     endif
 !
     if (ldiagnos) then
@@ -1049,8 +1050,40 @@ module Testfield_general
           df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest) &
                                         +uxbtest-uxbtestm(:,:,jtest)
         endif
+
       enddo
 !
     endsubroutine rhs_daatest
+!***********************************************************************
+    subroutine calc_2d_diagnostics_testfield(f,nmind,idiags_bij,ysum_xz)
+!
+!  Calculates 2D diagnostics from f-array (hence in mn-loop).
+!  nmind must be n(m) for use in testfield_xz(testfield_xy).
+!
+!  11-sep-23/MR: coded
+!
+      use Cdata, only: m, n, lroot, l2davgfirst, iaxtest, iaztest, iaatest
+
+      real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
+      integer :: nmind
+      integer, dimension(*) :: idiags_bij
+      external :: ysum_xz
+
+      integer :: jtest, j
+
+      if (l2davgfirst) then
+        do jtest=1,njtest
+!
+          iaxtest=iaatest+3*(jtest-1)
+          iaztest=iaxtest+2
+
+          do j=iaxtest,iaztest
+            call ysum_xz(f(:,m,n,j),nmind,idiags_bij(j-iaatest+1))
+          enddo
+
+        enddo
+      endif
+!
+    endsubroutine calc_2d_diagnostics_testfield
 !***********************************************************************
 endmodule Testfield_general

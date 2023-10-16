@@ -471,6 +471,16 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
         call init_chemistry(f)
       endif
 !
+!  Find initial mass fractions
+!
+      if (reac_rate_method=='roux') then
+        do i = 1, nchemspec
+          initial_massfractions(i)=f(l1,m1,n1,ichemspec(i))
+        enddo
+!
+        if (lroot) print*,'initial_massfractions=',initial_massfractions
+      endif
+!
 !  allocate memory for net_reaction diagnostics
 !
       if (allocated(net_react_p) .and. .not. lreloading) then
@@ -509,6 +519,24 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
       else
         call warning('initialize_chemistry','mu1_full not provided by eos')
       endif
+!
+!  04-18-11/Julien: Modified the computation of simple heat conductivity according
+!                   to Smooke & Giovangigli 1991. lambda_const is now equal 
+!                   to 2.58e-4 instead of 1e4, and represents the ratio \lambda0/cp0. 
+!                   Formula:
+!                   \lambda = lambda_const*cp*(T/T0)**0.7, with T0 now = 298K
+!
+      if (lThCond_simple .and. lambda_const == impossible) lambda_const = 2.58e-4
+!MR: Is it guaranteed that lambda_const is nowhere used with value impossible?
+!
+!  04-18-11/Julien: Changed the value of Diff_coef_const from 10 to 2.58e-4
+!                   according to Smooke & Giovangigli 1991. Now Diff_coef_const
+!                   does not represent a constant diffusion coefficient, 
+!                   but \rho0 D0.
+!                   Diff_penc_add are still the diffusion coefficients. Formula:
+!                   D = Diff_coef_const/\rho*(T/T0)**n0.7, with T0 now = 298K.
+!
+      if (lDiff_simple .and. Diff_coef_const == impossible) Diff_coef_const = 2.58e-4  !MR: the same as lambda_const?
 !
 !  write array dimension to chemistry diagnostics file
 !
@@ -958,14 +986,6 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
         if ((lThCond_simple) .or. (lambda_const < impossible)) then
           if (lThCond_simple) then
 !
-!  04-18-11/Julien: Modified the computation of simple heat conductivity according
-!                   to Smooke & Giovangigli 1991. lambda_const is now equal 
-!                   to 2.58e-4
-!                   instead of 1e4, and represents the ratio \lambda0/cp0. 
-!                   Formula:
-!                   \lambda = lambda_const*cp*(T/T0)**0.7, with T0 now = 298K
-!
-            if (lambda_const == impossible) lambda_const = 2.58e-4
             p%lambda = lambda_const*p%cp*exp(0.7*log(p%TT(:)/298.))
             if (lpencil(i_glambda))  then
               do i = 1,3
@@ -1004,14 +1024,6 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
         if (lpencil(i_Diff_penc_add)) then
           if (lDiff_simple) then
 !
-!  04-18-11/Julien: Changed the value of Diff_coef_const from 10 to 2.58e-4
-!                   according to Smooke & Giovangigli 1991. Now Diff_coef_const
-!                   does not represent a constant diffusion coefficient, 
-!                   but \rho0 D0.
-!                   Diff_penc_add are still the diffusion coefficients. Formula:
-!                   D = Diff_coef_const/\rho*(T/T0)**n0.7, with T0 now = 298K.
-!
-            if (Diff_coef_const == impossible) Diff_coef_const = 2.58e-4
             do k = 1,nchemspec
               p%Diff_penc_add(:,k) = &
                   Diff_coef_const*p%rho1*exp(0.7*log(p%TT(:)/298.))
@@ -4410,10 +4422,9 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       type (pencil_case) :: p
 !
       real :: mC3H8, mO2, Rcal, f_phi, E_a
-      real, save :: init_C3H8, init_O2
+      real :: init_C3H8, init_O2
       integer :: i_O2, i_C3H8, ichem_O2, ichem_C3H8, j
       logical :: lO2, lC3H8
-      logical, save :: lfirsttime=.true.
       real, dimension(nx) :: activation_energy, pre_exp, term1, term2
 !
       if (nreactions /= 1) &
@@ -4426,7 +4437,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       Rcal = Rgas_unit_sys/4.14*1e-7
 !
-!  Find indeces for oxygen and propane
+!  Find indices for oxygen and propane
 !
       call find_species_index('O2',i_O2,ichem_O2,lO2)
       call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)
@@ -4444,15 +4455,15 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
         call fatal_error('roux','C3H8 is not defined!')
       endif
 !
-!  Find initial mass fractions
+!  Print debugging output
 !
-      if (lfirsttime) then
-        do j = 1,nchemspec
-          initial_massfractions(j) = f(l1,m1,n1,ichemspec(j))
-          if (lroot) print*,'initial_massfractions=',initial_massfractions
-        enddo
+      if (headtt) then
         init_O2 = initial_massfractions(ichem_O2)
         init_C3H8 = initial_massfractions(ichem_C3H8)
+        print*,'i_O2, i_C3H8, ichem_O2, ichem_C3H8=', &
+            i_O2, i_C3H8, ichem_O2, ichem_C3H8
+        print*,'lO2, lC3H8=',lO2, lC3H8
+        print*,'init_C3H8,init_O2,mO2,mC3H8=',init_C3H8,init_O2,mO2,mC3H8
       endif
 !
 !  Find Laminar flame speed corrector based on equivalence ratio phi
@@ -4488,17 +4499,6 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
         vreact_p(:,1) = 0.
       endwhere
       vreact_m(:,1) = 0.
-!
-!  Print debugging output
-!
-      if (lfirsttime .and. lroot) then
-        print*,'i_O2, i_C3H8, ichem_O2, ichem_C3H8=', &
-            i_O2, i_C3H8, ichem_O2, ichem_C3H8
-        print*,'lO2, lC3H8=',lO2, lC3H8
-        print*,'init_C3H8,init_O2,mO2,mC3H8=',init_C3H8,init_O2,mO2,mC3H8
-      endif
-!
-      if (lfirsttime) lfirsttime = .false.
 !
     endsubroutine roux
 !***********************************************************************

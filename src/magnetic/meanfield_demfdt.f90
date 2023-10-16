@@ -98,28 +98,26 @@ module Magnetic_meanfield_demfdt
 !   6-jan-11/axel: adapted from meanfield.f90
 !
       use FArrayManager
-      use SharedVariables, only: put_shared_variable, get_shared_variable
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,ierr,l
 !
 !  Precalculate tau1_emf if tau_emf is given instead
 !
-      if (tau_emf/=0.) then
-        tau1_emf=1./tau_emf
-      endif
+      if (tau_emf/=0.) tau1_emf=1./tau_emf
       if (lroot) print*,'initialize_magn_mf_demfdt: tau1_emf=',tau1_emf
 !
 !  adopt eta_emf profiles by rescaling etat
 !
       if (lrun) then
         call get_shared_variable('kf_x',kf_x,caller='initialize_magn_mf_demfdt')
-        call get_shared_variable('kf_y',kf_y,caller='initialize_magn_mf_demfdt')
-        call get_shared_variable('kf_z',kf_z,caller='initialize_magn_mf_demfdt')
-        call get_shared_variable('kf_x1',kf_x1,caller='initialize_magn_mf_demfdt')
-        call get_shared_variable('etat_x',etat_x,caller='initialize_magn_mf_demfdt')
-        call get_shared_variable('etat_y',etat_y,caller='initialize_magn_mf_demfdt')
-        call get_shared_variable('etat_z',etat_z,caller='initialize_magn_mf_demfdt')
+        call get_shared_variable('kf_y',kf_y)
+        call get_shared_variable('kf_z',kf_z)
+        call get_shared_variable('kf_x1',kf_x1)
+        call get_shared_variable('etat_x',etat_x)
+        call get_shared_variable('etat_y',etat_y)
+        call get_shared_variable('etat_z',etat_z)
         eta_emf_x=etat_x*eta_emf_over_etat
         eta_emf_y=etat_y*eta_emf_over_etat
         eta_emf_z=etat_z*eta_emf_over_etat
@@ -156,12 +154,7 @@ module Magnetic_meanfield_demfdt
         case ('nothing'); if (lroot .and. j==1) print*,'initemf: nothing'
         case ('zero', '0'); f(:,:,:,iemfx:iemfz)=0.
         case default
-!
-!  Catch unknown values.
-!
-          call fatal_error('initemf', &
-              'initemf value "' // trim(initemf(j)) // '" not recognised')
-!
+          call fatal_error('initemf','no such initemf: "'//trim(initemf(j))//'"')
         endselect
       enddo
 !
@@ -210,7 +203,6 @@ module Magnetic_meanfield_demfdt
 !   6-jan-11/axel: coded
 !   6-jul-11/axel: added calculation of eta profile
 !
-      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -257,17 +249,31 @@ module Magnetic_meanfield_demfdt
 !  Apply EMF to dA/dt (was turned off in meanfield.f90 because lmagn_mf_demfdt=T
 !
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+f(l1:l2,m,n,iemfx:iemfz)
+
+      call calc_diagnostics_dt_meanfield(f)
+!
+    endsubroutine demf_dt_meanfield
+!***********************************************************************
+    subroutine calc_diagnostics_dt_meanfield(f)
 !
 !  Calculate diagnostic quantities.
 !  Diagnostic output for mean field dynamos.
 !
+      use Diagnostics
+      use Sub, only: dot2
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      real, dimension (nx) :: emf
+
       if (ldiagnos) then
-        if (idiag_EMFrms/=0) call sum_mn_name(+emf,idiag_EMFrms)
-        if (idiag_EMFmax/=0) call max_mn_name(+emf,idiag_EMFmax)
-        if (idiag_EMFmin/=0) call max_mn_name(-emf,idiag_EMFmax,lneg=.true.)
+        call dot2(f(l1:l2,m,n,iemfx:iemfz),emf)
+        if (idiag_EMFrms/=0) call sum_mn_name(+emf,idiag_EMFrms,lsqrt=.true.)
+        if (idiag_EMFmax/=0) call max_mn_name(+emf,idiag_EMFmax,lsqrt=.true.)
+        if (idiag_EMFmin/=0) call max_mn_name(-emf,idiag_EMFmax,lneg=.true.,lsqrt=.true.)
       endif
 !
-    endsubroutine demf_dt_meanfield
+    endsubroutine calc_diagnostics_dt_meanfield
 !***********************************************************************
     subroutine read_magn_mf_demfdt_init_pars(iostat)
 !

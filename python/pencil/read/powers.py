@@ -149,17 +149,11 @@ class Power(object):
                         power_list.append(file_name.split(".")[0][5:])
                     file_list.append(file_name)
 
-        # Determine the file and data structure.
-        if (os.path.isfile(datadir + "/grid.h5")):
-            grid=h5py.File(datadir + "/grid.h5",'r')
-            nxgrid = np.array(grid['settings']['nx'])
-            grid.close()
-        else:
-            dim = read.dim(datadir=datadir)
-            nxgrid = dim.nx
+        dim = read.dim(datadir=datadir)
+        # param is needed to figure out the options passed to power_xy
+        param = read.param(datadir=datadir)
 
-        #dim = read.dim(datadir=datadir)
-        block_size = np.ceil(int(nxgrid / 2) / 8.0) + 1
+        block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
 
         # Read the power spectra.
         for power_idx, file_name in enumerate(file_list):
@@ -187,53 +181,7 @@ class Power(object):
 
                 # This files has the k vector, and irrational numbers
                 # Get k vectors:
-                nk = 0
-                if "k_x" in line_list[1]:
-                    nkx = int(
-                        line_list[1]
-                        .split()[line_list[1].split().index("k_x") + 1]
-                        .split(")")[0][1:]
-                    )
-                    ini = 2
-                    kx = []
-                    for i in range(ini, int(np.ceil(nkx / 8)) + ini):
-                        kx.extend([float(j) for j in line_list[i].split()])
-                    kx = np.array(kx)
-                    setattr(self, "kx", kx)
-                    ini = i + 1
-                    nk = max(nk, nkx)
-
-                if "k_y" in line_list[1]:
-                    nky = int(
-                        line_list[1]
-                        .split()[line_list[1].split().index("k_y") + 1]
-                        .split(")")[0][1:]
-                    )
-                    ky = []
-                    for i in range(ini, int(np.ceil(nky / 8)) + ini):
-                        ky.extend([float(j) for j in line_list[i].split()])
-                    ky = np.array(ky)
-                    setattr(self, "ky", ky)
-                    ini = i + 1
-                    nk = max(nk, nky)
-
-                #KG: is this block ever used anywhere? How is it possible for power_xy to output kz?
-                if "k_z" in line_list[1]:
-                    nkz = int(
-                        line_list[1]
-                        .split()[line_list[1].split().index("k_z") + 1]
-                        .split(")")[0][1:]
-                    )
-                    kz = []
-                    for i in range(ini, int(np.ceil(nkz / 8)) + ini):
-                        kz.extend([float(j) for j in line_list[i].split()])
-                    kz = np.array(kz)
-                    setattr(self, "kz", kz)
-                    ini = i + 1
-                    nk = max(nk, nkz)
-
-                if "Shell-wavenumbers k" in line_list[1]:
-                    #TODO: may be better to just check param.lintegrate_shell. Previous three ifs can be guarded by checking param.lcomplex.
+                if param.lintegrate_shell:
                     nk = int(
                         line_list[1]
                         .split()[line_list[1].split().index("k") + 1]
@@ -246,18 +194,50 @@ class Power(object):
                     k = np.array(k)
                     setattr(self, "k", k)
                     ini = i + 1
+                else:
+                    nkx = int(
+                        line_list[1]
+                        .split()[line_list[1].split().index("k_x") + 1]
+                        .split(")")[0][1:]
+                    )
+                    ini = 2
+                    kx = []
+                    for i in range(ini, int(np.ceil(nkx / 8)) + ini):
+                        kx.extend([float(j) for j in line_list[i].split()])
+                    kx = np.array(kx)
+                    setattr(self, "kx", kx)
+                    ini = i + 1
+
+                    nky = int(
+                        line_list[1]
+                        .split()[line_list[1].split().index("k_y") + 1]
+                        .split(")")[0][1:]
+                    )
+                    ky = []
+                    for i in range(ini, int(np.ceil(nky / 8)) + ini):
+                        ky.extend([float(j) for j in line_list[i].split()])
+                    ky = np.array(ky)
+                    setattr(self, "ky", ky)
+                    ini = i + 1
+
+                    nk = nkx*nky
 
                 # Now read z-positions, if any
-                if "z-pos" in line_list[ini]:
-                    print("More than 1 z-pos")
-                    nzpos = int(re.search(r"\((\d+)\)", line_list[ini])[1])
-                    ini += 1
-                    zpos = np.array([float(j) for j in line_list[ini].split()])
-                    ini += 1
-                    setattr(self, "nzpos", nzpos)
-                    setattr(self, "zpos", zpos)
-                else:
+                if param.lintegrate_z:
                     nzpos = 1
+                else:
+                    if "z-pos" in line_list[ini]:
+                        print("More than 1 z-pos")
+                        nzpos = int(re.search(r"\((\d+)\)", line_list[ini])[1])
+                        ini += 1
+                        zpos = np.array([float(j) for j in line_list[ini].split()])
+                        ini += 1
+                    else:
+                        nzpos = dim.nzgrid
+                        grid = read.grid(datadir=datadir, trim=True, quiet=True)
+                        zpos = grid.z
+                    setattr(self, "zpos", zpos)
+                setattr(self, "nzpos", nzpos)
 
                 # Now read the rest of the file
                 line_list = line_list[ini:]
@@ -266,7 +246,10 @@ class Power(object):
                 linelen = len(line_list[1].strip().split())
 
                 # If more than one z-pos, the file will give the results concatenated for the 3 positions and the length of the block will increase
-                block_size = np.ceil(int(nk * nzpos) / 8) + 1
+                if param.lintegrate_shell:
+                    block_size = np.ceil(nk / 8) * nzpos + 1
+                else:
+                    block_size = np.ceil(int(nk * nzpos) / 8) + 1
                 n_blocks = int(len(line_list) / block_size)
 
                 for line_idx, line in enumerate(line_list):
@@ -290,7 +273,11 @@ class Power(object):
                     power_array = np.array(power_array, dtype=np.float32)
                 elif linelen == 16:
                     power_array = np.array(power_array, dtype=complex)
-                power_array = power_array.reshape([n_blocks, int(nzpos), int(nk)])
+
+                if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
+                    power_array = power_array.reshape([n_blocks, nzpos, nk])
+                else:
+                    power_array = power_array.reshape([n_blocks, nzpos, nkx, nky])
 
                 self.t = time.astype(np.float32)
                 setattr(self, power_list[power_idx], power_array)
@@ -327,7 +314,7 @@ class Power(object):
 
                 time = np.array(time)
                 power_array = np.array(power_array).reshape(
-                    [n_blocks, int(nxgrid / 2)]
+                    [n_blocks, int(dim.nxgrid / 2)]
                 )
                 self.t = time
                 setattr(self, power_list[power_idx], power_array)
@@ -340,7 +327,7 @@ class Power(object):
                             power_array.append(float(value_string))
                 power_array = (
                     np.array(power_array)
-                    .reshape([int(nxgrid / 2)])
+                    .reshape([int(dim.nxgrid / 2)])
                     .astype(np.float32)
                 )
                 setattr(self, power_list[power_idx], power_array)
@@ -358,7 +345,7 @@ class Power(object):
                 time = np.array(time)
                 power_array = (
                     np.array(power_array)
-                    .reshape([n_blocks, int(nxgrid / 2)])
+                    .reshape([n_blocks, int(dim.nxgrid / 2)])
                     .astype(np.float32)
                 )
                 self.t = time.astype(np.float32)

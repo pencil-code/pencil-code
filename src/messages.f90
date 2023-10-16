@@ -6,6 +6,7 @@ module Messages
 !
   use Cdata
   use Mpicomm
+!$ use OMP_lib
 !
   implicit none
 !
@@ -486,8 +487,8 @@ module Messages
       integer :: lun=9
       character(len=*), optional :: location
       character(len=*) :: message
-      double precision :: time
-      double precision, save :: time_initial
+      real(KIND=rkind8) :: time
+      real(KIND=rkind8), save :: time_initial
       character(len=*), optional :: instruct
       logical, optional :: mnloop
       integer :: mul_fac

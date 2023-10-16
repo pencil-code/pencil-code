@@ -49,7 +49,7 @@ module Density
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, target :: mpoly=impossible
-  real, pointer :: mpoly0, mpoly1, mpoly2
+  real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
   real, dimension(nz) :: fprofile_z=1.
@@ -102,7 +102,7 @@ module Density
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
   logical :: lrelativistic_eos=.false., ladvection_density=.true.
-  logical, pointer :: lconservative
+  logical, pointer :: lconservative, lhiggsless
   logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -278,9 +278,9 @@ module Density
   logical :: lupdate_mass_source
   real, dimension(nx) :: diffus_diffrho
   real, dimension(nx) :: diffus_diffrho3
-  real :: density_floor_log
+  real :: density_floor_log, density_ceiling_log
   real :: gamma, gamma1, gamma_m1, cp1
-
+!
   contains
 !***********************************************************************
     subroutine register_density
@@ -371,6 +371,7 @@ module Density
         call put_shared_variable('reference_state',reference_state)
         call put_shared_variable('reference_state_mass',reference_state_mass)
       endif
+
 
     endsubroutine register_density
 !***********************************************************************
@@ -968,12 +969,21 @@ module Density
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
-      if (lhydro.and.iphiuu==0) then
+      if (lhydro.and..not.lhydro_potential.and.iphiuu==0) then
         call get_shared_variable('lconservative', lconservative)
       else
         allocate(lconservative)
         lconservative=.false.
       endif
+!
+      if (lhydro.and..not.lhydro_potential) then
+        call get_shared_variable('lhiggsless', lhiggsless)
+      else
+        allocate(lhiggsless)
+        lhiggsless=.false.
+      endif
+!
+       if (lhydro.and.lhiggsless) call get_shared_variable('eps_hless',eps_hless)
 
       if (lcontinuity_gas.and..not.lweno_transport.and.ldensity_nolog.and.lconservative.and..not.lhydro) &
         call fatal_error_local('initialize_density','divss not available without hydro')
@@ -984,6 +994,7 @@ module Density
                           ' in density_run_pars for some density fluctuation diagnostics')
 !
       if (density_floor>0.) density_floor_log=alog(density_floor)
+      if (density_ceiling>0.) density_ceiling_log=alog(density_ceiling)
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -1073,6 +1084,7 @@ module Density
         case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
         case ('linear_lnrho'); f(:,:,:,ilnrho)=lnrho_const-spread(spread(z,1,mx),2,my)/Hrho
         case ('exp_zbot'); f(:,:,:,ilnrho)=alog(rho_left(j))-spread(spread(z-zbot,1,mx),2,my)/Hrho
+        case ('exp_rbot'); f(:,:,:,ilnrho)=lnrho_const-spread(spread(x-xyz0(1),2,my),3,mz)/Hrho
         case ('invsqr')
           do ix=1,mx
             if (x(ix)<=r0_rho) then
@@ -2068,6 +2080,11 @@ module Density
       if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
           idiag_inertiazz_car/=0 .or. idiag_sphmass/=0) lpenc_diagnos(i_r_mn)=.true.
 !
+      if (lconservative) then
+        lpenc_requested(i_lorentz)=.true.
+        if (lhiggsless)  lpenc_requested(i_hless)=.true.
+      endif
+!
     endsubroutine pencil_criteria_density
 !***********************************************************************
     subroutine pencil_interdep_density(lpencil_in)
@@ -2141,7 +2158,13 @@ module Density
         call calc_pencils_log_density_pnc(f,p,lpenc_loc)
       endif
 ! ekin
-      if (lpenc_loc(i_ekin)) p%ekin=0.5*p%rho*p%u2
+      if (lpenc_loc(i_ekin)) then
+        if (lconservative) then
+          p%ekin=fourthird*p%rho*p%lorentz*p%u2
+        else
+          p%ekin=0.5*p%rho*p%u2
+        endif
+      endif
 !
 !  Dummy pencils.
 !
@@ -2279,6 +2302,15 @@ module Density
 ! divS, needed for relativistic calculations
 !
       if (lpenc_loc(i_divss)) call div(f,iux,p%divss)
+!
+      if (lconservative) then
+        if (lhiggsless) then
+          where(real(t) < p%hless) p%rho=p%rho-eps_hless
+          p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
+        else
+          p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
+        endif
+      endif
 !
     endsubroutine calc_pencils_linear_density_pnc
 !***********************************************************************
@@ -3871,21 +3903,14 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, save :: density_ceiling_log
-      logical, save :: lfirstcall=.true.
-!
 !  Impose the density ceiling
 !
       if (density_ceiling>0.) then
-        if (lfirstcall) then
-          density_ceiling_log=alog(density_ceiling)
-          lfirstcall=.false.
-        endif
 !
-        if (ldensity_nolog.and..not.lreference_state) then
-          where (f(:,:,:,irho)>density_ceiling) f(:,:,:,irho)=density_ceiling
+        if (ldensity_nolog) then
+          if (.not.lreference_state) f(:,:,:,irho) = min(f(:,:,:,irho),density_ceiling)
         else
-          where (f(:,:,:,ilnrho)>density_ceiling_log) f(:,:,:,ilnrho)=density_ceiling_log
+         f(:,:,:,ilnrho) = min(f(:,:,:,ilnrho),density_ceiling_log)
         endif
       endif
 !

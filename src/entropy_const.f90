@@ -250,7 +250,7 @@ module Energy
 !  Calculate energy related diagnostics
 !
       if (ldiagnos) then
-        if (idiag_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (lfirst.and.ldt.and.idiag_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         if (idiag_ugradpm/=0) then
           call dot_mn(p%uu,p%glnrho,p%uglnrho)
           call sum_mn_name(p%rho*p%cs2*p%uglnrho,idiag_ugradpm)

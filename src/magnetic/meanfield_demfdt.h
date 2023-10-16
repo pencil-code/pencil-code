@@ -7,7 +7,7 @@
   public :: initialize_magn_mf_demfdt, init_aa_mf_demfdt
   public :: pencil_criteria_magn_mf_demfdt
   public :: pencil_interdep_magn_mf_demfdt
-  public :: calc_pencils_magn_mf_demfdt
+  public :: calc_pencils_magn_mf_demfdt, calc_diagnostics_dt_meanfield
   public :: demf_dt_meanfield
   public :: read_magn_mf_demfdt_init_pars, write_magn_mf_demfdt_init_pars
   public :: read_magn_mf_demfdt_run_pars, write_magn_mf_demfdt_run_pars

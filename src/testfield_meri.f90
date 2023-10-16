@@ -5,6 +5,9 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
+! CPARAM logical, parameter :: ltestfield_z = .false.
+! CPARAM logical, parameter :: ltestfield_xy = .false.
+! CPARAM logical, parameter :: ltestfield_xz  = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -12,7 +15,7 @@
 !***************************************************************
 module Testfield
 
-  use Cparam
+  use Cdata
   use Messages
 
   implicit none
@@ -23,7 +26,6 @@ module Testfield
 !
   real, target, dimension (:,:,:), allocatable :: bb11_xy,bb11_xy2,bb11_xy3,bb11_xy4
   real, target, dimension (:,:,:), allocatable :: bb11_xz,bb11_xz2,bb11_yz
-  real, target, dimension (:,:,:,:,:,:), allocatable :: bb11_r
 !
 ! Define the EMF and the Test fields here
 !
@@ -61,12 +63,12 @@ module Testfield
   real, dimension(ny) :: ytf,csec
 !  real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
 !  real :: delta_testfield_next=0., delta_testfield_time=0.
-  integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
+  integer, parameter :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
   namelist /testfield_init_pars/ &
        B_ext,initaatest, &
-       amplaatest,&
+       amplaatest, &
        luxb_as_aux,ljxb_as_aux
 
   ! run parameters
@@ -130,25 +132,25 @@ module Testfield
   integer :: idiag_a32xy=0      ! DIAG_DOC: $\alpha_{32}$
   integer :: idiag_a33xy=0      ! DIAG_DOC: $\alpha_{33}$
 !
-  integer :: idiag_b111xy=0      ! DIAG_DOC: $\b_{111}$
-  integer :: idiag_b121xy=0      ! DIAG_DOC: $\b_{121}$
-  integer :: idiag_b131xy=0      ! DIAG_DOC: $\b_{131}$
-  integer :: idiag_b211xy=0      ! DIAG_DOC: $\b_{211}$
-  integer :: idiag_b221xy=0      ! DIAG_DOC: $\b_{221}$
-  integer :: idiag_b231xy=0      ! DIAG_DOC: $\b_{231}$
-  integer :: idiag_b311xy=0      ! DIAG_DOC: $\b_{311}$
-  integer :: idiag_b321xy=0      ! DIAG_DOC: $\b_{321}$
-  integer :: idiag_b331xy=0      ! DIAG_DOC: $\b_{331}$
+  integer :: idiag_b111xy=0     ! DIAG_DOC: $\b_{111}$
+  integer :: idiag_b121xy=0     ! DIAG_DOC: $\b_{121}$
+  integer :: idiag_b131xy=0     ! DIAG_DOC: $\b_{131}$
+  integer :: idiag_b211xy=0     ! DIAG_DOC: $\b_{211}$
+  integer :: idiag_b221xy=0     ! DIAG_DOC: $\b_{221}$
+  integer :: idiag_b231xy=0     ! DIAG_DOC: $\b_{231}$
+  integer :: idiag_b311xy=0     ! DIAG_DOC: $\b_{311}$
+  integer :: idiag_b321xy=0     ! DIAG_DOC: $\b_{321}$
+  integer :: idiag_b331xy=0     ! DIAG_DOC: $\b_{331}$
 !
-  integer :: idiag_b112xy=0      ! DIAG_DOC: $\b_{112}$
-  integer :: idiag_b122xy=0      ! DIAG_DOC: $\b_{122}$
-  integer :: idiag_b132xy=0      ! DIAG_DOC: $\b_{132}$
-  integer :: idiag_b212xy=0      ! DIAG_DOC: $\b_{212}$
-  integer :: idiag_b222xy=0      ! DIAG_DOC: $\b_{222}$
-  integer :: idiag_b232xy=0      ! DIAG_DOC: $\b_{232}$
-  integer :: idiag_b312xy=0      ! DIAG_DOC: $\b_{312}$
-  integer :: idiag_b322xy=0      ! DIAG_DOC: $\b_{322}$
-  integer :: idiag_b332xy=0      ! DIAG_DOC: $\b_{332}$
+  integer :: idiag_b112xy=0     ! DIAG_DOC: $\b_{112}$
+  integer :: idiag_b122xy=0     ! DIAG_DOC: $\b_{122}$
+  integer :: idiag_b132xy=0     ! DIAG_DOC: $\b_{132}$
+  integer :: idiag_b212xy=0     ! DIAG_DOC: $\b_{212}$
+  integer :: idiag_b222xy=0     ! DIAG_DOC: $\b_{222}$
+  integer :: idiag_b232xy=0     ! DIAG_DOC: $\b_{232}$
+  integer :: idiag_b312xy=0     ! DIAG_DOC: $\b_{312}$
+  integer :: idiag_b322xy=0     ! DIAG_DOC: $\b_{322}$
+  integer :: idiag_b332xy=0     ! DIAG_DOC: $\b_{332}$
   integer :: ivid_bb11=0
 !
 !  arrays for azimuthally averaged uxb and jxb
@@ -156,7 +158,6 @@ module Testfield
   real, dimension (mx,my,3,njtest) :: uxbtestm,jxbtestm
 
   contains
-
 !***********************************************************************
     subroutine register_testfield()
 !
@@ -222,7 +223,7 @@ module Testfield
 ! Stop the code if we are not in spherical coordinates
 !
       if (.not.lspherical_coords) &
-        call stop_it('initialize_testfiled: testfield_meri works only in spherical coordinates')
+        call fatal_error('initialize_testfield','testfield_meri works only in spherical coordinates')
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
 !
@@ -275,7 +276,7 @@ module Testfield
           csec=1./sin(ytf)
           if (khtf /= 0.) khtf1=1./khtf
         case default
-          call fatal_error('initialize_testfield','undefined itestfield value')
+          call fatal_error('initialize_testfield','no such itestfield: '//trim(itestfield))
         endselect
       endif
 !REVISIT
@@ -329,14 +330,14 @@ module Testfield
       endif
 
       if (ivid_bb11/=0) &
-        call alloc_slice_buffers(bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2,bb11_xz2,bb11_r)
+        call alloc_slice_buffers(bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
 !
 !  write testfield information to a file (for convenient post-processing)
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/testfield_info.dat',STATUS='unknown')
-        write(1,'(a,i1)') 'lsoca='  ,merge(1,0,lsoca)
-        write(1,'(a,i1)') 'lsoca_jxb='  ,merge(1,0,lsoca_jxb)
+        write(1,'(a,i1)') 'lsoca=',merge(1,0,lsoca)
+        write(1,'(a,i1)') 'lsoca_jxb=',merge(1,0,lsoca_jxb)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         close(1)
       endif
@@ -350,7 +351,6 @@ module Testfield
 !   2-jun-05/axel: adapted from magnetic
 !
       use Cdata
-      use Mpicomm
       use Initcond
       use Sub
       use InitialCondition, only: initial_condition_aatest
@@ -366,11 +366,7 @@ module Testfield
       case ('nothing'); !(do nothing)
 
       case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'init_aatest: check initaatest: ', trim(initaatest(j))
-        call stop_it("")
+        call fatal_error("init_aatest","no such initaatest: "//trim(initaatest(j)))
       endselect
       enddo
 !
@@ -457,11 +453,9 @@ module Testfield
 !  25-jan-09/axel: added Maxwell stress tensor calculation
 !
       use Cdata
-      use Diagnostics
       use Hydro, only: uumxy,lcalc_uumeanxy
       use Mpicomm, only: stop_it
       use Sub
-      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -547,7 +541,7 @@ module Testfield
           case ('harmonic'); call set_bbtest_harmonic(B0test,jtest)
           case ('B=0'); B0test=0.
         case default
-          call fatal_error('daatest_dt','undefined itestfield value')
+          call fatal_error('daatest_dt','no such itestfield: '//trim(itestfield))
         endselect
 !
 !  add an external field, if present
@@ -558,8 +552,7 @@ module Testfield
 !
 !  add diffusion
 !
-        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +etatest*del2Atest
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+etatest*del2Atest
 !
 !  Compute u=U-Ubar
 !
@@ -576,11 +569,11 @@ module Testfield
 !  subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T)
 !
            if (lignore_uxbtestm) then
-              duxbtest(:,:)=uxbtest(:,:)
+             duxbtest(:,:)=uxbtest(:,:)
            else
-              do j=1,3
-                 duxbtest(:,j)=uxbtest(:,j)-uxbtestm(l1:l2,m,j,jtest)
-              enddo
+             do j=1,3
+               duxbtest(:,j)=uxbtest(:,j)-uxbtestm(l1:l2,m,j,jtest)
+             enddo
            endif
 !
 !  add to advance test-field equation
@@ -590,13 +583,11 @@ module Testfield
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
 !
-        if ((ldiagnos.or.l1davgfirst).and. &
-          (lsoca.or.ltest_uxb)) then
-          call cross_mn(p%uu,bbtest,uxbtest)
-       endif
-       bpq(:,:,jtest)=bbtest
-       Eipq(:,:,jtest)=uxbtest*bamp1
-    enddo
+        if ((ldiagnos.or.l1davgfirst) .and. (lsoca.or.ltest_uxb)) call cross_mn(p%uu,bbtest,uxbtest)
+
+        bpq(:,:,jtest)=bbtest
+        Eipq(:,:,jtest)=uxbtest*bamp1
+      enddo
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
@@ -606,39 +597,50 @@ module Testfield
         diffus_eta=etatest*dxyz_2
         maxdiffus=max(maxdiffus,diffus_eta)
       endif
+
+      call calc_diagnostics_testfield(p)
+
+    endsubroutine daatest_dt
+!***********************************************************************
+    subroutine calc_diagnostics_testfield(p)
 !
+      use Diagnostics
+      use Slices_methods, only: store_slices
+
+      type (pencil_case) :: p
+
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !  The g95 compiler doesn't like to see an index that is out of bounds,
 !  so prevent this warning by writing i3=3 and i4=4
 !
       if (ldiagnos) then
-        if (idiag_E11xy/=0) call zsum_mn_name_xy(Eipq(:,1,i1),idiag_E11xy)
-        if (idiag_E12xy/=0) call zsum_mn_name_xy(Eipq(:,2,i1),idiag_E12xy)
-        if (idiag_E13xy/=0) call zsum_mn_name_xy(Eipq(:,3,i1),idiag_E13xy)
-        if (idiag_E21xy/=0) call zsum_mn_name_xy(Eipq(:,1,i2),idiag_E21xy)
-        if (idiag_E22xy/=0) call zsum_mn_name_xy(Eipq(:,2,i2),idiag_E22xy)
-        if (idiag_E23xy/=0) call zsum_mn_name_xy(Eipq(:,3,i2),idiag_E23xy)
-        if (idiag_E31xy/=0) call zsum_mn_name_xy(Eipq(:,1,i3),idiag_E31xy)
-        if (idiag_E32xy/=0) call zsum_mn_name_xy(Eipq(:,2,i3),idiag_E32xy)
-        if (idiag_E33xy/=0) call zsum_mn_name_xy(Eipq(:,3,i3),idiag_E33xy)
-        if (idiag_E41xy/=0) call zsum_mn_name_xy(Eipq(:,1,i4),idiag_E41xy)
-        if (idiag_E42xy/=0) call zsum_mn_name_xy(Eipq(:,2,i4),idiag_E42xy)
-        if (idiag_E43xy/=0) call zsum_mn_name_xy(Eipq(:,3,i4),idiag_E43xy)
-        if (idiag_E51xy/=0) call zsum_mn_name_xy(Eipq(:,1,i5),idiag_E51xy)
-        if (idiag_E52xy/=0) call zsum_mn_name_xy(Eipq(:,2,i5),idiag_E52xy)
-        if (idiag_E53xy/=0) call zsum_mn_name_xy(Eipq(:,3,i5),idiag_E53xy)
-        if (idiag_E61xy/=0) call zsum_mn_name_xy(Eipq(:,1,i6),idiag_E61xy)
-        if (idiag_E62xy/=0) call zsum_mn_name_xy(Eipq(:,2,i6),idiag_E62xy)
-        if (idiag_E63xy/=0) call zsum_mn_name_xy(Eipq(:,3,i6),idiag_E63xy)
-        if (idiag_E71xy/=0) call zsum_mn_name_xy(Eipq(:,1,i7),idiag_E71xy)
-        if (idiag_E72xy/=0) call zsum_mn_name_xy(Eipq(:,2,i7),idiag_E72xy)
-        if (idiag_E73xy/=0) call zsum_mn_name_xy(Eipq(:,3,i7),idiag_E73xy)
-        if (idiag_E81xy/=0) call zsum_mn_name_xy(Eipq(:,1,i8),idiag_E81xy)
-        if (idiag_E82xy/=0) call zsum_mn_name_xy(Eipq(:,2,i8),idiag_E82xy)
-        if (idiag_E83xy/=0) call zsum_mn_name_xy(Eipq(:,3,i8),idiag_E83xy)
-        if (idiag_E91xy/=0) call zsum_mn_name_xy(Eipq(:,1,i9),idiag_E91xy)
-        if (idiag_E92xy/=0) call zsum_mn_name_xy(Eipq(:,2,i9),idiag_E92xy)
-        if (idiag_E93xy/=0) call zsum_mn_name_xy(Eipq(:,3,i9),idiag_E93xy)
+        call zsum_mn_name_xy(Eipq(:,1,i1),idiag_E11xy)
+        call zsum_mn_name_xy(Eipq(:,2,i1),idiag_E12xy)
+        call zsum_mn_name_xy(Eipq(:,3,i1),idiag_E13xy)
+        call zsum_mn_name_xy(Eipq(:,1,i2),idiag_E21xy)
+        call zsum_mn_name_xy(Eipq(:,2,i2),idiag_E22xy)
+        call zsum_mn_name_xy(Eipq(:,3,i2),idiag_E23xy)
+        call zsum_mn_name_xy(Eipq(:,1,i3),idiag_E31xy)
+        call zsum_mn_name_xy(Eipq(:,2,i3),idiag_E32xy)
+        call zsum_mn_name_xy(Eipq(:,3,i3),idiag_E33xy)
+        call zsum_mn_name_xy(Eipq(:,1,i4),idiag_E41xy)
+        call zsum_mn_name_xy(Eipq(:,2,i4),idiag_E42xy)
+        call zsum_mn_name_xy(Eipq(:,3,i4),idiag_E43xy)
+        call zsum_mn_name_xy(Eipq(:,1,i5),idiag_E51xy)
+        call zsum_mn_name_xy(Eipq(:,2,i5),idiag_E52xy)
+        call zsum_mn_name_xy(Eipq(:,3,i5),idiag_E53xy)
+        call zsum_mn_name_xy(Eipq(:,1,i6),idiag_E61xy)
+        call zsum_mn_name_xy(Eipq(:,2,i6),idiag_E62xy)
+        call zsum_mn_name_xy(Eipq(:,3,i6),idiag_E63xy)
+        call zsum_mn_name_xy(Eipq(:,1,i7),idiag_E71xy)
+        call zsum_mn_name_xy(Eipq(:,2,i7),idiag_E72xy)
+        call zsum_mn_name_xy(Eipq(:,3,i7),idiag_E73xy)
+        call zsum_mn_name_xy(Eipq(:,1,i8),idiag_E81xy)
+        call zsum_mn_name_xy(Eipq(:,2,i8),idiag_E82xy)
+        call zsum_mn_name_xy(Eipq(:,3,i8),idiag_E83xy)
+        call zsum_mn_name_xy(Eipq(:,1,i9),idiag_E91xy)
+        call zsum_mn_name_xy(Eipq(:,2,i9),idiag_E92xy)
+        call zsum_mn_name_xy(Eipq(:,3,i9),idiag_E93xy)
 !
 ! Invert the testfield equations here to get the transport coeffecients,
 ! in terms of the testfields and the calculated EMF.
@@ -654,12 +656,11 @@ module Testfield
       endif
 !
 !  write B-slices for output in wvid in run.f90
-!  Note: ix is the index with respect to array with ghost zones.
 !
       if (lvideo.and.lfirst.and.ivid_bb11/=0) &
         call store_slices(bpq(:,:,1),bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
 !
-    endsubroutine daatest_dt
+    endsubroutine calc_diagnostics_testfield
 !***********************************************************************
     subroutine invert_testfield_eqn
 !
@@ -687,7 +688,8 @@ module Testfield
 !  dhruba+piyali:
 !
       use Cdata
-      integer :: ivec,ix
+!
+      integer :: ivec,iix
 !
       do ivec=1,3
 ! For the testfield (1,0,0)
@@ -698,17 +700,17 @@ module Testfield
         atilde(:,ivec,3) = Eipq(:,ivec,i3)
 ! For the testfield (r,0,0)
         do ix=1,nx
-          btilde(ix,ivec,1,1) = Eipq(ix,ivec,i4) - x(ix+3)*atilde(ix,ivec,1)
+          btilde(iix,ivec,1,1) = Eipq(iix,ivec,i4) - x(iix+nghost)*atilde(iix,ivec,1)
 ! For the testfield (0,r,0)
-          btilde(ix,ivec,2,1) = Eipq(ix,ivec,i5) - x(ix+3)*atilde(ix,ivec,2)
+          btilde(iix,ivec,2,1) = Eipq(iix,ivec,i5) - x(iix+nghost)*atilde(iix,ivec,2)
 ! For the testfield (0,0,r)
-          btilde(ix,ivec,3,1) = Eipq(ix,ivec,i6) - x(ix+3)*atilde(ix,ivec,3)
+          btilde(iix,ivec,3,1) = Eipq(iix,ivec,i6) - x(iix+nghost)*atilde(iix,ivec,3)
 ! For the testfield (theta,0,0)
-          btilde(ix,ivec,1,2) = x(ix+3)*(Eipq(ix,ivec,i7) - y(m)*atilde(ix,ivec,1))
+          btilde(iix,ivec,1,2) = x(iix+nghost)*(Eipq(iix,ivec,i7) - y(m)*atilde(iix,ivec,1))
 ! For the testfield (0,theta,0)
-          btilde(ix,ivec,2,2) = x(ix+3)*(Eipq(ix,ivec,i8) - y(m)*atilde(ix,ivec,2))
+          btilde(iix,ivec,2,2) = x(iix+nghost)*(Eipq(iix,ivec,i8) - y(m)*atilde(iix,ivec,2))
 ! For the testfield (0,0,theta)
-          btilde(ix,ivec,3,2) = x(ix+3)*(Eipq(ix,ivec,i9) - y(m)*atilde(ix,ivec,3))
+          btilde(iix,ivec,3,2) = x(iix+nghost)*(Eipq(iix,ivec,i9) - y(m)*atilde(iix,ivec,3))
         enddo
       enddo
 !
@@ -721,7 +723,7 @@ module Testfield
 !  dhruba+piyali:
 !
       use Cdata
-      integer :: ivec,ix
+      integer :: ivec,iix
 !
       do ivec=1,3
         atilde(:,ivec,1) = Eipq(:,ivec,i1)*cos(xtf)+&
@@ -730,19 +732,19 @@ module Testfield
                            Eipq(:,ivec,i4)*sin(xtf)
         atilde(:,ivec,3) = Eipq(:,ivec,i5)*cos(xtf)+&
                            Eipq(:,ivec,i6)*sin(xtf)
-        do ix=1,nx
-          btilde(ix,ivec,1,1) =krtf1*(-Eipq(ix,ivec,i1)*sin(xtf(ix))+&
-                                       Eipq(ix,ivec,i2)*cos(xtf(ix)))
-          btilde(ix,ivec,2,1) =krtf1*(-Eipq(ix,ivec,i3)*sin(xtf(ix))+&
-                                       Eipq(ix,ivec,i4)*cos(xtf(ix)))
-          btilde(ix,ivec,3,1) =krtf1*(-Eipq(ix,ivec,i5)*sin(xtf(ix))+&
-                                       Eipq(ix,ivec,i6)*cos(xtf(ix)))
-          btilde(ix,ivec,1,2) = khtf1*x(ix)*csec(m)*(atilde(ix,ivec,1)*&
-                                cos(ytf(m))-Eipq(ix,ivec,i7))
-          btilde(ix,ivec,2,2) = khtf1*x(ix)*csec(m)*(atilde(ix,ivec,2)*&
-                                cos(ytf(m))-Eipq(ix,ivec,i8))
-          btilde(ix,ivec,3,2) = khtf1*x(ix)*csec(m)*(atilde(ix,ivec,3)*&
-                                cos(ytf(m))-Eipq(ix,ivec,i9))
+        do iix=1,nx
+          btilde(iix,ivec,1,1) =krtf1*(-Eipq(iix,ivec,i1)*sin(xtf(iix))+&
+                                       Eipq(iix,ivec,i2)*cos(xtf(iix)))
+          btilde(iix,ivec,2,1) =krtf1*(-Eipq(iix,ivec,i3)*sin(xtf(iix))+&
+                                       Eipq(iix,ivec,i4)*cos(xtf(iix)))
+          btilde(iix,ivec,3,1) =krtf1*(-Eipq(iix,ivec,i5)*sin(xtf(iix))+&
+                                       Eipq(iix,ivec,i6)*cos(xtf(iix)))
+          btilde(iix,ivec,1,2) = khtf1*x(iix)*csec(m)*(atilde(iix,ivec,1)*&
+                                cos(ytf(m))-Eipq(iix,ivec,i7))
+          btilde(iix,ivec,2,2) = khtf1*x(iix)*csec(m)*(atilde(iix,ivec,2)*&
+                                cos(ytf(m))-Eipq(iix,ivec,i8))
+          btilde(iix,ivec,3,2) = khtf1*x(iix)*csec(m)*(atilde(iix,ivec,3)*&
+                                cos(ytf(m))-Eipq(iix,ivec,i9))
         enddo
       enddo
 !
@@ -757,7 +759,8 @@ module Testfield
 !
       integer :: ivec
 !
-      call fatal_error('invert_bbtest_j0_P1','not coded yet')
+      call not_implemented('invert_bbtest_j0_P1','in testfield_meri')
+!
 ! get inspiration from below
 !          temp=(dn0dr(l1:l2)*Eipq(:,1,i1)-dj0dr(l1:l2)*Eipq(:,1,i2))/(atilde_denom1(l1:l2))
 !          if (idiag_a11xy/=0) call zsum_mn_name_xy(temp,idiag_a11xy)
@@ -780,7 +783,7 @@ module Testfield
 
       use Cdata
 
-      integer :: ix
+      integer :: iix
 !
 ! Get the a and b (alpha and beta in our notation) from the tilde (a,b)
 ! Eq. (16) page 6, Schrinner 2007 (Arxiv version)
@@ -788,9 +791,9 @@ module Testfield
 !  dhruba+piyali:
 !
 !
-      do ix=1, nx
-        alpha(ix,:,1) = atilde(ix,:,1) - btilde(ix,:,2,2)/x(ix+3)
-        alpha(ix,:,2) = atilde(ix,:,2) - btilde(ix,:,1,2)/x(ix+3)
+      do iix=1, nx
+        alpha(iix,:,1) = atilde(iix,:,1) - btilde(iix,:,2,2)/x(iix+3)
+        alpha(iix,:,2) = atilde(iix,:,2) - btilde(iix,:,1,2)/x(iix+3)
       enddo
       alpha(:,:,3) = atilde(:,:,3)
       beta = btilde
@@ -816,7 +819,7 @@ module Testfield
 !  Magnetic field
 !
         case ('bb11')
-          call assign_slices_vec(slices,bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2)
+          call assign_slices_vec(slices,bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
       endselect
 !
       call keep_compiler_quiet(f)
@@ -829,25 +832,25 @@ module Testfield
 !
 !    4-oct-18/axel+nishant: adapted from testflow
 !
+      use General, only: keep_compiler_quiet
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine testfield_before_boundary
 !***********************************************************************
-    subroutine testfield_after_boundary(f,p)
+    subroutine testfield_after_boundary(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
 !  21-jan-06/axel: coded
 !
-      use Cdata
       use Sub
       use Hydro, only: uumxy,lcalc_uumeanxy
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
 !
       real, dimension (mx,my,3) :: uxbtestm_temp,jxbtestm_temp
 !
@@ -1125,5 +1128,5 @@ module Testfield
       endif
 !
     endsubroutine rprint_testfield
-
+!***********************************************************************
 endmodule Testfield

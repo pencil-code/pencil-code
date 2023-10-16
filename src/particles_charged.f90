@@ -1653,8 +1653,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Evolution of charged particle velocity (called from main pencil loop).
 !
-!
-      use Diagnostics
       use EquationOfState, only: cs20
       use Sub, only: cross
 !
@@ -1731,6 +1729,24 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       endif
 !
+!  particle-particle separation and relative velocity diagnostics
+!
+      if (lparticles_diagnos_dv .and. lfirstpoint .and. lfirst) then
+        if (t > t_nextcol) call collisions(fp)
+      endif
+!
+      call calc_diagnostics_particles(p)
+!
+    endsubroutine dvvp_dt_pencil
+!***********************************************************************
+    subroutine calc_diagnostics_particles(fp,p,ineargrid)
+
+      use Diagnostics
+
+      real, dimension (mpar_loc,mparray) :: fp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
 !  Diagnostic output.
 !
       if (ldiagnos) then
@@ -1745,42 +1761,35 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhopmin/=0)  call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
         if (idiag_epspmax/=0)  call max_mn_name(p%epsp,idiag_epspmax)
         if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
-        if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
-            idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
-            call calculate_rms_speed(fp,ineargrid,p)
 !        if (idiag_dtdragp/=0.and.(lfirst.and.ldt))  &
 !            call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
+        if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
+            idiag_dvpm  /=0 .or. idiag_dvpmax/=0) call calculate_rms_speed(fp,ineargrid,p)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       if (l1davgfirst) then
-        if (idiag_npmx/=0)    call yzsum_mn_name_x(p%np,idiag_npmx)
-        if (idiag_npmy/=0)    call xzsum_mn_name_y(p%np,idiag_npmy)
-        if (idiag_npmz/=0)    call xysum_mn_name_z(p%np,idiag_npmz)
-        if (idiag_rhopmx/=0)  call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
-        if (idiag_rhopmy/=0)  call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
-        if (idiag_rhopmz/=0)  call xysum_mn_name_z(p%rhop,idiag_rhopmz)
-        if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%epsp,idiag_epspmx)
-        if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
-        if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
-        if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
+        call yzsum_mn_name_x(p%np,idiag_npmx)
+        call xzsum_mn_name_y(p%np,idiag_npmy)
+        call xysum_mn_name_z(p%np,idiag_npmz)
+        call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
+        call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
+        call xysum_mn_name_z(p%rhop,idiag_rhopmz)
+        call yzsum_mn_name_x(p%epsp,idiag_epspmx)
+        call xzsum_mn_name_y(p%epsp,idiag_epspmy)
+        call xysum_mn_name_z(p%epsp,idiag_epspmz)
+        call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
       endif
 !
       if (l2davgfirst) then
-        if (idiag_npmxy/=0)    call zsum_mn_name_xy(p%np,idiag_npmxy)
-        if (idiag_rhopmphi/=0) call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
-        if (idiag_rhopmxy/=0)  call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
-        if (idiag_rhopmxz/=0)  call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
+        call zsum_mn_name_xy(p%np,idiag_npmxy)
+        call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
+        call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
+        call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
       endif
 !
-!  particle-particle separation and relative velocity diagnostics
-!
-      if (lparticles_diagnos_dv .and. lfirstpoint .and. lfirst) then
-        if (t > t_nextcol) call collisions(fp)
-      endif
-!
-    endsubroutine dvvp_dt_pencil
+    endsubroutine calc_diagnostics_particles
 !***********************************************************************
     subroutine dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
 !
@@ -1869,11 +1878,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine create_particles_sink_simple
 !***********************************************************************
-
-
-!***********************************************************************
-
-!***********************************************************************
     subroutine calculate_rms_speed(fp,ineargrid,p)
 !
       use Diagnostics
@@ -1885,9 +1889,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
+
       real,dimension(nx,3) :: vvpm,dvp2m
       integer :: inx0,k,l
-      type (pencil_case) :: p
 !
 !  Initialize the variables
 !
@@ -1899,8 +1904,8 @@ k_loop:   do while (.not. (k>npar_loc))
       if (npar_imn(imn)/=0) then
 !
         do k=k1_imn(imn),k2_imn(imn)
-            inx0=ineargrid(k,1)-nghost
-            vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
+          inx0=ineargrid(k,1)-nghost
+          vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
         enddo
         do l=1,nx
           if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
@@ -1909,10 +1914,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Get the residual in quadrature, dvp2m. Need vvpm calculated above.
 !
         do k=k1_imn(imn),k2_imn(imn)
-            inx0=ineargrid(k,1)-nghost
-            dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
-            dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2
-            dvp2m(inx0,3)=dvp2m(inx0,3)+(fp(k,ivpz)-vvpm(inx0,3))**2
+          inx0=ineargrid(k,1)-nghost
+          dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
+          dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2
+          dvp2m(inx0,3)=dvp2m(inx0,3)+(fp(k,ivpz)-vvpm(inx0,3))**2
         enddo
         do l=1,nx
           if (p%np(l)>1.0) dvp2m(l,:)=dvp2m(l,:)/p%np(l)
@@ -1922,13 +1927,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Output the diagnostics
 !
-      if (idiag_dvpx2m/=0) call sum_mn_name(dvp2m(:,1),idiag_dvpx2m)
-      if (idiag_dvpy2m/=0) call sum_mn_name(dvp2m(:,2),idiag_dvpy2m)
-      if (idiag_dvpz2m/=0) call sum_mn_name(dvp2m(:,3),idiag_dvpz2m)
-      if (idiag_dvpm/=0)   call sum_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
-                                            idiag_dvpm,lsqrt=.true.)
-      if (idiag_dvpmax/=0) call max_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
-                                            idiag_dvpmax,lsqrt=.true.)
+      call sum_mn_name(dvp2m(:,1),idiag_dvpx2m)
+      call sum_mn_name(dvp2m(:,2),idiag_dvpy2m)
+      call sum_mn_name(dvp2m(:,3),idiag_dvpz2m)
+      if (idiag_dvpm/=0)   call sum_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),idiag_dvpm,lsqrt=.true.)
+      if (idiag_dvpmax/=0) call max_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),idiag_dvpmax,lsqrt=.true.)
 !
     endsubroutine calculate_rms_speed
 !***********************************************************************
@@ -2055,10 +2058,8 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'vpymax',idiag_vpymax)
         call parse_name(iname,cname(iname),cform(iname),'vpzmax',idiag_vpzmax)
         call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm', &
-            idiag_rhopvpxm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpym', &
-            idiag_rhopvpym)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm',idiag_rhopvpxm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpym',idiag_rhopvpym)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpzm', &
             idiag_rhopvpzm)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &

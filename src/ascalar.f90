@@ -63,7 +63,6 @@ module Ascalar
   real :: TT_mean=293.25, constTT=293.25
   real, dimension(3) :: gradacc0=(/0.0,0.0,0.0/)
   real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
-  real, dimension(nx,ny,nz) :: ttcm_volume, accm_volume 
   real, dimension(nx) :: es_T=0.0, qvs_T=0.0
   real, dimension(nx) :: buoyancy=0.0
   logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false., l_T_source=.true.
@@ -99,6 +98,7 @@ module Ascalar
 !   3-jun-16/xiangyu: adapted from pscalar_nolog
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('acc', iacc)
 !
@@ -112,6 +112,10 @@ module Ascalar
       if (lroot) call svn_id( &
           "$Id$")
 !
+!      if (lcondensation_rate) then
+        call put_shared_variable('ssat0', ssat0, caller='register_ascalar')
+!      endif
+!
     endsubroutine register_ascalar
 !***********************************************************************
     subroutine initialize_ascalar(f)
@@ -120,8 +124,6 @@ module Ascalar
 !  Since the passive scalar is often used for diagnostic purposes
 !  one may want to reinitialize it to its initial distribution.
 !      
-      use SharedVariables, only: put_shared_variable, get_shared_variable
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (lroot) print*, 'Supersaturation routine'
@@ -134,10 +136,6 @@ module Ascalar
         f(:,:,:,ittc)=0.
         call init_acc(f)
       endif
-!
-!      if (lcondensation_rate) then
-        call put_shared_variable('ssat0', ssat0)
-!      endif
 !
     endsubroutine initialize_ascalar
 !***********************************************************************
@@ -277,6 +275,17 @@ module Ascalar
 !      
     endsubroutine pencil_interdep_ascalar
 !**********************************************************************
+    subroutine ascalar_after_boundary(f)
+
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+
+      if (lcondensation_rate.and.lttc.and.lbuoyancy.and.lttc_mean) then
+        call calc_ttcmean(f)
+        call calc_accmean(f)
+      endif
+
+    endsubroutine ascalar_after_boundary
+!**********************************************************************
     subroutine calc_pencils_ascalar(f,p)
 !
 !  Calculate ascalar Pencils.
@@ -306,13 +315,9 @@ module Ascalar
         enddo
       endif
 ! ugacc
-      if (lpencil(i_ugacc)) then
-        call u_dot_grad(f,iacc,p%gacc,p%uu,p%ugacc,UPWIND=lupw_acc)
-      endif
+      if (lpencil(i_ugacc)) call u_dot_grad(f,iacc,p%gacc,p%uu,p%ugacc,UPWIND=lupw_acc)
 ! del2acc
-      if (lpencil(i_del2acc)) then
-        call del2(f,iacc,p%del2acc)
-      endif
+      if (lpencil(i_del2acc)) call del2(f,iacc,p%del2acc)
 !
 !  Compute gttc. Add imposed spatially constant gradient of ttc.
 !  (This only makes sense for periodic boundary conditions.)
@@ -324,13 +329,9 @@ module Ascalar
         enddo
       endif
 ! ugttc
-      if (lpencil(i_ugttc)) then
-        call u_dot_grad(f,ittc,p%gttc,p%uu,p%ugttc,UPWIND=lupw_ttc)
-      endif
+      if (lpencil(i_ugttc)) call u_dot_grad(f,ittc,p%gttc,p%uu,p%ugttc,UPWIND=lupw_ttc)
 ! del2ttc
-      if (lpencil(i_del2ttc)) then
-        call del2(f,ittc,p%del2ttc)
-      endif
+      if (lpencil(i_del2ttc)) call del2(f,ittc,p%del2ttc)
 !
     endsubroutine calc_pencils_ascalar
 !***********************************************************************
@@ -342,22 +343,16 @@ module Ascalar
 !  27-may-16/xiangyu: adapted from pscalar_nolog
 !   4-sep-16/axel: added more diagnostics
 !
-      use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
-      real, dimension (nx) :: radius_sum, condensation_rate_Cd
-      real :: acc_xyaver
-      real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
-      integer, parameter :: nxy=nxgrid*nygrid
-      integer :: k
-! XY0: Commented the following out. 
-!      intent(in)  :: f
       intent(out) :: df
+!
+      real, dimension (nx) :: bump, radius_sum, condensation_rate_Cd
+      integer :: k
 !
       character(len=2) :: id
 !
@@ -374,6 +369,7 @@ module Ascalar
       endif
 !
 ! Initialize auxiliary variables defined in this module and the corresponding pencils
+!
       f(:,m,n,issat) = 0.0
 !
 !  Passive scalar equation.
@@ -381,17 +377,16 @@ module Ascalar
       df(l1:l2,m,n,iacc)=df(l1:l2,m,n,iacc)-p%ugacc
       if (ascalar_diff/=0.) then
         df(l1:l2,m,n,iacc)=df(l1:l2,m,n,iacc)+ascalar_diff*p%del2acc
-        if (lfirst.and.ldt) &
-          maxdiffus=max(maxdiffus,ascalar_diff)
+        if (lfirst.and.ldt) maxdiffus=max(maxdiffus,ascalar_diff)
       endif
 !
 ! ttc
+!
       if (lttc) then
         df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)-p%ugttc
         if (thermal_diff/=0.) then
           df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)+thermal_diff*p%del2ttc
-          if (lfirst.and.ldt) &
-            maxdiffus=max(maxdiffus,thermal_diff)
+          if (lfirst.and.ldt) maxdiffus=max(maxdiffus,thermal_diff)
         endif
       endif
 !
@@ -423,7 +418,7 @@ module Ascalar
       endif
 !
 ! 17-10-18: Xiang-Yu coded. Solve supersaturation by solving equations for the temperature, mixing ratio
-      
+!      
       if (lcondensation_rate) then
         df(l1:l2,m,n,iacc)=df(l1:l2,m,n,iacc)-p%condensationRate
         if (lconstTT) then
@@ -434,11 +429,11 @@ module Ascalar
           df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp_constant
           if (lbuoyancy) then
             if (lTT_mean) then
-              buoyancy=gravity_acceleration*((p%TT+TT_mean-T_env)/(p%TT+TT_mean) &
-                      +Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+              buoyancy = gravity_acceleration*((p%TT+TT_mean-T_env)/(p%TT+TT_mean) &
+                        +Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
             else
-              buoyancy=gravity_acceleration*((p%TT-T_env)/p%TT+ &
-                      Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+              buoyancy = gravity_acceleration*((p%TT-T_env)/p%TT &
+                        +Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
             endif
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+buoyancy
           endif
@@ -457,110 +452,104 @@ module Ascalar
           ssat0=acc_const/((const1_qvs*exp(-const2_qvs/ttc_const))/(Rv*rhoa*ttc_const))-1
           if (lbuoyancy) then
             if (lttc_mean) then
-              call calc_ttcmean(f)
-              ttc_mean=sum(ttcm_volume)/size(ttcm_volume)
-              call calc_accmean(f)
-              acc_mean=sum(accm_volume)/size(accm_volume)
-              buoyancy=gravity_acceleration*((p%ttc-ttc_mean)/p%ttc+ &
-                     Rv_over_Rd_minus_one*(p%acc-acc_mean)/p%acc-p%waterMixingRatio)
+              buoyancy = gravity_acceleration*((p%ttc-ttc_mean)/p%ttc+ &
+                         Rv_over_Rd_minus_one*(p%acc-acc_mean)/p%acc-p%waterMixingRatio)
             else
-              buoyancy=gravity_acceleration*((p%ttc-T_env)/p%ttc+ &
-                     Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+              buoyancy = gravity_acceleration*((p%ttc-T_env)/p%ttc+ &
+                         Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
             endif
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+buoyancy
           endif
         endif
         f(l1:l2,m,n,issat)=f(l1:l2,m,n,issat)+f(l1:l2,m,n,iacc)/qvs_T-1.
       endif
+
+      call calc_diagnostics_ascalar(p)
+
+    endsubroutine dacc_dt
+!***********************************************************************
+    subroutine calc_diagnostics_ascalar(p)
 !
 !  Diagnostics
 !
+      use Diagnostics
+!
+      type (pencil_case) :: p
+!
       if (ldiagnos) then
         if (idiag_accrms/=0) call sum_mn_name(p%acc**2,idiag_accrms,lsqrt=.true.)
-        if (idiag_accmax/=0) call max_mn_name(p%acc,idiag_accmax)
+        call max_mn_name(p%acc,idiag_accmax)
         if (idiag_accmin/=0) call max_mn_name(-p%acc,idiag_accmin,lneg=.true.)
-        if (idiag_accm/=0) call sum_mn_name(p%acc,idiag_accm)
+        call sum_mn_name(p%acc,idiag_accm)
         if (lttc) then
           if (idiag_ttcrms/=0) call sum_mn_name(p%ttc**2,idiag_ttcrms,lsqrt=.true.)
-          if (idiag_ttcmax/=0) call max_mn_name(p%ttc,idiag_ttcmax)
+          call max_mn_name(p%ttc,idiag_ttcmax)
           if (idiag_ttcmin/=0) call max_mn_name(-p%ttc,idiag_ttcmin,lneg=.true.)
-          if (idiag_ttcm/=0) call sum_mn_name(p%ttc,idiag_ttcm)
+          call sum_mn_name(p%ttc,idiag_ttcm)
         endif
         if (idiag_uxaccm/=0) call sum_mn_name(p%uu(:,1)*p%acc,idiag_uxaccm)
         if (idiag_uyaccm/=0) call sum_mn_name(p%uu(:,2)*p%acc,idiag_uyaccm)
         if (idiag_uzaccm/=0) call sum_mn_name(p%uu(:,3)*p%acc,idiag_uzaccm)
         if (ltauascalar) then
-          if (idiag_tauascalarrms/=0) &
-            call sum_mn_name(p%tauascalar**2,idiag_tauascalarrms,lsqrt=.true.)
-          if (idiag_tauascalarmax/=0) call max_mn_name(p%tauascalar,idiag_tauascalarmax)
+          if (idiag_tauascalarrms/=0) call sum_mn_name(p%tauascalar**2,idiag_tauascalarrms,lsqrt=.true.)
+          call max_mn_name(p%tauascalar,idiag_tauascalarmax)
           if (idiag_tauascalarmin/=0) call max_mn_name(-p%tauascalar,idiag_tauascalarmin,lneg=.true.)
         endif
         if (idiag_condensationRaterms/=0) &
           call sum_mn_name(p%condensationRate**2,idiag_condensationRaterms,lsqrt=.true.)
-        if (idiag_condensationRatemax/=0) call max_mn_name(p%condensationRate,idiag_condensationRatemax)
+        call max_mn_name(p%condensationRate,idiag_condensationRatemax)
         if (idiag_condensationRatemin/=0) call max_mn_name(-p%condensationRate,idiag_condensationRatemin,lneg=.true.)
-        if (idiag_condensationRatem/=0) call sum_mn_name(p%condensationRate,idiag_condensationRatem)
+        call sum_mn_name(p%condensationRate,idiag_condensationRatem)
         if (idiag_waterMixingRatiorms/=0) &
           call sum_mn_name(p%waterMixingRatio**2,idiag_waterMixingRatiorms,lsqrt=.true.)
-        if (idiag_waterMixingRatiomax/=0) call max_mn_name(p%waterMixingRatio,idiag_waterMixingRatiomax)
+        call max_mn_name(p%waterMixingRatio,idiag_waterMixingRatiomax)
         if (idiag_waterMixingRatiomin/=0) call max_mn_name(-p%waterMixingRatio,idiag_waterMixingRatiomin,lneg=.true.)
-        if (idiag_waterMixingRatiom/=0) call sum_mn_name(p%waterMixingRatio,idiag_waterMixingRatiom)
-        if (idiag_ssatrms/=0) &
-          call sum_mn_name(p%ssat**2,idiag_ssatrms,lsqrt=.true.)
-        if (idiag_ssatmax/=0) call max_mn_name(p%ssat,idiag_ssatmax)
+        call sum_mn_name(p%waterMixingRatio,idiag_waterMixingRatiom)
+        if (idiag_ssatrms/=0) call sum_mn_name(p%ssat**2,idiag_ssatrms,lsqrt=.true.)
+        call max_mn_name(p%ssat,idiag_ssatmax)
         if (idiag_ssatmin/=0) call max_mn_name(-p%ssat,idiag_ssatmin,lneg=.true.)
-        if (idiag_ssatm/=0) call sum_mn_name(p%ssat,idiag_ssatm)
-        if (idiag_esmax/=0) call max_mn_name(es_T,idiag_esmax)
+        call sum_mn_name(p%ssat,idiag_ssatm)
+        call max_mn_name(es_T,idiag_esmax)
         if (idiag_esmin/=0) call max_mn_name(-es_T,idiag_esmin,lneg=.true.)
-        if (idiag_esm/=0) call sum_mn_name(es_T,idiag_esm)
-        if (idiag_esrms/=0) &
-          call sum_mn_name(es_T**2,idiag_esrms,lsqrt=.true.)
-        if (idiag_qvsmax/=0) call max_mn_name(qvs_T,idiag_qvsmax)
+        call sum_mn_name(es_T,idiag_esm)
+        if (idiag_esrms/=0) call sum_mn_name(es_T**2,idiag_esrms,lsqrt=.true.)
+        call max_mn_name(qvs_T,idiag_qvsmax)
         if (idiag_qvsmin/=0) call max_mn_name(-qvs_T,idiag_qvsmin,lneg=.true.)
-        if (idiag_qvsm/=0) call sum_mn_name(qvs_T,idiag_qvsm)
-        if (idiag_qvsrms/=0) &
-          call sum_mn_name(qvs_T**2,idiag_qvsrms,lsqrt=.true.)
+        call sum_mn_name(qvs_T,idiag_qvsm)
+        if (idiag_qvsrms/=0) call sum_mn_name(qvs_T**2,idiag_qvsrms,lsqrt=.true.)
         if (lbuoyancy) then
-          if (idiag_buoyancyrms/=0) &
-            call sum_mn_name(buoyancy**2,idiag_buoyancyrms,lsqrt=.true.)
-          if (idiag_buoyancym/=0) &
-            call sum_mn_name(buoyancy,idiag_buoyancym)
-          if (idiag_buoyancymax/=0) call max_mn_name(buoyancy,idiag_buoyancymax)
+          if (idiag_buoyancyrms/=0) call sum_mn_name(buoyancy**2,idiag_buoyancyrms,lsqrt=.true.)
+          call sum_mn_name(buoyancy,idiag_buoyancym)
+          call max_mn_name(buoyancy,idiag_buoyancymax)
           if (idiag_buoyancymin/=0) call max_mn_name(-buoyancy,idiag_buoyancymin,lneg=.true.)
+        endif
+!
+        if (lcondensation_rate.and.lttc.and.lbuoyancy.and.lttc_mean) then
+          call save_name(acc_mean,idiag_acc_mean)
+          call save_name(ttc_mean,idiag_ttc_mean)
         endif
       endif
 !
-    endsubroutine dacc_dt
+    endsubroutine calc_diagnostics_ascalar
 !***********************************************************************
     subroutine calc_ttcmean(f)
 !
-!  Calculation of volume averaged mean temperature and water vapor mixing ratio.
+!  Calculation of volume averaged mean temperature.
 !
 !  06-June-18/Xiang-Yu.Li: coded
 !
       use Sub, only: finalize_aver
-      use Diagnostics, only: save_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
-      real :: fact
-      real, dimension (nx)  :: temp
+
+      real, dimension(1) :: tmp
 !
 !  Calculate mean of temperature.
 !
-      if (lttc_mean) then
-        fact=1./(nxgrid*nygrid*nzgrid)
-        ttcm_volume=sum(f(l1:l2,m1:m2,n1:n2,ittc))
-        call finalize_aver(nprocx*nprocy*nprocz,123,ttcm_volume)
-        ttcm_volume  = fact*ttcm_volume
-      endif
-!
-      if (ldiagnos) then
-        if (lttc_mean) then
-          if (idiag_ttc_mean/=0) &
-            call save_name(ttc_mean,idiag_ttc_mean)
-        endif
-      endif
+      tmp = sum(f(l1:l2,m1:m2,n1:n2,ittc))
+      call finalize_aver(ncpus,123,tmp)
+      ttc_mean = tmp(1)/nwgrid
 !
     endsubroutine calc_ttcmean
 !***********************************************************************
@@ -571,29 +560,18 @@ module Ascalar
 !  06-June-18/Xiang-Yu.Li: coded
 !
       use Sub, only: finalize_aver
-      use Diagnostics, only: save_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
-      real :: fact
-      real, dimension (nx)  :: temp
+
+      real, dimension(1) :: tmp
 !
 !  Calculate mean of temperature.
 !
-      if (lttc_mean) then
-        fact=1./(nxgrid*nygrid*nzgrid)
-        accm_volume=sum(f(l1:l2,m1:m2,n1:n2,iacc))
-        call finalize_aver(nprocx*nprocy*nprocz,123,accm_volume)
-        accm_volume  = fact*accm_volume
-      endif
+      tmp = sum(f(l1:l2,m1:m2,n1:n2,iacc))
+      call finalize_aver(ncpus,123,tmp)
+      acc_mean = tmp(1)/nwgrid
 !
-      if (ldiagnos) then
-        if (lttc_mean) then
-          if (idiag_acc_mean/=0) &
-            call save_name(acc_mean,idiag_acc_mean)
-        endif
-      endif
-!      
     endsubroutine calc_accmean
 !***********************************************************************
     subroutine read_ascalar_init_pars(iostat)

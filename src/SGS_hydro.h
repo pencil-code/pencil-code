@@ -1,5 +1,5 @@
 public :: initialize_SGS_hydro
-public :: calc_SGS_hydro_force
+public :: calc_SGS_hydro_force, calc_diagnostics_SGS_hydro
 public :: rprint_SGS_hydro
 public :: register_SGS_hydro
 public :: SGS_hydro_after_boundary

@@ -15,7 +15,7 @@
   public :: get_slices_special
   public :: init_special
 
-  public :: dspecial_dt
+  public :: dspecial_dt, dspecial_dt_ode
 
   public :: calc_pencils_special
   public :: pencil_criteria_special

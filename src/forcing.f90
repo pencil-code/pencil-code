@@ -48,13 +48,13 @@ module Forcing
   real :: zff_hel=0.,max_force=impossible
   real :: dtforce=0., dtforce_ampl=.5, dtforce_duration=-1.0, force_strength=0.
   real :: b0_mode=0.
-  double precision :: tforce_ramp_down=1.1, tauforce_ramp_down=1.
+  real(KIND=rkind8) :: tforce_ramp_down=1.1, tauforce_ramp_down=1.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(3,2) :: location_fixed=0.
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1.,qdouble_profile=1.
-  integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
+  integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz,iff_aux
   integer :: kzlarge=1
   integer :: iforcing_zsym=0, nlocation=1
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
@@ -80,12 +80,15 @@ module Forcing
 ! For helical forcing in spherical polar coordinate system
   real, allocatable, dimension(:,:,:) :: psif
   real, allocatable, dimension(:,:) :: cklist
-  logical :: lfastCK=.false.,lsamesign=.true.,lisotropize_CK=.false.
+  logical :: lfastCK=.false.,lsamesign=.true.
+  logical :: lisotropize_SR=.false., SR_alpha_shift=.false., SR_ell_shift=.false., lfastSR=.false.
 ! allocated only if we have lfastCK=T
   real,allocatable,dimension(:,:,:) :: Zpsi_list
   real,allocatable,dimension(:,:,:) :: RYlm_list,IYlm_list
-  integer :: helsign=0,nlist_ck=25
-  real :: fpre = 1.0,ck_equator_gap=0.,ck_gap_step=0.
+! allocated only if we have lfastSR=T
+  real,allocatable,dimension(:,:,:,:) :: RYlm_rot,IYlm_rot
+  integer :: nlist_ck=25, ell_shift=0, helsign=0., ncol=7, n_axisrot_angles=10
+  real :: fpre = 1.0,ck_equator_gap=0.,ck_gap_step=0.,alpha_shift=5.
   integer :: icklist,jtest_aa0=5,jtest_uu0=1
 ! For random forcing
   logical :: lavoid_xymean=.false., lavoid_ymean=.false., lavoid_zmean=.false., &
@@ -154,7 +157,7 @@ module Forcing
        lforcing_coefs_hel_double, dtforce_ampl, &
        iforce_profile, iforce_tprofile, lscale_kvector_tobox, &
        force_direction, force_strength, lhelical_test, &
-       lfastCK,lisotropize_CK,fpre,helsign,nlist_ck,lwrite_psi,&
+       lfastCK,lisotropize_SR,fpre,helsign,nlist_ck,lwrite_psi,&
        ck_equator_gap,ck_gap_step,&
        ABC_A, ABC_B, ABC_C, &
        lforcing_cont,iforcing_cont, z_center_fcont, z_center, &
@@ -170,9 +173,10 @@ module Forcing
        omega_tidal, R0_tidal, phi_tidal, omega_vortex, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
        n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex, &
-       lrandom_time, laniso_forcing_old, &
+       lrandom_time,laniso_forcing_old, &
        lforcing_osc, lforcing_osc2, lforcing_osc_double, &
-       tcor_GP, kmin_GP,kmax_GP,nk_GP,beta_GP
+       tcor_GP, kmin_GP,kmax_GP,nk_GP,beta_GP, n_axisrot_angles, &
+       SR_alpha_shift, alpha_shift, ell_shift, SR_ell_shift, ncol, lfastSR
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -207,11 +211,17 @@ module Forcing
 !
 !  add forcing in timestep
 !  11-may-2002/wolf: coded
+
+      use FarrayManager, only: farray_register_auxiliary
 !
 !  identify version number
 !
       if (lroot) call svn_id( &
            "$Id$")
+
+      if (iforce=='spherical_radial') then
+        if (lisotropize_SR.and.lfastSR) call farray_register_auxiliary('force',iff_aux)
+      endif
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -230,14 +240,20 @@ module Forcing
 !  08-Aug-2019/MR: moved reading of k.dat, k_double.dat from individual subroutines
 !                  -> nk, kav, kk[xyz] and nk2, kav2, kk2[xyz], respectively, now module 
 !                  variables.
+!  16-Aug-2023/MR+ABa: Added a non-helical spherical forcing acting only in the 
+!                      radial direction that consists of Bessel functions in the 
+!                      radial and randomized spherical Harmonics around the x-axis
+!                      in the horizontal direction.  
 !
       use General, only: bessj,itoa
       use SharedVariables, only: get_shared_variable
       use Sub, only: step,erfunc,stepdown,register_report_aux
       use EquationOfState, only: cs0
 !
-      real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm
-      integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex,Legendrel
+      real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm,intv_rotang
+      real :: ang_intv,sthphase,cthphase,costhprime,phprime
+
+      integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex,Legendrel,iangle
       logical :: lk_dot_dat_exists
 !
       if (lstart) then
@@ -477,6 +493,12 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_ampl=exp(z/width_ff)
         profz_hel=1.
+!
+      elseif (iforce_profile=='exp(x/H)') then
+        profz_ampl=1.; profz_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profx_ampl=exp(x(l1:l2)/width_ff)
+        profx_hel=1.
 !
       elseif (iforce_profile=='exp(-(z/H)^2)') then
         profx_ampl=1.; profx_hel=1.
@@ -820,7 +842,61 @@ module Forcing
           endif
         endif
 !
-      elseif (iforce=='chandra_kendall'.or.iforce=='cktest') then
+      elseif (iforce=='spherical_radial') then  
+!
+        if (.not. lspherical_coords) call fatal_error('initialize_forcing', &
+                                     'spherical_radial forcing works only in spherical coordinates!')
+!
+! Read the list of values for emm, ell and alpha from file "alpha_in.dat". 
+! The number of given alpha for each lm pair should be ncol-2. 
+!
+        open(unit=76,file="alpha_in.dat",status="old")
+        read(76,*) ckno,rmin,rmax
+        if (ckno/=nlist_ck) then
+          call warning("initialize_forcing", &
+          "Number of entries in alpha_in.dat "//trim(itoa(ckno))//" unequal nlist_ck="//trim(itoa(nlist_ck)))
+          nlist_ck=ckno
+        endif
+        if (.not.allocated(cklist)) allocate(cklist(nlist_ck,ncol))
+        do ilread=1,nlist_ck
+          read(76,*) (cklist(ilread,ilm),ilm=1,ncol)
+        enddo
+        close(76)
+!
+        if (.not.allocated(psif)) allocate(psif(mx,my,mz))
+!
+        if (lfastSR.and.lisotropize_SR) then
+          if (.not.allocated(RYlm_rot)) then
+            allocate(RYlm_rot(my,mz,nlist_ck,n_axisrot_angles))
+            allocate(IYlm_rot(my,mz,nlist_ck,n_axisrot_angles))
+          endif
+          ang_intv=pi/n_axisrot_angles
+          do ilist=1,nlist_ck
+            emm = cklist(ilist,1)
+            Legendrel = cklist(ilist,2)
+            do iangle=1,n_axisrot_angles
+              do n=1,mz
+                do m=1,my
+                 
+                  sthphase=sin(ang_intv*iangle); cthphase=cos(ang_intv*iangle)
+                  costhprime=sthphase*cosph(n)*sinth(m)+cthphase*costh(m)
+                  if (abs(costhprime)==1.) then
+                    phprime=0.
+                  else
+                    phprime=acos((cthphase*cosph(n)*sinth(m)-sthphase*costh(m))/sqrt(1.-costhprime**2))
+                  endif
+                
+                  call sp_harm_real_costh(RYlm,Legendrel,emm,costhprime,phprime)
+                  call sp_harm_imag_costh(IYlm,Legendrel,emm,costhprime,phprime)
+                  RYlm_rot(m,n,ilist,iangle)=RYlm
+                  IYlm_rot(m,n,ilist,iangle)=IYlm
+                enddo
+              enddo
+            enddo
+          enddo
+        endif 
+ 
+      elseif (iforce=='chandra_kendall'.or.iforce=='cktest') then 
 !
         if (.not. lspherical_coords) call fatal_error('initialize_forcing', &
                         'Chandrasekhar-Kendall forcing works only in spherical coordinates!')
@@ -871,8 +947,8 @@ module Forcing
 
             do aindex=1,3
               Balpha = cklist(ilist,2+aindex)
-              call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
-              call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+              call sp_bessely_l(anum,Legendrel,Balpha*xyz0(1))
+              call sp_besselj_l(adenom,Legendrel,Balpha*xyz0(1))
               a_ell = -anum/adenom
               do l=1,mx
                 alphar=Balpha*x(l)
@@ -1105,6 +1181,7 @@ module Forcing
         case ('blobs');           call forcing_blobs(f)
         case ('blobHS_random');   call forcing_blobHS_random(f)
         case ('chandra_kendall','cktest'); call forcing_chandra_kendall(f)
+        case ('spherical_radial');call forcing_spherical_radial(f)    
         case ('diffrot');         call forcing_diffrot(f,force)
         case ('fountain', '3');   call forcing_fountain(f)
         case ('hillrain');        call forcing_hillrain(f,force)
@@ -1337,13 +1414,14 @@ module Forcing
 !  20-aug-14/MR: discard wavevectors [kx,0,kz] if lavoid_ymean, [kx,ky,0] if lavoid_zmean
 !  21-jan-15/MR: changes for use of reference state.
 !
+      use Diagnostics, only: sum_mn_name
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpireduce_sum,mpibcast_real
       use Sub, only: del2v_etc,dot
+      use Mpicomm, only: mpireduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kx0,kx,ky,kz,force_ampl,pi_over_Lx
-      real :: phase,ffnorm,iqfm,fsum,fsum_tmp
+      real :: phase,ffnorm
       real, dimension (2) :: fran
       real, dimension (nx) :: rho1,qf
       real, dimension (nx,3) :: forcing_rhs,curlo
@@ -1435,7 +1513,6 @@ module Forcing
 !
 !  Loop over all directions, but skip over directions with no extent.
 !
-      iqfm=0.
       do n=n1,n2
       do m=m1,m2
 !
@@ -1466,7 +1543,7 @@ module Forcing
           if (idiag_qfm/=0) then
             call del2v_etc(f,iuu,curlcurl=curlo)
             call dot(curlo,forcing_rhs,qf)
-            iqfm=iqfm+sum(qf)
+            call sum_mn_name(qf,idiag_qfm)
           endif
         endif
       enddo
@@ -1475,15 +1552,7 @@ module Forcing
 !  For printouts, irufm needs to be communicated to other processors.
 !
       if (lout) then
-        if (idiag_qfm/=0) then
-          fsum_tmp=iqfm/nwgrid
-          call mpireduce_sum(fsum_tmp,fsum)
-          iqfm=fsum
-          call mpibcast_real(iqfm)
-          fname(idiag_qfm)=iqfm
-          itype_name(idiag_qfm)=ilabel_sum
-        endif
-!
+        if (idiag_qfm/=0) call mpireduce_sum(fname(idiag_qfm)/nwgrid,fname(idiag_qfm))
       endif
 !
     endsubroutine forcing_irro
@@ -1874,14 +1943,14 @@ module Forcing
 !  12-jan-18/axel: added periodic forcing for omega_ff /= 0.
 !   3-aug-22/axel: added omega_double_ff for second forcing function
 !
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum
       use Sub
       use EquationOfState, only: rho0
       use DensityMethods, only: getrho1
+      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 
-      real :: irufm,iruxfxm,iruxfym,iruyfxm,iruyfym,iruzfzm,fsum_tmp,fsum
       real, dimension (nx) :: rho1,ruf,rho,force_ampl
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
       real, dimension (nx,3) :: forcing_rhs_old,forcing_rhs2_old
@@ -1947,8 +2016,6 @@ module Forcing
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
-!
-      irufm=0; iruxfxm=0; iruxfym=0; iruyfxm=0; iruyfym=0; iruzfzm=0
 !
 !  Here standard case. The case rcyl_ff==0 is to be removed sometime.
 !
@@ -2142,16 +2209,17 @@ module Forcing
 !
 !  Compute rhs.
 !
-                  variable_rhs=f(l1:l2,m,n,iffx:iffz)
+                  variable_rhs=f(l1:l2,m,n,iffx:iffz)          !MR: here already updated!
                   call multsv_mn(rho/dt,forcing_rhs,force_all)
                   call dot_mn(variable_rhs,force_all,ruf)
-                  irufm=irufm+sum(ruf)
+                  call sum_mn_name(ruf,idiag_rufm)
                 endif
-                if (idiag_ruxfxm/=0) iruxfxm=iruxfxm+sum(rho*f(l1:l2,m,n,iux)*forcing_rhs(:,1))
-                if (idiag_ruxfym/=0) iruxfym=iruxfym+sum(rho*f(l1:l2,m,n,iux)*forcing_rhs(:,2))
-                if (idiag_ruyfxm/=0) iruyfxm=iruyfxm+sum(rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,1))
-                if (idiag_ruyfym/=0) iruyfym=iruyfym+sum(rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,2))
-                if (idiag_ruzfzm/=0) iruzfzm=iruzfzm+sum(rho*f(l1:l2,m,n,iuz)*forcing_rhs(:,3))
+
+                if (idiag_ruxfxm/=0) call sum_mn_name(rho*f(l1:l2,m,n,iux)*forcing_rhs(:,1),idiag_ruxfxm)
+                if (idiag_ruxfym/=0) call sum_mn_name(rho*f(l1:l2,m,n,iux)*forcing_rhs(:,2),idiag_ruxfym)
+                if (idiag_ruyfxm/=0) call sum_mn_name(rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,1),idiag_ruyfxm)
+                if (idiag_ruyfym/=0) call sum_mn_name(rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,2),idiag_ruyfym)
+                if (idiag_ruzfzm/=0) call sum_mn_name(rho*f(l1:l2,m,n,iuz)*forcing_rhs(:,3),idiag_ruzfzm)
               endif
             endif
 !
@@ -2190,57 +2258,15 @@ module Forcing
         enddo
       endif
 !
-!  For printouts, irufm needs to be communicated.
+!  For printouts, rufm needs to be communicated.
 !
       if (lout) then
-        if (idiag_rufm/=0) then
-          fsum_tmp=irufm
-          call mpireduce_sum(fsum_tmp,fsum)
-          irufm=fsum
-          call mpibcast_real(irufm)
-          fname(idiag_rufm)=irufm
-          itype_name(idiag_rufm)=ilabel_sum
-        endif
-        if (idiag_ruxfxm/=0) then
-          fsum_tmp=iruxfxm
-          call mpireduce_sum(fsum_tmp,fsum)
-          iruxfxm=fsum
-          call mpibcast_real(iruxfxm)
-          fname(idiag_ruxfxm)=iruxfxm
-          itype_name(idiag_ruxfxm)=ilabel_sum
-        endif
-        if (idiag_ruxfym/=0) then
-          fsum_tmp=iruxfym
-          call mpireduce_sum(fsum_tmp,fsum)
-          iruxfym=fsum
-          call mpibcast_real(iruxfym)
-          fname(idiag_ruxfym)=iruxfym
-          itype_name(idiag_ruxfym)=ilabel_sum
-        endif
-        if (idiag_ruyfxm/=0) then
-          fsum_tmp=iruyfxm
-          call mpireduce_sum(fsum_tmp,fsum)
-          iruyfxm=fsum
-          call mpibcast_real(iruyfxm)
-          fname(idiag_ruyfxm)=iruyfxm
-          itype_name(idiag_ruyfxm)=ilabel_sum
-        endif
-        if (idiag_ruyfym/=0) then
-          fsum_tmp=iruyfym
-          call mpireduce_sum(fsum_tmp,fsum)
-          iruyfym=fsum
-          call mpibcast_real(iruyfym)
-          fname(idiag_ruyfym)=iruyfym
-          itype_name(idiag_ruyfym)=ilabel_sum
-        endif
-        if (idiag_ruzfzm/=0) then
-          fsum_tmp=iruzfzm
-          call mpireduce_sum(fsum_tmp,fsum)
-          iruzfzm=fsum
-          call mpibcast_real(iruzfzm)
-          fname(idiag_ruzfzm)=iruzfzm
-          itype_name(idiag_ruzfzm)=ilabel_sum
-        endif
+        if (idiag_rufm/=0)   call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
+        if (idiag_ruxfxm/=0) call mpireduce_sum(fname(idiag_ruxfxm)/nwgrid,fname(idiag_ruxfxm))
+        if (idiag_ruxfym/=0) call mpireduce_sum(fname(idiag_ruxfym)/nwgrid,fname(idiag_ruxfym))
+        if (idiag_ruyfxm/=0) call mpireduce_sum(fname(idiag_ruyfxm)/nwgrid,fname(idiag_ruyfxm))
+        if (idiag_ruyfym/=0) call mpireduce_sum(fname(idiag_ruyfym)/nwgrid,fname(idiag_ruyfym))
+        if (idiag_ruzfzm/=0) call mpireduce_sum(fname(idiag_ruzfzm)/nwgrid,fname(idiag_ruzfzm))
       endif
 !
       if (ip<=9) print*,'forcing_hel: forcing OK'
@@ -2264,6 +2290,7 @@ module Forcing
       use General, only: random_number_wrapper
       use Sub, only: del2v_etc,curl,cross,dot,dot2
       use DensityMethods, only: getrho1, getrho
+      use Mpicomm, only: mpireduce_sum
 !
       real :: phase,ffnorm
       real, dimension (2) :: fran
@@ -2561,7 +2588,7 @@ module Forcing
               endif
             enddo
 !
-!  For printouts:
+! Diagnostics: 
 !
             if (lout) then
               if (ldensity.and.idiag_rufm/=0) then
@@ -2590,7 +2617,7 @@ module Forcing
               if (idiag_qfm/=0) then
                 call del2v_etc(f,iuu,curlcurl=curlo)
                 call dot(curlo,forcing_rhs,qf)
-                call sum_mn_name(of,idiag_qfm)
+                call sum_mn_name(qf,idiag_qfm)
               endif
               if (idiag_ffm/=0) then
                 call dot2(forcing_rhs,ff)
@@ -2647,6 +2674,21 @@ module Forcing
       enddo
 !
       if (ip<=9) print*,'forcing_hel_kprof: forcing OK'
+!
+!  For printouts, rufm needs to be communicated.
+!
+      if (lout) then
+        if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
+        if (idiag_ufm/=0)  call mpireduce_sum(fname(idiag_ufm)/nwgrid,fname(idiag_ufm))
+        if (idiag_ofm/=0)  call mpireduce_sum(fname(idiag_ofm)/nwgrid,fname(idiag_ofm))
+        if (idiag_qfm/=0)  call mpireduce_sum(fname(idiag_qfm)/nwgrid,fname(idiag_qfm))
+        if (idiag_ffm/=0)  call mpireduce_sum(fname(idiag_ffm)/nwgrid,fname(idiag_ffm))
+        if (lmagnetic) then
+          if (idiag_fxbxm/=0) call mpireduce_sum(fname(idiag_fxbxm)/nwgrid,fname(idiag_fxbxm))
+          if (idiag_fxbym/=0) call mpireduce_sum(fname(idiag_fxbym)/nwgrid,fname(idiag_fxbym))
+          if (idiag_fxbzm/=0) call mpireduce_sum(fname(idiag_fxbzm)/nwgrid,fname(idiag_fxbzm))
+        endif
+      endif
 !
     endsubroutine forcing_hel_kprof
 !***********************************************************************
@@ -2876,13 +2918,14 @@ module Forcing
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
+      !
       real, dimension(3) :: ee
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
       integer :: emm,l,j,jf,Legendrel,lmindex,aindex
-      real :: a_ell,anum,adenom,jlm_ff,ylm_ff,rphase1,fnorm,alphar,Balpha,psilm,RYlm,IYlm
-      real :: rz,rindex,ralpha,rphase2,thphase,sthphase,cthphase,costhprime,phprime
+      real :: a_ell,anum,adenom,jlm_ff,ylm_ff,rphase1,fnorm,alphar,Balpha,&
+              psilm,RYlm,IYlm
+      real :: rz,rindex,ralpha,rphase2
       real, dimension(mx) :: Z_psi
 !
 ! This is designed for 5 emm values and for each one 5 ell values. Total 25 values.
@@ -2904,9 +2947,8 @@ module Forcing
       aindex=nint(ralpha*2)
       Balpha = cklist(lmindex,3+aindex)
 !
-! Now calculate the "potential" for the helical forcing. The expression
-! is taken from Chandrasekhar and Kendall.
-! Now construct Z_psi(r)
+! Calculate the "potential" for the helical forcing according to Chandrasekhar & Kendall.
+! Construct Z_psi(r).
 !
       call random_number_wrapper(rphase1,CHANNEL=channel_force)
       rphase1=rphase1*2*pi
@@ -2914,17 +2956,18 @@ module Forcing
       if (lfastCK) then
         do n=1,mz
           do m=1,my
-            psilm = RYlm_list(m,n,lmindex)*cos(rphase1) - IYlm_list(m,n,lmindex)*sin(rphase1)
+            psilm = RYlm_list(m,n,lmindex)*cos(rphase1) - &
+                    IYlm_list(m,n,lmindex)*sin(rphase1)
             psif(:,m,n) = psilm*Zpsi_list(:,lmindex,aindex+1)
             if (ck_equator_gap/=0) psif(:,m,n)=psif(:,m,n)*profy_ampl(m)
           enddo
         enddo
 
       else
-        call sp_bessely_l(anum,Legendrel,Balpha*x(l1))
-        call sp_besselj_l(adenom,Legendrel,Balpha*x(l1))
+        call sp_bessely_l(anum,Legendrel,Balpha*xyz0(1))
+        call sp_besselj_l(adenom,Legendrel,Balpha*xyz0(1))
         a_ell = -anum/adenom
-!        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,x(l1)
+!        write(*,*) 'dhruba:',anum,adenom,Legendrel,Bessel_alpha,xyz0(1)
         do l=1,mx
           alphar=Balpha*x(l)
           call sp_besselj_l(jlm_ff,Legendrel,alphar)
@@ -2932,26 +2975,10 @@ module Forcing
           Z_psi(l) = (a_ell*jlm_ff+ylm_ff)
         enddo
 !
-        if (lisotropize_CK) then
-          call random_number_wrapper(thphase,CHANNEL=channel_force)
-          thphase = pi*thphase/2.
-        endif
-
         do n=1,mz
           do m=1,my
-            if (lisotropize_CK) then
-              sthphase=sin(thphase); cthphase=cos(thphase)
-              costhprime=sthphase*cosph(n)*sinth(m)+cthphase*costh(m)
-              if (abs(costhprime)==1.) then
-                phprime=0.
-              else
-                phprime=acos((cthphase*cosph(n)*sinth(m)-sthphase*costh(m))/sqrt(1.-costhprime**2))
-              endif
-            else
-              costhprime=costh(m); phprime=z(n)
-            endif
-            call sp_harm_real_costh(RYlm,Legendrel,emm,costhprime,phprime)
-            call sp_harm_imag_costh(IYlm,Legendrel,emm,costhprime,phprime)
+            call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
+            call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
             psilm = RYlm*cos(rphase1)-IYlm*sin(rphase1)
             psif(:,m,n) = Z_psi*psilm
             if (ck_equator_gap/=0) psif(:,m,n)=psif(:,m,n)*profy_ampl(m)
@@ -2965,13 +2992,14 @@ module Forcing
 ! get random psi.
 ! ----------now generate and add the force ------------
 !
-      call random_number_wrapper(rz,CHANNEL=channel_force)
-      ee(3) = rz
-      call random_number_wrapper(rphase2,CHANNEL=channel_force)
-      rphase2 = pi*rphase2
-      ee(1) = sqrt(1.-rz*rz)*cos(rphase2)
-      ee(2) = sqrt(1.-rz*rz)*sin(rphase2)
-      fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
+
+!      call random_number_wrapper(rz,CHANNEL=channel_force)    
+      ee(3) = rz  
+      call random_number_wrapper(rphase2,CHANNEL=channel_force)  
+      rphase2 = pi*rphase2 
+      ee(1) = sqrt(1.-rz*rz)*cos(rphase2)                   
+      ee(2) = sqrt(1.-rz*rz)*sin(rphase2)                    
+      fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt) 
 !     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
 
       do n=n1,n2
@@ -2991,7 +3019,7 @@ module Forcing
           endif
           do j=1,3
             jf = iuu+j-1
-            if (r_ff /= 0.) capitalH(:,j)=profx_ampl*capitalH(:,j)
+            if (r_ff /= 0.)  capitalH(:,j)=profx_ampl*capitalH(:,j)
             if (lhelical_test) then
               if (lwrite_psi) then
                 f(l1:l2,m,n,jf) = psif(l1:l2,m,n)
@@ -3007,8 +3035,157 @@ module Forcing
           enddo
         enddo
       enddo
-!
+
     endsubroutine forcing_chandra_kendall
+!***********************************************************************
+    subroutine forcing_spherical_radial(f)
+!
+!  Add radial non-helical forcing function in spherical polar coordinate system.
+!  16-Aug-2023/MR+Aba: adapted from chandra_kendall forcing.
+!
+      use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Sub
+      use Mpicomm
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      !
+      real, dimension(3) :: ee
+      real, dimension(nx,3) :: capitalT,capitalS,psi
+      real, dimension(nx,3,3) :: psi_ij,Tij
+      integer :: emm,l,j,jf,Legendrel,lmindex,aindex,ell_rand,raindex
+      real :: a_ell,anum,adenom,jlm_ff,ylm_ff,rphase1,fnorm,alphar,Balpha,psilm,RYlm,IYlm
+      real :: rz,rindex,ralpha,rphase2,thphase,sthphase,cthphase,costhprime,phprime,alphap,&
+              ralpha2,ellSR,fmaxloc,fmax,gindex,crphase1,srphase1
+      real, dimension(mx) :: Z_psi
+      real, dimension(nx) :: Smod
+!
+      if (lhelical_test) then
+        if (icklist==nlist_ck) &
+          call fatal_error("forcing_spherical_radial","SR testing: no more values in list")
+        icklist=icklist+1
+        lmindex=icklist
+      else
+        call random_number_wrapper(rindex,CHANNEL=channel_force)
+        lmindex=nint(rindex*(nlist_ck-1))+1
+      endif
+!
+      emm = cklist(lmindex,1)
+      Legendrel = cklist(lmindex,2)
+!
+      call random_number_wrapper(ralpha,CHANNEL=channel_force)
+      aindex=nint(ralpha*(ncol-3))
+      Balpha = cklist(lmindex,3+aindex)
+!
+      if (SR_alpha_shift) then
+        call random_number_wrapper(ralpha2,CHANNEL=channel_force)
+        alphap=alpha_shift*2*ralpha2-alpha_shift
+        Balpha=Balpha+alphap
+      endif
+! 
+      if (SR_ell_shift) then
+        call random_number_wrapper(ellSR,CHANNEL=channel_force)
+        ell_rand=nint(ellSR*2*ell_shift)-ell_shift
+        Legendrel=Legendrel+ell_rand 
+      endif
+!
+! Calculate the "potential" for the non-helical forcing according to Chandrasekhar & Kendall.
+! Construct Z_psi(r)
+!
+      call sp_bessely_l(anum,Legendrel,Balpha*xyz0(1))
+      call sp_besselj_l(adenom,Legendrel,Balpha*xyz0(1))
+      a_ell = -anum/adenom
+!
+      do l=1,mx
+        alphar=Balpha*x(l)
+        call sp_besselj_l(jlm_ff,Legendrel,alphar)
+        call sp_bessely_l(ylm_ff,Legendrel,alphar)
+        Z_psi(l) = (a_ell*jlm_ff+ylm_ff)
+      enddo
+
+      if (lisotropize_SR) then
+
+        call random_number_wrapper(rphase1,CHANNEL=channel_force)
+        rphase1=rphase1*2*pi
+
+        if (lfastSR) then
+          call random_number_wrapper(gindex,CHANNEL=channel_force)
+          raindex=nint(gindex*(n_axisrot_angles-1))+1
+          crphase1=cos(rphase1)
+          srphase1=sin(rphase1)
+          do n=1,mz
+            do m=1,my
+              psilm = RYlm_rot(m,n,lmindex,raindex)*crphase1 - &
+                      IYlm_rot(m,n,lmindex,raindex)*srphase1
+              psif(:,m,n) = Z_psi*psilm
+            enddo
+          enddo
+        else
+!
+! Randomize axis of spherical harmonic by rotation about the x direction.
+!
+          call random_number_wrapper(thphase,CHANNEL=channel_force)
+          thphase = pi*thphase
+!
+          do n=1,mz
+            do m=1,my
+              if (lisotropize_SR) then
+                sthphase=sin(thphase); cthphase=cos(thphase)
+                costhprime=sthphase*cosph(n)*sinth(m)+cthphase*costh(m)
+                if (abs(costhprime)==1.) then
+                  phprime=0.
+                else
+                  phprime=acos((cthphase*cosph(n)*sinth(m)-sthphase*costh(m))/sqrt(1.-costhprime**2))
+                endif
+              else
+                costhprime=costh(m); phprime=z(n)
+              endif
+              call sp_harm_real_costh(RYlm,Legendrel,emm,costhprime,phprime)
+              call sp_harm_imag_costh(IYlm,Legendrel,emm,costhprime,phprime)
+              psilm = RYlm*cos(rphase1)-IYlm*sin(rphase1)
+              psif(:,m,n) = Z_psi*psilm
+            enddo
+          enddo
+
+        endif
+!
+! Calculate the force from the potential and store it as an auxiliary (except in test branches).
+!
+        ee = (/1.,0.,0./)
+        fnorm = cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
+        fmaxloc=0.
+        do n=n1,n2
+          do m=m1,m2
+            psi(:,1) = psif(l1:l2,m,n)*ee(1)
+            call gij_psi(psif,ee,psi_ij)
+            call curl_mn(psi_ij,capitalT,psi)
+            call gij_psi_etc(psif,ee,psi,psi_ij,Tij)
+            call curl_mn(Tij,capitalS,capitalT)
+            capitalS(:,1) = (1./Balpha)*capitalS(:,1)
+            if (r_ff /= 0.) capitalS(:,1)=profx_ampl*capitalS(:,1)
+            if (lhelical_test) then
+              if (lwrite_psi) then
+                f(l1:l2,m,n,iux) = psif(l1:l2,m,n)
+              else
+                f(l1:l2,m,n,iux) = fpre*fnorm*capitalS(:,1)
+              endif
+            else
+              fmaxloc=max(fmaxloc,maxval(abs(capitalS(:,1))))
+              f(l1:l2,m,n,iff_aux) = fpre*capitalS(:,1)
+            endif
+          enddo
+        enddo
+  
+        if (.not.lhelical_test) then
+          call mpiallreduce_max(fmaxloc,fmax)
+!
+! Stochastic euler scheme of integration [sqrt(dt) is already included in fnorm].
+!
+          f(l1:l2,m1:m2,n1:n2,iux) = (1./fmax)*f(l1:l2,m1:m2,n1:n2,iff_aux)
+        endif
+      endif
+
+    endsubroutine forcing_spherical_radial
 !***********************************************************************
     subroutine forcing_GP(f)
 !
@@ -3016,16 +3193,16 @@ module Forcing
 !
 !  24-jul-06/axel: coded
 !
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum
       use Sub
       use DensityMethods, only: getrho
+      use Diagnostics, only: sum_mn_name
 !
-      real :: irufm
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: cosx,sinx
-      real :: cost,sint,cosym,sinym,fsum_tmp,fsum
+      real :: cost,sint,cosym,sinym
       integer :: j,jf
       real :: fact
 !
@@ -3048,7 +3225,6 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
-      irufm=0
       do m=m1,m2
         cosx=cos(k1_ff*x+cost)
         sinx=sin(k1_ff*x+cost)
@@ -3065,28 +3241,16 @@ module Forcing
               call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
-              irufm=irufm+sum(ruf)
+              call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
         enddo
       enddo
-      !
-      ! For printouts
-      !
+!
+! For printouts, rufm needs to be communicated to other processors
+!
       if (lout) then
-        if (idiag_rufm/=0) then
-          irufm=irufm/(nwgrid)
-          !
-          !  irufm needs to be communicated to other processors
-          !
-          fsum_tmp=irufm
-          call mpireduce_sum(fsum_tmp,fsum)
-          irufm=fsum
-          call mpibcast_real(irufm)
-          !
-          fname(idiag_rufm)=irufm
-          itype_name(idiag_rufm)=ilabel_sum
-        endif
+        if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
       endif
 !
       if (ip<=9) print*,'forcing_GP: forcing OK'
@@ -3099,16 +3263,16 @@ module Forcing
 !
 !  23-mar-20/axel: adapted from forcing_GP92
 !
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum
       use Sub
       use DensityMethods, only: getrho
+      use Diagnostics, only: sum_mn_name
 !
-      real :: irufm
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: cosx,sinx
-      real :: cost,sint,cosym,sinym,fsum_tmp,fsum
+      real :: cost,sint,cosym,sinym
       integer :: j,jf
       real :: fact
 !
@@ -3131,14 +3295,13 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
-      irufm=0
+      cosx=cos(k1_ff*x+cost)
+      sinx=sin(k1_ff*x+cost)
+      forcing_rhs(:,2)=-fact*cosx(l1:l2)
       do m=m1,m2
-        cosx=cos(k1_ff*x+cost)
-        sinx=sin(k1_ff*x+cost)
         cosym=cos(k1_ff*y(m)+sint)
         sinym=sin(k1_ff*y(m)+sint)
         forcing_rhs(:,1)=-fact*sinym
-        forcing_rhs(:,2)=-fact*cosx(l1:l2)
         forcing_rhs(:,3)=+fact*(sinx(l1:l2)+cosym)
         do n=n1,n2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
@@ -3148,28 +3311,16 @@ module Forcing
               call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
-              irufm=irufm+sum(ruf)
+              call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
         enddo
       enddo
-      !
-      ! For printouts
-      !
+!
+! For printouts, rufm needs to be communicated to other processors
+!
       if (lout) then
-        if (idiag_rufm/=0) then
-          irufm=irufm/(nwgrid)
-          !
-          !  irufm needs to be communicated to other processors
-          !
-          fsum_tmp=irufm
-          call mpireduce_sum(fsum_tmp,fsum)
-          irufm=fsum
-          call mpibcast_real(irufm)
-          !
-          fname(idiag_rufm)=irufm
-          itype_name(idiag_rufm)=ilabel_sum
-        endif
+        if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
       endif
 !
       if (ip<=9) print*,'forcing_GP: forcing OK'
@@ -3182,11 +3333,11 @@ module Forcing
 !
 !   9-oct-04/axel: coded
 !
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum
       use Sub
       use DensityMethods, only: getrho
+      use Diagnostics, only: sum_mn_name
 !
-      real :: irufm,fsum_tmp,fsum
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3222,13 +3373,12 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
-      irufm=0
+      forcing_rhs(:,3)=0.
       do n=n1,n2
         do m=m1,m2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
           forcing_rhs(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
           forcing_rhs(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
-          forcing_rhs(:,3)=0.
           do j=1,3
             if (lactive_dimension(j)) then
               jf=j+ifff-1
@@ -3240,28 +3390,16 @@ module Forcing
               call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
-              irufm=irufm+sum(ruf)
+              call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
         enddo
       enddo
-      !
-      ! For printouts
-      !
+!
+! For printouts, rufm needs to be communicated to other processors
+!
       if (lout) then
-        if (idiag_rufm/=0) then
-          irufm=irufm/(nwgrid)
-          !
-          !  irufm needs to be communicated to other processors
-          !
-          fsum_tmp=irufm
-          call mpireduce_sum(fsum_tmp,fsum)
-          irufm=fsum
-          call mpibcast_real(irufm)
-          !
-          fname(idiag_rufm)=irufm
-          itype_name(idiag_rufm)=ilabel_sum
-        endif
+        if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
       endif
 !
       if (ip<=9) print*,'forcing_TG: forcing OK'
@@ -3276,12 +3414,11 @@ module Forcing
 !
       use Diagnostics
       use DensityMethods, only: getrho
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real :: irufm,fsum_tmp,fsum
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,bb,fxb
       real, dimension (mx), save :: sinx,cosx
@@ -3318,12 +3455,11 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
-      irufm=0
       do n=n1,n2
+        forcing_rhs(:,2)=fact*(sinx(l1:l2)+cosz(n))
         do m=m1,m2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
           forcing_rhs(:,1)=fact*(sinz(n    )+cosy(m)    )
-          forcing_rhs(:,2)=fact*(sinx(l1:l2)+cosz(n)    )
           forcing_rhs(:,3)=fact*(siny(m    )+cosx(l1:l2))
           f(l1:l2,m,n,iffx:iffz)=f(l1:l2,m,n,iffx:iffz)+forcing_rhs
           if (lout) then
@@ -3331,36 +3467,29 @@ module Forcing
               call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
-              irufm=irufm+sum(ruf)
+              call sum_mn_name(ruf,idiag_rufm)
+            endif
+            if (lmagnetic) then
+              if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
+                call curl(f,iaa,bb)
+                call cross(forcing_rhs,bb,fxb)
+                call sum_mn_name(fxb(:,1),idiag_fxbxm)
+                call sum_mn_name(fxb(:,2),idiag_fxbym)
+                call sum_mn_name(fxb(:,3),idiag_fxbzm)
+              endif
             endif
           endif
         enddo
       enddo
-      !
-      ! For printouts
-      !
+!
+! For printouts global, summation is needed as not done by finalize_diagnostics.
+!
       if (lout) then
-        if (idiag_rufm/=0) then
-          irufm=irufm/(nwgrid)
-          !
-          !  irufm needs to be communicated to other processors
-          !
-          fsum_tmp=irufm
-          call mpireduce_sum(fsum_tmp,fsum)
-          irufm=fsum
-          call mpibcast_real(irufm)
-          !
-          fname(idiag_rufm)=irufm
-          itype_name(idiag_rufm)=ilabel_sum
-        endif
+        if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
         if (lmagnetic) then
-          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
-            call curl(f,iaa,bb)
-            call cross(forcing_rhs,bb,fxb)
-            call sum_mn_name(fxb(:,1),idiag_fxbxm)
-            call sum_mn_name(fxb(:,2),idiag_fxbym)
-            call sum_mn_name(fxb(:,3),idiag_fxbzm)
-          endif
+          if (idiag_fxbxm/=0) call mpireduce_sum(fname(idiag_fxbxm)/nwgrid,fname(idiag_fxbxm))
+          if (idiag_fxbym/=0) call mpireduce_sum(fname(idiag_fxbym)/nwgrid,fname(idiag_fxbym))
+          if (idiag_fxbzm/=0) call mpireduce_sum(fname(idiag_fxbzm)/nwgrid,fname(idiag_fxbzm))
         endif
       endif
 !
@@ -3404,10 +3533,10 @@ module Forcing
 !  27-oct-04/axel: coded
 !
       use DensityMethods, only: getrho
-      use Mpicomm
+      use Diagnostics, only: sum_mn_name
+      use Mpicomm, only: mpireduce_sum
       use Sub
 !
-      real :: irufm,fsum_tmp,fsum
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3441,12 +3570,11 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
-      irufm=0
+      forcing_rhs(:,2)=fact*sinx(l1:l2)
       do n=n1,n2
+        forcing_rhs(:,1)=fact*sinz(n)
         do m=m1,m2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
-          forcing_rhs(:,1)=fact*sinz(n)
-          forcing_rhs(:,2)=fact*sinx(l1:l2)
           forcing_rhs(:,3)=fact*siny(m)
           do j=1,3
             if (lactive_dimension(j)) then
@@ -3459,28 +3587,16 @@ module Forcing
               call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
-              irufm=irufm+sum(ruf)
+              call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
         enddo
       enddo
-      !
-      ! For printouts
-      !
+!
+! For printouts, rufm needs to be communicated to other processors.
+!
       if (lout) then
-        if (idiag_rufm/=0) then
-          irufm=irufm/(nwgrid)
-          !
-          !  irufm needs to be communicated to other processors
-          !
-          fsum_tmp=irufm
-          call mpireduce_sum(fsum_tmp,fsum)
-          irufm=fsum
-          call mpibcast_real(irufm)
-          !
-          fname(idiag_rufm)=irufm
-          itype_name(idiag_rufm)=ilabel_sum
-        endif
+        if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
       endif
 !
       if (ip<=9) print*,'forcing_nocos: forcing OK'
@@ -3495,9 +3611,10 @@ module Forcing
 !  14-jul-10/axel: in less then 3-D, project forcing to computational domain
 !
       use DensityMethods, only: getrho
+      use Diagnostics, only: sum_mn_name
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3507,7 +3624,7 @@ module Forcing
       real, dimension (nx) :: radius2, gaussian, gaussian_fact, ruf, rho
       real, dimension (nx,3) :: variable_rhs,force_all,delta
       integer :: j, jf, ilocation
-      real :: irufm,fact,width_ff21,fsum_tmp,fsum
+      real :: fact,width_ff21
 !
 !  check length of time step
 !
@@ -3597,8 +3714,6 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorization.
 !  Calculate energy input from forcing; must use lout (not ldiagnos).
 !
-        irufm=0
-!
 !  loop over all pencils
 !
         do n=n1,n2
@@ -3676,7 +3791,7 @@ module Forcing
                   call getrho(f(:,m,n,ilnrho),rho)
                   call multsv_mn(rho/dt,spread(gaussian,2,3)*delta,force_all)
                   call dot_mn(variable_rhs,force_all,ruf)
-                  irufm=irufm+sum(ruf)
+                  call sum_mn_name(ruf,idiag_rufm)
                 endif
               endif
             enddo
@@ -3684,22 +3799,10 @@ module Forcing
         enddo
       endif
 !
-!  For printouts
+!  For printouts, rufm needs to be communicated to other processors.
 !
       if (lout) then
-        if (idiag_rufm/=0) then
-          irufm=irufm/(nwgrid)
-!
-!  irufm needs to be communicated to other processors
-!
-          fsum_tmp=irufm
-          call mpireduce_sum(fsum_tmp,fsum)
-          irufm=fsum
-          call mpibcast_real(irufm)
-!
-          fname(idiag_rufm)=irufm
-          itype_name(idiag_rufm)=ilabel_sum
-        endif
+        if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
       endif
 !
       if (ip<=9) print*,'forcing_gaussianpot: forcing OK'
@@ -3713,9 +3816,10 @@ module Forcing
 !  29-sep-15/axel: adapted from forcing_gaussianpot
 !
       use DensityMethods, only: getrho
+      use Diagnostics, only: sum_mn_name
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3725,7 +3829,7 @@ module Forcing
       real, dimension (nx) :: r, r2, r3, r5, pom2, ruf, rho
       real, dimension (nx,3) :: variable_rhs, force_all, delta
       integer :: j,jf
-      real :: irufm, fact, fsum_tmp, fsum
+      real :: fact
       real :: a_hill, a2_hill, a3_hill
 !
 !  check length of time step
@@ -3804,8 +3908,6 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
-        irufm=0
-!
 !  loop over all pencils
 !
         do n=n1,n2; do m=m1,m2
@@ -3875,28 +3977,16 @@ module Forcing
               call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,f(l1:l2,m,n,iux:iuz),force_all)
               call dot_mn(variable_rhs,force_all,ruf)
-              irufm=irufm+sum(ruf)
-            endif
-          endif
-!
-!  For printouts
-!
-          if (lout) then
-            if (idiag_rufm/=0) then
-              irufm=irufm/(nwgrid)
-!
-!  irufm needs to be communicated to other processors
-!
-              fsum_tmp=irufm
-              call mpireduce_sum(fsum_tmp,fsum)
-              irufm=fsum
-              call mpibcast_real(irufm)
-!
-              fname(idiag_rufm)=irufm
-              itype_name(idiag_rufm)=ilabel_sum
+              call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
         enddo; enddo
+!
+!  For printouts, rufm needs to be communicated to other processors.
+!
+        if (lout) then
+          if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
+        endif
       endif
 !
       if (ip<=9) print*,'forcing_hillrain: forcing OK'
@@ -3910,18 +4000,18 @@ module Forcing
 !  19-dec-13/axel: added
 !
       use DensityMethods, only: getrho
+      use Diagnostics, only: sum_mn_name
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,fsum_tmp,fsum
+      real :: ampl
 !
       real, dimension (nx) :: r,p,tmp,rho,ruf
       real, dimension (nx,3) :: force_all,variable_rhs,forcing_rhs
       integer :: j,jf
-      real :: irufm
 !
 !  check length of time step
 !
@@ -3951,8 +4041,6 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
-      irufm=0
-!
 !  loop over all pencils
 !
       do n=n1,n2
@@ -3980,28 +4068,16 @@ module Forcing
               call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
-              irufm=irufm+sum(ruf)
+              call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
         enddo
       enddo
 !
-!  For printouts
+!  For printouts, rufm needs to be communicated to other processors
 !
       if (lout) then
-        if (idiag_rufm/=0) then
-          irufm=irufm/(nwgrid)
-!
-!  irufm needs to be communicated to other processors
-!
-          fsum_tmp=irufm
-          call mpireduce_sum(fsum_tmp,fsum)
-          irufm=fsum
-          call mpibcast_real(irufm)
-!
-          fname(idiag_rufm)=irufm
-          itype_name(idiag_rufm)=ilabel_sum
-        endif
+        if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
       endif
 !
       if (ip<=9) print*,'forcing_white_noise: forcing OK'
@@ -4071,7 +4147,6 @@ module Forcing
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm
       use Sub
 !
       real :: phase,ffnorm
@@ -4259,8 +4334,6 @@ module Forcing
 !
 !  30-may-02/axel: coded
 !
-      use Mpicomm
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: sxx,cxx
       real, dimension (mx) :: sx,cx
@@ -4341,8 +4414,6 @@ module Forcing
 !
 !  30-may-02/axel: coded
 !
-      use Mpicomm
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: sxx,cxx
       real, dimension (mx) :: sx,cx
@@ -4422,8 +4493,6 @@ module Forcing
 !
 !  19-jun-02/axel+bertil: coded
 !
-      use Mpicomm
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: fx
       real, dimension (mz) :: fz
@@ -4453,8 +4522,6 @@ module Forcing
 !  add circular twisting motion, (ux, 0, uz)
 !
 !  19-jul-02/axel: coded
-!
-      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,nz) :: xx,zz,r2,tmp,fx,fz
@@ -4509,8 +4576,6 @@ module Forcing
 !  differential rotation procedure implemented directly in hydro.
 !
 !  26-jul-02/axel: coded
-!
-      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,nz) :: fx,fz,tmp
@@ -4644,21 +4709,23 @@ module Forcing
 !***********************************************************************
     subroutine forcing_hel_smooth(f)
 !
+      use Diagnostics
       use DensityMethods, only: getrho
       use General, only: random_number_wrapper
-      use Mpicomm
+      use Mpicomm, only: mpiallreduce_sum
       use Sub
 !
 !  06-dec-13/nishant: made kkx etc allocatable
 !  23-dec-18/axel: forcing_helicity has now similar capabilities
 !
       real, dimension (mx,my,mz,mfarray) :: f
+
       real, dimension (mx,my,mz,3) :: force_vec
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real :: phase1,phase2,p_weight
       real :: kx01,ky1,kz1,kx02,ky2,kz2
-      real :: mulforce_vec,irufm,fsum_tmp,fsum
+      real :: mulforce_vec
       integer :: ik1,ik2,ik
 !
 !  Re-calculate forcing wave numbers if necessary
@@ -4697,56 +4764,50 @@ module Forcing
 !
 ! Find energy input
 !
-      if (lout .or. lwork_ff) then
-        if (idiag_rufm/=0 .or. lwork_ff) then
-          irufm=0
-          do n=n1,n2
-            do m=m1,m2
-              forcing_rhs=force_vec(l1:l2,m,n,:)
-              variable_rhs=f(l1:l2,m,n,iffx:iffz)!-force_vec(l1:l2,m,n,:)
-              call getrho(f(:,m,n,ilnrho),rho)
-              call multsv_mn(rho/dt,forcing_rhs,force_all)
-              call dot_mn(variable_rhs,force_all,ruf)
-              irufm=irufm+sum(ruf)
-              !call sum_mn_name(ruf/nwgrid,idiag_rufm)
-            enddo
+      if (lout.and.idiag_rufm/=0 .or. lwork_ff) then
+
+        do n=n1,n2
+          do m=m1,m2
+            forcing_rhs=force_vec(l1:l2,m,n,:)
+            variable_rhs=f(l1:l2,m,n,iffx:iffz)!-force_vec(l1:l2,m,n,:)
+            call getrho(f(:,m,n,ilnrho),rho)
+            call multsv_mn(rho/dt,forcing_rhs,force_all)
+            call dot_mn(variable_rhs,force_all,ruf)
+            call sum_mn_name(ruf,idiag_rufm)
           enddo
+        enddo
+!
+! irufm needs to be summed-up globally and communicated to other processors.
+!
+        if (lout) then
+          if (idiag_rufm/=0) call mpiallreduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
         endif
-      endif
-      irufm=irufm/nwgrid
 !
 ! If we want to make energy input constant
 !
-      if (lwork_ff) then
-!
-!  irufm needs to be communicated to other processors
-!
-        fsum_tmp=irufm
-        call mpiallreduce_sum(fsum_tmp,irufm)
+        if (lwork_ff) then
 !
 ! What should be added to force_vec in order to make the energy
 ! input equal to work_ff?
 !
-        mulforce_vec=min(max_force,work_ff/irufm)
+          mulforce_vec=min(max_force,work_ff/fname(idiag_rufm))
 !
 !  Add rescaled forcing
 !
-        f(l1:l2,m1:m2,n1:n2,iffx:iffz) = f(l1:l2,m1:m2,n1:n2,iffx:iffz) &
-                                        +force_vec(l1:l2,m1:m2,n1:n2,:)*mulforce_vec
-      else
+          f(l1:l2,m1:m2,n1:n2,iffx:iffz) = f(l1:l2,m1:m2,n1:n2,iffx:iffz) &
+                                          +force_vec(l1:l2,m1:m2,n1:n2,:)*mulforce_vec
+        else
+          mulforce_vec=1.
 !
 !  Add forcing
 !
-        f(l1:l2,m1:m2,n1:n2,iffx:iffz) = f(l1:l2,m1:m2,n1:n2,iffx:iffz)+force_vec(l1:l2,m1:m2,n1:n2,:)
-      endif
-!
-! Save for printouts
-!
-      if (lout) then
-        if (idiag_rufm/=0) then
-          fname(idiag_rufm)=irufm*mulforce_vec
-          itype_name(idiag_rufm)=ilabel_sum
+          f(l1:l2,m1:m2,n1:n2,iffx:iffz) = f(l1:l2,m1:m2,n1:n2,iffx:iffz)+force_vec(l1:l2,m1:m2,n1:n2,:)
+
         endif
+!
+! Save for printouts.
+!
+        if (lout.and.idiag_rufm/=0) call save_name(fname(idiag_rufm)*mulforce_vec,idiag_rufm)
       endif
 !
     endsubroutine forcing_hel_smooth
@@ -4761,16 +4822,15 @@ module Forcing
 !
       use Diagnostics
       use DensityMethods, only: getrho, getrho1
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: force_ampl
-      real :: irufm
       real, dimension (nx) :: ruf,rho,rho1
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
-!      real, dimension (nx,3) :: bb,fxb
+      real, dimension (nx,3) :: bb,fxb
       integer :: j,jf,l
       real :: fact, dist3
 !
@@ -4787,7 +4847,6 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
-      irufm=0
       do n=n1,n2
         do m=m1,m2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
@@ -4819,38 +4878,31 @@ module Forcing
               call getrho(f(:,m,n,ilnrho),rho)
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
-              irufm=irufm+sum(ruf)
+              call sum_mn_name(ruf,idiag_rufm)
+            endif
+            if (lmagnetic) then
+              if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
+                call curl(f,iaa,bb)
+                call cross(forcing_rhs,bb,fxb)
+                call sum_mn_name(fxb(:,1),idiag_fxbxm)
+                call sum_mn_name(fxb(:,2),idiag_fxbym)
+                call sum_mn_name(fxb(:,3),idiag_fxbzm)
+              endif
             endif
           endif
         enddo
       enddo
-      !
-      ! For printouts
-      !
-!       if (lout) then
-!         if (idiag_rufm/=0) then
-!           irufm=irufm/(nwgrid)
-!           !
-!           !  irufm needs to be communicated
-!           !
-!           fsum_tmp=irufm
-!           call mpireduce_sum(fsum_tmp,fsum)
-!           irufm=fsum
-!           call mpibcast_real(irufm)
-!           !
-!           fname(idiag_rufm)=irufm
-!           itype_name(idiag_rufm)=ilabel_sum
-!         endif
-!         if (lmagnetic) then
-!           if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
-!             call curl(f,iaa,bb)
-!             call cross(forcing_rhs,bb,fxb)
-!             call sum_mn_name(fxb(:,1),idiag_fxbxm)
-!             call sum_mn_name(fxb(:,2),idiag_fxbym)
-!             call sum_mn_name(fxb(:,3),idiag_fxbzm)
-!           endif
-!         endif
-!       endif
+!
+! For printouts, global summation is needed as not done by finalize_diagnostics.
+!
+      if (lout) then
+        if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
+        if (lmagnetic) then
+          if (idiag_fxbxm/=0) call mpireduce_sum(fname(idiag_fxbxm)/nwgrid,fname(idiag_fxbxm))
+          if (idiag_fxbym/=0) call mpireduce_sum(fname(idiag_fxbym)/nwgrid,fname(idiag_fxbym))
+          if (idiag_fxbzm/=0) call mpireduce_sum(fname(idiag_fxbzm)/nwgrid,fname(idiag_fxbzm))
+        endif
+      endif
 !
       if (ip<=9) print*,'forcing_tidal: forcing OK'
 !
@@ -4875,7 +4927,6 @@ module Forcing
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -5997,15 +6048,9 @@ module Forcing
 !   (e.g. either uu or aa).
 !
         case('from_file')
-          force(:,1) = fcont_from_file(1, &
-                                       l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
-                                       m-nghost+ipy*ny,n-nghost+ipz*nz)
-          force(:,2) = fcont_from_file(2, &
-                                       l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
-                                       m-nghost+ipy*ny,n-nghost+ipz*nz)
-          force(:,3) = fcont_from_file(3, &
-                                       l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
-                                       m-nghost+ipy*ny,n-nghost+ipz*nz)
+          force(:,1) = fcont_from_file(1,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
+          force(:,2) = fcont_from_file(2,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
+          force(:,3) = fcont_from_file(3,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
           force=ampl_ff(i)*force
 !
 !  nothing 
@@ -6014,7 +6059,7 @@ module Forcing
           call warning('forcing_cont',"iforcing_cont='nothing'")
 !
         case default
-          call fatal_error('forcing_cont','no valid iforcing_cont specified')
+          call fatal_error('forcing_cont','no such iforcing_cont: '//trim(iforcing_cont(i)))
         endselect
 !
     endsubroutine forcing_cont

@@ -572,15 +572,15 @@ module Energy
 !       The timestep gets the factor TT/eth = cv1*rho1
         if (lfirst .and. ldt) diffus_chi = diffus_chi &
             +(16.0*sigmaSB/(3.0*kappa_rosseland))*p%TT*p%TT*p%TT/p%rho *cv1*p%rho1 * dxyz_2
-     endif
-     if (lfirst .and. ldt) then
-       maxdiffus=max(maxdiffus,diffus_chi)
-       maxdiffus3=max(maxdiffus3,diffus_chi3)
-     endif
+      endif
+      if (lfirst .and. ldt) then
+        maxdiffus=max(maxdiffus,diffus_chi)
+        maxdiffus3=max(maxdiffus3,diffus_chi3)
+      endif
 !
 !  Diagnostics.
 !
-     call calc_diagnostics_energy(f,p)
+      call calc_diagnostics_energy(f,p)
 !
     endsubroutine denergy_dt
 !***********************************************************************
@@ -909,7 +909,7 @@ module Energy
                 else
                   if (f(i,j,k,ieth) <= 0.0) print 20, f(i,j,k,ieth), x(i), y(j), z(k)
                 endif
-                10 format (1x, 'deth = ', es13.6, ' at x = ', es13.6, ', y = ', es13.6, ', z = ', es13.6)
+                10 format (1x, 'deth = ',es13.6, ' at x = ',es13.6, ', y = ',es13.6, ', z = ',es13.6)
                 20 format (1x, 'eth = ', es13.6, ' at x = ', es13.6, ', y = ', es13.6, ', z = ', es13.6)
               enddo xscan2
             enddo yscan2
@@ -1143,20 +1143,20 @@ module Energy
           last = .false.
         endif passed
 !
-        too_long: if (nok + nbad > rk_nmax) then
+        if (nok + nbad > rk_nmax) then
           status1 = -2
           exit rkck
-        endif too_long
+        endif
 !
       enddo rkck
 !
-      status_code: if (present(status)) then
+      if (present(status)) then
         if (ldebug) then
           status = nok + nbad
         else
           status = status1
         endif
-      endif status_code
+      endif
 !
 !  Cases for which there exists exact solutions.
 !

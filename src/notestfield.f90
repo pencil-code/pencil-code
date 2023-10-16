@@ -119,6 +119,16 @@ module Testfield
 !
     endsubroutine daatest_dt
 !***********************************************************************
+    subroutine calc_diagnostics_testfield(f,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_testfield
+!***********************************************************************
     subroutine get_slices_testfield(f,slices)
 !
       real, dimension (mx,my,mz,mfarray) :: f

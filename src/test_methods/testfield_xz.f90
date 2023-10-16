@@ -67,10 +67,14 @@ module Testfield
                                                                                                             ! Diag_DOC: $\eta_{123,\rm hh}, {\rm h}={\rm c,s}$
      'E11     ','E21     ','E31     ','E12     ','E22     ','E32     ','E13     ','E23     ','E33     ',&   ! DIAG_DOC: ${\cal E}^j_i$
      'E14     ','E24     ','E34     ','E15     ','E25     ','E35     ','E16     ','E26     ','E36     ',&   
-     'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     '  /) 
+     'E17     ','E27     ','E37     ','E18     ','E28     ','E38     ','E19     ','E29     ','E39     ',& 
+     'b11     ','b21     ','b31     ','b12     ','b22     ','b32     ','b13     ','b23     ','b33     ',&   ! DIAG_DOC: ${\cal b}^j_i$
+     'b14     ','b24     ','b34     ','b15     ','b25     ','b35     ','b16     ','b26     ','b36     ',&   
+     'b17     ','b27     ','b37     ','b18     ','b28     ','b38     ','b19     ','b29     ','b39     '  /) 
 !
   integer, dimension(n_cdiags):: idiags=0, idiags_z=0, idiags_xz=0
-  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_end=idiag_Eij_start+27-1
+  integer, parameter :: idiag_base_end=27, idiag_Eij_start=36, idiag_Eij_end=idiag_Eij_start+27-1, &
+                                           idiag_bij_start=idiag_Eij_end+1, idiag_bij_end=idiag_bij_start+27-1
 !
   integer, dimension(4) :: idiag_alp11h, idiag_eta123h            
   equivalence(idiags(idiag_base_end+1),idiag_alp11h), (idiags(idiag_base_end+5),idiag_eta123h)      ! alias names for selected diagnostics
@@ -152,6 +156,7 @@ module Testfield
 !                  calc_coefficients, completed
 !  20-oct-13/MR  : cases for itestfield='linear','1-alt' added
 !
+      use Diagnostics, only: ysum_mn_name_xz_npar
       use Hydro, only: uumxz
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -173,6 +178,8 @@ module Testfield
         case ('4','linear'); call rhs_daatest(f,df,p,uumxz(l1:l2,n,:),uxbtestm(:,nl,:,:),set_bbtest4)
         case default       ; call fatal_error('daatest_dt','undefined itestfield')
       endselect
+
+      call calc_2d_diagnostics_testfield(f,n,idiags(idiag_bij_start),ysum_mn_name_xz_npar)
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -215,7 +222,7 @@ module Testfield
       use Diagnostics, only: ysum_mn_name_xz_npar,xysum_mn_name_z_npar
       use Hydro, only: calc_pencils_hydro
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx,3) :: btest,uxbtest
       integer :: jtest,j, nl
@@ -231,8 +238,7 @@ module Testfield
 !
       headtt_save=headtt
       fac=1./nygrid
-      need_output = (ldiagnos .and. needed2d(1)) .or. &
-                    (l2davgfirst .and. needed2d(2))
+      need_output = (ldiagnos .and. needed2d(1)) .or. (l2davgfirst .and. needed2d(2))
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -265,11 +271,9 @@ module Testfield
 !
               do j=1,3
                 if (lflucts_with_xyaver) then
-                  uxbtestm(:,nl,j,jtest)=spread(sum( &
-                    uxbtestm(:,nl,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
+                  uxbtestm(:,nl,j,jtest) = spread(sum(uxbtestm(:,nl,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
                 else
-                  uxbtestm(:,nl,j,jtest)= &
-                    uxbtestm(:,nl,j,jtest)+fac*uxbtest(:,j)
+                  uxbtestm(:,nl,j,jtest) = uxbtestm(:,nl,j,jtest)+fac*uxbtest(:,j)
                 endif
               enddo
               headtt=.false.

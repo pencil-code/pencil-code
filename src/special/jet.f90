@@ -445,7 +445,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       type (boundary_condition) :: bc
-      integer, intent(IN) :: topbot
+      integer :: topbot
 !
       topbot=TOP
       if (bc%location==-1) topbot=BOT

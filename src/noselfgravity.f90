@@ -113,6 +113,14 @@ module Selfgravity
 !
     endsubroutine duu_dt_selfgrav
 !***********************************************************************
+    subroutine calc_diagnostics_selfgrav(p)
+!
+      type (pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_selfgrav
+!***********************************************************************
     subroutine read_selfgravity_init_pars(iostat)
 !
       integer, intent(out) :: iostat
