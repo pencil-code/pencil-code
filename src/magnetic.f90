@@ -735,6 +735,7 @@ module Magnetic
   integer :: idiag_jxbrzm=0     ! DIAG_DOC:
   integer :: idiag_jxbrmax=0    ! DIAG_DOC: $\max(|\Jv\times\Bv/\rho|)$
   integer :: idiag_jxbr2m=0     ! DIAG_DOC: $\left<(\Jv\times\Bv/\rho)^2\right>$
+  integer :: idiag_jxbrqm=0     ! DIAG_DOC: $\left<(\Jv\times\Bv/\rho)\cdot\mathbf{q}\right>$
   integer :: idiag_uxBrms=0     ! DIAG_DOC:
   integer :: idiag_Bresrms=0    ! DIAG_DOC:
   integer :: idiag_Rmrms=0      ! DIAG_DOC:
@@ -2831,7 +2832,7 @@ module Magnetic
       if (idiag_jxmax/=0 .or. idiag_jymax/=0 .or. idiag_jzmax/=0) lpenc_diagnos(i_jj)=.true.
       if (idiag_jxbxm/=0 .or. idiag_jybxm/=0 .or. idiag_jzbxm/=0 .or. idiag_jxbym/=0 .or. &
           idiag_jxbzm/=0 .or. idiag_jybzm/=0 .or. idiag_jzbzm/=0) lpenc_diagnos(i_jj)=.true.
-      if (idiag_jxbrxm/=0 .or. idiag_jxbrym/=0 .or. idiag_jxbrzm/=0) &
+      if (idiag_jxbrxm/=0 .or. idiag_jxbrym/=0 .or. idiag_jxbrzm/=0 .or. idiag_jxbrqm/=0) &
           lpenc_diagnos(i_jxbr)=.true.
       if (idiag_jxbrmax/=0) lpenc_diagnos(i_jxbr2)=.true.
       if (idiag_poynzmz/=0.or.idiag_jxbm/=0) lpenc_diagnos(i_jxb)=.true.
@@ -6075,6 +6076,8 @@ module Magnetic
       call sum_mn_name(p%jxbr(:,1),idiag_jxbrxm)
       call sum_mn_name(p%jxbr(:,2),idiag_jxbrym)
       call sum_mn_name(p%jxbr(:,3),idiag_jxbrzm)
+      call dot(p%curlo,jxbr,jxbrq)
+      call sum_mn_name(jxbrq,idiag_jxbrqm)
       call sum_mn_name(p%jxbr2,idiag_jxbr2m)
       call max_mn_name(p%jxbr2,idiag_jxbrmax,lsqrt=.true.)
 !
@@ -9626,7 +9629,7 @@ module Magnetic
         idiag_udotxbm=0; idiag_uxbdotm=0; idiag_brmphi=0; idiag_bpmphi=0
         idiag_bzmphi=0; idiag_b2mphi=0; idiag_jbmphi=0; idiag_uxbrmphi=0
         idiag_uxbpmphi=0; idiag_uxbzmphi=0; idiag_jxbrmphi=0; idiag_jxbpmphi=0
-        idiag_jxbzmphi=0; idiag_jxbrxm=0; idiag_jxbrym=0; idiag_jxbrzm=0
+        idiag_jxbzmphi=0; idiag_jxbrxm=0; idiag_jxbrym=0; idiag_jxbrzm=0; idiag_jxbrqm=0
         idiag_jxbr2m=0; idiag_jxbrxmx=0; idiag_jxbrymx=0; idiag_jxbrzmx=0; idiag_jxbrmax=0
         idiag_jxbrxmy=0; idiag_jxbrymy=0; idiag_jxbrzmy=0; idiag_jxbrxmz=0
         idiag_jxbrymz=0; idiag_jxbrzmz=0; idiag_armphi=0; idiag_apmphi=0
@@ -9811,6 +9814,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jxbrxm',idiag_jxbrxm)
         call parse_name(iname,cname(iname),cform(iname),'jxbrym',idiag_jxbrym)
         call parse_name(iname,cname(iname),cform(iname),'jxbrzm',idiag_jxbrzm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbrqm',idiag_jxbrqm)
         call parse_name(iname,cname(iname),cform(iname),'jxbrmax',idiag_jxbrmax)
         call parse_name(iname,cname(iname),cform(iname),'jxbr2m',idiag_jxbr2m)
         call parse_name(iname,cname(iname),cform(iname),'jxbm',idiag_jxbm)
