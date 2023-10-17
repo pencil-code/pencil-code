@@ -2750,7 +2750,7 @@ module Hydro
           idiag_ox4m/=0 .or. idiag_oy4m/=0 .or. idiag_oz4m/=0 .or. &
           idiag_oxm /=0 .or. idiag_oym /=0 .or. idiag_ozm /=0 .or. &
           idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0 .or. &
-          idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. &.or. 
+          idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. & 
           idiag_pvzm /=0 .or. idiag_quxom/=0 .or. idiag_qezxum/=0 .or. idiag_quysm/=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. idiag_o2u2m/=0 .or. idiag_o2sphm/=0 .or. &
@@ -4228,7 +4228,7 @@ module Hydro
         endif
 
         if (idiag_quysm/=0) then
-          call sum_mn_name( tau_diffrot1*(prof_amp3-p%uu(:,2))*p%curlo(:,2),idiag_quysm)
+          call sum_mn_name( tau_diffrot1*(prof_amp3(n)-p%uu(:,2))*p%curlo(:,2),idiag_quysm)
         endif
 
 !
