@@ -5772,7 +5772,7 @@ module Magnetic
       real, dimension (nx,3,3) :: bhatij
       real, dimension (nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv, gLam
       real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
-      real, dimension (nx) :: jxb_dotB0,uxb_dotB0, gLama, gLamb
+      real, dimension (nx) :: jxb_dotB0,jxbrq,uxb_dotB0, gLama, gLamb
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: aj, tmp, tmp1, fres2
       real, dimension (nx) :: B1dot_glnrhoxb,fb,fxbx
@@ -6076,7 +6076,7 @@ module Magnetic
       call sum_mn_name(p%jxbr(:,1),idiag_jxbrxm)
       call sum_mn_name(p%jxbr(:,2),idiag_jxbrym)
       call sum_mn_name(p%jxbr(:,3),idiag_jxbrzm)
-      call dot(p%curlo,jxbr,jxbrq)
+      call dot(p%curlo,p%jxbr,jxbrq)
       call sum_mn_name(jxbrq,idiag_jxbrqm)
       call sum_mn_name(p%jxbr2,idiag_jxbr2m)
       call max_mn_name(p%jxbr2,idiag_jxbrmax,lsqrt=.true.)
