@@ -3621,7 +3621,7 @@ module Forcing
       real :: force_ampl, force_tmp
 !
       real, dimension (3) :: fran
-      real, dimension (nx) :: radius2, gaussian, gaussian_fact, ruf, rho
+      real, dimension (nx) :: radius2, gaussian, gaussian_fact, ruf, rho, rho1
       real, dimension (nx,3) :: variable_rhs,force_all,delta
       integer :: j, jf, ilocation
       real :: fact,width_ff21
