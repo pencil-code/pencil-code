@@ -491,6 +491,7 @@ module Equ
 !
       use Cosmicray, only: calc_diagnostics_cosmicray
       use Density, only: calc_diagnostics_density
+      use Dustdensity, only: calc_diagnostics_dustdensity
       use Dustvelocity, only: calc_diagnostics_dustvelocity
       use Energy, only: calc_diagnostics_energy
       use Forcing, only: calc_diagnostics_forcing
@@ -534,6 +535,7 @@ module Equ
 
         !call calc_diagnostics_cosmicray(p)
         call calc_diagnostics_density(f,p)
+        call calc_diagnostics_dustdensity(f,p)
         call calc_diagnostics_dustvelocity(p)
         call calc_diagnostics_energy(f,p)
         call calc_diagnostics_hydro(f,p)
