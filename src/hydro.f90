@@ -513,6 +513,7 @@ module Hydro
   integer :: idiag_quxom=0      ! DIAG_DOC: $\left<\qv\cdot(\uv\times\omv)\right>$
   integer :: idiag_qezxum=0     ! DIAG_DOC: $\left< (\boldsymbol{e_z} \times \mathbf{u}) \cdot \mathbf{q} \right>$
   integer :: idiag_quysm=0      ! DIAG_DOC: $\left< \frac{1}{\tau} (u_y^S - u_y) \mathbf{\hat{y}} \cdot \mathbf{q} \right>$
+  integer :: idiag_jxbrqm=0     ! DIAG_DOC: $\left<(\Jv\times\Bv/\rho)\cdot\mathbf{q}\right>$
   integer :: idiag_pvzm=0       ! DIAG_DOC: $\left<\omega_z + 2\Omega/\varrho\right>$
                                 ! DIAG_DOC: \quad(z component of potential vorticity)
   integer :: idiag_oumphi=0     ! DIAG_DOC: $\left<\omv\cdot\uv\right>_\varphi$
@@ -2750,8 +2751,8 @@ module Hydro
           idiag_ox4m/=0 .or. idiag_oy4m/=0 .or. idiag_oz4m/=0 .or. &
           idiag_oxm /=0 .or. idiag_oym /=0 .or. idiag_ozm /=0 .or. &
           idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0 .or. &
-          idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. & 
-          idiag_pvzm /=0 .or. idiag_quxom/=0 .or. idiag_qezxum/=0 .or. idiag_quysm/=0) &
+          idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. idiag_pvzm /=0 .or. & 
+          idiag_quxom/=0 .or. idiag_qezxum/=0 .or. idiag_quysm/=0 .or. idiag_jxbrqm/=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. idiag_o2u2m/=0 .or. idiag_o2sphm/=0 .or. &
           idiag_ormsh/=0 .or. idiag_o2mz/=0 ) lpenc_diagnos(i_o2)=.true.
@@ -6306,6 +6307,7 @@ endif
         idiag_quxom=0
         idiag_qezxum=0
         idiag_quysm=0
+        idiag_jxbrqm=0
         idiag_pvzm=0
         idiag_oumx=0
         idiag_oumy=0
@@ -6516,6 +6518,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'quxom',idiag_quxom)
         call parse_name(iname,cname(iname),cform(iname),'qezxum',idiag_qezxum)
         call parse_name(iname,cname(iname),cform(iname),'quysm',idiag_quysm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbrqm',idiag_jxbrqm)
         call parse_name(iname,cname(iname),cform(iname),'ormsn',idiag_ormsn)
         call parse_name(iname,cname(iname),cform(iname),'ormss',idiag_ormss)
         call parse_name(iname,cname(iname),cform(iname),'omax',idiag_omax)
