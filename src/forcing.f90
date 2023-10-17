@@ -3756,6 +3756,12 @@ module Forcing
               radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
               gaussian=exp(-radius2*width_ff21)
               gaussian_fact=gaussian*fact
+              if (lmomentum_ff) then
+                if (ldensity_nolog) then
+                  rho1=1./f(l1:l2,m,n,irho)
+                else
+                  rho1=exp(-f(l1:l2,m,n,ilnrho))
+                gaussian_fact=gaussian_fact*rho1
               variable_rhs=f(l1:l2,m,n,iffx:iffz)
               if (iphiuu==0) then
                 do j=1,3
