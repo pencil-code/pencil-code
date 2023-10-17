@@ -3621,8 +3621,8 @@ module Forcing
       real :: force_ampl, force_tmp
 !
       real, dimension (3) :: fran
-      real, dimension (nx) :: radius2, gaussian, gaussian_fact, ruf, rho, rho1
-      real, dimension (nx,3) :: variable_rhs,force_all,delta
+      real, dimension (nx) :: radius2,gaussian,gaussian_fact,ruf,rho,rho1,qf
+      real, dimension (nx,3) :: variable_rhs,force_all,delta,curlo,tmp
       integer :: j, jf, ilocation
       real :: fact,width_ff21
 !
@@ -3800,6 +3800,12 @@ module Forcing
                   call multsv_mn(rho/dt,spread(gaussian,2,3)*delta,force_all)
                   call dot_mn(variable_rhs,force_all,ruf)
                   call sum_mn_name(ruf,idiag_rufm)
+                endif
+                if (idiag_qfm/=0) then
+                  call del2v_etc(f,iuu,curlcurl=curlo)
+                  call multsv_mn(gaussian_fact,delta,tmp)      
+                  call dot_mn(curlo,tmp,qf)
+                  call sum_mn_name(qf,idiag_qfm)
                 endif
               endif
             enddo
