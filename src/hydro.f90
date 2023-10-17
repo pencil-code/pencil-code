@@ -885,9 +885,7 @@ module Hydro
 !
       if (lconservative) then
         call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.)
-        if (llorentz_as_aux) then
-          call register_report_aux('lorentz', ilorentz,communicated=.true.)
-        endif
+        if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.)
       else
         if (lrelativistic) then
           call fatal_error('register_hydro','no lrelativistic without lconservative')

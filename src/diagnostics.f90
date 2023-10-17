@@ -1585,7 +1585,7 @@ module Diagnostics
 
     endsubroutine set_type
 !***********************************************************************
-    subroutine save_name(a,iname,ldt)
+    subroutine save_name(a,iname,l_dt)
 !
 !  Sets the value of a (must be treated as real) in fname array
 !
@@ -1594,11 +1594,11 @@ module Diagnostics
 !
       real :: a
       integer :: iname
-      logical, optional :: ldt
+      logical, optional :: l_dt
 !
       if (lroot.and.iname/=0) then
         fname(iname)=a
-        if (loptest(ldt)) itype_name(iname)=ilabel_max_dt
+        if (loptest(l_dt)) itype_name(iname)=ilabel_max_dt
       endif
 !
    endsubroutine save_name
