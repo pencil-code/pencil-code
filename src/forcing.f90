@@ -3761,7 +3761,9 @@ module Forcing
                   rho1=1./f(l1:l2,m,n,irho)
                 else
                   rho1=exp(-f(l1:l2,m,n,ilnrho))
+                endif
                 gaussian_fact=gaussian_fact*rho1
+              endif
               variable_rhs=f(l1:l2,m,n,iffx:iffz)
               if (iphiuu==0) then
                 do j=1,3
