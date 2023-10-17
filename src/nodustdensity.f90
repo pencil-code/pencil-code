@@ -87,6 +87,16 @@ module Dustdensity
 !
     endsubroutine dndmd_dt
 !***********************************************************************
+    subroutine calc_diagnostics_dustdensity(f,p)
+!
+      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_dustdensity
+!***********************************************************************
     subroutine read_dustdensity_init_pars(iostat)
 !
       integer, intent(out) :: iostat
