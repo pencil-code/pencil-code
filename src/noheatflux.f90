@@ -45,18 +45,6 @@ module Heatflux
 !
     endsubroutine initialize_heatflux
 !***********************************************************************
-    subroutine finalize_heatflux(f)
-!
-!  Called right before exiting.
-!
-!  14-aug-2011/Bourdin.KIS: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine finalize_heatflux
-!***********************************************************************
     subroutine init_heatflux(f)
 !
 !  initialise heatflux condition; called from start.f90
