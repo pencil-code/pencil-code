@@ -3621,8 +3621,8 @@ module Forcing
       real :: force_ampl, force_tmp
 !
       real, dimension (3) :: fran
-      real, dimension (nx) :: radius2,gaussian,gaussian_fact,ruf,rho,rho1,qf
-      real, dimension (nx,3) :: variable_rhs,force_all,delta,curlo,tmp
+      real, dimension (nx) :: radius2,gaussian,gaussian_fact,ruf,rho,rho1
+      real, dimension (nx,3) :: variable_rhs,force_all,delta
       integer :: j, jf, ilocation
       real :: fact,width_ff21
 !
@@ -3755,14 +3755,15 @@ module Forcing
 !
               radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
               gaussian=exp(-radius2*width_ff21)
-              gaussian_fact=gaussian*fact
               if (lmomentum_ff) then
                 if (ldensity_nolog) then
                   rho1=1./f(l1:l2,m,n,irho)
                 else
                   rho1=exp(-f(l1:l2,m,n,ilnrho))
                 endif
-                gaussian_fact=gaussian_fact*rho1
+                gaussian_fact=gaussian*fact*rho1
+              else
+                gaussian_fact=gaussian*fact
               endif
               variable_rhs=f(l1:l2,m,n,iffx:iffz)
               if (iphiuu==0) then
@@ -3800,12 +3801,6 @@ module Forcing
                   call multsv_mn(rho/dt,spread(gaussian,2,3)*delta,force_all)
                   call dot_mn(variable_rhs,force_all,ruf)
                   call sum_mn_name(ruf,idiag_rufm)
-                endif
-                if (idiag_qfm/=0) then
-                  call del2v_etc(f,iuu,curlcurl=curlo)
-                  call multsv_mn(gaussian_fact,delta,tmp)      
-                  call dot_mn(curlo,tmp,qf)
-                  call sum_mn_name(qf,idiag_qfm)
                 endif
               endif
             enddo
