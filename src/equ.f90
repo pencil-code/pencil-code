@@ -583,19 +583,32 @@ module Equ
 
         call calc_all_pencils(f,p)
 
-        !call calc_diagnostics_cosmicray(p)
+        call calc_diagnostics_ascalar(p)
+        call calc_diagnostics_chemistry(f,p)
+        call calc_diagnostics_chiral(f,p)
+        call calc_diagnostics_cosmicray(p)
         call calc_diagnostics_density(f,p)
+        call calc_diagnostics_dustdensity(f,p)
         call calc_diagnostics_dustvelocity(p)
         call calc_diagnostics_energy(f,p)
+        if (lforcing_cont) call calc_diagnostics_forcing(p)
+        call calc_diagnostics_gravity(p)
+        call calc_diagnostics_heatflux(p)
         call calc_diagnostics_hydro(f,p)
+        call calc_diagnostics_interstellar(p)
+        call calc_diagnostics_lorenz_gauge(f,p)
         call calc_diagnostics_magnetic(f,p)
         call calc_diagnostics_neutraldens(p)
         call calc_diagnostics_neutralvel(p)
+        call particles_calc_pencil_diags(p)
+        call calc_diagnostics_pointmasses(p)
         call calc_diagnostics_pscalar(p)
+        call calc_diagnostics_polymer(p)
+        !call calc_diagnostics_radiation(f,p)
+        call calc_diagnostics_selfgrav(p)
+        call calc_diagnostics_shear
         call calc_diagnostics_shock(p)
         call calc_diagnostics_viscosity(p)
-        call calc_diagnostics_interstellar(p)
-        if (lforcing_cont) call calc_diagnostics_forcing(p)
 
         lfirstpoint=.false.
       enddo
