@@ -139,7 +139,7 @@ module Hydro
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
-  integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0
+  integer :: idiag_urms=0,idiag_umax=0,idiag_uzrms=0
   integer :: idiag_uzmax=0,idiag_orms=0,idiag_omax=0
   integer :: idiag_ux2m=0,idiag_uy2m=0,idiag_uz2m=0
   integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0,idiag_oumphi=0
@@ -3368,7 +3368,7 @@ module Hydro
       if (lreset) then
         idiag_u2m=0; idiag_um2=0; idiag_oum=0; idiag_o2m=0
         idiag_ourms=0; idiag_oxurms=0
-        idiag_uxpt=0; idiag_uypt=0; idiag_uzpt=0; idiag_dtu=0
+        idiag_uxpt=0; idiag_uypt=0; idiag_uzpt=0
         idiag_urms=0; idiag_umax=0; idiag_uzrms=0; idiag_uzmax=0
         idiag_phase1=0; idiag_phase2=0
         idiag_orms=0; idiag_omax=0; idiag_oumphi=0
@@ -3397,7 +3397,6 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
         call parse_name(iname,cname(iname),cform(iname),'ourms',idiag_ourms)
         call parse_name(iname,cname(iname),cform(iname),'oxurms',idiag_oxurms)
-        call parse_name(iname,cname(iname),cform(iname),'dtu',idiag_dtu)
         call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
         call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
         call parse_name(iname,cname(iname),cform(iname),'uzrms',idiag_uzrms)
