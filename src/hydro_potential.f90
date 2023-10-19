@@ -27,7 +27,7 @@
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3)
 ! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel2; ss_rel(3)
 ! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor; divss_rel
-! PENCILS PROVIDED lorentz; hless
+! PENCILS PROVIDED lorentz; hless; advec_uu
 !
 !***************************************************************
 !
@@ -602,7 +602,6 @@ module Hydro
 !  Auxiliary variables
 !
   real, dimension(:,:), pointer :: reference_state
-  real, dimension (nx) :: advec_uu
 !
   contains
 !***********************************************************************
@@ -1154,6 +1153,8 @@ module Hydro
 !                   for which pencils are calculated, default: all
 ! 21-sep-13/MR    : returned to pencil mask as parameter lpenc_loc
 !
+      use General, only: notanumber
+
       real, dimension (mx,my,mz,mfarray),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
       logical, dimension(:),             intent(IN) :: lpenc_loc
@@ -1164,6 +1165,26 @@ module Hydro
         call calc_pencils_hydro_linearized(f,p,lpenc_loc)
       else
         call calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
+      endif
+! advec_uu
+      if (lfirst.and.ldt.and.ladvection_velocity) then
+        if (lmaximal_cdt) p%advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
+                                         abs(p%uu(:,2))*dline_1(:,2),&
+                                         abs(p%uu(:,3))*dline_1(:,3))
+!
+!  Empirically, it turns out that we need to take the full 3-D velocity
+!  into account for computing the time step. It is not clear why.
+!  Wlad finds that, otherwise, the code blows up for 2-D disk problem.
+!  Some 1D and 2D samples work when the non-existent direction has the
+!  largest velocity (like a 2D rz slice of a Keplerian disk that rotates
+!  on the phi direction).
+!
+        if (lisotropic_advection) then
+           if (dimensionality<3) p%advec_uu=sqrt(p%u2*dxyz_2)
+        endif
+        if (notanumber(p%advec_uu)) print*, 'advec_uu =',p%advec_uu
+      else
+        p%advec_uu=0.0
       endif
 !
       endsubroutine calc_pencils_hydro_pencpar
@@ -1656,29 +1677,8 @@ module Hydro
 !  ``uu/dx'' for timestep
 !
       if (lfirst.and.ldt.and.ladvection_velocity) then
-        if (lmaximal_cdt) then
-          advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
-                       abs(p%uu(:,2))*dline_1(:,2),&
-                       abs(p%uu(:,3))*dline_1(:,3))
-        endif
-      else
-        advec_uu=0.0
-      endif
-!
-!  Empirically, it turns out that we need to take the full 3-D velocity
-!  into account for computing the time step. It is not clear why.
-!  Wlad finds that, otherwise, the code blows up for 2-D disk problem.
-!  Some 1D and 2D samples work when the non-existent direction has the
-!  largest velocity (like a 2D rz slice of a Keplerian disk that rotates
-!  on the phi direction).
-!
-      if (lfirst.and.ldt) then
-        if (lisotropic_advection) then
-           if (dimensionality<3) advec_uu=sqrt(p%u2*dxyz_2)
-        endif
-        if (notanumber(advec_uu)) print*, 'advec_uu   =',advec_uu
-        maxadvec=maxadvec+advec_uu
-        if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
+        maxadvec=maxadvec+p%advec_uu
+        if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(p%advec_uu)
       endif
 !
 !  Ekman Friction, used only in two dimensional runs.
@@ -1730,7 +1730,7 @@ module Hydro
 
         if (othresh_per_orms/=0) call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
-        if (ldt.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
+        if (ldt.and.idiag_dtu/=0) call max_mn_name(p%advec_uu/cdt,idiag_dtu,l_dt=.true.)
         if (idiag_urms/=0) call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_durms/=0) then
           uref=ampluu(1)*cos(kx_uu*x(l1:l2))    !MR: very specific

@@ -489,20 +489,32 @@ module Equ
 !
 !  10-sep-2019/MR: coded
 !
+      use Ascalar, only: calc_diagnostics_ascalar
+      use Chemistry, only: calc_diagnostics_chemistry
+      use Chiral, only: calc_diagnostics_chiral
       use Cosmicray, only: calc_diagnostics_cosmicray
       use Density, only: calc_diagnostics_density
       use Dustdensity, only: calc_diagnostics_dustdensity
       use Dustvelocity, only: calc_diagnostics_dustvelocity
       use Energy, only: calc_diagnostics_energy
       use Forcing, only: calc_diagnostics_forcing
+      use Gravity, only: calc_diagnostics_gravity
+      use Heatflux, only: calc_diagnostics_heatflux
       use Hydro, only: calc_diagnostics_hydro
+      use Interstellar, only: calc_diagnostics_interstellar
+      use Lorenz_gauge, only: calc_diagnostics_lorenz_gauge
       use Magnetic, only: calc_diagnostics_magnetic
       use NeutralDensity, only: calc_diagnostics_neutraldens
       use NeutralVelocity, only: calc_diagnostics_neutralvel
+      use Particles_main, only: particles_calc_pencil_diags
+      use Pointmasses, only: calc_diagnostics_pointmasses
       use Pscalar, only: calc_diagnostics_pscalar
+      use Polymer, only: calc_diagnostics_polymer
+      !use Radiation, only: calc_diagnostics_radiation
+      use Selfgravity, only: calc_diagnostics_selfgrav
+      use Shear, only: calc_diagnostics_shear
       use Shock, only: calc_diagnostics_shock
       use Viscosity, only: calc_diagnostics_viscosity
-      use Interstellar, only: calc_diagnostics_interstellar
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
@@ -533,20 +545,32 @@ module Equ
 
         call calc_all_pencils(f,p)
 
-        !call calc_diagnostics_cosmicray(p)
+        call calc_diagnostics_ascalar(p)
+        call calc_diagnostics_chemistry(f,p)
+        call calc_diagnostics_chiral(f,p)
+        call calc_diagnostics_cosmicray(p)
         call calc_diagnostics_density(f,p)
         call calc_diagnostics_dustdensity(f,p)
         call calc_diagnostics_dustvelocity(p)
         call calc_diagnostics_energy(f,p)
+        if (lforcing_cont) call calc_diagnostics_forcing(p)
+        call calc_diagnostics_gravity(p)
+        call calc_diagnostics_heatflux(p)
         call calc_diagnostics_hydro(f,p)
+        call calc_diagnostics_interstellar(p)
+        call calc_diagnostics_lorenz_gauge(f,p)
         call calc_diagnostics_magnetic(f,p)
         call calc_diagnostics_neutraldens(p)
         call calc_diagnostics_neutralvel(p)
+        call particles_calc_pencil_diags(p)
+        call calc_diagnostics_pointmasses(p)
         call calc_diagnostics_pscalar(p)
+        call calc_diagnostics_polymer(p)
+        !call calc_diagnostics_radiation(f,p)
+        call calc_diagnostics_selfgrav(p)
+        call calc_diagnostics_shear
         call calc_diagnostics_shock(p)
         call calc_diagnostics_viscosity(p)
-        call calc_diagnostics_interstellar(p)
-        if (lforcing_cont) call calc_diagnostics_forcing(p)
 
         lfirstpoint=.false.
 
@@ -557,6 +581,8 @@ module Equ
     subroutine calc_all_pencils(f,p)
 
       use Diagnostics, only: calc_phiavg_profile
+
+      use Ascalar
       use BorderProfiles, only: calc_pencils_borderprofiles
       use Chiral
       use Chemistry
@@ -571,6 +597,7 @@ module Equ
       use Gravity
       use Heatflux
       use Hydro
+      use Interstellar, only: calc_pencils_interstellar
       use Lorenz_gauge
       use Magnetic
       use NeutralDensity
@@ -585,13 +612,11 @@ module Equ
       use Shock, only: calc_pencils_shock, calc_shock_profile, &
                        calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells_pencil
-      use Special, only: calc_pencils_special, dspecial_dt
-      use Ascalar
+      use Special, only: calc_pencils_special
       use Testfield
       use Testflow
       use Testscalar
       use Viscosity, only: calc_pencils_viscosity
-      use Interstellar, only: calc_pencils_interstellar
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p

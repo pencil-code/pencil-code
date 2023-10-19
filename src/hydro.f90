@@ -25,7 +25,7 @@
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
 ! PENCILS PROVIDED der6u_res(3,3)
-! PENCILS PROVIDED lorentz; hless
+! PENCILS PROVIDED lorentz; hless; advec_uu
 !***************************************************************
 !
 module Hydro
@@ -810,7 +810,7 @@ module Hydro
 !
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: Omegav=0.
-  real, dimension(nx) :: Fmax,advec_uu=0.
+  real, dimension(nx) :: Fmax
   real :: t_vart=0., fade_fact, frict
 !
   real, dimension (nx) :: prof_amp1, prof_amp2
@@ -2975,6 +2975,8 @@ module Hydro
 !                   for which pencils are calculated, default: all
 ! 21-sep-13/MR    : returned to pencil mask as parameter lpenc_loc
 !
+      use General, only: notanumber
+
       real, dimension (mx,my,mz,mfarray), intent(INOUT):: f
       type (pencil_case),                 intent(INOUT):: p
       logical, dimension(:),              intent(IN)   :: lpenc_loc
@@ -2983,6 +2985,36 @@ module Hydro
         call calc_pencils_hydro_linearized(f,p,lpenc_loc)
       else
         call calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
+      endif
+! advec_uu
+      if (lfirst.and.ldt.and.ladvection_velocity) then
+        if (lmaximal_cdt) then
+          p%advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
+                         abs(p%uu(:,2))*dline_1(:,2),&
+                         abs(p%uu(:,3))*dline_1(:,3))
+        elseif (lfargo_advection) then
+          p%advec_uu=sum(abs(p%uu_advec)*dline_1,2)
+        else
+          p%advec_uu=sum(abs(p%uu)*dline_1,2)
+        endif
+!
+!  Empirically, it turns out that we need to take the full 3-D velocity
+!  into account for computing the time step. It is not clear why.
+!  Wlad finds that, otherwise, the code blows up for 2-D disk problem.
+!  Some 1D and 2D samples work when the non-existent direction has the
+!  largest velocity (like a 2D rz slice of a Keplerian disk that rotates
+!  on the phi direction).
+!
+        if (lisotropic_advection) then
+          if (dimensionality<3) p%advec_uu=sqrt(p%u2*dxyz_2)
+        endif
+
+        if (notanumber(p%advec_uu)) then
+          if (lproc_print) then
+            print*, 'calc_pencils_hydro: p%advec_uu =',p%advec_uu
+            if (.not.allproc_print) lproc_print=.false.
+          endif
+        endif
       endif
 !
       endsubroutine calc_pencils_hydro_pencpar
@@ -3779,37 +3811,8 @@ module Hydro
 !  ``uu/dx'' for timestep
 !
       if (lfirst.and.ldt.and.ladvection_velocity) then
-        if (lmaximal_cdt) then
-          advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
-                       abs(p%uu(:,2))*dline_1(:,2),&
-                       abs(p%uu(:,3))*dline_1(:,3))
-        else
-          if (lfargo_advection) then
-            advec_uu=sum(abs(p%uu_advec)*dline_1,2)
-          else
-            advec_uu=sum(abs(p%uu)*dline_1,2)
-          endif
-        endif
-!
-!  Empirically, it turns out that we need to take the full 3-D velocity
-!  into account for computing the time step. It is not clear why.
-!  Wlad finds that, otherwise, the code blows up for 2-D disk problem.
-!  Some 1D and 2D samples work when the non-existent direction has the
-!  largest velocity (like a 2D rz slice of a Keplerian disk that rotates
-!  on the phi direction).
-!
-        if (lisotropic_advection) then
-          if (dimensionality<3) advec_uu=sqrt(p%u2*dxyz_2)
-        endif
-
-        if (notanumber(advec_uu)) then
-          if (lproc_print) then
-            print*, 'denergy_dt: advec_uu =',advec_uu
-            if (.not.allproc_print) lproc_print=.false.
-          endif
-        endif
-        maxadvec=maxadvec+advec_uu
-        if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
+        maxadvec=maxadvec+p%advec_uu
+        if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(p%advec_uu)
       endif
 !
 !  Ekman Friction, used only in two dimensional runs.
@@ -3946,7 +3949,7 @@ module Hydro
         endif
         if (.not.lgpu) then
           if (ldt) then
-            if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
+            if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(p%advec_uu/cdt,idiag_dtu,l_dt=.true.)
           endif
           if (idiag_dtF/=0) call max_mn_name(Fmax/cdtf,idiag_dtF,l_dt=.true.)
           call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
