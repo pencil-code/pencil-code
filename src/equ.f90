@@ -568,7 +568,7 @@ module Equ
         call calc_diagnostics_polymer(p)
         !call calc_diagnostics_radiation(f,p)
         call calc_diagnostics_selfgrav(p)
-        call calc_diagnostics_shear
+        call calc_diagnostics_shear(p)
         call calc_diagnostics_shock(p)
         call calc_diagnostics_viscosity(p)
 
