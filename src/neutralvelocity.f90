@@ -363,10 +363,10 @@ module NeutralVelocity
       endif
 !
       if (lpencil_in(i_snij)) then
-         if (any(iviscn=='nun-const')) then
-            lpencil_in(i_unij)=.true.
-            lpencil_in(i_divun)=.true.
-         endif
+        if (any(iviscn=='nun-const')) then
+          lpencil_in(i_unij)=.true.
+          lpencil_in(i_divun)=.true.
+        endif
       endif
 !
       if (lpencil_in(i_snij2)) lpencil_in(i_snij)=.true.
@@ -380,6 +380,7 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
+      use General, only: notanumber
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
