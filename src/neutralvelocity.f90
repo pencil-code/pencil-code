@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED divun; visc_heatn; un2; unij(3,3); uun(3); snij(3,3); snij2
-! PENCILS PROVIDED ungun(3); del2un(3); del6un(3); graddivun(3)
+! PENCILS PROVIDED ungun(3); del2un(3); del6un(3); graddivun(3); advec_uun; advec_csn2
 !
 !***************************************************************
 module NeutralVelocity
@@ -90,7 +90,7 @@ module NeutralVelocity
 !
 ! Auxiliaries
 !
-  real, dimension(nx) :: cions_rhon,cneut_rho,diffus_nun,advec_csn2,advec_uun
+  real, dimension(nx) :: cions_rhon,cneut_rho,diffus_nun
 
   contains
 !***********************************************************************
@@ -432,6 +432,25 @@ module NeutralVelocity
          !call multmv(unij5,p%glnrhon,unij5glnrhon)
       endif
 !
+      if (lfirst.and.ldt.and.dimensionality>0) then
+!
+!  ``uun/dx'' for timestep
+!
+        p%advec_uun=sum(abs(p%uun)*dline_1,2)
+        if (notanumber(p%advec_uun)) print*, 'p%advec_uun  =',p%advec_uun
+!
+! csn2/dx^2 for timestep
+! have to include a selection of equation of state...
+!
+        p%advec_csn2=csn20*dxyz_2
+        if (notanumber(p%advec_csn2)) print*, 'advec_csn2 =',p%advec_csn2
+!
+        if (headtt.or.ldebug) then
+          print*,'calc_pencils_neutralvelocity: max(advec_csn2) =',maxval(p%advec_csn2)
+          print*,'calc_pencils_neutralvelocity: max(advec_uun) =',maxval(p%advec_uun)
+        endif
+      endif
+!
     endsubroutine calc_pencils_neutralvelocity
 !***********************************************************************
     subroutine duun_dt(f,df,p)
@@ -556,22 +575,10 @@ module NeutralVelocity
         if (lpressuregradient) df(l1:l2,m,n,iunx:iunz)=df(l1:l2,m,n,iunx:iunz)-csn20*p%glnrhon
 !
       endif
-! csn2/dx^2 for timestep
-! have to include a selection of equation of state...
 !
       if (lfirst.and.ldt.and.dimensionality>0) then
-        advec_csn2=csn20*dxyz_2
-        if (notanumber(advec_csn2)) print*, 'advec_csn2 =',advec_csn2
-        if (headtt.or.ldebug) print*,'duun_dt: max(advec_csn2) =',maxval(advec_csn2)
-        advec2=advec2+advec_csn2
-!
-!  ``uun/dx'' for timestep
-!
-        advec_uun=sum(abs(p%uun)*dline_1,2)
-        if (notanumber(advec_uun)) print*, 'advec_uun  =',advec_uun
-        if (headtt.or.ldebug) print*,'duun_dt: max(advec_uun) =',maxval(advec_uun)
-        maxadvec=maxadvec+advec_uun
-!
+        advec2=advec2+p%advec_csn2
+        maxadvec=maxadvec+p%advec_uun
       endif
 !
 !  Apply border profiles
@@ -638,14 +645,14 @@ module NeutralVelocity
           call save_name(p%uun(lpoint-nghost,3),idiag_unzpt)
         endif
 !
-        if (lfirst.and.ldt) then
+        if (ldt) then
           if (lviscneutral) then
             if (idiag_dtnun/=0) call max_mn_name(diffus_nun/cdtv,idiag_dtnun,l_dt=.true.)
           endif
 
           if (dimensionality>0) then
-            if (idiag_dtun/=0) call max_mn_name(advec_uun/cdt,idiag_dtun,l_dt=.true.)
-            if (idiag_dtcn/=0) call max_mn_name(sqrt(advec_csn2)/cdt,idiag_dtcn,l_dt=.true.)
+            if (idiag_dtun/=0) call max_mn_name(p%advec_uun/cdt,idiag_dtun,l_dt=.true.)
+            if (idiag_dtcn/=0) call max_mn_name(sqrt(p%advec_csn2)/cdt,idiag_dtcn,l_dt=.true.)
           endif
         endif
 !

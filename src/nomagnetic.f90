@@ -34,10 +34,8 @@ module Magnetic
   logical :: lcoulomb=.false.
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
   integer :: iLam=0
-!
-  integer :: idiag_axmz=0,idiag_aymz=0
-  integer :: idiag_bxmz=0,idiag_bymz=0
-!
+  integer, parameter :: idiag_axmz=0, idiag_aymz=0, idiag_bxmz=0, idiag_bymz=0
+
   contains
 !***********************************************************************
     subroutine register_magnetic

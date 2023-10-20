@@ -20,6 +20,7 @@
 !
 ! CPARAM logical, parameter :: lshear = .true.
 !
+! PENCILS PROVIDED advec_shear
 !***************************************************************
 module Shear
 !
@@ -66,7 +67,7 @@ module Shear
   integer, parameter :: bspline_k = 7
   real, dimension(nygrid,nygrid) :: bspline_ay = 0.0
   integer, dimension(nygrid) :: bspline_iy = 0
-  real, dimension(nx) :: uy0 = 0.0, advec_shear
+  real, dimension(nx) :: uy0 = 0.
 !
   contains
 !***********************************************************************
@@ -263,8 +264,15 @@ module Shear
 !
       intent(in) :: f,p
 !
+!  Take shear into account for calculating time step.
+!
+      if (lfirst .and. ldt .and. (lhydro .or. ldensity) .and. &
+          nygrid > 1 .and. .not. lshearadvection_as_shift) then
+        p%advec_shear = abs(uy0 * dy_1(m))
+        maxadvec=maxadvec+p%advec_shear
+      endif
+!
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_shear
 !***********************************************************************
@@ -367,29 +375,22 @@ module Shear
 !  Loop through all the dam/dt equations and add -S*ay contribution.
 !
       if (iam/=0) df(l1:l2,m,n,iamx)=df(l1:l2,m,n,iamx)-Sshear*f(l1:l2,m,n,iamy)
-!
-!  Take shear into account for calculating time step.
-!
-      if (lfirst .and. ldt .and. (lhydro .or. ldensity) .and. &
-          nygrid > 1 .and. .not. lshearadvection_as_shift) then
-        advec_shear = abs(uy0 * dy_1(m))
-        maxadvec=maxadvec+advec_shear
-      endif
 
-      call calc_diagnostics_shear
+      call calc_diagnostics_shear(p)
 
     endsubroutine shearing
 !***********************************************************************
-    subroutine calc_diagnostics_shear
+    subroutine calc_diagnostics_shear(p)
 !
 !  Calculate shearing related diagnostics.
 !
       use Diagnostics, only: max_mn_name
 
+      type (pencil_case) :: p
+
       if (ldiagnos) then
-        if (lfirst .and. ldt .and. (lhydro .or. ldensity) .and. &
-            nygrid > 1 .and. .not. lshearadvection_as_shift) then
-          if (idiag_dtshear/=0) call max_mn_name(advec_shear/cdt,idiag_dtshear,l_dt=.true.)
+        if (ldt .and. (lhydro.or.ldensity) .and. nygrid > 1 .and. .not.lshearadvection_as_shift) then
+          if (idiag_dtshear/=0) call max_mn_name(p%advec_shear/cdt,idiag_dtshear,l_dt=.true.)
         endif
       endif
 !

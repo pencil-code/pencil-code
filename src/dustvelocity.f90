@@ -15,7 +15,7 @@
 ! PENCILS PROVIDED oud(ndustspec); ud2(ndustspec); udij(3,3,ndustspec)
 ! PENCILS PROVIDED sdij(3,3,ndustspec); udgud(3,ndustspec); uud(3,ndustspec)
 ! PENCILS PROVIDED del2ud(3,ndustspec); del6ud(3,ndustspec)
-! PENCILS PROVIDED graddivud(3,ndustspec)
+! PENCILS PROVIDED graddivud(3,ndustspec); advec_uud
 !
 !***************************************************************
 
@@ -123,7 +123,7 @@ module Dustvelocity
 !
 ! Auxiliary variables:
 !
-  real, dimension (nx) :: diffus_nud,diffus_nud3,advec_uud,advec_hypermesh_uud
+  real, dimension (nx) :: diffus_nud,diffus_nud3,advec_hypermesh_uud
 
   contains
 !***********************************************************************
@@ -1001,6 +1001,16 @@ module Dustvelocity
         if (lpencil(i_del6ud)) call del6v(f,iuud(k),p%del6ud(:,:,k))
 ! graddivud
         if (lpencil(i_graddivud)) call del2v_etc(f,iuud(k),GRADDIV=p%graddivud(:,:,k))
+!
+!  ``uud/dx'' for timestep
+!
+        if (lfirst .and. ldt) then
+          p%advec_uud=sum(abs(p%uud(:,:,k))*dline_1,2)
+          maxadvec=maxadvec+p%advec_uud
+          if ((headtt.or.ldebug) .and. (ip<6)) &
+            print*,'calc_pencils_dustvelocity: max(advec_uud) =',maxval(p%advec_uud)
+        endif
+
       enddo
 !
     endsubroutine calc_pencils_dustvelocity
@@ -1265,24 +1275,16 @@ module Dustvelocity
 !
           df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) + fviscd
 !
-!  ``uud/dx'' for timestep
-!
-          if (lfirst .and. ldt) then
-            advec_uud=sum(abs(p%uud(:,:,k))*dline_1,2)
-            maxadvec=maxadvec+advec_uud
-            if ((headtt.or.ldebug) .and. (ip<6)) then
-              print*,'duud_dt: max(advec_uud) =',maxval(advec_uud)
-              print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
-            endif
-          endif
-!
-!  Short friction time switch.
-!
         endif
 !
 !  Apply border profile
 !
         if (lborder_profiles) call set_border_dustvelocity(f,df,p,k)
+!
+        if (lfirst .and. ldt) then
+          if ((headtt.or.ldebug) .and. (ip<6)) &
+            print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
+        endif
 !
 !  End loop over dust species
 !
@@ -1327,8 +1329,8 @@ module Dustvelocity
           call max_mn_name(p%od2(:,k),idiag_odmax(k),lsqrt=.true.)
           call sum_mn_name(p%od2(:,k),idiag_od2m(k))
           call sum_mn_name(p%oud(:,k),idiag_oudm(k))
-          if (lfirst .and. ldt) then
-            if (idiag_dtud(k)/=0) call max_mn_name(advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
+          if (ldt) then
+            if (idiag_dtud(k)/=0) call max_mn_name(p%advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
             if (idiag_dtnud(k)/=0) call max_mn_name(diffus_nud/cdtv,idiag_dtnud(k),l_dt=.true.)
           endif
         enddo
