@@ -262,7 +262,8 @@ module Shear
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      intent(in) :: f,p
+      intent(in) :: f
+      intent(out) :: p
 !
 !  Take shear into account for calculating time step.
 !
