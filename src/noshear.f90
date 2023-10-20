@@ -141,7 +141,12 @@ module Shear
 !
     endsubroutine shearing
 !***********************************************************************
-    subroutine calc_diagnostics_shear
+    subroutine calc_diagnostics_shear(p)
+!
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+!
     endsubroutine calc_diagnostics_shear
 !***********************************************************************
     subroutine advance_shear(f,df,dt_shear)
