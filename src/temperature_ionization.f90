@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3); tcond; sglnTT(3)
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3); tcond; sglnTT(3); advec_cs2
 !
 !***************************************************************
 module Energy
@@ -576,6 +576,25 @@ module Energy
       if (lpencil(i_sglnTT)) &
         call not_implemented('calc_pencils_energy','pencil sglnTT for temperature_ionization')
 !
+!  ``cs2/dx^2'' for timestep
+!
+      if (ldensity.and.lhydro.and.lfirst.and.ldt) then
+        if (lreduced_sound_speed) then
+          if (lscale_to_cs2top) then
+            call fatal_error('denergy_dt','lscale_to_cs2top not possible')
+!AB: because cs2top is undefined in this module
+!--         p%advec_cs2=reduce_cs2*cs2top*dxyz_2
+          else
+            p%advec_cs2=reduce_cs2*p%cs2*dxyz_2
+          endif
+        else
+          p%advec_cs2=p%cs2*dxyz_2
+        endif
+!
+        advec_cs2=p%advec_cs2
+        if (headtt.or.ldebug) print*, 'calc_pencils_energy: max(p%advec_cs2) =', maxval(p%advec_cs2)
+      endif
+!
     endsubroutine calc_pencils_energy
 !***********************************************************************
     subroutine denergy_dt(f,df,p)
@@ -614,24 +633,6 @@ module Energy
 !  Calculate cs2 in a separate routine
 !
       if (headtt) print*,'denergy_dt: cs2 =', p%cs2(1)
-!
-!  ``cs2/dx^2'' for timestep
-!
-      if (ldensity.and.lhydro.and.lfirst.and.ldt) then
-        if (lreduced_sound_speed) then
-          if (lscale_to_cs2top) then
-            call fatal_error('denergy_dt','lscale_to_cs2top not possible')
-!AB: because cs2top is undefined in this module
-!--         advec_cs2=reduce_cs2*cs2top*dxyz_2
-          else
-            advec_cs2=reduce_cs2*p%cs2*dxyz_2
-          endif
-        else
-          advec_cs2=p%cs2*dxyz_2
-        endif
-      endif
-!
-      if (headtt.or.ldebug) print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
 !
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes)
@@ -728,7 +729,7 @@ module Energy
         call sum_mn_name(p%ss,idiag_ssm)
         call sum_mn_name(p%cv,idiag_cv)
         call sum_mn_name(p%cp,idiag_cp)
-        if (idiag_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (ldt.and.idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         call sum_mn_name(p%ee,idiag_eem)
         call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_Tppm/=0) call sum_mn_name(max(pthresh-p%pp,0.)*pthreshnorm,idiag_Tppm)

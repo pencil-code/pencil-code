@@ -17,7 +17,7 @@
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1tilde; glnTT(3)
 ! PENCILS PROVIDED TT; TT1; Ma2; ugss; hss(3,3); hlnTT(3,3)
-! PENCILS PROVIDED del2ss; del6ss; fpres(3); sglnTT(3)
+! PENCILS PROVIDED del2ss; del6ss; fpres(3); sglnTT(3); advec_cs2
 !
 !***************************************************************
 module Energy
@@ -383,6 +383,14 @@ module Energy
       if (lpencil(i_sglnTT)) &
         call not_implemented('calc_pencils_energy','pencil sglnTT for entropy_onefluid')
 !
+!  ``cs2/dx^2'' for timestep
+!
+      if (lhydro.and.ldensity.and.lfirst.and.ldt) then
+        p%advec_cs2=p%cs2*dxyz_2
+        advec_cs2=p%advec_cs2
+        if (headtt.or.ldebug) print*,'calc_pencils_energy: max(advec_cs2) =',maxval(p%advec_cs2)
+      endif
+!
     endsubroutine calc_pencils_energy
 !***********************************************************************
     subroutine denergy_dt(f,df,p)
@@ -451,13 +459,6 @@ module Energy
 !
       if (lspecial) call special_calc_energy(f,df,p)
 !
-!  ``cs2/dx^2'' for timestep
-!
-      if (lhydro.and.ldensity.and.lfirst.and.ldt) then
-        advec_cs2=p%cs2*dxyz_2
-        if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
-      endif
-!
       call calc_diagnostics_energy(f,p)
 
     endsubroutine denergy_dt
@@ -477,7 +478,7 @@ module Energy
         call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         call sum_mn_name(p%TT,idiag_TTm)
-        if (idiag_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_ethdivum/=0) call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)

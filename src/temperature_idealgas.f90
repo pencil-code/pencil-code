@@ -20,7 +20,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3); tcond; sglnTT(3); d2xlnTT; d2zlnTT
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3); tcond; sglnTT(3); d2xlnTT; d2zlnTT, advec_cs2
 !
 !***************************************************************
 module Energy
@@ -1155,6 +1155,22 @@ module Energy
 ! sglnTT 
       if (lpencil(i_sglnTT)) call multmv(p%sij,p%glnTT,p%sglnTT)
 !
+!  ``cs2/dx^2'' for timestep
+!
+      if (lfirst.and.ldt.and.ldensity.and.lhydro) then
+        if (lreduced_sound_speed) then
+!          if (lscale_to_cs2top) then
+!            p%advec_cs2=reduce_cs2*cs2top*dxyz_2
+!          else
+            p%advec_cs2=reduce_cs2*p%cs2*dxyz_2
+!          endif
+        else
+          p%advec_cs2=p%cs2*dxyz_2
+          advec_cs2=p%advec_cs2
+        endif
+        if (headtt.or.ldebug) print*,'calc_pencils_energy: max(advec_cs2) =',maxval(p%advec_cs2)
+      endif
+!
     endsubroutine calc_pencils_energy
 !***********************************************************************
     subroutine denergy_dt(f,df,p)
@@ -1199,21 +1215,6 @@ module Energy
           print*, 'denergy_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
           call identify_bcs('lnTT',ilnTT)
         endif
-      endif
-!
-!  ``cs2/dx^2'' for timestep
-!
-      if (lfirst.and.ldt.and.ldensity.and.lhydro) then
-        if (lreduced_sound_speed) then
-!          if (lscale_to_cs2top) then
-!            advec_cs2=reduce_cs2*cs2top*dxyz_2
-!          else
-            advec_cs2=reduce_cs2*p%cs2*dxyz_2
-!          endif
-        else
-          advec_cs2=p%cs2*dxyz_2
-        endif
-        if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
       endif
 !
 !  Sound speed squared.
@@ -1600,7 +1601,7 @@ module Energy
           call sum_mn_name(tmp,idiag_guzgTm)
         endif
 !
-        if (idiag_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (ldt.and.idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
 
         if (idiag_gTmax/=0) then
           call dot2(p%glnTT,tmp)
