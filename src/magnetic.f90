@@ -4315,6 +4315,8 @@ module Magnetic
             if (cmin>0)         rho1_jxb = rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
           endif
           p%advec_va2=sum((p%bb*dline_1)**2,2)*mu01*rho1_jxb
+        else
+          p%advec_va2=0.
         endif
 !
 !WL: don't know if this is correct, but it's the only way I can make
