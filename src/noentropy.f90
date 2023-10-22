@@ -15,7 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED Ma2; fpres(3); tcond; sglnTT(3)
-! PENCILS PROVIDED uglnTT, advec_cs2
+! PENCILS PROVIDED uglnTT; advec_cs2
 !
 !***************************************************************
 module Energy
@@ -290,10 +290,10 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep - but only if we are evolving hydrodynamics.
 !
+      if (.not.ldt) p%advec_cs2=0.0
       if (lfirst.and.ldt) then
         if (leos.and.ldensity.and.lhydro) then
           p%advec_cs2=p%cs2*dxyz_2
-          advec_cs2=p%advec_cs2
           if (headtt.or.ldebug) print*, 'calc_pencils_energy: max(advec_cs2) =', maxval(p%advec_cs2)
         endif
       endif
@@ -363,6 +363,8 @@ module Energy
           enddo
         endif
       endif
+
+      if (lfirst.and.ldt) advec_cs2 = p%advec_cs2
 
       call calc_diagnostics_energy(f,p)
 !
