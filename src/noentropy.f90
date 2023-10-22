@@ -290,7 +290,6 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep - but only if we are evolving hydrodynamics.
 !
-      if (.not.ldt) p%advec_cs2=0.0
       if (lfirst.and.ldt) then
         if (leos.and.ldensity.and.lhydro) then
           p%advec_cs2=p%cs2*dxyz_2
@@ -364,7 +363,7 @@ module Energy
         endif
       endif
 
-      if (lfirst.and.ldt) advec_cs2 = p%advec_cs2
+      if (lfirst.and.ldt.and.leos.and.ldensity.and.lhydro) advec_cs2 = p%advec_cs2
 
       call calc_diagnostics_energy(f,p)
 !
