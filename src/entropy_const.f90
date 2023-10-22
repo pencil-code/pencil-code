@@ -195,7 +195,6 @@ module Energy
 !
       if (lfirst.and.ldt) then
         p%advec_cs2=cs2*dxyz_2
-        advec_cs2 = p%advec_cs2
         if (headtt.or.ldebug) print*,'calc_pencils_energy: max(advec_cs2) =',maxval(p%advec_cs2)
       endif
 
@@ -236,6 +235,8 @@ module Energy
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-cs2*(glnrho(:,2))
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-cs2*(glnrho(:,3))
       endif
+
+      if (lfirst.and.ldt) advec_cs2 = p%advec_cs2
 
       call calc_diagnostics_energy(f,p)
 

@@ -387,7 +387,6 @@ module Energy
 !
       if (lhydro.and.ldensity.and.lfirst.and.ldt) then
         p%advec_cs2=p%cs2*dxyz_2
-        advec_cs2=p%advec_cs2
         if (headtt.or.ldebug) print*,'calc_pencils_energy: max(advec_cs2) =',maxval(p%advec_cs2)
       endif
 !
@@ -458,6 +457,8 @@ module Energy
 !  Entry possibility for "personal" entries.
 !
       if (lspecial) call special_calc_energy(f,df,p)
+!
+      if (lhydro.and.ldensity.and.lfirst.and.ldt) advec_cs2=p%advec_cs2
 !
       call calc_diagnostics_energy(f,p)
 

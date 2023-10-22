@@ -3248,7 +3248,6 @@ module Energy
           else
             p%advec_cs2=p%cs2*dxyz_2
           endif
-          advec_cs2=p%advec_cs2
           if (headtt.or.ldebug) print*, 'calc_pencils_energy: max(advec_cs2) =', maxval(p%advec_cs2)
         endif
       endif
@@ -3437,15 +3436,18 @@ module Energy
 !
 !  Enforce maximum heating rate timestep constraint
 !
-      if (lfirst.and.ldt.and.(lthdiff_Hmax.or.idiag_dtH/=0)) then
-        if (lthdiff_Hmax) then
+      if (lfirst.and.ldt) then
+        if (lhydro.and.ldensity) advec_cs2=p%advec_cs2
+        if (lthdiff_Hmax.or.idiag_dtH/=0) then
+          if (lthdiff_Hmax) then
+            ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
+            dt1_max=max(dt1_max,ssmax/cdts)
+          elseif (lrhs_max) then
+            dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
+          endif
+        elseif (ldiagnos.and.idiag_tauhmin/=0) then
           ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
-          dt1_max=max(dt1_max,ssmax/cdts)
-        elseif (lrhs_max) then
-          dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
         endif
-      elseif (ldiagnos.and.idiag_tauhmin/=0) then
-        ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
       endif
 !
 !  Calculate entropy related diagnostics.
