@@ -95,6 +95,40 @@ module Special
 !
     endsubroutine initialize_special
 !***********************************************************************
+    subroutine init_special(f)
+!
+!  initialize with self-consistent equilibrium state
+!  23-oct-23/hongzhe: coded
+!
+      use Gravity, only: g0
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      real :: p_tmp,dp,rhoeq_tmp,Teq_tmp,tau_tmp
+      real :: Rgas=4114.29
+      integer :: i,j,k
+!
+!  Compute the initial equilibrium state for pressure and density.
+!  dP = -rho_eq(P) * g(r) * dr. Integrate from bottom.
+!
+      call get_mu_ss(mu_ss,lon_ss,lat_ss)
+      do j=1,my
+      do k=1,mz
+        p_tmp = peqbot
+        do i=1,(ipx+1)*nx
+          call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k)
+          rhoeq_tmp = 100.* p_tmp/Rgas/Teq_tmp
+          dp = -rhoeq_tmp * g0/x(i)**2 * dx * pp2Pa
+          p_tmp = min(peqtop,p_tmp+dp)
+!
+          !if (i>=ipx*nx+1) f(i-ipx*nx+nghost,j,k,ilnrho) = log(rhoeq_tmp)
+        enddo
+      enddo
+      enddo
+!
+    endsubroutine init_special
+!***********************************************************************
     subroutine pencil_criteria_special
 !
 !  All pencils that this special module depends on are specified here.
