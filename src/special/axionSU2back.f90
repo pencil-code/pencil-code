@@ -107,7 +107,7 @@ module Special
   integer :: idiag_TRpsim  =0 ! DIAG_DOC: $\langle T_R^* \psi\rangle$
   integer :: idiag_TRpsikm  =0 ! DIAG_DOC: $\langle T_R^* \psi (k/a)\rangle$
   integer :: idiag_TRpsidotm  =0 ! DIAG_DOC: $\langle T_R^* \psi'\rangle$
-  integer :: idiag_TRdotpsim  =0 ! DIAG_DOC: $\langle T_R^*' \psi\rangle$
+  integer :: idiag_TRdotpsim  =0 ! DIAG_DOC: $\langle {T_R^*}' \psi\rangle$
   integer :: idiag_TLeff2m  =0 ! DIAG_DOC: $|T_R|^2_{\rm eff}$
   integer :: idiag_TLeff2km  =0 ! DIAG_DOC: $k|T_R|^2_{\rm eff}$
   integer :: idiag_TLdoteff2m  =0 ! DIAG_DOC: $|T_R\dot{T}_R|_{\rm eff}$
@@ -470,6 +470,7 @@ module Special
         xi=mQ+1./mQ
         epsQE=(mQ*H/g)**2
         epsQB=epsQE*mQ**2
+        if (headt) print*,'AXEL: mQ, xi, epsQE, epsQB=', mQ, xi, epsQE, epsQB
       else
         mQ=g*Q/H
       endif
@@ -1147,6 +1148,7 @@ module Special
           TLeff2m=(4.*pi*k**3*dlnk)*TLeff2
           !grand=grand+(4.*pi*k**3*dlnk)*(xi*H-k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
           !grant=grant+(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
+!AB: here, for TL, we use the opposite sign in front of the k/a terms.
           grand=grand+(4.*pi*k**3*dlnk)*(xi*H+k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
           grant=grant+(4.*pi*k**3*dlnk)*(mQ*H+k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
         endif

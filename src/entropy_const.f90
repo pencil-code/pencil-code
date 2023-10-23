@@ -23,7 +23,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; fpres(3); sglnTT(3)
+! PENCILS PROVIDED Ma2; fpres(3); sglnTT(3); advec_cs2
 !***************************************************************
 !
 module Energy
@@ -190,9 +190,15 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+!
+!  ``cs2/dx^2'' for timestep
+!
+      if (lfirst.and.ldt) then
+        p%advec_cs2=cs2*dxyz_2
+        if (headtt.or.ldebug) print*,'calc_pencils_energy: max(advec_cs2) =',maxval(p%advec_cs2)
+      endif
 
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -222,11 +228,6 @@ module Energy
 
       if (headtt) print*, it, m, n, maxval(cs2), maxval(profxss)
 !
-!  ``cs2/dx^2'' for timestep
-!
-      if (lfirst.and.ldt) advec_cs2=cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
-!
 !  subtract isothermal/polytropic pressure gradient term in momentum equation
 !
       if (lhydro) then
@@ -234,6 +235,8 @@ module Energy
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-cs2*(glnrho(:,2))
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-cs2*(glnrho(:,3))
       endif
+
+      if (lfirst.and.ldt) advec_cs2 = p%advec_cs2
 
       call calc_diagnostics_energy(f,p)
 
@@ -250,7 +253,7 @@ module Energy
 !  Calculate energy related diagnostics
 !
       if (ldiagnos) then
-        if (lfirst.and.ldt.and.idiag_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (lfirst.and.ldt.and.idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         if (idiag_ugradpm/=0) then
           call dot_mn(p%uu,p%glnrho,p%uglnrho)
           call sum_mn_name(p%rho*p%cs2*p%uglnrho,idiag_ugradpm)

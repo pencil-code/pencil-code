@@ -29,7 +29,9 @@ module Special
   real, dimension(my,mz) :: mu_ss=0.
   real, dimension(my) :: lat
   real, dimension(mz) :: lon
-  real :: pp2Pa=1., TT2K=1., tt2s=1.  !  convert pc units to [Pa] and [K] and [s]
+!  constants for unit conversion
+  real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
+  real :: pp2Pa=1., TT2K=1., tt2s=1., g2m3_s2=1.
 !
 ! variables in the reference profile
 !
@@ -39,25 +41,35 @@ module Special
 !
 ! Init parameters
 !
-  real :: lon_ss=0., lat_ss=0.  ! unit: [degree]
-  real :: dTeqbot=0., dTeqtop=100.  ! unit: [K]
-  real :: peqtop=1.d2, peqbot=1.d6  ! unit: [Pa]
+  !  reference values for unit conversion
+  real :: R_planet=9.5e7   !  unit: [m]
+  real :: rho_ref=1.e-2    !  unit: [kg/m3]
+  real :: cs_ref=2.e3      !  unit: [m/s]
+  real :: cp_ref=1.44e4    !  unit: [J/(kg*K)]
+  real :: T_ref=1533       !  unit: [K]
+  !
+  real :: lon_ss=0., lat_ss=0.            ! unit: [degree]
+  real :: dTeqbot=0., dTeqtop=100.        ! unit: [K]
+  real :: peqtop=1.d2, peqbot=1.d6        ! unit: [Pa]
   real :: tauradtop=1.d4, tauradbot=1.d7  ! unit: [s]
-  real :: pradtop=1.d3, pradbot=1.d6 ! unit:[ Pa]
+  real :: pradtop=1.d3, pradbot=1.d6      ! unit:[ Pa]
+  !
+  logical :: linit_equilibrium=.false.
 !
 ! Run parameters
 !
-  real :: tau_slow_heating=-1.
+  real :: tau_slow_heating=-1.,t0_slow_heating=0.
   real :: Bext_dipole=0.
 !
 !
 !
   namelist /special_init_pars/ &
+      R_planet,rho_ref,cs_ref,cp_ref,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
-      pradtop,pradbot,dTeqbot,dTeqtop,pp2Pa,TT2K,tt2s
+      pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium
 !
   namelist /special_run_pars/ &
-      tau_slow_heating,Bext_dipole
+      tau_slow_heating,t0_slow_heating,Bext_dipole
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -94,6 +106,47 @@ module Special
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
+!***********************************************************************
+    subroutine init_special(f)
+!
+!  initialize with self-consistent equilibrium state
+!  23-oct-23/hongzhe: coded
+!
+      use Gravity, only: g0
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      real :: p_tmp,dp,rhoeq_tmp,Teq_tmp,tau_tmp
+      integer :: i,j,k
+!
+      if (linit_equilibrium) then
+!
+!  Compute the initial equilibrium state for pressure and density.
+!  dP = -rho_eq(P) * g(r) * dr. Integrate from bottom.
+!
+        call get_mu_ss(mu_ss,lon_ss,lat_ss)
+        do j=1,my
+        do k=1,mz
+          p_tmp = peqbot  !  in [Pa]
+          do i=1,(ipx+1)*nx
+            call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
+            rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref/3.5) / rho2kg_m3  !  in code unit
+            dp = -rhoeq_tmp * g0/xglobal(i+nghost)**2 * dx * pp2Pa  ! in [Pa]
+            p_tmp = min(peqtop,p_tmp+dp)  !  in [Pa]
+            if (p_tmp<0.) call fatal_error('init_special', &
+                'failed to compute initial state, probably because of too low Nx')
+!
+            if (i>=ipx*nx+1) then
+              f(i-ipx*nx+nghost,j,k,ilnrho) = log(rhoeq_tmp)
+              f(i-ipx*nx+nghost,j,k,iTT)    =  Teq_tmp/TT2K
+            endif
+          enddo
+        enddo
+        enddo
+      endif
+!
+    endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special
 !
@@ -153,51 +206,26 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: Teq_x,tau_rad_x,log10pp
-      real ,dimension(:), allocatable :: Teq_local
+      real, dimension(nx) :: Teq_x,tau_rad_x
       real :: f_slow_heating
-      integer :: ix,index
 !
-!  The local equilibrium T; still in pressure coordinate
+!  Calculate the local equilibrium temperature Teq_x,
+!  and the local radiative cooling time tau_rad_x,
+!  for all l at m,n, given the local pressure.
+!  Teq_x is in [K] and tau_rad_x is in [s].
 !
-      allocate(Teq_local(nref))
-      Teq_local = Teq_night + dTeq*max(0.,mu_ss(m,n))
+      call calc_Teq_tau_mn(Teq_x,tau_rad_x,p%pp*pp2Pa,m,n)
 !
-!  interpolation for Teq_local at height coordinate (could have arbitrary pressure)
-!
-      log10pp = log10(p%pp*pp2Pa)
-      do ix=1,nx
-        ! index of the logp_ref that is just smaller than log10(pressure)
-        index = 1+floor((log10pp(ix)-logp_ref_min)/dlogp_ref)
-        if (index>=nref) then
-          Teq_x(ix) = Teq_local(nref)
-          tau_rad_x(ix) = tau_rad(nref)
-        elseif (index<= 1) then
-          Teq_x(ix) = Teq_local(1)
-          tau_rad_x(ix) = tau_rad(1)
-        else
-          ! interpolate T in log10(p) space
-          Teq_x(ix) = Teq_local(index)+(Teq_local(index+1)-Teq_local(index))*   &
-                          (log10pp(ix)-logp_ref(index))/   &
-                          (logp_ref(index+1)-logp_ref(index))   ! unit of K
-          ! interpolate log10(tau_rad) in log10 p space
-          tau_rad_x(ix) = log10(tau_rad(index))+  &
-                              (log10(tau_rad(index+1))-log10(tau_rad(index)))*   &
-                              (log10pp(ix)-logp_ref(index))/   &
-                              (logp_ref(index+1)-logp_ref(index))
-          tau_rad_x(ix) = 10**tau_rad_x(ix)  ! unit of s
-        endif
-      enddo
+!  Possibility of slowly turning on the heating term
 !
       if (tau_slow_heating>0) then
         f_slow_heating = min(1.d0,t/tau_slow_heating)
       else
         f_slow_heating = 1.
       endif
-  !
-      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - f_slow_heating*(p%TT-Teq_x/TT2K)/(tau_rad_x/tt2s)
+      if (t<t0_slow_heating) f_slow_heating=0.
 !
-      deallocate(Teq_local)
+      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - f_slow_heating*(p%TT-Teq_x/TT2K)/(tau_rad_x/tt2s)
 !
     endsubroutine special_calc_energy
 !***********************************************************************
@@ -234,6 +262,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
 !  compute cos(angle between the substellar point)
+!  could be time-dependent
 !
       call get_mu_ss(mu_ss,lon_ss,lat_ss)
 !
@@ -243,23 +272,33 @@ module Special
 !***********************************************************************
     subroutine prepare_unit_conversion
 !
-!  Constants that convert code units to SI.
+!  Calculate constants that convert code units to SI.
 !
 !  28-sep-23/hongzhe: coded
 !
- !     use EquationOfState, only: getmu
+      use EquationOfState, only: rho0,cs0,get_gamma_etc
 !
-!      real :: mu  !  mean molecular weight
+      real :: gamma,cp
 !
-!      call getmu(mu_tmp=mu)
+      if (unit_system/='SI') call fatal_error('prepare_unit_conversion','please use SI system')
 !
-      if (unit_system=='SI') then
-        ! %HZ: need to code correctly!!
-        ! m_u is atomic mass unit, not mean molecular weight
-        !pp2Pa=k_B_cgs/m_u_cgs*1.0e-4/mu*unit_density*unit_temperature
-        !TT2K=1.*unit_temperature
-      else
-        call fatal_error('prepare_unit_conversion','please use SI system')
+      call get_gamma_etc(gamma,cp=cp)
+!
+      r2m = R_planet/xyz0(1)         !  length to [m], using r_bottom
+      rho2kg_m3 = rho_ref/rho0       !  density to [kg/m3]
+      u2m_s = cs_ref/cs0             !  velocisty to [m/s]
+      cp2si = cp_ref/cp              !  cp to [J/(kg*K)]
+!
+      pp2Pa = rho2kg_m3 * u2m_s**2.  !  pressure to [Pa]
+      TT2K = u2m_s**2. / cp2si       !  temperature to [K]
+      tt2s = r2m / u2m_s             !  time to [s]
+      g2m3_s2 = r2m * u2m_s**2.      !  GM to [m3/s2]
+!
+      if (lroot) then
+        print*,'Constants for uit conversion: r2m,rho2kg_m3,u2m_s,cp2si = ', &
+                r2m,rho2kg_m3,u2m_s,cp2si
+        print*,'Constants for uit conversion: pp2Pa,TT2K,tt2s, g2m3_s2 = ', &
+                pp2Pa,TT2K,tt2s,g2m3_s2
       endif
 !
     endsubroutine  prepare_unit_conversion
@@ -355,6 +394,73 @@ module Special
               spread(sin(lat),2,mz)*sin(latss*deg2rad)
 !
     endsubroutine  get_mu_ss
+!***********************************************************************
+    subroutine calc_Teq_tau_pmn(T_local,tau_local,press,m,n)
+!
+!  Given the local pressure p and position m,n, calculate the equilibrium
+!  temperature T_local and the radiative cooling time tau_local, by
+!  interpolating Tref. Reference: Komacek+Showman2016.
+!  The output T_local is in [K] and tau_local is in [s], and
+!  the input press is in [Pa].
+!
+!  23-oct-23/hongzhe: outsourced from special_calc_energy
+!
+      real, intent(out) :: T_local,tau_local
+      real, intent(in) :: press
+      integer, intent(in) :: m,n
+!
+      real :: log10pp,Teq_local1,Teq_local2
+      integer :: ip
+!
+!  Index of the logp_ref that is just smaller than log10(pressure)
+!
+      log10pp = log10(press)
+      ip = 1+floor((log10pp-logp_ref_min)/dlogp_ref)
+!
+!  Interpolation for T_local and tau_local
+!
+      if (ip>=nref) then
+        T_local = Teq_night(nref) + dTeq(nref)*max(0.,mu_ss(m,n))
+        tau_local = tau_rad(nref)
+      elseif (ip<=1) then
+        T_local = Teq_night(1)    + dTeq(1)*max(0.,mu_ss(m,n))
+        tau_local = tau_rad(1)
+      else
+!
+!  The two closest values of equilibrium T given press,m,n
+!
+        Teq_local1 = Teq_night(ip)   + dTeq(ip)  *max(0.,mu_ss(m,n))
+        Teq_local2 = Teq_night(ip+1) + dTeq(ip+1)*max(0.,mu_ss(m,n))
+        T_local = Teq_local1+(Teq_local2-Teq_local1)*   &
+                  (log10pp-logp_ref(ip))/   &
+                  (logp_ref(ip+1)-logp_ref(ip))   ! unit of K
+!
+        tau_local = log10(tau_rad(ip))+  &
+                    (log10(tau_rad(ip+1))-log10(tau_rad(ip)))*   &
+                    (log10pp-logp_ref(ip))/   &
+                    (logp_ref(ip+1)-logp_ref(ip))
+        tau_local = 10.**tau_local  ! unit of s
+      endif
+!
+    endsubroutine calc_Teq_tau_pmn
+!***********************************************************************
+    subroutine calc_Teq_tau_mn(T_local,tau_local,press,m,n)
+!
+!  Same as calc_Teq_tau_pmn, but for an array of pressure values
+!
+!  23-oct-23/hongzhe: coded
+!
+    real, dimension(nx), intent(out) :: T_local,tau_local
+    real, dimension(nx), intent(in) :: press
+    integer, intent(in) :: m,n
+!
+    integer :: i
+!
+    do i=1,nx
+      call calc_Teq_tau_pmn( T_local(i),tau_local(i), press(i),m,n )
+    enddo
+!
+    endsubroutine calc_Teq_tau_mn
 !***********************************************************************
 !********************************************************************
 !********************************************************************

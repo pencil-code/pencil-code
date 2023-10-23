@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglnTT(3); transprhos !,dsdr
-! PENCILS PROVIDED initss; initlnrho, uuadvec_gss
+! PENCILS PROVIDED initss; initlnrho, uuadvec_gss; advec_cs2
 !
 !***************************************************************
 module Energy
@@ -3236,6 +3236,23 @@ module Energy
 !
       if (lpencil(i_uuadvec_gss)) call h_dot_grad(p%uu_advec,p%gss,p%uuadvec_gss)
 !
+!  ``cs2/dx^2'' for timestep
+!
+      if (lfirst.and.ldt) then
+        if (lhydro.and.ldensity) then
+          if (lreduced_sound_speed) then
+            if (lscale_to_cs2top) then
+              p%advec_cs2=reduce_cs2*cs2top*dxyz_2
+            else
+              p%advec_cs2=reduce_cs2*p%cs2*dxyz_2
+            endif
+          else
+            p%advec_cs2=p%cs2*dxyz_2
+          endif
+          if (headtt.or.ldebug) print*, 'calc_pencils_energy: max(advec_cs2) =', maxval(p%advec_cs2)
+        endif
+      endif
+!
     endsubroutine calc_pencils_energy
 !***********************************************************************
     subroutine denergy_dt(f,df,p)
@@ -3272,24 +3289,9 @@ module Energy
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'denergy_dt: SOLVE denergy_dt'
-      if (headtt) call identify_bcs('ss',iss)
-      if (headtt) print*,'denergy_dt: lnTT,cs2,cp1=', p%lnTT(1), p%cs2(1), p%cp1(1)
-!
-!  ``cs2/dx^2'' for timestep
-!
-      if (ldensity) then
-        if (lhydro.and.lfirst.and.ldt) then
-          if (lreduced_sound_speed) then
-            if (lscale_to_cs2top) then
-              advec_cs2=reduce_cs2*cs2top*dxyz_2
-            else
-              advec_cs2=reduce_cs2*p%cs2*dxyz_2
-            endif
-          else
-            advec_cs2=p%cs2*dxyz_2
-          endif
-        endif
-        if (headtt.or.ldebug) print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
+      if (headtt) then
+        call identify_bcs('ss',iss)
+        print*,'denergy_dt: lnTT,cs2,cp1=', p%lnTT(1), p%cs2(1), p%cp1(1)
       endif
 !
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
@@ -3435,15 +3437,18 @@ module Energy
 !
 !  Enforce maximum heating rate timestep constraint
 !
-      if (lfirst.and.ldt.and.(lthdiff_Hmax.or.idiag_dtH/=0)) then
-        if (lthdiff_Hmax) then
+      if (lfirst.and.ldt) then
+        if (lhydro.and.ldensity) advec_cs2=p%advec_cs2
+        if (lthdiff_Hmax.or.idiag_dtH/=0) then
+          if (lthdiff_Hmax) then
+            ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
+            dt1_max=max(dt1_max,ssmax/cdts)
+          elseif (lrhs_max) then
+            dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
+          endif
+        elseif (ldiagnos.and.idiag_tauhmin/=0) then
           ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
-          dt1_max=max(dt1_max,ssmax/cdts)
-        elseif (lrhs_max) then
-          dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
         endif
-      elseif (ldiagnos.and.idiag_tauhmin/=0) then
-        ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
       endif
 !
 !  Calculate entropy related diagnostics.
@@ -3489,7 +3494,7 @@ module Energy
               call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.)
             endif
           endif
-          if (idiag_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+          if (idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         endif
 
         if (idiag_ssmax/=0) call max_mn_name(p%ss*uT,idiag_ssmax)

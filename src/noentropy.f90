@@ -15,7 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED Ma2; fpres(3); tcond; sglnTT(3)
-! PENCILS PROVIDED uglnTT
+! PENCILS PROVIDED uglnTT; advec_cs2
 !
 !***************************************************************
 module Energy
@@ -288,6 +288,15 @@ module Energy
 ! sglnTT (dummy)
       if (lpencil(i_sglnTT)) p%sglnTT=0.
 !
+!  ``cs2/dx^2'' for timestep - but only if we are evolving hydrodynamics.
+!
+      if (lfirst.and.ldt) then
+        if (leos.and.ldensity.and.lhydro) then
+          p%advec_cs2=p%cs2*dxyz_2
+          if (headtt.or.ldebug) print*, 'calc_pencils_energy: max(advec_cs2) =', maxval(p%advec_cs2)
+        endif
+      endif
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_energy
@@ -338,14 +347,6 @@ module Energy
       intent(in) :: f,p
       intent(inout) :: df
 !
-!  ``cs2/dx^2'' for timestep - but only if we are evolving hydrodynamics.
-!
-      if (.not.ldt) advec_cs2=0.0
-      if (leos.and.ldensity.and.lhydro) then
-        if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-        if (headtt.or.ldebug) print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
-      endif
-!
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
       if (lhydro.and.lpressuregradient_gas.and..not.lconservative) then
@@ -361,6 +362,8 @@ module Energy
           enddo
         endif
       endif
+
+      if (lfirst.and.ldt.and.leos.and.ldensity.and.lhydro) advec_cs2 = p%advec_cs2
 
       call calc_diagnostics_energy(f,p)
 !
@@ -383,8 +386,9 @@ module Energy
 !  Calculate energy related diagnostics.
 !
       if (ldiagnos) then
-
-        if (idiag_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (ldt) then
+          if (idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        endif
         if (idiag_ugradpm/=0) call sum_mn_name(p%rho*p%cs2*p%uglnrho,idiag_ugradpm)
         if (idiag_thermalpressure/=0) call sum_lim_mn_name(p%rho*p%cs2,idiag_thermalpressure,p)
         if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)

@@ -32,7 +32,7 @@
 ! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
 ! PENCILS PROVIDED hjparallel; hjperp; nu_ni1
 ! PENCILS PROVIDED gamma_A2; clight2; gva(3); vmagfric(3)
-! PENCILS PROVIDED bb_sph(3)
+! PENCILS PROVIDED bb_sph(3),advec_va2
 !***************************************************************
 module Magnetic
 !
@@ -1013,7 +1013,7 @@ module Magnetic
 ! Auxiliary module variables
 !
   real, dimension(nx) :: eta_total=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
-                         diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.,advec_va2=0.
+                         diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.
   real, dimension(nx,3) :: fres,uxbb,forcing_rhs
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
@@ -3674,9 +3674,10 @@ module Magnetic
 !  18-jun-13/axel: b2 now includes B_ext by default (luse_Bext_in_b2=T is kept)
 !  20-jun-16/fred: added derivative tensor option and streamlined gij_etc
 !
-      use Sub
       use EquationOfState, only: rho0
+      use General, only: notanumber
       use FArrayManager, only: farray_index_by_name
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       type (pencil_case),                 intent(out)  :: p
@@ -3687,6 +3688,8 @@ module Magnetic
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
       integer :: i, j, ix, iedotx, iedotz
+
+      if (lfirstpoint) lproc_print=.true.
 ! aa
       if (lpenc_loc(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
 ! a2
@@ -4293,6 +4296,67 @@ module Magnetic
    !  if ((lpenc_loc(i_el).or.lpenc_loc(i_e2)).and.headt) &
    !      print*,'lets hope p%el and p%e2 are computed elsewhere...'
 !
+!  Add ``va^2/dx^2'' contribution to timestep.
+!  Consider advective timestep only when lhydro=T.
+!
+      if (lfirst.and.ldt) then
+        if (lhydro.and.llorentzforce) then
+          rho1_jxb=p%rho1
+          if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
+          if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) &
+            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+
+          if (betamin_jxb>0) then
+            va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
+            if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
+            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+          endif
+          if (lboris_correction) then
+            if (va2max_boris>0) rho1_jxb = rho1_jxb * (1+(p%va2/va2max_boris)**2.)**(-0.5)
+            if (cmin>0)         rho1_jxb = rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
+          endif
+          p%advec_va2=sum((p%bb*dline_1)**2,2)*mu01*rho1_jxb
+        else
+          p%advec_va2=0.
+        endif
+!
+!WL: don't know if this is correct, but it's the only way I can make
+!    some 1D and 2D samples work when the non-existent direction has the
+!    largest velocity (like a 2D rz slice of a Keplerian disk that rotates
+!    on the phi direction)
+!    Please check
+!
+        if (lisotropic_advection) then
+          if (dimensionality<3) p%advec_va2=p%va2*dxyz_2
+        endif
+!
+!mcnallcp: If hall_term is on, the fastest alfven-type mode is the Whistler wave at the grid scale.
+! Since the Alfven waves split into the fast whistler mode, the old advec_va2 is not right anymore.
+!  This is the generalization for Hall-MHD.
+!  This is not used in EMHD simulations.
+!
+        if (lhydro.and.hall_term/=0.0) p%advec_va2=( (p%bb(:,1)*dline_1(:,1)*( hall_term*pi*dline_1(:,1)*mu01 &
+                                                    +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,1)*mu01)**2 ) ))**2 &
+                                                    +(p%bb(:,2)*dline_1(:,2)*( hall_term*pi*dline_1(:,2)*mu01 &
+                                                    +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,2)*mu01)**2 ) ))**2 &
+                                                    +(p%bb(:,3)*dline_1(:,3)*( hall_term*pi*dline_1(:,3)*mu01 &
+                                                    +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,3)*mu01)**2 ) ))**2 &
+                                                   )
+!MR: Why is advec_va2 not cumulative?
+        if (notanumber(p%advec_va2)) then
+          if (lproc_print) then
+            print*, 'calc_pencils_magnetic: advec_va2  =',p%advec_va2
+            if (.not.allproc_print) lproc_print=.false.
+          endif
+        endif
+        advec2=advec2+p%advec_va2
+        if (lmagneto_friction) then
+          call dot2(p%vmagfric,tmp1)
+          advec2=advec2 + tmp1
+        endif
+!
+      endif
+!
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
     subroutine set_ambipolar_diffusion(p)
@@ -4404,7 +4468,7 @@ module Magnetic
       real, dimension (nx,3,3) :: d_sld_flux
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
-      real, dimension (nx) :: sign_jo,rho1_jxb,tmp1
+      real, dimension (nx) :: sign_jo,tmp1
       real, dimension (nx) :: eta_mn,etaSS,eta_heat
       real, dimension (nx) :: vdrift, va2max_beta
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
@@ -4444,7 +4508,7 @@ module Magnetic
       Fmax=1./impossible
       dAmax=1./impossible
       ssmax=1./impossible
-      if (n==nn(1).and.m==mm(1)) lproc_print=.true.
+      if (lfirstpoint) lproc_print=.true.
 !
 !  Replace B_ext locally to accommodate its time dependence.
 !
@@ -5474,66 +5538,6 @@ module Magnetic
         endif
       endif
 !
-!  Add ``va^2/dx^2'' contribution to timestep.
-!  Consider advective timestep only when lhydro=T.
-!
-      if (lfirst.and.ldt) then
-        advec_va2=0.
-        if (lhydro.and.llorentzforce) then
-          rho1_jxb=p%rho1
-          if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-          if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) &
-            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
-
-          if (betamin_jxb>0) then
-            va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
-            if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
-            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
-          endif
-          if (lboris_correction) then
-            if (va2max_boris>0) rho1_jxb = rho1_jxb * (1+(p%va2/va2max_boris)**2.)**(-0.5)
-            if (cmin>0)         rho1_jxb = rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
-          endif
-          advec_va2=sum((p%bb*dline_1)**2,2)*mu01*rho1_jxb
-        endif
-!
-!WL: don't know if this is correct, but it's the only way I can make
-!    some 1D and 2D samples work when the non-existent direction has the
-!    largest velocity (like a 2D rz slice of a Keplerian disk that rotates
-!    on the phi direction)
-!    Please check
-!
-        if (lisotropic_advection) then
-          if (dimensionality<3) advec_va2=p%va2*dxyz_2
-        endif
-!
-!mcnallcp: If hall_term is on, the fastest alfven-type mode is the Whistler wave at the grid scale.
-! Since the Alfven waves split into the fast whistler mode, the old advec_va2 is not right anymore.
-!  This is the generalization for Hall-MHD.
-!  This is not used in EMHD simulations.
-!
-        if (lhydro.and.hall_term/=0.0) advec_va2 = ( (p%bb(:,1)*dline_1(:,1)*( hall_term*pi*dline_1(:,1)*mu01 &
-                                                      +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,1)*mu01)**2 ) ))**2 &
-                                                    +(p%bb(:,2)*dline_1(:,2)*( hall_term*pi*dline_1(:,2)*mu01 &
-                                                      +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,2)*mu01)**2 ) ))**2 &
-                                                    +(p%bb(:,3)*dline_1(:,3)*( hall_term*pi*dline_1(:,3)*mu01 &
-                                                      +sqrt(mu01*p%rho1 + (hall_term*pi*dline_1(:,3)*mu01)**2 ) ))**2 &
-                                                   )
-!MR: Why is advec_va2 not cumulative?
-        if (notanumber(advec_va2)) then
-          if (lproc_print) then
-            print*, 'daa_dt: advec_va2  =',advec_va2
-            if (.not.allproc_print) lproc_print=.false.
-          endif
-        endif
-        advec2=advec2+advec_va2
-        if (lmagneto_friction) then
-          call dot2(p%vmagfric,tmp1)
-          advec2=advec2 + tmp1
-        endif
-!
-      endif
-!
 !  Apply border profiles.
 !
       if (lborder_profiles) call set_border_magnetic(f,df,p)
@@ -6067,9 +6071,7 @@ module Magnetic
       if (idiag_vA23rms/=0) call sum_mn_name(p%va2*p%rho1**onethird,idiag_vA23rms,lsqrt=.true.)
       call sum_mn_name(p%va2,idiag_vArms,lsqrt=.true.)
       call max_mn_name(p%va2,idiag_vAmax,lsqrt=.true.)
-      if (.not.lgpu) then
-        if (idiag_dtb/=0) call max_mn_name(sqrt(advec_va2)/cdt,idiag_dtb,l_dt=.true.)
-      endif
+      if (idiag_dtb/=0) call max_mn_name(sqrt(p%advec_va2)/cdt,idiag_dtb,l_dt=.true.)
 !
 !  Lorentz force.
 !

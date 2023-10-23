@@ -9548,12 +9548,12 @@ Gravity, $\bf{g}=-\nab\Phi$, is specified in terms of a potential
 $\Phi$. In slab geometry, $\Phi=\Phi(z)$, we have ${\bf g}=(0,0,g_z)$ and
 $g_z=-\dd\Phi/\dd z$.
 
-Use \var{grav_profile}='const'
+Use \var{gravz_profile}='const'
 together with \var{gravz}$=-1$ to get
 \begin{equation} \label{constgrav-gravz-init}
   \Phi=(z-z_\infty)(-g_z),\quad (-g_z)>0.
 \end{equation}
-Use \var{grav_profile}='linear' to get
+Use \var{gravz_profile}='linear' to get
 \begin{equation} \label{disc-gravz-init}
   \Phi={\textstyle\frac{1}{2}}(z^2-z_\infty^2)\nu_{\rm g}^2,
 \quad g_z=-\nu_{\rm g}^2z
@@ -9633,14 +9633,14 @@ In order that $\rho=\rho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
 $z=z_{\rm ref}$, we have to choose (remember that $g_z$ is normally negative!)
 \begin{equation}\label{zinfty}
   z_\infty = z_{\rm ref} + (m{+}1) \frac{c_{\rm s0}^2}{\gamma(-g_z)}
-  \quad\mbox{for \var{grav_profile}='const'},
+  \quad\mbox{for \var{gravz_profile}='const'},
 \end{equation}
 and
 \begin{equation}\label{zinfty2}
   z_\infty^2
   = z_{\rm ref}^2
     + (m{+}1) \frac{c_{\rm s0}^2}{{\textstyle\frac{1}{2}}\gamma\nu_{\rm g}^2}
-  \quad\mbox{for \var{grav_profile}='linear'}.
+  \quad\mbox{for \var{gravz_profile}='linear'}.
 \end{equation}
 Thus, when using \code{initlnrho='polytropic\_simple'} we calculate
 \begin{equation}
@@ -13393,12 +13393,12 @@ double precision, $\varepsilon\approx10^{-15}$.
                  $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\rho=\ln\rho_0$.\\
   \var{gravz} [$-1.$]
                & vertical gravity component $g_z$.\\
-  \var{grav_profile} \\{}
+  \var{gravz_profile} \\{}
     [\code{'const'}]
                & constant gravity $g_z = \texttt{gravz}$
-                 (\code{grav_profile='const'}) gravity
+                 (\code{gravz_profile='const'}) gravity
                  or linear profile $g_z = \texttt{gravz}\cdot z$
-                 (\code{grav_profile='linear'}, for accretion discs and
+                 (\code{gravz_profile='linear'}, for accretion discs and
                  similar). \\
   \var{z1} [$0.$], \\
   \var{z2} [$1.$]
@@ -14102,7 +14102,7 @@ information on wavenumbers and $z$ positions.\\
 \midrule
   \var{zref} [start], \\
   \var{gravz} [start], \\
-  \var{grav_profile} [start]
+  \var{gravz_profile} [start]
                & see p.~\pageref{zref-init}. \\
   \var{nu_epicycle} [start]
                & see Eq.~(\ref{disc-gravz-init}) in
