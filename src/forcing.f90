@@ -6276,11 +6276,14 @@ module Forcing
 !
 !   12-aug-09/dhruba: coded
 !
-      if (iforce=='chandra_kendall' .or. iforce=='cktest') then
-        deallocate(psif,cklist)
-        if (lfastCK) deallocate(Zpsi_list,RYlm_list,IYlm_list)
-      endif
-      
+      if (allocated(psif)) deallocate(psif)
+      if (allocated(cklist)) deallocate(cklist)
+      if (allocated(Zpsi_list)) deallocate(Zpsi_list)
+      if (allocated(RYlm_list)) deallocate(RYlm_list)
+      if (allocated(IYlm_list)) deallocate(IYlm_list)
+      if (allocated(RYlm_rot)) deallocate(RYlm_rot)
+      if (allocated(IYlm_rot)) deallocate(IYlm_rot)
+      if (allocated(random2d_kmodes)) deallocate(random2d_kmodes)
       if (allocated(fcont_from_file)) deallocate(fcont_from_file)
 !
     endsubroutine forcing_clean_up
