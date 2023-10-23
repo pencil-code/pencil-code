@@ -64,7 +64,7 @@ module Special
 !
 !
   namelist /special_init_pars/ &
-      R_planet,rho_ref,cs_ref,cp_ref,&
+      R_planet,rho_ref,cs_ref,cp_ref,T_ref,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium
 !
@@ -118,7 +118,8 @@ module Special
       intent(inout) :: f
 !
       real :: p_tmp,dp,rhoeq_tmp,Teq_tmp,tau_tmp
-      integer :: i,j,k
+      integer, parameter :: nsub=24
+      integer :: i,j,k,isub
 !
       if (linit_equilibrium) then
 !
@@ -130,12 +131,14 @@ module Special
         do k=1,mz
           p_tmp = peqbot  !  in [Pa]
           do i=1,(ipx+1)*nx
-            call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
-            rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref/3.5) / rho2kg_m3  !  in code unit
-            dp = -rhoeq_tmp * g0/xglobal(i+nghost)**2 * dx * pp2Pa  ! in [Pa]
-            p_tmp = min(peqtop,p_tmp+dp)  !  in [Pa]
-            if (p_tmp<0.) call fatal_error('init_special', &
-                'failed to compute initial state, probably because of too low Nx')
+            do isub=1,nsub  !  use small length step, dx/nsub
+              call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
+              rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref/3.5) / rho2kg_m3  !  in code unit
+              dp = -rhoeq_tmp * g0/xglobal(i+nghost)**2 * dx/nsub * pp2Pa  ! in [Pa]
+              p_tmp = min(peqtop,p_tmp+dp)  !  in [Pa]
+              if (p_tmp<0.) call fatal_error('init_special', &
+                  'failed to compute initial state, probably because of too low Nx')
+            enddo
 !
             if (i>=ipx*nx+1) then
               f(i-ipx*nx+nghost,j,k,ilnrho) = log(rhoeq_tmp)
@@ -284,7 +287,7 @@ module Special
 !
       call get_gamma_etc(gamma,cp=cp)
 !
-      r2m = R_planet/xyz0(1)         !  length to [m], using r_bottom
+      r2m = R_planet/xyz1(1)         !  length to [m]
       rho2kg_m3 = rho_ref/rho0       !  density to [kg/m3]
       u2m_s = cs_ref/cs0             !  velocisty to [m/s]
       cp2si = cp_ref/cp              !  cp to [J/(kg*K)]
