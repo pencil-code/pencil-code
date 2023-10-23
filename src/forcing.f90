@@ -6276,7 +6276,7 @@ module Forcing
 !
 !   12-aug-09/dhruba: coded
 !
-      if (iforce=='chandra-kendall' .or. iforce=='cktest') then
+      if (iforce=='chandra_kendall' .or. iforce=='cktest') then
         deallocate(psif,cklist)
         if (lfastCK) deallocate(Zpsi_list,RYlm_list,IYlm_list)
       endif
