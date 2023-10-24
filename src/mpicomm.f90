@@ -624,7 +624,7 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !
     endfunction index_to_iproc_comm
 !***********************************************************************
-    subroutine cubed_sphere_init
+    subroutine set_cubed_sphere_neighbors
 !
 !  Cubed mesh
 !
@@ -667,7 +667,51 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
       elseif (ipatch==6) then
       endif
 !
-    endsubroutine cubed_sphere_init
+    endsubroutine set_cubed_sphere_neighbors
+!***********************************************************************
+    subroutine scatter_snapshot(a,f,indvar1,indvar2)
+!
+!  Scatters a full snapshot (array a) residing in root (w/o ghost zones) to the f-arrays of all ranks
+!  (not filling ghost zones there). It's assumed that a contains indvar2-indvar1+1 variables to be stored
+!  in f(:,:,:,indvar1:indvar2).
+!
+!  23-oct-23/MR: coded
+!
+      real, dimension(:,:,:,:), intent(in):: a
+      real, dimension(mx,my,mz,mfarray), intent(out):: f
+      integer, intent(in) :: indvar1,indvar2
+
+      integer, dimension(4) :: start_get, start_store
+      integer :: type_get, type_store, win
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: size
+
+      nvar=indvar2-indvar1+1
+      start_get=(/ipx*nx,ipy*ny,ipz*nz,0/)+1
+      start_store=(/ipx*nx+1+nghost,ipy*ny+1+nghost,ipz*nz+1+nghost,indvar1/)
+
+      call MPI_Type_create_subarray(4, (/nxgrid,nygrid,nzgrid,nvar/), (/nx,ny,nz,nvar/), &
+                                    start_get, MPI_ORDER_FORTRAN, MPI_REAL,type_get,mpierr)
+      call MPI_Type_create_subarray(4, (/mx,my,mz,mfarray/), (/nx,ny,nz,nvar/), &
+                                    start_store, MPI_ORDER_FORTRAN, MPI_REAL,type_store,mpierr)
+      call MPI_Type_commit(type_get,mpierr)
+      call MPI_Type_commit(type_store,mpierr)
+
+      size=nxgrid*nygrid*nzgrid*size_of_real
+
+      if (lroot) then   ! data tb scattered is on root
+        call MPI_Win_create(a, size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, win, mpierr)
+      else              ! hence other ranks do not declare a window
+        call MPI_Win_create(a, 0, 1, MPI_INFO_NULL, MPI_COMM_WORLD, win, mpierr)
+      endif
+
+      call MPI_WIN_FENCE(0, win, mpierr)
+      call MPI_Get(f, 1, type_store, root, 0, 1, type_get, win, mpierr)
+      call MPI_WIN_FENCE(0, win, mpierr)
+
+      call MPI_TYPE_FREE(type_get,mpierr)
+      call MPI_TYPE_FREE(type_store,mpierr)
+
+    endsubroutine scatter_snapshot
 !***********************************************************************
     subroutine yyinit
 !
