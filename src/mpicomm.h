@@ -30,7 +30,7 @@
   public :: mpiscatter
   public :: mpigather_scl_str, mpigather_xy, mpimerge_1d, mpigather_z, &
             mpigather_and_out_cmplx, mpigather_and_out_real
-  public :: mpiscatterv, mpiscatterv_real_plain
+  public :: mpiscatterv, mpiscatterv_real_plain, scatter_snapshot
   public :: mpiwtime, mpiwtick
 
   public :: mpisend_nonblock_real,mpisend_nonblock_int

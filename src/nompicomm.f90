@@ -3056,4 +3056,20 @@ module Mpicomm
 
     endsubroutine mpiallreduce_merge
 !***********************************************************************
+    subroutine scatter_snapshot(a,f,indvar1,indvar2)
+!
+!  Scatters a full snapshot (array a) residing in root (w/o ghost zones) to the f-arrays of all ranks
+!  (not filling ghost zones there). It's assumed that a contains indvar2-indvar1+1 variables to be stored
+!  in f(:,:,:,indvar1:indvar2).
+!
+!  23-oct-23/MR: coded
+!
+      real, dimension(:,:,:,:), intent(in):: a
+      real, dimension(mx,my,mz,mfarray), intent(out):: f
+      integer, intent(in) :: indvar1,indvar2
+
+      f(l1:l2,m1:m2,n1:n2,indvar1,indvar2) = a
+
+    endsubroutine scatter_snapshot
+!***********************************************************************
 endmodule Mpicomm
