@@ -891,7 +891,11 @@ module Dustdensity
             f(i,:,:,ind(k)) = init_distr(i,k)*exp(-f(i,:,:,ilnrho))
           enddo
           enddo
-          if (ldcore) f(:,:,:,idcj)=init_distr_ki
+          if (ldcore) then
+            do i=1,ndustspec0; do k=1,ndustspec
+              f(:,:,:,idcj(k,i))=init_distr_ki(k,i)
+            enddo; enddo
+          endif
         case ('atm_drop_gauss2')
           del=(init_x2-init_x1)*0.2
           do k=1,ndustspec
