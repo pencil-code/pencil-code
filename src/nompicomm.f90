@@ -3068,7 +3068,7 @@ module Mpicomm
       real, dimension(mx,my,mz,mfarray), intent(out):: f
       integer, intent(in) :: indvar1,indvar2
 
-      f(l1:l2,m1:m2,n1:n2,indvar1,indvar2) = a
+      f(l1:l2,m1:m2,n1:n2,indvar1:indvar2) = a
 
     endsubroutine scatter_snapshot
 !***********************************************************************
