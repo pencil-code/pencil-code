@@ -324,7 +324,7 @@ module Energy
   integer :: idiag_gTrms=0      ! DIAG_DOC: $(\nabla T)_{\rm rms}$
   integer :: idiag_gsrms=0      ! DIAG_DOC: $(\nabla s)_{\rm rms}$
   integer :: idiag_gTxgsrms=0   ! DIAG_DOC: $(\nabla T\times\nabla s)_{\rm rms}$
-  integer :: idiag_gTxgSom=0    ! DIAG_DOC: $\left<  (\nabla T\times\nabla s)\cdot\boldsymbol{\omega} \right>$
+  integer :: idiag_gTxgsom=0    ! DIAG_DOC: $\left<  (\nabla T\times\nabla s)\cdot\boldsymbol{\omega} \right>$
   integer :: idiag_fconvm=0     ! DIAG_DOC: $\left< c_p \varrho u_z T \right>$
   integer :: idiag_TTp=0        ! DIAG_DOC:
   integer :: idiag_ssmr=0       ! DIAG_DOC:
