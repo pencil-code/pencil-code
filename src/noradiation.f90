@@ -46,11 +46,11 @@ module Radiation
 !
     endsubroutine radtransfer
 !***********************************************************************
-    subroutine initialize_radiation
+    subroutine initialize_radiation(f)
 !
-      !!real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), optional, intent(in) :: f
 !
-      !!call keep_compiler_quiet(f)
+      if (present(f)) call keep_compiler_quiet(f)
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -115,8 +115,6 @@ module Radiation
     endsubroutine dradiation_dt
 !***********************************************************************
     subroutine calc_diagnostics_radiation(f,p)
-
-      use Diagnostics
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
