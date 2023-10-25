@@ -222,7 +222,7 @@ module Special
 !  Possibility of slowly turning on the heating term
 !
       if (tau_slow_heating>0) then
-        f_slow_heating = min(1.d0,t/tau_slow_heating)
+        f_slow_heating = min(1.d0,(t-t0_slow_heating)/tau_slow_heating)
       else
         f_slow_heating = 1.
       endif
@@ -287,7 +287,7 @@ module Special
 !
       call get_gamma_etc(gamma,cp=cp)
 !
-      r2m = R_planet/xyz1(1)         !  length to [m]
+      r2m = R_planet/xyz1(0)         !  length to [m]
       rho2kg_m3 = rho_ref/rho0       !  density to [kg/m3]
       u2m_s = cs_ref/cs0             !  velocisty to [m/s]
       cp2si = cp_ref/cp              !  cp to [J/(kg*K)]
