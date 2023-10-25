@@ -68,9 +68,10 @@ module Heatflux
 ! Auxiliaries
 !
   real :: nu_ee, e_m
+  real, pointer :: z_cutoff, cool_wid
 ! Variable slot indices
 
-contains
+  contains
 !***********************************************************************
   subroutine register_heatflux()
 !
@@ -140,19 +141,12 @@ contains
       call fatal_error('initialize_heatflux','no such iheatflux: '//trim(iheatflux))
     endif
 
+    if (iheatflux=='noadvection-spitzer'.and.lradiation) then
+      call get_shared_variable('z_cutoff',z_cutoff,caller='initialize_heatflux')
+      call get_shared_variable('cool_wid',cool_wid)
+    endif
+
   endsubroutine initialize_heatflux
-!***********************************************************************
-  subroutine finalize_heatflux(f)
-!
-!  Called right before exiting.
-!
-!  14-aug-2011/Bourdin.KIS: coded
-!
-    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-    call keep_compiler_quiet(f)
-!
-  endsubroutine finalize_heatflux
 !***********************************************************************
   subroutine init_heatflux(f)
 !
@@ -316,18 +310,37 @@ contains
 !***********************************************************************
   subroutine calc_diagnostics_heatflux(p)
 
-    use Diagnostics, only: max_mn_name,sum_mn_name
+    use Diagnostics, only: max_mn_name,sum_mn_name,save_name
+    use Slices_methods, only: store_slices
 
     type (pencil_case) :: p
 
-    call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
-    call sum_mn_name(p%q2,idiag_qrms,lsqrt=.true.)
-    if (idiag_qxmin/=0) call max_mn_name(-p%qq(:,1),idiag_qxmin,lneg=.true.)
-    if (idiag_qymin/=0) call max_mn_name(-p%qq(:,2),idiag_qymin,lneg=.true.)
-    if (idiag_qzmin/=0) call max_mn_name(-p%qq(:,3),idiag_qzmin,lneg=.true.)
-    call max_mn_name(p%qq(:,1),idiag_qxmax)
-    call max_mn_name(p%qq(:,2),idiag_qymax)
-    call max_mn_name(p%qq(:,3),idiag_qzmax)
+    if (ldiagnos) then
+
+      call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
+      call sum_mn_name(p%q2,idiag_qrms,lsqrt=.true.)
+      if (idiag_qxmin/=0) call max_mn_name(-p%qq(:,1),idiag_qxmin,lneg=.true.)
+      if (idiag_qymin/=0) call max_mn_name(-p%qq(:,2),idiag_qymin,lneg=.true.)
+      if (idiag_qzmin/=0) call max_mn_name(-p%qq(:,3),idiag_qzmin,lneg=.true.)
+      call max_mn_name(p%qq(:,1),idiag_qxmax)
+      call max_mn_name(p%qq(:,2),idiag_qymax)
+      call max_mn_name(p%qq(:,3),idiag_qzmax)
+!
+      if (ldt) then
+        if (iheatflux=='noadvection-spitzer') then
+          if (idiag_dtspitzer/=0) call max_mn_name(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*p%cv1/cdtv, &
+                                                   idiag_dtspitzer,l_dt=.true.)
+        endif
+        if ((iheatflux=='spitzer'.and..not.ltau_spitzer_va) .or. iheatflux=='noadvection-spitzer') then
+          if (idiag_dtq2/=0) call save_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)  !needed? never changes
+        endif
+      endif
+    endif
+!
+    if (lvideo.and.lfirst) then
+      if (ivid_divq/=0 .and. iheatflux=='noadvection-spitzer') &
+          call store_slices(p%divq,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
+    endif
 !
   endsubroutine calc_diagnostics_heatflux
 !***********************************************************************
@@ -484,7 +497,7 @@ contains
 !
 !    for pp=qq/rho there you must divide by rho
 !
-     Kspitzer=Kspitzer_para*exp(3.5*p%lnTT-p%lnrho)
+      Kspitzer=Kspitzer_para*exp(3.5*p%lnTT-p%lnrho)
 !
 !    Limit the heat flux by the speed of light
 !    Kc should be on the order of unity or smaler
@@ -493,11 +506,12 @@ contains
         K_clight = Kc*c_light*dxmin_pencil/p%cv1
         Kspitzer = min(Kspitzer,K_clight)
       endif
+
     else
 !
-!    For pp=qq*rho there you must a factor of rho
+!    For pp=qq*rho there you must multiply by rho
 !
-     Kspitzer=Kspitzer_para*exp(p%lnrho+3.5*p%lnTT)
+      Kspitzer=Kspitzer_para*exp(p%lnrho+3.5*p%lnTT)
 !
 !    Limit the heat flux by the speed of light
 !    Kc should be on the order of unity or smaler
@@ -527,11 +541,12 @@ contains
       endif
 !
       where (qabs > sqrt(tini))
-        qsat = 1./(1./qsat +1./qabs)
+        qsat = 1./(1./qsat + 1./qabs)
         spitzer_vec(:,1) = spitzer_vec(:,1)*qsat/qabs
         spitzer_vec(:,2) = spitzer_vec(:,2)*qsat/qabs
         spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
       endwhere
+
       if (ldiagnos) then
 !
 !   pc_auto-test may digest at maximum 2 digits in the exponent
@@ -641,6 +656,10 @@ contains
 !       maxadvec = maxadvec + c_spitzer/dxmin_pencil
 !
         dt1_max=max(dt1_max,maxval(tau_inv_va)/cdts)
+        if (ldiagnos) then
+          if (idiag_dtq2/=0) call max_mn_name(tau_inv_va/cdts,idiag_dtq2,l_dt=.true.)
+          if (idiag_tauqmax/=0) call max_mn_name(1./tau_inv_va,idiag_tauqmax)
+        endif
       else
         call unit_vector(p%glnTT,unit_glnTT)
         call dot(unit_glnTT,p%bunit,cosgT_b)
@@ -658,17 +677,8 @@ contains
 !  
         if (idiag_dtspitzer/=0) call max_mn_name(diffspitz*dxyz_2/cdtv,idiag_dtspitzer,l_dt=.true.)
 
-        if (ltau_spitzer_va) then
-          if (idiag_dtq2/=0) call max_mn_name(tau_inv_va/cdts,idiag_dtq2,l_dt=.true.)
-        else
-          if (idiag_dtq2/=0) call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
-        endif
-
       endif
 !
-    endif
-    if (ldiagnos) then
-      if (ltau_spitzer_va .and. idiag_tauqmax/=0) call max_mn_name(1./tau_inv_va,idiag_tauqmax)
     endif
 !
     if (lvideo.and.lfirst) then
@@ -756,22 +766,18 @@ contains
     use Diagnostics, only: max_mn_name,max_name
     use EquationOfState
     use Sub
-    use SharedVariables, only: get_shared_variable
 !
     real, dimension (mx,my,mz,mvar) :: df
     type (pencil_case) :: p
     real, dimension(nx) :: b2_1,tau1_spitzer_penc
     real, dimension(nx) :: chi_clight,chi_spitzer
-    real, dimension(nx) :: rhs,cosgT_b
-    real, dimension(nx,3) :: K1,unit_glnTT
+    real, dimension(nx) :: rhs
+    real, dimension(nx,3) :: K1
     real, dimension(nx,3) :: spitzer_vec
     real, dimension(nx) :: tmp
-    real, pointer :: z_cutoff, cool_wid
-    integer :: ierr
     integer :: i
 !
-! Compute Spizter coefficiant K_0 * T^(5/2) * rho where
-! we introduced an additional factor rho.
+! Compute Spitzer coefficient K_0 * T^(5/2) * rho where we introduced an additional factor rho.
 !
     b2_1=1./(p%b2+tini)
 !
@@ -793,15 +799,6 @@ contains
     tau1_spitzer_penc=cdtv**2/(1.e-6*max(dz_1(n),dx_1(l1:l2)))**2/chi_spitzer
 
     if (lradiation) then
-      call get_shared_variable('z_cutoff',&
-               z_cutoff,ierr)
-      if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
-             'failed to get z_cutoff from radiation_ray')
-      call get_shared_variable('cool_wid',&
-             cool_wid,ierr)
-      if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
-               'failed to get cool_wid from radiation_ray')
-!
       df(l1:l2,m,n,iqx:iqz) = df(l1:l2,m,n,iqx:iqz)-tau_inv_spitzer*(p%qq+spitzer_vec)* &
                               step(z(n),z_cutoff,cool_wid)
     else
@@ -817,22 +814,11 @@ contains
     if (lfirst.and.ldt) then
 
       dt1_max=max(dt1_max,maxval(abs(rhs))/cdts)
-      call unit_vector(p%glnTT,unit_glnTT)
-      call dot(unit_glnTT,p%bunit,cosgT_b)
-      rhs = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*p%cv1
-!
-      if (idiag_dtspitzer/=0) call max_mn_name(rhs/cdtv,idiag_dtspitzer,l_dt=.true.)
 !
 ! Timestep constraints due to tau directly
 !
       dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
-!
-      if (ldiagnos.and.idiag_dtq2/=0) call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
      
-    endif
-!
-    if (lvideo.and.lfirst) then
-      if (ivid_divq/=0) call store_slices(p%divq,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
     endif
 !
   endsubroutine noadvection_non_fourier_spitzer
