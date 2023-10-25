@@ -61,10 +61,11 @@ module Hydro
   integer :: idiag_Marms=0,idiag_Mamax=0
   integer :: idiag_divu2m=0,idiag_epsK=0
 
-  contains
+  real, dimension(nx) :: advec_uu
 
+  contains
 !***********************************************************************
-    subroutine register_hydro()
+    subroutine register_hydro
 !
 !  Initialise variables which should know that we solve the hydro
 !  equations: iuu, etc; increase nvar accordingly.
@@ -358,8 +359,11 @@ module Hydro
 !
 !  ``(uu+c)/dx'' for timestep
 !
-      if (lfirst.and.ldt) advec_uu=sum(abs(uu)*dline_1,2)+sqrt(c2*dxyz_2)
-      if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
+      if (lfirst.and.ldt) then
+        advec_uu=sum(abs(uu)*dline_1,2)+sqrt(c2*dxyz_2)
+        if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
+        maxadvec=maxadvec+advec_uu
+      endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)

@@ -822,7 +822,10 @@ module Dustvelocity
 !
 !  20-11-04/anders: coded
 !
+!  MR: this restriction is in general not correct as, e.g. dustdensity uses pencils from here
+!      without restriction.
       if (.not. lchemistry) then
+!
         lpenc_requested(i_uud)=.true.
         if (ladvection_dust.and..not.ldustvelocity_shorttausd) &
             lpenc_requested(i_udgud)=.true.
@@ -890,7 +893,7 @@ module Dustvelocity
             maxval(idiag_od2m)/=0) lpenc_diagnos(i_od2)=.true.
         if (maxval(idiag_oudm)/=0) lpenc_diagnos(i_oud)=.true.
 !
-      endif
+      endif   ! if (.not.lchemistry)
 !
     endsubroutine pencil_criteria_dustvelocity
 !***********************************************************************
@@ -1006,7 +1009,6 @@ module Dustvelocity
 !
         if (lfirst .and. ldt) then
           p%advec_uud=sum(abs(p%uud(:,:,k))*dline_1,2)
-          maxadvec=maxadvec+p%advec_uud
           if ((headtt.or.ldebug) .and. (ip<6)) &
             print*,'calc_pencils_dustvelocity: max(advec_uud) =',maxval(p%advec_uud)
         endif
@@ -1061,13 +1063,12 @@ module Dustvelocity
 !  Calculated from master equation d(wx-ux)/dt = A + B*(wx-ux) = 0.
 !
         if (ldustvelocity_shorttausd .and. any(tausd1(:,k)>=shorttaus1limit)) then
-          do j=1,3
-            if (lgrav) then
-              AA_sfta(:,j)=p%gg(:,j)
-            else
-              AA_sfta(:,j)=0.0
-            endif
-          enddo
+
+          if (lgrav) then
+            AA_sfta=p%gg
+          else
+            AA_sfta=0.
+          endif
           if (ldensity) then
             do j=1,3; AA_sfta(:,j)=AA_sfta(:,j)+p%cs2(:)*p%glnrho(:,j); enddo
           endif
@@ -1271,20 +1272,23 @@ module Dustvelocity
             if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
           endif
 !
-!  Add to dust equation of motion.
+!  Add vicsous force to dust equation of motion.
 !
           df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) + fviscd
 !
-        endif
+          if (lfirst .and. ldt) then
+            if ((headtt.or.ldebug) .and. (ip<6)) print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
+          endif
+!
+        endif   !if (ldustvelocity_shorttausd .and. any(tausd1(:,k)>=shorttaus1limit))
+!
+!  Advective timestep contribution.
+!
+        if (lfirst.and.ldt) maxadvec=maxadvec+p%advec_uud
 !
 !  Apply border profile
 !
         if (lborder_profiles) call set_border_dustvelocity(f,df,p,k)
-!
-        if (lfirst .and. ldt) then
-          if ((headtt.or.ldebug) .and. (ip<6)) &
-            print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
-        endif
 !
 !  End loop over dust species
 !

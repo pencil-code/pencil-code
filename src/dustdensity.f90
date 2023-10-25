@@ -2260,10 +2260,10 @@ module Dustdensity
 !  Loop over pencil
 !
       do m=m1,m2; do n=n1,n2
-        nd(:,:) = f(l1:l2,m,n,ind)
+        nd = f(l1:l2,m,n,ind)
         do l=1,nx
-          md(:) = f(3+l,m,n,imd(:))
-          if (lmice) mi(:) = f(3+l,m,n,imi(:))
+          md = f(3+l,m,n,imd)
+          if (lmice) mi = f(3+l,m,n,imi)
           mdnew = 0.5*(mdminus+mdplus)
           ndnew = 0.
           minew = 0.
@@ -2308,9 +2308,9 @@ module Dustdensity
               endif
             endif
           enddo
-          f(3+l,m,n,ind(:)) = ndnew(:)
-          f(3+l,m,n,imd(:)) = mdnew(:)
-          if (lmice) f(3+l,m,n,imi(:)) = minew(:)
+          f(3+l,m,n,ind) = ndnew
+          f(3+l,m,n,imd) = mdnew
+          if (lmice) f(3+l,m,n,imi) = minew
         enddo
       enddo; enddo
 !
@@ -2532,8 +2532,8 @@ module Dustdensity
 !
         mfluxcond = vth*cc*rho*(1-supsatratio1)
         if (ldiagnos) then
-          if (idiag_ssrm/=0)   call sum_mn_name(1/supsatratio1(:),idiag_ssrm)
-          if (idiag_ssrmax/=0) call max_mn_name(1/supsatratio1(:),idiag_ssrmax)
+          if (idiag_ssrm/=0)   call sum_mn_name(1/supsatratio1,idiag_ssrm)
+          if (idiag_ssrmax/=0) call max_mn_name(1/supsatratio1,idiag_ssrmax)
         endif
       case ('aerosol')
 !        if (it == 1) call getmu_array(f,mu1_array)
@@ -2546,8 +2546,8 @@ module Dustdensity
 !
         mfluxcond = vth*cc*rho*(1-supsatratio1)
         if (ldiagnos) then
-          if (idiag_ssrm/=0)   call sum_mn_name(1/supsatratio1(:),idiag_ssrm)
-          if (idiag_ssrmax/=0) call max_mn_name(1/supsatratio1(:),idiag_ssrmax)
+          if (idiag_ssrm/=0)   call sum_mn_name(1/supsatratio1,idiag_ssrm)
+          if (idiag_ssrmax/=0) call max_mn_name(1/supsatratio1,idiag_ssrmax)
         endif
 !
 !  Condensation obtained from passive scalar equation.
@@ -2762,27 +2762,27 @@ module Dustdensity
 !        
 !     Knudsen number Kn 
 !
-          Kn(:)=2.*mu_air/rho_air*sqrt(pi*2e-24/(2.8*kB*TT))/(Rik/2.)
+          Kn=2.*mu_air/rho_air*sqrt(pi*2e-24/(2.8*kB*TT))/(Rik/2.)
 !
 !     Cunningham correction factor cor_factor
 !
-          cor_factor(:)=1.+Kn(:)*(1.142+0.558*exp(-0.999/Kn(:)))
+          cor_factor=1.+Kn*(1.142+0.558*exp(-0.999/Kn))
 
-          D_coeff(:)=kB*cor_factor*TT/(6.*pi*mu_air) 
-          Di(:)=D_coeff(:)/dsize(i)
-          Dk(:)=D_coeff(:)/dsize(k)
-          Dik(:)=(Di(:)+Dk(:))
-          KBC(:)=4*pi*(dsize(i)+dsize(k))*(Di(:)+Dk(:))
-          vmean_i(:)=sqrt(8.*kB*TT/pi/(4./3*pi*dsize(i)**3))
-          vmean_k(:)=sqrt(8.*kB*TT/pi/(4./3*pi*dsize(k)**3))
-          vmean_ik(:)=sqrt(vmean_i(:)**2+vmean_k(:)**2)
-          gamma_i(:)=8.*Di(:)/pi/vmean_i(:)
-          gamma_k(:)=8.*Dk(:)/pi/vmean_k(:)
-          omega_i(:)=((Rik+gamma_i(:))**3-(Rik**2+gamma_i(:)**2)**1.5)/(3.*Rik*gamma_i(:))-Rik
-          omega_k(:)=((Rik+gamma_k(:))**3-(Rik**2+gamma_k(:)**2)**1.5)/(3.*Rik*gamma_k(:))-Rik
-          sigma_ik(:)=sqrt(omega_i**2+omega_k**2)
+          D_coeff=kB*cor_factor*TT/(6.*pi*mu_air) 
+          Di=D_coeff/dsize(i)
+          Dk=D_coeff/dsize(k)
+          Dik=(Di+Dk)
+          KBC=4*pi*(dsize(i)+dsize(k))*(Di+Dk)
+          vmean_i=sqrt(8.*kB*TT/pi/(4./3*pi*dsize(i)**3))
+          vmean_k=sqrt(8.*kB*TT/pi/(4./3*pi*dsize(k)**3))
+          vmean_ik=sqrt(vmean_i**2+vmean_k**2)
+          gamma_i=8.*Di/pi/vmean_i
+          gamma_k=8.*Dk/pi/vmean_k
+          omega_i=((Rik+gamma_i)**3-(Rik**2+gamma_i**2)**1.5)/(3.*Rik*gamma_i)-Rik
+          omega_k=((Rik+gamma_k)**3-(Rik**2+gamma_k**2)**1.5)/(3.*Rik*gamma_k)-Rik
+          sigma_ik=sqrt(omega_i**2+omega_k**2)
 !
-          dkern(:,i,k)=KBC(:)/( Rik/(Rik+sigma_ik(:)) + 4.*Dik(:)/(vmean_ik(:)*Rik) )
+          dkern(:,i,k)=KBC/( Rik/(Rik+sigma_ik) + 4.*Dik/(vmean_ik*Rik) )
 !          
         enddo
         enddo

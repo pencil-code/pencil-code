@@ -51,7 +51,7 @@ module InitialCondition
 !  Oscillations must be perpendicular to the wave vector.
 !
       if (sum(init_amp0 * init_k0) /= 0.0) &
-        call fatal_error('initialize_initial_condition', 'init_amp0 and init_k0 are not perpendicular. ')
+        call fatal_error('initialize_initial_condition', 'init_amp0 and init_k0 not perpendicular')
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************
