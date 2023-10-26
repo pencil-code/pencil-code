@@ -305,6 +305,7 @@ module Equ
       if (lhydro)                 call hydro_after_boundary(f)
       if (lviscosity)             call viscosity_after_boundary(f)
       if (lmagnetic)              call magnetic_after_boundary(f)
+      if (ldustdensity)           call dustdensity_after_boundary(f)      
       if (lenergy)                call energy_after_boundary(f)
       if (lgrav)                  call gravity_after_boundary(f)
       if (lforcing)               call forcing_after_boundary(f)
