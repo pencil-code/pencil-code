@@ -63,6 +63,16 @@ module Dustdensity
 !
     endsubroutine pencil_interdep_dustdensity
 !***********************************************************************
+    subroutine dustdensity_after_boundary(f)
+!
+      use General, only: keep_compiler_quiet
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine dustdensity_after_boundary
+!***********************************************************************
     subroutine calc_pencils_dustdensity(f,p)
 !
       real, dimension (mx,my,mz,mfarray) :: f

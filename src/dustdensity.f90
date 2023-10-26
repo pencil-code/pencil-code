@@ -2580,6 +2580,20 @@ module Dustdensity
 !
     endsubroutine get_mfluxcond
 !***********************************************************************
+    subroutine dustdensity_after_boundary(f)
+!
+      use General, only: keep_compiler_quiet
+
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+! To start collision on the fly.
+!
+      if (t >= tstart_droplet_coagulation) lcalcdkern=.true. 
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine dustdensity_after_boundary
+!***********************************************************************
     subroutine coag_kernel(f,TT1)
 !
 !  Calculate kernel of coagulation equation; collision rate = ni*nj*kernel
@@ -2597,9 +2611,6 @@ module Dustdensity
       real :: deltavd_drift2=0, deltavd_drift2a=0, deltavd_drift2b=0
       real :: ust,tl01,teta1,mu_air,rho_air, kB=1.38e-16, Rik 
       integer :: i,j,l,k
-!
-! a flag to start collision on the fly
-      if (t >= tstart_droplet_coagulation) lcalcdkern=.true. 
 !
       if (ldustcoagulation) then
 !
