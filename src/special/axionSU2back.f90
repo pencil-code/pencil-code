@@ -516,14 +516,20 @@ module Special
       if (lconf_time) then
         if (lwith_eps) then
           psiddot=-(k**2-2./t**2)*psi &
-            +(2.*sqrt(epsQE)/t)*TRdot+((2.*sqrt(epsQB)*(mQ+sgn*k*t))/t**2)*TR
-          TRddot=-(k**2+(2.*(mQ*xi+sgn*k*t*(mQ+xi)))/t**2)*TR-(2.*sqrt(epsQE))/t*psidot &
-            +(2.*sqrt(epsQE))/t**2*psi+(2.*sqrt(epsQB))/t**2*(mQ+sgn*k*t)*psi
+           !+(2.*sqrt(epsQE)/t)*TRdot+((2.*sqrt(epsQB)*(mQ+sgn*k*t))/t**2)*TR
+            +2.*sqrt(epsQE)/t*TRdot+2.*sqrt(epsQB)*(mQ+sgn*k*t)/t**2*TR
+         !TRddot=-(k**2+(2.*(mQ*xi+sgn*k*t*(mQ+xi)))/t**2)*TR-(2.*sqrt(epsQE))/t*psidot &
+          TRddot=-(k**2+2.*(mQ*xi+sgn*k*t*(mQ+xi))/t**2)*TR-2.*sqrt(epsQE)/t*psidot &
+           !+(2.*sqrt(epsQE))/t**2*psi+(2.*sqrt(epsQB))/t**2*(mQ+sgn*k*t)*psi
+            +2./t**2*(sqrt(epsQB)*(mQ+sgn*k*t)+sqrt(epsQE))*psi
           if (lim_psi_TR) then
             impsiddot=-(k**2-2./t**2)*impsi &
-              +(2.*sqrt(epsQE)/t)*imTRdot+((2.*sqrt(epsQB)*(mQ+sgn*k*t))/t**2)*imTR
-            imTRddot=-(k**2+(2.*(mQ*xi+sgn*k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
-              +(2.*sqrt(epsQE))/t**2*impsi+(2.*sqrt(epsQB))/t**2*(mQ+sgn*k*t)*impsi
+             !+(2.*sqrt(epsQE)/t)*imTRdot+((2.*sqrt(epsQB)*(mQ+sgn*k*t))/t**2)*imTR
+              +2.*sqrt(epsQE)/t*imTRdot+2.*sqrt(epsQB)*(mQ+sgn*k*t)/t**2*imTR
+           !imTRddot=-(k**2+(2.*(mQ*xi+sgn*k*t*(mQ+xi)))/t**2)*imTR-(2.*sqrt(epsQE))/t*impsidot &
+            imTRddot=-(k**2+2.*(mQ*xi+sgn*k*t*(mQ+xi))/t**2)*imTR-2.*sqrt(epsQE)/t*impsidot &
+             !+(2.*sqrt(epsQE))/t**2*impsi+(2.*sqrt(epsQB))/t**2*(mQ+sgn*k*t)*impsi
+              +2./t**2*(sqrt(epsQB)*(mQ+sgn*k*t)+sqrt(epsQE))*impsi
           endif
 !
 !  Left-handed modes (conformal, with epsilon formulation)
