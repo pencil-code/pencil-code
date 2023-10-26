@@ -9,7 +9,6 @@
 !***************************************************************
 module BorderProfiles
 !
-  use Cparam
   use Cdata
   use Messages
 !
@@ -31,11 +30,7 @@ module BorderProfiles
   real                :: fraction_tborder1=impossible
   real                :: fac_sqrt_gsum1=1.0
 !
-! WL: Ideally,this 4D array f_init should be allocatable, since it
-!     is only used in specific conditions in the code (only when the
-!     border profile chosen is 'initial-condition').
-!
-  real, dimension(mx,my,mz,mvar) :: f_init
+  real, dimension(:,:,:,:), allocatable :: f_init
 !
   logical :: lborder_driving=.false.
   logical :: lborder_quenching=.false.
@@ -251,7 +246,8 @@ module BorderProfiles
 !  Read the data into an initial condition array f_init that will be saved
 !
         t_old = t
-        call input_snap ('VAR0', f_init(:,:,:,1:mvar), mvar, mode=0)
+        if (.not.allocated(f_init)) allocate(f_init(mx,my,mz,mvar))
+        call input_snap ('VAR0', f_init, mvar, mode=0)
         if (t_old /= t) then
            if (lroot) then
               print*,"You have requested to read VAR0 to set the border profile."
@@ -276,9 +272,8 @@ module BorderProfiles
 !
 !  25-dec-06/wolf: coded
 !
-      use Cdata
-!
       if (lborder_driving) then
+
         if (tborder==0.) lpenc_requested(i_uu)=.true.
         if (lcylinder_in_a_box.or.lcylindrical_coords) then
           lpenc_requested(i_rcyl_mn)=.true.
@@ -291,6 +286,14 @@ module BorderProfiles
         else
           lpenc_requested(i_x_mn)=.true.
         endif
+!
+!  if r_int_border and/or r_ext_border are still set to impossible,
+!  then put them equal to r_int and r_ext, respectively.
+!  Can't be done in initialize_borderprofiles as any initialize routine can set r_[int|ext].
+!
+        if (r_int_border==impossible) r_int_border=r_int
+        if (r_ext_border==impossible) r_ext_border=r_ext
+!
       endif
 !
     endsubroutine pencil_criteria_borderprofiles
@@ -330,9 +333,11 @@ module BorderProfiles
       elseif (lcylindrical_coords) then
         call set_border_xz(ivar,fborder)
       else
-        print*,'The system has no obvious symmetry. It is    '
-        print*,'better to stop and check how you want to save'
-        print*,'the initial condition for border profiles    '
+        if (lroot) then
+          print*,'The system has no obvious symmetry. It is    '
+          print*,'better to stop and check how you want to save'
+          print*,'the initial condition for border profiles    '
+        endif
         call fatal_error('set_border_initcond','')
       endif
 !
@@ -355,8 +360,7 @@ module BorderProfiles
 !
       if (lfirst .and. it==1) then
         fsave_init(:,m-m1+1,ivar)=f_init(l1:l2,m,npoint,ivar)
-        if (headtt.and.ip <= 6) &
-             print*,'saving initial condition for ivar=',ivar
+        if (headtt.and.ip <= 6) print*,'saving initial condition for ivar=',ivar
       endif
 !
       fborder=fsave_init(:,m-m1+1,ivar)
@@ -409,16 +413,6 @@ module BorderProfiles
       real :: pborder,inverse_drive_time
       integer :: i,j
       logical :: lradial, lmeridional
-      logical :: lfirstcall=.true.
-!
-!  if r_int_border and/or r_ext_border are still set to impossible,
-!  then put them equal to r_int and r_ext, respectively.
-!
-      if (lfirstcall) then
-        if (r_int_border==impossible) r_int_border=r_int
-        if (r_ext_border==impossible) r_ext_border=r_ext
-        lfirstcall=.false.
-      endif
 !
 !  Perform "border_driving" only if r < r_int_border or r > r_ext_border, but
 !  take into acount that the profile further inside on both ends.
