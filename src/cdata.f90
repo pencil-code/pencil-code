@@ -797,20 +797,13 @@ module Cdata
 !  Variables for concurrency
 ! 
   logical :: lwriting_snapshots=.false.
-!
-! threadprivate definitions for OpenMP
-!
-!$ include 'cdata_omp.inc'
-!
-!  Variables for concurrency
+  logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
 !
 !$ integer :: num_cores = 0
 !$ integer :: num_threads = 0
 !$ logical :: lthread_safe 
 ! 
-  logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
-!
-! threadprivate definitions for OpenMP
+! threadprivate definitions for OpenMP, copyin routine
 !
 !$  include 'cdata_omp.inc'
 !***********************************************************************
