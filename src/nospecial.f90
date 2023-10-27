@@ -666,5 +666,9 @@ module Special
       call keep_compiler_quiet(Ntot)
 !
     endsubroutine  set_init_parameters
+!*********************************************************************** 
+    subroutine copyin_special
+!
+    endsubroutine copyin_special
 !***********************************************************************
 endmodule Special

@@ -1007,7 +1007,7 @@ module Dustvelocity
 !
 !  ``uud/dx'' for timestep
 !
-        if (lfirst .and. ldt) then
+        if (lfirst .and. ldt .and. (ldustdensity.or.ladvection_dust)) then
           p%advec_uud=sum(abs(p%uud(:,:,k))*dline_1,2)
           if ((headtt.or.ldebug) .and. (ip<6)) &
             print*,'calc_pencils_dustvelocity: max(advec_uud) =',maxval(p%advec_uud)
@@ -1282,9 +1282,10 @@ module Dustvelocity
 !
         endif   !if (ldustvelocity_shorttausd .and. any(tausd1(:,k)>=shorttaus1limit))
 !
-!  Advective timestep contribution.
+!  Advective timestep contribution (condition could be narrower as even with dustdensity,
+!                                   there is not always advection).
 !
-        if (lfirst.and.ldt) maxadvec=maxadvec+p%advec_uud
+        if (lfirst.and.ldt.and.(ldustdensity.or.ladvection_dust)) maxadvec=maxadvec+p%advec_uud
 !
 !  Apply border profile
 !
@@ -1334,7 +1335,8 @@ module Dustvelocity
           call sum_mn_name(p%od2(:,k),idiag_od2m(k))
           call sum_mn_name(p%oud(:,k),idiag_oudm(k))
           if (ldt) then
-            if (idiag_dtud(k)/=0) call max_mn_name(p%advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
+            if ((ldustdensity.or.ladvection_dust).and.idiag_dtud(k)/=0) &
+              call max_mn_name(p%advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
             if (idiag_dtnud(k)/=0) call max_mn_name(diffus_nud/cdtv,idiag_dtnud(k),l_dt=.true.)
           endif
         enddo
