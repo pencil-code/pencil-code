@@ -287,7 +287,7 @@ module Special
 !
       call get_gamma_etc(gamma,cp=cp)
 !
-      r2m = R_planet/xyz1(0)         !  length to [m]
+      r2m = R_planet/xyz0(1)         !  length to [m]
       rho2kg_m3 = rho_ref/rho0       !  density to [kg/m3]
       u2m_s = cs_ref/cs0             !  velocisty to [m/s]
       cp2si = cp_ref/cp              !  cp to [J/(kg*K)]
