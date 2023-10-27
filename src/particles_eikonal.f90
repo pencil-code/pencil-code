@@ -233,6 +233,7 @@ module Particles
 !
   real, dimension(:), pointer :: beta_glnrho_global, beta_glnrho_scaled
   real, dimension (nx) :: dt1_drag
+  real :: local_omega
 
   contains
 !***********************************************************************
@@ -2602,7 +2603,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real :: rho1_point, tausp1_par, up2, csp, cs2p, kdotvA
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par, rhop, lnrhop
-      real :: wave_speed, local_omega
+      real :: wave_speed
       real :: omega_ms2, omega_ms
       real :: B2, B21, vA2, k2, cm4, cm2, cms2, kmod
       integer :: j, k, l, ix0, iy0, iz0
@@ -2766,7 +2767,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Wave speed: compute kperp etc.
 !
-              if(lmagnetic) then
+              if (lmagnetic) then
 
                 B2=bbp(1)**2+bbp(2)**2+bbp(3)**2
 !
@@ -4211,12 +4212,13 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: ix0,iy0,iz0,ix1,iy1,iz1,k,ix,iy,iz
       real, dimension (2,2,2) :: box_omega
       real, dimension (3) :: grad_omega,kvec !,bb_ext
-      real :: local_omega,grav=1.
+      real :: local_omega
+      real, parameter :: grav=1.     ! MR: should come from a gravity module!
       real :: udotk,Bdotk,B2,cs2,k2,kperp2,vA2,cms2,om_ms2
       real :: xdist,ydist,zdist,xdistmod,ydistmod,zdistmod
 !
       intent (in) :: f, fp, ineargrid, k
-      intent (out) :: grad_omega,local_omega
+      intent (out) :: grad_omega, local_omega
 !
       ix0=ineargrid(k,1)
       iy0=ineargrid(k,2)
@@ -4248,8 +4250,8 @@ k_loop:   do while (.not. (k>npar_loc))
         else
           cs2=(0.-z(iz+iz0-1))*grav
         endif
-        if(lhydro) call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,iux:iuz),kvec,udotk)
-        if(lmagnetic) then
+        if (lhydro) call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,iux:iuz),kvec,udotk)
+        if (lmagnetic) then
 !AXEL     call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz)+bb_ext,kvec,Bdotk)
 !AXEL     call dot2(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz)+bb_ext,B2)
           call dot(f(ix+ix0-1,iy+iy0-1,iz+iz0-1,ibx:ibz),kvec,Bdotk)

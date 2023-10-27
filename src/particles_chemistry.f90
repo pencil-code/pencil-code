@@ -25,7 +25,6 @@
 module Particles_chemistry
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
@@ -170,16 +169,16 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine register_particles_chem()
+    subroutine register_particles_chem
       integer :: ierr
 !      if (lroot) call svn_id( &
 !          "$Id: particles_chemistry.f90 20843 2014-10-06 18:45:43Z jonas.kruger $")
 !
-      call register_unit_system()
+      call register_unit_system
 !
       call get_pchem_info(species,'N_species',N_species,'quiet')
-      call register_indep_pchem()
-      call register_dep_pchem()
+      call register_indep_pchem
+      call register_dep_pchem
 !
       call put_shared_variable('total_carbon_sites',total_carbon_sites,caller='register_particles_chem')
       call put_shared_variable('true_density_carbon',true_density_carbon)
@@ -188,9 +187,9 @@ module Particles_chemistry
         call fatal_error('register_particles_chem', &
             'If lbaum_and_street, lsurface_nopores hast to be True!')
 !
-      if (lpchem_debug .and. lroot) call print_debug_info()
+      if (lpchem_debug .and. lroot) call print_debug_info
 !
-      if (lwrite) call write_outputfile()
+      if (lwrite) call write_outputfile
       lwrite = .false.
 !
     endsubroutine register_particles_chem
@@ -199,7 +198,7 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine register_indep_pchem()
+    subroutine register_indep_pchem
       integer :: stat, i
       logical :: lenhance
 !
@@ -263,7 +262,7 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine register_dep_pchem()
+    subroutine register_dep_pchem
       integer :: stat
 !
 !      allocate(R_c_hat(mpar_loc),STAT=stat)
@@ -280,7 +279,7 @@ module Particles_chemistry
 !
     endsubroutine register_dep_pchem
 !***********************************************************************
-    subroutine pencil_criteria_par_chem()
+    subroutine pencil_criteria_par_chem
 !
 !  All pencils that the Particles_chemistry module depends on are specified here.
 !
@@ -360,7 +359,7 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine calc_R_c_hat()
+    subroutine calc_R_c_hat
 !
       integer :: k, k1, k2
 !
@@ -998,7 +997,7 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine create_dngas()
+    subroutine create_dngas
       integer :: k
 !
       do k = 1,N_surface_reactions
@@ -1012,7 +1011,7 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine calc_entropy_of_reaction()
+    subroutine calc_entropy_of_reaction
       integer :: i, j, l, k, k1, k2
 !
       entropy_k = 0
@@ -1116,7 +1115,7 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine calc_enthalpy_of_reaction()
+    subroutine calc_enthalpy_of_reaction
 !
       integer :: i, k, k1, k2, j,l
 !
@@ -1177,7 +1176,7 @@ module Particles_chemistry
       real :: pre_kk, Sh, Sh_mean
       real ::  k_im, kkcg, x_mod,x_mod1, x_mod2, root_term
       real ::  x_mod3, x_mod4,root_term2
-      integer :: i, j, k, k1, k2, l, ix0, sh_counter
+      integer :: i, j, k, k1, k2, l, ix0
       integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(:), allocatable :: rep, nuvisc
       integer :: stat
@@ -1458,6 +1457,8 @@ module Particles_chemistry
       use Diagnostics
 
       type (pencil_case) :: p
+
+      integer :: sh_counter
 
       if (ldiagnos) then
         if (idiag_Shchm /= 0) then
@@ -2030,8 +2031,8 @@ module Particles_chemistry
         if (reverse_reactions_present) call calc_surf_entropy(fp)
         call calc_surf_enthalpy(fp)
 !
-        call calc_enthalpy_of_reaction()
-        if (reverse_reactions_present) call calc_entropy_of_reaction()
+        call calc_enthalpy_of_reaction
+        if (reverse_reactions_present) call calc_entropy_of_reaction
 !
         call calc_K_k(f,fp,p,ineargrid)
         call calc_Cg(f,fp,p,ineargrid)
@@ -2046,7 +2047,7 @@ module Particles_chemistry
         endif
 !
         call calc_ndot_mdot_R_j_hat(fp)
-        call calc_R_c_hat()
+        call calc_R_c_hat
       endif
 !
     endsubroutine calc_pchemistry_pencils
@@ -2189,7 +2190,7 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine cleanup_chemistry_pencils()
+    subroutine cleanup_chemistry_pencils
 !
 !  Do only if particles are present on the pencil
 !
@@ -2326,7 +2327,7 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine print_debug_info()
+    subroutine print_debug_info
       integer :: k
 !
       print*, 'N_surface_species'
@@ -2782,7 +2783,7 @@ module Particles_chemistry
 !
     endsubroutine particles_chemistry_clean_up
 ! ******************************************************************************
-    subroutine register_unit_system()
+    subroutine register_unit_system
 !
 !  Switch some variables that are affected by the switch from SI to cgs.
 !  They are declared in cgs and need to be switched to SI. Do nothing if
@@ -2869,7 +2870,7 @@ module Particles_chemistry
 !
     endsubroutine calc_pencil_rep_nu
 !***********************************************************************
-    subroutine write_outputfile()
+    subroutine write_outputfile
 !
 !  Write particle chemistry info to ./data/particle_chemistry.out
 !
@@ -2898,12 +2899,13 @@ module Particles_chemistry
 !
     endsubroutine write_outputfile
 !**********************************************************************
+    subroutine rprint_particles_chem(lreset,lwrite)
+!
 !  Read and register print parameters relevant for
 !  particles near field gas composition
 !
 !  06-oct-14/jonas: adapted
 !
-    subroutine rprint_particles_chem(lreset,lwrite)
       use Diagnostics
 !
       logical :: lreset
@@ -2913,6 +2915,7 @@ module Particles_chemistry
       integer :: iname,i
 !
 ! Write information to index.pro
+!
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
       if (lreset) then
@@ -2929,7 +2932,7 @@ module Particles_chemistry
 !***********************************************************************
     subroutine find_sh_counter(sh_counter)
 !
-      integer, intent(inout) :: sh_counter
+      integer, intent(out) :: sh_counter
       integer :: j, i
 !
       sh_counter = 0

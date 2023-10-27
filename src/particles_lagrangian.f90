@@ -21,7 +21,6 @@
 module Particles
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
@@ -313,6 +312,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use FArrayManager, only: farray_register_auxiliary
+      use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -331,8 +331,7 @@ module Particles
 !
 !  Set indices for particle assignment.
 !
-      if (.not. lnocalc_np) call farray_register_auxiliary('np',inp,&
-          communicated=lcommunicate_np)
+      if (.not. lnocalc_np) call farray_register_auxiliary('np',inp,communicated=lcommunicate_np)
       if (lpeh_radius) then
         lnocalc_rhop=.false.
         call farray_register_auxiliary('peh',ipeh,communicated=.false.)
@@ -356,7 +355,7 @@ module Particles
       if (ldiffuse_passive .and. lpscalar_sink) then
         call farray_register_auxiliary('dlncc',idlncc,communicated=.true.)
       elseif (ldiffuse_passive .and. .not. lpscalar_sink) then
-          call fatal_error('particles_lagrangian','ldiffuse_passive needs lpscalar_sink')
+        call fatal_error('particles_lagrangian','ldiffuse_passive needs lpscalar_sink')
       endif
 !
 !  Special variable for diffusion of particle-gas dragforce
@@ -369,7 +368,19 @@ module Particles
       endif
 !
 !  Kill particles that spend enough time in birth ring
+!
       if (lbirthring_depletion) call append_npaux('ibrtime',ibrtime)
+!
+!  Share Keplerian gravity.
+!
+      call put_shared_variable('gravr',gravr,caller='register_particles')
+!
+!  Share friction time (but only if Epstein drag regime!).
+!
+      if (ldraglaw_epstein .or. ldraglaw_simple) then
+        call put_shared_variable('tausp_species', tausp_species)
+        call put_shared_variable('tausp1_species',tausp1_species)
+      endif
 !
     endsubroutine register_particles
 !***********************************************************************
@@ -382,7 +393,7 @@ module Particles
 !   5-mar-15/MR: reference state included in calculation of mean density
 !
       use EquationOfState, only: rho0, cs0
-      use SharedVariables, only: put_shared_variable, get_shared_variable
+      use SharedVariables, only: get_shared_variable
       use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -395,13 +406,9 @@ module Particles
 !
 !  This module is incompatible with particle block domain decomposition.
 !
-      if (lparticles_blocks) then
-        if (lroot) then
-          print*, 'initialize_particles: must use PARTICLES =  PARTICLES_DUST_BLOCKS'
-          print*, '                      with particle block domain decomposition'
-        endif
-        call fatal_error('initialize_particles','')
-      endif
+      if (lparticles_blocks) &
+        call fatal_error('initialize_particles','must use PARTICLES = PARTICLES_DUST_BLOCKS'// &
+                         'with particle block domain decomposition')
 !
 !  Hand over Coriolis force and shear acceleration to Particles_drag.
 !
@@ -428,7 +435,7 @@ module Particles
 !
       apar: if (particle_radius /= 0.0) then
         if (lparticles_radius) &
-            call fatal_error('initialize_particles', 'particle_radius /= 0 has no effect when module Particles_radius is on. ')
+            call fatal_error('initialize_particles', 'particle_radius /= 0 has no effect when module Particles_radius is on')
         if (lroot) print *, 'initialize_particles: radius of each constituent particle = ', particle_radius
       endif apar
 !
@@ -448,52 +455,39 @@ module Particles
 !
       if (npar_species>1) then
         if (lroot) then
-          print*, 'initialize_particles: '// &
-              'Number of particle species = ', npar_species
+          print*, 'initialize_particles: Number of particle species = ', npar_species
           print*, 'initialize_particles: tausp_species = ', tausp_species
         endif
 !
 !  Must have set tausp_species for drag force.
 !
         if (ldragforce_dust_par .or. ldragforce_gas_par) then
-          if (any(tausp_species==0.0)) then
-            if (lroot) print*, &
-                'initialize_particles: drag force must have tausp_species/=0.0!'
-            call fatal_error('initialize_particles','')
-          endif
+          if (any(tausp_species==0.0)) &
+            call fatal_error('initialize_particles','drag force must have tausp_species/=0')
 !
 !  Inverse friction time is needed for drag force.
 !
           do jspec=1,npar_species
-            if (tausp_species(jspec)/=0.0) &
-                tausp1_species(jspec)=1/tausp_species(jspec)
+            if (tausp_species(jspec)/=0.0) tausp1_species(jspec)=1/tausp_species(jspec)
           enddo
         endif
       else
 !
 !  Single dust species => If tausp_species is set, it is probably an error.
 !
-        if (any(tausp_species/=0.0) .and. tausp/=tausp_species(1)) then
+        if (any(tausp_species/=0.0) .and. tausp/=tausp_species(1)) &
           call fatal_error('initialize_particles', 'When there is only '// &
-              '1 particle species, use tausp instead of tausp_species')
-        endif
+              'one particle species, use tausp instead of tausp_species')
         tausp_species(1)=tausp
         if (tausp_species(1)/=0.0) tausp1_species(1)=1/tausp_species(1)
-      endif
-!
-!  Share friction time (but only if Epstein drag regime!).
-!
-      if (ldraglaw_epstein .or. ldraglaw_simple) then
-        call put_shared_variable( 'tausp_species', tausp_species,caller='initialize_particles')
-        call put_shared_variable('tausp1_species',tausp1_species)
       endif
 !
 !  Global gas pressure gradient seen from the perspective of the dust.
 !
       if (beta_dPdr_dust/=0.0) then
         beta_dPdr_dust_scaled=beta_dPdr_dust*Omega/cs0
-        if (lroot) print*, 'initialize_particles: Global pressure '// &
-            'gradient with beta_dPdr_dust=', beta_dPdr_dust
+        if (lroot) print*, 'initialize_particles: Global pressure gradient with beta_dPdr_dust=', &
+                           beta_dPdr_dust
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.
@@ -504,10 +498,6 @@ module Particles
 !  Calculate gravsmooth**2 for gravity.
 !
       if (gravsmooth/=0.0) gravsmooth2=gravsmooth**2
-!
-!  Share Keplerian gravity.
-!
-      call put_shared_variable('gravr',gravr,caller='initialize_particles')
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -522,7 +512,7 @@ module Particles
           tau_coll_min=2*dx/cs0
         endif
         if (lroot) print*, 'initialize particles: set minimum collisional '// &
-            'time-scale equal to two times the Courant time-step.'
+                           'time-scale equal to two times the Courant time-step.'
       endif
 !
 !  Inverse of minimum collisional time-scale.
@@ -531,13 +521,8 @@ module Particles
 !
 !  Gas density is needed for back-reaction friction force.
 !
-      if (ldragforce_gas_par .and. .not. ldensity) then
-        if (lroot) then
-          print*, 'initialize_particles: friction force on gas only works '
-          print*, '                      together with gas density module!'
-        endif
-        call fatal_error('initialize_particles','')
-      endif
+      if (ldragforce_gas_par .and. .not. ldensity) &
+        call fatal_error('initialize_particles','friction force on gas requires gas density module')
 !
 !  Need to map particles on the grid for dragforce on gas.
 !
@@ -546,8 +531,7 @@ module Particles
 !  When drag force is smoothed, df is also set in the first ghost zone. This
 !  region needs to be folded back into the df array after pde is finished,
 !
-        if (particle_mesh .eq. 'cic' .or. particle_mesh .eq. 'tsc') &
-            lfold_df=.true.
+        if (particle_mesh .eq. 'cic' .or. particle_mesh .eq. 'tsc') lfold_df=.true.
       endif
 !
       if (lcollisional_cooling_twobody) then
@@ -555,31 +539,23 @@ module Particles
         lshepherd_neighbour=.true.
       endif
 !
-      if (ldraglaw_epstein_stokes_linear) ldraglaw_epstein=.false.
-      if (ldraglaw_epstein_transonic    .or.&
-          ldraglaw_eps_stk_transonic    .or.&
-          ldraglaw_steadystate          .or.&
-          ldraglaw_purestokes          .or.&
-          ldraglaw_stokesschiller      .or.&
-          ldraglaw_simple) then
-        ldraglaw_epstein=.false.
-      endif
-      if (ldraglaw_epstein_transonic         .and.&
-          ldraglaw_eps_stk_transonic) then
-        print*,'both epstein and epstein-stokes transonic '//&
-            'drag laws are switched on. You cannot have '//&
-            'both. Stop and choose only one.'
-        call fatal_error('initialize_particles','')
-      endif
+      if (ldraglaw_epstein_stokes_linear)    ldraglaw_epstein=.false.
+      if (ldraglaw_epstein_transonic   .or. &
+          ldraglaw_eps_stk_transonic   .or. &
+          ldraglaw_steadystate         .or. &
+          ldraglaw_purestokes          .or. &
+          ldraglaw_stokesschiller      .or. &
+          ldraglaw_simple)                   ldraglaw_epstein=.false.
+      if (ldraglaw_epstein_transonic .and. ldraglaw_eps_stk_transonic) &
+        call fatal_error('initialize_particles','both epstein and epstein-stokes transonic '// &
+                         'are switched on. Stop and choose only one')
 !
 !  Stiff drag force approximation.
 !
       if (ldragforce_stiff) then
-        if (ldragforce_dust_par .or. ldragforce_gas_par) then
-          if (lroot) print*, 'initialize_particles: stiff drag force '// &
-              'approximation is incompatible with normal drag'
-          call fatal_error('initialize_particles','')
-        endif
+        if (ldragforce_dust_par .or. ldragforce_gas_par) &
+          call fatal_error('initialize_particles', &
+                           'stiff drag force approximation is incompatible with normal drag')
         f(l1:l2,m1:m2,n1:n2,ifgx:ifgz)=0.0
       endif
 !
@@ -589,11 +565,8 @@ module Particles
 !
 !  Fatal error if sink particle radius is zero or negative.
 !
-      if (lsinkparticle_1 .and. rsinkparticle_1<=0.0) then
-        if (lroot) print*, 'initialize_particles: sink particle radius is '// &
-            'zero or negative: ', rsinkparticle_1
-        call fatal_error('initialize_particles','')
-      endif
+      if (lsinkparticle_1 .and. rsinkparticle_1<=0.0) &
+        call fatal_error('initialize_particles','sink particle radius is zero or negative')
 !
 !  Particle self gravity for x,z,r direction
 !
@@ -608,8 +581,7 @@ module Particles
       if (lcompensate_sedimentation.and.&
            ( (nzgrid/=1.and.(lcartesian_coords.or.lcylindrical_coords)).or.&
              (nygrid/=1.and.lspherical_coords)&
-           )&
-         ) call fatal_error("initialize_particles",&
+           )) call fatal_error("initialize_particles",&
          "compensate_sedimentation should only be used when the vertical dimension is not present")
 !
 !  Set up interpolation logicals. These logicals can be OR'ed with some logical
@@ -618,13 +590,13 @@ module Particles
 !  (The particles_spin module will for instance enable interpolation of the
 !  vorticity oo)
 !
-      uu: if (lnostore_uu) then
+      if (lnostore_uu) then
         if (ldraglaw_steadystate .or. lparticles_spin .or. lsolid_ogrid) &
-            call fatal_error('initialize_particles', 'lnostore_uu = .false. is required. ')
+            call fatal_error('initialize_particles', 'lnostore_uu = .false. is required')
         interp%luu = .false.
-      else uu
+      else
         interp%luu = ldragforce_dust_par .or. ldraglaw_steadystate .or. lparticles_spin .or. lsolid_ogrid
-      endif uu
+      endif
       interp%loo=.false.
       interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))&
           .or.(lthermophoretic_forces.and.(thermophoretic_T0==0.0))&
@@ -647,7 +619,6 @@ module Particles
       else
         interp_default=particle_mesh
       endif
-print*,'interp_default=',interp_default,particle_mesh
 !
 !  If individual interpolation policies are given, these will
 !  overwrite the default one.
@@ -658,10 +629,8 @@ print*,'interp_default=',interp_default,particle_mesh
       if (interp_pol_rho    .eq. 'none') interp_pol_rho=interp_default
       if (interp_pol_pp     .eq. 'none') interp_pol_pp=interp_default
       if (interp_pol_nu     .eq. 'none') interp_pol_nu=interp_default
-      if (interp_pol_species.eq. 'none') &
-          interp_pol_species=interp_default
-      if (interp_pol_gradTT .eq. 'none') &
-          interp_pol_gradTT=interp_default      
+      if (interp_pol_species.eq. 'none') interp_pol_species=interp_default
+      if (interp_pol_gradTT .eq. 'none') interp_pol_gradTT=interp_default
 !
 !  Overwrite with new policy variables:
 !
@@ -673,8 +642,7 @@ print*,'interp_default=',interp_default,particle_mesh
       case ('ngp')
         interp%pol_uu=ngp
       case default
-        call fatal_error('initialize_particles','No such value for '// &
-            'interp_pol_uu: '//trim(interp_pol_uu))
+        call fatal_error('initialize_particles','no such interp_pol_uu: '//trim(interp_pol_uu))
       endselect
 !
       select case (interp_pol_oo)
@@ -685,8 +653,7 @@ print*,'interp_default=',interp_default,particle_mesh
       case ('ngp')
         interp%pol_oo=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-            'interp_pol_oo: '//trim(interp_pol_oo))
+        call fatal_error('initialize_particles','no such interp_pol_oo: '//trim(interp_pol_oo))
       endselect
 !
       select case (interp_pol_TT)
@@ -697,22 +664,16 @@ print*,'interp_default=',interp_default,particle_mesh
       case ('ngp')
         interp%pol_TT=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-            'interp_pol_TT: '//trim(interp_pol_TT))
+        call fatal_error('initialize_particles','no such interp_pol_TT: '//trim(interp_pol_TT))
       endselect
 !
       select case (interp_pol_gradTT)
-      case ('tsc')
-        call fatal_error('initialize_particles','Not implemented gradTT'// &
-            'interp_pol_gradTT: '//trim(interp_pol_gradTT))
-      case ('cic')
-        call fatal_error('initialize_particles','Not implemented gradTT'// &
-            'interp_pol_gradTT: '//trim(interp_pol_gradTT))
+      case ('tsc','cic')
+        call not_implemented('initialize_particles','interp_pol_gradTT: '//trim(interp_pol_gradTT))
       case ('ngp')
         interp%pol_gradTT=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-            'interp_pol_gradTT: '//trim(interp_pol_gradTT))
+        call fatal_error('initialize_particles','no such interp_pol_gradTT: '//trim(interp_pol_gradTT))
       endselect
 !
       select case (interp_pol_rho)
@@ -723,36 +684,25 @@ print*,'interp_default=',interp_default,particle_mesh
       case ('ngp')
         interp%pol_rho=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-            'interp_pol_rho: '//trim(interp_pol_rho))
+        call fatal_error('initialize_particles','no such interp_pol_rho: '//trim(interp_pol_rho))
       endselect
 !
       select case (interp_pol_pp)
-      case ('tsc')
-        call fatal_error('initialize_particles','Not implemented pp'// &
-            'interp_pol_pp: '//trim(interp_pol_pp))
-      case ('cic')
-        call fatal_error('initialize_particles','Not implemented pp'// &
-            'interp_pol_pp: '//trim(interp_pol_pp))
+      case ('tsc','cic')
+        call not_implemented('initialize_particles','interp_pol_pp: '//trim(interp_pol_pp))
       case ('ngp')
         interp%pol_pp=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-            'interp_pol_pp: '//trim(interp_pol_pp))
+        call fatal_error('initialize_particles','no such interp_pol_pp: '//trim(interp_pol_pp))
       endselect
 !
       select case (interp_pol_nu)
-      case ('tsc')
-        call fatal_error('initialize_particles','Not implemented nu'// &
-            'interp_pol_nu: '//trim(interp_pol_nu))
-      case ('cic')
-        call fatal_error('initialize_particles','Not implemented nu'// &
-            'interp_pol_nu: '//trim(interp_pol_nu))
+      case ('tsc','cic')
+        call not_implemented('initialize_particles','interp_pol_nu: '//trim(interp_pol_nu))
       case ('ngp')
         interp%pol_nu=ngp
       case default
-        call fatal_error('initialize_particles','No such such value for '// &
-            'interp_pol_nu: '//trim(interp_pol_nu))
+        call fatal_error('initialize_particles','no such interp_pol_nu: '//trim(interp_pol_nu))
       endselect
 !
       if (l_shell) then
@@ -773,12 +723,12 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  29-dec-04/anders: coded
 !
-      use Density, only: beta_glnrho_global
       use EquationOfState, only: cs20
       use General, only: random_number_wrapper, normal_deviate
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent (out) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
@@ -793,14 +743,17 @@ print*,'interp_default=',interp_default,particle_mesh
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
       real :: rpar_int,rpar_ext
+
+      real, dimension(:), pointer :: beta_glnrho_global
+
+      call get_shared_variable('beta_glnrho_global',beta_glnrho_global,caller='init_particles')
 !
 !  Optionally withhold some number of particles, to be inserted in
 !  insert_particles. The particle indices to be removed are not randomized,
 !  so any randomization needs to be taken care of in the above initxxp cases.
 !
-      if (lwithhold_init_particles .and. frac_init_particles < 1.0-tini) then
+      if (lwithhold_init_particles .and. frac_init_particles < 1.0-tini) &
         npar_loc = nint(frac_init_particles*real(npar_loc))
-      endif
 !
 !  Use either a local random position or a global random position for certain
 !  initial conditions. The default is a local random position, but the equal
@@ -834,15 +787,13 @@ print*,'interp_default=',interp_default,particle_mesh
           fp(1:npar_loc,izp)=0.0
 !
         case ('constant')
-          if (lroot) &
-              print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
+          if (lroot) print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
           fp(1:npar_loc,ixp)=xp0
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
 !
         case ('constant-1')
-          if (lroot) &
-              print*, 'init_particles: Particle 1 at x,y,z=', xp1, yp1, zp1
+          if (lroot) print*, 'init_particles: Particle 1 at x,y,z=', xp1, yp1, zp1
           do k=1,npar_loc
             if (ipar(k)==1) then
               fp(k,ixp)=xp1
@@ -852,8 +803,7 @@ print*,'interp_default=',interp_default,particle_mesh
           enddo
 !
         case ('constant-2')
-          if (lroot) &
-              print*, 'init_particles: Particle 2 at x,y,z=', xp2, yp2, zp2
+          if (lroot) print*, 'init_particles: Particle 2 at x,y,z=', xp2, yp2, zp2
           do k=1,npar_loc
             if (ipar(k)==2) then
               fp(k,ixp)=xp2
@@ -863,8 +813,7 @@ print*,'interp_default=',interp_default,particle_mesh
           enddo
 !
         case ('constant-3')
-          if (lroot) &
-              print*, 'init_particles: Particle 2 at x,y,z=', xp3, yp3, zp3
+          if (lroot) print*, 'init_particles: Particle 2 at x,y,z=', xp3, yp3, zp3
           do k=1,npar_loc
             if (ipar(k)==3) then
               fp(k,ixp)=xp3
@@ -885,12 +834,9 @@ print*,'interp_default=',interp_default,particle_mesh
               fp(k,iyp)=r
             endif
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
-          if (nzgrid/=1) &
-              fp(1:npar_loc,izp)=zp0
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) fp(1:npar_loc,izp)=zp0
 !
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
@@ -908,12 +854,9 @@ print*,'interp_default=',interp_default,particle_mesh
               fp(k,izp)=r
             endif
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
-          if (nzgrid/=1) &
-              fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
 
         case ('random-shift')
           if (lroot) print*, 'init_particles: Randomly distribute particle positions, then shift them'
@@ -952,19 +895,16 @@ print*,'interp_default=',interp_default,particle_mesh
         case ('random-sphere')
           if (lroot) print*, 'init_particles: Random particle positions '// &
               'in a sphere around (0,0,0) with radius=',rad_sphere
-          if (rad_sphere==0) then
-            call fatal_error('init_particles','random-sphere '// &
-                'radius needs to be larger than zero')
-          endif
+          if (rad_sphere==0) &
+            call fatal_error('init_particles','random-sphere radius needs to be larger than zero')
           if (-rad_sphere+pos_sphere(1)<xyz0(1) .or. &
               +rad_sphere+pos_sphere(1)>xyz1(1) .or. &
               -rad_sphere+pos_sphere(2)<xyz0(2) .or. &
               +rad_sphere+pos_sphere(2)>xyz1(2) .or. &
               -rad_sphere+pos_sphere(3)<xyz0(3) .or. &
-              +rad_sphere+pos_sphere(3)>xyz1(3)) then
-            call fatal_error('init_particles','random-sphere '// &
-                'sphere needs to fit in the box')
-          endif
+              +rad_sphere+pos_sphere(3)>xyz1(3)) &
+            call fatal_error('init_particles','random-sphere needs to fit in the box')
+
           if (lcartesian_coords) then
             do k=1,npar_loc
               rp2=2.*rad_sphere**2
@@ -990,19 +930,18 @@ print*,'interp_default=',interp_default,particle_mesh
           if (lroot) print*, 'init_particles: Random particle positions '// &
               'in an ellipsoid around ', pos_ellipsoid, ' with ' // &
               'semi-principal axes a,b,c =',a_ellipsoid,b_ellipsoid,c_ellipsoid
-          if ((a_ellipsoid==0) .or. (b_ellipsoid==0) .or. (c_ellipsoid==0)) then
+          if ((a_ellipsoid==0) .or. (b_ellipsoid==0) .or. (c_ellipsoid==0)) &
             call fatal_error('init_particles','random-ellipsoid '// &
                 'all semi-principal axes need to be larger than zero')
-          endif
+          
           if (-a_ellipsoid+pos_ellipsoid(1)<xyz0(1) .or. &
               +a_ellipsoid+pos_ellipsoid(1)>xyz1(1) .or. &
               -b_ellipsoid+pos_ellipsoid(2)<xyz0(2) .or. &
               +b_ellipsoid+pos_ellipsoid(2)>xyz1(2) .or. &
               -c_ellipsoid+pos_ellipsoid(3)<xyz0(3) .or. &
-              +c_ellipsoid+pos_ellipsoid(3)>xyz1(3)) then
-            call fatal_error('init_particles','random-ellipsoid '// &
-                'ellipsoid needs to fit in the box')
-          endif
+              +c_ellipsoid+pos_ellipsoid(3)>xyz1(3)) &
+            call fatal_error('init_particles','random-ellipsoid needs to fit in the box')
+
           if (lcartesian_coords) then
             a_ell2=a_ellipsoid**2
             b_ell2=b_ellipsoid**2
@@ -1035,8 +974,7 @@ print*,'interp_default=',interp_default,particle_mesh
               fp(k,ixp)=r
             endif
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
 !
@@ -1048,14 +986,12 @@ print*,'interp_default=',interp_default,particle_mesh
               fp(k,iyp)=r
             endif
           enddo
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
           fp(1:npar_loc,ixp)=xp0
           fp(1:npar_loc,izp)=zp0
 !
         case ('random-hole')
-          if (lroot) print*, 'init_particles: Random particle positions '// &
-              'with inner hole'
+          if (lroot) print*, 'init_particles: Random particle positions with inner hole'
           do k=1,npar_loc
             rp2=-1.0
             do while (rp2<rp_int**2)
@@ -1079,8 +1015,7 @@ print*,'interp_default=',interp_default,particle_mesh
           enddo
 !
         case ('random-box')
-          if (lroot) print*, 'init_particles: Random particle positions '// &
-              'within a box'
+          if (lroot) print*, 'init_particles: Random particle positions within a box'
           do k=1,npar_loc
             if (nxgrid/=1) then
               call random_number_wrapper(r)
@@ -1110,7 +1045,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
         case ('random-cylindrical','random-cyl')
 !
-          if (lroot) print*, 'init_particles: Random particle '//&
+          if (lroot) print*, 'init_particles: Random particle '// &
               'cylindrical positions with power-law = ', dustdensity_powerlaw
 !
           do k=1,npar_loc
@@ -1122,8 +1057,7 @@ print*,'interp_default=',interp_default,particle_mesh
             elseif (lspherical_coords) then
               tmp=3-dustdensity_powerlaw
             else
-              call fatal_error("init_particles",&
-                   "The world is flat, and we never got here")
+              call fatal_error("init_particles","unsupported coordinate system")
             endif
 !
             if (lcartesian_coords) then
@@ -1348,13 +1282,10 @@ print*,'interp_default=',interp_default,particle_mesh
 !
         case ('shift')
           if (lroot) print*, 'init_particles: shift particle positions'
-          if (.not. lequidistant) then
-            call fatal_error('init_particles','must place particles equidistantly before shifting!')
-          endif
+          if (.not. lequidistant) &
+            call fatal_error('init_particles','must place particles equidistantly before shifting')
           k2_xxp=kx_xxp**2+ky_xxp**2+kz_xxp**2
-          if (k2_xxp==0.0) then
-            call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!')
-          endif
+          if (k2_xxp==0.0) call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed')
           do k=1,npar_loc
             fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
                 sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
@@ -1368,36 +1299,26 @@ print*,'interp_default=',interp_default,particle_mesh
 !
         case ('cosxcosz')
           if (lroot) print*, 'init_particles: shift particle positions'
-          if (.not. lequidistant) then
-            call fatal_error('init_particles','must place particles equidistantly before shifting!')
-          endif
+          if (.not. lequidistant) &
+            call fatal_error('init_particles','must place particles equidistantly before shifting')
           k2_xxp=kx_xxp**2+kz_xxp**2
-          if (k2_xxp==0.0) then
-            call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!')
-          endif
+          if (k2_xxp==0.0) call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed')
           do k=1,npar_loc
-          fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
-              sin(kx_xxp*fp(k,ixp))*cos(kz_xxp*fp(k,izp))
-          fp(k,izp) = fp(k,izp) - kz_xxp/k2_xxp*amplxxp* &
-              sin(kx_xxp*fp(k,ixp))*cos(kz_xxp*fp(k,izp))
+            fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp*sin(kx_xxp*fp(k,ixp))*cos(kz_xxp*fp(k,izp))
+            fp(k,izp) = fp(k,izp) - kz_xxp/k2_xxp*amplxxp*sin(kx_xxp*fp(k,ixp))*cos(kz_xxp*fp(k,izp))
           enddo
 !
 !  Shift to egg crate mode 2d, sin(x)sin(z)
 !
         case ('sinxsinz')
           if (lroot) print*, 'init_particles: shift particle positions'
-          if (.not. lequidistant) then
-            call fatal_error('init_particles','must place particles equidistantly before shifting!')
-          endif
+          if (.not. lequidistant) &
+            call fatal_error('init_particles','must place particles equidistantly before shifting')
           k2_xxp=kx_xxp**2+kz_xxp**2
-          if (k2_xxp==0.0) then
-            call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!')
-          endif
+          if (k2_xxp==0.0) call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed')
           do k=1,npar_loc
-          fp(k,ixp) = fp(k,ixp) + kx_xxp/k2_xxp*amplxxp* &
-              cos(kx_xxp*fp(k,ixp))*sin(kz_xxp*fp(k,izp))
-          fp(k,izp) = fp(k,izp) + kz_xxp/k2_xxp*amplxxp* &
-              cos(kx_xxp*fp(k,ixp))*sin(kz_xxp*fp(k,izp))
+          fp(k,ixp) = fp(k,ixp) + kx_xxp/k2_xxp*amplxxp*cos(kx_xxp*fp(k,ixp))*sin(kz_xxp*fp(k,izp))
+          fp(k,izp) = fp(k,izp) + kz_xxp/k2_xxp*amplxxp*cos(kx_xxp*fp(k,ixp))*sin(kz_xxp*fp(k,izp))
           enddo
 !
         case ('gaussian-z')
@@ -1423,10 +1344,8 @@ print*,'interp_default=',interp_default,particle_mesh
               if ((fp(k,izp)>=xyz0(3)) .and. (fp(k,izp)<=xyz1(3))) exit
             enddo
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
 !
         case ('gaussian-x')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
@@ -1446,10 +1365,8 @@ print*,'interp_default=',interp_default,particle_mesh
               if ((fp(k,ixp)>=xyz0(1)).and.(fp(k,ixp)<=xyz1(1))) exit
             enddo
           enddo
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
-          if (nzgrid/=1) &
-              fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+          if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
 !
         case ('gaussian-z-pure')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
@@ -1482,7 +1399,7 @@ print*,'interp_default=',interp_default,particle_mesh
           do k=k1_imn(imn_array(m_hole+m1-1,n_hole+n1-1)), &
                k2_imn(imn_array(m_hole+m1-1,n_hole+n1-1))
             if (ineargrid(k,1)==l_hole+l1-1) then
-              print*, k
+              if (lroot) print*, 'k=', k
               if (nxgrid/=0) fp(k,ixp)=fp(k,ixp)-dx
             endif
           enddo
@@ -1516,11 +1433,10 @@ print*,'interp_default=',interp_default,particle_mesh
               fp(1:npar_loc,izp) = az_tmp(1:npar_loc)
             endif
           endif
-          if (lroot .and. nzgrid/=0) print*,"Warning, birthring only implemented for 2D"
+          if (nzgrid/=0) call warning('init_particles',"birthring only implemented for 2D")
 !
         case default
-          call fatal_error('init_particles','Unknown value initxxp="'//trim(initxxp(j))//'"')
-!
+          call fatal_error('init_particles','no such initxxp: "'//trim(initxxp(j))//'"')
         endselect
 !
       enddo ! do j=1,ninit
@@ -1568,8 +1484,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
         case ('constant')
           if (lroot) print*, 'init_particles: Constant particle velocity'
-          if (lroot) &
-              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           if (lcylindrical_coords) then
             fp(1:npar_loc,ivpx)=vpx0*cos(fp(k,iyp))+vpy0*sin(fp(k,iyp))
             fp(1:npar_loc,ivpy)=vpy0*cos(fp(k,iyp))-vpx0*sin(fp(k,iyp))
@@ -1581,9 +1496,7 @@ print*,'interp_default=',interp_default,particle_mesh
           endif
 !
         case ('constant-1')
-          if (lroot) &
-              print*, 'init_particles: Particle 1 velocity vx,vy,vz=', &
-              vpx1, vpy1, vpz1
+          if (lroot) print*, 'init_particles: Particle 1 velocity vx,vy,vz=', vpx1, vpy1, vpz1
           do k=1,npar_loc
             if (ipar(k)==1) then
               fp(k,ivpx)=vpx1
@@ -1593,9 +1506,7 @@ print*,'interp_default=',interp_default,particle_mesh
           enddo
 !
         case ('constant-2')
-          if (lroot) &
-              print*, 'init_particles: Particle 2 velocity vx,vy,vz=', &
-              vpx2, vpy2, vpz2
+          if (lroot) print*, 'init_particles: Particle 2 velocity vx,vy,vz=', vpx2, vpy2, vpz2
           do k=1,npar_loc
             if (ipar(k)==2) then
               fp(k,ivpx)=vpx2
@@ -1605,9 +1516,7 @@ print*,'interp_default=',interp_default,particle_mesh
           enddo
 !
         case ('constant-3')
-          if (lroot) &
-              print*, 'init_particles: Particle 3 velocity vx,vy,vz=', &
-              vpx3, vpy3, vpz3
+          if (lroot) print*, 'init_particles: Particle 3 velocity vx,vy,vz=', vpx3, vpy3, vpz3
           do k=1,npar_loc
             if (ipar(k)==3) then
               fp(k,ivpx)=vpx3
@@ -1618,8 +1527,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
         case ('sinwave-phase')
           if (lroot) print*, 'init_particles: sinwave-phase'
-          if (lroot) &
-              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           do k=1,npar_loc
             fp(k,ivpx)=fp(k,ivpx)+vpx0*sin(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
             fp(k,ivpy)=fp(k,ivpy)+vpy0*sin(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
@@ -1628,8 +1536,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
         case ('coswave-phase')
           if (lroot) print*, 'init_particles: coswave-phase'
-          if (lroot) &
-              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           do k=1,npar_loc
             fp(k,ivpx)=fp(k,ivpx)+vpx0*cos(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
             fp(k,ivpy)=fp(k,ivpy)+vpy0*cos(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
@@ -1637,8 +1544,7 @@ print*,'interp_default=',interp_default,particle_mesh
           enddo
 !
         case ('random')
-          if (lroot) print*, 'init_particles: Random particle velocities; '// &
-              'delta_vp0=', delta_vp0
+          if (lroot) print*, 'init_particles: Random particle velocities; delta_vp0=', delta_vp0
           do k=1,npar_loc
             call random_number_wrapper(r)
             fp(k,ivpx) = fp(k,ivpx) + delta_vp0*(2*r-1)
@@ -1649,24 +1555,21 @@ print*,'interp_default=',interp_default,particle_mesh
           enddo
 !
         case ('random-x')
-          if (lroot) print*, 'init_particles: Random particle x-velocity; '// &
-              'delta_vp0=', delta_vp0
+          if (lroot) print*, 'init_particles: Random particle x-velocity; delta_vp0=', delta_vp0
           do k=1,npar_loc
             call random_number_wrapper(r)
             fp(k,ivpx) = fp(k,ivpx) + delta_vp0*(2*r-1)
           enddo
 !
         case ('random-y')
-          if (lroot) print*, 'init_particles: Random particle y-velocity; '// &
-              'delta_vp0=', delta_vp0
+          if (lroot) print*, 'init_particles: Random particle y-velocity; delta_vp0=', delta_vp0
           do k=1,npar_loc
             call random_number_wrapper(r)
             fp(k,ivpy) = fp(k,ivpy) + delta_vp0*(2*r-1)
           enddo
 !
         case ('random-z')
-          if (lroot) print*, 'init_particles: Random particle z-velocity; '// &
-              'delta_vp0=', delta_vp0
+          if (lroot) print*, 'init_particles: Random particle z-velocity; delta_vp0=', delta_vp0
           do k=1,npar_loc
             call random_number_wrapper(r)
             fp(k,ivpz) = fp(k,ivpz) + delta_vp0*(2*r-1)
@@ -1684,11 +1587,9 @@ print*,'interp_default=',interp_default,particle_mesh
           fp(1:npar_loc,ivpz)=fp(1:npar_loc,ivpz)-vpz_sum/npar
 !
         case ('follow-gas')
-          if (lroot) &
-              print*, 'init_particles: Particle velocity equal to gas velocity'
+          if (lroot) print*, 'init_particles: Particle velocity equal to gas velocity'
           do k=1,npar_loc
-            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup, &
-                ineargrid(k,:),0,0)
+            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,0)
             fp(k,ivpx:ivpz) = uup
           enddo
 !
@@ -1741,11 +1642,9 @@ print*,'interp_default=',interp_default,particle_mesh
               endif
             endif
 !
-            fp(k,ivpx) = fp(k,ivpx) + &
-                beta_glnrho_global(1)*Omega*tausp/ &
+            fp(k,ivpx) = fp(k,ivpx) + beta_glnrho_global(1)*Omega*tausp/ &
                 ((1.0+eps)**2+(Omega*tausp)**2)*cs
-            fp(k,ivpy) = fp(k,ivpy) + &
-                beta_glnrho_global(1)*(1+eps)/ &
+            fp(k,ivpy) = fp(k,ivpy) + beta_glnrho_global(1)*(1+eps)/ &
                 (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
 !
           enddo
@@ -1753,10 +1652,8 @@ print*,'interp_default=',interp_default,particle_mesh
         case ('dragforce_equi_nohydro')
 !
           do k=1,npar_loc
-            fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction* &
-                1/(1.0/(Omega*tausp)+Omega*tausp)
-            fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction* &
-                1/(1.0+(Omega*tausp)**2)
+            fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction/(1.0/(Omega*tausp)+Omega*tausp)
+            fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction/(1.0+(Omega*tausp)**2)
           enddo
 !
         case ('dragforce_equi_dust')
@@ -1770,21 +1667,17 @@ print*,'interp_default=',interp_default,particle_mesh
 !  Set particle velocity field.
           cs=sqrt(cs20)
           do k=1,npar_loc
-            fp(k,ivpx) = fp(k,ivpx) + &
-                1/(Omega*tausp+1/(Omega*tausp))*beta_dPdr_dust*cs
-            fp(k,ivpy) = fp(k,ivpy) - &
-                1/(1.0+1/(Omega*tausp)**2)*beta_dPdr_dust/2*cs
+            fp(k,ivpx) = fp(k,ivpx) + 1/(Omega*tausp+1/(Omega*tausp))*beta_dPdr_dust*cs
+            fp(k,ivpy) = fp(k,ivpy) - 1/(1.0+1/(Omega*tausp)**2)*beta_dPdr_dust/2*cs
           enddo
 !
        case ('Keplerian','keplerian')
 !
 !  Keplerian velocity based on gravr.
 !
-          if (lroot) then
-            print*, 'init_particles: Keplerian velocity'
-            if (lshear) call fatal_error("init_particles",&
-                 "Keplerian initial condition is for global disks, not shearing boxes")
-          endif
+          if (lroot) print*, 'init_particles: Keplerian velocity'
+          if (lshear) call fatal_error("init_particles", &
+             "Keplerian initial condition is for global disks, not shearing boxes")
           do k=1,npar_loc
             if (lcartesian_coords) then
               rad=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
@@ -1817,10 +1710,8 @@ print*,'interp_default=',interp_default,particle_mesh
            fp(k,ivpz) = delta_vp0*fp(k,izp)/rp_ext
          enddo
 !
-!
         case default
-          call fatal_error('init_particles','Unknown value initvvp="'//trim(initvvp(j))//'"')
-!
+          call fatal_error('init_particles','no such initvvp: "'//trim(initvvp(j))//'"')
         endselect
 !
       enddo ! do j=1,ninit
@@ -1921,10 +1812,8 @@ print*,'interp_default=',interp_default,particle_mesh
 !
         if (linsert_as_many_as_possible) then
           n_insert=min((mpar_loc-npar_loc),n_insert)
-          if ((n_insert+npar_loc <= mpar_loc)  &
-            .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
-            linsertmore=.true.
-          endif
+          if ((n_insert+npar_loc <= mpar_loc) &
+            .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) linsertmore=.true.
         endif
 !
         if (linsertmore) then
@@ -1982,8 +1871,7 @@ print*,'interp_default=',interp_default,particle_mesh
               elseif (lspherical_coords) then
                 tmp=3-dustdensity_powerlaw
               else
-                call fatal_error("init_particles",&
-                     "The world is flat, and we never got here")
+                call fatal_error("init_particles","The world is flat, and we never got here")
               endif
   !
               call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
@@ -2100,7 +1988,6 @@ print*,'interp_default=',interp_default,particle_mesh
 !
             case default
               call fatal_error_local('init_particles','no such initvvp: "'//trim(initvvp(j))//'"')
-!
             endselect
 !
           enddo ! do j=1,ninit
@@ -2121,7 +2008,7 @@ print*,'interp_default=',interp_default,particle_mesh
           if (lparticles_diagnos_state) call insert_particles_diagnos_state(fp, npar_loc_old)
 !
         endif
-      endif ! if (lroot) then
+      endif ! if (lroot)
 !
 !  Redistribute particles only when t < max_particle_insert_time
 !  and t>tstart_insert_particles.
@@ -2160,12 +2047,10 @@ print*,'interp_default=',interp_default,particle_mesh
              fp(k,ibrtime) = fp(k,ibrtime) + &
              dt*exp(-((rr_tmp(k)-birthring_r)**2.0)/(2.0*birthring_width**2.0))
           else
-           if ((rr_tmp(k) .ge. birthring_r-birthring_width) .and. &
-           (rr_tmp(k) .le. birthring_r+birthring_width)) &
-             fp(k,ibrtime) = fp(k,ibrtime)+dt
+            if ((rr_tmp(k) .ge. birthring_r-birthring_width) .and. &
+                (rr_tmp(k) .le. birthring_r+birthring_width)) fp(k,ibrtime) = fp(k,ibrtime)+dt
           endif
-          if (fp(k,ibrtime) .ge. birthring_lifetime) &
-            call remove_particle(fp,ipar,k)
+          if (fp(k,ibrtime) .ge. birthring_lifetime) call remove_particle(fp,ipar,k)
         enddo
       endif
 !
@@ -2345,32 +2230,23 @@ print*,'interp_default=',interp_default,particle_mesh
       if (.not.lpointmasses) then
         if (lcartesian_coords) then
 !
-          if (nxgrid/=1) &
-              dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-          if (nygrid/=1) &
-              dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
-          if (nzgrid/=1) &
-              dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
+          if (nxgrid/=1) dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+          if (nygrid/=1) dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
+          if (nzgrid/=1) dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
 !
         elseif (lcylindrical_coords) then
-          if (nxgrid/=1) &
-              dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-          if (nygrid/=1) &
-              dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
-                fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
-          if (nzgrid/=1) &
-              dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
+          if (nxgrid/=1) dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+          if (nygrid/=1) dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
+                         fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
+          if (nzgrid/=1) dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
 !
         elseif (lspherical_coords) then
 !
-          if (nxgrid/=1) &
-              dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-          if (nygrid/=1) &
-              dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
-                fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
-          if (nzgrid/=1) &
-              dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + &
-                fp(1:npar_loc,ivpz)/(max(fp(1:npar_loc,ixp),tini)*sin(fp(1:npar_loc,iyp)))
+          if (nxgrid/=1) dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+          if (nygrid/=1) dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
+                         fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
+          if (nzgrid/=1) dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + &
+                         fp(1:npar_loc,ivpz)/(max(fp(1:npar_loc,ixp),tini)*sin(fp(1:npar_loc,iyp)))
         endif
       endif
 !
@@ -2455,14 +2331,13 @@ print*,'interp_default=',interp_default,particle_mesh
 !  (the term must be added to the dust equation of motion when measuring
 !  velocities relative to the shear flow modified by the globalfpressure grad.)
 !
-      if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) then
+      if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) &
         dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
-      endif
 !
 !  Gravity on the particles.
 !  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
 !
-      if (lparticle_gravity)  call particle_gravity(f,df,fp,dfp,ineargrid)
+      if (lparticle_gravity) call particle_gravity(f,df,fp,dfp,ineargrid)
 !
 !  The auxiliary has to be set to zero afterwards
 !
@@ -2610,9 +2485,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !  Print out header information in first time step.
 !
       lheader=lfirstcall .and. lroot
-      if (lheader) then
-        print*,'dvvp_dt: Calculating gravity'
-      endif
+      if (lheader) print*,'dvvp_dt: Calculating gravity'
 !
 !  Gravity in the x-direction.
 !
@@ -2620,10 +2493,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
         select case (gravx_profile)
 !
-          case ('')
-            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
-!
-          case ('zero')
+          case ('','zero')
             if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
 !
           case ('const','plain')
@@ -2635,12 +2505,11 @@ print*,'interp_default=',interp_default,particle_mesh
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - nu_epicycle2*fp(1:npar_loc,ixp)
 !
           case ('sinusoidal')
-            if (lheader) &
-                print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
+            if (lheader) print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) + gravx*sin(kx_gg*fp(1:npar_loc,ixp))
 !
           case default
-            call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
+            call fatal_error('dvvp_dt','no such gravx_profile: '//trim(gravx_profile))
 !
         endselect
 !
@@ -2652,10 +2521,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
         select case (gravz_profile)
 !
-          case ('')
-            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
-!
-          case ('zero')
+          case ('','zero')
             if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
 !
           case ('const','plain')
@@ -2667,8 +2533,7 @@ print*,'interp_default=',interp_default,particle_mesh
             dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - nu_epicycle2*fp(1:npar_loc,izp)
 !
           case ('sinusoidal')
-            if (lheader) &
-                print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
+            if (lheader) print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
             dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) + gravz*sin(kz_gg*fp(1:npar_loc,izp))
 !
           case default
@@ -2696,8 +2561,7 @@ print*,'interp_default=',interp_default,particle_mesh
               'The N-body code should take care of the stellar-like '// &
               'gravity on the dust. Switch off the '// &
               'gravr_profile=''newtonian'' on particles_init')
-          if (lheader) &
-               print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
+          if (lheader) print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
           if (lvector_gravity) then
             if (t>=tstart_rpbeta) then
               if (lparticles_radius .and. lparticles_radius_rpbeta) then
@@ -2810,7 +2674,7 @@ print*,'interp_default=',interp_default,particle_mesh
                 ggp(1) = -fp(k,ixp)*OO2
                 ggp(2) = 0.0; ggp(3) = 0.0
                 if (lcylindrical_gravity_par) call fatal_error("dvvp_dt",&
-                     "No cylindrical gravity in spherical coordinates.")
+                     "No cylindrical gravity in spherical coordinates")
                 dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
               endif
   !  Limit time-step if particles close to gravity source.
@@ -2941,9 +2805,8 @@ print*,'interp_default=',interp_default,particle_mesh
       if (headtt) then
         if (lroot) then
           print*,'dvvp_dt_pencil: calculate dvvp_dt'
-          if (lhydro .and. ldragforce_gas_par) then
+          if (lhydro .and. ldragforce_gas_par) &
             print*,'dvvp_dt_pencil: adding feedback from dust to gas'
-          endif
         endif
       endif
 !
@@ -2952,8 +2815,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
       if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
       if (ldiffuse_passive .and. ilncc == 0) &
-          call fatal_error('particles_lagrangian', &
-          'ldiffuse_passive needs pscalar_nolog=F')
+          call fatal_error('particles_lagrangian','ldiffuse_passive needs pscalar_nolog=F')
 !
 !  Initialize the pencils that are calculated within this subroutine
 !  NILS: Are these initialized somewhere else (with the other pencils)?
@@ -2974,13 +2836,12 @@ print*,'interp_default=',interp_default,particle_mesh
 !  NILS: This precalculation, together with the stokes cunningham factor,
 !  NILS: should be moved to where the interpolation is done.
 !
-        getrep: if (ldraglaw_steadystate .or. lparticles_spin &
-            .or. ldraglaw_stokesschiller) then
+        if (ldraglaw_steadystate .or. lparticles_spin .or. ldraglaw_stokesschiller) then
           allocate(rep(k1_imn(imn):k2_imn(imn)))
           if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', &
               'unable to allocate sufficient memory for rep', .true.)
           call calc_pencil_rep(fp, rep)
-        endif getrep
+        endif
 !
 !  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple  or ldraglaw_purestokes)
 !
@@ -3134,11 +2995,9 @@ print*,'interp_default=',interp_default,particle_mesh
 !  Consider only (spherical) radial component of drag force (for testing).
 !  NILS: SInce this is for testing only; could it be removed?
 !
-              if (ldragforce_radialonly) then
-                dragforce=fp(k,ixp:izp)*(dragforce(1)*fp(k,ixp)+ &
-                    dragforce(2)*fp(k,iyp)+dragforce(3)*fp(k,izp))/ &
-                    (fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
-              endif
+              if (ldragforce_radialonly) dragforce=fp(k,ixp:izp)*(dragforce(1)*fp(k,ixp)+ &
+                                                   dragforce(2)*fp(k,iyp)+dragforce(3)*fp(k,izp))/ &
+                                                   (fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
@@ -3270,10 +3129,8 @@ print*,'interp_default=',interp_default,particle_mesh
                     if (lhydro .and. ldragforce_gas_par) then
                       call find_grid_volume(ixx,iyy,izz,volume_cell)
                       mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
-                      if (.not. ldiffuse_dragf) then
-                        df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                            mp_vcell*rho1_point*dragforce*weight
-                      endif
+                      if (.not. ldiffuse_dragf) df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                                                mp_vcell*rho1_point*dragforce*weight
                     endif
 !
                     if (lpscalar_sink .and. lpscalar) then
@@ -3512,18 +3369,15 @@ print*,'interp_default=',interp_default,particle_mesh
 ! iap>0 would be a better condition than eps_dtog/ldraglaw_steadystate?
                       if (lhydro .and. ldragforce_gas_par) then
                         mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
-                        if (.not. ldiffuse_dragf) then
-                          df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                              mp_vcell*rho1_point*dragforce*weight
-                        endif
+                        if (.not. ldiffuse_dragf) df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                                                  mp_vcell*rho1_point*dragforce*weight
                       endif
                       if (lpscalar_sink .and. lpscalar) then
                         if (ilncc == 0) then
                           call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog')
                         else
-                          if (.not. ldiffuse_passive) then
+                          if (.not. ldiffuse_passive) &
                             df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - weight*dthetadt/volume_cell
-                          endif
                         endif
                       endif
                     enddo
@@ -3607,7 +3461,7 @@ print*,'interp_default=',interp_default,particle_mesh
               if (lfirst .and. ldt) then
                 dt1_drag_dust(ix0-nghost) = max(dt1_drag_dust(ix0-nghost), tausp1_par)
                 if (ldragforce_gas_par) &
-                    dt1_drag_gas(ix0-nghost) = dt1_drag_gas(ix0-nghost) + mp_vcell * p%rho1(ix0-nghost) * tausp1_par
+                  dt1_drag_gas(ix0-nghost) = dt1_drag_gas(ix0-nghost) + mp_vcell * p%rho1(ix0-nghost) * tausp1_par
               endif
           enddo
 !
@@ -3723,20 +3577,21 @@ print*,'interp_default=',interp_default,particle_mesh
       real, dimension (mpar_loc,mparray) :: fp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: k
 !
 !  Diagnostic output.
 !
       if (ldiagnos) then
         if (idiag_npm/=0)      call sum_mn_name(p%np,idiag_npm)
         if (idiag_np2m/=0)     call sum_mn_name(p%np**2,idiag_np2m)
-        if (idiag_npmax/=0)    call max_mn_name(p%np,idiag_npmax)
+        if (idiag_npmax/=0)    call max_mn_name( p%np,idiag_npmax)
         if (idiag_npmin/=0)    call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
         if (idiag_rhopm/=0)    call sum_mn_name(p%rhop,idiag_rhopm)
         if (idiag_rhop2m/=0 )  call sum_mn_name(p%rhop**2,idiag_rhop2m)
         if (idiag_rhoprms/=0)  call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
-        if (idiag_rhopmax/=0)  call max_mn_name(p%rhop,idiag_rhopmax)
+        if (idiag_rhopmax/=0)  call max_mn_name( p%rhop,idiag_rhopmax)
         if (idiag_rhopmin/=0)  call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
-        if (idiag_epspmax/=0)  call max_mn_name(p%epsp,idiag_epspmax)
+        if (idiag_epspmax/=0)  call max_mn_name( p%epsp,idiag_epspmax)
         if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
         if (idiag_epspm/=0)    call sum_mn_name(p%epsp,idiag_epspm)
         if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
@@ -3936,8 +3791,7 @@ print*,'interp_default=',interp_default,particle_mesh
           if (ipar(k)/=1 .and. rp<rsinkparticle_1) then
             if (lparticles_density) then
               rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm)
-              momp_swarm_removed = momp_swarm_removed + &
-                  fp(k,ivpx:ivpz)*fp(k,irhopswarm)
+              momp_swarm_removed = momp_swarm_removed + fp(k,ivpx:ivpz)*fp(k,irhopswarm)
 !              if (lshear) then
 !                momp_swarm_removed(2) = momp_swarm_removed(2) + &
 !                    Sshear*fp(k,ixp)*fp(k,irhopswarm)
@@ -3988,9 +3842,8 @@ print*,'interp_default=',interp_default,particle_mesh
 !                  fp(ksink,irhopswarm) + momp_swarm_removed(3))/ &
 !                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
 !            else
-              fp(ksink,ivpx:ivpz) = (fp(ksink,ivpx:ivpz)* &
-                  fp(ksink,irhopswarm) + momp_swarm_removed)/ &
-                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
+              fp(ksink,ivpx:ivpz) = (fp(ksink,ivpx:ivpz)*fp(ksink,irhopswarm) + momp_swarm_removed)/ &
+                                    (fp(ksink,irhopswarm) + rhop_swarm_removed)
 !            endif
             fp(ksink,irhopswarm) = fp(ksink,irhopswarm) + rhop_swarm_removed
           endif
@@ -4076,8 +3929,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
-          if (fp(k,iap)/=0.0) then
-            tausp1_par = (sqrt(p%cs2(inx0))*p%rho(inx0))/(fp(k,iap)*rhopmat)
+          if (fp(k,iap)/=0.0) tausp1_par = (sqrt(p%cs2(inx0))*p%rho(inx0))/(fp(k,iap)*rhopmat)
 !
 ! DM : 10 Nov  2016
 ! For the usual Epstein drag we need also the thermal velocity and the
@@ -4086,7 +3938,6 @@ print*,'interp_default=',interp_default,particle_mesh
 ! a better prescription for flows with shocks if the particle sits very close to
 ! a shock.
 !
-          endif
         else
 !  Check if we are using multiple or single particle species.
           if (npar_species>1) then
@@ -4179,20 +4030,17 @@ print*,'interp_default=',interp_default,particle_mesh
       elseif (ldraglaw_stokesschiller) then
         if (.not.present(rep)) then
           call fatal_error('get_frictiontime','need particle reynolds '// &
-                  'number, rep, to calculate the stokes_schiller drag '// &
-                  'relaxation time!')
+                  'number, rep, to calculate the stokes_schiller drag relaxation time')
         else
           call calc_draglaw_steadystate(fp,k,rep,1.0,tausp1_par)
         endif
       elseif (ldraglaw_steadystate) then
         if (.not.present(rep)) then
           call fatal_error('get_frictiontime','need particle reynolds '// &
-                  'number, rep, to calculate the steady state drag '// &
-                  'relaxation time!')
+                  'number, rep, to calculate the steady state drag relaxation time')
         elseif (.not.present(stocunn)) then
           call fatal_error('get_frictiontime','need particle stokes '// &
-                  'cunningham factor, stocunn, to calculate the steady '// &
-                  ' state drag relaxation time!')
+                  'cunningham factor, stocunn, to calculate the steady state drag relaxation time')
         else
           call calc_draglaw_steadystate(fp,k,rep,stocunn,tausp1_par)
         endif
@@ -4566,15 +4414,12 @@ print*,'interp_default=',interp_default,particle_mesh
 !  vpm
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
-            vpm(ix0-nghost) = vpm(ix0-nghost) + &
-                sqrt( (fp(k,ivpx)-vvpm(ix0-nghost,1))**2 + &
-                      (fp(k,ivpy)-vvpm(ix0-nghost,2))**2 + &
-                      (fp(k,ivpz)-vvpm(ix0-nghost,3))**2 )
+            vpm(ix0-nghost) = vpm(ix0-nghost) + sqrt( (fp(k,ivpx)-vvpm(ix0-nghost,1))**2 + &
+                                                      (fp(k,ivpy)-vvpm(ix0-nghost,2))**2 + &
+                                                      (fp(k,ivpz)-vvpm(ix0-nghost,3))**2 )
           enddo
           do l=1,nx
-            if (p%np(l)>1.0) then
-              vpm(l)=vpm(l)/p%np(l)
-            endif
+            if (p%np(l)>1.0) vpm(l)=vpm(l)/p%np(l)
           enddo
 !  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
 !  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
@@ -4592,12 +4437,11 @@ print*,'interp_default=',interp_default,particle_mesh
             ix0=ineargrid(k,1)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                 tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
-            if (lcollisional_heat .or. ldiagnos) then
+            if (lcollisional_heat .or. ldiagnos) &
               call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
-              coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + &
-                   rhop_swarm_par*tau_coll1(ix0-nghost)*&
-                   sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
-            endif
+                                 coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + &
+                                 rhop_swarm_par*tau_coll1(ix0-nghost)*&
+                                 sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
           enddo
 !
           if (lfirst.and.ldt) dt1_max=max(dt1_max,tau_coll1/cdtp)
@@ -4661,33 +4505,28 @@ print*,'interp_default=',interp_default,particle_mesh
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             ispecies=npar_species*(ipar(k)-1)/npar+1
-            vvpm_species(ix0-nghost,:,ispecies) = &
-                vvpm_species(ix0-nghost,:,ispecies) + fp(k,ivpx:ivpz)
-            np_species(ix0-nghost,ispecies)  = &
-                np_species(ix0-nghost,ispecies) + 1.0
+            vvpm_species(ix0-nghost,:,ispecies) = vvpm_species(ix0-nghost,:,ispecies) + fp(k,ivpx:ivpz)
+            np_species(ix0-nghost,ispecies) = np_species(ix0-nghost,ispecies) + 1.0
           enddo
           do l=1,nx
             do ispecies=1,npar_species
-              if (np_species(l,ispecies)>1.0) then
+              if (np_species(l,ispecies)>1.0) &
                 vvpm_species(l,:,ispecies)=vvpm_species(l,:,ispecies)/np_species(l,ispecies)
-              endif
             enddo
           enddo
 !  Calculate rms speed for each species.
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             ispecies=npar_species*(ipar(k)-1)/npar+1
-            vpm_species(ix0-nghost,ispecies) = &
-                vpm_species(ix0-nghost,ispecies) + sqrt( &
-                (fp(k,ivpx)-vvpm_species(ix0-nghost,1,ispecies))**2 + &
-                (fp(k,ivpy)-vvpm_species(ix0-nghost,2,ispecies))**2 + &
-                (fp(k,ivpz)-vvpm_species(ix0-nghost,3,ispecies))**2 )
+            vpm_species(ix0-nghost,ispecies) = vpm_species(ix0-nghost,ispecies) + sqrt( &
+                                              (fp(k,ivpx)-vvpm_species(ix0-nghost,1,ispecies))**2 + &
+                                              (fp(k,ivpy)-vvpm_species(ix0-nghost,2,ispecies))**2 + &
+                                              (fp(k,ivpz)-vvpm_species(ix0-nghost,3,ispecies))**2 )
           enddo
           do l=1,nx
             do ispecies=1,npar_species
-              if (np_species(l,ispecies)>1.0) then
+              if (np_species(l,ispecies)>1.0) &
                 vpm_species(l,ispecies)=vpm_species(l,ispecies)/np_species(l,ispecies)
-              endif
             enddo
           enddo
 !
@@ -4697,18 +4536,15 @@ print*,'interp_default=',interp_default,particle_mesh
 !    tau_ij = tau_ji*rho_j/rho_i
 !
           do ispecies=1,npar_species; do jspecies=ispecies,npar_species
-            vcoll= &
-                sqrt(vpm_species(:,ispecies)**2+vpm_species(:,ispecies)**2 + &
-                  (vvpm_species(:,1,ispecies)-vvpm_species(:,1,jspecies))**2 + &
-                  (vvpm_species(:,2,ispecies)-vvpm_species(:,2,jspecies))**2 + &
-                  (vvpm_species(:,3,ispecies)-vvpm_species(:,3,jspecies))**2)
+            vcoll = sqrt( vpm_species(:,ispecies)**2+vpm_species(:,ispecies)**2 + &
+                        (vvpm_species(:,1,ispecies)-vvpm_species(:,1,jspecies))**2 + &
+                        (vvpm_species(:,2,ispecies)-vvpm_species(:,2,jspecies))**2 + &
+                        (vvpm_species(:,3,ispecies)-vvpm_species(:,3,jspecies))**2)
             call get_rhopswarm(mp_swarm,fp,k,m,n,rhop_swarm_mn)
             tau_coll1_species(:,jspecies,ispecies) = &
                  vcoll*np_species(:,ispecies)*rhop_swarm_mn*p%rho1 / ( &
-                 tausp_species(jspecies)**3/ &
-                 (tausp_species(ispecies)+tausp_species(jspecies))**2 )
-            where (np_species(:,ispecies)/=0.0) &
-              tau_coll1_species(:,ispecies,jspecies)= &
+                 tausp_species(jspecies)**3/(tausp_species(ispecies)+tausp_species(jspecies))**2 )
+            where (np_species(:,ispecies)/=0.0) tau_coll1_species(:,ispecies,jspecies)= &
                    tau_coll1_species(:,jspecies,ispecies)*np_species(:,jspecies)/np_species(:,ispecies)
           enddo; enddo
 !
