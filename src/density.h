@@ -15,7 +15,6 @@
   public :: dynamical_diffusion, boussinesq
   public :: mean_density
   public :: update_char_vel_density
-  public :: density_after_timestep
   public :: pushpars2c
   public :: calc_diagnostics_density
   public :: write_z_stratification

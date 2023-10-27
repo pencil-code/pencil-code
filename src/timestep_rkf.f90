@@ -363,7 +363,6 @@ module Timestep
 !  12-03-17/wlyra: coded
 !  28-03-17/MR: removed update_ghosts; checks for already communicated variables enabled.
 !
-      use Density,  only: density_after_timestep
       use Hydro,    only: hydro_after_timestep
       use Energy,   only: energy_after_timestep
       use Magnetic, only: magnetic_after_timestep
@@ -385,7 +384,6 @@ module Timestep
       if (lhydro)    call hydro_after_timestep   (f,df,dtsub)
       if (lmagnetic) call magnetic_after_timestep(f,df,dtsub)
       if (lenergy)   call energy_after_timestep  (f,df,dtsub)
-      if (ldensity)  call density_after_timestep (f,df,dtsub)
       if (lspecial) then
         call special_after_timestep(f, df, dtsub, llast)
         if (lparticles) call particles_special_after_dtsub(f, dtsub)
