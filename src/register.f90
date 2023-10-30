@@ -29,7 +29,6 @@ module Register
       use FArrayManager,    only: farray_finalize_ode
       use General,          only: setup_mm_nn
       use Io,               only: register_io
-      use Mpicomm,          only: stop_it
       use Param_Io,         only: get_datadir,get_snapdir
       use Sub
       use Chemistry,        only: register_chemistry
@@ -72,7 +71,6 @@ module Register
       use Viscosity,        only: register_viscosity
       use ImplicitPhysics,  only: register_implicit_physics
       use Solid_Cells,      only: register_solid_cells
-      use Syscalls,         only: system_cmd
 !
       integer :: ierr
 !
@@ -100,11 +98,11 @@ module Register
       if (lroot) then
         if (ldebug) print *, 'Creating ' // trim(datadir) // '/def_var.pro and variables.pro'
         open(15,FILE=trim(datadir)//'/def_var.pro',IOSTAT=ierr)
-        if (ierr /= 0) call stop_it("Cannot open "//trim(datadir)// &
+        if (ierr /= 0) call fatal_error("register_modules","Cannot open "//trim(datadir)// &
             "/def_var.pro for writing -- is "//trim(datadir)//" visible from root node?")
         if (ldebug) print *, 'Creating ' // trim(datadir) // '/variables.pro'
         open(4,FILE=trim(datadir)//'/variables.pro',IOSTAT=ierr)
-        if (ierr /= 0) call stop_it("Cannot open "//trim(datadir)// &
+        if (ierr /= 0) call fatal_error("register_modules","Cannot open "//trim(datadir)// &
             "/variables.pro for writing -- is "//trim(datadir)//" visible from root node?")
         write(4,*) 'close,1'
         write(4,*) "openr,1, datadir+'/'+varfile, /F77"
@@ -200,8 +198,6 @@ module Register
       use Cdata
       use FArrayManager, only: farray_check_maux
       use Param_IO
-      use Mpicomm,          only: mpireduce_sum,mpibcast_real,&
-                                  mpisend_real,mpirecv_real
       use BorderProfiles,   only: initialize_border_profiles
       use Chemistry,        only: initialize_chemistry
       use Chiral,           only: initialize_chiral
@@ -395,7 +391,7 @@ module Register
       call initialize_testscalar(f)
       call initialize_testfield(f)
       call initialize_testflow(f)
-      call initialize_radiation
+      call initialize_radiation  !(f)
       call initialize_pscalar(f)
       call initialize_ascalar(f)
       call initialize_chiral(f)
@@ -422,11 +418,15 @@ module Register
 !
       call farray_check_maux
 !
-!  print summary of variable names
+!  Print summary of variable names
 !
       call write_varname
       call write_pt_positions
 !
+!  Initialize threads.
+!
+!$    call copyin
+!  
     endsubroutine initialize_modules
 !***********************************************************************
     subroutine finalize_modules(f)
@@ -1223,19 +1223,19 @@ module Register
       integer, parameter :: unit = 3
       integer :: ivar
 !
-      root: if (lroot) then
+      if (lroot) then
         open(unit, file=trim(datadir)//'/varname.dat', status='replace')
         10 format (i4, 2x, a)
         do ivar = 1, nvar
           write(unit,10) ivar, varname(ivar)
         enddo
-        aux: if (lwrite_aux) then
+        if (lwrite_aux) then
           do ivar = nvar + 1, nvar + naux
             write(unit,10) ivar, varname(ivar)
           enddo
-        endif aux
+        endif
         close(unit)
-      endif root
+      endif
 !
     endsubroutine write_varname
 !***********************************************************************
@@ -1273,7 +1273,7 @@ module Register
       ikx=lpoint-nghost
       iky=mpoint-nghost
       ikz=npoint-nghost
-      pt: if (iproc==iproc_pt) then
+      if (iproc==iproc_pt) then
         lproc_pt=.true.
         open(unit, file=trim(datadir)//'/pt_positions.dat', status='replace')
         write(unit,11)'Positions where pt and p2 variables are written:'
@@ -1284,12 +1284,12 @@ module Register
         write(unit,11)'kx_fft(ikx+ipx*nx),ky_fft(iky+ipy*ny),kz_fft(ikz+ipz*nz)='
         write(unit,10) kx_fft(ikx+ipx*nx),ky_fft(iky+ipy*ny),kz_fft(ikz+ipz*nz)
         close(unit)
-      endif pt
+      endif
 !
       ikx=lpoint2-nghost
       iky=mpoint2-nghost
       ikz=npoint2-nghost
-      p2: if (iproc==iproc_p2) then
+      if (iproc==iproc_p2) then
         lproc_p2=.true.
         open(unit, file=trim(datadir)//'/p2_positions.dat', status='replace')
         write(unit,11)'Positions where p2 variables are written:'
@@ -1300,11 +1300,19 @@ module Register
         write(unit,11)'kx_fft(ikx+ipx*nx),ky_fft(iky+ipy*ny),kz_fft(ikz+ipz*nz)='
         write(unit,10) kx_fft(ikx+ipx*nx),ky_fft(iky+ipy*ny),kz_fft(ikz+ipz*nz)
         close(unit)
-      endif p2
+      endif
 !
       10 format (3g13.5,2x,3i6)
       11 format (a)
 !
     endsubroutine write_pt_positions
+!***********************************************************************
+!$  subroutine copyin
+!
+!  Initialize threads.
+!
+!$  include "copyin.inc"
+!
+!$  endsubroutine copyin
 !***********************************************************************
 endmodule Register

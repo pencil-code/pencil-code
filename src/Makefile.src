@@ -2856,7 +2856,7 @@ start.o: $(start) Makefile.local
 start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 #
-run.o: copyin.inc $(OMP_PREREQ) $(run) Makefile.local
+run.o: $(run) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #needs LIBGPU as prerequisite, this in turn needs a rule
@@ -2993,24 +2993,19 @@ ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
   FFLAGS += $(OMPFFLAGS)
   LDFLAGS += $(OMPLFLAGS)
   OMP_PREREQ := copyin.inc
-copyin.inc:  multithread/*_omp.inc
-	@echo '!$$omp parallel copyin( &' > copyin.inc
-	@rm -f threadpriv_modules.inc
-	@for file in $?; do \
-	  echo $$file; \
-	  obj=`echo $$file | sed -e's/multithread\///' -e's/_omp.inc$$/.o/'`; \
-	  if [ -f "$$obj" ]; then \
-	    modsrc=`echo $$obj | sed -e's/\.o/.f90/'`; \
-	    cat $$modsrc | grep '^ *module  *[a-zA-Z0-9_]*' | sed -e's/ //g' -e's/module/use /' >> threadpriv_modules.inc; \
-	    cat $$file | sed -e's/^!\$$omp threadprivate(\(.*\))$$/!\$$omp \1, \&/' >> copyin.inc; \
+copyin.inc: Makefile.local $(PENCIL_HOME)/src/copyin.inc
+	@cp -f $(PENCIL_HOME)/src/copyin.inc .
+	@for file in `grep '^ *[A-Z0-9_]* *=' Makefile.local | sed -f omp.sed`; do \
+	  use=`grep '^ *module' $$file | grep -v 'module  *procedure' | sed -e's/module/use/'`; \
+	  sub=`grep '^ *subroutine  *copyin_' $$file | sed -e's/subroutine/call/'`; \
+	  if [ "$$sub" != "" ]; then \
+	    echo "  $$use\n" "$$(cat copyin.inc)" > copyin.inc; \
+	    echo "$$sub" >> copyin.inc ; \
 	  fi \
 	done
-	@sed -i '$$ s/, *\& *$$/)/' copyin.inc
 else
   MULTITHREADING = 
-  OMP_PREREQ := 
-copyin.inc:  
-	touch copyin.inc
+  OMP_PREREQ = 
 endif
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
