@@ -2993,7 +2993,7 @@ module Forcing
 ! ----------now generate and add the force ------------
 !
 
-!      call random_number_wrapper(rz,CHANNEL=channel_force)    
+      call random_number_wrapper(rz,CHANNEL=channel_force)
       ee(3) = rz  
       call random_number_wrapper(rphase2,CHANNEL=channel_force)  
       rphase2 = pi*rphase2 
