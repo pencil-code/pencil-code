@@ -2994,12 +2994,12 @@ module Forcing
 !
 
       call random_number_wrapper(rz,CHANNEL=channel_force)
-      ee(3) = rz  
-      call random_number_wrapper(rphase2,CHANNEL=channel_force)  
-      rphase2 = pi*rphase2 
-      ee(1) = sqrt(1.-rz*rz)*cos(rphase2)                   
-      ee(2) = sqrt(1.-rz*rz)*sin(rphase2)                    
-      fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt) 
+      ee(3) = rz
+      call random_number_wrapper(rphase2,CHANNEL=channel_force)
+      rphase2 = pi*rphase2
+      ee(1) = sqrt(1.-rz*rz)*cos(rphase2)
+      ee(2) = sqrt(1.-rz*rz)*sin(rphase2)
+      fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
 !     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
 
       do n=n1,n2
