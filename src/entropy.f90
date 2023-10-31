@@ -6847,7 +6847,7 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_Kprof',idiag_fradz_Kprof)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_constchi',idiag_fradz_constchi)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_kramers',idiag_fradz_kramers)
-        call parse_name(inamex,cnamez(inamez),cformz(inamez),'Kkramersmz',idiag_Kkramersmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Kkramersmz',idiag_Kkramersmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssupmz',idiag_ssupmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssdownmz',idiag_ssdownmz)
