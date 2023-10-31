@@ -1,0 +1,26 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&run_pars
+  cvsid="b0892f6c1"
+  nt=150, it1=10
+  dspec=5., ou_spec=T, vel_spec=T
+  lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&forcing_run_pars
+  iforce='helical', force=0.07, relhel=0.
+/
+&viscosity_run_pars
+  nu=5e-3
+/
+&special_run_pars
+  R=9
+  Omega=1
+/
+&power_spectrum_run_pars
+/
