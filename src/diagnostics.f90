@@ -371,7 +371,7 @@ module Diagnostics
         if (cname(i)/=''.and.cform(i)=='') then
           ind=index(cname(i),'('); if (ind==0) ind=len_trim(cname(i))+1
           text=trim(text)//' '//trim(cname(i)(1:ind-1))//','
-          sedstring=trim(sedstring)//" -e '/^[^#!]/ s/^\("//trim(cname(i)(1:ind-1))//" *$\)/#\1/'"
+          sedstring=trim(sedstring)//" -e '0,/^ *"//trim(cname(i)(1:ind-1))//"/ s/^ *\("//trim(cname(i)(1:ind-1))//"\)/#\1/'"
         endif
       enddo
 
