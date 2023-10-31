@@ -13,9 +13,12 @@ module Equ
   implicit none
 !
   public :: pde, debug_imn_arrays, initialize_pencils
-  public :: impose_floors_ceilings
+  public :: impose_floors_ceilings, finalize_diagnostics
 !
   private
+!
+  logical :: started_finalizing_diagnostics = .false.
+  logical :: ldiagnos_save, l1davgfirst_save, l1dphiavg_save, l2davgfirst_save
 !
   contains
 !***********************************************************************
@@ -46,7 +49,6 @@ module Equ
 !                         
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
-      use General, only: ioptest, loptest
       use GhostFold, only: fold_df, fold_df_3points
       use Gpu
       use Gravity
@@ -305,7 +307,7 @@ module Equ
       if (lhydro)                 call hydro_after_boundary(f)
       if (lviscosity)             call viscosity_after_boundary(f)
       if (lmagnetic)              call magnetic_after_boundary(f)
-      if (ldustdensity)           call dustdensity_after_boundary(f)      
+      if (ldustdensity)           call dustdensity_after_boundary(f)
       if (lenergy)                call energy_after_boundary(f)
       if (lgrav)                  call gravity_after_boundary(f)
       if (lforcing)               call forcing_after_boundary(f)
@@ -420,45 +422,8 @@ module Equ
 !  Kutta solver adds to the f-array.
 !
       if (lnscbc) call nscbc_boundtreat(f,df)
-!
-!  0-D Diagnostics.
-!
-      if (ldiagnos) then
-        call diagnostic(fname,nname)
-        call diagnostic(fname_keep,nname,lcomplex=.true.)
-      endif
-!
-!  1-D diagnostics.
-!
-      if (l1davgfirst) then
-        if (lwrite_xyaverages) call xyaverages_z
-        if (lwrite_xzaverages) call xzaverages_y
-        if (lwrite_yzaverages) call yzaverages_x
-      endif
-      if (l1dphiavg) call phizaverages_r
-!
-!  2-D averages.
-!
-      if (l2davgfirst) then
-        if (lwrite_yaverages)   call yaverages_xz
-        if (lwrite_zaverages)   call zaverages_xy
-        if (lwrite_phiaverages) call phiaverages_rz
-      endif
-!
-!  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
-!  (of course, yaverages_xz does not need to be calculated for that).
-!
-      if (.not.l2davgfirst.and.ldiagnos.and.ldiagnos_need_zaverages) then
-        if (lwrite_zaverages) call zaverages_xy
-      endif
-!
-!  Calculate mean fields and diagnostics related to mean fields.
-!
-      if (ldiagnos) then
-        if (lmagnetic) call calc_mfield
-        if (lhydro)    call calc_mflow
-        if (lpscalar)  call calc_mpscalar
-      endif
+
+      if (lfirst) call finalize_diagnostics
 !
 !  Calculate rhoccm and cc2m (this requires that these are set in print.in).
 !  Broadcast result to other processors. This is needed for calculating PDFs.
@@ -578,6 +543,71 @@ module Equ
       enddo
 
     endsubroutine calc_all_module_diagnostics
+!*****************************************************************************
+    subroutine finalize_diagnostics
+!
+!  Finalizes all module diagnostics by MPI communication.
+!
+!  25-aug-23/TP: refactored from pde
+!
+      use Diagnostics
+      use Hydro
+      use Magnetic
+      use Pscalar
+
+!  Set that the master thread knows we have started the finalization
+!
+!$    started_finalizing_diagnostics = .true.
+!
+!  Restore options that were used when calc_all_module_diagnostics was called
+!
+!$    l1davgfirst = l1davgfirst_save
+!$    ldiagnos = ldiagnos_save
+!$    l1dphiavg = l1dphiavg_save
+!$    l2davgfirst = l2davgfirst_save
+
+!  0-D Diagnostics.
+!
+      if (lout) then
+        call diagnostic(fname,nname)
+        call diagnostic(fname_keep,nname,lcomplex=.true.)
+      endif
+!
+!  1-D diagnostics.
+!
+      if (l1davg) then
+        if (lwrite_xyaverages) call xyaverages_z
+        if (lwrite_xzaverages) call xzaverages_y
+        if (lwrite_yzaverages) call yzaverages_x
+      endif
+      if (lcylinder_in_a_box.and.l1davg) call phizaverages_r
+!
+!  2-D averages.
+!
+      if (l2davg) then
+        if (lwrite_yaverages)   call yaverages_xz
+        if (lwrite_zaverages)   call zaverages_xy
+        if (lwrite_phiaverages) call phiaverages_rz
+      endif
+!
+!  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
+!  (of course, yaverages_xz does not need to be calculated for that).
+!
+      if (.not.l2davg.and.lout.and.ldiagnos_need_zaverages) then
+        if (lwrite_zaverages) call zaverages_xy
+      endif
+!
+!  Calculate mean fields and diagnostics related to mean fields.
+!
+      if (lout) then
+        if (lmagnetic) call calc_mfield
+        if (lhydro)    call calc_mflow
+        if (lpscalar)  call calc_mpscalar
+      endif
+
+!$    lfinalized_diagnostics = .true.
+ 
+    endsubroutine finalize_diagnostics
 !****************************************************************************
     subroutine calc_all_pencils(f,p)
 
@@ -610,8 +640,7 @@ module Equ
       use Radiation
       use Selfgravity
       use Shear
-      use Shock, only: calc_pencils_shock, calc_shock_profile, &
-                       calc_shock_profile_simple
+      use Shock, only: calc_pencils_shock
       use Solid_Cells, only: update_solid_cells_pencil
       use Special, only: calc_pencils_special
       use Testfield
@@ -649,9 +678,11 @@ module Equ
 ! DM : we need to have dsdr to calculate lambda. Hence, the way it is done now,
 ! DM : we need to have energy pencils calculated before viscosity pencils.
 ! DM : This is *bad* practice and must be corrected later.
+!
 ! To check ghost cell consistency, please uncomment the following 2 lines:
 !       if (.not. lpencil_check_at_work .and. necessary(imn)) &
 !       call check_ghosts_consistency (f, 'before calc_pencils_*')
+!
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
         if (lpscalar)         call calc_pencils_pscalar(f,p)
@@ -693,6 +724,7 @@ module Equ
 !  21-feb-17/MR: Moved all module-specific estimators of the (inverse) possible timestep 
 !                to the individual modules.
 !
+      use Ascalar
       use Chiral
       use Chemistry
       use Cosmicray
@@ -703,8 +735,7 @@ module Equ
       use Dustdensity
       use Energy
       use EquationOfState
-      use Forcing, only: calc_pencils_forcing, calc_diagnostics_forcing
-      use GhostFold, only: fold_df, fold_df_3points
+      use Forcing, only: calc_diagnostics_forcing
       use Gravity
       use Heatflux
       use Hydro
@@ -719,16 +750,12 @@ module Equ
       use Radiation
       use Selfgravity
       use Shear
-      use Shock, only: calc_pencils_shock, calc_shock_profile, &
-                       calc_shock_profile_simple
-      use Solid_Cells, only: update_solid_cells_pencil, dsolid_dt
-      use Special, only: calc_pencils_special, dspecial_dt
+      use Solid_Cells, only: dsolid_dt
+      use Special, only: dspecial_dt
       use Sub, only: sum_mn
-      use Ascalar
       use Testfield
       use Testflow
       use Testscalar
-      use Viscosity, only: calc_pencils_viscosity
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
@@ -988,7 +1015,7 @@ module Equ
           df(l1:l2,m,n,iux:iuz) = df_iuu_pencil + df(l1:l2,m,n,iux:iuz)
           call sum_mn(p%rho,mass_per_proc(1))
         endif
-        call timing('pde','end of mn loop',mnloop=.true.)
+        call timing('rhs_cpu','end of mn loop',mnloop=.true.)
 !
 !  End of loops over m and n.
 !
@@ -1399,7 +1426,7 @@ module Equ
         if (notanumber(maxadvec)) then
           print*, 'pde: maxadvec contains a NaN at iproc=', iproc_world
           if (lenergy) print*, 'advec_cs2  =',advec_cs2
-          call fatal_error_local('pde','')
+          call fatal_error_local('set_dt1_max','')
         endif
       endif
 
