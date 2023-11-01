@@ -81,6 +81,7 @@ module InitialCondition
   implicit none
 !
   include '../initial_condition.h'
+  include '../eos_params.h'
 !
 !  Observed number density per cubic cm parameters from Dickey & Lockman
 !  Includes neutral hydrogen and warm ionized hydrogen plus helium
@@ -260,7 +261,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: lnrho, ss

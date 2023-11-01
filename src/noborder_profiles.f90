@@ -68,6 +68,7 @@ module BorderProfiles
     subroutine request_border_driving(border_var)
 !
       character (len=labellen) :: border_var
+
       call keep_compiler_quiet(border_var)
 !
     endsubroutine request_border_driving
@@ -86,15 +87,17 @@ module BorderProfiles
 !
     endsubroutine calc_pencils_borderprofiles
 !***********************************************************************
-    subroutine set_border_initcond(f,ivar,tmp)
+    subroutine set_border_initcond(f,ivar,tmp,keep)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: tmp
       integer :: ivar
+      logical, optional :: keep
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ivar)
       call keep_compiler_quiet(tmp)
+      call keep_compiler_quiet(keep)
 !
     endsubroutine set_border_initcond
 !***********************************************************************

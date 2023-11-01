@@ -17,6 +17,8 @@ module Initcond
 !
   private
 !
+  include 'eos_params.h'
+
   public :: arcade_x, vecpatternxy, bipolar, bipolar_restzero
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
@@ -2676,7 +2678,7 @@ module Initcond
 !  28-jun-19/nishant: added an option to use stratification file without
 !                     the ghost cells; use lnoghost_strati=T in init_pars
 !
-      use EquationOfState, only: eoscalc,ilnrho_lnTT
+      use EquationOfState, only: eoscalc
       use Sub, only: write_zprof
       use Cdata, only: lnoghost_strati
 !
@@ -2885,7 +2887,7 @@ module Initcond
 !
 !   02-mar-09/petri: adapted from stratification
 !
-      use EquationOfState, only: eoscalc,ilnrho_lnTT
+      use EquationOfState, only: eoscalc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mxgrid) :: lnrho0,ss0,lnTT0
@@ -3004,7 +3006,7 @@ module Initcond
 !
 !  09-aug-14/axel: adapted from stratification
 !
-      use EquationOfState, only: eoscalc,ilnrho_lnTT
+      use EquationOfState, only: eoscalc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nxgrid,nzgrid,mvar) :: slice
@@ -7324,7 +7326,7 @@ print*,'AXEL ltime3: time1=',time1
 !
 !  13-jul-10/mvaisala: created
 !
-      use EquationOfState, only: eoscalc,ilnrho_lnTT
+      use EquationOfState, only: eoscalc
 !
       integer :: jj, test, n, m, l, len_file
       integer, parameter :: BE_resolution = 2000

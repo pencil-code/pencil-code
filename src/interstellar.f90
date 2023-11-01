@@ -25,6 +25,7 @@ module Interstellar
 !
   include 'interstellar.h'
   include 'record_types.h'
+  include 'eos_params.h'
 !
   interface input_persistent_interstellar
      module procedure input_persist_interstellar_id
@@ -2596,7 +2597,7 @@ module Interstellar
 !
       use General, only: random_seed_wrapper,  random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
-      use EquationOfState, only: eoscalc, ilnrho_ss, irho_ss
+      use EquationOfState, only: eoscalc
       use Grid, only: get_grid_mn
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -3135,7 +3136,7 @@ module Interstellar
 !  It is repeatable given fixed nprocy/z though.
 !
     use General, only: random_seed_wrapper,  random_number_wrapper
-    use EquationOfState, only: eoscalc,ilnrho_ss,irho_ss
+    use EquationOfState, only: eoscalc
     use Mpicomm, only: mpibcast_int, mpibcast_real
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
@@ -3279,7 +3280,7 @@ module Interstellar
 !
 !  27-aug-2003/tony: coded
 !
-      use EquationOfState, only: eoscalc,ilnrho_lnTT
+      use EquationOfState, only: eoscalc
       use Mpicomm, only: mpibcast_int, mpibcast_real
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
@@ -3397,8 +3398,7 @@ module Interstellar
 !  ??-nov-02/grs : coded from GalaxyCode
 !  20-may-03/tony: pencil formulation and broken into subroutines
 !
-      use EquationOfState, only: ilnrho_ee, eoscalc, eosperturb ,&
-                                 ilnrho_ss, irho_ss
+      use EquationOfState, only: eoscalc, eosperturb
       use Mpicomm, only: mpiallreduce_max, mpiallreduce_sum
       use General, only: keep_compiler_quiet
       use Grid, only: get_grid_mn
@@ -4140,7 +4140,6 @@ module Interstellar
       use Sub
       use Mpicomm, only: mpiallreduce_sum
       use Grid, only: get_grid_mn
-      use EquationOfState, only: irho_ss
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(in) :: remnant
