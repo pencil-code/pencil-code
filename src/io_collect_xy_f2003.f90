@@ -204,8 +204,9 @@ module Io
         call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
         if (lroot) write (lun_output) gx, gy, gz
 !
-        if (lode) call output_ode(file)
       endif
+
+      if (lode) output_ode(file)
 
     endsubroutine output_snap
 !***********************************************************************

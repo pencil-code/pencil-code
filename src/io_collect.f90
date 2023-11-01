@@ -279,9 +279,10 @@ module Io
           deallocate (gx, gy, gz)
         endif
 
-        if (lode) call output_ode(file)
       endif
 !
+      if (lode) call output_ode(file)
+
     endsubroutine output_snap
 !***********************************************************************
     subroutine output_snap_finalize
