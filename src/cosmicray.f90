@@ -326,9 +326,6 @@ module Cosmicray
 !
 !  diagnostics
 !
-!  output for double and triple correlators (assume z-gradient of cc)
-!  <u_k u_j d_j c> = <u_k c uu.gradecr>
-!
       use Diagnostics
 
       type (pencil_case) :: p
@@ -393,7 +390,7 @@ module Cosmicray
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_ecrm=0; idiag_ecrmax=0 ; idiag_kmax=0
+        idiag_ecrm=0; idiag_ecrmax=0; idiag_kmax=0
       endif
 !
 !  check for those quantities that we want to evaluate online

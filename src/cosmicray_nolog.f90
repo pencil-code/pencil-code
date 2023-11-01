@@ -367,9 +367,6 @@ module Cosmicray
 !
 !  diagnostics
 !
-!  output for double and triple correlators (assume z-gradient of cc)
-!  <u_k u_j d_j c> = <u_k c uu.gradecr>
-!
       use Diagnostics
 !
       type (pencil_case) :: p

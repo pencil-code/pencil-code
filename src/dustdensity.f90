@@ -39,6 +39,7 @@ module Dustdensity
   implicit none
 !
   include 'dustdensity.h'
+  include 'eos_params.h'
 !
   integer, parameter :: ndiffd_max=4, mmom=24  !(largest possible moment)
 !  integer, parameter :: ndustspec0=10 !8
@@ -2511,7 +2512,7 @@ module Dustdensity
 !  Calculate mass flux of condensing monomers
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
-      use EquationOfState, only: eoscalc,ilnrho_ss,getpressure
+      use EquationOfState, only: getmu,eoscalc,getpressure
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: mfluxcond,rho,TT1,cc
