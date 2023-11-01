@@ -382,7 +382,13 @@ module Diagnostics
         text=text(1:index(text,',',BACK=.true.)-1)//' diagnostic(s) in '//trim(file)// &
              ' undefined or multiply defined!'
         print*, trim(text)
-        call system_cmd('sed '//trim(sedstring)//' -isv '//trim(file))
+        call system_cmd('sed '//trim(sedstring)//' -i '//trim(file))
+!
+!  In the case of duplicate entries, the following would keep the first and comment out the other, 
+!  but not all unixoid systems have tac.
+!
+        !call system_cmd('tac '//trim(file)//'|sed '//trim(sedstring)//'| tac > '//trim(file)//'.tmp')
+        !call system_cmd('mv '//trim(file)//'.tmp '//trim(file))
       endif
 
     endsubroutine report_undefined
