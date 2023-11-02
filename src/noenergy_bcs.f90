@@ -6,13 +6,12 @@
     use General, only: keep_compiler_quiet
     use Messages
 !
-    private
+    include 'energy_bcs.h'
+
     real, dimension(:,:), pointer :: reference_state
 
     real :: gamma, gamma_m1
 !
-    include 'energy_bcs.h'
-
     contains
 !**************************************************************************************************
     subroutine initialize_energy_bcs

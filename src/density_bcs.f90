@@ -6,8 +6,6 @@
 
     include 'density_bcs.h'
 
-    private
-
     integer, parameter :: XBOT=1, XTOP=nx
 
     real, dimension(:,:), pointer :: reference_state
@@ -407,4 +405,3 @@
     endsubroutine bc_ism_dens
 !***********************************************************************
   endmodule DensityBcs
-

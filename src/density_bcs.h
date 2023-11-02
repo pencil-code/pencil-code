@@ -1,3 +1,5 @@
+    private
+
     public :: initialize_density_bcs
     public :: bc_lnrho_cfb_r_iso
     public :: bc_lnrho_hdss_z_iso

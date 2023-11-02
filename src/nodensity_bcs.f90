@@ -6,8 +6,6 @@
 
     include 'density_bcs.h'
 
-    private
-
     contains
 !**************************************************************************************************
     subroutine initialize_density_bcs
