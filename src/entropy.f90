@@ -385,13 +385,13 @@ module Energy
   integer :: idiag_fturbz=0     ! XYAVG_DOC: $\left<\varrho T \chi_t \nabla_z
                                 ! XYAVG_DOC: s\right>_{xy}$ \quad(turbulent
                                 ! XYAVG_DOC: heat flux)
-  integer :: idiag_fturbtz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t0 \nabla_z
+  integer :: idiag_fturbtz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t \nabla_z
                                 ! XYAVG_DOC: s\right>_{xy}$ \quad(turbulent
                                 ! XYAVG_DOC: heat flux)
-  integer :: idiag_fturbmz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t0 \nabla_z
+  integer :: idiag_fturbmz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t \nabla_z
                                 ! XYAVG_DOC: \overline{s}\right>_{xy}$
                                 ! XYAVG_DOC: \quad(turbulent heat flux)
-  integer :: idiag_fturbfz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t0 \nabla_z
+  integer :: idiag_fturbfz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t \nabla_z
                                 ! XYAVG_DOC: s'\right>_{xy}$ \quad(turbulent
                                 ! XYAVG_DOC: heat flux)
   integer :: idiag_dcoolz=0     ! XYAVG_DOC: surface cooling flux
