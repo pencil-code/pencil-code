@@ -321,19 +321,18 @@ module BorderProfiles
 !
     endsubroutine calc_pencils_borderprofiles
 !***********************************************************************
-    subroutine set_border_initcond(f,ivar,fborder,keep)
+    subroutine set_border_initcond(f,ivar,fborder)
 !
       use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
-      logical, optional :: keep
 !
       if (lspherical_coords.or.lcylinder_in_a_box) then
-        call set_border_xy(ivar,fborder,keep)
+        call set_border_xy(ivar,fborder)
       elseif (lcylindrical_coords) then
-        call set_border_xz(ivar,fborder,keep)
+        call set_border_xz(ivar,fborder)
       else
         if (lroot) then
           print*,'The system has no obvious symmetry. It is    '
@@ -347,7 +346,7 @@ module BorderProfiles
 !
     endsubroutine set_border_initcond
 !***********************************************************************
-    subroutine set_border_xy(ivar,fborder,keep)
+    subroutine set_border_xy(ivar,fborder)
 !
 !  Save the initial condition for a quantity that is
 !  symmetric in the z axis. That can be a vertically
@@ -356,12 +355,9 @@ module BorderProfiles
 !
 !  28-apr-09/wlad: coded
 !
-      use General, only: loptest
-
       real, dimension (nx,ny,mvar), save :: fsave_init
       real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
-      logical, optional :: keep
 !
       if (lfirst .and. it==1) then
         fsave_init(:,m-m1+1,ivar)=f_init(l1:l2,m,npoint,ivar)
@@ -369,11 +365,10 @@ module BorderProfiles
       endif
 !
       fborder=fsave_init(:,m-m1+1,ivar)
-      if (.not.loptest(keep,.false.)) deallocate(f_init)
 !
     endsubroutine set_border_xy
 !***********************************************************************
-    subroutine set_border_xz(ivar,fborder,keep)
+    subroutine set_border_xz(ivar,fborder)
 !
 !  Save the initial condition for a quantity that is
 !  symmetric in the y axis. An azimuthally symmetric
@@ -381,12 +376,9 @@ module BorderProfiles
 !
 !  28-apr-09/wlad: coded
 ! 
-      use General, only: loptest
-
       real, dimension (nx,nz,mvar), save :: fsave_init
       real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
-      logical, optional :: keep
 !
       if (lfirst .and. it==1) then
         fsave_init(:,n-n1+1,ivar)=f_init(l1:l2,mpoint,n,ivar)
@@ -394,7 +386,6 @@ module BorderProfiles
       endif
 !
       fborder=fsave_init(:,n-n1+1,ivar)
-      if (.not.loptest(keep,.false.)) deallocate(f_init)
 !
     endsubroutine set_border_xz
 !***********************************************************************

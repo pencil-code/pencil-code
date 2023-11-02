@@ -801,7 +801,7 @@ module Density
       case ('nothing')
         if (headtt.and.ip<=5) print*,"initialize_density: borderlnrho='nothing'"
       case default
-        call fatal_error('set_border_density',"No such borderlnrho: '"//trim(borderlnrho)//"'")
+        call fatal_error('initialize_density',"no such borderlnrho: '"//trim(borderlnrho)//"'")
       end select
 !
 !  Check if we are solving partially force-free equations.

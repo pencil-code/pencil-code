@@ -4299,7 +4299,7 @@ module Energy
 !
 !  Keep the density and replace cs2 by the initial cs2 to drive ss to the initial temperature.
 !
-        call set_border_initcond(f,iss,ss_init,keep=.true.)
+        call set_border_initcond(f,iss,ss_init)
         if (ldensity_nolog) then
           call set_border_initcond(f,irho,rho_init)
           lnrho_init = log(rho_init)
