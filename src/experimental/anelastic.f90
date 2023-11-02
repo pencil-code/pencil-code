@@ -20,15 +20,16 @@
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3),transprho
 ! PENCILS PROVIDED ekin
-! PENCILS PROVIDED rho; rho1; lnrho
+! PENCILS PROVIDED rho; rho1; lnrho; glnrhos(3)
 !
 !***************************************************************
 module Density
 !
-  use Cparam
   use Cdata
+  use EquationOfState, only: cs0, cs20, cs2top, cs2bot, get_gamma_etc, rho0, lnrho0, &
+                             get_average_pressure, select_eos_variable
+  use General, only: keep_compiler_quiet
   use Messages
-  use EquationOfState
   use Sub
   use Diagnostics
 !
@@ -37,7 +38,6 @@ module Density
   implicit none
 !
   include '../density.h'
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   real, dimension (ninit) :: ampllnrho=0.0, widthlnrho=0.1
   real, dimension (ninit) :: rho_left=1.0, rho_right=1.0
@@ -58,6 +58,7 @@ module Density
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
+  real, dimension (mz,1) :: lnrhomz
   real, dimension (nz,3) :: glnrhomz
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: init_average_density
@@ -73,7 +74,7 @@ module Density
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
   logical :: lshare_plaw=.false.,lmassdiff_fix=.false.
   logical :: lcheck_negative_density=.false.
-  logical :: lcalc_glnrhomean=.false.
+  logical :: lcalc_glnrhomean=.false., lcalc_lnrhomean=.false.
   logical, pointer :: lanelastic_lin
 !
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
@@ -89,7 +90,7 @@ module Density
       ampllnrho,initlnrho,widthlnrho,                    &
       rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top,       &
       radius_lnrho,eps_planet,xblob,yblob,zblob,                    &
-      b_ell,q_ell,hh0,rbound,lwrite_stratification,                 &
+      b_ell,q_ell,hh0,rbound,                 &
       mpoly,strati_type,beta_glnrho_global,radial_percent_smooth,   &
       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho,     &
       kxx_lnrho, kyy_lnrho, kzz_lnrho,                              &
@@ -135,6 +136,8 @@ module Density
   integer :: idiag_divrhourms=0 ! DIAG_DOC: $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$
   integer :: idiag_divrhoumax=0 ! DIAG_DOC: $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$
 !
+  real :: gamma, gamma_m1
+
   contains
 !***********************************************************************
     subroutine register_density()
@@ -172,7 +175,7 @@ module Density
       use FArrayManager, only: farray_register_auxiliary, farray_register_global
       use Gravity, only: lnumerical_equilibrium
       use Mpicomm, only: stop_it
-      use SharedVariables, only: get_shared_variable
+      use SharedVariables, only: get_shared_variable, put_shared_variable
       use DensityMethods, only: initialize_density_methods
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -253,6 +256,8 @@ module Density
       call put_shared_variable('mpoly',mpoly)
       call initialize_density_methods
 !
+      call get_gamma_etc(gamma); gamma_m1=gamma-1.
+
     endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f)
@@ -271,7 +276,6 @@ module Density
       use Mpicomm
 !      use Selfgravity, only: rhs_poisson_const
       use InitialCondition, only: initial_condition_lnrho
-      use SharedVariables, only: get_shared_variable
       use Poisson, only: inverse_laplacian
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -650,6 +654,7 @@ module Density
 !                  to allow isothermal condition for arbitrary density
 !
       use Gravity
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,tmp
@@ -1381,5 +1386,29 @@ module Density
       call keep_compiler_quiet(f)
 
     endsubroutine write_z_stratification
+!***********************************************************************
+    subroutine update_char_vel_density(f)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine update_char_vel_density
+!***********************************************************************
+    subroutine impose_density_ceiling(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      call keep_compiler_quiet(f)
+!
+    endsubroutine impose_density_ceiling
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+
+    integer, parameter :: n_pars=0
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    endsubroutine pushpars2c
 !***********************************************************************s
 endmodule Density
