@@ -190,8 +190,7 @@ module BorderProfiles
       if (any(border_frac_x/=0).or.&
           any(border_frac_y/=0).or.&
           any(border_frac_z/=0).or.&
-          any(border_frac_r/=0)) &
-        lborder_quenching=.true.
+          any(border_frac_r/=0))     lborder_quenching=.true.
 !
 !  Use a fixed timescale to drive the boundary, independently of radius.
 !  Else use some fraction of the local orbital time.
@@ -217,8 +216,8 @@ module BorderProfiles
       endif
 !
       if (lmeridional_border_drive.and..not.lspherical_coords) &
-           call fatal_error("initialize_border_profiles",&
-           "drive meridional borders for spherical coords only.")
+           call fatal_error("initialize_border_profiles", &
+           "drive meridional borders for spherical coords only")
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
@@ -234,7 +233,7 @@ module BorderProfiles
       use IO, only: input_snap, input_snap_finalize
 !
       character (len=labellen) :: border_var
-      logical :: lread=.true.
+      logical, save :: lread=.true.
       real :: t_old
 !
       lborder_driving=.true.
@@ -242,6 +241,8 @@ module BorderProfiles
 !  Check if there is a variable requesting initial condition as border
 !
       if (lread .and. (border_var=='initial-condition')) then
+
+        if (.not.allocated(f_init)) allocate(f_init(mx,my,mz,mvar))
 !
 !  Read the data into an initial condition array f_init that will be saved
 !
@@ -287,7 +288,7 @@ module BorderProfiles
           lpenc_requested(i_x_mn)=.true.
         endif
 !
-!  if r_int_border and/or r_ext_border are still set to impossible,
+!  If r_int_border and/or r_ext_border are still set to impossible,
 !  then put them equal to r_int and r_ext, respectively.
 !  Can't be done in initialize_borderprofiles as any initialize routine can set r_[int|ext].
 !
@@ -320,18 +321,19 @@ module BorderProfiles
 !
     endsubroutine calc_pencils_borderprofiles
 !***********************************************************************
-    subroutine set_border_initcond(f,ivar,fborder)
+    subroutine set_border_initcond(f,ivar,fborder,keep)
 !
       use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
+      logical, optional :: keep
 !
       if (lspherical_coords.or.lcylinder_in_a_box) then
-        call set_border_xy(ivar,fborder)
+        call set_border_xy(ivar,fborder,keep)
       elseif (lcylindrical_coords) then
-        call set_border_xz(ivar,fborder)
+        call set_border_xz(ivar,fborder,keep)
       else
         if (lroot) then
           print*,'The system has no obvious symmetry. It is    '
@@ -345,7 +347,7 @@ module BorderProfiles
 !
     endsubroutine set_border_initcond
 !***********************************************************************
-    subroutine set_border_xy(ivar,fborder)
+    subroutine set_border_xy(ivar,fborder,keep)
 !
 !  Save the initial condition for a quantity that is
 !  symmetric in the z axis. That can be a vertically
@@ -354,9 +356,12 @@ module BorderProfiles
 !
 !  28-apr-09/wlad: coded
 !
+      use General, only: loptest
+
       real, dimension (nx,ny,mvar), save :: fsave_init
       real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
+      logical, optional :: keep
 !
       if (lfirst .and. it==1) then
         fsave_init(:,m-m1+1,ivar)=f_init(l1:l2,m,npoint,ivar)
@@ -364,28 +369,32 @@ module BorderProfiles
       endif
 !
       fborder=fsave_init(:,m-m1+1,ivar)
+      if (.not.loptest(keep,.false.)) deallocate(f_init)
 !
     endsubroutine set_border_xy
 !***********************************************************************
-    subroutine set_border_xz(ivar,fborder)
+    subroutine set_border_xz(ivar,fborder,keep)
 !
 !  Save the initial condition for a quantity that is
 !  symmetric in the y axis. An azimuthally symmetric
 !  box in cylindrical coordinates, for instance.
 !
 !  28-apr-09/wlad: coded
-!
+! 
+      use General, only: loptest
+
       real, dimension (nx,nz,mvar), save :: fsave_init
       real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
+      logical, optional :: keep
 !
       if (lfirst .and. it==1) then
         fsave_init(:,n-n1+1,ivar)=f_init(l1:l2,mpoint,n,ivar)
-        if (headtt.and.ip <= 6) &
-             print*,'saving initial condition for ivar=',ivar
+        if (headtt.and.ip <= 6) print*,'saving initial condition for ivar=',ivar
       endif
 !
       fborder=fsave_init(:,n-n1+1,ivar)
+      if (.not.loptest(keep,.false.)) deallocate(f_init)
 !
     endsubroutine set_border_xz
 !***********************************************************************
@@ -435,10 +444,9 @@ module BorderProfiles
         if (lradial.or.lmeridional) then
           call get_drive_time(inverse_drive_time,i)
           call get_border(p,pborder,i)
-          df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) &
-               - (f(i+l1-1,m,n,j) - f_target(i))*pborder*inverse_drive_time
+          df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) - (f(i+l1-1,m,n,j)-f_target(i))*pborder*inverse_drive_time
         endif
-        !else do nothing
+
       enddo
 !
     endsubroutine border_driving
@@ -542,8 +550,7 @@ module BorderProfiles
               if (lborder_hyper_diff) then
                 if (maxval(border_prof_pencil) < 1.) then
                   call del6(f,j,del6_fj,IGNOREDX=.true.)
-                  df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
-                      border_diff*(1.-border_prof_pencil)*del6_fj/dt_sub
+                  df(l1:l2,m,n,j) = df(l1:l2,m,n,j)+border_diff*(1.-border_prof_pencil)*del6_fj/dt_sub
                 endif
               endif
             enddo

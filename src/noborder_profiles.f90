@@ -9,7 +9,6 @@
 !***************************************************************
 module BorderProfiles
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
 !
@@ -30,38 +29,17 @@ module BorderProfiles
 !
       use Messages, only: fatal_error
 !
-      if (border_frac_x(1)/=0.0.or.border_frac_x(2)/=0.0) then
-        if (lroot) then
-          print*, 'initialize_border_profiles: must use '// &
-              'BORDER_PROFILES =   border_profiles'
-          print*, '                            for border_frac_x'
-        endif
-        call fatal_error('initialize_border_profiles','')
-      endif
-      if (border_frac_y(1)/=0.0.or.border_frac_y(2)/=0.0) then
-        if (lroot) then
-          print*, 'initialize_border_profiles: must use '// &
-              'BORDER_PROFILES =   border_profiles'
-          print*, '                            for border_frac_y'
-        endif
-        call fatal_error('initialize_border_profiles','')
-      endif
-      if (border_frac_z(1)/=0.0.or.border_frac_z(2)/=0.0) then
-        if (lroot) then
-          print*, 'initialize_border_profiles: must use '// &
-              'BORDER_PROFILES =   border_profiles'
-          print*, '                            for border_frac_z'
-        endif
-        call fatal_error('initialize_border_profiles','')
-      endif
-      if (border_frac_r(1)/=0.0.or.border_frac_r(2)/=0.0) then
-        if (lroot) then
-          print*, 'initialize_border_profiles: must use '// &
-              'BORDER_PROFILES =   border_profiles'
-          print*, '                            for border_frac_r'
-        endif
-        call fatal_error('initialize_border_profiles','')
-      endif
+      character(LEN=128) :: msg
+
+      msg = 'must use BORDER_PROFILES = border_profiles for'
+      if (border_frac_x(1)/=0.0.or.border_frac_x(2)/=0.0) &
+        call fatal_error('initialize_border_profiles',trim(msg)//' border_frac_x')
+      if (border_frac_y(1)/=0.0.or.border_frac_y(2)/=0.0) &
+        call fatal_error('initialize_border_profiles',trim(msg)//' border_frac_y')
+      if (border_frac_z(1)/=0.0.or.border_frac_z(2)/=0.0) &
+        call fatal_error('initialize_border_profiles',trim(msg)//' border_frac_z')
+      if (border_frac_r(1)/=0.0.or.border_frac_r(2)/=0.0) &
+        call fatal_error('initialize_border_profiles',trim(msg)//' border_frac_r')
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
