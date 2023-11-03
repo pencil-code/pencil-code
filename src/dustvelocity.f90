@@ -33,7 +33,7 @@ module Dustvelocity
 !ajwm - not good but for reasons of dust density / velocity interaction
   public :: rhods, surfd, mdplus, mdminus
   public :: ad, scolld, ustcst, tausd1, tausd
-  public :: unit_md, dust_chemistry, mumon, mmon, mi, md
+  public :: unit_md, dust_chemistry, mumon, mmon, md
 !
   integer, parameter :: nvisc_max=4
   complex, dimension (7) :: coeff=0.

@@ -50,7 +50,7 @@ module Dustdensity
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: BB=0.
   real, dimension(ndustspec) :: dsize,init_distr2,amplnd_rel=0.
-  real, dimension(ndustspec) :: diffnd_ndustspec
+  real, dimension(ndustspec) :: diffnd_ndustspec,mi
   real, dimension(mx,ndustspec) :: init_distr
   real, dimension(0:5) :: coeff_smooth=0.0
   real, dimension (3) :: diffnd_anisotropic=0.0
@@ -2256,15 +2256,16 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ndustspec) :: nd
       real, dimension (ndustspec) :: ndnew,mdnew,minew
-      integer :: j,k,i_targ,l
+      integer :: j,k,i_targ,l,lgh
 !
 !  Loop over pencil
 !
       do m=m1,m2; do n=n1,n2
         nd = f(l1:l2,m,n,ind)
         do l=1,nx
-          md = f(3+l,m,n,imd)
-          if (lmice) mi = f(3+l,m,n,imi)
+          lgh=l+nghost
+          md = f(lgh,m,n,imd)
+          if (lmice) mi = f(lgh,m,n,imi)
           mdnew = 0.5*(mdminus+mdplus)
           ndnew = 0.
           minew = 0.
@@ -2302,16 +2303,16 @@ module Dustdensity
               ndnew(i_targ) = ndnew(i_targ) + nd(l,k)
             elseif (i_targ == 0) then        !  Underflow below lower boundary
               if (lpscalar_nolog) then
-                f(3+l,m,n,ilncc) = f(3+l,m,n,ilncc) + nd(l,k)*md(k)*unit_md*exp(-f(3+l,m,n,ilnrho))
+                f(lgh,m,n,ilncc) = f(lgh,m,n,ilncc) + nd(l,k)*md(k)*unit_md*exp(-f(lgh,m,n,ilnrho))
               elseif (lpscalar) then
-                f(3+l,m,n,ilncc) = log(exp(f(3+l,m,n,ilncc)) + &
-                                   nd(l,k)*md(k)*unit_md*exp(-f(3+l,m,n,ilnrho)))
+                f(lgh,m,n,ilncc) = log(exp(f(lgh,m,n,ilncc)) + &
+                                   nd(l,k)*md(k)*unit_md*exp(-f(lgh,m,n,ilnrho)))
               endif
             endif
           enddo
-          f(3+l,m,n,ind) = ndnew
-          f(3+l,m,n,imd) = mdnew
-          if (lmice) f(3+l,m,n,imi) = minew
+          f(lgh,m,n,ind) = ndnew
+          f(lgh,m,n,imd) = mdnew
+          if (lmice) f(lgh,m,n,imi) = minew
         enddo
       enddo; enddo
 !
@@ -2463,7 +2464,7 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx) :: mfluxcond, cc_tmp
       real :: dmdfac
-      integer :: k,l
+      integer :: k,l,lgh
 !
 !  Calculate mass flux of condensing monomers
 !
@@ -2475,20 +2476,22 @@ module Dustdensity
 !
         if (dust_chemistry=='simplified') then
           do l=1,nx
+            lgh=l+nghost
             do k=1,ndustspec
-              df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + 4*pi*ad(k)*p%rho(l)*mfluxcond(l)
+              df(lgh,m,n,imd(k)) = df(lgh,m,n,imd(k)) + 4*pi*ad(k)*p%rho(l)*mfluxcond(l)
             enddo
           enddo
         else
           do l=1,nx
+            lgh=l+nghost
             do k=1,ndustspec
               dmdfac = surfd(k)*mfluxcond(l)/unit_md
               if (lmice) then
                 if (p%mi(l,k) + dt_beta_ts(itsub)*dmdfac < 0.) dmdfac = -p%mi(l,k)/dt_beta_ts(itsub)
               endif
               if (cc_tmp(l) < 1e-6 .and. dmdfac > 0.) dmdfac=0.
-              if (lmice) df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) + dmdfac
-              df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac
+              if (lmice) df(lgh,m,n,imi(k)) = df(lgh,m,n,imi(k)) + dmdfac
+              df(lgh,m,n,imd(k)) = df(lgh,m,n,imd(k)) + dmdfac
 !
 ! NB: it is should be changed for the chemistry case
 ! one needs to make the corresponding pencil
@@ -2611,7 +2614,7 @@ module Dustdensity
       real :: deltavd_turbu=0, fact
       real :: deltavd_drift2=0, deltavd_drift2a=0, deltavd_drift2b=0
       real :: ust,tl01,teta1,mu_air,rho_air, kB=1.38e-16, Rik 
-      integer :: i,j,l,k
+      integer :: i,j,l,k,lgh
 !
       if (ldustcoagulation) then
 !
@@ -2632,8 +2635,8 @@ module Dustdensity
 !  or one should use l1,l2 etc.
 !
           do l=1,nx
-            if (lmdvar) md = f(3+l,m,n,imd)
-            if (lmice)  mi = f(3+l,m,n,imi)
+            lgh=l+nghost
+            if (lmdvar) md = f(lgh,m,n,imd)
             do i=1,ndustspec
               do j=i,ndustspec
 !
@@ -2645,32 +2648,32 @@ module Dustdensity
                     select case (self_collisions)
                     case ('average')
                       fact=.5*self_collision_factor
-                      call dot2(fact*(f(3+l,m,n,iudx(j):iudz(j))+ &
-                                      f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                      call dot2(fact*(f(lgh,m,n,iudx(j):iudz(j))+ &
+                                      f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2)
                     case ('neighbor')
                       fact=self_collision_factor
                       if (i==1) then
-                        call dot2(fact*(f(3+l,m,n,iudx(i+1):iudz(i+1))- &
-                                        f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                        call dot2(fact*(f(lgh,m,n,iudx(i+1):iudz(i+1))- &
+                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2)
                       elseif (i==ndustspec) then
-                        call dot2(fact*(f(3+l,m,n,iudx(i-1):iudz(i-1))- &
-                                        f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                        call dot2(fact*(f(lgh,m,n,iudx(i-1):iudz(i-1))- &
+                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2)
                       else
                         fact=.5*self_collision_factor
-                        call dot2(fact*(f(3+l,m,n,iudx(i+1):iudz(i+1))- &
-                                        f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2a)
-                        call dot2(fact*(f(3+l,m,n,iudx(i-1):iudz(i-1))- &
-                                        f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2b)
+                        call dot2(fact*(f(lgh,m,n,iudx(i+1):iudz(i+1))- &
+                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2a)
+                        call dot2(fact*(f(lgh,m,n,iudx(i-1):iudz(i-1))- &
+                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2b)
                         deltavd_drift2=deltavd_drift2a+deltavd_drift2b
                       endif
                     case ('neighbor_asymmetric')
                       fact=self_collision_factor
                       if (i==ndustspec) then
-                        call dot2(fact*(f(3+l,m,n,iudx(i-1):iudz(i-1))- &
-                                        f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                        call dot2(fact*(f(lgh,m,n,iudx(i-1):iudz(i-1))- &
+                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2)
                       else
-                        call dot2(fact*(f(3+l,m,n,iudx(i+1):iudz(i+1))- &
-                                        f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                        call dot2(fact*(f(lgh,m,n,iudx(i+1):iudz(i+1))- &
+                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2)
                       endif
                     case default
                       call fatal_error('dustdensity:coag_kernel','no such self_collisions: '// &
@@ -2680,8 +2683,8 @@ module Dustdensity
                     deltavd_drift2=0.
                   endif
                 else
-                  call dot2(f(3+l,m,n,iudx(j):iudz(j))- &
-                            f(3+l,m,n,iudx(i):iudz(i)),deltavd_drift2)
+                  call dot2(f(lgh,m,n,iudx(j):iudz(j))- &
+                            f(lgh,m,n,iudx(i):iudz(i)),deltavd_drift2)
                 endif
                 deltavd_drift = sqrt(deltavd_drift2)
 !
@@ -2828,7 +2831,7 @@ module Dustdensity
 !
       real :: dndfac, dndfaci, dndfacj
       real :: momcons_term_x,momcons_term_y,momcons_term_z
-      integer :: i,j,k,l
+      integer :: i,j,k,l,lgh
       logical :: lmdvar_noevolve=.false.
 !
 !  Carry out integration over all bins.
@@ -2841,6 +2844,7 @@ module Dustdensity
       momcons_sum_z=0.
 
       do l=1,nx
+        lgh=l+nghost
         do i=1,ndustspec; do j=i,ndustspec
           dndfac = -dkern(l,i,j)*p%nd(l,i)*p%nd(l,j)
           if (lmomcons2) then
@@ -2858,18 +2862,18 @@ module Dustdensity
 !
           if (dndfac/=0.0) then
             if (lradius_binning) then
-              df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac*p%ad(l,i)*dlnad
-              df(3+l,m,n,ind(j)) = df(3+l,m,n,ind(j)) + dndfac*p%ad(l,j)*dlnad
+              df(lgh,m,n,ind(i)) = df(lgh,m,n,ind(i)) + dndfac*p%ad(l,i)*dlnad
+              df(lgh,m,n,ind(j)) = df(lgh,m,n,ind(j)) + dndfac*p%ad(l,j)*dlnad
             else
-              df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac
-              df(3+l,m,n,ind(j)) = df(3+l,m,n,ind(j)) + dndfac
+              df(lgh,m,n,ind(i)) = df(lgh,m,n,ind(i)) + dndfac
+              df(lgh,m,n,ind(j)) = df(lgh,m,n,ind(j)) + dndfac
               if (lmomcons2) then
-                df(3+l,m,n,iudz(i)) = df(3+l,m,n,iudz(i)) - dndfaci*f(3+l,m,n,iudz(i))
-                df(3+l,m,n,iudz(j)) = df(3+l,m,n,iudz(j)) - dndfacj*f(3+l,m,n,iudz(j))
-                !df(3+l,m,n,iudz(i)) = df(3+l,m,n,iudz(i)) - dndfac*f(3+l,m,n,iudz(i))/ &
-                !  (p%md(l,i)*(p%nd(l,i)+dt*df(3+l,m,n,ind(i))))
-                !df(3+l,m,n,iudz(j)) = df(3+l,m,n,iudz(j)) - dndfac*f(3+l,m,n,iudz(j))/ &
-                !  (p%md(l,j)*(p%nd(l,j)+dt*df(3+l,m,n,ind(j))))
+                df(lgh,m,n,iudz(i)) = df(lgh,m,n,iudz(i)) - dndfaci*f(lgh,m,n,iudz(i))
+                df(lgh,m,n,iudz(j)) = df(lgh,m,n,iudz(j)) - dndfacj*f(lgh,m,n,iudz(j))
+                !df(lgh,m,n,iudz(i)) = df(lgh,m,n,iudz(i)) - dndfac*f(lgh,m,n,iudz(i))/ &
+                !  (p%md(l,i)*(p%nd(l,i)+dt*df(lgh,m,n,ind(i))))
+                !df(lgh,m,n,iudz(j)) = df(lgh,m,n,iudz(j)) - dndfac*f(lgh,m,n,iudz(j))/ &
+                !  (p%md(l,j)*(p%nd(l,j)+dt*df(lgh,m,n,ind(j))))
               endif
             endif
             !do k=j,ndustspec+1
@@ -2878,31 +2882,31 @@ module Dustdensity
             do k=j,ndustspec
               if (p%md(l,i) + p%md(l,j) >= mdminus(k) .and. p%md(l,i) + p%md(l,j) < mdplus(k)) then
                 if (lmdvar) then
-                  df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - dndfac
+                  df(lgh,m,n,ind(k)) = df(lgh,m,n,ind(k)) - dndfac
                   dndfac_sum2= dndfac_sum2 - dndfac
                   if (.not.lmdvar_noevolve) then
                     if (p%nd(l,k) < ndmin_for_mdvar) then
-                      f(3+l,m,n,imd(k)) = p%md(l,i) + p%md(l,j)
+                      f(lgh,m,n,imd(k)) = p%md(l,i) + p%md(l,j)
                     else
-                      df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) - &
+                      df(lgh,m,n,imd(k)) = df(lgh,m,n,imd(k)) - &
                           (p%md(l,i) + p%md(l,j) - p%md(l,k))*1/p%nd(l,k)*dndfac
                     endif
                   endif
                   if (lmice) then
                     if (p%nd(l,k) == 0.) then
-                      f(3+l,m,n,imi(k)) = p%mi(l,i) + p%mi(l,j)
+                      f(lgh,m,n,imi(k)) = p%mi(l,i) + p%mi(l,j)
                     else
-                      df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) - (p%mi(l,i) + p%mi(l,j) - p%mi(l,k))* &
+                      df(lgh,m,n,imi(k)) = df(lgh,m,n,imi(k)) - (p%mi(l,i) + p%mi(l,j) - p%mi(l,k))* &
                                            1/p%nd(l,k)*dndfac
                     endif
                   endif
                   exit
                 else
                   if (lradius_binning) then
-                    df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k) &
+                    df(lgh,m,n,ind(k)) = df(lgh,m,n,ind(k)) - dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k) &
                                         *(p%ad(l,k)/p%ad(l,j))**2*p%ad(l,i)*dlnad
                   else
-                    df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k)
+                    df(lgh,m,n,ind(k)) = df(lgh,m,n,ind(k)) - dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k)
                     dndfac_sum2= dndfac_sum2 - dndfac
 !
 !  momentum conservation treatment (first term)
@@ -2910,69 +2914,69 @@ module Dustdensity
 !  Only the gain term is needed (i.e.; the loss term should NOT be included)
 !
                     if (lmomcons2) then
-                      df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k))+dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k) &
-                          !*p%md(l,k)*f(3+l,m,n,iudz(k))/ &
-                          !(p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                          *f(3+l,m,n,iudz(k))/((p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                      df(lgh,m,n,iudz(k)) = df(lgh,m,n,iudz(k))+dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k) &
+                          !*p%md(l,k)*f(lgh,m,n,iudz(k))/ &
+                          !(p%md(l,k)*(p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
+                          *f(lgh,m,n,iudz(k))/((p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
                     elseif (lmomcons3) then
-                      momcons_term_x= -dndfac_sum2*f(3+l,m,n,iudx(i))/ &
-                                       (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                      df(3+l,m,n,iudx(k)) = df(3+l,m,n,iudx(k)) + momcons_term_x
+                      momcons_term_x= -dndfac_sum2*f(lgh,m,n,iudx(i))/ &
+                                       (p%md(l,k)*(p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
+                      df(lgh,m,n,iudx(k)) = df(lgh,m,n,iudx(k)) + momcons_term_x
 !
-                      momcons_term_y= -dndfac_sum2*f(3+l,m,n,iudy(i))/ &
-                                      (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                      df(3+l,m,n,iudy(k)) = df(3+l,m,n,iudy(k)) + momcons_term_y
+                      momcons_term_y= -dndfac_sum2*f(lgh,m,n,iudy(i))/ &
+                                      (p%md(l,k)*(p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
+                      df(lgh,m,n,iudy(k)) = df(lgh,m,n,iudy(k)) + momcons_term_y
 !
-                      momcons_term_z= -dndfac_sum2*f(3+l,m,n,iudz(i))/ &
-                                      (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                      df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) + momcons_term_z
+                      momcons_term_z= -dndfac_sum2*f(lgh,m,n,iudz(i))/ &
+                                      (p%md(l,k)*(p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
+                      df(lgh,m,n,iudz(k)) = df(lgh,m,n,iudz(k)) + momcons_term_z
 !
                       momcons_sum_x=momcons_sum_x+momcons_term_x
                       momcons_sum_y=momcons_sum_y+momcons_term_y
                       momcons_sum_z=momcons_sum_z+momcons_term_z
                     elseif (lmomcons) then
-                      momcons_term_x= -dndfac*(p%md(l,i)*f(3+l,m,n,iudx(i)) &
-                                              +p%md(l,j)*f(3+l,m,n,iudx(j)) &
-                                              -p%md(l,k)*f(3+l,m,n,iudx(k)))/ &
-                                              (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                      df(3+l,m,n,iudx(k)) = df(3+l,m,n,iudx(k)) + momcons_term_x
+                      momcons_term_x= -dndfac*(p%md(l,i)*f(lgh,m,n,iudx(i)) &
+                                              +p%md(l,j)*f(lgh,m,n,iudx(j)) &
+                                              -p%md(l,k)*f(lgh,m,n,iudx(k)))/ &
+                                              (p%md(l,k)*(p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
+                      df(lgh,m,n,iudx(k)) = df(lgh,m,n,iudx(k)) + momcons_term_x
 !
-                      momcons_term_y= -dndfac*(p%md(l,i)*f(3+l,m,n,iudy(i)) &
-                                              +p%md(l,j)*f(3+l,m,n,iudy(j)) &
-                                              -p%md(l,k)*f(3+l,m,n,iudy(k)))/ &
-                                              (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                      df(3+l,m,n,iudy(k)) = df(3+l,m,n,iudy(k)) + momcons_term_y
+                      momcons_term_y= -dndfac*(p%md(l,i)*f(lgh,m,n,iudy(i)) &
+                                              +p%md(l,j)*f(lgh,m,n,iudy(j)) &
+                                              -p%md(l,k)*f(lgh,m,n,iudy(k)))/ &
+                                              (p%md(l,k)*(p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
+                      df(lgh,m,n,iudy(k)) = df(lgh,m,n,iudy(k)) + momcons_term_y
 !
                       if (lmomconsb) then
-                        momcons_term_z= -dndfac*(2*p%md(l,i)*f(3+l,m,n,iudz(i)) &
-                                                +2*p%md(l,j)*f(3+l,m,n,iudz(j)) &
-                                                -(p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudz(k)))/ &
-                                                (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                        momcons_term_z= -dndfac*(2*p%md(l,i)*f(lgh,m,n,iudz(i)) &
+                                                +2*p%md(l,j)*f(lgh,m,n,iudz(j)) &
+                                                -(p%md(l,i)+p%md(l,j))*f(lgh,m,n,iudz(k)))/ &
+                                                (p%md(l,k)*(p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
                       else
-                        momcons_term_z= -dndfac*(p%md(l,i)*f(3+l,m,n,iudz(i)) &
-                                                +p%md(l,j)*f(3+l,m,n,iudz(j)) &
-                                                -p%md(l,k)*f(3+l,m,n,iudz(k)))/ &
-                                                (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                        momcons_term_z= -dndfac*(p%md(l,i)*f(lgh,m,n,iudz(i)) &
+                                                +p%md(l,j)*f(lgh,m,n,iudz(j)) &
+                                                -p%md(l,k)*f(lgh,m,n,iudz(k)))/ &
+                                                (p%md(l,k)*(p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
                       endif
 
-                      df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) + momcons_term_z * momcons_term_frac
+                      df(lgh,m,n,iudz(k)) = df(lgh,m,n,iudz(k)) + momcons_term_z * momcons_term_frac
                       momcons_sum_x=momcons_sum_x+momcons_term_x
                       momcons_sum_y=momcons_sum_y+momcons_term_y
                       momcons_sum_z=momcons_sum_z+momcons_term_z
 
                     elseif (lmomcons3b) then
-                      df(3+l,m,n,iudx(k)) = df(3+l,m,n,iudx(k))-dndfac*(p%md(l,i)*f(3+l,m,n,iudx(i)) &
-                                           +p%md(l,j)*f(3+l,m,n,iudx(j)) &
-                                           -((p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudx(k))))/ &
-                                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                      df(3+l,m,n,iudy(k)) = df(3+l,m,n,iudy(k))-dndfac*(p%md(l,i)*f(3+l,m,n,iudy(i)) &
-                                           +p%md(l,j)*f(3+l,m,n,iudy(j)) &
-                                           -((p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudy(k))))/ &
-                                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                      df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k))-dndfac*(p%md(l,i)*f(3+l,m,n,iudz(i)) &
-                                           +p%md(l,j)*f(3+l,m,n,iudz(j)) &
-                                           -((p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudz(k))))/ &
-                                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                      df(lgh,m,n,iudx(k)) = df(lgh,m,n,iudx(k))-dndfac*(p%md(l,i)*f(lgh,m,n,iudx(i)) &
+                                           +p%md(l,j)*f(lgh,m,n,iudx(j)) &
+                                           -((p%md(l,i)+p%md(l,j))*f(lgh,m,n,iudx(k))))/ &
+                                           (p%md(l,k)*(p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
+                      df(lgh,m,n,iudy(k)) = df(lgh,m,n,iudy(k))-dndfac*(p%md(l,i)*f(lgh,m,n,iudy(i)) &
+                                           +p%md(l,j)*f(lgh,m,n,iudy(j)) &
+                                           -((p%md(l,i)+p%md(l,j))*f(lgh,m,n,iudy(k))))/ &
+                                           (p%md(l,k)*(p%nd(l,k)+dt*df(lgh,m,n,ind(k))))
+                      df(lgh,m,n,iudz(k)) = df(lgh,m,n,iudz(k))-dndfac*(p%md(l,i)*f(lgh,m,n,iudz(i)) &
+                                           +p%md(l,j)*f(lgh,m,n,iudz(j)) &
+                                           -((p%md(l,i)+p%md(l,j))*f(lgh,m,n,iudz(k))))/ &
+                                           (p%md(l,k)*(p%nd(l,k)+dt*df(l,m,n,ind(k))))
                     endif
                   endif
                   exit
