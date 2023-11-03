@@ -65,12 +65,6 @@ module Selfgravity
   integer :: idiag_qtoomre=0,idiag_qtoomremin=0,idiag_qtoomremax=0
   integer :: idiag_jeanslength=0, idiag_ljeans2d=0
 !
-  type InternalPencils
-     real, dimension(nx) :: qtoomre
-  endtype InternalPencils
-!
-  type (InternalPencils) :: q
-!
 !  Module Variables
 !
   real, dimension(mz) :: rho0z = 0.0
@@ -375,9 +369,6 @@ module Selfgravity
         !if (igpotselfx/=0) f(l1:l2,m,n,igpotselfx:igpotselfz)=p%gpotself
       !endif
 !
-      if (ldiagnos.and.(idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_qtoomremax/=0)) &
-        q%qtoomre=kappa_mn*sqrt(p%cs2)/(gravitational_const*pi*p%rho)
-!
 !  Apply Jeans stiffening to the EOS
 !
       if (ljeans_stiffening) then
@@ -525,6 +516,8 @@ module Selfgravity
       use Diagnostics
 !
       type (pencil_case) :: p
+
+      real, dimension(nx) :: qtoomre
 !
 !  Diagnostic averages.
 !
@@ -541,9 +534,16 @@ module Selfgravity
         if (idiag_gxgzm/=0) call sum_mn_name(p%gpotself(:,1)*p%gpotself(:,3),idiag_gxgzm)
         if (idiag_gygzm/=0) call sum_mn_name(p%gpotself(:,2)*p%gpotself(:,3),idiag_gygzm)
         if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) call calc_cylgrav_stresses(p)
-        if (idiag_qtoomre/=0) call sum_mn_name(q%qtoomre,idiag_qtoomre)
-        if (idiag_qtoomremin/=0) call max_mn_name(-q%qtoomre,idiag_qtoomremin,lneg=.true.)
-        call max_mn_name( q%qtoomre,idiag_qtoomremax)
+!
+        if (idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_qtoomremax/=0) then
+
+          qtoomre=kappa_mn*sqrt(p%cs2)/(gravitational_const*pi*p%rho)
+
+          call sum_mn_name(qtoomre,idiag_qtoomre)
+          if (idiag_qtoomremin/=0) call max_mn_name(-qtoomre,idiag_qtoomremin,lneg=.true.)
+          call max_mn_name(qtoomre,idiag_qtoomremax)
+        endif
+
         if (idiag_jeanslength/=0) call max_mn_name(-sqrt(pi*p%cs2/ &
             (gravitational_const*p%rho)),idiag_jeanslength,lneg=.true.)
         if (idiag_ljeans2d/=0) call max_mn_name(-p%cs2/ &
