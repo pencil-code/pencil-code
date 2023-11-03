@@ -26,7 +26,6 @@ module Diagnostics
   public :: write_1daverages_prepare, write_2daverages_prepare
   public :: name_is_present
   public :: expand_cname, parse_name, fparse_name
-! GPU-START
   public :: set_type
   public :: save_name
   public :: save_name_halfz, save_name_sound
@@ -42,7 +41,6 @@ module Diagnostics
   public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
   public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar, &
             zsum_mn_name_xy_arr, zsum_mn_name_xy_arr2
-! GPU-END
   public :: allocate_fnames,allocate_vnames,allocate_sound
   public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
   public :: allocate_phizaverages
@@ -101,6 +99,7 @@ module Diagnostics
 
   character (len=intlen) :: ch1davg, ch2davg
   integer :: ixav_max
+  integer :: nfirst=0
 !
 ! Variables for Yin-Yang grid: z-averages.
 !
@@ -213,6 +212,8 @@ module Diagnostics
 !  Limits to xaveraging.
 !
       call init_xaver
+!
+      nfirst = nn(1)
 
     endsubroutine initialize_diagnostics
 !***********************************************************************
@@ -2770,7 +2771,6 @@ module Diagnostics
 !
       real :: r0,width
       integer :: ir
-      integer, save :: nfirst=0
 !
 !  We use a quartic-Gaussian profile ~ exp(-r^4)
 !
@@ -2781,10 +2781,7 @@ module Diagnostics
         phiavg_profile(ir,:) = exp(-0.5*((p%rcyl_mn-r0)/width)**4)
       enddo
 !
-      if (lfirstpoint) then
-        phiavg_norm=0.
-        nfirst=n
-      endif
+      if (lfirstpoint) phiavg_norm=0.
 !
 !  Normalization factor, not depending on n, so only done for n=nfirst.
 !  As we calculate z-averages, multiply by nzgrid when used.
