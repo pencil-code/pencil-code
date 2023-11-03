@@ -421,9 +421,7 @@ module Dustdensity
 !
       select case (diffnd_law)
       case ('const')
-        do k=1,ndustspec
-          diffnd_ndustspec(k)=diffnd
-        enddo
+        diffnd_ndustspec=diffnd
       case ('ad_exponential')
         diffnd_ndustspec=diffnd*(ad/adref_diffnd)**diffnd_exponent
       case default
@@ -2728,27 +2726,23 @@ module Dustdensity
                   if (deltavd > ust) deltavd = 0.
                 endif
 !
+!  Calculate kernel
+!
+                if (lkernel_mean) then
+!
+!  Mean kernel for Smoluchowski equation.
+!
+                  dkern(l,i,j) = kernel_mean(i,j)
+!
 !  If nothing special is done, we will start to loose mass when the
 !  larger particles reach the upper boundary. Set lzero_upper_kern=T
 !  to make sure that no particles leave the upper boundary, and hence
 !  that no mass is lost.
 !
-                if (lzero_upper_kern) then
-                  if ((i .ge. ndustspec-1) .or. (j .ge. ndustspec-1)) scolld(i,j)=0.
-                endif
-!
-!  Calculate kernel
-!
-                if (lno_deltavd) then
+                elseif (lzero_upper_kern .and. (i >= ndustspec-1 .or. j >= ndustspec-1)) then
+                  dkern(l,i,j) = 0.
+                elseif (lno_deltavd) then
                   dkern(l,i,j) = scolld(i,j)*deltavd_const
-                else
-                  dkern(l,i,j) = scolld(i,j)*deltavd
-                endif
-!
-!24-Oct-16: Xiangyu added mean kernel for Smoluchowski equation
-!
-                if (lkernel_mean) then
-                  dkern(l,i,j) = kernel_mean(i,j)
                 else
                   dkern(l,i,j) = scolld(i,j)*deltavd
                 endif
