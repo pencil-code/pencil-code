@@ -809,8 +809,7 @@ module Chemistry
           if (lpencil(i_hhk_full) ) then
             do k = 1,nchemspec
               if (species_constants(k,imass) > 0.)  then
-                p%hhk_full(:,k) = p%H0_RT(:,k)*Rgas*T_loc &
-                    /species_constants(k,imass)
+                p%hhk_full(:,k) = p%H0_RT(:,k)*Rgas*T_loc/species_constants(k,imass)
               endif
             enddo
           endif
@@ -4349,7 +4348,7 @@ module Chemistry
 !
 !  For diagnostics
 !
-      if (lchemistry_diag) then
+      if (ldiagnos.and.lchemistry_diag) then
         do k = 1,nchemspec
           do j = 1,nreactions
             net_react_p(k,j) = net_react_p(k,j)+stoichio(k,j)*sum(vreactions_p(:,j))
@@ -4363,11 +4362,13 @@ module Chemistry
     subroutine  write_net_reaction
 !
 !  write net reactions to file
-
-      open (1,file=trim(datadir)//'/net_reactions.dat',position='append')
-      write (1,*) t
-      write (1,'(8e10.2)') net_react_p, net_react_m
-      close (1)
+!
+      if (lchemistry_diag) then
+        open (1,file=trim(datadir)//'/net_reactions.dat',position='append')
+        write (1,*) t
+        write (1,'(8e10.2)') net_react_p, net_react_m
+        close (1)
+      endif
 !
     endsubroutine  write_net_reaction
 !***********************************************************************

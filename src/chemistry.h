@@ -46,5 +46,4 @@
 ! public :: chemistry_calc_magnetic
 
   public :: write_net_reaction
-  public :: lchemistry_diag
   public :: lreactions
