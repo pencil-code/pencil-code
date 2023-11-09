@@ -67,6 +67,7 @@ class TimeSeries(object):
         comment_char="#",
         sim=None,
         unique_clean=False,
+        time_range=None,
     ):
         """
         read(file_name='time_series.dat', datadir='data',
@@ -149,3 +150,23 @@ class TimeSeries(object):
             if np.size(clean_t) != np.size(self.t):
                 for key in self.keys:
                     setattr(self, key, getattr(self, key)[unique_indices])
+        if time_range:
+            if isinstance(time_range, list):
+                time_range = time_range
+            else:
+                time_range = [time_range]
+            if len(time_range) == 1:
+                start_time = 0.
+                end_time = time_range[0]
+            elif len(time_range) == 2:
+                start_time = time_range[0]
+                end_time = time_range[1]
+            ilist = list()
+            for i, time in zip(range(self.t.size),self.t):
+                if time >= start_time:
+                    if time <= end_time:
+                        ilist.append(i)
+            for key in self.keys:
+                tmp = self.__getattribute__(key)[ilist]
+                self.__delattr__(key)
+                setattr(self, key, tmp)
