@@ -38,15 +38,16 @@ module Shock
   logical :: lgaussian_smooth=.false.
   logical :: lforce_periodic_shockviscosity=.false.
   logical :: lfix_Re_mesh=.false.
+  logical :: lmax_shock=.true.
   real    :: div_threshold=0.0
   real    :: shock_linear = 0.01
-  real    :: shock_div_pow = 1.
-  logical :: lrewrite_shock_boundary=.false., lconvergence_only=.true.
+  real    :: shock_div_pow = 1., dtfactor=1e-4, con_bias=0.1
+  logical :: lrewrite_shock_boundary=.false., lconvergence_only=.true., lconvergence_bias=.true.
 !
   namelist /shock_run_pars/ &
       ishock_max, lgaussian_smooth, lforce_periodic_shockviscosity, &
       div_threshold, lrewrite_shock_boundary, lfix_Re_mesh, lshock_linear, shock_linear, &
-      shock_div_pow, lconvergence_only
+      shock_div_pow, lconvergence_only, lmax_shock, dtfactor, lconvergence_bias, con_bias
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -126,41 +127,6 @@ module Shock
 !  Calculate the smoothing factors
 !
       call smoothing_kernel(smooth_factor,lgaussian_smooth)
-!
-!      if (lgaussian_smooth) then
-!        weights = (/1.,9.,45.,70.,45.,9.,1./)
-!      else
-!        weights = (/1.,6.,15.,20.,15.,6.,1./)
-!      endif
-!!
-!      if (nxgrid > 1) then
-!        do i = -3,3
-!          smooth_factor(i,:,:) = smooth_factor(i,:,:)*weights(i)
-!        enddo
-!      else
-!        smooth_factor(-3:-1,:,:) = 0.
-!        smooth_factor(+1:+3,:,:) = 0.
-!      endif
-!!
-!      if (nygrid > 1) then
-!        do j = -3,3
-!          smooth_factor(:,j,:) = smooth_factor(:,j,:)*weights(j)
-!        enddo
-!      else
-!        smooth_factor(:,-3:-1,:) = 0.
-!        smooth_factor(:,+1:+3,:) = 0.
-!      endif
-!!
-!      if (nzgrid > 1) then
-!        do k = -3,3
-!          smooth_factor(:,:,k) = smooth_factor(:,:,k)*weights(k)
-!        enddo
-!      else
-!        smooth_factor(:,:,-3:-1) = 0.
-!        smooth_factor(:,:,+1:+3) = 0.
-!      endif
-!!
-!      smooth_factor = smooth_factor / sum(smooth_factor)
 !
 !  Check that smooth order is within bounds
 !
@@ -278,7 +244,7 @@ module Shock
 !
 !  check for those quantities for which we want video slices
 !
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         where(cnamev=='shock') cformv='DEFINED'
       endif
 !
@@ -366,7 +332,7 @@ module Shock
 ! gshock_perp
         if (lpencil(i_gshock_perp)) call grad(f,ishock_perp,p%gshock_perp)
       endif
-! 
+!
       call calc_diagnostics_shock(p)
 
     endsubroutine calc_pencils_shock
@@ -414,7 +380,7 @@ module Shock
       integer :: imn
       integer :: i,j,k
       integer :: ni,nj,nk
-      real :: shock_max, a=0., a1
+      real :: shock_max, a=0., a1, dt_div_pow
       logical :: lcommunicate
 !
 !  Initialize shock to impossibly large number to force code crash in case of
@@ -429,6 +395,12 @@ module Shock
       call initiate_isendrcv_bdry(f,iux,iuz)
 !
       if (lshock_linear) a1 = shock_linear / dxmax
+!
+!  retain dimensionality of diffusion coefficient as L^2/t, dtfactor is some
+!  timescale relevant to the flow divergence, which keeps the peak diffusive
+!  coefficient of order unity in highly compressive shocks.
+!
+      if (shock_div_pow /= 1.) dt_div_pow = dtfactor**(shock_div_pow-1)
 !
       lcommunicate=.true.
       do imn=1,nyz
@@ -451,9 +423,14 @@ module Shock
         if (lconvergence_only) then
           f(l1:l2,m,n,ishock) = max(0.0,-penc)
         else
-          f(l1:l2,m,n,ishock) = abs(penc)
+          if (lconvergence_bias) then
+            f(l1:l2,m,n,ishock) = max(0.0,-penc) + max(0.0,con_bias*penc)
+          else
+            f(l1:l2,m,n,ishock) = abs(penc)
+          endif
         endif
-        if (shock_div_pow /= 1.) f(l1:l2,m,n,ishock)=f(l1:l2,m,n,ishock)**shock_div_pow
+        if (shock_div_pow /= 1.) f(l1:l2,m,n,ishock)=&
+            dt_div_pow*f(l1:l2,m,n,ishock)**shock_div_pow
 !
 !  Add the linear term if requested
 !
@@ -465,12 +442,6 @@ module Shock
 !
       if (div_threshold > 0.0) where(abs(f(:,:,:,ishock)) < div_threshold) f(:,:,:,ishock) = 0.0
 !
-!  Take maximum over a number of grid cells
-!
-      ni = merge(ishock_max,0,nxgrid > 1)
-      nj = merge(ishock_max,0,nygrid > 1)
-      nk = merge(ishock_max,0,nzgrid > 1)
-!
 !  Because of a bug in the shearing boundary conditions we must first manually
 !  set the y boundary conditions on the shock profile.
 !
@@ -484,45 +455,7 @@ module Shock
 !
       call initiate_isendrcv_bdry(f,ishock,ishock)
 !
-      tmp = 0.0
-!
-      lcommunicate=.true.
-
-      do imn=1,nyz
-!
-        n = nn(imn)
-        m = mm(imn)
-!
-        if (lcommunicate) then 
-          if (necessary(imn)) then
-            call finalize_isendrcv_bdry(f,ishock,ishock)
-            call boundconds_y(f,ishock,ishock)
-            call boundconds_z(f,ishock,ishock)
-            lcommunicate=.false.
-          endif
-        endif
-!
-        penc = 0.0
-!
-        do k=-nk,nk
-        do j=-nj,nj
-        do i=-ni,ni
-          penc = max(penc,f(l1+i:l2+i,m+j,n+k,ishock))
-        enddo
-        enddo
-        enddo
-!
-        tmp(l1:l2,m,n) = penc
-!
-      enddo
-!
-      f(:,:,:,ishock) = tmp
-!
-!  Smooth with a Gaussian profile
-!
-      ni = merge(3,0,nxgrid > 1)
-      nj = merge(3,0,nygrid > 1)
-      nk = merge(3,0,nzgrid > 1)
+      if (lmax_shock) call maximum_shock(f)
 !
 !  Because of a bug in the shearing boundary conditions we must first manually
 !  set the y boundary conditions on the shock profile.
@@ -536,37 +469,7 @@ module Shock
       call boundconds_x(f,ishock,ishock)
       call initiate_isendrcv_bdry(f,ishock,ishock)
 !
-      tmp = 0.0
-!
-      lcommunicate=.true.
-
-      do imn=1,nyz
-!
-        n = nn(imn)
-        m = mm(imn)
-!
-        if (lcommunicate) then
-          if (necessary(imn)) then
-            call finalize_isendrcv_bdry(f,ishock,ishock)
-            call boundconds_y(f,ishock,ishock)
-            call boundconds_z(f,ishock,ishock)
-            lcommunicate=.false.
-          endif
-        endif
-!
-        penc = 0.0
-!
-        do k=-nk,nk
-        do j=-nj,nj
-        do i=-ni,ni
-          penc = penc + smooth_factor(i,j,k)*f(l1+i:l2+i,m+j,n+k,ishock)
-        enddo
-        enddo
-        enddo
-!
-        tmp(l1:l2,m,n) = penc
-!
-      enddo
+      call smooth_shock(tmp, f, ishock)
 !
       fix_Re: if (lfix_Re_mesh) then
 !
@@ -617,12 +520,14 @@ module Shock
         endif
       endif fix_Re
 !
+!  NB shock_perp without lconvergence not yet implemented.
+!
       if (ldivu_perp) then
 !
         call boundconds_x(f,ishock_perp,ishock_perp)
         call initiate_isendrcv_bdry(f,ishock_perp,ishock_perp)
         lcommunicate=.true.
-
+!
         do imn=1,nyz
 !
           n = nn(imn)
@@ -641,42 +546,13 @@ module Shock
           call bb_unitvec_shock(f,bb_hat)
           call shock_divu_perp(f,bb_hat,penc,penc_perp)
           f(l1:l2,m,n,ishock_perp)=max(0.,-penc_perp)
+          if (shock_div_pow /= 1.) f(l1:l2,m,n,ishock_perp)=&
+              dt_div_pow*f(l1:l2,m,n,ishock_perp)**shock_div_pow
 !
         enddo
 !
-        tmp = 0.0
-
-        call boundconds_x(f,ishock_perp,ishock_perp)
-        call initiate_isendrcv_bdry(f,ishock_perp,ishock_perp)
-        lcommunicate=.true.
-
-        do imn=1,nyz
+        call smooth_shock(tmp, f, ishock_perp)
 !
-          n = nn(imn)
-          m = mm(imn)
-!
-          if (lcommunicate) then
-            if (necessary(imn)) then
-              call finalize_isendrcv_bdry(f,ishock_perp,ishock_perp)
-              call boundconds_y(f,ishock_perp,ishock_perp)
-              call boundconds_z(f,ishock_perp,ishock_perp)
-              lcommunicate=.false.
-            endif
-          endif
-!
-          penc = 0.0
-!
-          do k=-nk,nk
-          do j=-nj,nj
-          do i=-ni,ni
-            penc = penc + smooth_factor(i,j,k)*f(l1+i:l2+i,m+j,n+k,ishock_perp)
-          enddo
-          enddo
-          enddo
-!
-          tmp(l1:l2,m,n) = penc
-!
-        enddo
         if (.not.lrewrite_shock_boundary) then
           f(l1:l2,m1:m2,n1:n2,ishock_perp) = tmp(l1:l2,m1:m2,n1:n2) * dxmin**2
         else
@@ -687,10 +563,122 @@ module Shock
 !
     endsubroutine calc_shock_profile
 !***********************************************************************
+    subroutine maximum_shock(f)
+!
+      use Boundcond, only: boundconds_y, boundconds_z
+      use Mpicomm, only: finalize_isendrcv_bdry
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+!
+      real, dimension (mx,my,mz) :: tmp
+      real, dimension (nx) :: penc
+      integer :: imn
+      integer :: i,j,k
+      integer :: ni,nj,nk
+      logical :: lcommunicate
+!
+!
+!  Apply maximum within ishock_max zones to shock profile.
+!
+!  Take maximum over a number of grid cells
+!
+      ni = merge(ishock_max,0,nxgrid > 1)
+      nj = merge(ishock_max,0,nygrid > 1)
+      nk = merge(ishock_max,0,nzgrid > 1)
+!
+      lcommunicate=.true.
+!
+      do imn=1,nyz
+!
+        n = nn(imn)
+        m = mm(imn)
+!
+        if (lcommunicate) then
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f,ishock,ishock)
+            call boundconds_y(f,ishock,ishock)
+            call boundconds_z(f,ishock,ishock)
+            lcommunicate=.false.
+          endif
+        endif
+!
+        penc = 0.0
+!
+        do k=-nk,nk
+        do j=-nj,nj
+        do i=-ni,ni
+          penc = max(penc,f(l1+i:l2+i,m+j,n+k,ishock))
+        enddo
+        enddo
+        enddo
+!
+        tmp(l1:l2,m,n) = penc
+!
+      enddo
+!
+      f(:,:,:,ishock) = tmp
+!
+    endsubroutine maximum_shock
+!***********************************************************************
+    subroutine smooth_shock(tmp, f,ivar)
+!
+      use Boundcond, only: boundconds_y, boundconds_z
+      use Mpicomm, only: finalize_isendrcv_bdry
+!
+      real, dimension (mx,my,mz), intent (out) :: tmp
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer, intent(in) :: ivar
+!
+      real, dimension (nx) :: penc
+      integer :: imn
+      integer :: i,j,k
+      integer :: ni,nj,nk
+      logical :: lcommunicate
+!
+!  Smooth with a Gaussian profile
+!
+      ni = merge(3,0,nxgrid > 1)
+      nj = merge(3,0,nygrid > 1)
+      nk = merge(3,0,nzgrid > 1)
+!
+      tmp = 0.0
+!
+      lcommunicate=.true.
+
+      do imn=1,nyz
+!
+        n = nn(imn)
+        m = mm(imn)
+!
+        if (lcommunicate) then
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f,ivar,ivar)
+            call boundconds_y(f,ivar,ivar)
+            call boundconds_z(f,ivar,ivar)
+            lcommunicate=.false.
+          endif
+        endif
+!
+        penc = 0.0
+!
+        do k=-nk,nk
+        do j=-nj,nj
+        do i=-ni,ni
+          penc = penc + smooth_factor(i,j,k)*f(l1+i:l2+i,m+j,n+k,ivar)
+        enddo
+        enddo
+        enddo
+!
+        tmp(l1:l2,m,n) = penc
+!
+      enddo
+!
+    endsubroutine smooth_shock
+!***********************************************************************
     subroutine shock_before_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!     
+!
 !  Shock profile calculation.
 !
       call calc_shock_profile(f)
