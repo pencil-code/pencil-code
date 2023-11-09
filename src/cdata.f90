@@ -333,6 +333,7 @@ module Cdata
   logical :: ladv_der_as_aux=.false.
   logical :: lghostfold_usebspline = .false.
   logical :: lcooling_ss_mz = .false.
+  logical :: lshock_heat = .true.
 !
 !  Type counters.
 !
@@ -793,9 +794,9 @@ module Cdata
 !  or not the chiral MHD special module is used.
 !
   real :: lambda5 = 0.0
-! 
+!
 !  Variables for concurrency
-! 
+!
   logical :: lwriting_snapshots=.false.
   logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
 !

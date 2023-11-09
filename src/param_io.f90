@@ -201,7 +201,7 @@ module Param_IO
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
       lpencil_check_small, lpencil_check_no_zeros, lpencil_check_diagnos_opti, &
       lpencil_init, penc0, lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
-      crash_file_dtmin_factor, ltestperturb, eps_rkf, &
+      crash_file_dtmin_factor, ltestperturb, eps_rkf, lshock_heat, &
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
       lini_t_eq_zero, lini_t_eq_zero_once, &
       lav_smallx, xav_max, ldt_paronly, lweno_transport, &
