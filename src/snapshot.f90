@@ -568,12 +568,12 @@ module Snapshot
 !  This assumes that one is now using ldensity_nolog=F.
 !  NB: require lupw_rho->lupw_lnrho and diagnostics ..grho..->..glnrho..
 !
-      elseif (lread_oldsnap_rho2lnrho) then
-        call input_snap(chsnap,f,ilnrho-1,mode)
-        call input_snap(chsnap,f,ilnrho,mode,DATA_LABEL='rho',ivar0=ilnrho)
-        if (msnap>ilnrho) call input_snap(chsnap,f,msnap,mode,ivar0=ilnrho+1)
-        if (lpersist) call input_persistent(chsnap)
-        call input_snap_finalize
+      !elseif (lread_oldsnap_rho2lnrho) then
+      !  call input_snap(chsnap,f,ilnrho-1,mode)
+      !  call input_snap(chsnap,f,ilnrho,mode,DATA_LABEL='rho',ivar0=ilnrho)
+      !  if (msnap>ilnrho) call input_snap(chsnap,f,msnap,mode,ivar0=ilnrho+1)
+      !  if (lpersist) call input_persistent(chsnap)
+      !  call input_snap_finalize
       else
         call input_snap(chsnap,f,msnap,mode)
         if (lpersist) call input_persistent(chsnap)
