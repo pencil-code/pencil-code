@@ -12,11 +12,8 @@ module Timestep
 !
 ! Parameters for adaptive time stepping
   real, parameter :: safety      =  0.9
-!  maxerr typically ~1, so Cash-Karp index of -1/5 too slow to converge
-  real, parameter :: dt_decrease = -2.5!-0.2
-  real, parameter :: dt_increase = -0.1!-0.25
-  real, parameter :: dt_increase_factor = 1.91!5.0
-  real            :: errcon, farraymin, dt_next
+  real            :: errcon, dt_next, dt_increase, dt_decrease
+  real, dimension(mvar) :: farraymin
 !
   contains
 !
@@ -24,12 +21,14 @@ module Timestep
     subroutine initialize_timestep
 !
       use Messages, only: fatal_error, warning
-
+!
       if (lparticles) call fatal_error("initialize_timestep", "Particles are"// &
                                                  " not yet supported by the adaptive rkf scheme")
-      if (itorder/=5) then
+      if (itorder/=5.and.itorder/=3) then
         call warning('initialize_timestep','itorder set to 5 for Runge-Kutta-Fehlberg')
         itorder=5
+      else if (itorder==3) then
+        call warning('initialize_timestep','Runge-Kutta-Fehlberg itorder is 3: set to 5 for higher accuracy')
       endif
 !
       if (dt==0.) then
@@ -41,13 +40,14 @@ module Timestep
       !General error condition: errcon ~1e-4 redundant with maxerr ~1. 0.1 more effective accelerator
       errcon = 0.1!(5.0/safety)**(1.0/dt_increase)
       !prefactor for absolute floor on value of farray in calculating err
-      farraymin = 1e-8
 !
       !ldt is set after read_persistent in rsnap, so dt0==0 used to read, but ldt=F for write
       ldt=.false.
       !overwrite the persistent time_step from dt0 in run.in if dt too high to initialize run
       if (dt0/=0.) dt=dt0
       dt_next=dt
+      dt_increase=-1./itorder
+      dt_decrease=-1./(itorder-1)
 
     endsubroutine initialize_timestep
 !***********************************************************************
@@ -72,19 +72,29 @@ module Timestep
 !
 !      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
+      do j=1,mvar
+        farraymin(j) = max(min(dxmin*maxval(abs(f(:,:,:,j))),1.),epsi)
+        if (farraymin(j)==0) farraymin(j) = 1
+      enddo
+      if (lroot.and.it==1) print*,"farraymin",farraymin
+!
       lfirst=.true.
       told=t
       dt=dt_next
       do i=1,20
         ! Do a Runge-Kutta step
-        call rkck(f, df, p, errmax)
+        if (itorder==5) then
+          call rkck(f, df, p, errmax)
+        else
+          call rkck3(f, df, p, errmax)
+        endif
         ! Step succeeded so exit
-        if (errmax <= safety) exit
+        if (errmax <= 1) exit
         ! Step didn't succeed so decrease the time step
-        dt_temp = safety*dt*((errmax/safety)**dt_decrease)
-        !if (lroot) print*,"Decreasing dt, dt_temp, errmax",dt,dt_temp,errmax
+        dt_temp = safety*dt*errmax**dt_decrease
         ! Don't decrease the time step by more than a factor of ten
-        dt = sign(max(abs(dt_temp), 0.3/eps_rkf**0.05*abs(dt)), dt)
+        dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+        if (lroot.and.ip==7) print*,"Decreasing dt, dt_temp, errmax",dt,dt_temp,errmax
         tnew=told+dt
         if (tnew == told) then
           ! Guard against infinitesimal time steps
@@ -94,7 +104,7 @@ module Timestep
         endif
         t=told
       enddo
-      if (lroot.and.ip==6) then
+      if (lroot.and.ip==7) then
         print*,"time_step: rkck took",i,"iterations to converge to errmax",errmax
         print*,"time_step: tried time",dt_next,"reducing to",dt,"reduction rate",dt/dt_next
       endif
@@ -103,14 +113,7 @@ module Timestep
 ! Time step to try next time
 !
 !
-      if (errmax < errcon) then
-        ! Increase the time step > dt_increase_factor
-        dt_next = safety*dt*((errmax/2.)**dt_increase)
-      else
-        ! But not by more than a factor of 1.9 (dt_increase_factor)
-        ! Previous try 5.0 inefficient: excessive decrease interations
-        dt_next = dt_increase_factor*dt
-      endif
+      dt_next = safety*dt*errmax**dt_increase
 !
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt
 !
@@ -315,29 +318,28 @@ module Timestep
 ! Get the maximum error over the whole field
 !
         select case (timestep_scaling(j))
-        case ('per_var_err')
-          ! Per variable error
-          !          scal=  ( &
-          !              sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
-          !              sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,1)**2) + 1e-30)
-          !          errmaxs = max(maxval(abs(err/scal)),errmaxs)
-          scal=  sqrt(f(l1:l2,m,n,j)**2  + k(l1:l2,m,n,j,1)**2 + 1e-30)
-          errmaxs = max(maxval(abs(err/scal)),errmaxs)
-        case ('cons_frac_err')
-          ! Constant fractional error, prone to division by zero
-          scal = abs(f(l1:l2,m,n,j)) + abs(df(l1:l2,m,n,j))
-          errmaxs = max(maxval(abs(err/scal)),errmaxs)
-        case ('rel_err')
-          ! Relative error constraint with farraymin=1e-8 floor
-          scal=max(abs(f(l1:l2,m,n,j)),farraymin)
-          errmaxs = max(maxval(abs(err)/scal),errmaxs)
-        case ('cons_err')
-          ! Relative error constraint for f>1 or abs error
-          scal = abs(f(l1:l2,m,n,j))
-          scal = max(scal,1.)
-          errmaxs = max(maxval(abs(err)/scal),errmaxs)
-        case ('none')
-          ! No error check
+          case ('per_var_err')
+            ! Per variable error
+            !          scal=  ( &
+            !              sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
+            !              sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,1)**2) + 1e-30)
+            !          errmaxs = max(maxval(abs(err/scal)),errmaxs)
+            scal=  sqrt(f(l1:l2,m,n,j)**2  + k(l1:l2,m,n,j,1)**2 + farraymin(j)**2)
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+          case ('cons_frac_err')
+            ! Constrained fractional error: variable lower bound to avoid division by zero
+            scal = max(abs(f(l1:l2,m,n,j)) + abs(df(l1:l2,m,n,j)),farraymin(j))
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+          case ('rel_err')
+            ! Relative error to f constrained with farraymin floor
+            scal=max(abs(f(l1:l2,m,n,j)),farraymin(j))
+            errmaxs = max(maxval(abs(err)/scal),errmaxs)
+          case ('cons_err')
+            ! Relative error constraint for abs(f) > 1e-8
+            scal=max(abs(f(l1:l2,m,n,j)),1e-8)
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+          case ('none')
+            ! No error check
         endselect
 !
       enddo; enddo;
@@ -355,6 +357,177 @@ module Timestep
       call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
 !
     endsubroutine rkck
+!***********************************************************************
+    subroutine rkck3(f, df, p, errmax)
+!
+! Explicit fifth order Runge--Kutta--Fehlberg time stepping
+!
+      use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
+      use Equ, only: pde, impose_floors_ceilings
+      use Shear, only: advance_shear
+      use Boundcond, only: update_ghosts
+!
+! RK parameters by Cash and Karp
+!
+      real, parameter :: b21 = 0.2
+      real, parameter :: b31 = 0.075
+      real, parameter :: b32 = 0.225
+      real, parameter :: b41 = 0.3
+      real, parameter :: b42 = -0.9
+      real, parameter :: b43 = 1.2
+      real, parameter :: c1  = 0.35185185185185186 !19.0/54.0
+      real, parameter :: c2  = 0.0
+      real, parameter :: c3  = -0.37037037037037035 !-10.0/27.0
+      real, parameter :: c4  = 1.0185185185185186 !55.0/54.0
+      real, parameter :: dc1 = c1 + 1.5
+      real, parameter :: dc2 = c2 - 2.5
+      real, parameter :: dc3 = c3
+      real, parameter :: dc4 = c4
+      real, parameter :: substep1 = 0.2
+      real, parameter :: substep2 = 0.3
+      real, parameter :: substep3 = 0.6
+!
+! Note: f is intent(inout), as pde may change it due to
+!   lshift_datacube_x, density floor, or velocity ceiling.
+!   None of those will do exctly what is intended, because they are
+!   only really modifying f during the first substep.
+!
+      intent(inout) :: f
+      intent(out)   :: df, p, errmax
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension(mx,my,mz,mvar,3) :: k
+! Note: The tmp array will not use more memory than the temporary
+!   array that would be implicitly created with calls like
+!   call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
+      real, dimension (mx,my,mz,mfarray) :: tmp
+      real, dimension(nx) :: scal, err
+      real :: errmax, errmaxs, dtsub, told
+      integer :: j
+      logical :: llogarithmic
+!
+      df=0.
+      errmax=0.
+      errmaxs=0.
+      k=0.
+      told=t
+!
+!  FIRST SUBSTEP
+!
+      call pde(f, k(:,:,:,:,1), p)
+      dtsub = dt*substep1
+      if (lshear) then
+        tmp = f
+        call impose_floors_ceilings(tmp)
+        call update_ghosts(tmp)  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
+        call advance_shear(tmp, k(:,:,:,:,1), dtsub)
+      endif
+      do j=1,mvar; do n=n1,n2; do m=m1,m2
+        k(l1:l2,m,n,j,1) = dt*k(l1:l2,m,n,j,1)
+      enddo; enddo; enddo
+!
+      lfirst=.false.
+!
+!  Transferring auxiliaries from f to tmp.
+!
+      if (mfarray>mvar) tmp(:,:,:,mvar+1:mfarray) = f(:,:,:,mvar+1:mfarray)
+      tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b21*k(:,:,:,:,1)
+!
+      call update_after_substep(tmp,k(:,:,:,:,1),dtsub,.false.)
+      t = told + dtsub
+!
+!  SECOND SUBSTEP
+!
+      call pde(tmp, k(:,:,:,:,2), p)
+      dtsub = dt*substep2
+      do j=1,mvar; do n=n1,n2; do m=m1,m2
+        k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
+      enddo; enddo; enddo
+!
+      tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b31*k(:,:,:,:,1) &
+                                          + b32*k(:,:,:,:,2)
+      call update_after_substep(tmp,k(:,:,:,:,2),0.,.false.)
+      t = told + dtsub
+!
+!
+!  THIRD SUBSTEP
+!
+      call pde(tmp, k(:,:,:,:,3), p)
+      dtsub = dt*substep3
+      if (lshear) then
+        call impose_floors_ceilings(tmp)
+        call update_ghosts(tmp)
+        call advance_shear(tmp, k(:,:,:,:,3), dtsub)
+      endif
+      do j=1,mvar; do n=n1,n2; do m=m1,m2
+        k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
+      enddo; enddo; enddo
+!
+      tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b41*k(:,:,:,:,1) &
+                                          + b42*k(:,:,:,:,2) &
+                                          + b43*k(:,:,:,:,3)
+!
+      call update_after_substep(tmp,k(:,:,:,:,3),dtsub,.false.)
+      t = told + dtsub
+!
+!  FINALIZE STEP
+!
+      call pde(tmp, df, p)
+      t = told + dt
+!
+      do j=1,mvar; do n=n1,n2; do m=m1,m2
+        llogarithmic=((j==ilnrho.and..not.ldensity_nolog).or.(j==iss).or.(j==ilnTT))
+        df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
+!
+        err = dc1*k(l1:l2,m,n,j,1) + dc2*k(l1:l2,m,n,j,2) + &
+              dc3*k(l1:l2,m,n,j,3) + dc4*df(l1:l2,m,n,j)
+!
+        df(l1:l2,m,n,j) = c1*k(l1:l2,m,n,j,1) + c2*k(l1:l2,m,n,j,2) + &
+                          c3*k(l1:l2,m,n,j,3) + c4*df(l1:l2,m,n,j)
+!
+! Get the maximum error over the whole field
+!
+        select case (timestep_scaling(j))
+          case ('per_var_err')
+            ! Per variable error
+            !          scal=  ( &
+            !              sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
+            !              sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,1)**2) + 1e-30)
+            !          errmaxs = max(maxval(abs(err/scal)),errmaxs)
+            scal=  sqrt(f(l1:l2,m,n,j)**2  + k(l1:l2,m,n,j,1)**2 + farraymin(j)**2)
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+          case ('cons_frac_err')
+            ! Constrained fractional error: variable lower bound to avoid division by zero
+            scal = max(abs(f(l1:l2,m,n,j)) + abs(df(l1:l2,m,n,j)),farraymin(j))
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+          case ('rel_err')
+            ! Relative error to f constrained with farraymin floor
+            scal=max(abs(f(l1:l2,m,n,j)),farraymin(j))
+            errmaxs = max(maxval(abs(err)/scal),errmaxs)
+          case ('cons_err')
+            ! Relative error constraint for abs(f) > 1e-8
+            scal=max(abs(f(l1:l2,m,n,j)),1e-8)
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+          case ('none')
+            ! No error check
+        endselect
+!
+      enddo; enddo;
+
+      enddo
+!
+!  Transferring auxiliaries from tmp to f.
+!
+      if (mfarray>mvar) f(:,:,:,mvar+1:mfarray) = tmp(:,:,:,mvar+1:mfarray)
+!
+! Divide your maximum error by the required accuracy
+!
+      errmaxs=errmaxs/eps_rkf
+!
+      call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
+!
+    endsubroutine rkck3
 !***********************************************************************
     subroutine update_after_substep(f,df,dtsub,llast)
 !
