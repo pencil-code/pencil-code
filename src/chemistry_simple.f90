@@ -562,9 +562,7 @@ module Chemistry
 !
 !  allocate memory for net_reaction diagnostics
 !
-      if (allocated(net_react_p) .and. .not. lreloading) then
-        print*, 'this should not be here'
-      endif
+      if (allocated(net_react_p) .and. .not. lreloading) print*, 'this should not be here'
 
       if (lchemistry_diag .and. .not. lreloading) then
         allocate(net_react_p(nchemspec,nreactions),STAT=stat)
@@ -995,9 +993,8 @@ module Chemistry
 !
         if (lT_tanh) then
           del = init_x2-init_x1
-          f(k,:,:,ilnTT) = f(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
-              +((init_TT2-init_TT1)*0.5)  &
-              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
+          f(k,:,:,ilnTT) = f(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5+((init_TT2-init_TT1)*0.5) &
+                          *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
         else
           if (x(k) <= init_x1) f(k,:,:,ilnTT) = log(init_TT1)
           if (x(k) >= init_x2) f(k,:,:,ilnTT) = log(init_TT2)
@@ -1031,9 +1028,8 @@ module Chemistry
 !
         if (lT_tanh) then
           del = (init_x2-init_x1)
-          f(k,:,:,i_O2) = (f(l2,:,:,i_O2)+f(l1,:,:,i_O2))*0.5  &
-              +((f(l2,:,:,i_O2)-f(l1,:,:,i_O2))*0.5)  &
-              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+          f(k,:,:,i_O2) = (f(l2,:,:,i_O2)+f(l1,:,:,i_O2))*0.5+((f(l2,:,:,i_O2)-f(l1,:,:,i_O2))*0.5) &
+                         *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
         else
           if (x(k) > init_x2) f(k,:,:,i_O2) = final_massfrac_O2
           if (x(k) > init_x1 .and. x(k) <= init_x2) &
@@ -1280,8 +1276,7 @@ module Chemistry
 !
 !  Initialize velocity
 !
-      f(:,:,:,iuy) = 0
-      f(:,:,:,iux) = 0
+      f(:,:,:,iux:iuy) = 0
 !
 !  Check if we want nolog of density or nolog of temperature
 !
@@ -1507,8 +1502,7 @@ module Chemistry
 !
           do k = 1,nchemspec
             if (species_constants(k,imass) > 0.) then
-              sum_DYDt = sum_DYDt+Rgas/species_constants(k,imass) &
-                  *(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+              sum_DYDt = sum_DYDt+Rgas/species_constants(k,imass)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
               if (lreactions) then
                 sum_hhk_DYDt_reac = sum_hhk_DYDt_reac-p%hhk_full(:,k)*p%DYDt_reac(:,k)
               endif
@@ -1637,7 +1631,7 @@ module Chemistry
 !  Calculate diagnostic quantities
 !
       if (ldiagnos) then
-
+        if (idiag_dtchem /= 0) call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
         !!if (idiag_dtchem /= 0) call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
 !
         do i = 1,nchemspec
@@ -1652,8 +1646,8 @@ module Chemistry
           do ii=1,nchemspec
             call sum_mn_name(p%DYDt_reac(:,ii),idiag_dYm(ii))
             if (idiag_dYmax(ii) /= 0) call max_mn_name(abs(p%DYDt_reac(:,ii)),idiag_dYmax(ii))
-            if (idiag_hm(ii) /= 0) call sum_mn_name(p%H0_RT(:,ii)*Rgas* &
-                                                    p%TT(:)/species_constants(ii,imass),idiag_hm(ii))
+            if (idiag_hm(ii) /= 0) &
+              call sum_mn_name(p%H0_RT(:,ii)*Rgas*p%TT(:)/species_constants(ii,imass),idiag_hm(ii))
           enddo
         endif
 
@@ -1822,8 +1816,7 @@ module Chemistry
       do iname=1,nnamev
         sname=trim(cnamev(iname))
         if (sname(1:8)=='chemspec') then
-          if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) &
-            cformv(iname)='DEFINED'
+          if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) cformv(iname)='DEFINED'
         endif
         if (sname(1:9)=='viscosity') cformv(iname)='DEFINED'
         if (sname(1:2)=='cp') cformv(iname)='DEFINED'
@@ -1955,7 +1948,7 @@ module Chemistry
             if (Sijp(spec,reac) /= 1) write (Sijp_string,'(F3.1)') Sijp(spec,reac)
 !            if (Sijp(spec,reac)>1) Sijp_string=itoa(Sijp(spec,reac))
             reac_string = trim(reac_string)//trim(separatorp)// &
-                trim(Sijp_string)//trim(varname(ichemspec(spec)))
+                          trim(Sijp_string)//trim(varname(ichemspec(spec)))
             separatorp = '+'
           endif
           if (Sijm(spec,reac) > 0) then
@@ -1963,7 +1956,7 @@ module Chemistry
             if (Sijm(spec,reac) /= 1) write (Sijm_string,'(F3.1)') Sijm(spec,reac)
 !            if (Sijm(spec,reac)>1) Sijm_string=itoa(Sijm(spec,reac))
             product_string = trim(product_string)//trim(separatorm)// &
-                trim(Sijm_string)//trim(varname(ichemspec(spec)))
+                             trim(Sijm_string)//trim(varname(ichemspec(spec)))
             separatorm = '+'
           endif
         enddo
@@ -2020,7 +2013,7 @@ module Chemistry
       inquire(file='chem.inp',exist=cheminp)
       inquire(file='chem.in',exist=chemin)
       if (chemin .and. cheminp) call fatal_error('chemistry', &
-          'chem.in and chem.inp found, please decide for one')
+          'both chem.in and chem.inp found, please decide for one')
       if (cheminp) input_file='chem.inp'
       if (chemin) input_file='chem.in'
 !
@@ -2152,30 +2145,29 @@ module Chemistry
 ! CO2 CO N2 O2 H2O
 !
     if (lmech_simple) then
-        ! O2
-        tran_data(4,1:7) = (/ 1.0000000000000000        ,107.40000000000001        ,3.4580000000000002        ,&
-                              0.0000000000000000E+000   ,1.6000000000000001        ,3.7999999999999998        ,&
+      ! O2
+      tran_data(4,1:7) = (/ 1.0000000000000000        ,107.40000000000001        ,3.4580000000000002        ,&
+                            0.0000000000000000E+000   ,1.6000000000000001        ,3.7999999999999998        ,&
+                            0.0000000000000000E+000 /)
+      ! N2
+      tran_data(3,1:7) = (/ 1.0000000000000000        ,97.530000000000001        ,3.6210000000000000        ,&
+                             0.0000000000000000E+000   ,1.7600000000000000        ,4.0000000000000000       ,&
+                             0.0000000000000000E+000 /)
+      ! CO
+      tran_data(2,1:7) = (/ 1.0000000000000000        ,98.099999999999994        ,3.6499999999999999        ,&
+                             0.0000000000000000E+000   ,1.9500000000000000        ,1.8000000000000000       ,&
+                             0.0000000000000000E+000 /)
+      ! CO2
+      tran_data(1,1:7) = (/ 1.0000000000000000        ,244.00000000000000        ,3.7629999999999999        ,&
+                             0.0000000000000000E+000   ,2.6499999999999999        ,2.1000000000000001       ,&
+                             0.0000000000000000E+000 /)
+      if (nchemspec==5) &
+        ! H2O
+        tran_data(5,1:7) = (/ 2.0000000000000000        ,572.39999999999998        ,2.6050000000000000        ,&
+                              1.8440000000000001        ,0.0000000000000000E+000   ,4.0000000000000000        ,&
                               0.0000000000000000E+000 /)
-        ! N2
-        tran_data(3,1:7) = (/ 1.0000000000000000        ,97.530000000000001        ,3.6210000000000000        ,&
-                               0.0000000000000000E+000   ,1.7600000000000000        ,4.0000000000000000       ,&
-                               0.0000000000000000E+000 /)
-        ! CO
-        tran_data(2,1:7) = (/ 1.0000000000000000        ,98.099999999999994        ,3.6499999999999999        ,&
-                               0.0000000000000000E+000   ,1.9500000000000000        ,1.8000000000000000       ,&
-                               0.0000000000000000E+000 /)
-        ! CO2
-        tran_data(1,1:7) = (/ 1.0000000000000000        ,244.00000000000000        ,3.7629999999999999        ,&
-                               0.0000000000000000E+000   ,2.6499999999999999        ,2.1000000000000001       ,&
-                               0.0000000000000000E+000 /)
-        if (nchemspec==5) then
-          ! H2O
-          tran_data(5,1:7) = (/ 2.0000000000000000        ,572.39999999999998        ,2.6050000000000000        ,&
-                                1.8440000000000001        ,0.0000000000000000E+000   ,4.0000000000000000        ,&
-                                0.0000000000000000E+000 /)
-        endif
 !
-!  Find number of ractions
+!  Find number of reactions
 !
       mreactions = 1
       if (lroot) print*,'Number of reactions=',mreactions
@@ -3774,9 +3766,7 @@ module Chemistry
             if (ChemInpLine(1:9) /= "REACTIONS") then
               StartInd=1; StopInd =0
               StopInd=index(ChemInpLine(StartInd:),'=')+StartInd-1
-              if (StopInd>0 .and. ChemInpLine(1:1) /= '!') then
-                NrOfReactions=NrOfReactions+1
-              endif
+              if (StopInd>0 .and. ChemInpLine(1:1) /= '!') NrOfReactions=NrOfReactions+1
             endif
           endif
         else
@@ -3796,31 +3786,31 @@ module Chemistry
 !
 ! Photochemical case
 !
-               ParanthesisInd=0
-               photochemInd=0
-               SeparatorInd=0
-               photochemInd=index(ChemInpLine(StartInd:),'hv')
+                ParanthesisInd=0
+                photochemInd=0
+                SeparatorInd=0
+                photochemInd=index(ChemInpLine(StartInd:),'hv')
+                if (photochemInd>0) then
+                  photochem_case (k)=.true.
 
-               if (photochemInd>0) then
-                 photochem_case (k)=.true.
+                  ParanthesisInd=index(ChemInpLine(photochemInd:),'(')+photochemInd-1
 
-                 ParanthesisInd=index(ChemInpLine(photochemInd:),'(')+photochemInd-1
+                  if ((ParanthesisInd>0) .and. (photochemInd>0)) then
+                    StopInd=index(ChemInpLine(StartInd:),'lam')
 
-                 if ((ParanthesisInd>0) .and. (photochemInd>0)) then
-                   StopInd=index(ChemInpLine(StartInd:),'lam')
+                    SeparatorInd=index(ChemInpLine(ParanthesisInd:StopInd),'<')
 
-                   SeparatorInd=index(ChemInpLine(ParanthesisInd:StopInd),'<')
-
-                   if (SeparatorInd>0) then
-                     SeparatorInd=SeparatorInd+ParanthesisInd-1
-                     read (unit=ChemInpLine(ParanthesisInd+1:SeparatorInd-1),fmt='(E15.8)') lamb_low
-                   endif
-                   ParanthesisInd=index(ChemInpLine(StopInd:),')') +StopInd-1
-                   SeparatorInd=index(ChemInpLine(StopInd:ParanthesisInd),'<')+StopInd-1
-                   if (SeparatorInd>0) &
-                     read (unit=ChemInpLine(SeparatorInd+1:ParanthesisInd-1),fmt='(E15.8)') lamb_up
-                 endif
-               endif
+                    if (SeparatorInd>0) then
+                      SeparatorInd=SeparatorInd+ParanthesisInd-1
+                      read (unit=ChemInpLine(ParanthesisInd+1:SeparatorInd-1),fmt='(E15.8)') lamb_low
+                    endif
+                    ParanthesisInd=index(ChemInpLine(StopInd:),')') + StopInd-1
+                    SeparatorInd=index(ChemInpLine(StopInd:ParanthesisInd),'<') + StopInd-1
+                     if (SeparatorInd>0) &
+                       read (unit=ChemInpLine(SeparatorInd+1:ParanthesisInd-1),fmt='(E15.8)') lamb_up
+!
+                  endif
+                endif
 !
 ! End of the photochemical case
 !
@@ -3962,10 +3952,10 @@ module Chemistry
                             StopInd_add_=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-1
                             if (find_specie) then
                               call find_species_index(ChemInpLine_add(StartInd_add:StopInd_add),ind_glob, &
-                                  ind_chem,found_specie)
+                                                      ind_chem,found_specie)
                             else
                               if (found_specie) then
-                                read (unit=ChemInpLine_add(StartInd_add:&
+                                read (unit=ChemInpLine_add(StartInd_add: &
                                     StopInd_add),fmt='(E15.8)') a_k4(ind_chem,k)
                               else
                                 print*,'ChemInpLine=',ChemInpLine_add
@@ -4170,8 +4160,7 @@ module Chemistry
           enddo
           do k = 1,nchemspec
             if (abs(Sijm(k,reac)) == 1.0) then
-              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))
+              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))
             elseif (abs(Sijm(k,reac)) == 2.0) then
               prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k)) &
@@ -4509,114 +4498,106 @@ module Chemistry
 !
       if (Cp_const < impossible) then
 !
-      do k = 1,nchemspec
-        cp_k(k) = Cp_const/species_constants(k,imass)
-        cv_k(k) = (Cp_const-Rgas)/species_constants(k,imass)
-      enddo
+        do k = 1,nchemspec
+          cp_k(k) = Cp_const/species_constants(k,imass)
+          cv_k(k) = (Cp_const-Rgas)/species_constants(k,imass)
+        enddo
 !
-      if (dir == 1) then
-         allocate (TT_full(ny,nz))
-         allocate (cp_full(ny,nz))
-         allocate (cv_full(ny,nz))
-         if (ltemperature_nolog) then
-           TT_full = f(index,m1:m2,n1:n2,iTT)
-         else
-           TT_full = exp(f(index,m1:m2,n1:n2,ilnTT))
-         endif
-         do k=1,nchemspec
-           if (species_constants(k,imass)>0.) then
-             cp_full = cp_full + cp_k(k)*f(index,m1:m2,n1:n2,ichemspec(k))
-             cv_full = cv_full + cv_k(k)*f(index,m1:m2,n1:n2,ichemspec(k))
-           endif
-         enddo
-         slice = cp_full/cv_full * f(index,m1:m2,n1:n2,iRR)*TT_full
-      elseif (dir == 2) then
-         allocate (TT_full(nx,nz))
-         allocate (cp_full(nx,nz))
-         allocate (cv_full(nx,nz))
-         if (ltemperature_nolog) then
-           TT_full = f(l1:l2,index,n1:n2,iTT)
-         else
-           TT_full = exp(f(l1:l2,index,n1:n2,ilnTT))
-         endif
-         do k=1,nchemspec
-           if (species_constants(k,imass)>0.) then
-             cp_full = cp_full + cp_k(k)*f(l1:l2,index,n1:n2,ichemspec(k))
-             cv_full = cv_full + cv_k(k)*f(l1:l2,index,n1:n2,ichemspec(k))
-           endif
-         enddo
-         slice = cp_full/cv_full * f(l1:l2,index,n1:n2,iRR)*TT_full
-      elseif (dir == 3) then
-         allocate (TT_full(nx,ny))
-         allocate (cp_full(nx,ny))
-         allocate (cv_full(nx,ny))
-         if (ltemperature_nolog) then
-           TT_full = f(l1:l2,m1:m2,index,iTT)
-         else
-           TT_full = exp(f(l1:l2,m1:m2,index,ilnTT))
-         endif
-         do k=1,nchemspec
-           if (species_constants(k,imass)>0.) then
-             cp_full = cp_full + cp_k(k)*f(l1:l2,m1:m2,index,ichemspec(k))
-             cv_full = cv_full + cv_k(k)*f(l1:l2,m1:m2,index,ichemspec(k))
-           endif
-         enddo
-         slice = cp_full/cv_full * f(l1:l2,m1:m2,index,iRR)*TT_full
+        if (dir == 1) then
+          allocate (TT_full(ny,nz))
+          allocate (cp_full(ny,nz))
+          allocate (cv_full(ny,nz))
+          if (ltemperature_nolog) then
+            TT_full = f(index,m1:m2,n1:n2,iTT)
+          else
+            TT_full = exp(f(index,m1:m2,n1:n2,ilnTT))
+          endif
+          do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+              cp_full = cp_full + cp_k(k)*f(index,m1:m2,n1:n2,ichemspec(k))
+              cv_full = cv_full + cv_k(k)*f(index,m1:m2,n1:n2,ichemspec(k))
+            endif
+          enddo
+          slice = cp_full/cv_full * f(index,m1:m2,n1:n2,iRR)*TT_full
+        elseif (dir == 2) then
+          allocate (TT_full(nx,nz))
+          allocate (cp_full(nx,nz))
+          allocate (cv_full(nx,nz))
+          if (ltemperature_nolog) then
+            TT_full = f(l1:l2,index,n1:n2,iTT)
+          else
+            TT_full = exp(f(l1:l2,index,n1:n2,ilnTT))
+          endif
+          do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+              cp_full = cp_full + cp_k(k)*f(l1:l2,index,n1:n2,ichemspec(k))
+              cv_full = cv_full + cv_k(k)*f(l1:l2,index,n1:n2,ichemspec(k))
+            endif
+          enddo
+          slice = cp_full/cv_full * f(l1:l2,index,n1:n2,iRR)*TT_full
+        elseif (dir == 3) then
+          allocate (TT_full(nx,ny))
+          allocate (cp_full(nx,ny))
+          allocate (cv_full(nx,ny))
+          if (ltemperature_nolog) then
+            TT_full = f(l1:l2,m1:m2,index,iTT)
+          else
+            TT_full = exp(f(l1:l2,m1:m2,index,ilnTT))
+          endif
+          do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+              cp_full = cp_full + cp_k(k)*f(l1:l2,m1:m2,index,ichemspec(k))
+              cv_full = cv_full + cv_k(k)*f(l1:l2,m1:m2,index,ichemspec(k))
+            endif
+          enddo
+          slice = cp_full/cv_full * f(l1:l2,m1:m2,index,iRR)*TT_full
+        else
+          call fatal_error('get_cs2_slice','no such dir')
+        endif
+!
       else
-         call fatal_error('get_cs2_slice','no such dir')
+!
+        if (dir == 1) then
+          allocate (TT_full(ny,nz))
+          allocate (cp_full(ny,nz))
+          allocate (cv_full(ny,nz))
+          if (ltemperature_nolog) then
+            TT_full = f(index,m1:m2,n1:n2,iTT)
+          else
+            TT_full = exp(f(index,m1:m2,n1:n2,ilnTT))
+          endif
+          cp_full = f(index,m1:m2,n1:n2,icp)
+          cv_full = cp_full - f(index,m1:m2,n1:n2,iRR)
+          slice = cp_full/cv_full * f(index,m1:m2,n1:n2,iRR)*TT_full
+        elseif (dir == 2) then
+          allocate (TT_full(nx,nz))
+          allocate (cp_full(nx,nz))
+          allocate (cv_full(nx,nz))
+          if (ltemperature_nolog) then
+            TT_full = f(l1:l2,index,n1:n2,iTT)
+          else
+            TT_full = exp(f(l1:l2,index,n1:n2,ilnTT))
+          endif
+          cp_full = f(l1:l2,index,n1:n2,icp)
+          cv_full = cp_full - f(l1:l2,index,n1:n2,iRR)
+          slice = cp_full/cv_full * f(l1:l2,index,n1:n2,iRR)*TT_full
+        elseif (dir == 3) then
+          allocate (TT_full(nx,ny))
+          allocate (cp_full(nx,ny))
+          allocate (cv_full(nx,ny))
+          if (ltemperature_nolog) then
+            TT_full = f(l1:l2,m1:m2,index,iTT)
+          else
+            TT_full = exp(f(l1:l2,m1:m2,index,ilnTT))
+          endif
+          cp_full = f(l1:l2,m1:m2,index,icp)
+          cv_full = cp_full - f(l1:l2,m1:m2,index,iRR)
+          slice = cp_full/cv_full * f(l1:l2,m1:m2,index,iRR)*TT_full
+        else
+           call fatal_error('get_cs2_slice','no such dir')
+        endif
+!
       endif
-!
-      deallocate (TT_full)
-      deallocate (cp_full)
-      deallocate (cv_full)
-!
-      else
-!
-      if (dir == 1) then
-         allocate (TT_full(ny,nz))
-         allocate (cp_full(ny,nz))
-         allocate (cv_full(ny,nz))
-         if (ltemperature_nolog) then
-           TT_full = f(index,m1:m2,n1:n2,iTT)
-         else
-           TT_full = exp(f(index,m1:m2,n1:n2,ilnTT))
-         endif
-         cp_full = f(index,m1:m2,n1:n2,icp)
-         cv_full = cp_full - f(index,m1:m2,n1:n2,iRR)
-         slice = cp_full/cv_full * f(index,m1:m2,n1:n2,iRR)*TT_full
-      elseif (dir == 2) then
-         allocate (TT_full(nx,nz))
-         allocate (cp_full(nx,nz))
-         allocate (cv_full(nx,nz))
-         if (ltemperature_nolog) then
-           TT_full = f(l1:l2,index,n1:n2,iTT)
-         else
-           TT_full = exp(f(l1:l2,index,n1:n2,ilnTT))
-         endif
-         cp_full = f(l1:l2,index,n1:n2,icp)
-         cv_full = cp_full - f(l1:l2,index,n1:n2,iRR)
-         slice = cp_full/cv_full * f(l1:l2,index,n1:n2,iRR)*TT_full
-      elseif (dir == 3) then
-         allocate (TT_full(nx,ny))
-         allocate (cp_full(nx,ny))
-         allocate (cv_full(nx,ny))
-         if (ltemperature_nolog) then
-           TT_full = f(l1:l2,m1:m2,index,iTT)
-         else
-           TT_full = exp(f(l1:l2,m1:m2,index,ilnTT))
-         endif
-         cp_full = f(l1:l2,m1:m2,index,icp)
-         cv_full = cp_full - f(l1:l2,m1:m2,index,iRR)
-         slice = cp_full/cv_full * f(l1:l2,m1:m2,index,iRR)*TT_full
-      else
-         call fatal_error('get_cs2_slice','no such dir')
-      endif
-!
-      deallocate (TT_full)
-      deallocate (cp_full)
-      deallocate (cv_full)
-!
-    endif
 !
     endsubroutine get_cs2_slice
 !***********************************************************************
@@ -4645,78 +4626,72 @@ module Chemistry
       real, dimension(nchemspec) ::  cp_k, cv_k
       real, dimension (:,:), allocatable :: cp_full, cv_full
 !
-    if (Cp_const < impossible) then
+      if (Cp_const < impossible) then
 !
-      do k = 1,nchemspec
-        cp_k(k) = Cp_const/species_constants(k,imass)
-        cv_k(k) = (Cp_const-Rgas)/species_constants(k,imass)
-      enddo
+        do k = 1,nchemspec
+          cp_k(k) = Cp_const/species_constants(k,imass)
+          cv_k(k) = (Cp_const-Rgas)/species_constants(k,imass)
+        enddo
 !
-      if (dir == 1) then
-         allocate (cp_full(ny,nz))
-         allocate (cv_full(ny,nz))
-         cp_full = f(index,m1:m2,n1:n2,icp)
-         do k=1,nchemspec
-           if (species_constants(k,imass)>0.) then
-             cv_full = cv_full + cv_k(k)*f(index,m1:m2,n1:n2,ichemspec(k))
-           endif
-         enddo
-        slice = cp_full/cv_full
-      elseif (dir == 2) then
-         allocate (cp_full(nx,nz))
-         allocate (cv_full(nx,nz))
-         cp_full = f(l1:l2,index,n1:n2,icp)
-         do k=1,nchemspec
-           if (species_constants(k,imass)>0.) then
-             cv_full = cv_full + cv_k(k)*f(l1:l2,index,n1:n2,ichemspec(k))
-           endif
-         enddo
-        slice = cp_full/cv_full
-      elseif (dir == 3) then
-         allocate (cp_full(nx,ny))
-         allocate (cv_full(nx,ny))
-         cp_full = f(l1:l2,m1:m2,index,icp)
-         do k=1,nchemspec
-           if (species_constants(k,imass)>0.) then
-             cv_full = cv_full + cv_k(k)*f(l1:l2,m1:m2,index,ichemspec(k))
-           endif
-         enddo
-        slice = cp_full/cv_full
+        if (dir == 1) then
+           allocate (cp_full(ny,nz))
+           allocate (cv_full(ny,nz))
+           cp_full = f(index,m1:m2,n1:n2,icp)
+           do k=1,nchemspec
+             if (species_constants(k,imass)>0.) then
+               cv_full = cv_full + cv_k(k)*f(index,m1:m2,n1:n2,ichemspec(k))
+             endif
+           enddo
+          slice = cp_full/cv_full
+        elseif (dir == 2) then
+           allocate (cp_full(nx,nz))
+           allocate (cv_full(nx,nz))
+           cp_full = f(l1:l2,index,n1:n2,icp)
+           do k=1,nchemspec
+             if (species_constants(k,imass)>0.) then
+               cv_full = cv_full + cv_k(k)*f(l1:l2,index,n1:n2,ichemspec(k))
+             endif
+           enddo
+          slice = cp_full/cv_full
+        elseif (dir == 3) then
+           allocate (cp_full(nx,ny))
+           allocate (cv_full(nx,ny))
+           cp_full = f(l1:l2,m1:m2,index,icp)
+           do k=1,nchemspec
+             if (species_constants(k,imass)>0.) then
+               cv_full = cv_full + cv_k(k)*f(l1:l2,m1:m2,index,ichemspec(k))
+             endif
+           enddo
+          slice = cp_full/cv_full
+        else
+          call fatal_error('get_gamma_slice','no such dir')
+        endif
+!
       else
-        call fatal_error('get_gamma_slice','no such dir')
+!
+        if (dir == 1) then
+           allocate (cp_full(ny,nz))
+           allocate (cv_full(ny,nz))
+           cp_full = f(index,m1:m2,n1:n2,icp)
+           cv_full = cp_full - f(index,m1:m2,n1:n2,iRR)
+           slice = cp_full/cv_full
+        elseif (dir == 2) then
+           allocate (cp_full(nx,nz))
+           allocate (cv_full(nx,nz))
+           cp_full = f(l1:l2,index,n1:n2,icp)
+           cv_full = cp_full - f(l1:l2,index,n1:n2,iRR)
+           slice = cp_full/cv_full
+        elseif (dir == 3) then
+           allocate (cp_full(nx,ny))
+           allocate (cv_full(nx,ny))
+           cp_full = f(l1:l2,m1:m2,index,icp)
+           cv_full = cp_full - f(l1:l2,m1:m2,index,iRR)
+           slice = cp_full/cv_full
+        else
+          call fatal_error('get_gamma_slice','no such dir')
+        endif
+!
       endif
-!
-      deallocate (cp_full)
-      deallocate (cv_full)
-!
-    else
-!
-      if (dir == 1) then
-         allocate (cp_full(ny,nz))
-         allocate (cv_full(ny,nz))
-         cp_full = f(index,m1:m2,n1:n2,icp)
-         cv_full = cp_full - f(index,m1:m2,n1:n2,iRR)
-         slice = cp_full/cv_full
-      elseif (dir == 2) then
-         allocate (cp_full(nx,nz))
-         allocate (cv_full(nx,nz))
-         cp_full = f(l1:l2,index,n1:n2,icp)
-         cv_full = cp_full - f(l1:l2,index,n1:n2,iRR)
-         slice = cp_full/cv_full
-      elseif (dir == 3) then
-         allocate (cp_full(nx,ny))
-         allocate (cv_full(nx,ny))
-         cp_full = f(l1:l2,m1:m2,index,icp)
-         cv_full = cp_full - f(l1:l2,m1:m2,index,iRR)
-         slice = cp_full/cv_full
-      else
-        call fatal_error('get_gamma_slice','no such dir')
-      endif
-!
-      deallocate (cp_full)
-      deallocate (cv_full)
-!
-    endif
 !
     endsubroutine get_gamma_slice
 !***********************************************************************
@@ -4749,7 +4724,7 @@ module Chemistry
       inquire (file='air.dat',exist=airdat)
       inquire (file='air.in',exist=airin)
       if (airdat .and. airin) &
-        call fatal_error('chemistry','air.in and air.dat found. Please decide for one')
+        call fatal_error('chemistry','both air.in and air.dat found. Please decide for one')
 
       if (airdat) open(file_id,file='air.dat')
       if (airin) open(file_id,file='air.in')
@@ -4761,6 +4736,7 @@ module Chemistry
 
         read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine
         if (iostat < 0) exit dataloop
+
         emptyFile=.false.
         StartInd_1=1; StopInd_1=0
         StopInd_1=index(ChemInpLine,' ')
@@ -4768,6 +4744,7 @@ module Chemistry
         tmp_string=trim(ChemInpLine(1:1))
 
         if (tmp_string == '!' .or. tmp_string == ' ') then
+!
         elseif (tmp_string == 'T') then
           StartInd=1; StopInd =0
 
@@ -4814,9 +4791,8 @@ module Chemistry
             read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') YY_k
             if (lroot) print*, ' volume fraction, %,    ', YY_k,species_constants(ind_chem,imass)
 
-            if (species_constants(ind_chem,imass)>0.) then
-             air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
-            endif
+            if (species_constants(ind_chem,imass)>0.) &
+              air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
 
             if (StartInd==80) exit
 
@@ -4847,25 +4823,23 @@ module Chemistry
         initial_massfractions(j)=f(l1,m1,n1,ichemspec(j))
       enddo
 
-      if (mvar < 5) then
-        call fatal_error("air_field", "I can only set existing fields")
-      endif
+      if (mvar < 5) call fatal_error("air_field", "mvar<5 - I can only set existing fields")
 
       if (.not. reinitialize_chemistry) then
-      if (.not.lflame_front .or. .not.lflame_front_2D)  then
-        if (ltemperature_nolog) then
-          f(:,:,:,iTT)=TT
-        else
-          f(:,:,:,ilnTT)=alog(TT)!+f(:,:,:,ilnTT)
+        if (.not.lflame_front .or. .not.lflame_front_2D)  then   !MR: this OK?
+          if (ltemperature_nolog) then
+            f(:,:,:,iTT)=TT
+          else
+            f(:,:,:,ilnTT)=alog(TT)!+f(:,:,:,ilnTT)
+          endif
+          if (ldensity_nolog) then
+            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3
+          else
+            tmp=(PP/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3
+              f(:,:,:,ilnrho)=alog(tmp)
+          endif
+          if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
         endif
-        if (ldensity_nolog) then
-          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3
-        else
-          tmp=(PP/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3
-            f(:,:,:,ilnrho)=alog(tmp)
-        endif
-        if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
-      endif
       endif
 
       if (init_from_file) then
@@ -4896,17 +4870,15 @@ module Chemistry
 
       if (linit_temperature) then
         do i=1,mx
-        if (x(i)<=init_x1) then
-          f(i,:,:,ilnTT)=alog(init_TT1)
-        endif
-        if (x(i)>=init_x2) then
-          f(i,:,:,ilnTT)=alog(init_TT2)
-        endif
+
+        if (x(i)<=init_x1) f(i,:,:,ilnTT)=alog(init_TT1)
+        if (x(i)>=init_x2) f(i,:,:,ilnTT)=alog(init_TT2)
+
         if (x(i)>init_x1 .and. x(i)<init_x2) then
-          if (init_x1 /= init_x2) then
+          if (init_x1 /= init_x2) &
             f(i,:,:,ilnTT) = alog((x(i)-init_x1)/(init_x2-init_x1)*(init_TT2-init_TT1)+init_TT1)
-          endif
         endif
+
         enddo
       endif
 
@@ -5036,8 +5008,7 @@ module Chemistry
         if (species_constants(k,imass)>0.) then
           do j2=mm1,mm2
             do j3=nn1,nn2
-              mu1_full(:,j2,j3) = &
-                  mu1_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))/species_constants(k,imass)
+              mu1_full(:,j2,j3) = mu1_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))/species_constants(k,imass)
             enddo
           enddo
         endif
@@ -5075,7 +5046,7 @@ module Chemistry
       inquire (file='tran.dat',exist=trandat)
       inquire (file='tran.in',exist=tranin)
       if (tranin .and. trandat) &
-        call fatal_error('eos_chemistry','tran.in and tran.dat found. Please decide which one to use')
+        call fatal_error('eos_chemistry','both tran.in and tran.dat found. Please decide for one')
 
       if (tranin) open(file_id,file='tran.in')
       if (trandat) open(file_id,file='tran.dat')
@@ -5106,23 +5077,17 @@ module Chemistry
               StartInd=StartInd+1
             else
               if (VarNumber==1) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  &
-                    tran_data(ind_chem,VarNumber)
+                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)' ) tran_data(ind_chem,VarNumber)
               elseif (VarNumber==2) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
+                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
               elseif (VarNumber==3) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
+                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
               elseif (VarNumber==4) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
+                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
               elseif (VarNumber==5) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
+                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
               elseif (VarNumber==6) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
+                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
               else
                 call fatal_error("read_transport_data","no such VarNumber")
               endif
@@ -5138,7 +5103,7 @@ module Chemistry
 !
 ! Stop if tran.dat is empty
 !
-1000  if (emptyFile)  call fatal_error('read_transport_data','input file tran.dat was empty')
+1000  if (emptyFile)  call fatal_error('read_transport_data','input file tran.dat is empty')
 !
       if (lroot) print*, 'the following species are found in tran.dat: end of the list:'
 !
@@ -5187,6 +5152,7 @@ module Chemistry
       logical :: lsN2
 !
       call find_species_index('N2', isN2, ichemsN2, lsN2 )
+
       sum_Y=0.0 !; sum_Y2=0.0
       do k=1,nchemspec
         if (k/=ichemsN2) then
