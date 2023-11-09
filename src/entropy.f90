@@ -3305,7 +3305,7 @@ module Energy
               if (.not.allproc_print) lproc_print=.false.
             endif
             if (ip<6) print*, 'p%fpres =',p%fpres
-            call fatal_error_local('denergy_dt','')
+            call fatal_error('denergy_dt','',FORCE=.true.)
           endif
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
 !
@@ -3764,7 +3764,7 @@ module Energy
 !  Radiative flux.
 !
 ! from calc_heatcond
-        if (hcond0/=0.) then 
+        if (hcond0/=0.) then
           if (idiag_fradz_Kprof/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
           if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
         endif
@@ -3845,7 +3845,7 @@ module Energy
         if (idiag_fturbrsphmphi/=0) call phisum_mn_name_rz(-chi_t1*p%rho*(gss0(:,1)*p%evr(:,1)+ &
                                     gss0(:,2)*p%evr(:,2)+gss0(:,3)*p%evr(:,3)),idiag_fturbrsphmphi)
 ! from calc_heatcond
-        if (hcond0/=0.) then 
+        if (hcond0/=0.) then
           if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
           if (idiag_fradymxy_Kprof/=0) call zsum_mn_name_xy(p%glnTT,idiag_fradymxy_Kprof,(/0,1,0/),-hcond*p%TT)
         endif
