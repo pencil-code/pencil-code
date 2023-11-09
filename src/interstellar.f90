@@ -204,7 +204,7 @@ module Interstellar
 !  fred: max rho intended to avoid explosion sites that are difficult to
 !  resolve, but can lead to persistent high density structures that cannot be
 !  destroyed by SN, so may be better to allow unrestricted
-  real, parameter :: TT_SN_min_cgs=1., TT_SN_max_cgs=1E8
+  real, parameter :: TT_SN_min_cgs=1., TT_SN_max_cgs=5E6
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
   real :: SN_rho_ratio=1e4, SN_TT_ratio=1.0e1
@@ -3414,7 +3414,7 @@ module Interstellar
       real :: ekintot_new, ambient_mass
       real :: Nsol_ratio, Nsol_ratio_best, radius_min, radius_max, sol_mass_tot
       real :: uu_sedov, rad_hot, rho_hot, rho_max
-      real :: radius2, SNvol, radius2mass
+      real :: radius2, radius3, SNvol, radius2mass
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
       real, dimension(nx,3) :: deltauu=0., deltafcr=0.
@@ -3623,6 +3623,7 @@ module Interstellar
 !  Validate the explosion.
 !
       radius2=energy_Nsigma2*SNR%feat%radius**2
+      radius3=2.25*energy_Nsigma2*SNR%feat%radius**2
       radius2mass=SNR%feat%radius**2
       site_mass=0.0
       maxlnTT=-10.0
@@ -3673,9 +3674,9 @@ module Interstellar
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
           maskedlnTT=lnTT
-          where (dr2_SN>radius2) maskedlnTT=-10.0
+          where (dr2_SN>radius3) maskedlnTT=-10.0
           maxTT=maxval(exp(maskedlnTT))
-          if (SNR%feat%radius<=1.1*rfactor_SN*SNR%feat%dr) then
+          if (SNR%feat%radius<=1.01*rfactor_SN*SNR%feat%dr) then
             !dense remnant
             if (maxTT>TT_SN_max) then
               if (present(ierr)) then
@@ -4728,4 +4729,24 @@ module Interstellar
 !
     endsubroutine set_next_OB
 !*****************************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+
+    integer, parameter :: n_pars=7
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(GammaUV,p_par(1))
+    call copy_addr(cUV,p_par(2))
+    call copy_addr(T0UV,p_par(3))
+    call copy_addr(ncool,p_par(4))
+!
+! Only a problem should nx < ncool (profile not scalar as above)
+!
+    call copy_addr(lncoolT,p_par(5))  ! (nx)
+    call copy_addr(lncoolH,p_par(6))  ! (nx)
+    call copy_addr(coolB,p_par(7))  ! (nx)
+
+    endsubroutine pushpars2c
+!*******************************************************************
  endmodule Interstellar
