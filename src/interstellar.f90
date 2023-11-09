@@ -4728,25 +4728,25 @@ module Interstellar
           "(1x,'set_next_OB: Next OB at time =',e10.3)",t_cluster
 !
     endsubroutine set_next_OB
-!*****************************************************************************
-    subroutine pushpars2c(p_par)
-
-    use Syscalls, only: copy_addr
-
-    integer, parameter :: n_pars=7
-    integer(KIND=ikind8), dimension(n_pars) :: p_par
-
-    call copy_addr(GammaUV,p_par(1))
-    call copy_addr(cUV,p_par(2))
-    call copy_addr(T0UV,p_par(3))
-    call copy_addr(ncool,p_par(4))
+!!*****************************************************************************
+!    subroutine pushpars2c(p_par)
 !
-! Only a problem should nx < ncool (profile not scalar as above)
+!    use Syscalls, only: copy_addr
 !
-    call copy_addr(lncoolT,p_par(5))  ! (nx)
-    call copy_addr(lncoolH,p_par(6))  ! (nx)
-    call copy_addr(coolB,p_par(7))  ! (nx)
-
-    endsubroutine pushpars2c
+!    integer, parameter :: n_pars=7
+!    integer(KIND=ikind8), dimension(n_pars) :: p_par
+!
+!    call copy_addr(GammaUV,p_par(1))
+!    call copy_addr(cUV,p_par(2))
+!    call copy_addr(T0UV,p_par(3))
+!    call copy_addr(ncool,p_par(4))
+!!
+!! Only a problem should nx < ncool (profile not scalar as above)
+!!
+!    call copy_addr(lncoolT,p_par(5))  ! (nx)
+!    call copy_addr(lncoolH,p_par(6))  ! (nx)
+!    call copy_addr(coolB,p_par(7))  ! (nx)
+!
+!    endsubroutine pushpars2c
 !*******************************************************************
  endmodule Interstellar
