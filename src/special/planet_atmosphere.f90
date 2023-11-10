@@ -135,7 +135,6 @@ module Special
               call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
               rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref/3.5) / rho2kg_m3  !  in code unit
               dp = -rhoeq_tmp * g0/xglobal(i+nghost)**2 * dx/nsub * pp2Pa  ! in [Pa]
-              p_tmp = min(peqtop,p_tmp+dp)  !  in [Pa]
               if (p_tmp<0.) call fatal_error('init_special', &
                   'failed to compute initial state, probably because of too low Nx')
             enddo
@@ -373,6 +372,20 @@ module Special
 !
       deallocate(temp_ref,p_temp_ref)
 !
+!  for debug purpose, output Teq at day- and night-points
+!
+      if (lroot) then
+        open(1,file=trim(datadir)//'/Teq_night.dat',position='append')
+        write(1,*) Teq_night
+        write(1,*) logp_ref
+        close(1)
+!
+        open(1,file=trim(datadir)//'/Teq_day.dat',position='append')
+        write(1,*) Teq_night+dTeq
+        write(1,*) logp_ref
+        close(1)
+      endif
+!
     endsubroutine  prepare_Tref_and_tau
 !***********************************************************************
     subroutine get_mu_ss(mu_ss,lonss,latss)
@@ -385,8 +398,12 @@ module Special
 !
 !  28-sep-23/xianyu,hongzhe: coded
 !
+      use General, only: itoa
+!
       real, dimension(my,mz), intent(out) :: mu_ss
       real, intent (in) :: lonss, latss
+      integer :: j,k
+      character (len=1) :: chproc
 !
       real, PARAMETER :: deg2rad=pi/180.
 !
@@ -395,6 +412,17 @@ module Special
               spread(sin(lon),1,my)*spread(cos(lat),2,mz) &
              * sin(lonss*deg2rad) * cos(latss*deg2rad) + &
               spread(sin(lat),2,mz)*sin(latss*deg2rad)
+!
+!  debug
+!
+      chproc=itoa(iproc)
+      open(1,file=trim(datadir)//'/mu_proc'//chproc//'.dat',position='append')
+      do j=m1,m2
+      do k=n1,n2
+        write(1,*) y(j),z(k),mu_ss(j,k)
+      enddo
+      enddo
+      close(1)      
 !
     endsubroutine  get_mu_ss
 !***********************************************************************
