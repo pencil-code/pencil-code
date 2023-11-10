@@ -53,7 +53,7 @@ module Special
   real :: peqtop=1.d2, peqbot=1.d6        ! unit: [Pa]
   real :: tauradtop=1.d4, tauradbot=1.d7  ! unit: [s]
   real :: pradtop=1.d3, pradbot=1.d6      ! unit: [Pa]
-  real :: pbot0=1e7                       ! unit: [Pa]
+  real :: pbot0=1.e7                       ! unit: [Pa]
   !
   logical :: linit_equilibrium=.false.
 !
@@ -65,7 +65,7 @@ module Special
 !
 !
   namelist /special_init_pars/ &
-      R_planet,rho_ref,cs_ref,cp_ref,T_ref,&
+      R_planet,rho_ref,cs_ref,cp_ref,T_ref,pbot0,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium
 !
