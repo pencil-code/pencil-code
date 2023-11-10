@@ -52,7 +52,8 @@ module Special
   real :: dTeqbot=0., dTeqtop=100.        ! unit: [K]
   real :: peqtop=1.d2, peqbot=1.d6        ! unit: [Pa]
   real :: tauradtop=1.d4, tauradbot=1.d7  ! unit: [s]
-  real :: pradtop=1.d3, pradbot=1.d6      ! unit:[ Pa]
+  real :: pradtop=1.d3, pradbot=1.d6      ! unit: [Pa]
+  real :: pbot0=1e7                       ! unit: [Pa]
   !
   logical :: linit_equilibrium=.false.
 !
@@ -129,7 +130,7 @@ module Special
         call get_mu_ss(mu_ss,lon_ss,lat_ss)
         do j=1,my
         do k=1,mz
-          p_tmp = peqbot  !  in [Pa]
+          p_tmp = pbot0  !  in [Pa]
           do i=1,(ipx+1)*nx
             do isub=1,nsub  !  use small length step, dx/nsub
               call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
