@@ -417,14 +417,14 @@ module Special
 !
 !  debug
 !
-      chproc=itoa(iproc)
-      open(1,file=trim(datadir)//'/mu_proc'//chproc//'.dat',position='append')
-      do j=m1,m2
-      do k=n1,n2
-        write(1,*) y(j),z(k),mu_ss(j,k)
-      enddo
-      enddo
-      close(1)      
+!      chproc=itoa(iproc)
+!      open(1,file=trim(datadir)//'/mu_proc'//chproc//'.dat',position='append')
+!      do j=m1,m2
+!      do k=n1,n2
+!        write(1,*) y(j),z(k),mu_ss(j,k)
+!      enddo
+!      enddo
+!      close(1)      
 !
     endsubroutine  get_mu_ss
 !***********************************************************************
