@@ -2408,7 +2408,7 @@ module Energy
 !  Normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3).
 !
         rho=real((n_c+n_w+n_i+n_h)*rhoscale)
-        call putrho(f(:,m,n,irho),rho)
+        call putrho(f(:,m,n,ilnrho),rho)
 !
 !  Define entropy via pressure, assuming fixed T for each component.
 !
@@ -2484,7 +2484,7 @@ module Energy
       do m=m1,m2
 
         rho=rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
-        call putrho(f(:,m,n,irho),rho)
+        call putrho(f(:,m,n,ilnrho),rho)
 
         if (lentropy) then
 !  Isothermal
@@ -2531,7 +2531,7 @@ module Energy
       do m=m1,m2
 !
         rho=rho0hs*exp(1 - sqrt(1 + (z(n)/H0hs)**2))
-        call putrho(f(:,m,n,irho),rho)
+        call putrho(f(:,m,n,ilnrho),rho)
 !
         if (lentropy) then
 !
