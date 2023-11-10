@@ -136,6 +136,7 @@ module Special
               call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
               rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref/3.5) / rho2kg_m3  !  in code unit
               dp = -rhoeq_tmp * g0/xglobal(i+nghost)**2 * dx/nsub * pp2Pa  ! in [Pa]
+              p_tmp = p_tmp+dp
               if (p_tmp<0.) call fatal_error('init_special', &
                   'failed to compute initial state, probably because of too low Nx')
             enddo
