@@ -19,6 +19,9 @@ module Diagnostics
   public :: prep_finalize_thread_diagnos
   public :: diagnostic, initialize_time_integrals, get_average_density
   public :: xyaverages_z, xzaverages_y, yzaverages_x
+  public :: diagnostics_init_reduc_pointers
+  public :: diagnostics_diag_reductions
+  public :: diagnostics_read_diag_accum
   public :: phizaverages_r, yaverages_xz, zaverages_xy
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
@@ -94,7 +97,9 @@ module Diagnostics
   private
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
-  real, dimension (nrcyl) :: phiavg_norm
+  real, pointer, dimension (:) :: p_phiavg_norm
+  real, target, dimension (nrcyl) :: phiavg_norm
+  !$omp threadprivate(phiavg_norm)
   real :: dVol_rel1
 
   character (len=intlen) :: ch1davg, ch2davg
@@ -875,7 +880,7 @@ module Diagnostics
 !
     endsubroutine initialize_time_integrals
 !***********************************************************************
-    subroutine xyaverages_z
+    subroutine xyaverages_z(fnamez,ncountsz)
 !
 !  Calculate xy-averages (still depending on z)
 !  NOTE: these averages depend on z, so after summation in x and y they
@@ -893,6 +898,8 @@ module Diagnostics
 !
       real, dimension(nz,nprocz,nnamez) :: fsumz
       integer, dimension(nz) :: nsum, ncount
+      integer, dimension(:,:) :: ncountsz
+      real, dimension(:,:,:) :: fnamez
       integer :: idiag
 !
       if (nnamez>0) then
@@ -931,13 +938,14 @@ module Diagnostics
 !
     endsubroutine xyaverages_z
 !***********************************************************************
-    subroutine xzaverages_y
+    subroutine xzaverages_y(fnamey)
 !
 !  Calculate xz-averages (still depending on y).
 !
 !  12-oct-05/anders: adapted from xyaverages_z
 !
       real, dimension (ny,nprocy,nnamey) :: fsumy
+      real, dimension (:,:,:) :: fnamey
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
@@ -949,13 +957,14 @@ module Diagnostics
 !
     endsubroutine xzaverages_y
 !***********************************************************************
-    subroutine yzaverages_x
+    subroutine yzaverages_x(fnamex)
 !
 !  Calculate yz-averages (still depending on x).
 !
 !   2-oct-05/anders: adapted from xyaverages_z
 !
       real, dimension (nx,nprocx,nnamex) :: fsumx
+      real, dimension (:,:,:) :: fnamex
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
@@ -967,7 +976,7 @@ module Diagnostics
 !
     endsubroutine yzaverages_x
 !***********************************************************************
-    subroutine phizaverages_r
+    subroutine phizaverages_r(fnamer)
 !
 !  Calculate phiz-averages (still depending on r).
 !
@@ -976,6 +985,7 @@ module Diagnostics
       real, dimension (nrcyl,nnamer) :: fsumr
       integer :: iname
       real, dimension (nrcyl) :: norm
+      real, dimension (:,:) :: fnamer
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
@@ -993,13 +1003,14 @@ module Diagnostics
 !
     endsubroutine phizaverages_r
 !***********************************************************************
-    subroutine yaverages_xz
+    subroutine yaverages_xz(fnamexz)
 !
 !  Calculate y-averages (still depending on x and z).
 !
 !   7-jun-05/axel: adapted from zaverages_xy
 !
       real, dimension (nx,nz,nnamexz) :: fsumxz
+      real, dimension (:,:,:) :: fnamexz
 !
 !  Communicate over all processors along y beams.
 !  The result is only present on the y-root processors.
@@ -1011,7 +1022,7 @@ module Diagnostics
 !
     endsubroutine yaverages_xz
 !***********************************************************************
-    subroutine zaverages_xy
+    subroutine zaverages_xy(fnamexy)
 !
 !  Calculate z-averages (still depending on x and y).
 !
@@ -1023,6 +1034,7 @@ module Diagnostics
 
       real, dimension(:,:,:), allocatable :: fsumxy
       real :: fac
+      real, dimension(:,:,:) :: fnamexy
 !
       if (nnamexy>0) then
 
@@ -1050,7 +1062,7 @@ module Diagnostics
 !
     endsubroutine zaverages_xy
 !***********************************************************************
-    subroutine phiaverages_rz
+    subroutine phiaverages_rz(fnamerz)
 !
 !  Calculate azimuthal averages (as functions of r_cyl,z).
 !  NOTE: these averages depend on (r and) z, so after summation they
@@ -1062,6 +1074,7 @@ module Diagnostics
       integer :: i
       real, dimension(nrcyl,nz,nprocz,nnamerz) :: fsumrz
       real, dimension(nrcyl) :: norm
+      real, dimension(:,:,:,:) :: fnamerz
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor
@@ -2075,7 +2088,7 @@ module Diagnostics
       type (pencil_case) :: p
       real :: dv
       integer :: iname,i,isum
-      logical, save :: lfirsttime=.true.
+      ! logical, save :: lfirsttime=.true.
 !
       if (iname /= 0) then
 !
@@ -2083,10 +2096,10 @@ module Diagnostics
           rlim=p%rcyl_mn
         elseif (lsphere_in_a_box) then
           rlim=p%r_mn
-        elseif (lfirsttime) then
+        ! elseif (lfirsttime) then
           call warning("sum_lim_mn_name","no reason to call it when "// &
                "not using a cylinder or"//achar(10)//"a sphere embedded in a Cartesian grid")
-          lfirsttime=.false.
+          ! lfirsttime=.false.
         endif
 !
         dv=1.
@@ -2786,9 +2799,21 @@ module Diagnostics
 !  Normalization factor, not depending on n, so only done for n=nfirst.
 !  As we calculate z-averages, multiply by nzgrid when used.
 !
-      if (n==nfirst) phiavg_norm=phiavg_norm+sum(phiavg_profile,2)
+      if (n==nn(1)) phiavg_norm=phiavg_norm+sum(phiavg_profile,2)
 !
     endsubroutine calc_phiavg_profile
+!***********************************************************************
+    subroutine diagnostics_init_reduc_pointers
+      p_phiavg_norm => phiavg_norm
+    endsubroutine diagnostics_init_reduc_pointers
+!***********************************************************************
+    subroutine diagnostics_diag_reductions
+      p_phiavg_norm = p_phiavg_norm + phiavg_norm
+    endsubroutine diagnostics_diag_reductions
+!***********************************************************************
+    subroutine diagnostics_read_diag_accum
+      phiavg_norm = p_phiavg_norm
+    endsubroutine diagnostics_read_diag_accum
 !***********************************************************************
     subroutine phisum_mn_name_rz(a,iname)
 !
@@ -3529,4 +3554,6 @@ module Diagnostics
 
     endsubroutine prep_finalize_thread_diagnos
 !***********************************************************************
+
+
 endmodule Diagnostics

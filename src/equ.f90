@@ -14,11 +14,10 @@ module Equ
 !
   public :: pde, debug_imn_arrays, initialize_pencils
   public :: impose_floors_ceilings, finalize_diagnostics
+  public :: read_diagnostics_accumulators, write_diagnostics
 !
   private
 !
-  logical :: started_finalizing_diagnostics = .false.
-  logical :: ldiagnos_save, l1davgfirst_save, l1dphiavg_save, l2davgfirst_save
 !
   contains
 !***********************************************************************
@@ -333,6 +332,7 @@ module Equ
       if (lgpu) then
         call rhs_gpu(f,itsub,early_finalize)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+          call do_rest_diagnostics_tasks(f)
           call copy_farray_from_GPU(f)
           call calc_all_module_diagnostics(f,p)
         endif
@@ -423,7 +423,11 @@ module Equ
 !
       if (lnscbc) call nscbc_boundtreat(f,df)
 
-      if (lfirst) call finalize_diagnostics
+      if (lfirst) then
+!$      if(num_of_diag_iter_done==nyz .and. .not. lstarted_finalizing_diagnostics) then
+          call finalize_diagnostics
+!$      endif
+      endif
 !
 !  Calculate rhoccm and cc2m (this requires that these are set in print.in).
 !  Broadcast result to other processors. This is needed for calculating PDFs.
@@ -448,8 +452,235 @@ module Equ
       lwrite_prof=.false.
 !
     endsubroutine pde
+!***********************************************************************
+    subroutine read_diagnostic_flags
+    use Chemistry
+    l1davgfirst = l1davgfirst_save 
+    ldiagnos = ldiagnos_save 
+    l1dphiavg = l1dphiavg_save 
+    l2davgfirst = l2davgfirst_save 
+
+    lout = lout_save 
+    l1davg = l1davg_save
+    l2davg = l2davg_save 
+    lout_sound = lout_sound_save
+    lvideo = lvideo_save
+    lwrite_slices = lwrite_slices_save
+
+    lchemistry_diag = lchemistry_diag_save
+    it = it_save
+
+    endsubroutine read_diagnostic_flags
 !****************************************************************************
-    subroutine calc_all_module_diagnostics(f,p)
+    subroutine read_diagnostics_accumulators
+
+    use Chemistry
+    use Diagnostics
+
+    if (allocated(fname))      fname = p_fname
+    if (allocated(fnamex))     fnamex = p_fnamex
+    if (allocated(fnamey))     fnamey = p_fnamey 
+    if (allocated(fnamez))     fnamez = p_fnamez
+    if (allocated(fnamer))     fnamer = p_fnamer
+    if (allocated(fnamexy))    fnamexy = p_fnamexy
+    if (allocated(fnamexz))    fnamexz = p_fnamexz
+    if (allocated(fnamerz))    fnamerz = p_fnamerz
+    if (allocated(fname_keep)) fname_keep = p_fname_keep
+    if (allocated(fname_sound))fname_sound = p_fname_sound
+    if (allocated(ncountsz))   ncountsz = p_ncountsz
+    call read_diagnostic_flags
+    call diagnostics_read_diag_accum
+    call chemistry_read_diag_accum
+
+
+    endsubroutine read_diagnostics_accumulators
+!***********************************************************************
+   subroutine write_diagnostics(f)
+    use Chemistry
+    use Slices
+    use Diagnostics
+    real, dimension (mx,my,mz,mfarray) :: f
+
+            call read_diagnostics_accumulators
+            lstarted_writing_diagnostics = .true.
+        !
+        !  Print diagnostic averages to screen and file.
+        !
+        !task here
+            if (lout) then
+                call prints
+                if (lchemistry_diag) call write_net_reaction
+            endif
+        !
+            if (l1davg) call write_1daverages
+            if (l2davg) call write_2daverages
+        !
+            if (lout_sound) then
+                call write_sound(tsound)
+                lout_sound = .false.
+            endif
+        !
+        !  Write slices (for animation purposes).
+        !
+            if (lvideo .and. lwrite_slices) call wvid(f)
+        !
+            lwritten_diagnostics = .true.
+    endsubroutine write_diagnostics
+!***********************************************************************
+  subroutine write_diagnostics_accumulators
+!$  use OMP_lib
+    integer :: imn
+      if (ldiagnos .and. allocated(fname)) then
+        p_fname = fname
+      endif
+
+      if (l1davgfirst) then
+        if (allocated(fnamex)) p_fnamex =  fnamex
+        if (allocated(fnamey)) p_fnamey =  fnamey
+        if (allocated(fnamez)) p_fnamez =  fnamez
+        if (allocated(fnamer)) p_fnamer =  fnamer
+      endif
+
+      if (l2davgfirst) then
+        if (allocated(fnamexy)) p_fnamexy =  fnamexy
+        if (allocated(fnamexz)) p_fnamexz =  fnamexz
+        if (allocated(fnamerz)) p_fnamerz =  fnamerz
+      endif
+
+      if (allocated(fname_keep)) p_fname_keep =  fname_keep
+      if (allocated(fname_sound)) p_fname_sound =  fname_sound
+      if (allocated(ncountsz)) p_ncountsz =  ncountsz
+    endsubroutine write_diagnostics_accumulators
+!***********************************************************************
+    subroutine do_rest_diagnostics_tasks(f)
+    use Slices
+    use Diagnostics
+    use Chemistry
+    real, dimension (mx,my,mz,mfarray) :: f
+
+       !$omp taskwait
+       !wait for diagnostics
+        do while(num_of_diag_iter_done < nyz)
+        enddo
+        !if not started finalization do itself
+        if(.not. lstarted_finalizing_diagnostics) call finalize_diagnostics
+        !wait for finalization
+        do while(.not. lfinalized_diagnostics)
+        enddo
+        !if not started writing diagnostics do itself
+        if (.not. lstarted_writing_diagnostics) call write_diagnostics(f)
+        !wait for writing
+        do while(.not. lwritten_diagnostics)
+        enddo
+    endsubroutine do_rest_diagnostics_tasks
+!***********************************************************************
+    subroutine init_reduc_pointers
+!
+!  Initializes pointers used in diagnostics_reductions
+!
+!  30-mar-23/TP: Coded
+!  
+      use Diagnostics
+
+      if (allocated(fname))      p_fname => fname
+      if (allocated(fname_keep)) p_fname_keep => fname_keep
+      if (allocated(fnamer))     p_fnamer => fnamer
+      if (allocated(fname_sound))p_fname_sound => fname_sound
+      if (allocated(fnamex))     p_fnamex => fnamex
+      if (allocated(fnamey))     p_fnamey => fnamey
+      if (allocated(fnamez))     p_fnamez => fnamez
+      if (allocated(fnamexy))    p_fnamexy => fnamexy
+      if (allocated(fnamexz))    p_fnamexz => fnamexz
+      if (allocated(fnamerz))    p_fnamerz => fnamerz
+      if (allocated(ncountsz))   p_ncountsz => ncountsz
+      call diagnostics_init_reduc_pointers
+ 
+    endsubroutine init_reduc_pointers
+!***********************************************************************
+   subroutine init_diagnostics_accumulators 
+!    
+!  Need to initialize accumulators since master thread does not take part in diagnostics
+!
+!  25-aug-23/TP: Coded
+!
+    use Chemistry
+    if (allocated(fname))      p_fname = 0.
+    if (allocated(fnamex))     p_fnamex = 0.
+    if (allocated(fnamey))     p_fnamey = 0.
+    if (allocated(fnamez))     p_fnamez = 0.
+    if (allocated(fnamer))     p_fnamer = 0.
+    if (allocated(fnamexy))    p_fnamexy = 0.
+    if (allocated(fnamexz))    p_fnamexz = 0.
+    if (allocated(fnamerz))    p_fnamerz = 0.
+    if (allocated(fname_keep)) p_fname_keep = 0.
+    if (allocated(fname_sound))p_fname_sound= 0.
+    if (allocated(ncountsz))   p_ncountsz= 0
+
+    num_of_diag_iter_done = 0
+    lstarted_finalizing_diagnostics = .false.
+    lfinalized_diagnostics = .false.
+    lstarted_writing_diagnostics = .false.
+    lwritten_diagnostics = .false.
+
+    l1davgfirst_save = l1davgfirst
+    ldiagnos_save = ldiagnos
+    l1dphiavg_save = l1dphiavg
+    l2davgfirst_save = l2davgfirst
+
+    lout_save = lout
+    l1davg_save = l1davg
+    l2davg_save = l2davg
+    lout_sound_save = lout_sound
+    lvideo_save = lvideo
+    lwrite_slices_save = lwrite_slices
+    lchemistry_diag_save = lchemistry_diag
+    it_save = it
+
+    endsubroutine init_diagnostics_accumulators
+!***********************************************************************
+    subroutine diagnostics_reductions
+!
+!  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
+!
+!  30-mar-23/TP: Coded
+!
+
+!$  use OMP_lib
+    use Diagnostics
+    integer :: imn
+      if (ldiagnos .and. allocated(fname)) then
+        do imn=1,size(fname)
+          if (any(inds_max_diags == imn) .and. fname(imn) /= 0.) then
+            p_fname(imn) = max(p_fname(imn),fname(imn))
+          else if (any(inds_sum_diags == imn)) then
+            p_fname(imn) = p_fname(imn) + fname(imn)
+          endif
+        enddo
+      endif
+
+      if (l1davgfirst) then
+        if (allocated(fnamex)) p_fnamex = p_fnamex + fnamex
+        if (allocated(fnamey)) p_fnamey = p_fnamey + fnamey
+        if (allocated(fnamez)) p_fnamez = p_fnamez + fnamez
+        if (allocated(fnamer)) p_fnamer = p_fnamer + fnamer
+      endif
+
+      if (l2davgfirst) then
+        if (allocated(fnamexy)) p_fnamexy = p_fnamexy + fnamexy
+        if (allocated(fnamexz)) p_fnamexz = p_fnamexz + fnamexz
+        if (allocated(fnamerz)) p_fnamerz = p_fnamerz + fnamerz
+      endif
+
+      if (allocated(fname_keep)) p_fname_keep = p_fname_keep + fname_keep
+      if (allocated(fname_sound)) p_fname_sound = p_fname_sound + fname_sound
+      if (allocated(ncountsz)) p_ncountsz = p_ncountsz + ncountsz
+
+      call diagnostics_diag_reductions
+
+
+    endsubroutine diagnostics_reductions
+!***********************************************************************
+    subroutine all_module_diags_slice(istart,iend,f,p)
 !
 !  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
 !
@@ -485,7 +716,7 @@ module Equ
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
 
-      integer :: imn
+      integer :: imn,istart,iend
 !
 !  This is the beginning of the famous mn-loop!
 !  Here, m and n don't start with m1 and n1, as one would naively expect,
@@ -496,7 +727,7 @@ module Equ
 !  has finished.
 !
       lfirstpoint=.true.
-      do imn=1,nyz
+      do imn=istart,iend
 
         n=nn(imn)
         m=mm(imn)
@@ -541,9 +772,61 @@ module Equ
         lfirstpoint=.false.
 
       enddo
+!$omp critical
+!$   call prep_finalize_thread_diagnos
+!$   if(omp_get_thread_num() /= 0) call diagnostics_reductions
+      num_of_diag_iter_done = num_of_diag_iter_done + ((iend-istart)+1)
+!$omp end critical
 
-    endsubroutine calc_all_module_diagnostics
+    endsubroutine all_module_diags_slice
 !*****************************************************************************
+    subroutine all_module_diags_threaded(f,p)
+!
+!
+!
+!$    use OMP_lib
+
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      type (pencil_case)                ,intent(INOUT) :: p
+
+      integer :: istart,iend,nper_thread,num_of_threads_to_use,i
+!
+        num_of_threads_to_use = 1
+!TP: for now we are using all but one thread to do the diagnostics
+!$      num_of_threads_to_use  = max(omp_get_num_procs()-1,1)
+        call init_diagnostics_accumulators
+        nper_thread = (nyz/num_of_threads_to_use)+1
+        iend = 0
+        do i=1,num_of_threads_to_use
+          istart = iend+1
+          iend = iend + nper_thread
+!$omp task
+          call all_module_diags_slice(istart,min(iend,nyz),f,p)
+!$omp end task
+        enddo
+    endsubroutine all_module_diags_threaded
+!*****************************************************************************
+    subroutine calc_all_module_diagnostics(f,p)
+!
+!  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
+!
+!  10-sep-2019/MR: coded
+!
+!$    use OMP_lib
+
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      type (pencil_case)                ,intent(INOUT) :: p
+
+      integer :: imn
+!
+!$  if(omp_in_parallel()) then
+!$      call init_reduc_pointers
+!$      call all_module_diags_threaded(f,p)
+!$  else
+        call all_module_diags_slice(1,nyz,f,p)
+!$  endif
+    endsubroutine calc_all_module_diagnostics
+!****************************************************************************
     subroutine finalize_diagnostics
 !
 !  Finalizes all module diagnostics by MPI communication.
@@ -554,18 +837,18 @@ module Equ
       use Hydro
       use Magnetic
       use Pscalar
+!$    use OMP_lib
 
 !  Set that the master thread knows we have started the finalization
 !
-!$    started_finalizing_diagnostics = .true.
+!$    lstarted_finalizing_diagnostics = .true.
 !
 !  Restore options that were used when calc_all_module_diagnostics was called
 !
-!$    l1davgfirst = l1davgfirst_save
-!$    ldiagnos = ldiagnos_save
-!$    l1dphiavg = l1dphiavg_save
-!$    l2davgfirst = l2davgfirst_save
-
+!$   call read_diagnostics_accumulators
+!
+!TP: best would be to to pass p_fname vars as input but there are simply too
+!many calls because of the calc_mfield etc.
 !  0-D Diagnostics.
 !
       if (lout) then
@@ -576,25 +859,25 @@ module Equ
 !  1-D diagnostics.
 !
       if (l1davg) then
-        if (lwrite_xyaverages) call xyaverages_z
-        if (lwrite_xzaverages) call xzaverages_y
-        if (lwrite_yzaverages) call yzaverages_x
+        if (lwrite_xyaverages) call xyaverages_z(fnamez,ncountsz)
+        if (lwrite_xzaverages) call xzaverages_y(fnamey)
+        if (lwrite_yzaverages) call yzaverages_x(fnamex)
       endif
-      if (lcylinder_in_a_box.and.l1davg) call phizaverages_r
+      if (lcylinder_in_a_box.and.l1davg) call phizaverages_r(fnamer)
 !
 !  2-D averages.
 !
       if (l2davg) then
-        if (lwrite_yaverages)   call yaverages_xz
-        if (lwrite_zaverages)   call zaverages_xy
-        if (lwrite_phiaverages) call phiaverages_rz
+        if (lwrite_yaverages)   call yaverages_xz(fnamexz)
+        if (lwrite_zaverages)   call zaverages_xy(fnamexy)
+        if (lwrite_phiaverages) call phiaverages_rz(fnamerz)
       endif
 !
 !  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
 !  (of course, yaverages_xz does not need to be calculated for that).
 !
       if (.not.l2davg.and.lout.and.ldiagnos_need_zaverages) then
-        if (lwrite_zaverages) call zaverages_xy
+        if (lwrite_zaverages) call zaverages_xy(fnamexy)
       endif
 !
 !  Calculate mean fields and diagnostics related to mean fields.
@@ -605,6 +888,7 @@ module Equ
         if (lpscalar)  call calc_mpscalar
       endif
 
+!$    call write_diagnostics_accumulators
 !$    lfinalized_diagnostics = .true.
  
     endsubroutine finalize_diagnostics
@@ -770,7 +1054,7 @@ module Equ
       lcommunicate=.not.early_finalize
 
       mn_loop: do imn=1,nyz
-!
+
         n=nn(imn)
         m=mm(imn)
 
@@ -841,6 +1125,7 @@ module Equ
         call duu_dt(f,df,p)
         call dlnrho_dt(f,df,p)
         call denergy_dt(f,df,p)
+        ! call test_rhs(f,df,p,dlnrho_dt,dlnrho_dt_copy)
 !
 !  Magnetic field evolution
 !
@@ -1431,5 +1716,110 @@ module Equ
       endif
 
     endsubroutine set_dt1_max
+!***********************************************************************
+    subroutine test_rhs(f,df,p,rhs_1,rhs_2)
+
+      use Mpicomm
+      use Ascalar
+      use Chiral
+      use Chemistry
+      use Cosmicray
+      use CosmicrayFlux
+      use Density
+      use Diagnostics
+      use Dustvelocity
+      use Dustdensity
+      use Energy
+      use EquationOfState
+      use Forcing, only: calc_diagnostics_forcing
+      use Gravity
+      use Heatflux
+      use Hydro
+      use Lorenz_gauge
+      use Magnetic
+      use NeutralDensity
+      use NeutralVelocity
+      use Particles_main
+      use Pscalar
+      use PointMasses
+      use Polymer
+      use Radiation
+      use Selfgravity
+      use Shear
+      use Solid_Cells, only: dsolid_dt
+      use Special, only: dspecial_dt
+      use Sub, only: sum_mn
+      use Testfield
+      use Testflow
+      use Testscalar
+
+      real, dimension (mx,my,mz,mfarray) :: f,f_copy
+      real, dimension (mx,my,mz,mfarray) :: df,df_copy
+      integer :: i,j,k,n
+      type (pencil_case) :: p,p_copy
+
+      intent(inout) :: f
+      intent(in) :: p
+      intent(inout) :: df
+      logical :: passed
+      interface
+          subroutine rhs_1(f,df,p)
+              import mx
+              import my
+              import mz
+              import mfarray
+              import pencil_case
+              real, dimension (mx,my,mz,mfarray) :: f
+              real, dimension (mx,my,mz,mfarray) :: df
+              type (pencil_case) :: p
+
+              intent(inout) :: f
+              intent(in) :: p
+              intent(inout) :: df
+          endsubroutine rhs_1 
+        endinterface
+        interface
+          subroutine rhs_2(f,df,p)
+              import mx
+              import my
+              import mz
+              import mfarray
+              import pencil_case
+              real, dimension (mx,my,mz,mfarray) :: f
+              real, dimension (mx,my,mz,mfarray) :: df
+              type (pencil_case) :: p
+
+              intent(inout) :: f
+              intent(in) :: p
+              intent(inout) :: df
+          endsubroutine rhs_2 
+      endinterface
+      df_copy = df
+      p_copy = p
+      f_copy = f
+      call rhs_1(f,df,p)
+      call rhs_2(f_copy,df_copy,p_copy)
+      passed = .true.
+      do i=1,mx
+        do j=1,my
+          do k=1,mz
+            do n=1,mfarray
+              if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
+                print*,"Wrong at: ",i,j,k,n
+                print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
+                passed = .false.
+              endif
+            enddo
+          enddo
+        enddo
+      enddo
+      if(passed) then
+        print*,"passed test :)"
+      else
+        print*,"did not pass test :/"
+      endif
+      print*,iux,iuy,iuz,iss,ilnrho
+      call die_gracefully
+    endsubroutine test_rhs
 !***********************************************************************
 endmodule Equ

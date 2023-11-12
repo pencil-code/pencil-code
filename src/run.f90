@@ -58,7 +58,7 @@ program run
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
-  use Equ,             only: debug_imn_arrays,initialize_pencils
+  use Equ,             only: debug_imn_arrays,initialize_pencils,write_diagnostics
   use EquationOfState, only: ioninit
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
@@ -521,6 +521,8 @@ program run
 !
 !  Do loop in time.
 !
+!$omp do firstprivate(p)
+!$omp master
   Time_loop: do while (it<=nt)
 !
     lout = (mod(it-1,it1) == 0) .and. (it > it1start)
@@ -769,9 +771,10 @@ program run
     if (ialive /= 0) then
       if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
     endif
-!
-!$omp task
-!$  lwriting_snapshots = .true.
+
+!TP: TODO: make this a task
+!!$omp task
+!$  lstarted_writing_snapshots = .true.
     if (lparticles) call write_snapshot_particles(f,ENUM=.true.)
     if (lpointmasses) call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
 !
@@ -781,37 +784,18 @@ program run
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
     if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
-!$  lwriting_snapshots = .false.
-!$omp end task
+!$  lwritten_snapshots = .false.
+!!$omp end task
 !
 !   Diagnostic output in concurrent thread.
 !
-!$  if (lfinalized_diagnostics) then
-!$    lwriting_diagnostics = .true.
 !
-!  Print diagnostic averages to screen and file.
-!
+!$  if (lfinalized_diagnostics .and. .not. lstarted_writing_diagnostics) then
 !$omp task
-      if (lout) then
-        call prints
-        if (lchemistry_diag) call write_net_reaction
-      endif
-!
-      if (l1davg) call write_1daverages
-      if (l2davg) call write_2daverages
-!
-      if (lout_sound) then
-        call write_sound(tsound)
-        lout_sound = .false.
-      endif
-!
-!  Write slices (for animation purposes).
-!
-      if (lvideo .and. lwrite_slices) call wvid(f)
+      call write_diagnostics(f)
 !$omp end task
-!
-!$    lwriting_diagnostics = .false.
 !$  endif
+!
 !
 !  Write tracers (for animation purposes).
 !
@@ -898,6 +882,8 @@ program run
     it=it+1
     headt=.false.
   enddo Time_loop
+!$omp end master
+!$omp end parallel
 !
   if (lroot) then
     print*
