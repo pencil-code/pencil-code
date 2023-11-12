@@ -149,4 +149,55 @@ contains
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
+
+    ! subroutine test_rhs(f,df,p,rhs_1,rhs_2)
+    !   real, dimension (mx,my,mz,mfarray) :: f
+    !   real, dimension (mx,my,mz,mfarray) :: df,df_copy
+    !   integer :: i,j,k,n
+    !   type (pencil_case) :: p
+
+    !   intent(in) :: f,p
+    !   intent(inout) :: df
+    !   logical :: passed
+    !   interface
+    !       subroutine rhs_1(f,df,p)
+    !           real, dimension (mx,my,mz,mfarray) :: f
+    !           real, dimension (mx,my,mz,mfarray) :: df
+    !           type (pencil_case) :: p
+
+    !           intent(in) :: f,p
+    !           intent(inout) :: df
+    !       endsubroutine rhs_1 
+    !       subroutine rhs_2(f,df,p)
+    !           real, dimension (mx,my,mz,mfarray) :: f
+    !           real, dimension (mx,my,mz,mfarray) :: df
+    !           type (pencil_case) :: p
+
+    !           intent(in) :: f,p
+    !           intent(inout) :: df
+    !       endsubroutine rhs_2 
+    !   endinterface
+    !   df_copy = df
+    !   call rhs_1(df)
+    !   call rhs_2(df_copy)
+    !   passed = .true.
+    !   do i=1,mx
+    !     do j=1,my
+    !       do k=1,mz
+    !         do n=1,mfarray
+    !           if df_copy(i,j,k,n) /= df(i,j,k,n) then
+    !             print*,"Wrong at: ",i,j,k,n
+    !             passed = .false.
+    !           endif
+    !         enddo
+    !       enddo
+    !     enddo
+    !   enddo
+    !   if(passed) then
+    !     print*,"passed test :)"
+    !   else
+    !     print*,"did not pass test :/"
+    !   endif
+    ! endsubroutine test_rhs
+!**************************************************************************
 endmodule GPU

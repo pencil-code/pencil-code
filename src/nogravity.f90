@@ -56,8 +56,6 @@ module Gravity
       if (lroot) call svn_id( &
           "$Id$")
 !
-      lgravz = .false.
-      lgravr = .false.
 !
     endsubroutine register_gravity
 !***********************************************************************
@@ -69,6 +67,8 @@ module Gravity
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
+      lgravz = .false.
+      lgravr = .false.
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_gravity

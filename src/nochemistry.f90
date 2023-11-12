@@ -27,6 +27,8 @@ module Chemistry
 !
   include 'chemistry.h'
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_chemistry()
@@ -283,5 +285,14 @@ module Chemistry
       call keep_compiler_quiet(f)
 !
     endsubroutine chemspec_normalization_N2
+!***********************************************************************
+    subroutine chemistry_init_reduc_pointers
+    endsubroutine chemistry_init_reduc_pointers
+!***********************************************************************
+    subroutine chemistry_diag_reductions
+    endsubroutine chemistry_diag_reductions 
+!***********************************************************************
+    subroutine chemistry_read_diag_accum
+    endsubroutine chemistry_read_diag_accum
 !***********************************************************************
 endmodule Chemistry

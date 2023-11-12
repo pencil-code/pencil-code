@@ -66,6 +66,10 @@ module General
   public :: qualify_position_bilin, qualify_position_bicub, &
             qualify_position_biquin
   public :: binomial,merge_lists,reallocate
+! 
+! 
+! !Public declaration added by preprocessor
+! _general
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0

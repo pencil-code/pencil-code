@@ -112,6 +112,10 @@ module Special
   integer :: idiag_potturbm=0,idiag_potturb2m=0,idiag_potturbmax=0,idiag_potturbmin=0
   integer :: idiag_gpotturbx2m=0,idiag_gpotturby2m=0,idiag_gpotturbz2m=0
 !
+!Public declaration added by preprocessor
+
+
+
   contains
 
 !***********************************************************************
@@ -852,5 +856,7 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
+
+
 endmodule Special
 

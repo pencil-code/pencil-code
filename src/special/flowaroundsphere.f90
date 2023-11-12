@@ -99,6 +99,8 @@ module Special
 ! Other variables (needs to be consistent with reset list below)
 !
 !
+!Public declaration added by preprocessor
+
   contains
 !
 !***********************************************************************

@@ -74,6 +74,10 @@ module Special
   integer :: idiag_qbetamin=0
   integer :: idiag_qbetamax=0
 !
+!Public declaration added by preprocessor
+
+
+
 contains
 !
 !***********************************************************************
@@ -284,5 +288,7 @@ contains
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
+
+
 endmodule Special
 

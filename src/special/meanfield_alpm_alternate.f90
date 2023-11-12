@@ -62,6 +62,8 @@ module Special
   real, dimension(:), pointer :: etat_y, kf_y
   real, dimension(:), pointer :: etat_z, kf_z
 !
+!Public declaration added by preprocessor
+
   contains
 !
 !***********************************************************************

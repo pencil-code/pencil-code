@@ -29,6 +29,8 @@ module Viscosity
   logical :: lvisc_first=.false.
   integer :: pushpars2c        ! should be procedure pointer (F2003)
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_viscosity()

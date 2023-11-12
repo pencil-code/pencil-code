@@ -168,6 +168,8 @@ module Hydro
   real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer, interp_buffer
   real, dimension(:,:,:), allocatable :: smooth_factor
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -621,6 +623,21 @@ module Hydro
       endif
 !
     endsubroutine pencil_interdep_hydro
+  
+!***********************************************************************
+    logical function get_lupdate_aux
+      get_lupdate_aux = .true.
+      select case (kinematic_flow)
+        case ('from-snap','from-foreign-snap')
+          get_lupdate_aux = .false.
+        case('from_aux')
+          get_lupdate_aux = .false.
+        case('spher-harm-poloidal')
+          get_lupdate_aux = .false.
+        case('spher-harm-poloidal-per')
+          get_lupdate_aux = .false.
+      end select 
+    endsubroutine get_lupdate_aux
 !***********************************************************************
     subroutine calc_pencils_hydro_std(f,p)
 !
@@ -673,7 +690,7 @@ module Hydro
 !      real :: random_r_pt, random_p_pt
       real :: fac, fac2, argy, argz, cxt, cyt, czt, omt, del
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
-      real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
+      real :: sqrt2, sqrt21k1, eps1, WW, k21
       real :: Balpha, ABC_A1, ABC_B1, ABC_C1
       real :: coef_mu, coef_eta2, coef_aa, coef_bb
       real :: ro
@@ -685,8 +702,8 @@ module Hydro
 !  Choose from a list of different flow profiles.
 !  Begin with a
 !
-      lupdate_aux=.true.
 !
+      eps1=1.
       select case (kinematic_flow)
 !
 !constant flow in the x direction.
@@ -2458,7 +2475,6 @@ module Hydro
         else
           call inevitably_fatal_error('hydro_kinematic', '"from-[foreign-]snap" requires lkinflow_as_aux=T')
         endif
-        lupdate_aux=.false.
 !
       case ('Jouve-2008-benchmark-noav')
         if (lpenc_loc(i_uu)) then
@@ -2483,13 +2499,10 @@ module Hydro
 !
       case('from_aux')
         if (lpenc_loc(i_uu)) p%uu=ampl_kinflow*f(l1:l2,m,n,iux:iuz)
-        lupdate_aux=.false.
       case('spher-harm-poloidal')
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
-        lupdate_aux=.false.
       case('spher-harm-poloidal-per')
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)*cos(omega_kinflow*t)
-        lupdate_aux=.false.
       case('sound3D')
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
       case default
@@ -2687,7 +2700,7 @@ module Hydro
 !  know we are?
 !  Changed lkinflow_as_aux -> (lkinflow_as_aux.or.lkinflow_as_comaux)
 !
-     if (lpencil(i_uu).and.lkinflow_as_aux.and.(lupdate_aux.or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
+     if (lpencil(i_uu).and.lkinflow_as_aux.and.(get_lupdate_aux().or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
      !if (lpencil(i_uu).and.(lkinflow_as_aux.or.lkinflow_as_comaux).and. &
      !    (lupdate_aux.or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
      if (.not.lpencil_check_at_work) lfirst_aux=.false.

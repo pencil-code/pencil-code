@@ -1326,9 +1326,9 @@ module Dustdensity
       real, dimension (nx,3) :: tmp_pencil_3
       real, dimension (ndustspec) :: ttt, ff_tmp
       real, dimension (nx,ndustspec) :: Nd_rho, CoagS
-      real :: aa0= 6.107799961, aa1= 4.436518521e-1
-      real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
-      real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
+      real, parameter :: aa0= 6.107799961, aa1= 4.436518521e-1
+      real, parameter :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
+      real, parameter :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
       integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
@@ -2607,12 +2607,14 @@ module Dustdensity
       real, dimension (nx) :: TT,Kn, cor_factor, D_coeff, Di, Dk, Dik, KBC, vmean_i, vmean_k
       real, dimension (nx) :: vmean_ik, gamma_i, gamma_k, omega_i, omega_k, sigma_ik
 !
-      real :: deltavd,deltavd_drift=0,deltavd_therm=0
-      real :: deltavd_turbu=0, fact
-      real :: deltavd_drift2=0, deltavd_drift2a=0, deltavd_drift2b=0
-      real :: ust,tl01,teta1,mu_air,rho_air, kB=1.38e-16, Rik 
+      real :: deltavd,deltavd_therm
+      real :: deltavd_turbu, fact
+      real :: deltavd_drift2, deltavd_drift2a, deltavd_drift2b
+      real :: ust,tl01,teta1,mu_air,rho_air, Rik 
+      real, parameter :: kB=1.38e-16
       integer :: i,j,l,k
 !
+      deltavd_turbu = 0.
       if (ldustcoagulation) then
 !
 !  As a test, can set kernel to a constant 
@@ -2683,7 +2685,6 @@ module Dustdensity
                   call dot2(f(3+l,m,n,iudx(j):iudz(j))- &
                             f(3+l,m,n,iudx(i):iudz(i)),deltavd_drift2)
                 endif
-                deltavd_drift = sqrt(deltavd_drift2)
 !
 !  Relative thermal speed is only important for very light particles
 !  urms^2 = 8*kB*T/(pi*m_red)
@@ -2715,7 +2716,7 @@ module Dustdensity
 !
 !  Add all speed contributions quadratically
 !
-                deltavd = sqrt(deltavd_drift**2+deltavd_therm**2+deltavd_turbu**2+deltavd_imposed**2)
+                deltavd = sqrt(deltavd_drift2+deltavd_therm**2+deltavd_turbu**2+deltavd_imposed**2)
 !
 !  Stick only when relative speed is below sticking speed
 !
@@ -3305,8 +3306,9 @@ module Dustdensity
       real, dimension (nx,ndustspec) ::  ff,dff_dr
       real, dimension (ndustspec) :: dsize_loc
 
-      integer :: k,i1=1,i2=2,i3=3
-      integer :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
+      integer :: k,
+      integer, parameter :: i1=1,i2=2,i3=3
+      integer, parameter :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
       real :: rr1=0.,rr2=0.,rr3=0.
       intent(in) :: ff, dsize_loc
       intent(out) :: dff_dr
@@ -3505,4 +3507,6 @@ module Dustdensity
 !
     endsubroutine initnd_lognormal
 !***********************************************************************
+
+
 endmodule Dustdensity

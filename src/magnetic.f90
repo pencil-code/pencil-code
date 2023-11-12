@@ -1014,11 +1014,12 @@ module Magnetic
 !
   real, dimension(nx) :: eta_total=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.
-  real, dimension(nx,3) :: fres,uxbb,forcing_rhs
+  real, dimension(nx,3) :: fres,,forcing_rhs
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
   real :: eta_shock_jump1=1.0, eta_tdep=0.0, Arms=0.0
   real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kern_jjsmooth
+  !$omp atomic(eta_total)
 !
   real, dimension(nz,nprocz) :: z_allprocs
 !
@@ -1030,6 +1031,10 @@ module Magnetic
   real :: R2,R12
 
   real :: gamma, gamma1, gamma_m1
+
+
+
+!Public declaration added by preprocessor
 
   contains
 !***********************************************************************
@@ -5687,7 +5692,7 @@ module Magnetic
       type(pencil_case) :: p
 
       integer :: isound,lspoint,mspoint,nspoint,j
-      real, dimension (nx,3) :: uxbxb,poynting
+      real, dimension (nx,3) :: uxbxb,poynting,uxbb
 
       if (lpencil(i_uxb)) call cross(p%uu,p%bbb,uxbb)
 !
@@ -10689,4 +10694,6 @@ module Magnetic
 
     endsubroutine pushdiags2c
 !***********************************************************************
+
+
 endmodule Magnetic

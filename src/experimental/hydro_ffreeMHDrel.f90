@@ -63,6 +63,8 @@ module Hydro
 
   real, dimension(nx) :: advec_uu
 
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_hydro

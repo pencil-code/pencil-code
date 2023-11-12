@@ -65,6 +65,8 @@ module Special
   integer :: idiag_drhopmx = 0
   integer :: idiag_drhop2mx = 0
 !
+!Public declaration added by preprocessor
+
   contains
 !****************************************************************************
     subroutine initialize_special(f)

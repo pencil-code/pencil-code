@@ -603,6 +603,10 @@ module Hydro
 !
   real, dimension(:,:), pointer :: reference_state
 !
+
+
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -3892,4 +3896,6 @@ module Hydro
 
     endsubroutine pushdiags2c
 !***********************************************************************
+
+
 endmodule Hydro

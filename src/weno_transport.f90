@@ -19,7 +19,6 @@ module WENO_transport
   public :: weno_transp
 !
   integer, parameter :: nw=3
-  real, allocatable, dimension(:,:) :: f, df    ! Why module variables?
 !
   contains
 !***********************************************************************
@@ -59,6 +58,8 @@ module WENO_transport
       real, dimension(size(fq,1)) :: vsig, dq, fl, fr, tmp
       integer :: i, mx, nghost
       logical :: lref,lref1
+
+      real, allocatable, dimension(:,:) :: f, df    !TP: moved to local ones
 !
 !  Possible to multiply transported variable by another variables, e.g. to
 !  transport the momentum rho*u.
@@ -103,7 +104,7 @@ module WENO_transport
 
       enddo
 !
-      call weno5_1d(fl)
+      call weno5_1d(fl,f)
 !
 !  Time derivative for x-transport.
 !
@@ -135,7 +136,7 @@ module WENO_transport
 
       enddo
 !
-      call weno5_1d(fl)
+      call weno5_1d(fl,f)
 !
 !  Right fluxes.
 !
@@ -155,7 +156,7 @@ module WENO_transport
 
       enddo
 !
-      call weno5_1d(fr)
+      call weno5_1d(fr,f)
 !
 !  Time derivative for y-transport.
 !
@@ -197,13 +198,14 @@ module WENO_transport
 !
     endsubroutine weno5
 !***********************************************************************
-    subroutine weno5_1d(flux)
+    subroutine weno5_1d(flux,f)
 !
 !  Fifth order implementation of WENO scheme (1-D version).
 !
 !  29-dec-09/evghenii: coded
 !
       real, dimension(:), intent(inout) :: flux
+      real, dimension(:,:) :: f
 !
       real, parameter :: WENO_POW = 2
       real, parameter :: WENO_EPS = 1.0e-6
@@ -276,4 +278,6 @@ module WENO_transport
 !
     endsubroutine weno5_1d
 !***********************************************************************
+
+
 endmodule WENO_transport

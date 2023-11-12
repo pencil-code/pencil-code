@@ -36,6 +36,8 @@ module Magnetic
   integer :: iLam=0
   integer, parameter :: idiag_axmz=0, idiag_aymz=0, idiag_bxmz=0, idiag_bymz=0
 
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_magnetic

@@ -108,6 +108,8 @@ module Energy
 !
   real, dimension (nx) :: diffus_chi,diffus_chi3
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_energy

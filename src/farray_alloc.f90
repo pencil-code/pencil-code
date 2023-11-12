@@ -7,6 +7,10 @@
   public :: f,df
   public :: initialize, finalize
 
+
+
+!Public declaration added by preprocessor
+_farray_alloc
   contains
 !******************************************************************************
   subroutine initialize

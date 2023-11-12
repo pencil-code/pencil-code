@@ -50,6 +50,8 @@ module Energy
   real, dimension(:), pointer :: beta_glnrho_scaled
   real :: gamma
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_energy

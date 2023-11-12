@@ -702,14 +702,12 @@ module Deriv
       integer :: j,k
       logical, optional :: ignoredx,upwind
       logical :: igndx,upwnd
-      logical, save :: lfirstcall=.true.
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
-      if (lfirstcall.and.headtt) then
+      if (headtt) then
          call warning('deriv_2nd','der6 not implemented yet -- using 6th order')
-         lfirstcall=.false.
       endif
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
@@ -896,14 +894,12 @@ module Deriv
       integer :: j
       logical, optional :: ignoredx,upwind
       logical :: igndx,upwnd
-      logical, save :: lfirstcall
 !
       intent(in)  :: j, pencil,ignoredx,upwind
       intent(out) :: df6
 !
-      if (lfirstcall.and.headtt) then
+      if (headtt) then
          call warning('deriv_2nd','der6_pencil not implemented yet -- using 6th order')
-         lfirstcall=.false.
       endif
 !
       if (present(ignoredx)) then

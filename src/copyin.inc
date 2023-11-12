@@ -1,8 +1,36 @@
-  use Diagnostics
-  use General
-  use Messages
-!
-    call copyin_cdata
-    call copyin_diagnostics
-    call copyin_messages
-    call copyin_general
+call copyin_viscosity
+call copyin_dustvelocity
+call copyin_borderprofiles
+call copyin_chemistry
+call copyin_hydro
+call copyin_hdf5_io
+call copyin_selfgravity
+call copyin_magnetic
+call copyin_forcing
+call copyin_hydro
+call copyin_energy
+call copyin_dustvelocity
+call copyin_dustdensity
+call copyin_messages
+call copyin_diagnostics
+call copyin_chemistry
+call copyin_energy
+call copyin_sharedvariables
+call copyin_neutralvelocity
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_special
+call copyin_magnetic
+call copyin_chemistry
+call copyin_neutralvelocity

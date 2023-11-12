@@ -487,7 +487,7 @@ module Cdata
   real, dimension(:,:,:)  , allocatable, target :: fnamex, fnamey, fnamez, fnamexy, fnamexz
   real, dimension(:,:,:,:), allocatable, target :: fnamerz
   integer, dimension(:,:) , allocatable :: sound_coords_list
-  integer, dimension(:,:) , allocatable :: ncountsz
+  integer, dimension(:,:) , allocatable, target :: ncountsz
   character (len=fmtlen), allocatable :: cform(:),cformv(:),cform_sound(:), &
                                          cformxy(:),cformxz(:),cformrz(:), &
                                          cformz(:),cformy(:),cformx(:),cformr(:)
@@ -796,19 +796,30 @@ module Cdata
 ! 
 !  Variables for concurrency
 ! 
-  logical :: lwriting_snapshots=.false.
-  logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
-!
-!$ integer :: num_cores = 0
-!$ integer :: num_threads = 0
-!$ logical :: lthread_safe 
+  real, pointer, dimension (:) :: p_fname,p_fname_keep
+  real, pointer, dimension (:,:) :: p_fnamer,p_fname_sound
+  integer, pointer, dimension (:,:) :: p_ncountsz
+  real, pointer, dimension (:,:,:) :: p_fnamex,p_fnamey,p_fnamez,p_fnamexy,p_fnamexz
+  real, pointer, dimension(:,:,:,:) :: p_fnamerz
+  real, pointer, dimension(:) :: p_dt1_max
+  integer, volatile :: num_of_diag_iter_done = nyz
+  logical, volatile :: lstarted_writing_diagnostics=.true., lstarted_finalizing_diagnostics=.true.
+  logical, volatile :: lstarted_writing_snapshots=.true., lwritten_snapshots=.true. 
+  logical, volatile :: lwritten_diagnostics=.true., lfinalized_diagnostics=.true.
+  logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
+  logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save, lwrite_slices_save
+  logical :: lchemistry_diag_save
+  integer :: hot_loop_counter = 0
+  integer :: it_save
 ! 
 ! threadprivate definitions for OpenMP, copyin routine.
 !
-!$ include 'cdata_omp.inc'
+!!$ include 'cdata_omp.inc'
 !***********************************************************************
 !***********************************************************************
 !***       Do not add declarations here - will break the build!      ***
 !***********************************************************************
 !***********************************************************************
+
+
 endmodule Cdata

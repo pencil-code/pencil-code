@@ -128,6 +128,10 @@ module Special
   integer :: idiag_dtgh=0
   integer :: idiag_totKE=0
 !
+!Public declaration added by preprocessor
+
+
+
   contains
 !
 !***********************************************************************
@@ -876,4 +880,6 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
+
+
 endmodule Special

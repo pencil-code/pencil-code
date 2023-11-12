@@ -114,6 +114,10 @@ module Special
 !
    logical :: lsecond_order,lsixth_order
 !
+
+
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_special()
@@ -1066,4 +1070,6 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
+
+
 endmodule Special

@@ -39,4 +39,3 @@
   public :: special_particles_after_dtsub
   
   public :: set_init_parameters
-  public :: copyin_special

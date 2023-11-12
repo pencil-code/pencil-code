@@ -78,6 +78,8 @@ module Special
   integer :: idiag_qq3m=0 ! DIAG_DOC: $\langle \ln T^3 \rangle$
   integer :: idiag_qq4m=0 ! DIAG_DOC: $\langle \ln T^4 \rangle$
 !
+!Public declaration added by preprocessor
+
   contains
 !
 !***********************************************************************

@@ -83,6 +83,8 @@ module Special
   integer :: idiag_etamax=0
   integer :: idiag_etam=0
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_special()

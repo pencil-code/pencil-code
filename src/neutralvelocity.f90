@@ -39,7 +39,6 @@ module NeutralVelocity
   real :: colldrag=0,electron_pressure=1
   real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.
   real :: rnoise_int=impossible,rnoise_ext=impossible
-  real, dimension (nx,3,3) :: unij5
   character (len=labellen),dimension(ninit) :: iviscn=''
 !
   namelist /neutralvelocity_init_pars/ &
@@ -91,6 +90,10 @@ module NeutralVelocity
 ! Auxiliaries
 !
   real, dimension(nx) :: cions_rhon,cneut_rho,diffus_nun
+
+
+
+!Public declaration added by preprocessor
 
   contains
 !***********************************************************************
@@ -425,13 +428,7 @@ module NeutralVelocity
       else
         if (lpencil(i_graddivun)) call del2v_etc(f,iuun,GRADDIV=p%graddivun)
       endif
-!
-! can't do unij5glnrho here, as calc_pencils_neutraldensity is called AFTER
-!
-      if (any(iviscn=='hyper3_nun-const')) then
-         call gij(f,iuun,unij5,5)
-         !call multmv(unij5,p%glnrhon,unij5glnrhon)
-      endif
+
 !
       if (lfirst.and.ldt.and.dimensionality>0) then
 !
@@ -777,7 +774,12 @@ module NeutralVelocity
 
       real, dimension(nx,3) :: fvisc,unij5glnrhon
       real, dimension(nx) :: munrhon1,tmp,diffus_nun3
+      real, dimension (nx,3,3) :: unij5
       integer :: i,j,jj,ju
+
+      if (any(iviscn=='hyper3_nun-const')) then
+         call gij(f,iuun,unij5,5)
+      endif
 !
       fvisc=0.
       diffus_nun=0.
@@ -1042,4 +1044,6 @@ module NeutralVelocity
 !
     endsubroutine rprint_neutralvelocity
 !***********************************************************************
+
+
 endmodule Neutralvelocity

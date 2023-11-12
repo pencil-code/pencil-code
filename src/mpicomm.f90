@@ -192,7 +192,15 @@ module Mpicomm
 
       lmpicomm = .true.
 !
+!$    if(.true.) then
+!$      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,thread_support,mpierr)
+!$      if thread_support<MPI_THREAD_MULTIPLE then
+!$        print*,"asked for multiple. got ",thread_support
+!$        call die_gracefully
+!$      endif
+!$    else
       call MPI_INIT(mpierr)
+!$    endif
 !
 ! Size and rank w.r.t. MPI_COMM_WORLD
 !

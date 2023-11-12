@@ -47,6 +47,8 @@ module Special
   integer :: idiag_uxm_central=0,idiag_tau_w=0
   integer :: ivid_uu_meanx=0, ivid_oo_meanx=0
 !
+!Public declaration added by preprocessor
+
   contains
 !
 !***********************************************************************

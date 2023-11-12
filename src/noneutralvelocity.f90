@@ -25,6 +25,8 @@ module NeutralVelocity
 !
   include 'neutralvelocity.h'
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_neutralvelocity

@@ -141,6 +141,9 @@ module SharedVariables
 !
   character(LEN=2*labellen) :: scaller=''
 !
+
+
+!Public declaration added by preprocessor
   contains
 !
 !***********************************************************************
@@ -824,7 +827,7 @@ module SharedVariables
 !***********************************************************************
     subroutine put_variable_logical1d(varname,variable,ierr,caller)
 !
-!  Comment me.
+!  mment me.
 !
       character (len=*) :: varname
       logical, dimension(:), target :: variable
@@ -1016,4 +1019,6 @@ module SharedVariables
 
     endsubroutine fetch_profile_3d
 !***********************************************************************
+
+
 endmodule SharedVariables

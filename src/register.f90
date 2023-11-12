@@ -1311,7 +1311,7 @@ module Register
 !
 !  Initialize threads.
 !
-!$  include "copyin.inc"
+!$  
 !
 !$  endsubroutine copyin
 !***********************************************************************

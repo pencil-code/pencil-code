@@ -1208,13 +1208,13 @@ module solid_cells_ogrid_chemistry
       real, dimension(nx_ogrid,nreactions), intent(out) :: vreact_p, vreact_m
 !
       type (pencil_case_ogrid) :: p_ogrid
-      real, dimension(nx_ogrid) :: dSR=0., dHRT=0., Kp, Kc
+      real, dimension(nx_ogrid) :: dSR, dHRT, Kp, Kc
       real, dimension(nx_ogrid) :: prod1, prod2
-      real, dimension(nx_ogrid) :: kf=0., kr=0.
+      real, dimension(nx_ogrid) :: kf, kr
       real, dimension(nx_ogrid) :: rho_cgs, p_atm
       real, dimension(nx_ogrid) :: mix_conc
       integer :: k, reac, i
-      real :: sum_tmp=0., ddd
+      real :: sum_tmp, ddd
       real :: Rcal, Rcal1, lnRgas, l10, lnp_atm
       logical, save :: lwrite_first=.true.
       character(len=fnlen) :: input_file="./data/react_ogr.out"

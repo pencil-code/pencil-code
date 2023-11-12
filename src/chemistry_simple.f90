@@ -770,7 +770,7 @@ module Chemistry
       intent(inout) :: f
       intent(inout) :: p
       integer :: k,i,j2,j3
-      integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
+      integer, parameter :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
       real :: T_low, T_up, T_mid
       real, dimension(nx) :: T_loc, TT_2, TT_3, TT_4, D_th
 !
@@ -1436,11 +1436,11 @@ module Chemistry
 !  indices
 !
       integer :: j, k,i
-      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
-      integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
-      integer :: iz1=1, iz2=2, iz3=3, iz4=4, iz5=5, iz6=6, iz7=7, iz8=8, iz9=9, iz10=10
-      integer :: iz11=11, iz12=12, iz13=13, iz14=14, iz15=15, iz16=16, iz17=17
-      integer :: iz18=18, iz19=19
+      integer, parameter :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
+      integer, parameter :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
+      integer, parameter :: iz1=1, iz2=2, iz3=3, iz4=4, iz5=5, iz6=6, iz7=7, iz8=8, iz9=9, iz10=10
+      integer, parameter :: iz11=11, iz12=12, iz13=13, iz14=14, iz15=15, iz16=16, iz17=17
+      integer, parameter :: iz18=18, iz19=19
 !
       intent(in) :: p,f
       intent(inout) :: df
@@ -4098,13 +4098,13 @@ module Chemistry
       real, dimension(nx,nreactions), intent(out) :: vreact_p, vreact_m
 !
       type (pencil_case) :: p
-      real, dimension(nx) :: dSR=0., dHRT=0., Kp, Kc
+      real, dimension(nx) :: dSR, dHRT, Kp, Kc
       real, dimension(nx) :: prod1, prod2
-      real, dimension(nx) :: kf=0., kr=0.
+      real, dimension(nx) :: kf, kr
       real, dimension(nx) :: rho_cgs, p_atm
       real, dimension(nx) :: mix_conc
       integer :: k, reac, i
-      real :: sum_tmp=0., ddd
+      real :: sum_tmp, ddd
       real :: Rcal, Rcal1, lnRgas, l10, lnp_atm
       logical, save :: lwrite_first=.true.
       character(len=fnlen) :: input_file="./data/react.out"
@@ -4318,8 +4318,8 @@ module Chemistry
       real, dimension(nx,nchemspec) :: molm
       type (pencil_case) :: p
       integer :: k,j,ii
-      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
-      integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
+      integer, parameter :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
+      integer, parameter :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
 !
       p%DYDt_reac = 0.
       rho1 = 1./p%rho
@@ -4382,10 +4382,10 @@ module Chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nx,3) :: gchemspec, sum_diff=0., dk_D
+      real, dimension(nx,3) :: gchemspec, sum_diff, dk_D
       real, dimension(nx,3,nchemspec) :: gDiff_full_add
       real, dimension(nx) :: del2chemspec, diff_op1, diff_op2
-      real, dimension(nx) :: sum_gdiff=0., gY_sumdiff
+      real, dimension(nx) :: sum_gdiff, gY_sumdiff
       integer :: k,i
 !
       intent(in) :: f
@@ -5196,4 +5196,6 @@ module Chemistry
 !
     endsubroutine chemspec_normalization_N2
 !***********************************************************************
+
+
 endmodule Chemistry

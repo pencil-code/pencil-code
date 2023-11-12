@@ -87,6 +87,10 @@ module NeutralVelocity
   integer :: idiag_unrmr=0,idiag_unpmr=0,idiag_unzmr=0
   integer :: idiag_divunm=0,idiag_dtnun=0
 !
+!Public declaration added by preprocessor
+
+
+
   contains
 !***********************************************************************
     subroutine register_neutralvelocity()
@@ -1016,4 +1020,6 @@ module NeutralVelocity
 !
     endsubroutine rprint_neutralvelocity
 !***********************************************************************
+
+
 endmodule Neutralvelocity

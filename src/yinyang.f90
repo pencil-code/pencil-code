@@ -1034,13 +1034,13 @@ print*, 'DOUBLE GAP: iproc=', iproc
       logical :: ok
 
       integer :: ind
-      logical, save :: l0=.true.
+      ! logical, save :: l0=.true.
    
       ok=.true.
       if (lyang) then 
 !if (l0.and.iproc==1.and.allocated(overlap_thrngs)) print*, 'overlap_thrngs=', overlap_thrngs
 !if (l0.and.iproc==1.and.allocated(overlap_phrngs)) print*, 'overlap_phrngs=', overlap_phrngs
-if (l0) l0=.false.
+! if (l0) l0=.false.
 
         if (lfirst_proc_y.or.llast_proc_y) then
           ind=indph-nghost

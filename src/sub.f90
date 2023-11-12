@@ -601,18 +601,19 @@ module Sub
       intent(inout) :: c
 !
       integer :: i
-      logical :: l0
+      ! logical :: l0
 !
-      l0 = .not.loptest(ladd)
-
-      do i=1,size(a,2)
-        if (l0) then
-          c=a(:,i)*b(:,i)
-          l0=.false.
-        else
+      ! l0 = .not.loptest(ladd)
+      if(.not.loptest(ladd)) then
+          c=a(:,1)*b(:,1)
+        do i=2,size(a,2)
           c=c+a(:,i)*b(:,i)
-        endif
-      enddo
+        enddo
+      else
+        do i=1,size(a,2)
+          c=c+a(:,i)*b(:,i)
+        enddo
+      endif
 !
     endsubroutine dot_mn
 !***********************************************************************
@@ -1888,7 +1889,8 @@ module Sub
       real, dimension (:,:), intent (in), optional :: a
       logical, intent (in), optional :: lcovariant_derivative
       real, dimension (nx,3), intent (out) :: b
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,a1,a2
+      integer, parameter :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7
+      integer :: a1,a2
 !
       b(:,1)=aij(:,3,2)-aij(:,2,3)
       b(:,2)=aij(:,1,3)-aij(:,3,1)
@@ -3293,7 +3295,7 @@ module Sub
 !
       if (k<1 .or. k>mfarray) then
         call fatal_error('u_dot_grad_vec','variable index is out of bounds')
-        return
+        ! return
       endif
 !
       do j=1,3
@@ -3469,7 +3471,7 @@ module Sub
 !
       if (k<1 .or. k>mfarray) then
         call fatal_error('u_dot_grad_scl','variable index is out of bounds')
-        return
+        ! return
       endif
 !
       call dot_mn(uu,gradf,ugradf,ladd)
@@ -4204,8 +4206,9 @@ module Sub
       real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost), intent(in) :: kernel
       real, dimension(nx), intent(out) :: smth
 !
-      integer :: i=0, j=0, k=0, l
+      integer :: i, j, k, l
 !
+      i=0;j=0;k=0;
       if (nxgrid /=1) i=nghost
       if (nygrid /=1) j=nghost
       if (nzgrid /=1) k=nghost
@@ -5883,7 +5886,7 @@ nameloop: do
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1,tmpv
       real, dimension (nx) :: abs_b,b1,del2ecr,gecr2,vKperp,vKpara
       real, dimension (nx) :: hhh2,quenchfactor,rhs,tmp,tmpi,tmpj,tmpk
-      real :: limiter_tensordiff=3.
+      real, parameter :: limiter_tensordiff=3.
       integer :: i,j,k
       logical, optional :: llog
       real, optional, dimension (nx,3) :: gvKperp,gvKpara
@@ -7151,7 +7154,7 @@ nameloop: do
             elsewhere
               indxs = 8
             endwhere
-            call deri_3d_inds(f(1,1,1,k),del6f(1,j),indxs,j,lnometric=.true.)
+            call deri_3d_inds(f(:,:,:,k),del6f(:,j),indxs,j,lnometric=.true.)
           endif
 !
           del6f(:,j) = abs(hh(:,j))*del6f(:,j)

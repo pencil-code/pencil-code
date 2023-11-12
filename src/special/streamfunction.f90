@@ -127,6 +127,10 @@ module Special
 !
   logical :: lgauss_seidel,lomega_jacobi
 !
+!Public declaration added by preprocessor
+
+
+
     contains
 !***********************************************************************
     subroutine register_special()
@@ -1309,4 +1313,6 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
+
+
 endmodule Special

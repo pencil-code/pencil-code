@@ -255,6 +255,10 @@ module Energy
   real, dimension(nx) :: diffus_chi,diffus_chi3,hcond,cooling
   real :: gamma, gamma1, gamma_m1, cp1
 !
+!Public declaration added by preprocessor
+
+
+
   contains
 !***********************************************************************
     subroutine register_energy
@@ -2380,7 +2384,7 @@ module Energy
       real, dimension  (nx) :: part_den2
       real, dimension  (nx) :: lgT
 !
-      real                  :: a0=1., a1=1., a2=1.
+      real                  :: a0, a1, a2
 !
       character (len=3) :: channel
 !
@@ -3082,4 +3086,6 @@ module Energy
 !**                                                                **
     include 'energy_common.inc'
 !***********************************************************************
+
+
 endmodule Energy

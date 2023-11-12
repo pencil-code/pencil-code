@@ -72,6 +72,8 @@ module Special
   namelist /special_run_pars/  &
        turb_inlet_dir
 !
+!Public declaration added by preprocessor
+
   contains
 !
 !***********************************************************************

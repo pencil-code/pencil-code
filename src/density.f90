@@ -33,6 +33,7 @@ module Density
 !
   include 'density.h'
 !
+  public :: dlnrho_dt_copy
   real, dimension (ninit) :: ampllnrho=0.0, widthlnrho=0.1
   real, dimension (ninit) :: rho_left=1.0, rho_right=1.0
   real, dimension (ninit) :: amplrho=0.0, phase_lnrho=0.0, radius_lnrho=0.5
@@ -427,7 +428,7 @@ module Density
       endif
 !
       if (.not.ldensity_nolog.and.lweno_transport) then
-        lweno_transport=.false.
+        ! lweno_transport=.false.
         !call warning('initialize_density','disabled WENO transport for logarithmic density')
         call fatal_error('initialize_density','cannot do WENO transport for logarithmic density!')
       endif
@@ -2801,6 +2802,37 @@ module Density
       call timing('dlnrho_dt','finished',mnloop=.true.)
 !
     endsubroutine dlnrho_dt
+    subroutine dlnrho_dt_copy(f,df,p)
+real, dimension (nxgrid/nprocx+2*3,nygrid/nprocy+2*3,nzgrid/nprocz+2*3,5+0+0+0) :: f
+real, dimension (nxgrid/nprocx+2*3,nygrid/nprocy+2*3,nzgrid/nprocz+2*3,5) :: df
+type (pencil_case) :: p
+intent(in)  :: p
+intent(inout) :: df,f
+real, dimension (nxgrid/nprocx) :: fdiff
+real, dimension (nxgrid/nprocx) :: tmp
+real, dimension (nxgrid/nprocx,3) :: tmpv
+real, dimension (nxgrid/nprocx) :: density_rhs,advec_hypermesh_rho
+integer :: j
+logical :: ldt_up
+call timing('dlnrho_dt','entered',mnloop=.true.)
+if(headtt.or..false.) then
+ print*,'dlnrho_dt: solve'
+endif
+density_rhs= - p%divu
+ density_rhs = density_rhs - p%uglnrho
+df(1+3:l2,m,n,ilnrho) = df(1+3:l2,m,n,ilnrho) + density_rhs
+diffus_diffrho=0.
+diffus_diffrho3=0.
+fdiff=0.0
+ldt_up = .false..and..true.
+tmp = fdiff
+forall(j = iux:iuz) df(1+3:l2,m,n,j) = df(1+3:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
+df(1+3:l2,m,n,iss) = df(1+3:l2,m,n,iss) - p%cv*tmp
+df(1+3:l2,m,n,ilnrho) = df(1+3:l2,m,n,ilnrho) + fdiff
+call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
+call calc_diagnostics_density(f,p)
+call timing('dlnrho_dt','finished',mnloop=.true.)
+endsubroutine dlnrho_dt_copy
 !***********************************************************************
     subroutine calc_diagnostics_density(f,p)
 !

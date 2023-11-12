@@ -78,6 +78,8 @@ module Special
   integer :: idiag_L4=0   ! DIAG_DOC: $L_4$
   integer :: idiag_L5=0   ! DIAG_DOC: $L_5$
 !
+!Public declaration added by preprocessor
+
   contains
 !
 !***********************************************************************

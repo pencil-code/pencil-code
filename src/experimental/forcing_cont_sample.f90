@@ -129,6 +129,8 @@ module Forcing
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
 !
+!Public declaration added by preprocessor
+
   contains
 !
 !***********************************************************************
@@ -3773,7 +3775,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real            :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu, arg
       real, pointer   :: gravx
       integer         :: ierr
-      integer :: i2d1=1,i2d2=2,i2d3=3
+      !not used
+      ! integer :: i2d1=1,i2d2=2,i2d3=3
 !
         select case (iforcing_cont)
         case('xz')

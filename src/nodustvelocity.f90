@@ -39,6 +39,10 @@ module Dustvelocity
   real :: nd0=1.,rhod0=1.
   logical :: ldustcoagulation=.false., ldustcondensation=.false.
 !
+!Public declaration added by preprocessor
+
+
+
   contains
 !***********************************************************************
     subroutine register_dustvelocity()
@@ -164,4 +168,6 @@ module Dustvelocity
 !
     endsubroutine get_slices_dustvelocity
 !***********************************************************************
+
+
 endmodule Dustvelocity

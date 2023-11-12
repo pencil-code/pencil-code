@@ -48,3 +48,6 @@
   public :: write_net_reaction
   public :: lchemistry_diag
   public :: lreactions
+  public :: chemistry_init_reduc_pointers
+  public :: chemistry_diag_reductions
+  public :: chemistry_read_diag_accum

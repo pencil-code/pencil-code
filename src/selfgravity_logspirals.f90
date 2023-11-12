@@ -76,6 +76,10 @@ module Selfgravity
   real, dimension(mz) :: rho0z = 0.0
   real :: gm1, c
 !
+
+
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_selfgravity()
@@ -721,4 +725,6 @@ module Selfgravity
 !
     endsubroutine rprint_selfgravity
 !***********************************************************************
+
+
 endmodule Selfgravity

@@ -70,6 +70,8 @@ module Selfgravity
 !
   real, dimension(mz) :: rho0z = 0.0
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_selfgravity()
@@ -276,8 +278,8 @@ module Selfgravity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      logical :: first=.true.
-      real, save :: gm1, c
+      ! logical :: first=.true.
+      real :: c
 !
       intent(inout) :: f, p
 !
@@ -294,16 +296,15 @@ module Selfgravity
           print*, 'calc_pencils_selfgravity: stiffening is applied to the EOS with '
           print*, 'calc_pencils_selfgravity: ', nj_stiff, ' points per Jeans length and adiabatic index ', stiff_gamma
         endif
-        if (first) then
-          gm1 = stiff_gamma - 1.
+        ! if (first) then
           if (dimensionality == 2) then
             c = gravitational_const * real(nj_stiff) * dxmax
           else
             c = gravitational_const * (real(nj_stiff) * dxmax)**2 / pi
           endif
-          first = .false.
-        endif
-        p%fpres = p%fpres * spread(1. + stiff_gamma * (c * p%rho / p%cs2)**gm1, 2, 3)
+          ! first = .false.
+        ! endif
+        p%fpres = p%fpres * spread(1. + stiff_gamma * (c * p%rho / p%cs2)**(stiff_gamma-1.), 2, 3)
       endif
 !
     endsubroutine calc_pencils_selfgravity

@@ -226,6 +226,10 @@ module Viscosity
   real, dimension(mz) :: eth0z = 0.0
   real, dimension(nx) :: diffus_nu, diffus_nu3
 !
+
+
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_viscosity
@@ -463,7 +467,7 @@ module Viscosity
           lvisc_nu_shock_profr=.true.
         case ('shock_simple', 'shock-simple')
           if (.not. lshock) call fatal_error('initialize_viscosity','a SHOCK module is required for "shock-simple"')
-          if (lroot) print *, 'viscous force: div(nu_shock*grad(uu_i)))'
+          if (lroot) print *, 'viscous force: div(nu_shock*grad(uu_i))'
           lvisc_shock_simple = .true.
         case ('hyper2-simplified','hyper2_simplified', 'hyper4')
           if (lroot) print*,'viscous force: -nu_hyper*del4v'
@@ -2890,4 +2894,6 @@ module Viscosity
 
     endsubroutine pushpars2c
 !***********************************************************************
+
+
 endmodule Viscosity

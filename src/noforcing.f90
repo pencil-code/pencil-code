@@ -31,6 +31,8 @@ module Forcing
   integer :: n_forcing_cont=n_forcing_cont_max
   integer :: pushpars2c  ! should be procedure pointer (F2003)
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_forcing

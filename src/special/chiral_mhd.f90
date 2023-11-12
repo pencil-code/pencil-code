@@ -193,6 +193,8 @@ module Special
   integer :: idiag_jxm = 0     ! DIAG_DOC: $\langle J_x\rangle$
   integer :: idiag_Dmu5_tdep=0 ! DIAG_DOC: $D(t)$
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_special()

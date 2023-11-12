@@ -25,6 +25,8 @@ module Special
 !
   real, dimension(nghost) :: top = 0.0, bot = 0.0
 !
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_special()

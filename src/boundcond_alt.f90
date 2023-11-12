@@ -1630,7 +1630,8 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+      integer :: i,j,
+      integer, parameter :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
       select case (topbot)
 !
@@ -2159,7 +2160,8 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+      integer :: i,j
+      integer, parameter :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
       select case (topbot)
 !
@@ -2333,7 +2335,8 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+      integer :: i,j
+      integer, parameter :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
       select case (topbot)
 !

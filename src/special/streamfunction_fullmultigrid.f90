@@ -138,6 +138,10 @@ module Special
   real, dimension(mz) :: Tbar = 0.0, etabar=0.0
   real :: gTT_conductive = 0.0, eta_alpha2=0.0
 !
+!Public declaration added by preprocessor
+
+
+
   contains
 !***********************************************************************
     subroutine register_special()
@@ -1535,6 +1539,10 @@ module Special
       enddo
       deallocate(grid)
 !
+!Public declaration added by preprocessor
+
+
+
       contains
 !--------------------------------------------------------------------
       recursive subroutine vcycle(jgrid,u,rrhs,alpp,bett)
@@ -1939,4 +1947,6 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
+
+
 endmodule Special

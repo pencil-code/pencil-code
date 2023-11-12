@@ -204,6 +204,10 @@ module Forcing
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 25
 !
+
+
+!Public declaration added by preprocessor
+
   contains
 !
 !***********************************************************************
@@ -5132,7 +5136,7 @@ module Forcing
       integer,                intent(in) :: i
 !
       real, dimension (nx) :: argum,s
-      real ::  b0=1., s0=2., width=.2
+      real, parameter ::  b0=1., s0=2., width=.2
 !
 !  density for the magnetic flux flux ring
 !
@@ -5603,7 +5607,7 @@ module Forcing
       real, dimension (nx) :: tmp
       real :: fact, fact1, fact2, fpara, dfpara, sqrt21k1
       real :: kf, kx, ky, kz, nu, arg, ecost, esint
-      integer :: i2d1=1,i2d2=2,i2d3=3,modeN
+      integer :: i2d1,i2d2,i2d3,modeN
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
 !
         select case (iforcing_cont(i))
@@ -6307,4 +6311,6 @@ module Forcing
 
     endsubroutine pushpars2c
 !*******************************************************************
+
+
 endmodule Forcing

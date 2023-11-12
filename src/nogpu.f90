@@ -2,8 +2,7 @@
 !
 ! MODULE_DOC: This module contains GPU related dummy types and functions.
 !
-! CPARAM logical, parameter :: lgpu = .false.
-!
+! CPARAM logical, parameter :: lgpu = .false.  !
 !**************************************************************************
 !
 module GPU
@@ -57,4 +56,14 @@ contains
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
+    ! subroutine test_rhs(f,df,p,rhs_1,rhs_2)
+    !   real, dimension (mx,my,mz,mfarray) :: f
+    !   real, dimension (mx,my,mz,mfarray) :: df,df_copy
+    !   integer :: i,j,k,n
+    !   type (pencil_case) :: p
+
+    !   intent(in) :: f,p
+    !   intent(inout) :: df
+    !   call keep_compiler_quiet(df)
+    ! endsubroutine test_rhs
 endmodule  GPU

@@ -78,6 +78,10 @@ module Special
   real, dimension(nx,ny,2) :: gravity
   real, dimension(nx,3) :: fcoriolis,fgravity
 !
+!Public declaration added by preprocessor
+
+
+
   contains
 !
 !***********************************************************************
@@ -248,5 +252,7 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
+
+
 endmodule Special
 

@@ -183,6 +183,8 @@ module Magnetic
 
   type(magspectra) :: spectra
 
+!Public declaration added by preprocessor
+
   contains
 !***********************************************************************
     subroutine register_magnetic

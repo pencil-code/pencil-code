@@ -36,7 +36,8 @@ module Shock
 !
   logical :: lshock_first=.true.,lshock_max5=.false., lshock_max3_interp=.false.
   logical :: lwith_extreme_div=.false.
-  logical :: ldivu_perp=.false.
+!TP: declared in cdata
+!   logical :: ldivu_perp=.false.
   logical :: lgauss_integral=.false.
   logical :: lgauss_integral_comm_uu=.false.
   logical :: lcommunicate_uu=.true.
