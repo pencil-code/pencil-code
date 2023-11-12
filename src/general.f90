@@ -4167,7 +4167,7 @@ endfunction
     
     j=0
     do i = 1, size(haystack)
-      if (needle(1) <= haystack(i) .and. needle(2) <= haystack(i)) then
+      if (needle(1) <= haystack(i) .and. haystack(i) <= needle(2)) then
         j=j+1
         if (present(positions)) positions(j) = i
       endif

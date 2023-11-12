@@ -3534,23 +3534,43 @@ module Diagnostics
 !
     endfunction name_is_present
 !***********************************************************************
-    subroutine prep_finalize_thread_diagnos
-
+   subroutine prep_finalize_thread_diagnos
+   !
+   ! For accumulated diagnostic variables get which reduction to perform
+   !
+   ! 25-aug-23/TP: modified, bug fix
+   !
       use General, only: allpos_in_array_int
 
-      integer :: nmax, nsum 
-      logical, save :: firstcall=.true.
+      integer :: nmax, nsum, nmin, i
+      logical :: firstcall=.true., firstcall_from_pencil_check=.false.
+      integer,dimension(2) ::max_range, sum_range
+
+      max_range(1) = -5
+      max_range(2) = -1
+
+      sum_range(1) = 1
+      sum_range(2) = 40
+      
+!  Have to do this ugly workaround since the pencil tests call this function
+!  and we want the first non pencil test call
+!
+      if (firstcall_from_pencil_check .and. .not. lpencil_check_at_work) then
+        firstcall = .true.
+        deallocate(inds_max_diags)
+        deallocate(inds_sum_diags)
+      end if
 
       if (.not.firstcall) return
-
-      nmax = allpos_in_array_int((/-5,-1/),itype_name)
+      nmax = allpos_in_array_int(max_range,itype_name)
       allocate(inds_max_diags(nmax))
-      nmax = allpos_in_array_int((/-5,-1/),itype_name,inds_max_diags)
-      nsum = allpos_in_array_int((/1,40/),itype_name)
+      nmax = allpos_in_array_int(max_range,itype_name,inds_max_diags)
+      nsum = allpos_in_array_int(sum_range,itype_name)
       allocate(inds_sum_diags(nsum))
-      nsum = allpos_in_array_int((/1,40/),itype_name,inds_sum_diags)
+      nsum = allpos_in_array_int(sum_range,itype_name,inds_sum_diags)
 
       firstcall=.false.
+      firstcall_from_pencil_check=lpencil_check_at_work
 
     endsubroutine prep_finalize_thread_diagnos
 !***********************************************************************
