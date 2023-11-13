@@ -1,0 +1,480 @@
+/var/spool/slurmd/job19341921/slurm_script: line 18: gcc/11.3.0: No such file or directory
+/var/spool/slurmd/job19341921/slurm_script: line 20: intel-oneapi-mkl/2022.1.0: No such file or directory
+/var/spool/slurmd/job19341921/slurm_script: line 22: openmpi/4.1.4: No such file or directory
+/var/spool/slurmd/job19341921/slurm_script: line 24: csc-tools: command not found
+/var/spool/slurmd/job19341921/slurm_script: line 26: StdEnv: command not found
+/var/spool/slurmd/job19341921/slurm_script: line 27: cuda/11.7.0: No such file or directory
+rm: cannot remove './data/time_series.dat': No such file or directory
+/users/purotouk/pencil-merge/pencil-code/samples/conv-slab
+2 CPUs
+HOSTNAME = r07c01.bullx
+USER = purotouk
+Running under MPI
+Simple Linux Utility for Resource Management (SLURM) job
+SLURM_NODELIST = r07c01
+SLURM_TASKS_PER_NODE = 2
+Puhti - CSC, Kajaani, Finland
+Running job: 19341921
+GETCONF:multi_op=
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <1>
+$ncpus          =  <2>
+$npops          =  <-n 2>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-3627167>
+$hn             =  <r07c01.bullx>
+$masterhost     =  <>
+$mpirun         =  <srun>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <r07c01>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <3627167>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+/bin/ls: No match.
+/bin/ls: No match.
+Revision: 42b943b5b
+ M src/Makefile.parent
+ M src/bfield.f90
+ M src/border_profiles.f90
+ M src/boundcond.f90
+ M src/boundcond_alt.f90
+ M src/cdata.f90
+ M src/chemistry.f90
+ M src/chemistry_simple.f90
+ M src/copyin.inc
+ M src/density.f90
+ M src/deriv_2nd.f90
+ M src/diagnostics.f90
+ M src/dustdensity.f90
+ M src/dustvelocity.f90
+ M src/entropy.f90
+ M src/equ.f90
+ M src/experimental/entropy_anelastic.f90
+ M src/experimental/forcing_cont_sample.f90
+ M src/experimental/hydro_ffreeMHDrel.f90
+ M src/experimental/magnetic_shearboxJ.f90
+ M src/experimental/neutralvelocity_matchiontemp.f90
+ M src/experimental/shock_perp.f90
+ M src/experimental/test_chemistry.f90
+ M src/farray_alloc.f90
+ M src/forcing.f90
+ M src/general.f90
+ M src/gpu_astaroth.f90
+ M src/gravity_simple.f90
+ M src/hdf5_io_parallel.f90
+ M src/hydro.f90
+ M src/hydro_kinematic.f90
+ M src/hydro_potential.f90
+ M src/magnetic.f90
+ M src/magnetic/maxwell.f90
+ M src/messages.f90
+ M src/mpicomm.h
+ M src/neutralvelocity.f90
+ M src/nochemistry.f90
+ M src/nodustdensity.f90
+ M src/nodustvelocity.f90
+ M src/noenergy.f90
+ M src/noentropy.f90
+ M src/nofarray_alloc.f90
+ M src/noforcing.f90
+ M src/nogpu.f90
+ M src/nogravity.f90
+ M src/nohydro.f90
+ M src/nomagnetic.f90
+ M src/noneutralvelocity.f90
+ M src/noselfgravity.f90
+ M src/noviscosity.f90
+ M src/register.f90
+ M src/selfgravity.f90
+ M src/selfgravity_logspirals.f90
+ M src/shared_variables.f90
+ M src/solid_cells_ogrid_chemistry.f90
+ M src/special.f90
+ M src/special.h
+ M src/special/1D_loop.f90
+ M src/special/NS_polecap.f90
+ M src/special/advective_gauge.f90
+ M src/special/alphadisk.f90
+ M src/special/atmosphere.f90
+ M src/special/axionSU2back.f90
+ M src/special/backreact_infl.f90
+ M src/special/baroclinic_run.f90
+ M src/special/bc_strat.f90
+ M src/special/boussinesq.f90
+ M src/special/chem_stream.f90
+ M src/special/chiral_mhd.f90
+ M src/special/collapse.f90
+ M src/special/coronae.f90
+ M src/special/disp_current.f90
+ M src/special/dynamical_resistivity.f90
+ M src/special/flowaroundsphere.f90
+ M src/special/flux_limdiff.f90
+ M src/special/footpoints.f90
+ M src/special/gravitational_waves.f90
+ M src/special/gravitational_waves_hTXk.f90
+ M src/special/gravitational_waves_hij6.f90
+ M src/special/gross_pitaevskii.f90
+ M src/special/internal_flow.f90
+ M src/special/jet.f90
+ M src/special/lorenz_gauge.f90
+ M src/special/lucky_droplet.f90
+ M src/special/magneticspiral.f90
+ M src/special/meanfield_alpm.f90
+ M src/special/meanfield_alpm_alternate.f90
+ M src/special/meanfield_alpm_etat.f90
+ M src/special/meanfield_dynamo_z.f90
+ M src/special/meanfield_e_tensor.f90
+ M src/special/multisp_drag_eq.f90
+ M src/special/neutron_star.f90
+ M src/special/newton_cooling.f90
+ M src/special/oscillation_0D.f90
+ M src/special/oscillation_0D_Lorenz.f90
+ M src/special/param_instab.f90
+ M src/special/planet_atmosphere.f90
+ M src/special/pressure_bump.f90
+ M src/special/radial_dist_func.f90
+ M src/special/reaction_0D.f90
+ M src/special/rtime_phiavg.f90
+ M src/special/set_gravity.f90
+ M src/special/shallow_water.f90
+ M src/special/shell.f90
+ M src/special/solar_corona.f90
+ M src/special/stellartide.f90
+ M src/special/streamfunction.f90
+ M src/special/streamfunction_dimensional.f90
+ M src/special/streamfunction_direct.f90
+ M src/special/streamfunction_fullmultigrid.f90
+ M src/special/streamfunction_multigrid.f90
+ M src/special/symbreak.f90
+ M src/special/turbpotential.f90
+ M src/special/twist_inject.f90
+ M src/special/twist_inject_delta.f90
+ M src/special/van_der_pol.f90
+ M src/sub.f90
+ M src/temperature_idealgas.f90
+ M src/temperature_ionization.f90
+ M src/thermal_energy.f90
+ M src/visc_smagorinsky.f90
+ M src/viscosity.f90
+ M src/weno_transport.f90
+ M src/yinyang.f90
+Fri 10 Nov 23:11:02 EET 2023
+srun  -n 2  src/start.x 
+ Pencil1: iapp, nprocs, ncpus=           0           2           2
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ nxgrid, nygrid, nzgrid=          32          32          32
+ units_general: unit_velocity=   1.0000000000000000     
+ units_general: unit_density=   1.0000000000000000     
+ units_general: unit_length=   1.0000000000000000     
+ units_general: unit_magnetic=   3.5449078083038330     
+ units_eos: unit_temperature=   4.8108880235694808E-009
+ units_eos: cp, lnTT0, cs0, pp0, Rgas=   1.00000000     -0.693148017      0.577350020      0.199999824      0.399999976    
+ initialize_gravity: no x-gravity
+ initialize_gravity: no y-gravity
+ initialize_gravity: constant gravz=  -1.00000000    
+ diffusion: nothing (i.e. no mass diffusion)
+ initialize_density: no need to read initial stratification for lanti_shockdiffusion=F.
+ select_eos_variable: Using lnrho and ss
+ initialize_energy: nheatc_max,iheatcond=           4 nothing                                 nothing                                 nothing                                 nothing                                 
+ heat conduction: nothing
+ init_uu: up-down
+ init_lnrho: piecewise polytropic vertical stratification (lnrho)
+ init_lnrho: initlnrho(1) = piecew-poly
+ init_lnrho: cs2bot,cs2top=   1.44999969      0.333333045    
+ init_energy: piecewise polytropic vertical stratification (ss)
+ ssint=   0.00000000    
+ init_energy: initss(1) = piecew-poly
+
+ start.x has completed successfully
+
+0.009u 0.054s 0:04.52 1.1%	0+0k 16+24io 0pf+0w
+
+Fri 10 Nov 23:11:06 EET 2023
+2 CPUs
+HOSTNAME = r07c01.bullx
+USER = purotouk
+Running under MPI
+Simple Linux Utility for Resource Management (SLURM) job
+SLURM_NODELIST = r07c01
+SLURM_TASKS_PER_NODE = 2
+Puhti - CSC, Kajaani, Finland
+Running job: 19341921
+GETCONF:multi_op=
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <1>
+$ncpus          =  <2>
+$npops          =  <-n 2>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-3627320>
+$hn             =  <r07c01.bullx>
+$masterhost     =  <>
+$mpirun         =  <srun>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <r07c01>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <3627320>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+Revision: 42b943b5b
+ M src/Makefile.parent
+ M src/bfield.f90
+ M src/border_profiles.f90
+ M src/boundcond.f90
+ M src/boundcond_alt.f90
+ M src/cdata.f90
+ M src/chemistry.f90
+ M src/chemistry_simple.f90
+ M src/copyin.inc
+ M src/density.f90
+ M src/deriv_2nd.f90
+ M src/diagnostics.f90
+ M src/dustdensity.f90
+ M src/dustvelocity.f90
+ M src/entropy.f90
+ M src/equ.f90
+ M src/experimental/entropy_anelastic.f90
+ M src/experimental/forcing_cont_sample.f90
+ M src/experimental/hydro_ffreeMHDrel.f90
+ M src/experimental/magnetic_shearboxJ.f90
+ M src/experimental/neutralvelocity_matchiontemp.f90
+ M src/experimental/shock_perp.f90
+ M src/experimental/test_chemistry.f90
+ M src/farray_alloc.f90
+ M src/forcing.f90
+ M src/general.f90
+ M src/gpu_astaroth.f90
+ M src/gravity_simple.f90
+ M src/hdf5_io_parallel.f90
+ M src/hydro.f90
+ M src/hydro_kinematic.f90
+ M src/hydro_potential.f90
+ M src/magnetic.f90
+ M src/magnetic/maxwell.f90
+ M src/messages.f90
+ M src/mpicomm.h
+ M src/neutralvelocity.f90
+ M src/nochemistry.f90
+ M src/nodustdensity.f90
+ M src/nodustvelocity.f90
+ M src/noenergy.f90
+ M src/noentropy.f90
+ M src/nofarray_alloc.f90
+ M src/noforcing.f90
+ M src/nogpu.f90
+ M src/nogravity.f90
+ M src/nohydro.f90
+ M src/nomagnetic.f90
+ M src/noneutralvelocity.f90
+ M src/noselfgravity.f90
+ M src/noviscosity.f90
+ M src/register.f90
+ M src/selfgravity.f90
+ M src/selfgravity_logspirals.f90
+ M src/shared_variables.f90
+ M src/solid_cells_ogrid_chemistry.f90
+ M src/special.f90
+ M src/special.h
+ M src/special/1D_loop.f90
+ M src/special/NS_polecap.f90
+ M src/special/advective_gauge.f90
+ M src/special/alphadisk.f90
+ M src/special/atmosphere.f90
+ M src/special/axionSU2back.f90
+ M src/special/backreact_infl.f90
+ M src/special/baroclinic_run.f90
+ M src/special/bc_strat.f90
+ M src/special/boussinesq.f90
+ M src/special/chem_stream.f90
+ M src/special/chiral_mhd.f90
+ M src/special/collapse.f90
+ M src/special/coronae.f90
+ M src/special/disp_current.f90
+ M src/special/dynamical_resistivity.f90
+ M src/special/flowaroundsphere.f90
+ M src/special/flux_limdiff.f90
+ M src/special/footpoints.f90
+ M src/special/gravitational_waves.f90
+ M src/special/gravitational_waves_hTXk.f90
+ M src/special/gravitational_waves_hij6.f90
+ M src/special/gross_pitaevskii.f90
+ M src/special/internal_flow.f90
+ M src/special/jet.f90
+ M src/special/lorenz_gauge.f90
+ M src/special/lucky_droplet.f90
+ M src/special/magneticspiral.f90
+ M src/special/meanfield_alpm.f90
+ M src/special/meanfield_alpm_alternate.f90
+ M src/special/meanfield_alpm_etat.f90
+ M src/special/meanfield_dynamo_z.f90
+ M src/special/meanfield_e_tensor.f90
+ M src/special/multisp_drag_eq.f90
+ M src/special/neutron_star.f90
+ M src/special/newton_cooling.f90
+ M src/special/oscillation_0D.f90
+ M src/special/oscillation_0D_Lorenz.f90
+ M src/special/param_instab.f90
+ M src/special/planet_atmosphere.f90
+ M src/special/pressure_bump.f90
+ M src/special/radial_dist_func.f90
+ M src/special/reaction_0D.f90
+ M src/special/rtime_phiavg.f90
+ M src/special/set_gravity.f90
+ M src/special/shallow_water.f90
+ M src/special/shell.f90
+ M src/special/solar_corona.f90
+ M src/special/stellartide.f90
+ M src/special/streamfunction.f90
+ M src/special/streamfunction_dimensional.f90
+ M src/special/streamfunction_direct.f90
+ M src/special/streamfunction_fullmultigrid.f90
+ M src/special/streamfunction_multigrid.f90
+ M src/special/symbreak.f90
+ M src/special/turbpotential.f90
+ M src/special/twist_inject.f90
+ M src/special/twist_inject_delta.f90
+ M src/special/van_der_pol.f90
+ M src/sub.f90
+ M src/temperature_idealgas.f90
+ M src/temperature_ionization.f90
+ M src/thermal_energy.f90
+ M src/visc_smagorinsky.f90
+ M src/viscosity.f90
+ M src/weno_transport.f90
+ M src/yinyang.f90
+Fri 10 Nov 23:11:08 EET 2023
+srun  -n 2  src/run.x 
+ Pencil1: iapp, nprocs, ncpus=           0           2           2
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ The verbose level is ip=          14  (ldebug= F )
+ This is a 3-D run
+ nxgrid, nygrid, nzgrid=          32          32          32
+ Lx, Ly, Lz=   1.00000000       1.00000000       2.00000000    
+       Vbox=   2.00000000    
+ setup_slices: slice_position = p
+ setup_slices: ix_loc,iy_loc,iz_loc,iz2_loc, (video files) = 4 4 4 35                                                                        
+ units_general: unit_velocity=   1.0000000000000000     
+ units_general: unit_density=   1.0000000000000000     
+ units_general: unit_length=   1.0000000000000000     
+ units_general: unit_magnetic=   3.5449078083038330     
+ units_eos: unit_temperature=   4.8108880235694808E-009
+ units_eos: cp, lnTT0, cs0, pp0, Rgas=   1.00000000     -0.693148017      0.577350020      0.199999824      0.399999976    
+ initialize_gravity: no x-gravity
+ initialize_gravity: no y-gravity
+ initialize_gravity: constant gravz=  -1.00000000    
+ diffusion: nothing (i.e. no mass diffusion)
+ initialize_density: no need to read initial stratification for lanti_shockdiffusion=F.
+ select_eos_variable: Using lnrho and ss
+ initialize_energy: cs2top,cs2cool,cs2cool2=  0.333333045      0.333332986       0.00000000    
+ initialize_energy: now set cs2top=(cool*cs2cool + cool2*cs2cool2)/(cool+cool2)
+ initialize_energy: Calculated Fbot =    1.00000007E-02
+ initialize_energy: nheatc_max,iheatcond=           4 K-profile                               nothing                                 nothing                                 nothing                                 
+ heat conduction: K-profile
+ viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+ pencil_consistency_check: checking pencil case
+ passed test :)
+           1           2           3           5           4
+ passed test :)
+           1           2           3           5           4
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_DIVIDE_BY_ZERO IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_DIVIDE_BY_ZERO IEEE_DENORMAL
+srun: error: r07c01: task 0: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=19341921.1
+0.009u 0.060s 0:01.70 3.5%	0+0k 32+24io 0pf+0w
+Fri 10 Nov 23:11:09 EET 2023
+Done
+Found ERROR file from run.x
