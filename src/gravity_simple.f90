@@ -46,8 +46,6 @@ module Gravity
   real, dimension(mx) :: gravx_xpencil=0.0, potx_xpencil=0.0
   real, dimension(my) :: gravy_ypencil=0.0, poty_ypencil=0.0
   real, dimension(mz) :: gravz_zpencil=0.0, potz_zpencil=0.0
-  !for testing
-  ! public ::gravz_zpencil
   real, dimension(mx) :: xdep=0.0
   real, dimension(mz) :: zdep=0.0
   real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
@@ -924,58 +922,55 @@ module Gravity
 !
 !  Add gravity acceleration on gas.
 !
-!       if (lhydro) then
-!         if (lboussinesq_grav) then
-!           if (lentropy) then
-!             if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%ss*p%gg(:,1)
-!             if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%ss*p%gg(:,2)
-!             if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%ss*p%gg(:,3)
-!           endif
-!         elseif (lanelastic) then
-! ! Now works for the linear anelastic formulation only
-!           if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*p%rho_anel
-!           if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)*p%rho_anel
-!           if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*(-p%ss)
-! !                                                                       p%rho_anel
-!         else
-!           if (lgravx_gas) gg(:,1)=p%gg(:,1)
-!           if (lgravy_gas) gg(:,2)=p%gg(:,2)
-!           if (lgravz_gas) gg(:,3)=p%gg(:,3)
-! !
-! ! When reference state is used, gravity needs a correction factor rho'/rho=1-rho_0/rho.
-! ! Note that the pencil case contains always the total quantities.
-! !
-!           if (lreference_state) then
-!             refac=1.-reference_state(:,iref_rho)*p%rho1
-!             if (lgravx_gas) gg(:,1)=gg(:,1)*refac
-!             if (lgravy_gas) gg(:,2)=gg(:,2)*refac
-!             if (lgravz_gas) gg(:,3)=gg(:,3)*refac
-!           endif
-! !
-!           if (lxyzdependence) then
-!             if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+gg(:,1)*zdep(n)
-!             if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+gg(:,2)
-!             if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gg(:,3)*xdep(l1:l2)
-!           else
-!             if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+gg(:,1)
-!             if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+gg(:,2)
-!             if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gg(:,3)
-!           endif
-!         endif
-!       endif
-! !
-! !  Add gravity acceleration on dust.
-! !
-!       if (ldustvelocity) then
-!         do k=1,ndustspec
-!           if (lgravx_dust) df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + p%gg(:,1)
-!           if (lgravy_dust) df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) + p%gg(:,2)
-!           if (lgravz_dust) df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + p%gg(:,3)
-!         enddo
-!       endif
-      gg(:,3)=p%gg(:,3)
-      df(1+3:l2,m,n,iuz)=df(1+3:l2,m,n,iuz)+gg(:,3)
-
+      if (lhydro) then
+        if (lboussinesq_grav) then
+          if (lentropy) then
+            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%ss*p%gg(:,1)
+            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%ss*p%gg(:,2)
+            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%ss*p%gg(:,3)
+          endif
+        elseif (lanelastic) then
+! Now works for the linear anelastic formulation only
+          if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*p%rho_anel
+          if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)*p%rho_anel
+          if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*(-p%ss)
+!                                                                       p%rho_anel
+        else
+          if (lgravx_gas) gg(:,1)=p%gg(:,1)
+          if (lgravy_gas) gg(:,2)=p%gg(:,2)
+          if (lgravz_gas) gg(:,3)=p%gg(:,3)
+!
+! When reference state is used, gravity needs a correction factor rho'/rho=1-rho_0/rho.
+! Note that the pencil case contains always the total quantities.
+!
+          if (lreference_state) then
+            refac=1.-reference_state(:,iref_rho)*p%rho1
+            if (lgravx_gas) gg(:,1)=gg(:,1)*refac
+            if (lgravy_gas) gg(:,2)=gg(:,2)*refac
+            if (lgravz_gas) gg(:,3)=gg(:,3)*refac
+          endif
+!
+          if (lxyzdependence) then
+            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+gg(:,1)*zdep(n)
+            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+gg(:,2)
+            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gg(:,3)*xdep(l1:l2)
+          else
+            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+gg(:,1)
+            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+gg(:,2)
+            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gg(:,3)
+          endif
+        endif
+      endif
+!
+!  Add gravity acceleration on dust.
+!
+      if (ldustvelocity) then
+        do k=1,ndustspec
+          if (lgravx_dust) df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + p%gg(:,1)
+          if (lgravy_dust) df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) + p%gg(:,2)
+          if (lgravz_dust) df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + p%gg(:,3)
+        enddo
+      endif
 
       call calc_diagnostics_gravity(p)
 
