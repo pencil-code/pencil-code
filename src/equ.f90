@@ -337,7 +337,7 @@ module Equ
           call calc_all_module_diagnostics(f,p)
         endif
       else
-        call test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_cpu,rhs_cpu)
+        !call test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_cpu,rhs_cpu)
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif
 !
