@@ -65,7 +65,7 @@ module Special
   namelist /special_run_pars/ laddheatingrate,taucool_floor
 !
   type InternalPencils
-     real, dimension(nx)   :: kappa,tau,tau1,taucool,taucool1
+     real, dimension(nx) :: tau,taucool,taucool1
   endtype InternalPencils
 !
   real, dimension(nx,nz,0:nprocy-1) :: tau_column
@@ -88,7 +88,7 @@ module Special
 
   contains
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_special
 !
 !  Configure pre-initialised (i.e. before parameter read) variables 
 !  which should be know to be able to evaluate
@@ -123,6 +123,9 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real :: cp, cv
 !
+      if (.not.lentropy) &
+        call fatal_error('initialize_special','newton cooling requires entropy module')
+
       call get_gamma_etc(gamma,cp,cv)
 
       gamma1=1./gamma; gamma_m1=gamma-1.
@@ -137,10 +140,8 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (lroot) print*,'calling special before boundary'
+!MR: should be needed on start only if kappar is written in snapshot.
       call special_before_boundary(f)
-      if (lroot) print*,'done calling special before boundary'
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine  init_special
 !***********************************************************************
@@ -152,12 +153,11 @@ module Special
 !
       use EquationOfState, only: cs20,rho0
       use Sub, only: grad,dot
-      use General, only: notanumber
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: rho,TT
       real :: TT0,rho01,lnTT0,kappa_cgs,TTdim,rhodim
-      integer :: i,j      
+      integer :: i
 !
       lnTT0=log(cs20*cp1/gamma_m1)
       TT0=exp(lnTT0)
@@ -170,7 +170,7 @@ module Special
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
-        TT = TT0 * (rho*rho01)**gamma_m1 * exp(f(l1:l2,m,n,iss)*cv1) 
+        TT = TT0 * (rho*rho01)**gamma_m1 * exp(f(l1:l2,m,n,iss)*cv1) !MR: better use generic eoscalc here!
 !
 ! lnrho = log(f(i,m,n,irho))
 ! lnTT = lnTT0 + cv1*f(i,m,n,iss) + gamma_m1*(lnrho-lnrho0)
@@ -191,7 +191,7 @@ module Special
 !
 ! Also precompute dtau for optical depth calculation. 
 !
-        dtau(:,m-nghost,n-nghost) = f(l1:l2,m,n,ikappar)*rho* x(l1:l2)/dy_1(m)
+        dtau(:,m-nghost,n-nghost) = f(l1:l2,m,n,ikappar)*rho*x(l1:l2)/dy_1(m)
 !
       enddo;enddo
 !
@@ -211,7 +211,7 @@ module Special
       real :: tau_above_sum,tau_below_sum
       integer :: ipy_loc,i
 !
-      if (lmpicomm)  call calc_column_tau(f)
+      if (lmpicomm) call calc_column_tau(f)
 !
 !  For every point, get stuff above and below -- assume meriodional to start with
 !
@@ -225,12 +225,10 @@ module Special
           tau_above_local(m) = sum(dtau(i-nghost,m1-nghost:m-nghost,n-nghost))
         enddo
         tau_above_sum=0.
-        if (lmpicomm) then
-          if (ipy/=0) then
-            do ipy_loc=0,ipy-1
-              tau_above_sum=tau_above_sum+tau_column(i-nghost,n-nghost,ipy_loc)
-            enddo
-          endif
+        if (ipy/=0) then
+          do ipy_loc=0,ipy-1
+            tau_above_sum=tau_above_sum+tau_column(i-nghost,n-nghost,ipy_loc)
+          enddo
         endif
         do m=m1,m2
           tau_above(m)=tau_above_sum+tau_above_local(m)
@@ -252,12 +250,12 @@ module Special
         enddo
 !
         do m=m1,m2
-           !if (f(i,m,n,ikappar) /= impossible) then !T >> T9
-              f(i,m,n,itau)=min(tau_below(m),tau_above(m))
-           !else
-           !   !force it to cool! 
-           !   f(i,m,n,itau)=1.
-           !endif
+          !if (f(i,m,n,ikappar) /= impossible) then !T >> T9
+             f(i,m,n,itau)=min(tau_below(m),tau_above(m))
+          !else
+          !   !force it to cool! 
+          !   f(i,m,n,itau)=1.
+          !endif
         enddo
 !
       enddo;enddo
@@ -312,11 +310,11 @@ module Special
             tau_column=tau_column_yroot
           else
             ! send to partner
-             call mpisend_real(tau_column_yroot,(/nx,nz,nprocy/),partner,y2tag)
+            call mpisend_real(tau_column_yroot,(/nx,nz,nprocy/),partner,y2tag)
           endif
         enddo
       else
-         call mpirecv_real(tau_column,(/nx,nz,nprocy/),broadcaster,y2tag)
+        call mpirecv_real(tau_column,(/nx,nz,nprocy/),broadcaster,y2tag)
       endif
 !
     endsubroutine calc_column_tau
@@ -333,27 +331,24 @@ module Special
       integer :: i
 !
       tmp=p%cp**1.5 * gamma1 * sqrt(gamma_m1) / (3.*sigmaSB) * p%rho * p%TT**(-2.5)
-      tau_eff = 0.375*q%tau + .25*sqrt(3.) + .25*q%tau1
+      tau_eff = 0.375*q%tau + .25*sqrt(3.) + .25/q%tau
       Rd=tmp*tau_eff
       OOK1 = (x(l1:l2)*sinth(m))**(1.5)  !inverse Keplerian frequency
       taucool = Rd*OOK1
 !
-      if (taucool_floor/=impossible) & 
-           where (taucool < taucool_floor) taucool=taucool_floor
+      if (taucool_floor/=impossible) where (taucool < taucool_floor) taucool=taucool_floor
 !
       taucool1 = 1./taucool
 !
     endsubroutine calc_cooling_time
 !***********************************************************************
-    subroutine pencil_criteria_special()
+    subroutine pencil_criteria_special
 !
       lpenc_requested(i_TT)=.true.
       lpenc_requested(i_TT1)=.true.
       lpenc_requested(i_rho)=.true.
       lpenc_requested(i_cp)=.true.
-      lpenc_requested(i_cp1)=.true.
       lpenc_requested(i_cv)=.true.
-      lpenc_requested(i_ss)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -364,14 +359,9 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      q%kappa=f(l1:l2,m,n,ikappar)
-!
       q%tau=f(l1:l2,m,n,itau)
-      q%tau1=1./q%tau
 !
       call calc_cooling_time(f,p,q%taucool,q%taucool1)
-!
-      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -382,7 +372,6 @@ module Special
 !  01-aug-11/wlad: coded
 !
       use General, only: notanumber
-      use Mpicomm, only: stop_it
 !
       real, intent(in) :: TT,rho
       real, intent(out) :: kk
@@ -539,53 +528,57 @@ module Special
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
 !
-      use Cdata
-      use Diagnostics
       use EquationOfState, only: cs20
-      use General, only: notanumber
 !      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension(nx) :: rr_cyl,TT_init,heating_rate
-      integer :: i
 !
-!  Modified momentum equation
+!  Modified entropy equation.
 !
       if (laddheatingrate) then
-         rr_cyl=x(l1:l2)*sinth(m)
-         TT_init = cs20/(p%cp*gamma_m1)  * r_ref / rr_cyl
-         heating_rate = p%cv * (p%TT-TT_init)*q%taucool1
+        rr_cyl=x(l1:l2)*sinth(m)
+        TT_init = cs20/(p%cp*gamma_m1) * r_ref / rr_cyl
+        heating_rate = p%cv * (p%TT-TT_init)*q%taucool1
 !
-         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%TT1 * heating_rate
-         if (lfirst.and.ldt) dt1_max=max(dt1_max,q%taucool1/cdts)
-       endif
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%TT1 * heating_rate
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,q%taucool1/cdts)
+      endif
+!
+      call special_calc_diagnostics(f)
+!
+    endsubroutine special_calc_energy
+!***********************************************************************
+    subroutine special_calc_diagnostics(f)
+
+      use Diagnostics
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+!
+      real, dimension (nx) :: kappa
 !
       if (ldiagnos) then 
-        if (idiag_kappam/=0)    call sum_mn_name(q%kappa,idiag_kappam)
-        if (idiag_kappamax/=0)  call max_mn_name(q%kappa,idiag_kappamax)
-        if (idiag_kappamin/=0)  call max_mn_name(-q%kappa,idiag_kappamin,lneg=.true.)
+      
+        kappa=f(l1:l2,m,n,ikappar)
 !
-        if (idiag_taum/=0)   call sum_mn_name(q%tau,idiag_taum)
-        if (idiag_taumax/=0) call max_mn_name(q%tau,idiag_taumax)
+        call sum_mn_name(kappa,idiag_kappam)
+        call max_mn_name(kappa,idiag_kappamax)
+        if (idiag_kappamin/=0) call max_mn_name(-kappa,idiag_kappamin,lneg=.true.)
+!
+        call sum_mn_name(q%tau,idiag_taum)
+        call max_mn_name(q%tau,idiag_taumax)
         if (idiag_taumin/=0) call max_mn_name(-q%tau,idiag_taumin,lneg=.true.)
 !
-        if (idiag_taucoolm/=0)   call sum_mn_name(q%taucool,idiag_taucoolm)
-        if (idiag_taucoolmax/=0) call max_mn_name(q%taucool,idiag_taucoolmax)
+        call sum_mn_name(q%taucool,idiag_taucoolm)
+        call max_mn_name(q%taucool,idiag_taucoolmax)
         if (idiag_taucoolmin/=0) call max_mn_name(-q%taucool,idiag_taucoolmin,lneg=.true.)
 !
         if (idiag_dts/=0) call max_mn_name(q%taucool1/cdts,idiag_dts,l_dt=.true.)
       endif
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_energy
+    endsubroutine special_calc_diagnostics
 !***********************************************************************
-!
-!***********************************************************************
-!********************************************************************
-!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

@@ -1680,7 +1680,7 @@ module Viscosity
         call multsv_add(tmp2,nu_shock*p%divu,p%gshock,tmp)
         p%fvisc=p%fvisc+tmp
         if (ldiffus_total) p%diffus_total=p%diffus_total+(nu_shock*p%shock)
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+nu_shock*p%shock*p%divu**2
+        if (lpencil(i_visc_heat).and.lshock_heat) p%visc_heat=p%visc_heat+nu_shock*p%shock*p%divu**2
       endif
 !
 !  viscous force: nu_shock with vertical profile
@@ -1702,7 +1702,7 @@ module Viscosity
         call multsv_mn_add(p%shock*p%divu,gradnu_shock,tmp)
         p%fvisc=p%fvisc+tmp
         if (ldiffus_total) p%diffus_total=p%diffus_total+(pnu_shock*p%shock)
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+pnu_shock*p%shock*p%divu**2
+        if (lpencil(i_visc_heat).and.lshock_heat) p%visc_heat=p%visc_heat+pnu_shock*p%shock*p%divu**2
       endif
 !
 !  viscous force: nu_shock with radial profile
@@ -1731,7 +1731,7 @@ module Viscosity
         call multsv_mn_add(p%shock*p%divu,gradnu_shock,tmp)
         p%fvisc=p%fvisc+tmp
         if (ldiffus_total) p%diffus_total=p%diffus_total+(pnu_shock*p%shock)
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+pnu_shock*p%shock*p%divu**2
+        if (lpencil(i_visc_heat).and.lshock_heat) p%visc_heat=p%visc_heat+pnu_shock*p%shock*p%divu**2
       endif
 !
 !  viscous force: div(nu_shock * grad(uu_i))

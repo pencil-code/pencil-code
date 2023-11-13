@@ -27,8 +27,10 @@ module Special
 ! variables global to this module
 !
   real, dimension(my,mz) :: mu_ss=0.
-  real, dimension(my) :: lat
-  real, dimension(mz) :: lon
+  real, dimension(my) :: lat  ! latitude in [rad]
+  real, dimension(mz) :: lon  ! longitude in [rad]
+  real, dimension(mx,my,mz) :: rr1,siny,cosy  !  1/r,sin(th) and cos(th)
+  real, dimension(mx,my,mz,3) :: Bext=0.  !  time-dependent external field
 !  constants for unit conversion
   real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
   real :: pp2Pa=1., TT2K=1., tt2s=1., g2m3_s2=1.
@@ -52,24 +54,27 @@ module Special
   real :: dTeqbot=0., dTeqtop=100.        ! unit: [K]
   real :: peqtop=1.d2, peqbot=1.d6        ! unit: [Pa]
   real :: tauradtop=1.d4, tauradbot=1.d7  ! unit: [s]
-  real :: pradtop=1.d3, pradbot=1.d6      ! unit:[ Pa]
+  real :: pradtop=1.d3, pradbot=1.d6      ! unit: [Pa]
+  real :: pbot0=1.e7                       ! unit: [Pa]
   !
   logical :: linit_equilibrium=.false.
 !
 ! Run parameters
 !
   real :: tau_slow_heating=-1.,t0_slow_heating=0.
-  real :: Bext_dipole=0.
+  real :: Bext_ampl=0.
+  character (len=labellen) :: iBext='nothing'
 !
 !
 !
   namelist /special_init_pars/ &
-      R_planet,rho_ref,cs_ref,cp_ref,T_ref,&
+      R_planet,rho_ref,cs_ref,cp_ref,T_ref,pbot0,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
-      pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium
+      pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
+      Bext_ampl,iBext
 !
   namelist /special_run_pars/ &
-      tau_slow_heating,t0_slow_heating,Bext_dipole
+      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -96,6 +101,12 @@ module Special
 !
       lat=0.5*pi-y
       lon=z-pi
+!
+!  3d coordinates for convenience
+!
+      rr1 = 1./spread(spread(x,2,my),3,mz)
+      siny = spread(spread(sin(y),1,mx),3,mz)
+      cosy = spread(spread(cos(y),1,mx),3,mz)
 !
 !  unit conversion
 !
@@ -131,13 +142,13 @@ module Special
         call get_mu_ss(mu_ss,lon_ss,lat_ss)
         do j=1,my
         do k=1,mz
-          p_tmp = peqbot  !  in [Pa]
+          p_tmp = pbot0  !  in [Pa]
           do i=1,(ipx+1)*nx
             do isub=1,nsub  !  use small length step, dx/nsub
               call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
               rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref/3.5) / rho2kg_m3  !  in code unit
               dp = -rhoeq_tmp * g0/xglobal(i+nghost)**2 * dx/nsub * pp2Pa  ! in [Pa]
-              p_tmp = min(peqtop,p_tmp+dp)  !  in [Pa]
+              p_tmp = p_tmp+dp
               if (p_tmp<0.) call fatal_error('init_special', &
                   'failed to compute initial state, probably because of too low Nx')
             enddo
@@ -244,15 +255,9 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: uxb_ext,Bdipole
+      real, dimension (nx,3) :: uxb_ext
 !
-!  the r,theta,phi components of the dipole filed
-!
-      Bdipole(:,1) = Bext_dipole / (x(l1:l2)**3.)
-      Bdipole(:,2) = Bext_dipole / (x(l1:l2)**3.)
-      Bdipole(:,3) = Bext_dipole / (x(l1:l2)**3.)
-!
-      call cross_mn(p%uu,Bdipole,uxb_ext)
+      call cross_mn(p%uu,Bext(l1:l2,m,n,:),uxb_ext)
       df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_ext
 !
     endsubroutine special_calc_magnetic
@@ -270,6 +275,8 @@ module Special
 !  could be time-dependent
 !
       call get_mu_ss(mu_ss,lon_ss,lat_ss)
+!
+      call calc_Bext
 !
       call keep_compiler_quiet(f)
 !
@@ -375,6 +382,20 @@ module Special
 !
       deallocate(temp_ref,p_temp_ref)
 !
+!  for debug purpose, output Teq at day- and night-points
+!
+      if (lroot) then
+        open(1,file=trim(datadir)//'/Teq_night.dat',position='append')
+        write(1,*) Teq_night
+        write(1,*) logp_ref
+        close(1)
+!
+        open(1,file=trim(datadir)//'/Teq_day.dat',position='append')
+        write(1,*) Teq_night+dTeq
+        write(1,*) logp_ref
+        close(1)
+      endif
+!
     endsubroutine  prepare_Tref_and_tau
 !***********************************************************************
     subroutine get_mu_ss(mu_ss,lonss,latss)
@@ -387,8 +408,12 @@ module Special
 !
 !  28-sep-23/xianyu,hongzhe: coded
 !
+      use General, only: itoa
+!
       real, dimension(my,mz), intent(out) :: mu_ss
       real, intent (in) :: lonss, latss
+      integer :: j,k
+      character (len=1) :: chproc
 !
       real, PARAMETER :: deg2rad=pi/180.
 !
@@ -398,7 +423,40 @@ module Special
              * sin(lonss*deg2rad) * cos(latss*deg2rad) + &
               spread(sin(lat),2,mz)*sin(latss*deg2rad)
 !
+!  debug
+!
+!      chproc=itoa(iproc)
+!      open(1,file=trim(datadir)//'/mu_proc'//chproc//'.dat',position='append')
+!      do j=m1,m2
+!      do k=n1,n2
+!        write(1,*) y(j),z(k),mu_ss(j,k)
+!      enddo
+!      enddo
+!      close(1)      
+!
     endsubroutine  get_mu_ss
+!***********************************************************************
+    subroutine calc_Bext
+!
+!  Calculate the external B field originated from the planet interior.
+!  This contributes an extra uxb term in du/dt.
+!
+!  13-nov-23/hongzhe: coded
+!
+      select case (iBext)
+      case ('nothing')
+        Bext = 0.
+      case ('dipole')
+        ! dipole = mu0/(4pi) * ( 3*rhat*(rhat dot m)-m ) / |r|^3
+        !        = mu0/(4pi) * m * { 2*costh/r^3, sinth/r^3, 0 }
+        Bext(:,:,:,1) = Bext_ampl * 2.*cosy*rr1**3.
+        Bext(:,:,:,2) = Bext_ampl * siny*rr1**3.
+        Bext(:,:,:,3) = 0.
+      case default
+        call fatal_error('calc_Bext','no such iBext')
+      endselect
+!
+    endsubroutine  calc_Bext
 !***********************************************************************
     subroutine calc_Teq_tau_pmn(T_local,tau_local,press,m,n)
 !

@@ -64,7 +64,6 @@ module Special
   namelist /special_run_pars/ B0,etamu0,Omega0,r0
 !
   type InternalPencils
-    real, dimension(nx)   :: beta
     real, dimension(nx,3) :: jxbr
   endtype InternalPencils
 !
@@ -173,7 +172,7 @@ contains
       type (pencil_case) :: p
       real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: bb,jj,jxb
-      real, dimension (nx) :: tmp,va2
+      real, dimension (nx) :: tmp
       integer :: j
 !
 ! jxbr
@@ -195,11 +194,6 @@ contains
       call cross_mn(jj,bb,jxb)
       call multsv_mn(p%rho1,jxb,q%jxbr)
 !
-      if (ldiagnos) then 
-        va2 = (brad(l1:l2,m,n)**2 + bphi(l1:l2,m,n)**2)*p%rho1/mu0
-        q%beta = 2*p%cs2/va2
-      endif
-!
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_special
@@ -218,6 +212,8 @@ contains
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: beta
       integer :: j,ju
 !
 !  Modified momentum equation
@@ -230,9 +226,12 @@ contains
 !  Diagnostics
 !      
       if (ldiagnos) then
-        if (idiag_qbetam/=0) call sum_mn_name(q%beta,idiag_qbetam)
-        if (idiag_qbetamin/=0) call max_mn_name(q%beta,idiag_qbetamax)
-        if (idiag_qbetamax/=0) call max_mn_name(-q%beta,idiag_qbetamin,lneg=.true.)
+        if (idiag_qbetam/=0 .or. idiag_qbetamax/=0 .or. idiag_qbetamin/=0 ) then
+          beta = 2*p%cs2/((brad(l1:l2,m,n)**2 + bphi(l1:l2,m,n)**2)*p%rho1/mu0)
+          call sum_mn_name(beta,idiag_qbetam)
+          call max_mn_name(beta,idiag_qbetamax)
+          if (idiag_qbetamin/=0) call max_mn_name(-beta,idiag_qbetamin,lneg=.true.)
+        endif
       endif
 !
       call keep_compiler_quiet(f)

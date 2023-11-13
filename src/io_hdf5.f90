@@ -491,7 +491,7 @@ module Io
 !
     endsubroutine initialize_slice
 !***********************************************************************
-    subroutine input_snap(file, a, nv, mode, label)
+    subroutine input_snap(file, a, nv, mode, label, ivar0, data_label)
 !
 !  Read snapshot file. Also read mesh and time, if mode==1.
 !
@@ -499,17 +499,20 @@ module Io
 !  10-Mar-2015/MR: avoided use of fseek;
 !                  this subroutine seems not yet to be adapted to HDF5
 !  28-Oct-2016/PABourdin: redesigned
+!  12-Oct-2023/Fred: ivar0 optional start parameter for handling change of labels
+!                    e.g. rho2lnrho
 !
       use File_io, only: backskip_to_time
+      use General, only: ioptest
       use Syscalls, only: islink
 !
       character (len=*) :: file
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(out) :: a
-      integer, optional, intent(in) :: mode
-      character (len=*), optional :: label
+      integer, optional, intent(in) :: mode, ivar0
+      character (len=*), optional :: label, data_label
 !
-      character (len=fnlen) :: dataset
+      character (len=fnlen) :: dataset, dataset_var
       integer :: pos
 !
       varfile_name = trim(directory_snap)//'/'//trim(file)//'.h5'
@@ -532,13 +535,18 @@ module Io
       call file_open_hdf5 (varfile_name, read_only=.true.)
       if (dataset == 'f') then
         ! read components of f-array
-        do pos=1, nv
+        do pos=ioptest(ivar0,1), nv
           if (index_get(pos) == '') cycle
-          call input_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
+          if (present (data_label)) then
+            dataset_var = data_label
+          else
+            dataset_var = index_get(pos)
+          endif
+          call input_hdf5 ('data/'//trim(dataset_var), a(:,:,:,pos))
         enddo
       elseif (dataset == 'globals') then
         ! read components of globals array
-        do pos=1, nv
+        do pos=ioptest(ivar0,1), nv
           if (index_get(mvar_io + pos) == '') cycle
           call input_hdf5 ('data/'//index_get(mvar_io + pos), a(:,:,:,pos))
         enddo

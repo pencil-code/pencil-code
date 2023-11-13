@@ -725,11 +725,9 @@ outer:  do ikz=1,nz
       cpos=4
     endif
   endif
-  if (cpos==0) &
-    call fatal_error('power_xy','no implementation for field '//trim(sp))
+  if (cpos==0) call fatal_error('power_xy','no implementation for field '//trim(sp))
 
-  if ( sp_field=='u' .or. sp_field=='b' .or.  &
-       sp_field=='a' .or. sp_field=='jxb' ) then  ! for vector fields
+  if ( sp_field=='u' .or. sp_field=='b' .or. sp_field=='a' .or. sp_field=='jxb' ) then  ! for vector fields
     if (len(trim(sp))>=cpos) then                 ! component specification expected
       ncomp=1
       select case (sp(cpos:cpos))
@@ -886,10 +884,9 @@ outer:  do ikz=1,nz
 !
     enddo
 !
-  enddo !(of loop over ivec)
+  enddo ! (do ivec=iveca,iveca+ncomp-1)
 !
-  if (lintegrate_shell .and. firstout<n_spectra .and. ipz==0) &        ! filling of the shell-wavenumber vector
-    call mpimerge_1d(kshell,nk,12)
+  if (lintegrate_shell .and. firstout<n_spectra .and. ipz==0) call mpimerge_1d(kshell,nk,12) ! filling of the shell-wavenumber vector
 !
   if (lroot) then
 !
@@ -945,11 +942,11 @@ outer:  do ikz=1,nz
 !
     endif
 !
-    firstout = firstout+1
-!
     write(1,*) t
 !
   endif
+!
+  firstout = firstout+1
 !
   if (lintegrate_shell) then
 !

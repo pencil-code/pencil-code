@@ -25,7 +25,6 @@ module BorderProfiles
   real, dimension(my) :: border_prof_y=1.0
   real, dimension(mz) :: border_prof_z=1.0
   real, dimension(mx, my, mz) :: border_prof_r=1.0
-  real, dimension(nx) :: rborder_mn
   real                :: tborder1=impossible
   real                :: fraction_tborder1=impossible
   real                :: fac_sqrt_gsum1=1.0
@@ -301,21 +300,10 @@ module BorderProfiles
 !***********************************************************************
     subroutine calc_pencils_borderprofiles(f,p)
 !
-!  rborder_mn is an "internal" pencil to BorderProfiles, that does not
-!  need to be put in the pencil case.
-!
       use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!
-      if (lcylinder_in_a_box.or.lcylindrical_coords) then
-        rborder_mn = p%rcyl_mn
-      elseif (lsphere_in_a_box.or.lspherical_coords) then
-        rborder_mn = p%r_mn
-      else
-        rborder_mn = p%x_mn
-      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -408,11 +396,19 @@ module BorderProfiles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target
+      real, dimension(nx) :: f_target, rborder_mn
       type (pencil_case) :: p
       real :: pborder,inverse_drive_time
       integer :: i,j
       logical :: lradial, lmeridional
+!
+      if (lcylinder_in_a_box.or.lcylindrical_coords) then
+        rborder_mn = p%rcyl_mn
+      elseif (lsphere_in_a_box.or.lspherical_coords) then
+        rborder_mn = p%r_mn
+      else
+        rborder_mn = p%x_mn
+      endif
 !
 !  Perform "border_driving" only if r < r_int_border or r > r_ext_border, but
 !  take into acount that the profile further inside on both ends.
@@ -423,18 +419,18 @@ module BorderProfiles
 !
 ! conditions for driving of the radial border
 !
-        lradial=(rborder_mn(i)<=r_int_border+2*wborder_int).or.&  ! inner stripe
-                (rborder_mn(i)>=r_ext_border-2*wborder_ext)       ! outer stripe
+        lradial=(rborder_mn(i)<=r_int_border+2*wborder_int).or. &  ! inner stripe
+                (rborder_mn(i)>=r_ext_border-2*wborder_ext)        ! outer stripe
 !
 ! conditions for driving of the meridional border
 !
         lmeridional=lmeridional_border_drive.and.&
-               ((y(m)<=theta_lower_border+2*wborder_theta_lower).or.& ! lower stripe
-                (y(m)>=theta_upper_border-2*wborder_theta_upper))     ! upper stripe
+               ((y(m)<=theta_lower_border+2*wborder_theta_lower).or. & ! lower stripe
+                (y(m)>=theta_upper_border-2*wborder_theta_upper))      ! upper stripe
 !
         if (lradial.or.lmeridional) then
-          call get_drive_time(inverse_drive_time,i)
-          call get_border(p,pborder,i)
+          call get_drive_time(inverse_drive_time,rborder_mn(i))
+          call get_border(pborder,rborder_mn(i))
           df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) - (f(i+l1-1,m,n,j)-f_target(i))*pborder*inverse_drive_time
         endif
 
@@ -442,7 +438,7 @@ module BorderProfiles
 !
     endsubroutine border_driving
 !***********************************************************************
-    subroutine get_border(p,pborder,i)
+    subroutine get_border(pborder,rlim_mn)
 !
 ! Apply a step function that smoothly goes from zero to one on both sides.
 ! In practice, means that the driving takes place
@@ -456,17 +452,7 @@ module BorderProfiles
       use Sub, only: cubic_step
 !
       real, intent(out) :: pborder
-      type (pencil_case) :: p
       real :: rlim_mn
-      integer :: i
-!
-      if (lcylinder_in_a_box.or.lcylindrical_coords) then
-         rlim_mn = p%rcyl_mn(i)
-      elseif (lsphere_in_a_box.or.lspherical_coords) then
-         rlim_mn = p%r_mn(i)
-      else
-         rlim_mn = p%x_mn(i)
-      endif
 !
 ! cint = 1-step_int , cext = step_ext
 ! pborder = cint+cext
@@ -480,7 +466,7 @@ module BorderProfiles
 !
     endsubroutine get_border
 !***********************************************************************
-    subroutine get_drive_time(inverse_drive_time,i)
+    subroutine get_drive_time(inverse_drive_time,rborder_mn)
 !
 !  This is problem-dependent, since the driving should occur in the
 !  typical time-scale of the problem. tborder can be specified as input.
@@ -490,8 +476,8 @@ module BorderProfiles
 !  24-jun-09/axel: added tborder as input
 !
       real, intent(out) :: inverse_drive_time
+      real :: rborder_mn
       real :: inverse_period
-      integer :: i
 !
 !  calculate orbital time
 !
@@ -501,7 +487,7 @@ module BorderProfiles
 !  orbital period 2pi/Omega. This is of course specific
 !  to Keplerian global disks. 
 !
-        inverse_period = rborder_mn(i)**(-1.5) * fac_sqrt_gsum1
+        inverse_period = rborder_mn**(-1.5) * fac_sqrt_gsum1
         inverse_drive_time = fraction_tborder1*inverse_period
 !
 !  specify tborder as input

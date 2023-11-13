@@ -30,7 +30,7 @@ module solid_cells_ogrid_chemistry
   use Cdata
   use General, only: keep_compiler_quiet
   use EquationOfState
-  use Chemistry, only: Rgas, lreactions, lchemistry_diag
+  use Chemistry, only: Rgas, lreactions
   use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error, not_implemented
   use Mpicomm, only: stop_it
   use solid_cells_ogrid_cdata

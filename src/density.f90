@@ -170,7 +170,7 @@ module Density
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
-      cs2bot, cs2top, lupw_lnrho, lupw_rho, idiff, &
+      cs2bot, cs2top, lupw_lnrho, lupw_rho, idiff, ldensity_nolog, &
       lmass_source, lmass_source_random, diff_cspeed, &
       mass_source_profile, mass_source_Mdot, mass_source_sigma, &
       mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &

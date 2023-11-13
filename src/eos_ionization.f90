@@ -1024,11 +1024,9 @@ module EquationOfState
         sqrtrhs=sqrt(rhs)
         yH_=2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
         fractions=(1+yH_+xHe)
-        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                   -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
-                   -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+        ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
-        pp_=(1+yH_+xHe)*exp(lnrho_)*TT_*ss_ion
+        pp_=fractions*exp(lnrho_)*TT_*ss_ion
 !
       case (ilnrho_ee)
         lnrho_=var1
@@ -1042,9 +1040,7 @@ module EquationOfState
         TT_=(ee_-yH_*ee_ion)/(1.5*fractions*ss_ion)
         lnTT_=log(TT_)
         rho_=exp(lnrho_)
-        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                    -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
-                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+        ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
         pp_=fractions*rho_*TT_*ss_ion
 !
       case (ilnrho_pp)
@@ -1058,9 +1054,7 @@ module EquationOfState
         rho_=exp(lnrho_)
         TT_=pp_/(fractions*ss_ion*rho_)
         lnTT_=log(TT_)
-        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                   -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
-                   -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+        ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
 !
       case default
@@ -1076,6 +1070,21 @@ module EquationOfState
       if (present(pp)) pp=pp_
 !
     endsubroutine eoscalc_pencil
+!***********************************************************************
+    elemental function get_ss(lnTT,lnrho,yH,fractions) result(ss)
+!
+!  Calculates entropy from lnTT,lnrho,yH,fractions.
+!
+! 11-nov-2023/MR: coded
+!
+      real, intent(IN) :: lnTT, lnrho, yH, fractions
+      real :: ss
+
+      ss = ss_ion*(fractions*(1.5*(lnTT-lnTT_ion)-lnrho+2.5) &
+          -yH*(2*log(yH)-lnrho_e-lnrho_H) &
+          -(1-yH)*(log(1-yH+epsi)-lnrho_H)-xHe_term)
+
+    endfunction get_ss
 !***********************************************************************
     subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
@@ -1124,11 +1133,9 @@ module EquationOfState
         sqrtrhs=sqrt(rhs)
         yH_=2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
         fractions=(1+yH_+xHe)
-        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                   -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
-                   -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+        ss_ = get_ss(lnTT_,lnrho_,yH_,fractions)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
-        pp_=(1+yH_+xHe)*exp(lnrho_)*TT_*ss_ion
+        pp_=fractions*exp(lnrho_)*TT_*ss_ion
         cs2_=impossible
 !
       case (ilnrho_ee)
@@ -1140,9 +1147,7 @@ module EquationOfState
         TT_=(ee_-yH_*ee_ion)/(1.5*fractions*ss_ion)
         lnTT_=log(TT_)
         rho_=exp(lnrho_)
-        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                    -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
-                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+        ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
         pp_=fractions*rho_*TT_*ss_ion
         cs2_=impossible
 !
@@ -1155,9 +1160,7 @@ module EquationOfState
         rho_=exp(lnrho_)
         TT_=pp_/(fractions*ss_ion*rho_)
         lnTT_=log(TT_)
-        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                   -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
-                   -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+        ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         cs2_=impossible
 !

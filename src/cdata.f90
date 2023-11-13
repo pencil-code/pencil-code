@@ -175,7 +175,7 @@ module Cdata
   logical :: lfirstpoint=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
-  character (len=20), dimension(mvar) :: timestep_scaling='cons_err'
+  character (len=20), dimension(mvar) :: timestep_scaling='cons_frac_err'
 !
 !  Use of LSODE to solve the chemistry in a separate step
 !  By default, sequential splitting method (1st order)
@@ -333,6 +333,7 @@ module Cdata
   logical :: ladv_der_as_aux=.false.
   logical :: lghostfold_usebspline = .false.
   logical :: lcooling_ss_mz = .false.
+  logical :: lshock_heat = .true.
 !
 !  Type counters.
 !
@@ -793,8 +794,9 @@ module Cdata
 !  or not the chiral MHD special module is used.
 !
   real :: lambda5 = 0.0
-! 
+!
 !  Variables for concurrency
+<<<<<<< HEAD
 ! 
   real, pointer, dimension (:) :: p_fname,p_fname_keep
   real, pointer, dimension (:,:) :: p_fnamer,p_fname_sound
@@ -811,6 +813,15 @@ module Cdata
   logical :: lchemistry_diag_save
   integer :: hot_loop_counter = 0
   integer :: it_save
+=======
+!
+  logical :: lwriting_snapshots=.false.
+  logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
+!
+!$ integer :: num_cores = 0
+!$ integer :: num_threads = 0
+!$ logical :: lthread_safe 
+>>>>>>> a8f1b58e42c9d8fd81399de71c7634c6b165770e
 ! 
 ! threadprivate definitions for OpenMP, copyin routine.
 !

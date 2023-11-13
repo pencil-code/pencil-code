@@ -181,7 +181,7 @@ module Special
   integer :: idiag_oogmu5rms=0  
   integer :: idiag_oogmuSrms=0  
   integer :: idiag_dt_lambda5=0! DIAG_DOC: $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ 
-  integer :: idiag_dt_D5=0     ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
+  integer :: idiag_dt_D5=0     ! DIAG_DOC: $(\lambda \eta \mathrm{max}(\Bv^2))^{-1}$ 
   integer :: idiag_dt_gammaf5=0! DIAG_DOC: $1/\Gamma_\mathrm{f}$   
   integer :: idiag_dt_CMW=0    ! DIAG_DOC: $\delta x/((C_\mu C_5)^{1/2} \mathrm{max}(|\Bv|))$ 
   integer :: idiag_dt_Dmu=0    ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
@@ -551,10 +551,11 @@ module Special
       if (lmuS) then
          dt1_CVE2 = p%muS*lambda5*eta*p%b2
       endif
-      dt1_D5 = diffmu5*dxyz_2
-!      if (lmuS) then
-!        dt1_mu5_3 = p%muS*coef_mu5*sqrt(p%b2)
-!      endif
+      if (ldiffmu5_hyper2_simplified) then
+         dt1_D5 = diffmu5_hyper2*dxyz_4
+      else
+         dt1_D5 = diffmu5*dxyz_2
+      endif
       dt1_gammaf5 = gammaf5
 !
 !  Evolution of muS
@@ -595,7 +596,11 @@ module Special
         endif
 !  Contributions to timestep from muS equation
         dt1_CMW = sqrt(coef_mu5*coef_muS)*sqrt(p%b2)*sqrt(dxyz_2)
-        dt1_Dmu = diffmuS*dxyz_2
+        if (ldiffmuS_hyper2_simplified) then
+           dt1_Dmu = diffmuS_hyper2*dxyz_4
+        else
+           dt1_Dmu = diffmuS*dxyz_2
+        endif
       endif
 !                          
 !  Additions to evolution of bb
@@ -628,13 +633,13 @@ module Special
 !
       if (lfirst.and.ldt.and.ldt_chiral_mhd) then
         if (lmuS) then
-          dt1_special = cdtchiral*max(dt1_lambda5, dt1_D5, &
-                          dt1_gammaf5, dt1_vmu, &
-                          dt1_CVE1, dt1_CVE2, &
-                          dt1_CMW, dt1_Dmu) 
+          dt1_special = max(dt1_lambda5, dt1_D5, &
+                        dt1_gammaf5, dt1_vmu, &
+                        dt1_CVE1, dt1_CVE2, &
+                        dt1_CMW, dt1_Dmu)/cdtchiral
         else
-          dt1_special = cdtchiral*max(dt1_lambda5, dt1_D5, &
-                          dt1_gammaf5, dt1_vmu)
+          dt1_special = max(dt1_lambda5, dt1_D5, &
+                        dt1_gammaf5, dt1_vmu)/cdtchiral
         endif
         dt1_max=max(dt1_max,dt1_special)  
       endif

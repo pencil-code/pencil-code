@@ -4521,10 +4521,8 @@ module Chemistry
           vreactions_p(:,j) = alpha*kreactions_p(j)*kreactions_z(n,j)
           vreactions_m(:,j) = alpha*kreactions_m(j)*kreactions_z(n,j)
           do k = 1,nchemspec
-            vreactions_p(:,j) = vreactions_p(:,j)* &
-                f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
-            vreactions_m(:,j) = vreactions_m(:,j)* &
-                f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
+            vreactions_p(:,j) = vreactions_p(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
+            vreactions_m(:,j) = vreactions_m(:,j)*f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
           enddo
         enddo
         vreactions_m = -vreactions_m
@@ -4553,7 +4551,7 @@ module Chemistry
 !
 !  For diagnostics
 !
-      if (lchemistry_diag) then
+      if (ldiagnos.and.lchemistry_diag) then
         do k = 1,nchemspec
           do j = 1,nreactions
             net_react_p(k,j) = net_react_p(k,j)+stoichio(k,j)*sum(vreactions_p(:,j))
@@ -4579,10 +4577,12 @@ module Chemistry
 !
 !  write net reactions to file
 !
-      open (1,file=trim(datadir)//'/net_reactions.dat',position='append')
-      write (1,*) t
-      write (1,'(8e10.2)') net_react_p, net_react_m
-      close (1)
+      if (lchemistry_diag) then
+        open (1,file=trim(datadir)//'/net_reactions.dat',position='append')
+        write (1,*) t
+        write (1,'(8e10.2)') net_react_p, net_react_m
+        close (1)
+      endif
 !
     endsubroutine  write_net_reaction
 !***********************************************************************

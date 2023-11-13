@@ -53,7 +53,7 @@ program run
 !
   use Boundcond,       only: update_ghosts, initialize_boundcond
   use Cdata
-  use Chemistry,       only: chemistry_clean_up, write_net_reaction, lchemistry_diag
+  use Chemistry,       only: chemistry_clean_up, write_net_reaction
   use Density,         only: boussinesq
   use Diagnostics
   use Dustdensity,     only: init_nd
@@ -834,9 +834,7 @@ program run
 !  other hand, are indeed at the correct d+dt. Therefore,
 !  when lspec_first=T, we output spectra for both t and t+dt.
 !
-    if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) then
-      lspec=.true.
-    endif
+    if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) lspec=.true.
 !
 !  Save spectrum snapshot.
 !
