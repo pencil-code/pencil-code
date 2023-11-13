@@ -6406,6 +6406,17 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
     endsubroutine read_transport_data
 !***********************************************************************
-
+    subroutine chemistry_init_diag_accum
+    endsubroutine chemistry_init_diag_accum
+!***********************************************************************
+    subroutine chemistry_init_reduc_pointers
+    endsubroutine chemistry_init_reduc_pointers
+!***********************************************************************
+    subroutine chemistry_diag_reductions
+    endsubroutine chemistry_diag_reductions 
+!***********************************************************************
+    subroutine chemistry_read_diag_accum
+    endsubroutine chemistry_read_diag_accum
+!***********************************************************************
 
 endmodule Chemistry

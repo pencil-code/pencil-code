@@ -100,6 +100,7 @@ module Special
   endtype InternalPencils
 !
   type (InternalPencils) :: q
+  !$omp threadprivate(q)
 !
   real, dimension(nmode_max) :: gauss_ampl, rcenter, phicenter, zcenter
   real, dimension(nmode_max) :: omega_mode, tmode_init, radial_sigma_inv

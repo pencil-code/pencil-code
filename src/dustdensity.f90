@@ -47,6 +47,7 @@ module Dustdensity
   real, dimension(nx,ndustspec,ndustspec0) :: dndr_full, ppsf_full
 !  real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
+  !$omp threadprivate(dkern)
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: BB=0.
   real, dimension(ndustspec) :: dsize,init_distr2,amplnd_rel=0.
@@ -2608,20 +2609,12 @@ module Dustdensity
       real, dimension (nx) :: TT,Kn, cor_factor, D_coeff, Di, Dk, Dik, KBC, vmean_i, vmean_k
       real, dimension (nx) :: vmean_ik, gamma_i, gamma_k, omega_i, omega_k, sigma_ik
 !
-<<<<<<< HEAD
       real :: deltavd,deltavd_therm
       real :: deltavd_turbu, fact
       real :: deltavd_drift2, deltavd_drift2a, deltavd_drift2b
       real :: ust,tl01,teta1,mu_air,rho_air, Rik 
       real, parameter :: kB=1.38e-16
-      integer :: i,j,l,k
-=======
-      real :: deltavd,deltavd_drift=0,deltavd_therm=0
-      real :: deltavd_turbu=0, fact
-      real :: deltavd_drift2=0, deltavd_drift2a=0, deltavd_drift2b=0
-      real :: ust,tl01,teta1,mu_air,rho_air, kB=1.38e-16, Rik 
       integer :: i,j,l,k,lgh
->>>>>>> a8f1b58e42c9d8fd81399de71c7634c6b165770e
 !
       deltavd_turbu = 0.
       if (ldustcoagulation) then

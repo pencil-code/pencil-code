@@ -68,6 +68,7 @@ module Special
   endtype InternalPencils
 !
   type (InternalPencils) :: q
+  !$omp threadprivate(q)
 !
   integer :: idiag_qbetam=0
   integer :: idiag_qbetamin=0

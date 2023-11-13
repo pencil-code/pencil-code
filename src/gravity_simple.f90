@@ -47,7 +47,7 @@ module Gravity
   real, dimension(my) :: gravy_ypencil=0.0, poty_ypencil=0.0
   real, dimension(mz) :: gravz_zpencil=0.0, potz_zpencil=0.0
   !for testing
-  public ::gravz_zpencil
+  ! public ::gravz_zpencil
   real, dimension(mx) :: xdep=0.0
   real, dimension(mz) :: zdep=0.0
   real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9

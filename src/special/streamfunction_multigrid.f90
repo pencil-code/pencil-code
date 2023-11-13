@@ -68,6 +68,7 @@ module Special
      real, dimension(nx) :: ugTT,u2,qtidal,eta,devsigzz
   endtype InternalPencils
   type (InternalPencils) :: q
+  !$omp threadprivate(q)
 !
   character (len=labellen) :: initpsi='nothing'
   character (len=labellen) :: iconv_viscosity='Newtonian'

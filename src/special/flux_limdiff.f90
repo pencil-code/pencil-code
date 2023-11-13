@@ -63,6 +63,7 @@ module Special
   endtype InternalPencils
 !
   type (InternalPencils) :: q
+  !$omp threadprivate(q)
 !
   integer :: ikappar,ilambda
 !

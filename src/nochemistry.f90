@@ -295,4 +295,7 @@ module Chemistry
     subroutine chemistry_read_diag_accum
     endsubroutine chemistry_read_diag_accum
 !***********************************************************************
+    subroutine chemistry_init_diag_accum
+    endsubroutine chemistry_init_diag_accum
+!***********************************************************************
 endmodule Chemistry

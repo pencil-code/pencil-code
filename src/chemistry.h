@@ -50,3 +50,4 @@
   public :: chemistry_init_reduc_pointers
   public :: chemistry_diag_reductions
   public :: chemistry_read_diag_accum
+  public :: chemistry_init_diag_accum

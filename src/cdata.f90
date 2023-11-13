@@ -796,7 +796,6 @@ module Cdata
   real :: lambda5 = 0.0
 !
 !  Variables for concurrency
-<<<<<<< HEAD
 ! 
   real, pointer, dimension (:) :: p_fname,p_fname_keep
   real, pointer, dimension (:,:) :: p_fnamer,p_fname_sound
@@ -811,20 +810,16 @@ module Cdata
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save, lwrite_slices_save
   logical :: lchemistry_diag_save
-  integer :: hot_loop_counter = 0
   integer :: it_save
-=======
-!
-  logical :: lwriting_snapshots=.false.
-  logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
-!
-!$ integer :: num_cores = 0
-!$ integer :: num_threads = 0
-!$ logical :: lthread_safe 
->>>>>>> a8f1b58e42c9d8fd81399de71c7634c6b165770e
 ! 
 ! threadprivate definitions for OpenMP, copyin routine.
 !
+!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil&
+!$omp ,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
+!$omp threadprivate(lfirstpoint)
+!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
+!$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
+!$omp threadprivate(it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
 !!$ include 'cdata_omp.inc'
 !***********************************************************************
 !***********************************************************************

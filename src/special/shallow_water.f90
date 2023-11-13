@@ -122,6 +122,7 @@ module Special
   endtype InternalPencils
 !
   type (InternalPencils) :: q
+  !$omp threadprivate(q)
 !
 ! Diagnostics
 !

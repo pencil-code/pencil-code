@@ -66,6 +66,7 @@ module Special
   endtype InternalPencils
 !
   type (InternalPencils) :: q
+  !$omp threadprivate(q)
 !
   character (len=labellen) :: initpsi='nothing'
   character (len=labellen) :: iconv_viscosity='Newtonian'

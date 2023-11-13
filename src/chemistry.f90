@@ -171,6 +171,7 @@ module Chemistry
 !   Diagnostics
 !
   real, allocatable, dimension(:,:) :: net_react_m, net_react_p
+  !$omp threadprivate(net_react_m,net_react_p)
 ! For concurrency
   real, pointer, dimension(:,:) :: p_net_react_m, p_net_react_p
   real, dimension(nchemspec) :: Ythresh=0.
@@ -6306,8 +6307,14 @@ module Chemistry
 !
     endsubroutine read_transport_data
 !***********************************************************************
+    subroutine chemistry_init_diag_accum
+      net_react_m = 0.0
+      net_react_p = 0.0
+    endsubroutine chemistry_init_diag_accum
+!***********************************************************************
     subroutine chemistry_init_reduc_pointers
-      p_phiavg_norm => phiavg_norm
+      p_net_react_m =>  net_react_m
+      p_net_react_p =>  net_react_p
     endsubroutine chemistry_init_reduc_pointers
 !***********************************************************************
     subroutine chemistry_diag_reductions
