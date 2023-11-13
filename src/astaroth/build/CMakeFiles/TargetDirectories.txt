@@ -1,4 +1,0 @@
-/users/purotouk/pencil-main/pencil-code/samples/gputest/src/astaroth/build/CMakeFiles/rebuild_cache.dir
-/users/purotouk/pencil-main/pencil-code/samples/gputest/src/astaroth/build/CMakeFiles/edit_cache.dir
-/users/purotouk/pencil-main/pencil-code/samples/gputest/src/astaroth/build/CMakeFiles/astaroth_sgl.dir
-/users/purotouk/pencil-main/pencil-code/samples/gputest/src/astaroth/build/CMakeFiles/gpu_astaroth.dir
