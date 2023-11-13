@@ -27,8 +27,10 @@ module Special
 ! variables global to this module
 !
   real, dimension(my,mz) :: mu_ss=0.
-  real, dimension(my) :: lat
-  real, dimension(mz) :: lon
+  real, dimension(my) :: lat  ! latitude in [rad]
+  real, dimension(mz) :: lon  ! longitude in [rad]
+  real, dimension(mx,my,mz) :: rr1,siny,cosy  !  1/r,sin(th) and cos(th)
+  real, dimension(mx,my,mz,3) :: Bext=0.  !  time-dependent external field
 !  constants for unit conversion
   real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
   real :: pp2Pa=1., TT2K=1., tt2s=1., g2m3_s2=1.
@@ -60,17 +62,19 @@ module Special
 ! Run parameters
 !
   real :: tau_slow_heating=-1.,t0_slow_heating=0.
-  real :: Bext_dipole=0.
+  real :: Bext_ampl=0.
+  character (len=labellen) :: iBext='nothing'
 !
 !
 !
   namelist /special_init_pars/ &
       R_planet,rho_ref,cs_ref,cp_ref,T_ref,pbot0,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
-      pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium
+      pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
+      Bext_ampl,iBext
 !
   namelist /special_run_pars/ &
-      tau_slow_heating,t0_slow_heating,Bext_dipole
+      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -95,6 +99,12 @@ module Special
 !
       lat=0.5*pi-y
       lon=z-pi
+!
+!  3d coordinates for convenience
+!
+      rr1 = 1./spread(spread(x,2,my),3,mz)
+      siny = spread(spread(sin(y),1,mx),3,mz)
+      cosy = spread(spread(cos(y),1,mx),3,mz)
 !
 !  unit conversion
 !
@@ -243,15 +253,9 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: uxb_ext,Bdipole
+      real, dimension (nx,3) :: uxb_ext
 !
-!  the r,theta,phi components of the dipole filed
-!
-      Bdipole(:,1) = Bext_dipole / (x(l1:l2)**3.)
-      Bdipole(:,2) = Bext_dipole / (x(l1:l2)**3.)
-      Bdipole(:,3) = Bext_dipole / (x(l1:l2)**3.)
-!
-      call cross_mn(p%uu,Bdipole,uxb_ext)
+      call cross_mn(p%uu,Bext(l1:l2,m,n,:),uxb_ext)
       df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_ext
 !
     endsubroutine special_calc_magnetic
@@ -269,6 +273,8 @@ module Special
 !  could be time-dependent
 !
       call get_mu_ss(mu_ss,lon_ss,lat_ss)
+!
+      call calc_Bext
 !
       call keep_compiler_quiet(f)
 !
@@ -427,6 +433,28 @@ module Special
 !      close(1)      
 !
     endsubroutine  get_mu_ss
+!***********************************************************************
+    subroutine calc_Bext
+!
+!  Calculate the external B field originated from the planet interior.
+!  This contributes an extra uxb term in du/dt.
+!
+!  13-nov-23/hongzhe: coded
+!
+      select case (iBext)
+      case ('nothing')
+        Bext = 0.
+      case ('dipole')
+        ! dipole = mu0/(4pi) * ( 3*rhat*(rhat dot m)-m ) / |r|^3
+        !        = mu0/(4pi) * m * { 2*costh/r^3, sinth/r^3, 0 }
+        Bext(:,:,:,1) = Bext_ampl * 2.*cosy*rr1**3.
+        Bext(:,:,:,2) = Bext_ampl * siny*rr1**3.
+        Bext(:,:,:,3) = 0.
+      case default
+        call fatal_error('calc_Bext','no such iBext')
+      endselect
+!
+    endsubroutine  calc_Bext
 !***********************************************************************
     subroutine calc_Teq_tau_pmn(T_local,tau_local,press,m,n)
 !
