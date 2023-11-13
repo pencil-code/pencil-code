@@ -32,7 +32,7 @@ else
   PREC=sgl
   CMAKE_PREC = 'DOUBLE_PRECISION=OFF'
 endif
-
+CMAKE_PREC = 'DOUBLE_PRECISION=OFF'
 SOURCES = gpu_astaroth.cc
 
 DATA_TRANSFERS = PACKED
@@ -44,16 +44,18 @@ else
   ENVIRON += -DPACKED_DATA_TRANSFERS=0
   CMAKE_PACKED = 'PACKED_DATA_TRANSFERS=OFF'
 endif
+ENVIRON += -DAC_MPI_ENABLED=1
+ENVIRON += -DAC_USE_HIP=0
 
 OBJECTS = $(SOURCES:.cc=.o) 
 
 CCFLAGS = $(OPTFLAGS) -std=c++11 -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -g -G -lm
 #CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
-CCFLAGS = $(OPTFLAGS) -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm
+CCFLAGS = $(OPTFLAGS) -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm 
 
 PCHEADER_DIR=.
 #DSL_MODULE_DIR=Pencil
-DSL_MODULE_DIR=samples/mhd
+DSL_MODULE_DIR=samples/mhd_modular
 
 include Makefile.depend
 include Makefile.extern
@@ -62,23 +64,29 @@ include Makefile.extern
 #export CUDA_NVCC_FLAGS='-shared -fPIC'
 
 astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
-	nvcc $(CCFLAGS) $(CUFLAGS) -shared -o astaroth_$(PREC).so $(OBJECTS) -L submodule/build/src/core -L submodule/build/src/core/kernels -L submodule/build/src/utils -lastaroth_core -lkernels -lastaroth_utils -Isubmodule/include
+	CC $(CCFLAGS) $(CUFLAGS) -shared -o astaroth_$(PREC).so $(OBJECTS) -L submodule/build/src/core -L submodule/build/src/core/kernels -L submodule/build/src/utils -lastaroth_core -lkernels -lastaroth_utils -Isubmodule/include
 
-astaroth_libs: $(PC_HEADERS)
+astaroth_libs:
 	mkdir -p submodule/build && cd submodule/build && \
-	export DSL_MODULE=$(DSL_MODULE_DIR); cmake -DMULTIGPU_ENABLED=OFF -DBUILD_SHARED=ON -DSINGLEPASS_INTEGRATION=OFF -DBUILD_STANDALONE=OFF\
-              -D$(CMAKE_PACKED) -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=DEBUG -DADJACENT_VERTEX_BUFFERS=ON .. \
-	&& make -I../../.. VERBOSE=0 # Build the core Astaroth library
+	export DSL_MODULE=$(DSL_MODULE_DIR); cmake -DMULTIGPU_ENABLED=ON -DDSL_MODULE_DIR=~/pencil-main/pencil-code/samples/gputest/src/astaroth/submodule/acc-runtime/samples/mhd -DUSE_OMP=ON -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DUSE_CUDA_AWARE_MPI=OFF\
+              -D$(CMAKE_PACKED) -D$(CMAKE_PREC) -DBUILD_SAMPLES=ON  -DADJACENT_VERTEX_BUFFERS=ON -DUSE_HIP=OFF -DLINEAR_PROC_MAPPING=ON -DUSE_EXTERNAL_DECOMP=ON -DVERBOSE=OFF -DCMAKE_BUILD_TYPE=Debug .. \
+	&& make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
+	@echo ENVIRON: $(ENVIRON)
+update_astaroth_libs:
+	cd submodule/build && \
+	make -I../../.. VERBOSE=0 # Build the core Astaroth library
+	@echo PRECISION=$(CMAKE_PREC)
+	@echo ENVIRON: $(ENVIRON)
+
 
 #-DCMAKE_CXX_COMPILER=/appl/spack/install-tree/gcc-4.8.5/gcc-8.3.0-qzmzn5/bin/c++ .. \
 #export DSL_MODULE=pc_mhd_solver && \
 
 %.o: %.cc
-	nvcc $(CCFLAGS) $(ENVIRON) -dc $< -o $@
+	CC $(CCFLAGS) $(ENVIRON) -dc $< -o $@
 
 $(PC_HEADERS): .sentinel
-
 .sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
 	@rm -f $(PCHEADER_DIR)/PC_modulepars.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
 #diagnostics/PC_modulediags.h
@@ -113,3 +121,4 @@ cleann: clean
 #@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < $(PC_HEADER_DIR)/PC_modulepars.h | xargs rm -f
 #@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags.h | xargs rm -f
 #@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags_init.h | xargs rm -f
+
