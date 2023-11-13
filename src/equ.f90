@@ -456,16 +456,9 @@ module Equ
 !***********************************************************************
     subroutine pde_gpu(f,df,p)
 !
-!  Call the different evolution equations.
+!  Call the different evolution equations on the GPU
 !
-!  10-sep-01/axel: coded
-!  12-may-12/MR: call of density_before_boundary added for boussinesq;
-!                moved call of timing after call of anelastic_after_mn
-!  26-aug-13/MR: added call of diagnostic for imaginary parts
-!   9-jun-15/MR: call of gravity_after_boundary added
-!  24-sep-16/MR: added offset manipulation for second derivatives in complete one-sided fornulation.
-!   5-jan-17/MR: removed mn-offset manipulation
-!  14-feb-17/MR: adaptations for use of GPU kernels in calculating the rhss of the pde
+!  13-nov-23/TP: carved from normal pde
 !
       use Chiral
       use Chemistry
