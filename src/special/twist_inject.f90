@@ -117,7 +117,7 @@ module Special
 !
   real :: gamma, cp1
 !
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

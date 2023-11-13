@@ -41,8 +41,6 @@ module Energy
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
   real :: chi_jump_shock=1.0, xchi_shock=0.0,widthchi_shock=0.02
   real, target :: chi=0.0, cs2cool=0., mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  !for testing
-  public :: cs2cool
   real, pointer :: mpoly
   real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_cspeed=0.5
   real :: chi_shock2=0.0
@@ -64,7 +62,7 @@ module Energy
   real, dimension(3) :: chi_hyper3_aniso=0.0
   real, dimension(3) :: gradS0_imposed=(/0.0,0.0,0.0/)
   !for testing
-  public :: grads0_imposed
+  !public :: grads0_imposed
   real, target :: hcond0=impossible, hcond1=impossible
   real, target :: hcondxbot=impossible, hcondxtop=0.0
   real, target :: hcondzbot=impossible, hcondztop=impossible
@@ -99,8 +97,8 @@ module Energy
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   !for testing
-  public :: hcond0
-  public :: hcond
+  ! public :: hcond0
+  ! public :: hcond
   real :: chimax_kramers=0., chimin_kramers=0.
   integer :: nsmooth_kramers=0
   real :: zheat_uniform_range=0.
@@ -182,8 +180,8 @@ module Energy
   real, dimension (nx) :: chit_aniso_prof, dchit_aniso_prof
   real, dimension (:), allocatable :: hcond_prof,dlnhcond_prof
   !for testing
-  public :: hcond_prof
-  public :: dlnhcond_prof
+  ! public :: hcond_prof
+  ! public :: dlnhcond_prof
   real, dimension (:), allocatable :: chit_prof_stored,chit_prof_fluct_stored
   real, dimension (:), allocatable :: dchit_prof_stored,dchit_prof_fluct_stored
   real, dimension(3) :: beta_glnrho_global=0.
@@ -499,8 +497,6 @@ module Energy
   real, dimension(:), pointer :: beta_glnrho_scaled
 !
 
-
-!Public declaration added by preprocessor
 
   contains
 !***********************************************************************

@@ -265,7 +265,7 @@ module Special
 
   type(GWspectra) :: spectra
 
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

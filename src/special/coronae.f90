@@ -162,7 +162,7 @@ module Special
   real, dimension(nx) :: diffus_chi
   real :: gamma, gamma1, gamma_m1, cp1
 !
-!Public declaration added by preprocessor
+
 
   contains
 !

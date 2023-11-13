@@ -32,7 +32,7 @@ module Viscosity
 !
   namelist /viscosity_run_pars/ nu, lvisc_first,ivisc,c_smag
 !
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

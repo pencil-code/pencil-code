@@ -85,8 +85,6 @@ module HDF5_IO
 !
 
 
-!Public declaration added by preprocessor
-_hdf5_io
   contains
 !***********************************************************************
     subroutine initialize_hdf5(nxyz,ngrid,mvar_,maux_)
@@ -1017,8 +1015,6 @@ _hdf5_io
 
 
 
-!Public declaration added by preprocessor
-_hdf5_io
       contains
 !----------------------------------------------------------------------
     function offsetof(base,comp) result(offset)

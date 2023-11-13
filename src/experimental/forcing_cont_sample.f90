@@ -129,7 +129,7 @@ module Forcing
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
 !
-!Public declaration added by preprocessor
+
 
   contains
 !

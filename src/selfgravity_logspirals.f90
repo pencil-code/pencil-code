@@ -72,7 +72,7 @@ module Selfgravity
 !
 
 
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

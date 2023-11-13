@@ -166,7 +166,7 @@ module Special
    integer :: i_Egpe3=0
 !!
 !
-!Public declaration added by preprocessor
+
 
   contains
 !

@@ -74,7 +74,7 @@ module Special
 !
   real :: gamma, gamma_m1, cp1, cv1
 !
-!Public declaration added by preprocessor
+
 
 
 

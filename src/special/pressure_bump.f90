@@ -62,7 +62,7 @@ module Special
 !
     real, dimension(:), pointer :: beta_glnrho_scaled
 !
-!Public declaration added by preprocessor
+
 
     contains
 !***********************************************************************

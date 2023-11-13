@@ -28,7 +28,7 @@ module Energy
 !
   include 'energy.h'
 !
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

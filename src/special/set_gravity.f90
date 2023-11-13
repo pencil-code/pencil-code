@@ -72,7 +72,7 @@ module Special
   real, dimension(nx,ny,nz,3) :: gravity
   real :: sigmaz=0.3
 !
-!Public declaration added by preprocessor
+
 
   contains
 

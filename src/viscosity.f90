@@ -229,7 +229,7 @@ module Viscosity
 !
 
 
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

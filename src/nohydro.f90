@@ -73,7 +73,7 @@ module Hydro
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
   integer :: idiag_ekintot=0, idiag_ekin=0
 !
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

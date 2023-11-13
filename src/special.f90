@@ -93,7 +93,7 @@
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules_max,n_subroutines) :: special_sub_handles
 
-!Public declaration added by preprocessor
+
 
     contains
 !****************************************************************************

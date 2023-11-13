@@ -605,8 +605,6 @@ module Hydro
 !
 
 
-!Public declaration added by preprocessor
-
   contains
 !***********************************************************************
     subroutine register_hydro

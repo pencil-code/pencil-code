@@ -168,8 +168,6 @@ module Hydro
   real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer, interp_buffer
   real, dimension(:,:,:), allocatable :: smooth_factor
 !
-!Public declaration added by preprocessor
-
   contains
 !***********************************************************************
     subroutine register_hydro

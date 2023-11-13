@@ -59,7 +59,7 @@ module Special
   logical, pointer :: lmeanfield_theory
   real, pointer :: meanfield_etat,eta
 !
-!Public declaration added by preprocessor
+
 
   contains
 !

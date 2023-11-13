@@ -96,7 +96,7 @@ module Special
 !
 !!   integer :: idiag_POSSIBLEDIAGNOSTIC=0
 !
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

@@ -821,10 +821,6 @@ module Hydro
   real, dimension (nx,3) :: fint,fext
   real, dimension (nx,ny) :: omega_prof
 
-!Public declaration added by preprocessor
-
-
-
   contains
 !***********************************************************************
     subroutine register_hydro

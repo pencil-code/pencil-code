@@ -293,7 +293,7 @@ module Special
     module procedure smooth_rbound_4d
   end interface
 
-!Public declaration added by preprocessor
+
 
 
 

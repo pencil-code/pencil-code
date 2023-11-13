@@ -142,7 +142,7 @@ module Special
   type(GridPointers), allocatable :: grid(:)
   integer :: ngrid
 !
-!Public declaration added by preprocessor
+
 
 
 

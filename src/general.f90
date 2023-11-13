@@ -68,8 +68,6 @@ module General
   public :: binomial,merge_lists,reallocate
 ! 
 ! 
-! !Public declaration added by preprocessor
-! _general
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0

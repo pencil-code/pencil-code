@@ -139,7 +139,7 @@ module Special
   real, dimension(mz) :: Tbar = 0.0, etabar=0.0
   real :: gTT_conductive = 0.0, eta_alpha2=0.0
 !
-!Public declaration added by preprocessor
+
 
 
 
@@ -1540,7 +1540,7 @@ module Special
       enddo
       deallocate(grid)
 !
-!Public declaration added by preprocessor
+
 
 
 

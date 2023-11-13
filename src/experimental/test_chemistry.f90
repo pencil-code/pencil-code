@@ -234,7 +234,7 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
   integer :: ireac=0
   integer, dimension(nchemspec) :: ireaci=0
 
-!Public declaration added by preprocessor
+
 
 
 

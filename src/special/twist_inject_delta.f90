@@ -102,7 +102,7 @@ module Special
 !
    integer,dimension(2) :: idiag_posx=0,idiag_Iring=0
 !
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

@@ -78,7 +78,7 @@ module Special
   real, dimension(nx,ny,2) :: gravity
   real, dimension(nx,3) :: fcoriolis,fgravity
 !
-!Public declaration added by preprocessor
+
 
 
 

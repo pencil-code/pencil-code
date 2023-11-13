@@ -143,7 +143,7 @@ module SharedVariables
 !
 
 
-!Public declaration added by preprocessor
+
   contains
 !
 !***********************************************************************

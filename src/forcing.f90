@@ -206,8 +206,6 @@ module Forcing
 !
 
 
-!Public declaration added by preprocessor
-
   contains
 !
 !***********************************************************************

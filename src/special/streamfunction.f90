@@ -128,7 +128,7 @@ module Special
 !
   logical :: lgauss_seidel,lomega_jacobi
 !
-!Public declaration added by preprocessor
+
 
 
 

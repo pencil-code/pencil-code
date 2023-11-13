@@ -39,7 +39,7 @@ module Dustvelocity
   real :: nd0=1.,rhod0=1.
   logical :: ldustcoagulation=.false., ldustcondensation=.false.
 !
-!Public declaration added by preprocessor
+
 
 
 

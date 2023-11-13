@@ -42,7 +42,7 @@ module Special
 !
   integer :: idiag_u1=0, idiag_u2=0
 !
-!Public declaration added by preprocessor
+
 
   contains
 !

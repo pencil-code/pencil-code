@@ -65,7 +65,7 @@ module Special
     n_pivot, udrive, xp, yp, rad, lam_twist, lam_u, r_profile, z_profile, lam_z, &
     t_e3, lblink, delay_blink, t_blink_up, t_blink_0u, t_blink_down, t_blink_0d
 !
-!Public declaration added by preprocessor
+
 
   contains
 !

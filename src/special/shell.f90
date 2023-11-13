@@ -99,7 +99,7 @@ module Special
 !
    integer :: idiag_uuGOY=0, idiag_deltM=0, idiag_eddy_time=0
 !
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

@@ -74,7 +74,7 @@ module Special
   integer :: idiag_qbetamin=0
   integer :: idiag_qbetamax=0
 !
-!Public declaration added by preprocessor
+
 
 
 

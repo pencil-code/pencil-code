@@ -120,7 +120,7 @@ module Special
    !  module procedure sigma_to_mdot_pt
    !endinterface
 !
-!Public declaration added by preprocessor
+
 
 
 

@@ -45,7 +45,7 @@ module Special
   integer, parameter :: nkramers=1
   real :: unit_cond=1.
 
-!Public declaration added by preprocessor
+
 
   contains
 !***********************************************************************

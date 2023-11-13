@@ -97,7 +97,7 @@ module Special
   integer :: idiag_eymz=0       ! XYAVG_DOC: $\left<{\cal E}_y\right>_{xy}$
   integer :: idiag_ezmz=0       ! XYAVG_DOC: $\left<{\cal E}_z\right>_{xy}$
 !
-!Public declaration added by preprocessor
+
 
   contains
 !

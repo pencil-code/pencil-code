@@ -135,7 +135,7 @@ module Special
   integer :: idiag_a2rhopm=0   ! DIAG_DOC: $a^2 (rho+p)$
   integer :: idiag_a2rhom=0   ! DIAG_DOC: $a^2 rho$
 !
-!Public declaration added by preprocessor
+
 
   contains
 !****************************************************************************
