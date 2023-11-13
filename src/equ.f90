@@ -337,6 +337,7 @@ module Equ
           call calc_all_module_diagnostics(f,p)
         endif
       else
+        call test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_cpu,rhs_cpu)
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif
 !
@@ -452,6 +453,150 @@ module Equ
       lwrite_prof=.false.
 !
     endsubroutine pde
+!***********************************************************************
+    subroutine pde_gpu(f,df,p)
+!
+!  Call the different evolution equations.
+!
+!  10-sep-01/axel: coded
+!  12-may-12/MR: call of density_before_boundary added for boussinesq;
+!                moved call of timing after call of anelastic_after_mn
+!  26-aug-13/MR: added call of diagnostic for imaginary parts
+!   9-jun-15/MR: call of gravity_after_boundary added
+!  24-sep-16/MR: added offset manipulation for second derivatives in complete one-sided fornulation.
+!   5-jan-17/MR: removed mn-offset manipulation
+!  14-feb-17/MR: adaptations for use of GPU kernels in calculating the rhss of the pde
+!
+      use Chiral
+      use Chemistry
+      use Density
+      use Detonate, only: detonate_before_boundary
+      use Diagnostics
+      use Dustdensity
+      use Energy
+      use EquationOfState
+      use Forcing, only: forcing_after_boundary
+!                         
+! To check ghost cell consistency, please uncomment the following line:
+!     use Ghost_check, only: check_ghosts_consistency
+      use GhostFold, only: fold_df, fold_df_3points
+      use Gpu
+      use Gravity
+      use Hydro
+      use Interstellar, only: interstellar_before_boundary
+      use Magnetic
+      use Magnetic_meanfield, only: meanfield_after_boundary
+      use Hypervisc_strict, only: hyperviscosity_strict
+      use Hyperresi_strict, only: hyperresistivity_strict
+      use NeutralDensity, only: neutraldensity_after_boundary
+      use NSCBC
+      use Particles_main
+      use Poisson
+      use Pscalar
+      use PointMasses
+      use Polymer
+      use Radiation
+      use Selfgravity
+      use Shear
+      use Shock, only: shock_before_boundary, calc_shock_profile_simple
+      use Solid_Cells, only: update_solid_cells, dsolid_dt_integrate
+      use Special, only: special_before_boundary,special_after_boundary
+      use Sub
+      use Testfield
+      use Testflow
+      use Testscalar
+      use Viscosity, only: viscosity_after_boundary
+      use Grid, only: coarsegrid_interp
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      intent(inout):: f       ! inout due to lshift_datacube_x,
+                              ! density floor, or velocity ceiling
+      intent(out)  :: df,p
+!
+      logical :: early_finalize
+      real, dimension(1)  :: mass_per_proc
+!
+!  Print statements when they are first executed.
+!
+      headtt = headt .and. lfirst .and. lroot
+!
+      if (headtt.or.ldebug) print*,'pde: ENTER'
+      if (headtt) call svn_id( &
+           "$Id$")
+!
+!  Initialize counter for calculating and communicating print results.
+!  Do diagnostics only in the first of the 3 (=itorder) substeps.
+!
+      ldiagnos   =lfirst.and.lout
+      l1davgfirst=lfirst.and.l1davg
+      l2davgfirst=lfirst.and.l2davg
+!
+!  Derived diagnostics switches.
+!
+      l1dphiavg=lcylinder_in_a_box.and.l1davgfirst
+!
+!  For chemistry with LSODE
+!
+      lchemonly=.false.
+!
+!  Record times for diagnostic and 2d average output.
+!
+      if (ldiagnos   ) tdiagnos  =t ! (diagnostics are for THIS time)
+      if (l1davgfirst) t1ddiagnos=t ! (1-D averages are for THIS time)
+      if (l2davgfirst)  then
+        t2davgfirst=t ! (2-D averages are for THIS time)
+!
+!  [AB: Isn't it true that not all 2-D averages use rcyl_mn?
+!  lwrite_phiaverages=T is required, and perhaps only that.]
+!  [BD: add also the z_mn dependency]
+!
+        lpencil(i_rcyl_mn)=.true.
+        lpencil(i_z_mn)=.true.
+      endif
+!
+!  Shift entire data cube by one grid point at the beginning of each
+!  time-step. Useful for smearing out possible x-dependent numerical
+!  diffusion, e.g. in a linear shear flow.
+!
+      if (lfirst .and. lshift_datacube_x) then
+        call boundconds_x(f)
+        do  n=n1,n2; do m=m1,m2
+          f(:,m,n,:)=cshift(f(:,m,n,:),1,1)
+        enddo; enddo
+      endif
+!
+!  Need to finalize communication early either for test purposes, or
+!  when radiation transfer of global ionization is calculated.
+!  This could in principle be avoided (but it not worth it now)
+!
+      early_finalize=test_nonblocking.or. &
+                     leos_ionization.or.lradiation_ray.or. &
+                     lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
+                     ltestscalar.or.ltestfield.or.ltestflow.or. &
+                     lparticles_spin.or.lsolid_cells.or. &
+                     lchemistry.or.lweno_transport .or. lbfield .or. & 
+!                     lslope_limit_diff .or. lvisc_smag .or. &
+                     lvisc_smag .or. &
+                     lyinyang .or. lgpu .or. &   !!!
+                     ncoarse>1 
+!
+      call rhs_gpu(f,itsub,early_finalize)
+      if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+        call do_rest_diagnostics_tasks(f)
+        call copy_farray_from_GPU(f)
+        call calc_all_module_diagnostics(f,p)
+      endif
+
+      if (lfirst) then
+!$      if(num_of_diag_iter_done==nyz .and. .not. lstarted_finalizing_diagnostics) then
+          call finalize_diagnostics
+!$      endif
+      endif
+!
+    endsubroutine pde_gpu
 !***********************************************************************
     subroutine read_diagnostic_flags
     use Chemistry
@@ -1125,14 +1270,12 @@ module Equ
         call duu_dt(f,df,p)
         call dlnrho_dt(f,df,p)
         call denergy_dt(f,df,p)
-        ! call test_rhs(f,df,p,dlnrho_dt,dlnrho_dt_copy)
 !
 !  Magnetic field evolution
 !
         if (lmagnetic) call daa_dt(f,df,p)
 !
 !  Lorenz gauge evolution
-!
         if (llorenz_gauge) call dlorenz_gauge_dt(f,df,p)
 !
 !  Polymer evolution
@@ -1717,7 +1860,7 @@ module Equ
 
     endsubroutine set_dt1_max
 !***********************************************************************
-    subroutine test_rhs(f,df,p,rhs_1,rhs_2)
+    subroutine test_dt(f,df,p,rhs_1,rhs_2)
 
       use Mpicomm
       use Ascalar
@@ -1820,6 +1963,954 @@ module Equ
       endif
       print*,iux,iuy,iuz,iss,ilnrho
       call die_gracefully
+    endsubroutine test_dt
+!***********************************************************************
+subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
+
+      use Mpicomm
+      use Ascalar
+      use Chiral
+      use Chemistry
+      use Cosmicray
+      use CosmicrayFlux
+      use Density
+      use Diagnostics
+      use Dustvelocity
+      use Dustdensity
+      use Energy
+      use EquationOfState
+      use Forcing, only: calc_diagnostics_forcing
+      use Gravity
+      use Heatflux
+      use Hydro
+      use Lorenz_gauge
+      use Magnetic
+      use NeutralDensity
+      use NeutralVelocity
+      use Particles_main
+      use Pscalar
+      use PointMasses
+      use Polymer
+      use Radiation
+      use Selfgravity
+      use Shear
+      use Solid_Cells, only: dsolid_dt
+      use Special, only: dspecial_dt
+      use Sub, only: sum_mn
+      use Testfield
+      use Testflow
+      use Testscalar
+
+      real, dimension (mx,my,mz,mfarray) :: f,f_copy
+      real, dimension (mx,my,mz,mfarray) :: df,df_copy
+      type (pencil_case) :: p,p_copy
+      real, dimension(1), intent(inout) :: mass_per_proc
+      logical ,intent(in) :: early_finalize
+      integer :: i,j,k,n
+      logical :: passed
+      interface
+          subroutine rhs_1(f,df,p,mass_per_proc,early_finalize)
+              import mx
+              import my
+              import mz
+              import mfarray
+              import pencil_case
+              real, dimension (mx,my,mz,mfarray) :: f
+              real, dimension (mx,my,mz,mfarray) :: df
+              type (pencil_case) :: p
+              real, dimension(1), intent(inout) :: mass_per_proc
+              logical ,intent(in) :: early_finalize
+
+              intent(inout) :: f
+              intent(inout) :: p
+              intent(out) :: df
+          endsubroutine rhs_1 
+        endinterface
+        interface
+          subroutine rhs_2(f,df,p,mass_per_proc,early_finalize)
+              import mx
+              import my
+              import mz
+              import mfarray
+              import pencil_case
+              real, dimension (mx,my,mz,mfarray) :: f
+              real, dimension (mx,my,mz,mfarray) :: df
+              type (pencil_case) :: p
+              real, dimension(1), intent(inout) :: mass_per_proc
+              logical ,intent(in) :: early_finalize
+
+              intent(inout) :: f
+              intent(inout) :: p
+              intent(out) :: df
+          endsubroutine rhs_2 
+      endinterface
+      df_copy = df
+      p_copy = p
+      f_copy = f
+      call rhs_1(f,df,p,mass_per_proc,early_finalize)
+      call rhs_2(f_copy,df_copy,p_copy,mass_per_proc,early_finalize)
+      passed = .true.
+      do i=1,mx
+        do j=1,my
+          do k=1,mz
+            do n=1,mfarray
+              if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
+                print*,"Wrong at: ",i,j,k,n
+                print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
+                passed = .false.
+              endif
+            enddo
+          enddo
+        enddo
+      enddo
+      if(passed) then
+        print*,"passed test :)"
+      else
+        print*,"did not pass test :/"
+      endif
+      print*,iux,iuy,iuz,iss,ilnrho
+      call die_gracefully
     endsubroutine test_rhs
+!***********************************************************************
+subroutine rhs_cpu_test(f,df,p,mass_per_proc,early_finalize)
+use Deriv
+use General
+use Energy
+use Viscosity
+use Hydro
+use Density
+use Gravity
+use EquationOfState
+real, dimension (mx,my,mz,mfarray),intent(inout) :: f
+real, dimension (mx,my,mz,mfarray)   ,intent(out  ) :: df
+type (pencil_case)              ,intent(inout) :: p
+real, dimension(1)                ,intent(inout) :: mass_per_proc
+logical                           ,intent(in   ) :: early_finalize
+real, dimension (nxgrid/nprocx,3) :: df_iuu_pencil
+real, dimension (nxgrid/nprocx)::tmp_53_54_55_82
+real, dimension (nxgrid/nprocx)::dd_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_rho_53_54_55_82
+real, dimension (nxgrid/nprocx,3) :: tmp3_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3) :: tmp33_53_54_55_82
+real::cs201_53_54_55_82
+real::outest_53_54_55_82
+integer::i_53_54_55_82
+integer::j_53_54_55_82
+integer::ju_53_54_55_82
+integer::jj_53_54_55_82
+integer::kk_53_54_55_82
+integer::jk_53_54_55_82
+real, dimension (nxgrid/nprocx)::a_max_4_53_54_55_82
+logical::fast_sqrt1_4_53_54_55_82
+logical::precise_sqrt1_4_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_5_53_54_55_82
+integer::i_5_53_54_55_82
+integer::j_5_53_54_55_82
+integer::k1_5_53_54_55_82
+integer::i_8_53_54_55_82
+integer::j_8_53_54_55_82
+logical :: lshear_ros_8_53_54_55_82
+logical :: loptest_return_value_7_8_53_54_55_82
+integer::i_9_53_54_55_82
+integer::j_9_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_10_53_54_55_82
+integer::i_10_53_54_55_82
+integer::j_10_53_54_55_82
+integer::k1_10_53_54_55_82
+integer::a1_12_53_54_55_82
+integer::a2_12_53_54_55_82
+logical :: loptest_return_value_11_12_53_54_55_82
+real, dimension (nxgrid/nprocx)::a_max_13_53_54_55_82
+logical::fast_sqrt1_13_53_54_55_82
+logical::precise_sqrt1_13_53_54_55_82
+integer :: i_15_53_54_55_82
+logical :: loptest_return_value_14_15_53_54_55_82
+real, dimension (nxgrid/nprocx)::a_max_17_53_54_55_82
+logical::fast_sqrt1_17_53_54_55_82
+logical::precise_sqrt1_17_53_54_55_82
+real, dimension (nxgrid/nprocx,3)::ff_25_53_54_55_82
+real, dimension (nxgrid/nprocx,3)::grad_f_tmp_25_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_25_53_54_55_82
+integer::j_25_53_54_55_82
+integer :: i_18_23_25_53_54_55_82
+logical :: loptest_return_value_14_18_23_25_53_54_55_82
+logical :: loptest_return_value_19_23_25_53_54_55_82
+real, dimension(nxgrid/nprocx) :: del6f_upwind_22_23_25_53_54_55_82
+integer :: msk_22_23_25_53_54_55_82
+real, dimension(nxgrid/nprocx,3)::del6f_21_22_23_25_53_54_55_82
+integer, dimension(nxgrid/nprocx)            :: indxs_21_22_23_25_53_54_55_82
+integer::j_21_22_23_25_53_54_55_82
+integer::msk_21_22_23_25_53_54_55_82
+logical :: loptest_return_value_24_25_53_54_55_82
+real, dimension (nxgrid/nprocx)::a_max_26_53_54_55_82
+logical::fast_sqrt1_26_53_54_55_82
+logical::precise_sqrt1_26_53_54_55_82
+real, dimension (nxgrid/nprocx,3)::ff_27_53_54_55_82
+real, dimension (nxgrid/nprocx,3)::grad_f_tmp_27_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_27_53_54_55_82
+integer::j_27_53_54_55_82
+integer :: i_18_23_27_53_54_55_82
+logical :: loptest_return_value_14_18_23_27_53_54_55_82
+logical :: loptest_return_value_19_23_27_53_54_55_82
+real, dimension(nxgrid/nprocx) :: del6f_upwind_22_23_27_53_54_55_82
+integer :: msk_22_23_27_53_54_55_82
+real, dimension(nxgrid/nprocx,3)::del6f_21_22_23_27_53_54_55_82
+integer, dimension(nxgrid/nprocx)            :: indxs_21_22_23_27_53_54_55_82
+integer::j_21_22_23_27_53_54_55_82
+integer::msk_21_22_23_27_53_54_55_82
+logical :: loptest_return_value_24_27_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_29_53_54_55_82
+integer::i_29_53_54_55_82
+integer::k1_29_53_54_55_82
+real, dimension (nxgrid/nprocx)::d4fdx_28_29_53_54_55_82
+real, dimension (nxgrid/nprocx)::d4fdy_28_29_53_54_55_82
+real, dimension (nxgrid/nprocx)::d4fdz_28_29_53_54_55_82
+logical :: ignore_dx_28_29_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_33_53_54_55_82
+integer::i_33_53_54_55_82
+integer::k1_33_53_54_55_82
+logical :: loptest_return_value_30_33_53_54_55_82
+real, dimension(nxgrid/nprocx)::tmp_31_33_53_54_55_82
+integer::i_31_33_53_54_55_82
+integer::j_31_33_53_54_55_82
+real, dimension (nxgrid/nprocx)::d6fdx_32_33_53_54_55_82
+real, dimension (nxgrid/nprocx)::d6fdy_32_33_53_54_55_82
+real, dimension (nxgrid/nprocx)::d6fdz_32_33_53_54_55_82
+logical :: ignore_dx_32_33_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_34_53_54_55_82
+integer::i_34_53_54_55_82
+integer::k1_34_53_54_55_82
+logical :: loptest_return_value_30_34_53_54_55_82
+real, dimension(nxgrid/nprocx)::tmp_31_34_53_54_55_82
+integer::i_31_34_53_54_55_82
+integer::j_31_34_53_54_55_82
+real, dimension (nxgrid/nprocx)::d6fdx_32_34_53_54_55_82
+real, dimension (nxgrid/nprocx)::d6fdy_32_34_53_54_55_82
+real, dimension (nxgrid/nprocx)::d6fdz_32_34_53_54_55_82
+logical :: ignore_dx_32_34_53_54_55_82
+real, dimension(nxgrid/nprocx) :: tmp_35_53_54_55_82
+integer::ki_35_53_54_55_82
+integer::kj_35_53_54_55_82
+integer::i_35_53_54_55_82
+integer::j_35_53_54_55_82
+integer::k_35_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fjji_36_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fijj_36_53_54_55_82
+real, dimension (nxgrid/nprocx,3) ::  fjik_36_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_36_53_54_55_82
+integer::i_36_53_54_55_82
+integer::j_36_53_54_55_82
+integer::k1_36_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fjji_37_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fijj_37_53_54_55_82
+real, dimension (nxgrid/nprocx,3) ::  fjik_37_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_37_53_54_55_82
+integer::i_37_53_54_55_82
+integer::j_37_53_54_55_82
+integer::k1_37_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fjji_38_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fijj_38_53_54_55_82
+real, dimension (nxgrid/nprocx,3) ::  fjik_38_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_38_53_54_55_82
+integer::i_38_53_54_55_82
+integer::j_38_53_54_55_82
+integer::k1_38_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fjji_39_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fijj_39_53_54_55_82
+real, dimension (nxgrid/nprocx,3) ::  fjik_39_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_39_53_54_55_82
+integer::i_39_53_54_55_82
+integer::j_39_53_54_55_82
+integer::k1_39_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fjji_40_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fijj_40_53_54_55_82
+real, dimension (nxgrid/nprocx,3) ::  fjik_40_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_40_53_54_55_82
+integer::i_40_53_54_55_82
+integer::j_40_53_54_55_82
+integer::k1_40_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fjji_41_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fijj_41_53_54_55_82
+real, dimension (nxgrid/nprocx,3) ::  fjik_41_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_41_53_54_55_82
+integer::i_41_53_54_55_82
+integer::j_41_53_54_55_82
+integer::k1_41_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fjji_42_53_54_55_82
+real, dimension (nxgrid/nprocx,3,3)::fijj_42_53_54_55_82
+real, dimension (nxgrid/nprocx,3) ::  fjik_42_53_54_55_82
+real, dimension (nxgrid/nprocx) :: tmp_42_53_54_55_82
+integer::i_42_53_54_55_82
+integer::j_42_53_54_55_82
+integer::k1_42_53_54_55_82
+real, dimension(nxgrid/nprocx,3) :: tmp_46_53_54_55_82
+real, dimension(nxgrid/nprocx) :: tmp_47_53_54_55_82
+integer::i_47_53_54_55_82
+integer::j_47_53_54_55_82
+integer::kincrement_47_53_54_55_82
+integer :: i_51_52_53_54_55_82
+logical :: loptest_return_value_14_51_52_53_54_55_82
+integer :: i_65_66_67_82
+integer :: i_18_57_65_66_67_82
+logical :: loptest_return_value_14_18_57_65_66_67_82
+logical :: loptest_return_value_19_57_65_66_67_82
+real, dimension(nxgrid/nprocx) :: del6f_upwind_22_57_65_66_67_82
+integer :: msk_22_57_65_66_67_82
+real, dimension(nxgrid/nprocx,3)::del6f_21_22_57_65_66_67_82
+integer, dimension(nxgrid/nprocx)            :: indxs_21_22_57_65_66_67_82
+integer::j_21_22_57_65_66_67_82
+integer::msk_21_22_57_65_66_67_82
+real, dimension (nxgrid/nprocx)::a_max_58_65_66_67_82
+logical::fast_sqrt1_58_65_66_67_82
+logical::precise_sqrt1_58_65_66_67_82
+real, dimension (nxgrid/nprocx)::d2fdx_59_65_66_67_82
+real, dimension (nxgrid/nprocx)::d2fdy_59_65_66_67_82
+real, dimension (nxgrid/nprocx)::d2fdz_59_65_66_67_82
+real, dimension (nxgrid/nprocx)::tmp_59_65_66_67_82
+real, dimension (nxgrid/nprocx) :: tmp_60_65_66_67_82
+integer::i_60_65_66_67_82
+integer::j_60_65_66_67_82
+real, dimension (nxgrid/nprocx) :: tmp_62_65_66_67_82
+integer::i_62_65_66_67_82
+integer::j_62_65_66_67_82
+logical :: loptest_return_value_61_62_65_66_67_82
+real, dimension (nxgrid/nprocx) :: tmp_63_65_66_67_82
+integer::i_63_65_66_67_82
+integer::j_63_65_66_67_82
+logical :: loptest_return_value_61_63_65_66_67_82
+integer :: i_51_64_65_66_67_82
+logical :: loptest_return_value_14_51_64_65_66_67_82
+real, dimension(nxgrid/nprocx) :: tmp_72_73_82
+integer::i_72_73_82
+integer::j_72_73_82
+real, dimension (nxgrid/nprocx) :: tmp_69_72_73_82
+integer::i_69_72_73_82
+integer::j_69_72_73_82
+real, dimension (nxgrid/nprocx)::d2fdx_70_72_73_82
+real, dimension (nxgrid/nprocx)::d2fdy_70_72_73_82
+real, dimension (nxgrid/nprocx)::d2fdz_70_72_73_82
+real, dimension (nxgrid/nprocx)::tmp_70_72_73_82
+real, dimension (nxgrid/nprocx)::d6fdx_71_72_73_82
+real, dimension (nxgrid/nprocx)::d6fdy_71_72_73_82
+real, dimension (nxgrid/nprocx)::d6fdz_71_72_73_82
+logical :: ignore_dx_71_72_73_82
+integer :: j_79_82
+integer :: i_18_74_79_82
+logical :: loptest_return_value_14_18_74_79_82
+logical :: loptest_return_value_19_74_79_82
+real, dimension(nxgrid/nprocx) :: del6f_upwind_22_74_79_82
+integer :: msk_22_74_79_82
+real, dimension(nxgrid/nprocx,3)::del6f_21_22_74_79_82
+integer, dimension(nxgrid/nprocx)            :: indxs_21_22_74_79_82
+integer::j_21_22_74_79_82
+integer::msk_21_22_74_79_82
+integer :: i_18_75_79_82
+logical :: loptest_return_value_14_18_75_79_82
+logical :: loptest_return_value_19_75_79_82
+real, dimension(nxgrid/nprocx) :: del6f_upwind_22_75_79_82
+integer :: msk_22_75_79_82
+real, dimension(nxgrid/nprocx,3)::del6f_21_22_75_79_82
+integer, dimension(nxgrid/nprocx)            :: indxs_21_22_75_79_82
+integer::j_21_22_75_79_82
+integer::msk_21_22_75_79_82
+real, dimension (nxgrid/nprocx) :: tmp_76_79_82
+integer::i_76_79_82
+integer::j_76_79_82
+logical :: loptest_return_value_61_76_79_82
+integer :: i_51_78_79_82
+logical :: loptest_return_value_14_51_78_79_82
+real, dimension (nxgrid/nprocx,3)::tmp_80_82
+real, dimension (nxgrid/nprocx,3)::tmp2_80_82
+real, dimension (nxgrid/nprocx,3)::gradnu_80_82
+real, dimension (nxgrid/nprocx,3)::sgradnu_80_82
+real, dimension (nxgrid/nprocx,3)::gradnu_shock_80_82
+real, dimension (nxgrid/nprocx)::murho1_80_82
+real, dimension (nxgrid/nprocx)::zetarho1_80_82
+real, dimension (nxgrid/nprocx)::mutt_80_82
+real, dimension (nxgrid/nprocx)::tmp3_80_82
+real, dimension (nxgrid/nprocx)::tmp4_80_82
+real, dimension (nxgrid/nprocx)::pnu_shock_80_82
+real, dimension (nxgrid/nprocx)::lambda_phi_80_82
+real, dimension (nxgrid/nprocx)::prof_80_82
+real, dimension (nxgrid/nprocx)::prof2_80_82
+real, dimension (nxgrid/nprocx)::derprof_80_82
+real, dimension (nxgrid/nprocx)::derprof2_80_82
+real, dimension (nxgrid/nprocx)::gradnu_effective_80_82
+real, dimension (nxgrid/nprocx)::fac_80_82
+real, dimension (nxgrid/nprocx)::advec_hypermesh_uu_80_82
+real, dimension (nxgrid/nprocx,3)::deljskl2_80_82
+real, dimension (nxgrid/nprocx,3)::fvisc_nnewton2_80_82
+real, dimension (nxgrid/nprocx,3,3) :: d_sld_flux_80_82
+integer::i_80_82
+integer::j_80_82
+integer::ju_80_82
+integer::ii_80_82
+integer::jj_80_82
+integer::kk_80_82
+integer::ll_80_82
+logical::ldiffus_total_80_82
+logical::ldiffus_total3_80_82
+real, dimension (nxgrid/nprocx,3) :: uu1_89
+real, dimension (nxgrid/nprocx)::tmp_89
+real, dimension (nxgrid/nprocx)::ftot_89
+real, dimension (nxgrid/nprocx)::ugu_schur_x_89
+real, dimension (nxgrid/nprocx)::ugu_schur_y_89
+real, dimension (nxgrid/nprocx)::ugu_schur_z_89
+real, dimension (nxgrid/nprocx,3,3) :: puij_schur_89
+integer::i_89
+integer::j_89
+integer::ju_89
+real::c2_86_89
+real::s2_86_89
+integer :: i_88_89
+real, dimension (nxgrid/nprocx)::reshock_87_88_89
+real, dimension (nxgrid/nprocx)::fvisc2_87_88_89
+real, dimension (nxgrid/nprocx)::uus_87_88_89
+real, dimension (nxgrid/nprocx)::tmp_87_88_89
+real, dimension (nxgrid/nprocx)::qfvisc_87_88_89
+real, dimension (nxgrid/nprocx,3)::nud2uxb_87_88_89
+real, dimension (nxgrid/nprocx,3)::fluxv_87_88_89
+real, dimension (nxgrid/nprocx) :: fdiff_91
+real, dimension (nxgrid/nprocx) :: tmp_91
+real, dimension (nxgrid/nprocx,3) :: tmpv_91
+real, dimension (nxgrid/nprocx)::density_rhs_91
+real, dimension (nxgrid/nprocx)::advec_hypermesh_rho_91
+integer :: j_91
+logical :: ldt_up_91
+real::ztop_99
+real::xi_99
+real::profile_cor_99
+real, dimension(nxgrid/nprocx) :: tmp1_99
+integer :: j_99
+real, dimension (nxgrid/nprocx,3)::glnthcond_96_99
+real, dimension (nxgrid/nprocx,3)::glhc_96_99
+real, dimension (nxgrid/nprocx) :: chix_96_99
+real, dimension (nxgrid/nprocx)::thdiff_96_99
+real, dimension (nxgrid/nprocx)::g2_96_99
+real, dimension (nxgrid/nprocx)::del2ss1_96_99
+real, dimension (nxgrid/nprocx) :: glnrhoglnt_96_99
+real, dimension (nxgrid/nprocx,3) :: gradchit_prof_96_99
+real, dimension (nxgrid/nprocx,3,3) :: tmp_96_99
+real::s2_96_99
+real::c2_96_99
+real::sc_96_99
+integer :: j_96_99
+real, dimension(nxgrid/nprocx)::r_mn_94_96_99
+real, dimension(nxgrid/nprocx)::r_mn1_94_96_99
+integer :: j_94_96_99
+integer :: i_95_96_99
+logical :: loptest_return_value_14_95_96_99
+real, dimension (nxgrid/nprocx)::tmp_98_99
+real, dimension (nxgrid/nprocx)::heat_98_99
+real, dimension (nxgrid/nprocx)::tt_drive_98_99
+real, dimension (nxgrid/nprocx)::prof_98_99
+real :: profile_buffer_98_99
+real::xi_98_99
+real::rgas_98_99
+real, dimension (nxgrid/nprocx)::prof_97_98_99
+real::zbot_97_98_99
+real::ztop_97_98_99
+integer :: k_101
+real, dimension(nxgrid/nprocx,3) :: gg_101
+real, dimension(nxgrid/nprocx) :: refac_101
+real, dimension(nxgrid/nprocx)::dt1_max_loc_102
+real, dimension(nxgrid/nprocx)::dt1_advec_102
+real, dimension(nxgrid/nprocx)::dt1_diffus_102
+real, dimension(nxgrid/nprocx)::dt1_src_102
+real :: dt1_preac_102
+mn_loop: do imn=1,nygrid/nprocy*nzgrid/nprocz
+n=nn(imn)
+m=mm(imn)
+if(lpencil(i_uu)) then
+p%uu=f(1+3:l2,m,n,iux:iuz)
+endif
+if(lpencil(i_uij)) then
+k1_5_53_54_55_82=iuu-1
+do i_5_53_54_55_82=1,3
+do j_5_53_54_55_82=1,3
+call der(f,k1_5_53_54_55_82+i_5_53_54_55_82,tmp_5_53_54_55_82,j_5_53_54_55_82)
+p%uij(:,i_5_53_54_55_82,j_5_53_54_55_82)=tmp_5_53_54_55_82
+enddo
+enddo
+endif
+if(lpencil(i_divu)) then
+p%divu=p%uij(:,1,1)+p%uij(:,2,2)+p%uij(:,3,3)
+endif
+if(lpencil(i_sij)) then
+do j_8_53_54_55_82=1,3
+p%sij(:,j_8_53_54_55_82,j_8_53_54_55_82)=p%uij(:,j_8_53_54_55_82,j_8_53_54_55_82)-(1./3.)*p%divu
+do i_8_53_54_55_82=j_8_53_54_55_82+1,3
+p%sij(:,i_8_53_54_55_82,j_8_53_54_55_82)=.5*(p%uij(:,i_8_53_54_55_82,j_8_53_54_55_82)+p%uij(:,j_8_53_54_55_82,i_8_53_54_55_82))
+p%sij(:,j_8_53_54_55_82,i_8_53_54_55_82)=p%sij(:,i_8_53_54_55_82,j_8_53_54_55_82)
+enddo
+enddo
+endif
+if(lpencil(i_sij2)) then
+p%sij2 = p%sij(:,1,1)**2
+do i_9_53_54_55_82 = 2, 3
+p%sij2 = p%sij2 + p%sij(:,i_9_53_54_55_82,i_9_53_54_55_82)**2
+do j_9_53_54_55_82 = 1, i_9_53_54_55_82-1
+p%sij2 = p%sij2 + 2 * p%sij(:,i_9_53_54_55_82,j_9_53_54_55_82)**2
+enddo
+enddo
+endif
+if(lpencil(i_uij5)) then
+k1_10_53_54_55_82=iuu-1
+do i_10_53_54_55_82=1,3
+do j_10_53_54_55_82=1,3
+enddo
+enddo
+endif
+if(lpencil(i_oo)) then
+a1_12_53_54_55_82 = 1
+a2_12_53_54_55_82 = nxgrid/nprocx
+if(a2_12_53_54_55_82 == nxgrid/nprocx+2*3) then
+a1_12_53_54_55_82 = 1+3
+a2_12_53_54_55_82 = l2
+endif
+endif
+if(lpencil(i_ou)) then
+do i_15_53_54_55_82=2,3
+enddo
+endif
+if(lpencil(i_ugu)) then
+do j_25_53_54_55_82=1,3
+grad_f_tmp_25_53_54_55_82 = p%uij(:,j_25_53_54_55_82,:)
+tmp_25_53_54_55_82=p%uu(:,1)*grad_f_tmp_25_53_54_55_82(:,1)
+do i_18_23_25_53_54_55_82=2,3
+tmp_25_53_54_55_82=tmp_25_53_54_55_82+p%uu(:,i_18_23_25_53_54_55_82)*grad_f_tmp_25_53_54_55_82(:,i_18_23_25_53_54_55_82)
+enddo
+p%ugu(:,j_25_53_54_55_82)=tmp_25_53_54_55_82
+enddo
+endif
+if(lpencil(i_ogu)) then
+do j_27_53_54_55_82=1,3
+do i_18_23_27_53_54_55_82=2,3
+enddo
+enddo
+endif
+if(lpencil(i_del4u)) then
+k1_29_53_54_55_82=iuu-1
+do i_29_53_54_55_82=1,3
+enddo
+endif
+if(lpencil(i_del6u)) then
+k1_33_53_54_55_82=iuu-1
+do i_33_53_54_55_82=1,3
+enddo
+endif
+if(lpencil(i_del6u_strict)) then
+k1_34_53_54_55_82=iuu-1
+do i_34_53_54_55_82=1,3
+do i_31_34_53_54_55_82=1,3
+do j_31_34_53_54_55_82=1,3
+enddo
+enddo
+enddo
+endif
+if(lpencil(i_del4graddivu)) then
+do i_35_53_54_55_82=1,3
+ki_35_53_54_55_82 = iuu + (i_35_53_54_55_82-1)
+do j_35_53_54_55_82=1,3
+enddo
+do j_35_53_54_55_82=1,3
+if(j_35_53_54_55_82/=i_35_53_54_55_82) then
+if((i_35_53_54_55_82==1).and.(j_35_53_54_55_82==2)) then
+k_35_53_54_55_82=3
+endif
+if((i_35_53_54_55_82==1).and.(j_35_53_54_55_82==3)) then
+k_35_53_54_55_82=2
+endif
+if((i_35_53_54_55_82==2).and.(j_35_53_54_55_82==1)) then
+k_35_53_54_55_82=3
+endif
+if((i_35_53_54_55_82==2).and.(j_35_53_54_55_82==3)) then
+k_35_53_54_55_82=1
+endif
+if((i_35_53_54_55_82==3).and.(j_35_53_54_55_82==1)) then
+k_35_53_54_55_82=2
+endif
+if((i_35_53_54_55_82==3).and.(j_35_53_54_55_82==2)) then
+k_35_53_54_55_82=1
+endif
+kj_35_53_54_55_82 = iuu+(j_35_53_54_55_82-1)
+endif
+enddo
+enddo
+endif
+if(lpencil(i_der6u_res)) then
+do j_53_54_55_82=1,3
+ju_53_54_55_82=j_53_54_55_82+iuu-1
+do i_53_54_55_82=1,3
+enddo
+enddo
+endif
+if(lpencil(i_del2u).and.lpencil(i_graddivu).and.lpencil(i_curlo)) then
+k1_36_53_54_55_82=iuu-1
+do i_36_53_54_55_82=1,3
+do j_36_53_54_55_82=1,3
+call der2 (f,k1_36_53_54_55_82+i_36_53_54_55_82,tmp_36_53_54_55_82,  j_36_53_54_55_82)
+fijj_36_53_54_55_82(:,i_36_53_54_55_82,j_36_53_54_55_82)=tmp_36_53_54_55_82
+call derij(f,k1_36_53_54_55_82+j_36_53_54_55_82,tmp_36_53_54_55_82,j_36_53_54_55_82,i_36_53_54_55_82)
+fjji_36_53_54_55_82(:,i_36_53_54_55_82,j_36_53_54_55_82)=tmp_36_53_54_55_82
+enddo
+enddo
+do i_36_53_54_55_82=1,3
+p%del2u(:,i_36_53_54_55_82)=fijj_36_53_54_55_82(:,i_36_53_54_55_82,1)+fijj_36_53_54_55_82(:,i_36_53_54_55_82,2)+fijj_36_53_54_55_82(:,i_36_53_54_55_82,3)
+enddo
+do i_36_53_54_55_82=1,3
+p%graddivu(:,i_36_53_54_55_82)=fjji_36_53_54_55_82(:,i_36_53_54_55_82,1)+fjji_36_53_54_55_82(:,i_36_53_54_55_82,2)+fjji_36_53_54_55_82(:,i_36_53_54_55_82,3)
+enddo
+else if(lpencil(i_del2u).and.lpencil(i_graddivu)) then
+k1_37_53_54_55_82=iuu-1
+do i_37_53_54_55_82=1,3
+do j_37_53_54_55_82=1,3
+call der2 (f,k1_37_53_54_55_82+i_37_53_54_55_82,tmp_37_53_54_55_82,  j_37_53_54_55_82)
+fijj_37_53_54_55_82(:,i_37_53_54_55_82,j_37_53_54_55_82)=tmp_37_53_54_55_82
+call derij(f,k1_37_53_54_55_82+j_37_53_54_55_82,tmp_37_53_54_55_82,j_37_53_54_55_82,i_37_53_54_55_82)
+fjji_37_53_54_55_82(:,i_37_53_54_55_82,j_37_53_54_55_82)=tmp_37_53_54_55_82
+enddo
+enddo
+do i_37_53_54_55_82=1,3
+p%del2u(:,i_37_53_54_55_82)=fijj_37_53_54_55_82(:,i_37_53_54_55_82,1)+fijj_37_53_54_55_82(:,i_37_53_54_55_82,2)+fijj_37_53_54_55_82(:,i_37_53_54_55_82,3)
+enddo
+do i_37_53_54_55_82=1,3
+p%graddivu(:,i_37_53_54_55_82)=fjji_37_53_54_55_82(:,i_37_53_54_55_82,1)+fjji_37_53_54_55_82(:,i_37_53_54_55_82,2)+fjji_37_53_54_55_82(:,i_37_53_54_55_82,3)
+enddo
+else if(lpencil(i_del2u).and.lpencil(i_curlo)) then
+k1_38_53_54_55_82=iuu-1
+do i_38_53_54_55_82=1,3
+do j_38_53_54_55_82=1,3
+call der2 (f,k1_38_53_54_55_82+i_38_53_54_55_82,tmp_38_53_54_55_82,  j_38_53_54_55_82)
+fijj_38_53_54_55_82(:,i_38_53_54_55_82,j_38_53_54_55_82)=tmp_38_53_54_55_82
+call derij(f,k1_38_53_54_55_82+j_38_53_54_55_82,tmp_38_53_54_55_82,j_38_53_54_55_82,i_38_53_54_55_82)
+enddo
+enddo
+do i_38_53_54_55_82=1,3
+p%del2u(:,i_38_53_54_55_82)=fijj_38_53_54_55_82(:,i_38_53_54_55_82,1)+fijj_38_53_54_55_82(:,i_38_53_54_55_82,2)+fijj_38_53_54_55_82(:,i_38_53_54_55_82,3)
+enddo
+do i_38_53_54_55_82=1,3
+enddo
+else if(lpencil(i_graddivu).and.lpencil(i_curlo)) then
+k1_39_53_54_55_82=iuu-1
+do i_39_53_54_55_82=1,3
+do j_39_53_54_55_82=1,3
+call der2 (f,k1_39_53_54_55_82+i_39_53_54_55_82,tmp_39_53_54_55_82,  j_39_53_54_55_82)
+call derij(f,k1_39_53_54_55_82+j_39_53_54_55_82,tmp_39_53_54_55_82,j_39_53_54_55_82,i_39_53_54_55_82)
+fjji_39_53_54_55_82(:,i_39_53_54_55_82,j_39_53_54_55_82)=tmp_39_53_54_55_82
+enddo
+enddo
+do i_39_53_54_55_82=1,3
+enddo
+do i_39_53_54_55_82=1,3
+p%graddivu(:,i_39_53_54_55_82)=fjji_39_53_54_55_82(:,i_39_53_54_55_82,1)+fjji_39_53_54_55_82(:,i_39_53_54_55_82,2)+fjji_39_53_54_55_82(:,i_39_53_54_55_82,3)
+enddo
+else if(lpencil(i_del2u)) then
+k1_40_53_54_55_82=iuu-1
+do i_40_53_54_55_82=1,3
+do j_40_53_54_55_82=1,3
+call der2 (f,k1_40_53_54_55_82+i_40_53_54_55_82,tmp_40_53_54_55_82,  j_40_53_54_55_82)
+fijj_40_53_54_55_82(:,i_40_53_54_55_82,j_40_53_54_55_82)=tmp_40_53_54_55_82
+call derij(f,k1_40_53_54_55_82+j_40_53_54_55_82,tmp_40_53_54_55_82,j_40_53_54_55_82,i_40_53_54_55_82)
+enddo
+enddo
+do i_40_53_54_55_82=1,3
+p%del2u(:,i_40_53_54_55_82)=fijj_40_53_54_55_82(:,i_40_53_54_55_82,1)+fijj_40_53_54_55_82(:,i_40_53_54_55_82,2)+fijj_40_53_54_55_82(:,i_40_53_54_55_82,3)
+enddo
+do i_40_53_54_55_82=1,3
+enddo
+else if(lpencil(i_graddivu)) then
+k1_41_53_54_55_82=iuu-1
+do i_41_53_54_55_82=1,3
+do j_41_53_54_55_82=1,3
+call der2 (f,k1_41_53_54_55_82+i_41_53_54_55_82,tmp_41_53_54_55_82,  j_41_53_54_55_82)
+call derij(f,k1_41_53_54_55_82+j_41_53_54_55_82,tmp_41_53_54_55_82,j_41_53_54_55_82,i_41_53_54_55_82)
+fjji_41_53_54_55_82(:,i_41_53_54_55_82,j_41_53_54_55_82)=tmp_41_53_54_55_82
+enddo
+enddo
+do i_41_53_54_55_82=1,3
+enddo
+do i_41_53_54_55_82=1,3
+p%graddivu(:,i_41_53_54_55_82)=fjji_41_53_54_55_82(:,i_41_53_54_55_82,1)+fjji_41_53_54_55_82(:,i_41_53_54_55_82,2)+fjji_41_53_54_55_82(:,i_41_53_54_55_82,3)
+enddo
+else if(lpencil(i_curlo)) then
+k1_42_53_54_55_82=iuu-1
+do i_42_53_54_55_82=1,3
+do j_42_53_54_55_82=1,3
+enddo
+enddo
+do i_42_53_54_55_82=1,3
+enddo
+do i_42_53_54_55_82=1,3
+enddo
+endif
+if(lpencil(i_uijk)) then
+do kincrement_47_53_54_55_82=0,2
+do i_47_53_54_55_82=1,3
+do j_47_53_54_55_82=i_47_53_54_55_82,3
+enddo
+enddo
+enddo
+endif
+if(lpencil(i_grad5divu)) then
+do i_53_54_55_82=1,3
+do j_53_54_55_82=1,3
+ju_53_54_55_82=iuu+j_53_54_55_82-1
+enddo
+enddo
+endif
+if(lpencil(i_uu_advec)) then
+do j_53_54_55_82=1,3
+do i_51_52_53_54_55_82=2,3
+enddo
+enddo
+endif
+p%lnrho=f(1+3:l2,m,n,ilnrho)
+if(lpencil(i_rho1)) then
+p%rho1=exp(-f(1+3:l2,m,n,ilnrho))
+endif
+if(lpencil(i_rho)) then
+p%rho=1.0/p%rho1
+endif
+if(lpencil(i_glnrho).or.lpencil(i_grho)) then
+call der(f,ilnrho,p%glnrho(:,1),1)
+call der(f,ilnrho,p%glnrho(:,2),2)
+call der(f,ilnrho,p%glnrho(:,3),3)
+if(lpencil(i_grho)) then
+do i_65_66_67_82=1,3
+enddo
+endif
+endif
+if(lpencil(i_uglnrho)) then
+p%uglnrho=p%uu(:,1)*p%glnrho(:,1)
+do i_18_57_65_66_67_82=2,3
+p%uglnrho=p%uglnrho+p%uu(:,i_18_57_65_66_67_82)*p%glnrho(:,i_18_57_65_66_67_82)
+enddo
+msk_22_57_65_66_67_82=0
+msk_21_22_57_65_66_67_82=0
+msk_21_22_57_65_66_67_82=msk_22_57_65_66_67_82
+do j_21_22_57_65_66_67_82=1,3
+if(j_21_22_57_65_66_67_82==msk_21_22_57_65_66_67_82) then
+del6f_21_22_57_65_66_67_82(:,j_21_22_57_65_66_67_82) = 0.
+else
+if(lequidist(j_21_22_57_65_66_67_82) .or. .false.) then
+call der6(f,ilnrho,del6f_21_22_57_65_66_67_82(:,j_21_22_57_65_66_67_82),j_21_22_57_65_66_67_82,upwind=.true.)
+else
+where(p%uu(:,j_21_22_57_65_66_67_82)>=0)
+indxs_21_22_57_65_66_67_82 = 7
+elsewhere
+indxs_21_22_57_65_66_67_82 = 8
+endwhere
+endif
+del6f_21_22_57_65_66_67_82(:,j_21_22_57_65_66_67_82) = abs(p%uu(:,j_21_22_57_65_66_67_82))*del6f_21_22_57_65_66_67_82(:,j_21_22_57_65_66_67_82)
+endif
+enddo
+del6f_upwind_22_57_65_66_67_82 = sum(del6f_21_22_57_65_66_67_82,2)
+p%uglnrho = p%uglnrho-del6f_upwind_22_57_65_66_67_82
+endif
+if(lpencil(i_del2lnrho)) then
+call der2(f,ilnrho,d2fdx_59_65_66_67_82,1)
+call der2(f,ilnrho,d2fdy_59_65_66_67_82,2)
+call der2(f,ilnrho,d2fdz_59_65_66_67_82,3)
+p%del2lnrho=d2fdx_59_65_66_67_82+d2fdy_59_65_66_67_82+d2fdz_59_65_66_67_82
+endif
+if(lpencil(i_hlnrho)) then
+do j_60_65_66_67_82=1,3
+do i_60_65_66_67_82=j_60_65_66_67_82+1,3
+enddo
+enddo
+endif
+if(lpencil(i_sglnrho)) then
+do i_62_65_66_67_82=1,3
+j_62_65_66_67_82=1
+tmp_62_65_66_67_82=p%sij(:,i_62_65_66_67_82,j_62_65_66_67_82)*p%glnrho(:,j_62_65_66_67_82)
+do j_62_65_66_67_82=2,3
+tmp_62_65_66_67_82=tmp_62_65_66_67_82+p%sij(:,i_62_65_66_67_82,j_62_65_66_67_82)*p%glnrho(:,j_62_65_66_67_82)
+enddo
+p%sglnrho(:,i_62_65_66_67_82)=tmp_62_65_66_67_82
+enddo
+endif
+if(lpencil(i_uij5glnrho)) then
+do i_63_65_66_67_82=1,3
+j_63_65_66_67_82=1
+do j_63_65_66_67_82=2,3
+enddo
+enddo
+endif
+if(lpencil(i_uuadvec_glnrho)) then
+do i_51_64_65_66_67_82=2,3
+enddo
+endif
+if(lpencil(i_cv)) then
+p%cv=1/cv1
+endif
+if(lpencil(i_ss)) then
+p%ss=f(1+3:l2,m,n,iss)
+endif
+if(lpencil(i_gss)) then
+call der(f,iss,p%gss(:,1),1)
+call der(f,iss,p%gss(:,2),2)
+call der(f,iss,p%gss(:,3),3)
+endif
+if(lpencil(i_hss)) then
+do j_69_72_73_82=1,3
+do i_69_72_73_82=j_69_72_73_82+1,3
+enddo
+enddo
+endif
+if(lpencil(i_del2ss)) then
+call der2(f,iss,d2fdx_70_72_73_82,1)
+call der2(f,iss,d2fdy_70_72_73_82,2)
+call der2(f,iss,d2fdz_70_72_73_82,3)
+p%del2ss=d2fdx_70_72_73_82+d2fdy_70_72_73_82+d2fdz_70_72_73_82
+endif
+if(lpencil(i_cs2)) then
+p%cs2=cs20*exp(cv1*p%ss+gamma_m1*(p%lnrho-lnrho0))
+endif
+if(lpencil(i_lntt)) then
+p%lntt=lntt0+cv1*p%ss+gamma_m1*(p%lnrho-lnrho0)
+endif
+if(lpencil(i_tt)) then
+p%tt=exp(p%lntt)
+endif
+if(lpencil(i_tt1)) then
+p%tt1=exp(-p%lntt)
+endif
+if(lpencil(i_glntt)) then
+p%glntt=gamma_m1*p%glnrho+cv1*p%gss
+endif
+if(lpencil(i_gtt)) then
+do j_72_73_82=1,3
+enddo
+endif
+if(lpencil(i_del2lntt)) then
+p%del2lntt=gamma_m1*p%del2lnrho+cv1*p%del2ss
+endif
+if(lpencil(i_ugss)) then
+p%ugss=p%uu(:,1)*p%gss(:,1)
+do i_18_74_79_82=2,3
+p%ugss=p%ugss+p%uu(:,i_18_74_79_82)*p%gss(:,i_18_74_79_82)
+enddo
+msk_22_74_79_82=0
+msk_21_22_74_79_82=0
+msk_21_22_74_79_82=msk_22_74_79_82
+do j_21_22_74_79_82=1,3
+if(j_21_22_74_79_82==msk_21_22_74_79_82) then
+del6f_21_22_74_79_82(:,j_21_22_74_79_82) = 0.
+else
+if(lequidist(j_21_22_74_79_82) .or. .false.) then
+call der6(f,iss,del6f_21_22_74_79_82(:,j_21_22_74_79_82),j_21_22_74_79_82,upwind=.true.)
+else
+where(p%uu(:,j_21_22_74_79_82)>=0)
+indxs_21_22_74_79_82 = 7
+elsewhere
+indxs_21_22_74_79_82 = 8
+endwhere
+endif
+del6f_21_22_74_79_82(:,j_21_22_74_79_82) = abs(p%uu(:,j_21_22_74_79_82))*del6f_21_22_74_79_82(:,j_21_22_74_79_82)
+endif
+enddo
+del6f_upwind_22_74_79_82 = sum(del6f_21_22_74_79_82,2)
+p%ugss = p%ugss-del6f_upwind_22_74_79_82
+endif
+if(lpencil(i_uglntt)) then
+do i_18_75_79_82=2,3
+enddo
+msk_22_75_79_82=0
+msk_21_22_75_79_82=0
+msk_21_22_75_79_82=msk_22_75_79_82
+do j_21_22_75_79_82=1,3
+if(j_21_22_75_79_82==msk_21_22_75_79_82) then
+else
+if(lequidist(j_21_22_75_79_82) .or. .false.) then
+else
+where(p%uu(:,j_21_22_75_79_82)>=0)
+indxs_21_22_75_79_82 = 7
+elsewhere
+indxs_21_22_75_79_82 = 8
+endwhere
+endif
+endif
+enddo
+endif
+if(lpencil(i_sglntt)) then
+do i_76_79_82=1,3
+j_76_79_82=1
+do j_76_79_82=2,3
+enddo
+enddo
+endif
+if(lpencil(i_fpres)) then
+do j_79_82=1,3
+p%fpres(:,j_79_82)=-p%cs2*(p%glnrho(:,j_79_82) + p%glntt(:,j_79_82))*gamma1
+enddo
+endif
+if(lpencil(i_uuadvec_gss)) then
+do i_51_78_79_82=2,3
+enddo
+endif
+p%fvisc=0.0
+if(lpencil(i_visc_heat)) then
+p%visc_heat=0.0
+endif
+fac_80_82=4.00000019e-03
+do j_80_82=1,3
+p%fvisc(:,j_80_82) = p%fvisc(:,j_80_82) + fac_80_82*(p%del2u(:,j_80_82) + 2.*p%sglnrho(:,j_80_82) + 1./3.*p%graddivu(:,j_80_82))
+enddo
+if(lpencil(i_visc_heat)) then
+p%visc_heat=p%visc_heat+2*4.00000019e-03*p%sij2
+endif
+if(lpencil(i_gg)) then
+p%gg(:,3) = gravz_zpencil(n)
+endif
+df(1+3:l2,m,n,iux:iuz)=df(1+3:l2,m,n,iux:iuz)-p%ugu
+c2_86_89=2*0.100000001
+df(1+3:l2,m,n,iux  )=df(1+3:l2,m,n,iux  )+c2_86_89*p%uu(:,2)
+df(1+3:l2,m,n,iux+1)=df(1+3:l2,m,n,iux+1)-c2_86_89*p%uu(:,1)
+df(1+3:l2,m,n,iux:iuz) = df(1+3:l2,m,n,iux:iuz) + p%fvisc
+density_rhs_91= - p%divu
+density_rhs_91 = density_rhs_91 - p%uglnrho
+df(1+3:l2,m,n,ilnrho) = df(1+3:l2,m,n,ilnrho) + density_rhs_91
+fdiff_91=0.0
+tmp_91 = fdiff_91
+forall(j_91 = iux:iuz) df(1+3:l2,m,n,j_91) = df(1+3:l2,m,n,j_91) - p%uu(:,j_91-iuu+1) * tmp_91
+df(1+3:l2,m,n,iss) = df(1+3:l2,m,n,iss) - p%cv*tmp_91
+df(1+3:l2,m,n,ilnrho) = df(1+3:l2,m,n,ilnrho) + fdiff_91
+df(1+3:l2,m,n,iux:iuz) = df(1+3:l2,m,n,iux:iuz) + p%fpres
+if(any(beta_glnrho_scaled/=0.0)) then
+do j_99=1,3
+df(1+3:l2,m,n,(iux-1)+j_99) = df(1+3:l2,m,n,(iux-1)+j_99) - p%cs2*beta_glnrho_scaled(j_99)
+enddo
+endif
+df(1+3:l2,m,n,iss) = df(1+3:l2,m,n,iss) - p%ugss
+do j_99=1,3
+if(grads0_imposed(j_99)/=0.) then
+df(1+3:l2,m,n,iss)=df(1+3:l2,m,n,iss)-grads0_imposed(j_99)*p%uu(:,j_99)
+endif
+enddo
+df(1+3:l2,m,n,iss) = df(1+3:l2,m,n,iss) + p%tt1*p%visc_heat
+if(hcond0/=0..or..false.) then
+hcond=hcond_prof(n-3)
+glhc_96_99(:,3)=dlnhcond_prof(n-3)
+glhc_96_99(:,1:2)=0.
+glnthcond_96_99 = p%glntt + glhc_96_99
+g2_96_99=p%glntt(:,1)*glnthcond_96_99(:,1)
+do i_95_96_99=2,3
+g2_96_99=g2_96_99+p%glntt(:,i_95_96_99)*glnthcond_96_99(:,i_95_96_99)
+enddo
+thdiff_96_99 = p%rho1*hcond * (p%del2lntt + g2_96_99)
+endif
+if(hcond0/=0..or..false..or.0.00000000/=0.) then
+df(1+3:l2,m,n,iss) = df(1+3:l2,m,n,iss) + thdiff_96_99
+endif
+heat_98_99=0.0
+ztop_97_98_99=-0.680000007+2.00000000
+prof_97_98_99 = spread(exp(-0.5*((ztop_97_98_99-z(n))/0.200000003)**2), 1, l2-4+1)
+heat_98_99 = heat_98_99 - 15.0000000*prof_97_98_99*(p%cs2-cs2cool)/cs2cool
+df(1+3:l2,m,n,iss) = df(1+3:l2,m,n,iss) + p%tt1*p%rho1*heat_98_99
+gg_101(:,3)=p%gg(:,3)
+df(1+3:l2,m,n,iuz)=df(1+3:l2,m,n,iuz)+gg_101(:,3)
+enddo mn_loop
+endsubroutine rhs_cpu_test
 !***********************************************************************
 endmodule Equ

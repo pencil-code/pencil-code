@@ -2650,7 +2650,6 @@ module Magnetic
 ! uxb
       if (lpenc_loc(i_uxb)) then
         call cross_mn(p%uu,p%bb,p%uxb)
-        call cross_mn(p%uu,p%bbb,uxbb)
 !  add external e-field.
         do j=1,3
           if (iglobal_eext(j)/=0) p%uxb(:,j)=p%uxb(:,j)+f(l1:l2,m,n,iglobal_eext(j))
@@ -3048,6 +3047,7 @@ module Magnetic
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
       real, dimension (nx,3) :: magfric,vmagfric2, baroclinic
       real, dimension (nx,3) :: dAdt, gradeta_shock
+      real, dimension (nx,3) :: uxbb
       real, dimension (nx) :: exabot,exatop, peta_shock
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -3075,6 +3075,7 @@ module Magnetic
 !
 !  Identify module and boundary conditions.
 !
+      if (lpenc_loc(i_uxb)) then call cross_mn(p%uu,p%bbb,uxbb)
       call timing('daa_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'daa_dt: SOLVE'
       if (headtt) then

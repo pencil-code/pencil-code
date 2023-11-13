@@ -42,6 +42,11 @@ module EquationOfState
   real :: gamma_m1    !(=gamma-1)
   real :: gamma1      !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
+  !for testing
+  public :: cv1
+  public :: gamma_m1
+  public :: gamma1
+  public :: lntt0
   real :: pres_corr=0.1
   real :: cs2bot=impossible, cs2top=impossible
   real :: fac_cs=1.0, cs20_tdep_rate=1.0

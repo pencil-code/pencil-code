@@ -4031,6 +4031,7 @@ module Sub
       do l=1,nx
         if (v2(l)>=thresh2) then
           write(lun) l,m-nghost,n-nghost,vv(l,:)
+          !$omp atomic
           nvec=nvec+1
         endif
       enddo

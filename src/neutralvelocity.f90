@@ -777,9 +777,6 @@ module NeutralVelocity
       real, dimension (nx,3,3) :: unij5
       integer :: i,j,jj,ju
 
-      if (any(iviscn=='hyper3_nun-const')) then
-         call gij(f,iuun,unij5,5)
-      endif
 !
       fvisc=0.
       diffus_nun=0.
@@ -827,6 +824,7 @@ module NeutralVelocity
 !
 !  Viscous force: nun*(del6un+Sn.glnrhon), where Sn_ij=d^5 un_i/dx_j^5
 !
+            call gij(f,iuun,unij5,5)
             call multmv(unij5,p%glnrhon,unij5glnrhon)
 !
             if (headtt) print*, 'Viscous force (neutral): nun*(del6un+Sn.glnrhon)'
