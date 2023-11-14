@@ -18,7 +18,6 @@ module Equ
 !
   private
 !
-!
   contains
 !***********************************************************************
     include 'pencil_init.inc' ! defines subroutine initialize_pencils()
@@ -1881,45 +1880,10 @@ module Equ
 !***********************************************************************
     subroutine test_dt(f,df,p,rhs_1,rhs_2)
 !
-!   Used to test different implementations of dt subroutines
+!   Test different implementations of dt subroutines.
 !
 !   13-nov-23/TP: Written
 !
-
-      use Mpicomm
-      use Ascalar
-      use Chiral
-      use Chemistry
-      use Cosmicray
-      use CosmicrayFlux
-      use Density
-      use Diagnostics
-      use Dustvelocity
-      use Dustdensity
-      use Energy
-      use EquationOfState
-      use Forcing, only: calc_diagnostics_forcing
-      use Gravity
-      use Heatflux
-      use Hydro
-      use Lorenz_gauge
-      use Magnetic
-      use NeutralDensity
-      use NeutralVelocity
-      use Particles_main
-      use Pscalar
-      use PointMasses
-      use Polymer
-      use Radiation
-      use Selfgravity
-      use Shear
-      use Solid_Cells, only: dsolid_dt
-      use Special, only: dspecial_dt
-      use Sub, only: sum_mn
-      use Testfield
-      use Testflow
-      use Testscalar
-
       real, dimension (mx,my,mz,mfarray) :: f,f_copy
       real, dimension (mx,my,mz,mfarray) :: df,df_copy
       integer :: i,j,k,n
@@ -1980,55 +1944,22 @@ module Equ
           enddo
         enddo
       enddo
-      if(passed) then
+      if (passed) then
         print*,"passed test :)"
       else
         print*,"did not pass test :/"
       endif
       print*,iux,iuy,iuz,iss,ilnrho
       call die_gracefully
+      
     endsubroutine test_dt
 !***********************************************************************
-subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
-
+    subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
+!
 !  Used to test different implementations of rhs_cpu.
 !
 !  13-nov-23/TP: Written
 !
-      use Mpicomm
-      use Ascalar
-      use Chiral
-      use Chemistry
-      use Cosmicray
-      use CosmicrayFlux
-      use Density
-      use Diagnostics
-      use Dustvelocity
-      use Dustdensity
-      use Energy
-      use EquationOfState
-      use Forcing, only: calc_diagnostics_forcing
-      use Gravity
-      use Heatflux
-      use Hydro
-      use Lorenz_gauge
-      use Magnetic
-      use NeutralDensity
-      use NeutralVelocity
-      use Particles_main
-      use Pscalar
-      use PointMasses
-      use Polymer
-      use Radiation
-      use Selfgravity
-      use Shear
-      use Solid_Cells, only: dsolid_dt
-      use Special, only: dspecial_dt
-      use Sub, only: sum_mn
-      use Testfield
-      use Testflow
-      use Testscalar
-
       real, dimension (mx,my,mz,mfarray) :: f,f_copy
       real, dimension (mx,my,mz,mfarray) :: df,df_copy
       type (pencil_case) :: p,p_copy
@@ -2082,7 +2013,7 @@ subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
         do j=1,my
           do k=1,mz
             do n=1,mfarray
-              if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
+              if (df_copy(i,j,k,n) /= df(i,j,k,n)) then
                 print*,"Wrong at: ",i,j,k,n
                 print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
                 passed = .false.
@@ -2098,6 +2029,7 @@ subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
       endif
       print*,iux,iuy,iuz,iss,ilnrho
       call die_gracefully
+      
     endsubroutine test_rhs
 !***********************************************************************
 endmodule Equ
