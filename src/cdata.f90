@@ -820,12 +820,5 @@ module Cdata
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
 !$omp threadprivate(it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
-!!$ include 'cdata_omp.inc'
-!***********************************************************************
-!***********************************************************************
-!***       Do not add declarations here - will break the build!      ***
-!***********************************************************************
-!***********************************************************************
-
 
 endmodule Cdata
