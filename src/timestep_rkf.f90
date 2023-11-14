@@ -175,8 +175,9 @@ module Timestep
 !   None of those will do exctly what is intended, because they are
 !   only really modifying f during the first substep.
 !
-      intent(inout) :: f
-      intent(out)   :: df, p, errmax
+      !intent(inout) :: f
+      !intent(out)   :: df, p, errmax
+      intent(out)   :: errmax
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -188,7 +189,6 @@ module Timestep
       real, dimension(nx) :: scal, err
       real :: errmax, errmaxs, dtsub, told
       integer :: j
-      logical :: llogarithmic
 !
       df=0.
       errmax=0.
@@ -303,7 +303,6 @@ module Timestep
       t = told + dt
 !
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-        llogarithmic=((j==ilnrho.and..not.ldensity_nolog).or.(j==iss).or.(j==ilnTT))
         df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
 !
         err = dc1*k(l1:l2,m,n,j,1) + &!dc2*k(l1:l2,m,n,j,2) + &
@@ -392,8 +391,9 @@ module Timestep
 !   None of those will do exctly what is intended, because they are
 !   only really modifying f during the first substep.
 !
-      intent(inout) :: f
-      intent(out)   :: df, p, errmax
+      !intent(inout) :: f
+      !intent(out)   :: df, p, errmax
+      intent(out)   :: errmax
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -405,7 +405,6 @@ module Timestep
       real, dimension(nx) :: scal, err
       real :: errmax, errmaxs, dtsub, told
       integer :: j
-      logical :: llogarithmic
 !
       df=0.
       errmax=0.
@@ -477,7 +476,6 @@ module Timestep
       t = told + dt
 !
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-        llogarithmic=((j==ilnrho.and..not.ldensity_nolog).or.(j==iss).or.(j==ilnTT))
         df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
 !
         err = dc1*k(l1:l2,m,n,j,1) + dc2*k(l1:l2,m,n,j,2) + &
