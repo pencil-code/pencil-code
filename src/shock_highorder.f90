@@ -454,9 +454,6 @@ module Shock
 !
       if (lmax_shock) call maximum_shock(f)
 !
-      call boundconds_x(f,ishock,ishock)
-      call initiate_isendrcv_bdry(f,ishock,ishock)
-!
       call smooth_shock(tmp, f, ishock)
 !
       fix_Re: if (lfix_Re_mesh) then
@@ -512,23 +509,10 @@ module Shock
 !
       if (ldivu_perp) then
 !
-        call boundconds_x(f,ishock_perp,ishock_perp)
-        call initiate_isendrcv_bdry(f,ishock_perp,ishock_perp)
-        lcommunicate=.true.
-!
         do imn=1,nyz
 !
           n = nn(imn)
           m = mm(imn)
-!
-          if (lcommunicate) then
-            if (necessary(imn)) then
-              call finalize_isendrcv_bdry(f,ishock_perp,ishock_perp)
-              call boundconds_y(f,ishock_perp,ishock_perp)
-              call boundconds_z(f,ishock_perp,ishock_perp)
-              lcommunicate=.false.
-            endif
-          endif
 !
           call div(f,iuu,penc)
           call bb_unitvec_shock(f,bb_hat)
@@ -645,7 +629,9 @@ module Shock
       tmp = 0.0
 !
       lcommunicate=.true.
-
+      call boundconds_x(f,ishock,ishock)
+      call initiate_isendrcv_bdry(f,ishock,ishock)
+!
       do imn=1,nyz
 !
         n = nn(imn)
