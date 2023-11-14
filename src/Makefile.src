@@ -2992,7 +2992,9 @@ endif
 ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
   FFLAGS += $(OMPFFLAGS)
   LDFLAGS += $(OMPLFLAGS)
-  OMP_PREREQ := copyin.inc
+#  OMP_PREREQ = copyin.inc
+#  Creates code for copying in threadprivate variables. - Not needed at the moment.
+#
 copyin.inc: Makefile.local $(PENCIL_HOME)/src/copyin.inc
 	@cp -f $(PENCIL_HOME)/src/copyin.inc .
 	@for file in `grep '^ *[A-Z0-9_]* *=' Makefile.local | sed -f omp.sed`; do \
@@ -3005,7 +3007,6 @@ copyin.inc: Makefile.local $(PENCIL_HOME)/src/copyin.inc
 	done
 else
   MULTITHREADING = 
-  OMP_PREREQ = 
 endif
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
