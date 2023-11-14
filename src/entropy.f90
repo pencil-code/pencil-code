@@ -496,8 +496,6 @@ module Energy
 
   real, dimension(:), pointer :: beta_glnrho_scaled
 !
-
-
   contains
 !***********************************************************************
     subroutine register_energy
