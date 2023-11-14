@@ -42,7 +42,8 @@ module Shock
   real    :: div_threshold=0.0
   real    :: shock_linear = 0.01
   real    :: shock_div_pow = 1., dtfactor=1e-4, con_bias=0.1
-  logical :: lrewrite_shock_boundary=.false., lconvergence_only=.true., lconvergence_bias=.true.
+  logical :: lrewrite_shock_boundary=.false.
+  logical :: lconvergence_only=.true., lconvergence_bias=.true.
 !
   namelist /shock_run_pars/ &
       ishock_max, lgaussian_smooth, lforce_periodic_shockviscosity, &
@@ -451,20 +452,7 @@ module Shock
         call finalize_isendrcv_bdry(f,ishock,ishock)
       endif
 !
-      call boundconds_x(f,ishock,ishock)
-!
-      call initiate_isendrcv_bdry(f,ishock,ishock)
-!
       if (lmax_shock) call maximum_shock(f)
-!
-!  Because of a bug in the shearing boundary conditions we must first manually
-!  set the y boundary conditions on the shock profile.
-!
-      if (lshear) then
-        call boundconds_y(f,ishock,ishock)
-        call initiate_isendrcv_bdry(f,ishock,ishock)
-        call finalize_isendrcv_bdry(f,ishock,ishock)
-      endif
 !
       call boundconds_x(f,ishock,ishock)
       call initiate_isendrcv_bdry(f,ishock,ishock)
@@ -565,8 +553,8 @@ module Shock
 !***********************************************************************
     subroutine maximum_shock(f)
 !
-      use Boundcond, only: boundconds_y, boundconds_z
-      use Mpicomm, only: finalize_isendrcv_bdry
+      use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
+      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
@@ -585,6 +573,10 @@ module Shock
       ni = merge(ishock_max,0,nxgrid > 1)
       nj = merge(ishock_max,0,nygrid > 1)
       nk = merge(ishock_max,0,nzgrid > 1)
+!
+      call boundconds_x(f,ishock,ishock)
+!
+      call initiate_isendrcv_bdry(f,ishock,ishock)
 !
       lcommunicate=.true.
 !
@@ -617,6 +609,15 @@ module Shock
       enddo
 !
       f(:,:,:,ishock) = tmp
+!
+!  Because of a bug in the shearing boundary conditions we must first manually
+!  set the y boundary conditions on the shock profile.
+!
+      if (lshear) then
+        call boundconds_y(f,ishock,ishock)
+        call initiate_isendrcv_bdry(f,ishock,ishock)
+        call finalize_isendrcv_bdry(f,ishock,ishock)
+      endif
 !
     endsubroutine maximum_shock
 !***********************************************************************
