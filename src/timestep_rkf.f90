@@ -23,12 +23,13 @@ module Timestep
       use Messages, only: fatal_error, warning
 !
       if (lparticles) call fatal_error("initialize_timestep", "Particles are"// &
-                                                 " not yet supported by the adaptive rkf scheme")
+                                       " not yet supported by the adaptive rkf scheme")
       if (itorder/=5.and.itorder/=3) then
         call warning('initialize_timestep','itorder set to 5 for Runge-Kutta-Fehlberg')
         itorder=5
       else if (itorder==3) then
-        call warning('initialize_timestep','Runge-Kutta-Fehlberg itorder is 3: set to 5 for higher accuracy')
+        call warning('initialize_timestep',&
+                     'Runge-Kutta-Fehlberg itorder is 3: set to 5 for higher accuracy')
       endif
 !
       if (dt==0.) then
@@ -37,18 +38,21 @@ module Timestep
         dt=1e-6
       endif
 !
-      !General error condition: errcon ~1e-4 redundant with maxerr ~1. 0.1 more effective accelerator
+!  General error condition: errcon ~1e-4 redundant with maxerr ~1.
+!  0.1 more effective accelerator
       errcon = 0.1!(5.0/safety)**(1.0/dt_increase)
-      !prefactor for absolute floor on value of farray in calculating err
 !
-      !ldt is set after read_persistent in rsnap, so dt0==0 used to read, but ldt=F for write
+!  ldt is set after read_persistent in rsnap, so dt0==0 used to read,
+!  but ldt=F for write
+!
       ldt=.false.
-      !overwrite the persistent time_step from dt0 in run.in if dt too high to initialize run
+      !overwrite the persistent time_step from dt0 in run.in if dt
+      !too high to initialize run
       if (dt0/=0.) dt=dt0
       dt_next=dt
       dt_increase=-1./itorder
       dt_decrease=-1./(itorder-1)
-
+!
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
@@ -65,7 +69,7 @@ module Timestep
       type (pencil_case) :: p
 !
       real :: errmax, dt_temp
-      real(KIND=rkind8) :: tnew, told!, time1, time2
+      real(KIND=rkind8) :: tnew, told
       integer :: j,i
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
@@ -111,7 +115,6 @@ module Timestep
       call update_after_substep(f,df,dt,.true.)
 !
 ! Time step to try next time
-!
 !
       dt_next = safety*dt*errmax**dt_increase
 !
