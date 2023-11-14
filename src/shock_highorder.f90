@@ -607,8 +607,8 @@ module Shock
 !***********************************************************************
     subroutine smooth_shock(tmp, f,ivar)
 !
-      use Boundcond, only: boundconds_y, boundconds_z
-      use Mpicomm, only: finalize_isendrcv_bdry
+      use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
+      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
 !
       real, dimension (mx,my,mz), intent (out) :: tmp
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
