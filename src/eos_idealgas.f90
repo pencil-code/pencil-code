@@ -1169,7 +1169,8 @@ module EquationOfState
 !   20-jan-15/MR: changes for use of reference state
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: cs2,cp1tilde
+      real, dimension(nx), intent(out) :: cs2
+      real, dimension(nx), intent(out), optional :: cp1tilde
 !
       real, dimension(nx) :: lnrho,ss
 !
@@ -1199,7 +1200,7 @@ module EquationOfState
 !
 !  inverse cp (will be different from 1 when cp is not 1)
 !
-      cp1tilde=cp1
+      if (present(cp1tilde)) cp1tilde=cp1
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -1378,63 +1379,39 @@ module EquationOfState
       real, dimension(psize), intent(in), optional :: ee, pp, ss
 !
       real, dimension(psize) :: lnrho_
+      integer :: i1,i2
 !
-      if (psize==nx) then
-        call getlnrho(f(:,m,n,ilnrho),lnrho_)
-        if (present(ee)) then
-          if (pretend_lnTT) then
-            f(l1:l2,m,n,iss)=log(cv1*ee)
-          else
-            f(l1:l2,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma_m1*(lnrho_-lnrho0))
-          endif
-        elseif (present(pp)) then
-          if (pretend_lnTT) then
-            f(l1:l2,m,n,iss)=log(gamma*pp/(gamma_m1*lnrho_))
-          else
-            f(l1:l2,m,n,iss)=cv*(log(gamma*pp/gamma_m1)-gamma*lnrho_-gamma_m1*lnrho0-lnTT0)
-          endif
-        elseif (present(ss)) then
-          if (pretend_lnTT) then
-            f(l1:l2,m,n,iss)=lnTT0+cv1*ss+gamma_m1*(lnrho_-lnrho0)
-          else
-            f(l1:l2,m,n,iss)=ss
-          endif
-        endif
+      select case (psize)
+        case (nx); i1=l1; i2=l2
+        case (mx); i1=1; i2=mx
+        case default; call fatal_error('eosperturb','no such pencil size')
+      end select
 !
-        if (lreference_state) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - reference_state(:,iref_s)
-!
-      elseif (psize==mx) then
-!
-!  Reference state not yet considered in this branch as undefined in ghost zones.
-!
-        if (ldensity_nolog) then
-          lnrho_=log(f(:,m,n,irho))
+      call getlnrho(f(:,m,n,ilnrho),lnrho_)
+      if (present(ee)) then
+        if (pretend_lnTT) then
+          f(i1:i2,m,n,iss)=log(cv1*ee)
         else
-          lnrho_=f(:,m,n,ilnrho)
+          f(i1:i2,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma_m1*(lnrho_-lnrho0))
         endif
-        if (present(ee)) then
-          if (pretend_lnTT) then
-            f(:,m,n,iss)=log(cv1*ee)
-          else
-            f(:,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma_m1*(lnrho_-lnrho0))
-          endif
-        elseif (present(pp)) then
-          if (pretend_lnTT) then
-            f(:,m,n,iss)=log(gamma*pp/(gamma_m1*lnrho_))
-          else
-            f(:,m,n,iss)=cv*(log(gamma*pp/gamma_m1)-gamma*lnrho_-gamma_m1*lnrho0-lnTT0)
-          endif
-        elseif (present(ss)) then
-          if (pretend_lnTT) then
-            f(:,m,n,iss)=lnTT0+cv1*ss+gamma_m1*(lnrho_-lnrho0)
-          else
-            f(:,m,n,iss)=ss
-          endif
+      elseif (present(pp)) then
+        if (pretend_lnTT) then
+          f(i1:i2,m,n,iss)=log(gamma*pp/(gamma_m1*lnrho_))
+        else
+          f(i1:i2,m,n,iss)=cv*(log(gamma*pp/gamma_m1)-gamma*lnrho_-gamma_m1*lnrho0-lnTT0)
         endif
-!
-      else
-        call not_implemented("eosperturb")
+      elseif (present(ss)) then
+        if (pretend_lnTT) then
+          f(i1:i2,m,n,iss)=lnTT0+cv1*ss+gamma_m1*(lnrho_-lnrho0)
+        else
+          f(i1:i2,m,n,iss)=ss
+        endif
       endif
+!
+!  Reference state undefined in ghost zones.
+!
+      if (psize==nx.and.lreference_state) f(i1:i2,m,n,iss) = f(i1:i2,m,n,iss) - reference_state(:,iref_s)
+!
     endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
@@ -1459,9 +1436,16 @@ module EquationOfState
       real, dimension(psize) :: lnTT_, cs2_
       real, dimension(psize) :: lnrho_,ss_
       real, dimension(psize) :: rho, eth
+      integer :: i1,i2
 !
 !ajwm this test should be done at initialization
 !      if (gamma_m1==0.) call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
+!
+      select case (psize)
+        case (nx); i1=l1; i2=l2
+        case (mx); i1=1; i2=mx
+        case default; call fatal_error('eoscalc_farray','no such pencil size')
+      end select
 !
       select case (ieosvars)
 !
@@ -1469,50 +1453,29 @@ module EquationOfState
 !
       case (ilnrho_ss,irho_ss)
 !
-        select case (psize)
-        case (nx)
-          if (lstratz) then
-            lnrho_ = log(rho0z(n)) + log(1.0 + f(l1:l2,m,n,ieosvar1))
-          elseif (ieosvars == ilnrho_ss) then    ! use of getlnrho possible?
-            lnrho_=f(l1:l2,m,n,ieosvar1)
+        if (lstratz) then
+          lnrho_ = log(rho0z(n)) + log(1.0 + f(i1:i2,m,n,ieosvar1))
+        elseif (ieosvars == ilnrho_ss) then    ! use of getlnrho possible?
+          lnrho_=f(i1:i2,m,n,ieosvar1)
+        else
+          if (psize==nx.and.lreference_state) then
+            lnrho_=log(f(i1:i2,m,n,ieosvar1)+reference_state(:,iref_rho))
           else
-            if (lreference_state) then
-              lnrho_=log(f(l1:l2,m,n,ieosvar1)+reference_state(:,iref_rho))
-            else
-              lnrho_=log(f(l1:l2,m,n,ieosvar1))
-            endif
+            lnrho_=log(f(i1:i2,m,n,ieosvar1))
           endif
-          if (leos_isentropic) then
-            ss_=0
-          elseif (leos_isothermal) then
-            ss_=-cv*gamma_m1*(lnrho_-lnrho0)
-          else
-            ss_=f(l1:l2,m,n,ieosvar2)
-            if (lreference_state) ss_ = ss_+reference_state(:,iref_s)
-          endif
-        case (mx)
-          if (lstratz) then
-            lnrho_ = log(rho0z(n)) + log(1.0 + f(:,m,n,ieosvar1))
-          elseif (ieosvars == ilnrho_ss) then
-            lnrho_=f(:,m,n,ieosvar1)
-          else
-            !!!if (lreference_state) then
-            lnrho_=log(f(:,m,n,ieosvar1))
-          endif
-          if (leos_isentropic) then
-            ss_=0
-          elseif (leos_isothermal) then
-            ss_=-cv*gamma_m1*(lnrho_-lnrho0)
-          else
-            !!!if (lreference_state) then
-            ss_=f(:,m,n,ieosvar2)
-          endif
-        case default
-          call fatal_error('eoscalc_farray','no such pencil size')
-        end select
+        endif
+        if (leos_isentropic) then
+          ss_=0
+        elseif (leos_isothermal) then
+          ss_=-cv*gamma_m1*(lnrho_-lnrho0)
+        else
+          ss_=f(i1:i2,m,n,ieosvar2)
+          if (psize==nx.and.lreference_state) ss_ = ss_+reference_state(:,iref_s)
+        endif
 !
         lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
         if (gamma_m1==0.) call fatal_error('eoscalc_farray','gamma=1 not allowed with entropy')
+
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) ee=cv*exp(lnTT_)
@@ -1522,36 +1485,18 @@ module EquationOfState
 ! Log rho and Log T
 !
       case (ilnrho_lnTT,irho_lnTT)
-        select case (psize)
-        case (nx)
           if (ieosvars==ilnrho_lnTT) then
-            lnrho_=f(l1:l2,m,n,ieosvar1)
+            lnrho_=f(i1:i2,m,n,ieosvar1)
           else
-            lnrho_=log(f(l1:l2,m,n,ieosvar1))
+            lnrho_=log(f(i1:i2,m,n,ieosvar1))
           endif
           if (leos_isentropic) then
             lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
           elseif (leos_isothermal) then
             lnTT_=lnTT0
           else
-            lnTT_=f(l1:l2,m,n,ieosvar2)
+            lnTT_=f(i1:i2,m,n,ieosvar2)
           endif
-        case (mx)
-          if (ieosvars==ilnrho_lnTT) then
-            lnrho_=f(:,m,n,ieosvar1)
-          else
-            lnrho_=log(f(:,m,n,ieosvar1))
-          endif
-          if (leos_isentropic) then
-            lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
-          elseif (leos_isothermal) then
-            lnTT_=lnTT0
-          else
-            lnTT_=f(:,m,n,ieosvar2)
-          endif
-        case default
-          call fatal_error('eoscalc_farray','no such pencil size')
-        end select
 !
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
@@ -1567,44 +1512,22 @@ module EquationOfState
 ! Log rho and cs2
 !
       case (ilnrho_cs2,irho_cs2)
-        select case (psize)
-        case (nx)
-          if (lstratz) then
-            lnrho_ = log(rho0z(n)) + log(1 + f(l1:l2,m,n,ieosvar1))
-          elseif (ieosvars == ilnrho_cs2) then
-            lnrho_=f(l1:l2,m,n,ieosvar1)
-          else
-            lnrho_=log(f(l1:l2,m,n,ieosvar1))
-          endif
-          if (leos_isentropic) then
-            cs2_=exp(gamma_m1*(lnrho_-lnrho0)+log(cs20))
-          elseif (leos_isothermal) then
-            cs2_=cs20
-          elseif (leos_localisothermal) then
-            cs2_=f(l1:l2,m,n,iglobal_cs2)
-          else
-            call not_implemented('eoscalc_farray','full eos for cs2')
-          endif
-        case (mx)
-          if (lstratz) then
-            lnrho_ = log(rho0z(n)) + log(1 + f(:,m,n,ieosvar1))
-          elseif (ieosvars == ilnrho_cs2) then
-            lnrho_=f(:,m,n,ieosvar1)
-          else
-            lnrho_=log(f(:,m,n,ieosvar1))
-          endif
-          if (leos_isentropic) then
-            cs2_=exp(gamma_m1*(lnrho_-lnrho0)+log(cs20))
-          elseif (leos_isothermal) then
-            cs2_=cs20
-          elseif (leos_localisothermal) then
-            cs2_=f(:,m,n,iglobal_cs2)
-          else
-            call not_implemented('eoscalc_farray','full eos for cs2')
-          endif
-        case default
-          call fatal_error('eoscalc_farray','no such pencil size')
-        end select
+        if (lstratz) then
+          lnrho_ = log(rho0z(n)) + log(1 + f(i1:i2,m,n,ieosvar1))
+        elseif (ieosvars == ilnrho_cs2) then
+          lnrho_=f(i1:i2,m,n,ieosvar1)
+        else
+          lnrho_=log(f(i1:i2,m,n,ieosvar1))
+        endif
+        if (leos_isentropic) then
+          cs2_=exp(gamma_m1*(lnrho_-lnrho0)+log(cs20))
+        elseif (leos_isothermal) then
+          cs2_=cs20
+        elseif (leos_localisothermal) then
+          cs2_=f(i1:i2,m,n,iglobal_cs2)
+        else
+          call not_implemented('eoscalc_farray','full eos for cs2')
+        endif
 !
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT0+log(cs2_)
@@ -1613,34 +1536,17 @@ module EquationOfState
         if (present(cs2)) cs2 = cs2_
 !
       case (irho_eth, ilnrho_eth)
-        rho_eth: select case (psize)
-        case (nx) rho_eth
-          strat1: if (lstratz) then
-            rho = rho0z(n) * (1.0 + f(l1:l2,m,n,irho))
-            eth = eth0z(n) * (1.0 + f(l1:l2,m,n,ieth))
-          else strat1
-            if (ldensity_nolog) then
-              rho = f(l1:l2,m,n,irho)
-            else
-              rho = exp(f(l1:l2,m,n,ilnrho))
-            endif
-            eth = f(l1:l2,m,n,ieth)
-          endif strat1
-        case (mx) rho_eth
-          strat2: if (lstratz) then
-            rho = rho0z(n) * (1.0 + f(:,m,n,irho))
-            eth = eth0z(n) * (1.0 + f(:,m,n,ieth))
-          else strat2
-            if (ldensity_nolog) then
-              rho = f(:,m,n,irho)
-            else
-              rho = exp(f(:,m,n,ilnrho))
-            endif
-            eth = f(:,m,n,ieth)
-          endif strat2
-        case default rho_eth
-          call fatal_error('eoscalc_farray', 'no such pencil size')
-        endselect rho_eth
+        if (lstratz) then
+          rho = rho0z(n) * (1.0 + f(i1:i2,m,n,irho))
+          eth = eth0z(n) * (1.0 + f(i1:i2,m,n,ieth))
+        else
+          if (ldensity_nolog) then
+            rho = f(i1:i2,m,n,irho)
+          else
+            rho = exp(f(i1:i2,m,n,ilnrho))
+          endif
+          eth = f(i1:i2,m,n,ieth)
+        endif
         if (present(lnrho)) lnrho = log(rho)
         if (present(lnTT)) lnTT = log(cv1 * eth / rho)
         if (present(ee)) ee = eth / rho
@@ -1648,10 +1554,13 @@ module EquationOfState
         if (present(cs2)) cs2 = gamma * gamma_m1 * eth / rho
 !
       case default
-        call not_implemented("eoscalc_farray",'Thermodynamic variable combination')
+        call not_implemented("eoscalc_farray",'thermodynamic variable combination')
       endselect
 !
-      if (present(yH)) yH=impossible
+      if (present(yH)) then
+        yH=impossible
+        call fatal_error("eoscalc","no yH without ionization")
+      endif
 !
       if (present(kapparho)) then
         kapparho=0.
