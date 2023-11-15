@@ -1504,6 +1504,11 @@ sub test_rundir {
         }
     }
 
+    # Remove orphaned or broken data directory links
+    if (-l "data" && !-e "data") {
+        unlink ("data");
+    }
+
     # 1. Test compilation
     test_compile($dir, $makeopts, $t0);
     return if ($test_status);
