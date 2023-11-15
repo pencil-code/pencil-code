@@ -2045,7 +2045,7 @@ END {
             } elsif ($ntests > 1) {
                 print "All $ntests tests succeeded.\n";
                 # pc_update_validated
-                system("$pencil_home/bin/pc_update_validated.sh &");
+                # system("$pencil_home/bin/pc_update_validated.sh &");
             }
             elsif (($ntests < 1) && ! $failed) {
                 print "There was no test to run???\n";
