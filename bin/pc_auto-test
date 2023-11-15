@@ -2113,6 +2113,10 @@ END {
             print "The following configuration has been used:\n";
             system(@pc_dump_config);
             printf "Perl version v%vd\n", $^V;
+
+            get_current_revision();
+            print "SVN: ".$current_revision."\n";
+            print "GIT: ".$current_hash."\n";
         }
     }
 
