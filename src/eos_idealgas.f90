@@ -1619,19 +1619,30 @@ module EquationOfState
         pp_=(cp-cv)*exp(lnTT_+lnrho_)
         cs2_=gamma*gamma_m1*ee_
 !
-      case (ilnrho_ee)
-        lnrho_=var1
+      case (ilnrho_ee,irho_ee)
         ee_=var2
+        if (ivars==ilnrho_ee) then
+          lnrho_=var1
+          pp_=gamma_m1*ee_*exp(var1)
+        else
+          lnrho_=log(var1)
+          pp_=gamma_m1*ee_*var1
+        endif
         lnTT_=log(cv1*ee_)
         ss_=cv*(lnTT_-lnTT0-gamma_m1*(lnrho_-lnrho0))
-        pp_=gamma_m1*ee_*exp(lnrho_)
         cs2_=gamma*gamma_m1*ee_
 !
-      case (ilnrho_pp)
-        lnrho_=var1
+      case (ilnrho_pp,irho_pp)
         pp_=var2
-        ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma_m1*(lnrho_-lnrho0))
-        ee_=pp_*exp(-lnrho_)/gamma_m1
+        if (ivars==ilnrho_pp) then
+          lnrho_=var1
+          ee_=pp_*exp(-lnrho_)/gamma_m1
+          ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma_m1*(lnrho_-lnrho0))
+        else
+          lnrho_=log(var1)
+          ee_=pp_/var1/gamma_m1
+          ss_=cv*(log(pp_/var1*gamma/cs20)-gamma_m1*(lnrho_-lnrho0))
+        endif
         lnTT_=log(cv1*ee_)
         cs2_=gamma*gamma_m1*ee_
 !
@@ -1780,19 +1791,30 @@ module EquationOfState
         cs2_=gamma*gamma_m1*ee_
         cs2_=cs20*cv1*ee_
 !
-      case (ilnrho_ee)
-        lnrho_=var1
+      case (ilnrho_ee,irho_ee)
         ee_=var2
+        if (ivars==ilnrho_ee) then
+          lnrho_=var1
+          pp_=gamma_m1*ee_*exp(var1)
+        else
+          lnrho_=log(var1)
+          pp_=gamma_m1*ee_*var1
+        endif
         lnTT_=log(cv1*ee_)
         ss_=cv*(lnTT_-lnTT0-gamma_m1*(lnrho_-lnrho0))
-        pp_=gamma_m1*ee_*exp(lnrho_)
         cs2_=gamma*gamma_m1*ee_
 !
-      case (ilnrho_pp)
-        lnrho_=var1
+      case (ilnrho_pp,irho_pp)
         pp_=var2
-        ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma_m1*(lnrho_-lnrho0))
-        ee_=pp_*exp(-lnrho_)/gamma_m1
+        if (ivars==ilnrho_pp) then
+          lnrho_=var1
+          ee_=pp_*exp(-lnrho_)/gamma_m1
+          ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma_m1*(lnrho_-lnrho0))
+        else
+          lnrho_=log(var1)
+          ee_=pp_/var1/gamma_m1
+          ss_=cv*(log(pp_/var1*gamma/cs20)-gamma_m1*(lnrho_-lnrho0))
+        endif
         lnTT_=log(cv1*ee_)
         cs2_=gamma*gamma_m1*ee_
 !
