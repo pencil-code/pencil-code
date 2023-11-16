@@ -801,9 +801,7 @@ module EquationOfState
 !
       if (present(yH)) yH = yH_
 !
-      if (present(mu1).or.present(ss).or.present(ee).or.present(pp)) then
-        mu1 = mu1_0*(1 + yH_ + xHe)
-      endif
+      if (present(mu1).or.present(ee).or.present(pp)) mu1 = mu1_0*(1 + yH_ + xHe)
 !
       if (present(ee)) ee = 1.5*Rgas*mu1*exp(lnTT_) + yH_*Rgas*mu1_0*TT_ion
 !
@@ -811,17 +809,17 @@ module EquationOfState
 !
       if (.false.) then   !present(ss)) then
         tmp = 2.5 - 1.5*(lnTT_ion-lnTT_) - lnrho_
-        where (yH_ < 1) ! Neutral Hydrogen
-          ss = (1-yH_)*(tmp + lnrho_H - log(1-yH_))
-        endwhere
-        where (yH_ > 0) ! Electrons and ionized Hydrogen
-          ss = ss + yH_*(tmp + lnrho_H - log(yH_))
-          ss = ss + yH_*(tmp + lnrho_e - log(yH_))
-        endwhere
-        if (xHe > 0) then ! Helium
-          ss = ss + xHe*(tmp + lnrho_He - log(xHe))
-        endif
-        ss = Rgas*mu1_0*ss
+        !where (yH_ < 1) ! Neutral Hydrogen
+        !  ss = (1-yH_)*(tmp + lnrho_H - log(1-yH_))
+        !endwhere
+        !where (yH_ > 0) ! Electrons and ionized Hydrogen
+        !  ss = ss + yH_*(tmp + lnrho_H - log(yH_))
+        !  ss = ss + yH_*(tmp + lnrho_e - log(yH_))
+        !endwhere
+        !if (xHe > 0) then ! Helium
+        !  ss = ss + xHe*(tmp + lnrho_He - log(xHe))
+        !endif
+        !ss = Rgas*mu1_0*ss
       endif
 !
       if (present(cs2)) call not_implemented('eoscalc_farray','calculation of cs2')
