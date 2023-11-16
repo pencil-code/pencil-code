@@ -281,7 +281,6 @@ def get_value_from_file(
     except:
         if type(q) == type("string") and "," in q:
             q, q_type = string_to_tuple(q)  # q is a TULPE_something
-            print("q = {0}, q_type = {1}".format(q, q_type))
 
         if type(q) == type("string") and q in ["F", "f"]:  # q is BOOL
             q = False
