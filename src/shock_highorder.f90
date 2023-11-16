@@ -454,7 +454,7 @@ module Shock
 !
       if (lmax_shock) call maximum_shock(f)
 !
-      call smooth_shock(tmp, f, ishock)
+      call smooth_shock(f,ishock,tmp)
 !
       fix_Re: if (lfix_Re_mesh) then
 !
@@ -488,7 +488,7 @@ module Shock
         else shock
           a = dxmin**2
         endif shock
-        f(:,:,:,ishock) = a * tmp
+        f(l1:l2,m1:m2,n1:n2,ishock) = a * tmp(l1:l2,m1:m2,n1:n2)
       else fix_Re
 !
 !  Scale by dxmin**2.
@@ -504,6 +504,15 @@ module Shock
           f(:,:,:,ishock) = tmp*dxmin**2
         endif
       endif fix_Re
+!
+!  Because of a bug in the shearing boundary conditions we must first manually
+!  set the y boundary conditions on the shock profile.
+!
+      if (lshear) then
+        call boundconds_y(f,ishock,ishock)
+        call initiate_isendrcv_bdry(f,ishock,ishock)
+        call finalize_isendrcv_bdry(f,ishock,ishock)
+      endif
 !
 !  NB shock_perp without lconvergence not yet implemented.
 !
@@ -523,12 +532,21 @@ module Shock
 !
         enddo
 !
-        call smooth_shock(tmp, f, ishock_perp)
+        call smooth_shock(f,ishock_perp,tmp)
 !
         if (.not.lrewrite_shock_boundary) then
           f(l1:l2,m1:m2,n1:n2,ishock_perp) = tmp(l1:l2,m1:m2,n1:n2) * dxmin**2
         else
           f(:,:,:,ishock_perp) = tmp * dxmin**2
+        endif
+!
+!  Because of a bug in the shearing boundary conditions we must first manually
+!  set the y boundary conditions on the shock profile.
+!
+        if (lshear) then
+          call boundconds_y(f,ishock_perp,ishock_perp)
+          call initiate_isendrcv_bdry(f,ishock_perp,ishock_perp)
+          call finalize_isendrcv_bdry(f,ishock_perp,ishock_perp)
         endif
 !
       endif
@@ -592,7 +610,7 @@ module Shock
 !
       enddo
 !
-      f(:,:,:,ishock) = tmp
+      f(l1:l2,m1:m2,n1:n2,ishock) = tmp(l1:l2,m1:m2,n1:n2)
 !
 !  Because of a bug in the shearing boundary conditions we must first manually
 !  set the y boundary conditions on the shock profile.
@@ -605,7 +623,7 @@ module Shock
 !
     endsubroutine maximum_shock
 !***********************************************************************
-    subroutine smooth_shock(tmp, f,ivar)
+    subroutine smooth_shock(f,ivar,tmp)
 !
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
