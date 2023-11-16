@@ -308,7 +308,7 @@ def get_value_from_file(
         q = int(q)
 
     ######## if value of quantity has to be changed do:
-    if change_quantity_to != None:
+    if change_quantity_to is not None:
 
         ####### prepare change_quantity_to for string injection
         if q_type == "STRING":
