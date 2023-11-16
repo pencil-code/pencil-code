@@ -686,11 +686,12 @@ module EquationOfState
 !
       case (nx)
         lnrho_=f(l1:l2,m,n,ilnrho)
+        ss_=f(l1:l2,m,n,iss)
       case (mx)
         lnrho_=f(:,m,n,ilnrho)
+        ss_=f(:,m,n,iss)
       case default
         call fatal_error("eoscalc_farray","no such pencil size")
-!
       end select
 !
       lnTT_=lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
