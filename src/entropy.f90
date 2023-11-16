@@ -28,6 +28,7 @@ module Energy
   implicit none
 !
   include 'energy.h'
+  include 'eos_params.h'
 !
   real :: entropy_floor = impossible, TT_floor = impossible
   real, dimension(ninit) :: radius_ss=0.1, radius_ss_x=1., ampl_ss=0.0
@@ -1458,8 +1459,7 @@ module Energy
 !  20-jan-2015/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: isothermal_entropy, eoscalc, eosperturb, &
-                                 isothermal_lnrho_ss, ilnrho_pp
+      use EquationOfState, only: isothermal_entropy, eoscalc, isothermal_lnrho_ss
       use General, only: itoa
       use Gravity
       use Initcond
@@ -1471,7 +1471,6 @@ module Energy
 !
       real, dimension (nx) :: tmp,pot
       real, dimension (nx) :: pp,lnrho,r_mn
-      real, dimension (mx) :: ss_mx
       real :: cs2int,ss0,ssint,ztop,ss_ext,pot0,pot_ext
       real, pointer :: fac_cs
       integer, pointer :: isothmid
@@ -1796,12 +1795,12 @@ module Energy
       if (save_pretend_lnTT) then
         pretend_lnTT=.true.
         do m=1,my; do n=1,mz
-          ss_mx=f(:,m,n,iss)
-          call eosperturb(f,mx,ss=ss_mx)
+          call getlnrho(f(:,m,n,ilnrho),lnrho)
+          call eoscalc(ilnrho_ss,lnrho,f(l1:l2,m,n,iss),lnTT=f(l1:l2,m,n,iss))
         enddo; enddo
       endif
 
-      if (lreference_state) then    ! always meaningful?
+      if (lreference_state.and..not.pretend_lnTT) then    ! always meaningful?
         do n=n1,n2; do m=m1,m2
           f(:,m,n,iss) = f(:,m,n,iss) - reference_state(:,iref_s)
         enddo; enddo
@@ -2003,7 +2002,7 @@ module Energy
 !
 !  20-feb-04/tobi: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_ss
+      use EquationOfState, only: eoscalc
       use Gravity, only: gravz
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2114,7 +2113,7 @@ module Energy
 !  12-jul-05/axel: coded
 !  17-Nov-05/dintrans: updated using strat_MLT
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc
       use General, only: safe_character_assign
       use Gravity, only: z1
 !
@@ -2214,7 +2213,7 @@ module Energy
 !  20-oct-03/dave -- coded
 !  21-aug-08/dhruba: added spherical coordinates
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc
       use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2308,7 +2307,7 @@ module Energy
 !  for `conv_slab' style runs, with a layer of polytropic gas in [z0,z1].
 !  generalised for cp/=1.
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc
       use Gravity, only: gravz, zinfty
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2353,7 +2352,7 @@ module Energy
 !
 !  AJ: PLEASE IDENTIFY AUTHOR
 !
-      use EquationOfState, only: eoscalc, ilnrho_pp, eosperturb
+      use EquationOfState, only: eoscalc
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2418,7 +2417,7 @@ module Energy
 !
           pp=real(k_B*unit_length**3 * (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h))
 
-          call eosperturb(f,nx,pp=pp)
+          call eoscalc(irho_pp,rho,pp,ss=f(l1:l2,m,n,iss))
 !
           fmpi1=cs2bot
           call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
@@ -2446,7 +2445,7 @@ module Energy
 !  12-feb-11/fred: older subroutine now use thermal_hs_equilibrium_ism.
 !  20-jan-15/MR: changes for use of reference state.
 !
-      use EquationOfState , only: eosperturb, getmu
+      use EquationOfState , only: eoscalc, getmu
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2486,19 +2485,17 @@ module Energy
         rho=rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
         call putrho(f(:,m,n,ilnrho),rho)
 
-        if (lentropy) then
 !  Isothermal
-          pp=rho*gamma_m1/gamma*T0
-          call eosperturb(f,nx,pp=pp)
+        pp=rho*gamma_m1/gamma*T0
+        call eoscalc(irho_pp,rho,pp,ss=f(l1:l2,m,n,iss))
 !
-          fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
-          cs2bot=fmpi1
-          fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
-          cs2top=fmpi1
+        fmpi1=cs2bot
+        call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
+        cs2bot=fmpi1
+        fmpi1=cs2top
+        call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
+        cs2top=fmpi1
 !
-         endif
        enddo
      enddo
 !
@@ -2517,7 +2514,7 @@ module Energy
 !   22-jan-10/fred
 !   20-jan-15/MR: changes for use of reference state.
 !
-      use EquationOfState, only: eosperturb
+      use EquationOfState, only: eoscalc
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2533,30 +2530,27 @@ module Energy
         rho=rho0hs*exp(1 - sqrt(1 + (z(n)/H0hs)**2))
         call putrho(f(:,m,n,ilnrho),rho)
 !
-        if (lentropy) then
-!
 !  Isothermal
 !
-          pp=rho*cs0hs**2
-          call eosperturb(f,nx,pp=pp)
-          if (ldensity_nolog) then
-            if (lreference_state) then
-              ss=log(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
-            else
-              ss=log(f(l1:l2,m,n,irho))
-            endif
+        pp=rho*cs0hs**2
+        call eoscalc(irho_pp,rho,pp,ss=f(l1:l2,m,n,iss))
+        if (ldensity_nolog) then
+          if (lreference_state) then
+            ss=log(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
           else
-            ss=f(l1:l2,m,n,ilnrho)
+            ss=log(f(l1:l2,m,n,irho))
           endif
-
-          fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
-          cs2bot=fmpi1
-          fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
-          cs2top=fmpi1
-!
+        else
+          ss=f(l1:l2,m,n,ilnrho)
         endif
+
+        fmpi1=cs2bot
+        call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
+        cs2bot=fmpi1
+        fmpi1=cs2top
+        call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
+        cs2top=fmpi1
+!
       enddo
       enddo
 !
@@ -6654,7 +6648,7 @@ module Energy
 !  12-nov-10/mvaisala: adapted from calc_heat_cool
 !  12-feb-15/MR: adapted for reference state.
 !
-      use EquationOfState, only: eoscalc,ilnrho_ss,irho_ss
+      use EquationOfState, only: eoscalc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -6975,7 +6969,7 @@ module Energy
 !  26-jul-06/tony: coded
 !  12-feb-15/MR  : changes for use of reference state.
 !
-      use EquationOfState, only: eoscalc, ilnrho_ss, irho_ss
+      use EquationOfState, only: eoscalc
       use Slices_methods, only: assign_slices_scal, addto_slices, process_slices, exp2d
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -7572,11 +7566,11 @@ module Energy
 !
 !  09-aug-06/dintrans: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc
       use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: lnrho,lnTT,TT,r_mn
+      real, dimension (nx) :: TT,r_mn
       real :: beta0,beta1,TT_bcz
       real :: lnrho_int,lnrho_ext,lnrho_bcz
 !
@@ -7622,9 +7616,7 @@ module Energy
           f(l1:l2,m,n,ilnrho)=lnrho_int
         endwhere
 !
-        lnrho=f(l1:l2,m,n,ilnrho)
-        lnTT=log(TT)
-        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=f(l1:l2,m,n,iss))
+        call eoscalc(ilnrho_lnTT,f(l1:l2,m,n,ilnrho),log(TT),ss=f(l1:l2,m,n,iss))
 !
       enddo
 !
@@ -7642,7 +7634,7 @@ module Energy
 !
 !  17-mar-07/dintrans: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_TT
+      use EquationOfState, only: eoscalc
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -7696,7 +7688,7 @@ module Energy
 !
 !  06-sep-07/dintrans: coded a single polytrope of index mpoly0
 !
-      use EquationOfState, only: eoscalc, ilnrho_TT
+      use EquationOfState, only: eoscalc
       use Gravity, only: gravz
       use SharedVariables, only: get_shared_variable
 !
