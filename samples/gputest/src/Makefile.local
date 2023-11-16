@@ -17,5 +17,6 @@ EOS       =   eos_idealgas
 
 #FORCING   =   forcing
 SHEAR     = noshear
+MULTITHREADING = OpenMP
 
 #REAL_PRECISION = double
