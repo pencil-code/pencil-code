@@ -340,7 +340,7 @@ module Equ
           call cpu_time(rhs_start)
         call rhs_gpu(f,itsub,early_finalize)
           call cpu_time(rhs_end)
-          print*,"Took ",rhs_end-rhs_start,"in GPU rhs"
+          ! print*,"Took ",rhs_end-rhs_start,"in GPU rhs"
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
           call do_rest_diagnostics_tasks(f)
           copy_start = omp_get_wtime()
@@ -350,7 +350,7 @@ module Equ
           call calc_all_module_diagnostics(f,p)
           diag_end = omp_get_wtime()
           print*,"Took ",diag_end-diag_start,"in diags"
-          print*,"Took ",copy_end-copy_start,"to move data"
+          ! print*,"Took ",copy_end-copy_start,"to move data"
         endif
       else
         !call test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_cpu,rhs_cpu)
@@ -444,9 +444,9 @@ module Equ
       ! enddo
       if (lfirst) then
 !$      if(num_of_diag_iter_done==nyz .and. .not. lstarted_finalizing_diagnostics) then
-!$omp task
+!!$omp task
           call finalize_diagnostics
-!$omp endtask
+!!$omp endtask
 !$      endif
       endif
       ! do while(.not. lfinalized_diagnostics)
@@ -474,7 +474,7 @@ module Equ
 !
       lwrite_prof=.false.
       end = omp_get_wtime()
-      print*,"Took ",end-start,"in pde"
+      ! print*,"Took ",end-start,"in pde"
 !
     endsubroutine pde
 !***********************************************************************
@@ -637,8 +637,6 @@ module Equ
     lvideo = lvideo_save
     lwrite_slices = lwrite_slices_save
     it = it_save
-    print*,"it=",it
-    print*,"it_save=",it_save
 !$  endif
 
     endsubroutine read_diagnostic_flags
@@ -995,7 +993,7 @@ module Equ
         first_task = .true.
 !TP: for now we are using all but one thread to do the diagnostics
 !$      num_of_threads_to_use  = max(omp_get_num_procs()-1,1)
-        print*,"TP: In THREADED VERSION"
+        ! print*,"TP: In THREADED VERSION"
         call init_reduc_pointers
         call init_diagnostics_accumulators
         nper_thread = (nyz/num_of_threads_to_use)+1
@@ -1004,9 +1002,9 @@ module Equ
         do i=1,num_of_threads_to_use
           istart = iend+1
           iend = iend + nper_thread
-!$omp task
+!!$omp task
           call all_module_diags_slice(istart,min(iend,nyz),f,p)
-!$omp end task
+!!$omp end task
           first_task = .false.
         enddo
     endsubroutine all_module_diags_threaded
