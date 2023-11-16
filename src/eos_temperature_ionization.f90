@@ -589,7 +589,7 @@ module EquationOfState
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee,pp,ss
 !
-      call not_implemented("eosperturb")
+      call not_implemented("eosperturb","")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(psize)
@@ -659,13 +659,11 @@ module EquationOfState
 !
 !   02-apr-04/tony: implemented dummy
 !
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: cs2,cp1tilde
-!
+      real, dimension(nx), intent(out) :: cs2
+      real, dimension(nx), intent(out), optional :: cp1tilde
 !
       cs2=impossible
-      cp1tilde=impossible
       call fatal_error('pressure_gradient_farray','SHOULD NOT BE CALLED WITH'// &
           ' eos_temperature_ionization')
 !
@@ -761,7 +759,7 @@ module EquationOfState
 !
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,mu1,lnTT,ee,pp,cs2,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,yH,mu1,lnTT,ee,pp,cs2,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -772,7 +770,7 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: lnrho,ss
+      real, dimension(psize), intent(out), optional :: lnrho
       real, dimension(psize), intent(out), optional :: yH,lnTT,mu1
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
       real, dimension(psize), optional :: cs2
@@ -811,7 +809,7 @@ module EquationOfState
 !
       if (present(pp)) pp = Rgas*mu1*exp(lnrho_+lnTT_)
 !
-      if (present(ss)) then
+      if (.false.) then   !present(ss)) then
         tmp = 2.5 - 1.5*(lnTT_ion-lnTT_) - lnrho_
         where (yH_ < 1) ! Neutral Hydrogen
           ss = (1-yH_)*(tmp + lnrho_H - log(1-yH_))

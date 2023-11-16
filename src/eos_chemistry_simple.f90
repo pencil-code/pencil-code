@@ -988,11 +988,11 @@ module EquationOfState
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: cs2,cp1tilde
+      real, dimension(nx), intent(out) :: cs2
+      real, dimension(nx), intent(out), optional :: cp1tilde
 !
-      cs2=impossible
-      cp1tilde=impossible
       call not_implemented("pressure_gradient_farray","in eos_chemistry_simple")
+      cs2=impossible
 !
       call keep_compiler_quiet(f)
 !

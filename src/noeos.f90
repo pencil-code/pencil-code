@@ -352,13 +352,13 @@ module EquationOfState
 !
     endsubroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,mu1,lnTT,ee,pp,cs2,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,yH,mu1,lnTT,ee,pp,cs2,kapparho)
 !
 !   02-apr-04/tony: dummy
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension (psize), intent(out), optional :: lnrho,ss
+      real, dimension (psize), intent(out), optional :: lnrho
       real, dimension (psize), intent(out), optional :: yH,lnTT,mu1
       real, dimension (psize), intent(out), optional :: ee,pp,cs2,kapparho
 !
@@ -367,7 +367,6 @@ module EquationOfState
 ! To keep compiler quiet set variables with intent(out) to zero
 !
       if (present(lnrho)) lnrho = 0.0
-      if (present(ss)) ss = 0.0
       if (present(yH)) yH = 0.0
       if (present(lnTT)) lnTT = 0.0
       if (present(mu1)) mu1 = 0.0

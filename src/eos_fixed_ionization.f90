@@ -543,7 +543,9 @@ module EquationOfState
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: cs2,cp1tilde
+      real, dimension(nx), intent(out) :: cs2
+      real, dimension(nx), intent(out), optional :: cp1tilde
+
       real, dimension(nx) :: lnrho,ss,lnTT
 !
       lnrho=f(l1:l2,m,n,ilnrho)
@@ -551,7 +553,7 @@ module EquationOfState
       lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
 !
       cs2=gamma*(1+yH0+xHe-xH2)*ss_ion*exp(lnTT)
-      cp1tilde=nabla_ad/(1+yH0+xHe-xH2)/ss_ion
+      if (present(cp1tilde)) cp1tilde=nabla_ad/(1+yH0+xHe-xH2)/ss_ion
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -663,7 +665,7 @@ module EquationOfState
 !
     endsubroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,cs2,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -675,7 +677,7 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: lnrho,ss,yH,lnTT
+      real, dimension(psize), intent(out), optional :: lnrho,yH,lnTT
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
       real, dimension(psize), optional :: cs2
       real, dimension(psize) :: lnrho_,ss_,lnTT_,TT_,yH_
@@ -684,12 +686,8 @@ module EquationOfState
 !
       case (nx)
         lnrho_=f(l1:l2,m,n,ilnrho)
-        ss_=f(l1:l2,m,n,iss)
-!
       case (mx)
         lnrho_=f(:,m,n,ilnrho)
-        ss_=f(:,m,n,iss)
-!
       case default
         call fatal_error("eoscalc_farray","no such pencil size")
 !
@@ -700,7 +698,6 @@ module EquationOfState
       yH_=yH0
 !
       if (present(lnrho)) lnrho=lnrho_
-      if (present(ss))    ss=ss_
       if (present(yH))    yH=yH_
       if (present(lnTT))  lnTT=lnTT_
       if (present(ee))    ee=1.5*(1+yH_+xHe-xH2)*ss_ion*TT_+yH_*ss_ion*TT_ion

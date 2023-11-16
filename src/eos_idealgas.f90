@@ -313,6 +313,9 @@ module EquationOfState
         aux_count = aux_count+1
       endif
 !
+      if (lentropy.and.gamma_m1==0.) call fatal_error('initialize_eos','gamma=1 not allowed w/entropy')
+      if (gamma_m1==0.and..not.lanelastic) call fatal_error('initialize_eos','gamma=1 not allowed w/entropy')
+!
     endsubroutine initialize_eos
 !***********************************************************************
     subroutine select_eos_variable(variable,findex)
@@ -1262,8 +1265,6 @@ module EquationOfState
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
 !
-      if (gamma_m1==0.) call fatal_error('temperature_gradient','gamma=1 not allowed with entropy')
-!
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
@@ -1289,8 +1290,6 @@ module EquationOfState
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx) :: tmp
-!
-      if (gamma_m1==0.) call fatal_error('temperature_laplacian','gamma=1 not allowed with entropy')
 !
 !  pretend_lnTT
 !
@@ -1320,8 +1319,6 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3,3), intent(out) :: hlnTT
-!
-      if (gamma_m1==0.) call fatal_error('temperature_hessian','gamma=1 not allowed with entropy')
 !
 !  pretend_lnTT
 !
@@ -1438,9 +1435,6 @@ module EquationOfState
       real, dimension(psize) :: rho, eth
       integer :: i1,i2
 !
-!ajwm this test should be done at initialization
-!      if (gamma_m1==0.) call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
-!
       select case (psize)
         case (nx); i1=l1; i2=l2
         case (mx); i1=1; i2=mx
@@ -1474,7 +1468,6 @@ module EquationOfState
         endif
 !
         lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
-        if (gamma_m1==0.) call fatal_error('eoscalc_farray','gamma=1 not allowed with entropy')
 
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
@@ -1595,9 +1588,6 @@ module EquationOfState
       real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
       real :: rho, eth
-!
-      if (gamma_m1==0.and..not.lanelastic) call fatal_error &
-        ('eoscalc_point','gamma=1 not allowed w/entropy')
 !
       select case (ivars)
 !
@@ -1767,8 +1757,6 @@ module EquationOfState
       real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
       real, dimension(nx) :: rho, eth
-!
-      if (gamma_m1==0.) call fatal_error('eoscalc_pencil','gamma=1 not allowed w/entropy')
 !
       select case (ivars)
 !
