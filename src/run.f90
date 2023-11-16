@@ -521,8 +521,15 @@ program run
 !
 !  Do loop in time.
 !
-!$omp do firstprivate(p)
+!$omp parallel firstprivate(p) copyin(dxyz_2,dxyz_4,dxyz_6,&
+!$omp dvol,dxmax_pencil,dxmin_pencil,&
+!$omp dline_1,lcoarse_mn,&
+!$omp lfirstpoint, seed, m, n, &
+!$omp fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,&
+!$omp l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,&
+!$omp it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
 !$omp master
+
   Time_loop: do while (it<=nt)
 !
     lout = (mod(it-1,it1) == 0) .and. (it > it1start)
@@ -790,6 +797,8 @@ program run
 !   Diagnostic output in concurrent thread.
 !
 !
+    ! do while(.not. lfinalized_diagnostics)
+    ! enddo
 !$  if (lfinalized_diagnostics .and. .not. lstarted_writing_diagnostics) then
 !$omp task
       call write_diagnostics(f)

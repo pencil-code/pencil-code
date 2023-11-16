@@ -3545,6 +3545,7 @@ module Diagnostics
       integer :: nmax, nsum, nmin, i
       logical :: firstcall=.true., firstcall_from_pencil_check=.false.
       integer,dimension(2) ::max_range, sum_range
+      !$omp threadprivate(firstcall)
 
       max_range(1) = -5
       max_range(2) = -1

@@ -55,7 +55,7 @@ CCFLAGS = $(OPTFLAGS) -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmod
 
 PCHEADER_DIR=.
 #DSL_MODULE_DIR=Pencil
-DSL_MODULE_DIR=samples/mhd_modular
+DSL_MODULE_DIR=samples/test
 
 include Makefile.depend
 include Makefile.extern
@@ -64,11 +64,18 @@ include Makefile.extern
 #export CUDA_NVCC_FLAGS='-shared -fPIC'
 
 astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
-	CC $(CCFLAGS) $(CUFLAGS) -shared -o astaroth_$(PREC).so $(OBJECTS) -L submodule/build/src/core -L submodule/build/src/core/kernels -L submodule/build/src/utils -lastaroth_core -lkernels -lastaroth_utils -Isubmodule/include
+	mkdir -p build
+	cd build
+	cmake -DMULTIGPU_ENABLED=ON -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DUSE_OMP=ON -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DUSE_CUDA_AWARE_MPI=OFF -DUSE_EXTERNAL_DECOMP=ON -DLINEAR_PROC_MAPPING=ON
+	make -j
+	cd ..
+	cp ./build/libastaroth_sgl.so libastaroth_sgl.so
+	cp libastaroth_sgl.so astaroth_sgl.so
+
 
 astaroth_libs:
 	mkdir -p submodule/build && cd submodule/build && \
-	export DSL_MODULE=$(DSL_MODULE_DIR); cmake -DMULTIGPU_ENABLED=ON -DDSL_MODULE_DIR=~/pencil-main/pencil-code/samples/gputest/src/astaroth/submodule/acc-runtime/samples/mhd -DUSE_OMP=ON -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DUSE_CUDA_AWARE_MPI=OFF\
+	export DSL_MODULE=$(DSL_MODULE_DIR); cmake -DMULTIGPU_ENABLED=ON -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DUSE_OMP=ON -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DUSE_CUDA_AWARE_MPI=OFF\
               -D$(CMAKE_PACKED) -D$(CMAKE_PREC) -DBUILD_SAMPLES=ON  -DADJACENT_VERTEX_BUFFERS=ON -DUSE_HIP=OFF -DLINEAR_PROC_MAPPING=ON -DUSE_EXTERNAL_DECOMP=ON -DVERBOSE=OFF -DCMAKE_BUILD_TYPE=Debug .. \
 	&& make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
@@ -83,8 +90,6 @@ update_astaroth_libs:
 #-DCMAKE_CXX_COMPILER=/appl/spack/install-tree/gcc-4.8.5/gcc-8.3.0-qzmzn5/bin/c++ .. \
 #export DSL_MODULE=pc_mhd_solver && \
 
-%.o: %.cc
-	CC $(CCFLAGS) $(ENVIRON) -dc $< -o $@
 
 $(PC_HEADERS): .sentinel
 .sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)

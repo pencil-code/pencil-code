@@ -4030,7 +4030,9 @@ module Sub
       v2=sum(vv**2,2)
       do l=1,nx
         if (v2(l)>=thresh2) then
+          !$omp critical
           write(lun) l,m-nghost,n-nghost,vv(l,:)
+          !$omp end critical
           !$omp atomic
           nvec=nvec+1
         endif

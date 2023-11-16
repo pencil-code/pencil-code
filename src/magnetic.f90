@@ -1014,12 +1014,12 @@ module Magnetic
 !
   real, dimension(nx) :: eta_total=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.
-  real, dimension(nx,3) :: fres,,forcing_rhs
+  !$omp threadprivate(eta_total)
+  real, dimension(nx,3) :: fres,forcing_rhs
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
   real :: eta_shock_jump1=1.0, eta_tdep=0.0, Arms=0.0
   real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kern_jjsmooth
-  !$omp atomic(eta_total)
 !
   real, dimension(nz,nprocz) :: z_allprocs
 !
@@ -5732,7 +5732,7 @@ module Magnetic
 
       call calc_2d_diagnostics_magnetic(p)
       call calc_1d_diagnostics_magnetic(p)
-      if (ldiagnos) call calc_0d_diagnostics_magnetic(f,p)
+      if (ldiagnos) call calc_0d_diagnostics_magnetic(f,p,uxbb)
 
 !
 !  Write B-slices for output in wvid in run.f90.
@@ -5766,7 +5766,7 @@ module Magnetic
 
     endsubroutine calc_diagnostics_magnetic
 !******************************************************************************
-    subroutine calc_0d_diagnostics_magnetic(f,p)
+    subroutine calc_0d_diagnostics_magnetic(f,p,uxbb)
 !
 !  Calculate diagnostic quantities.
 !
@@ -5777,6 +5777,7 @@ module Magnetic
 
       real, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
+      real, dimension (nx,3), intent(in) :: uxbb
 
       real, dimension (nx,3,3) :: bhatij
       real, dimension (nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv, gLam

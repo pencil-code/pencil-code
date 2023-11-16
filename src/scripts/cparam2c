@@ -3,7 +3,8 @@ sed -f scripts/cparam.sed cparam.inc > cparam.inc_c.h
 echo '#define MIN(a,b) (a<b ? a : b)' > cparam_c.h
 echo '#define MAX(a,b) (a>b ? a : b)' >> cparam_c.h
 sed "s/, bind(C)//g" cparam.f90 > cparam_tmp
-sed "s/(KIND=rkind8)//g" cparam_tmp > cparam_tmp2
+sed "s/huge(zero_double)/DBL_MAX/g" cparam_tmp > cparam_tmp_3
+sed "s/(KIND=rkind8)//g" cparam_tmp_3 > cparam_tmp2
 if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
   sed -f scripts/cparam.sed -e's/integer *:: *\([a-zA-Z0-9_]*\) *= *[^!;]*.*$/extern FINT \1;/' cparam_tmp2 >> cparam_c.h
 else

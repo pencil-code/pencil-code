@@ -17,6 +17,7 @@ module Equ
   public :: read_diagnostics_accumulators, write_diagnostics
 !
   private
+  real :: diag_start
 !
 !
   contains
@@ -76,6 +77,7 @@ module Equ
       use Testscalar
       use Viscosity, only: viscosity_after_boundary
       use Grid, only: coarsegrid_interp
+      use OMP_lib
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -87,6 +89,11 @@ module Equ
 !
       logical :: early_finalize
       real, dimension(1)  :: mass_per_proc
+      real :: start,end
+      real :: rhs_start,rhs_end
+      real ::  diag_end
+      real :: copy_start, copy_end
+      start = omp_get_wtime()
 !
 !  Print statements when they are first executed.
 !
@@ -330,11 +337,20 @@ module Equ
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
+          call cpu_time(rhs_start)
         call rhs_gpu(f,itsub,early_finalize)
+          call cpu_time(rhs_end)
+          print*,"Took ",rhs_end-rhs_start,"in GPU rhs"
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
           call do_rest_diagnostics_tasks(f)
+          copy_start = omp_get_wtime()
           call copy_farray_from_GPU(f)
+          copy_end= omp_get_wtime()
+          call cpu_time(diag_start)
           call calc_all_module_diagnostics(f,p)
+          diag_end = omp_get_wtime()
+          print*,"Took ",diag_end-diag_start,"in diags"
+          print*,"Took ",copy_end-copy_start,"to move data"
         endif
       else
         !call test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_cpu,rhs_cpu)
@@ -424,11 +440,17 @@ module Equ
 !
       if (lnscbc) call nscbc_boundtreat(f,df)
 
+      ! do while(num_of_diag_iter_done /= nyz)
+      ! enddo
       if (lfirst) then
 !$      if(num_of_diag_iter_done==nyz .and. .not. lstarted_finalizing_diagnostics) then
+!$omp task
           call finalize_diagnostics
+!$omp endtask
 !$      endif
       endif
+      ! do while(.not. lfinalized_diagnostics)
+      ! enddo
 !
 !  Calculate rhoccm and cc2m (this requires that these are set in print.in).
 !  Broadcast result to other processors. This is needed for calculating PDFs.
@@ -451,6 +473,8 @@ module Equ
 !  Reset lwrite_prof.
 !
       lwrite_prof=.false.
+      end = omp_get_wtime()
+      print*,"Took ",end-start,"in pde"
 !
     endsubroutine pde
 !***********************************************************************
@@ -599,6 +623,8 @@ module Equ
 !
 !
     use Chemistry
+!$  use OMP_lib
+!$  if(omp_get_thread_num() /= 0) then
     l1davgfirst = l1davgfirst_save 
     ldiagnos = ldiagnos_save 
     l1dphiavg = l1dphiavg_save 
@@ -611,6 +637,9 @@ module Equ
     lvideo = lvideo_save
     lwrite_slices = lwrite_slices_save
     it = it_save
+    print*,"it=",it
+    print*,"it_save=",it_save
+!$  endif
 
     endsubroutine read_diagnostic_flags
 !****************************************************************************
@@ -624,7 +653,9 @@ module Equ
 
     use Chemistry
     use Diagnostics
+    use OMP_lib
 
+!$  if(omp_get_thread_num() /= 0) then
     if (allocated(fname))      fname = p_fname
     if (allocated(fnamex))     fnamex = p_fnamex
     if (allocated(fnamey))     fnamey = p_fnamey 
@@ -639,7 +670,7 @@ module Equ
     call read_diagnostic_flags
     call diagnostics_read_diag_accum
     call chemistry_read_diag_accum
-
+!$  endif
 
     endsubroutine read_diagnostics_accumulators
 !***********************************************************************
@@ -654,7 +685,7 @@ module Equ
     use Diagnostics
     real, dimension (mx,my,mz,mfarray) :: f
 
-            call read_diagnostics_accumulators
+!$          call read_diagnostics_accumulators
             lstarted_writing_diagnostics = .true.
         !
         !  Print diagnostic averages to screen and file.
@@ -688,7 +719,7 @@ module Equ
 !
 !$  use OMP_lib
     integer :: imn
-      if (ldiagnos .and. allocated(fname)) then
+      if (allocated(fname)) then
         p_fname = fname
       endif
 
@@ -876,6 +907,8 @@ module Equ
       use Shear, only: calc_diagnostics_shear
       use Shock, only: calc_diagnostics_shock
       use Viscosity, only: calc_diagnostics_viscosity
+      use Diagnostics
+!$    use OMP_lib
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
@@ -890,6 +923,8 @@ module Equ
 !  before we really need to make sure all the (concurrent) communication
 !  has finished.
 !
+!$    call read_diagnostic_flags
+!$    print*,"TP: task thread num: ", omp_get_thread_num()
       lfirstpoint=.true.
       do imn=istart,iend
 
@@ -898,11 +933,11 @@ module Equ
 !
 !  Skip points not belonging to coarse grid.
 !
-        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-        if (lcoarse_mn) then
-          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-          if (ninds(0,m,n)<=0) cycle
-        endif
+        ! lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        ! if (lcoarse_mn) then
+        !   lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+        !   if (ninds(0,m,n)<=0) cycle
+        ! endif
 
         call calc_all_pencils(f,p)
 
@@ -954,19 +989,25 @@ module Equ
       type (pencil_case)                ,intent(INOUT) :: p
 
       integer :: istart,iend,nper_thread,num_of_threads_to_use,i
+      logical :: first_task
 !
         num_of_threads_to_use = 1
+        first_task = .true.
 !TP: for now we are using all but one thread to do the diagnostics
 !$      num_of_threads_to_use  = max(omp_get_num_procs()-1,1)
+        print*,"TP: In THREADED VERSION"
+        call init_reduc_pointers
         call init_diagnostics_accumulators
         nper_thread = (nyz/num_of_threads_to_use)+1
         iend = 0
+        diag_start = omp_get_wtime()
         do i=1,num_of_threads_to_use
           istart = iend+1
           iend = iend + nper_thread
 !$omp task
           call all_module_diags_slice(istart,min(iend,nyz),f,p)
 !$omp end task
+          first_task = .false.
         enddo
     endsubroutine all_module_diags_threaded
 !*****************************************************************************
@@ -983,10 +1024,10 @@ module Equ
 
       integer :: imn
 !
-!$  if(omp_in_parallel()) then
-!$      call init_reduc_pointers
+!$  if(.true.) then
 !$      call all_module_diags_threaded(f,p)
 !$  else
+        print*,"OMP in parallel=",omp_in_parallel()
         call all_module_diags_slice(1,nyz,f,p)
 !$  endif
     endsubroutine calc_all_module_diagnostics
@@ -1879,225 +1920,157 @@ module Equ
 
     endsubroutine set_dt1_max
 !***********************************************************************
-    subroutine test_dt(f,df,p,rhs_1,rhs_2)
-!
-!   Used to test different implementations of dt subroutines
-!
-!   13-nov-23/TP: Written
-!
+!     subroutine test_dt(f,df,p,rhs_1,rhs_2)
+! !
+! !   Used to test different implementations of dt subroutines
+! !
+! !   13-nov-23/TP: Written
+! !
 
-      use Mpicomm
-      use Ascalar
-      use Chiral
-      use Chemistry
-      use Cosmicray
-      use CosmicrayFlux
-      use Density
-      use Diagnostics
-      use Dustvelocity
-      use Dustdensity
-      use Energy
-      use EquationOfState
-      use Forcing, only: calc_diagnostics_forcing
-      use Gravity
-      use Heatflux
-      use Hydro
-      use Lorenz_gauge
-      use Magnetic
-      use NeutralDensity
-      use NeutralVelocity
-      use Particles_main
-      use Pscalar
-      use PointMasses
-      use Polymer
-      use Radiation
-      use Selfgravity
-      use Shear
-      use Solid_Cells, only: dsolid_dt
-      use Special, only: dspecial_dt
-      use Sub, only: sum_mn
-      use Testfield
-      use Testflow
-      use Testscalar
 
-      real, dimension (mx,my,mz,mfarray) :: f,f_copy
-      real, dimension (mx,my,mz,mfarray) :: df,df_copy
-      integer :: i,j,k,n
-      type (pencil_case) :: p,p_copy
+!       real, dimension (mx,my,mz,mfarray) :: f,f_copy
+!       real, dimension (mx,my,mz,mfarray) :: df,df_copy
+!       integer :: i,j,k,n
+!       type (pencil_case) :: p,p_copy
 
-      intent(inout) :: f
-      intent(in) :: p
-      intent(inout) :: df
-      logical :: passed
-      interface
-          subroutine rhs_1(f,df,p)
-              import mx
-              import my
-              import mz
-              import mfarray
-              import pencil_case
-              real, dimension (mx,my,mz,mfarray) :: f
-              real, dimension (mx,my,mz,mfarray) :: df
-              type (pencil_case) :: p
+!       intent(inout) :: f
+!       intent(in) :: p
+!       intent(inout) :: df
+!       logical :: passed
+!       interface
+!           subroutine rhs_1(f,df,p)
+!               import mx
+!               import my
+!               import mz
+!               import mfarray
+!               import pencil_case
+!               real, dimension (mx,my,mz,mfarray) :: f
+!               real, dimension (mx,my,mz,mfarray) :: df
+!               type (pencil_case) :: p
 
-              intent(inout) :: f
-              intent(in) :: p
-              intent(inout) :: df
-          endsubroutine rhs_1 
-        endinterface
-        interface
-          subroutine rhs_2(f,df,p)
-              import mx
-              import my
-              import mz
-              import mfarray
-              import pencil_case
-              real, dimension (mx,my,mz,mfarray) :: f
-              real, dimension (mx,my,mz,mfarray) :: df
-              type (pencil_case) :: p
+!               intent(inout) :: f
+!               intent(in) :: p
+!               intent(inout) :: df
+!           endsubroutine rhs_1 
+!         endinterface
+!         interface
+!           subroutine rhs_2(f,df,p)
+!               import mx
+!               import my
+!               import mz
+!               import mfarray
+!               import pencil_case
+!               real, dimension (mx,my,mz,mfarray) :: f
+!               real, dimension (mx,my,mz,mfarray) :: df
+!               type (pencil_case) :: p
 
-              intent(inout) :: f
-              intent(in) :: p
-              intent(inout) :: df
-          endsubroutine rhs_2 
-      endinterface
-      df_copy = df
-      p_copy = p
-      f_copy = f
-      call rhs_1(f,df,p)
-      call rhs_2(f_copy,df_copy,p_copy)
-      passed = .true.
-      do i=1,mx
-        do j=1,my
-          do k=1,mz
-            do n=1,mfarray
-              if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
-                print*,"Wrong at: ",i,j,k,n
-                print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
-                passed = .false.
-              endif
-            enddo
-          enddo
-        enddo
-      enddo
-      if(passed) then
-        print*,"passed test :)"
-      else
-        print*,"did not pass test :/"
-      endif
-      print*,iux,iuy,iuz,iss,ilnrho
-      call die_gracefully
-    endsubroutine test_dt
+!               intent(inout) :: f
+!               intent(in) :: p
+!               intent(inout) :: df
+!           endsubroutine rhs_2 
+!       endinterface
+!       df_copy = df
+!       p_copy = p
+!       f_copy = f
+!       call rhs_1(f,df,p)
+!       call rhs_2(f_copy,df_copy,p_copy)
+!       passed = .true.
+!       do i=1,mx
+!         do j=1,my
+!           do k=1,mz
+!             do n=1,mfarray
+!               if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
+!                 print*,"Wrong at: ",i,j,k,n
+!                 print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
+!                 passed = .false.
+!               endif
+!             enddo
+!           enddo
+!         enddo
+!       enddo
+!       if(passed) then
+!         print*,"passed test :)"
+!       else
+!         print*,"did not pass test :/"
+!       endif
+!       call die_gracefully
+!     endsubroutine test_dt
 !***********************************************************************
-subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
+! subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
 
-!  Used to test different implementations of rhs_cpu.
-!
-!  13-nov-23/TP: Written
-!
-      use Mpicomm
-      use Ascalar
-      use Chiral
-      use Chemistry
-      use Cosmicray
-      use CosmicrayFlux
-      use Density
-      use Diagnostics
-      use Dustvelocity
-      use Dustdensity
-      use Energy
-      use EquationOfState
-      use Forcing, only: calc_diagnostics_forcing
-      use Gravity
-      use Heatflux
-      use Hydro
-      use Lorenz_gauge
-      use Magnetic
-      use NeutralDensity
-      use NeutralVelocity
-      use Particles_main
-      use Pscalar
-      use PointMasses
-      use Polymer
-      use Radiation
-      use Selfgravity
-      use Shear
-      use Solid_Cells, only: dsolid_dt
-      use Special, only: dspecial_dt
-      use Sub, only: sum_mn
-      use Testfield
-      use Testflow
-      use Testscalar
+! !  Used to test different implementations of rhs_cpu.
+! !
+! !  13-nov-23/TP: Written
+! !
 
-      real, dimension (mx,my,mz,mfarray) :: f,f_copy
-      real, dimension (mx,my,mz,mfarray) :: df,df_copy
-      type (pencil_case) :: p,p_copy
-      real, dimension(1), intent(inout) :: mass_per_proc
-      logical ,intent(in) :: early_finalize
-      integer :: i,j,k,n
-      logical :: passed
-      interface
-          subroutine rhs_1(f,df,p,mass_per_proc,early_finalize)
-              import mx
-              import my
-              import mz
-              import mfarray
-              import pencil_case
-              real, dimension (mx,my,mz,mfarray) :: f
-              real, dimension (mx,my,mz,mfarray) :: df
-              type (pencil_case) :: p
-              real, dimension(1), intent(inout) :: mass_per_proc
-              logical ,intent(in) :: early_finalize
+!       real, dimension (mx,my,mz,mfarray) :: f,f_copy
+!       real, dimension (mx,my,mz,mfarray) :: df,df_copy
+!       type (pencil_case) :: p,p_copy
+!       real, dimension(1), intent(inout) :: mass_per_proc
+!       logical ,intent(in) :: early_finalize
+!       integer :: i,j,k,n
+!       logical :: passed
+!       interface
+!           subroutine rhs_1(f,df,p,mass_per_proc,early_finalize)
+!               import mx
+!               import my
+!               import mz
+!               import mfarray
+!               import pencil_case
+!               real, dimension (mx,my,mz,mfarray) :: f
+!               real, dimension (mx,my,mz,mfarray) :: df
+!               type (pencil_case) :: p
+!               real, dimension(1), intent(inout) :: mass_per_proc
+!               logical ,intent(in) :: early_finalize
 
-              intent(inout) :: f
-              intent(inout) :: p
-              intent(out) :: df
-          endsubroutine rhs_1 
-        endinterface
-        interface
-          subroutine rhs_2(f,df,p,mass_per_proc,early_finalize)
-              import mx
-              import my
-              import mz
-              import mfarray
-              import pencil_case
-              real, dimension (mx,my,mz,mfarray) :: f
-              real, dimension (mx,my,mz,mfarray) :: df
-              type (pencil_case) :: p
-              real, dimension(1), intent(inout) :: mass_per_proc
-              logical ,intent(in) :: early_finalize
+!               intent(inout) :: f
+!               intent(inout) :: p
+!               intent(out) :: df
+!           endsubroutine rhs_1 
+!         endinterface
+!         interface
+!           subroutine rhs_2(f,df,p,mass_per_proc,early_finalize)
+!               import mx
+!               import my
+!               import mz
+!               import mfarray
+!               import pencil_case
+!               real, dimension (mx,my,mz,mfarray) :: f
+!               real, dimension (mx,my,mz,mfarray) :: df
+!               type (pencil_case) :: p
+!               real, dimension(1), intent(inout) :: mass_per_proc
+!               logical ,intent(in) :: early_finalize
 
-              intent(inout) :: f
-              intent(inout) :: p
-              intent(out) :: df
-          endsubroutine rhs_2 
-      endinterface
-      df_copy = df
-      p_copy = p
-      f_copy = f
-      call rhs_1(f,df,p,mass_per_proc,early_finalize)
-      call rhs_2(f_copy,df_copy,p_copy,mass_per_proc,early_finalize)
-      passed = .true.
-      do i=1,mx
-        do j=1,my
-          do k=1,mz
-            do n=1,mfarray
-              if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
-                print*,"Wrong at: ",i,j,k,n
-                print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
-                passed = .false.
-              endif
-            enddo
-          enddo
-        enddo
-      enddo
-      if(passed) then
-        print*,"passed test :)"
-      else
-        print*,"did not pass test :/"
-      endif
-      print*,iux,iuy,iuz,iss,ilnrho
-      call die_gracefully
-    endsubroutine test_rhs
+!               intent(inout) :: f
+!               intent(inout) :: p
+!               intent(out) :: df
+!           endsubroutine rhs_2 
+!       endinterface
+!       df_copy = df
+!       p_copy = p
+!       f_copy = f
+!       call rhs_1(f,df,p,mass_per_proc,early_finalize)
+!       call rhs_2(f_copy,df_copy,p_copy,mass_per_proc,early_finalize)
+!       passed = .true.
+!       do i=1,mx
+!         do j=1,my
+!           do k=1,mz
+!             do n=1,mfarray
+!               if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
+!                 print*,"Wrong at: ",i,j,k,n
+!                 print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
+!                 passed = .false.
+!               endif
+!             enddo
+!           enddo
+!         enddo
+!       enddo
+!       if(passed) then
+!         print*,"passed test :)"
+!       else
+!         print*,"did not pass test :/"
+!       endif
+!       call die_gracefully
+!     endsubroutine test_rhs
 !***********************************************************************
 endmodule Equ

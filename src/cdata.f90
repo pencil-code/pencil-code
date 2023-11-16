@@ -496,6 +496,7 @@ module Cdata
                                          cnamexy(:),cnamexz(:),cnamerz(:), &
                                          cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
+  !$omp threadprivate(inds_max_diags, inds_sum_diags)
 
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.,lrmv=.false.
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.

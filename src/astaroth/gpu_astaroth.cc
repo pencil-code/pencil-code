@@ -27,7 +27,7 @@
 #include "submodule/src/core/kernels/kernels.h"
 #include "submodule/src/core/task.h"
 #include "submodule/acc-runtime/api/math_utils.h"
-#include "astaroth_utils.h"
+#include "submodule/include/astaroth_utils.h"
 #define real AcReal
 #define EXTERN 
 #define FINT int
@@ -50,7 +50,7 @@ __thread int tp_int;
 
 #include "PC_module_parfuncs.h"
 
-static bool with_boundconds = false;
+static bool with_boundconds = true;
 static AcMesh mesh;
 static AcMesh test_mesh;
 static AcTaskGraph* graph_1;
@@ -205,7 +205,8 @@ AcReal max_advec()
 {
         AcReal maxadvec_=0.;
 #if LHYDRO
-        AcReal umax=acReduceVec(RTYPE_MAX,VTXBUF_UUX,VTXBUF_UUY,VTXBUF_UUZ);
+	AcReal umax;
+        acGridReduceVec(STREAM_DEFAULT,RTYPE_MAX,VTXBUF_UUX,VTXBUF_UUY,VTXBUF_UUZ,&umax);
 #endif
         return maxadvec_;
 }
@@ -276,8 +277,6 @@ void loadBoundary()
 //
 extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=false)
 {
-    // printf("TP: in substep gpu\n");
-    // fflush(stdout);
 #if LFORCING
     // //Update forcing params
 
@@ -290,50 +289,27 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
          AcReal dt1_=sqrt(pow(dt1_advec,2) + pow(dt1_diffus,2));
          set_dt(dt1_);
     }
-    // printf("TP: loading dt: %f\n", dt);
-    // fflush(stdout);
     acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, dt);
     acGridSynchronizeStream(STREAM_DEFAULT);
     //Transfer the updated ghost zone to the device(s) in the node 
 
     if (full){
-        acGridLoadMesh(STREAM_DEFAULT,mesh);
+        //normalize
+        for(int i=0;i<mx*my*mz;i++){
+          for(int vtxbufidx = 0; vtxbufidx< NUM_VTXBUF_HANDLES; vtxbufidx++)
+          {
+            mesh.vertex_buffer[vtxbufidx][i] = mesh.vertex_buffer[vtxbufidx][i]*0.1;
+          }
+        }
+        acDeviceLoadMesh(acGridGetDevice(),STREAM_DEFAULT,mesh);
+        // acGridLoadMesh(STREAM_DEFAULT,mesh);
         acGridSynchronizeStream(STREAM_ALL);
-        acGridExecuteTaskGraph(randomize_graph,1);
+        // acGridExecuteTaskGraph(randomize_graph,1);
         acGridSynchronizeStream(STREAM_ALL);
-	//example of loading profile
+	      //example of loading profile
         //acDeviceLoadProfile(acGridGetDevice(), STREAM_DEFAULT, mesh,PROFILE_X);
     }
-    // printf("TP: loaded mesh\n");
-    // fflush(stdout);
     if(!early_finalize){
-    //     int iarg1=1, iarg2=NUM_VTXBUF_HANDLES; 
-    //     // finalize_isendrcv_bdry((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
-    //     // boundconds_x_c((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
-    //     //boundconds_y_c((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
-    //     printf("AFTER BOUNDCONDS Y\n");
-    //     //Check does offloading work as intended
-    //     acGridStoreMesh(STREAM_DEFAULT,&mesh);
-    //     acGridSynchronizeStream(STREAM_ALL);
-    //     // boundconds_z_c((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
-    //     // acGridSymmetricOffloadAdjacent(&mesh);
-    //     // boundconds_y_c((AcReal*) mesh.vertex_buffer[0], &iarg1, &iarg2);
-    // // acGridLoadMesh(STREAM_DEFAULT,mesh);
-    
-    // acGridSynchronizeStream(STREAM_ALL);
-    //     // AcReal* profile_x_device = acGridGetProfile(PROFILE_X);
-    //     // acGridCheckProfile(PROFILE_X);
-    //     AcMeshInfo info = mesh.info;
-
-    // const int nx_min = info.int_params[AC_nx_min];
-    // const int nx_max = info.int_params[AC_nx_max];
-    // const int ny_min = info.int_params[AC_ny_min];
-    // const int ny_max = info.int_params[AC_ny_max];
-    // const int nz_min = info.int_params[AC_nz_min];
-    // const int nz_max = info.int_params[AC_nz_max];
-    // info.int_params[AC_mx] = mx;
-    // info.int_params[AC_my] = my;
-    // info.int_params[AC_mz] = mz;
 
     }
         acGridSynchronizeStream(STREAM_ALL);
@@ -387,10 +363,10 @@ extern "C" void testBcKernel(AcReal* farray_in, AcReal* farray_truth){
         offset+=mw;
     }
 
-    AcReal cv1 = 1.66666663;
-    lnrho0 = 0;
-    cp = 1.0;
-    AcReal gamma_m1 = 0.666666627;
+    // AcReal cv1 = 1.66666663;
+    // lnrho0 = 0;
+    // cp = 1.0;
+    // AcReal gamma_m1 = 0.666666627;
     //Run the gpu code serially
     int3 dims = {mx,my,1};
     for(int i=0;i<dims.x;i++){
@@ -406,7 +382,7 @@ extern "C" void testBcKernel(AcReal* farray_in, AcReal* farray_truth){
                 //     rho_xy = mesh.vertex_buffer[ilnrho-1][DEVICE_VTXBUF_IDX(i,j,n2+z-1)]-mesh.vertex_buffer[ilnrho-1][DEVICE_VTXBUF_IDX(i,j,n2-z-1)];
                 //     mesh.vertex_buffer[iss-1][DEVICE_VTXBUF_IDX(i,j,n2+z-1)] = mesh.vertex_buffer[iss-1][DEVICE_VTXBUF_IDX(i,j,n2-z-1)] + cp*(cp-cv)*(-rho_xy-1.0*tmp_xy);
                 // }
-                #include "res.cuh"
+                //#include "res.cuh"
 
             }
         }
@@ -479,11 +455,11 @@ extern "C" void testBcKernel(AcReal* farray_in, AcReal* farray_truth){
 extern "C" void registerGPU(AcReal* farray)
 {
 
-    AcReal* profile_x_host = (AcReal*)malloc(sizeof(AcReal)*mx);
-    for(int i=0;i<mx;i++){
-        profile_x_host[i] = (AcReal)i;
-        printf("profile_x_host[%d]=%f\n",i,profile_x_host[i]);
-    }
+    // AcReal* profile_x_host = (AcReal*)malloc(sizeof(AcReal)*mx);
+    // for(int i=0;i<mx;i++){
+    //     profile_x_host[i] = (AcReal)i;
+    //     printf("profile_x_host[%d]=%f\n",i,profile_x_host[i]);
+    // }
     // mesh.profiles[PROFILE_X] = profile_x_host; 
 
 
@@ -508,10 +484,6 @@ printf("nx etc. %d %d %d %.14f %.14f %.14f \n",nxgrid,nygrid,nzgrid,dx,dy,dz);
      config.int_params[AC_nx]=nxgrid;
      config.int_params[AC_ny]=nygrid;
      config.int_params[AC_nz]=nzgrid;
-        // config.int_params[AC_nx]=nx;
-        // config.int_params[AC_ny]=ny;
-        // config.int_params[AC_nz]=nz;
-
      config.int_params[AC_mx] = mxgrid;
      config.int_params[AC_my] = mygrid;
      config.int_params[AC_mz] = mzgrid;
@@ -521,24 +493,11 @@ printf("nx etc. %d %d %d %.14f %.14f %.14f \n",nxgrid,nygrid,nzgrid,dx,dy,dz);
       config.int_params[AC_ny_max] = m2;
       config.int_params[AC_nz_min] = n1;
       config.int_params[AC_nz_max] = n2;
-//      config.int_params[AC_mxy]  = mx*my;
-//      config.int_params[AC_nxy]  = nx*ny;
-//      config.int_params[AC_nxyz] = nw;
-    //  config.int_params[AC_xy_plate_bufsize] = halo_xy_size;
-    //  config.int_params[AC_xz_plate_bufsize] = halo_xz_size;
-    //  config.int_params[AC_yz_plate_bufsize] = halo_yz_size;
-
-    //  config.real_params[AC_dsx]=dx;
-    //  config.real_params[AC_dsy]=dy;
-    //  config.real_params[AC_dsz]=dz;
      config.real_params[AC_dsx]=dx;
      config.real_params[AC_dsy]=dy;
      config.real_params[AC_dsz]=dz;
 printf("%d: l1i etc. %d %d %d %d %d %d \n", pid, l1i,l2i,n1i,n2i,m1i,m2i);
 printf("%d: l1 etc. %d %d %d %d %d %d \n", pid, l1,l2,n1,n2,m1,m2);
-    //  config.real_params[AC_inv_dsx] = 1./dx;
-    //  config.real_params[AC_inv_dsy] = 1./dy;
-    //  config.real_params[AC_inv_dsz] = 1./dz;
      config.real_params[AC_dsmin]   = std::min(dx,std::min(dy,dz));
      config.real_params[AC_xlen]=6.28318548;
      config.real_params[AC_ylen]=6.28318548;
@@ -546,13 +505,7 @@ printf("%d: l1 etc. %d %d %d %d %d %d \n", pid, l1,l2,n1,n2,m1,m2);
      config.real_params[AC_xorig]=-3.14159274;
      config.real_params[AC_yorig]=-3.14159274;
   config.real_params[AC_zorig]=-3.14159274;
-    printf("Middle setUpConfig\n");
-// printf("lxyz etc. %f %f %f %f %f %f \n",lxyz[0],lxyz[1],lxyz[2],xyz0[0],xyz0[1],xyz0[2]);
-    //  config.real_params[AC_unit_density]=unit_density;
-    //  config.real_params[AC_unit_velocity]=unit_velocity;
-    //  config.real_params[AC_unit_length]=unit_length;
      config.real_params[AC_mu0]=mu0;
-//printf("units etc. %lf %lf %lf \n", unit_density, unit_velocity, unit_length);
     printf("Done setUpConfig\n");
 
 #include "PC_modulepars.h"
@@ -560,6 +513,7 @@ printf("%d: l1 etc. %d %d %d %d %d %d \n", pid, l1,l2,n1,n2,m1,m2);
 }
 /***********************************************************************************************/
 void checkConfig(AcMeshInfo & config){
+printf("check that config is correct\n");
 //printf("setupConfig:mesh.info.real_params[AC_k1_ff]= %f \n",config.real_params[AC_k1_ff]);
 #if LENTROPY
      printf("lpressuregradientgas= %d %d \n", lpressuregradient_gas, config.int_params[AC_lpressuregradient_gas]);
@@ -579,7 +533,7 @@ void checkConfig(AcMeshInfo & config){
      printf("gamma= %f %f \n", gamma, config.real_params[AC_gamma]);
      printf("cv= %f %f \n", cv, config.real_params[AC_cv_sound]);
      printf("cp= %f %f \n", cp, config.real_params[AC_cp_sound]);
-     printf("lnT0= %f %f \n", lnTT0, config.real_params[AC_lnT0]);
+     printf("lnT0= %f %f \n", lnTT0, config.real_params[AC_lnTT0]);
      printf("lnrho0= %f %f \n", lnrho0, config.real_params[AC_lnrho0]);
 #endif
 #if LFORCING
@@ -623,24 +577,23 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
 
 
 
-int3 decomp = {1,2,1};
 printf("Before set domain decomp\n");
 printf("nprocy_c: 2:%d\n",nprocy);
 printf("nprocx_c: 1:%d\n",nprocx);
 printf("nprocz_c: 1:%d\n",nprocz);
+printf("hi :(\n");
 fflush(stdout);
 printf("Setting domain int3\n");
+int3 decomp = {nprocx,nprocy,nprocx};
 fflush(stdout);
 acCheckDeviceAvailability();
 printf("Setted domain int3\n");
 fflush(stdout);
 
 acGridSetDomainDecomposition(decomp);
-printf("Before grid init\n");
+checkConfig(mesh.info);
 fflush(stdout);
     acGridInit(mesh.info);
-printf("Done grid init\n");
-fflush(stdout);
 
 // printf("Done grid init\n");
 //         AcReal *p[2];
@@ -663,21 +616,21 @@ fflush(stdout);
         ({
 
         acHaloExchange(all_fields),
-        acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_SYMMETRIC, all_fields),
+        acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
         acCompute(KERNEL_randomize, all_fields),
         });
     if(with_boundconds){
         graph_1 = acGridBuildTaskGraph({
             acHaloExchange(all_fields),
-            acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_SYMMETRIC, all_fields),
-            acCompute(KERNEL_twopass_solve_intermediate_step0, all_fields),
-            acCompute(KERNEL_twopass_solve_final_step0, all_fields),
+            acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
+            acCompute(KERNEL_twopass_solve_intermediate, all_fields),
+            acCompute(KERNEL_twopass_solve_final, all_fields),
         });
     }else{
         graph_1 = acGridBuildTaskGraph({
             acHaloExchange(all_fields),
-            acCompute(KERNEL_twopass_solve_intermediate_step0, all_fields),
-            acCompute(KERNEL_twopass_solve_final_step0, all_fields),
+            acCompute(KERNEL_twopass_solve_intermediate, all_fields),
+            acCompute(KERNEL_twopass_solve_final, all_fields),
         });
 
     }
@@ -685,32 +638,32 @@ fflush(stdout);
         graph_2 = acGridBuildTaskGraph(
         {
             acHaloExchange(all_fields),
-            acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_SYMMETRIC, all_fields),
-            acCompute(KERNEL_twopass_solve_intermediate_step1, all_fields),
-            acCompute(KERNEL_twopass_solve_final_step1, all_fields),
+            acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
+            acCompute(KERNEL_twopass_solve_intermediate, all_fields),
+            acCompute(KERNEL_twopass_solve_final, all_fields),
         });
     }else{
         graph_2 = acGridBuildTaskGraph(
         {
             acHaloExchange(all_fields),
-            acCompute(KERNEL_twopass_solve_intermediate_step1, all_fields),
-            acCompute(KERNEL_twopass_solve_final_step1, all_fields),
+            acCompute(KERNEL_twopass_solve_intermediate, all_fields),
+            acCompute(KERNEL_twopass_solve_final, all_fields),
         });
     }
     if(with_boundconds){
         graph_3 = acGridBuildTaskGraph(
         {
             acHaloExchange(all_fields),
-            acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_SYMMETRIC, all_fields),
-            acCompute(KERNEL_twopass_solve_intermediate_step2, all_fields),
-            acCompute(KERNEL_twopass_solve_final_step2, all_fields),
+            acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
+            acCompute(KERNEL_twopass_solve_intermediate, all_fields),
+            acCompute(KERNEL_twopass_solve_final, all_fields),
         });
     }else{
         graph_3 = acGridBuildTaskGraph(
         {
             acHaloExchange(all_fields),
-            acCompute(KERNEL_twopass_solve_intermediate_step2, all_fields),
-            acCompute(KERNEL_twopass_solve_final_step2, all_fields),
+            acCompute(KERNEL_twopass_solve_intermediate, all_fields),
+            acCompute(KERNEL_twopass_solve_final, all_fields),
         });
 
     }
@@ -728,7 +681,7 @@ extern "C" void copyFarray()
     // acGridSynchronizeStream(STREAM_ALL);
     // // hipMemcpy(&mesh.vertex_buffer[0],vba_in,mw*NUM_VTXBUF_HANDLES*sizeof(AcReal),hipMemcpyDeviceToHost);
     acGridSynchronizeStream(STREAM_ALL);
-    acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &test_mesh);
+    acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
     // acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
     acGridSynchronizeStream(STREAM_ALL);
 // printf("store all %d \n",res); fflush(stdout);

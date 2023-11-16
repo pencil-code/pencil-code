@@ -187,6 +187,7 @@ module Mpicomm
       use Syscalls, only: sizeof_real
 !
       !integer(KIND=ikind8) :: iapp
+!$    integer :: thread_support
       integer :: iapp=0
       integer :: flag
 
@@ -194,7 +195,7 @@ module Mpicomm
 !
 !$    if(.true.) then
 !$      call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,thread_support,mpierr)
-!$      if thread_support<MPI_THREAD_MULTIPLE then
+!$      if(thread_support<MPI_THREAD_MULTIPLE) then
 !$        print*,"asked for multiple. got ",thread_support
 !$        call die_gracefully
 !$      endif

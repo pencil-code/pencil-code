@@ -2992,17 +2992,6 @@ endif
 ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
   FFLAGS += $(OMPFFLAGS)
   LDFLAGS += $(OMPLFLAGS)
-  OMP_PREREQ := copyin.inc
-copyin.inc: Makefile.local $(PENCIL_HOME)/src/copyin.inc
-	@cp -f $(PENCIL_HOME)/src/copyin.inc .
-	@for file in `grep '^ *[A-Z0-9_]* *=' Makefile.local | sed -f omp.sed`; do \
-	  use=`grep '^ *module' $$file | grep -v 'module  *procedure' | sed -e's/module/use/'`; \
-	  sub=`grep '^ *subroutine  *copyin_' $$file | sed -e's/subroutine/call/'`; \
-	  if [ "$$sub" != "" ]; then \
-	    echo "  $$use\n" "$$(cat copyin.inc)" > copyin.inc; \
-	    echo "$$sub" >> copyin.inc ; \
-	  fi \
-	done
 else
   MULTITHREADING = 
   OMP_PREREQ = 

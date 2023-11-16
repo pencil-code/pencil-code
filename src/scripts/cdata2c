@@ -1,7 +1,8 @@
 
   sed "s/, bind(C)//g" cdata.f90 > cdata_tmp
   sed "s/, bind(c)//g" cdata_tmp > cdata_tmp_2
-  sed "s/(KIND=rkind8)//g" cdata_tmp_2 > cdata_tmp_3
+  sed "s/, volatile//g" cdata_tmp_2 > cdata_tmp_4
+  sed "s/(KIND=rkind8)//g" cdata_tmp_4 > cdata_tmp_3
 if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
 
   sed -f scripts/cdata_CRAY.sed cdata_tmp_3 > cdata_c.h
@@ -11,4 +12,5 @@ else
   sed -e's/MODULE_PREFIX/'$MODULE_PREFIX'/' -e's/MODULE_INFIX/'$MODULE_INFIX'/' -e's/MODULE_SUFFIX/'$MODULE_SUFFIX'/' tmp > defines_cdata.h
   rm -f tmp
 fi
-
+sed "s/extern REAL dxyz_2_,dxyz_4_,dxyz_6_,dvol_;/extern thread_local REAL dxyz_2_,dxyz_4_,dxyz_6_,dvol_;/g" cdata_refs.h > tmp
+cp tmp cdata_refs.h
