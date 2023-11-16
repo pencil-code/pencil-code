@@ -313,8 +313,8 @@ module EquationOfState
         aux_count = aux_count+1
       endif
 !
-      if (lentropy.and.gamma_m1==0.) call fatal_error('initialize_eos','gamma=1 not allowed w/entropy')
-      if (gamma_m1==0.and..not.lanelastic) call fatal_error('initialize_eos','gamma=1 not allowed w/entropy')
+      if (lentropy.and.gamma_m1==0.) call warning('initialize_eos','gamma=1 not allowed w/entropy')
+      if (gamma_m1==0.and..not.lanelastic) call warning('initialize_eos','gamma=1 not allowed w/entropy')
 !
     endsubroutine initialize_eos
 !***********************************************************************
