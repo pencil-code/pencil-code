@@ -12,7 +12,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 2
-!! COMMUNICATED AUXILIARIES 2
+! COMMUNICATED AUXILIARIES 1
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3); del2TT; del6TT; del6lnTT
@@ -76,9 +76,9 @@ module EquationOfState
 !  Set indices for auxiliary variables.
 !
       !call farray_register_auxiliary('yH',iyH,communicated=.true.)
-      !if (ilnTT==0) call farray_register_auxiliary('lnTT',ilnTT,communicated=.true.)
       call farray_register_auxiliary('yH',iyH)
-      if (ilnTT==0) call farray_register_auxiliary('lnTT',ilnTT)
+      if (.not.ltemperature.or.ltemperature_nolog) &
+        call farray_register_auxiliary('lnTT',ilnTT,communicated=.true.)
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -382,14 +382,14 @@ module EquationOfState
         lpencil_in(i_glnTT)=.true.
         lpencil_in(i_TT)=.true.
       endif
-      if (lpencil_in(i_del2lnTT)) then
-        lpencil_in(i_del2lnrho)=.true.
-        lpencil_in(i_del2ss)=.true.
-      endif
-      if (lpencil_in(i_glnTT)) then
-        lpencil_in(i_glnrho)=.true.
-        lpencil_in(i_gss)=.true.
-      endif
+      !if (lpencil_in(i_del2lnTT)) then
+      !  lpencil_in(i_del2lnrho)=.true.
+      !  lpencil_in(i_del2ss)=.true.
+      !endif
+      !if (lpencil_in(i_glnTT)) then
+      !  lpencil_in(i_glnrho)=.true.
+      !  lpencil_in(i_gss)=.true.
+      !endif
       if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
       if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
 !
@@ -440,7 +440,6 @@ module EquationOfState
 ! handled by the eos module.
 ! ss
       if (lpenc_loc(i_ss)) p%ss=f(l1:l2,m,n,iss)
-!
 ! gss
       if (lpenc_loc(i_gss)) call grad(f,iss,p%gss)
 ! pp
@@ -448,9 +447,9 @@ module EquationOfState
 ! ee
       if (lpenc_loc(i_ee)) call eoscalc(f,nx,ee=p%ee)
 ! lnTT
-      if (lpenc_loc(i_lnTT)) call eoscalc(f,nx,lnTT=p%lnTT)
+      if (lpenc_loc(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
 ! yH
-      if (lpenc_loc(i_yH)) call eoscalc(f,nx,yH=p%yH)
+      if (lpenc_loc(i_yH)) p%yH=f(l1:l2,m,n,iyH)
 ! TT
       if (lpenc_loc(i_TT)) p%TT=exp(p%lnTT)
 ! TT1
@@ -459,45 +458,27 @@ module EquationOfState
       if (lpenc_loc(i_cs2) .or. lpenc_loc(i_cp1tilde)) &
           call pressure_gradient(f,p%cs2,p%cp1tilde)
 ! glnTT
-      if (lpenc_loc(i_glnTT)) then
-        call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
-      endif
+      if (lpenc_loc(i_glnTT)) call grad(f,ilnTT,p%glnTT)
 ! gTT
       if (lpenc_loc(i_gTT)) then
         do i=1,3; p%gTT(:,i)=p%glnTT(:,i)*p%TT; enddo
       endif
 ! hss
-      if (lpenc_loc(i_hss)) then
-        call g2ij(f,iss,p%hss)
-      endif
+      if (lpenc_loc(i_hss)) call g2ij(f,iss,p%hss)
 ! del2ss
-      if (lpenc_loc(i_del2ss)) then
-        call del2(f,iss,p%del2ss)
-      endif
+      if (lpenc_loc(i_del2ss)) call del2(f,iss,p%del2ss)
 ! del2lnTT
-      if (lpenc_loc(i_del2lnTT)) then
-        call temperature_laplacian(f,p)
-      endif
+      if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
 ! del2TT
-      if (lpenc_loc(i_del2TT)) then
-        call fatal_error('calc_pencils_eos_pencpar','del2TT not implemented')
-      endif
+      if (lpenc_loc(i_del2TT)) call not_implemented('calc_pencils_eos_pencpar','del2TT')
 ! del6lnTT
-      if (lpenc_loc(i_del6lnTT)) then
-        call fatal_error('calc_pencils_eos_pencpar','del6lnTT not implemented')
-      endif
+      if (lpenc_loc(i_del6lnTT)) call del6(f,ilnTT,p%del6lnTT)
 ! del6TT
-      if (lpenc_loc(i_del6TT)) then
-        call fatal_error('calc_pencils_eos_pencpar','del6TT not implemented')
-      endif
+      if (lpenc_loc(i_del6TT)) call not_implemented('calc_pencils_eos_pencpar','del6TT')
 ! del6ss
-      if (lpenc_loc(i_del6ss)) then
-        call del6(f,iss,p%del6ss)
-      endif
+      if (lpenc_loc(i_del6ss)) call del6(f,iss,p%del6ss)
 ! hlnTT
-      if (lpenc_loc(i_hlnTT)) then
-        call temperature_hessian(f,p%hlnrho,p%hss,p%hlnTT)
-      endif
+      if (lpenc_loc(i_hlnTT)) call temperature_hessian(f,p%hlnrho,p%hss,p%hlnTT)
 !
       if (lpenc_loc(i_glnmumol)) p%glnmumol(:,:)=0.
 !
@@ -665,7 +646,9 @@ module EquationOfState
       use General, only: ioptest
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: cs2,cp1tilde
+      real, dimension(nx), intent(out) :: cs2
+      real, dimension(nx), intent(out), optional :: cp1tilde
+
       real, dimension(nx) :: lnrho,yH,lnTT
       real, dimension(nx) :: R,dlnTTdy,dRdy,temp
       real, dimension(nx) :: dlnPPdlnrho,fractions,fractions1
@@ -676,9 +659,9 @@ module EquationOfState
       lnTT=f(l1:l2,m,n,ilnTT)
 !
       TT1=exp(-lnTT)
-      fractions=(1+yH+xHe)
+      fractions=1+yH+xHe
       fractions1=1/fractions
-!!
+!
       R=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1-yH+epsi)-2*log(yH)
       dlnTTdy=(2*(-R-TT_ion*TT1)-3)/3*fractions1
       dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH+epsi)-2/yH
@@ -686,8 +669,8 @@ module EquationOfState
       dlnPPdlnrho=(5-2*TT_ion*TT1*temp)/3
       dlnPPdss=ss_ion1*fractions1*(dlnPPdlnrho-temp-1)
       cs2=fractions*ss_ion*dlnPPdlnrho/TT1
-      cp1tilde=dlnPPdss/dlnPPdlnrho
-!!
+      if (present(cp1tilde)) cp1tilde=dlnPPdss/dlnPPdlnrho
+!
     endsubroutine pressure_gradient_farray
 !***********************************************************************
     subroutine pressure_gradient_point(lnrho,ss,cs2,cp1tilde)
@@ -900,7 +883,7 @@ module EquationOfState
 !
     endsubroutine eosperturb
 !!***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,cs2,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -916,55 +899,40 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: lnrho,ss
+      real, dimension(psize), intent(out), optional :: lnrho
       real, dimension(psize), intent(out), optional :: yH,lnTT
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
       real, dimension(psize), optional :: cs2
-      real, dimension(psize) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions,exponent
-!copied from eos_idealgas
-      real, dimension(psize) :: rho, eth, cp1tilde_, cs2_
+      real, dimension(psize) :: lnrho_,yH_,lnTT_,TT,fractions,exponent
+      integer :: i1,i2
 !
       select case (psize)
-!
-      case (nx)
-        lnrho_=f(l1:l2,m,n,ilnrho)
-        ss_=f(l1:l2,m,n,iss)
-        yH_=f(l1:l2,m,n,iyH)
-        lnTT_=f(l1:l2,m,n,ilnTT)
-        if (present(cs2)) call pressure_gradient(f,cs2,cp1tilde_)
-!
-      case (mx)
-        lnrho_=f(:,m,n,ilnrho)
-        ss_=f(:,m,n,iss)
-        yH_=f(:,m,n,iyH)
-        lnTT_=f(:,m,n,ilnTT)
-        if (present(cs2)) then
-          cs2_=1.
-          call pressure_gradient(f,cs2_(l1:l2),cp1tilde_(l1:l2))
-          cs2=cs2_
-        endif
-!
-      case default
-        call stop_it("eoscalc: no such pencil size")
-!
+        case (nx); i1=l1; i2=l2
+        case (mx); i1=1; i2=mx
+        case default; call stop_it("eoscalc: no such pencil size")
       end select
-!
-      TT_=exp(lnTT_)
-      fractions=(1+yH_+xHe)
-!
+
+      lnrho_=f(i1:i2,m,n,ilnrho)
+      yH_   =f(i1:i2,m,n,iyH)
+      lnTT_ =f(i1:i2,m,n,ilnTT)
+
       if (present(lnrho)) lnrho=lnrho_
-      if (present(ss)) ss=ss_
       if (present(yH)) yH=yH_
       if (present(lnTT)) lnTT=lnTT_
-      if (present(ee)) ee=1.5*fractions*ss_ion*TT_+yH_*ee_ion
-      if (present(pp)) pp=fractions*exp(lnrho_)*TT_*ss_ion
+      if (present(cs2)) call pressure_gradient(f,cs2(i1:i2))
+!
+      if (present(ee).or.present(pp).or.present(kapparho)) TT=exp(lnTT_)
+      if (present(ee).or.present(pp)) fractions=1+yH_+xHe
+!
+      if (present(ee)) ee=1.5*fractions*ss_ion*TT+yH_*ee_ion
+      if (present(pp)) pp=fractions*exp(lnrho_)*TT*ss_ion
 !
 !  Hminus opacity
 !
       if (present(kapparho)) then
 !        lnchi=2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_) &
 !             +TT_ion_/TT_+log(yH_+yMetals)+log(1-yH_+epsi)+lnchi0
-        exponent = (2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_/TT_)
+        exponent = (2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_/TT)
         !
         ! Ensure exponentiation and successive multiplication with
         ! numbers up to ~ 1e4 avoids overflow:
@@ -980,8 +948,6 @@ module EquationOfState
 !   Calculate thermodynamical quantities
 !
 !   i13-mar-04/tony: modified
-!
-      use Mpicomm, only: stop_it
 !
       integer, intent(in) :: ivars
       real, dimension(nx), intent(in) :: var1,var2
@@ -1014,11 +980,21 @@ module EquationOfState
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         pp_=fractions*rho_*TT_*ss_ion
 !
-      case (ilnrho_lnTT)
-        lnrho_=var1
-        lnTT_=var2
-        TT_=exp(lnTT_)
-        TT1_=exp(-lnTT_)
+      case (ilnrho_lnTT,ilnrho_TT,irho_TT)
+        if (ivars==irho_TT) then
+          lnrho_=log(var1)
+        else
+          lnrho_=var1
+        endif
+        if (ivars==ilnrho_lnTT) then
+          lnTT_=var2
+          TT_=exp(lnTT_)
+          TT1_=exp(-lnTT_)
+        else
+          TT_=var2
+          lnTT_=log(TT_)
+          TT1_=1./TT_
+        endif
         rhs=exp(lnrho_e-lnrho_+1.5*(lnTT_-lnTT_ion)-TT_ion*TT1_)
         rhs=max(rhs,tini)       ! avoid log(0.) below
         sqrtrhs=sqrt(rhs)
@@ -1028,38 +1004,49 @@ module EquationOfState
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         pp_=fractions*exp(lnrho_)*TT_*ss_ion
 !
-      case (ilnrho_ee)
-        lnrho_=var1
+      case (ilnrho_ee,irho_ee)
+        if (ivars==ilnrho_ee) then
+          lnrho_=var1
+          rho_=exp(lnrho_)
+        else
+          rho_=var1
+          lnrho_=log(rho_)
+        endif
         ee_=var2
         yH_=yHmax
         yH_=0.5*min(ee_/ee_ion,yH_)
         do i=1,nx
-          call rtsafe(ilnrho_ee,lnrho_(i),ee_(i),yHmin,yHmax*min(ee_(i)/ee_ion,1.0),yH_(i))
+          call rtsafe(ilnrho_ee,lnrho_(i),ee_(i),yHmin,yHmax*min(ee_(i)/ee_ion,1.0),yH_(i))   !!!
         enddo
         fractions=(1+yH_+xHe)
         TT_=(ee_-yH_*ee_ion)/(1.5*fractions*ss_ion)
         lnTT_=log(TT_)
-        rho_=exp(lnrho_)
         ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
         pp_=fractions*rho_*TT_*ss_ion
 !
-      case (ilnrho_pp)
-        lnrho_=var1
+      case (ilnrho_pp,irho_pp)
+        if (ivars==ilnrho_pp) then
+          lnrho_=var1
+          rho_=exp(lnrho_)
+        else
+          rho_=var1
+          lnrho_=log(rho_)
+        endif
         pp_=var2
         yH_=0.5*yHmax
         do i=1,nx
-          call rtsafe(ilnrho_pp,lnrho_(i),pp_(i),yHmin,yHmax,yH_(i))
+          call rtsafe(ilnrho_pp,lnrho_(i),pp_(i),yHmin,yHmax,yH_(i))   !!!
         enddo
         fractions=(1+yH_+xHe)
-        rho_=exp(lnrho_)
         TT_=pp_/(fractions*ss_ion*rho_)
         lnTT_=log(TT_)
         ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
 !
+      case (ipp_ss, irho_eth, ilnrho_eth)
+        call not_implemented("eoscalc_pencil","ipp_ss, irho_eth, ilnrho_eth")
       case default
-        call stop_it("eoscalc_pencil: I don't get what the independent variables are.")
-!
+        call fatal_error("eoscalc_pencil","unknown independent variables combination")
       end select
 !
       if (present(lnrho)) lnrho=lnrho_
