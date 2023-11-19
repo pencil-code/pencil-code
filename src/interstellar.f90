@@ -3815,7 +3815,8 @@ module Interstellar
         deltaEE=0.
         call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
         if (lSN_eth) &
-          call eosperturb(f,nx,ee=real((ee_old*rho_old+deltaEE*frac_eth)/rho_old))
+          !call eosperturb(f,nx,ee=real((ee_old*rho_old+deltaEE*frac_eth)/rho_old))
+          call eoscalc(irho_ee,rho_old,real((ee_old*rho_old+deltaEE*frac_eth)/rho_old),ss=f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
 
         if (ldensity_nolog) then
           call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
