@@ -4357,12 +4357,12 @@ module Chemistry
         write (1,*) t
         write (1,'(8e10.2)') net_react_p, net_react_m
         close (1)
-      endif
 !
 ! Reset to zero for next time
 !
-     net_react_m = 0.
-     net_react_p = 0.
+        net_react_m = 0.
+        net_react_p = 0.
+      endif
 !
     endsubroutine  write_net_reaction
 !***********************************************************************
