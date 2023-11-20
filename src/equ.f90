@@ -93,7 +93,8 @@ module Equ
       real :: rhs_start,rhs_end
       real ::  diag_end
       real :: copy_start, copy_end
-      start = omp_get_wtime()
+      ! start = omp_get_wtime()
+      call cpu_time(start)
 !
 !  Print statements when they are first executed.
 !
@@ -212,7 +213,7 @@ module Equ
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
 !
-      call boundconds_x(f)
+      ! call boundconds_x(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
@@ -220,14 +221,16 @@ module Equ
 !  2. communication
 !  3. y- and z-boundaries
 !
-      if (nghost>0) then
-        if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
-        call initiate_isendrcv_bdry(f)
-        if (early_finalize) then
-          call finalize_isendrcv_bdry(f)
-          if (lcoarse) call coarsegrid_interp(f)   ! after boundconds_x???
-          call boundconds_y(f)
-          call boundconds_z(f)
+      if(.not. lgpu) then
+        if (nghost>0) then
+          if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
+          call initiate_isendrcv_bdry(f)
+          if (early_finalize) then
+            call finalize_isendrcv_bdry(f)
+            if (lcoarse) call coarsegrid_interp(f)   ! after boundconds_x???
+            call boundconds_y(f)
+            call boundconds_z(f)
+          endif
         endif
       endif
 !
@@ -337,20 +340,26 @@ module Equ
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
-          call cpu_time(rhs_start)
+        ! rhs_start = omp_get_wtime()
+        call cpu_time(rhs_start)
         call rhs_gpu(f,itsub,early_finalize)
-          call cpu_time(rhs_end)
-          ! print*,"Took ",rhs_end-rhs_start,"in GPU rhs"
+        call cpu_time(rhs_end)
+        print*,"Took ",rhs_end-rhs_start,"in GPU rhs"
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+          call cpu_time(diag_end)
+          print*,"Time from beginning: before do rest",diag_end-start
           call do_rest_diagnostics_tasks(f)
-          copy_start = omp_get_wtime()
+          call cpu_time(diag_end)
+          print*,"Time from beginning: after do rest",diag_end-start
+          call cpu_time(copy_start)
           call copy_farray_from_GPU(f)
-          copy_end= omp_get_wtime()
+          call cpu_time(copy_end)
           call cpu_time(diag_start)
           call calc_all_module_diagnostics(f,p)
-          diag_end = omp_get_wtime()
+          call cpu_time(diag_end)
           print*,"Took ",diag_end-diag_start,"in diags"
-          ! print*,"Took ",copy_end-copy_start,"to move data"
+          print*,"Time from beginning: ",diag_end-start
+          print*,"Took ",copy_end-copy_start,"to move data"
         endif
       else
         !call test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_cpu,rhs_cpu)
@@ -473,8 +482,9 @@ module Equ
 !  Reset lwrite_prof.
 !
       lwrite_prof=.false.
-      end = omp_get_wtime()
-      ! print*,"Took ",end-start,"in pde"
+      ! end = omp_get_wtime()
+      call cpu_time(end)
+      print*,"Took ",end-start,"in pde"
 !
     endsubroutine pde
 !***********************************************************************
@@ -873,7 +883,7 @@ module Equ
 
     endsubroutine diagnostics_reductions
 !***********************************************************************
-    subroutine all_module_diags_slice(istart,iend,f,p)
+    subroutine all_module_diags_slice(istart,iend)
 !
 !  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
 !
@@ -906,10 +916,10 @@ module Equ
       use Shock, only: calc_diagnostics_shock
       use Viscosity, only: calc_diagnostics_viscosity
       use Diagnostics
+      use Farray_alloc, only: f
 !$    use OMP_lib
 
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
-      type (pencil_case)                ,intent(INOUT) :: p
+      type (pencil_case) :: p
 
       integer :: imn,istart,iend
 !
@@ -988,27 +998,39 @@ module Equ
 
       integer :: istart,iend,nper_thread,num_of_threads_to_use,i
       logical :: first_task
+      real :: start_task, end_task
 !
         num_of_threads_to_use = 1
         first_task = .true.
 !TP: for now we are using all but one thread to do the diagnostics
 !$      num_of_threads_to_use  = max(omp_get_num_procs()-1,1)
+        ! num_of_threads_to_use = 1
         ! print*,"TP: In THREADED VERSION"
         call init_reduc_pointers
         call init_diagnostics_accumulators
         nper_thread = (nyz/num_of_threads_to_use)+1
         iend = 0
-        diag_start = omp_get_wtime()
+        call cpu_time(start_task)
         do i=1,num_of_threads_to_use
           istart = iend+1
           iend = iend + nper_thread
-!!$omp task
-          call all_module_diags_slice(istart,min(iend,nyz),f,p)
-!!$omp end task
+!$omp task
+          call all_module_diags_slice(istart,min(iend,nyz))
+          ! call all_module_diags_wrapper(istart,min(iend,nyz),f)
+          ! call all_module_diags_wrapper(istart,min(iend,nyz))
+!$omp end task
           first_task = .false.
+        enddo
+        call cpu_time(end_task)
+        print*,"Took:",end_task-start_task,"to generate tasks"
+        do while(num_of_diag_iter_done < nyz)
         enddo
     endsubroutine all_module_diags_threaded
 !*****************************************************************************
+    ! subroutine all_module_diags_wrapper(istart,iend,f)
+    !   integer :: istart,iend
+    !   num_of_diag_iter_done = nyz
+    ! endsubroutine all_module_diags_wrapper
     subroutine calc_all_module_diagnostics(f,p)
 !
 !  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
@@ -1026,7 +1048,7 @@ module Equ
 !$      call all_module_diags_threaded(f,p)
 !$  else
         print*,"OMP in parallel=",omp_in_parallel()
-        call all_module_diags_slice(1,nyz,f,p)
+        call all_module_diags_slice(1,nyz)
 !$  endif
     endsubroutine calc_all_module_diagnostics
 !****************************************************************************

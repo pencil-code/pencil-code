@@ -13,6 +13,7 @@
   public :: potential,acceleration
   public :: set_consistent_gravity, is_constant_zgrav
   public :: gravity_after_boundary, calc_diagnostics_gravity
+  public :: pushpars2c
 !ajwm SHOULDN'T BE SHARED
 !MR: can be made protected
   public :: gravz,nu_epicycle,g0,gravz_const

@@ -1364,4 +1364,15 @@ module Gravity
 
     endfunction is_constant_zgrav
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(gravz_zpencil(l1),p_par(1)) ! (mz)
+
+    endsubroutine pushpars2c
+!***********************************************************************
 endmodule Gravity
