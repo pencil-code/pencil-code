@@ -1768,7 +1768,7 @@ module EquationOfState
           else
             call fatal_error('eoscalc_pencil','lstratz = .true. requires optional argument iz')
           endif
-        elseif (ivars == ilnrho_ss) then stratz1
+        elseif (ivars == ilnrho_ss) then
           lnrho_ = var1
         else
           lnrho_ = log(var1)
@@ -1854,7 +1854,7 @@ module EquationOfState
         endif
 !
       case (irho_eth, ilnrho_eth)
-        strat: if (lstratz) then
+        if (lstratz) then
           if (present(iz)) then
             rho = rho0z(iz) * (1.0 + var1)
             eth = eth0z(iz) * (1.0 + var2)
@@ -1862,7 +1862,7 @@ module EquationOfState
           else
             call fatal_error('eoscalc_point','lstratz = .true. requires optional argument iz')
           endif
-        else strat
+        else
           if (ldensity_nolog) then
             rho = var1
             if (present(lnrho)) lnrho_ = log(var1)
@@ -1871,7 +1871,7 @@ module EquationOfState
             if (present(lnrho)) lnrho_ = var1
           endif
           eth = var2
-        endif strat
+        endif
         if (present(lnTT).or.present(ss)) lnTT_ = log(cv1 * eth / rho)
         if (present(ee)) ee_ = eth / rho
         if (present(pp)) pp_ = gamma_m1 * eth
