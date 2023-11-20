@@ -232,8 +232,10 @@ module Chemistry
 !  Auxiliaries.
 !
   integer :: ireac=0
+  integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(nchemspec) :: ireaci=0
-
+  real, dimension(nchemspec,18) :: species_constants
+!
   contains
 !
 !***********************************************************************
@@ -890,8 +892,7 @@ module Chemistry
           if (lpencil(i_hhk_full) ) then
             do k = 1,nchemspec
               if (species_constants(k,imass) > 0.)  then
-                p%hhk_full(:,k) = p%H0_RT(:,k)*Rgas*T_loc &
-                    /species_constants(k,imass)
+                p%hhk_full(:,k) = p%H0_RT(:,k)*Rgas*T_loc/species_constants(k,imass)
               endif
             enddo
           endif
@@ -1009,10 +1010,8 @@ module Chemistry
         if (lpencil(i_Diff_penc_add)) then
           if (lDiff_simple) then
             do k = 1,nchemspec
-              p%Diff_penc_add(:,k) = &
-                  Diff_coef_const*p%rho1*exp(0.7*log(p%TT(:)/298.))
-              if (lew_exist) p%Diff_penc_add(:,k) = &
-                  p%Diff_penc_add(:,k)*Lewis_coef1(k)
+              p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1*exp(0.7*log(p%TT(:)/298.))
+              if (lew_exist) p%Diff_penc_add(:,k) = p%Diff_penc_add(:,k)*Lewis_coef1(k)
             enddo
 !
 !  Constant diffusion coefficients
@@ -1178,9 +1177,7 @@ module Chemistry
         final_massfrac_CH4 = 0.
         final_massfrac_H2O = 2.*mH2O/mCH4 * init_CH4
         final_massfrac_CO2 = mCO2/mCH4 * init_CH4
-        final_massfrac_O2 = &
-            1. - final_massfrac_CO2 - final_massfrac_H2O  &
-            - init_N2
+        final_massfrac_O2 = 1. - final_massfrac_CO2 - final_massfrac_H2O - init_N2
       endif
 !
       if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
@@ -1208,8 +1205,7 @@ module Chemistry
           if (x(k) <= init_x1) f(k,:,:,ilnTT) = log(init_TT1)
           if (x(k) >= init_x2) f(k,:,:,ilnTT) = log(init_TT2)
           if (x(k) > init_x1 .and. x(k) < init_x2) &
-              f(k,:,:,ilnTT) = log((x(k)-init_x1)/(init_x2-init_x1) &
-              *(init_TT2-init_TT1)+init_TT1)
+              f(k,:,:,ilnTT) = log((x(k)-init_x1)/(init_x2-init_x1)*(init_TT2-init_TT1)+init_TT1)
         endif
 !
 !  Initialize fuel
@@ -1228,8 +1224,7 @@ module Chemistry
           if (x(k) > init_x1) then
             if (lH2 .and. .not. lCH4) f(k,:,:,i_H2) = init_H2* &
                 (exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
-            if (lCH4) f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                /(init_TT1-init_TT2)
+            if (lCH4) f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
           endif
         endif
 !
@@ -1243,8 +1238,7 @@ module Chemistry
         else
           if (x(k) > init_x2) f(k,:,:,i_O2) = final_massfrac_O2
           if (x(k) > init_x1 .and. x(k) <= init_x2) &
-              f(k,:,:,i_O2) = (x(k)-init_x1)/(init_x2-init_x1) &
-              *(final_massfrac_O2-init_O2)+init_O2
+              f(k,:,:,i_O2) = (x(k)-init_x1)/(init_x2-init_x1)*(final_massfrac_O2-init_O2)+init_O2
         endif
       enddo
 !
@@ -1292,8 +1286,7 @@ module Chemistry
           initial_massfractions(ichem_H2)/(mH2)
       if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
       if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
-      log_inlet_density = &
-          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+      log_inlet_density = log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
 !
 !  Initialize density
 !
@@ -1309,10 +1302,8 @@ module Chemistry
 !
 !  Check if we want nolog of density or nolog of temperature
 !
-      if (ldensity_nolog) &
-          f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      if (ltemperature_nolog) &
-          f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
+      if (ldensity_nolog) f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if (ltemperature_nolog) f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
 !
 ! Renormalize all species to be sure that the sum of all mass fractions
 ! are unity
@@ -1407,39 +1398,38 @@ module Chemistry
 !
 !  Initialize temperature
 !
-                     
-      if( lhotspot )then
-          if( x(k)<init_x2 )then
+      if (lhotspot )then
+        if( x(k)<init_x2 )then
           theta = ( x(k)-init_x1 )/( init_x2-init_x1 )
           f(k,:,:,ilnTT) = log( init_TT1-theta*(init_TT1-init_TT2) )
-          else
+        else
           f(k,:,:,ilnTT) = log( init_TT2 )
-          end if
-          f(k,:,:,i_H2)  = init_H2
-          f(k,:,:,i_O2)  = init_O2 
-          f(k,:,:,i_H2O) = init_H2O
-          f(k,:,:,iux) = 0.0
+        end if
+        f(k,:,:,i_H2)  = init_H2
+        f(k,:,:,i_O2)  = init_O2 
+        f(k,:,:,i_H2O) = init_H2O
+        f(k,:,:,iux) = 0.0
       else
-          if ( x(k)<=init_x1 )then
+        if ( x(k)<=init_x1 )then
           f(k,:,:,ilnTT) = log( init_TT1 )
           f(k,:,:,i_H2)  = final_massfrac_H2
           f(k,:,:,i_O2)  = final_massfrac_O2 
           f(k,:,:,i_H2O) = final_massfrac_H2O
           f(k,:,:,iux) = 0.0
-          else if ( x(k)>init_x2 )then
+        else if ( x(k)>init_x2 )then
           f(k,:,:,ilnTT) = log( init_TT2 )
           f(k,:,:,i_H2)  = init_H2
           f(k,:,:,i_O2)  = init_O2
           f(k,:,:,i_H2O) = init_H2O
           f(k,:,:,iux) = init_ux*(init_TT1/init_TT2-1.0)
-          else
+        else
           theta = ( x(k)-init_x1 )/( init_x2-init_x1 )
           f(k,:,:,ilnTT) = log( init_TT1-theta*(init_TT1-init_TT2) )
           f(k,:,:,i_H2)  = init_H2*theta+final_massfrac_H2
           f(k,:,:,i_O2)  = init_O2*theta+final_massfrac_O2
           f(k,:,:,i_H2O) = init_H2O*(1.0-theta)+final_massfrac_H2O
           f(k,:,:,iux) = init_ux*(init_TT1/init_TT2-1.0)*theta
-          end if
+        end if
       end if
 
       end do
@@ -1455,12 +1445,10 @@ module Chemistry
           initial_massfractions(ichem_O2)/(mO2) &
           +initial_massfractions(ichem_H2O)/(mH2O) &
           +initial_massfractions(ichem_N2)/(mN2)
-      if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
-          initial_massfractions(ichem_H2)/(mH2)
+      if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+initial_massfractions(ichem_H2)/(mH2)
       if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
       if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
-      log_inlet_density = &
-          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+      log_inlet_density = log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
 !
 !  Initialize density
 !
@@ -1526,10 +1514,8 @@ module Chemistry
 !
 !  Check if we want nolog of density or nolog of temperature
 !
-      if (ldensity_nolog) &
-          f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      if (ltemperature_nolog) &
-          f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
+      if (ldensity_nolog) f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if (ltemperature_nolog) f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
 !
 ! Renormalize all species to be sure that the sum of all mass fractions
 ! are unity
@@ -1556,8 +1542,7 @@ module Chemistry
       integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
       integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
       integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
-      real :: final_massfrac_O2, final_massfrac_CH4, &
-          final_massfrac_H2O, final_massfrac_CO2
+      real :: final_massfrac_O2, final_massfrac_CH4, final_massfrac_H2O, final_massfrac_CO2
       real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
       real :: beta
       real :: init_y1, init_y2
@@ -1619,9 +1604,7 @@ module Chemistry
         final_massfrac_CH4 = 0.
         final_massfrac_H2O = 2.*mH2O/mCH4 * init_CH4
         final_massfrac_CO2 = mCO2/mCH4 * init_CH4
-        final_massfrac_O2 = &
-            1. - final_massfrac_CO2 - final_massfrac_H2O  &
-            - init_N2
+        final_massfrac_O2 = 1. - final_massfrac_CO2 - final_massfrac_H2O - init_N2
       endif
 !
       if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
@@ -1652,17 +1635,11 @@ module Chemistry
               +((init_TT2-init_TT1)*0.5)  &
               *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
         else
-          if (x(k) <= init_x1) then
-            f(k,:,:,ilnTT) = log(init_TT1)
-          endif
-          if (x(k) >= init_x2) then
-            f(k,:,:,ilnTT) = log(init_TT2)
-          endif
-          if (x(k) > init_x1 .and. x(k) < init_x2) then
-            f(k,:,:,ilnTT) = &
-                log((x(k)-init_x1)/(init_x2-init_x1) &
+          if (x(k) <= init_x1) f(k,:,:,ilnTT) = log(init_TT1)
+          if (x(k) >= init_x2) f(k,:,:,ilnTT) = log(init_TT2)
+          if (x(k) > init_x1 .and. x(k) < init_x2) &
+            f(k,:,:,ilnTT) = log((x(k)-init_x1)/(init_x2-init_x1) &
                 *(init_TT2-init_TT1)+init_TT1)
-          endif
         endif
 !
 !  Initialize fuel
@@ -1680,14 +1657,10 @@ module Chemistry
 !
         else
           if (x(k) > init_x1) then
-            if (lH2) then
-              f(k,:,:,i_H2) = init_H2*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                  /(init_TT1-init_TT2)
-            endif
-            if (lCH4) then
-              f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                  /(init_TT1-init_TT2)
-            endif
+            if (lH2) &
+              f(k,:,:,i_H2) = init_H2*(exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
+            if (lCH4) &
+              f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
           endif
         endif
 !
@@ -1702,8 +1675,7 @@ module Chemistry
 !
           if (x(k) > init_x2) f(k,:,:,i_O2) = final_massfrac_O2
           if (x(k) > init_x1 .and. x(k) <= init_x2) &
-              f(k,:,:,i_O2) = (x(k)-init_x1)/(init_x2-init_x1) &
-              *(final_massfrac_O2-init_O2)+init_O2
+              f(k,:,:,i_O2) = (x(k)-init_x1)/(init_x2-init_x1)*(final_massfrac_O2-init_O2)+init_O2
         endif
       enddo
 !
@@ -1718,16 +1690,14 @@ module Chemistry
                 *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
           endif
           if (lCH4) then
-            if (k==1) call warning('flame_front','No tanh initial function available for CH4 combustion')
+            if (k==1) call warning('flame_front','no tanh initial function available for CH4 combustion')
           endif
         enddo
       else
         do k = 1,mx
           if (x(k) >= init_x1 .and. x(k) < init_x2) then
-            f(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1) &
-                *final_massfrac_H2O
-            if (lCO2) f(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1) &
-                *final_massfrac_CO2
+            f(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1)*final_massfrac_H2O
+            if (lCO2) f(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1)*final_massfrac_CO2
           elseif (x(k) >= init_x2) then
             if (lCO2) f(k,:,:,i_CO2) = final_massfrac_CO2
             if (lH2O) f(k,:,:,i_H2O) = final_massfrac_H2O
@@ -1814,10 +1784,8 @@ module Chemistry
 !
 !  Check if we want nolog of density or nolog of temperature
 !
-      if (ldensity_nolog) &
-          f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      if (ltemperature_nolog) &
-          f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
+      if (ldensity_nolog) f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if (ltemperature_nolog) f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
 !
     endsubroutine triple_flame
 !***********************************************************************
@@ -1897,17 +1865,10 @@ module Chemistry
               +((init_TT2-init_TT1)*0.5)  &
               *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
         else
-          if (x(k) <= init_x1) then
-            f(k,:,:,ilnTT) = log(init_TT1)
-          endif
-          if (x(k) >= init_x2) then
-            f(k,:,:,ilnTT) = log(init_TT2)
-          endif
-          if (x(k) > init_x1 .and. x(k) < init_x2) then
-            f(k,:,:,ilnTT) = &
-                log((x(k)-init_x1)/(init_x2-init_x1) &
-                *(init_TT2-init_TT1)+init_TT1)
-          endif
+          if (x(k) <= init_x1) f(k,:,:,ilnTT) = log(init_TT1)
+          if (x(k) >= init_x2) f(k,:,:,ilnTT) = log(init_TT2)
+          if (x(k) > init_x1 .and. x(k) < init_x2) &
+            f(k,:,:,ilnTT) = log((x(k)-init_x1)/(init_x2-init_x1)*(init_TT2-init_TT1)+init_TT1)
         endif
 !
 !  Initialize steam and hydrogen
@@ -1923,8 +1884,7 @@ module Chemistry
                 *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
           endif
           if (lCH4) then
-            f(k,:,:,i_CH4) = init_CH4*0.5  &
-                -init_CH4*0.5  &
+            f(k,:,:,i_CH4) = init_CH4*0.5-init_CH4*0.5  &
                 *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
             f(k,:,:,i_H2O) = init_H2O+(init_CH4-f(k,:,:,i_CH4))*2.*mH2O/mCH4
             f(k,:,:,i_CO2) = init_CO2+(init_CH4-f(k,:,:,i_CH4))*1.*mCO2/mCH4
@@ -1932,14 +1892,10 @@ module Chemistry
           endif
         else
           if (x(k) > init_x1) then
-            if (lH2) then
-              f(k,:,:,i_H2) = init_H2*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                  /(init_TT1-init_TT2)
-            endif
-            if (lCH4) then
-              f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                  /(init_TT1-init_TT2)
-            endif
+            if (lH2) &
+              f(k,:,:,i_H2) = init_H2*(exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
+            if (lCH4) &
+              f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
           endif
         endif
 !
@@ -1956,8 +1912,7 @@ module Chemistry
           endif
           if (x(k) > init_x1 .and. x(k) < init_x2) then
             f(k,:,:,i_O2) = (x(k)-init_x2)/(init_x1-init_x2) &
-                *(init_O2-final_massfrac_O2) &
-                +final_massfrac_O2
+                *(init_O2-final_massfrac_O2)+final_massfrac_O2
           endif
         endif
       enddo
@@ -1969,8 +1924,7 @@ module Chemistry
           if (x(k) >= init_x1) then
             if (final_massfrac_O2 > 0.) then
               f(k,:,:,i_H2O) = initial_massfractions(ichem_H2)/mH2*mH2O &
-                  *(exp(f(k,:,:,ilnTT))-init_TT1) &
-                  /(init_TT2-init_TT1)+init_H2O
+                  *(exp(f(k,:,:,ilnTT))-init_TT1)/(init_TT2-init_TT1)+init_H2O
             else
               if (x(k) >= init_x2) then
                 if (lCO2) f(k,:,:,i_CO2) = init_CO2+(init_CH4-f(k,:,:,i_CH4))
@@ -1995,15 +1949,13 @@ module Chemistry
 !
 !  Find logaritm of density at inlet
 !
-      initial_mu1 &
-          = initial_massfractions(ichem_H2)/(mH2) &
-           +initial_massfractions(ichem_O2)/(mO2) &
-           +initial_massfractions(ichem_H2O)/(mH2O) &
-           +initial_massfractions(ichem_N2)/(mN2)
+      initial_mu1 = initial_massfractions(ichem_H2)/(mH2) &
+                   +initial_massfractions(ichem_O2)/(mO2) &
+                   +initial_massfractions(ichem_H2O)/(mH2O) &
+                   +initial_massfractions(ichem_N2)/(mN2)
       if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
       if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
-      log_inlet_density = &
-          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+      log_inlet_density = log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
 !
       call getmu_array(f,mu1_full)
 !
@@ -2018,10 +1970,8 @@ module Chemistry
 !
 !  Check if we want nolog of density or nolog of temperature
 !
-      if (ldensity_nolog) &
-          f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      if (ltemperature_nolog) &
-          f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
+      if (ldensity_nolog) f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if (ltemperature_nolog) f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
 !
 ! Renormalize all species too be sure that the sum of all mass fractions
 ! are unity
@@ -2065,9 +2015,8 @@ module Chemistry
 !
 ! Find approximate value for the mass fraction of O2 after the flame front
 !
-      final_massfrac_O2 &
-          = (initial_massfractions(ichem_O2)/mO2 &
-            -initial_massfractions(ichem_H2)/(2*mH2))*mO2
+      final_massfrac_O2 = (initial_massfractions(ichem_O2)/mO2 &
+                          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
 !
 !  Initialize temperature and species in air_field(f)
 !
@@ -2078,11 +2027,10 @@ module Chemistry
 !
 !  Find logaritm of density at inlet
 !
-      initial_mu1 &
-          = initial_massfractions(ichem_H2)/(mH2) &
-           +initial_massfractions(ichem_O2)/(mO2) &
-           +initial_massfractions(ichem_H2O)/(mH2O) &
-           +initial_massfractions(ichem_N2)/(mN2)
+      initial_mu1 = initial_massfractions(ichem_H2)/(mH2) &
+                   +initial_massfractions(ichem_O2)/(mO2) &
+                   +initial_massfractions(ichem_H2O)/(mH2O) &
+                   +initial_massfractions(ichem_N2)/(mN2)
 !
       call getmu_array(f,mu1_full)
 !
@@ -2209,9 +2157,8 @@ module Chemistry
 !  Find progress variable phi based on distance from boundaries.
 !
             flat_range = init_x2*0.1
-            phi &
-                = exp(-((lower-flat_range)/init_x2)**2) &
-                +exp(-((upper-flat_range)/init_x2)**2)
+            phi = exp(-((lower-flat_range)/init_x2)**2) &
+                 +exp(-((upper-flat_range)/init_x2)**2)
             if (phi > 1.0) phi = 1.
             if (flat_range > lower) phi = 1.
             if (flat_range > upper) phi = 1.
@@ -2301,10 +2248,9 @@ module Chemistry
             else
               rho0 = exp(f(j1,j2,j3,ilnrho))
             endif
-            T1 = &
-                (init_TT2-init_TT1)*exp(-(lower/init_x2)**2)+ &
-                (init_TT2-init_TT1)*exp(-(upper/init_x2)**2)+ &
-                init_TT1
+            T1 = (init_TT2-init_TT1)*exp(-(lower/init_x2)**2)+ &
+                 (init_TT2-init_TT1)*exp(-(upper/init_x2)**2)+ &
+                  init_TT1
             if (ltemperature_nolog) then
               f(j1,j2,j3,ilnTT) = T1
             else
@@ -2518,8 +2464,7 @@ module Chemistry
                     if (lfix_Sc) then
                       do k = 1,nchemspec
                         if (species_constants(k,imass) > 0.) &
-                          Diff_full(:,j2,j3,k) = species_viscosity(:,j2,j3,k) &
-                                                /rho_full(:,j2,j3)/Sc_number
+                          Diff_full(:,j2,j3,k) = species_viscosity(:,j2,j3,k)/rho_full(:,j2,j3)/Sc_number
                       enddo
                     elseif (ldiffusion) then
 !
@@ -2592,8 +2537,7 @@ module Chemistry
           write (file_id,*) ''
           write (file_id,*) 'Species viscosity, g/cm/s,'
           do k = 1,nchemspec
-            write (file_id,'(7E12.4)') species_viscosity(l1,m1,n1,k),  &
-                species_viscosity(l2-1,m1,n1,k)
+            write (file_id,'(7E12.4)') species_viscosity(l1,m1,n1,k),species_viscosity(l2-1,m1,n1,k)
           enddo
           write (file_id,*) ''
           write (file_id,*) 'Thermal cond, erg/(cm K s),'
@@ -2974,10 +2918,8 @@ module Chemistry
 !  further one should check the existence of a file with
 !  binary diffusion coefficients!
 !
-        if (ldiffusion2) then
-          df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+ &
-              p%DYDt_diff(:,k)
-        endif
+        if (ldiffusion2) &
+          df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k)
 !
 !  chemical reactions:
 !  multiply with stoichiometric matrix with reaction speed
@@ -2989,8 +2931,7 @@ module Chemistry
 !  chemical contribution, that's why no sum is required
             df(l1:l2,m,n,ichemspec(k)) = p%DYDt_reac(:,k)
           else
-            df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+ &
-                p%DYDt_reac(:,k)
+            df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+p%DYDt_reac(:,k)
           endif
         endif
 !
@@ -3001,9 +2942,7 @@ module Chemistry
             if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt) < -1e-25 ) then
               df(i,m,n,ichemspec(k)) = -1e-25*dt
             endif
-            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt) > 1. ) then
-              df(i,m,n,ichemspec(k)) = 1.*dt
-            endif
+            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt) > 1. ) df(i,m,n,ichemspec(k)) = 1.*dt
           enddo
         endif
 !
@@ -3014,9 +2953,7 @@ module Chemistry
             if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt) < 0.0 ) then
               if (df(i,m,n,ichemspec(k)) < 0.) df(i,m,n,ichemspec(k)) = 0.
             endif
-            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt) > 1. ) then
-              df(i,m,n,ichemspec(k)) = 1.*dt
-            endif
+            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt) > 1. ) df(i,m,n,ichemspec(k)) = 1.*dt
           enddo
         endif
 !
@@ -3037,8 +2974,7 @@ module Chemistry
 !
           do k = 1,nchemspec
             if (species_constants(k,imass) > 0.) then
-              sum_DYDt = sum_DYDt+Rgas/species_constants(k,imass) &
-                  *(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+              sum_DYDt = sum_DYDt+Rgas/species_constants(k,imass)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
               if (lreactions) then
                 sum_hhk_DYDt_reac = sum_hhk_DYDt_reac-p%hhk_full(:,k)*p%DYDt_reac(:,k)
               endif
@@ -3074,8 +3010,8 @@ module Chemistry
 ! If the correction velocity is added
 !
           if (ldiff_corr .and. ldiffusion2) then
-            call fatal_error('dchemistry_dt',&
-                'The correction vel. is not properly implemented - pleas fix!')
+            call fatal_error('dchemistry_dt', &
+                'correction velocity is not properly implemented - please fix')
             do k = 1,nchemspec
               call dot_mn(sum_diff,p%ghhk(:,:,k),sum_dhhk)
               sum_dk_ghk(:) = sum_dk_ghk(:)-f(l1:l2,m,n,ichemspec(k))*sum_dhhk(:)
@@ -3110,8 +3046,7 @@ module Chemistry
           endif
         endif
 !
-        if (lheatc_chemistry .and.(.not. lchemonly)) &
-            call calc_heatcond_chemistry(f,df,p)
+        if (lheatc_chemistry .and.(.not. lchemonly)) call calc_heatcond_chemistry(f,df,p)
       endif
 !
       if (lreactions .and. ireac /= 0 .and. ((.not. llsode).or. lchemonly)) then
@@ -3122,15 +3057,12 @@ module Chemistry
 !
       if (lcloud .and.(.not. lchemonly)) then
 !
-        df(l1:l2,m,n,ichemspec(index_H2O)) = df(l1:l2,m,n,ichemspec(index_H2O)) &
-            - p%ccondens
+        df(l1:l2,m,n,ichemspec(index_H2O)) = df(l1:l2,m,n,ichemspec(index_H2O)) - p%ccondens
         do i = 1,mx
           if ((f(i,m,n,ichemspec(index_H2O)) &
-              +df(i,m,n,ichemspec(index_H2O))*dt) >= 1. ) &
-              df(i,m,n,ichemspec(index_H2O)) = 0.
+              +df(i,m,n,ichemspec(index_H2O))*dt) >= 1. ) df(i,m,n,ichemspec(index_H2O)) = 0.
           if ((f(i,m,n,ichemspec(index_H2O)) &
-              +df(i,m,n,ichemspec(index_H2O))*dt) < 0. ) &
-              df(i,m,n,ichemspec(index_H2O)) = 0.
+              +df(i,m,n,ichemspec(index_H2O))*dt) < 0. ) df(i,m,n,ichemspec(index_H2O)) = 0.
         enddo
       endif
 !
@@ -3180,8 +3112,7 @@ module Chemistry
             reac_chem = 0.
             !sum_reac_rate=0.
             do k = 1,nchemspec
-              reac_chem = reac_chem+abs(p%DYDt_reac(:,k)/ &
-                  max(f(l1:l2,m,n,ichemspec(k)),0.001))
+              reac_chem = reac_chem+abs(p%DYDt_reac(:,k)/max(f(l1:l2,m,n,ichemspec(k)),0.001))
               !sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
             enddo
             if (maxval(reac_chem) > 1e11) reac_chem = 1e11   !MR: not where(...)?
@@ -3258,42 +3189,6 @@ module Chemistry
       endif
 
     endsubroutine calc_diagnostics_chemistry
-!***********************************************************************
-    subroutine read_chemistry_init_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read (parallel_unit, NML=chemistry_init_pars, IOSTAT=iostat)
-!
-    endsubroutine read_chemistry_init_pars
-!***********************************************************************
-    subroutine write_chemistry_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write (unit, NML=chemistry_init_pars)
-!
-    endsubroutine write_chemistry_init_pars
-!***********************************************************************
-    subroutine read_chemistry_run_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read (parallel_unit, NML=chemistry_run_pars, IOSTAT=iostat)
-!
-    endsubroutine read_chemistry_run_pars
-!***********************************************************************
-    subroutine write_chemistry_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write (unit, NML=chemistry_run_pars)
-!
-    endsubroutine write_chemistry_run_pars
 !***********************************************************************
     subroutine rprint_chemistry(lreset,lwrite)
 !
@@ -3436,6 +3331,42 @@ module Chemistry
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
+    subroutine read_chemistry_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read (parallel_unit, NML=chemistry_init_pars, IOSTAT=iostat)
+!
+    endsubroutine read_chemistry_init_pars
+!***********************************************************************
+    subroutine write_chemistry_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write (unit, NML=chemistry_init_pars)
+!
+    endsubroutine write_chemistry_init_pars
+!***********************************************************************
+    subroutine read_chemistry_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read (parallel_unit, NML=chemistry_run_pars, IOSTAT=iostat)
+!
+    endsubroutine read_chemistry_run_pars
+!***********************************************************************
+    subroutine write_chemistry_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write (unit, NML=chemistry_run_pars)
+!
+    endsubroutine write_chemistry_run_pars
+!***********************************************************************
     subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
 !
 !  calculation of the stoichoimetric matrix
@@ -3452,8 +3383,7 @@ module Chemistry
 !
       if ((ChemInpLine(StartInd:StopInd) /= "M" ) &
           .and. (ChemInpLine(StartInd:StartInd+1) /= "hv" )) then
-        StartSpecie = verify(ChemInpLine(StartInd:StopInd), &
-            "1234567890")+StartInd-1
+        StartSpecie = verify(ChemInpLine(StartInd:StopInd),"1234567890")+StartInd-1
 !
 !  Call to a routine that checks for arbitrary stoiciometric coefficents
 !  removes them and shifts the begin of the species index in cheminpline
@@ -3461,8 +3391,7 @@ module Chemistry
         if (StopInd-StartSpecie >= 3 .and. StartSpecie > 1) &
             call find_remove_real_stoic(ChemInpLine(StartSpecie-1:StopInd),lreal,stoi,StartSpecie)
 !
-        call find_species_index(ChemInpLine(StartSpecie:StopInd), &
-            ind_glob,ind_chem,found_specie)
+        call find_species_index(ChemInpLine(StartSpecie:StopInd),ind_glob,ind_chem,found_specie)
         if (.not. found_specie) then
           print*,'ChemInpLine=',ChemInpLine
           print*,'StartSpecie,StopInd=',StartSpecie,StopInd
@@ -3470,7 +3399,7 @@ module Chemistry
           print*,'ind_glob,ind_chem=',ind_glob,ind_chem
 !          if (.not. lpencil_check_small) then
 !          if (.not. lpencil_check) then
-           call fatal_error("build_stoich_matrix","Did not find species!")
+           call fatal_error("build_stoich_matrix","Did not find species")
 !          endif
 !          endif
         endif
@@ -3479,9 +3408,7 @@ module Chemistry
         if (StartSpecie == StartInd) then
           stoi = 1.0
         else
-          if (.not. lreal) then
-            read (unit=ChemInpLine(StartInd:StartInd),fmt='(I1)') stoi_int
-          endif
+          if (.not. lreal) read (unit=ChemInpLine(StartInd:StartInd),fmt='(I1)') stoi_int
         endif
       endif
 !
@@ -3522,12 +3449,10 @@ module Chemistry
         do spec = 1,nchemspec
           if (Sijp(spec,reac) > 0) then
             Sijp_string = ''
-            if (Sijp(spec,reac) /= 1) then
-              write (Sijp_string,'(F3.1)') Sijp(spec,reac)
-            endif
+            if (Sijp(spec,reac) /= 1) write (Sijp_string,'(F3.1)') Sijp(spec,reac)
 !            if (Sijp(spec,reac)>1) Sijp_string=itoa(Sijp(spec,reac))
             reac_string = trim(reac_string)//trim(separatorp)// &
-                trim(Sijp_string)//trim(varname(ichemspec(spec)))
+                          trim(Sijp_string)//trim(varname(ichemspec(spec)))
             separatorp = '+'
           endif
           if (Sijm(spec,reac) > 0) then
@@ -3535,7 +3460,7 @@ module Chemistry
             if (Sijm(spec,reac) /= 1) write (Sijm_string,'(F3.1)') Sijm(spec,reac)
 !            if (Sijm(spec,reac)>1) Sijm_string=itoa(Sijm(spec,reac))
             product_string = trim(product_string)//trim(separatorm)// &
-                trim(Sijm_string)//trim(varname(ichemspec(spec)))
+                             trim(Sijm_string)//trim(varname(ichemspec(spec)))
             separatorm = '+'
           endif
         enddo
@@ -3595,7 +3520,7 @@ module Chemistry
 !
       inquire(file='chem.inp',exist=cheminp)
       inquire(file='chem.in',exist=chemin)
-      if (chemin .and. cheminp) call fatal_error('chemistry',&
+      if (chemin .and. cheminp) call fatal_error('chemistry', &
           'chem.in and chem.inp found, please decide for one')
       if (cheminp) input_file='chem.inp'
       if (chemin) input_file='chem.in'
@@ -3656,8 +3581,7 @@ module Chemistry
       endif
 !
       if (lroot .and. .not. tran_exist .and. .not. lew_exist) then
-        if (chem_diff == 0.) &
-            call inevitably_fatal_error('chemkin data', 'chem_diff = 0')
+        if (chem_diff == 0.) call inevitably_fatal_error('chemkin data', 'chem_diff = 0')
         print*,'tran.dat file with transport data is not found.'
         print*,'lewis.dat file with Lewis numbers is not found.'
         print*,'Now diffusion coefficients is ',chem_diff
@@ -3978,10 +3902,8 @@ module Chemistry
                       !      'number ', k
                         VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
                         do while (VarNumber_add<4)
-                          StopInd_add=index(ChemInpLine_add(StartInd_add:),&
-                              ' ')+StartInd_add-2
-                          StopInd_add_=index(ChemInpLine_add(StartInd_add:),&
-                              '/')+StartInd_add-2
+                          StopInd_add=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-2
+                          StopInd_add_=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
                           StopInd_add=min(StopInd_add,StopInd_add_)
                           if (StopInd_add==StartInd_add) then
                             StartInd_add=StartInd_add+1
@@ -4003,8 +3925,7 @@ module Chemistry
                           endif
                           VarNumber_add=VarNumber_add+1
                           !   StartInd_add=StopInd_add
-                          StartInd_add=verify(ChemInpLine_add(StopInd_add+1:),&
-                              ' ')+StopInd_add
+                          StartInd_add=verify(ChemInpLine_add(StopInd_add+1:),' ')+StopInd_add
                           StopInd_add=StartInd_add
                         enddo
                         i=80
@@ -4014,25 +3935,20 @@ module Chemistry
                         do while (ChemInpLine_add(i:i+1)/='  ')
                           find_specie=.true.
                           do while (StartInd_add/=StopInd_add_)
-                            StopInd_add=index(ChemInpLine_add(StartInd_add:),&
-                                '/')+StartInd_add-2
-                            StopInd_add_=index(ChemInpLine_add(StartInd_add:),&
-                                ' ')+StartInd_add-1
+                            StopInd_add=index(ChemInpLine_add(StartInd_add:),'/')+StartInd_add-2
+                            StopInd_add_=index(ChemInpLine_add(StartInd_add:),' ')+StartInd_add-1
                             if (find_specie) then
-                              call find_species_index(ChemInpLine_add&
-                                  (StartInd_add:StopInd_add),ind_glob,&
+                              call find_species_index(ChemInpLine_add(StartInd_add:StopInd_add),ind_glob, &
                                   ind_chem,found_specie)
                             else
                               if (found_specie) then
-                                read (unit=ChemInpLine_add(StartInd_add:&
-                                    StopInd_add),fmt='(E15.8)') a_k4(ind_chem,k)
+                                read(unit=ChemInpLine_add(StartInd_add:StopInd_add),fmt='(E15.8)') &
+                                      a_k4(ind_chem,k)
                               else
                                 print*,'ChemInpLine=',ChemInpLine_add
-                                print*,'Specie=',&
-                                    ChemInpLine_add(StartInd_add:StopInd_add)
-                                print*,'StartInd_add,StopInd_add=',&
-                                    StartInd_add,StopInd_add
-                                call fatal_error("read_reactions","Did not find specie!")
+                                print*,'Specie=',ChemInpLine_add(StartInd_add:StopInd_add)
+                                print*,'StartInd_add,StopInd_add=',StartInd_add,StopInd_add
+                                call fatal_error("read_reactions","did not find specie")
                               endif
                             endif
                             StartInd_add=StopInd_add+2
@@ -4063,12 +3979,10 @@ module Chemistry
                 endif
 
                 StartInd=1
-                PlusInd=index(ChemInpLine(StartInd:LastLeftCharacter),'+')&
-                    +StartInd-1
+                PlusInd=index(ChemInpLine(StartInd:LastLeftCharacter),'+')+StartInd-1
                 do while (PlusInd<LastLeftCharacter .AND. PlusInd>0)
                   StopInd=PlusInd-1
-                  call build_stoich_matrix(StartInd,StopInd,k,&
-                      ChemInpLine,.false.)
+                  call build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,.false.)
                   StartInd=StopInd+2
                   plusind_=index(ChemInpLine(StartInd:),'+')
                   if (plusind_ > 0) then
@@ -4096,12 +4010,10 @@ module Chemistry
                 else
                   LastLeftCharacter=SeparatorInd-1
                 endif
-                PlusInd=index(ChemInpLine(StartInd:LastLeftCharacter),'+')&
-                    +StartInd-1
+                PlusInd=index(ChemInpLine(StartInd:LastLeftCharacter),'+')+StartInd-1
                 do while (PlusInd<LastLeftCharacter .AND. PlusInd>StartInd)
                   StopInd=PlusInd-1
-                  call build_stoich_matrix(StartInd,StopInd,k,&
-                      ChemInpLine,.true.)
+                  call build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,.true.)
                   StartInd=StopInd+2
                   PlusInd=index(ChemInpLine(StartInd:),'+')+StartInd-1
                 enddo
@@ -4240,8 +4152,7 @@ module Chemistry
 !  Find forward rate constant for reaction 'reac'
 !
           if (latmchem) then
-            if ((B_n(reac) == 0.) .and. (alpha_n(reac) == 0.)  &
-                .and. (E_an(reac) == 0.)) then
+            if ((B_n(reac) == 0.) .and. (alpha_n(reac) == 0.) .and. (E_an(reac) == 0.)) then
               do i = 1,nx
                 call calc_extra_react(f,reac,kf(i),i,m,n,p)
               enddo
@@ -4277,7 +4188,7 @@ module Chemistry
             sum_sp = 0.
             do k = 1,nchemspec
               sum_sp = sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
-                  *rho_cgs(:)/species_constants(k,imass)
+                      *rho_cgs(:)/species_constants(k,imass)
             enddo
             mix_conc = sum_sp
           else
@@ -4307,7 +4218,7 @@ module Chemistry
 !
           if (maxval(abs(troe_coeff(:,reac))) > 0.) then
             Fcent = (1.-troe_coeff(1,reac))*exp(-p%TT(:)/troe_coeff(2,reac)) &
-                +troe_coeff(1,reac)*exp(-p%TT(:)/troe_coeff(3,reac))
+                    +troe_coeff(1,reac)*exp(-p%TT(:)/troe_coeff(3,reac))
             ccc = -0.4-0.67*log10(Fcent)
             nnn = 0.75-1.27*log10(Fcent)
             ddd = 0.14
@@ -4728,9 +4639,7 @@ module Chemistry
           enddo
 !
         else
-          if (.not. lDiff_simple .and. .not. lDiff_lewis) then
-            Bin_Diff_coef = 0.
-          endif
+          if (.not. lDiff_simple .and. .not. lDiff_lewis) Bin_Diff_coef = 0.
         endif
       endif
 !
@@ -5095,8 +5004,7 @@ module Chemistry
           if (minval(cv_full(:,j,k)) <= 0) then
             cs2_full(:,j,k) = 0.
           else
-            cs2_full(:,j,k) = cp_full(:,j,k)/cv_full(:,j,k)*mu1_full(:,j,k) &
-                             *TT_full(:,j,k)*Rgas
+            cs2_full(:,j,k) = cp_full(:,j,k)/cv_full(:,j,k)*mu1_full(:,j,k)*TT_full(:,j,k)*Rgas
           endif
         enddo
       enddo
@@ -5197,8 +5105,7 @@ module Chemistry
       inquire (file='air.dat',exist=airdat)
       inquire (file='air.in',exist=airin)
       if (airdat .and. airin) &
-        call fatal_error('chemistry', &
-            'both air.in and air.dat found. Please decide for one')
+        call fatal_error('chemistry','both air.in and air.dat found. Please decide for one')
       
       if (airdat) open(file_id,file='air.dat')
       if (airin) open(file_id,file='air.in')
@@ -6144,9 +6051,7 @@ module Chemistry
 
       sum_Y=0.0 !; sum_Y2=0.0
       do k=1,nchemspec
-        if (k/=ichemsN2) then
-          sum_Y=sum_Y+f(:,:,:,ichemspec(k))
-        endif
+        if (k/=ichemsN2) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
       enddo
       f(:,:,:,isN2)=1.0-sum_Y
 !
@@ -6220,93 +6125,6 @@ module Chemistry
 !
     endsubroutine read_Lewis
 !***********************************************************************
-   subroutine read_transport_data
-!
-!  Reading of the chemkin transport data
-!
-!  01-apr-08/natalia: coded
-!  30-jun-17/MR: moved here from eos_chemistry.
-!
-      logical :: emptyfile
-      logical :: found_specie
-      integer :: file_id=123, ind_glob, ind_chem
-      character (len=80) :: ChemInpLine
-      character (len=10) :: specie_string
-      integer :: VarNumber
-      integer :: StartInd,StopInd,StartInd_1,StopInd_1
-      logical :: tranin=.false.
-      logical :: trandat=.false.
-!
-      emptyFile=.true.
-!
-      StartInd_1=1; StopInd_1=0
-
-      inquire (file='tran.dat',exist=trandat)
-      inquire (file='tran.in',exist=tranin)
-      if (tranin .and. trandat) &
-        call fatal_error('read_transport_data', &
-            'both tran.in and tran.dat found. Please decide which to use.')
-
-      if (tranin) open(file_id,file='tran.in')
-      if (trandat) open(file_id,file='tran.dat')
-!
-      if (lroot) print*, 'the following species are found in tran.in/dat:'
-!
-      dataloop: do
-!
-        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
-        emptyFile=.false.
-!
-        StopInd_1=index(ChemInpLine,' ')
-        specie_string=trim(ChemInpLine(1:StopInd_1-1))
-!
-        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
-!
-        if (found_specie) then
-          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' ind_chem=',ind_chem
-!
-          VarNumber=1; StartInd=1; StopInd =0
-          stringloop: do while (VarNumber<7)
-!
-            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-            StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
-            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-!
-            if (StopInd==StartInd) then
-              StartInd=StartInd+1
-            else
-              if (VarNumber==1) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==2) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==3) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==4) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==5) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==6) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              else
-                call fatal_error("read_transport_data","no such VarNumber: "//trim(itoa(VarNumber)))
-              endif
-!
-              VarNumber=VarNumber+1
-              StartInd=StopInd
-            endif
-            if (StartInd==80) exit
-          enddo stringloop
-!
-        endif
-      enddo dataloop
-!
-! Stop if tran.dat is empty
-!
-!
-1000  if (emptyFile) call fatal_error('read_transport_data','input file tran.dat was empty')
-!
-      close(file_id)
-!
-    endsubroutine read_transport_data
+    include 'chemistry_common.inc'
 !***********************************************************************
 endmodule Chemistry

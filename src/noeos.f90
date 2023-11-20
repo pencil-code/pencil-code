@@ -36,7 +36,6 @@ module EquationOfState
   real :: cs20=1.0, lnrho0=0.0 
   real :: gamma=5.0/3.0, gamma_m1, gamma1
   real :: cs2bot=1.0, cs2top=1.0
-  real, dimension(nchemspec,18) :: species_constants
   real :: Cp_const=impossible
   real :: Pr_number=0.7
   logical :: lpres_grad=.false.
@@ -189,13 +188,13 @@ module EquationOfState
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
-    subroutine ioninit(f)
+    subroutine init_eos(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine ioninit
+    endsubroutine init_eos
 !***********************************************************************
     subroutine ioncalc(f)
 !
@@ -336,21 +335,6 @@ module EquationOfState
       call keep_compiler_quiet(hlnrho,hss,hlnTT)
 !
     endsubroutine temperature_hessian
-!***********************************************************************
-    subroutine eosperturb(f,psize,ee,pp)
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      integer, intent(in) :: psize
-      real, dimension (psize), intent(in), optional :: ee,pp
-!
-      call not_implemented('eosperturb','in noeos')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(psize)
-      call keep_compiler_quiet(present(ee))
-      call keep_compiler_quiet(present(pp))
-!
-    endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,mu1,lnTT,ee,pp,cs2,kapparho)
 !
@@ -513,14 +497,14 @@ module EquationOfState
 !
     endsubroutine isothermal_entropy
 !***********************************************************************
-    subroutine isothermal_lnrho_ss(f,T0,rho0)
+    subroutine isothermal_lnrho_ss(lnrho,T0,rho0,ss)
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz), intent(out) :: lnrho,ss
       real, intent(in) :: T0,rho0
 !
       call fatal_error('isothermal_lnrho_ss','should not be called with noeos')
 !
-      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lnrho,ss)
       call keep_compiler_quiet(T0,rho0)
 !
     endsubroutine isothermal_lnrho_ss

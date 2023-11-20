@@ -27,6 +27,9 @@ module Chemistry
 !
   include 'chemistry.h'
 !
+  integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
+  real, dimension(nchemspec,18) :: species_constants,tran_data
+
   contains
 !***********************************************************************
     subroutine register_chemistry()
@@ -110,38 +113,6 @@ module Chemistry
 
     endsubroutine calc_diagnostics_chemistry
 !***********************************************************************
-    subroutine read_chemistry_init_pars(iostat)
-!
-      integer, intent(out) :: iostat
-!
-      iostat = 0
-!
-    endsubroutine read_chemistry_init_pars
-!***********************************************************************
-    subroutine write_chemistry_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_chemistry_init_pars
-!***********************************************************************
-    subroutine read_chemistry_run_pars(iostat)
-!
-      integer, intent(out) :: iostat
-!
-      iostat = 0
-!
-    endsubroutine read_chemistry_run_pars
-!***********************************************************************
-    subroutine write_chemistry_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_chemistry_run_pars
-!***********************************************************************
     subroutine rprint_chemistry(lreset,lwrite)
 !
       logical :: lreset
@@ -173,6 +144,34 @@ module Chemistry
     subroutine chemistry_clean_up()
 !
     endsubroutine chemistry_clean_up
+!***********************************************************************
+    subroutine read_chemistry_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+    endsubroutine read_chemistry_init_pars
+!***********************************************************************
+    subroutine write_chemistry_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+    endsubroutine write_chemistry_init_pars
+!***********************************************************************
+    subroutine read_chemistry_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+    endsubroutine read_chemistry_run_pars
+!***********************************************************************
+    subroutine write_chemistry_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+    endsubroutine write_chemistry_run_pars
 !***********************************************************************
     subroutine jacobn(f,jacob)
 !
@@ -283,5 +282,18 @@ module Chemistry
       call keep_compiler_quiet(f)
 !
     endsubroutine chemspec_normalization_N2
+!***********************************************************************
+   subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
+!
+!  Find index in the f array for specie
+!
+!  05-feb-08/nils: coded
+!
+      integer, intent(out) :: ind_glob
+      integer, intent(inout) :: ind_chem
+      character (len=*), intent(in) :: species_name
+      logical, intent(out) :: found_specie
+!
+   endsubroutine find_species_index
 !***********************************************************************
 endmodule Chemistry

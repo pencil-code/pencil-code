@@ -528,7 +528,7 @@ module Dustvelocity
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: lnrho,rho,cs2,rhod,cp1tilde
+      real, dimension (nx) :: lnrho,rho,cs2,rhod
       real :: eps,cs,eta_glnrho,v_Kepler
       integer :: j,k,l
       logical :: lnothing
@@ -632,7 +632,7 @@ module Dustvelocity
                 else
                   rhod = f(l1:l2,m,n,ind(k))*md(k)
                 endif
-                call pressure_gradient(f,cs2,cp1tilde)
+                call pressure_gradient(f,cs2)
                 call get_stoppingtime(f(l1:l2,m,n,iudx(k):iudz(k)),f(l1:l2,m,n,iux:iuz),rho,cs2,rhod,k)
                 f(l1:l2,m,n,iudz(k)) = f(l1:l2,m,n,iudz(k)) - tausd1(:,k)**(-1)*nu_epicycle**2*z(n)
               enddo

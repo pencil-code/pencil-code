@@ -53,8 +53,6 @@ module EquationOfState
   namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 ! run parameters
   namelist /eos_run_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
-!ajwm  Not sure this should exist either...
-  integer :: imass=1
 !
   real, dimension(nchemspec,18) :: species_constants
 !
@@ -127,7 +125,7 @@ module EquationOfState
 !
     endsubroutine units_eos
 !***********************************************************************
-    subroutine initialize_eos
+    subroutine initialize_eos(f)
 !
 !  Perform any post-parameter-read initialization, e.g. set derived
 !  parameters.
@@ -137,6 +135,8 @@ module EquationOfState
       use General
       use Sub, only: register_report_aux
 !
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+
       if (lroot) print*,'initialize_eos: ENTER'
 !
 !  ionization parameters
@@ -176,6 +176,8 @@ module EquationOfState
       if (lpp_as_aux) call register_report_aux('pp',ipp)
       if (lcp_as_aux) call register_report_aux('cp',icp)
 !
+      call init_eos(f)
+
       if (lroot.and.ip<14) then
         print*,'initialize_eos: reference values for ionization'
         print*,'initialize_eos: yHmin,yHmax,yMetals=',yHmin,yHmax,yMetals
@@ -448,8 +450,10 @@ module EquationOfState
       if (lpenc_loc(i_ee)) call eoscalc(f,nx,ee=p%ee)
 ! lnTT
       if (lpenc_loc(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
+!      if (lpenc_loc(i_lnTT)) call eoscalc(f,nx,lnTT=p%lnTT)
 ! yH
       if (lpenc_loc(i_yH)) p%yH=f(l1:l2,m,n,iyH)
+!      if (lpenc_loc(i_yH)) call eoscalc(f,nx,yH=p%yH)
 ! TT
       if (lpenc_loc(i_TT)) p%TT=exp(p%lnTT)
 ! TT1
@@ -459,6 +463,7 @@ module EquationOfState
           call pressure_gradient(f,p%cs2,p%cp1tilde)
 ! glnTT
       if (lpenc_loc(i_glnTT)) call grad(f,ilnTT,p%glnTT)
+!        call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
 ! gTT
       if (lpenc_loc(i_gTT)) then
         do i=1,3; p%gTT(:,i)=p%glnTT(:,i)*p%TT; enddo
@@ -469,6 +474,7 @@ module EquationOfState
       if (lpenc_loc(i_del2ss)) call del2(f,iss,p%del2ss)
 ! del2lnTT
       if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+!        call temperature_laplacian(f,p)
 ! del2TT
       if (lpenc_loc(i_del2TT)) call not_implemented('calc_pencils_eos_pencpar','del2TT')
 ! del6lnTT
@@ -531,8 +537,7 @@ module EquationOfState
 !  just a single value of mu, because it must depend on position.
 !  Therefore, call fatal error.
 !
-      call fatal_error('getmu',&
-          'SHOULD NOT BE CALLED WITH eos_ionization, see cp/cv pencils')
+      call fatal_error('getmu','SHOULD NOT BE CALLED WITH eos_ionization, see cp/cv pencils')
 !
 ! tobi: the real mean molecular weight would be:
 !
@@ -540,19 +545,14 @@ module EquationOfState
 !
     endsubroutine getmu
 !***********************************************************************
-    subroutine ioninit(f)
-!
-!  the ionization fraction has to be set to a value yH0 < yH < yHmax before
-!  rtsafe is called for the first time
-!
-!  12-jul-03/tobi: coded
+    subroutine init_eos(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       f(:,:,:,iyH) = 0.5*(yHmax-yHmin)
       call ioncalc(f)
 !
-    endsubroutine ioninit
+    endsubroutine init_eos
 !***********************************************************************
     subroutine ioncalc(f)
 !
@@ -895,7 +895,6 @@ module EquationOfState
 !   10-feb-23/fred: call to pressure_gradient to yield cs2
 !
       use Sub
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
@@ -909,7 +908,7 @@ module EquationOfState
       select case (psize)
         case (nx); i1=l1; i2=l2
         case (mx); i1=1; i2=mx
-        case default; call stop_it("eoscalc: no such pencil size")
+        case default; call fatal_error("eoscalc","no such pencil size")
       end select
 
       lnrho_=f(i1:i2,m,n,ilnrho)
@@ -1410,7 +1409,7 @@ module EquationOfState
 !
     endsubroutine get_soundspeed
 !***********************************************************************
-    subroutine isothermal_entropy(f,T0)
+    subroutine isothermal_entropy(lnrho_arr,T0,ss_arr)
 !
 !  Isothermal stratification (for lnrho and ss)
 !  This routine should be independent of the gravity module used.
@@ -1426,15 +1425,15 @@ module EquationOfState
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
-      real, dimension(nx) :: lnrho,ss,yH,K,sqrtK,yH_term,one_yH_term
+      real, dimension(mx,my,mz) :: lnrho_arr,ss_arr
+
+      real, dimension(nx) :: lnrho,yH,K,sqrtK,yH_term,one_yH_term
 !
       do n=n1,n2
       do m=m1,m2
-!
-        lnrho=f(l1:l2,m,n,ilnrho)
-!
+
+        lnrho=lnrho_arr(l1:l2,m,n)
         K=exp(lnrho_e-lnrho-TT_ion/T0)*(T0/TT_ion)**1.5
         sqrtK=sqrt(K)
         yH=2*sqrtK/(sqrtK+sqrt(4+K))
@@ -1451,26 +1450,21 @@ module EquationOfState
           one_yH_term=0
         endwhere
 !
-        ss=ss_ion*((1+yH+xHe)*(1.5*log(T0/TT_ion)-lnrho+2.5) &
-                   -yH_term-one_yH_term-xHe_term)
-!
-        f(l1:l2,m,n,iss)=ss
+        ss_arr(l1:l2,m,n)=ss_ion*((1+yH+xHe)*(1.5*log(T0/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)
 !
       enddo
       enddo
 !
     endsubroutine isothermal_entropy
 !***********************************************************************
-    subroutine isothermal_lnrho_ss(f,T0,rho0)
+    subroutine isothermal_lnrho_ss(lnrho,T0,rho0,ss)
 !
-!  Isothermal stratification for lnrho and ss (for yH=0!)
-!
-!  Currently only implemented for ionization_fixed.
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz), intent(out) :: lnrho,ss
       real, intent(in) :: T0,rho0
 !
-      call keep_compiler_quiet(f)
+      call fatal_error('isothermal_lnrho_ss','should not be called with eos_ionization')
+!
+      call keep_compiler_quiet(lnrho,ss)
       call keep_compiler_quiet(T0)
       call keep_compiler_quiet(rho0)
 !
@@ -2173,50 +2167,6 @@ module EquationOfState
       endselect
 !
     endsubroutine bc_ism
-!***********************************************************************
-    subroutine write_thermodyn
-!
-    endsubroutine write_thermodyn
-!***********************************************************************
-    subroutine read_thermodyn(input_file)
-!
-      character (len=*), intent(in) :: input_file
-!
-      call keep_compiler_quiet(input_file)
-!
-    endsubroutine read_thermodyn
-!***********************************************************************
-    subroutine read_species(input_file)
-!
-      character (len=*) :: input_file
-!
-      call keep_compiler_quiet(input_file)
-!
-    endsubroutine read_species
-!***********************************************************************
-    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-!
-      integer, intent(out) :: ind_glob
-      integer, intent(inout) :: ind_chem
-      character (len=*), intent(in) :: species_name
-      logical, intent(out) :: found_specie
-!
-         call keep_compiler_quiet(ind_glob)
-         call keep_compiler_quiet(ind_chem)
-         call keep_compiler_quiet(species_name)
-         call keep_compiler_quiet(found_specie)
-!
-     endsubroutine find_species_index
-!***********************************************************************
-     subroutine find_mass(element_name,MolMass)
-!
-      character (len=*), intent(in) :: element_name
-      real, intent(out) :: MolMass
-!
-       call keep_compiler_quiet(element_name)
-       call keep_compiler_quiet(MolMass)
-!
-     endsubroutine find_mass
 !***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !

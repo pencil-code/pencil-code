@@ -2625,19 +2625,19 @@ module Interstellar
         do m=m1,m2
           if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
           if (ldensity_nolog) then
-            rho(1:nx)=f(l1:l2,m,n,irho)
-            call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss), lnTT=lnTT)
+            rho=f(l1:l2,m,n,irho)
+            call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss), lnTT=lnTT)  !ss
           else
-            rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
-            call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),lnTT=lnTT)
+            rho=exp(f(l1:l2,m,n,ilnrho))
+            call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),lnTT=lnTT)  !ss
           endif
-          TT(1:nx)=exp(lnTT(1:nx))
-          rho_cloud(1:nx)=0.0
-          where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) rho_cloud(1:nx) = rho(1:nx)
+          TT=exp(lnTT)
+          rho_cloud=0.0
+          where (rho >= cloud_rho .and. TT(1:nx) <= cloud_TT) rho_cloud = rho
 !
 !  Multiply by volume element dVol to find total mass.
 !
-          cloud_mass=cloud_mass+sum(rho_cloud(1:nx)*dVol)
+          cloud_mass=cloud_mass+sum(rho_cloud*dVol)
         enddo
         enddo
 !
@@ -3175,11 +3175,11 @@ module Interstellar
           if (ldensity_nolog) then
             rho(1:nx)=f(l1:l2,m,n,irho)
             lnrho(1:nx)=log(rho(1:nx))
-            call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
+            call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)   !ss
           else
             lnrho(1:nx)=f(l1:l2,m,n,ilnrho)
             rho(1:nx)=exp(lnrho(1:nx))
-            call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
+            call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)   !ss
           endif
           TT(1:nx)=exp(lnTT(1:nx))
           do l=1,nx
@@ -3366,7 +3366,7 @@ module Interstellar
 !  ??-nov-02/grs : coded from GalaxyCode
 !  20-may-03/tony: pencil formulation and broken into subroutines
 !
-      use EquationOfState, only: eoscalc, eosperturb
+      use EquationOfState, only: eoscalc
       use Mpicomm, only: mpiallreduce_max, mpiallreduce_sum
       use General, only: keep_compiler_quiet
       use Grid, only: get_grid_mn
@@ -3546,14 +3546,11 @@ module Interstellar
 !
       if (lSN_mass) then
         if (mass_profile=="gaussian3") then
-          cmass_SN=mass_SN/(cnorm_SN(dimensionality)* &
-              width_mass**dimensionality)
+          cmass_SN=mass_SN/(cnorm_SN(dimensionality)*width_mass**dimensionality)
         elseif (mass_profile=="gaussian2") then
-          cmass_SN=mass_SN/(cnorm_gaussian2_SN(dimensionality)* &
-              width_mass**dimensionality)
+          cmass_SN=mass_SN/(cnorm_gaussian2_SN(dimensionality)*width_mass**dimensionality)
         elseif (mass_profile=="gaussian") then
-          cmass_SN=mass_SN/(cnorm_gaussian_SN(dimensionality)* &
-              width_mass**dimensionality)
+          cmass_SN=mass_SN/(cnorm_gaussian_SN(dimensionality)*width_mass**dimensionality)
         endif
       else
         cmass_SN=0.
@@ -3632,8 +3629,7 @@ module Interstellar
 !  Check max temperature within Nsigma of any remant does
 !  not exceed TT_SN_max*SN_TT_ratio.
 !
-        call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),&
-            yH=yH,lnTT=lnTT,ee=ee_old)
+        call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT,ee=ee_old)  !ss
         deltaEE=0.
         call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
         if (lSN_eth) then
@@ -3796,6 +3792,7 @@ module Interstellar
         else
           rho_old=exp(f(l1:l2,m,n,ilnrho))
         endif
+
         if ((lSN_mass.and.cmass_SN>0).or.(lSN_coolingmass.and.cmass_SN>0)) then
           deltarho=0.
           call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%feat%MM)
@@ -3807,16 +3804,30 @@ module Interstellar
           endif
         endif
 !
-!  Get the unperturbed energy and then add thermal energy if lSN_eth.
+!  Get the unperturbed energy and then add thermal energy if lSN_eth.  MR: unpertubed? deltarho is already added
 !  Save changes to f-array.
 !
-        call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),&
-            yH=yH,lnTT=lnTT,ee=ee_old)
+        !!deltaEE=0.
+        !!call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
+        !!if (lSN_eth) then
+        !!  if (ltemperature) then
+        !!    call eoscalc(irho_lnTT,rho_old,f(l1:l2,m,n,ilnTT),ee=ee_old)
+        !!    call eoscalc(irho_ee,rho_old,real((ee_old*rho_old+deltaEE*frac_eth)/rho_old),lnTT=f(l1:l2,m,n,ilnTT),yH=yH)
+        !!  elseif (lentropy) then 
+        !!    call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),ee=ee_old)
+        !!    !!!call eosperturb(f,nx,ee=real((ee_old*rho_old+deltaEE*frac_eth)/rho_old))
+        !!    call eoscalc(irho_ee,rho_old,real((ee_old*rho_old+deltaEE*frac_eth)/rho_old),ss=f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
+        !!    if (lentropy.and.ilnTT/=0) f(l1:l2,m,n,ilnTT)=lnTT
+        !!  endif
+        !!  if (iyH/=0) f(l1:l2,m,n,iyH)=yH
+        !!endif
+
+        call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT,ee=ee_old)
         deltaEE=0.
         call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
-        if (lSN_eth) &
-          !call eosperturb(f,nx,ee=real((ee_old*rho_old+deltaEE*frac_eth)/rho_old))
-          call eoscalc(irho_ee,rho_old,real((ee_old*rho_old+deltaEE*frac_eth)/rho_old),ss=f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
+        !if (lSN_eth) call eosperturb(f,nx,ee=real((ee_old*rho_old+deltaEE*frac_eth)/rho_old))
+        if (lSN_eth) call eoscalc(irho_ee,rho_old,real((ee_old*rho_old+deltaEE*frac_eth)/rho_old), &
+                                  ss=f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
 
         if (ldensity_nolog) then
           call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
@@ -4394,21 +4405,19 @@ module Interstellar
 !  Whether mass is moved or not, inject energy.
 !
       if (thermal_profile=="gaussian3") then
-        profile_SN=exp(-(dr2_SN(1:nx)/width**2)**3)
+        profile_SN=exp(-(dr2_SN/width**2)**3)
       elseif (thermal_profile=="gaussian2") then
-        profile_SN=exp(-(dr2_SN(1:nx)/width**2)**2)
+        profile_SN=exp(-(dr2_SN/width**2)**2)
       elseif (thermal_profile=="gaussian") then
-        profile_SN=exp(-(dr2_SN(1:nx)/width**2))
+        profile_SN=exp(-(dr2_SN/width**2))
       elseif (thermal_profile=="quadratic") then
-        profile_SN=max(1.0-(dr2_SN(1:nx)/width**2),0.0)
+        profile_SN=max(1.-(dr2_SN/width**2),0.)
       elseif (thermal_profile=="quadratictanh") then
-        profile_SN=max(1.0-(dr2_SN(1:nx)/width**2),0.0)* &
-                       0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
+        profile_SN=max(1.-(dr2_SN/width**2),0.)*0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
       elseif (thermal_profile=="quartictanh") then
-        profile_SN=max(1.0-(dr2_SN(1:nx)/width**2)**2,0.0)* &
-                       0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
+        profile_SN=max(1.-(dr2_SN/width**2)**2,0.)*0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
       elseif (thermal_profile=="tanh") then
-        profile_SN=(1.-tanh((sqrt(dr2_SN(1:nx))-width)*sigma_SN1))*0.5
+        profile_SN=(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))*0.5
       endif
 !
       deltaEE(1:nx)=c_SN*profile_SN(1:nx) ! spatial energy density
