@@ -1,3 +1,4 @@
 [submodule "src/astaroth"]
 	path = src/astaroth/submodule
 	url = https://bitbucket.org/jpekkila/astaroth.git
+	branch = push-branch
