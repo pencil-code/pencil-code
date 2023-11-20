@@ -2656,11 +2656,10 @@ module Density
         else
           tmp = fdiff
         endif
-
-        if (lhydro) then
+        if (lhydro.and.(.not.lhydro_potential)) then
+          !  when using lhydro_potential, df doesn't have iux:iuz entries
           forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
         endif
-
         if (lentropy.and.(.not.pretend_lnTT)) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
         elseif (lentropy.and.pretend_lnTT) then
