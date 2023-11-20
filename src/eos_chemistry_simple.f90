@@ -136,10 +136,12 @@ module EquationOfState
 !
     endsubroutine units_eos
 !***********************************************************************
-    subroutine initialize_eos
+    subroutine initialize_eos(f)
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
+      real, dimension (mx,my,mz,mfarray) :: f
+
       ieosvars=-1
       ieosvar_count=0
 !

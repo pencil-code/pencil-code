@@ -134,13 +134,15 @@ module EquationOfState
 
     endsubroutine register_eos
 !***********************************************************************
-    subroutine initialize_eos
+    subroutine initialize_eos(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  21-may-14/axel: adapted from eos_entropy
 !
       use Sub, only: register_report_aux
+!
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (lroot) print*,'initialize_eos: ENTER'
 !
