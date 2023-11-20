@@ -84,7 +84,7 @@ module EquationOfState
       if (lroot) call svn_id( &
           "$Id$")
 !
-      call put_shared_variable('gamma',gamma,caller='initialize_eos')
+      call put_shared_variable('gamma',gamma,caller='register_eos')
 !
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0)
@@ -120,12 +120,14 @@ module EquationOfState
 !
     endsubroutine units_eos
 !***********************************************************************
-    subroutine initialize_eos
+    subroutine initialize_eos(f)
 !
 !  Perform any post-parameter-read initialization, e.g. set derived
 !  parameters.
 !
 !   2-feb-03/axel: adapted from Interstellar module
+!
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: ierr
       real :: mu1yHxHe

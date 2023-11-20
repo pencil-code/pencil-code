@@ -135,17 +135,19 @@ module EquationOfState
 !      inquire(FILE=input_file, EXIST=lcheminp_eos)
 !
       if (.not. lcheminp_eos ) then
-        call fatal_error('initialize_eos','file chem.imp not found')
+        call fatal_error('units_eos','file chem.imp not found')
       elseif (lroot) then
         print*,'units_eos: chem.imp is found! Now cp, cv, gamma, mu are pencils ONLY!'
       endif
 !
     endsubroutine units_eos
 !***********************************************************************
-    subroutine initialize_eos
+    subroutine initialize_eos(f)
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
+      real, dimension (mx,my,mz,mfarray) :: f
+
       ieosvars=-1
       ieosvar_count=0
 !
