@@ -23,6 +23,7 @@ module NSCBC
   implicit none
 !
   include 'NSCBC.h'
+  include 'eos_params.h'
 !
 ! Format: nscbc_bc = 'bottom_x:top_x','bottom_y:top_y','bottom_z:top_z'
 ! for top and bottom boundary treatment at x, y and z-boundaries.
@@ -378,7 +379,6 @@ module NSCBC
 !
       use Deriv, only: der_onesided_4_slice
       use Chemistry
-      use EquationOfState, only: imass, species_constants
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1247,7 +1247,7 @@ module NSCBC
 !
 !  2010.07.26/Julien Savre: coded
 !
-      use EquationOfState, only: find_species_index
+      use Chemistry, only: find_species_index
       use General, only: keep_compiler_quiet
 !
       real, dimension(:,:,:), intent(inout) :: YYi_full
@@ -1421,7 +1421,7 @@ module NSCBC
 ! 2010.01.21/Nils Erland: coded
 !
         use Chemistry
-        use EquationOfState, only: cs0, cs20, eoscalc, irho_TT
+        use EquationOfState, only: cs0, cs20, eoscalc
 !
         real, dimension(mx,my,mz,mfarray) :: f
         integer, intent(in) :: direction, sgn,lll,imin,imax,jmin,jmax

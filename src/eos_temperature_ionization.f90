@@ -33,7 +33,6 @@ module EquationOfState
 !
   integer :: icv, idelta, igamma, inabad
 !  integer :: icp, icv, ics, idelta, igamma, inabad
-  integer :: imass = 1
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas,mu1yHxHe
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
@@ -185,6 +184,8 @@ module EquationOfState
       if (ldelta_as_aux) call register_report_aux('delta',idelta)
       if (lgamma_as_aux) call register_report_aux('gamma',igamma)
       if (lnabad_as_aux) call register_report_aux('nabad',inabad)
+!
+      call ioncalc(f)
 !
 !  write scale non-free constants to file; to be read by idl
 !
@@ -532,13 +533,13 @@ module EquationOfState
 !
     endsubroutine rprint_eos
 !***********************************************************************
-    subroutine ioninit(f)
+    subroutine init_eos(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call ioncalc(f)
 !
-    endsubroutine ioninit
+    endsubroutine init_eos
 !***********************************************************************
     subroutine ioncalc(f)
 !
@@ -582,22 +583,6 @@ module EquationOfState
       endif
 !
     endsubroutine ioncalc
-!***********************************************************************
-    subroutine eosperturb(f,psize,ee,pp,ss)
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      integer, intent(in) :: psize
-      real, dimension(psize), intent(in), optional :: ee,pp,ss
-!
-      call not_implemented("eosperturb","")
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(psize)
-      call keep_compiler_quiet(present(ee))
-      call keep_compiler_quiet(present(pp))
-      call keep_compiler_quiet(present(ss))
-!
-    endsubroutine eosperturb
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
 !
@@ -1024,16 +1009,14 @@ module EquationOfState
 !
     endsubroutine isothermal_entropy
 !***********************************************************************
-    subroutine isothermal_lnrho_ss(f,T0,rho0)
+    subroutine isothermal_lnrho_ss(lnrho,T0,rho0,ss)
 !
-!  Isothermal stratification for lnrho and ss (for yH=0!)
-!
-!  Currently only implemented for ionization_fixed.
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz), intent(out) :: lnrho,ss
       real, intent(in) :: T0,rho0
 !
-      call keep_compiler_quiet(f)
+      call fatal_error('isothermal_lnrho_ss','should not be called with eos_temperature_ionization')
+!
+      call keep_compiler_quiet(lnrho,ss)
       call keep_compiler_quiet(T0)
       call keep_compiler_quiet(rho0)
 !
@@ -2368,50 +2351,6 @@ module EquationOfState
       endselect
 !
     endsubroutine bc_ism
-!***********************************************************************
-    subroutine write_thermodyn
-!
-    endsubroutine write_thermodyn
-!***********************************************************************
-    subroutine read_thermodyn(input_file)
-!
-      character (len=*), intent(in) :: input_file
-!
-      call keep_compiler_quiet(input_file)
-!
-    endsubroutine read_thermodyn
-!***********************************************************************
-    subroutine read_species(input_file)
-!
-      character (len=*) :: input_file
-!
-      call keep_compiler_quiet(input_file)
-!
-    endsubroutine read_species
-!***********************************************************************
-    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-!
-      integer, intent(out) :: ind_glob
-      integer, intent(inout) :: ind_chem
-      character (len=*), intent(in) :: species_name
-      logical, intent(out) :: found_specie
-!
-      call keep_compiler_quiet(ind_glob)
-      call keep_compiler_quiet(ind_chem)
-      call keep_compiler_quiet(species_name)
-      call keep_compiler_quiet(found_specie)
-!
-    endsubroutine find_species_index
-!***********************************************************************
-    subroutine find_mass(element_name,MolMass)
-!
-      character (len=*), intent(in) :: element_name
-      real, intent(out) :: MolMass
-!
-      call keep_compiler_quiet(element_name)
-      call keep_compiler_quiet(MolMass)
-!
-     endsubroutine find_mass
 !***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !

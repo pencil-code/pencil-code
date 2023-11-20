@@ -46,4 +46,4 @@
 ! public :: chemistry_calc_magnetic
 
   public :: write_net_reaction
-  public :: lreactions
+  public :: lreactions, species_constants, find_species_index

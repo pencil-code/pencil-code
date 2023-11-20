@@ -54,7 +54,6 @@ module EquationOfState
   real :: gamma=5./3., gamma_m1,gamma1, nabla_ad
 !ajwm  can't use impossible else it breaks reading param.nml
   real :: cs2bot=1., cs2top=1.
-  integer :: imass=1
 !
   real, dimension(nchemspec,18) :: species_constants
 !
@@ -482,13 +481,13 @@ module EquationOfState
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
-    subroutine ioninit(f)
+    subroutine init_eos(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call ioncalc(f)
 !
-    endsubroutine ioninit
+    endsubroutine init_eos
 !***********************************************************************
     subroutine ioncalc(f)
 !
@@ -650,20 +649,6 @@ module EquationOfState
       call keep_compiler_quiet(f)
 !
     endsubroutine temperature_hessian
-!***********************************************************************
-    subroutine eosperturb(f,psize,ee,pp,ss)
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      integer, intent(in) :: psize
-      real, dimension(psize), intent(in), optional :: ee,pp,ss
-!
-      call not_implemented("eosperturb")
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(present(ee),present(pp),present(ss))
-      call keep_compiler_quiet(psize)
-!
-    endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
 !
@@ -898,7 +883,7 @@ module EquationOfState
 !
     endsubroutine get_soundspeed
 !***********************************************************************
-    subroutine isothermal_entropy(f,T0)
+    subroutine isothermal_entropy(lnrho,T0,ss)
 !
 !  Isothermal stratification (for lnrho and ss)
 !  This routine should be independent of the gravity module used.
@@ -914,24 +899,14 @@ module EquationOfState
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz), intent(out) :: lnrho, ss
       real, intent(in) :: T0
-      real, dimension(nx) :: lnrho,ss
 !
-      do n=n1,n2
-      do m=m1,m2
-!
-        lnrho=f(l1:l2,m,n,ilnrho)
-        ss=ss_ion*((1+yH0+xHe-xH2)*(1.5*log(T0/TT_ion)-lnrho+2.5) &
-                   -yH_term-one_yH_term-xHe_term)
-        f(l1:l2,m,n,iss)=ss
-!
-      enddo
-      enddo
+      ss=ss_ion*((1+yH0+xHe-xH2)*(1.5*log(T0/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)
 !
     endsubroutine isothermal_entropy
 !***********************************************************************
-    subroutine isothermal_lnrho_ss(f,T0,rho0)
+    subroutine isothermal_lnrho_ss(lnrho,T0,rho0,ss)
 !
 !  Isothermal stratification for lnrho and ss (for yH=0!)
 !
@@ -944,30 +919,25 @@ module EquationOfState
 !
       use Gravity, only: gravz_profile
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz), intent(out) :: lnrho, ss
       real, intent(in) :: T0,rho0
-      real, dimension(nx) :: lnrho,ss,lnTT
+      real, dimension(nx) :: lnTT
 !
       if (gravz_profile /= 'linear') call not_implemented &
           ('isothermal_lnrho_ss','for other than linear gravity profile')
 !
 !  First calculate hydrostatic density stratification when T=T0
 !
-      do m=m1,m2
-        do n=n1,n2
-          f(l1:l2,m,n,ilnrho) = &
-              -(Omega*z(n))**2/(2*(1.+xHe-xH2)*ss_ion*T0)+log(rho0)
-        enddo
+      do n=n1,n2
+        lnrho(l1:l2,m1:m2,n) = -(Omega*z(n))**2/(2*(1.+xHe-xH2)*ss_ion*T0)+log(rho0)
       enddo
 !
 !  Then calculate entropy as a function of T0 and lnrho
 !
       do m=m1,m2
         do n=n1,n2
-          lnrho=f(l1:l2,m,n,ilnrho)
           lnTT=log(T0)
-          call eoscalc_pencil(ilnrho_lnTT,lnrho,lnTT,ss=ss)
-          f(l1:l2,m,n,iss) = ss
+          call eoscalc_pencil(ilnrho_lnTT,lnrho(l1:l2,m,n),lnTT,ss=ss(l1:l2,m,n))
         enddo
       enddo
 !
@@ -1448,50 +1418,6 @@ module EquationOfState
       endselect
 !
     endsubroutine bc_ism
-!***********************************************************************
-    subroutine write_thermodyn
-!
-    endsubroutine write_thermodyn
-!***********************************************************************
-    subroutine read_thermodyn(input_file)
-!
-      character (len=*), intent(in) :: input_file
-!
-      call keep_compiler_quiet(input_file)
-!
-    endsubroutine read_thermodyn
-!***********************************************************************
-    subroutine read_species(input_file)
-!
-      character (len=*) :: input_file
-!
-      call keep_compiler_quiet(input_file)
-
-    endsubroutine read_species
-!***********************************************************************
-    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-!
-      integer, intent(out) :: ind_glob
-      integer, intent(inout) :: ind_chem
-      character (len=*), intent(in) :: species_name
-      logical, intent(out) :: found_specie
-!
-         call keep_compiler_quiet(ind_glob)
-         call keep_compiler_quiet(ind_chem)
-         call keep_compiler_quiet(species_name)
-         call keep_compiler_quiet(found_specie)
-!
-     endsubroutine find_species_index
-!***********************************************************************
-     subroutine find_mass(element_name,MolMass)
-!
-      character (len=*), intent(in) :: element_name
-      real, intent(out) :: MolMass
-!
-       call keep_compiler_quiet(element_name)
-       call keep_compiler_quiet(MolMass)
-!
-     endsubroutine find_mass
 !***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !

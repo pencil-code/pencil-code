@@ -1681,42 +1681,6 @@ module Chemistry
 
     endsubroutine chemistry_before_boundary
 !***********************************************************************
-    subroutine read_chemistry_init_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read (parallel_unit, NML=chemistry_init_pars, IOSTAT=iostat)
-!
-    endsubroutine read_chemistry_init_pars
-!***********************************************************************
-    subroutine write_chemistry_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write (unit, NML=chemistry_init_pars)
-!
-    endsubroutine write_chemistry_init_pars
-!***********************************************************************
-    subroutine read_chemistry_run_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read (parallel_unit, NML=chemistry_run_pars, IOSTAT=iostat)
-!
-    endsubroutine read_chemistry_run_pars
-!***********************************************************************
-    subroutine write_chemistry_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write (unit, NML=chemistry_run_pars)
-!
-    endsubroutine write_chemistry_run_pars
-!***********************************************************************
     subroutine rprint_chemistry(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to chemistry
@@ -1863,6 +1827,42 @@ module Chemistry
       endif
 !
     endsubroutine get_slices_chemistry
+!***********************************************************************
+    subroutine read_chemistry_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read (parallel_unit, NML=chemistry_init_pars, IOSTAT=iostat)
+!
+    endsubroutine read_chemistry_init_pars
+!***********************************************************************
+    subroutine write_chemistry_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write (unit, NML=chemistry_init_pars)
+!
+    endsubroutine write_chemistry_init_pars
+!***********************************************************************
+    subroutine read_chemistry_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read (parallel_unit, NML=chemistry_run_pars, IOSTAT=iostat)
+!
+    endsubroutine read_chemistry_run_pars
+!***********************************************************************
+    subroutine write_chemistry_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write (unit, NML=chemistry_run_pars)
+!
+    endsubroutine write_chemistry_run_pars
 !***********************************************************************
     subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
 !
@@ -4359,6 +4359,11 @@ module Chemistry
         close (1)
       endif
 !
+! Reset to zero for next time
+!
+     net_react_m = 0.
+     net_react_p = 0.
+!
     endsubroutine  write_net_reaction
 !***********************************************************************
     subroutine calc_diffusion_term(f,p)
@@ -5022,95 +5027,6 @@ module Chemistry
 !
  !   endsubroutine read_Lewis
 !***********************************************************************
-   subroutine read_transport_data
-!
-!  Reading of the chemkin transport data
-!
-!  01-apr-08/natalia: coded
-!  30-jun-17/MR: moved here from eos_chemistry.
-!
-      logical :: emptyfile
-      logical :: found_specie
-      integer :: file_id=123, ind_glob, ind_chem
-      character (len=80) :: ChemInpLine
-      character (len=10) :: specie_string
-      integer :: VarNumber
-      integer :: StartInd,StopInd,StartInd_1,StopInd_1
-      logical :: tranin=.false.
-      logical :: trandat=.false.
-!
-      emptyFile=.true.
-!
-      StartInd_1=1; StopInd_1 =0
-
-      inquire (file='tran.dat',exist=trandat)
-      inquire (file='tran.in',exist=tranin)
-      if (tranin .and. trandat) &
-        call fatal_error('eos_chemistry','both tran.in and tran.dat found. Please decide for one')
-
-      if (tranin) open(file_id,file='tran.in')
-      if (trandat) open(file_id,file='tran.dat')
-!
-      if (lroot) print*, 'the following species are found in tran.in/dat: beginning of the list:'
-!
-      dataloop: do
-!
-        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
-        emptyFile=.false.
-!
-        StopInd_1=index(ChemInpLine,' ')
-        specie_string=trim(ChemInpLine(1:StopInd_1-1))
-!
-        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
-!
-        if (found_specie) then
-          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' ind_chem=',ind_chem
-!
-          VarNumber=1; StartInd=1; StopInd =0
-          do while (VarNumber<7)
-!
-            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-            StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
-            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-!
-            if (StopInd==StartInd) then
-              StartInd=StartInd+1
-            else
-              if (VarNumber==1) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)' ) tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==2) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==3) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==4) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==5) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==6) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              else
-                call fatal_error("read_transport_data","no such VarNumber")
-              endif
-!
-              VarNumber=VarNumber+1
-              StartInd=StopInd
-            endif
-            if (StartInd==80) exit
-          enddo
-!
-        endif
-      enddo dataloop
-!
-! Stop if tran.dat is empty
-!
-1000  if (emptyFile)  call fatal_error('read_transport_data','input file tran.dat is empty')
-!
-      if (lroot) print*, 'the following species are found in tran.dat: end of the list:'
-!
-      close(file_id)
-!
-    endsubroutine read_transport_data
-!***********************************************************************
     subroutine jacobn(f,jacob)
 !
 !   dummy routine
@@ -5155,12 +5071,12 @@ module Chemistry
 
       sum_Y=0.0 !; sum_Y2=0.0
       do k=1,nchemspec
-        if (k/=ichemsN2) then
-          sum_Y=sum_Y+f(:,:,:,ichemspec(k))
-        endif
+        if (k/=ichemsN2) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
       enddo
       f(:,:,:,isN2)=1.0-sum_Y
 !
     endsubroutine chemspec_normalization_N2
+!***********************************************************************
+    include 'chemistry_common.inc'
 !***********************************************************************
 endmodule Chemistry

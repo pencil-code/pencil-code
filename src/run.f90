@@ -59,7 +59,6 @@ program run
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
   use Equ,             only: debug_imn_arrays,initialize_pencils
-  use EquationOfState, only: ioninit
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use Filter
@@ -425,10 +424,6 @@ program run
 !
   if (mglobal/=0 .and. lread_global) call input_globals('global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
-!
-!  Initialize ionization array.
-!
-  if (leos_ionization) call ioninit(f)
 !
 !  Prepare particles.
 !

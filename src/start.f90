@@ -57,7 +57,7 @@ program start
   use Dustdensity,      only: init_nd
   use Dustvelocity,     only: init_uud
   use Energy,           only: init_energy
-  use EquationOfState,  only: ioninit
+  use EquationOfState,  only: init_eos
   use FArrayManager,    only: farray_clean_up
   use Filter
   use General
@@ -82,7 +82,7 @@ program start
   use Param_IO
   use Particles_main
   use Polymer,          only: init_poly
-  use PointMasses!,      only: init_pointmasses
+  use PointMasses
   use Pscalar,          only: init_lncc
   use Radiation,        only: init_rad, radtransfer
   use Register
@@ -446,14 +446,12 @@ program start
 !  If desired, the f array can be initialized in one call.
 !
   if (linitial_condition) call initial_condition_all(f)
+  call init_eos(f)     ! has to come last
 !
 !  Initialize particles.
 !
   if (lparticles) call particles_init(f)
 !
-!  Check whether we want ionization.
-!
-  if (leos_ionization) call ioninit(f)
   if (lradiation_ray) then
     call update_ghosts(f)
     call radtransfer(f)
