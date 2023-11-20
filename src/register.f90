@@ -372,7 +372,7 @@ module Register
       call initialize_gpu
       call initialize_timeavg(f)
       call initialize_initial_condition(f)
-      call initialize_eos
+      call initialize_eos(f)
       call initialize_gravity(f)
       call initialize_selfgravity(f)
       call initialize_poisson
@@ -391,7 +391,7 @@ module Register
       call initialize_testscalar(f)
       call initialize_testfield(f)
       call initialize_testflow(f)
-      call initialize_radiation  !(f)
+      call initialize_radiation   !(f)
       call initialize_pscalar(f)
       call initialize_ascalar(f)
       call initialize_chiral(f)
