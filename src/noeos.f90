@@ -65,7 +65,9 @@ module EquationOfState
 !
     endsubroutine units_eos
 !***********************************************************************
-    subroutine initialize_eos
+    subroutine initialize_eos(f)
+!
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
 !
       gamma_m1=gamma-1.; gamma1=1./gamma
       rho02 = rho0**2
