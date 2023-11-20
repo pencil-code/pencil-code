@@ -19,7 +19,6 @@ module Equ
   private
   real :: diag_start
 !
-!
   contains
 !***********************************************************************
     include 'pencil_init.inc' ! defines subroutine initialize_pencils()
@@ -1940,157 +1939,158 @@ module Equ
 
     endsubroutine set_dt1_max
 !***********************************************************************
-!     subroutine test_dt(f,df,p,rhs_1,rhs_2)
-! !
-! !   Used to test different implementations of dt subroutines
-! !
-! !   13-nov-23/TP: Written
-! !
+    subroutine test_dt(f,df,p,rhs_1,rhs_2)
+!
+!   Test different implementations of dt subroutines.
+!
+!   13-nov-23/TP: Written
+!
+      real, dimension (mx,my,mz,mfarray) :: f,f_copy
+      real, dimension (mx,my,mz,mfarray) :: df,df_copy
+      integer :: i,j,k,n
+      type (pencil_case) :: p,p_copy
 
+      intent(inout) :: f
+      intent(in) :: p
+      intent(inout) :: df
+      logical :: passed
+      interface
+          subroutine rhs_1(f,df,p)
+              import mx
+              import my
+              import mz
+              import mfarray
+              import pencil_case
+              real, dimension (mx,my,mz,mfarray) :: f
+              real, dimension (mx,my,mz,mfarray) :: df
+              type (pencil_case) :: p
 
-!       real, dimension (mx,my,mz,mfarray) :: f,f_copy
-!       real, dimension (mx,my,mz,mfarray) :: df,df_copy
-!       integer :: i,j,k,n
-!       type (pencil_case) :: p,p_copy
+              intent(inout) :: f
+              intent(in) :: p
+              intent(inout) :: df
+          endsubroutine rhs_1 
+        endinterface
+        interface
+          subroutine rhs_2(f,df,p)
+              import mx
+              import my
+              import mz
+              import mfarray
+              import pencil_case
+              real, dimension (mx,my,mz,mfarray) :: f
+              real, dimension (mx,my,mz,mfarray) :: df
+              type (pencil_case) :: p
 
-!       intent(inout) :: f
-!       intent(in) :: p
-!       intent(inout) :: df
-!       logical :: passed
-!       interface
-!           subroutine rhs_1(f,df,p)
-!               import mx
-!               import my
-!               import mz
-!               import mfarray
-!               import pencil_case
-!               real, dimension (mx,my,mz,mfarray) :: f
-!               real, dimension (mx,my,mz,mfarray) :: df
-!               type (pencil_case) :: p
-
-!               intent(inout) :: f
-!               intent(in) :: p
-!               intent(inout) :: df
-!           endsubroutine rhs_1 
-!         endinterface
-!         interface
-!           subroutine rhs_2(f,df,p)
-!               import mx
-!               import my
-!               import mz
-!               import mfarray
-!               import pencil_case
-!               real, dimension (mx,my,mz,mfarray) :: f
-!               real, dimension (mx,my,mz,mfarray) :: df
-!               type (pencil_case) :: p
-
-!               intent(inout) :: f
-!               intent(in) :: p
-!               intent(inout) :: df
-!           endsubroutine rhs_2 
-!       endinterface
-!       df_copy = df
-!       p_copy = p
-!       f_copy = f
-!       call rhs_1(f,df,p)
-!       call rhs_2(f_copy,df_copy,p_copy)
-!       passed = .true.
-!       do i=1,mx
-!         do j=1,my
-!           do k=1,mz
-!             do n=1,mfarray
-!               if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
-!                 print*,"Wrong at: ",i,j,k,n
-!                 print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
-!                 passed = .false.
-!               endif
-!             enddo
-!           enddo
-!         enddo
-!       enddo
-!       if(passed) then
-!         print*,"passed test :)"
-!       else
-!         print*,"did not pass test :/"
-!       endif
-!       call die_gracefully
-!     endsubroutine test_dt
+              intent(inout) :: f
+              intent(in) :: p
+              intent(inout) :: df
+          endsubroutine rhs_2 
+      endinterface
+      df_copy = df
+      p_copy = p
+      f_copy = f
+      call rhs_1(f,df,p)
+      call rhs_2(f_copy,df_copy,p_copy)
+      passed = .true.
+      do i=1,mx
+        do j=1,my
+          do k=1,mz
+            do n=1,mfarray
+              if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
+                print*,"Wrong at: ",i,j,k,n
+                print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
+                passed = .false.
+              endif
+            enddo
+          enddo
+        enddo
+      enddo
+      if (passed) then
+        print*,"passed test :)"
+      else
+        print*,"did not pass test :/"
+      endif
+      print*,iux,iuy,iuz,iss,ilnrho
+      call die_gracefully
+      
+    endsubroutine test_dt
 !***********************************************************************
-! subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
+    subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
+!
+!  Used to test different implementations of rhs_cpu.
+!
+!  13-nov-23/TP: Written
+!
+      real, dimension (mx,my,mz,mfarray) :: f,f_copy
+      real, dimension (mx,my,mz,mfarray) :: df,df_copy
+      type (pencil_case) :: p,p_copy
+      real, dimension(1), intent(inout) :: mass_per_proc
+      logical ,intent(in) :: early_finalize
+      integer :: i,j,k,n
+      logical :: passed
+      interface
+          subroutine rhs_1(f,df,p,mass_per_proc,early_finalize)
+              import mx
+              import my
+              import mz
+              import mfarray
+              import pencil_case
+              real, dimension (mx,my,mz,mfarray) :: f
+              real, dimension (mx,my,mz,mfarray) :: df
+              type (pencil_case) :: p
+              real, dimension(1), intent(inout) :: mass_per_proc
+              logical ,intent(in) :: early_finalize
 
-! !  Used to test different implementations of rhs_cpu.
-! !
-! !  13-nov-23/TP: Written
-! !
+              intent(inout) :: f
+              intent(inout) :: p
+              intent(out) :: df
+          endsubroutine rhs_1 
+        endinterface
+        interface
+          subroutine rhs_2(f,df,p,mass_per_proc,early_finalize)
+              import mx
+              import my
+              import mz
+              import mfarray
+              import pencil_case
+              real, dimension (mx,my,mz,mfarray) :: f
+              real, dimension (mx,my,mz,mfarray) :: df
+              type (pencil_case) :: p
+              real, dimension(1), intent(inout) :: mass_per_proc
+              logical ,intent(in) :: early_finalize
 
-!       real, dimension (mx,my,mz,mfarray) :: f,f_copy
-!       real, dimension (mx,my,mz,mfarray) :: df,df_copy
-!       type (pencil_case) :: p,p_copy
-!       real, dimension(1), intent(inout) :: mass_per_proc
-!       logical ,intent(in) :: early_finalize
-!       integer :: i,j,k,n
-!       logical :: passed
-!       interface
-!           subroutine rhs_1(f,df,p,mass_per_proc,early_finalize)
-!               import mx
-!               import my
-!               import mz
-!               import mfarray
-!               import pencil_case
-!               real, dimension (mx,my,mz,mfarray) :: f
-!               real, dimension (mx,my,mz,mfarray) :: df
-!               type (pencil_case) :: p
-!               real, dimension(1), intent(inout) :: mass_per_proc
-!               logical ,intent(in) :: early_finalize
-
-!               intent(inout) :: f
-!               intent(inout) :: p
-!               intent(out) :: df
-!           endsubroutine rhs_1 
-!         endinterface
-!         interface
-!           subroutine rhs_2(f,df,p,mass_per_proc,early_finalize)
-!               import mx
-!               import my
-!               import mz
-!               import mfarray
-!               import pencil_case
-!               real, dimension (mx,my,mz,mfarray) :: f
-!               real, dimension (mx,my,mz,mfarray) :: df
-!               type (pencil_case) :: p
-!               real, dimension(1), intent(inout) :: mass_per_proc
-!               logical ,intent(in) :: early_finalize
-
-!               intent(inout) :: f
-!               intent(inout) :: p
-!               intent(out) :: df
-!           endsubroutine rhs_2 
-!       endinterface
-!       df_copy = df
-!       p_copy = p
-!       f_copy = f
-!       call rhs_1(f,df,p,mass_per_proc,early_finalize)
-!       call rhs_2(f_copy,df_copy,p_copy,mass_per_proc,early_finalize)
-!       passed = .true.
-!       do i=1,mx
-!         do j=1,my
-!           do k=1,mz
-!             do n=1,mfarray
-!               if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
-!                 print*,"Wrong at: ",i,j,k,n
-!                 print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
-!                 passed = .false.
-!               endif
-!             enddo
-!           enddo
-!         enddo
-!       enddo
-!       if(passed) then
-!         print*,"passed test :)"
-!       else
-!         print*,"did not pass test :/"
-!       endif
-!       call die_gracefully
-!     endsubroutine test_rhs
+              intent(inout) :: f
+              intent(inout) :: p
+              intent(out) :: df
+          endsubroutine rhs_2 
+      endinterface
+      df_copy = df
+      p_copy = p
+      f_copy = f
+      call rhs_1(f,df,p,mass_per_proc,early_finalize)
+      call rhs_2(f_copy,df_copy,p_copy,mass_per_proc,early_finalize)
+      passed = .true.
+      do i=1,mx
+        do j=1,my
+          do k=1,mz
+            do n=1,mfarray
+              if (df_copy(i,j,k,n) /= df(i,j,k,n)) then
+                print*,"Wrong at: ",i,j,k,n
+                print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
+                passed = .false.
+              endif
+            enddo
+          enddo
+        enddo
+      enddo
+      if(passed) then
+        print*,"passed test :)"
+      else
+        print*,"did not pass test :/"
+      endif
+      print*,iux,iuy,iuz,iss,ilnrho
+      call die_gracefully
+      
+    endsubroutine test_rhs
 !***********************************************************************
 endmodule Equ

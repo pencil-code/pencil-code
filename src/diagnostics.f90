@@ -3575,6 +3575,4 @@ module Diagnostics
 
     endsubroutine prep_finalize_thread_diagnos
 !***********************************************************************
-
-
 endmodule Diagnostics
