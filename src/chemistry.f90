@@ -235,7 +235,6 @@ module Chemistry
 !  Auxiliaries.
 !
   integer :: ireac=0
-  integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(nchemspec) :: ireaci=0
 !
   contains
@@ -251,6 +250,7 @@ module Chemistry
 !   5-mar-08/nils: Read thermodynamical data from chem.inp
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
       integer :: k, ichemspec_tmp
       character(len=fnlen) :: input_file
