@@ -77,8 +77,7 @@ module Timestep
 !      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
       do j=1,mvar
-        farraymin(j) = max(min(dxmin*maxval(abs(f(:,:,:,j))),1.),epsi)
-        if (farraymin(j)==0) farraymin(j) = 1
+        farraymin(j) = max(min(5e-3*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),1.),dt_epsi)
       enddo
       if (lroot.and.it==1) print*,"farraymin",farraymin
 !

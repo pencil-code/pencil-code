@@ -155,7 +155,7 @@ module Cdata
   real :: cdtsrc=0.2, cdtf=0.9
   real :: eps_rkf=1e-5, eps_stiff=1e-6
   real :: ddt=0.0
-  real :: dtmin=1.0e-6, dtmax=1.0e37
+  real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7
   real :: nu_sts=0.1
   real :: density_scale_factor=impossible
   integer :: permute_sts=0
@@ -802,8 +802,8 @@ module Cdata
 !
 !$ integer :: num_cores = 0
 !$ integer :: num_threads = 0
-!$ logical :: lthread_safe 
-! 
+!$ logical :: lthread_safe
+!
 ! threadprivate definitions for OpenMP, copyin routine.
 !
 !$ include 'cdata_omp.inc'
