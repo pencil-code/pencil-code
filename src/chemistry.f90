@@ -159,6 +159,10 @@ module Chemistry
   logical :: lcloud=.false.
   integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
 !
+!   Species constants
+!
+  real, dimension(nchemspec,18), target :: species_constants
+!
 !   Lewis coefficients
 !
  real, dimension(nchemspec) :: Lewis_coef, Lewis_coef1
@@ -315,6 +319,8 @@ module Chemistry
 !  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( "$Id$")
+!
+      call put_shared_variable('species_constants',species_constants,caller='register_chemistry')
 !
     endsubroutine register_chemistry
 !***********************************************************************

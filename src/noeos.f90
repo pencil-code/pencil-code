@@ -39,7 +39,6 @@ module EquationOfState
   real :: Cp_const=impossible
   real :: Pr_number=0.7
   logical :: lpres_grad=.false.
-  real, dimension(nchemspec,18):: species_constants
 
   contains
 !***********************************************************************
@@ -366,7 +365,7 @@ module EquationOfState
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
-    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
 !   02-apr-04/tony: dummy
 !
@@ -374,7 +373,7 @@ module EquationOfState
       real, intent(in) :: var1,var2
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
-      real, intent(out), optional :: ee,pp
+      real, intent(out), optional :: ee,pp,cs2
 !
       call not_implemented('eoscalc_point','for this EOS')
 !
@@ -390,13 +389,13 @@ module EquationOfState
 !
     endsubroutine eoscalc_point
 !***********************************************************************
-    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
       integer, intent(in) :: ivars
       real, dimension (nx), intent(in) :: var1,var2
       real, dimension (nx), intent(out), optional :: lnrho,ss
       real, dimension (nx), intent(out), optional :: yH,lnTT
-      real, dimension (nx), intent(out), optional :: ee,pp
+      real, dimension (nx), intent(out), optional :: ee,pp,cs2
 !
       call not_implemented('eoscalc_pencil','for this EOS')
 !
@@ -457,11 +456,10 @@ module EquationOfState
 !
     endsubroutine write_eos_run_pars
 !***********************************************************************
-    subroutine isothermal_entropy(f,T0)
+    subroutine isothermal_entropy(lnrho,T0,ss)
 !
 !  Isothermal stratification (for lnrho and ss)
 !  This routine should be independent of the gravity module used.
-!  When entropy is present, this module also initializes entropy.
 !
 !  Sound speed (and hence Temperature), is
 !  initialised to the reference value:
@@ -473,24 +471,18 @@ module EquationOfState
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
-      real, dimension (nx) :: lnrho,ss
-      real :: ss_offset=0.0
+      real, dimension(mx,my,mz) :: lnrho,ss
+      real :: ss_offset
 !
 !  if T0 is different from unity, we interpret
 !  ss_offset = ln(T0)/gamma as an additive offset of ss
 !
+      ss_offset=0.
       if (T0/=1.) ss_offset=alog(T0)/gamma
 !
-      do n=n1,n2
-      do m=m1,m2
-        lnrho=f(l1:l2,m,n,ilnrho)
-        ss=-gamma_m1*(lnrho-lnrho0)/gamma
+      ss=-gamma_m1*(lnrho-lnrho0)/gamma+ss_offset
           !+ other terms for sound speed not equal to cs_0
-        f(l1:l2,m,n,iss)=ss+ss_offset
-      enddo
-      enddo
 !
 !  cs2 values at top and bottom may be needed to boundary conditions.
 !  The values calculated here may be revised in the entropy module.
