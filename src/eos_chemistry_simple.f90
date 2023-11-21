@@ -190,6 +190,7 @@ module EquationOfState
 !   02-apr-06/tony: implemented
 !
       use FArrayManager
+      use General, only: itoa
 !
       character (len=*), intent(in) :: variable
       integer, intent(in) :: findex

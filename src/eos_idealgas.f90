@@ -1775,7 +1775,7 @@ module EquationOfState
         endif
         if (pretend_lnTT) then
           lnTT_=var2
-          ss_=cv*(lnTT_-lnTT0-gamma_m1*(lnrho_-lnrho0))
+          if (present(ss)) ss_=cv*(lnTT_-lnTT0-gamma_m1*(lnrho_-lnrho0))
         else
           ss_=var2
           lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
