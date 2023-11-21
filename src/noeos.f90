@@ -96,7 +96,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), optional :: f
       real, intent(out) :: mu
 !
-      call not_implmented('getmu','for this EOS')
+      call not_implemented('getmu','for this EOS')
 !
       mu=0.0
 !
