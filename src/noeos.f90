@@ -411,7 +411,7 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine get_soundspeed(TT,cs2)
+    elemental subroutine get_soundspeed(TT,cs2)
 !
 !  02-apr-04/tony: dummy
 !
