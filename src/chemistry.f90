@@ -145,7 +145,6 @@ module Chemistry
 !
   logical :: lcheminp=.false., lchem_cdtc=.false.
   logical :: lmobility=.false.
-  ! real, dimension(nchemspec,18) :: species_constants
   integer :: iTemp1=2, iTemp2=3, iTemp3=4
   integer, dimension(7) :: iaa1, iaa2
   real, allocatable, dimension(:) :: B_n, alpha_n, E_an
@@ -234,7 +233,6 @@ module Chemistry
   integer :: ireac=0
   integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
   integer, dimension(nchemspec) :: ireaci=0
-  real, dimension(nchemspec,18) :: species_constants
 !
   contains
 !
