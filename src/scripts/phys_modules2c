@@ -91,7 +91,7 @@ if [[ $1 == 'par' ]]; then
             t cont
             s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z]*\) *$/ config.\3_params[\uA\uC\l_\1]=\1; \/\/ [\2-1] \1 \3/w tmp1
             t cont
-            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ \/\/memcpy(config.real_arr_params[\uA\uC\l_\1],\1,\3*sizeof(real)); \/\/ [\2-1] \1 real(\3)/w tmp1
+            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ config.profiles[\uA\uC\l_\1]=\1; \/\/ [\2-1] \1 real(\3)/w tmp1
             t cont
             s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z]*\) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ \/\/memcpy(config.\3_arr_params[\uA\uC\l_\1],\1,\4*sizeof(\3));  \/\/ [\2-1] \1 \3(\4)/w tmp1
             : cont
@@ -143,7 +143,7 @@ if [ -f tmp1 ]; then
          H
          b end
          : dimen
-         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9]* *)\) *$/#define \2 ((\3 *) p_par_'$1'_'$modname'\1) \/\/ \4/
+         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9]* *)\) *$/#define \2 ((\3 *) '$1'_'$modname'\1) \/\/ \4/
          p
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_]*\)) *$/\2[\3] AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
          H
