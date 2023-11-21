@@ -28,7 +28,6 @@ module Chemistry
   include 'chemistry.h'
 !
   integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
-  real, dimension(nchemspec,18) :: species_constants,tran_data
 
   contains
 !***********************************************************************
