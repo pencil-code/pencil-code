@@ -54,8 +54,7 @@ module EquationOfState
   real :: gamma=5./3., gamma_m1,gamma1, nabla_ad
 !ajwm  can't use impossible else it breaks reading param.nml
   real :: cs2bot=1., cs2top=1.
-!
-  real, dimension(nchemspec,18) :: species_constants
+  integer :: imass=0
 !
   real :: Cp_const=impossible
   real :: Pr_number=0.7
@@ -322,26 +321,6 @@ module EquationOfState
 !!      endselect
 !
     endsubroutine select_eos_variable
-!*******************************************************************
-    subroutine rprint_eos(lreset,lwrite)
-!
-      logical :: lreset
-      logical, optional :: lwrite
-!
-      call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(present(lwrite))
-!
-    endsubroutine rprint_eos
-!***********************************************************************
-    subroutine get_slices_eos(f,slices)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
-!
-    endsubroutine get_slices_eos
 !***********************************************************************
     subroutine pencil_criteria_eos
 !
@@ -483,22 +462,6 @@ module EquationOfState
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
-    subroutine init_eos(f)
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call ioncalc(f)
-!
-    endsubroutine init_eos
-!***********************************************************************
-    subroutine ioncalc(f)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine ioncalc
-!***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
 !
       real, intent(in) :: EE,TT,yH
@@ -510,30 +473,6 @@ module EquationOfState
       rho=exp(max(lnrho,-15.))
 !
     endsubroutine getdensity
-!***********************************************************************
-  subroutine gettemperature(f,TT_tmp)
-!
-     real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (mx,my,mz), intent(out) :: TT_tmp
-!
-     call keep_compiler_quiet(f)
-     call keep_compiler_quiet(TT_tmp)
-!
-   endsubroutine gettemperature
-!***********************************************************************
-    subroutine getpressure(pp_tmp,TT_tmp,rho_tmp,mu1_tmp)
-!
-     real, dimension (nx), intent(out) :: pp_tmp
-     real, dimension (nx), intent(in)  :: TT_tmp,rho_tmp,mu1_tmp
-!
-     call fatal_error('getpressure','should not be called with eos_fixed_ionization')
-!
-     call keep_compiler_quiet(pp_tmp)
-     call keep_compiler_quiet(TT_tmp)
-     call keep_compiler_quiet(rho_tmp)
-     call keep_compiler_quiet(mu1_tmp)
-!
-    endsubroutine getpressure
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -610,24 +549,6 @@ module EquationOfState
       call keep_compiler_quiet(f)
 !
     endsubroutine temperature_gradient
-!***********************************************************************
-    subroutine temperature_laplacian(f,p)
-!
-!   Calculate thermodynamical quantities, cs2 and cp1tilde
-!   and optionally glnPP and glnTT
-!   gP/rho=cs2*(glnrho+cp1tilde*gss)
-!
-!   12-dec-05/tony: adapted from subroutine temperature_gradient
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      type (pencil_case) :: p
-!
-      call not_implemented('temperature_laplacian')
-!
-      p%del2lnTT=0.
-      call keep_compiler_quiet(f)
-!
-    endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
 !
@@ -869,21 +790,6 @@ module EquationOfState
       write(unit, NML=eos_run_pars)
 !
     endsubroutine write_eos_run_pars
-!***********************************************************************
-    subroutine get_soundspeed(TT,cs2)
-!
-!  Calculate sound speed for given temperature
-!
-!  20-Oct-03/tobi: coded
-!
-      real, intent(in)  :: TT
-      real, intent(out) :: cs2
-!
-      call fatal_error('get_soundspeed','with ionization, lnrho needs to be known here')
-!
-      call keep_compiler_quiet(TT,cs2)
-!
-    endsubroutine get_soundspeed
 !***********************************************************************
     subroutine isothermal_entropy(lnrho,T0,ss)
 !
@@ -1421,24 +1327,6 @@ module EquationOfState
 !
     endsubroutine bc_ism
 !***********************************************************************
-    subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
-!
-!  Get background stratification in z direction.
-!
-!  13-oct-14/ccyang: dummy
-!
-      real, dimension(:), intent(in) :: z
-      real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz, eth0z
-!
-      call not_implemented('get_stratz','stratification for eos_fixed_ionization')
-!
-      call keep_compiler_quiet(z)
-      if (present(rho0z)) call keep_compiler_quiet(rho0z)
-      if (present(dlnrho0dz)) call keep_compiler_quiet(dlnrho0dz)
-      if (present(eth0z)) call keep_compiler_quiet(eth0z)
-!
-    endsubroutine get_stratz
-!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
@@ -1449,5 +1337,15 @@ module EquationOfState
     call copy_addr(cs20,p_par(1))
 
     endsubroutine pushpars2c
+!***********************************************************************
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include 'eos_common.inc'
 !***********************************************************************
 endmodule EquationOfState

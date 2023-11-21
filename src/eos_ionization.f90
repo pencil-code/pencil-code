@@ -54,7 +54,7 @@ module EquationOfState
 ! run parameters
   namelist /eos_run_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 !
-  real, dimension(nchemspec,18) :: species_constants
+  integer :: imass=0
 !
   real :: Cp_const=impossible
   real :: Pr_number=0.7
@@ -176,7 +176,7 @@ module EquationOfState
       if (lpp_as_aux) call register_report_aux('pp',ipp)
       if (lcp_as_aux) call register_report_aux('cp',icp)
 !
-      call init_eos(f)
+      if (lrun) call init_eos(f)
 
       if (lroot.and.ip<14) then
         print*,'initialize_eos: reference values for ionization'
@@ -596,32 +596,6 @@ module EquationOfState
 !
     endsubroutine getdensity
 !***********************************************************************
-  subroutine gettemperature(f,TT_tmp)
-!
-     real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (mx,my,mz), intent(out) :: TT_tmp
-!
-     call not_implemented('gettemperature','in eos_ionization')
-!
-     call keep_compiler_quiet(f)
-     call keep_compiler_quiet(TT_tmp)
-!
-   endsubroutine gettemperature
-!***********************************************************************
-    subroutine getpressure(pp_tmp,TT_tmp,rho_tmp,mu1_tmp)
-!
-     real, dimension (nx), intent(out) :: pp_tmp
-     real, dimension (nx), intent(in)  :: TT_tmp,rho_tmp,mu1_tmp
-!
-     call not_implemented('getpressure','in eos_ionization')
-!
-     call keep_compiler_quiet(pp_tmp)
-     call keep_compiler_quiet(TT_tmp)
-     call keep_compiler_quiet(rho_tmp)
-     call keep_compiler_quiet(mu1_tmp)
-!
-    endsubroutine getpressure
-!***********************************************************************
     subroutine get_gamma_etc(gamma,cp,cv)
 !
       real, intent(OUT) :: gamma
@@ -741,24 +715,6 @@ module EquationOfState
       enddo
 !
     endsubroutine temperature_gradient
-!***********************************************************************
-    subroutine temperature_laplacian(f,p)
-!
-!   Calculate thermodynamical quantities, cs2 and cp1tilde
-!   and optionally glnPP and glnTT
-!   gP/rho=cs2*(glnrho+cp1tilde*gss)
-!
-!   12-dec-05/tony: adapted from subroutine temperature_gradient
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      type (pencil_case) :: p
-!
-      call not_implemented('temperature_laplacian','in eos_ionization')
-!
-      p%del2lnTT=0.0
-      call keep_compiler_quiet(f)
-!
-    endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
 !
@@ -1392,23 +1348,6 @@ module EquationOfState
 !
     endsubroutine saha
 !***********************************************************************
-    subroutine get_soundspeed(TT,cs2)
-!
-!  Calculate sound speed for given temperature
-!
-!  20-Oct-03/tobi: coded
-!
-      use Mpicomm
-!
-      real, intent(in)  :: TT
-      real, intent(out) :: cs2
-!
-      call stop_it("get_soundspeed: with ionization, lnrho needs to be known here")
-!
-      call keep_compiler_quiet(TT,cs2)
-!
-    endsubroutine get_soundspeed
-!***********************************************************************
     subroutine isothermal_entropy(lnrho_arr,T0,ss_arr)
 !
 !  Isothermal stratification (for lnrho and ss)
@@ -1456,33 +1395,6 @@ module EquationOfState
       enddo
 !
     endsubroutine isothermal_entropy
-!***********************************************************************
-    subroutine isothermal_lnrho_ss(lnrho,T0,rho0,ss)
-!
-      real, dimension (mx,my,mz), intent(out) :: lnrho,ss
-      real, intent(in) :: T0,rho0
-!
-      call fatal_error('isothermal_lnrho_ss','should not be called with eos_ionization')
-!
-      call keep_compiler_quiet(lnrho,ss)
-      call keep_compiler_quiet(T0)
-      call keep_compiler_quiet(rho0)
-!
-    endsubroutine isothermal_lnrho_ss
-!***********************************************************************
-     subroutine get_average_pressure(average_density,average_pressure)
-!
-!   01-dec-2009/piyali+dhruba: coded
-!
-      use Cdata
-!
-      real, intent(in):: average_density
-      real, intent(out):: average_pressure
-!
-      call keep_compiler_quiet(average_density)
-      call keep_compiler_quiet(average_pressure)
-!
-    endsubroutine get_average_pressure
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,lone_sided)
 !
@@ -2168,24 +2080,6 @@ module EquationOfState
 !
     endsubroutine bc_ism
 !***********************************************************************
-    subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
-!
-!  Get background stratification in z direction.
-!
-!  13-oct-14/ccyang: dummy
-!
-      real, dimension(:), intent(in) :: z
-      real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz, eth0z
-!
-      call not_implemented('get_stratz', 'for eos_ionization')
-!
-      call keep_compiler_quiet(z)
-      if (present(rho0z)) call keep_compiler_quiet(rho0z)
-      if (present(dlnrho0dz)) call keep_compiler_quiet(dlnrho0dz)
-      if (present(eth0z)) call keep_compiler_quiet(eth0z)
-!
-    endsubroutine get_stratz
-!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
@@ -2196,5 +2090,15 @@ module EquationOfState
     call copy_addr(cs20,p_par(1))
 
     endsubroutine pushpars2c
+!***********************************************************************
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include 'eos_common.inc'
 !***********************************************************************
 endmodule EquationOfState

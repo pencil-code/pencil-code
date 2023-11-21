@@ -59,11 +59,10 @@ module EquationOfState
   real, pointer :: meanfield_Beq, chit_quenching, uturb
   real, dimension(:), pointer :: B_ext
 !
-  real, dimension(nchemspec,18):: species_constants
-!
   real :: Cp_const=impossible
   real :: Pr_number=0.7
   logical :: lpres_grad=.false.
+  integer :: imass=0
 !
 !  Background stratification data
 !
@@ -1113,22 +1112,6 @@ module EquationOfState
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
-    subroutine init_eos(f)
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine init_eos
-!***********************************************************************
-    subroutine ioncalc(f)
-!
-    real, dimension(mx,my,mz,mfarray), intent(in) :: f
-!
-    call keep_compiler_quiet(f)
-!
-    endsubroutine ioncalc
-!***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
 !
       real, intent(in) :: EE,TT,yH
@@ -1138,30 +1121,6 @@ module EquationOfState
       call keep_compiler_quiet(yH)
 !
     endsubroutine getdensity
-!***********************************************************************
-  subroutine gettemperature(f,TT_tmp)
-!
-     real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (mx,my,mz), intent(out) :: TT_tmp
-!
-     call keep_compiler_quiet(f)
-     call keep_compiler_quiet(TT_tmp)
-!
-   endsubroutine gettemperature
-!***********************************************************************
-    subroutine getpressure(pp_tmp,TT_tmp,rho_tmp,mu1_tmp)
-!
-     real, dimension (nx), intent(out) :: pp_tmp
-     real, dimension (nx), intent(in)  :: TT_tmp,rho_tmp,mu1_tmp
-!
-     call fatal_error('getpressure','should not be called with eos_idealgas')
-!
-     call keep_compiler_quiet(pp_tmp)
-     call keep_compiler_quiet(TT_tmp)
-     call keep_compiler_quiet(rho_tmp)
-     call keep_compiler_quiet(mu1_tmp)
-!
-    endsubroutine getpressure
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)    !never called
 !
@@ -1993,22 +1952,6 @@ module EquationOfState
       cs2top=cs2bot
 !
     endsubroutine isothermal_entropy
-!***********************************************************************
-    subroutine isothermal_lnrho_ss(lnrho,T0,rho0,ss)
-!
-!  Isothermal stratification for lnrho and ss (for yH=0!)
-!
-!  Currently only implemented for ionization_fixed.
-!
-      real, dimension(mx,my,mz), intent(in) :: lnrho
-      real, dimension(mx,my,mz), intent(out) :: ss
-      real, intent(in) :: T0,rho0
-!
-      call keep_compiler_quiet(lnrho,ss)
-      call keep_compiler_quiet(T0)
-      call keep_compiler_quiet(rho0)
-!
-    endsubroutine isothermal_lnrho_ss
 !***********************************************************************
     subroutine get_average_pressure(init_average_density,average_density,average_pressure)
 !
@@ -4740,6 +4683,6 @@ module EquationOfState
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-!    include 'eos_common.inc'
+    include 'eos_common.inc'
 !***********************************************************************
 endmodule EquationOfState

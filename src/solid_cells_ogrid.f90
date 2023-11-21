@@ -514,7 +514,7 @@ module Solid_Cells
 !  Get thermal diffusivity from energy module
 !
       if (iTT .ne. 0) then
-        if (.not. lchemistry) call get_shared_variable('chi',chi)
+        if (.not. lchemistry) call get_shared_variable('chi',chi,caller='initialize_solid_cells')
         call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
         call get_shared_variable('ladvection_temperature',ladvection_temperature)
         call get_shared_variable('lupw_lnTT',lupw_lnTT)
@@ -525,7 +525,7 @@ module Solid_Cells
       endif
 !
       if (lchemistry) then
-        call get_shared_variable('lheatc_chemistry',lheatc_chemistry)
+        call get_shared_variable('lheatc_chemistry',lheatc_chemistry,caller='initialize_solid_cells')
         call get_shared_variable('lflame_front_2D',lflame_front_2D)
         call get_shared_variable('linterp_pressure',linterp_pressure)
         call initialize_chemistry_og(f_ogrid)
@@ -557,7 +557,7 @@ module Solid_Cells
       use Initcond, only: gaunoise
       use HDF5_IO,  only: wdim
       use Sub,      only: control_file_exists
-      use EquationOfState, only: imass, species_constants, lpres_grad
+      use EquationOfState, only: imass, lpres_grad
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz) :: mu1_full=0

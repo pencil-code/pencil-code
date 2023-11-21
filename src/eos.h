@@ -52,7 +52,7 @@
   public :: cs2top,cs2bot
 
 ! chemistry
-  public :: Pr_number, cp_const, lpres_grad, species_constants
+  public :: Pr_number, cp_const, lpres_grad, imass
 !  public :: B_n, alpha_n, E_an, low_coeff,high_coeff,troe_coeff,a_k4
 !  public :: Mplus_case, tran_data
 !

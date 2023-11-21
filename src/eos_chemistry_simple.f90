@@ -59,7 +59,7 @@ module EquationOfState
   logical :: lpres_grad = .false.
   logical :: linterp_pressure=.false. !This is only used when ogrid to interpolate pressure instead of temperature
 !
- real, dimension(nchemspec,18) :: species_constants
+ real, dimension(:,:), pointer :: species_constants
 !
   namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, Cp_const, lpres_grad, linterp_pressure, scale_Rgas
 !
@@ -140,6 +140,8 @@ module EquationOfState
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
+      use SharedVariables, only: get_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
 
       ieosvars=-1
@@ -181,6 +183,8 @@ module EquationOfState
         nn1=1;  nn2=mz
       endif
 !
+      call get_shared_variable('species_constants',species_constants,caller='initialize_eos')
+!
     endsubroutine initialize_eos
 !***********************************************************************
     subroutine select_eos_variable(variable,findex)
@@ -213,33 +217,33 @@ module EquationOfState
 !
 !      select case (variable)
       if (variable=='ss') then
-          this_var=ieosvar_ss
-          if (findex<0) leos_isentropic=.true.
+        this_var=ieosvar_ss
+        if (findex<0) leos_isentropic=.true.
       elseif (variable=='cs2') then
-          this_var=ieosvar_cs2
-          if (findex==-2) then
-            leos_localisothermal=.true.
+        this_var=ieosvar_cs2
+        if (findex==-2) then
+          leos_localisothermal=.true.
 !
-            call farray_register_global('cs2',iglobal_cs2)
-            call farray_register_global('glnTT',iglobal_glnTT,vector=3)
+          call farray_register_global('cs2',iglobal_cs2)
+          call farray_register_global('glnTT',iglobal_glnTT,vector=3)
 !
-          elseif (findex<0) then
-            leos_isothermal=.true.
-          endif
+        elseif (findex<0) then
+          leos_isothermal=.true.
+        endif
       elseif (variable=='lnTT') then
-          this_var=ieosvar_lnTT
-          if (findex<0) leos_isothermal=.true.
+        this_var=ieosvar_lnTT
+        if (findex<0) leos_isothermal=.true.
       elseif (variable=='TT') then
-          this_var=ieosvar_TT
+        this_var=ieosvar_TT
       elseif (variable=='lnrho') then
-          this_var=ieosvar_lnrho
-          if (findex<0) leos_isochoric=.true.
+        this_var=ieosvar_lnrho
+        if (findex<0) leos_isochoric=.true.
       elseif (variable=='rho') then
-          this_var=ieosvar_rho
-          if (findex<0) leos_isochoric=.true.
+        this_var=ieosvar_rho
+        if (findex<0) leos_isochoric=.true.
       elseif (variable=='pp') then
-          this_var=ieosvar_pp
-          if (findex<0) leos_isobaric=.true.
+        this_var=ieosvar_pp
+        if (findex<0) leos_isobaric=.true.
       else
         call fatal_error("select_eos_variable","no such thermodynamic variable: "//trim(variable))
       endif
@@ -640,257 +644,17 @@ module EquationOfState
 !***********************************************************************
 !**************ONLY DUMMY ROUTINES BELOW********************************
 !***********************************************************************
-    subroutine init_eos(f)
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine init_eos
-!***********************************************************************
-    subroutine ioncalc(f)
-!
-!   calculate degree of ionization and temperature
-!   This routine is called from equ.f90 and operates on the full 3-D array.
-!
-!   13-jun-03/tobi: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine ioncalc
-!***********************************************************************
-    subroutine pressure_gradient_farray(f,cs2,cp1tilde)
-!
-!   Calculate thermodynamical quantities, cs2 and cp1tilde
-!   and optionally glnPP and glnTT
-!   gP/rho=cs2*(glnrho+cp1tilde*gss)
-!
-!   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: cs2
-      real, dimension(nx), intent(out), optional :: cp1tilde
-!
-      call not_implemented("pressure_gradient_farray","in eos_chemistry_simple")
-      cs2=impossible
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine pressure_gradient_farray
-!***********************************************************************
-    subroutine pressure_gradient_point(lnrho,ss,cs2,cp1tilde)
-!
-!   Calculate thermodynamical quantities, cs2 and cp1tilde
-!   and optionally glnPP and glnTT
-!   gP/rho=cs2*(glnrho+cp1tilde*gss)
-!
-!   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-!
-      real, intent(in) :: lnrho,ss
-      real, intent(out) :: cs2,cp1tilde
-!
-      call not_implemented("pressure_gradient_point","in eos_chemistry_simple")
-!
-      call keep_compiler_quiet(cs2,cp1tilde,ss,lnrho)
-!
-    endsubroutine pressure_gradient_point
-!***********************************************************************
-    subroutine temperature_gradient(f,glnrho,gss,glnTT)
-!
-!   Calculate thermodynamical quantities
-!   and optionally glnPP and glnTT
-!   gP/rho=cs2*(glnrho+cp1*gss)
-!
-!   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx,3), intent(in) :: glnrho,gss
-      real, dimension(nx,3), intent(out) :: glnTT
-!
-      call not_implemented("temperature_gradient","in eos_chemistry_simple")
-!
-!  given that we just stopped, it cannot become worse by setting
-!  cp1tilde to impossible, which allows the compiler to compile.
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(glnrho,gss,glnTT)
-!
-    endsubroutine temperature_gradient
-!***********************************************************************
-    subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
-!
-!   Calculate thermodynamical quantities
-!   and optionally glnPP and glnTT
-!   gP/rho=cs2*(glnrho+cp1*gss)
-!
-!   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(in) :: del2lnrho,del2ss
-      real, dimension(nx), intent(out) :: del2lnTT
-!
-      call not_implemented("temperature_laplacian","in eos_chemistry_simple")
-!
-     call keep_compiler_quiet(f)
-     call keep_compiler_quiet(del2lnrho,del2ss,del2lnTT)
-!
-    endsubroutine temperature_laplacian
-!***********************************************************************
-    subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
-!
-!   Calculate thermodynamical quantities, cs2 and cp1
-!   and optionally hlnPP and hlnTT
-!   hP/rho=cs2*(hlnrho+cp1*hss)
-!
-!   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx,3,3), intent(in) :: hlnrho,hss
-      real, dimension(nx,3,3), intent(out) :: hlnTT
-!
-      call not_implemented("temperature_hessian","in eos_chemistry_simple")
-!
-      hlnTT(:,:,:)=0
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(hss)
-      call keep_compiler_quiet(hlnrho)
-!
-    endsubroutine temperature_hessian
-!***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
-!
-!   dummy routine to calculate thermodynamical quantities
-!   copied from eo_idealgas
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: psize
-      real, dimension(psize), optional :: lnrho,lnTT
-      real, dimension(psize), optional :: yH,ee,pp,cs2,kapparho
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(present(lnrho),present(lnTT))
-      call keep_compiler_quiet(present(yH),present(ee))
-      call keep_compiler_quiet(present(pp),present(kapparho))
-      call keep_compiler_quiet(present(cs2))
-!
-      call not_implemented("eoscalc_farray","in eos_chemistry_simple")
-!
-    endsubroutine eoscalc_farray
-!***********************************************************************
-    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
-!
-!   Calculate thermodynamical quantities
-!
-!   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
-!
-      integer, intent(in) :: ivars
-      real, intent(in) :: var1,var2
-      real, optional :: lnrho,ss
-      real, optional :: yH,lnTT
-      real, optional :: ee,pp,cs2
-!
-      call not_implemented("eoscalc_point","in eos_chemistry_simple")
-!
-      call keep_compiler_quiet(present(lnrho),present(lnTT))
-      call keep_compiler_quiet(present(pp),present(ee))
-      call keep_compiler_quiet(present(yH))
-      call keep_compiler_quiet(present(ss),present(cs2))
-      call keep_compiler_quiet(ivars)
-      call keep_compiler_quiet(var1,var2)
-!
-    endsubroutine eoscalc_point
-!***********************************************************************
-    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
-!
-!   Calculate thermodynamical quantities
-!
-!   2-feb-03/axel: simple example coded
-!   13-jun-03/tobi: the ionization fraction as part of the f-array
-!                   now needs to be given as an argument as input
-!   17-nov-03/tobi: moved calculation of cs2 and cp1 to
-!                   subroutine pressure_gradient
-!   27-mar-06/tony: Introduces cv, cv1, gamma1 to make faster
-!                   + more explicit
-!   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1.
-!                   is just fine.
-!   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
-!
-      integer, intent(in) :: ivars
-      real, dimension(nx), intent(in) :: var1,var2
-      real, dimension(nx), optional :: lnrho,ss
-      real, dimension(nx), optional :: yH,lnTT
-      real, dimension(nx), optional :: ee,pp,cs2
-!
-      call not_implemented("eoscalc_pencil","in eos_chemistry_simple")
-!
-      call keep_compiler_quiet(present(lnrho),present(lnTT))
-      call keep_compiler_quiet(present(pp),present(ee))
-      call keep_compiler_quiet(present(yH))
-      call keep_compiler_quiet(present(ss),present(cs2))
-      call keep_compiler_quiet(ivars)
-      call keep_compiler_quiet(var1,var2)
-!
-    endsubroutine eoscalc_pencil
-!***********************************************************************
-    subroutine get_soundspeed(TT,cs2)
-!
-!  Calculate sound speed for given temperature
-!
-!  20-Oct-03/tobi: Coded
-!
-      real, intent(in)  :: TT
-      real, intent(out) :: cs2
-!
-      cs2=impossible
-      call not_implemented("get_soundspeed","in eos_chemistry_simple")
-!
-      call keep_compiler_quiet(TT)
-!
-    endsubroutine get_soundspeed
-!***********************************************************************
     subroutine isothermal_entropy(lnrho,T0,ss)
 !
-!  Isothermal stratification (for lnrho and ss)
-!  This routine should be independent of the gravity module used.
-!  When entropy is present, this module also initializes entropy.
-!
-!  Sound speed (and hence Temperature), is
-!  initialised to the reference value:
-!           sound speed: cs^2_0            from start.in
-!           density: rho0 = exp(lnrho0)
-!
-!  11-jun-03/tony: extracted from isothermal routine in Density module
-!                  to allow isothermal condition for arbitrary density
-!  17-oct-03/nils: works also with leos_ionization=T
-!  18-oct-03/tobi: distributed across ionization modules
-!
-      real, dimension (mx,my,mz), intent(out) :: lnrho,ss
       real, intent(in) :: T0
-!
-      cs2top=cs2bot
+      real, dimension(mx,my,mz) :: lnrho,ss
+
       call not_implemented("isothermal_entropy","in eos_chemistry_simple")
-!
+
       call keep_compiler_quiet(T0)
       call keep_compiler_quiet(lnrho,ss)
-!
+
     endsubroutine isothermal_entropy
-!***********************************************************************
-    subroutine isothermal_lnrho_ss(lnrho,T0,rho0,ss)
-!
-      real, dimension (mx,my,mz), intent(out) :: lnrho,ss
-      real, intent(in) :: T0,rho0
-!
-      call fatal_error('isothermal_lnrho_ss','should not be called with eos_chemistry_simple')
-!
-      call keep_compiler_quiet(lnrho,ss)
-      call keep_compiler_quiet(T0)
-      call keep_compiler_quiet(rho0)
-!
-    endsubroutine isothermal_lnrho_ss
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,lone_sided)
 !
@@ -1345,67 +1109,6 @@ module EquationOfState
 !
     endsubroutine bc_ism
 !***********************************************************************
-    subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
-!
-!  Get background stratification in z direction.
-!
-!  13-oct-14/ccyang: dummy
-!
-      real, dimension(:), intent(in) :: z
-      real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz, eth0z
-!
-      call not_implemented('get_stratz', 'stratification for eos_chemistry_simple')
-!
-      call keep_compiler_quiet(z)
-      if (present(rho0z)) call keep_compiler_quiet(rho0z)
-      if (present(dlnrho0dz)) call keep_compiler_quiet(dlnrho0dz)
-      if (present(eth0z)) call keep_compiler_quiet(eth0z)
-!
-    endsubroutine get_stratz
-!***********************************************************************
-   subroutine getdensity(f,EE,TT,yH,rho_full)
-!
-     real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (mx,my,mz), intent(out) :: rho_full
-     real, intent(in), optional :: EE,TT,yH
-!
-      call keep_compiler_quiet(yH,EE,TT)
-      call keep_compiler_quiet(rho_full)
-      call keep_compiler_quiet(f)
-!
-   endsubroutine getdensity
-!***********************************************************************
-   subroutine gettemperature(f,TT_full)
-!
-     real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (mx,my,mz), intent(out) :: TT_full
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(TT_full)
-!
-   endsubroutine gettemperature
-!***********************************************************************
-  subroutine getpressure(pp,TT,rho,mu1)
-!
-     real, dimension (nx), intent(out) :: pp
-     real, dimension (nx), intent(in) :: TT, rho, mu1
-!
-      call keep_compiler_quiet(rho,mu1,TT)
-      call keep_compiler_quiet(pp)
-!
-   endsubroutine getpressure
-!***********************************************************************
-     subroutine get_average_pressure(average_density,average_pressure)
-!
-!   01-dec-2009/piyali+dhrube: coded
-!
-      real, intent(in):: average_density
-      real, intent(out):: average_pressure
-      call keep_compiler_quiet(average_density)
-      call keep_compiler_quiet(average_pressure)
-
-    endsubroutine get_average_pressure
-!***********************************************************************
     subroutine get_gamma_etc(gamma,cp,cv)
 !
       real, intent(OUT) :: gamma
@@ -1427,5 +1130,15 @@ module EquationOfState
     call keep_compiler_quiet(p_par)
 
     endsubroutine pushpars2c
+!***********************************************************************
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include 'eos_common.inc'
 !***********************************************************************
 endmodule EquationOfState

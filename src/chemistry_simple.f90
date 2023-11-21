@@ -124,6 +124,10 @@ module Chemistry
   logical :: lback=.true.
   real :: scale_homo = 0.
 !
+!   Species constants
+!
+  real, dimension(nchemspec,18), target :: species_constants
+!
 !   Lewis coefficients
 !
  real, dimension(nchemspec) :: Lewis_coef=1., Lewis_coef1=1.
@@ -278,6 +282,7 @@ module Chemistry
       else
         call read_thermodyn_simple
       endif
+      call put_shared_variable('species_constants',species_constants,caller='register_chemistry')
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -287,7 +292,7 @@ module Chemistry
 !
       if (lsolid_cells) then
 !
-        call put_shared_variable('lheatc_chemistry',lheatc_chemistry,caller='register_chemistry')
+        call put_shared_variable('lheatc_chemistry',lheatc_chemistry)
         call put_shared_variable('ldiffusion',ldiffusion)
         call put_shared_variable('ldiff_corr',ldiff_corr)
         call put_shared_variable('lew_exist',lew_exist)
@@ -305,7 +310,6 @@ module Chemistry
         call put_shared_variable('iaa1',iaa1)
         call put_shared_variable('iaa2',iaa2)
         call put_shared_variable('lmech_simple',lmech_simple)
-        call put_shared_variable('species_constants',species_constants)
         call put_shared_variable('imass',imass)
         call put_shared_variable('lflame_front_2D',lflame_front_2D)
         call put_shared_variable('p_init',p_init)
@@ -1063,11 +1067,6 @@ module Chemistry
         enddo
       endif
 !
-      if (unit_system == 'cgs') then
-        Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy*scale_Rgas
-      endif
-!
 !  Find logaritm of density at inlet
 !
       initial_mu1 = initial_massfractions(ichem_O2)/(mO2) &
@@ -1250,11 +1249,6 @@ module Chemistry
             if (lH2O) f(:,k,:,i_H2O) = final_massfrac_H2O
           endif
         enddo
-!
-      if (unit_system == 'cgs') then
-        Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy*scale_Rgas
-      endif
 !
 !  Find logaritm of density at inlet
 !

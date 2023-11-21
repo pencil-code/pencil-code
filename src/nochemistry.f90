@@ -27,11 +27,11 @@ module Chemistry
 !
   include 'chemistry.h'
 !
-  integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
+  real, dimension(0,0) :: species_constants
 
   contains
 !***********************************************************************
-    subroutine register_chemistry()
+    subroutine register_chemistry
 !
     endsubroutine register_chemistry
 !***********************************************************************
@@ -51,7 +51,7 @@ module Chemistry
 !
     endsubroutine init_chemistry
 !***********************************************************************
-    subroutine pencil_criteria_chemistry()
+    subroutine pencil_criteria_chemistry
 !
     endsubroutine pencil_criteria_chemistry
 !***********************************************************************
@@ -140,7 +140,7 @@ module Chemistry
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
-    subroutine chemistry_clean_up()
+    subroutine chemistry_clean_up
 !
     endsubroutine chemistry_clean_up
 !***********************************************************************
