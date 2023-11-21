@@ -4,17 +4,16 @@
 !
 &run_pars
   cvsid="fe0309a94"
-  !nt=25000, it1=50, isave=1000, it1d=2000, itorder=5, tmax=0.05, dtmin=1e-15
-  nt=5, it1=1, isave=1000, it1d=5000, itorder=5, tmax=0.5, dtmin=1e-15
-  eps_rkf = 1e-5, timestep_scaling='cons_err', dt=1e-6
-  cdt=0.1, cdtv=0.1, cdts=0.1, cdtf=0.1
-  dsnap=.0005, dvid=.00025, slice_position='m'
-  !for magnetic take at least 20 snapshots up to first Myr fluctuation dynamo?
-  !dsnap=2., dvid=2., slice_position='m'
+  !nt=250000, it1=250, isave=5000, it1d=2500, itorder=3, tmax=0.05, dtmin=1e-10
+  nt=5, it1=1, isave=1000, it1d=5000, itorder=3, tmax=0.005, dtmin=1e-10
+  dt=1e-8
+  eps_rkf = 1e-2
+  timestep_scaling="cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err"
+  dsnap=.001, dvid=.00025, slice_position='m'
   bcz = 's','s','ubs','ism','ism','s','s','a','cop'
   ip=1963
-  lpencil_check=F
-  lpencil_check_small=F
+  lpencil_check=T
+  lpencil_check_small=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
@@ -23,32 +22,34 @@
   Omega=25.0
 /
 &viscosity_run_pars
-  ivisc='nu-shock', 'nu-const', 'hyper3-nu-const'
-  nu_shock=5.0
-  nu=4e-3
-  nu_hyper3=5e-11 !~dx^5*umax
+  ivisc='nu-shock','hyper3-nu-const','nu-const'
+  nu_shock=2., nu_hyper3=5e-12, nu=4e-3
 /
 &density_run_pars
-  idiff='shock'
-  diffrho_shock=2.0
+  diffrho_shock=1.
+  lmassdiff_fix=T
+  idiff='shock','hyper3'
+  diffrho_hyper3=5e-12
+  total_mass=0.1432
+  lconserve_total_mass=T
+  density_floor=1e-7
 /
 &grav_run_pars
 /
 &entropy_run_pars
   iheatcond='shock','hyper3'
-  chi_hyper3=5e-11
-  chi_shock=2.0
+  chi_shock=1.
+  chi_hyper3=5e-12
 /
 &magnetic_run_pars
-  iresistivity='eta-const','hyper3'
-  eta_hyper3=5e-11
-  eta=8e-4
+  iresistivity='hyper3','eta-const'
+  eta_hyper3=5e-12,eta=8e-4
 /
 &interstellar_run_pars
 !! adjust SN radius above rfactor_SN for diffuse ISM
   lSN_scale_rad=T
-  N_mass=100.0
-  rfactor_SN=5.0
+  N_mass=60.0
+  rfactor_SN=2.5
 !! override persistent variables read in from varfile
 !  lSNII=T, l_persist_overwrite_lSNII=T
 !  lSNI=T, l_persist_overwrite_lSNI=T
@@ -62,6 +63,10 @@
   qshear = 1.0
 /
 &shock_run_pars
-  ishock_max=2
+  lmax_shock=F
   lgaussian_smooth=T
+  lconvergence_only=F
+  shock_div_pow=3.0
+  dtfactor=2e-3
+  con_bias=0.25
 /
