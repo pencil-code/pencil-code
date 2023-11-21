@@ -6,8 +6,8 @@
   cvsid="fe0309a94"
   !nt=250000, it1=250, isave=5000, it1d=2500, itorder=3, tmax=0.05, dtmin=1e-10
   nt=5, it1=1, isave=1000, it1d=5000, itorder=3, tmax=0.005, dtmin=1e-10
-  dt=1e-8
-  eps_rkf = 1e-2
+  dt=1e-7, dt_epsi=1e-5
+  eps_rkf = 0.01
   timestep_scaling="cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err"
   dsnap=.001, dvid=.00025, slice_position='m'
   bcz = 's','s','ubs','ism','ism','s','s','a','cop'
@@ -30,7 +30,7 @@
   lmassdiff_fix=T
   idiff='shock','hyper3'
   diffrho_hyper3=5e-12
-  total_mass=0.1432
+  total_mass=1.1134865e-3
   lconserve_total_mass=T
   density_floor=1e-7
 /
