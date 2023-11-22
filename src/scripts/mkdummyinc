@@ -102,7 +102,7 @@ sub find_implemented_routines {
     while( my $line = <SRC> ) {
           chop($line);
           my $lout = $line;
-          if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i || $line =~ /^\s*integer\s*function/i ) {
+          if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i || $line =~ /^\s*integer\s*function/i || $line =~ /^\s*elemental/i ) {
               my $subname;
               my @words = split " ", $line;
               if( $words[1] =~ /^\s*function/i ) {
@@ -163,7 +163,7 @@ sub write_dummies {
 # line and 'subroutine'" 
 #
           if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i ||
-                   $line =~ /^\s*integer\s*function/i ) {
+               $line =~ /^\s*integer\s*function/i || $line =~ /^\s*elemental/i ) {
 #
 # Define subname
 #
