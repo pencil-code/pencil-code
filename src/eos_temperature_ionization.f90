@@ -187,7 +187,7 @@ module EquationOfState
       if (lgamma_as_aux) call register_report_aux('gamma',igamma)
       if (lnabad_as_aux) call register_report_aux('nabad',inabad)
 !
-      call ioncalc(f)
+      if (lrun) call ioncalc(f)
 !
 !  write scale non-free constants to file; to be read by idl
 !

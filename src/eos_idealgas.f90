@@ -1693,7 +1693,9 @@ module EquationOfState
 !***********************************************************************
     subroutine eoscalc_pencil(ivars,var1,var2,iz,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
-!   Calculate thermodynamical quantities
+!   Calculate thermodynamical quantities. Convention for entropy:
+!   If pretend_lnTT=T and ivars = ..._ss, input in var2 is supposed to be lnTT,
+!   output in ss is always (true) entropy. Otherwise, var2 is supposesd to be (true) entropy.
 !
 !   2-feb-03/axel: simple example coded
 !   13-jun-03/tobi: the ionization fraction as part of the f-array
