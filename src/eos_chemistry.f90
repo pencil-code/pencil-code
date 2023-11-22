@@ -62,7 +62,7 @@ module EquationOfState
 !NILS: Why do we spend a lot of memory allocating these variables here????
 !MR: Is now allocated only once.
  real, dimension(mx,my,mz), target :: mu1_full
- integer :: imass=0
+ integer :: imass=1
 !
   namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, lpp_as_aux
 !
