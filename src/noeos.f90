@@ -418,10 +418,6 @@ module EquationOfState
       real, intent(in)  :: TT
       real, intent(out) :: cs2
 !
-      call not_implemented('get_soundspeed','for this EOS')
-      cs2=0.0
-      call keep_compiler_quiet(TT)
-!
     endsubroutine get_soundspeed
 !***********************************************************************
     subroutine read_eos_init_pars(iostat)
