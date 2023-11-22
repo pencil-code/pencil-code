@@ -305,21 +305,17 @@ module EquationOfState
 !
     endsubroutine temperature_gradient
 !***********************************************************************
-    subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
+    subroutine temperature_laplacian(f,p)
 !
 !   12-dec-05/tony: dummy
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (nx), intent(in) :: del2lnrho,del2ss
-      real, dimension (nx), intent(out) :: del2lnTT
+      type (pencil_case),                intent(OUT)  :: p
 !
       call not_implemented('temperature_laplacian','for this EOS')
 !
-      del2lnTT=0.0
-!
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(del2lnrho)
-      call keep_compiler_quiet(del2ss)
+      call keep_compiler_quiet(p)
 !
     endsubroutine temperature_laplacian
 !***********************************************************************
