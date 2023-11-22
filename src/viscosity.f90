@@ -144,8 +144,8 @@ module Viscosity
 !
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
-  integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration
-  integer :: idiag_fviscmax=0   ! DIAG_DOC: Max value of viscous acceleration
+  integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration (deprecated)
+  integer :: idiag_fviscmax=0   ! DIAG_DOC: Max absolute viscous acceleration
   integer :: idiag_fviscrmsx=0  ! DIAG_DOC: Rms value of viscous acceleration
                                 ! DIAG_DOC: for the vis_xaver_range
   integer :: idiag_num=0        ! DIAG_DOC: Mean value of viscosity
@@ -1189,6 +1189,13 @@ module Viscosity
         lpenc_requested(i_del2u)=.true.
         lpenc_requested(i_d2uidxj)=.true.
       endif
+!
+!  fviscmax has been revised to show absolute maximum rather than component
+!  maximum and largest component negative no longer computed. Sign of the
+!  maximum force is arbitrary.
+!
+      if (idiag_fviscmin/=0) call warning("pencil_criteria_viscosity",&
+          "fviscmin deprecated equivalent to fviscmax (absolute)")
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
@@ -2596,8 +2603,8 @@ module Viscosity
                                                p%uu(:,2)*p%fvisc(:,2)+ &
                                                p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
 
-        if (idiag_fviscmin/=0) call max_mn_name(-fvisc2,idiag_fviscmin,lneg=.true.,lsqrt=.true.)
-        call max_mn_name(fvisc2,idiag_fviscmax,lsqrt=.true.)
+        if (idiag_fviscmin/=0) call max_mn_name(fvisc2,idiag_fviscmin,lsqrt=.true.)
+        if (idiag_fviscmax/=0) call max_mn_name(fvisc2,idiag_fviscmax,lsqrt=.true.)
 
         if (idiag_fviscrmsx/=0) call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
         call sum_mn_name(p%visc_heat,idiag_visc_heatm)

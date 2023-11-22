@@ -754,7 +754,7 @@ module Interstellar
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
         print*,'initialize_interstellar: finished'
       endif
-      if (ladd_massflux) call warning('initialize_interstellar','ladd_massflux now depricated,' // &
+      if (ladd_massflux) call warning('initialize_interstellar','ladd_massflux now deprecated,' // &
                                       'set lconserve_total_mass, total_mass in density_run_pars instead')
 !
 !  Fred: 06-Nov-17 added SN_rate column and changed site_mass to site_Nsol
