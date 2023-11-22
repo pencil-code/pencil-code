@@ -144,7 +144,7 @@ module Viscosity
 !
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
-  integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration (deprecated)
+  integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration (redundant)
   integer :: idiag_fviscmax=0   ! DIAG_DOC: Max absolute viscous acceleration
   integer :: idiag_fviscrmsx=0  ! DIAG_DOC: Rms value of viscous acceleration
                                 ! DIAG_DOC: for the vis_xaver_range
@@ -1195,7 +1195,7 @@ module Viscosity
 !  maximum force is arbitrary.
 !
       if (idiag_fviscmin/=0) call warning("pencil_criteria_viscosity",&
-          "fviscmin deprecated equivalent to fviscmax (absolute)")
+          "fviscmin redundant equivalent to fviscmax (absolute)")
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
