@@ -113,7 +113,7 @@ class Dim(object):
                 self.mvar = np.array(tmp["settings"]["mvar"]).item()
                 self.maux = np.array(tmp["settings"]["maux"]).item()
                 self.mglobal = np.array(tmp["settings"]["mglobal"])
-                self.precision = np.array(tmp["settings"]["precision"]).item()
+                self.precision = np.array(tmp["settings"]["precision"]).item().decode()
                 self.nghostx = np.array(tmp["settings"]["nghost"]).item()
                 self.nghosty = np.array(tmp["settings"]["nghost"]).item()
                 self.nghostz = np.array(tmp["settings"]["nghost"]).item()
