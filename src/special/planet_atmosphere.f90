@@ -32,6 +32,7 @@ module Special
   real, dimension(mx,my,mz) :: rr1,siny,cosy  !  1/r,sin(th) and cos(th)
   real, dimension(mx,my,mz,3) :: Bext=0.  !  time-dependent external field
 !  constants for unit conversion
+  real :: gamma=1.
   real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
   real :: pp2Pa=1., TT2K=1., tt2s=1., g2m3_s2=1.
 !
@@ -144,7 +145,7 @@ module Special
           do i=1,(ipx+1)*nx
             do isub=1,nsub  !  use small length step, dx/nsub
               call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
-              rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref/3.5) / rho2kg_m3  !  in code unit
+              rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref*(gamma-1.)/gamma) / rho2kg_m3  !  in code unit
               dp = -rhoeq_tmp * g0/xglobal(i+nghost)**2 * dx/nsub * pp2Pa  ! in [Pa]
               p_tmp = p_tmp+dp
               if (p_tmp<0.) call fatal_error('init_special', &
@@ -288,7 +289,7 @@ module Special
 !
       use EquationOfState, only: rho0,cs0,get_gamma_etc
 !
-      real :: gamma,cp
+      real :: cp
 !
       if (unit_system/='SI') call fatal_error('prepare_unit_conversion','please use SI system')
 !
@@ -305,8 +306,8 @@ module Special
       g2m3_s2 = r2m * u2m_s**2.      !  GM to [m3/s2]
 !
       if (lroot) then
-        print*,'Constants for uit conversion: r2m,rho2kg_m3,u2m_s,cp2si = ', &
-                r2m,rho2kg_m3,u2m_s,cp2si
+        print*,'Constants for uit conversion: gamma,r2m,rho2kg_m3,u2m_s,cp2si = ', &
+                gamma,r2m,rho2kg_m3,u2m_s,cp2si
         print*,'Constants for uit conversion: pp2Pa,TT2K,tt2s, g2m3_s2 = ', &
                 pp2Pa,TT2K,tt2s,g2m3_s2
       endif
