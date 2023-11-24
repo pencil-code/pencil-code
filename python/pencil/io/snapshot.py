@@ -355,7 +355,7 @@ def write_h5_snapshot(
         dim = read.dim(datadir=sim_datadir)
         for key in skeys:
             settings[key] = dim.__getattribute__(key)
-        settings["precision"] = precision.encode()
+        settings["precision"] = precision.upper().encode() #Uppercase to be consistent with the convention used in snapshots written by io_hdf5.f90
         settings["nghost"] = nghost
         settings["version"] = np.int32(0)
     nprocs = settings["nprocx"] * settings["nprocy"] * settings["nprocz"]
