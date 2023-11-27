@@ -54,7 +54,7 @@ module EquationOfState
   real :: gamma=5./3., gamma_m1,gamma1, nabla_ad
 !ajwm  can't use impossible else it breaks reading param.nml
   real :: cs2bot=1., cs2top=1.
-  integer :: imass=0
+  integer :: imass=0, ivars_mod
 !
   real :: Cp_const=impossible
   real :: Pr_number=0.7
@@ -67,16 +67,13 @@ module EquationOfState
 !  14-jun-03/axel: adapted from register_ionization
 !
       use SharedVariables, only: put_shared_variable
-      use Sub
 !
       leos_fixed_ionization=.true.
 !
       iyH = 0
       ilnTT = 0
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_eos: ionization nvar = ', nvar
-      endif
+      if ((ip<=8) .and. lroot) print*, 'register_eos: ionization nvar = ', nvar
 !
 !  identify version number
 !
@@ -106,8 +103,7 @@ module EquationOfState
 !
 ! Complain if xH2 not between 0 and 0.5
 !
-      if (xH2 < 0. .or. xH2 > 0.5) &
-          call fatal_error('get_mu','xH2 must be <= 0.5 and >= 0.0')
+      if (xH2 < 0. .or. xH2 > 0.5) call fatal_error('get_mu','xH2 must be <= 0.5 and >= 0.0')
 !
       call keep_compiler_quiet(present(f))
 !
@@ -128,18 +124,19 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      integer :: ierr
       real :: mu1yHxHe
-!
-!  ionization parameters
-!  since m_e and chiH, as well as hbar are all very small
-!  it is better to divide m_e and chiH separately by hbar.
 !
       if (pretend_lnTT) then
         call warning('initialize_eos','pretend_lnTT is not used with ionization')
         pretend_lnTT=.false.
       endif
-      if (headtt) print*,'initialize_eos: assume cp is not 1, yH0=',yH0
+!
+!  ionization parameters
+!  since m_e and chiH, as well as hbar are all very small
+!  it is better to divide m_e and chiH separately by hbar.
+!
+      if (lroot) print*,'initialize_eos: assume cp is not 1, yH0=',yH0
+
       Rgas=k_B/m_p
       mu1yHxHe=1.+3.97153*xHe
       TT_ion=chiH/k_B
@@ -197,8 +194,7 @@ module EquationOfState
 
       if (lroot) then
         print*,'initialize_eos: reference values for ionization'
-        print*,'initialize_eos: TT_ion,ss_ion,kappa0=', &
-                TT_ion,ss_ion,kappa0
+        print*,'initialize_eos: TT_ion,ss_ion,kappa0=',TT_ion,ss_ion,kappa0
         print*,'initialize_eos: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
@@ -227,8 +223,6 @@ module EquationOfState
     endsubroutine initialize_eos
 !*******************************************************************
     subroutine select_eos_variable(variable,findex)
-!
-!  Calculate average particle mass in the gas relative to
 !
 !   02-apr-06/tony: implemented
 !
@@ -403,7 +397,6 @@ module EquationOfState
 ! handled by the eos module.
 ! ss
       if (lpenc_loc(i_ss)) p%ss=f(l1:l2,m,n,iss)
-!
 ! gss
       if (lpenc_loc(i_gss)) call grad(f,iss,p%gss)
 ! pp
@@ -422,33 +415,21 @@ module EquationOfState
       if (lpenc_loc(i_cs2) .or. lpenc_loc(i_cp1tilde)) &
           call pressure_gradient(f,p%cs2,p%cp1tilde)
 ! glnTT
-      if (lpenc_loc(i_glnTT)) then
-        call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
-      endif
+      if (lpenc_loc(i_glnTT)) call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
 ! gTT
       if (lpenc_loc(i_gTT)) then
         do i=1,3; p%gTT(:,i)=p%glnTT(:,i)*p%TT; enddo
       endif
 ! hss
-      if (lpenc_loc(i_hss)) then
-        call g2ij(f,iss,p%hss)
-      endif
+      if (lpenc_loc(i_hss)) call g2ij(f,iss,p%hss)
 ! del2ss
-      if (lpenc_loc(i_del2ss)) then
-        call del2(f,iss,p%del2ss)
-      endif
+      if (lpenc_loc(i_del2ss)) call del2(f,iss,p%del2ss)
 ! del2lnTT
-      if (lpenc_loc(i_del2lnTT)) then
-          call temperature_laplacian(f,p)
-      endif
+      if (lpenc_loc(i_del2lnTT)) call temperature_laplacian(f,p)
 ! del6ss
-      if (lpenc_loc(i_del6ss)) then
-        call del6(f,iss,p%del6ss)
-      endif
+      if (lpenc_loc(i_del6ss)) call del6(f,iss,p%del6ss)
 ! hlnTT
-      if (lpenc_loc(i_hlnTT)) then
-        call temperature_hessian(f,p%hlnrho,p%hss,p%hlnTT)
-      endif
+      if (lpenc_loc(i_hlnTT)) call temperature_hessian(f,p%hlnrho,p%hss,p%hlnTT)
 !
       if (lpenc_loc(i_glnmumol)) p%glnmumol(:,:)=0.
 !
@@ -540,11 +521,8 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
-      integer :: j
 !
-      do j=1,3
-        glnTT(:,j)=(2.0/3.0)*(glnrho(:,j)+gss(:,j)/ss_ion/(1+yH0+xHe-xH2))
-      enddo
+      glnTT=(2.0/3.0)*(glnrho+gss/ss_ion/(1+yH0+xHe-xH2))
 !
       call keep_compiler_quiet(f)
 !
@@ -561,13 +539,8 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3,3), intent(out) :: hlnTT
-      integer :: i,j
 !
-      do j=1,3
-      do i=1,3
-        hlnTT(:,i,j)=(2.0/3.0)*(hlnrho(:,i,j)+hss(:,i,j)/ss_ion/(1+yH0+xHe-xH2))
-      enddo
-      enddo
+      hlnTT=(2.0/3.0)*(hlnrho+hss/ss_ion/(1+yH0+xHe-xH2))
 !
       call keep_compiler_quiet(f)
 !
@@ -603,7 +576,7 @@ module EquationOfState
       end select
 !
       lnTT_=lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
-      TT_=exp(lnTT_)
+      if (present(ee) .or. present(pp) .or. present(kapparho)) TT_=exp(lnTT_)
       yH_=yH0
 !
       if (present(lnrho)) lnrho=lnrho_
@@ -615,83 +588,29 @@ module EquationOfState
 !
 !  Hminus opacity
 !
-      if (present(kapparho)) then
-        kapparho=exp(2*lnrho_-lnrho_e+1.5*(lnTT_ion_-lnTT_)+TT_ion_/TT_) &
-                *yH_*(1-yH_)*kappa0
-      endif
+      if (present(kapparho)) &
+        kapparho=exp(2*lnrho_-lnrho_e+1.5*(lnTT_ion_-lnTT_)+TT_ion_/TT_)*yH_*(1-yH_)*kappa0
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
     subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
-!
-!   Calculate thermodynamical quantities
-!
-!   2-feb-03/axel: simple example coded
-!   13-jun-03/tobi: the ionization fraction as part of the f-array
-!                   now needs to be given as an argument as input
-!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
-!                   subroutine pressure_gradient
-!
+
       integer, intent(in) :: ivars
       real, intent(in) :: var1,var2
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp,cs2
-      real :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_,cs2_
-!
-      select case (ivars)
-!
-      case (ilnrho_ss)
-        lnrho_ = var1
-        ss_    = var2
-        lnTT_  = lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
-        TT_    = exp(lnTT_)
-        rho_   = exp(lnrho_)
-        ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
-        pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
-        cs2_=impossible
-!
-      case (ilnrho_ee)
-        lnrho_ = var1
-        ee_    = var2
-        TT_    = (2.0/3.0)*TT_ion*(ee_/ee_ion-yH0)/(1+yH0+xHe-xH2)
-        lnTT_  = log(TT_)
-        ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
-        rho_   = exp(lnrho_)
-        pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
-        cs2_=impossible
-!
-      case (ilnrho_pp)
-        lnrho_ = var1
-        pp_    = var2
-        rho_   = exp(lnrho_)
-        TT_    = pp_/((1+yH0+xHe-xH2)*ss_ion*rho_)
-        lnTT_  = log(TT_)
-        ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
-        ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
-        cs2_=impossible
-!
-      case (ilnrho_lnTT)
-        lnrho_ = var1
-        lnTT_  = var2
-        ss_    = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
-        cs2_=impossible
-!
-      case default
-        call fatal_error('eoscalc_point','invalid thermodynamic case')
-     end select
-!
-      if (present(lnrho)) lnrho=lnrho_
-      if (present(ss)) ss=ss_
-      if (present(yH)) yH=yH0
-      if (present(lnTT)) lnTT=lnTT_
-      if (present(ee)) ee=ee_
-      if (present(pp)) pp=pp_
-      if (present(cs2)) cs2=cs2_
-!
+
+      if (.not.any((/ilnrho_ss, ilnrho_ee, ilnrho_pp, ilnrho_lnTT/)==ivars))  &
+        call fatal_error('eoscalc_point','invalid combination of thermodynamic variables')
+
+      ivars_mod=ivars
+
+      call eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+
     endsubroutine eoscalc_point
 !***********************************************************************
-    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+    elemental subroutine eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
 !   Calculate thermodynamical quantities
 !
@@ -701,49 +620,54 @@ module EquationOfState
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
 !                   subroutine pressure_gradient
 !
-      integer, intent(in) :: ivars
-      real, dimension(nx), intent(in) :: var1,var2
-      real, dimension(nx), intent(out), optional :: lnrho,ss
-      real, dimension(nx), intent(out), optional :: yH,lnTT
-      real, dimension(nx), intent(out), optional :: ee,pp
-      real, dimension(nx) :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_
+      real, intent(in) :: var1,var2
+      real, intent(out), optional :: lnrho,ss
+      real, intent(out), optional :: yH,lnTT
+      real, intent(out), optional :: ee,pp,cs2
+      real :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_
 !
-      select case (ivars)
+      select case (ivars_mod)
 !
       case (ilnrho_ss)
         lnrho_ = var1
         ss_    = var2
         lnTT_  = lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
-        TT_    = exp(lnTT_)
-        rho_   = exp(lnrho_)
-        ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
-        pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
+        if (present(ee) .or. present(pp)) then
+          TT_  = exp(lnTT_)
+          if (present(ee)) ee_ = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
+          if (present(pp)) pp_ = (1+yH0+xHe-xH2)*exp(lnrho_)*TT_*ss_ion
+        endif
 !
       case (ilnrho_ee)
         lnrho_ = var1
         ee_    = var2
-        TT_    = (2.0/3.0)*TT_ion*(ee/ee_ion-yH0)/(1+yH0+xHe-xH2)
-        lnTT_  = log(TT_)
-        ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
-        rho_   = exp(lnrho_)
-        pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
+        TT_    = (2.0/3.0)*TT_ion*(ee_/ee_ion-yH0)/(1+yH0+xHe-xH2)
+        if (present(lnTT).or.present(ss)) then
+          lnTT_  = log(TT_)
+          if (present(ss)) ss_ = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
+        endif
+        if (present(pp)) pp_ = (1+yH0+xHe-xH2)*exp(lnrho_)*TT_*ss_ion
 !
       case (ilnrho_pp)
         lnrho_ = var1
         pp_    = var2
-        rho_   = exp(lnrho_)
-        TT_    = pp_/((1+yH0+xHe-xH2)*ss_ion*rho_)
-        lnTT_  = log(TT_)
-        ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
-        ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
+        TT_    = pp_/((1+yH0+xHe-xH2)*ss_ion*exp(lnrho_))
+        if (present(lnTT).or.present(ss)) then
+          lnTT_  = log(TT_)
+          if (present(ss)) ss_ = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
+        endif
+        if (present(ee)) ee_ = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
 !
       case (ilnrho_lnTT)
         lnrho_ = var1
         lnTT_  = var2
-        ss_    = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
+        if (present(ss)) ss_ = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
+        if (present(ee) .or. present(pp)) then
+          TT_  = exp(lnTT_)
+          if (present(ee)) ee_ = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion   !tbchecked
+          if (present(pp)) pp_ = (1+yH0+xHe-xH2)*exp(lnrho_)*TT_*ss_ion      !tbchecked
+        endif
 !
-      case default
-        call fatal_error('eoscalc_pencil','invalid thermodynamic case')
      end select
 !
       if (present(lnrho)) lnrho=lnrho_
@@ -752,7 +676,25 @@ module EquationOfState
       if (present(lnTT)) lnTT=lnTT_
       if (present(ee)) ee=ee_
       if (present(pp)) pp=pp_
+      if (present(cs2)) cs2=impossible
 !
+    endsubroutine eoscalc_elem
+!***********************************************************************
+    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+
+      integer, intent(in) :: ivars
+      real, dimension(nx), intent(in) :: var1,var2
+      real, dimension(nx), intent(out), optional :: lnrho,ss
+      real, dimension(nx), intent(out), optional :: yH,lnTT
+      real, dimension(nx), intent(out), optional :: ee,pp,cs2
+
+      if (.not.any((/ilnrho_ss, ilnrho_ee, ilnrho_pp, ilnrho_lnTT/)==ivars))  &
+        call fatal_error('eoscalc_point','invalid combination of thermodynamic variables')
+
+      ivars_mod=ivars
+
+      call eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+
     endsubroutine eoscalc_pencil
 !***********************************************************************
     subroutine read_eos_init_pars(iostat)
@@ -793,12 +735,10 @@ module EquationOfState
 !***********************************************************************
     subroutine isothermal_entropy(lnrho,T0,ss)
 !
-!  Isothermal stratification (for lnrho and ss)
+!  Isothermal stratification: initilizes ss from lnrho.
 !  This routine should be independent of the gravity module used.
-!  When entropy is present, this module also initializes entropy.
 !
-!  Sound speed (and hence Temperature), is
-!  initialised to the reference value:
+!  Sound speed (and hence Temperature), is initialised to the reference value:
 !           sound speed: cs^2_0            from start.in
 !           density: rho0 = exp(lnrho0)
 !
@@ -807,7 +747,8 @@ module EquationOfState
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
 !
-      real, dimension(mx,my,mz), intent(out) :: lnrho, ss
+      real, dimension(mx,my,mz), intent(in) :: lnrho
+      real, dimension(mx,my,mz), intent(out) :: ss
       real, intent(in) :: T0
 !
       ss=ss_ion*((1+yH0+xHe-xH2)*(1.5*log(T0/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)
@@ -850,18 +791,6 @@ module EquationOfState
       enddo
 !
     endsubroutine isothermal_lnrho_ss
-!***********************************************************************
-     subroutine get_average_pressure(average_density,average_pressure)
-!
-!   01-dec-2009/piyali+dhrube: coded
-!
-      real, intent(in):: average_density
-      real, intent(out):: average_pressure
-!
-      call keep_compiler_quiet(average_density)
-      call keep_compiler_quiet(average_pressure)
-!
-    endsubroutine get_average_pressure
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,lone_sided)
 !
