@@ -122,8 +122,7 @@ module Energy
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_energy')
 !
-      if (lenergy_slope_limited) &
-        call not_implemented('initialize_energy','slope-limited diffusion')
+      if (lenergy_slope_limited) call not_implemented('initialize_energy','slope-limited diffusion')
 !
       call keep_compiler_quiet(f)
 !
@@ -195,10 +194,10 @@ module Energy
 !
             case ('zero', '0'); f(:,:,:,iss) = 0.
             case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
-            case ('isothermal'); call isothermal_entropy(f,T0)
+            case ('isothermal'); call isothermal_entropy(f(:,:,:,ilnrho),T0,f(:,:,:,ss))
             case ('isothermal_lnrho_ss')
               if (lroot) print*, 'init_energy: Isothermal density and entropy stratification'
-              call isothermal_lnrho_ss(f,T0,rho0)
+              call isothermal_lnrho_ss(f(:,:,:,ilnrho),T0,rho0,f(:,:,:,iss))
             case default
 !
 !  Catch unknown values
@@ -248,8 +247,7 @@ module Energy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
-      if (idiag_TTm/=0 .or. idiag_TTmz/=0 .or. idiag_TTmax/=0 &
-        .or. idiag_TTmin/=0) &
+      if (idiag_TTm/=0 .or. idiag_TTmz/=0 .or. idiag_TTmax/=0 .or. idiag_TTmin/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
@@ -332,8 +330,7 @@ module Energy
 ! TT1
       if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
 ! cs2 and cp1tilde
-      if (lpencil(i_cs2) .or. lpencil(i_cp1tilde)) &
-          call pressure_gradient(f,p%cs2,p%cp1tilde)
+      if (lpencil(i_cs2) .or. lpencil(i_cp1tilde)) call pressure_gradient(f,p%cs2,p%cp1tilde)
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! glnTT
@@ -348,21 +345,13 @@ module Energy
       if (lpencil(i_ugss)) call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
 !ajwm Should probably combine the following two somehow.
 ! hss
-      if (lpencil(i_hss)) then
-        call g2ij(f,iss,p%hss)
-      endif
+      if (lpencil(i_hss)) call g2ij(f,iss,p%hss)
 ! del2ss
-      if (lpencil(i_del2ss)) then
-        call del2(f,iss,p%del2ss)
-      endif
+      if (lpencil(i_del2ss)) call del2(f,iss,p%del2ss)
 ! del2lnTT
-      if (lpencil(i_del2lnTT)) then
-          call temperature_laplacian(f,p)
-      endif
+      if (lpencil(i_del2lnTT)) call temperature_laplacian(f,p)
 ! del6ss
-      if (lpencil(i_del6ss)) then
-        call del6(f,iss,p%del6ss)
-      endif
+      if (lpencil(i_del6ss)) call del6(f,iss,p%del6ss)
 ! hlnTT
       if (lpencil(i_hlnTT)) then
          if (pretend_lnTT) then
@@ -498,17 +487,6 @@ module Energy
       endif
 !
     endsubroutine calc_diagnostics_energy
-!***********************************************************************
-    subroutine energy_after_boundary(f)
-!
-!  dummy routine
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-
-    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine rprint_energy(lreset,lwrite)
 !
