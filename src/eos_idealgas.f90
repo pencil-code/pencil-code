@@ -104,9 +104,7 @@ module EquationOfState
 !
       use SharedVariables, only: put_shared_variable
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_eos: ionization nvar = ', nvar
-      endif
+      if ((ip<=8) .and. lroot) print*, 'register_eos: ionization nvar = ', nvar
 !
 !  Identify version number.
 !
@@ -222,8 +220,7 @@ module EquationOfState
 !
           if (abs(cp-cp_reference)/cp > error_cp) then
             if (lroot) print*,'Rgas,mu=', Rgas, mu
-            if (lroot) print*,'units_eos: consistency: cp=', cp, &
-                'while: cp_reference=', cp_reference
+            if (lroot) print*,'units_eos: consistency: cp=',cp, 'while: cp_reference=', cp_reference
             if (lroot) print*,'also caused when changing gamma btw start/run!'
             call fatal_error('units_eos','cp is not correctly calculated')
           endif
@@ -343,16 +340,13 @@ module EquationOfState
       if (ieosvar_count==0) ieosvar_selected=0
 !
       if (ieosvar_count>=2) call fatal_error('select_eos_variable', &
-          '2 thermodynamic quantities have already been defined '// &
-          'while attempting to add a 3rd')
+          'two thermodynamic quantities already defined while attempting to add a 3rd')
 !
       ieosvar_count=ieosvar_count+1
 !
       if (variable=='ss') then
         this_var=ieosvar_ss
-        if (findex<0) then
-          leos_isentropic=.true.
-        endif
+        if (findex<0) leos_isentropic=.true.
       elseif (variable=='cs2') then
         this_var=ieosvar_cs2
         if (findex==-2) then
@@ -364,26 +358,18 @@ module EquationOfState
         endif
       elseif (variable=='lnTT') then
         this_var=ieosvar_lnTT
-        if (findex<0) then
-          leos_isothermal=.true.
-        endif
+        if (findex<0) leos_isothermal=.true.
       elseif (variable=='TT') then
         this_var=ieosvar_TT
       elseif (variable=='lnrho') then
         this_var=ieosvar_lnrho
-        if (findex<0) then
-          leos_isochoric=.true.
-        endif
+        if (findex<0) leos_isochoric=.true.
       elseif (variable=='rho') then
         this_var=ieosvar_rho
-        if (findex<0) then
-          leos_isochoric=.true.
-        endif
+        if (findex<0) leos_isochoric=.true.
       elseif (variable=='pp') then
         this_var=ieosvar_pp
-        if (findex<0) then
-          leos_isobaric=.true.
-        endif
+        if (findex<0) leos_isobaric=.true.
       elseif (variable=='eth') then
         this_var=ieosvar_eth
       else
@@ -995,8 +981,7 @@ module EquationOfState
             p%TTb=cs20*cp1*exp(gamma*f(l1:l2,m,n,iss_b)*cp1+gamma_m1*p%lnrho)/gamma_m1
             p%cs2=cp*p%TTb*gamma_m1
             p%TT1=1./p%TTb
-            p%rho_anel=(f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2)- &
-                 f(l1:l2,m,n,iss)*cp1)
+            p%rho_anel=(f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2) - f(l1:l2,m,n,iss)*cp1)
           else
             if (lpenc_loc(i_pp)) p%pp=f(l1:l2,m,n,ipp)
             if (lpenc_loc(i_ss)) p%ss=f(l1:l2,m,n,iss)
@@ -1034,22 +1019,22 @@ module EquationOfState
         if (leos_isentropic) then
           call not_implemented('calc_pencils_eos','isentropic for (pp,lnTT)')
         elseif (leos_isothermal) then
-        if (lanelastic) then
-          if (lanelastic_lin) then
-            p%pp=f(l1:l2,m,n,ipp)
-            p%rho_anel=f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*cs20)
-          else  ! lanelastic_lin=F means the non-linearized anelastic approx.
-            p%pp=f(l1:l2,m,n,ipp)
+          if (lanelastic) then
+            if (lanelastic_lin) then
+              p%pp=f(l1:l2,m,n,ipp)
+              p%rho_anel=f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*cs20)
+            else  ! lanelastic_lin=F means the non-linearized anelastic approx.
+              p%pp=f(l1:l2,m,n,ipp)
+            endif
+          else
+            if (lpenc_loc(i_cs2)) p%cs2=cs20
+            if (lpenc_loc(i_lnrho)) p%lnrho=log(p%pp/cs20)
+            if (lpenc_loc(i_rho)) p%rho=(p%pp/cs20)
+            if (lpenc_loc(i_lnTT)) p%lnTT=lnTT0
+            if (lpenc_loc(i_glnTT)) p%glnTT=0.0
+            if (lpenc_loc(i_hlnTT)) p%hlnTT=0.0
+            if (lpenc_loc(i_del2lnTT)) p%del2lnTT=0.0
           endif
-        else
-          if (lpenc_loc(i_cs2)) p%cs2=cs20
-          if (lpenc_loc(i_lnrho)) p%lnrho=log(p%pp/cs20)
-          if (lpenc_loc(i_rho)) p%rho=(p%pp/cs20)
-          if (lpenc_loc(i_lnTT)) p%lnTT=lnTT0
-          if (lpenc_loc(i_glnTT)) p%glnTT=0.0
-          if (lpenc_loc(i_hlnTT)) p%hlnTT=0.0
-          if (lpenc_loc(i_del2lnTT)) p%del2lnTT=0.0
-        endif
         elseif (leos_localisothermal) then
           call not_implemented('calc_pencils_eos','local isothermal case for ipp_cs2')
         endif
@@ -1076,14 +1061,14 @@ module EquationOfState
           if (lpenc_loc(i_eths)) p%eths = 1.0 + f(l1:l2,m,n,ieth)
           if (lpenc_loc(i_geths)) call grad(f, ieth, p%geths)
           if (lpenc_loc(i_eth)) p%eth = eth0z(n) * p%eths
-          if (lpenc_loc(i_geth)) call fatal_error('calc_pencils_eos', 'geth is not available. ')
-          if (lpenc_loc(i_del2eth)) call fatal_error('calc_pencils_eos', 'del2eth is not available. ')
+          if (lpenc_loc(i_geth)) call fatal_error('calc_pencils_eos', 'geth is not available')
+          if (lpenc_loc(i_del2eth)) call fatal_error('calc_pencils_eos', 'del2eth is not available')
         else stratz
           if (lpenc_loc(i_eth)) p%eth = f(l1:l2,m,n,ieth)
           if (lpenc_loc(i_geth)) call grad(f, ieth, p%geth)
           if (lpenc_loc(i_del2eth)) call del2(f, ieth, p%del2eth)
-          if (lpenc_loc(i_eths)) call fatal_error('calc_pencils_eos', 'eths is not available. ')
-          if (lpenc_loc(i_geths)) call fatal_error('calc_pencils_eos', 'geths is not available. ')
+          if (lpenc_loc(i_eths)) call fatal_error('calc_pencils_eos', 'eths is not available')
+          if (lpenc_loc(i_geths)) call fatal_error('calc_pencils_eos', 'geths is not available')
         endif stratz
         if (lpenc_loc(i_cs2)) p%cs2=gamma*gamma_m1*p%eth*p%rho1
         if (lpenc_loc(i_pp)) p%pp=gamma_m1*p%eth
@@ -1097,11 +1082,9 @@ module EquationOfState
             p%glnTT(:,i)=p%TT1*p%gTT(:,i)
           enddo
         endif
-        if (lpenc_loc(i_del2TT)) p%del2TT= &
-            p%rho1*(p%cv1*p%del2eth-p%TT*p%del2rho-2*sum(p%grho*p%gTT,2))
+        if (lpenc_loc(i_del2TT)) p%del2TT=p%rho1*(p%cv1*p%del2eth-p%TT*p%del2rho-2*sum(p%grho*p%gTT,2))
         if (lpenc_loc(i_hlnTT)) call not_implemented('calc_pencils_eos', &
                                                      'hlnTT for ilnrho_eth or irho_eth')
-!
       case default
         call fatal_error('calc_pencils_eos','unknown combination of eos vars')
       endselect
