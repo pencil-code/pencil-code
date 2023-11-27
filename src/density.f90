@@ -173,7 +173,7 @@ module Density
       mass_source_profile, mass_source_Mdot, mass_source_sigma, &
       mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
-      lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
+      lnrho_const, rho_const,lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       density_floor_profile, density_floor_exp, &
       ldiffusion_nolog, lcheck_negative_density, &
