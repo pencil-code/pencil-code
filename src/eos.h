@@ -2,10 +2,14 @@
 
   private
 
+  public :: ilnrho_ss, ilnrho_ee, ilnrho_pp
+  public :: ilnrho_lnTT, ilnrho_cs2
+  public :: irho_cs2, irho_ss, irho_lnTT, ilnrho_TT
+  public :: irho_TT, ipp_ss, ipp_cs2
+  public :: irho_eth, ilnrho_eth, irho_ee, irho_pp
+
   public :: eoscalc,pressure_gradient,temperature_gradient
   public :: temperature_laplacian, get_gamma_etc
-  public :: ilnrho_ss, ilnrho_lnTT, ilnrho_pp, ilnrho_ee, ilnrho_TT
-  public :: ipp_ss,ipp_cs2, irho_TT, irho_ss, irho_eth, ilnrho_eth
   public :: get_soundspeed
   public :: getmu
   public :: getdensity, gettemperature, getpressure

@@ -646,8 +646,8 @@ module EquationOfState
 !***********************************************************************
     subroutine isothermal_entropy(lnrho,T0,ss)
 !
+      real, dimension (mx,my,mz), intent(out) :: lnrho,ss
       real, intent(in) :: T0
-      real, dimension(mx,my,mz) :: lnrho,ss
 
       call not_implemented("isothermal_entropy","in eos_chemistry_simple")
 
