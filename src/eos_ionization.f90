@@ -30,6 +30,7 @@ module EquationOfState
 !
   include 'eos.h'
   include 'eos_params.h'
+
 !  secondary parameters calculated in initialize
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
@@ -54,7 +55,7 @@ module EquationOfState
 ! run parameters
   namelist /eos_run_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 !
-  integer :: imass=0
+  integer :: imass=0, ivars_mod
 !
   real :: Cp_const=impossible
   real :: Pr_number=0.7
@@ -459,8 +460,7 @@ module EquationOfState
 ! TT1
       if (lpenc_loc(i_TT1)) p%TT1=exp(-p%lnTT)
 ! cs2 and cp1tilde
-      if (lpenc_loc(i_cs2) .or. lpenc_loc(i_cp1tilde)) &
-          call pressure_gradient(f,p%cs2,p%cp1tilde)
+      if (lpenc_loc(i_cs2) .or. lpenc_loc(i_cp1tilde)) call pressure_gradient(f,p%cs2,p%cp1tilde)
 ! glnTT
       if (lpenc_loc(i_glnTT)) call grad(f,ilnTT,p%glnTT)
 !        call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
@@ -537,7 +537,7 @@ module EquationOfState
 !  just a single value of mu, because it must depend on position.
 !  Therefore, call fatal error.
 !
-      call fatal_error('getmu','SHOULD NOT BE CALLED WITH eos_ionization, see cp/cv pencils')
+      call not_implemented('getmu','for eos_ionization, use cp/cv pencils')
 !
 ! tobi: the real mean molecular weight would be:
 !
@@ -810,9 +810,11 @@ module EquationOfState
         if (present(ee)) then
           yH_=yHmax
           yH_=0.5*min(ee/ee_ion,yH_)
+          ivars_mod=ilnrho_ee
           do i=1,nx
             call rtsafe(ilnrho_ee,lnrho_(i),ee(i),yHmin,yHmax*min(ee(i)/ee_ion,1.0),yH_(i))
           enddo
+          !call rtsafe_elem(lnrho_,ee,0.*yH_+yHmin,yHmax*min(ee/ee_ion,1.0),yH_)
           fractions=(1+yH_+xHe)
           TT_=(ee-yH_*ee_ion)/(1.5*fractions*ss_ion)
           lnTT_=log(TT_)
@@ -821,9 +823,11 @@ module EquationOfState
                       -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         elseif (present(pp)) then
           yH_=0.5*yHmax
+          ivars_mod=ilnrho_pp
           do i=1,nx
             call rtsafe(ilnrho_pp,lnrho_(i),pp(i),yHmin,yHmax,yH_(i))
           enddo
+          !call rtsafe_elem(lnrho_,pp,0.*yH_+yHmin,0.*yH_+yHmax,yH_)
           fractions=(1+yH_+xHe)
           rho_=exp(lnrho_)
           TT_=pp/(fractions*ss_ion*rho_)
@@ -864,7 +868,7 @@ module EquationOfState
       select case (psize)
         case (nx); i1=l1; i2=l2
         case (mx); i1=1; i2=mx
-        case default; call fatal_error("eoscalc","no such pencil size")
+        case default; call fatal_error("eoscalc_farray","no such pencil size")
       end select
 
       lnrho_=f(i1:i2,m,n,ilnrho)
@@ -898,21 +902,240 @@ module EquationOfState
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
-    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_point_(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+    
+      integer, intent(in) :: ivars
+      real, intent(in) :: var1,var2
+      real, intent(out), optional :: lnrho,ss
+      real, intent(out), optional :: yH,lnTT
+      real, intent(out), optional :: ee,pp,cs2
+
+      select case (ivars)
+      case (ipp_ss, irho_eth, ilnrho_eth)
+        call not_implemented("eoscalc_point_","thermodynamic variable combinations ipp_ss, irho_eth, ilnrho_eth")
+      case default
+        call fatal_error("eoscalc_pencil","unknown independent variables combination")
+      end select
+        
+      ivars_mod=ivars
+
+      !call eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+
+      eoscalc_count=eoscalc_count+1
+
+    endsubroutine eoscalc_point_
+!***********************************************************************
+    subroutine eoscalc_pencil_(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+
+      integer, intent(in) :: ivars
+      real, dimension(nx), intent(in) :: var1,var2
+      real, dimension(nx), intent(out), optional :: lnrho,ss
+      real, dimension(nx), intent(out), optional :: yH,lnTT
+      real, dimension(nx), intent(out), optional :: ee,pp,cs2
+
+      select case (ivars)
+      case (ipp_ss, irho_eth, ilnrho_eth)
+        call not_implemented("eoscalc_pencil_","thermodynamic variable combinations ipp_ss, irho_eth, ilnrho_eth")
+      case default
+        !!!call fatal_error("eoscalc_pencil","unknown independent variables combination")
+      end select
+
+      ivars_mod=ivars
+
+      !call eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+
+      eoscalc_count=eoscalc_count+1
+
+    endsubroutine eoscalc_pencil_
+!***********************************************************************
+    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+!
+!   Calculate thermodynamical quantities
+!
+!   2-feb-03/axel: simple example coded
+!   13-jun-03/tobi: the ionization fraction as part of the f-array
+!                   now needs to be given as an argument as input
+!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!                   subroutine pressure_gradient
+!   13-mar-04/tony: modified
+!
+      integer, intent(in) :: ivars
+      real, intent(in) :: var1,var2
+      real, intent(out), optional :: lnrho,ss
+      real, intent(out), optional :: yH,lnTT
+      real, intent(out), optional :: ee,pp,cs2
+      real :: lnrho_,ss_,yH_,lnTT_,TT_,TT1_,rho_,ee_,pp_
+      real :: fractions,rhs,sqrtrhs
+!
+      ivars_mod=ivars
+      select case (ivars)
+!
+      case (ilnrho_ss,irho_ss)
+        if (ivars==ilnrho_ss) then
+          lnrho_=var1
+          if (present(pp)) rho_=exp(var1)
+        else
+          lnrho_=alog(var1)
+          if (present(pp)) rho_=var1
+        endif
+        ss_=var2
+        yH_=0.5*yHmax
+        call rtsafe(ivars,lnrho_,ss_,yHmin,yH_+yHmax,yH_)
+
+        if (present(ee).or.present(lnTT).or.present(pp)) then
+          fractions=1+yH_+xHe
+          lnTT_=(2.0/3.0)*((ss_/ss_ion+(1-yH_)*(log(1-yH_+epsi)-lnrho_H) &
+                            +yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
+                            +xHe_term)/fractions+lnrho_-2.5)+lnTT_ion
+          if (present(ee).or.present(pp)) then
+            TT_=exp(lnTT_)
+            if (present(ee)) ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+            if (present(pp)) pp_=fractions*rho_*TT_*ss_ion
+          endif
+        endif
+!
+      case (ilnrho_lnTT,ilnrho_TT,irho_TT)
+        if (ivars==irho_TT) then
+          if (present(pp)) rho_=var1
+          lnrho_=log(var1)
+        else
+          lnrho_=var1
+          if (present(pp)) rho_=exp(var1)
+        endif
+        if (ivars==ilnrho_lnTT) then
+          lnTT_=var2
+          TT_=exp(lnTT_)
+        else
+          TT_=var2
+          lnTT_=log(TT_)
+        endif
+        rhs=exp(lnrho_e-lnrho_+1.5*(lnTT_-lnTT_ion)-TT_ion/TT_)
+        rhs=max(rhs,tini)       ! avoid log(0.) below
+        sqrtrhs=sqrt(rhs)
+        yH_=2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+
+        if (present(ee).or.present(ss).or.present(pp)) then
+          fractions=1+yH_+xHe
+          if (present(ss)) ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
+          if (present(ee)) ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+          if (present(pp)) pp_=fractions*rho_*TT_*ss_ion
+        endif
+!
+      case (ilnrho_ee,irho_ee)
+        if (ivars==ilnrho_ee) then
+          lnrho_=var1
+          rho_=exp(lnrho_)
+        else
+          rho_=var1
+          lnrho_=log(rho_)
+        endif
+        ee_=var2
+        yH_=yHmax
+        yH_=0.5*min(ee_/ee_ion,yH_)
+        call rtsafe(ivars,lnrho_,ee_,0.*yH_+yHmin,yHmax*min(ee_/ee_ion,1.0),yH_)
+
+        if (present(lnTT).or.present(ss).or.present(pp)) then
+          fractions=1+yH_+xHe
+          TT_=(ee_-yH_*ee_ion)/(1.5*fractions*ss_ion)
+          if (present(lnTT).or.present(ss)) then
+            lnTT_=log(TT_)
+            if (present(ss)) ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
+          endif
+          if (present(pp)) pp_=fractions*rho_*TT_*ss_ion
+        endif
+!
+      case (ilnrho_pp,irho_pp)
+        if (ivars==ilnrho_pp) then
+          lnrho_=var1
+          rho_=exp(lnrho_)
+        else
+          rho_=var1
+          lnrho_=log(rho_)
+        endif
+        pp_=var2
+        yH_=0.5*yHmax
+        call rtsafe(ivars,lnrho_,pp_,0.*yH_+yHmin,0.*yH_+yHmax,yH_)
+
+        if (present(lnTT).or.present(ss).or.present(ee)) then
+          fractions=1+yH_+xHe
+          TT_=pp_/(fractions*ss_ion*rho_)
+          if (present(lnTT).or.present(ss)) then
+            lnTT_=log(TT_)
+            if (present(ss)) ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
+          endif
+          if (present(ee)) ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion   !simplify
+        endif
+!
+      case (ipp_ss, irho_eth, ilnrho_eth)
+        call not_implemented("eoscalc_point","thermodynamic variable combinations ipp_ss, irho_eth, ilnrho_eth")
+      case default
+        call fatal_error("eoscalc_pencil","unknown independent variables combination")
+      end select
+!
+      if (present(lnrho)) lnrho=lnrho_
+      if (present(ss)) ss=ss_
+      if (present(yH)) yH=yH_
+      if (present(lnTT)) lnTT=lnTT_
+      if (present(ee)) ee=ee_
+      if (present(pp)) pp=pp_
+      if (present(cs2)) cs2=impossible
+!
+    endsubroutine eoscalc_point
+!***********************************************************************
+    function get_ss_pencil(lnTT,lnrho,yH,fractions) result(ss)
+!
+!  Calculates entropy pencil from lnTT,lnrho,yH,fractions pencils.
+!
+! 11-nov-2023/MR: coded
+!
+      real, dimension(nx), intent(IN) :: lnTT, lnrho, yH, fractions
+      real, dimension(nx) :: ss
+
+      ss = ss_ion*(fractions*(1.5*(lnTT-lnTT_ion)-lnrho+2.5) &
+          -yH*(2*log(yH)-lnrho_e-lnrho_H) &
+          -(1-yH)*(log(1-yH+epsi)-lnrho_H)-xHe_term)
+
+    endfunction get_ss_pencil
+!***********************************************************************
+    elemental function get_ss(lnTT,lnrho,yH,fractions) result(ss)
+!
+!  Calculates entropy from lnTT,lnrho,yH,fractions at a point
+!  Not efficient for pencils.
+!
+! 11-nov-2023/MR: coded
+!
+      real, intent(IN) :: lnTT, lnrho, yH, fractions
+      real :: ss
+
+      ss = ss_ion*(fractions*(1.5*(lnTT-lnTT_ion)-lnrho+2.5) &
+          -yH*(2*log(yH)-lnrho_e-lnrho_H) &
+          -(1-yH)*(log(1-yH+epsi)-lnrho_H)-xHe_term)
+
+    endfunction get_ss
+!***********************************************************************
+    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
 !   Calculate thermodynamical quantities
 !
 !   i13-mar-04/tony: modified
 !
+      use Mpicomm, only: stop_it
+!
       integer, intent(in) :: ivars
       real, dimension(nx), intent(in) :: var1,var2
       real, dimension(nx), intent(out), optional :: lnrho,ss
       real, dimension(nx), intent(out), optional :: yH,lnTT
-      real, dimension(nx), intent(out), optional :: ee,pp
+      real, dimension(nx), intent(out), optional :: ee,pp,cs2
       real, dimension(nx) :: lnrho_,ss_,yH_,lnTT_,TT_,TT1_,rho_,ee_,pp_
       real, dimension(nx) :: fractions,rhs,sqrtrhs
       integer :: i
 !
+        !do i=1,nx
+        !  call rtsafe_(ilnrho_ss,lnrho_(i),ss_(i),yHmin,yHmax,yH_(i))
+        !enddo
+      eoscalc_count=eoscalc_count+1
+!
+      ivars_mod=ivars
       select case (ivars)
 !
       case (ilnrho_ss,irho_ss)
@@ -923,23 +1146,30 @@ module EquationOfState
         endif
         ss_=var2
         yH_=0.5*yHmax
+        !call rtsafe_elem(lnrho_,ss_,0.*yH_+yHmin,0.*yH_+yHmax,yH_)
         do i=1,nx
           call rtsafe(ilnrho_ss,lnrho_(i),ss_(i),yHmin,yHmax,yH_(i))
         enddo
-        fractions=(1+yH_+xHe)
-        lnTT_=(2.0/3.0)*((ss_/ss_ion+(1-yH_)*(log(1-yH_+epsi)-lnrho_H) &
-                          +yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
-                          +xHe_term)/fractions+lnrho_-2.5)+lnTT_ion
-        TT_=exp(lnTT_)
-        rho_=exp(lnrho_)
-        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
-        pp_=fractions*rho_*TT_*ss_ion
+
+        if (present(ee).or.present(lnTT).or.present(pp)) then
+          fractions=1+yH_+xHe
+          lnTT_=(2.0/3.0)*((ss_/ss_ion+(1-yH_)*(log(1-yH_+epsi)-lnrho_H) &
+                            +yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
+                            +xHe_term)/fractions+lnrho_-2.5)+lnTT_ion
+          if (present(ee).or.present(pp)) then
+            TT_=exp(lnTT_)
+            ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+            pp_=fractions*exp(lnrho_)*TT_*ss_ion
+          endif
+        endif
 !
       case (ilnrho_lnTT,ilnrho_TT,irho_TT)
         if (ivars==irho_TT) then
+          if (present(pp)) rho_=var1
           lnrho_=log(var1)
         else
           lnrho_=var1
+          if (present(pp)) rho_=exp(var1)
         endif
         if (ivars==ilnrho_lnTT) then
           lnTT_=var2
@@ -954,10 +1184,13 @@ module EquationOfState
         rhs=max(rhs,tini)       ! avoid log(0.) below
         sqrtrhs=sqrt(rhs)
         yH_=2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
-        fractions=(1+yH_+xHe)
-        ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
-        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
-        pp_=fractions*exp(lnrho_)*TT_*ss_ion
+
+        if (present(ee).or.present(ss).or.present(pp)) then
+          fractions=1+yH_+xHe
+          if (present(ss)) ss_= get_ss_pencil(lnTT_,lnrho_,yH_,fractions)
+          if (present(ee)) ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+          if (present(pp)) pp_=fractions*rho_*TT_*ss_ion
+        endif
 !
       case (ilnrho_ee,irho_ee)
         if (ivars==ilnrho_ee) then
@@ -970,14 +1203,20 @@ module EquationOfState
         ee_=var2
         yH_=yHmax
         yH_=0.5*min(ee_/ee_ion,yH_)
+        !call rtsafe_elem(lnrho_,ee_,0.*yH_+yHmin,yHmax*min(ee_/ee_ion,1.0),yH_)
         do i=1,nx
-          call rtsafe(ilnrho_ee,lnrho_(i),ee_(i),yHmin,yHmax*min(ee_(i)/ee_ion,1.0),yH_(i))   !!!
+          call rtsafe(ilnrho_ee,lnrho_(i),ee_(i),yHmin,yHmax,yH_(i))
         enddo
-        fractions=(1+yH_+xHe)
-        TT_=(ee_-yH_*ee_ion)/(1.5*fractions*ss_ion)
-        lnTT_=log(TT_)
-        ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
-        pp_=fractions*rho_*TT_*ss_ion
+
+        if (present(lnTT).or.present(ss).or.present(pp)) then
+          fractions=1+yH_+xHe
+          TT_=(ee_-yH_*ee_ion)/(1.5*fractions*ss_ion)
+          if (present(lnTT).or.present(ss)) then
+            lnTT_=log(TT_)
+            if (present(ss)) ss_= get_ss_pencil(lnTT_,lnrho_,yH_,fractions)
+          endif
+          if (present(pp)) pp_=fractions*rho_*TT_*ss_ion
+        endif
 !
       case (ilnrho_pp,irho_pp)
         if (ivars==ilnrho_pp) then
@@ -989,19 +1228,25 @@ module EquationOfState
         endif
         pp_=var2
         yH_=0.5*yHmax
+        !call rtsafe_elem(lnrho_,pp_,0.*yH_+yHmin,0.*yH_+yHmax,yH_)
         do i=1,nx
-          call rtsafe(ilnrho_pp,lnrho_(i),pp_(i),yHmin,yHmax,yH_(i))   !!!
+          call rtsafe(ilnrho_pp,lnrho_(i),pp_(i),yHmin,yHmax,yH_(i))
         enddo
-        fractions=(1+yH_+xHe)
-        TT_=pp_/(fractions*ss_ion*rho_)
-        lnTT_=log(TT_)
-        ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
-        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+
+        if (present(lnTT).or.present(ss).or.present(ee)) then
+          fractions=1+yH_+xHe
+          TT_=pp_/(fractions*ss_ion*rho_)
+          if (present(lnTT).or.present(ss)) then
+            lnTT_=log(TT_)
+            if (present(ss)) ss_= get_ss_pencil(lnTT_,lnrho_,yH_,fractions)
+          endif
+          if (present(ee)) ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion   !simplify
+        endif
 !
       case (ipp_ss, irho_eth, ilnrho_eth)
-        call not_implemented("eoscalc_pencil","ipp_ss, irho_eth, ilnrho_eth")
+        call not_implemented("eoscalc_point","thermodynamic variable combinations ipp_ss, irho_eth, ilnrho_eth")
       case default
-        call fatal_error("eoscalc_pencil","unknown independent variables combination")
+        call fatal_error("eoscalc_pencil","unknown combination of thermodynamic variables")
       end select
 !
       if (present(lnrho)) lnrho=lnrho_
@@ -1010,116 +1255,9 @@ module EquationOfState
       if (present(lnTT)) lnTT=lnTT_
       if (present(ee)) ee=ee_
       if (present(pp)) pp=pp_
+      if (present(cs2)) cs2=impossible
 !
     endsubroutine eoscalc_pencil
-!***********************************************************************
-    elemental function get_ss(lnTT,lnrho,yH,fractions) result(ss)
-!
-!  Calculates entropy from lnTT,lnrho,yH,fractions.
-!
-! 11-nov-2023/MR: coded
-!
-      real, intent(IN) :: lnTT, lnrho, yH, fractions
-      real :: ss
-
-      ss = ss_ion*(fractions*(1.5*(lnTT-lnTT_ion)-lnrho+2.5) &
-          -yH*(2*log(yH)-lnrho_e-lnrho_H) &
-          -(1-yH)*(log(1-yH+epsi)-lnrho_H)-xHe_term)
-
-    endfunction get_ss
-!***********************************************************************
-    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
-!
-!   Calculate thermodynamical quantities
-!
-!   2-feb-03/axel: simple example coded
-!   13-jun-03/tobi: the ionization fraction as part of the f-array
-!                   now needs to be given as an argument as input
-!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
-!                   subroutine pressure_gradient
-!
-      use Mpicomm, only: stop_it
-!
-      integer, intent(in) :: ivars
-      real, intent(in) :: var1,var2
-      real, intent(out), optional :: lnrho,ss
-      real, intent(out), optional :: yH,lnTT
-      real, intent(out), optional :: ee,pp,cs2
-      real :: lnrho_,ss_,yH_,lnTT_,TT_,TT1_,rho_,ee_,pp_,cs2_
-      real :: fractions,rhs,sqrtrhs
-!
-      select case (ivars)
-!
-      case (ilnrho_ss)
-        lnrho_=var1
-        ss_=var2
-        yH_=0.5*yHmax
-        call rtsafe(ilnrho_ss,lnrho_,ss_,yHmin,yHmax,yH_)
-        lnTT_=(ss_/ss_ion+(1-yH_)*(log(1-yH_+epsi)-lnrho_H) &
-              +yH_*(2*log(yH_)-lnrho_e-lnrho_H)+xHe_term)/(1+yH_+xHe)
-        lnTT_=(2.0/3.0)*(lnTT_+lnrho_-2.5)+lnTT_ion
-!
-        TT_=exp(lnTT_)
-        rho_=exp(lnrho_)
-        ee_=1.5*(1+yH_+xHe)*ss_ion*TT_+yH_*ee_ion
-        pp_=(1+yH_+xHe)*rho_*TT_*ss_ion
-        cs2_=impossible
-!
-      case (ilnrho_lnTT)
-        lnrho_=var1
-        lnTT_=var2
-        TT_=exp(lnTT_)
-        TT1_=1/TT_
-        rhs=exp(lnrho_e-lnrho_+1.5*(lnTT_-lnTT_ion)-TT_ion*TT1_)
-        rhs = max(rhs,tini)     ! avoid log(0.) below
-        sqrtrhs=sqrt(rhs)
-        yH_=2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
-        fractions=(1+yH_+xHe)
-        ss_ = get_ss(lnTT_,lnrho_,yH_,fractions)
-        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
-        pp_=fractions*exp(lnrho_)*TT_*ss_ion
-        cs2_=impossible
-!
-      case (ilnrho_ee)
-        lnrho_=var1
-        ee_=var2
-        yH_=0.5*min(ee_/ee_ion,yHmax)
-        call rtsafe(ilnrho_ee,lnrho_,ee_,yHmin,yHmax*min(ee_/ee_ion,1.0),yH_)
-        fractions=(1+yH_+xHe)
-        TT_=(ee_-yH_*ee_ion)/(1.5*fractions*ss_ion)
-        lnTT_=log(TT_)
-        rho_=exp(lnrho_)
-        ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
-        pp_=fractions*rho_*TT_*ss_ion
-        cs2_=impossible
-!
-      case (ilnrho_pp)
-        lnrho_=var1
-        pp_=var2
-        yH_=0.5*yHmax
-        call rtsafe(ilnrho_pp,lnrho_,pp_,yHmin,yHmax,yH_)
-        fractions=(1+yH_+xHe)
-        rho_=exp(lnrho_)
-        TT_=pp_/(fractions*ss_ion*rho_)
-        lnTT_=log(TT_)
-        ss_= get_ss(lnTT_,lnrho_,yH_,fractions)
-        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
-        cs2_=impossible
-!
-      case default
-        call stop_it("eoscalc_point: I don't get what the independent variables are.")
-!
-      end select
-!
-      if (present(lnrho)) lnrho=lnrho_
-      if (present(ss)) ss=ss_
-      if (present(yH)) yH=yH_
-      if (present(lnTT)) lnTT=lnTT_
-      if (present(ee)) ee=ee_
-      if (present(pp)) pp=pp_
-      if (present(cs2)) cs2=cs2_
-!
-    endsubroutine eoscalc_point
 !***********************************************************************
     subroutine read_eos_init_pars(iostat)
 !
@@ -1304,8 +1442,6 @@ module EquationOfState
 !
 !   23-feb-03/tobi: errors fixed
 !
-      use Mpicomm, only: stop_it
-!
       integer, intent(in)          :: ivars
       real, intent(in)             :: var1,var2,yH
       real, intent(out)            :: f,df
@@ -1337,7 +1473,7 @@ module EquationOfState
         pp=var2
         lnTT_=log(pp/ss_ion*fractions1)-lnrho
       case default
-        call stop_it("saha: I don't get what the independent variables are.")
+        call fatal_error("saha","unknown thermodynamic variable combination")
         lnTT_=0.
       end select
 !
@@ -1347,6 +1483,96 @@ module EquationOfState
       df=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/yH
 !
     endsubroutine saha
+!***********************************************************************
+    elemental subroutine rtsafe_elem(var1,var2,yHlb,yHub,yH)
+!
+!   safe newton raphson algorithm (adapted from NR) !
+!   09-apr-03/tobi: changed to subroutine
+!
+      real, intent(in)    :: var1,var2
+      real, intent(in)    :: yHlb,yHub
+      real, intent(inout) :: yH
+!
+      real               :: dyHold,dyH,yHl,yHh,f,df,temp
+      integer            :: i
+      integer, parameter :: maxit=1000
+!
+      yHl=yHlb
+      yHh=yHub
+      dyH=1
+      dyHold=dyH
+!
+      call saha_elem(var1,var2,yH,f,df)
+!
+      do i=1,maxit
+        if (        sign(1.,((yH-yHl)*df-f)) &
+                 == sign(1.,((yH-yHh)*df-f)) &
+              .or. abs(2*f) > abs(dyHold*df) ) then
+          dyHold=dyH
+          dyH=0.5*(yHl-yHh)
+          yH=yHh+dyH
+          if (yHh==yH) return
+        else
+          dyHold=dyH
+          dyH=f/df
+          temp=yH
+          yH=yH-dyH
+          if (temp==yH) return
+        endif
+        if (abs(dyH)<yHacc*yH) return
+        call saha_elem(var1,var2,yH,f,df)
+        if (f<0) then
+          yHh=yH
+        else
+          yHl=yH
+        endif
+      enddo
+!
+    endsubroutine rtsafe_elem
+!***********************************************************************
+    elemental subroutine saha_elem(var1,var2,yH,f,df)
+!
+!   We want to find the root of f.
+!
+!   23-feb-03/tobi: errors fixed
+!
+      real, intent(in)  :: var1,var2,yH
+      real, intent(out) :: f,df
+!
+      real :: lnrho,ss,ee,pp
+      real :: lnTT,dlnTT,TT1,fractions1
+!
+      fractions1=1/(1+yH+xHe)
+!
+      select case (ivars_mod)
+      case (ilnrho_ss)
+        lnrho=var1
+        ss=var2
+        lnTT=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
+                        +yH*(2*log(yH)-lnrho_e-lnrho_H) &
+                        +xHe_term)*fractions1+lnrho-2.5)
+      case (ilnrho_ee)
+        lnrho=var1
+        ee=var2
+        !print*,'saha: TT',2.0/3.0*(ee-yH*ee_ion)*fractions1
+        !lnTT=log(2.0/3.0*(ee/ee_ion-yH)*fractions1)
+      !  if (ee<yH*ee_ion) then
+      !    lnTT=-25.
+      !  else
+        lnTT=log(2.0/3.0*(ee-yH*ee_ion)*fractions1)
+      !  endif
+      case (ilnrho_pp)
+        lnrho=var1
+        pp=var2
+        lnTT=log(pp/ss_ion*fractions1)-lnrho
+      end select
+!
+      TT1=exp(-lnTT)
+      f=lnrho_e-lnrho+1.5*lnTT-TT1+log(1-yH+epsi)-2*log(yH)
+      dlnTT=((2.0/3.0)*(-f-TT1)-1)*fractions1
+      df=dlnTT*(1.5+TT1)-1/(1-yH+epsi)-2/yH
+!
+    endsubroutine saha_elem
 !***********************************************************************
     subroutine isothermal_entropy(lnrho_arr,T0,ss_arr)
 !
