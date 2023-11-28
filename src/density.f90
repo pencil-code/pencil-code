@@ -1265,10 +1265,8 @@ module Density
           TT=spread(cs20/gamma_m1,1,nx)
           do n=n1,n2
           do m=m1,m2
-            lnrho=lnrho0-(x(l1:l2)-r_ext)/haut
-            f(l1:l2,m,n,ilnrho)=lnrho
-            call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
-            f(l1:l2,m,n,iss)=ss
+            f(l1:l2,m,n,ilnrho)=lnrho0-(x(l1:l2)-r_ext)/haut
+            call eoscalc(ilnrho_TT,f(l1:l2,m,n,ilnrho),TT,ss=f(l1:l2,m,n,iss))
           enddo
           enddo
         case ('isentropic-star')
@@ -3631,7 +3629,7 @@ module Density
 
       real, dimension (mx,my,mz,mfarray) :: f
       real :: haut
-      real, dimension (nx) :: lnrho,TT,ss
+      real, dimension (nx) :: TT
 !
       intent(inout) :: f
 !
@@ -3643,9 +3641,7 @@ module Density
           do m=m1,m2
             r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
             f(l1:l2,m,n,ilnrho)=lnrho0-r_mn/haut
-            lnrho=f(l1:l2,m,n,ilnrho)
-            call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
-            f(l1:l2,m,n,iss)=ss
+            call eoscalc(ilnrho_TT,f(l1:l2,m,n,ilnrho),TT,ss=f(l1:l2,m,n,iss))
           enddo
         enddo
       endif
