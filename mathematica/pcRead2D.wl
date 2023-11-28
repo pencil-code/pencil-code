@@ -66,15 +66,15 @@ readStride[sim_,sl_]:=Module[{dim,dir,n,file,stride},
     stride=Flatten@Import[file];
     Switch[Length[stride],
       2, stride={1,n[[1]],stride[[1]],1,n[[2]],stride[[2]]},
-      6, ,
+      6, stride=stride,
       _, Print["stride file bad structure. Failed."];Return@$Failed]
-    ];
-    
-    stride=stride/.{"nxgrid"->dim["nx"],"nygrid"->dim["ny"],"nzgrid"->dim["nz"]};
-    
-    AssociationThread[
-      Flatten[Table[i<>j,{i,dir},{j,{"min","max","step"}}]]->stride
-    ]
+  ];
+  
+  stride=stride/.{"nxgrid"->dim["nx"],"nygrid"->dim["ny"],"nzgrid"->dim["nz"]};
+  
+  AssociationThread[
+    Flatten[Table[i<>j,{i,dir},{j,{"min","max","step"}}]]->stride
+  ]
 ]
 
 readSlice[sim_,var_,sl_]:=Module[
