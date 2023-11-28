@@ -114,9 +114,7 @@ module EquationOfState
       if (naux < maux)  aux_var(aux_count)=',yH $'
       if (naux == maux) aux_var(aux_count)=',yH'
       aux_count=aux_count+1
-      if (lroot) then
-        write(15,*) 'yH = fltarr(mx,my,mz)*one'
-      endif
+      if (lroot) write(15,*) 'yH = fltarr(mx,my,mz)*one'
 !
 !  Identify version number.
 !
@@ -476,13 +474,9 @@ module EquationOfState
         p%ss = Rgas*mu1_0*p%ss
       endif
 !
-      if (lpenc_loc(i_gss)) then
-        call fatal_error('gss',"SHOULDN'T BE CALLED WITH eos_temperature_...")
-      endif
+      if (lpenc_loc(i_gss)) call fatal_error('gss',"SHOULDN'T BE CALLED WITH eos_temperature_...")
 !
-      if (lpenc_loc(i_del2ss)) then
-        call fatal_error('del2ss',"SHOULDN'T BE CALLED WITH eos_temperature_...")
-      endif
+      if (lpenc_loc(i_del2ss)) call fatal_error('del2ss',"SHOULDN'T BE CALLED WITH eos_temperature_...")
 !
       if (lpenc_loc(i_glnmumol)) p%glnmumol(:,:)=0.
 !
@@ -594,8 +588,6 @@ module EquationOfState
 !   04-apr-06/tobi: Adapted for this EOS module
 !   27-jan-11/MR: caught zero in calculation of kapparho
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho
@@ -619,7 +611,7 @@ module EquationOfState
         yH_=f(:,m,n,iyH)
 !
       case default
-        call stop_it("eoscalc: no such pencil size")
+        call fatal_error("eoscalc_farray","no such pencil size")
       end select
 !
       if (present(lnrho)) lnrho=lnrho_
@@ -770,7 +762,6 @@ module EquationOfState
 !   3-oct-16/MR: added new optional switch lone_sided
 !
       use Gravity
-      use Mpicomm,only:stop_it
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
