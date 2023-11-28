@@ -921,8 +921,6 @@ module EquationOfState
 
       !call eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 
-      eoscalc_count=eoscalc_count+1
-
     endsubroutine eoscalc_point_
 !***********************************************************************
     subroutine eoscalc_pencil_(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
@@ -943,8 +941,6 @@ module EquationOfState
       ivars_mod=ivars
 
       !call eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
-
-      eoscalc_count=eoscalc_count+1
 
     endsubroutine eoscalc_pencil_
 !***********************************************************************
@@ -1129,11 +1125,6 @@ module EquationOfState
       real, dimension(nx) :: lnrho_,ss_,yH_,lnTT_,TT_,TT1_,rho_,ee_,pp_
       real, dimension(nx) :: fractions,rhs,sqrtrhs
       integer :: i
-!
-        !do i=1,nx
-        !  call rtsafe_(ilnrho_ss,lnrho_(i),ss_(i),yHmin,yHmax,yH_(i))
-        !enddo
-      eoscalc_count=eoscalc_count+1
 !
       ivars_mod=ivars
       select case (ivars)
