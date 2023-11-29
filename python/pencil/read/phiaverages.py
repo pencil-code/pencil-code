@@ -58,10 +58,10 @@ class Averages(object):
             print(i)
 
     def read(
-        self, datadir="data", avg_file=None, var_index=-1, iter_list=None, precision="f"
+        self, datadir="data", avg_file=None, var_index=-1, iter_list=None, precision="f", param=list()
     ):
         """
-         read(datadir="data", avg_file="1", var_index=-1, iter_list=None, precision="f")
+         read(datadir="data", avg_file="1", var_index=-1, iter_list=None, precision="f", param=list())
 
          Read Pencil Code phi-averaged data.
 
@@ -83,6 +83,9 @@ class Averages(object):
 
         precision : string
             Float (f), double (d) or half (half).
+
+        param     : Param object
+            Param object belonging to the simulation.
         """
 
         import os
