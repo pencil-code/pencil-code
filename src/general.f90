@@ -21,7 +21,7 @@ module General
 !
   public :: setup_mm_nn
   public :: find_index_range, find_index, find_index_range_hill, pos_in_array, allpos_in_array_int
-  public :: find_proc, find_proc_general, find_proc_coords_general
+  public :: find_proc, find_proc_general, find_proc_coords_general, find_proc_max_localty
 !
   public :: spline, tridag, pendag, complex_phase, erfcc
   public :: cspline
@@ -223,6 +223,27 @@ module General
       endif
 !
     endfunction find_proc
+!***********************************************************************
+    pure integer function find_proc_max_localty(ipx, ipy, ipz) result(rank)
+!
+!  Returns the rank of a process given its position in (ipx,ipy,ipz).
+!
+!  16-sep-15/ccyang: coded.
+!
+      use Cdata, only: lprocz_slowest, nprocx_node, nprocy_node, nprocz_node
+!
+      integer, intent(in) :: ipx, ipy, ipz
+!
+      integer :: nprocs_node 
+
+      nprocs_node=nprocx_node*nprocy_node*nprocz_node
+      rank = find_proc_general(mod(ipx,nprocx_node), mod(ipy,nprocy_node), mod(ipz,nprocz_node), &
+                               nprocx_node, nprocy_node, nprocz_node, lprocz_slowest) &
+            + ipx/nprocx_node * nprocs_node &
+            + ipy/nprocy_node * nprocx*nprocy_node &
+            + ipz/nprocz_node * nprocx*nprocy*nprocz_node
+           
+    endfunction find_proc_max_localty
 !***********************************************************************
     pure integer function find_proc_general(ipx, ipy, ipz, nprocx, nprocy, nprocz, lprocz_slowest)
 !
