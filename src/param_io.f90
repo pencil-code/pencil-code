@@ -93,7 +93,7 @@ module Param_IO
       lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, lenforce_maux_check, &
-      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, lzorder, &
+      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, nprocx_node, nprocy_node, nprocz_node, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
       lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &
