@@ -443,8 +443,8 @@ module Io
 
       endif
 !
-      if (lode) output_ode(file)
-
+      if (lode) call output_ode(file)
+!
     endsubroutine output_snap
 !***********************************************************************
     subroutine output_snap_finalize
