@@ -1933,22 +1933,23 @@ module Particles
           if (lroot .and. (ldragforce_equi_global_eps .or. ldragforce_equi_noback)) &
               print*, 'init_particles: average dust-to-gas ratio=', eps
 !
+          uudrag: if (lhydro .and. (.not. lread_oldsnap .or. lread_oldsnap_nohydro)) then
 !  Set gas velocity field.
-          if (lhydro) then
-            do l = l1,l2
-              do m = m1,m2
-                do n = n1,n2
+              do l = l1,l2
+                do m = m1,m2
+                  do n = n1,n2
 !  Take either global or local dust-to-gas ratio.
-                  if (.not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f,l,m,n)
+                    if (.not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f,l,m,n)
 !
-                  f(l,m,n,iux) = f(l,m,n,iux) - beta_glnrho_global(1)*eps*Omega*tausp/ &
-                                                ((1.0+eps)**2+(Omega*tausp)**2)*cs
-                  f(l,m,n,iuy) = f(l,m,n,iuy) + beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
-                                                (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+                    f(l,m,n,iux) = f(l,m,n,iux) - beta_glnrho_global(1)*eps*Omega*tausp/ &
+                                                  ((1.0+eps)**2+(Omega*tausp)**2)*cs
+                    f(l,m,n,iuy) = f(l,m,n,iuy) + beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
+                                                  (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+                  enddo
                 enddo
               enddo
-            enddo
-          endif
+            endif
+          endif uudrag
 !  Set particle velocity field.
           do k = 1,npar_loc
 !  Take either global or local dust-to-gas ratio.
