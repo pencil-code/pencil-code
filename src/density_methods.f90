@@ -374,9 +374,9 @@ module DensityMethods
 !***********************************************************************
     subroutine getdlnrho_z(f,rn,in,dlnrho)
 
-      integer,                   intent(in) :: rn,in
-      real, dimension(mx,my,mz), intent(in) :: f
-      real, dimension(mx,my),    intent(out):: dlnrho
+      integer,                              intent(in) :: rn,in
+      real, dimension(:,:,:),               intent(in) :: f
+      real, dimension(size(f,1),size(f,2)), intent(out):: dlnrho
 
       dlnrho = f(:,:,rn+in)-f(:,:,rn-in)          ! = Delta \rho or Delta log(\rho)
       if (ldensity_nolog) then
