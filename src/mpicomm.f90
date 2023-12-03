@@ -309,7 +309,7 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !
 !  Announce myself for pc_run to detect.
 !
-      use General, only: itoa
+      use General, only: itoa, find_proc, find_proc_coords
 
       integer :: nprocs_penc, nprocs_foreign
 
