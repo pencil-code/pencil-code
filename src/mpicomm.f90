@@ -384,15 +384,16 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !  Position on the processor grid (WITHIN Yin or Yang grid!).
 !  x is fastest direction, z slowest (this is the default)
 !
-      if (lprocz_slowest) then
-        ipx = modulo(iproc, nprocx)
-        ipy = modulo(iproc/nprocx, nprocy)
-        ipz = iproc/nprocxy
-      else
-        ipx = modulo(iproc, nprocx)
-        ipy = iproc/nprocxz
-        ipz = modulo(iproc/nprocx, nprocz)
-      endif
+      call find_proc_coords(iproc,ipx,ipy,ipz)
+      !if (lprocz_slowest) then
+      !  ipx = modulo(iproc, nprocx)
+      !  ipy = modulo(iproc/nprocx, nprocy)
+      !  ipz = iproc/nprocxy
+      !else
+      !  ipx = modulo(iproc, nprocx)
+      !  ipy = iproc/nprocxz
+      !  ipz = modulo(iproc/nprocx, nprocz)
+      !endif
 !
 !  Set up flags for leading processors in each possible direction and plane
 !
@@ -420,19 +421,19 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !
 !  Set up `lower' and `upper' neighbours, refer to MPI_COMM_GRID.
 !
-      xlneigh = modulo(ipx-1,nprocx) + ipy*nprocx + ipz*nprocxy
-      xuneigh = modulo(ipx+1,nprocx) + ipy*nprocx + ipz*nprocxy
-      ylneigh = ipx + modulo(ipy-1,nprocy)*nprocx + ipz*nprocxy
-      yuneigh = ipx + modulo(ipy+1,nprocy)*nprocx + ipz*nprocxy
-      zlneigh = ipx + ipy*nprocx + modulo(ipz-1,nprocz)*nprocxy
-      zuneigh = ipx + ipy*nprocx + modulo(ipz+1,nprocz)*nprocxy
+      xlneigh = find_proc(ipx-1,ipy,ipz)  !modulo(ipx-1,nprocx) + ipy*nprocx + ipz*nprocxy
+      xuneigh = find_proc(ipx+1,ipy,ipz)  !modulo(ipx+1,nprocx) + ipy*nprocx + ipz*nprocxy
+      ylneigh = find_proc(ipx,ipy-1,ipz)  !ipx + modulo(ipy+1,nprocy)*nprocx + ipz*nprocxy
+      yuneigh = find_proc(ipx,ipy+1,ipz)  !ipx + modulo(ipy-1,nprocy)*nprocx + ipz*nprocxy
+      zlneigh = find_proc(ipx,ipy,ipz-1)  !ipx + ipy*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      zuneigh = find_proc(ipx,ipy,ipz+1)  !ipx + ipy*nprocx + modulo(ipz+1,nprocz)*nprocxy
 !
 !  Set the four corners in the yz-plane (in cyclic order).
 !
-      llcorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
-      ulcorn = ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
-      uucorn = ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
-      lucorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
+      llcorn = find_proc(ipx,ipy-1,ipz-1)  !ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      ulcorn = find_proc(ipx,ipy+1,ipz-1)  !ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      uucorn = find_proc(ipx,ipy+1,ipz+1)  !ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
+      lucorn = find_proc(ipx,ipy-1,ipz+1)  !ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
 !
 !  Overwrite with settings for boundary processors in Yin-Yang grid.
 !
@@ -710,6 +711,7 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
 
       call MPI_TYPE_FREE(type_get,mpierr)
       call MPI_TYPE_FREE(type_store,mpierr)
+      call MPI_WIN_FREE(win,mpierr)
 
     endsubroutine scatter_snapshot
 !***********************************************************************
