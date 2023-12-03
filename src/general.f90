@@ -21,7 +21,8 @@ module General
 !
   public :: setup_mm_nn
   public :: find_index_range, find_index, find_index_range_hill, pos_in_array, allpos_in_array_int
-  public :: find_proc, find_proc_general, find_proc_coords_general, find_proc_max_localty
+  public :: find_proc, find_proc_general, find_proc_coords, find_proc_coords_general
+  public :: find_proc_node_localty, find_proc_coords_node_localty
 !
   public :: spline, tridag, pendag, complex_phase, erfcc
   public :: cspline
@@ -224,11 +225,11 @@ module General
 !
     endfunction find_proc
 !***********************************************************************
-    pure integer function find_proc_max_localty(ipx, ipy, ipz) result(rank)
+    pure integer function find_proc_node_localty(ipx, ipy, ipz) result(rank)
 !
 !  Returns the rank of a process given its position in (ipx,ipy,ipz).
 !
-!  16-sep-15/ccyang: coded.
+!  28-nov-23/ccyang: coded.
 !
       use Cdata, only: lprocz_slowest, nprocx_node, nprocy_node, nprocz_node
 !
@@ -240,10 +241,10 @@ module General
       rank = find_proc_general(mod(ipx,nprocx_node), mod(ipy,nprocy_node), mod(ipz,nprocz_node), &
                                nprocx_node, nprocy_node, nprocz_node, lprocz_slowest) &
             + ipx/nprocx_node * nprocs_node &
-            + ipy/nprocy_node * nprocx*nprocy_node &
+            + ipy/nprocy_node * nprocx*nprocy_node*nprocz_node &
             + ipz/nprocz_node * nprocx*nprocy*nprocz_node
            
-    endfunction find_proc_max_localty
+    endfunction find_proc_node_localty
 !***********************************************************************
     pure integer function find_proc_general(ipx, ipy, ipz, nprocx, nprocy, nprocz, lprocz_slowest)
 !
@@ -276,6 +277,54 @@ module General
       ipz = rank/(nprocx*nprocy)
 
     endsubroutine find_proc_coords_general
+!***********************************************************************
+    subroutine find_proc_coords(rank,ipx,ipy,ipz)
+
+      use Cdata, only: lprocz_slowest, nprocx_node, nprocy_node, nprocz_node
+
+      integer, intent(in) :: rank
+      integer, intent(out) :: ipx, ipy, ipz
+
+      if (.false..and.all((/nprocx_node,nprocy_node,nprocz_node/)>0)) then
+        call find_proc_coords_node_localty(rank,ipx,ipy,ipz)
+print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty(ipx,ipy,ipz)
+      else
+        if (lprocz_slowest) then
+          ipx = modulo(rank, nprocx)
+          ipy = modulo(rank/nprocx, nprocy)
+          ipz = rank/nprocxy
+        else
+          ipx = modulo(rank, nprocx)
+          ipy = rank/nprocxz
+          ipz = modulo(rank/nprocx, nprocz)
+        endif
+      endif
+
+    endsubroutine find_proc_coords
+!***********************************************************************
+    subroutine find_proc_coords_node_localty(rank, ipx, ipy, ipz)
+!
+!  Determines the Cartesian processor coordinates ip[xyz] of processor rank for
+!  processor layout defined by nproc[xyz].
+!
+!  6-dec-22/MR: coded
+!
+      use Cdata, only: lprocz_slowest, nprocx_node, nprocy_node, nprocz_node
+!
+      integer :: rank, ipx, ipy, ipz
+      integer :: nprocs_per_node,inodex,inodey,inodez
+
+      nprocs_per_node=nprocx_node*nprocy_node*nprocz_node
+      call find_proc_coords_general(rank/nprocs_per_node, nprocx/nprocx_node, nprocy/nprocy_node, &
+                                    nprocz/nprocz_node, inodex, inodey, inodez)
+      call find_proc_coords_general(mod(rank,nprocs_per_node),nprocx_node,nprocy_node,nprocz_node, &
+                                    ipx, ipy, ipz)
+
+      ipx = ipx+inodex*nprocx_node
+      ipy = ipy+inodey*nprocy_node
+      ipz = ipz+inodez*nprocz_node
+
+    endsubroutine find_proc_coords_node_localty
 !***********************************************************************
     subroutine setup_mm_nn
 !
