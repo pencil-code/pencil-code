@@ -213,19 +213,23 @@ module General
 !
 !  16-sep-15/ccyang: coded.
 !
-      use Cdata, only: lprocz_slowest
+      use Cdata, only: lprocz_slowest,nprocx_node,nprocy_node,nprocz_node
 !
       integer, intent(in) :: ipx, ipy, ipz
 !
-      if (lprocz_slowest) then
-        find_proc = ipz * nprocxy + ipy * nprocx + ipx
+      if (.false..and.all((/nprocx_node,nprocy_node,nprocz_node/)>0)) then
+        find_proc = find_proc_node_localty(ipx, ipy, ipz)
       else
-        find_proc = ipy * nprocxz + ipz * nprocx + ipx
+        if (lprocz_slowest) then
+          find_proc = modulo(ipz,nprocz) * nprocxy + modulo(ipy,nprocy) * nprocx + modulo(ipx,nprocx)
+        else
+          find_proc = modulo(ipy,nprocy) * nprocxz + modulo(ipz,nprocz) * nprocx + modulo(ipx,nprocx)
+        endif
       endif
 !
     endfunction find_proc
 !***********************************************************************
-    pure integer function find_proc_node_localty(ipx, ipy, ipz) result(rank)
+    pure integer function find_proc_node_localty(ipx_, ipy_, ipz_) result(rank)
 !
 !  Returns the rank of a process given its position in (ipx,ipy,ipz).
 !
@@ -233,10 +237,12 @@ module General
 !
       use Cdata, only: lprocz_slowest, nprocx_node, nprocy_node, nprocz_node
 !
-      integer, intent(in) :: ipx, ipy, ipz
+      integer, intent(in) :: ipx_, ipy_, ipz_
 !
       integer :: nprocs_node 
+      integer :: ipx, ipy, ipz
 
+      ipx=modulo(ipx_,nprocx); ipy=modulo(ipy_,nprocy); ipz=modulo(ipz_,nprocz)
       nprocs_node=nprocx_node*nprocy_node*nprocz_node
       rank = find_proc_general(mod(ipx,nprocx_node), mod(ipy,nprocy_node), mod(ipz,nprocz_node), &
                                nprocx_node, nprocy_node, nprocz_node, lprocz_slowest) &
@@ -256,9 +262,9 @@ module General
       logical, intent(in), optional :: lprocz_slowest
 !
       if (loptest(lprocz_slowest,.true.)) then
-        find_proc_general = ipz * nprocx*nprocy + ipy * nprocx + ipx
+        find_proc_general = modulo(ipz,nprocz) * nprocx*nprocy + modulo(ipy,nprocy) * nprocx + modulo(ipx,nprocx)
       else
-        find_proc_general = ipy * nprocx*nprocz + ipz * nprocx + ipx
+        find_proc_general = modulo(ipy,nprocy) * nprocx*nprocz + modulo(ipz,nprocz) * nprocx + modulo(ipx,nprocx)
       endif
 !
     endfunction find_proc_general
