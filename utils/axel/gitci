@@ -1,5 +1,4 @@
-#!/bin/csh
-git add main.tex
+#!/bin/sh
 git commit -m "current version; message generated automatically on: `uname -ns` ($USER)"
 git pull --rebase
 git push
