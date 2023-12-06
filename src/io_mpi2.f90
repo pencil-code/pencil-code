@@ -1339,6 +1339,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1361,7 +1362,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_logical (buffer, partner, tag_log_0D)
               global(px+1,py+1,pz+1) = buffer
@@ -1387,6 +1388,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1411,7 +1413,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_logical (buffer, nv, partner, tag_log_1D)
               global(px+1,py+1,pz+1,:) = buffer
@@ -1437,6 +1439,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1459,7 +1462,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_int (buffer, partner, tag_int_0D)
               global(px+1,py+1,pz+1) = buffer
@@ -1485,6 +1488,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1509,7 +1513,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_int (buffer, nv, partner, tag_int_1D)
               global(px+1,py+1,pz+1,:) = buffer
@@ -1535,6 +1539,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1557,7 +1562,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_real (buffer, partner, tag_real_0D)
               global(px+1,py+1,pz+1) = buffer
@@ -1583,6 +1588,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1607,7 +1613,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_real (buffer, nv, partner, tag_real_1D)
               global(px+1,py+1,pz+1,:) = buffer
@@ -1710,6 +1716,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
@@ -1729,7 +1736,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_logical (global(px+1,py+1,pz+1), partner, tag_log_0D)
             enddo
@@ -1752,6 +1759,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
@@ -1773,7 +1781,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_logical (global(px+1,py+1,pz+1,:), nv, partner, tag_log_1D)
             enddo
@@ -1796,6 +1804,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
@@ -1815,7 +1824,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_int (global(px+1,py+1,pz+1), partner, tag_int_0D)
             enddo
@@ -1838,6 +1847,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
@@ -1859,7 +1869,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_int (global(px+1,py+1,pz+1,:), nv, partner, tag_int_1D)
             enddo
@@ -1882,6 +1892,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       real, intent(out) :: value
@@ -1901,7 +1912,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_real (global(px+1,py+1,pz+1), partner, tag_real_0D)
             enddo
@@ -1924,6 +1935,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
@@ -1945,7 +1957,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_real (global(px+1,py+1,pz+1,:), nv, partner, tag_real_1D)
             enddo
