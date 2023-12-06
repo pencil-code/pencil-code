@@ -24,6 +24,7 @@ module Io
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
   use File_io, only: file_exists
+  use General, only: find_proc
   use Messages, only: fatal_error, svn_id, warning
 !
   implicit none
@@ -119,7 +120,7 @@ module Io
           x = gx(1:mx)
           do px = 0, nprocx-1
             if (px == 0) cycle
-            call mpisend_real (gx(px*nx+1:px*nx+mx), mx, px, tag_gx)
+            call mpisend_real (gx(px*nx+1:px*nx+mx), mx, find_proc(px,0,0), tag_gx)
           enddo
         else
           ! receive local x-data from root processor
@@ -128,14 +129,14 @@ module Io
         ! send local x-data to all other processors in the same yz-plane
         do py = 0, nprocy-1
           do pz = 0, nprocz-1
-            partner = ipx + py*nprocx + pz*nprocxy
+            partner = find_proc(ipx,py,pz)
             if (partner == iproc) cycle
             call mpisend_real (x, mx, partner, tag_gx)
           enddo
         enddo
       else
         ! receive local x-data from leading yz-processor
-        call mpirecv_real (x, mx, ipx, tag_gx)
+        call mpirecv_real (x, mx, find_proc(ipx,0,0), tag_gx)
       endif
 !
       ! distribute y-grid
@@ -145,7 +146,7 @@ module Io
           y = gy(1:my)
           do py = 0, nprocy-1
             if (py == 0) cycle
-            call mpisend_real (gy(py*ny+1:py*ny+my), my, py*nprocx, tag_gy)
+            call mpisend_real (gy(py*ny+1:py*ny+my), my, find_proc(0,py,0), tag_gy)
           enddo
         else
           ! receive local y-data from root processor
@@ -154,14 +155,14 @@ module Io
         ! send local y-data to all other processors in the same xz-plane
         do px = 0, nprocx-1
           do pz = 0, nprocz-1
-            partner = px + ipy*nprocx + pz*nprocxy
+            partner = find_proc(px,ipy,pz)
             if (partner == iproc) cycle
             call mpisend_real (y, my, partner, tag_gy)
           enddo
         enddo
       else
         ! receive local y-data from leading xz-processor
-        call mpirecv_real (y, my, ipy*nprocx, tag_gy)
+        call mpirecv_real (y, my, find_proc(0,ipy,0), tag_gy)
       endif
 !
       ! distribute z-grid
@@ -171,7 +172,7 @@ module Io
           z = gz(1:mz)
           do pz = 0, nprocz-1
             if (pz == 0) cycle
-            call mpisend_real (gz(pz*nz+1:pz*nz+mz), mz, pz*nprocxy, tag_gz)
+            call mpisend_real (gz(pz*nz+1:pz*nz+mz), mz, find_proc(0,0,pz), tag_gz)
           enddo
         else
           ! receive local z-data from root processor
@@ -180,14 +181,14 @@ module Io
         ! send local z-data to all other processors in the same xy-plane
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (partner == iproc) cycle
             call mpisend_real (z, mz, partner, tag_gz)
           enddo
         enddo
       else
         ! receive local z-data from leading xy-processor
-        call mpirecv_real (z, mz, ipz*nprocxy, tag_gz)
+        call mpirecv_real (z, mz, find_proc(0,0,ipz), tag_gz)
       endif
 !
     endsubroutine distribute_grid
@@ -707,7 +708,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_logical (buffer, partner, tag_log_0D)
               global(px+1,py+1,pz+1) = buffer
@@ -761,7 +762,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_logical (buffer, nv, partner, tag_log_1D)
               global(px+1,py+1,pz+1,:) = buffer
@@ -813,7 +814,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_int (buffer, partner, tag_int_0D)
               global(px+1,py+1,pz+1) = buffer
@@ -867,7 +868,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_int (buffer, nv, partner, tag_int_1D)
               global(px+1,py+1,pz+1,:) = buffer
@@ -919,7 +920,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_real (buffer, partner, tag_real_0D)
               global(px+1,py+1,pz+1) = buffer
@@ -973,7 +974,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_real (buffer, nv, partner, tag_real_1D)
               global(px+1,py+1,pz+1,:) = buffer
@@ -1126,7 +1127,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_logical (global(px+1,py+1,pz+1), partner, tag_log_0D)
             enddo
@@ -1174,7 +1175,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_logical (global(px+1,py+1,pz+1,:), nv, partner, tag_log_1D)
             enddo
@@ -1220,7 +1221,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_int (global(px+1,py+1,pz+1), partner, tag_int_0D)
             enddo
@@ -1268,7 +1269,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_int (global(px+1,py+1,pz+1,:), nv, partner, tag_int_1D)
             enddo
@@ -1314,7 +1315,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_real (global(px+1,py+1,pz+1), partner, tag_real_0D)
             enddo
@@ -1362,7 +1363,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_real (global(px+1,py+1,pz+1,:), nv, partner, tag_real_1D)
             enddo
