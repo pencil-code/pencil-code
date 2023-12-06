@@ -37,6 +37,7 @@ module Io
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
   use File_io, only: file_exists
+  use General, only: find_proc
   use Messages, only: fatal_error, svn_id, warning
 !
   implicit none
@@ -122,7 +123,6 @@ module Io
       real, dimension(mzgrid), intent(in), optional :: gz
 !
       real, dimension(mxgrid+mygrid+mzgrid) :: tmp_grid
-      integer :: px, py, pz, partner
       integer, parameter :: tag_gx=680, tag_gy=681, tag_gz=682
 !
       if (lroot) then
@@ -206,7 +206,7 @@ module Io
 !
       endif
 
-      if (lode) output_ode(file)
+      if (lode) call output_ode(file)
 
     endsubroutine output_snap
 !***********************************************************************
@@ -603,7 +603,7 @@ module Io
         global(ipx+1,ipy+1) = value
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpirecv_logical (buffer, partner, tag_log_0D)
             global(px+1,py+1) = buffer
@@ -614,7 +614,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpisend_logical (value, ipz*nprocxy, tag_log_0D)
+        call mpisend_logical (value, find_proc(0,0,ipz), tag_log_0D)
       endif
 !
       write_persist_logical_0D = .false.
@@ -651,7 +651,7 @@ module Io
         global(ipx+1,ipy+1,:) = value
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpirecv_logical (buffer, nv, partner, tag_log_1D)
             global(px+1,py+1,:) = buffer
@@ -662,7 +662,7 @@ module Io
 !
         deallocate (global, buffer)
       else
-        call mpisend_logical (value, nv, ipz*nprocxy, tag_log_1D)
+        call mpisend_logical (value, nv, find_proc(0,0,ipz), tag_log_1D)
       endif
 !
       write_persist_logical_1D = .false.
@@ -697,7 +697,7 @@ module Io
         global(ipx+1,ipy+1) = value
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpirecv_int (buffer, partner, tag_int_0D)
             global(px+1,py+1) = buffer
@@ -708,7 +708,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpisend_int (value, ipz*nprocxy, tag_int_0D)
+        call mpisend_int (value, find_proc(0,0,ipz), tag_int_0D)
       endif
 !
       write_persist_int_0D = .false.
@@ -745,7 +745,7 @@ module Io
         global(ipx+1,ipy+1,:) = value
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpirecv_int (buffer, nv, partner, tag_int_1D)
             global(px+1,py+1,:) = buffer
@@ -756,7 +756,7 @@ module Io
 !
         deallocate (global, buffer)
       else
-        call mpisend_int (value, nv, ipz*nprocxy, tag_int_1D)
+        call mpisend_int (value, nv, find_proc(0,0,ipz), tag_int_1D)
       endif
 !
       write_persist_int_1D = .false.
@@ -830,7 +830,7 @@ module Io
         global(ipx+1,ipy+1,:) = value
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpirecv_real (buffer, nv, partner, tag_real_1D)
             global(px+1,py+1,:) = buffer
@@ -841,7 +841,7 @@ module Io
 !
         deallocate (global, buffer)
       else
-        call mpisend_real (value, nv, ipz*nprocxy, tag_real_1D)
+        call mpisend_real (value, nv, find_proc(0,0,ipz), tag_real_1D)
       endif
 !
       write_persist_real_1D = .false.
@@ -952,7 +952,7 @@ module Io
         value = global(ipx+1,ipy+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpisend_logical (global(px+1,py+1), partner, tag_log_0D)
           enddo
@@ -960,7 +960,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpirecv_logical (value, ipz*nprocxy, tag_log_0D)
+        call mpirecv_logical (value, find_proc(0,0,ipz), tag_log_0D)
       endif
 !
       read_persist_logical_0D = .false.
@@ -994,7 +994,7 @@ module Io
         value = global(ipx+1,ipy+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpisend_logical (global(px+1,py+1,:), nv, partner, tag_log_1D)
           enddo
@@ -1002,7 +1002,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpirecv_logical (value, nv, ipz*nprocxy, tag_log_1D)
+        call mpirecv_logical (value, nv, find_proc(0,0,ipz), tag_log_1D)
       endif
 !
       read_persist_logical_1D = .false.
@@ -1034,7 +1034,7 @@ module Io
         value = global(ipx+1,ipy+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpisend_int (global(px+1,py+1), partner, tag_int_0D)
           enddo
@@ -1042,7 +1042,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpirecv_int (value, ipz*nprocxy, tag_int_0D)
+        call mpirecv_int (value, find_proc(0,0,ipz), tag_int_0D)
       endif
 !
       read_persist_int_0D = .false.
@@ -1076,7 +1076,7 @@ module Io
         value = global(ipx+1,ipy+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpisend_int (global(px+1,py+1,:), nv, partner, tag_int_1D)
           enddo
@@ -1084,7 +1084,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpirecv_int (value, nv, ipz*nprocxy, tag_int_1D)
+        call mpirecv_int (value, nv, find_proc(0,0,ipz), tag_int_1D)
       endif
 !
       read_persist_int_1D = .false.
@@ -1116,7 +1116,7 @@ module Io
         value = global(ipx+1,ipy+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpisend_real (global(px+1,py+1), partner, tag_real_0D)
           enddo
@@ -1124,7 +1124,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpirecv_real (value, ipz*nprocxy, tag_real_0D)
+        call mpirecv_real (value, find_proc(0,0,ipz), tag_real_0D)
       endif
 !
       read_persist_real_0D = .false.
@@ -1158,7 +1158,7 @@ module Io
         value = global(ipx+1,ipy+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpisend_real (global(px+1,py+1,:), nv, partner, tag_real_1D)
           enddo
@@ -1166,7 +1166,7 @@ module Io
 !
         deallocate (global)
       else
-        call mpirecv_real (value, nv, ipz*nprocxy, tag_real_1D)
+        call mpirecv_real (value, nv, find_proc(0,0,ipz), tag_real_1D)
       endif
 !
       read_persist_real_1D = .false.
