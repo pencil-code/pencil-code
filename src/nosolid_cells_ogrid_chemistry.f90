@@ -3,6 +3,7 @@ module solid_cells_ogrid_chemistry
   use Cdata
   use General, only: keep_compiler_quiet
   use Solid_cells_ogrid_cdata
+  use Chemistry, only: species_constants
 !
 implicit none
 !
