@@ -157,7 +157,7 @@ module Cdata
 !AB: this more carefully and discuss it first in the newsletter.
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtsrc=0.2, cdtf=0.9
-  real :: eps_rkf=1e-5, eps_stiff=1e-6
+  real :: eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
   real :: ddt=0.0
   real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7
   real :: nu_sts=0.1
@@ -177,7 +177,7 @@ module Cdata
   logical :: lfractional_tstep_advance=.false.
   logical :: lfractional_tstep_negative=.true.
   logical :: lfirstpoint=.false.
-  logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
+  logical :: lmaxadvec_sum=.false.,old_cdtv=.false.,leps_fixed=.true.
   logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_frac_err'
 !
@@ -570,6 +570,7 @@ module Cdata
   integer :: idiag_Rmesh=0      ! DIAG_DOC: $R_{\rm mesh}$
   integer :: idiag_Rmesh3=0     ! DIAG_DOC: $R_{\rm mesh}^{(3)}$
   integer :: idiag_maxadvec=0   ! DIAG_DOC: maxadvec
+  integer :: idiag_eps_rkf=0    ! DIAG_DOC: time step accuracy threshold
 !
 !  Emergency brake:
 !   When toggled the code will stop at the next convenient point

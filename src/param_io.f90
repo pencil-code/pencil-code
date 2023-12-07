@@ -140,7 +140,7 @@ module Param_IO
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
       lshift_origin, lshift_origin_lower, coord_system, lconcurrent, &
       nt, it1, it1start, it1d, itspec, it_rmv, dt, dt0, dt_epsi, cdt, ddt, dt_incr, &
-      lfractional_tstep_advance, lfractional_tstep_negative, &
+      lfractional_tstep_advance, lfractional_tstep_negative, leps_fixed, &
       cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, cdtf, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, &
@@ -201,7 +201,7 @@ module Param_IO
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
       lpencil_check_small, lpencil_check_no_zeros, lpencil_check_diagnos_opti, &
       lpencil_init, penc0, lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
-      crash_file_dtmin_factor, ltestperturb, eps_rkf, lshock_heat, &
+      crash_file_dtmin_factor, ltestperturb, eps_rkf, eps_rkf0, lshock_heat, &
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
       lini_t_eq_zero, lini_t_eq_zero_once, &
       lav_smallx, xav_max, ldt_paronly, lweno_transport, &

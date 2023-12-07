@@ -38,6 +38,8 @@ module Timestep
         dt=1e-6
       endif
 !
+      if (eps_rkf0/=0.) eps_rkf=eps_rkf0
+!
 !  General error condition: errcon ~1e-4 redundant with maxerr ~1.
 !  0.1 more effective accelerator
       errcon = 0.1!(5.0/safety)**(1.0/dt_increase)
@@ -68,7 +70,7 @@ module Timestep
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real :: errmax, dt_temp
+      real :: errmax, dt_temp, dt_last
       real(KIND=rkind8) :: tnew, told
       integer :: j,i
 !
@@ -83,6 +85,7 @@ module Timestep
 !
       lfirst=.true.
       told=t
+      dt_last=dt
       dt=dt_next
       do i=1,20
         ! Do a Runge-Kutta step
@@ -116,6 +119,7 @@ module Timestep
 ! Time step to try next time
 !
       dt_next = safety*dt*errmax**dt_increase
+      if (.not.leps_fixed) eps_rkf = eps_rkf*(dt/dt_last)**dt_increase
 !
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt
 !

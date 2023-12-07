@@ -426,7 +426,7 @@ module Register
 !  Initialize threads.
 !
 !$    call copyin
-!  
+!
     endsubroutine initialize_modules
 !***********************************************************************
     subroutine finalize_modules(f)
@@ -1152,7 +1152,7 @@ module Register
 !
       if (lreset) then
         idiag_t=0; idiag_it=0; idiag_dt=0; idiag_walltime=0
-        idiag_timeperstep=0
+        idiag_timeperstep=0; idiag_eps_rkf=0
         idiag_rcylmphi=0; idiag_phimphi=0; idiag_zmphi=0; idiag_rmphi=0
         idiag_dtv=0; idiag_dtdiffus=0; idiag_dtdiffus2=0; idiag_dtdiffus3=0; idiag_Rmesh=0; idiag_Rmesh3=0
         idiag_maxadvec=0
@@ -1174,6 +1174,7 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'maxadvec',idiag_maxadvec)
         call parse_name(iname,cname(iname),cform(iname),'walltime',idiag_walltime)
         call parse_name(iname,cname(iname),cform(iname),'timeperstep',idiag_timeperstep)
+        call parse_name(iname,cname(iname),cform(iname),'eps_rkf',idiag_eps_rkf)
       enddo
 !
 !  phi-averages
