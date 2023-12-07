@@ -6543,11 +6543,9 @@ print*,'AXEL ltime3: time1=',time1
 !  Allocate memory for arrays.
 !
       allocate (Bz(bnx,bny), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error('mag_init', &
-          'Could not allocate memory for Bz', .true.)
+      if (alloc_err > 0) call fatal_error('mag_init','Could not allocate Bz', .true.)
       allocate (exp_fact(enx,eny,mz), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error('mag_init', &
-          'Could not allocate memory for exp_fact', .true.)
+      if (alloc_err > 0) call fatal_error('mag_init','Could not allocate exp_fact', .true.)
 !
       if (lroot) then
         inquire (file=mag_field_dat, exist=exists)
@@ -6556,7 +6554,7 @@ print*,'AXEL ltime3: time1=',time1
         inquire (iolength=rec_len) 1.0d0
         open (unit, file=mag_field_dat, form='unformatted', recl=rec_len*bnx*bny, access='direct')
         do py = 1, nprocxy-1
-          partner = py + ipz*nprocxy
+          partner = find_proc(modulo(py,nprocx),py/nprocx,0)
           ! read Bz data for remote processors
           read (unit, rec=1+py) Bz
           ! send Bz data to remote
@@ -6569,7 +6567,6 @@ print*,'AXEL ltime3: time1=',time1
         call stop_it_if_any(.false.,'')
         if (lfirst_proc_z) then
           ! receive Bz data
-          partner = ipy + ipz*nprocxy
           call mpirecv_real (Bz, (/ bnx, bny /), 0, tag_xy)
         endif
       endif
@@ -6578,11 +6575,11 @@ print*,'AXEL ltime3: time1=',time1
         ! distribute Bz along the z-direction
         if (lfirst_proc_z) then
           do pz = 1, nprocz-1
-            partner = ipx + ipy*nprocx + pz*nprocxy
+            partner = find_proc(ipx,ipy,pz)
             call mpisend_real (Bz, (/ bnx, bny /), partner, tag_z)
           enddo
         else
-          partner = ipx + ipy*nprocx
+          partner = find_proc(ipx,ipy,0)
           call mpirecv_real (Bz, (/ bnx, bny /), partner, tag_z)
         endif
       endif
@@ -6743,7 +6740,7 @@ print*,'AXEL ltime3: time1=',time1
                 f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
               endif
             else
-              partner = ipx + ipy*nprocx + pz*nprocxy
+              partner = find_proc(ipx,ipy,pz)
               call mpisend_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
             endif
           enddo
@@ -6753,7 +6750,7 @@ print*,'AXEL ltime3: time1=',time1
         call stop_it_if_any(.false.,'')
         do comp = 1, 3
           if (lfirst_proc_xy) then
-            partner = ipx + ipy*nprocx
+            partner = find_proc(ipx,ipy,0)
             call mpirecv_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
             call distribute_xy(A_local, A_global)
           else

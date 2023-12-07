@@ -957,7 +957,6 @@ contains
 !
 !  26-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: mpisend_int, mpirecv_int
       use General, only: lower_case
 !
       character (len=*), intent(in) :: label

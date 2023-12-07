@@ -2372,7 +2372,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !  25-feb-13/ccyang: construct global coordinates including ghost cells.
 !
       use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int, MPI_COMM_WORLD
-      use General, only: loptest
+      use General, only: loptest, find_proc
 !
       logical, optional :: lprecise_symmetry
 
@@ -2403,15 +2403,16 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !  The root processor, in turn, receives the data from the others
 !
         do jx=0,nprocx-1
+!
+          iproc_recv=find_proc(jx,0,0) 
           !avoid send-to-self
-          if (jx/=root) then
+          if (iproc_recv/=root) then
 !
 !  Formula of the serial processor number:
 !  iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
 !  Since for the x-row ipy=ipz=0, this reduces
 !  to iproc_recv=jx.
 !
-            iproc_recv=jx
             call mpirecv_real(xrecv,nx,iproc_recv,111)
             call mpirecv_real(x1recv,nx,iproc_recv,112)
             call mpirecv_real(x2recv,nx,iproc_recv,113)
@@ -2449,8 +2450,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         endif
       else
         do jy=0,nprocy-1
-          if (jy/=root) then
-            iproc_recv=nprocx*jy
+          iproc_recv=find_proc(0,jy,0) 
+          if (iproc_recv/=root) then
             call mpirecv_real(yrecv,ny,iproc_recv,221)
             call mpirecv_real(y1recv,ny,iproc_recv,222)
             call mpirecv_real(y2recv,ny,iproc_recv,223)
@@ -2483,8 +2484,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         endif
       else
         do jz=0,nprocz-1
-          if (jz/=root) then
-            iproc_recv=nprocx*nprocy*jz
+          iproc_recv=find_proc(0,0,jz) 
+          if (iproc_recv/=root) then
             call mpirecv_real(zrecv,nz,iproc_recv,331)
             call mpirecv_real(z1recv,nz,iproc_recv,332)
             call mpirecv_real(z2recv,nz,iproc_recv,333)
