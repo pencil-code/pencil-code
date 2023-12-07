@@ -261,7 +261,7 @@ module Io
         if (ipz == 0) z_start = 1
         if (ipz == nprocz-1) z_end = mz
         ! send data to root processor
-        call globalize_xy (a(:,:,z_start:z_end,na:ne), dest_proc=-ipz*nprocxy)
+        call globalize_xy (a(:,:,z_start:z_end,na:ne), dest_proc=-find_proc(0,0,ipz))
       endif
 !
       ! write additional data:
@@ -501,7 +501,7 @@ module Io
 !
       else
         ! receive data from root processor
-        call localize_xy (a, source_proc=-ipz*nprocxy)
+        call localize_xy (a, source_proc=-find_proc(0,0,ipz))
       endif
 !
       ! read additional data
