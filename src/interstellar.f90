@@ -2727,6 +2727,8 @@ module Interstellar
 !
 !  Determine position for next SN (w/ fixed scale-height).
 !
+    use General, only: find_proc
+
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
 !
@@ -2767,7 +2769,7 @@ module Interstellar
       endif
       SNR%indx%ipz=(i-1)/nz   ! uses integer division
       SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
-      SNR%indx%iproc=SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
+      SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
     endif
     call share_SN_parameters(f,SNR)
 !
@@ -2781,7 +2783,7 @@ module Interstellar
 !  27-oct-16/fred: z-location revised to use non-equidistant grid needs z from
 !                  each processor - use mpi on all procs not just root
 !
-    use General, only: random_number_wrapper, random_seed_wrapper
+    use General, only: random_number_wrapper, random_seed_wrapper, find_proc
     use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max,&
                        mpiallreduce_sum, mpibcast_real
     use Grid, only: get_grid_mn
@@ -3021,7 +3023,7 @@ module Interstellar
       if (j>nygrid) j=j-nygrid
       SNR%indx%ipy=(j-1)/ny  ! uses integer division
       SNR%indx%m=j-(SNR%indx%ipy*ny)+nghost
-      SNR%indx%iproc=SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
+      SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
       if (lnew_cluster) then
         x_cluster = (SNR%indx%l-1) * Lx/nxgrid + xyz0(1)
         y_cluster = (SNR%indx%m-1) * Ly/nygrid + xyz0(2)
@@ -3044,7 +3046,7 @@ module Interstellar
 !
 !  Determine position for next SN (w/ fixed scale-height).
 !
-    use General, only: random_seed_wrapper, random_number_wrapper
+    use General, only: random_seed_wrapper, random_number_wrapper, find_proc
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
@@ -3080,7 +3082,7 @@ module Interstellar
       if (nzgrid==1) i=1
       SNR%indx%ipz=(i-1)/nz   ! uses integer division
       SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
-      SNR%indx%iproc=SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
+      SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
     endif
 !
     call share_SN_parameters(f,SNR)
