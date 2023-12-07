@@ -1625,10 +1625,9 @@ module Interstellar
 !
       lpenc_requested(i_heat)=.true.
       lpenc_requested(i_cool)=.true.
-      lpenc_requested(i_heatcool)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_lnTT)=.true.
-      lpenc_requested(i_ee)=.true.
+      if (ltemperature.and..not.ltemperature_nolog) lpenc_requested(i_ee)=.true.
       if (.not.(ltemperature_nolog.and.ltemperature).or.pretend_lnTT) then
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_TT1)=.true.
@@ -1636,8 +1635,16 @@ module Interstellar
       if (ltemperature_nolog) lpenc_requested(i_cv1)=.true.
       if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
 !
-      if ((ltemperature_nolog.and.ltemperature).and.(idiag_taucmin/=0.or.idiag_Hmax_ism/=0)) &
+      if (idiag_taucmin/=0.or.idiag_Hmax_ism/=0) then
+        if (ltemperature_nolog.and.ltemperature) then
           lpenc_diagnos(i_TT1)=.true.
+        else
+          lpenc_diagnos(i_ee)=.true.
+          lpenc_diagnos(i_TT)=.true.
+        endif
+        lpenc_diagnos(i_heatcool)=.true.
+      endif
+      if (idiag_rhoHCmz/=0) lpenc_diagnos(i_heatcool)=.true.
       if (idiag_Lamm/=0) lpenc_diagnos(i_rho1)=.true.
 !
 !  Diagnostic pencils
@@ -1736,28 +1743,23 @@ module Interstellar
 !
       type(pencil_case) :: p
 !
-      real, dimension(nx) :: netheat, netcool
-!
       if (ldiagnos) then
         if (idiag_Hmax_ism/=0) then
-          netheat=max(p%heatcool,0.)
           if (ltemperature.and.ltemperature_nolog) then
-            call max_mn_name(netheat*p%TT1,idiag_Hmax_ism)
+            call max_mn_name(p%heatcool*p%TT1,idiag_Hmax_ism)
           elseif (pretend_lnTT) then
-            call max_mn_name(netheat,idiag_Hmax_ism)
+            call max_mn_name(p%heatcool,idiag_Hmax_ism)
           else
-            call max_mn_name(netheat*p%TT/p%ee,idiag_Hmax_ism)
+            call max_mn_name(p%heatcool*p%TT/p%ee,idiag_Hmax_ism)
           endif
         endif
         if (idiag_taucmin/=0) then
-          netcool=-p%heatcool
-          where (p%heatcool>=0.0) netcool=1.0e-6
           if (ltemperature.and.ltemperature_nolog) then
-            call max_mn_name(netcool*p%TT1,idiag_taucmin,lreciprocal=.true.)
+            call max_mn_name(-p%heatcool*p%TT1,idiag_taucmin,lreciprocal=.true.)
           elseif (pretend_lnTT) then
-            call max_mn_name(netcool,idiag_taucmin,lreciprocal=.true.)
+            call max_mn_name(-p%heatcool,idiag_taucmin,lreciprocal=.true.)
           else
-            call max_mn_name(netcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
+            call max_mn_name(-p%heatcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
           endif
         endif
         if (idiag_Lamm/=0) call sum_mn_name(p%rho1*p%cool,idiag_Lamm)
