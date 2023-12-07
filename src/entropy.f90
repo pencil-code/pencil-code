@@ -3480,17 +3480,17 @@ module Energy
               call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
             endif
           endif
-          if (idiag_Hmax/=0) call max_mn_name(Hmax/p%ee,idiag_Hmax)
-          if (idiag_tauhmin/=0) then
-            if (lthdiff_Hmax) then
-              call max_mn_name(ssmax,idiag_tauhmin,lreciprocal=.true.)
-            else
-              call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.)
-            endif
-          endif
           if (idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         endif
 
+        if (idiag_Hmax/=0) call max_mn_name(Hmax/p%ee,idiag_Hmax)
+        if (idiag_tauhmin/=0) then
+          if (lthdiff_Hmax.and.ldt) then
+            call max_mn_name(ssmax,idiag_tauhmin,lreciprocal=.true.)
+          else
+            call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.)
+          endif
+        endif
         if (idiag_ssmax/=0) call max_mn_name(p%ss*uT,idiag_ssmax)
         if (idiag_ssmin/=0) call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
         if (idiag_TTmax/=0) call max_mn_name(p%TT*uT,idiag_TTmax)
