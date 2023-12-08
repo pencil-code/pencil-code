@@ -946,15 +946,15 @@ module Special
 !
                 if (lactivate_reservoir) then
                   if (ig .ne. 0) f(l1-ig,m,n,ilnTT)=log(cs0p**2*cp1/(gamma-1))
-                  if (f(l1-ig,m,n,iqx) .lt. 0.0) then
+                    if (f(l1-ig,m,n,iqx) .lt. 0.0) then
 !                   rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
-                    rhob(m,n)=1.2*rho0
-                    f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
-                    (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
-                  else
-                    rhob(m,n)=rho0
-                    f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
-                    (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                      rhob(m,n)=1.2*rho0
+                      f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
+                      (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                    else
+                      rhob(m,n)=rho0
+                      f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
+                      (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
                   endif
                 endif
               enddo
@@ -962,12 +962,6 @@ module Special
             enddo
           enddo
 !
-!  Add slope limted diffusive flux to log density
-!
-!          if (.not.ldensity_nolog) then
-!            rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
-!            f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
-!          endif
         endif
         if (lset_boundary_emf) then
           do m=m1,m2
