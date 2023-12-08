@@ -387,29 +387,25 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Sub, only: calc_slope_diff_flux
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx) :: fdiff
       real, dimension (nx,3,3) :: flux_sld_ten
       integer :: i
-      real :: nlf_sld
       logical :: luu_nolog=.true.
       type (pencil_case), intent(in) :: p
-!!
-!!
+!
+!
       if (lslope_limited_special .and. llast) then
-        nlf_sld=nlf
         do i=1,3
-!              call calc_slope_diff_flux(f,iux+(i-1),p,alpha,nlf_sld,fdiff,'2nd')
               call div_diff_flux(f,iux+(i-1),p,fdiff,luu_nolog,FLUX_SLD=flux_sld_ten(:,:,i))
               df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + fdiff
         enddo
-!        if (lspherical_coords) then
-!              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(flux_sld_ten(:,2,2)+flux_sld_ten(:,3,3))/x(l1:l2)
-!              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+(flux_sld_ten(:,2,1)-flux_sld_ten(:,1,2)-flux_sld_ten(:,3,3)*cotth(m))/x(l1:l2)
-!              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(flux_sld_ten(:,3,1)-flux_sld_ten(:,1,3)+flux_sld_ten(:,3,2)*cotth(m))/x(l1:l2)
-!        endif
+        if (lspherical_coords) then
+              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(flux_sld_ten(:,2,2)+flux_sld_ten(:,3,3))/x(l1:l2)
+              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+(flux_sld_ten(:,2,1)-flux_sld_ten(:,1,2)-flux_sld_ten(:,3,3)*cotth(m))/x(l1:l2)
+              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(flux_sld_ten(:,3,1)-flux_sld_ten(:,1,3)+flux_sld_ten(:,3,2)*cotth(m))/x(l1:l2)
+        endif
 !
       endif
 !
@@ -539,8 +535,6 @@ module Special
           endif
         else
 !
-! Store the diffusive flux in a special aux array to be added later to
-! log-density in special_after_timestep
 !
           call div_diff_flux(f,ilnTT,p,fdiff,ltemperature_nolog)
           if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnTT)) then
@@ -567,18 +561,24 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
       real, dimension (nx) :: fdiff
       real, dimension (nx,3,3) :: flux_sld_ten
       integer :: i
       logical :: laa_nolog=.true.
-
-
+      type (pencil_case), intent(in) :: p
+!
+!
       if (lslope_limited_special .and. llast) then
         do i=1,3
-              call div_diff_flux(f,iax+(i-1),p,fdiff,laa_nolog)
-!              df(l1:l2,m,n,iax+i-1) = df(l1:l2,m,n,iax+i-1) + fdiff
+              call div_diff_flux(f,iax+(i-1),p,fdiff,laa_nolog,FLUX_SLD=flux_sld_ten(:,:,i))
+              df(l1:l2,m,n,iax+i-1) = df(l1:l2,m,n,iax+i-1) + fdiff
         enddo
+        if (lspherical_coords) then
+              df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-(flux_sld_ten(:,2,2)+flux_sld_ten(:,3,3))/x(l1:l2)
+              df(l1:l2,m,n,iay)=df(l1:l2,m,n,iay)+(flux_sld_ten(:,2,1)-flux_sld_ten(:,1,2)-flux_sld_ten(:,3,3)*cotth(m))/x(l1:l2)
+              df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)+(flux_sld_ten(:,3,1)-flux_sld_ten(:,1,3)+flux_sld_ten(:,3,2)*cotth(m))/x(l1:l2)
+        endif
+!
       endif
 !
     endsubroutine special_calc_magnetic
@@ -944,12 +944,18 @@ module Special
 ! p0=-C*qx for qx<0
 ! p0=0 for qx>0
 !
-                 if (lactivate_reservoir .and. (f(l1-ig,m,n,iqx) .lt. 0.0)) then
-                   rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
-!                   f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)+ &
-!                   (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
-                    f(l1-ig,m,n,ilnrho)=log(exp(f(l1-ig,m,n,ilnrho))+rhob(m,n))
-                    f(l1-ig,m,n,ilnTT)=log(cs0p**2*cp1/(gamma-1))
+                if (lactivate_reservoir) then
+                  if (ig .ne. 0) f(l1-ig,m,n,ilnTT)=log(cs0p**2*cp1/(gamma-1))
+                  if (f(l1-ig,m,n,iqx) .lt. 0.0) then
+!                   rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
+                    rhob(m,n)=1.2*rho0
+                    f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
+                    (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                  else
+                    rhob(m,n)=rho0
+                    f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
+                    (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                  endif
                 endif
               enddo
 !
