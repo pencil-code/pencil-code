@@ -918,6 +918,9 @@ module Boundcond
                 case ('e2')
                   ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_2(f,topbot,j)
+                case ('e2h')
+                  ! BCX_DOC: extrapolation [describe]
+                  call bcx_extrap_frac_2(f,topbot,j)
                 case ('e3')
                   ! BCX_DOC: extrapolation in log [maintain a power law]
                   call bcx_extrap_2_3(f,topbot,j)
@@ -4712,6 +4715,63 @@ module Boundcond
       endselect
 !
     endsubroutine bcx_extrap_2_2
+!***********************************************************************
+    subroutine bcx_extrap_frac_2(f,topbot,j)
+!
+!  Extrapolation boundary condition.
+!  Correct for polynomials up to 2nd order, determined 2 further degrees
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!  19-jun-03/wolf: coded
+!  01-jul-03/axel: introduced abbreviations n1p4,n2m4
+!
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+      real :: frac=0.8
+      integer :: j,l1p4,l2m4
+!
+!  abbreviations, because otherwise the ifc compiler complains
+!  for 1-D runs without vertical extent
+!
+      l1p4=l1+4
+      l2m4=l2-4
+!
+      select case (topbot)
+!
+      case(BOT)               ! bottom boundary
+        if ((j .eq. ilnrho) .or. (j .eq. ilnTT)) then
+          f(l1-1,:,:,j)=alog(0.2*frac*(9*exp(f(l1,:,:,j))- &
+          4*exp(f(l1+2,:,:,j))- 3*exp(f(l1+3,:,:,j))+ 3*exp(f(l1p4,:,:,j))))
+          f(l1-2,:,:,j)=alog(0.2*frac*(15*exp(f(l1,:,:,j))- &
+          2*exp(f(l1+1,:,:,j))-9*exp(f(l1+2,:,:,j))-6*exp(f(l1+3,:,:,j))+7*exp(f(l1p4,:,:,j))))
+          f(l1-3,:,:,j)=alog(frac/35.*(157*exp(f(l1,:,:,j))- &
+          33*exp(f(l1+1,:,:,j))-108*exp(f(l1+2,:,:,j))-68*exp(f(l1+3,:,:,j))+87*exp(f(l1p4,:,:,j))))
+        else
+          f(l1-1,:,:,j)=0.2   *(  9*f(l1,:,:,j)                 -4*f(l1+2,:,:,j)- 3*f(l1+3,:,:,j)+ 3*f(l1p4,:,:,j))
+          f(l1-2,:,:,j)=0.2   *( 15*f(l1,:,:,j)- 2*f(l1+1,:,:,j)-9*f(l1+2,:,:,j)- 6*f(l1+3,:,:,j)+ 7*f(l1p4,:,:,j))
+          f(l1-3,:,:,j)=1./35.*(157*f(l1,:,:,j)-33*f(l1+1,:,:,j)-108*f(l1+2,:,:,j)-68*f(l1+3,:,:,j)+87*f(l1p4,:,:,j))
+        endif
+!
+      case(TOP)               ! top boundary
+        if ((j .eq. ilnrho) .or. (j .eq. ilnTT)) then
+          f(l2+1,:,:,j)=alog(0.2*frac*(9*exp(f(l2,:,:,j))- &
+          4*exp(f(l2-2,:,:,j))- 3*exp(f(l2-3,:,:,j))+ 3*exp(f(l2m4,:,:,j))))
+          f(l2+2,:,:,j)=alog(0.2*frac*(15*exp(f(l2,:,:,j))- & 
+          2*exp(f(l2-1,:,:,j))-9*exp(f(l2-2,:,:,j))- 6*exp(f(l2-3,:,:,j))+ 7*exp(f(l2m4,:,:,j))))
+          f(l2+3,:,:,j)=alog(frac/35.*(157*exp(f(l2,:,:,j))- &
+          33*exp(f(l2-1,:,:,j))-108*exp(f(l2-2,:,:,j))-68*exp(f(l2-3,:,:,j))+87*exp(f(l2m4,:,:,j))))
+        else
+          f(l2+1,:,:,j)=0.2   *(  9*f(l2,:,:,j)                 - 4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))
+          f(l2+2,:,:,j)=0.2   *( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))
+          f(l2+3,:,:,j)=1./35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))
+        endif
+!
+      case default
+        call fatal_error("bcx_extrap_frac_2: ","topbot should be BOT or TOP")
+!
+      endselect
+!
+    endsubroutine bcx_extrap_frac_2
 !***********************************************************************
     subroutine bcy_extrap_2_2(f,topbot,j)
 !
