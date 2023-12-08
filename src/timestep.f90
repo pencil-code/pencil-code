@@ -197,6 +197,7 @@ module Timestep
         endif
 !
         call update_after_substep(f,df,dtsub,llast)
+        call update_ghosts(f)  ! Necessary for boundary driving in special module
 !
 !  Increase time.
 !
