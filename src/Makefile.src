@@ -1461,6 +1461,17 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O2 -DFUNDERSC=1 -mcmodel=large #(fn01sv06)
 #LD_MPI= #(fn01sv06)
 #####
+##### Piyali on Dirac
+##FFLAGS= -O2 -mcmodel=large #(dirac0*)
+#FFLAGS= -O2 -xCORE-AVX512 #(dirac0*)
+##FFLAGS= -g -traceback -CB -mcmodel=large #(dirac0*)
+#FC=mpiifort #(dirac0*)
+#CC=mpiicc #(dirac0*)
+#CFLAGS=-O2 -DFUNDERSC=1 #(dirac0*)
+#LD_MPI= #(dirac0*)
+##FFLAGS_DOUBLE=-fdefault-real-8 #(dirac03)
+#FFLAGS_DOUBLE=-r8 #(dirac0*)
+#####
 #####Sahel on CRAY ####################
 #FC=ftn #(elogin*)
 #F90=$(FC) #(elogin*)
