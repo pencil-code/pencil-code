@@ -2769,6 +2769,14 @@ outer:  do ikz=1,nz
     else
       call warning ('powerscl',"ia0=0 doesn't work.")
     endif
+  elseif (sp=='u_m') then
+    if (ilorentz>0) then
+      a_re=sqrt(1.-1./f(l1:l2,m1:m2,n1:n2,ilorentz))
+    else
+      a_re=sqrt(f(l1:l2,m1:m2,n1:n2,iux)**2 &
+               +f(l1:l2,m1:m2,n1:n2,iuy)**2 &
+               +f(l1:l2,m1:m2,n1:n2,iuz)**2)
+    endif
   elseif (sp=='ux') then
     a_re=f(l1:l2,m1:m2,n1:n2,iux)
   elseif (sp=='uy') then
