@@ -356,7 +356,7 @@ module Cdata
   integer :: ip21=0,ip22=0,ip23=0
   integer :: ip31=0,ip32=0,ip33=0
   integer :: ipoly_fr=0
-  integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0,iphiuu=0
+  integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0,iphiuu=0, ilorentz=0
   integer :: iuu0=0,iu0x=0,iu0y=0,iu0z=0
   integer :: ioo=0, iox=0, ioy=0, ioz=0
   integer :: igradu11=0,igradu12=0,igradu13=0
@@ -600,8 +600,8 @@ module Cdata
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
   character (LEN=labellen*4) :: xy_spec=''
   character (LEN=labellen), dimension(n_xy_specs_max) :: xy_specs=''
-  logical :: EP_spec=.false., nd_spec=.false., ud_spec=.false.
-  logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
+  logical :: EP_spec=.false., nd_spec=.false., ud_spec=.false., abs_u_spec=.false.
+  logical :: ro_spec=.false., TT_spec=.false., ss_spec=.false., cc_spec=.false., cr_spec=.false.
   logical :: sp_spec=.false., ssp_spec=.false., sssp_spec=.false., mu_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false., oun_spec=.false.
   logical :: np_spec=.false., np_ap_spec=.false., rhop_spec=.false., ele_spec=.false., pot_spec=.false.

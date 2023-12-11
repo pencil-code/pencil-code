@@ -739,6 +739,7 @@ module Snapshot
         if (EP_spec)  call powerhel(f,'bEP',lfirstcall_powerhel)
         if (a0_spec)  call powerscl(f,'a0')
         if (ro_spec)  call powerscl(f,'ro')
+        if (abs_u_spec) call powerscl(f,'u_m')
         if (ux_spec)  call powerscl(f,'ux')
         if (uy_spec)  call powerscl(f,'uy')
         if (uy_spec)  call powerscl(f,'uz')

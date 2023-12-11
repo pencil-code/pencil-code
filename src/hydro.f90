@@ -117,7 +117,7 @@ module Hydro
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   integer :: nb_rings=0
   integer :: neddy=0
-  integer :: iTij=0, ilorentz=0, ihless=0, jhless=0, nhless=0
+  integer :: iTij=0, ihless=0, jhless=0, nhless=0
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
   real, dimension(:), allocatable :: Bsquared
 !
