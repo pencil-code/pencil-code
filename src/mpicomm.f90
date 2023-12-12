@@ -6652,7 +6652,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-!
       bnx = size (out, 1)
       bny = size (out, 2)
       bnz = size (out, 3)
@@ -6937,7 +6936,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: pz, broadcaster, partner, nbox
       integer, parameter :: ytag=117
       integer, dimension(MPI_STATUS_SIZE) :: stat
-!
 !
       bnx = size (out, 1)
       bny = size (out, 2)
@@ -7570,7 +7568,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: buffer
 !
-!
       if ((nprocx == 1) .and. (nprocy == 1)) then
         out = in
         return
@@ -7656,7 +7653,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nxgrid), intent(in) :: in
       real, dimension(nx), intent(out) :: out
 !
-!
       out = in(nx*ipx+1:nx*(ipx+1))
 !
     endsubroutine unmap_from_pencil_x
@@ -7712,7 +7708,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx,ny) :: recv_buf
 !
-!
       nbox = nx*ny
 !
       do ibox = 0, nprocy-1
@@ -7750,7 +7745,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, inz ! size of the first and third dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
-!
 !
       inx = size (in, 1)
       inz = size (in, 3)
@@ -7807,7 +7801,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
 !
-!
       inx = size (in, 1)
       inz = size (in, 3)
       ina = size (in, 4)
@@ -7860,7 +7853,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nygrid), intent(in) :: in
       real, dimension(ny), intent(out) :: out
 !
-!
       out = in(ny*ipy+1:ny*(ipy+1))
 !
     endsubroutine unmap_from_pencil_y_1D
@@ -7874,7 +7866,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(nx,nygrid), intent(in) :: in
       real, dimension(nx,ny), intent(out) :: out
-!
 !
       out = in(:,ny*ipy+1:ny*(ipy+1))
 !
@@ -7890,7 +7881,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
-!
       out = in(:,ny*ipy+1:ny*(ipy+1),:)
 !
     endsubroutine unmap_from_pencil_y_3D
@@ -7904,7 +7894,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
-!
 !
       out = in(:,ny*ipy+1:ny*(ipy+1),:,:)
 !
@@ -7962,7 +7951,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:), allocatable :: recv_buf
 !
-!
       ina = size (in, 2)
       nbox = nz*ina
 !
@@ -7976,7 +7964,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       ! Allocate memory for large arrays.
       allocate (recv_buf(nz,ina), stat=alloc_err)
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_z_2D: Could not allocate memory for recv_buf', .true.)
- !
+!
       do ibox = 0, nprocz-1
         partner = find_proc(ipx,ipy,ibox)
         if (iproc == partner) then
@@ -8014,7 +8002,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, iny ! size of the first and third dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
-!
 !
       inx = size (in, 1)
       iny = size (in, 2)
@@ -8070,7 +8057,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, iny, ina ! size of the first, second, and fourth dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
-!
 !
       inx = size (in, 1)
       iny = size (in, 2)
@@ -8139,7 +8125,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
 !
-!
       out = in(nz*ipz+1:nz*(ipz+1),:)
 !
     endsubroutine unmap_from_pencil_z_2D
@@ -8154,7 +8139,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
-!
       out = in(:,:,nz*ipz+1:nz*(ipz+1))
 !
     endsubroutine unmap_from_pencil_z_3D
@@ -8168,7 +8152,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
-!
 !
       out = in(:,:,nz*ipz+1:nz*(ipz+1),:)
 !
@@ -8192,7 +8175,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
-!
 !
       if (nprocx == 1) then
         out = in
@@ -8253,7 +8235,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
-
 !
       nnx=size(in,1) ; nny=size(in,2)
       inx=nnx        ; iny=nny
@@ -8412,7 +8393,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocx == 1) then
         out = in
         return
@@ -8482,7 +8462,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
-!
 !
       if (nprocx == 1) then
         out = in
@@ -8936,7 +8915,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       inx = size (in, 1)
       iny = size (in, 2)
       inz = size (in, 3)
@@ -9020,7 +8998,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocz == 1) then
         out = in
         return
@@ -9088,7 +9065,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
-!
 !
       if (nprocz == 1) then
         out = in
@@ -9161,7 +9137,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocz == 1) then
         out = in
         return
@@ -9229,7 +9204,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocz == 1) then
         out = in
         return
@@ -9294,7 +9268,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:), intent(in) :: x,y,z
       real, dimension(:), intent(out) :: gx,gy,gz
 !
-      integer :: px, py, pz, mx, my, mz, l2, m2, n2, ie
+      integer :: px, py, pz, mx, my, mz, l2, m2, n2, ie, rank
       integer, parameter :: tag_gx=677, tag_gy=678, tag_gz=679
 !
       mx=size(x); my=size(y); mz=size(z)
@@ -9305,8 +9279,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         gx(1:mx) = x; ie=l2
         if (nprocx > 1) then
           do px = 1, nprocx-1
-            if (ldownsampling) call mpirecv_int(l2,px,tag_gx)
-            call mpirecv_real (gx(ie+1:ie+l2), l2, px, tag_gx)
+            rank=find_proc(px,0,0)
+            if (ldownsampling) call mpirecv_int(l2,rank,tag_gx)
+            call mpirecv_real (gx(ie+1:ie+l2), l2, rank, tag_gx)
             ie=ie+l2-nghost
           enddo
         endif
@@ -9314,8 +9289,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         gy(1:my) = y; ie=m2
         if (nprocy > 1) then
           do py = 1, nprocy-1
-            if (ldownsampling) call mpirecv_int(m2,py*nprocx,tag_gy)
-            call mpirecv_real (gy(ie+1:ie+m2), m2, py*nprocx, tag_gy)
+            rank=find_proc(0,py,0)
+            if (ldownsampling) call mpirecv_int(m2,rank,tag_gy)
+            call mpirecv_real (gy(ie+1:ie+m2), m2, rank, tag_gy)
             ie=ie+m2-nghost
           enddo
         endif
@@ -9323,8 +9299,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         gz(1:mz) = z; ie=n2
         if (nprocz > 1) then
           do pz = 1, nprocz-1
-            if (ldownsampling) call mpirecv_int(n2,pz*nprocxy,tag_gz)
-            call mpirecv_real (gz(ie+1:ie+n2), n2, pz*nprocxy, tag_gz)
+            rank=find_proc(0,0,pz)
+            if (ldownsampling) call mpirecv_int(n2,rank,tag_gz)
+            call mpirecv_real (gz(ie+1:ie+n2), n2, rank, tag_gz)
             ie=ie+n2-nghost
           enddo
         endif
