@@ -424,8 +424,8 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !
       xlneigh = find_proc(ipx-1,ipy,ipz)  !modulo(ipx-1,nprocx) + ipy*nprocx + ipz*nprocxy
       xuneigh = find_proc(ipx+1,ipy,ipz)  !modulo(ipx+1,nprocx) + ipy*nprocx + ipz*nprocxy
-      ylneigh = find_proc(ipx,ipy-1,ipz)  !ipx + modulo(ipy+1,nprocy)*nprocx + ipz*nprocxy
-      yuneigh = find_proc(ipx,ipy+1,ipz)  !ipx + modulo(ipy-1,nprocy)*nprocx + ipz*nprocxy
+      ylneigh = find_proc(ipx,ipy-1,ipz)  !ipx + modulo(ipy-1,nprocy)*nprocx + ipz*nprocxy
+      yuneigh = find_proc(ipx,ipy+1,ipz)  !ipx + modulo(ipy+1,nprocy)*nprocx + ipz*nprocxy
       zlneigh = find_proc(ipx,ipy,ipz-1)  !ipx + ipy*nprocx + modulo(ipz-1,nprocz)*nprocxy
       zuneigh = find_proc(ipx,ipy,ipz+1)  !ipx + ipy*nprocx + modulo(ipz+1,nprocz)*nprocxy
 !
@@ -632,9 +632,9 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !
 !  20-dec-15/MR: coded
 !
-      real, dimension(:,:,:), allocatable :: gridbuf_midy, gridbuf_midz, &! contains grid request of direct neighbour(s)
-                                             gridbuf_left, &              !             ~         of left corner neighbour
-                                             gridbuf_right                !             ~         of right corner neighbour
+      real, dimension(:,:,:), allocatable :: gridbuf_midy, gridbuf_midz, &  ! contains grid request of direct neighbour(s)
+                                             gridbuf_left, &                !             ~         of left corner neighbour
+                                             gridbuf_right                  !             ~         of right corner neighbour
 
       integer :: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot
       integer :: ipatch
@@ -1479,11 +1479,16 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !  NB nprocz=2*n, n>=1, comms across y-plane parallel in z! 
 !
       if (lcommunicate_y) then
-        poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx
-        pnbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+0*nprocx+ipx !N rev
-        pnfcrn = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+0*nprocx+ipx !N fwd
-        psfcrn = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+(nprocy-1)*nprocx+ipx
-        psbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+(nprocy-1)*nprocx+ipx
+        poleneigh = find_proc(ipx,     ipy,ipz  +nprocz/2)
+        pnbcrn    = find_proc(ipx,       0,ipz-1+nprocz/2)
+        pnfcrn    = find_proc(ipx,       0,ipz+1+nprocz/2)
+        psfcrn    = find_proc(ipx,nprocy-1,ipz+1+nprocz/2)
+        psbcrn    = find_proc(ipx,nprocy-1,ipz-1+nprocz/2)
+        !poleneigh = modulo(ipz  +nprocz/2,nprocz)*nprocxy+       ipy*nprocx+ipx
+        !pnbcrn    = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+         0*nprocx+ipx !N rev
+        !pnfcrn    = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+         0*nprocx+ipx !N fwd
+        !psfcrn    = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+(nprocy-1)*nprocx+ipx
+        !psbcrn    = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+(nprocy-1)*nprocx+ipx
       endif
 !
 !  Allocate and send/receive buffers across y-planes
@@ -2449,15 +2454,25 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !     ipx_partner = the offset to the shearing neighbour within the x-row, 
 !                   either the low-x end or high-x end of the grid. 
 !                   Note iproc, ipx, etc are zero-based indexing.
-          nextnextya = ipz*nprocy*nprocx +modulo(ipy-ystep+1,nprocy)*nprocx + ipx_partner
-          nextya     = ipz*nprocy*nprocx +modulo(ipy-ystep  ,nprocy)*nprocx + ipx_partner
-          lastya     = ipz*nprocy*nprocx +modulo(ipy-ystep-1,nprocy)*nprocx + ipx_partner
-          lastlastya = ipz*nprocy*nprocx +modulo(ipy-ystep-2,nprocy)*nprocx + ipx_partner
+          nextnextya = find_proc(ipx_partner,ipy-ystep+1,ipz) 
+          nextya     = find_proc(ipx_partner,ipy-ystep  ,ipz) 
+          lastya     = find_proc(ipx_partner,ipy-ystep-1,ipz) 
+          lastlastya = find_proc(ipx_partner,ipy-ystep-2,ipz) 
 !
-          lastlastyb = ipz*nprocy*nprocx +modulo(ipy+ystep-1,nprocy)*nprocx + ipx_partner
-          lastyb     = ipz*nprocy*nprocx +modulo(ipy+ystep  ,nprocy)*nprocx + ipx_partner
-          nextyb     = ipz*nprocy*nprocx +modulo(ipy+ystep+1,nprocy)*nprocx + ipx_partner
-          nextnextyb = ipz*nprocy*nprocx +modulo(ipy+ystep+2,nprocy)*nprocx + ipx_partner
+          lastlastyb = find_proc(ipx_partner,ipy+ystep-1,ipz) 
+          lastyb     = find_proc(ipx_partner,ipy+ystep  ,ipz) 
+          nextyb     = find_proc(ipx_partner,ipy+ystep+1,ipz) 
+          nextnextyb = find_proc(ipx_partner,ipy+ystep+2,ipz) 
+!
+          !!nextnextya = ipz*nprocy*nprocx +modulo(ipy-ystep+1,nprocy)*nprocx + ipx_partner
+          !!nextya     = ipz*nprocy*nprocx +modulo(ipy-ystep  ,nprocy)*nprocx + ipx_partner
+          !!lastya     = ipz*nprocy*nprocx +modulo(ipy-ystep-1,nprocy)*nprocx + ipx_partner
+          !!lastlastya = ipz*nprocy*nprocx +modulo(ipy-ystep-2,nprocy)*nprocx + ipx_partner
+!
+          !!lastlastyb = ipz*nprocy*nprocx +modulo(ipy+ystep-1,nprocy)*nprocx + ipx_partner
+          !!lastyb     = ipz*nprocy*nprocx +modulo(ipy+ystep  ,nprocy)*nprocx + ipx_partner
+          !!nextyb     = ipz*nprocy*nprocx +modulo(ipy+ystep+1,nprocy)*nprocx + ipx_partner
+          !!nextnextyb = ipz*nprocy*nprocx +modulo(ipy+ystep+2,nprocy)*nprocx + ipx_partner
 !
 !         The data that gets passed, each set of values goes to 4 places.
 !         Only pass active grid points in y, the guard cells are not assumed to be filled yet
@@ -2469,7 +2484,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !         Here we exchange the fao and fbo data across the shearing boundary.
 !         These if statements determinie if we need to copy, or post a MPI send/recieve.
 !         Direct copying is done when we discover we are the reciever.
-!         the route from send to recieve butffer names is bassed on values of iproc:
+!         the route from send to recieve buffer names is based on values of iproc:
 !          nextnextyb -> fao => fahihi
 !          nextyb     -> fao => fahi
 !          lastyb     -> fao => falo
@@ -2615,8 +2630,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Some special cases have already finished in initiate_shearing.
 !
-      if (nygrid/=1 .and. (nprocx>1 .or. nprocy>1) .and. &
-          (lfirst_proc_x .or. llast_proc_x)) then
+      if (nygrid/=1 .and. (nprocx>1 .or. nprocy>1) .and. (lfirst_proc_x .or. llast_proc_x)) then
 !
 !  Need to wait till all communication has been recived.
 !
