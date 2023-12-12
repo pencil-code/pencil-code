@@ -16,7 +16,7 @@
 module PointMasses
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, find_proc
   use Messages
   use Cparam
 !
@@ -2015,10 +2015,15 @@ module PointMasses
         !lperi(3),iz0,iz1,ipz0,ipz1,rdz1,rdz2)
       endif
 !
-      iproc_q11 = ipx0 + nprocx*ipy0 + nprocx*nprocy*ipz
-      iproc_q21 = ipx1 + nprocx*ipy0 + nprocx*nprocy*ipz
-      iproc_q12 = ipx0 + nprocx*ipy1 + nprocx*nprocy*ipz
-      iproc_q22 = ipx1 + nprocx*ipy1 + nprocx*nprocy*ipz
+      iproc_q11 = find_proc(ipx0,ipy0,ipz)
+      iproc_q21 = find_proc(ipx1,ipy0,ipz)
+      iproc_q12 = find_proc(ipx0,ipy1,ipz)
+      iproc_q22 = find_proc(ipx1,ipy1,ipz)
+!
+      !iproc_q11 = ipx0 + nprocx*ipy0 + nprocx*nprocy*ipz
+      !iproc_q21 = ipx1 + nprocx*ipy0 + nprocx*nprocy*ipz
+      !iproc_q12 = ipx0 + nprocx*ipy1 + nprocx*nprocy*ipz
+      !iproc_q22 = ipx1 + nprocx*ipy1 + nprocx*nprocy*ipz
 !
       if (iproc_q11 /= root) then
         if (iproc==iproc_q11) call mpisend_real(v(ix0,iy0,iz0,:),3,root     ,111)
