@@ -17,7 +17,7 @@ As of 18 Jun 2023: 20 owners:
         Matthias Rheinhardt <matthias.rheinhardt@aalto.fi>,
         Jennifer Schober <schober.jen@gmail.com>,
         Joern Warnecke <warnecke@mps.mpg.de>,
-        Chao-Chin Yang <ccyang@unlv.edu>,
+        Chao-Chin Yang <ccyang@ua.edu>,
         Hongzhe Zhou <hongzhe.zhou@sjtu.edu.cn>
 
 As of 7 Dec 2019: 16 owners: 
