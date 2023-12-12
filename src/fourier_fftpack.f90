@@ -229,8 +229,7 @@ module Fourier
       integer :: l,m,n
       logical :: lforward
 !
-      if (nprocx>1) &
-          call fatal_error('fourier_transform_xy','Must have nprocx=1!')
+      if (nprocx>1) call fatal_error('fourier_transform_xy','must have nprocx=1')
 !
       lforward=.true.
       if (present(linv)) lforward=.not.linv
@@ -241,20 +240,21 @@ module Fourier
 !
       if (lforward) then
         if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
+!$omp task
+!$omp parallel do num_threads(num_threads-2) collapse(2) private(ax,wsavex,n,m)
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nx,ax,wsavex)
           a_re(:,m,n)=real(ax)
           a_im(:,m,n)=aimag(ax)
         enddo; enddo
+!$omp end parallel
+!$omp end task
 !
 !  Transform y-direction.
 !
         if (nygrid/=1) then
-          if (nygrid/=nxgrid) then
-            if (lroot) print*, 'fourier_transform_xy: must have nygrid=nxgrid!'
-            call fatal_error('fourier_transform_xy','')
-          endif
+          if (nygrid/=nxgrid) call fatal_error('fourier_transform_xy','must have nygrid=nxgrid')
           call transp(a_re,'y')
           call transp(a_im,'y')
 !
@@ -273,10 +273,7 @@ module Fourier
 !  Transform y-direction back.
 !
         if (nygrid/=1) then
-          if (nygrid/=nxgrid) then
-            if (lroot) print*, 'fourier_transform: must have nygrid=nxgrid!'
-            call fatal_error('fourier_transform','')
-          endif
+          if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
 !
           if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in y'
           do n=1,nz; do l=1,ny
@@ -3967,12 +3964,13 @@ module Fourier
 !   3-sep-2008/anders: adapted from fourier_transform_xy_xy
 !
       use Mpicomm, only: mpirecv_real, mpisend_real
+      use General, only: find_proc
 !
       real, dimension (ny) :: a_re, a_im
       logical, optional :: linv
 !
       real, dimension (nygrid) :: a_re_full, a_im_full
-      integer :: ipy_send
+      integer :: ipy_send,partner
       integer, parameter :: itag1=100, itag2=200
       logical :: lforward
 !
@@ -3989,14 +3987,16 @@ module Fourier
             a_re_full(1:ny)=a_re
             a_im_full(1:ny)=a_im
             do ipy_send=1,nprocy-1
+              partner=find_proc(0,ipy+ipy_send,ipz)
               call mpirecv_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,itag1)
+                  ny,partner,itag1)   !iproc+ipy_send,itag1)
               call mpirecv_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,itag2)
+                  ny,partner,itag2)   !iproc+ipy_send,itag2)
             enddo
           else
-            call mpisend_real(a_re,ny,iproc-ipy,itag1)
-            call mpisend_real(a_im,ny,iproc-ipy,itag2)
+            partner=find_proc(0,0,ipz)
+            call mpisend_real(a_re,ny,partner,itag1)
+            call mpisend_real(a_im,ny,partner,itag2)
           endif
 !
           if (lfirst_proc_y) then
@@ -4012,14 +4012,15 @@ module Fourier
             a_im=a_im_full(1:ny)
 !
             do ipy_send=1,nprocy-1
+              partner=find_proc(0,ipy+ipy_send,ipz)
               call mpisend_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,itag1)
+                  ny,partner,itag1)    !iproc+ipy_send,itag1)
               call mpisend_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,itag2)
+                  ny,partner,itag2)    !iproc+ipy_send,itag2)
             enddo
           else
-            call mpirecv_real(a_re,ny,iproc-ipy,itag1)
-            call mpirecv_real(a_im,ny,iproc-ipy,itag2)
+            call mpirecv_real(a_re,ny,partner,itag1)   !iproc-ipy,itag1)
+            call mpirecv_real(a_im,ny,partner,itag2)   !iproc-ipy,itag2)
           endif
 !
         endif
@@ -4033,14 +4034,16 @@ module Fourier
             a_re_full(1:ny)=a_re
             a_im_full(1:ny)=a_im
             do ipy_send=1,nprocy-1
+              partner=find_proc(0,ipy+ipy_send,ipz)
               call mpirecv_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,itag1)
+                  ny,partner,itag1)    !iproc+ipy_send,itag1)
               call mpirecv_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,itag2)
+                  ny,partner,itag2)    !iproc+ipy_send,itag2)
             enddo
           else
-            call mpisend_real(a_re,ny,iproc-ipy,itag1)
-            call mpisend_real(a_im,ny,iproc-ipy,itag2)
+            partner=find_proc(0,0,ipz)
+            call mpisend_real(a_re,ny,partner,itag1)   !iproc-ipy,itag1)
+            call mpisend_real(a_im,ny,partner,itag2)   !iproc-ipy,itag2)
           endif
 !
           if (lfirst_proc_y) then
@@ -4056,14 +4059,15 @@ module Fourier
             a_im=a_im_full(1:ny)
 !
             do ipy_send=1,nprocy-1
+              partner=find_proc(0,ipy+ipy_send,ipz)
               call mpisend_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,itag1)
+                  ny,partner,itag1)    !iproc+ipy_send,itag1)
               call mpisend_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,iproc+ipy_send,itag2)
+                  ny,partner,itag2)    !iproc+ipy_send,itag2)
             enddo
           else
-            call mpirecv_real(a_re,ny,iproc-ipy,itag1)
-            call mpirecv_real(a_im,ny,iproc-ipy,itag2)
+            call mpirecv_real(a_re,ny,partner,itag1)    !iproc-ipy,itag1)
+            call mpirecv_real(a_im,ny,partner,itag2)    !iproc-ipy,itag2)
           endif
 !
         endif
@@ -4089,6 +4093,7 @@ module Fourier
 !  19-jul-06/anders: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
+      use General, only: find_proc
 !
       real, dimension (ny,nz) :: a_re
       real :: shift_y
@@ -4142,13 +4147,11 @@ module Fourier
 !
           do ipy_from=1,nprocy-1
             if (lfirst_proc_y) then
-              call mpirecv_real( &
-                  a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,1), &
-                  ny,ipy_from*nprocx+ipx,itag)
+              call mpirecv_real( a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,1), &
+                  ny,find_proc(ipx,ipy_from,0),itag)     !ipy_from*nprocx+ipx,itag)
             else
-              ipy_to=0
               if (ipy==ipy_from) &
-                  call mpisend_real(a_re(:,1),ny,ipy_to*nprocx+ipx,itag)
+                  call mpisend_real(a_re(:,1),ny,find_proc(ipx,0,0),itag)   !ipy_to*nprocx+ipx,itag)
             endif
           enddo
           if (lfirst_proc_y) a_re_new(1:ny,1)=a_re(:,1)
@@ -4169,7 +4172,7 @@ module Fourier
           ! each participating processor receives data
           allocate (buffer(ny,nz_new))
           do ipy_from=0,nprocy-1
-            iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
+            iproc_from=find_proc(ipx,ipy_from,ipz)   !ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
               if (ipy<nprocy_used) then
                 call mpirecv_real(buffer,(/ny,nz_new/),iproc_from,itag)
@@ -4179,10 +4182,9 @@ module Fourier
               if (ipy<nprocy_used) a_re_new(ipy*ny+1:(ipy+1)*ny,:) = &
                   a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)
               do ipy_to=0,nprocy_used-1
-                iproc_to=ipz*nprocy*nprocx+ipy_to*nprocx+ipx
+                iproc_to=find_proc(ipx,ipy_to,ipz)   !ipz*nprocy*nprocx+ipy_to*nprocx+ipx
                 if (ipy/=ipy_to) call mpisend_real( &
-                    a_re(:,ipy_to*nz_new+1:(ipy_to+1)*nz_new), &
-                    (/ny,nz_new/),iproc_to,itag)
+                    a_re(:,ipy_to*nz_new+1:(ipy_to+1)*nz_new),(/ny,nz_new/),iproc_to,itag)
               enddo
             endif
           enddo
@@ -4225,10 +4227,10 @@ module Fourier
             do ipy_to=1,nprocy-1
               call mpisend_real( &
                   a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,1), &
-                  ny,ipy_to*nprocx+ipx,itag)
+                  ny,find_proc(ipx,ipy_to,0),itag)    !ipy_to*nprocx+ipx,itag)
             enddo
           else
-            call mpirecv_real(a_re(:,1),ny,ipx,itag)
+            call mpirecv_real(a_re(:,1),ny,find_proc(ipx,0,0),itag)  !ipx,itag)
           endif
           if (lfirst_proc_y) a_re(:,1)=a_re_new(1:ny,1)
         else
@@ -4237,7 +4239,7 @@ module Fourier
           ! each participating processor needs to send data
           ! all processors receive their data portion
           do ipy_from=0,nprocy_used-1
-            iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
+            iproc_from=find_proc(ipx,ipy_from,ipz)    !ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
               call mpirecv_real( &
                   a_re(:,ipy_from*nz_new+1:(ipy_from+1)*nz_new), &
@@ -4246,7 +4248,7 @@ module Fourier
               if (ipy<nprocy_used) a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)= &
                   a_re_new(ipy*ny+1:(ipy+1)*ny,:)
               do ipy_to=0,nprocy-1
-                iproc_to=ipz*nprocy*nprocx+ipy_to*nprocx+ipx
+                iproc_to=find_proc(ipx,ipy_to,ipz)    !ipz*nprocy*nprocx+ipy_to*nprocx+ipx
                 if (ipy/=ipy_to) then
                   buffer = a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:)
                   call mpisend_real(buffer,(/ny,nz_new/),iproc_to,itag+100)
