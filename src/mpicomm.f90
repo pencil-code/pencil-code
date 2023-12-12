@@ -6356,7 +6356,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine sum_xy(in, out)
 !
 !  Sum up 0D data in the xy-plane and distribute back the sum.
-!  This routine needs only to be called from all processors a the xy-plane.
+!  This routine needs only to be called from all processors in an xy-plane.
 !  Several xy-planes can call this routine at once.
 !
 !  19-jan-2011/Bourdin.KIS: coded
@@ -6382,7 +6382,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         enddo
       else
         ! send data to collector
-        call mpisend_real (in, ipz*nprocxy, tag)
+        call mpisend_real (in, find_proc(0,0,ipz), tag)
         sum = 0.0
       endif
 !
