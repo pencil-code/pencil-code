@@ -79,7 +79,7 @@ module Fourier
       integer :: l,m,n
       logical :: lforward
 !
-      if (nprocx>1) call fatal_error('fourier_transform','Must have nprocx=1!')
+      if (nprocx>1) call fatal_error('fourier_transform','must have nprocx=1')
 !
       lforward=.true.
       if (present(linv)) lforward=.not.linv
@@ -100,10 +100,7 @@ module Fourier
 !  Transform y-direction.
 !
         if (nygrid/=1) then
-          if (nygrid/=nxgrid) then
-            if (lroot) print*, 'fourier_transform: must have nygrid=nxgrid!'
-            call fatal_error('fourier_transform','')
-          endif
+          if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
           call transp(a_re,'y')
           call transp(a_im,'y')
 !
@@ -121,10 +118,7 @@ module Fourier
 !  Transform z-direction.
 !
         if (nzgrid/=1) then
-          if (nzgrid/=nxgrid) then
-            if (lroot) print*, 'fourier_transform: must have nzgrid=nxgrid!'
-            call fatal_error('fourier_transform','')
-          endif
+          if (nzgrid/=nxgrid) call fatal_error('fourier_transform','must have nzgrid=nxgrid')
           call transp(a_re,'z')
           call transp(a_im,'z')
 !
@@ -147,10 +141,7 @@ module Fourier
 !
 !  Transform z-direction back.
 !
-          if (nzgrid/=nxgrid) then
-            if (lroot) print*, 'fourier_transform: must have nzgrid=nxgrid!'
-            call fatal_error('fourier_transform','')
-          endif
+          if (nzgrid/=nxgrid) call fatal_error('fourier_transform','must have nzgrid=nxgrid')
 !
           if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in z'
           do m=1,nz; do l=1,ny
@@ -164,10 +155,7 @@ module Fourier
 !  Transform y-direction back. Must transpose to go from (z,x,y) to (y,x,z).
 !
         if (nygrid/=1) then
-          if (nygrid/=nxgrid) then
-            if (lroot) print*, 'fourier_transform: must have nygrid=nxgrid!'
-            call fatal_error('fourier_transform','')
-          endif
+          if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
 !
           if (nzgrid/=1) then
             call transp(a_re,'z')
@@ -327,23 +315,15 @@ module Fourier
       integer :: l,m,n
 !
       if (present(linv)) then
-        if (linv) then
-          if (lroot) print*, 'fourier_transform_xz: only implemented for '// &
-              'forwards transform!'
-          call fatal_error('fourier_transform_xz','')
-        endif
+        if (linv) call not_implemented('fourier_transform_xz','for backwards transform')
       endif
 !
-      if (nprocx>1) &
-          call fatal_error('fourier_transform_xz','Must have nprocx=1!')
+      if (nprocx>1) call fatal_error('fourier_transform_xz','must have nprocx=1')
 !
 !  check whether nxgrid=nygrid=nzgrid
 !
-      if (nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) then
-        if (lroot) &
-            print*, 'fourier_transform_xz: must have nxgrid=nygrid=nzgrid!'
-        call fatal_error('fourier_transform_xz','')
-      endif
+      if (nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) &
+        call fatal_error('fourier_transform_xz','must have nxgrid=nygrid=nzgrid')
 !
 !  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
 !
@@ -400,17 +380,13 @@ module Fourier
       lforward=.true.
       if (present(linv)) lforward=.not.linv
 !
-      if (nprocx>1) &
-          call fatal_error('fourier_transform_x','Must have nprocx=1!')
+      if (nprocx>1) call fatal_error('fourier_transform_x','must have nprocx=1')
 !
 !  Check whether nxgrid=nygrid=nzgrid.
 !
       if ( (nygrid/=1.and.nygrid/=nxgrid) .or. &
-           (nzgrid/=1.and.nzgrid/=nxgrid) ) then
-        if (lroot) &
-            print*, 'fourier_transform_x: must have nxgrid=nygrid=nzgrid!'
-        call fatal_error('fourier_transform_x','')
-      endif
+           (nzgrid/=1.and.nzgrid/=nxgrid) ) &
+        call fatal_error('fourier_transform_x','must have nxgrid=nygrid=nzgrid')
 !
 !  need to initialize cfft only once, because nxgrid=nygrid
 !
@@ -503,18 +479,15 @@ module Fourier
       lnormalize=.true.
       if (present(lnorm)) lnormalize=lnorm
 !
-      if (nprocx>1) &
-          call fatal_error('fourier_transform_y','Must have nprocx=1!')
+      if (nprocx>1) call fatal_error('fourier_transform_y','must have nprocx=1')
 !
 ! Separate the problem in two cases. nxgrid>= nygrid and its
 ! opposite
 !
       if (nxgrid >= nygrid) then
-        if (mod(nxgrid,nygrid)/=0) then
-          print*,'fourier_transform_y: when nxgrid>= nygrid, '//&
-               'nxgrid needs to be an integer multiple of nygrid.'
-          call fatal_error('fourier_transform_y','mod(nxgrid,nygrid)/=0')
-        endif
+        if (mod(nxgrid,nygrid)/=0) &
+          call fatal_error('fourier_transform_y', &
+            'when nxgrid>= nygrid, nxgrid needs to be an integer multiple of nygrid')
       endif
 !
 !  initialize cfft (coefficients for fft?)
@@ -529,8 +502,7 @@ module Fourier
 !
 !  Transpose, transform and transpose back
 !
-        if (lroot .and. ip<10) print*, &
-             'fourier_transform_y: nxgrid>=nygrid'
+        if (lroot .and. ip<10) print*,'fourier_transform_y: nxgrid>=nygrid'
 !
         call transp(a_re,'y') ; call transp(a_im,'y')
         do n=1,nz; do l=1,ny
@@ -560,8 +532,7 @@ module Fourier
 !
       else !case nxgrid<nygrid
 !
-        if (lroot .and. ip<10) print*, &
-             'fourier_transform_y: nxgrid<nygrid'
+        if (lroot .and. ip<10) print*,'fourier_transform_y: nxgrid<nygrid'
 !
 ! Save interpolated values of x to dimension nygrid
 !
@@ -669,21 +640,14 @@ module Fourier
       lforward=.true.
       if (present(linv)) lforward=.not.linv
 !
-      if (nprocx>1) &
-          call fatal_error('fourier_transform_shear','Must have nprocx=1!')
+      if (nprocx>1) call fatal_error('fourier_transform_shear','must have nprocx=1')
 !
 !  If nxgrid/=nygrid/=nzgrid, stop.
 !
-      if (nygrid/=nxgrid .and. nygrid/=1) then
-        print*, 'fourier_transform_shear: '// &
-            'need to have nygrid=nxgrid if nygrid/=1.'
-        call fatal_error('fourier_transform_shear','')
-      endif
-      if (nzgrid/=nxgrid .and. nzgrid/=1) then
-        print*,'fourier_transform_shear: '// &
-            'need to have nzgrid=nxgrid if nzgrid/=1.'
-        call fatal_error('fourier_transform_shear','')
-      endif
+      if (nygrid/=nxgrid .and. nygrid/=1) &
+        call fatal_error('fourier_transform_shear','need to have nygrid=nxgrid if nygrid/=1')
+      if (nzgrid/=nxgrid .and. nzgrid/=1) &
+        call fatal_error('fourier_transform_shear','need to have nzgrid=nxgrid if nzgrid/=1')
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
 !
@@ -694,8 +658,7 @@ module Fourier
 !  Transform y-direction. Must start with y, because x is not periodic (yet).
 !
         if (nygrid/=1) then
-          if (lroot.and.ip<10) &
-              print*, 'fourier_transform_shear: doing FFTpack in y'
+          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
           call transp(a_re,'y')
           call transp(a_im,'y')
           do n=1,nz; do l=1,ny
@@ -712,8 +675,7 @@ module Fourier
 !
 !  Transform x-direction.
 !
-        if (lroot.and.ip<10) &
-            print*, 'fourier_transform_shear: doing FFTpack in x'
+        if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nygrid/=1) then
           call transp(a_re,'y')
           call transp(a_im,'y')
@@ -728,8 +690,7 @@ module Fourier
 !  Transform z-direction.
 !
         if (nzgrid/=1) then
-          if (lroot.and.ip<10) &
-              print*, 'fourier_transform_shear: doing FFTpack in z'
+          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in z'
           call transp(a_re,'z')
           call transp(a_im,'z')
           do l=1,nz; do m=1,ny
@@ -744,8 +705,7 @@ module Fourier
 !  Transform z-direction back.
 !
         if (nzgrid/=1) then
-          if (lroot.and.ip<10) &
-              print*, 'fourier_transform_shear: doing FFTpack in z'
+          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in z'
           do l=1,nz; do m=1,ny
             az=cmplx(a_re(:,m,l),a_im(:,m,l))
             call cfftb(nxgrid,az,wsave)
@@ -756,8 +716,7 @@ module Fourier
 !
 !  Transform x-direction back.
 !
-        if (lroot.and.ip<10) &
-            print*, 'fourier_transform_shear: doing FFTpack in x'
+        if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nzgrid/=1) then
           call transp(a_re,'z')
           call transp(a_im,'z')
@@ -776,8 +735,7 @@ module Fourier
         if (nygrid/=1) then
           call transp(a_re,'y')
           call transp(a_im,'y')
-          if (lroot.and.ip<10) &
-              print*, 'fourier_transform_shear: doing FFTpack in y'
+          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
           do n=1,nz; do l=1,ny
             ay=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
@@ -837,16 +795,12 @@ module Fourier
       lforward=.true.
       if (present(linv)) lforward=.not.linv
 !
-      if (nprocx>1) &
-          call fatal_error('fourier_transform_shear_xy','Must have nprocx=1!')
+      if (nprocx>1) call fatal_error('fourier_transform_shear_xy','must have nprocx=1')
 !
 !  If nxgrid/=nygrid/=nzgrid, stop.
 !
-      if (nygrid/=nxgrid .and. nygrid/=1) then
-        print*, 'fourier_transform_shear_xy: '// &
-            'need to have nygrid=nxgrid if nygrid/=1.'
-        call fatal_error('fourier_transform_shear','')
-      endif
+      if (nygrid/=nxgrid .and. nygrid/=1) &
+        call fatal_error('fourier_transform_shear_xy','need to have nygrid=nxgrid if nygrid/=1')
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
 !
@@ -857,8 +811,7 @@ module Fourier
 !  Transform y-direction. Must start with y, because x is not periodic (yet).
 !
         if (nygrid>1) then
-          if (lroot.and.ip<10) &
-              print*, 'fourier_transform_shear: doing FFTpack in y'
+          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
           call transp(a_re,'y')
           call transp(a_im,'y')
           do n=1,nz; do l=1,ny
@@ -875,8 +828,7 @@ module Fourier
 !
 !  Transform x-direction.
 !
-        if (lroot.and.ip<10) &
-            print*, 'fourier_transform_shear: doing FFTpack in x'
+        if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nygrid/=1) then
           call transp(a_re,'y')
           call transp(a_im,'y')
@@ -891,8 +843,7 @@ module Fourier
 !
 !  Transform x-direction back.
 !
-        if (lroot.and.ip<10) &
-            print*, 'fourier_transform_shear: doing FFTpack in x'
+        if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftb(nxgrid,ax,wsave)
@@ -907,8 +858,7 @@ module Fourier
         if (nygrid>1) then
           call transp(a_re,'y')
           call transp(a_im,'y')
-          if (lroot.and.ip<10) &
-              print*, 'fourier_transform_shear: doing FFTpack in y'
+          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
           do n=1,nz; do l=1,ny
             ay=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
@@ -961,8 +911,7 @@ module Fourier
 !  Transform x-direction.
 !
       if (lforward) then
-        if (lroot .and. ip<10) &
-            print*, 'fourier_transform_other_1: doing FFTpack in x'
+        if (lroot .and. ip<10) print*, 'fourier_transform_other_1: doing FFTpack in x'
         ax=cmplx(a_re,a_im)
         call cfftf(nx_other,ax,wsavex)
         a_re=real(ax)
@@ -971,8 +920,7 @@ module Fourier
 !
 !  Transform x-direction back.
 !
-        if (lroot .and. ip<10) &
-            print*, 'fourier_transform_other_1: doing FFTpack in x'
+        if (lroot .and. ip<10) print*, 'fourier_transform_other_1: doing FFTpack in x'
         ax=cmplx(a_re,a_im)
         call cfftb(nx_other,ax,wsavex)
         a_re=real(ax)
@@ -986,8 +934,7 @@ module Fourier
         a_im=a_im/nx_other
       endif
 !
-      if (lroot .and. ip<10) &
-          print*, 'fourier_transform_other_1: fft has finished'
+      if (lroot .and. ip<10) print*, 'fourier_transform_other_1: fft has finished'
 !
     endsubroutine fourier_transform_other_1
 !***********************************************************************
@@ -1021,8 +968,7 @@ module Fourier
 !
         call cffti(nx_other,wsavex)
 !
-        if (lroot .and. ip<10) &
-            print*, 'fourier_transform_other_2: doing FFTpack in x'
+        if (lroot .and. ip<10) print*, 'fourier_transform_other_2: doing FFTpack in x'
         do m=1,ny_other
           ax=cmplx(a_re(:,m),a_im(:,m))
           call cfftf(nx_other,ax,wsavex)
@@ -1034,8 +980,7 @@ module Fourier
 !
         call cffti(ny_other,wsavey)
 !
-        if (lroot .and. ip<10) &
-            print*, 'fourier_transform_other_2: doing FFTpack in y'
+        if (lroot .and. ip<10) print*, 'fourier_transform_other_2: doing FFTpack in y'
         do l=1,nx_other
           ay=cmplx(a_re(l,:),a_im(l,:))
           call cfftf(ny_other,ay,wsavey)
@@ -1048,8 +993,7 @@ module Fourier
 !
         call cffti(nx_other,wsavex)
 !
-        if (lroot .and. ip<10) &
-            print*, 'fourier_transform_other_2: doing FFTpack in x'
+        if (lroot .and. ip<10) print*, 'fourier_transform_other_2: doing FFTpack in x'
         do m=1,ny_other
           ax=cmplx(a_re(:,m),a_im(:,m))
           call cfftb(nx_other,ax,wsavex)
@@ -1061,8 +1005,7 @@ module Fourier
 !
         call cffti(ny_other,wsavey)
 !
-        if (lroot .and. ip<10) &
-            print*, 'fourier_transform_other_2: doing FFTpack in y'
+        if (lroot .and. ip<10) print*, 'fourier_transform_other_2: doing FFTpack in y'
         do l=1,nx_other
           ay=cmplx(a_re(l,:),a_im(l,:))
           call cfftb(ny_other,ay,wsavey)
@@ -1078,8 +1021,7 @@ module Fourier
         a_im=a_im/(nx_other*ny_other)
       endif
 !
-      if (lroot .and. ip<10) &
-          print*, 'fourier_transform_other_2: fft has finished'
+      if (lroot .and. ip<10) print*, 'fourier_transform_other_2: fft has finished'
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
@@ -1249,7 +1191,7 @@ module Fourier
 !
       if (nxgrid_other/=nygrid_other) &
         call fatal_error('fourier_transform_xy_xy_other', &
-             'nxgrid_other needs to be equal to nygrid_other.',lfirst_proc_xy)
+             'nxgrid_other needs to be equal to nygrid_other',lfirst_proc_xy)
 !
       if (lforward) then
         if (nygrid_other > 1) then
@@ -1368,15 +1310,15 @@ module Fourier
 !
 !
       if (size (a_re, 1) /= nx) &
-          call fatal_error ('fft_x_parallel_1D', 'size of input must be nx!', lfirst_proc_x)
+          call fatal_error ('fft_x_parallel_1D', 'size of input must be nx', lfirst_proc_x)
       if (size (a_re, 1) /= size (a_im, 1)) &
           call fatal_error ('fft_x_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nxgrid), p_im(nxgrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_1D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_x_parallel_1D', 'Could not allocate p', .true.)
 !
-      if (lshear_loc) call fatal_error ('fft_x_parallel_1D', 'Shearing is not implemented!', lfirst_proc_x)
+      if (lshear_loc) call not_implemented('fft_x_parallel_1D', 'Shearing', lfirst_proc_x)
 !
       call cffti (nxgrid, wsavex)
 
@@ -1474,9 +1416,9 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate memory for p/t', .true.)
+      if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate p and t', .true.)
 !
-      if (lshear_loc) call fatal_error ('fft_x_parallel_2D', 'Shearing is not implemented!', lfirst_proc_x)
+      if (lshear_loc) call not_implemented('fft_x_parallel_2D', 'Shearing', lfirst_proc_x)
 !
       call cffti (nxgrid, wsavex)
 !
@@ -1569,7 +1511,6 @@ module Fourier
       lshear_loc = lshear
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
-!
       inz = size (a_re, 3)
 !
       if (inz /= size (a_im, 3)) &
@@ -1587,9 +1528,9 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny,inz), p_im(pnx,pny,inz), t_re(tnx,tny,inz), t_im(tnx,tny,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate memory for p/t', .true.)
+      if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate p and t', .true.)
 !
-      if (lshear_loc) call fatal_error ('fft_x_parallel_3D', 'Shearing is not implemented!', lfirst_proc_x)
+      if (lshear_loc) call not_implemented('fft_x_parallel_3D', 'Shearing', lfirst_proc_x)
 !
       call cffti (nxgrid, wsavex)
 !
@@ -1691,25 +1632,25 @@ module Fourier
       ina = size (a_re, 4)
 !
       if (inz /= size (a_im, 3)) &
-          call fatal_error ('fft_x_parallel_4D', 'third dimension differs for real and imaginary part', lfirst_proc_x)
+          call fatal_error ('fft_x_parallel_4D','third dimension differs for real and imaginary part', lfirst_proc_x)
       if (ina /= size (a_im, 4)) &
-          call fatal_error ('fft_x_parallel_4D', 'fourth dimension differs for real and imaginary part', lfirst_proc_x)
+          call fatal_error ('fft_x_parallel_4D','fourth dimension differs for real and imaginary part', lfirst_proc_x)
 !
       if ((size (a_re, 1) /= nx) .or. (size (a_re, 2) /= ny)) &
-          call fatal_error ('fft_x_parallel_4D', 'real array size mismatch /= nx,ny', lfirst_proc_x)
+          call fatal_error ('fft_x_parallel_4D','real array size mismatch /= nx,ny', lfirst_proc_x)
       if ((size (a_im, 1) /= nx) .or. (size (a_im, 2) /= ny)) &
-          call fatal_error ('fft_x_parallel_4D', 'imaginary array size mismatch /= nx,ny', lfirst_proc_x)
+          call fatal_error ('fft_x_parallel_4D','imaginary array size mismatch /= nx,ny', lfirst_proc_x)
 !
       if (mod (nxgrid, nprocxy) /= 0) &
-          call fatal_error ('fft_x_parallel_4D', 'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
+          call fatal_error ('fft_x_parallel_4D','nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
       if (mod (nygrid, nprocxy) /= 0) &
-          call fatal_error ('fft_x_parallel_4D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
+          call fatal_error ('fft_x_parallel_4D','nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny,inz,ina), p_im(pnx,pny,inz,ina), t_re(tnx,tny,inz,ina), t_im(tnx,tny,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate memory for p/t', .true.)
+      if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate p and t', .true.)
 !
-      if (lshear_loc) call fatal_error ('fft_x_parallel_4D', 'Shearing is not implemented!', lfirst_proc_x)
+      if (lshear_loc) call not_implemented('fft_x_parallel_4D', 'Shearing', lfirst_proc_x)
 !
       call cffti (nxgrid, wsavex)
 !
@@ -1811,15 +1752,15 @@ module Fourier
 !
 !
       if (size (a_re, 1) /= ny) &
-          call fatal_error ('fft_y_parallel_1D', 'size of input must be ny!', lfirst_proc_y)
+          call fatal_error ('fft_y_parallel_1D', 'size of input must be ny', lfirst_proc_y)
       if (size (a_re, 1) /= size (a_im, 1)) &
           call fatal_error ('fft_y_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nygrid), p_im(nygrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate p', .true.)
 !
-      if (lshear_loc) call fatal_error ('fft_y_parallel_1D', 'Shearing is not implemented for 1D data!', lfirst_proc_y)
+      if (lshear_loc) call not_implemented('fft_y_parallel_1D', 'Shearing for 1D data', lfirst_proc_y)
       if (lshift) dshift_y = shift_y
 !
       call cffti (nygrid, wsavey)
@@ -1914,7 +1855,7 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nx,nygrid), p_im(nx,nygrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
       if (lshift) dshift_y = shift_y
@@ -2028,7 +1969,7 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nx,nygrid,inz), p_im(nx,nygrid,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
       if (lshift) dshift_y = shift_y
@@ -2149,7 +2090,7 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nx,nygrid,inz,ina), p_im(nx,nygrid,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
       if (lshift) dshift_y = shift_y
@@ -2263,9 +2204,9 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nzgrid), p_im(nzgrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_1D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_z_parallel_1D', 'Could not allocate p', .true.)
 !
-      if (lshear_loc) call fatal_error ('fft_z_parallel_1D', 'Shearing is not implemented!', lfirst_proc_z)
+      if (lshear_loc) call not_implemented('fft_z_parallel_1D', 'Shearing', lfirst_proc_z)
 !
       if (lshift) dshift_z = shift_z
 !
@@ -2372,14 +2313,13 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nzgrid,ina), p_im(nzgrid,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate p', .true.)
 !
-      if (lshear_loc) call fatal_error ('fft_z_parallel_2D', 'Shearing is not implemented!', lfirst_proc_z)
+      if (lshear_loc) call not_implemented('fft_z_parallel_2D', 'Shearing', lfirst_proc_z)
 !
       if (lshift) then
         allocate (dshift_z(ina), stat=stat)
-        if (stat > 0) call fatal_error ('fft_z_parallel_2D', &
-             'Could not allocate memory for shift', .true.)
+        if (stat > 0) call fatal_error ('fft_z_parallel_2D','Could not allocate shift', .true.)
         dshift_z = shift_z
       endif
 !
@@ -2484,9 +2424,9 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(inx,iny,nzgrid), p_im(inx,iny,nzgrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_3D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_z_parallel_3D', 'Could not allocate p', .true.)
 !
-      if (lshear_loc) call fatal_error ('fft_z_parallel_3D', 'Shearing is not implemented!', lfirst_proc_z)
+      if (lshear_loc) call not_implemented('fft_z_parallel_3D', 'Shearing', lfirst_proc_z)
 !
       call cffti (nzgrid, wsavez)
 !
@@ -2595,9 +2535,9 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(inx,iny,nzgrid,ina), p_im(inx,iny,nzgrid,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_4D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_z_parallel_4D', 'Could not allocate p', .true.)
 !
-      if (lshear_loc) call fatal_error ('fft_z_parallel_3D', 'Shearing is not implemented!', lfirst_proc_z)
+      if (lshear_loc) call not_implemented('fft_z_parallel_3D', 'Shearing', lfirst_proc_z)
 !
       call cffti (nzgrid, wsavez)
 !
@@ -2730,7 +2670,7 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for p/t', .true.)
+      if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
@@ -2898,7 +2838,7 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
-      if (stat > 0) call fatal_error('fft_xy_parallel_2D','Could not allocate memory for p/t', .true.)
+      if (stat > 0) call fatal_error('fft_xy_parallel_2D','Could not allocate p and t', .true.)
 !
       call cffti(nxgrid_other,wsavex_other)
       call cffti(nygrid_other,wsavey_other)
@@ -3056,7 +2996,7 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny,inz), p_im(pnx,pny,inz), t_re(tnx,tny,inz), t_im(tnx,tny,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for p/t', .true.)
+      if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
@@ -3240,7 +3180,7 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny,inz,ina), p_im(pnx,pny,inz,ina), t_re(tnx,tny,inz,ina), t_im(tnx,tny,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for p/t', .true.)
+      if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
@@ -3417,7 +3357,7 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nx,pny,pnz), p_im(nx,pny,pnz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xyz_parallel_3D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_xyz_parallel_3D', 'Could not allocate p', .true.)
 !
       call cffti (nzgrid, wsavez)
 !
@@ -3552,7 +3492,7 @@ module Fourier
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nx,pny,pnz,ina), p_im(nx,pny,pnz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xyz_parallel_4D', 'Could not allocate memory for p', .true.)
+      if (stat > 0) call fatal_error ('fft_xyz_parallel_4D', 'Could not allocate p', .true.)
 !
       call cffti (nzgrid, wsavez)
 !
@@ -3659,7 +3599,7 @@ module Fourier
           call fatal_error ('setup_extrapol_fact', 'factor x/y-dimension is invalid', lfirst_proc_xy)
 !
       allocate (k_2(enx,eny), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error ('setup_extrapol_fact', 'Could not allocate memory for k_2', .true.)
+      if (alloc_err > 0) call fatal_error ('setup_extrapol_fact', 'Could not allocate k_2', .true.)
 !
       ! Get wave numbers in transposed pencil shape and calculate exp(|k|)
       kx_start = (ipx + ipy*nprocx)*eny
@@ -3742,12 +3682,11 @@ module Fourier
           call fatal_error ('vect_pot_extrapol_z_parallel', &
               'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
-      if (lshear) call fatal_error ('vect_pot_extrapol_z_parallel', &
-          'shearing is not implemented in this routine!', lfirst_proc_xy)
+      if (lshear) call not_implemented('vect_pot_extrapol_z_parallel','shearing',lfirst_proc_xy) 
 !
       ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny,ona), p_im(pnx,pny,ona), t_re(tnx,tny,ona), t_im(tnx,tny,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for p/t', .true.)
+      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate p and t', .true.)
 !
       call cffti (nxgrid, wsavex)
       call cffti (nygrid, wsavey)
@@ -3772,7 +3711,7 @@ module Fourier
       deallocate (p_re, p_im)
 !
       allocate (e_re(tnx,tny,onz,ona), e_im(tnx,tny,onz,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for e', .true.)
+      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate e', .true.)
 !
       do pos_a = 1, ona
         do l = 1, tny
@@ -3793,7 +3732,7 @@ module Fourier
       deallocate (t_re, t_im)
 !
       allocate (b_re(pnx,pny,onz,ona), b_im(pnx,pny,onz,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for b', .true.)
+      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate b', .true.)
 !
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
@@ -3874,12 +3813,11 @@ module Fourier
           call fatal_error ('field_extrapol_z_parallel', &
               'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
-      if (lshear) call fatal_error ('field_extrapol_z_parallel', &
-          'shearing is not implemented in this routine!', lfirst_proc_xy)
+      if (lshear) call not_implemented('field_extrapol_z_parallel','shearing', lfirst_proc_xy) 
 !
       ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for p/t', .true.)
+      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate p and t', .true.)
 !
       call cffti (nxgrid, wsavex)
       call cffti (nygrid, wsavey)
@@ -3902,7 +3840,7 @@ module Fourier
       deallocate (p_re, p_im)
 !
       allocate (e_re(tnx,tny,onz,2), e_im(tnx,tny,onz,2), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for e', .true.)
+      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate e', .true.)
 !
       do l = 1, tny
         ! Transform y-direction.
@@ -3928,7 +3866,7 @@ module Fourier
       deallocate (t_re, t_im)
 !
       allocate (b_re(pnx,pny,onz,2), b_im(pnx,pny,onz,2), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for b', .true.)
+      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate b', .true.)
 !
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
@@ -4284,10 +4222,8 @@ module Fourier
 !
 !  if nxgrid/=nygrid, then stop.
 !
-      if (nygrid/=nxgrid .and. nygrid/=1) then
-        print*, 'fourier_shift_y: need to have nygrid=nxgrid if nygrid/=1'
-        call fatal_error('fourier_transform_shear','')
-      endif
+      if (nygrid/=nxgrid .and. nygrid/=1) &
+        call fatal_error('fourier_shft_y','need to have nygrid=nxgrid if nygrid/=1')
 !
 !  Initialize cfft.
 !
@@ -4357,15 +4293,13 @@ module Fourier
 !  Transform x-direction.
 !
       if (lforward) then
-        if (lroot .and. ip<10) &
-            print*, 'fourier_transform_real_1: doing FFTpack in x'
+        if (lroot .and. ip<10) print*, 'fourier_transform_real_1: doing FFTpack in x'
         call rfftf(na,a,wsavex_temp)
       else
 !
 !  Transform x-direction back.
 !
-        if (lroot .and. ip<10) &
-            print*, 'fourier_transform_real_1: doing FFTpack in x'
+        if (lroot .and. ip<10) print*, 'fourier_transform_real_1: doing FFTpack in x'
         call rfftb(na,a,wsavex_temp)
       endif
 !
@@ -4375,8 +4309,7 @@ module Fourier
         a=a/na
       endif
 !
-      if (lroot .and. ip<10) &
-          print*, 'fourier_transform_real_1: fft has finished'
+      if (lroot .and. ip<10) print*, 'fourier_transform_real_1: fft has finished'
 !
     endsubroutine fourier_transform_real_1
 !***********************************************************************
