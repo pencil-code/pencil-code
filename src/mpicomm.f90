@@ -46,7 +46,6 @@
 module Mpicomm
 !
   use Cdata
-  use Cparam
   use Yinyang
 !
   implicit none
@@ -197,7 +196,6 @@ module Mpicomm
 !$    else
 !$      call MPI_INIT_THREAD(MPI_THREAD_SERIALIZED, mpi_thread_provided, mpierr)
 !$      lthread_safe = mpi_thread_provided >= MPI_THREAD_SERIALIZED
-!$      if (.not. lthread_safe) call warning("mpi_init", "MPI implementation not threadsafe")
 !$    endif
 !
 ! Size and rank w.r.t. MPI_COMM_WORLD
@@ -224,6 +222,7 @@ module Mpicomm
 if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MPI_COMM_PENCIL, MPI_COMM_WORLD
 !
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_PENCIL!
+!$    if (.not. lthread_safe.and.lroot) print*, "mpi_init: Warning - MPI implementation not threadsafe!!!")
 !
       if (iapp>0) call stop_it('in MPMD mode, Pencil must be the first application')
 
@@ -261,7 +260,7 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
       if (ncpus/=nprocx*nprocy*nprocz) then
         if (lroot) then
           print*, 'Laid out for ncpus (per grid) = ', ncpus, &
-              ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
+                  ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
         endif
         call stop_it('mpicomm_init')
       endif
