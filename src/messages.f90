@@ -90,9 +90,12 @@ module Messages
 
     endsubroutine set_caller
 !***********************************************************************
-    subroutine not_implemented(location,message)
+    subroutine not_implemented(location,message,force)
 !
+      use General, only: loptest
+
       character(len=*), optional :: location, message
+      logical, optional :: force
 !
       if (present(location)) scaller=location
 !
@@ -110,7 +113,10 @@ module Messages
           endif
         endif
 !
-        if (ldie_onfatalerror) call die_gracefully
+        if (ldie_onfatalerror) then
+          if (loptest(force)) call die_immediately
+          call die_gracefully
+        endif
 !
       endif
 !
