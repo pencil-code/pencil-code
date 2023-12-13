@@ -58,7 +58,10 @@ module Special
   real :: pradtop=1.d3, pradbot=1.d6      ! unit: [Pa]
   real :: pbot0=1.e7                       ! unit: [Pa]
   !
+  integer :: n_damping=0
+  !
   logical :: linit_equilibrium=.false.
+  logical :: lsponge_top=.false.,lsponge_bottom=.false.
 !
 ! Run parameters
 !
@@ -72,10 +75,11 @@ module Special
       R_planet,rho_ref,cs_ref,cp_ref,T_ref,pbot0,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
-      Bext_ampl,iBext
+      Bext_ampl,iBext,n_damping,lsponge_top,lsponge_bottom
 !
   namelist /special_run_pars/ &
-      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext
+      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,n_damping,&
+      lsponge_top,lsponge_bottom
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -210,6 +214,48 @@ module Special
       write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
+!***********************************************************************
+    subroutine special_calc_hydro(f,df,p)
+!
+!  Add damping layers near the top and bottom boundaries. Ref: Dowling (1998).
+!  ksp in his work is equal to n_damping.
+!  q(j) is correspond to mu0(n_damping+1-j) in eq(57).
+!
+!  24-nov-23/kuan,hongzhe: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(:), allocatable :: q
+      integer :: i, j
+!
+      if (n_damping>0 .and. (lsponge_top.or.lsponge_bottom)) then
+        allocate(q(n_damping))
+        q=0.
+      endif
+!
+      if (it>1 .and. lsponge_top .and. llast_proc_x) then
+        do j=1,n_damping
+          q=0.1/dt*(1.-cos(pi*j/n_damping))
+        enddo
+!
+        do i=iux,iuz
+          df(l2-n_damping+1:l2,m,n,i)=-q*f(l2-n_damping+1:l2,m,n,i)
+        enddo
+      endif
+!
+      if (it>1 .and. lsponge_bottom .and. lfirst_proc_x) then
+        do j=1,n_damping
+          q=0.1/dt*(1.-cos(pi*(n_damping-j+1)/n_damping))
+        enddo
+!
+        do i=iux,iuz
+          df(l1:l1+n_damping-1,m,n,i)=-q*f(l1:l1+n_damping-1,m,n,i)
+        enddo
+      endif
+!
+    endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
