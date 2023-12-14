@@ -41,7 +41,7 @@ module Shock
   logical :: lmax_shock=.true.
   real    :: div_threshold=0.0
   real    :: shock_linear = 0.01
-  real    :: shock_div_pow = 1., dtfactor=1e-4, con_bias=0.1
+  real    :: shock_div_pow = 1., dtfactor=1., con_bias=0.1
   logical :: lrewrite_shock_boundary=.false.
   logical :: lconvergence_only=.true., lconvergence_bias=.true.
 !
