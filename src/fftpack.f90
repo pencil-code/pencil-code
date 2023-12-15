@@ -634,9 +634,8 @@ subroutine cffti ( n, wsave )
 !
   implicit none
 !
-  integer n
-!
-  real wsave(4*n+15)
+  integer, intent(in) :: n
+  real, intent(out):: wsave(4*n+15)
 !
   wsave = 0.0
 
@@ -677,7 +676,9 @@ subroutine cffti1 ( n, wa, ifac )
 !
   implicit none
 !
-  integer n
+  integer, intent(in) :: n
+  integer, intent(out):: ifac(15)
+  real, intent(out):: wa(2*n)
 !
   real arg
   real argh
@@ -686,7 +687,6 @@ subroutine cffti1 ( n, wa, ifac )
   integer i
   integer i1
   integer ido
-  integer ifac(15)
   integer ii
   integer ip
   integer j
@@ -696,7 +696,6 @@ subroutine cffti1 ( n, wa, ifac )
   integer ld
   integer nf
   real r_pi
-  real wa(2*n)
 !
   call i_factor ( n, ifac )
 
@@ -1113,12 +1112,12 @@ subroutine cosqi ( n, wsave )
 !
   implicit none
 !
-  integer n
+  integer, intent(in) :: n
+  real, intent(out) :: wsave(3*n+15)
 !
   real dt
   integer k
   real r_pi
-  real wsave(3*n+15)
 !
   dt = 0.5E+00 * r_pi ( ) / real ( n )
 
@@ -2142,12 +2141,12 @@ subroutine dcosti ( n, wsave )
 !
   implicit none
 !
-  integer n
+  integer, intent(in) :: n
+  double precision, intent(out) :: wsave(3*n+15)
 !
   double precision d_pi
   double precision dt
   integer k
-  double precision wsave(3*n+15)
 !
   if ( n <= 3 ) then
     return
@@ -2436,9 +2435,8 @@ subroutine dffti ( n, wsave )
 !
   implicit none
 !
-  integer n
-!
-  double precision wsave(2*n+15)
+  integer, intent(in) :: n
+  double precision, intent(out) :: wsave(2*n+15)
 !
   if ( n <= 1 ) then
     return
@@ -2477,7 +2475,9 @@ subroutine dffti1 ( n, wa, ifac )
 !
   implicit none
 !
-  integer n
+  integer, intent(in) :: n
+  double precision, intent(out) :: wa(n)
+  integer, intent(out) :: ifac(15)
 !
   double precision arg
   double precision argh
@@ -2486,7 +2486,6 @@ subroutine dffti1 ( n, wa, ifac )
   double precision fi
   integer i
   integer ido
-  integer ifac(15)
   integer ii
   integer ip
   integer is
@@ -2496,7 +2495,6 @@ subroutine dffti1 ( n, wa, ifac )
   integer l2
   integer ld
   integer nf
-  double precision wa(n)
 !
   call i_factor ( n, ifac )
 
@@ -2837,12 +2835,12 @@ subroutine dsinti ( n, wsave )
 !
   implicit none
 !
-  integer n
+  integer, intent(in) :: n
+  double precision, intent(out) :: wsave((5*n+30)/2)
 !
   double precision d_pi
   double precision dt
   integer k
-  double precision wsave((5*n+30)/2)
 !
   if ( n <= 1 ) then
     return
@@ -3348,9 +3346,8 @@ subroutine ezffti ( n, wsave )
 !
   implicit none
 !
-  integer n
-!
-  real wsave(3*n+15)
+  integer, intent(in):: n
+  real, intent(out):: wsave(3*n+15)
 !
   if ( n <= 1 ) then
     return
@@ -3389,7 +3386,9 @@ subroutine ezffti1 ( n, wa, ifac )
 !
   implicit none
 !
-  integer n
+  integer, intent(in) :: n
+  integer, intent(out):: ifac(15)
+  real, intent(out):: wa(n)
 !
   real arg1
   real argh
@@ -3399,7 +3398,6 @@ subroutine ezffti1 ( n, wa, ifac )
   real dsh1
   integer i
   integer ido
-  integer ifac(15)
   integer ii
   integer ip
   integer is
@@ -3410,7 +3408,6 @@ subroutine ezffti1 ( n, wa, ifac )
   integer nf
   real r_pi
   real sh1
-  real wa(n)
 !
   call i_factor ( n, ifac )
 
@@ -3456,7 +3453,7 @@ subroutine ezffti1 ( n, wa, ifac )
 
   return
 end
-subroutine i_factor ( n, ifac )
+pure subroutine i_factor ( n, ifac )
 !
 !*******************************************************************************
 !
@@ -3483,10 +3480,11 @@ subroutine i_factor ( n, ifac )
 !
   implicit none
 !
+  integer, intent(out):: ifac(15)
+  integer, intent(in) :: n
+!
   integer i
-  integer ifac(15)
   integer j
-  integer n
   integer nf
   integer nl
   integer nq
@@ -3575,7 +3573,7 @@ subroutine i_factor ( n, ifac )
 
   return
 end
-subroutine passb ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
+pure subroutine passb ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
 !
 !*******************************************************************************
 !
@@ -3595,16 +3593,19 @@ subroutine passb ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
 !
   implicit none
 !
-  integer idl1
-  integer ido
-  integer ip
-  integer l1
+  integer, intent(out):: nac
+  integer, intent(in) :: idl1
+  integer, intent(in) :: ido
+  integer, intent(in) :: ip
+  integer, intent(in) :: l1
 !
-  real c1(ido,l1,ip)
-  real c2(idl1,ip)
-  real cc(ido,ip,l1)
-  real ch(ido,l1,ip)
-  real ch2(idl1,ip)
+  real, intent(out) :: c1(ido,l1,ip)
+  real, intent(out) :: c2(idl1,ip)
+  real, intent(in)  :: cc(ido,ip,l1)
+  real, intent(out) :: ch(ido,l1,ip)
+  real, intent(out) :: ch2(idl1,ip)
+  real, intent(in) :: wa(*)
+!
   integer i
   integer idij
   integer idj
@@ -3619,9 +3620,7 @@ subroutine passb ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
   integer k
   integer l
   integer lc
-  integer nac
   integer nt
-  real wa(*)
   real wai
   real war
 !
@@ -3747,7 +3746,7 @@ subroutine passb ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
 
   return
 end
-subroutine passb2 ( ido, l1, cc, ch, wa1 )
+pure subroutine passb2 ( ido, l1, cc, ch, wa1 )
 !
 !*******************************************************************************
 !
@@ -3767,16 +3766,16 @@ subroutine passb2 ( ido, l1, cc, ch, wa1 )
 !
   implicit none
 !
-  integer ido
-  integer l1
+  integer, intent(in) :: ido
+  integer, intent(in) :: l1
+  real, intent(in) :: cc(ido,2,l1)
+  real, intent(out) :: ch(ido,l1,2)
+  real, intent(in) :: wa1(ido)
 !
-  real cc(ido,2,l1)
-  real ch(ido,l1,2)
   integer i
   integer k
   real ti2
   real tr2
-  real wa1(ido)
 !
   if ( ido <= 2 ) then
 
@@ -3805,7 +3804,7 @@ subroutine passb2 ( ido, l1, cc, ch, wa1 )
 
   return
 end
-subroutine passb3 ( ido, l1, cc, ch, wa1, wa2 )
+pure subroutine passb3 ( ido, l1, cc, ch, wa1, wa2 )
 !
 !*******************************************************************************
 !
@@ -3825,11 +3824,13 @@ subroutine passb3 ( ido, l1, cc, ch, wa1, wa2 )
 !
   implicit none
 !
-  integer ido
-  integer l1
+  integer, intent(in) :: ido
+  integer, intent(in) :: l1
+  real, intent(in) :: cc(ido,3,l1)
+  real, intent(out):: ch(ido,l1,3)
+  real, intent(in) :: wa1(ido)
+  real, intent(in) :: wa2(ido)
 !
-  real cc(ido,3,l1)
-  real ch(ido,l1,3)
   real ci2
   real ci3
   real cr2
@@ -3844,8 +3845,6 @@ subroutine passb3 ( ido, l1, cc, ch, wa1, wa2 )
   real, parameter :: taur = -0.5E+00
   real ti2
   real tr2
-  real wa1(ido)
-  real wa2(ido)
 !
   taui = sqrt ( 3.0E+00 ) / 2.0E+00
 
@@ -3904,7 +3903,7 @@ subroutine passb3 ( ido, l1, cc, ch, wa1, wa2 )
 
   return
 end
-subroutine passb4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
+pure subroutine passb4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 !
 !*******************************************************************************
 !
@@ -3924,11 +3923,14 @@ subroutine passb4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 !
   implicit none
 !
-  integer ido
-  integer l1
+  integer, intent(in) :: ido
+  integer, intent(in) :: l1
+  real, intent(in) :: cc(ido,4,l1)
+  real, intent(out) :: ch(ido,l1,4)
+  real, intent(in) :: wa1(ido)
+  real, intent(in) :: wa2(ido)
+  real, intent(in) :: wa3(ido)
 !
-  real cc(ido,4,l1)
-  real ch(ido,l1,4)
   real ci2
   real ci3
   real ci4
@@ -3945,9 +3947,6 @@ subroutine passb4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
   real tr2
   real tr3
   real tr4
-  real wa1(ido)
-  real wa2(ido)
-  real wa3(ido)
 !
   if ( ido == 2 ) then
 
@@ -4012,7 +4011,7 @@ subroutine passb4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 
   return
 end
-subroutine passb5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
+pure subroutine passb5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 !
 !*******************************************************************************
 !
@@ -4032,11 +4031,15 @@ subroutine passb5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 !
   implicit none
 !
-  integer ido
-  integer l1
+  integer, intent(in) :: ido
+  integer, intent(in) :: l1
+  real, intent(in) :: cc(ido,5,l1)
+  real, intent(out):: ch(ido,l1,5)
+  real, intent(in) :: wa1(ido)
+  real, intent(in) :: wa2(ido)
+  real, intent(in) :: wa3(ido)
+  real, intent(in) :: wa4(ido)
 !
-  real cc(ido,5,l1)
-  real ch(ido,l1,5)
   real ci2
   real ci3
   real ci4
@@ -4067,10 +4070,6 @@ subroutine passb5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
   real tr3
   real tr4
   real tr5
-  real wa1(ido)
-  real wa2(ido)
-  real wa3(ido)
-  real wa4(ido)
 !
   if ( ido == 2 ) then
 
@@ -4162,7 +4161,7 @@ subroutine passb5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 
   return
 end
-subroutine passf ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
+pure subroutine passf ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
 !
 !*******************************************************************************
 !
@@ -4182,16 +4181,19 @@ subroutine passf ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
 !
   implicit none
 !
-  integer idl1
-  integer ido
-  integer ip
-  integer l1
+  integer, intent(out)::  nac
+  integer, intent(in) :: idl1
+  integer, intent(in) :: ido
+  integer, intent(in) :: ip
+  integer, intent(in) :: l1
 !
-  real c1(ido,l1,ip)
-  real c2(idl1,ip)
-  real cc(ido,ip,l1)
-  real ch(ido,l1,ip)
-  real ch2(idl1,ip)
+  real, intent(out):: c1(ido,l1,ip)
+  real, intent(out):: c2(idl1,ip)
+  real, intent(in) :: cc(ido,ip,l1)
+  real, intent(out):: ch(ido,l1,ip)
+  real, intent(out):: ch2(idl1,ip)
+  real, intent(in) :: wa(*)
+!
   integer i
   integer idij
   integer idj
@@ -4206,9 +4208,7 @@ subroutine passf ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
   integer k
   integer l
   integer lc
-  integer nac
   integer nt
-  real wa(*)
   real wai
   real war
 !
@@ -4332,7 +4332,7 @@ subroutine passf ( nac, ido, ip, l1, idl1, cc, c1, c2, ch, ch2, wa )
 
   return
 end
-subroutine passf2 ( ido, l1, cc, ch, wa1 )
+pure subroutine passf2 ( ido, l1, cc, ch, wa1 )
 !
 !*******************************************************************************
 !
@@ -4352,16 +4352,17 @@ subroutine passf2 ( ido, l1, cc, ch, wa1 )
 !
   implicit none
 !
-  integer ido
-  integer l1
+  integer, intent(in) :: ido
+  integer, intent(in) :: l1
 !
-  real cc(ido,2,l1)
-  real ch(ido,l1,2)
+  real, intent(in) :: cc(ido,2,l1)
+  real, intent(out):: ch(ido,l1,2)
+  real, intent(in) :: wa1(ido)
+!
   integer i
   integer k
   real ti2
   real tr2
-  real wa1(ido)
 !
   if ( ido <= 2 ) then
 
@@ -4391,7 +4392,7 @@ subroutine passf2 ( ido, l1, cc, ch, wa1 )
 
   return
 end
-subroutine passf3 ( ido, l1, cc, ch, wa1, wa2 )
+pure subroutine passf3 ( ido, l1, cc, ch, wa1, wa2 )
 !
 !*******************************************************************************
 !
@@ -4411,11 +4412,14 @@ subroutine passf3 ( ido, l1, cc, ch, wa1, wa2 )
 !
   implicit none
 !
-  integer ido
-  integer l1
+  integer, intent(in) :: ido
+  integer, intent(in) :: l1
 !
-  real cc(ido,3,l1)
-  real ch(ido,l1,3)
+  real, intent(in) :: cc(ido,3,l1)
+  real, intent(out):: ch(ido,l1,3)
+  real, intent(in) :: wa1(ido)
+  real, intent(in) :: wa2(ido)
+!
   real ci2
   real ci3
   real cr2
@@ -4430,8 +4434,6 @@ subroutine passf3 ( ido, l1, cc, ch, wa1, wa2 )
   real, parameter :: taur = -0.5E+00
   real ti2
   real tr2
-  real wa1(ido)
-  real wa2(ido)
 !
   taui = - sqrt ( 3.0E+00 ) / 2.0E+00
 
@@ -4490,7 +4492,7 @@ subroutine passf3 ( ido, l1, cc, ch, wa1, wa2 )
 
   return
 end
-subroutine passf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
+pure subroutine passf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 !
 !*******************************************************************************
 !
@@ -4510,11 +4512,15 @@ subroutine passf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 !
   implicit none
 !
-  integer ido
-  integer l1
+  integer, intent(in) :: ido
+  integer, intent(in) :: l1
 !
-  real cc(ido,4,l1)
-  real ch(ido,l1,4)
+  real, intent(in) :: cc(ido,4,l1)
+  real, intent(out):: ch(ido,l1,4)
+  real, intent(in) :: wa1(ido)
+  real, intent(in) :: wa2(ido)
+  real, intent(in) :: wa3(ido)
+!
   real ci2
   real ci3
   real ci4
@@ -4531,9 +4537,6 @@ subroutine passf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
   real tr2
   real tr3
   real tr4
-  real wa1(ido)
-  real wa2(ido)
-  real wa3(ido)
 !
   if ( ido == 2 ) then
 
@@ -4597,7 +4600,7 @@ subroutine passf4 ( ido, l1, cc, ch, wa1, wa2, wa3 )
 
   return
 end
-subroutine passf5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
+pure subroutine passf5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 !
 !*******************************************************************************
 !
@@ -4617,11 +4620,16 @@ subroutine passf5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 !
   implicit none
 !
-  integer ido
-  integer l1
+  integer, intent(in) :: ido
+  integer, intent(in) :: l1
 !
-  real cc(ido,5,l1)
-  real ch(ido,l1,5)
+  real, intent(in) :: cc(ido,5,l1)
+  real, intent(out):: ch(ido,l1,5)
+  real, intent(in) :: wa1(ido)
+  real, intent(in) :: wa2(ido)
+  real, intent(in) :: wa3(ido)
+  real, intent(in) :: wa4(ido)
+!
   real ci2
   real ci3
   real ci4
@@ -4658,10 +4666,6 @@ subroutine passf5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 !  cos ( 36 ) = +0.809016
 !
   real, parameter :: tr12 = -0.809016994374947E+00
-  real wa1(ido)
-  real wa2(ido)
-  real wa3(ido)
-  real wa4(ido)
 !
   if ( ido == 2 ) then
 
@@ -4753,7 +4757,7 @@ subroutine passf5 ( ido, l1, cc, ch, wa1, wa2, wa3, wa4 )
 
   return
 end
-function r_cas ( x )
+pure function r_cas ( x )
 !
 !*******************************************************************************
 !
@@ -4786,8 +4790,8 @@ function r_cas ( x )
 !
   implicit none
 !
-  real r_cas
-  real x
+  real :: r_cas
+  real, intent(in) :: x
 !
   r_cas = cos ( x ) + sin ( x )
 
@@ -4814,7 +4818,7 @@ function r_pi ()
 !
   implicit none
 !
-  real r_pi
+  real :: r_pi
 !
   r_pi = 3.14159265358979323846264338327950288419716939937510E+00
 
@@ -6990,9 +6994,8 @@ subroutine rffti ( n, wsave )
 !
   implicit none
 !
-  integer n
-!
-  real wsave(2*n+15)
+  integer, intent(in) :: n
+  real, intent(out) :: wsave(2*n+15)
 !
   if ( n <= 1 ) then
     return
@@ -7031,7 +7034,9 @@ subroutine rffti1 ( n, wa, ifac )
 !
   implicit none
 !
-  integer n
+  integer, intent(in) :: n
+  integer, intent(out) :: ifac(15)
+  real, intent(out) :: wa(n)
 !
   real arg
   real argh
@@ -7039,7 +7044,6 @@ subroutine rffti1 ( n, wa, ifac )
   real fi
   integer i
   integer ido
-  integer ifac(15)
   integer ii
   integer ip
   integer is
@@ -7050,7 +7054,6 @@ subroutine rffti1 ( n, wa, ifac )
   integer ld
   integer nf
   real r_pi
-  real wa(n)
 !
   call i_factor ( n, ifac )
 
