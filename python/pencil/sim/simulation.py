@@ -975,9 +975,10 @@ class __Simulation__(object):
         from os.path import basename
         from pencil.math import natural_sort
 
-        key = "VAR"
-        if particle == True:
+        if particle:
             key = "PVAR"
+        else:
+            key = "VAR"
 
         varlist = natural_sort(
             [
