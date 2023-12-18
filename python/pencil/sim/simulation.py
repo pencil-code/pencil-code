@@ -996,7 +996,6 @@ class __Simulation__(object):
                 for i in glob.glob(join(self.datadir, proc) + "/" + key + "*")
             ]
         )
-        # if particle: varlist = ['P'+i for i in varlist]
 
         if pos == False:
             return varlist
