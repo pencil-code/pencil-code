@@ -64,10 +64,9 @@ subroutine cfftb ( n, c, wsave )
 !
   implicit none
 !
-  integer n
-!
-  complex c(n)
-  real wsave(4*n+15)
+  integer, intent(in) :: n
+  complex, intent(inout) :: c(n)
+  real, intent(inout) :: wsave(4*n+15)
 !
   if ( n <= 1 ) then
     return
@@ -113,13 +112,14 @@ subroutine cfftb1 ( n, c, ch, wa, ifac )
 !
   implicit none
 !
-  integer n
+  integer, intent(in) :: n
+  integer, intent(in) :: ifac(15)
+  real, intent(in) :: wa(2*n)
 !
   complex c(n)
   complex ch(n)
   integer idl1
   integer ido
-  integer ifac(15)
   integer ip
   integer iw
   integer ix2
@@ -131,7 +131,6 @@ subroutine cfftb1 ( n, c, ch, wa, ifac )
   integer na
   integer nac
   integer nf
-  real wa(2*n)
 !
   nf = ifac(2)
   na = 0
@@ -358,10 +357,9 @@ subroutine cfftf ( n, c, wsave )
 !
   implicit none
 !
-  integer n
-!
-  complex c(n)
-  real wsave(4*n+15)
+  integer, intent(in) :: n
+  complex, intent(inout) :: c(n)
+  real, intent(in) :: wsave(4*n+15)
 !
   if ( n <= 1 ) then
     return
@@ -406,13 +404,14 @@ subroutine cfftf1 ( n, c, ch, wa, ifac )
 !
   implicit none
 !
-  integer n
+  integer, intent(in) :: n
+  integer, intent(in) :: ifac(15)
+  real, intent(in) :: wa(2*n)
+  complex, intent(inout) :: c(n)
+  complex, intent(in) :: ch(n)
 !
-  complex c(n)
-  complex ch(n)
   integer idl1
   integer ido
-  integer ifac(15)
   integer ip
   integer iw
   integer ix2
@@ -424,7 +423,6 @@ subroutine cfftf1 ( n, c, ch, wa, ifac )
   integer na
   integer nac
   integer nf
-  real wa(2*n)
 !
   nf = ifac(2)
   na = 0
