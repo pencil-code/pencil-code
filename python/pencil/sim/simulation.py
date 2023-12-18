@@ -985,10 +985,15 @@ class __Simulation__(object):
         else:
             key = "VAR"
 
+        if isinstance(self.param, dict) and self.param['io_strategy'] == 'HDF5':
+            proc = "allprocs"
+        else:
+            proc = "proc0"
+
         varlist = natural_sort(
             [
                 basename(i)
-                for i in glob.glob(join(self.datadir, "proc0") + "/" + key + "*")
+                for i in glob.glob(join(self.datadir, proc) + "/" + key + "*")
             ]
         )
         # if particle: varlist = ['P'+i for i in varlist]
