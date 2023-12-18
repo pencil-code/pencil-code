@@ -87,6 +87,8 @@ class Dim(object):
           dimensions. If proc is >=0, then read the dim.dat in the
           corresponding processor directory.
 
+        down : bool
+          whether to read dim_down.dat
         Returns
         -------
         Class containing the domain dimension information.
