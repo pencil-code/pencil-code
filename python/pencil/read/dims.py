@@ -93,7 +93,7 @@ class Dim(object):
         -------
         Class containing the domain dimension information.
         """
-
+        import glob
         import os
 
         lh5 = False
@@ -108,7 +108,18 @@ class Dim(object):
         if lh5:
             import h5py
 
-            with h5py.File(os.path.join(datadir,"allprocs","var.h5"), "r") as tmp:
+            if down:
+                # KG: dim_down.h5 contains only per-processor output (wrong for for nproc{x,y,z} != 1), so we do this instead.
+                vardfiles = glob.glob(os.path.join(datadir, "allprocs", "VARd*"))
+                if len(vardfiles) == 0:
+                    raise RuntimeError(
+                        "No downsampled snapshots were saved, so we cannot get their dimensions."
+                    )
+                filename = os.path.basename(vardfiles[0])
+            else:
+                filename = "var.h5"
+
+            with h5py.File(os.path.join(datadir, "allprocs", filename), "r") as tmp:
                 self.mx = np.array(tmp["settings"]["mx"]).item()
                 self.my = np.array(tmp["settings"]["my"]).item()
                 self.mz = np.array(tmp["settings"]["mz"]).item()
