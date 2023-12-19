@@ -6995,6 +6995,8 @@ module Magnetic
             else
               eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
             endif
+          case ('standard2')
+            eta_tdep=eta*(1.+max(real(t-eta_tdep_toffset)/eta_tdep_t0,0.))**eta_tdep_exponent
           case ('log-switch-on')
             eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
                      *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
