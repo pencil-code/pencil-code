@@ -345,14 +345,10 @@ module Fourier
       do l=1,nz; do m=1,ny
         ax=cmplx(a_re(:,m,l),a_im(:,m,l))
         call cfftf(nx,ax,wsavex)
-        a_re(:,m,n)=real(ax)
-        a_im(:,m,n)=aimag(ax)
+        a_re(:,m,n)=real(ax)/nwgrid     ! normalize
+        a_im(:,m,n)=aimag(ax)/nwgrid
       enddo; enddo
-!
-!  Normalize
-!
-      a_re=a_re/nwgrid
-      a_im=a_im/nwgrid
+
       if (lroot .and. ip<10) print*, 'fourier_transform_xz: fft has finished'
 !
     endsubroutine fourier_transform_xz
@@ -400,8 +396,8 @@ module Fourier
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nx,ax,wsavex)
-          a_re(:,m,n)=real(ax)
-          a_im(:,m,n)=aimag(ax)
+          a_re(:,m,n)=real(ax)/nxgrid
+          a_im(:,m,n)=aimag(ax)/nxgrid
         enddo; enddo
 !
       else
@@ -416,13 +412,6 @@ module Fourier
           a_im(:,m,n)=aimag(ax)
         enddo; enddo
 !
-      endif
-!
-!  Normalize
-!
-      if (lforward) then
-        a_re=a_re/nxgrid
-        a_im=a_im/nxgrid
       endif
 !
       if (lroot .and. ip<10) print*, 'fourier_transform_x: fft has finished'
@@ -836,8 +825,8 @@ module Fourier
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nxgrid,ax,wsave)
-          a_re(:,m,n)=real(ax)
-          a_im(:,m,n)=aimag(ax)
+          a_re(:,m,n)=real(ax)/nxygrid
+          a_im(:,m,n)=aimag(ax)/nxygrid
         enddo; enddo
       else
 !
@@ -871,13 +860,6 @@ module Fourier
           call transp(a_re,'y')  ! Deliver array back in (x,y,z) order.
           call transp(a_im,'y')
         endif
-      endif
-!
-!  Normalize
-!
-      if (lforward) then
-        a_re=a_re/(nxgrid*nygrid)
-        a_im=a_im/(nxgrid*nygrid)
       endif
 !
     endsubroutine fourier_transform_shear_xy
@@ -914,8 +896,8 @@ module Fourier
         if (lroot .and. ip<10) print*, 'fourier_transform_other_1: doing FFTpack in x'
         ax=cmplx(a_re,a_im)
         call cfftf(nx_other,ax,wsavex)
-        a_re=real(ax)
-        a_im=aimag(ax)
+        a_re=real(ax)/nx_other
+        a_im=aimag(ax)/nx_other
       else
 !
 !  Transform x-direction back.
@@ -925,13 +907,6 @@ module Fourier
         call cfftb(nx_other,ax,wsavex)
         a_re=real(ax)
         a_im=aimag(ax)
-      endif
-!
-!  Normalize
-!
-      if (lforward) then
-        a_re=a_re/nx_other
-        a_im=a_im/nx_other
       endif
 !
       if (lroot .and. ip<10) print*, 'fourier_transform_other_1: fft has finished'
@@ -984,8 +959,8 @@ module Fourier
         do l=1,nx_other
           ay=cmplx(a_re(l,:),a_im(l,:))
           call cfftf(ny_other,ay,wsavey)
-          a_re(l,:)=real(ay)
-          a_im(l,:)=aimag(ay)
+          a_re(l,:)=real(ay)/(nx_other*ny_other)
+          a_im(l,:)=aimag(ay)/(nx_other*ny_other)
         enddo
       else
 !
@@ -1012,13 +987,6 @@ module Fourier
           a_re(l,:)=real(ay)
           a_im(l,:)=aimag(ay)
         enddo
-      endif
-!
-!  Normalize
-!
-      if (lforward) then
-        a_re=a_re/(nx_other*ny_other)
-        a_im=a_im/(nx_other*ny_other)
       endif
 !
       if (lroot .and. ip<10) print*, 'fourier_transform_other_2: fft has finished'
@@ -1154,8 +1122,8 @@ module Fourier
 !  Normalize
 !
       if (lforward) then
-        a_re=a_re/(nxgrid*nygrid)
-        a_im=a_im/(nxgrid*nygrid)
+        a_re=a_re/nxygrid
+        a_im=a_im/nxygrid
       endif
 !
     endsubroutine fourier_transform_xy_xy
@@ -1321,7 +1289,6 @@ module Fourier
       if (lshear_loc) call not_implemented('fft_x_parallel_1D', 'Shearing', lfirst_proc_x)
 !
       call cffti (nxgrid, wsavex)
-
 !
       if (lforward) then
 !
@@ -1335,19 +1302,15 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform x-direction.
+        ! Transform x-direction and normalize.
         ax = cmplx (p_re, p_im)
         call cfftf (nxgrid, ax, wsavex)
-        p_re = real (ax)
-        p_im = aimag (ax)
+        p_re = real (ax)/nxgrid
+        p_im = aimag (ax)/nxgrid
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_x (p_re, a_re)
         call unmap_from_pencil_x (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nxgrid
-        a_im = a_im / nxgrid
 !
       else
 !
@@ -1434,21 +1397,17 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform x-direction.
+        ! Transform x-direction and normalize.
         do m = 1, pny
           ax = cmplx (p_re(:,m), p_im(:,m))
           call cfftf (nxgrid, ax, wsavex)
-          p_re(:,m) = real (ax)
-          p_im(:,m) = aimag (ax)
+          p_re(:,m) = real (ax)/nxgrid
+          p_im(:,m) = aimag (ax)/nxgrid
         enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         call unmap_from_pencil_xy (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nxgrid
-        a_im = a_im / nxgrid
 !
       else
 !
@@ -1548,21 +1507,17 @@ module Fourier
 !
         do pos_z = 1, inz
           do m = 1, pny
-            ! Transform x-direction.
+            ! Transform x-direction and normalize.
             ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
             call cfftf (nxgrid, ax, wsavex)
-            p_re(:,m,pos_z) = real (ax)
-            p_im(:,m,pos_z) = aimag (ax)
+            p_re(:,m,pos_z) = real (ax)/nxgrid
+            p_im(:,m,pos_z) = aimag (ax)/nxgrid
           enddo
         enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         call unmap_from_pencil_xy (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nxgrid
-        a_im = a_im / nxgrid
 !
       else
 !
@@ -1669,11 +1624,11 @@ module Fourier
         do pos_a = 1, ina
           do pos_z = 1, inz
             do m = 1, pny
-              ! Transform x-direction.
+              ! Transform x-direction and normalize.
               ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
               call cfftf (nxgrid, ax, wsavex)
-              p_re(:,m,pos_z,pos_a) = real (ax)
-              p_im(:,m,pos_z,pos_a) = aimag (ax)
+              p_re(:,m,pos_z,pos_a) = real (ax)/nxgrid
+              p_im(:,m,pos_z,pos_a) = aimag (ax)/nxgrid
             enddo
           enddo
         enddo
@@ -1681,10 +1636,6 @@ module Fourier
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         call unmap_from_pencil_xy (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nxgrid
-        a_im = a_im / nxgrid
 !
       else
 !
@@ -1777,20 +1728,16 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform y-direction.
+        ! Transform y-direction and normalize.
         ay = cmplx (p_re, p_im)
         call cfftf (nygrid, ay, wsavey)
         if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y))
-        p_re = real (ay)
-        p_im = aimag (ay)
+        p_re = real (ay)/nygrid
+        p_im = aimag (ay)/nygrid
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_y (p_re, a_re)
         call unmap_from_pencil_y (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nygrid
-        a_im = a_im / nygrid
 !
       else
 !
@@ -1874,23 +1821,19 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform y-direction.
+        ! Transform y-direction and normalize.
         do l = 1, nx
           ay = cmplx (p_re(l,:), p_im(l,:))
           call cfftf (nygrid, ay, wsavey)
           if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
           if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
-          p_re(l,:) = real (ay)
-          p_im(l,:) = aimag (ay)
+          p_re(l,:) = real (ay)/nygrid
+          p_im(l,:) = aimag (ay)/nygrid
         enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_y (p_re, a_re)
         call unmap_from_pencil_y (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nygrid
-        a_im = a_im / nygrid
 !
       else
 !
@@ -1988,25 +1931,21 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform y-direction.
+        ! Transform y-direction and normalize.
         do pos_z = 1, inz
           do l = 1, nx
             ay = cmplx (p_re(l,:,pos_z), p_im(l,:,pos_z))
             call cfftf (nygrid, ay, wsavey)
             if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
             if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
-            p_re(l,:,pos_z) = real (ay)
-            p_im(l,:,pos_z) = aimag (ay)
+            p_re(l,:,pos_z) = real (ay)/nygrid
+            p_im(l,:,pos_z) = aimag (ay)/nygrid
           enddo
         enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_y (p_re, a_re)
         call unmap_from_pencil_y (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nygrid
-        a_im = a_im / nygrid
 !
       else
 !
@@ -2109,7 +2048,7 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform y-direction.
+        ! Transform y-direction and normalize.
         do pos_a = 1, ina
           do pos_z = 1, inz
             do l = 1, nx
@@ -2117,8 +2056,8 @@ module Fourier
               call cfftf (nygrid, ay, wsavey)
               if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
               if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
-              p_re(l,:,pos_z,pos_a) = real (ay)
-              p_im(l,:,pos_z,pos_a) = aimag (ay)
+              p_re(l,:,pos_z,pos_a) = real (ay)/nygrid
+              p_im(l,:,pos_z,pos_a) = aimag (ay)/nygrid
             enddo
           enddo
         enddo
@@ -2126,10 +2065,6 @@ module Fourier
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_y (p_re, a_re)
         call unmap_from_pencil_y (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nygrid
-        a_im = a_im / nygrid
 !
       else
 !
@@ -2224,20 +2159,16 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform z-direction.
+        ! Transform z-direction and normalize.
         az = cmplx (p_re, p_im)
         call cfftf (nzgrid, az, wsavez)
         if (lshift) az = az * exp (cmplx (0,-kz_fft * dshift_z))
-        p_re = real (az)
-        p_im = aimag (az)
+        p_re = real (az)/nzgrid
+        p_im = aimag (az)/nzgrid
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_z (p_re, a_re)
         call unmap_from_pencil_z (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nzgrid
-        a_im = a_im / nzgrid
 !
       else
 !
@@ -2337,22 +2268,18 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform z-direction.
+        ! Transform z-direction and normalize.
         do pos_a = 1, ina
           az = cmplx (p_re(:,pos_a), p_im(:,pos_a))
           call cfftf (nzgrid, az, wsavez)
           if (lshift) az = az * exp (cmplx (0,-kz_fft * dshift_z(pos_a)))
-          p_re(:,pos_a) = real (az)
-          p_im(:,pos_a) = aimag (az)
+          p_re(:,pos_a) = real (az)/nzgrid
+          p_im(:,pos_a) = aimag (az)/nzgrid
         enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_z (p_re, a_re)
         call unmap_from_pencil_z (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nzgrid
-        a_im = a_im / nzgrid
 !
       else
 !
@@ -2442,23 +2369,19 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform z-direction.
+        ! Transform z-direction and normalize.
         do m = 1, iny
           do l = 1, inx
             az = cmplx (p_re(l,m,:), p_im(l,m,:))
             call cfftf (nzgrid, az, wsavez)
-            p_re(l,m,:) = real (az)
-            p_im(l,m,:) = aimag (az)
+            p_re(l,m,:) = real (az)/nzgrid
+            p_im(l,m,:) = aimag (az)/nzgrid
           enddo
         enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_z (p_re, a_re)
         call unmap_from_pencil_z (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nzgrid
-        a_im = a_im / nzgrid
 !
       else
 !
@@ -2553,14 +2476,14 @@ module Fourier
           p_im = 0.0
         endif
 !
-        ! Transform z-direction.
+        ! Transform z-direction and normalize.
         do pos_a = 1, ina
           do m = 1, iny
             do l = 1, inx
               az = cmplx (p_re(l,m,:,pos_a), p_im(l,m,:,pos_a))
               call cfftf (nzgrid, az, wsavez)
-              p_re(l,m,:,pos_a) = real (az)
-              p_im(l,m,:,pos_a) = aimag (az)
+              p_re(l,m,:,pos_a) = real (az)/nzgrid
+              p_im(l,m,:,pos_a) = aimag (az)/nzgrid
             enddo
           enddo
         enddo
@@ -2568,10 +2491,6 @@ module Fourier
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_z (p_re, a_re)
         call unmap_from_pencil_z (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nzgrid
-        a_im = a_im / nzgrid
 !
       else
 !
@@ -2717,17 +2636,13 @@ module Fourier
         do m = 1, pny
           ax = cmplx (p_re(:,m), p_im(:,m))
           call cfftf (nxgrid, ax, wsavex)
-          p_re(:,m) = real (ax)
-          p_im(:,m) = aimag (ax)
+          p_re(:,m) = real (ax)/nxygrid
+          p_im(:,m) = aimag (ax)/nxygrid
         enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         call unmap_from_pencil_xy (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / (nxgrid * nygrid)
-        a_im = a_im / (nxgrid * nygrid)
 !
       else
 !
@@ -2862,12 +2777,12 @@ module Fourier
         call transp_pencil_xy(p_re,t_re)
         call transp_pencil_xy(p_im,t_im)
 !
-        ! Transform y-direction.
+        ! Transform y-direction and normalize.
         do l=1,tny
           ay_other = cmplx(t_re(:,l), t_im(:,l))
           call cfftf(nygrid_other,ay_other,wsavey_other)
-          t_re(:,l) = real(ay_other)
-          t_im(:,l) = aimag(ay_other)
+          t_re(:,l) = real(ay_other)/(nxgrid_other*nygrid_other)
+          t_im(:,l) = aimag(ay_other)/(nxgrid_other*nygrid_other)
         enddo
 !
         call transp_pencil_xy(t_re,p_re)
@@ -2876,10 +2791,6 @@ module Fourier
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy_2D_other(p_re,a_re)
         call unmap_from_pencil_xy_2D_other(p_im,a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re/(nxgrid_other*nygrid_other)
-        a_im = a_im/(nxgrid_other*nygrid_other)
 !
       else
 !
@@ -3043,21 +2954,17 @@ module Fourier
 !
         do pos_z = 1, inz
           do m = 1, pny
-            ! Transform x-direction.
+            ! Transform x-direction and normalize.
             ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
             call cfftf (nxgrid, ax, wsavex)
-            p_re(:,m,pos_z) = real (ax)
-            p_im(:,m,pos_z) = aimag (ax)
+            p_re(:,m,pos_z) = real (ax)/nxygrid
+            p_im(:,m,pos_z) = aimag (ax)/nxygrid
           enddo
         enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         call unmap_from_pencil_xy (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / (nxgrid * nygrid)
-        a_im = a_im / (nxgrid * nygrid)
 !
       else
 !
@@ -3230,11 +3137,11 @@ module Fourier
         do pos_a = 1, ina
           do pos_z = 1, inz
             do m = 1, pny
-              ! Transform x-direction.
+              ! Transform x-direction and normalize.
               ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
               call cfftf (nxgrid, ax, wsavex)
-              p_re(:,m,pos_z,pos_a) = real (ax)
-              p_im(:,m,pos_z,pos_a) = aimag (ax)
+              p_re(:,m,pos_z,pos_a) = real (ax)/nxygrid
+              p_im(:,m,pos_z,pos_a) = aimag (ax)/nxygrid
             enddo
           enddo
         enddo
@@ -3242,10 +3149,6 @@ module Fourier
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         call unmap_from_pencil_xy (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / (nxgrid * nygrid)
-        a_im = a_im / (nxgrid * nygrid)
 !
       else
 !
@@ -3377,21 +3280,17 @@ module Fourier
 !
         do l = 1, nx
           do m = 1, pny
-            ! Transform z-direction.
+            ! Transform z-direction and normalize.
             az = cmplx (p_re(l,m,:), p_im(l,m,:))
             call cfftf (nzgrid, az, wsavez)
-            p_re(l,m,:) = real (az)
-            p_im(l,m,:) = aimag (az)
+            p_re(l,m,:) = real (az)/nzgrid
+            p_im(l,m,:) = aimag (az)/nzgrid
           enddo
         enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_yz (p_re, a_re)
         call unmap_from_pencil_yz (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nzgrid
-        a_im = a_im / nzgrid
 !
       else
 !
@@ -3513,11 +3412,11 @@ module Fourier
         do pos_a = 1, ina
           do l = 1, nx
             do m = 1, pny
-              ! Transform z-direction.
+              ! Transform z-direction and normalize.
               az = cmplx (p_re(l,m,:,pos_a), p_im(l,m,:,pos_a))
               call cfftf (nzgrid, az, wsavez)
-              p_re(l,m,:,pos_a) = real (az)
-              p_im(l,m,:,pos_a) = aimag (az)
+              p_re(l,m,:,pos_a) = real (az)/nzgrid
+              p_im(l,m,:,pos_a) = aimag (az)/nzgrid
             enddo
           enddo
         enddo
@@ -3525,10 +3424,6 @@ module Fourier
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_yz (p_re, a_re)
         call unmap_from_pencil_yz (p_im, a_im)
-!
-        ! Apply normalization factor to fourier coefficients.
-        a_re = a_re / nzgrid
-        a_im = a_im / nxgrid
 !
       else
 !
@@ -4246,21 +4141,18 @@ module Fourier
           a_im(:,l,n)=aimag(ay)
         enddo; enddo
 !
-!  Transform y-direction back.
+!  Transform y-direction back and normalize.
 !
         if (lroot.and.ip<10) print*, 'fourier_shift_y: doing FFTpack in y'
         do n=1,nz; do l=1,ny
           ay=cmplx(a_re(:,l,n),a_im(:,l,n))
           call cfftb(nygrid,ay,wsave)
-          a_re(:,l,n)=real(ay)
-          a_im(:,l,n)=aimag(ay)
+          a_re(:,l,n)=real(ay)/nygrid
+          a_im(:,l,n)=aimag(ay)/nygrid
         enddo; enddo
+
         call transp(a_re,'y')
         call transp(a_im,'y')
-!
-!  Normalize
-!
-        a_re=a_re/nygrid
       endif
 !
     endsubroutine fourier_shift_y
@@ -4287,26 +4179,20 @@ module Fourier
       if (ifirst_fft==1) then
 ! Initialize fftpack
         call rffti(na,wsavex_temp)
-      else
       endif
 !
-!  Transform x-direction.
+!  Transform x-direction and normalize.
 !
       if (lforward) then
         if (lroot .and. ip<10) print*, 'fourier_transform_real_1: doing FFTpack in x'
         call rfftf(na,a,wsavex_temp)
+        a=a/na
       else
 !
 !  Transform x-direction back.
 !
         if (lroot .and. ip<10) print*, 'fourier_transform_real_1: doing FFTpack in x'
         call rfftb(na,a,wsavex_temp)
-      endif
-!
-!  Normalize
-!
-      if (lforward) then
-        a=a/na
       endif
 !
       if (lroot .and. ip<10) print*, 'fourier_transform_real_1: fft has finished'
