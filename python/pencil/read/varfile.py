@@ -272,11 +272,6 @@ class DataCube(object):
                             )
             return self
 
-        dim = None
-        param = None
-        index = None
-        grid = None
-
         if isinstance(sim, __Simulation__):
             datadir = os.path.expanduser(sim.datadir)
             dim = sim.dim
@@ -285,24 +280,24 @@ class DataCube(object):
             grid = read.grid(datadir=sim.datadir, quiet=True)
         else:
             datadir = os.path.expanduser(datadir)
-            if dim is None:
-                if var_file[0:2].lower() == "og":
-                    dim = read.ogdim(datadir, proc)
+
+            if var_file[0:2].lower() == "og":
+                dim = read.ogdim(datadir, proc)
+            else:
+                if var_file[0:4] == "VARd":
+                    dim = read.dim(datadir, proc, down=True)
                 else:
-                    if var_file[0:4] == "VARd":
-                        dim = read.dim(datadir, proc, down=True)
-                    else:
-                        dim = read.dim(datadir, proc)
-            if param is None:
-                param = read.param(datadir=datadir, quiet=quiet, conflicts_quiet=True)
-            if index is None:
-                index = read.index(datadir=datadir)
-            if grid is None:
-                try:
-                    grid = read.grid(datadir=datadir, quiet=True)
-                except FileNotFoundError:
-                    # KG: Handling this case because there is no grid.dat in `tests/input/serial-1/proc0` and we don't want the test to fail. Should we just drop this and add a grid.dat in the test input?
-                    warnings.warn("Grid.dat not found. Assuming the grid is uniform.")
+                    dim = read.dim(datadir, proc)
+
+            param = read.param(datadir=datadir, quiet=quiet, conflicts_quiet=True)
+
+            index = read.index(datadir=datadir)
+
+            try:
+                grid = read.grid(datadir=datadir, quiet=True)
+            except FileNotFoundError:
+                # KG: Handling this case because there is no grid.dat in `tests/input/serial-1/proc0` and we don't want the test to fail. Should we just drop this and add a grid.dat in the test input?
+                warnings.warn("Grid.dat not found. Assuming the grid is uniform.")
 
         if param.lwrite_aux:
             total_vars = dim.mvar + dim.maux
