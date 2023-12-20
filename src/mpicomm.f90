@@ -6723,7 +6723,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real :: buffer
 !
-      collector = find_proc(ioptest(dest_proc,0),0,ipz)
+      collector = ipz * nprocxy
+      if (present (dest_proc)) collector = collector + dest_proc
 !
       if (iproc == collector) then
         ! collect the data
@@ -6776,7 +6777,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       bny = size (in, 2)
       nbox = bnx*bny
 !
-      collector = find_proc(ioptest(dest_proc,0),0,ipz)
+      collector = ipz * nprocxy
+      if (present (dest_proc)) collector = collector + dest_proc
 !
       if (iproc == collector) then
         ! collect the data
@@ -6835,7 +6837,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       bnz = size (in, 3)
       nbox = bnx*bny*bnz
 !
-      collector = find_proc(ioptest(dest_proc,0),0,ipz)
+      collector = ipz * nprocxy
+      if (present (dest_proc)) collector = collector + dest_proc
 !
       if (iproc == collector) then
         ! collect the data
@@ -6895,7 +6898,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       bna = size (in, 4)
       nbox = bnx*bny*bnz*bna
 !
-      collector = find_proc(ioptest(dest_proc,0),0,ipz)
+      collector = ipz * nprocxy
+      if (present (dest_proc)) collector = collector + dest_proc
 !
       if (iproc == collector) then
         ! collect the data
@@ -7064,7 +7068,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       bnz = size (in, 3)
       nbox = bnx*bny*bnz
 !
-      collector = find_proc(ipx,ipy,ioptest(dest_proc,0))
+      collector = ipx + ipy*nprocx
+      if (present (dest_proc)) collector = collector + dest_proc*nprocxy
 !
       if (iproc == collector) then
         ! collect the data
@@ -7124,7 +7129,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       bna = size (in, 4)
       nbox = bnx*bny*bnz*bna
 !
-      collector = find_proc(ipx,ipy,ioptest(dest_proc,0))
+      collector = ipx + ipy*nprocx
+      if (present (dest_proc)) collector = collector + dest_proc*nprocxy
 !
       if (iproc == collector) then
         ! collect the data
@@ -7196,10 +7202,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       rny = cny*nprocy + 2*nghost
       nrow = bnx*rny*bnz*bna
 !
-      collector = find_proc(ioptest(dest_proc,0),0,ipz)
+      collector = ipz * nprocxy
+      if (present (dest_proc)) collector = collector + dest_proc
       pz = ioptest(source_pz,ipz)
 !
-      if (present(out) .and. iproc == collector) then
+      if (iproc == collector) then
         if (cnx * nprocx + 2*nghost /= size (out, 1)) &
             call stop_fatal ('globalize_xy: output x dim must be nprocx*input minus inner ghosts', .true.)
         if (cny * nprocy + 2*nghost /= size (out, 2)) &
@@ -7248,7 +7255,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         ! old version: call MPI_SEND (in, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
-      if (present(out) .and. iproc == collector) then
+      if (iproc == collector) then
         ! collect the y-rows into global data
         allocate (buffer(bnx,rny,bnz,bna), stat=alloc_err)
         if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
@@ -7315,7 +7322,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       rny = gny + 2*nghost
       nrow = bnx*rny*bnz*bna
 !
-      broadcaster = find_proc(ioptest(source_proc,0),0,ipz)
+      broadcaster = ipz * nprocxy
+      if (present (source_proc)) broadcaster = broadcaster + source_proc
       pz = ipz
       if (present (dest_pz)) pz = dest_pz
 !
@@ -7436,7 +7444,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:), allocatable :: buffer
 !
-      collector = find_proc(ipx,ipy,ioptest(dest_proc,0))
+      collector = ipx + ipy * nprocx
+      if (present (dest_proc)) collector = collector + dest_proc * nprocxy
 !
       if (iproc == collector) then
         ! collect the data
