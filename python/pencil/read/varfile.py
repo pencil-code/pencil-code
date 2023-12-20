@@ -294,6 +294,10 @@ class DataCube(object):
             dim = read.ogdim(datadir, proc)
         elif var_file[0:4] == "VARd":
             dim = read.dim(datadir, proc, down=True)
+            warnings.warn(
+                "Reading downsampled grid is currently not implemented. Assuming the grid is uniform."
+            )
+            grid = None
 
         if param.lwrite_aux:
             total_vars = dim.mvar + dim.maux
