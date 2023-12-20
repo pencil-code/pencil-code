@@ -109,9 +109,8 @@ class TimeSeries(object):
                 datadir = sim.datadir
 
         datadir = os.path.expanduser(datadir)
-        infile = open(os.path.join(datadir, file_name), "r")
-        lines = infile.readlines()
-        infile.close()
+        with open(os.path.join(datadir, file_name), "r") as infile:
+            lines = infile.readlines()
 
         nlines_init = len(lines)
         data = np.zeros((nlines_init, len(self.keys)))
