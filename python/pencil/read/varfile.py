@@ -235,7 +235,6 @@ class DataCube(object):
         from scipy.io import FortranFile
         from pencil.math.derivatives import curl, curl2
         from pencil import read
-        from pencil.sim import __Simulation__
 
         def persist(self, infile=None, precision="d", quiet=quiet):
             """An open Fortran file potentially containing persistent variables appended
@@ -272,13 +271,7 @@ class DataCube(object):
                             )
             return self
 
-        if isinstance(sim, __Simulation__):
-            datadir = os.path.expanduser(sim.datadir)
-            dim = sim.dim
-            param = read.param(datadir=sim.datadir, quiet=True, conflicts_quiet=True)
-            index = read.index(datadir=sim.datadir)
-            grid = read.grid(datadir=sim.datadir, quiet=True)
-        else:
+        if sim is None:
             datadir = os.path.expanduser(datadir)
 
             if var_file[0:2].lower() == "og":
@@ -298,6 +291,12 @@ class DataCube(object):
             except FileNotFoundError:
                 # KG: Handling this case because there is no grid.dat in `tests/input/serial-1/proc0` and we don't want the test to fail. Should we just drop this and add a grid.dat in the test input?
                 warnings.warn("Grid.dat not found. Assuming the grid is uniform.")
+        else:
+            datadir = os.path.expanduser(sim.datadir)
+            dim = sim.dim
+            param = read.param(datadir=sim.datadir, quiet=True, conflicts_quiet=True)
+            index = read.index(datadir=sim.datadir)
+            grid = read.grid(datadir=sim.datadir, quiet=True)
 
         if param.lwrite_aux:
             total_vars = dim.mvar + dim.maux
