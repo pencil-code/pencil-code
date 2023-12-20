@@ -288,7 +288,7 @@ class DataCube(object):
             dim = sim.dim
             param = read.param(datadir=sim.datadir, quiet=True, conflicts_quiet=True)
             index = read.index(datadir=sim.datadir)
-            grid = read.grid(datadir=sim.datadir, quiet=True)
+            grid = sim.grid
 
         if var_file[0:2].lower() == "og":
             dim = read.ogdim(datadir, proc)
