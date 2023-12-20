@@ -273,17 +273,8 @@ class DataCube(object):
 
         if sim is None:
             datadir = os.path.expanduser(datadir)
-
-            if var_file[0:2].lower() == "og":
-                dim = read.ogdim(datadir, proc)
-            else:
-                if var_file[0:4] == "VARd":
-                    dim = read.dim(datadir, proc, down=True)
-                else:
-                    dim = read.dim(datadir, proc)
-
+            dim = read.dim(datadir, proc)
             param = read.param(datadir=datadir, quiet=quiet, conflicts_quiet=True)
-
             index = read.index(datadir=datadir)
 
             try:
@@ -297,6 +288,11 @@ class DataCube(object):
             param = read.param(datadir=sim.datadir, quiet=True, conflicts_quiet=True)
             index = read.index(datadir=sim.datadir)
             grid = read.grid(datadir=sim.datadir, quiet=True)
+
+        if var_file[0:2].lower() == "og":
+            dim = read.ogdim(datadir, proc)
+        elif var_file[0:4] == "VARd":
+            dim = read.dim(datadir, proc, down=True)
 
         if param.lwrite_aux:
             total_vars = dim.mvar + dim.maux
