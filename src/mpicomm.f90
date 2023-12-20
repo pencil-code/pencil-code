@@ -7197,11 +7197,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       nrow = bnx*rny*bnz*bna
 !
       collector = find_proc(ioptest(dest_proc,0),0,ipz)
-
-      pz = ipz
-      if (present (source_pz)) pz = source_pz
+      pz = ioptest(source_pz,ipz)
 !
-      if (iproc == collector) then
+      if (present(out) .and. iproc == collector) then
         if (cnx * nprocx + 2*nghost /= size (out, 1)) &
             call stop_fatal ('globalize_xy: output x dim must be nprocx*input minus inner ghosts', .true.)
         if (cny * nprocy + 2*nghost /= size (out, 2)) &
@@ -7250,7 +7248,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         ! old version: call MPI_SEND (in, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
-      if (iproc == collector) then
+      if (present(out) .and. iproc == collector) then
         ! collect the y-rows into global data
         allocate (buffer(bnx,rny,bnz,bna), stat=alloc_err)
         if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
