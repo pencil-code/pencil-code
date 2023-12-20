@@ -282,6 +282,7 @@ class DataCube(object):
             except FileNotFoundError:
                 # KG: Handling this case because there is no grid.dat in `tests/input/serial-1/proc0` and we don't want the test to fail. Should we just drop this and add a grid.dat in the test input?
                 warnings.warn("Grid.dat not found. Assuming the grid is uniform.")
+                grid = None
         else:
             datadir = os.path.expanduser(sim.datadir)
             dim = sim.dim
