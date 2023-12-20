@@ -299,6 +299,9 @@ class DataCube(object):
             )
             grid = None
 
+        # Used later on to support the case where only some of the variables were written into the snapshots.
+        index_max = dim.mvar + dim.maux
+
         if param.lwrite_aux:
             total_vars = dim.mvar + dim.maux
         else:
@@ -706,15 +709,16 @@ class DataCube(object):
                 and "uutest" not in key
             ):
                 value = index.__dict__[key]
-                setattr(self, key, self.f[value - 1, ...])
+                if value <= index_max:
+                    setattr(self, key, self.f[value - 1, ...])
         # Special treatment for vector quantities.
-        if hasattr(index, "ux"):
+        if hasattr(index, "ux") and index.uz <= index_max:
             setattr(self, "uu", self.f[index.ux - 1 : index.uz, ...])
-        if hasattr(index, "ax"):
+        if hasattr(index, "ax") and index.az <= index_max:
             setattr(self, "aa", self.f[index.ax - 1 : index.az, ...])
-        if hasattr(index, "uu_sph"):
+        if hasattr(index, "uu_sph") and index.uu_sphz <= index_max:
             self.uu_sph = self.f[index.uu_sphx - 1 : index.uu_sphz, ...]
-        if hasattr(index, "bb_sph"):
+        if hasattr(index, "bb_sph") and index.bb_sphz <= index_max:
             self.bb_sph = self.f[index.bb_sphx - 1 : index.bb_sphz, ...]
         # Special treatment for test method vector quantities.
         # Note index 1,2,3,...,0 last vector may be the zero field/flow
