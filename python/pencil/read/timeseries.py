@@ -115,7 +115,7 @@ class TimeSeries(object):
         nlines_init = len(lines)
         data = np.zeros((nlines_init, len(self.keys)))
         nlines = 0
-        for line in lines:
+        for i, line in enumerate(lines):
             if re.search("^%s--" % comment_char, line):
                 # Read header and create keys for dictionary.
                 line = line.strip("{0}-\n".format(comment_char))
@@ -130,7 +130,7 @@ class TimeSeries(object):
                     data[nlines, :] = row
                     nlines += 1
                 except ValueError:
-                    print("Invalid data on line {0}. Skipping.".format(nlines))
+                    print(f"Invalid data on line {i}. Skipping.")
 
         # Clean up data.
         data = np.resize(data, (nlines, len(self.keys)))
