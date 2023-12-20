@@ -97,6 +97,7 @@ module Special
   real :: cool_RTV,x_cutoff,TTsponge=0.0,lnTT_sponge_tau=1.0,border_width=0.1
   real :: cs0p=0.104,C_heatflux=132.0,tau_res=0.65
   real :: heat_vol=0.0,heat_LH=0.2783,heat_FS=9.74d-4
+  namelist /special_init_pars/ lslope_limited_special
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
            lset_boundary_emf,lupin,nlf,lslope_limited_special, &
@@ -108,8 +109,7 @@ module Special
            heat_LH,heat_FS,heat_vol
 ! Declare index of new variables in f array (if any).
 !
-!!   integer :: ispecial=0
-   integer :: ispecaux=0
+   integer :: ispecaux=0,ispecauxx=0,ispecauxy=0,ispecauxz=0
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -125,14 +125,18 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      use FArrayManager
+      use Sub, only: register_report_aux
+      use FArrayManager, only: farray_register_pde,farray_register_auxiliary
       if (lroot) call svn_id( &
            "$Id$")
-!!
-!      if (ldensity.and..not.ldensity_nolog) &
-!      call farray_register_auxiliary('specaux',ispecaux)
-!!      call farray_register_pde('special',ispecial)
-!!      call farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
+!
+      if (lslope_limited_special) then
+        call register_report_aux('specaux',ispecaux,ispecauxx,ispecauxy, &
+            ispecauxz,communicated=.true.)
+        if (lroot) print*, 'naux=',naux,'naux_com=', naux_com, 'maux=', maux,'maux_com=', maux_com
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+3
+      endif
 !
     endsubroutine register_special
 !***********************************************************************
@@ -155,10 +159,7 @@ module Special
 ! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
 !
       if (lrun) then
-!        f(:,:,:,ispecaux)=0.0d0
         if (lslope_limited_special) then
-          if (ibb==0)  &
-            call fatal_error ('initialize_special', "set lbb_as_aux=T in start.in")
           if (lroot) print*,'initialize_special: Set up half grid x12p, y12p, z12p'
           call generate_halfgrid(x12p,y12p,z12p)
           do n=n1,n2
@@ -166,7 +167,7 @@ module Special
               call gij(f,iaa,aij,1)
 ! bb
               call curl_mn(aij,pbb,aa)
-              f(l1:l2,m,n,ibx  :ibz  )=pbb
+              f(l1:l2,m,n,ispecauxx  :ispecauxz)=pbb
             enddo
           enddo
         endif
@@ -652,9 +653,25 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      use Sub, only: gij, gij_etc, curl_mn, dot2_mn
 !
-      call keep_compiler_quiet(f)
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nx,3) :: bb
+      real, dimension(nx,3,3) :: aij, bij
+!
+      !
+!  Find bb and jj if as communicated auxiliary.
+!
+      getcomaux: if (lslope_limited_special .and. llast) then
+        do imn = 1, nyz
+
+          m = mm(imn)
+          n = nn(imn)
+          call gij(f, iaa, aij, 1)
+          call curl_mn(aij, bb, A=f(:,m,n,iax:iaz))
+          f(l1:l2,m,n,ispecauxx:ispecauxz) = bb
+        enddo  ! mn_loop
+      endif getcomaux
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -715,7 +732,7 @@ module Special
 !
       use Deriv, only: der
       use EquationOfState, only: cs0, rho0
-      use Mpicomm, only: mpibcast
+      use Mpicomm
       use Diagnostics, only: save_name
       use Sub, only: cross,gij,curl_mn,step
 !
@@ -724,7 +741,7 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
       real, dimension(mx,my,mz):: rho_tmp
-      real, dimension(my,mz):: rhob
+      real, dimension(my,mz):: rhob, TTb
       real, dimension(nx) :: dfy,dfz
       real, dimension (nx,3) :: aa,pbb
       real, dimension(nx,3,3) :: aij
@@ -863,7 +880,7 @@ module Special
               call gij(f,iaa,aij,1)
 ! bb
               call curl_mn(aij,pbb,aa)
-              f(l1:l2,m,n,ibx  :ibz  )=pbb
+              f(l1:l2,m,n,ispecauxx  :ispecauxz  )=pbb
               do ig=0,nghost
                 xx0=x(l1-ig)*sinth(m)*cos(z(n))
                 yy0=x(l1-ig)*sinth(m)*sin(z(n))
@@ -945,16 +962,21 @@ module Special
 ! p0=0 for qx>0
 !
                 if (lactivate_reservoir) then
-                  if (ig .ne. 0) f(l1-ig,m,n,ilnTT)=log(cs0p**2*cp1/(gamma-1))
                     if (f(l1-ig,m,n,iqx) .lt. 0.0) then
 !                   rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
-                      rhob(m,n)=1.2*rho0
+                      rhob(m,n)=1.1*rho0
+                      TTb(m,n)=(1.2*cs0**2*cp1/(gamma-1))
                       f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
                       (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                      f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
+                      (1-(TTb(m,n)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
                     else
                       rhob(m,n)=rho0
+                      TTb(m,n)=(cs0**2*cp1/(gamma-1))
                       f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
                       (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                      f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
+                      (1-(TTb(m,n)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
                   endif
                 endif
               enddo
@@ -989,6 +1011,8 @@ module Special
                                step(z(n),lborder,-0.05*Lxyz(3))*dt_
         enddo; enddo
       endif
+      call initiate_isendrcv_bdry(f)
+      call finalize_isendrcv_bdry(f)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
@@ -1680,9 +1704,9 @@ module Special
       select case (k)
 ! x-component
         case(1)
-          b1_xtmp=0.5*(f(l1-1:l2,m,n,ibx)+f(l1:l2+1,m,n,ibx))
-          b2_xtmp=0.5*(f(l1-1:l2,m,n,iby)+f(l1:l2+1,m,n,iby))
-          b3_xtmp=0.5*(f(l1-1:l2,m,n,ibz)+f(l1:l2+1,m,n,ibz))
+          b1_xtmp=0.5*(f(l1-1:l2,m,n,ispecauxx)+f(l1:l2+1,m,n,ispecauxx))
+          b2_xtmp=0.5*(f(l1-1:l2,m,n,ispecauxy)+f(l1:l2+1,m,n,ispecauxy))
+          b3_xtmp=0.5*(f(l1-1:l2,m,n,ispecauxz)+f(l1:l2+1,m,n,ispecauxz))
           if (ldensity_nolog) then
           rho_xtmp=0.5*(f(l1-1:l2,m,n,irho)+f(l1:l2+1,m,n,irho))
           else
@@ -1692,18 +1716,18 @@ module Special
           cmax_ip12(:,1)=sqrt(b1_xtmp(1:nx)**2+b2_xtmp(1:nx)**2+b3_xtmp(1:nx)**2)/sqrt(mu0*rho_xtmp(1:nx))+sqrt(p%cs2)
 ! y-component
         case(2)
-          b1_tmp=0.5*(f(l1:l2,m-1,n,ibx)+f(l1:l2,m,n,ibx))
-          b2_tmp=0.5*(f(l1:l2,m-1,n,iby)+f(l1:l2,m,n,iby))
-          b3_tmp=0.5*(f(l1:l2,m-1,n,ibz)+f(l1:l2,m,n,ibz))
+          b1_tmp=0.5*(f(l1:l2,m-1,n,ispecauxx)+f(l1:l2,m,n,ispecauxx))
+          b2_tmp=0.5*(f(l1:l2,m-1,n,ispecauxy)+f(l1:l2,m,n,ispecauxy))
+          b3_tmp=0.5*(f(l1:l2,m-1,n,ispecauxz)+f(l1:l2,m,n,ispecauxz))
           if (ldensity_nolog) then
             rho_tmp=0.5*(f(l1:l2,m-1,n,irho)+f(l1:l2,m,n,irho))
           else
             rho_tmp=0.5*(exp(f(l1:l2,m-1,n,ilnrho))+exp(f(l1:l2,m,n,ilnrho)))
           endif
           cmax_im12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(mu0*rho_tmp)+sqrt(p%cs2)
-          b1_tmp=0.5*(f(l1:l2,m,n,ibx)+f(l1:l2,m+1,n,ibx))
-          b2_tmp=0.5*(f(l1:l2,m,n,iby)+f(l1:l2,m+1,n,iby))
-          b3_tmp=0.5*(f(l1:l2,m,n,ibz)+f(l1:l2,m+1,n,ibz))
+          b1_tmp=0.5*(f(l1:l2,m,n,ispecauxx)+f(l1:l2,m+1,n,ispecauxx))
+          b2_tmp=0.5*(f(l1:l2,m,n,ispecauxy)+f(l1:l2,m+1,n,ispecauxy))
+          b3_tmp=0.5*(f(l1:l2,m,n,ispecauxz)+f(l1:l2,m+1,n,ispecauxz))
           if (ldensity_nolog) then
             rho_tmp=0.5*(f(l1:l2,m,n,irho)+f(l1:l2,m+1,n,irho))
           else
@@ -1712,18 +1736,18 @@ module Special
           cmax_ip12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(mu0*rho_tmp)+sqrt(p%cs2)
 ! z-component
         case(3)
-          b1_tmp=0.5*(f(l1:l2,m,n-1,ibx)+f(l1:l2,m,n,ibx))
-          b2_tmp=0.5*(f(l1:l2,m,n-1,iby)+f(l1:l2,m,n,iby))
-          b3_tmp=0.5*(f(l1:l2,m,n-1,ibz)+f(l1:l2,m,n,ibz))
+          b1_tmp=0.5*(f(l1:l2,m,n-1,ispecauxx)+f(l1:l2,m,n,ispecauxx))
+          b2_tmp=0.5*(f(l1:l2,m,n-1,ispecauxy)+f(l1:l2,m,n,ispecauxy))
+          b3_tmp=0.5*(f(l1:l2,m,n-1,ispecauxz)+f(l1:l2,m,n,ispecauxz))
           if (ldensity_nolog) then
             rho_tmp=0.5*(f(l1:l2,m,n-1,irho)+f(l1:l2,m,n,irho))
           else
             rho_tmp=0.5*(exp(f(l1:l2,m,n-1,ilnrho))+exp(f(l1:l2,m,n,ilnrho)))
           endif
           cmax_im12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(mu0*rho_tmp)+sqrt(p%cs2)
-          b1_tmp=0.5*(f(l1:l2,m,n,ibx)+f(l1:l2,m,n+1,ibx))
-          b2_tmp=0.5*(f(l1:l2,m,n,iby)+f(l1:l2,m,n+1,iby))
-          b3_tmp=0.5*(f(l1:l2,m,n,ibz)+f(l1:l2,m,n+1,ibz))
+          b1_tmp=0.5*(f(l1:l2,m,n,ispecauxx)+f(l1:l2,m,n+1,ispecauxx))
+          b2_tmp=0.5*(f(l1:l2,m,n,ispecauxy)+f(l1:l2,m,n+1,ispecauxy))
+          b3_tmp=0.5*(f(l1:l2,m,n,ispecauxz)+f(l1:l2,m,n+1,ispecauxz))
           if (ldensity_nolog) then
             rho_tmp=0.5*(f(l1:l2,m,n,irho)+f(l1:l2,m,n+1,irho))
           else
