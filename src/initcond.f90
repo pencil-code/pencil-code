@@ -5104,7 +5104,7 @@ module Initcond
 !***********************************************************************
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
-      lskip_projection,lvectorpotential,lscale_tobox, &
+      lskip_projection,lvectorpotential,lscale_tobox, lsquash, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,time,cs,lreinit, &
@@ -5136,11 +5136,11 @@ module Initcond
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest
 !
-      logical, intent(in), optional :: lscale_tobox, lremain_in_fourier, ltime_old
+      logical, intent(in), optional :: lscale_tobox, lsquash, lremain_in_fourier, ltime_old
       logical, intent(in), optional :: ltime_new, lrho_nonuni
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
       logical, intent(in), optional :: llogbranch0,ldouble0, lreinit
-      logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
+      logical :: lvectorpotential, lscale_tobox1, lsquash1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
       logical :: ltime_new1, lrho_nonuni1
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
@@ -5166,6 +5166,12 @@ module Initcond
         lscale_tobox1 = lscale_tobox
       else
         lscale_tobox1 = .true.
+      endif
+!
+      if (present(lsquash)) then
+        lsquash1 = lsquash
+      else
+        lsquash1 = .true.
       endif
 !
 !  Check whether or not we want to remain in Fourier space
@@ -5329,7 +5335,7 @@ module Initcond
         print*,'ampl,initpower,initpower2=',ampl,initpower,initpower2
         print*,'cutoff,ncutoff,kpeak,i1,i2,relhel,kgaussian=',cutoff,ncutoff,kpeak,i1,i2,relhel,kgaussian
         !print*,'lskip_projection,lvectorpotential,lscale_tobox1=',lskip_projection,lvectorpotential,lscale_tobox1
-        print*,'lskip_projection,lscale_tobox1=',lskip_projection,lscale_tobox1
+        print*,'lskip_projection,lscale_tobox1,lsquash1=',lskip_projection,lscale_tobox1,lsquash1
         !print*,'k1hel,k2hel,lremain_in_fourier,lpower_profile_file,qexp=',k1hel,k2hel,lremain_in_fourier,lpower_profile_file,qexp
         print*,'lremain_in_fourier1',lremain_in_fourier1
   !     print*,'lno_noise,nfact,lfactors=',lno_noise,nfact,lfactors
@@ -5388,19 +5394,30 @@ module Initcond
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
       else
 !
-!  calculate k^2
+!  calculate k^2. If lscale_tobox1=T, then k is calculated as if the
+!  box is 2pi in all three directions.
+!  If lsquash_aa=T, then the box size in the y and z directions is the
+!  same as in the x direction. It is called that way, because, if the
+!  aspect ratio is is different from unity, it makes the field squashed.
 !
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Lx
         kx=cshift((/(i-nxgrid/2,i=0,nxgrid-1)/),nxgrid/2)*scale_factor
+        if (lroot.and.ip<10) print*,'AXEL: kx=',kx
 !
-        scale_factor=1
-        if (.not.lscale_tobox1) scale_factor=2*pi/Ly
+        if (.not. lsquash1) then
+          scale_factor=1
+          if (.not.lscale_tobox1) scale_factor=2*pi/Ly
+        endif
         ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),nygrid/2)*scale_factor
+        if (lroot.and.ip<10) print*,'AXEL: ky=',ky
 !
-        scale_factor=1
-        if (.not.lscale_tobox1) scale_factor=2*pi/Lz
+        if (.not. lsquash1) then
+          scale_factor=1
+          if (.not.lscale_tobox1) scale_factor=2*pi/Lz
+        endif
         kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2)*scale_factor
+        if (lroot.and.ip<10) print*,'AXEL: kz=',kz
 !
 !  Set k^2 array.
 !
@@ -5997,7 +6014,6 @@ module Initcond
 !  notification
 !
         if (lroot.and..not.ltime) then
-print*,'AXEL ltime3: time1=',time1
           if (cutoff==0) then
             print*,'power_randomphase_hel: k^',initpower,' spectrum : var  i=',i
           else
