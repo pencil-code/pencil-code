@@ -242,7 +242,7 @@ module Magnetic
   logical :: lambipolar_diffusion=.false.
   logical :: lpower_profile_file=.false.
   logical :: lskip_projection_aa=.false.
-  logical :: lscale_tobox=.true.
+  logical :: lscale_tobox=.true., lsquash_aa=.false.
   logical :: lbraginsky=.false.
   logical :: lcoulomb=.false.
   logical :: lfactors_aa=.false., lvacuum=.false.
@@ -259,7 +259,7 @@ module Magnetic
       alp_aniso, ljj_as_comaux, lsmooth_jj, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
-      lscale_tobox, kgaussian_aa, z1_aa, z2_aa, &
+      lscale_tobox, lsquash_aa, kgaussian_aa, z1_aa, z2_aa, &
       lcheck_positive_va2, lskip_projection_aa, &
       ladd_disp_current_from_aux, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux, &
@@ -2028,7 +2028,7 @@ module Magnetic
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
-            lskip_projection_aa, lvectorpotential, lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
+            lskip_projection_aa, lvectorpotential, lscale_tobox, lsquash_aa, k1hel=k1hel, k2hel=k2hel, &
             lpower_profile_file=lpower_profile_file, qexp=qexp_aa,nfact0=nfact_aa, lfactors0=lfactors_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
