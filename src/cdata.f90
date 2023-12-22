@@ -359,6 +359,7 @@ module Cdata
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0,iphiuu=0, ilorentz=0
   integer :: iuu0=0,iu0x=0,iu0y=0,iu0z=0
   integer :: ioo=0, iox=0, ioy=0, ioz=0
+  integer :: ivv=0, ivx=0, ivy=0, ivz=0
   integer :: igradu11=0,igradu12=0,igradu13=0
   integer :: igradu21=0,igradu22=0,igradu23=0
   integer :: igradu31=0,igradu32=0,igradu33=0
@@ -594,7 +595,7 @@ module Cdata
 !  Variables related to Fourier spectra and structure functions.
 !
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
-  logical :: j_spec=.false., jb_spec=.false., ja_spec=.false., oo_spec=.false.
+  logical :: j_spec=.false., jb_spec=.false., ja_spec=.false., oo_spec=.false., relvel_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
