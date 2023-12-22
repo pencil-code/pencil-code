@@ -702,6 +702,7 @@ module Snapshot
         if (r2u_spec) call power(f,'r2u')
         if (r3u_spec) call power(f,'r3u')
         if (oo_spec)  call power(f,'o')
+        if (relvel_spec) call power(f,'v')
         if (mag_spec) call power(f,'b')
         if (vec_spec) call power(f,'a')
         if (j_spec)   call power_vec(f,'j')

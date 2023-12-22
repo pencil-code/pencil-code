@@ -140,6 +140,7 @@ module Hydro
   logical :: luuk_as_aux=.false., look_as_aux=.false.
   logical :: luu_fluc_as_aux=.false.
   logical :: luu_sph_as_aux=.false.
+  logical :: lvv_as_aux=.false., lvv_as_comaux=.false.
   logical :: lscale_tobox=.true.
   logical :: lfactors_uu=.false.
   logical :: lpower_profile_file_uu=.false.
@@ -191,6 +192,7 @@ module Hydro
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
+      lvv_as_aux, lvv_as_comaux, &
       lfactors_uu, qirro_uu, lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, &
       xjump_mid, yjump_mid, zjump_mid
@@ -873,6 +875,12 @@ module Hydro
         call register_report_aux('oost', ioost, ioxst, ioyst, iozst)
         ltime_integrals=.true.
       endif
+!
+!  After a reload, we need to rewrite index.pro, but the auxiliary
+!  arrays are already allocated and must not be allocated again.
+!
+      if (lvv_as_aux .or. lvv_as_comaux) &
+        call register_report_aux('vv', ivv, ivx, ivy, ivz, communicated=lvv_as_comaux)
 !
 !  omega as aux
 !
@@ -3113,6 +3121,13 @@ module Hydro
           p%uu=f(l1:l2,m,n,iux:iuz)
         endif
       endif
+!
+!  option to save velocity as auxiliary variable. This only makes sense if
+!  the iuu slot does not correspond to the actual velocity, which is the
+!  case when lconservative or lrelativity.
+!
+      if (lvv_as_aux .or. lvv_as_comaux) f(l1:l2,m,n,ivx:ivz) = p%uu
+!
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 ! uij

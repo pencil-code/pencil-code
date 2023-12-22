@@ -374,6 +374,8 @@ outer:  do ikz=1,nz
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/2.)
      elseif (trim(sp)=='r3u') then
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/3.)
+     elseif (trim(sp)=='v') then
+        a1=f(l1:l2,m1:m2,n1:n2,ivx+ivec-1)
      elseif (trim(sp)=='o') then
         do n=n1,n2
            do m=m1,m2
@@ -445,6 +447,8 @@ outer:  do ikz=1,nz
 !  append to diagnostics file
 !
   if (lroot) then
+!
+!  1/2 factor in the definition of energies.
 !
     spectrum_sum=.5*spectrum_sum
 !
