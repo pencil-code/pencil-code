@@ -1,0 +1,29 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Runtime parameters for shock tube problem.
+!
+&run_pars
+  cvsid="d544cdc8f"
+  nt=7, it1=1, cdt=0.8, cdtv=0.15, isave=50, itorder=3
+  dspec=.01, ou_spec=T, relvel_spec=T, GWs_spec=T, GWh_spec=T
+  dsnap=10.0, dvid=.05
+  lpencil_check_small=F
+  dt=1e-2
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  vwall=.6
+/
+&density_run_pars
+  idiff='normal', diffrho=1e-3
+  lmassdiff_fix=F
+/
+&viscosity_run_pars
+  ivisc='simplified', nu=1e-3
+/
+&special_run_pars
+  nscale_factor_conformal=0.
+/
+&power_spectrum_run_pars
+/

@@ -1,0 +1,29 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for shock tube problem.
+!
+&init_pars
+  cvsid="d544cdc8f"
+  lwrite_aux = T
+  lread_aux = T
+  lwrite_ic = F
+  !wav1=0.261799
+  xyz0=0.,0.,0.
+  xyz1=40.,40.,40.
+/
+&eos_init_pars
+  gamma=1., cs0=.57735027
+/
+&hydro_init_pars
+  lconservative=T
+  lrelativistic=T
+  llorentz_as_aux=T, lvv_as_aux=T
+  lhiggsless=T, vwall=.6, alpha_hless=.05
+/
+&density_init_pars
+  !initlnrho='nolog-shock-tube', rho_left=1e-1, rho_right=1., widthlnrho=-.01
+  lrelativistic_eos=F
+  ldensity_nolog=T
+/
+&special_init_pars
+/
