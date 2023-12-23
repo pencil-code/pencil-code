@@ -2208,6 +2208,11 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
       enddo
 !
+!  Give some output in case of error:
+!
+      print*,'iproc,xi_star=',iproc,xi_star 
+      print*,'iproc,grid_func=',iproc,grid_func 
+      print*,'iproc,xi_lo, xi_up, x_lo, x_up, x_star=', iproc,xi_lo, xi_up, x_lo, x_up, x_star
       call fatal_error('find_star','maximum number of iterations exceeded')
 !
     endfunction find_star
