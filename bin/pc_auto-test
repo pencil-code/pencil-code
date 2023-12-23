@@ -116,7 +116,6 @@ my %tests = (
                          MRI-turbulence_hyper
                          dust_turb_globaldisk
                          geodynamo
-                         higgsless
                          2d-tests/cylinder_deposition
                          2d-tests/selfgravdisk-deadzone-dust
                          2d-tests/spherical_viscous_ring
