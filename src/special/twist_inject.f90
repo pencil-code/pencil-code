@@ -97,6 +97,7 @@ module Special
   real :: cool_RTV,x_cutoff,TTsponge=0.0,lnTT_sponge_tau=1.0,border_width=0.1
   real :: cs0p=0.104,C_heatflux=132.0,tau_res=0.65
   real :: heat_vol=0.0,heat_LH=0.2783,heat_FS=9.74d-4
+  real, dimension(4) :: rhog
   namelist /special_init_pars/ lslope_limited_special
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
@@ -106,7 +107,7 @@ module Special
            cool_RTV,cool_RTV_cutoff,x_cutoff,cool_type, &
            lset_sponge_lnTT,TTsponge,lnTT_sponge_tau,border_width,&
            lactivate_reservoir,cs0p,C_heatflux,tau_res, &
-           heat_LH,heat_FS,heat_vol
+           heat_LH,heat_FS,heat_vol,rhog
 ! Declare index of new variables in f array (if any).
 !
    integer :: ispecaux=0,ispecauxx=0,ispecauxy=0,ispecauxz=0
@@ -303,6 +304,24 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine read_special_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+!
+    endsubroutine read_special_init_pars
+!***********************************************************************
+    subroutine write_special_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=special_init_pars)
+!
+    endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
@@ -732,6 +751,7 @@ module Special
 !
       use Deriv, only: der
       use EquationOfState, only: cs0, rho0
+      use EquationOfState, only: get_gamma_etc
       use Mpicomm
       use Diagnostics, only: save_name
       use Sub, only: cross,gij,curl_mn,step
@@ -741,7 +761,7 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
       real, dimension(mx,my,mz):: rho_tmp
-      real, dimension(my,mz):: rhob, TTb
+      real, dimension(my,mz,4):: rhob, TTb
       real, dimension(nx) :: dfy,dfz
       real, dimension (nx,3) :: aa,pbb
       real, dimension(nx,3,3) :: aij
@@ -750,12 +770,15 @@ module Special
               prof,ymid,zmid,umax,cs2,rho_corr
       real :: tmpx,tmpy,tmpz,posxold,Iringold,poszold
       real :: uborder, lborder
+      real :: cp
       logical :: lring=.true.
       integer :: l,k,ig
 !
 !  IMPLEMENTATION OF INSERTION OF BIPOLES (Non-Potential part)
 !  (Yeates, Mackay and van Ballegooijen 2008, Sol. Phys, 247, 103)
 !
+      call get_gamma_etc(gamma,cp)
+      cp1=1./cp
       ymid=0.5*(xyz0(2)+xyz1(2))
       zmid=0.5*(xyz0(3)+xyz1(3))
       if (lroot) then
@@ -791,6 +814,7 @@ module Special
         if (idiag_posz/=0) &
           call save_name(posz,idiag_posz)
       endif
+!
 !
       if (lfirst_proc_z.and.lcartesian_coords) then
         n=n1
@@ -964,19 +988,19 @@ module Special
                 if (lactivate_reservoir) then
                     if (f(l1-ig,m,n,iqx) .lt. 0.0) then
 !                   rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
-                      rhob(m,n)=1.1*rho0
-                      TTb(m,n)=(1.2*cs0**2*cp1/(gamma-1))
+                      rhob(m,n,ig+1)=1.1*rhog(ig+1)
+                      TTb(m,n,ig+1)=(1.2*cs0**2*cp1/(gamma-1))
                       f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
-                      (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                      (1-(rhob(m,n,ig+1)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
                       f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
-                      (1-(TTb(m,n)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
+                      (1-(TTb(m,n,ig+1)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
                     else
-                      rhob(m,n)=rho0
-                      TTb(m,n)=(cs0**2*cp1/(gamma-1))
+                      rhob(m,n,ig+1)=rhog(ig+1)
+                      TTb(m,n,ig+1)=(cs0**2*cp1/(gamma-1))
                       f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
-                      (1-(rhob(m,n)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                      (1-(rhob(m,n,ig+1)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
                       f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
-                      (1-(TTb(m,n)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
+                      (1-(TTb(m,n,ig+1)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
                   endif
                 endif
               enddo
