@@ -948,6 +948,8 @@ module Deriv
 !
 !   8-jul-02/wolf: coded
 !
+      use General, only: loptest
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
@@ -961,11 +963,7 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
 !
-      if (present(ignoredx)) then
-        igndx = ignoredx
-      else
-        igndx = .false.
-      endif
+      igndx=loptest(ignoredx)
 !
       if (present(upwind)) then
         if (.not. lequidist(j).and..not.lignore_nonequi) &
