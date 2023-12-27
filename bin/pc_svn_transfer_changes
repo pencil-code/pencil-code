@@ -23,12 +23,16 @@ my $new = $ARGV[1];
 $old =~ s|/+$||s;
 $new =~ s|/+$||s;
 
-if (!-d $old || !-d "$old/.svn") { die "no SVN working copy at source '".$old."'."; }
-if (!-d $new || !-d "$new/.svn") { die "no SVN working copy at destination '".$new."'."; }
+if (!-d $old || !-d "$old/.svn") { die "ERROR: no SVN working copy at source '".$old."'."; }
+if (!-d $new || !-d "$new/.svn") { die "ERROR: no SVN working copy at destination '".$new."'."; }
+
+my $stat = `cd "$new" && svn status | grep -P "^M "`;
+chomp ($stat);
+if ($stat ne "") { die "ERROR: there are modified files in destination '".$new."':\n".$stat."\n=> Please submit your changes first and 'svn up' both copies!\n"; }
 
 my $stat = `cd "$old" && svn status | grep -P "^M "`;
 chomp ($stat);
-if ($stat eq "") { die "no modified files in source '".$old."'\n"; }
+if ($stat eq "") { die "ERROR: no modified files in source '".$old."'\n"; }
 
 my @files = split (/\n\s*/s, $stat);
 print "Processing files:\n";
