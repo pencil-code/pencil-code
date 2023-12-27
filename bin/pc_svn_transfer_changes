@@ -41,7 +41,7 @@ foreach my $line (@files) {
 		my $file = $1;
 		print "$file\n";
 		my $cp = `cp "$old/$file" "$new/$file"`;
-		my $touch = `cd "$new" && touch "$new/$file"`;
+		my $touch = `touch "$new/$file"`;
 	}
 }
 
