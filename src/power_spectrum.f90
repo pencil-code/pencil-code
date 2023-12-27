@@ -359,7 +359,7 @@ outer:  do ikz=1,nz
   if (ltrue_binning) then
     nk=nk_truebin
   else
-    nk=nxgrid/2
+    nk=nk_xyz
   endif
   allocate(spectrum(nk),spectrum_sum(nk))
   spectrum=0.
@@ -422,7 +422,7 @@ outer:  do ikz=1,nz
        do ikz=1,nz
           do iky=1,ny
              do ikx=1,nx
-                k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+                k2=get_k2(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz)
                 where(int(k2)==k2s) &
                   spectrum=spectrum+a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
              enddo
@@ -432,7 +432,7 @@ outer:  do ikz=1,nz
        do ikz=1,nz
           do iky=1,ny
              do ikx=1,nx
-                k=nint(sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+                k=nint(get_k(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz))
                 if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
                      +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
              enddo
