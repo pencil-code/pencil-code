@@ -48,6 +48,6 @@ foreach my $line (@files) {
 		if ($touch) { die "ERROR: ".$touch."\n"; }
 	}
 }
-print "Transferred successfully!\n";
+print "Done.\nAll files transferred successfully!\n";
 
 exit (0);
