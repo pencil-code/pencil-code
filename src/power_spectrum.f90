@@ -557,17 +557,16 @@ outer:  do ikz=1,nz
      enddo
      !
   enddo !(loop over ivec)
-  !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
-  !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  !
-  !  on root processor, write global result to file
-  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
-  !
 !
-!  append to diagnostics file
+!  Summing up the results from the different processors.
+!  The result is available only on root.
+!
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+!
+!  On root processor, write global result to file
+!  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>.
+!
+!  Append to diagnostics file.
 !
   if (lroot) then
     if (ip<10) print*,'Writing power spectra of variable',sp &

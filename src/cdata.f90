@@ -114,7 +114,6 @@ module Cdata
   real, dimension(0:nprocx) :: procx_bounds
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds
-  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0 
 !
 !  Polar grid
 !
@@ -436,6 +435,7 @@ module Cdata
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh               ! `pole' processor neighbours
+  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0 
 !
 !  Data for registering of already updated variable ghost zones for only partly
 !  updating by the *_after_timestep routines.
