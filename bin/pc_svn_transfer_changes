@@ -40,9 +40,14 @@ foreach my $line (@files) {
 	if ($line =~ /^M\s+(.*)$/s) {
 		my $file = $1;
 		print "$file\n";
-		my $cp = `cp "$old/$file" "$new/$file"`;
-		my $touch = `touch "$new/$file"`;
+		my $cp = `cp -f "$old/$file" "$new/$file" 2>&1`;
+		chomp ($cp);
+		if ($cp) { die "ERROR: ".$cp."\n"; }
+		my $touch = `touch "$new/$file" 2>&1`;
+		chomp ($touch);
+		if ($touch) { die "ERROR: ".$touch."\n"; }
 	}
 }
+print "Transferred successfully!\n";
 
 exit (0);
