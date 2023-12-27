@@ -143,6 +143,7 @@ outer:  do ikz=1,nz
               if (k2>max_k2) cycle
               if (pos_in_array(int(k2),k2s)==0) then
                 ind=ind+1
+!               KG: should this not be nint? (I think the below will always round down) Similar issue in subroutine power.
                 k2s(ind)=int(k2)
                 if (ind==len) exit outer
               endif
