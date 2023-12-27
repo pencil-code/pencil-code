@@ -32,7 +32,7 @@ if ($clean ne "") { die "ERROR: there are modified files in destination '".$new.
 
 my $stat = `cd "$old" && svn status | grep -P "^M "`;
 chomp ($stat);
-if ($stat eq "") { die "ERROR: no modified files in source '".$old."'\n"; }
+if ($stat eq "") { print "no modified files in source '".$old."'\n"; exit (0); }
 
 my @files = split (/\n\s*/s, $stat);
 print "Processing files:\n";
