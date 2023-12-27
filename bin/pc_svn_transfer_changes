@@ -1,0 +1,44 @@
+#!/usr/bin/perl
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
+#======================================================================#
+
+# Name:   pc_svn-transfer-changes
+# Author: PABourdin, Christmas present for Matthias
+# Date:   27-Dec-2023
+# ID:     $Id$
+# Description:
+# Transfers local changes in one SVN checkout to another "fresh" checkout.
+
+use strict;
+
+my $progname = $0;
+$progname =~ s|^\S*/||;
+
+my $usage="Usage:  $progname <path_old> <path_new>\n\nTransfers all local changes from one SVN working copy at <path_old> into a fresh working copy at <path_new>.\n";
+if (@ARGV != 2) { die $usage; }
+
+my $old = $ARGV[0];
+my $new = $ARGV[1];
+
+$old =~ s|/+$||s;
+$new =~ s|/+$||s;
+
+if (!-d $old || !-d "$old/.svn") { die "no SVN working copy at source '".$old."'."; }
+if (!-d $new || !-d "$new/.svn") { die "no SVN working copy at destination '".$new."'."; }
+
+my $stat = `cd "$old" && svn status | grep -P "^M "`;
+chomp ($stat);
+if ($stat eq "") { die "no modified files in source '".$old."'\n"; }
+
+my @files = split (/\n\s*/s, $stat);
+print "Processing files:\n";
+foreach my $line (@files) {
+	if ($line =~ /^M\s+(.*)$/s) {
+		my $file = $1;
+		print "$file\n";
+		my $cp = `cp "$old/$file" "$new/$file"`;
+		my $touch = `cd "$new" && touch "$new/$file"`;
+	}
+}
+
+exit (0);
