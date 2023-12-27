@@ -764,7 +764,7 @@ outer:  do ikz=1,nz
   if (lintegrate_shell) then
 !
     title = 'Shell-integrated'
-    nk = nint( sqrt( ((nxgrid+1)/Lx)**2+((nygrid+1)/Ly)**2 )*Lx/2 )+1
+    nk = nk_xy
     allocate( kshell(nk) )
 !
 ! To initialize variables with NaN, please only use compiler flags. (Bourdin.KIS)
@@ -860,12 +860,11 @@ outer:  do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
 !
-            !!k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2))
-            k=nint( sqrt( (kx(ikx+ipx*nx)/Lx)**2+(ky(iky+ipy*ny)/Ly)**2 )*Lx ) ! i.e. wavenumber index k
-                                                                        ! is |\vec{k}|/(2*pi/Lx)
+            k=nint(sqrt(get_k2_xy(ikx+ipx*nx, iky+ipy*ny))) ! i.e. wavenumber index k
+                                                            ! is |\vec{k}|/(2*pi/Lx)
             if ( k>=0 .and. k<=nk-1 ) then
 !
-              kshell(k+1) = k*2*pi/Lx
+              kshell(k+1) = k*2*pi/L_min_xy
 !
               if (l2nd) then
                 prods = 0.5*(ar(ikx,iky,ikz)*br(ikx,iky,ikz)+ai(ikx,iky,ikz)*bi(ikx,iky,ikz))
