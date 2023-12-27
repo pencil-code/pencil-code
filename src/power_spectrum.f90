@@ -56,6 +56,8 @@ module power_spectrum
   integer, dimension(:), allocatable :: k2s
   integer :: nk_truebin=0
   logical :: lpowerdat_existed=.false.
+  real :: L_min, L_min_xy
+  integer :: nk_xyz, nk_xy
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
@@ -86,6 +88,14 @@ module power_spectrum
           ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
           call warning ('power_spectrum', &
           "Shell-integration will be wrong; set dx=dy=dz to fix this.")
+      
+      L_min = minval(Lxyz)
+      L_min_xy = min(Lx, Ly)
+      
+!     KG: Ideally, these would be used for calculation of nk, but that requires making all arrays of size nk into allocatables. Currently these are unused.
+      nk_xyz = nint(min( nxgrid*L_min/(2*Lx), nygrid*L_min/(2*Ly), nzgrid*L_min/(2*Lz) ))
+!       nk_xy = nint(min( nxgrid*L_min/(2*Lx), nygrid*L_min/(2*Ly) ))
+      nk_xy = nint( sqrt( ((nxgrid+1)/Lx)**2+((nygrid+1)/Ly)**2 )*L_min_xy/2 )+1 !KG: I don't agree with this expression, but I am using this to avoid changing the behaviour of power_xy.
 !
 !  07-dec-20/hongzhe: import gauss-legendre quadrature from gauss_legendre_quadrature.dat
 !
@@ -5714,5 +5724,51 @@ endsubroutine pdf
   endif
   !
   endsubroutine power_transfer_mag
+!***********************************************************************
+  function get_k2(ikx, iky, ikz) result(k2)
+!   Note that ik{x,y,z} are global, not per-processor, indices.
+!   The result needs to be multiplied by (2*pi/L_min)**2 to get the actual k**2.
+!   We use L_min since having the bin size smaller than the smallest wavenumber
+!   along a particular direction seems to lead to ugly aliasing artefacts.
+!
+!   27-sep-2023/KG: coded
+!
+    use Fourier, only: kx_fft2, ky_fft2, kz_fft2
+    
+    integer, intent (in) :: ikx, iky, ikz
+    real :: k2
+    
+    k2 = (L_min/(2*pi))**2 * ( kx_fft2(ikx) + ky_fft2(iky) + kz_fft2(ikz) )
+  endfunction get_k2
+!***********************************************************************
+  function get_k(ikx, iky, ikz) result(k)
+!   Note that ik{x,y,z} are global, not per-processor, indices.
+!   The result needs to be multiplied by (2*pi/L_min)to get the actual k.
+!   We use L_min since having the bin size smaller than the smallest wavenumber
+!   along a particular direction seems to lead to ugly aliasing artefacts.
+!
+!   27-sep-2023/KG: coded
+!
+    integer, intent (in) :: ikx, iky, ikz
+    real :: k
+    
+    k = sqrt(get_k2(ikx, iky, ikz))
+  endfunction get_k
+!***********************************************************************
+  function get_k2_xy(ikx, iky) result(k2)
+!   Note that ik{x,y,z} are global, not per-processor, indices.
+!   The result needs to be multiplied by (2*pi/L_min_xy)**2 to get the actual k**2.
+!   We use L_min_xy since having the bin size smaller than the smallest wavenumber
+!   along a particular direction seems to lead to ugly aliasing artefacts.
+!
+!   27-sep-2023/KG: coded
+!
+    use Fourier, only: kx_fft2, ky_fft2
+    
+    integer, intent (in) :: ikx, iky
+    real :: k2
+    
+    k2 = (L_min_xy/(2*pi))**2 * ( kx_fft2(ikx) + ky_fft2(iky) )
+  endfunction get_k2_xy
 !***********************************************************************
 endmodule power_spectrum
