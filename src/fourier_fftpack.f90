@@ -2889,12 +2889,13 @@ module Fourier
 ! suggests it cannot be used in this case. I suspect the (nxgrid == 1)
 ! block above is also wrong, but I am leaving it in since I don't have a
 ! setup ready at the moment to test it.
-!       if (nygrid == 1) then
-!         !call fft_x_parallel (a_re(:,1,:), a_im(:,1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
-! !AB: Philippe, could you please heck whether this "correction" is correct?
-!         call fft_x_parallel (a_re(:,1,1), a_im(:,1,1), .not. lforward, lcompute_im, lignore_shear=lnoshear)
-!         return
-!       endif
+! KG: restored this to quickly fix a failing auto-test; nevertheless, this needs to be resolved.
+      if (nygrid == 1) then
+        !call fft_x_parallel (a_re(:,1,:), a_im(:,1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+!AB: Philippe, could you please heck whether this "correction" is correct?
+        call fft_x_parallel (a_re(:,1,1), a_im(:,1,1), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+        return
+      endif
 !
       inz = size (a_re, 3)
 !
