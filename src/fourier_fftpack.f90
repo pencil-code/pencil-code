@@ -2859,7 +2859,7 @@ module Fourier
       real, dimension (tny) :: deltay_x
       real, dimension (tny) :: dshift_y
 !
-      integer :: l, m, stat, pos_z, x_offset
+      integer :: l, m, stat, pos_z, x_offset, i
       logical :: lforward, lcompute_im, lshift, lnoshear, lshear_loc
 !
       lforward = .true.
@@ -2878,26 +2878,21 @@ module Fourier
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
-      ! Check for degenerate cases.
-      if (nxgrid == 1) then
-        call fft_y_parallel (a_re(1,:,:), a_im(1,:,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
-        return
-      endif
-! Kishore: the code below seems WRONG. After commenting these lines out,
-! the output of fft_xy_parallel_3D becomes the same as that of
-! fourier_transform_xy when nygrid=1. Cursory inspection of fft_x_parallel_2D
-! suggests it cannot be used in this case. I suspect the (nxgrid == 1)
-! block above is also wrong, but I am leaving it in since I don't have a
-! setup ready at the moment to test it.
-! KG: restored this to quickly fix a failing auto-test; nevertheless, this needs to be resolved.
-      if (nygrid == 1) then
-        !call fft_x_parallel (a_re(:,1,:), a_im(:,1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
-!AB: Philippe, could you please heck whether this "correction" is correct?
-        call fft_x_parallel (a_re(:,1,1), a_im(:,1,1), .not. lforward, lcompute_im, lignore_shear=lnoshear)
-        return
-      endif
-!
       inz = size (a_re, 3)
+!     Check for degenerate cases.
+!     KG: (27-sep-2023) it seems to me that fft_y_parallel_2D does the FFT along the second axis; here, we want FFT along the first axis, and moreover have to handle the case where nx!=ny!=nz. This seems the simplest way to accomplish that.
+      if (nxgrid == 1) then
+        do i=1,inz
+          call fft_y_parallel (a_re(1,:,i), a_im(1,:,i), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+        enddo
+        return
+      endif
+      if (nygrid == 1) then
+        do i=1,inz
+          call fft_x_parallel (a_re(:,1,i), a_im(:,1,i), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+        enddo
+        return
+      endif
 !
       if (inz /= size (a_im, 3)) &
           call fatal_error ('fft_xy_parallel_3D', 'third dimension differs for real and imaginary part', lfirst_proc_xy)
@@ -3045,7 +3040,7 @@ module Fourier
       real, dimension (tny) :: deltay_x
       real, dimension (tny) :: dshift_y
 !
-      integer :: l, m, stat, pos_z, pos_a, x_offset
+      integer :: l, m, stat, pos_z, pos_a, x_offset, iz, ia
       logical :: lforward, lcompute_im, lshift, lnoshear, lshear_loc
 !
       lforward = .true.
@@ -3064,18 +3059,26 @@ module Fourier
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
 !
-      ! Check for degenerate cases.
+      inz = size (a_re, 3)
+      ina = size (a_re, 4)
+!     Check for degenerate cases.
+!     KG: (27-sep-2023) it seems to me that fft_y_parallel_3D does the FFT along the second axis; here, we want FFT along the first axis, and moreover have to handle the case where nx!=ny!=nz. This seems the simplest way to accomplish that.
       if (nxgrid == 1) then
-        call fft_y_parallel (a_re(1,:,:,:), a_im(1,:,:,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+        do iz=1,inz
+          do ia = 1,ina
+            call fft_y_parallel (a_re(1,:,iz,ia), a_im(1,:,iz,ia), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+          enddo
+        enddo
         return
       endif
       if (nygrid == 1) then
-        call fft_x_parallel (a_re(:,1,:,:), a_im(:,1,:,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+        do iz=1,inz
+          do ia = 1,ina
+            call fft_x_parallel (a_re(:,1,iz,ia), a_im(:,1,iz,ia), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+          enddo
+        enddo
         return
       endif
-!
-      inz = size (a_re, 3)
-      ina = size (a_re, 4)
 !
       if (inz /= size (a_im, 3)) &
           call fatal_error ('fft_xy_parallel_4D', 'third dimension differs for real and imaginary part', lfirst_proc_xy)
