@@ -131,10 +131,6 @@ module power_spectrum
 !
 ! Determine the k^2 in the range from 0 to max_k2.
 !
-        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-
         if (allocated(k2s)) deallocate(k2s)
         len=2*binomial(int(sqrt(max_k2/3.)+2),3)   ! only valid for isotropic 3D grid!
         allocate(k2s(len)); k2s=-1
@@ -143,7 +139,7 @@ module power_spectrum
 outer:  do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
-              k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+              k2=get_k2(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz)
               if (k2>max_k2) cycle
               if (pos_in_array(int(k2),k2s)==0) then
                 ind=ind+1
