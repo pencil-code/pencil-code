@@ -646,7 +646,6 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-!   KG: NOTE: when nygrid=1, fft_xy_parallel seems to give wrong results (see my comments in fourier_fftpack.f90/fft_xy_parallel_3D)
     if (nprocx>1 .or. (nygrid/=1 .and. nxgrid/=nygrid)) then
       call fft_xy_parallel(ar,ai)
     else
