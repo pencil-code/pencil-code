@@ -510,6 +510,11 @@ outer:  do ikz=1,nz
   !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("power_2d", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -1083,6 +1088,11 @@ outer:  do ikz=1,nz
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
 !
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerhel", "computation of wavevector is wrong for non-cubical domains")
+!
 ! Select cases where spectra are precomputed
 !
   if (iaakim>0.or.ieekim>0) then
@@ -1630,6 +1640,11 @@ outer:  do ikz=1,nz
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerLor", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -1884,6 +1899,11 @@ outer:  do ikz=1,nz
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerLor_OLD", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -2097,6 +2117,11 @@ outer:  do ikz=1,nz
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerEMF", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -2290,6 +2315,11 @@ outer:  do ikz=1,nz
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerTra", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -2483,6 +2513,11 @@ outer:  do ikz=1,nz
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerGWs", "computation of wavevector is wrong for non-cubical domains")
 !
 ! Select cases where spectra are precomputed
 !
@@ -2751,6 +2786,11 @@ outer:  do ikz=1,nz
   !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerscl", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -3796,6 +3836,11 @@ endsubroutine pdf
   !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("power_vec", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -3927,6 +3972,11 @@ endsubroutine pdf
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("polar_spectrum", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -4529,6 +4579,11 @@ endsubroutine pdf
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("power_cor", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -4842,6 +4897,11 @@ endsubroutine pdf
   !  identify version
   !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("power_cor_scl", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -5096,10 +5156,16 @@ endsubroutine pdf
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=*) :: sp
+!
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("quadratic_invariants", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -5512,6 +5578,11 @@ endsubroutine pdf
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("power_shell_filter", "computation of wavevector is wrong for non-cubical domains")
 !
 !  Define wave vector, defined here for the *full* mesh.
 !  Each processor will see only part of it.
