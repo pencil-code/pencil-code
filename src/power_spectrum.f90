@@ -21,6 +21,8 @@
 !   11-nov-10/MR: intro'd flags for shell integration and z integration,
 !   for that, changed namelist run_pars and corresp. read and write subroutines;
 !   corresp. changes at the moment only in effect in power_xy
+!   27-sep-2023/KG: fixed calculation of wavenumbers for non-cubical boxes in
+!                   power and power_xy
 !
 module power_spectrum
 !
