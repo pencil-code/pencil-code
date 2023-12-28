@@ -34,6 +34,11 @@ my $stat = `cd "$old" && svn status | grep -P "^M "`;
 chomp ($stat);
 if ($stat eq "") { print "no modified files in source '".$old."'\n"; exit (0); }
 
+my $local = `cd "$old" && svn info --show-item revision .`;
+my $URL = `cd "$old" && svn info --show-item url .`;
+my $remote = `svn info --show-item revision $URL`;
+if ($local ne $remote) { die "ERROR: first please 'svn up' at source '".$old."'\n"; }
+
 my @files = split (/\n\s*/s, $stat);
 print "Processing files:\n";
 foreach my $line (@files) {
