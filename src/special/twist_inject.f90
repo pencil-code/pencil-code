@@ -97,7 +97,7 @@ module Special
   real :: cool_RTV,x_cutoff,TTsponge=0.0,lnTT_sponge_tau=1.0,border_width=0.1
   real :: cs0p=0.104,C_heatflux=132.0,tau_res=0.65
   real :: heat_vol=0.0,heat_LH=0.2783,heat_FS=9.74d-4
-  real, dimension(4) :: rhog
+  real, dimension(3) :: rhog
   namelist /special_init_pars/ lslope_limited_special
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
@@ -761,7 +761,7 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
       real, dimension(mx,my,mz):: rho_tmp
-      real, dimension(my,mz,4):: rhob, TTb
+      real, dimension(my,mz,3):: rhob, TTb
       real, dimension(nx) :: dfy,dfz
       real, dimension (nx,3) :: aa,pbb
       real, dimension(nx,3,3) :: aij
@@ -905,7 +905,7 @@ module Special
 ! bb
               call curl_mn(aij,pbb,aa)
               f(l1:l2,m,n,ispecauxx  :ispecauxz  )=pbb
-              do ig=0,nghost
+              do ig=1,nghost
                 xx0=x(l1-ig)*sinth(m)*cos(z(n))
                 yy0=x(l1-ig)*sinth(m)*sin(z(n))
                 zz0=x(l1-ig)*costh(m)
@@ -986,21 +986,21 @@ module Special
 ! p0=0 for qx>0
 !
                 if (lactivate_reservoir) then
-                    if (f(l1-ig,m,n,iqx) .lt. 0.0) then
+                    if (f(l1,m,n,iqx) .lt. 0.0) then
 !                   rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
-                      rhob(m,n,ig+1)=1.1*rhog(ig+1)
-                      TTb(m,n,ig+1)=(1.2*cs0**2*cp1/(gamma-1))
+                      rhob(m,n,ig)=1.1*rhog(ig)
+                      TTb(m,n,ig)=(1.2*cs0**2*cp1/(gamma-1))
                       f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
-                      (1-(rhob(m,n,ig+1)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                      (1-(rhob(m,n,ig)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
                       f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
-                      (1-(TTb(m,n,ig+1)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
+                      (1-(TTb(m,n,ig)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
                     else
-                      rhob(m,n,ig+1)=rhog(ig+1)
-                      TTb(m,n,ig+1)=(cs0**2*cp1/(gamma-1))
+                      rhob(m,n,ig)=rhog(ig)
+                      TTb(m,n,ig)=(cs0**2*cp1/(gamma-1))
                       f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
-                      (1-(rhob(m,n,ig+1)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                      (1-(rhob(m,n,ig)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
                       f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
-                      (1-(TTb(m,n,ig+1)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
+                      (1-(TTb(m,n,ig)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
                   endif
                 endif
               enddo
