@@ -92,7 +92,9 @@ module power_spectrum
       L_min = minval(Lxyz)
       L_min_xy = min(Lx, Ly)
       
-!     KG: Ideally, these would be used for calculation of nk, but that requires making all arrays of size nk into allocatables. Currently these are unused.
+!     KG: Ideally, these would be used for calculation of nk, but that requires
+!     making all arrays of size nk into allocatables. Currently these are used
+!     only in power_xy and power.
       nk_xyz = nint(min( nxgrid*L_min/(2*Lx), nygrid*L_min/(2*Ly), nzgrid*L_min/(2*Lz) ))
 !       nk_xy = nint(min( nxgrid*L_min/(2*Lx), nygrid*L_min/(2*Ly) ))
       nk_xy = nint( sqrt( ((nxgrid+1)/Lx)**2+((nygrid+1)/Ly)**2 )*L_min_xy/2 )+1 !KG: I don't agree with this expression, but I am using this to avoid changing the behaviour of power_xy.
