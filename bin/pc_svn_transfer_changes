@@ -35,8 +35,11 @@ chomp ($stat);
 if ($stat eq "") { print "no modified files in source '".$old."'\n"; exit (0); }
 
 my $local = `cd "$old" && svn info --show-item revision .`;
+chomp ($local);
 my $URL = `cd "$old" && svn info --show-item url .`;
+chomp ($URL);
 my $remote = `svn info --show-item revision $URL`;
+chomp ($remote);
 if ($local ne $remote) { die "ERROR: first please 'svn up' at source '".$old."'\n"; }
 
 my @files = split (/\n\s*/s, $stat);
