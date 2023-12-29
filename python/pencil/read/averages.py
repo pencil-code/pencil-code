@@ -6,6 +6,7 @@
 """
 Contains the classes and methods to read average files.
 """
+import warnings
 import sys
 from pencil import read
 from pencil.math import natural_sort
@@ -293,7 +294,7 @@ class Averages(object):
                         if not var_name in variables:
                             plane_var_names.remove(var_name)
                     if len(plane_var_names) < 1:
-                        print("Warning read.aver: var_names has no match in {} - reading all variables instead".format(in_file_name))
+                        warnings.warn("read.aver: var_names has no match in {} - reading all variables instead".format(in_file_name))
                     else:
                         var_index = list()
                         for indx, var in zip(range(n_vars),variables):
@@ -383,7 +384,7 @@ class Averages(object):
                     # Check matches in avfile_list if present
                     if avfile_list:
                         if not prefix+".h5" in avfile_list:
-                            print(prefix+" does not match in avfile_list and plane_list")
+                            warnings.warn(prefix+" does not match in avfile_list and plane_list")
                             plane_list.remove(prefix)
                         else:
                             if join(datadir,"averages",prefix+".h5") in av_files:
@@ -491,7 +492,7 @@ class Averages(object):
                     itlist = range(n_times,n_times+1,iter_step)
                 elif len(iter_list) == 2:
                     if iter_list[0] >= iter_list[1]:
-                        print("Warning read.aver: iter_list pair must be list of integer - reading full series instead")
+                        warnings.warn("read.aver: iter_list pair must be list of integer - reading full series instead")
                     itlist = range(max(0,iter_list[0]),min(n_times,iter_list[1]),iter_step)
                 else:
                     itlist = iter_list
@@ -499,7 +500,7 @@ class Averages(object):
                     if not str(it) in tmp.keys():
                         itlist.remove(it)
                 if not len(itlist) > 0:
-                    print("Warning read.aver: iter_list has no match in {} keys - reading only {} instead".format(av_file,tmp['last'][0]))
+                    warnings.warn("read.aver: iter_list has no match in {} keys - reading only {} instead".format(av_file,tmp['last'][0]))
                     itlist.append(tmp['last'][0])
             else:
                 itlist = natural_sort(tmp.keys())[:n_times]
@@ -526,7 +527,7 @@ class Averages(object):
                     if not var_name in variables:
                         var_names.remove(var_name)
                 if len(var_names) < 1:
-                    print("Warning read.aver: var_names has no match in {} keys - reading all variables instead".format(av_file))
+                    warnings.warn("read.aver: var_names has no match in {} keys - reading all variables instead".format(av_file))
                     #var_names = list(tmp[str(itlist[0])].keys())
                     var_names = variables
             else:
