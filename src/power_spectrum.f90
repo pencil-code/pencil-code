@@ -339,9 +339,6 @@ outer:  do ikz=1,nz
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb,oo
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   real :: k2
   real, dimension(:), allocatable :: spectrum,spectrum_sum
   character(LEN=fnlen) :: filename
@@ -351,14 +348,6 @@ outer:  do ikz=1,nz
   !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   if (ltrue_binning) then
     nk=nk_truebin
