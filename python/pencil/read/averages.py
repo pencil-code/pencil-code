@@ -179,8 +179,7 @@ class Averages(object):
                 iter_list = [iter_list]
             for it in iter_list:
                 if not isinstance(it, int):
-                    print("read.aver Error: iter_list contains {}, but must be integers".format(it))
-                    exit()
+                    raise ValueError(f"read.aver Error: iter_list contains {it}, but must be integers")
 
         import os
         from os.path import join, abspath
@@ -230,10 +229,9 @@ class Averages(object):
                         for plane in plane_list:
                             in_file_name_list.append(prefix + "aver.in")
                     else:
-                        print(
+                        raise ValueError(
                             "plane_list and avfile_list must have matching length and order"
                         )
-                        sys.stdout.flush()
             else:
                 aver_file_name_list = []
                 in_file_name_list = []
@@ -262,9 +260,7 @@ class Averages(object):
                         in_file_name_list.append("data/averages/phiavg.list")
                         aver_file_name_list.append(os.path.join("averages", "phi.h5"))
                 if not in_file_name_list:
-                    print("error: invalid plane name")
-                    sys.stdout.flush()
-                    return -1
+                    raise ValueError("invalid plane name")
 
             class Foo(object):
                 pass
@@ -367,13 +363,9 @@ class Averages(object):
                     if not ".h5" in av_file[-3:]:
                         av_files.remove(av_file)
                 if len(av_files) == 0:
-                    print('read.aver error: no averages files in '+join(datadir,"averages"))
-                    sys.stdout.flush()
-                    return -1
+                    raise RuntimeError(f"read.aver error: no averages files in {join(datadir,'averages')}")
             else:
-                print('read.aver error: no averages files in '+join(datadir,"averages"))
-                sys.stdout.flush()
-                return -1
+                raise RuntimeError(f"read.aver error: no averages files in {join(datadir,'averages')}")
             av_files_in = list()
             # Initialize the av_files_list of planes.
             if avfile_list:
@@ -402,9 +394,7 @@ class Averages(object):
                         else:
                             plane_list.remove(prefix)
                 if len(av_files_in) == 0:
-                    print('read.aver error: plane_lists and avlist or av_files have no match'.format(plane_list, av_files))
-                    sys.stdout.flush()
-                    return -1
+                    raise RuntimeError(f"read.aver error: {plane_list =} and {av_files = } have no match.")
             else:
                 plane_list = list()
                 for av_file in av_files:
@@ -416,9 +406,7 @@ class Averages(object):
                         av_files_in.append(av_file)
                         plane_list.append(av_file.split('/')[-1].split('_')[-1][:-3])
                 if len(av_files_in) == 0:
-                    print('read.aver error: avfile_list has no match in av_files'.format(avlist, av_files))
-                    sys.stdout.flush()
-                    return -1
+                    raise RuntimeError(f"read.aver error: {avfile_list =} has no match in {av_files = }")
 
             if not quiet:
                 print(av_files_in)
@@ -523,9 +511,7 @@ class Averages(object):
                         if tmp[str(t_idx) + "/time"][()].item() <= end_time:
                             tmplist.append(t_idx)
                 if len(tmplist) == 0:
-                    print('read.aver error: no data in {{av_file}} within time range {{time_range}}.')
-                    sys.stdout.flush()
-                    return -1
+                    raise RuntimeError(f"read.aver error: no data in {av_file} within time range {time_range}.")
                 else:
                     itlist = tmplist
             # Determine the structure of the xy/xz/yz/y/z averages.
@@ -845,8 +831,7 @@ class Averages(object):
                     raw_idx += 1
                 line_idx += 1
         except:
-            print("Error: There was a problem reading {} at line {}.\nCalculated values: n_vars = {}, nw = {}.\nAre these correct?".format(aver_file_name, line_idx, n_vars, nw))
-            raise
+            raise RuntimeError(f"Error: There was a problem reading {aver_file_name} at line {line_idx}.\nCalculated values: {n_vars = }, {n_w = }.\nAre these correct?")
 
         # Restructure the raw data and add it to the Averages object.
         raw_data = np.reshape(raw_data, [n_times, n_vars, nw])
