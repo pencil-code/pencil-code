@@ -689,6 +689,7 @@ outer:  do ikz=1,nz
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out_real, mpigather_and_out_cmplx, &
                       mpimerge_1d, ipz, mpibarrier, mpigather_z
    use General, only: itoa, write_full_columns, get_range_no, write_by_ranges
+  use Fourier, only: kx_fft, ky_fft
 !
   implicit none
 !
@@ -706,8 +707,6 @@ outer:  do ikz=1,nz
   real,    allocatable, dimension(:,:,:)  :: spectrum3
   complex, allocatable, dimension(:,:,:,:):: spectrum3_cmplx
 !
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
   real, dimension(nx,ny)  :: prod
   real                    :: prods
 !
@@ -829,13 +828,6 @@ outer:  do ikz=1,nz
 !
   title = trim(title)//' spectrum w.r.t. x and y'
   !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)       !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)       !*2*pi/Ly
-  !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part ar1-ar3; and put imaginary part, ai1-ai3, to zero
   !
@@ -940,8 +932,8 @@ outer:  do ikz=1,nz
 !
         write(1,'(a)') 'Wavenumbers k_x ('//trim(itoa(nkx))//') and k_y ('//trim(itoa(nky))//'):'
 !
-        call write_by_ranges( 1, kx*2*pi/Lx, kxrange )
-        call write_by_ranges( 1, ky*2*pi/Ly, kyrange )
+        call write_by_ranges( 1, kx_fft, kxrange )
+        call write_by_ranges( 1, ky_fft, kyrange )
 !
       endif
 !
