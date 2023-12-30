@@ -641,7 +641,7 @@ subroutine cffti ( n, wsave )
     return
   end if
 
-  call cffti1 ( n, wsave(2*n+1), wsave(4*n+1) )
+  call cffti1 ( n, wsave(2*n+1), wsave(4*n+1) )   !writes wsave(2n+1:)
 
   return
 end
@@ -6999,7 +6999,7 @@ subroutine rffti ( n, wsave )
     return
   end if
 
-  call rffti1 ( n, wsave(n+1), wsave(2*n+1) )
+  call rffti1 ( n, wsave(n+1), wsave(2*n+1) )    !writes wsave(n+1:)
 
   return
 end

@@ -268,6 +268,7 @@ module Snapshot
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
+      real, dimension(:), allocatable, save :: snaptimes
       character (len=fnlen) :: file
       character (len=intlen) :: ch
       integer :: nv1_capitalvar
@@ -283,6 +284,7 @@ module Snapshot
 !
         if (lfirst_call) then
           call read_snaptime(file,tsnap,nsnap,dsnap,t)
+          !call read_predef_snaptimes('snaptimes.txt',snaptimes)
           lfirst_call=.false.
         endif
 !
@@ -334,6 +336,13 @@ module Snapshot
       if (ltec) call output_snap_tec (file,a,msnap)
 !
     endsubroutine wsnap
+!***********************************************************************
+    subroutine read_predef_snaptimes(file,snaptimes)
+
+      character(LEN=fnlen) :: file
+      real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
+      
+    endsubroutine read_predef_snaptimes
 !***********************************************************************
     subroutine rsnap(chsnap,f,msnap,lread_nogrid)
 !
@@ -696,8 +705,8 @@ module Snapshot
 
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f)
         lfirstcall_powerhel=.true.
-
         if (ldo_all)  call update_ghosts(f)
+!
         if (vel_spec) call power(f,'u')
         if (r2u_spec) call power(f,'r2u')
         if (r3u_spec) call power(f,'r3u')
