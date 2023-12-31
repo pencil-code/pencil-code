@@ -3059,7 +3059,7 @@ your own new script than figuring out how something else works.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{RELOAD and STOP files}
+\subsection{RELOAD, STOP and SAVE files}
 \label{S-RELOAD}
 
 The code periodically (every \var{it} time steps) checks
@@ -3105,6 +3105,14 @@ output.
 % \file{src/run.x}. If you run without the \file{run.csh} script you need
 % to remember doing this by hand.
 
+\paragraph{Saving a snapshot}
+In the directory where you started the code, create the file
+\file{SAVE} with
+\begin{alltt}
+  \prompt{unix> } touch SAVE \
+\end{alltt}
+to save the current state of the simulation in the file {\tt var.dat}.
+See {\bf Stopping the code} for when this action is taken. 
 % ---------------------------------------------------------------------- %
 
 \subsection{RERUN and NEWDIR files}
