@@ -306,7 +306,6 @@ make(@make_args, $target);
 sub make {
 # Run 'make' with the given arguments
     my @make_args = @_;
-
     system('make', @make_args) == 0
       or die "'make @make_args' failed: <$!>\n";
 }
