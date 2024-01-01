@@ -168,7 +168,7 @@ module Dustvelocity
 !
 !  18-mar-03/axel+anders: adapted from hydro
 !
-      use EquationOfState, only: cs0
+      use EquationOfState, only: cs20
       use BorderProfiles, only: request_border_driving
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -395,7 +395,7 @@ module Dustvelocity
       endif
 !
       if (beta_dPdr_dust/=0.0) then
-        beta_dPdr_dust_scaled=beta_dPdr_dust*Omega/cs0
+        beta_dPdr_dust_scaled=beta_dPdr_dust*Omega/sqrt(cs20)
         if (lroot) print*, 'initialize_dustvelocity: Global pressure '// &
                            'gradient with beta_dPdr_dust=', beta_dPdr_dust
       endif

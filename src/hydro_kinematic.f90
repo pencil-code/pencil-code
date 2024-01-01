@@ -2302,8 +2302,8 @@ module Hydro
       case ('circ_spherical')
         if (headtt) print*,'just circulation (spherical)'
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=+(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)
-          p%uu(:,2)=-x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))
+          p%uu(:,1)=+wind_amp*(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)
+          p%uu(:,2)=-wind_amp* x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))
           p%uu(:,3)=0.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
