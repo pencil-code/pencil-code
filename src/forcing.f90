@@ -188,6 +188,7 @@ module Forcing
 !
 ! Auxiliaries
 !
+  real :: cs0
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: k1xyz=0.
   real, dimension(mz) :: profz_k
@@ -248,13 +249,15 @@ module Forcing
       use General, only: bessj,itoa
       use SharedVariables, only: get_shared_variable
       use Sub, only: step,erfunc,stepdown,register_report_aux
-      use EquationOfState, only: cs0
+      use EquationOfState, only: cs20
 !
       real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm,intv_rotang
       real :: ang_intv,sthphase,cthphase,costhprime,phprime
 
       integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex,Legendrel,iangle
       logical :: lk_dot_dat_exists
+
+      cs0=sqrt(cs20)
 !
       if (lstart) then
         if (ip<4) print*,'initialize_forcing: not needed in start'
@@ -1242,7 +1245,6 @@ module Forcing
 !
 !  14-feb-2011/ dhruba : coded
 !
-      use EquationOfState, only: cs0
       use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1307,7 +1309,7 @@ module Forcing
 !
 ! Now add the forcing
 !
-      force_norm = force*cs0*cs0*sqrt(dt)
+      force_norm = force*cs20*sqrt(dt)
       do n=n1,n2
         do m=m1,m2
           xkx1 = x(l1:l2)*kx1+phase1
@@ -1359,7 +1361,6 @@ module Forcing
 !
 !  14-feb-2011/ dhruba : coded
 !
-      use EquationOfState, only: cs0
       use General, only: random_number_wrapper, itoa
       use Sub, only: step
 !
@@ -1384,7 +1385,7 @@ module Forcing
 !
 ! Now add the forcing
 !
-      force_norm = force*cs0*cs0*sqrt(dt)
+      force_norm = force*cs20*sqrt(dt)
       do n=n1,n2
         do m=m1,m2
           xkx = x(l1:l2)*kx_2df+phase1
@@ -2286,7 +2287,7 @@ module Forcing
 !  06-dec-13/nishant: made kkx etc allocatable
 !
       use Diagnostics, only: sum_mn_name
-      use EquationOfState, only: cs0,rho0
+      use EquationOfState, only: rho0
       use General, only: random_number_wrapper
       use Sub, only: del2v_etc,curl,cross,dot,dot2
       use DensityMethods, only: getrho1, getrho
@@ -2709,7 +2710,6 @@ module Forcing
 !   6-oct-09/MR: according to Axel, this routine is now superseded by forcing_hel and should be deleted
 !  06-dec-13/nishant: made kkx etc allocatable
 !
-      use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Sub
 !
@@ -2913,7 +2913,6 @@ module Forcing
 !  Add helical forcing function in spherical polar coordinate system.
 !  25-jul-07/dhruba: adapted from forcing_hel
 !
-      use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Sub
 !
@@ -2999,7 +2998,7 @@ module Forcing
       rphase2 = pi*rphase2
       ee(1) = sqrt(1.-rz*rz)*cos(rphase2)
       ee(2) = sqrt(1.-rz*rz)*sin(rphase2)
-      fnorm = fpre*cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
+      fnorm = fpre*cs20*sqrt(1./(cs0*Balpha))*sqrt(dt)
 !     write(*,*) 'dhruba:',fnorm*sqrt(dt),dt,ee(1),ee(2),ee(3)
 
       do n=n1,n2
@@ -3043,7 +3042,6 @@ module Forcing
 !  Add radial non-helical forcing function in spherical polar coordinate system.
 !  16-Aug-2023/MR+Aba: adapted from chandra_kendall forcing.
 !
-      use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Sub
       use Mpicomm
@@ -3152,7 +3150,7 @@ module Forcing
 ! Calculate the force from the potential and store it as an auxiliary (except in test branches).
 !
         ee = (/1.,0.,0./)
-        fnorm = cs0*cs0*sqrt(1./(cs0*Balpha))*sqrt(dt)
+        fnorm = cs20*sqrt(1./(cs0*Balpha))*sqrt(dt)
         fmaxloc=0.
         do n=n1,n2
           do m=m1,m2
@@ -3612,7 +3610,6 @@ module Forcing
 !
       use DensityMethods, only: getrho
       use Diagnostics, only: sum_mn_name
-      use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum
       use Sub
@@ -3826,7 +3823,6 @@ module Forcing
 !
       use DensityMethods, only: getrho
       use Diagnostics, only: sum_mn_name
-      use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum
       use Sub
@@ -4010,7 +4006,6 @@ module Forcing
 !
       use DensityMethods, only: getrho
       use Diagnostics, only: sum_mn_name
-      use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum
       use Sub
@@ -4154,7 +4149,6 @@ module Forcing
 !  10-apr-00/axel: coded
 !  06-dec-13/nishant: made kkx etc allocatable
 !
-      use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Sub
 !
@@ -4934,7 +4928,6 @@ module Forcing
 !  21-apr-23/MR: changed to cumulative work: NEEDS INITIALIZATION OF force1 BEFORE CALL!
 !                added parameter fac for immediate scaling of force1
 !
-      use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Sub
 !

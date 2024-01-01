@@ -1205,7 +1205,7 @@ module Magnetic
       use BorderProfiles, only: request_border_driving
       use FArrayManager
       use SharedVariables, only: get_shared_variable, put_shared_variable
-      use EquationOfState, only: cs0, get_gamma_etc
+      use EquationOfState, only: cs20, get_gamma_etc
       use Initcond
       use Forcing, only: n_forcing_cont
       use Yinyang_mpi, only: initialize_zaver_yy
@@ -1571,7 +1571,7 @@ module Magnetic
         case ('eta_j2')
           if (lroot) print*, 'resistivity: eta_j2'
           lresi_etaj2=.true.
-          etaj20 = eta_j2 * mu0**2 * dxmax**3 / cs0
+          etaj20 = eta_j2 * mu0**2 * dxmax**3 / sqrt(cs20)
         case ('eta_jrho')
           if (lroot) print*, 'resistivity: eta_jrho'
           lresi_etajrho=.true.
@@ -2094,7 +2094,7 @@ module Magnetic
         case ('hor-fluxlayer-y'); call hfluxlayer_y(amplaa(j),f,iaa,z0aa,widthaa(1),ladd_bb_init)
         case ('hor-fluxlayer-y-theta'); call hfluxlayer_y_theta(amplaa(j),f,iaa)
         case ('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,x0aa,widthaa(1))
-        case ('mag-support'); call magsupport(amplaa(j),f,gravz,cs0,rho0)
+        case ('mag-support'); call magsupport(amplaa(j),f,gravz,sqrt(cs20),rho0)
         case ('arcade-x'); call arcade_x(amplaa(j),f,iaa,kx_aa(j),kz_aa(j))
         case ('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa)
         case ('halfcos-Bz'); call halfcos_z(amplaa(j),f,iaa)
@@ -2476,7 +2476,7 @@ module Magnetic
 !  The beq2 expression for 2*mu0*p is not general yet.
 !
       if (lpress_equil.or.lpress_equil_via_ss) then
-        if (lroot) print*,'init_aa: adjust lnrho to have pressure equilib; cs0=',cs0
+        if (lroot) print*,'init_aa: adjust lnrho to have pressure equilib; cs20=',cs20
         call boundconds_x(f)
         call initiate_isendrcv_bdry(f)
         call finalize_isendrcv_bdry(f)
@@ -2490,9 +2490,9 @@ module Magnetic
           call curl(f,iaa,bb)
           call dot2_mn(bb,b2)
           if (gamma==1.0) then
-            f(l1:l2,m,n,ilnrho)=log(exp(f(l1:l2,m,n,ilnrho))-b2/(2.*cs0**2))
+            f(l1:l2,m,n,ilnrho)=log(exp(f(l1:l2,m,n,ilnrho))-b2/(2.*cs20))
           else
-            beq2=2.*rho0*cs0**2
+            beq2=2.*rho0*cs20
             fact=max(1.0e-6,1.0-b2/beq2)
             if (lentropy.and.lpress_equil_via_ss) then
               if (lpress_equil_alt) then
@@ -2512,7 +2512,7 @@ module Magnetic
                   gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0))      ! lnrho0 added for generality
               else
                 !f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
-                beq2_pencil=2.*rho0*cs0**2*exp(gamma*(f(l1:l2,m,n,ilnrho)-lnrho0))
+                beq2_pencil=2.*rho0*cs20*exp(gamma*(f(l1:l2,m,n,ilnrho)-lnrho0))
                 fact=max(1.0e-6,1.0-b2/beq2_pencil)
                 f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+alog(fact)/gamma
               endif
@@ -8896,7 +8896,7 @@ module Magnetic
 !
       use General, only: erfcc
       use Sub, only: step, der_step, cubic_step, cubic_der_step,erfunc
-      use EquationOfState, only: cs0
+      use EquationOfState, only: cs20
 !
       character(len=labellen), intent(in) :: zdep_profile
       integer, intent(in) :: nz
@@ -8916,8 +8916,8 @@ module Magnetic
           if (present(geta_z)) geta_z=-eta*eta_ampl*sin(z)
 !
         case ('fs')
-          if (cs0 > 0. .and. Omega > 0.) then
-            h = sqrt(2.) * cs0 / Omega
+          if (cs20 > 0. .and. Omega > 0.) then
+            h = sqrt(2. * cs20) / Omega
           else
             h = 1.
           endif
