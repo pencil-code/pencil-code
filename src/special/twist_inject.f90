@@ -163,6 +163,7 @@ module Special
         if (lslope_limited_special) then
           if (lroot) print*,'initialize_special: Set up half grid x12p, y12p, z12p'
           call generate_halfgrid(x12p,y12p,z12p)
+          f(:,:,:,ispecauxx  :ispecauxz)=0.0
           do n=n1,n2
             do m=m1,m2
               call gij(f,iaa,aij,1)
@@ -905,7 +906,7 @@ module Special
 ! bb
               call curl_mn(aij,pbb,aa)
               f(l1:l2,m,n,ispecauxx  :ispecauxz  )=pbb
-              do ig=1,nghost
+              do ig=0,nghost
                 xx0=x(l1-ig)*sinth(m)*cos(z(n))
                 yy0=x(l1-ig)*sinth(m)*sin(z(n))
                 zz0=x(l1-ig)*costh(m)
@@ -985,7 +986,7 @@ module Special
 ! p0=-C*qx for qx<0
 ! p0=0 for qx>0
 !
-                if (lactivate_reservoir) then
+                if (lactivate_reservoir .and. ig .ge. 1) then
                     if (f(l1,m,n,iqx) .lt. 0.0) then
 !                   rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
                       rhob(m,n,ig)=1.1*rhog(ig)
@@ -1309,6 +1310,9 @@ module Special
       integer, intent(in) :: l,m,ig
       real :: Pres_p1,Pres_m1
 !
+!        Pres_p1=exp(f(l+1,:,:,ilnrho)+f(l+1,:,:,ilnTT))*cp*(gamma-1)/gamma
+!        Pres_m1=exp(f(l-1,:,:,ilnrho)+f(l-1,:,:,ilnTT))*cp*(gamma-1)/gamma
+!        f(l,:,:,iuz)=((Pres_m1-Pres_p1)*dz_1(l)/exp(f(l,:,:,ilnrho))+gravz)*dt_
       if (ig.lt.3) then
         Pres_p1=cs0**2*(exp(gamma*f(l,m,n1-ig+1,iss)*cp1+gamma*&
                    (f(l,m,n1-ig+1,ilnrho)-alog(rho0))))/gamma
