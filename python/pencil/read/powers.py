@@ -192,7 +192,7 @@ class Power(object):
                     for i in range(ini, int(np.ceil(nk / 8)) + ini):
                         k.extend([float(j) for j in line_list[i].split()])
                     k = np.array(k)
-                    setattr(self, "k", k)
+                    self.k = k
                     ini = i + 1
                 else:
                     nkx = int(
@@ -205,7 +205,7 @@ class Power(object):
                     for i in range(ini, int(np.ceil(nkx / 8)) + ini):
                         kx.extend([float(j) for j in line_list[i].split()])
                     kx = np.array(kx)
-                    setattr(self, "kx", kx)
+                    self.kx = kx
                     ini = i + 1
 
                     nky = int(
@@ -217,7 +217,7 @@ class Power(object):
                     for i in range(ini, int(np.ceil(nky / 8)) + ini):
                         ky.extend([float(j) for j in line_list[i].split()])
                     ky = np.array(ky)
-                    setattr(self, "ky", ky)
+                    self.ky = ky
                     ini = i + 1
 
                     nk = nkx*nky
@@ -236,8 +236,8 @@ class Power(object):
                         nzpos = dim.nzgrid
                         grid = read.grid(datadir=datadir, trim=True, quiet=True)
                         zpos = grid.z
-                    setattr(self, "zpos", zpos)
-                setattr(self, "nzpos", nzpos)
+                    self.zpos = zpos
+                self.nzpos = nzpos
 
                 # Now read the rest of the file
                 line_list = line_list[ini:]
