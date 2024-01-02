@@ -1246,6 +1246,7 @@ module Forcing
 !  14-feb-2011/ dhruba : coded
 !
       use General, only: random_number_wrapper
+      use EquationOfState, only: cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, save :: lfirst_call=.true.
@@ -1363,6 +1364,7 @@ module Forcing
 !
       use General, only: random_number_wrapper, itoa
       use Sub, only: step
+      use EquationOfState, only: cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx,3) :: forcing_rhs
@@ -2913,6 +2915,7 @@ module Forcing
 !  Add helical forcing function in spherical polar coordinate system.
 !  25-jul-07/dhruba: adapted from forcing_hel
 !
+      use EquationOfState, only: cs20
       use General, only: random_number_wrapper
       use Sub
 !
@@ -3042,6 +3045,7 @@ module Forcing
 !  Add radial non-helical forcing function in spherical polar coordinate system.
 !  16-Aug-2023/MR+Aba: adapted from chandra_kendall forcing.
 !
+      use EquationOfState, only: cs20
       use General, only: random_number_wrapper
       use Sub
       use Mpicomm
