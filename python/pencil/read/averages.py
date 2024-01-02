@@ -187,17 +187,10 @@ class Averages(object):
 
         simdir = abspath(simdir)
 
-        lh5 = False
         if isinstance(param, list):
             param = read.param(datadir=datadir, quiet=True)
-        if hasattr(param, "io_strategy"):
-            if param.io_strategy == "HDF5":
-                lh5 = True
-        # Keep this for sims that were converted from Fortran to hdf5
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
-            lh5 = True
 
-        if not lh5:
+        if param.io_strategy != "HDF5":
             #Reading averages from Fortran binary and ascii files
             # Initialize the planes list.
             if plane_list:
