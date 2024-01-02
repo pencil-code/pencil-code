@@ -25,20 +25,20 @@ Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8
 Boris Dintrans,       boris.dintrans/gmail.com,	     boris.dintrans,       +33 4 67141400,                    ,         bdintrans,   CNRS/CINES
 Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 151 28123472,         wolfgangdobler,
 Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456,  ,                         ,            Max-Planck-Institut für Sonnensystemforschung Göttingen
-Fred A. Gent,         frederick.gent/aalto.fi,       fred.gent.ncl,        +358 50 344 9122,  +44 7779 364 893 (mob),   fred_gent,   Aalto University
+Fred A. Gent,         frederick.gent/aalto.fi,       fred.gent.ncl,        +358 50 344 9122,  +44 7779 364 893 (mob),   fred_gent,   Aalto University+Nordita
 Gustavo Guerrero,     tavo.buk/gmail.com,            ,                     +46 8 5537 8718,   +46 76 089 1432,          ,            Universidade Federal de Minas Gerais
-Anders Johansen,      anders/astro.lu.se,            ,                     +46 46 22 21589,   +46 736 84 96 98,         ,            Lund Observatory
-Nils E.L. Haugen,     Nils.E.Haugen/sintef.no,       ,                     +47 986 08 683,    +47 986 08 683,           ,            Norges teknisk-naturvitenskapelige universitet
+Anders Johansen,      anders/astro.lu.se,            ,                     +46 46 22 21589,   +46 736 84 96 98,         ,            Lund Observatory+Copenhagen
+Nils E.L. Haugen,     Nils.E.Haugen/sintef.no,       ,                     +47 986 08 683,    +47 986 08 683,           ,            SINTEF & Norges teknisk-naturvitenskapelige universitet
 Tobias Heinemann,     tobias.heinemann/gmail.com,    ,                     +1 609 734 8298,   ,                         ,            University of Copenhagen
 Alexander Hubbard,    alex.i.hubbard/gmail.com,      ,                     +46 8 5537 8573,   +46 70 924 2713,          ,            American Museum of Natural History
 Sarah Jabbari,        sarahjab/nordita.org,          ,                     ,                  +46 70 097 2365 (mob),    Sarah Jab,   Saab
 André Kapelrud,       kapelrud/stud.ntnu.no,         ,                     ,                  ,                         ,            Norges teknisk-naturvitenskapelige universitet
 Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277,   ,                         ,            Huntsman Corporation Salt Lake City
 Jonas Kruger,         jnskrueger/gmail.com,          jnskrueger,           +47 7359 3734,     +47 908 78 865,           ,            Norges teknisk-naturvitenskapelige universitet
-Maarit Käpylä,        kapyla/mps.mpg.de,             ,                     +49 551 3849 79402,+49 151 158 76515,        maramiral,   MPS Göttingen, Aalto University
-Petri Käpylä,         petri.kapyla/aalto.fi,         ,                     +49 331 7499 522,  +49 151 523 15712,        pkapyla,     Leibniz-Institut für Astrophysik Potsdam, Aalto University
+Maarit Korpi-Lagg     kapyla/mps.mpg.de,             ,                     +49 551 3849 79402,+49 151 158 76515,        maramiral,   MPS Göttingen, Aalto University
+Petri Käpylä,         petri.kapyla/aalto.fi,         ,                     +49 331 7499 522,  +49 151 523 15712,        pkapyla,     Kiepenheuer Institut
 Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                     ,                  +46 73 613 71 11,         ,            Lund Observatory
-Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,                  +46 70 772 6604 (mob),    ,            NORDITA
+Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,                  +46 70 772 6604 (mob),    ,            McDonald Observatory, USA
 Wladimir Lyra,        wladimir.lyra/gmail.com,       wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81,  New Mexico State University
 Tony Mee,             antony/onlymee.co.uk,          mee,                  +44 207 9950683,   +44 7787 767 772,         ,            Bank of America 
 Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8 5537 8575,   +46 738 969 494, +46 730 547 603,      dhrubaditya, NORDITA
