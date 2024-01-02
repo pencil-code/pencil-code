@@ -646,7 +646,7 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-    if (nprocx>1 .or. (nygrid/=1 .and. nxgrid/=nygrid)) then
+    if (nygrid/=1) then
       call fft_xy_parallel(ar,ai)
     else
       ndelx=nxgrid/n_segment_x      ! segmented work not yet operational -> n_segment_x always 1.
@@ -657,6 +657,10 @@ outer:  do ikz=1,nz
         le=min(le+ndelx,nxgrid)
         call fourier_transform_xy(ar(la:le,:,:),ai(la:le,:,:))
       enddo
+!     KG: (02-Dec-2024) fourier_transform_xy returns the transposed (ky,kx,z) output
+!     if nygrid/=1. If you modify the code to use fourier_transform_xy
+!     for nygrid/=1, you will have to call transp_xy on ar and ai (since
+!     the rest of the code now assumes that ar,ai have axis order (kx,ky,z).
     endif
 !
    endsubroutine comp_spectrum_xy
@@ -968,13 +972,10 @@ outer:  do ikz=1,nz
          call mpireduce_sum(spectrum2,spectrum2_sum,(/nx,ny/),3)
          call mpigather_xy( spectrum2_sum, spectrum2_global, 0 )
 !
-!  transposing output, as in Fourier_transform_xy; an unreverted transposition is performed
-!  but no transposition when nygrid=1 (e.g., in 2-D setup for 1-D spectrum)
-!
   elseif (lcomplex) then
-    call mpigather_and_out_cmplx(spectrum3_cmplx,1,.not.(nygrid==1),kxrange,kyrange,zrange)
+    call mpigather_and_out_cmplx(spectrum3_cmplx,1,.false.,kxrange,kyrange,zrange)
   else
-    call mpigather_and_out_real(spectrum3,1,.not.(nygrid==1),kxrange,kyrange,zrange)
+    call mpigather_and_out_real(spectrum3,1,.false.,kxrange,kyrange,zrange)
   endif
 !
   if (lroot) then
