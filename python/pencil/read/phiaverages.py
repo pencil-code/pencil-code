@@ -92,15 +92,10 @@ class Averages(object):
         import numpy as np
         from pencil import read
 
-        lh5 = False
         if not param:
             param = read.param(datadir=datadir, quiet=True)
-        if hasattr(param, "io_strategy"):
-            if param.io_strategy == "HDF5":
-                lh5 = True
-        # Keep this for sims that were converted from Fortran to hdf5
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
-            lh5 = True
+
+        lh5 = (param.io_strategy == "HDF5")
 
         # Determine which average files to read.
         in_file_name_list = []
