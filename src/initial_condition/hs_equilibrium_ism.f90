@@ -146,8 +146,6 @@ module InitialCondition
 ! 
 !  SAMPLE IMPLEMENTATION
 !
-      
-
       call keep_compiler_quiet(f)
       if (present(profiles)) then
         call fatal_error('initial_condition_all', &

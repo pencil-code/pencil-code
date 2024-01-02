@@ -130,15 +130,15 @@ program start
 !  up to nx=ny=nz=135, but not for even slightly larger grids.
 !
   allocate( f(mx,my,mz,mfarray),STAT=stat)
-  if (stat>0) call fatal_error('start','Could not allocate memory for f')
+  if (stat>0) call fatal_error('start','Could not allocate f')
 !
 !  Pre-initialize f and df to absurd value (to crash the code should we
 !  later use uninitialized slots of those fields).
 !
-  f =huge(1.0)
+  f=huge(1.0)
   if (lmodify .or. nfilter/=0) then
     allocate(df(mx,my,mz,mvar),STAT=stat)
-    if (stat>0) call fatal_error('start','Could not allocate memory for df')
+    if (stat>0) call fatal_error('start','Could not allocate df')
     df=huge(1.0)
   endif
 !
@@ -168,6 +168,9 @@ program start
 !  Register variables in the f array.
 !
   call register_modules
+  !allocate( f(mx,my,mz,nvar+naux+nscratch+nglobal),STAT=stat)
+  !allocate(df(mx,my,mz,nvar)   ,STAT=stat)
+
   if (lparticles) call particles_register_modules
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
