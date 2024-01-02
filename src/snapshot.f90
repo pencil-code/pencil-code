@@ -250,10 +250,12 @@ module Snapshot
 !  28-may-21/axel: added nv1_capitalvar
 !
       use Boundcond, only: update_ghosts
-      use General, only: safe_character_assign, loptest
+      use General, only: safe_character_assign, loptest, touch_file
       use IO, only: output_snap, output_snap_finalize, log_filename_to_file
       use Persist, only: output_persistent
       use Sub, only: read_snaptime, update_snaptime
+      use File_IO, only: delete_file
+      use Mpicomm, only: mpibarrier
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
@@ -306,9 +308,12 @@ module Snapshot
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
+          if (lroot) call touch_file(trim(workdir)//'/WRITING')
           call output_snap(a,nv1=nv1_capitalvar,nv2=msnap,file=file)
           if (lpersist) call output_persistent(file)
           call output_snap_finalize
+          call mpibarrier
+          if (lroot) call delete_file(trim(workdir)//'/WRITING')
           if (present(flist)) call log_filename_to_file(file,flist)
           lsnap=.false.
         endif
@@ -326,9 +331,12 @@ module Snapshot
         ! update ghosts, because 'update_auxiliaries' may change the data
         if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
+        if (lroot) call touch_file(trim(workdir)//'/WRITING')
         call output_snap(a,nv2=msnap,file=file)
         if (lpersist) call output_persistent(file)
         call output_snap_finalize
+        call mpibarrier
+        if (lroot) call delete_file(trim(workdir)//'/WRITING')
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
 !
