@@ -101,7 +101,7 @@ class Averages(object):
         proc=-1,
         precision="f",
         comp_time=False,
-        quiet=True,
+        quiet=True
     ):
         """
         read(plane_list=None, datadir='data', proc=-1, var_index=-1, proc=-1):
