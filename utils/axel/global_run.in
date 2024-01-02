@@ -1,5 +1,4 @@
 &run_pars
-  ip = 123
 / 
 &eos_run_pars
 /
@@ -56,4 +55,6 @@
 &particles_number_run_pars
 /
 &particles_selfgrav_run_pars
+/
+&special_run_pars
 /
