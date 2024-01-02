@@ -1404,7 +1404,6 @@ lib/perl/Test/ScriptTester.pm -text
 lib/sh/functions.sh -text
 license/CODE_OF_CONDUCT.md -text
 license/GNU_public_license.txt -text
-license/authors.txt -text
 license/developers.txt -text
 license/owners+voters.txt -text
 mathematica/README -text
