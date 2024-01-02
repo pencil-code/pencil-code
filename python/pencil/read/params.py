@@ -269,22 +269,14 @@ class Param(object):
                     return -1
 
         if append_units:
-            setattr(self, "unit_time", self.unit_length / self.unit_velocity)
-            setattr(self, "unit_mass", self.unit_density * self.unit_length ** 3)
-            setattr(self, "unit_flux", self.unit_mass / self.unit_time ** 3)
-            setattr(self, "unit_energy", self.unit_mass * self.unit_velocity ** 2)
-            setattr(
-                self, "unit_energy_density", self.unit_density * self.unit_velocity ** 2
-            )
-            setattr(
-                self, "unit_entropy", self.unit_velocity ** 2 / self.unit_temperature
-            )
-            if hasattr(param, "mu0"):
-                setattr(
-                    self,
-                    "unit_current",
-                    self.unit_magnetic * self.unit_length / self.mu0,
-                )
+            self.unit_time = self.unit_length / self.unit_velocity
+            self.unit_mass = self.unit_density * self.unit_length ** 3
+            self.unit_flux = self.unit_mass / self.unit_time ** 3
+            self.unit_energy = self.unit_mass * self.unit_velocity ** 2
+            self.unit_energy_density = self.unit_density * self.unit_velocity ** 2
+            self.unit_entropy = self.unit_velocity ** 2 / self.unit_temperature
+            if hasattr(self, "mu0"):
+                self.unit_current = self.unit_magnetic * self.unit_length / self.mu0
 
         if not hasattr(self, "io_strategy"):
             if exists(join(datadir, "grid.h5")):
