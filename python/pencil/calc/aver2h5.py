@@ -167,21 +167,21 @@ def zav2h5(
     import os
 
     if os.path.exists(os.path.join(folder, "averages/z.h5")):
-        zav = aver(plane_list=["z"])  # read all averages
-        tensor_buf = tensors_sph(  # calculate tensors
-            aver=zav,
-            rank=rank,
-            lskip_zeros=lskip_zeros,
-            timereducer=timereducers[timereducer],
-            # trargs=trargs,
-            rmfzeros=rmfzeros,
-            rmbzeros=rmbzeros,
-            l_correction=l_correction,
-            t_correction=t_correction,
-            dim=dim,
-            # tindex=tindex,
-            imask=imask,
-        )
+        zav=aver(plane_list=["z"])     # read all averages
+        tensor_buf=tensors_sph(        # calculate tensors
+                               aver=zav,
+                               rank=rank,
+                               lskip_zeros=lskip_zeros,
+                               timereducer=timereducers[timereducer],
+                               #trargs=trargs,
+                               rmfzeros=rmfzeros,
+                               rmbzeros=rmbzeros,
+                               l_correction=l_correction,
+                               t_correction=t_correction,
+                               dim=dim,
+                               #tindex=tindex,
+                               imask=imask
+                              )
     else:
         yndx_tmp = np.array_split(yindex, dim.nprocy)
         # list of vectors ipy*ny/nprocy ... (ipy+1)*ny/nprocy - 1, ipy=0,nprocy-1
