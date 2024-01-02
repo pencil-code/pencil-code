@@ -35,8 +35,8 @@ Sarah Jabbari,        sarahjab/nordita.org,          ,                     ,    
 André Kapelrud,       kapelrud/stud.ntnu.no,         ,                     ,                  ,                         ,            Norges teknisk-naturvitenskapelige universitet
 Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277,   ,                         ,            Huntsman Corporation Salt Lake City
 Jonas Kruger,         jnskrueger/gmail.com,          jnskrueger,           +47 7359 3734,     +47 908 78 865,           ,            Norges teknisk-naturvitenskapelige universitet
-Maarit Korpi-Lagg     kapyla/mps.mpg.de,             ,                     +49 551 3849 79402,+49 151 158 76515,        maramiral,   MPS Göttingen, Aalto University
-Petri Käpylä,         petri.kapyla/aalto.fi,         ,                     +49 331 7499 522,  +49 151 523 15712,        pkapyla,     Kiepenheuer Institut
+Maarit Korpi-Lagg     maarit.korpi-lagg/aalto.fi     ,                     +49 551 3849 79402,+49 151 158 76515,        maramiral,   MPS Göttingen, Aalto University
+Petri Käpylä,         pkapyla/leibniz-kis.de         ,                     +49 331 7499 522,  +49 151 523 15712,        pkapyla,     Kiepenheuer Institut
 Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                     ,                  +46 73 613 71 11,         ,            Lund Observatory
 Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,                  +46 70 772 6604 (mob),    ,            McDonald Observatory, USA
 Wladimir Lyra,        wladimir.lyra/gmail.com,       wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81,  New Mexico State University
