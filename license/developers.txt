@@ -42,7 +42,7 @@ Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,    
 Wladimir Lyra,        wladimir.lyra/gmail.com,       wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81,  New Mexico State University
 Tony Mee,             antony/onlymee.co.uk,          mee,                  +44 207 9950683,   +44 7787 767 772,         ,            Bank of America, Merryll Lynch, London
 Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8 5537 8575,   +46 738 969 494, +46 730 547 603,      dhrubaditya, NORDITA
-Mikhail Modestov,     mikhail3/kth.se,               ,                     +46 8 5537 8039,   +46 73 8600 130,          ,            NORDITA
+Mikhail Modestov,     mikhail3/kth.se,               ,                     +46 8 5537 8039,   +46 73 8600 130,          ,            IAC, Teneriffe
 Jeffrey S. Oishi,     jsoishi/gmail.com,             ,                     +1 347 432 9203,   ,                         ,            Farmingdale State College
 Raphael Plasson,      ,                              ,                     +46 7 3575 8374,   ,                         ,            Harvard University
 Matthias Rheinhardt,  mreinhardt/nordita.org,        rei,                  +358 50 4480159,   ,+49 1590 2984560         ,            Aalto University
