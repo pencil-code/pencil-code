@@ -307,13 +307,7 @@ class DataCube(object):
         else:
             total_vars = dim.mvar
 
-        lh5 = False
-        if hasattr(param, "io_strategy") and param.io_strategy == "HDF5":
-            lh5 = True
-        # Keep this for sims that were converted from Fortran to hdf5
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
-            lh5 = True
-        if lh5:
+        if param.io_strategy == "HDF5":
             #
             #  Read HDF5 files.
             #
@@ -356,8 +350,7 @@ class DataCube(object):
                         self.__setattr__(
                             key, (tmp["persist"][key][0]).astype(precision)
                         )
-        elif (hasattr(param, "io_strategy") and param.io_strategy == "dist"
-             ) or not hasattr(param, "io_strategy"):
+        elif param.io_strategy == "dist":
             #
             #  Read scattered Fortran binary files.
             #
@@ -570,7 +563,7 @@ class DataCube(object):
                         :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
                     ]
             if "bbtest" in magic:
-                if lh5:
+                if param.io_strategy == "HDF5":
                     # Compute the magnetic field before doing trimall.
                     for j in range(int(len(aatest) / 3)):
                         key = aatest[j*3][:-1]
@@ -722,7 +715,7 @@ class DataCube(object):
             self.bb_sph = self.f[index.bb_sphx - 1 : index.bb_sphz, ...]
         # Special treatment for test method vector quantities.
         # Note index 1,2,3,...,0 last vector may be the zero field/flow
-        if not lh5:
+        if param.io_strategy != "HDF5":
             if hasattr(index, "aatest1"):
                 naatest = int(len(aatest) / 3)
                 for j in range(0, naatest):
