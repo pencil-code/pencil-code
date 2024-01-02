@@ -9,6 +9,8 @@
 """
 Contains the parameters of the simulation.
 """
+import warnings
+
 try:
     import f90nml
 
@@ -283,8 +285,25 @@ class Param(object):
                     "unit_current",
                     self.unit_magnetic * self.unit_length / self.mu0,
                 )
-        # IL: updating the list of keys as a list
 
+        if not hasattr(param, "io_strategy"):
+            if exists(join(datadir, "grid.h5")):
+                """
+                This handles
+                1. sims that were converted from Fortran to hdf5
+                2. reading old simulations performed before commit https://github.com/pencil-code/pencil-code/commit/d28aff2e37f0b6439c524f7bcbd2b385904fbf54
+                """
+                warnings.warn(
+                    "io_strategy was not found in params.nml, but grid.h5 was found; assuming HDF5 IO. If this is wrong, please edit param.nml by hand."
+                )
+                self.io_strategy = "HDF5"
+            else:
+                warnings.warn(
+                    "io_strategy was not found in params.nml; assuming io_dist was used. If this is wrong, please edit param.nml by hand."
+                )
+                self.io_strategy = "dist"
+
+        # IL: updating the list of keys as a list
         self.keys = list(self.__dict__.keys())
         return 0
 
