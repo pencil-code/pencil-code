@@ -317,7 +317,7 @@ class Averages(object):
                         proc,
                         precision=precision,
                     )
-                if plane == "y" or plane == "z" or plane == "phi":
+                elif plane == "y" or plane == "z" or plane == "phi":
                     t, raw_data = self.__read_1d_aver(
                         plane,
                         datadir,
@@ -331,6 +331,8 @@ class Averages(object):
                         proc,
                         precision=precision,
                     )
+                else:
+                    raise ValueError(f"Unknown plane {plane}.")
 
                 # Add the raw data to self.
                 var_idx = 0
