@@ -31,7 +31,7 @@ Anders Johansen,      anders/astro.lu.se,            ,                     +46 4
 Nils E.L. Haugen,     Nils.E.Haugen/sintef.no,       ,                     +47 986 08 683,    +47 986 08 683,           ,            Norges teknisk-naturvitenskapelige universitet
 Tobias Heinemann,     tobias.heinemann/gmail.com,    ,                     +1 609 734 8298,   ,                         ,            University of Copenhagen
 Alexander Hubbard,    alex.i.hubbard/gmail.com,      ,                     +46 8 5537 8573,   +46 70 924 2713,          ,            American Museum of Natural History
-Sarah Jabbari,        sarahjab/nordita.org,          ,                     ,                  +46 70 097 2365 (mob),    Sarah Jab,   NORDITA
+Sarah Jabbari,        sarahjab/nordita.org,          ,                     ,                  +46 70 097 2365 (mob),    Sarah Jab,   Saab
 André Kapelrud,       kapelrud/stud.ntnu.no,         ,                     ,                  ,                         ,            Norges teknisk-naturvitenskapelige universitet
 Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277,   ,                         ,            Huntsman Corporation Salt Lake City
 Jonas Kruger,         jnskrueger/gmail.com,          jnskrueger,           +47 7359 3734,     +47 908 78 865,           ,            Norges teknisk-naturvitenskapelige universitet
@@ -52,7 +52,7 @@ Graeme R. Sarson,     g.r.sarson/ncl.ac.uk,          ,                     +44 1
 Julien Savre,         juliensavre/gmail.com,         ,                     +46 46 222 3624,   +46 7 00 94 71 55,        ,            University of Cambridge
 Jennifer Schober,     schober.jen@gmail.com,         ,                     +41 76 723 43 64   ,                         ,            Laboratoire d'astrophysique, EPFL
 Ramkishor Sharma,     ramkishor.sharma/su.se         ,                     ,                  +46767530270              ,            Nordita
-Nishant K. Singh,     nishant.cosmo/gmail.com,       ,                     +91 9916785745,    ,                         ,            NORDITA
+Nishant K. Singh,     nishant.cosmo/gmail.com,       ,                     +91 9916785745,    ,                         ,            IUCAA
 Andrew Snodin,        andrew.snodin/ncl.ac.uk,       ,                     ,                  ,                         ,            King Mongkut's University of Technology North Bangkok
 Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2560 4115,     +91 94 210 37 292,        ,            Indian Institute of Astrophysics
 Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 917 348 1018,   +46 73 968 86 56,         ,            NORDITA
