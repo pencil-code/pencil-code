@@ -40,7 +40,7 @@ Petri Käpylä,         petri.kapyla/aalto.fi,         ,                     +49
 Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                     ,                  +46 73 613 71 11,         ,            Lund Observatory
 Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,                  +46 70 772 6604 (mob),    ,            McDonald Observatory, USA
 Wladimir Lyra,        wladimir.lyra/gmail.com,       wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81,  New Mexico State University
-Tony Mee,             antony/onlymee.co.uk,          mee,                  +44 207 9950683,   +44 7787 767 772,         ,            Bank of America 
+Tony Mee,             antony/onlymee.co.uk,          mee,                  +44 207 9950683,   +44 7787 767 772,         ,            Bank of America, Merryll Lynch, London
 Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8 5537 8575,   +46 738 969 494, +46 730 547 603,      dhrubaditya, NORDITA
 Mikhail Modestov,     mikhail3/kth.se,               ,                     +46 8 5537 8039,   +46 73 8600 130,          ,            NORDITA
 Jeffrey S. Oishi,     jsoishi/gmail.com,             ,                     +1 347 432 9203,   ,                         ,            Farmingdale State College
