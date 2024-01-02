@@ -78,7 +78,17 @@ class Averages(object):
 
         import numpy as np
 
-        self.t = np.array([])
+        self._t = np.array([])
+
+    @property
+    def t(self):
+        return self._t
+
+    @t.setter
+    def t(self, arr):
+        if len(self.t) > 0 and np.any(self.t != arr):
+            warnings.warn("Mismatch between the times of different kinds of averages (usually happens when 1D and 2D averages are stored at different times). Please use the t attributes of the respective planes (e.g. av.xy.t, rather than av.t).")
+        self._t = arr
 
     def keys(self):
         for i in self.__dict__.keys():
@@ -344,6 +354,7 @@ class Averages(object):
                     plane_keys.remove("keys")
                 setattr(ext_object, "keys", plane_keys)
 
+                ext_object.t = t
                 self.t = t
                 setattr(self, plane, ext_object)
 
@@ -421,6 +432,7 @@ class Averages(object):
                         comp_time=comp_time,
                     )
 
+                ext_object.t = t
                 self.t = t
                 setattr(self, plane, ext_object)
         return 0
