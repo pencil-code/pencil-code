@@ -277,7 +277,7 @@ class Power(object):
                 if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
                     power_array = power_array.reshape([n_blocks, nzpos, nk])
                 else:
-                    power_array = power_array.reshape([n_blocks, nzpos, nkx, nky])
+                    power_array = power_array.reshape([n_blocks, nzpos, nky, nkx])
 
                 self.t = time.astype(np.float32)
                 setattr(self, power_list[power_idx], power_array)
