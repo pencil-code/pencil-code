@@ -286,7 +286,7 @@ class Param(object):
                     self.unit_magnetic * self.unit_length / self.mu0,
                 )
 
-        if not hasattr(param, "io_strategy"):
+        if not hasattr(self, "io_strategy"):
             if exists(join(datadir, "grid.h5")):
                 """
                 This handles
