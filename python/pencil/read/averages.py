@@ -8,10 +8,12 @@ Contains the classes and methods to read average files.
 """
 import warnings
 import sys
+import numpy as np
 from pencil import read
 from pencil.math import natural_sort
 import glob
 import time
+import os
 
 def aver(*args, **kwargs):
     """
@@ -75,9 +77,6 @@ class Averages(object):
         """
         Fill members with default values.
         """
-
-        import numpy as np
-
         self._t = np.array([])
 
     @property
@@ -192,7 +191,6 @@ class Averages(object):
                 if not isinstance(it, int):
                     raise ValueError(f"read.aver Error: iter_list contains {it}, but must be integers")
 
-        import os
         from os.path import join, abspath
 
         simdir = abspath(simdir)
@@ -465,10 +463,7 @@ class Averages(object):
         Return the raw data and the time array.
         """
 
-        import os
-        import numpy as np
         from scipy.io import FortranFile
-        from pencil import read
         import h5py
 
         print(av_file)
@@ -610,10 +605,7 @@ class Averages(object):
         Return the raw data and the time array.
         """
 
-        import os
-        import numpy as np
         from scipy.io import FortranFile
-        from pencil import read
 
         # Read the data
         glob_dim = read.dim(datadir)
@@ -801,10 +793,6 @@ class Averages(object):
         Read the xyaverages.dat, xzaverages.dat, yzaverages.dat
         Return the raw data and the time array.
         """
-
-        import os
-        import numpy as np
-        from pencil import read
 
         # Determine the structure of the xy/xz/yz averages.
         if plane == "xy":
