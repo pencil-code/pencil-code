@@ -987,21 +987,22 @@ module Special
 ! p0=0 for qx>0
 !
                 if (lactivate_reservoir .and. ig .ge. 1) then
+!                if (lactivate_reservoir) then
                     if (f(l1,m,n,iqx) .lt. 0.0) then
 !                   rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
                       rhob(m,n,ig)=1.1*rhog(ig)
-                      TTb(m,n,ig)=(1.2*cs0**2*cp1/(gamma-1))
+!                      TTb(m,n,ig)=(1.0*cs0**2*cp1/(gamma-1))
                       f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
                       (1-(rhob(m,n,ig)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
-                      f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
-                      (1-(TTb(m,n,ig)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
+!                      f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
+!                      (1-(TTb(m,n,ig)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
                     else
                       rhob(m,n,ig)=rhog(ig)
-                      TTb(m,n,ig)=(cs0**2*cp1/(gamma-1))
+!                      TTb(m,n,ig)=(cs0**2*cp1/(gamma-1))
                       f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
                       (1-(rhob(m,n,ig)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
-                      f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
-                      (1-(TTb(m,n,ig)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
+!                      f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
+!                      (1-(TTb(m,n,ig)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
                   endif
                 endif
               enddo
