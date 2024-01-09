@@ -1,6 +1,0 @@
-!$omp threadprivate(x)
-!$omp threadprivate(a1)
-!$omp threadprivate(a2)
-!$omp threadprivate(y)
-!$omp threadprivate(q)
-!$omp threadprivate(k)

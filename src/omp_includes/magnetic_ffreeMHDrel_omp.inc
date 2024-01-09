@@ -1,8 +1,0 @@
-!$omp threadprivate(a0)
-!$omp threadprivate(bb_xy)
-!$omp threadprivate(bb_xy2)
-!$omp threadprivate(bb_xy3)
-!$omp threadprivate(bb_xy4)
-!$omp threadprivate(bb_xz)
-!$omp threadprivate(bb_yz)
-!$omp threadprivate(bb_xz2)

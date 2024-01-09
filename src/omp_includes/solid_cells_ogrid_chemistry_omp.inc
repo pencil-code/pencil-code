@@ -1,1 +1,0 @@
-!$omp threadprivate(initial_massfractions)

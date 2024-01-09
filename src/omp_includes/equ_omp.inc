@@ -1,1 +1,0 @@
-!$omp threadprivate(num_of_diagnostic_iterations_done)

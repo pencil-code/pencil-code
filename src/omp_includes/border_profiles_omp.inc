@@ -1,1 +1,0 @@
-!$omp threadprivate(rborder_mn)

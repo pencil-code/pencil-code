@@ -1,8 +1,0 @@
-!$omp threadprivate(pp_xz)
-!$omp threadprivate(pp_yz)
-!$omp threadprivate(pp_xy)
-!$omp threadprivate(pp_xy2)
-!$omp threadprivate(pp_xy3)
-!$omp threadprivate(pp_xy4)
-!$omp threadprivate(pp_xz2)
-!$omp threadprivate(hcond)
