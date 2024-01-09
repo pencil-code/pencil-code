@@ -287,33 +287,29 @@ class Power(object):
         """
         dim = read.dim(datadir=datadir)
 
-        infile = open(os.path.join(datadir, file_name), "r")
-        line_list = infile.readlines()
-        infile.close()
-
         block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
 
         time = []
         power_array = []
-        for line_idx, line in enumerate(line_list):
-            if np.mod(line_idx, block_size) == 0:
-                # print(float(line.strip()))
-                time.append(float(line.strip()))
-            else:
-                if (
-                    line.find(",") == -1
-                ):  # if the line does not contain ',', assume it represents a series of real numbers.
-                    for value_string in line.strip().split():
-                        power_array.append(float(value_string))
-                else:  # Assume we have complex numbers.
-                    for value_string in line.strip().split("( ")[1:]:
-                        value_string = (
-                            value_string.replace(")", "j")
-                            .strip()
-                            .replace(", ", "")
-                            .replace(" ", "+")
-                        )
-                        power_array.append(complex(value_string))
+        with open(os.path.join(datadir, file_name), "r") as f:
+            for line_idx, line in enumerate(f):
+                if np.mod(line_idx, block_size) == 0:
+                    time.append(float(line.strip()))
+                else:
+                    if (
+                        line.find(",") == -1
+                    ):  # if the line does not contain ',', assume it represents a series of real numbers.
+                        for value_string in line.strip().split():
+                            power_array.append(float(value_string))
+                    else:  # Assume we have complex numbers.
+                        for value_string in line.strip().split("( ")[1:]:
+                            value_string = (
+                                value_string.replace(")", "j")
+                                .strip()
+                                .replace(", ", "")
+                                .replace(" ", "+")
+                            )
+                            power_array.append(complex(value_string))
 
         time = np.array(time)
         power_array = np.array(power_array).reshape([len(time), int(dim.nxgrid / 2)])
