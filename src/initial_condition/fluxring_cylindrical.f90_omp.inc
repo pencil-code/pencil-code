@@ -1,1 +1,0 @@
-!$omp threadprivate(s0)
