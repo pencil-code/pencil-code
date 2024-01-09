@@ -176,95 +176,95 @@ class Power(object):
         dim = read.dim(datadir=datadir)
         param = read.param(datadir=datadir)
 
-        infile = open(os.path.join(datadir, file_name), "r")
-        line_list = infile.readlines()
-        infile.close()
+        with open(os.path.join(datadir, file_name), "r") as f:
+            _ = f.readline()  # ignore first line
+            header = f.readline()
 
-        # Get k vectors:
-        if param.lintegrate_shell:
-            nk = int(
-                line_list[1]
-                .split()[line_list[1].split().index("k") + 1]
-                .split(")")[0][1:]
-                )
-            ini = 2
-            k = []
-            for i in range(ini, int(np.ceil(nk / 8)) + ini):
-                k.extend([float(j) for j in line_list[i].split()])
-            k = np.array(k)
-            self.k = k
-            ini = i + 1
-        else:
-            nkx = int(
-                line_list[1]
-                .split()[line_list[1].split().index("k_x") + 1]
-                .split(")")[0][1:]
-                )
-            ini = 2
-            kx = []
-            for i in range(ini, int(np.ceil(nkx / 8)) + ini):
-                kx.extend([float(j) for j in line_list[i].split()])
-            kx = np.array(kx)
-            self.kx= kx
-            ini = i + 1
-
-            nky = int(
-                line_list[1]
-                .split()[line_list[1].split().index("k_y") + 1]
-                .split(")")[0][1:]
-                )
-            ky = []
-            for i in range(ini, int(np.ceil(nky / 8)) + ini):
-                ky.extend([float(j) for j in line_list[i].split()])
-            ky = np.array(ky)
-            self.ky = ky
-            ini = i + 1
-
-            nk = nkx * nky
-
-        # Now read z-positions, if any
-        if param.lintegrate_z:
-            nzpos = 1
-        else:
-            if "z-pos" in line_list[ini]:
-                print("More than 1 z-pos")
-                nzpos = int(re.search(r"\((\d+)\)", line_list[ini])[1])
-                ini += 1
-                zpos = np.array([float(j) for j in line_list[ini].split()])
-                ini += 1
+            # Get k vectors:
+            if param.lintegrate_shell:
+                nk = int(
+                    header
+                    .split()[header.split().index("k") + 1]
+                    .split(")")[0][1:]
+                    )
+                k = []
+                for _ in range(int(np.ceil(nk / 8))):
+                    line = f.readline()
+                    k.extend([float(j) for j in line.split()])
+                k = np.array(k)
+                self.k = k
             else:
-                nzpos = dim.nzgrid
-                grid = read.grid(datadir=datadir, trim=True, quiet=True)
-                zpos = grid.z
-            self.zpos = zpos
-        self.nzpos = nzpos
+                nkx = int(
+                    header
+                    .split()[header.split().index("k_x") + 1]
+                    .split(")")[0][1:]
+                    )
+                kx = []
+                for _ in range(int(np.ceil(nkx / 8))):
+                    line = f.readline()
+                    kx.extend([float(j) for j in line.split()])
+                kx = np.array(kx)
+                self.kx = kx
 
-        # Now read the rest of the file
-        line_list = line_list[ini:]
-        time = []
-        power_array = []
-        linelen = len(line_list[1].strip().split())
+                nky = int(
+                    header
+                    .split()[header.split().index("k_y") + 1]
+                    .split(")")[0][1:]
+                    )
+                ky = []
+                for _ in range(int(np.ceil(nky / 8))):
+                    line = f.readline()
+                    ky.extend([float(j) for j in line.split()])
+                ky = np.array(ky)
+                self.ky = ky
 
-        if param.lintegrate_shell:
-            block_size = np.ceil(nk / 8) * nzpos + 1
-        else:
-            block_size = np.ceil(int(nk * nzpos) / 8) + 1
+                nk = nkx * nky
 
-        for line_idx, line in enumerate(line_list):
-            if np.mod(line_idx, block_size) == 0:
-                time.append(float(line.strip()))
+            # Now read z-positions, if any
+            if param.lintegrate_z:
+                nzpos = 1
             else:
-                if linelen == 8:
-                    # real power spectrum
-                    for value_string in line.strip().split():
-                        power_array.append(ffloat(value_string))
+                ini = f.tell()
+                line = f.readline()
+                if "z-pos" in line:
+                    nzpos = int(re.search(r"\((\d+)\)", line)[1])
+                    line = f.readline()
+                    # KG: is it never possible for zpos to be broken across more than one line? TODO
+                    self.zpos = np.array([float(j) for j in line.split()])
+                else:
+                    # there was no list of z-positions, so reset the position of the reader.
+                    f.seek(ini)
 
-                elif linelen == 16:
-                    # complex power spectrum
-                    real = line.strip().split()[0::2]
-                    imag = line.strip().split()[1::2]
-                    for a, b in zip(real, imag):
-                        power_array.append(ffloat(a) + 1j * ffloat(b))
+                    nzpos = dim.nzgrid
+                    grid = read.grid(datadir=datadir, trim=True, quiet=True)
+                    self.zpos = grid.z
+
+            # Now read the rest of the file
+            time = []
+            power_array = []
+
+            if param.lintegrate_shell:
+                block_size = np.ceil(nk / 8) * nzpos + 1
+            else:
+                block_size = np.ceil(int(nk * nzpos) / 8) + 1
+
+            for line_idx, line in enumerate(f):
+                if np.mod(line_idx, block_size) == 0:
+                    time.append(float(line.strip()))
+                else:
+                    linelen = len(line.strip().split())
+                    if linelen == 8:
+                        # real power spectrum
+                        for value_string in line.strip().split():
+                            power_array.append(ffloat(value_string))
+                    elif linelen == 16:
+                        # complex power spectrum
+                        real = line.strip().split()[0::2]
+                        imag = line.strip().split()[1::2]
+                        for a, b in zip(real, imag):
+                            power_array.append(ffloat(a) + 1j * ffloat(b))
+                    else:
+                        raise NotImplementedError(f"Unsupported line length ({linelen})")
 
         time = np.array(time)
 
@@ -279,6 +279,7 @@ class Power(object):
             power_array = power_array.reshape([len(time), nzpos, nky, nkx])
 
         self.t = time.astype(np.float32)
+        self.nzpos = nzpos
         setattr(self, power_name, power_array)
 
     def _read_power_1d(self, power_name, file_name, datadir):
