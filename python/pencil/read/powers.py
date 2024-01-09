@@ -162,9 +162,6 @@ class Power(object):
             line_list = infile.readlines()
             infile.close()
 
-            # Extract the numbers from the file strings.
-            n_blocks = int(len(line_list) / block_size)
-
             if not quiet:
                 print(file_name)
 
@@ -250,7 +247,6 @@ class Power(object):
                     block_size = np.ceil(nk / 8) * nzpos + 1
                 else:
                     block_size = np.ceil(int(nk * nzpos) / 8) + 1
-                n_blocks = int(len(line_list) / block_size)
 
                 for line_idx, line in enumerate(line_list):
                     if np.mod(line_idx, block_size) == 0:
@@ -275,9 +271,9 @@ class Power(object):
                     power_array = np.array(power_array, dtype=complex)
 
                 if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
-                    power_array = power_array.reshape([n_blocks, nzpos, nk])
+                    power_array = power_array.reshape([len(time), nzpos, nk])
                 else:
-                    power_array = power_array.reshape([n_blocks, nzpos, nky, nkx])
+                    power_array = power_array.reshape([len(time), nzpos, nky, nkx])
 
                 self.t = time.astype(np.float32)
                 setattr(self, power_name, power_array)
@@ -314,7 +310,7 @@ class Power(object):
 
                 time = np.array(time)
                 power_array = np.array(power_array).reshape(
-                    [n_blocks, int(dim.nxgrid / 2)]
+                    [len(time), int(dim.nxgrid / 2)]
                 )
                 self.t = time
                 setattr(self, power_name, power_array)
@@ -345,7 +341,7 @@ class Power(object):
                 time = np.array(time)
                 power_array = (
                     np.array(power_array)
-                    .reshape([n_blocks, int(dim.nxgrid / 2)])
+                    .reshape([len(time), int(dim.nxgrid / 2)])
                     .astype(np.float32)
                 )
                 self.t = time.astype(np.float32)
