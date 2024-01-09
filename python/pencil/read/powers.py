@@ -156,7 +156,7 @@ class Power(object):
         block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
 
         # Read the power spectra.
-        for power_idx, file_name in enumerate(file_list):
+        for power_name, file_name in zip(power_list, file_list):
             # Read the raw file.
             infile = open(os.path.join(datadir, file_name), "r")
             line_list = infile.readlines()
@@ -280,7 +280,7 @@ class Power(object):
                     power_array = power_array.reshape([n_blocks, nzpos, nky, nkx])
 
                 self.t = time.astype(np.float32)
-                setattr(self, power_list[power_idx], power_array)
+                setattr(self, power_name, power_array)
 
             elif (
                 file_name == "poweruz_x.dat"
@@ -317,7 +317,7 @@ class Power(object):
                     [n_blocks, int(dim.nxgrid / 2)]
                 )
                 self.t = time
-                setattr(self, power_list[power_idx], power_array)
+                setattr(self, power_name, power_array)
 
             elif file_name == "power_krms.dat":
                 power_array = []
@@ -330,7 +330,7 @@ class Power(object):
                     .reshape([int(dim.nxgrid / 2)])
                     .astype(np.float32)
                 )
-                setattr(self, power_list[power_idx], power_array)
+                setattr(self, power_name, power_array)
             else:
                 time = []
                 power_array = []
@@ -349,4 +349,4 @@ class Power(object):
                     .astype(np.float32)
                 )
                 self.t = time.astype(np.float32)
-                setattr(self, power_list[power_idx], power_array)
+                setattr(self, power_name, power_array)
