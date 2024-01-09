@@ -317,13 +317,13 @@ class Power(object):
         Read power_krms.dat.
         """
         nk = self._get_nk_xyz(datadir)
-        block_size = np.ceil(nk/8) + 1
+        block_size = np.ceil(nk/8)
 
         power_array = []
         with open(os.path.join(datadir, file_name), "r") as f:
             for line_idx, line in enumerate(f):
                 # KG: Is this file expected to contain extra lines? If not, the if below can be removed.
-                if line_idx < block_size - 1:
+                if line_idx < block_size:
                     for value_string in line.strip().split():
                         power_array.append(float(value_string))
         power_array = (
