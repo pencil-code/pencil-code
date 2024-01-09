@@ -70,7 +70,7 @@ class Power(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, datadir="data", file_name="", quiet=False):
+    def read(self, datadir="data", file_name=None, quiet=False):
         """
         read(datadir='data', file_name='', quiet=False)
     
@@ -106,36 +106,30 @@ class Power(object):
         krms
         hel_kin
         """
-        import os.path as op
 
         power_list = []
         file_list = []
 
-        if file_name:
-            print("Reading only ", file_name)
-            try:
-                if op.isfile(op.join(datadir, file_name)):
-                    # print("read one file")
-                    if file_name[:5] == "power" and file_name[-4:] == ".dat":
-                        if file_name[:6] == "power_":
-                            power_list.append(file_name.split(".")[0][6:])
+        if file_name is not None:
+            if not quiet:
+                print("Reading only ", file_name)
+
+            if os.path.isfile(os.path.join(datadir, file_name)):
+                if file_name[:5] == "power" and file_name[-4:] == ".dat":
+                    if file_name[:6] == "power_":
+                        power_list.append(file_name.split(".")[0][6:])
+                        if not quiet:
                             print("appending", file_name.split(".")[0][6:])
-                        else:
-                            power_list.append(file_name.split(".")[0][5:])
+                    else:
+                        power_list.append(file_name.split(".")[0][5:])
+                        if not quiet:
                             print("appending", file_name.split(".")[0][5:])
-                        file_list.append(file_name)
-                else:
-                    print("File does not exist, exiting")
-            except IOError:
-                print("File does not exist, exiting")
-                return
+
+                    file_list.append(file_name)
+            else:
+                raise ValueError(f"File {file_name} does not exist.")
 
         else:
-
-            # Find the existing power files.
-
-            # power_list = []
-            # file_list = []
             for file_name in os.listdir(datadir):
                 if file_name[:5] == "power" and file_name[-4:] == ".dat":
                     if file_name[:6] == "power_":
