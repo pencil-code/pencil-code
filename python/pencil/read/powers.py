@@ -245,29 +245,32 @@ class Power(object):
                 block_size = np.ceil(int(nk * nzpos) / 8) + 1
 
             for line_idx, line in enumerate(f):
-                if np.mod(line_idx, block_size) == 0:
+                if line_idx % block_size == 0:
                     time.append(float(line.strip()))
                 else:
-                    linelen = len(line.strip().split())
-                    if linelen == 8:
+                    lsp = line.strip().split()
+
+                    if len(lsp) == 8:
                         # real power spectrum
-                        for value_string in line.strip().split():
+                        for value_string in lsp:
                             power_array.append(ffloat(value_string))
-                    elif linelen == 16:
+                    elif len(lsp) == 16:
                         # complex power spectrum
-                        real = line.strip().split()[0::2]
-                        imag = line.strip().split()[1::2]
+                        real = lsp[0::2]
+                        imag = lsp[1::2]
                         for a, b in zip(real, imag):
                             power_array.append(ffloat(a) + 1j * ffloat(b))
                     else:
-                        raise NotImplementedError(f"Unsupported line length ({linelen})")
+                        raise NotImplementedError(f"Unsupported line length ({len(lsp)})")
 
         time = np.array(time)
 
-        if linelen == 8:
+        if len(lsp) == 8:
             power_array = np.array(power_array, dtype=np.float32)
-        elif linelen == 16:
+        elif len(lsp) == 16:
             power_array = np.array(power_array, dtype=complex)
+        else:
+            raise NotImplementedError(f"Unsupported line length ({len(lsp)})")
 
         if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
             power_array = power_array.reshape([len(time), nzpos, nk])
