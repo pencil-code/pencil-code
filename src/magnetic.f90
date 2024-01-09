@@ -243,7 +243,7 @@ module Magnetic
   logical :: lpower_profile_file=.false.
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true., lsquash_aa=.false.
-  logical :: lbraginsky=.false.
+  logical :: lbraginsky=.false., l2d_aa=.false.
   logical :: lcoulomb=.false.
   logical :: lfactors_aa=.false., lvacuum=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
@@ -276,7 +276,7 @@ module Magnetic
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
-      lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, &
+      lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian
 !
 ! Run parameters
@@ -2029,7 +2029,8 @@ module Magnetic
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
             lskip_projection_aa, lvectorpotential, lscale_tobox, lsquash_aa, k1hel=k1hel, k2hel=k2hel, &
-            lpower_profile_file=lpower_profile_file, qexp=qexp_aa,nfact0=nfact_aa, lfactors0=lfactors_aa)
+            lpower_profile_file=lpower_profile_file, qexp=qexp_aa,nfact0=nfact_aa, lfactors0=lfactors_aa, &
+            l2d=l2d_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')
