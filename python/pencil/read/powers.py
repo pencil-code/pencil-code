@@ -293,7 +293,7 @@ class Power(object):
         power_array = []
         with open(os.path.join(datadir, file_name), "r") as f:
             for line_idx, line in enumerate(f):
-                if np.mod(line_idx, block_size) == 0:
+                if line_idx % block_size == 0:
                     time.append(float(line.strip()))
                 elif line.find(",") == -1:
                     # if the line does not contain ',', assume it represents a series of real numbers.
