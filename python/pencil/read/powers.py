@@ -326,17 +326,15 @@ class Power(object):
         """
         dim = read.dim(datadir=datadir)
 
-        infile = open(os.path.join(datadir, file_name), "r")
-        line_list = infile.readlines()
-        infile.close()
-
         block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
 
         power_array = []
-        for line_idx, line in enumerate(line_list):
-            if line_idx < block_size - 1:
-                for value_string in line.strip().split():
-                    power_array.append(float(value_string))
+        with open(os.path.join(datadir, file_name), "r") as f:
+            for line_idx, line in enumerate(f):
+                # KG: Is this file expected to contain extra lines? If not, the if below can be removed.
+                if line_idx < block_size - 1:
+                    for value_string in line.strip().split():
+                        power_array.append(float(value_string))
         power_array = (
             np.array(power_array).reshape([int(dim.nxgrid / 2)]).astype(np.float32)
         )
