@@ -11,6 +11,8 @@ import numpy as np
 from pencil import read
 from pencil.util import ffloat
 import re
+import warnings
+import functools
 
 def power(*args, **kwargs):
     """
@@ -314,9 +316,8 @@ class Power(object):
         """
         Read power_krms.dat.
         """
-        dim = read.dim(datadir=datadir)
-
-        block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
+        nk = self._get_nk_xyz(datadir)
+        block_size = np.ceil(nk/8) + 1
 
         power_array = []
         with open(os.path.join(datadir, file_name), "r") as f:
@@ -326,7 +327,7 @@ class Power(object):
                     for value_string in line.strip().split():
                         power_array.append(float(value_string))
         power_array = (
-            np.array(power_array).reshape([int(dim.nxgrid / 2)]).astype(np.float32)
+            np.array(power_array).reshape([nk]).astype(np.float32)
         )
         setattr(self, power_name, power_array)
 
@@ -334,9 +335,8 @@ class Power(object):
         """
         Handles output of power subroutine.
         """
-        dim = read.dim(datadir=datadir)
-
-        block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
+        nk = self._get_nk_xyz(datadir)
+        block_size = np.ceil(nk/8) + 1
 
         time = []
         power_array = []
@@ -352,8 +352,37 @@ class Power(object):
         time = np.array(time)
         power_array = (
             np.array(power_array)
-            .reshape([len(time), int(dim.nxgrid / 2)])
+            .reshape([len(time), nk])
             .astype(np.float32)
         )
         self.t = time.astype(np.float32)
         setattr(self, power_name, power_array)
+
+    @functools.lru_cache
+    def _get_nk_xyz(self, datadir):
+        """
+        See variable nk_xyz in power_spectrum.f90.
+
+        NOTE: If you want to read output from non-cubic-box simulations run using older versions of Pencil where the number of k-vectors was always taken as nxgrid/2, you can do
+        ```
+        >>> class Power_wrong(pc.read.powers.Power):
+        ...     def _get_nk_xyz(self, dim, grid):
+        ...         return int(dim.nxgrid/2)
+
+        >>> p = Power_wrong.read()
+        ```
+        """
+        dim = read.dim(datadir=datadir)
+        try:
+            grid = read.grid(datadir=datadir, quiet=True)
+        except FileNotFoundError:
+            # KG: Handling this case because there is no grid.dat in `tests/input/serial-1/proc0` and we don't want the test to fail. Should we just drop this and add a grid.dat in the test input?
+            warnings.warn("grid.dat not found. Assuming the box is cubical.")
+            return int(dim.nxgrid/2)
+
+        Lx = grid.Lx
+        Ly = grid.Ly
+        Lz = grid.Lz
+
+        L_min = min(Lx, Ly, Lz)
+        return int(np.round(min( dim.nxgrid*L_min/(2*Lx), dim.nygrid*L_min/(2*Ly), dim.nzgrid*L_min/(2*Lz) )))
