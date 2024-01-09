@@ -345,7 +345,7 @@ class Power(object):
         power_array = []
         with open(os.path.join(datadir, file_name), "r") as f:
             for line_idx, line in enumerate(f):
-                if np.mod(line_idx, block_size) == 0:
+                if line_idx % block_size == 0:
                     time.append(float(line.strip()))
                 else:
                     for value_string in line.strip().split():
