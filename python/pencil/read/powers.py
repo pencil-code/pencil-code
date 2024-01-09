@@ -348,20 +348,17 @@ class Power(object):
         """
         dim = read.dim(datadir=datadir)
 
-        infile = open(os.path.join(datadir, file_name), "r")
-        line_list = infile.readlines()
-        infile.close()
-
         block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
 
         time = []
         power_array = []
-        for line_idx, line in enumerate(line_list):
-            if np.mod(line_idx, block_size) == 0:
-                time.append(float(line.strip()))
-            else:
-                for value_string in line.strip().split():
-                    power_array.append(ffloat(value_string))
+        with open(os.path.join(datadir, file_name), "r") as f:
+            for line_idx, line in enumerate(f):
+                if np.mod(line_idx, block_size) == 0:
+                    time.append(float(line.strip()))
+                else:
+                    for value_string in line.strip().split():
+                        power_array.append(ffloat(value_string))
 
         # Reformat into arrays.
         time = np.array(time)
