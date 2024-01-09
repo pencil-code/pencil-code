@@ -105,12 +105,9 @@ class Power(object):
         import os
         import os.path as op
         import numpy as np
-        import h5py
         from pencil import read
         from pencil.util import ffloat
 
-        # import sys
-        import matplotlib as plt
         import re
 
         power_list = []
