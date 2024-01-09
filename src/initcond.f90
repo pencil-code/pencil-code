@@ -5108,7 +5108,7 @@ module Initcond
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,time,cs,lreinit, &
-      ltime_old,ltime_new,lrho_nonuni,ilnr)
+      ltime_old,ltime_new,lrho_nonuni,ilnr,l2d)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5139,10 +5139,10 @@ module Initcond
       logical, intent(in), optional :: lscale_tobox, lsquash, lremain_in_fourier, ltime_old
       logical, intent(in), optional :: ltime_new, lrho_nonuni
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
-      logical, intent(in), optional :: llogbranch0,ldouble0, lreinit
+      logical, intent(in), optional :: llogbranch0,ldouble0, lreinit, l2d
       logical :: lvectorpotential, lscale_tobox1, lsquash1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
-      logical :: ltime_new1, lrho_nonuni1
+      logical :: ltime_new1, lrho_nonuni1, l2d1
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
       integer, intent(in), optional :: ilnr
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
@@ -5217,6 +5217,14 @@ module Initcond
         lno_noise1 = lno_noise
       else
         lno_noise1 = .false.
+      endif
+!
+!  Check whether we want l2d or not
+!
+      if (present(l2d)) then
+        l2d1 = l2d
+      else
+        l2d1 = .false.
       endif
 !
 !  qirro, is the vortical contribution, qirro=1 for fully irrotational.
@@ -5875,17 +5883,24 @@ module Initcond
 !
 !  (vx, vy, vz) -> ux
 !
-                u_re(ikx,iky,ikz,1)=v_re(ikx,iky,ikz,1) &
-                    -ky(iky+ipy*ny)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-                u_im(ikx,iky,ikz,1)=v_im(ikx,iky,ikz,1) &
-                    +ky(iky+ipy*ny)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                if (l2d1) then
+                  u_re(ikx,iky,ikz,1)=0.
+                  u_im(ikx,iky,ikz,1)=0.
+                  u_re(ikx,iky,ikz,2)=0.
+                  u_im(ikx,iky,ikz,2)=0.
+                else
+                  u_re(ikx,iky,ikz,1)=v_re(ikx,iky,ikz,1) &
+                      -ky(iky+ipy*ny)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,1)=v_im(ikx,iky,ikz,1) &
+                      +ky(iky+ipy*ny)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
 !
 !  (vx, vy, vz) -> uy
 !
-                u_re(ikx,iky,ikz,2)=v_re(ikx,iky,ikz,2) &
-                    +kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-                u_im(ikx,iky,ikz,2)=v_im(ikx,iky,ikz,2) &
-                    -kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                  u_re(ikx,iky,ikz,2)=v_re(ikx,iky,ikz,2) &
+                      +kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,2)=v_im(ikx,iky,ikz,2) &
+                      -kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                endif
 !
 !  (vx, vy, vz) -> uz
 !
