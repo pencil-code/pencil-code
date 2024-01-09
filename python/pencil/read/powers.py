@@ -295,21 +295,20 @@ class Power(object):
             for line_idx, line in enumerate(f):
                 if np.mod(line_idx, block_size) == 0:
                     time.append(float(line.strip()))
+                elif line.find(",") == -1:
+                    # if the line does not contain ',', assume it represents a series of real numbers.
+                    for value_string in line.strip().split():
+                        power_array.append(float(value_string))
                 else:
-                    if (
-                        line.find(",") == -1
-                    ):  # if the line does not contain ',', assume it represents a series of real numbers.
-                        for value_string in line.strip().split():
-                            power_array.append(float(value_string))
-                    else:  # Assume we have complex numbers.
-                        for value_string in line.strip().split("( ")[1:]:
-                            value_string = (
-                                value_string.replace(")", "j")
-                                .strip()
-                                .replace(", ", "")
-                                .replace(" ", "+")
-                            )
-                            power_array.append(complex(value_string))
+                    # Assume we have complex numbers.
+                    for value_string in line.strip().split("( ")[1:]:
+                        value_string = (
+                            value_string.replace(")", "j")
+                            .strip()
+                            .replace(", ", "")
+                            .replace(" ", "+")
+                        )
+                        power_array.append(complex(value_string))
 
         time = np.array(time)
         power_array = np.array(power_array).reshape([len(time), int(dim.nxgrid / 2)])
