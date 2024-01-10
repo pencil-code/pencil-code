@@ -253,27 +253,22 @@ class Power(object):
                 else:
                     lsp = line.strip().split()
 
-                    if len(lsp) == 8:
-                        # real power spectrum
-                        for value_string in lsp:
-                            power_array.append(ffloat(value_string))
-                    elif len(lsp) == 16:
+                    if param.lcomplex:
                         # complex power spectrum
                         real = lsp[0::2]
                         imag = lsp[1::2]
                         for a, b in zip(real, imag):
                             power_array.append(ffloat(a) + 1j * ffloat(b))
                     else:
-                        raise NotImplementedError(f"Unsupported line length ({len(lsp)})")
+                        for value_string in lsp:
+                            power_array.append(ffloat(value_string))
 
         time = np.array(time)
 
-        if len(lsp) == 8:
-            power_array = np.array(power_array, dtype=np.float32)
-        elif len(lsp) == 16:
+        if param.lcomplex:
             power_array = np.array(power_array, dtype=complex)
         else:
-            raise NotImplementedError(f"Unsupported line length ({len(lsp)})")
+            power_array = np.array(power_array, dtype=np.float32)
 
         if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
             power_array = power_array.reshape([len(time), nzpos, nk])
