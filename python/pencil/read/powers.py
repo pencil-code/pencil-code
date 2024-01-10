@@ -224,9 +224,12 @@ class Power(object):
                 line = f.readline()
                 if "z-pos" in line:
                     nzpos = int(re.search(r"\((\d+)\)", line)[1])
-                    line = f.readline()
-                    # KG: is it never possible for zpos to be broken across more than one line? TODO
-                    self.zpos = np.array([float(j) for j in line.split()])
+                    block_size = int(np.ceil(nzpos / 8))
+                    zpos = []
+                    for _ in range(block_size):
+                        line = f.readline()
+                        zpos.extend([ffloat(j) for j in line.split()])
+                    self.zpos = np.array(zpos)
                 else:
                     # there was no list of z-positions, so reset the position of the reader.
                     f.seek(ini)
