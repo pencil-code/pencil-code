@@ -42,7 +42,7 @@ module Equ
       use Density
       use Detonate, only: detonate_before_boundary
       use Diagnostics
-      use Dustdensity
+      use Dustdensity, only: dustdensity_after_boundary, dustdensity_before_boundary
       use Energy
       use EquationOfState
       use Forcing, only: forcing_after_boundary
@@ -175,17 +175,9 @@ module Equ
 !
       call calc_selfpotential(f)
 !
-!  Check for dust grain mass interval overflows
-!  (should consider having possibility for all modules to fiddle with the
-!   f array before boundary conditions are sent)
-!
-      if (.not. lchemistry) then
-        if (ldustdensity) call null_dust_vars(f)
-        if (ldustdensity .and. lmdvar .and. lfirst) call redist_mdbins(f)
-      endif
-!
 !  Call "before_boundary" hooks (for f array precalculation)
 !
+      if (ldustdensity)  call dustdensity_before_boundary(f) 
       if (linterstellar) call interstellar_before_boundary(f)
       if (ldensity.or.lboussinesq) call density_before_boundary(f)
       if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
