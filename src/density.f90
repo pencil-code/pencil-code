@@ -97,6 +97,7 @@ module Density
   real :: total_mass=-1.
   real :: rescale_rho=1.0
   real :: xjump_mid=0.0,yjump_mid=0.0,zjump_mid=0.0
+  real :: kgaussian_lnrho=0., initpower_lnrho=2, kpeak_lnrho=1., cutoff_lnrho=0.
   real, target :: reduce_cs2 = 1.0
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
@@ -161,7 +162,7 @@ module Density
       dens_coeff, temp_coeff, temp_trans, temp_coeff_out, reduce_cs2, &
       lreduced_sound_speed, lrelativistic_eos, &
       lscale_to_cs2top, density_zaver_range, &
-      ieos_profile, width_eos_prof, &
+      ieos_profile, width_eos_prof, kpeak_lnrho, initpower_lnrho, cutoff_lnrho, &
       lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux,&
       ldensity_linearstart, xjump_mid, yjump_mid, zjump_mid
 !
@@ -1590,10 +1591,15 @@ module Density
             f(ix,iy,1:mz,ilnrho) = log( rho_bottom+((rho_top-rho_bottom)/(Lxyz(3)))*(z(1:mz)-xyz0(3)) )
           enddo;enddo
 !
-        case default
+!  initial spectrum
+!
+        case ('power_randomphase')
+          call power_randomphase(ampllnrho(j),initpower_lnrho,kgaussian_lnrho,kpeak_lnrho,cutoff_lnrho,&
+            f,ilnrho,ilnrho,lscale_tobox=.false.)
 !
 !  Catch unknown values
 !
+        case default
           call fatal_error('init_lnrho','No such initlnrho('//trim(iinit_str)//'): '//trim(initlnrho(j)))
 !
         endselect
