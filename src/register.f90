@@ -425,8 +425,6 @@ module Register
 !
 !  Initialize threads.
 !
-!$    call copyin
-!  
     endsubroutine initialize_modules
 !***********************************************************************
     subroutine finalize_modules(f)
@@ -1306,13 +1304,5 @@ module Register
       11 format (a)
 !
     endsubroutine write_pt_positions
-!***********************************************************************
-!$  subroutine copyin
-!
-!  Initialize threads.
-!
-!$  
-!
-!$  endsubroutine copyin
 !***********************************************************************
 endmodule Register

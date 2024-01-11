@@ -48,8 +48,7 @@
                           I_SPECIAL_AFTER_BOUNDARY=27,  &
                           I_SPECIAL_AFTER_TIMESTEP=28,  &
                           I_SET_INIT_PARAMETERS=29, &
-                          I_SPECIAL_CALC_SPECTRA=30, &
-                          I_COPYIN_SPECIAL=32
+                          I_SPECIAL_CALC_SPECTRA=30
     
     integer, parameter :: n_subroutines=32
     integer, parameter :: n_special_modules_max=2
@@ -87,8 +86,7 @@
                            'special_after_timestep      ', &
                            'set_init_parameters         ', &
                            'special_calc_spectra_byte   ', &
-                           'dspecial_dt_ode             ', &
-                           'copyin_special              ' /)
+                           'dspecial_dt_ode             '   )
 
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules_max,n_subroutines) :: special_sub_handles
@@ -704,14 +702,14 @@
 
     endsubroutine special_calc_spectra
 !*********************************************************************** 
-    subroutine copyin_special
+!    subroutine copyin_special
 !
-      integer :: i
+!      integer :: i
 !
-      do i=1,n_special_modules
-        call caller0(special_sub_handles(i,I_COPYIN_SPECIAL))
-      enddo
+!      do i=1,n_special_modules
+!        call caller0(special_sub_handles(i,I_COPYIN_SPECIAL))
+!      enddo
 !
-    endsubroutine copyin_special
+!    endsubroutine copyin_special
 !*********************************************************************** 
   endmodule Special
