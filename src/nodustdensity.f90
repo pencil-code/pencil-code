@@ -73,6 +73,16 @@ module Dustdensity
 !
     endsubroutine dustdensity_after_boundary
 !***********************************************************************
+    subroutine dustdensity_before_boundary(f)
+!
+      use General, only: keep_compiler_quiet
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine dustdensity_before_boundary
+!***********************************************************************
     subroutine calc_pencils_dustdensity(f,p)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -138,22 +148,6 @@ module Dustdensity
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_dustdensity_run_pars
-!***********************************************************************
-    subroutine redist_mdbins(f)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine redist_mdbins
-!***********************************************************************
-    subroutine null_dust_vars(f)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine null_dust_vars
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !

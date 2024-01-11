@@ -319,7 +319,7 @@ module Cdata
   logical :: lpscalar_nolog=.false.
   logical :: lalpm=.false., lalpm_alternate=.false.
   logical :: lradiation_ray=.false.,lradiation_fld=.false.
-  logical :: ldustdensity_log=.false.,lmdvar=.false.,lmice=.false.,ldcore=.false.
+  logical :: ldustdensity_log=.false.,lmdvar=.false.
   logical :: lneutraldensity_nolog=.false.
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.
