@@ -1935,11 +1935,14 @@ sub get_current_revision {
             #$current_revision = `svn info "$pencil_home" --show-item revision`;
             my $result = `svn info "$pencil_home" --xml`;
             if ($result =~ /revision\s*=\s*"(\d+)"/is) { $current_revision = $1; }
-            if (!$current_revision) { $current_revision = "Problem obtaining SVN revision!"; }
-            # GIT hash
-            $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
-            if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $current_hash = $1; }
-            if (!$current_hash) { $current_hash = "No network connection to github!"; }
+            if (!$current_revision) {
+                $current_revision = "Problem obtaining SVN revision!";
+            } else {
+                # GIT hash
+                $current_hash = `wget -q "https://pencil-code.org/translate.php?output=plain&revision=$current_revision" -O -`;
+                chomp ($current_hash);
+            }
+            if (!$current_hash) { $current_hash = "No network connection to pencil-code.org!"; }
         }
         elsif (-e "$pencil_home/.git") {
             # GIT hash
