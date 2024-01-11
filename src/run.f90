@@ -531,7 +531,6 @@ program run
 !
 !  Copies values of all threadprivate variables to all threads from the master thread and starts a parallel region
 !
-!$ include "copyin.inc"
 !$omp master
   Time_loop: do while (it<=nt)
 !

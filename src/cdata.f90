@@ -803,7 +803,7 @@ module Cdata
 !$ integer :: num_threads = 0
 !$ logical :: lthread_safe 
 ! 
-! threadprivate definitions for OpenMP, copyin routine
+! threadprivate definitions for OpenMP
 !
 !$  include 'cdata_omp.inc'
 !***********************************************************************
