@@ -813,7 +813,7 @@ module Cdata
   logical :: lchemistry_diag_save
   integer :: it_save
 ! 
-! threadprivate definitions for OpenMP, copyin routine.
+! threadprivate definitions for OpenMP
 !
 !$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil&
 !$omp ,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
