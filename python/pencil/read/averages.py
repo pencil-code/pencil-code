@@ -267,9 +267,6 @@ class Averages(object):
                 if not in_file_name_list:
                     raise ValueError("invalid plane name")
 
-            class Foo(object):
-                pass
-
             if not quiet:
                 print(plane_list, in_file_name_list, aver_file_name_list)
             
@@ -277,7 +274,7 @@ class Averages(object):
                 plane_list, in_file_name_list, aver_file_name_list
             ):
                 # This one will store the data.
-                ext_object = Foo()
+                ext_object = _Plane()
 
                 # Get the averaged quantities.
                 file_id = open(os.path.join(simdir, in_file_name))
@@ -542,11 +539,8 @@ class Averages(object):
             if "time" in var_names:
                 var_names.remove('time')
 
-            class Foo(object):
-                pass
-
             # This one will store the data.
-            ext_object = getattr(self, plane, Foo())
+            ext_object = getattr(self, plane, _Plane())
             if comp_time:
                 start_time = time.time()
                 data_shape = None
@@ -848,3 +842,9 @@ class Averages(object):
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
         return sorted(l, key=alphanum_key)
+
+class _Plane():
+    """
+    Used to store the averages in a particular plane
+    """
+    pass
