@@ -430,6 +430,7 @@ class Averages(object):
                         simdir,
                         precision=precision,
                         comp_time=comp_time,
+                        quiet=quiet,
                     )
 
                 ext_object.t = t
@@ -457,6 +458,7 @@ class Averages(object):
         simdir,
         precision="f",
         comp_time=False,
+        quiet=True,
     ):
         """
         Read the yaverages.dat, zaverages.dat.
@@ -466,7 +468,8 @@ class Averages(object):
         from scipy.io import FortranFile
         import h5py
 
-        print(av_file)
+        if not quiet:
+            print(av_file)
         with open(os.path.join(simdir, plane+"aver.in")) as file_id:
             variables = file_id.readlines()
         variables = [
@@ -579,7 +582,8 @@ class Averages(object):
                 plane_keys.remove("keys")
             ext_object.keys = plane_keys
         end_time = time.time()-start_time
-        print("{} object reading time {:.0f} seconds".format(plane,end_time))
+        if not quiet:
+            print("{} object reading time {:.0f} seconds".format(plane,end_time))
         return t, ext_object
 
     def __read_1d_aver(
