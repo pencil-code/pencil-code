@@ -581,7 +581,7 @@ class Averages(object):
             plane_keys = list(ext_object.__dict__.keys())
             if "keys" in plane_keys:
                 plane_keys.remove("keys")
-            setattr(ext_object, "keys", plane_keys)
+            ext_object.keys = plane_keys
         end_time = time.time()-start_time
         print("{} object reading time {:.0f} seconds".format(plane,end_time))
         return t, ext_object
