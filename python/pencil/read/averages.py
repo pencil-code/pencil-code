@@ -461,7 +461,6 @@ class Averages(object):
         quiet=True,
     ):
         """
-        Read the yaverages.dat, zaverages.dat.
         Return the raw data and the time array.
         """
 
