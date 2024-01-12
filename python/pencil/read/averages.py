@@ -571,12 +571,12 @@ class Averages(object):
                 t = np.zeros(data_shape[0], dtype=precision)
                 for var in var_names:
                     setattr(ext_object, var, np.zeros(data_shape, dtype=precision))
-                for t_idx, tmp_idx in zip(range(len(itlist)),itlist):
-                    t[int(t_idx)] = tmp[str(tmp_idx) + "/time"][()]
+                for t_idx, tmp_idx in enumerate(itlist):
+                    t[t_idx] = tmp[f"{tmp_idx}/time"][()]
                     for var in var_names:
                         if var in tmp[str(tmp_idx)].keys():
-                            getattr(ext_object, var)[int(t_idx)] = tmp[str(tmp_idx) + "/" + var][()]
-            plane_keys = list(ext_object.__dict__.keys())
+                            getattr(ext_object, var)[t_idx] = tmp[f"{tmp_idx}/{var}"][()]
+            plane_keys = [ext_object.__dict__.keys()]
             if "keys" in plane_keys:
                 plane_keys.remove("keys")
             ext_object.keys = plane_keys
