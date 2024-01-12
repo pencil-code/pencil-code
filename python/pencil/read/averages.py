@@ -348,11 +348,6 @@ class Averages(object):
                     for var, var_idx in zip(plane_var_names,
                                                 range(len(plane_var_names))):
                         setattr(ext_object, var.strip(), raw_data[:, var_idx, ...])
-                plane_keys = ext_object.__dict__.keys()
-                plane_keys = list(ext_object.__dict__.keys())
-                if "keys" in plane_keys:
-                    plane_keys.remove("keys")
-                setattr(ext_object, "keys", plane_keys)
 
                 ext_object.t = t
                 self.t = t
@@ -573,10 +568,6 @@ class Averages(object):
                     for var in var_names:
                         if var in tmp[str(tmp_idx)].keys():
                             getattr(ext_object, var)[t_idx] = tmp[f"{tmp_idx}/{var}"][()]
-            plane_keys = [ext_object.__dict__.keys()]
-            if "keys" in plane_keys:
-                plane_keys.remove("keys")
-            ext_object.keys = plane_keys
 
         end_time = time.time()-start_time
         if not quiet:
@@ -847,4 +838,9 @@ class _Plane():
     """
     Used to store the averages in a particular plane
     """
-    pass
+    @property
+    def keys(self):
+        ks = list(self.__dict__.keys())
+        if "keys" in ks:
+            ks.remove("ks")
+        return ks
