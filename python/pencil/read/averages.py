@@ -431,7 +431,6 @@ class Averages(object):
                 ext_object.t = t
                 self.t = t
                 setattr(self, plane, ext_object)
-        return 0
 
     def __equal_newline(self, line):
         """
