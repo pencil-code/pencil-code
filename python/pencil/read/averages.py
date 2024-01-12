@@ -464,7 +464,6 @@ class Averages(object):
         Return the raw data and the time array.
         """
 
-        from scipy.io import FortranFile
         import h5py
 
         if not quiet:
