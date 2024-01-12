@@ -567,9 +567,7 @@ class Averages(object):
                 start_time = time.time()
                 tmpkeys = list(tmp[str(itlist[0])].keys())
                 tmpkeys.remove('time')
-                data_shape = [len(itlist),]
-                for dshape in tmp[str(itlist[0])][tmpkeys[0]].shape:
-                    data_shape.append(dshape)
+                data_shape = [len(itlist), *tmp[str(itlist[0])][tmpkeys[0]].shape]
                 t = np.zeros(data_shape[0], dtype=precision)
                 for var in var_names:
                     setattr(ext_object, var, np.zeros(data_shape, dtype=precision))
