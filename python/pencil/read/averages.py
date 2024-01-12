@@ -566,6 +566,7 @@ class Averages(object):
                     setattr(ext_object, var, raw_data)
             else:
                 start_time = time.time()
+
                 data_shape = [len(itlist), *tmp[str(itlist[0])][var_names[0]].shape]
                 t = np.zeros(data_shape[0], dtype=precision)
                 for var in var_names:
@@ -579,9 +580,11 @@ class Averages(object):
             if "keys" in plane_keys:
                 plane_keys.remove("keys")
             ext_object.keys = plane_keys
+
         end_time = time.time()-start_time
         if not quiet:
             print("{} object reading time {:.0f} seconds".format(plane,end_time))
+
         return t, ext_object
 
     def __read_1d_aver(
