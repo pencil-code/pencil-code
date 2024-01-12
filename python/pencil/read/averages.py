@@ -520,15 +520,12 @@ class Averages(object):
                 else:
                     var_names = [var_names]
                 for var_name in var_names:
-                    #if not var_name in tmp[str(itlist[0])].keys():
                     if not var_name in variables:
                         var_names.remove(var_name)
                 if len(var_names) < 1:
                     warnings.warn("read.aver: var_names has no match in {} keys - reading all variables instead".format(av_file))
-                    #var_names = list(tmp[str(itlist[0])].keys())
                     var_names = variables
             else:
-                #var_names = list(tmp[str(itlist[0])].keys())
                 var_names = variables
             if "time" in var_names:
                 var_names.remove('time')
