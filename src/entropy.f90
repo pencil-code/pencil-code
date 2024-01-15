@@ -1505,7 +1505,12 @@ module Energy
             call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j),radius_ss_x(j))
           case ('blob_radeq')
             call blob_radeq(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
-          case ('isothermal'); call isothermal_entropy(f(:,:,:,ilnrho),T0,f(:,:,:,iss))
+          case ('isothermal')
+            if (ldensity_nolog) then
+              call isothermal_entropy(log(f(:,:,:,irho)),T0,f(:,:,:,iss))
+            else
+              call isothermal_entropy(f(:,:,:,ilnrho),T0,f(:,:,:,iss))
+            endif
           case ('isothermal_lnrho_ss')
             if (lroot) print*, 'init_energy: Isothermal density and entropy stratification'
             call isothermal_lnrho_ss(f(:,:,:,ilnrho),T0,rho0,f(:,:,:,iss))
