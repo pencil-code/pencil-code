@@ -402,7 +402,7 @@ module InitialCondition
 !
     endsubroutine initial_condition_xxp
 !***********************************************************************
-    subroutine initial_condition_vvp(f, fp)
+    subroutine initial_condition_vvp(f, fp, ineargrid)
 !
 ! Initialize particles' mass and velocity.
 !
@@ -410,6 +410,7 @@ module InitialCondition
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(:,:), intent(inout) :: fp
+      integer, dimension(:,:), intent(in) :: ineargrid
 !
       real :: argx, argz, sinkx, coskx, sinkz, coskz
       real :: dv, dvpx, dvpy, dvpz
@@ -417,6 +418,7 @@ module InitialCondition
       integer :: k, p, i
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ineargrid)
 !
 ! Assign the mass and the equilibrium velocity of each particle.
 !

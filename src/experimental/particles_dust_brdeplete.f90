@@ -1837,7 +1837,7 @@ module Particles
 !
 !  Interface for user's own initial condition
 !
-      if (linitial_condition) call initial_condition_vvp(f,fp)
+      if (linitial_condition) call initial_condition_vvp(f, fp, ineargrid)
 !
 !  Optionally withhold some number of particles, to be inserted in 
 !  insert_particles. The particle indices to be removed are not randomized, 

@@ -357,17 +357,20 @@ module InitialCondition
 !
     endsubroutine initial_condition_xxp
 !***********************************************************************
-    subroutine initial_condition_vvp(f,fp)
+    subroutine initial_condition_vvp(f, fp, ineargrid)
 !
 !  Initialize particles' velocities.
 !
 !  07-may-09/wlad: coded
+!  16-jan-23/ccyang: pass ineargrid
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (:,:), intent(inout) :: fp
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (:,:), intent(in) :: fp
+      integer, dimension(:,:), intent(in) :: ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine initial_condition_vvp
 !***********************************************************************
