@@ -403,34 +403,6 @@ module InitialCondition
 !
     endsubroutine initial_condition_cctest
 !***********************************************************************
-    subroutine initial_condition_xxp(f,fp)
-!
-!  Initialize particles' positions.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (:,:), intent(inout) :: fp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-!
-    endsubroutine initial_condition_xxp
-!***********************************************************************
-    subroutine initial_condition_vvp(f,fp)
-!
-!  Initialize particles' velocities.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (:,:), intent(inout) :: fp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-!
-    endsubroutine initial_condition_vvp
-!***********************************************************************
     subroutine read_initial_condition_pars(iostat)
 !
       use File_io, only: parallel_unit

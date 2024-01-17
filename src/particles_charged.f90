@@ -999,7 +999,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Interface for user's own initial condition
 !
-      if (linitial_condition) call initial_condition_vvp(f,fp)
+      if (linitial_condition) call initial_condition_vvp(f, fp, ineargrid)
 !
 !  Map particle velocity on the grid.
 !
