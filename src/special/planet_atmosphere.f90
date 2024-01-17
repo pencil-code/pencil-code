@@ -57,11 +57,12 @@ module Special
   real :: tauradtop=1.d4, tauradbot=1.d7  ! unit: [s]
   real :: pradtop=1.d3, pradbot=1.d6      ! unit: [Pa]
   real :: pbot0=1.e7                       ! unit: [Pa]
+  real :: q_damping=0.0
   !
   integer :: n_damping=0
   !
   logical :: linit_equilibrium=.false.
-  logical :: lsponge_top=.false.,lsponge_bottom=.false.
+  logical :: lsponge_top=.false.,lsponge_bottom=.false.,lvelocity_drag=.false.
 !
 ! Run parameters
 !
@@ -75,11 +76,11 @@ module Special
       R_planet,rho_ref,cs_ref,cp_ref,T_ref,pbot0,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
-      Bext_ampl,iBext,n_damping,lsponge_top,lsponge_bottom
+      Bext_ampl,iBext,n_damping,lsponge_top,lsponge_bottom,lvelocity_drag,q_damping
 !
   namelist /special_run_pars/ &
       tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,n_damping,&
-      lsponge_top,lsponge_bottom
+      lsponge_top,lsponge_bottom,lvelocity_drag,q_damping
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -237,23 +238,27 @@ module Special
 !
       if (it>1 .and. lsponge_top .and. llast_proc_x) then
         do j=1,n_damping
-          q=0.1/dt*(1.-cos(pi*j/n_damping))
+          q=0.5*(1.-cos(pi*j/n_damping)) ! from 0 to 2
         enddo
 !
         do i=iux,iuz
-          df(l2-n_damping+1:l2,m,n,i)=-q*f(l2-n_damping+1:l2,m,n,i)
+          df(l2-n_damping+1:l2,m,n,i) = -q * f(l2-n_damping+1:l2,m,n,i) ! from bottom to top
         enddo
       endif
 !
       if (it>1 .and. lsponge_bottom .and. lfirst_proc_x) then
         do j=1,n_damping
-          q=0.1/dt*(1.-cos(pi*(n_damping-j+1)/n_damping))
+          q=0.5*(1.-cos(pi*(n_damping-j+1)/n_damping)) ! from 2 to 0
         enddo
 !
         do i=iux,iuz
-          df(l1:l1+n_damping-1,m,n,i)=-q*f(l1:l1+n_damping-1,m,n,i)
+          df(l1:l1+n_damping-1,m,n,i) = -q * f(l1:l1+n_damping-1,m,n,i) ! from bottom to top
         enddo
       endif
+!
+! add velocity drag, dudt = ... - q_damping * u
+!
+      if (lvelocity_drag) df(l1:l2,m,n,iux:iuz) = -q_damping * f(l1:l2,m,n,iux:iuz)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
