@@ -5149,7 +5149,8 @@ module Initcond
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
       real, intent(in), optional :: initpower_med0, kpeak_log0, kbreak0
       real, intent(in), optional :: nfactd0, qirro, time, cs
-      real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
+      real, dimension (:,:,:,:), allocatable :: u_re, u_im
+      real, dimension(3) :: v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (:), allocatable :: kk, lgkk, power_factor, lgff
@@ -5284,10 +5285,6 @@ module Initcond
         if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_re')
         allocate(u_im(nx,ny,nz,3),stat=stat)
         if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_im')
-        allocate(v_re(nx,ny,nz,3),stat=stat)
-        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate v_re')
-        allocate(v_im(nx,ny,nz,3),stat=stat)
-        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate v_im')
       endif
 !
       allocate(kx(nxgrid),stat=stat)
@@ -5664,10 +5661,10 @@ module Initcond
 !  To allow also for the possibility of longitudinal initial fields, we write
 !  (1-q)*(delij-kikj) + q*kikj = (1-q)*delij - (1-2*q)*kikj.
 !
-        if (lskip_projection) then
-          v_re=u_re
-          v_im=u_im
-        else
+!
+!  Here, u_re, u_im is what was v_re, v_im before!
+!
+        if (.not.lskip_projection) then
 !
 !  Allow for possibility of irrotational contributions of fraction q,
 !  so the vortical fraction is (1-q) == p.
@@ -5675,6 +5672,7 @@ module Initcond
           p=1.-qirro1
 !
 !  In 2-D
+!
           if (nz==1) then
             ikz=1
             do iky=1,ny
@@ -5686,18 +5684,18 @@ module Initcond
 !
                 r(ikx,iky,ikz)=(1.-2.*qirro1) * (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
                                                 +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
-                v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                v_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)
+                u_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)
 !
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
                 r(ikx,iky,ikz)=(1.-2.*qirro1) * (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
                                                 +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
-                v_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                v_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                v_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)
+                u_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)
               enddo
             enddo
 !  In 3-D
@@ -5725,9 +5723,9 @@ module Initcond
 !                      r(ikx,iky,ikz)=r(ikx,iky,ikz)*sin(om*time1)
 !                    endif
 !
-                  v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+                  u_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                  u_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                  u_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
 !
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
@@ -5736,14 +5734,14 @@ module Initcond
                       (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
                       +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
                       +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
                 enddo
               enddo
             enddo
           endif  ! 3D
-        endif  !(lskip_projection)
+        endif  !(.not.lskip_projection)
 !
 !  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ikhat_k*sigma.
 !  Use r=sigma/k for normalization of sigma*khat_i = sigma*ki/sqrt(k2).
@@ -5767,32 +5765,27 @@ module Initcond
               ikz=1
 !
 !  (vx, vy, vz) -> ux
+              v_re = u_re(ikx,iky,ikz,:); v_im = u_im(ikx,iky,ikz,:)
               if (l2d1) then
                 u_re(ikx,iky,ikz,1:2)=0.
                 u_im(ikx,iky,ikz,1:2)=0.
               else
 !
-                u_re(ikx,iky,ikz,1)=v_re(ikx,iky,ikz,1) &
-                    -ky(iky+ipy*ny)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-                u_im(ikx,iky,ikz,1)=v_im(ikx,iky,ikz,1) &
-                    +ky(iky+ipy*ny)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,1)=v_re(1) - ky(iky+ipy*ny)*v_im(3)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,1)=v_im(1) + ky(iky+ipy*ny)*v_re(3)*r(ikx,iky,ikz)
 !
 !  (vx, vy, vz) -> uy
 !
-                u_re(ikx,iky,ikz,2)=v_re(ikx,iky,ikz,2) &
-                    +kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-                u_im(ikx,iky,ikz,2)=v_im(ikx,iky,ikz,2) &
-                    -kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,2)=v_re(2) + kx(ikx+ipx*nx)*v_im(3)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,2)=v_im(2) - kx(ikx+ipx*nx)*v_re(3)*r(ikx,iky,ikz)
               endif
 !
 !  (vx, vy, vz) -> uz
 !
-              u_re(ikx,iky,ikz,3)=v_re(ikx,iky,ikz,3) &
-                  +ky(iky+ipy*ny)*v_im(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
-                  -kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,2)*r(ikx,iky,ikz)
-              u_im(ikx,iky,ikz,3)=v_im(ikx,iky,ikz,3) &
-                  -ky(iky+ipy*ny)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
-                  +kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz)
+              u_re(ikx,iky,ikz,3)=v_re(3) + ky(iky+ipy*ny)*v_im(1)*r(ikx,iky,ikz) &
+                                          - kx(ikx+ipx*nx)*v_im(2)*r(ikx,iky,ikz)
+              u_im(ikx,iky,ikz,3)=v_im(3) - ky(iky+ipy*ny)*v_re(1)*r(ikx,iky,ikz) &
+                                          + kx(ikx+ipx*nx)*v_re(2)*r(ikx,iky,ikz)
             enddo
           enddo
 !  In 3-D
@@ -5801,32 +5794,28 @@ module Initcond
             do iky=1,ny
               do ikx=1,nx
 !
+                v_re = u_re(ikx,iky,ikz,:); v_im = u_im(ikx,iky,ikz,:)
+!
 !  (vx, vy, vz) -> ux
 !
-                u_re(ikx,iky,ikz,1)=v_re(ikx,iky,ikz,1) &
-                    +kz(ikz+ipz*nz)*v_im(ikx,iky,ikz,2)*r(ikx,iky,ikz) &
-                    -ky(iky+ipy*ny)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-                u_im(ikx,iky,ikz,1)=v_im(ikx,iky,ikz,1) &
-                    -kz(ikz+ipz*nz)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz) &
-                    +ky(iky+ipy*ny)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,1)=v_re(1) + kz(ikz+ipz*nz)*v_im(2)*r(ikx,iky,ikz) &
+                                            - ky(iky+ipy*ny)*v_im(3)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,1)=v_im(1) - kz(ikz+ipz*nz)*v_re(2)*r(ikx,iky,ikz) &
+                                            + ky(iky+ipy*ny)*v_re(3)*r(ikx,iky,ikz)
 !
 !  (vx, vy, vz) -> uy
 !
-                u_re(ikx,iky,ikz,2)=v_re(ikx,iky,ikz,2) &
-                    +kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz) &
-                    -kz(ikz+ipz*nz)*v_im(ikx,iky,ikz,1)*r(ikx,iky,ikz)
-                u_im(ikx,iky,ikz,2)=v_im(ikx,iky,ikz,2) &
-                    -kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz) &
-                    +kz(ikz+ipz*nz)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,2)=v_re(2) + kx(ikx+ipx*nx)*v_im(3)*r(ikx,iky,ikz) &
+                                            - kz(ikz+ipz*nz)*v_im(1)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,2)=v_im(2) - kx(ikx+ipx*nx)*v_re(3)*r(ikx,iky,ikz) &
+                                            + kz(ikz+ipz*nz)*v_re(1)*r(ikx,iky,ikz)
 !
 !  (vx, vy, vz) -> uz
 !
-                u_re(ikx,iky,ikz,3)=v_re(ikx,iky,ikz,3) &
-                    +ky(iky+ipy*ny)*v_im(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
-                    -kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,2)*r(ikx,iky,ikz)
-                u_im(ikx,iky,ikz,3)=v_im(ikx,iky,ikz,3) &
-                    -ky(iky+ipy*ny)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
-                    +kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,3)=v_re(3) + ky(iky+ipy*ny)*v_im(1)*r(ikx,iky,ikz) &
+                                            - kx(ikx+ipx*nx)*v_im(2)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,3)=v_im(3) - ky(iky+ipy*ny)*v_re(1)*r(ikx,iky,ikz) &
+                                            + kx(ikx+ipx*nx)*v_re(2)*r(ikx,iky,ikz)
 !
               enddo
             enddo
@@ -5910,10 +5899,10 @@ module Initcond
 !
       if (lroot.and..not.ltime) then
         if (cutoff==0) then
-          print*,'power_randomphase_hel: k^',initpower,' spectrum : var  i=',i
+          print*,'power_randomphase_hel: k^',initpower,' spectrum: var  i=',i
         else
           print*,'power_randomphase_hel: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
-              initpower,', k0 =',cutoff,' : var  i=',i
+                 initpower,', k0 =',cutoff,' : var  i=',i
         endif
       endif
 !
@@ -5923,8 +5912,6 @@ module Initcond
       if (allocated(r))  deallocate(r)
       if (allocated(u_re)) deallocate(u_re)
       if (allocated(u_im)) deallocate(u_im)
-      if (allocated(v_re)) deallocate(v_re)
-      if (allocated(v_im)) deallocate(v_im)
       if (allocated(kx)) deallocate(kx)
       if (allocated(ky)) deallocate(ky)
       if (allocated(kz)) deallocate(kz)
