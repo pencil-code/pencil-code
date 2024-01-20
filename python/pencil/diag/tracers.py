@@ -496,19 +496,19 @@ class Tracers(object):
         f = h5py.File(os.path.join(datadir, file_name), "r")
 
         # Extract arrays.
-        self.t = f["t"].value
-        self.x0 = f["x0"].value
-        self.y0 = f["y0"].value
-        self.x1 = f["x1"].value
-        self.y1 = f["y1"].value
-        self.z1 = f["z1"].value
-        self.l = f["l"].value
-        self.tracers = f["tracers"].value
-        self.mapping = f["mapping"].value
+        self.t = f["t"][0]
+        self.x0 = f["x0"][:]
+        self.y0 = f["y0"][:]
+        self.x1 = f["x1"][:]
+        self.y1 = f["y1"][:]
+        self.z1 = f["z1"][:]
+        self.l = f["l"][:]
+        self.tracers = f["tracers"][:]
+        self.mapping = f["mapping"][:]
         if "curly_A" in list(f.keys()):
-            self.curly_A = f["curly_A"].value
+            self.curly_A = f["curly_A"][:]
         if "ee" in list(f.keys()):
-            self.ee = f["ee"].value
+            self.ee = f["ee"][:]
 
         # Extract parameters.
         params = f["params"]
