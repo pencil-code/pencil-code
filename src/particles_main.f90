@@ -537,6 +537,10 @@ module Particles_main
 !
       call insert_particles_now(f)
 !
+!  Log removed particles.
+!
+      call remove_particle_writelog()
+!
     endsubroutine particles_timestep_second
 !***********************************************************************
     subroutine split_update_particles(f, dt)
