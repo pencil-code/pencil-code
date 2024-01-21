@@ -443,6 +443,19 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
+    subroutine output_part_rmv(ipar_rmv, ipar_sink, fp_rmv, fp_sink, nrmv)
+!
+      use Io_out, only: output_part_rmv_ => output_part_rmv
+!
+      integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
+      real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
+      integer, intent(in) :: nrmv
+!
+      call switch_io
+      call output_part_rmv_(ipar_rmv, ipar_sink, fp_rmv, fp_sink, nrmv)
+!
+    endsubroutine output_part_rmv
+!***********************************************************************
     subroutine output_stalker_init(num, nv, snap, ID)
 
       use Io_out, only: output_stalker_init_ => output_stalker_init

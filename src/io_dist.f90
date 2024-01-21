@@ -336,6 +336,29 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
+    subroutine output_part_rmv(ipar_rmv, ipar_sink, fp_rmv, fp_sink, nrmv)
+!
+!  Writes the log of removed particles to a file.
+!
+!  21-jan-24/ccyang: stub
+!
+      use General, only: keep_compiler_quiet
+      use Messages, only: not_implemented
+!
+      integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
+      real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
+      integer, intent(in) :: nrmv
+!
+      call keep_compiler_quiet(ipar_rmv)
+      call keep_compiler_quiet(ipar_sink)
+      call keep_compiler_quiet(fp_rmv)
+      call keep_compiler_quiet(fp_sink)
+      call keep_compiler_quiet(nrmv)
+!
+      call not_implemented("output_part_rmv")
+!
+    endsubroutine output_part_rmv
+!***********************************************************************
     subroutine output_stalker_init(num, nv, snap, ID)
 !
 !  Open stalker particle snapshot file and initialize with snapshot time.
