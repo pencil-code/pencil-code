@@ -882,35 +882,11 @@ module Particles_sub
 !
 !  21-jan-24/ccyang: coded
 !
-      integer k
-      real :: t_sp   ! t in single precision for backwards compatibility
+      use IO, only: output_part_rmv
 !
-      if (nrmv <= 0) return
+!  Write the log.
 !
-!  Write particle IDs.
-!
-      t_sp = t
-      open(20, file=trim(directory_snap)//'/rmv_ipar.dat', position='append')
-      ipar: do k = 1, nrmv
-        if (ipar_sink(k) >= 0) then
-          write(20,*) ipar_rmv(k), t_sp, ipar_sink(k)
-        else
-          write(20,*) ipar_rmv(k), t_sp
-        endif
-      enddo ipar
-      close(20)
-!
-!  Write particle attributes.
-!
-      open(20, file=trim(directory_snap)//'/rmv_par.dat', position='append', form='unformatted')
-      fp: do k = 1, nrmv
-        if (ipar_sink(k) >= 0) then
-          write(20) fp_rmv(:,k), fp_sink(:,k)
-        else
-          write(20) fp_rmv(:,k)
-        endif
-      enddo fp
-      close(20)
+      call output_part_rmv(ipar_rmv, ipar_sink, fp_rmv, fp_sink, nrmv)
 !
 !  Clear the log.
 !
