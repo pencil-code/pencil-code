@@ -20,7 +20,7 @@ module Particles_sub
   public :: input_particles, output_particles
   public :: append_npvar, append_npaux, boundconds_particles
   public :: sum_par_name, max_par_name, integrate_par_name
-  public :: remove_particle, get_particles_interdistance
+  public :: remove_particle, remove_particle_writelog, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
   public :: find_interpolation_indeces, get_gas_density
@@ -819,43 +819,13 @@ module Particles_sub
       integer, dimension (mpar_loc,3), optional :: ineargrid
       integer, intent(in), optional :: ks
 !
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
       intent (inout) :: fp, dfp, ineargrid
       intent (in)    :: k
 !
 !  Log the particle to be removed.
 !
       call remove_particle_log(fp, ipar, k, ks)
-!
-      t_sp = t
-!
-!  Write to the respective processor that the particle is removed.
-!  We also write the time.
-!
-!  TODO: It would be better to write this information in binary format to avoid
-!  conversion problems when reading t_rmv with pc_read_pvar.
-!
-!      open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
-      open(20,file=trim(directory_snap)//'/rmv_ipar.dat',position='append') !21-08-14/XYLI.
-      if (present(ks)) then
-        write(20,*) ipar(k), t_sp, ipar(ks)
-      else
-        write(20,*) ipar(k), t_sp
-      endif
-      close(20)
-!
-!      open(20,file=trim(directory)//'/rmv_par.dat', & !21-08-14/XYLI
-      open(20,file=trim(directory_snap)//'/rmv_par.dat', &
-          position='append',form='unformatted')
-      if (present(ks)) then
-        write(20) fp(k,:), fp(ks,:)
-      else
-        write(20) fp(k,:)
-      endif
-      close(20)
-!
-      if (ip<=8) print*, 'removed particle ', ipar(k)
+      if (ip <= 8) print *, 'remove particle ', ipar(k)
 !
 !  Switch the removed particle with the last particle present in the processor
 !  npar_loc
@@ -905,6 +875,48 @@ module Particles_sub
       endif sink
 !
     endsubroutine remove_particle_log
+!***********************************************************************
+    subroutine remove_particle_writelog()
+!
+!  Writes the log of removed particles and clears the log.
+!
+!  21-jan-24/ccyang: coded
+!
+      integer k
+      real :: t_sp   ! t in single precision for backwards compatibility
+!
+      if (nrmv <= 0) return
+!
+!  Write particle IDs.
+!
+      t_sp = t
+      open(20, file=trim(directory_snap)//'/rmv_ipar.dat', position='append')
+      ipar: do k = 1, nrmv
+        if (ipar_sink(k) >= 0) then
+          write(20,*) ipar_rmv(k), t_sp, ipar_sink(k)
+        else
+          write(20,*) ipar_rmv(k), t_sp
+        endif
+      enddo ipar
+      close(20)
+!
+!  Write particle attributes.
+!
+      open(20, file=trim(directory_snap)//'/rmv_par.dat', position='append', form='unformatted')
+      fp: do k = 1, nrmv
+        if (ipar_sink(k) >= 0) then
+          write(20) fp_rmv(:,k), fp_sink(:,k)
+        else
+          write(20) fp_rmv(:,k)
+        endif
+      enddo fp
+      close(20)
+!
+!  Clear the log.
+!
+      nrmv = 0
+!
+    endsubroutine remove_particle_writelog
 !***********************************************************************
     subroutine count_particles(ipar,npar_found)
 !
