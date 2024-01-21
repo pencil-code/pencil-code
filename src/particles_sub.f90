@@ -20,7 +20,8 @@ module Particles_sub
   public :: input_particles, output_particles
   public :: append_npvar, append_npaux, boundconds_particles
   public :: sum_par_name, max_par_name, integrate_par_name
-  public :: remove_particle, remove_particle_writelog, get_particles_interdistance
+  public :: remove_particle, remove_particle_initialize, remove_particle_writelog
+  public :: get_particles_interdistance
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
   public :: find_interpolation_indeces, get_gas_density
@@ -37,10 +38,9 @@ module Particles_sub
 !
 ! Module Variables
 !
-  integer, parameter :: mrmv = mpar_loc
-  integer, dimension(mrmv) :: ipar_rmv = -1, ipar_sink = -1
-  real, dimension(mparray, mrmv) :: fp_rmv = 0.0, fp_sink = 0.0
-  integer :: nrmv = 0  ! number of removed particles
+  integer, dimension(:), allocatable :: ipar_rmv, ipar_sink
+  real, dimension(:,:), allocatable :: fp_rmv, fp_sink
+  integer :: mrmv = 1, nrmv = 0  ! number of removed particles
 !
   contains
 !***********************************************************************
@@ -842,6 +842,16 @@ module Particles_sub
 !
     endsubroutine remove_particle
 !***********************************************************************
+    subroutine remove_particle_initialize
+!
+!  Allocates buffers for logging removed particles.
+!
+!  21-jan-24/ccyang: coded
+!
+      allocate (ipar_rmv(mrmv), ipar_sink(mrmv), fp_rmv(mparray,mrmv), fp_sink(mparray,mrmv))
+!
+    endsubroutine remove_particle_initialize
+!***********************************************************************
     subroutine remove_particle_log(fp, ipar, k, ks)
 !
 !  Logs the attributes of each removed particle, and optionally those of
@@ -854,10 +864,33 @@ module Particles_sub
       integer :: k
       integer, optional :: ks
 !
+      integer, dimension(:), allocatable :: itmp
+      real, dimension(:,:), allocatable :: rtmp
+      integer :: mrmv_new
+!
 !  Increment the buffer.
 !
       nrmv = nrmv + 1
-      if (nrmv > mrmv) call fatal_error_local("remove_particle_log", "too many removed particles")
+      cap: if (nrmv > mrmv) then
+        allocate (itmp(2*mrmv), rtmp(mparray,2*mrmv))
+!
+        itmp(:mrmv) = ipar_rmv
+        itmp(mrmv+1:) = ipar_sink
+        rtmp(:,:mrmv) = fp_rmv(:,:)
+        rtmp(:,mrmv+1:) = fp_sink(:,:)
+!
+        deallocate (ipar_rmv, ipar_sink, fp_rmv, fp_sink)
+        mrmv_new = 2 * mrmv
+        allocate (ipar_rmv(mrmv_new), ipar_sink(mrmv_new), fp_rmv(mparray,mrmv_new), fp_sink(mparray,mrmv_new))
+!
+        ipar_rmv(:mrmv) = itmp(:mrmv)
+        ipar_sink(:mrmv) = itmp(mrmv+1:)
+        fp_rmv(:,:mrmv) = rtmp(:,:mrmv)
+        fp_sink(:,:mrmv) = rtmp(:,mrmv+1:)
+!
+        deallocate (itmp, rtmp)
+        mrmv = mrmv_new
+      endif cap
 !
 !  Log the removed particle.
 !

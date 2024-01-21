@@ -217,6 +217,8 @@ module Particles_main
       call initialize_pars_diagnos_state  (f)
       call initialize_particles_diagnos_dv(f)
 !
+      call remove_particle_initialize
+!
       if (lparticles_blocks) then
         if (lrun) then
           if (lroot) print*, 'particles_initialize_modules: reblocking particles'
