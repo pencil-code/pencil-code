@@ -35,6 +35,13 @@ module Particles_sub
     module procedure get_rhopswarm_block
   endinterface
 !
+! Module Variables
+!
+  integer, parameter :: mrmv = mpar_loc
+  integer, dimension(mrmv) :: ipar_rmv = -1, ipar_sink = -1
+  real, dimension(mparray, mrmv) :: fp_rmv = 0.0, fp_sink = 0.0
+  integer :: nrmv = 0  ! number of removed particles
+!
   contains
 !***********************************************************************
     elemental integer function assign_species(ipar) result(p)
@@ -817,6 +824,10 @@ module Particles_sub
       intent (inout) :: fp, dfp, ineargrid
       intent (in)    :: k
 !
+!  Log the particle to be removed.
+!
+      call remove_particle_log(fp, ipar, k, ks)
+!
       t_sp = t
 !
 !  Write to the respective processor that the particle is removed.
@@ -860,6 +871,40 @@ module Particles_sub
       npar_loc=npar_loc-1
 !
     endsubroutine remove_particle
+!***********************************************************************
+    subroutine remove_particle_log(fp, ipar, k, ks)
+!
+!  Logs the attributes of each removed particle, and optionally those of
+!  the sink particle that accreted it.
+!
+!  21-jan-24/ccyang: coded
+!
+      real, dimension(mpar_loc,mparray) :: fp
+      integer, dimension(mpar_loc) :: ipar
+      integer :: k
+      integer, optional :: ks
+!
+!  Increment the buffer.
+!
+      nrmv = nrmv + 1
+      if (nrmv > mrmv) call fatal_error_local("remove_particle_log", "too many removed particles")
+!
+!  Log the removed particle.
+!
+      ipar_rmv(nrmv) = ipar(k)
+      fp_rmv(:,nrmv) = fp(k,:)
+!
+!  Log the sink particle, if noted.
+!
+      sink: if (present(ks)) then
+        ipar_sink(nrmv) = ipar(ks)
+        fp_sink(:,nrmv) = fp(ks,:)
+      else sink
+        ipar_sink(nrmv) = -1
+        fp_sink(:,nrmv) = 0.0
+      endif sink
+!
+    endsubroutine remove_particle_log
 !***********************************************************************
     subroutine count_particles(ipar,npar_found)
 !
