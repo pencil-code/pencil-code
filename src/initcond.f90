@@ -5159,7 +5159,7 @@ module Initcond
       real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, D3, compk
       real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
       real :: nfactd,nexp3,nexp4
-      real :: qirro1, p, time1, cs1, cs2, cs21, om, ctime, stime
+      real :: qirro1, p, time1, cs1, om, ctime, stime
 !
       if (ampl==0.) then
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
@@ -5213,8 +5213,6 @@ module Initcond
 !  cs
 !
      cs1 = roptest(cs,1.)
-     cs2 = cs1**2
-     cs21 = 1./cs2
 !
 !  alberto: added option to compensate spectral shape by a power of k
 !
@@ -5747,14 +5745,17 @@ module Initcond
 !  Use r=sigma/k for normalization of sigma*khat_i = sigma*ki/sqrt(k2).
 !  Put r(k=0)=0, but this is only true for the root processor.
 !
-        r=relhel/sqrt(k2)
+!  From now on, k2 := sqrt(k2)!
+!
+        k2=sqrt(k2)
+        r=relhel/k2
         if (lroot) r(1,1,1)=0.
 !
 !  put sigma=0 outside [r1hel,r2hel]
 !
         if (present(k1hel) .and. present(k2hel)) then
           if (k1hel>0. .and. k2hel<max_real) then
-            where (k2<k1hel**2 .or. k2>k2hel**2) r = 0.
+            where (k2<k1hel .or. k2>k2hel) r = 0.
           endif
         endif
 !
@@ -5830,7 +5831,7 @@ module Initcond
           do ikz=1,nz
             do iky=1,ny
               do ikx=1,nx
-                  om=cs1*sqrt(k2(ikx,iky,ikz))
+                  om=cs1*k2(ikx,iky,ikz)
                   ctime=cos(om*time1); stime=sin(om*time1)
                   if (ltime_new1) then
 !
@@ -5881,11 +5882,11 @@ module Initcond
                   u_re(ikx,iky,ikz,1)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
                                       +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
                                       +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3) &
-                                      )/sqrt(cs2*k2(ikx,iky,ikz))
+                                      )/(cs1*k2(ikx,iky,ikz))
                   u_im(ikx,iky,ikz,1)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
                                       +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
                                       +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3) &
-                                      )/sqrt(cs2*k2(ikx,iky,ikz))
+                                      )/(cs1*k2(ikx,iky,ikz))
                 enddo
               enddo
             enddo
