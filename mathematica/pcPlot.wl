@@ -38,6 +38,13 @@ Options:
 Output:
   A bar legend as an Image object, which can be aligned with other figures using Grid."
 
+pcDensityPlot::usage="pcDensityPlot[data] plots 2D color plots using ArrayPlot. It has better performance
+than ListDensityPlot and should be generally used on equidistant grids.
+Input:
+  data: Can either be a Nx by 3 List {gridx,gridy,gridf} or its Transpose. Need not be Sort'ed.
+Options:
+  All options inherit those of ArrayPlot."
+
 spaceTimeDiag::usage="spaceTimeDiag[sim,plane,var,plotStyle:] makes a butterfly diagram from planar averaged data.
 Input:
   sim: String. Directory of the simulation.
@@ -148,7 +155,8 @@ pcPlotStyle[]:=Module[{setOps},
     }];
   (*Options for 2D plots*)
   setOps[{
-      PlotLegends->Automatic,ColorFunction->pcColors["Rainbow"]
+      PlotLegends->Automatic,ColorFunction->pcColors["Rainbow"],
+      PlotRangePadding->None
     },{
       DensityPlot,ListDensityPlot
     }];
@@ -158,13 +166,6 @@ pcPlotStyle[]:=Module[{setOps},
     },{
       ListDensityPlot
     }];
-   (*Options for MatrixPlot*)
-   setOps[{
-       ColorFunction->pcColors["Rainbow"],PlotRangePadding->None,LabelStyle->pcLabelStyle,FrameStyle->pcLabelStyle,
-       FrameTicks->{{Automatic,None},{Automatic,None}}
-     },{
-       MatrixPlot
-     }];
 ]
 
 pcPopup[plot_]:=CreateDocument[plot,
@@ -194,6 +195,26 @@ pcLegend[l_List,"h",opt:OptionsPattern[]]:=DensityPlot[x,{x,Sequence@@MinMax[l]}
   FrameTicks->{{None,None},{All,None}},PlotRangePadding->None,
   AspectRatio->1/12,ImagePadding->{{5,5},{40,5}},ImageSize->{240,80}
 ]
+
+
+(* ::Section:: *)
+(*Wrapper for ArrayPlot*)
+
+
+(* to-do: All places where ListDensityPlot is used for a equidistant grid, for better performance *)
+pcDensityPlot[{gridx_,gridy_,data_},opts:OptionsPattern[]]:=Module[{x,y,f},
+  {x,y,f}=Transpose[{gridx,gridy,data}]//Sort//Transpose;
+  f=Transpose@Partition[f,y//Union//Length];
+  ArrayPlot[f,opts,DataReversed->True,
+    DataRange->{x//MinMax,y//MinMax},AspectRatio->Length[y//Union]/Length[x//Union],
+    PlotRangePadding->None,
+    FrameTicks->{{Subdivide[Sequence@@MinMax[x],4],Automatic},{Subdivide[Sequence@@MinMax[y],4],Automatic}},
+    FrameStyle->Directive[Black,AbsoluteThickness[1]],
+    FrameTicksStyle->ConstantArray[{pcLabelStyle,Directive[FontOpacity->0,FontSize->0]},2],
+    LabelStyle->pcLabelStyle,PlotLegends->Automatic
+  ]
+]
+pcDensityPlot[data_List,opts:OptionsPattern[]]:=pcDensityPlot[Transpose[data],opts]/;Dimensions[data][[-1]]==3
 
 
 (* ::Section:: *)
@@ -346,6 +367,7 @@ Protect[
   pcHexColor,pcColors,
   pcLabelStyle,pcPlotStyle,pcPopup,pcTicks,pcInset,
   pcLegend,
+  pcDensityPlot,
   spaceTimeDiag,
   showVideo,
   showSlice,showSliceVector,
