@@ -41,6 +41,7 @@ module Param_IO
   use Polymer
   use Power_spectrum
   use Pscalar
+  use Python
   use Ascalar
   use Radiation
   use Selfgravity
@@ -520,7 +521,6 @@ module Param_IO
 
     endsubroutine read_all_run_pars
 !***********************************************************************
-!***********************************************************************
     subroutine read_all_namelists(linit_pars)
 !
       use Particles_main, only: read_all_particles_init_pars, read_all_particles_run_pars
@@ -612,6 +612,7 @@ module Param_IO
         call read_namelist(read_polymer_run_pars        ,'polymer'           ,lpolymer)
         call read_namelist(read_pointmasses_run_pars    ,'pointmasses'       ,lpointmasses)
         call read_namelist(read_power_spectrum_run_pars ,'power_spectrum'    ,lpower_spectrum)
+        call read_namelist(read_python_run_pars         ,'python'            ,lpython)
         call read_namelist(read_implicit_diff_run_pars  ,'implicit_diffusion',limplicit_diffusion)
 !
       call read_all_particles_run_pars
@@ -970,6 +971,7 @@ module Param_IO
           call write_power_spectrum_run_pars(unit)
           call write_polymer_run_pars(unit)
           call write_pointmasses_run_pars(unit)
+          call write_python_run_pars(unit)
           call write_implicit_diff_run_pars(unit)
 !
           call write_all_particles_run_pars(unit)
