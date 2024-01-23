@@ -29,6 +29,26 @@
       call py_initialize(trim(pymodule)//char(0),trim(pyfunction)//char(0),pModule,pFunction)
 
     endsubroutine python_initialize
+!***********************************************************************
+    subroutine read_python_run_pars(iostat)
+!
+! 23-jan-24/MR: coded
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=python_run_pars, IOSTAT=iostat)
+
+    endsubroutine read_python_run_pars
+!***************************************************************
+    subroutine write_python_run_pars(unit)
+!
+      integer, intent(in) :: unit
+
+      write(unit, NML=python_run_pars)
+
+    endsubroutine write_python_run_pars
 !***************************************************************
     subroutine python_call
      

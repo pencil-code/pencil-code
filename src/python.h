@@ -7,3 +7,6 @@
     public :: python_initialize
     public :: python_call
     public :: python_finalize
+    public :: read_python_run_pars
+    public :: write_python_run_pars
+
