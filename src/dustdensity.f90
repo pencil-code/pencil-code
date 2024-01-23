@@ -1173,7 +1173,6 @@ module Dustdensity
 !        lpenc_requested(i_dndr)=.true.
         lpenc_requested(i_ccondens)=.true.
         lpenc_requested(i_fcloud)=.true.
-        if (lmdvar) lpenc_requested(i_md)=.true.
       endif
 !
 !      if (lsemi_chemistry) then

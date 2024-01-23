@@ -369,3 +369,50 @@ void FTNIZE(sizeof_real_c)
     return usage.ru_maxrss;
   }
 /* ---------------------------------------------------------------------- */
+void FTNIZE(py_init)()
+  {
+#ifdef PYTHONPATH
+    #include <Python.h>
+    Py_Initialize();
+#endif
+  }
+/* ---------------------------------------------------------------------- */
+void FTNIZE(py_initialize)(const char *pymodule,const char *pyfunction,void *pModule,void *pFunction)
+  {
+#ifdef PYTHONPATH
+    #include <Python.h>
+
+    // Import the Python module
+    pModule = (void*) PyImport_ImportModule(pymodule);
+    if (pModule != NULL) {
+        // Get a reference to the Python function
+        pFunction = (void*) PyObject_GetAttrString((PyObject*) pModule,pyfunction);
+    } else {
+        PyErr_Print();
+    }
+#endif
+  }
+/* ---------------------------------------------------------------------- */
+void FTNIZE(py_call)(void *pFunction, int *arg)
+  {
+#ifdef PYTHONPATH
+    #include <Python.h>
+
+    // Call the Python function with the provided file path
+    PyObject *pArgs = NULL;  //PyTuple_Pack(1, Py_BuildValue("s", file_path));
+    PyObject_CallObject((PyObject *) pFunction, pArgs);
+#endif
+  }
+/* ---------------------------------------------------------------------- */
+void FTNIZE(py_finalize)(void *pModule,void *pFunction)
+  {
+#ifdef PYTHONPATH
+    #include <Python.h>
+
+    if (pFunction != NULL) Py_XDECREF((PyObject*) pFunction);
+    if (pModule != NULL) Py_XDECREF((PyObject*) pModule);
+
+    Py_Finalize();
+#endif
+  }
+/* ---------------------------------------------------------------------- */

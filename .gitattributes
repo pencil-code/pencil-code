@@ -4505,6 +4505,7 @@ src/nopoisson.f90 -text
 src/nopolymer.f90 -text
 src/nopower_spectrum.f90 -text
 src/nopscalar.f90 -text
+src/nopython.f90 -text
 src/noradiation.f90 -text
 src/noselfgravity.f90 -text
 src/noshear.f90 -text
@@ -4649,6 +4650,8 @@ src/pre_and_post_processing/read_xyaver_alpha.f90 -text
 src/pscalar.f90 -text
 src/pscalar.h -text
 src/pscalar_nolog.f90 -text
+src/python.f90 -text
+src/python.h -text
 src/radiation.h -text
 src/radiation_ray.f90 -text
 src/read_all_videofiles.f90 -text
