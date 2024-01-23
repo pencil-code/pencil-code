@@ -80,6 +80,7 @@ program run
   use Particles_main
   use Pencil_check,    only: pencil_consistency_check
   use PointMasses
+  use Python
   use Register
   use SharedVariables, only: sharedvars_clean_up
   use Signal_handling, only: signal_prepare, emergency_stop
@@ -121,6 +122,10 @@ program run
 !  Initialize GPU use.
 !
   call gpu_init
+!
+!  Initialize Python use.
+!
+  call python_init
 !
 !  Identify version.
 !
@@ -992,6 +997,7 @@ program run
 !  Stop MPI.
 !
   call mpifinalize
+  call python_finalize
 !
 !  Free any allocated memory.
 !  MR: Is this needed? the program terminates anyway
