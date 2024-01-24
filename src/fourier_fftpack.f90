@@ -621,7 +621,7 @@ module Fourier
 !
 !  25-may-06/anders: adapted from transform_fftpack
 !
-      real, dimension (nxgrid,ny,nz) :: a_re,a_im
+      real, dimension (nx,ny,nz) :: a_re,a_im   ! effectively, nx=nxgrid due to nprocx=1 required
       logical, optional :: linv
 !
       complex, dimension (nxgrid) :: ay
@@ -654,14 +654,14 @@ module Fourier
           call transp(a_im,'y')
 !$omp parallel do num_threads(num_diag_threads) collapse(2) private(l,deltay_x) copyin(wsavex)
           do n=1,nz; do l=1,ny
-            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
+            ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftf(nxgrid,ay,wsavex)
 !  Shift y-coordinate so that x-direction is periodic. This is best done in
 !  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0, ky_fft(two:nxgrid)*deltay_x))
-            a_re(:,l,n)=real(ay)
-            a_im(:,l,n)=aimag(ay)
+            a_re(:,l,n)=real(ay(1:nx))
+            a_im(:,l,n)=aimag(ay(1:nx))
           enddo; enddo
         endif
 !
@@ -674,10 +674,10 @@ module Fourier
         endif
 !$omp parallel do num_threads(num_diag_threads) collapse(2) private(m) copyin(wsavex)
         do n=1,nz; do m=1,ny
-          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nxgrid,ax,wsavex)
-          a_re(:,m,n)=real(ax)/nwgrid
-          a_im(:,m,n)=aimag(ax)/nwgrid
+          a_re(:,m,n)=real(ax(1:nx))/nwgrid
+          a_im(:,m,n)=aimag(ax(1:nx))/nwgrid
         enddo; enddo
 !
 !  Transform z-direction.
@@ -688,10 +688,10 @@ module Fourier
           call transp(a_im,'z')
 !$omp parallel do num_threads(num_diag_threads) collapse(2) private(m) copyin(wsavex)
           do l=1,nz; do m=1,ny
-            az=cmplx(a_re(:,m,l),a_im(:,m,l))
+            az(1:nx)=cmplx(a_re(:,m,l),a_im(:,m,l))
             call cfftf(nxgrid,az,wsavex)
-            a_re(:,m,l)=real(az)
-            a_im(:,m,l)=aimag(az)
+            a_re(:,m,l)=real(az(1:nx))
+            a_im(:,m,l)=aimag(az(1:nx))
           enddo; enddo
         endif
       else
@@ -702,10 +702,10 @@ module Fourier
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in z'
 !$omp parallel do num_threads(num_diag_threads) collapse(2) private(m) copyin(wsavex)
           do l=1,nz; do m=1,ny
-            az=cmplx(a_re(:,m,l),a_im(:,m,l))
+            az(1:nx)=cmplx(a_re(:,m,l),a_im(:,m,l))
             call cfftb(nxgrid,az,wsavex)
-            a_re(:,m,l)=real(az)
-            a_im(:,m,l)=aimag(az)
+            a_re(:,m,l)=real(az(1:nx))
+            a_im(:,m,l)=aimag(az(1:nx))
           enddo; enddo
         endif
 !
@@ -718,10 +718,10 @@ module Fourier
         endif
 !$omp parallel do num_threads(num_diag_threads) collapse(2) private(m) copyin(wsavex)
         do n=1,nz; do m=1,ny
-          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftb(nxgrid,ax,wsavex)
-          a_re(:,m,n)=real(ax)
-          a_im(:,m,n)=aimag(ax)
+          a_re(:,m,n)=real(ax(1:nx))
+          a_im(:,m,n)=aimag(ax(1:nx))
         enddo; enddo
 !
 !  Transform y-direction back. Would be more practical to end with the
@@ -734,13 +734,13 @@ module Fourier
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
 !$omp parallel do num_threads(num_diag_threads) collapse(2) private(l,deltay_x) copyin(wsavex)
           do n=1,nz; do l=1,ny
-            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
+            ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*deltay_x))
             call cfftb(nxgrid,ay,wsavex)
-            a_re(:,l,n)=real(ay)
-            a_im(:,l,n)=aimag(ay)
+            a_re(:,l,n)=real(ay(1:nx))
+            a_im(:,l,n)=aimag(ay(1:nx))
           enddo; enddo
           call transp(a_re,'y')  ! Deliver array back in (x,y,z) order.
           call transp(a_im,'y')
@@ -770,7 +770,7 @@ module Fourier
 !
 !  19-dec-06/anders: adapted from fourier_transform_shear
 !
-      real, dimension (nxgrid,ny,nz) :: a_re,a_im
+      real, dimension (nx,ny,nz) :: a_re,a_im   ! effectively, nx=nxgrid due to nprocx=1 required
       logical, optional :: linv
 !
       complex, dimension (nxgrid) :: ay
@@ -800,14 +800,14 @@ module Fourier
           call transp(a_im,'y')
 !$omp parallel do num_threads(num_diag_threads) collapse(2) private(ay,deltay_x,l) copyin(wsavex)
           do n=1,nz; do l=1,ny
-            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
+            ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftf(nxgrid,ay,wsavex)
 !  Shift y-coordinate so that x-direction is periodic. This is best done in
 !  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
-            ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0, ky_fft(two:nxgrid)*deltay_x))
-            a_re(:,l,n)=real(ay)
-            a_im(:,l,n)=aimag(ay)
+            ay(two:nx)=ay(two:nx)*exp(cmplx(0.0, ky_fft(two:nxgrid)*deltay_x))
+            a_re(:,l,n)=real(ay(1:nx))
+            a_im(:,l,n)=aimag(ay(1:nx))
           enddo; enddo
         endif
 !
@@ -820,10 +820,10 @@ module Fourier
         endif
 !$omp parallel do num_threads(num_diag_threads) collapse(2) private(m) copyin(wsavex)
         do n=1,nz; do m=1,ny
-          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nxgrid,ax,wsavex)
-          a_re(:,m,n)=real(ax)/nxygrid
-          a_im(:,m,n)=aimag(ax)/nxygrid
+          a_re(:,m,n)=real(ax(1:nx))/nxygrid
+          a_im(:,m,n)=aimag(ax(1:nx))/nxygrid
         enddo; enddo
       else
 !
@@ -832,10 +832,10 @@ module Fourier
         if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
 !$omp parallel do num_threads(num_diag_threads) collapse(2) private(m) copyin(wsavex)
         do n=1,nz; do m=1,ny
-          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftb(nxgrid,ax,wsavex)
-          a_re(:,m,n)=real(ax)
-          a_im(:,m,n)=aimag(ax)
+          a_re(:,m,n)=real(ax(1:nx))
+          a_im(:,m,n)=aimag(ax(1:nx))
         enddo; enddo
 !
 !  Transform y-direction back. Would be more practical to end with the
@@ -848,13 +848,13 @@ module Fourier
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
 !$omp parallel do num_threads(num_diag_threads) collapse(2) private(ay,l,deltay_x) copyin(wsavex)
           do n=1,nz; do l=1,ny
-            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
+            ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*deltay_x))
             call cfftb(nxgrid,ay,wsavex)
-            a_re(:,l,n)=real(ay)
-            a_im(:,l,n)=aimag(ay)
+            a_re(:,l,n)=real(ay(1:nx))
+            a_im(:,l,n)=aimag(ay(1:nx))
           enddo; enddo
           call transp(a_re,'y')  ! Deliver array back in (x,y,z) order.
           call transp(a_im,'y')
