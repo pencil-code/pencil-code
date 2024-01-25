@@ -119,7 +119,6 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
 
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine calc_diagnostics_radiation
 !***********************************************************************
