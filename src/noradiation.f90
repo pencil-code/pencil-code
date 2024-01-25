@@ -114,10 +114,9 @@ module Radiation
 
     endsubroutine dradiation_dt
 !***********************************************************************
-    subroutine calc_diagnostics_radiation(f,p)
+    subroutine calc_diagnostics_radiation(f)
 
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
