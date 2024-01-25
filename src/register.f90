@@ -391,7 +391,7 @@ module Register
       call initialize_testscalar(f)
       call initialize_testfield(f)
       call initialize_testflow(f)
-      call initialize_radiation   !(f)
+      call initialize_radiation(f)
       call initialize_pscalar(f)
       call initialize_ascalar(f)
       call initialize_chiral(f)
