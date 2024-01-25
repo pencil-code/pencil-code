@@ -54,7 +54,6 @@ module Radiation
   integer, parameter :: maxdir=26
 !
   real, dimension (mx,my,mz) :: Srad, tau=0, Qrad=0, Qrad0=0
-  real, dimension (nx,ny,nz) :: Srad_noghost, kapparho_noghost
   real, dimension (mx,my) :: Irad_refl_xy
   real, target, dimension (:,:,:), allocatable :: Jrad_xy
   real, target, dimension (:,:,:), allocatable :: Jrad_xy2
@@ -185,6 +184,7 @@ module Radiation
       ldoppler_rad, ldoppler_rad_includeQ, ldoppler_rad_includeQder
 !
   real :: gamma
+  real, dimension(nx) :: dt1_rad, diffus_chi
 !
   contains
 !***********************************************************************
@@ -260,7 +260,7 @@ module Radiation
 !
     endsubroutine register_radiation
 !***********************************************************************
-    subroutine initialize_radiation
+    subroutine initialize_radiation(f)
 !
 !  Calculate number of directions of rays.
 !  Do this in the beginning of each run.
@@ -270,22 +270,24 @@ module Radiation
 !  19-feb-14/axel: read tabulated source function
 !
       use EquationOfState, only: get_gamma_etc
+      use Mpicomm, only: mpibcast
       use Sub, only: parse_bc_rad
       use Slices_methods, only: alloc_slice_buffers
 !
+      real, dimension(mx,my,mz,mfarray) :: f
+
       integer :: itable
       real :: radlength,arad_normal
       logical :: periodic_xy_plane,bad_ray,ray_good
       character (len=labellen) :: header
+      integer :: lun_input = 1
+      real, dimension (:,:,:), allocatable :: tmp_noghost
 !
 !  Check that the number of rays does not exceed maximum.
 !
-      if (radx>1) call fatal_error('initialize_radiation', &
-          'radx currently must not be greater than 1')
-      if (rady>1) call fatal_error('initialize_radiation', &
-          'rady currently must not be greater than 1')
-      if (radz>1) call fatal_error('initialize_radiation', &
-          'radz currently must not be greater than 1')
+      if (radx>1) call fatal_error('initialize_radiation','radx currently must not be >1')
+      if (rady>1) call fatal_error('initialize_radiation','rady currently must not be >1')
+      if (radz>1) call fatal_error('initialize_radiation','radz currently must not be >1')
 !
 !  Empirically we have found that cdtrad>0.1 is unsafe.
 !  But in Perri & Brandenburg, for example, cdtrad=0.5 was still ok.
@@ -359,10 +361,8 @@ module Radiation
 !
 !  Print all unit vectors (if ray_good=T).
 !
-          if (lroot.and.ip<14) write(*,'(1x,a,i4,3f6.2)') &
-              'initialize_radiation: idir, unit_vec=', &
-              idir, unit_vec(idir,:)
-!
+          if (lroot.and.ip<14) write(*,'(1x,a,i4,3f6.2)') 'initialize_radiation: idir, unit_vec=', &
+                                                          idir, unit_vec(idir,:)
           idir=idir+1
 !
         endif
@@ -427,14 +427,23 @@ module Radiation
 !  Read tabulated source function.
 !
       if (lread_source_function) then
-        open (1,file='nnu2.dat')
-        read (1,*) nlnTT_table
-        read (1,*) header
+        if (lroot) then
+          open (1,file='nnu2.dat')
+          read (1,*) nlnTT_table
+          read (1,*) header
+        endif
+        call mpibcast(nlnTT_table)
         allocate(lnTT_table(nlnTT_table),lnSS_table(nlnTT_table,nnu))
-        do itable=1,nlnTT_table
-          read(1,*) lnTT_table(itable),lnSS_table(itable,:)
-        enddo
-        close (1)
+        if (lroot) then
+          do itable=1,nlnTT_table
+            read(1,*) lnTT_table(itable),lnSS_table(itable,:)
+          enddo
+          close (1)
+        endif
+
+        call mpibcast(lnTT_table,nlnTT_table)
+        call mpibcast(lnSS_table,(/nlnTT_table,nnu/))
+
         lnTT_table0=lnTT_table(1)
         dlnTT_table=(nlnTT_table-1)/(lnTT_table(nlnTT_table)-lnTT_table(1))
       endif
@@ -454,7 +463,7 @@ module Radiation
       if (ivid_Jrad/=0) &
         call alloc_slice_buffers(Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,ncomp=nnu)
 !
-!  Switch factor for Dopper term
+!  Switch factor for Doppler term
 !
       if (ldoppler_rad_includeQder) then
         Qderfact=1.
@@ -467,6 +476,26 @@ module Radiation
       if (source_function_type=='LTE'.and.lcutoff_opticallythin) then
         if (z_cutoff==impossible .or. cool_wid==impossible) &
           call fatal_error("source_function:","z_cutoff or cool_wid is not set")
+      endif
+!
+! MR: all procs read the same files? - can't be correct for ncpus>1.
+!
+      if (opacity_type=='read_file') then
+        allocate(tmp_noghost(nx,ny,nz))
+        open (lun_input, file=trim(directory_prestart)//'/kapparho.dat', form='unformatted')
+        read (lun_input) tmp_noghost
+        close(lun_input)
+        f(l1:l2,m1:m2,n1:n2,ikapparho)=tmp_noghost
+      endif
+
+      if (source_function_type=='read_file') then
+        if (.not.allocated(tmp_noghost)) allocate(tmp_noghost(nx,ny,nz))
+        open (lun_input, file=trim(directory_prestart)//'/Srad.dat', form='unformatted')
+        read (lun_input) tmp_noghost
+        close(lun_input)
+        Srad(l1:l2,m1:m2,n1:n2)=tmp_noghost
+        Srad(l1:l2,m1:m2,n1-1)=impossible
+        Srad(l1:l2,m1:m2,n2+1)=impossible
       endif
 
     endsubroutine initialize_radiation
@@ -481,6 +510,8 @@ module Radiation
 !
 !  18-may-07/wlad: coded
 !
+      use General, only: rtoa
+
       real :: xyplane,yzplane,xzplane,room,xaxis
       real :: yaxis,zaxis,aspect_ratio,mu2,correction_factor=1.
 !
@@ -501,8 +532,7 @@ module Radiation
         if (ndir>0) weight=(4*pi/ndir)*correction_factor
         if (radx>1.or.rady>1.or.radz>1) call fatal_error( &
             'calc_angle_weights','radx, rady, and radz cannot be larger than 1')
-        if (lroot.and.ip<=14) print*, &
-            'calc_angle_weights: correction_factor =', correction_factor
+        if (lroot.and.ip<=14) print*,'calc_angle_weights: correction_factor =', correction_factor
         weightn=weight
 !
 !  Constant weight factors, ignore dimensionality, which is wrong,
@@ -521,14 +551,13 @@ module Radiation
 !  Check if dx==dy and that dx/dz lies in the positive range.
 !
         if (dx/=dy) then
-          print*,'dx,dy=',dx,dy
-          call fatal_error('calc_angle_weights', &
-              'weights not calculated for dx/dy != 1')
+          if (lroot) print*,'dx,dy=',dx,dy
+          call fatal_error('calc_angle_weights','weights not calculated for dx/dy /= 1')
         endif
         aspect_ratio=dx/dz
         if (aspect_ratio<0.69.or.aspect_ratio>sqrt(3.0)) &
-            call fatal_error('calc_angle_weights', &
-            'weights go negative for this dx/dz ratio')
+            call fatal_error('calc_angle_weights','weights go negative for this dx/dz='// &
+                             trim(rtoa(aspect_ratio)))
 !
 !  Calculate the weights.
 !
@@ -553,14 +582,12 @@ module Radiation
           !room diagonal
           if (dir(idir,1)/=0.and.dir(idir,2)/=0.and.dir(idir,3)/=0) weight(idir)=room
           if (lroot.and.ip<11) &
-              print*,'calc_angle_weights: dir(idir,1:3),weight(idir) =',&
-              dir(idir,1:3),weight(idir)
+            print*,'calc_angle_weights: dir(idir,1:3),weight(idir) =',dir(idir,1:3),weight(idir)
         enddo
         weightn=weight
 !
       case default
-        call fatal_error('calc_angle_weights', &
-            'no such angle-weighting: '//trim(angle_weight))
+        call fatal_error('calc_angle_weights','no such angle_weight: '//trim(angle_weight))
       endselect
 !
     endsubroutine calc_angle_weights
@@ -649,8 +676,7 @@ module Radiation
               if (lradflux) then
                 do j=1,3
                   k=iKR_Frad+(j-1)
-                  f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j) &
-                    *(Qrad+Srad)*f(:,:,:,ikapparho)
+                  f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)*f(:,:,:,ikapparho)
                 enddo
               endif
 !
@@ -699,20 +725,13 @@ module Radiation
 !  Calculate slices of J=S+Q/(4pi).
 !
           if (lvideo.and.lfirst.and.ivid_Jrad/=0) then
-            if (lwrite_slice_yz) &
-              Jrad_yz(:,:,inu)= Qrad(ix_loc,m1:m2,n1:n2) +Srad(ix_loc,m1:m2,n1:n2)
-            if (lwrite_slice_xz) &
-              Jrad_xz(:,:,inu)= Qrad(l1:l2,iy_loc,n1:n2) +Srad(l1:l2,iy_loc,n1:n2)
-            if (lwrite_slice_xz2) &
-              Jrad_xz2(:,:,inu)=Qrad(l1:l2,iy2_loc,n1:n2)+Srad(l1:l2,iy2_loc,n1:n2)
-            if (lwrite_slice_xy) &
-              Jrad_xy(:,:,inu)= Qrad(l1:l2,m1:m2,iz_loc) +Srad(l1:l2,m1:m2,iz_loc)
-            if (lwrite_slice_xy2) &
-              Jrad_xy2(:,:,inu)=Qrad(l1:l2,m1:m2,iz2_loc)+Srad(l1:l2,m1:m2,iz2_loc)
-            if (lwrite_slice_xy3) &
-              Jrad_xy3(:,:,inu)=Qrad(l1:l2,m1:m2,iz3_loc)+Srad(l1:l2,m1:m2,iz3_loc)
-            if (lwrite_slice_xy4) &
-              Jrad_xy4(:,:,inu)=Qrad(l1:l2,m1:m2,iz4_loc)+Srad(l1:l2,m1:m2,iz4_loc)
+            if (lwrite_slice_yz) Jrad_yz(:,:,inu) =Qrad(ix_loc,m1:m2,n1:n2) +Srad(ix_loc,m1:m2,n1:n2)
+            if (lwrite_slice_xz) Jrad_xz(:,:,inu) =Qrad(l1:l2,iy_loc,n1:n2) +Srad(l1:l2,iy_loc,n1:n2)
+            if (lwrite_slice_xz2)Jrad_xz2(:,:,inu)=Qrad(l1:l2,iy2_loc,n1:n2)+Srad(l1:l2,iy2_loc,n1:n2)
+            if (lwrite_slice_xy) Jrad_xy(:,:,inu) =Qrad(l1:l2,m1:m2,iz_loc) +Srad(l1:l2,m1:m2,iz_loc)
+            if (lwrite_slice_xy2)Jrad_xy2(:,:,inu)=Qrad(l1:l2,m1:m2,iz2_loc)+Srad(l1:l2,m1:m2,iz2_loc)
+            if (lwrite_slice_xy3)Jrad_xy3(:,:,inu)=Qrad(l1:l2,m1:m2,iz3_loc)+Srad(l1:l2,m1:m2,iz3_loc)
+            if (lwrite_slice_xy4)Jrad_xy4(:,:,inu)=Qrad(l1:l2,m1:m2,iz4_loc)+Srad(l1:l2,m1:m2,iz4_loc)
           endif
 !
 !  End of frequency loop (inu).
@@ -864,8 +883,7 @@ module Radiation
           emdtau2=emdtau*(1+dtau_m)-1
         endif
         tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
-        Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
-                   -Srad1st*emdtau1-Srad2nd*emdtau2
+        Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau-Srad1st*emdtau1-Srad2nd*emdtau2
 !
 !  Q derivative term
 !
@@ -1206,17 +1224,11 @@ module Radiation
 !  Copy all heating rates at the upstream boundaries to Qrad0 which is used in
 !  Qrevision below.
 !
-      if (lrad/=0) then
-        Qrad0(llstart-lrad,mm1:mm2,nn1:nn2)=Qbc_yz(mm1:mm2,nn1:nn2)%val
-      endif
+      if (lrad/=0) Qrad0(llstart-lrad,mm1:mm2,nn1:nn2)=Qbc_yz(mm1:mm2,nn1:nn2)%val
 !
-      if (mrad/=0) then
-        Qrad0(ll1:ll2,mmstart-mrad,nn1:nn2)=Qbc_zx(ll1:ll2,nn1:nn2)%val
-      endif
+      if (mrad/=0) Qrad0(ll1:ll2,mmstart-mrad,nn1:nn2)=Qbc_zx(ll1:ll2,nn1:nn2)%val
 !
-      if (nrad/=0) then
-        Qrad0(ll1:ll2,mm1:mm2,nnstart-nrad)=Qbc_xy(ll1:ll2,mm1:mm2)%val
-      endif
+      if (nrad/=0) Qrad0(ll1:ll2,mm1:mm2,nnstart-nrad)=Qbc_xy(ll1:ll2,mm1:mm2)%val
 !
 !  If this is not the last processor in ray direction (z-component) then
 !  calculate the downstream heating rates at the xy-boundary and send them
@@ -1403,7 +1415,6 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !
       use Debug_IO, only: output
-      use Diagnostics, only: xysum_mn_name_z
 !
 !  Identifier.
 !
@@ -1427,18 +1438,7 @@ module Radiation
           Isurf(idir)%xy2=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
       endif
 !
-      if (lrad_debug) &
-        call output(trim(directory_dist)//'/Qrev-'//raydir_str//'.dat',Qrad,1)
-!
-!  xy-averages
-!
-      if (l1davgfirst) then
-        do n=n1,n2
-        do m=m1,m2
-          call xysum_mn_name_z(tau(l1:l2,m,n),idiag_taumz)
-        enddo
-        enddo
-      endif
+      if (lrad_debug) call output(trim(directory_dist)//'/Qrev-'//raydir_str//'.dat',Qrad,1)
 !
     endsubroutine Qrevision
 !***********************************************************************
@@ -1453,39 +1453,27 @@ module Radiation
 !
 !  No incoming intensity.
 !
-      if (bc_ray_x=='0') then
-        Qrad0_yz=-Srad(llstart-lrad,:,:)
-      endif
+      if (bc_ray_x=='0') Qrad0_yz=-Srad(llstart-lrad,:,:)
 !
 !  Set intensity equal to unity (as a numerical experiment for now).
 !
-      if (bc_ray_x=='1') then
-        Qrad0_yz=1.0-Srad(llstart-lrad,:,:)
-      endif
+      if (bc_ray_x=='1') Qrad0_yz=1.0-Srad(llstart-lrad,:,:)
 !
 !  Set intensity equal to source function.
 !
-      if (bc_ray_x=='S') then
-        Qrad0_yz=0
-      endif
+      if (bc_ray_x=='S') Qrad0_yz=0
 !
 !  Set intensity equal to S-F.
 !
-      if (bc_ray_x=='S-F') then
-        Qrad0_yz=-Frad_boundary_ref/(2*weightn(idir))
-      endif
+      if (bc_ray_x=='S-F') Qrad0_yz=-Frad_boundary_ref/(2*weightn(idir))
 !
 !  Set intensity equal to S+F.
 !
-      if (bc_ray_x=='S+F') then
-        Qrad0_yz=+Frad_boundary_ref/(2*weightn(idir))
-      endif
+      if (bc_ray_x=='S+F') Qrad0_yz=+Frad_boundary_ref/(2*weightn(idir))
 !
 !  Set intensity equal to a pre-defined incoming intensity.
 !
-      if (bc_ray_x=='F') then
-        Qrad0_yz=-Srad(llstart-lrad,:,:)+Frad_boundary_ref/(2*weightn(idir))
-      endif
+      if (bc_ray_x=='F') Qrad0_yz=-Srad(llstart-lrad,:,:)+Frad_boundary_ref/(2*weightn(idir))
 !
     endsubroutine radboundary_yz_set
 !***********************************************************************
@@ -1500,39 +1488,27 @@ module Radiation
 !
 !  No incoming intensity.
 !
-      if (bc_ray_y=='0') then
-        Qrad0_zx=-Srad(:,mmstart-mrad,:)
-      endif
+      if (bc_ray_y=='0') Qrad0_zx=-Srad(:,mmstart-mrad,:)
 !
 !  Set intensity equal to unity (as a numerical experiment for now).
 !
-      if (bc_ray_y=='1') then
-        Qrad0_zx=1.0-Srad(:,mmstart-mrad,:)
-      endif
+      if (bc_ray_y=='1') Qrad0_zx=1.0-Srad(:,mmstart-mrad,:)
 !
 !  Set intensity equal to source function.
 !
-      if (bc_ray_y=='S') then
-        Qrad0_zx=0
-      endif
+      if (bc_ray_y=='S') Qrad0_zx=0
 !
 !  Set intensity equal to S-F.
 !
-      if (bc_ray_y=='S-F') then
-        Qrad0_zx=-Frad_boundary_ref/(2*weightn(idir))
-      endif
+      if (bc_ray_y=='S-F') Qrad0_zx=-Frad_boundary_ref/(2*weightn(idir))
 !
 !  Set intensity equal to S+F.
 !
-      if (bc_ray_y=='S+F') then
-        Qrad0_zx=+Frad_boundary_ref/(2*weightn(idir))
-      endif
+      if (bc_ray_y=='S+F') Qrad0_zx=+Frad_boundary_ref/(2*weightn(idir))
 !
 !  Set intensity equal to a pre-defined incoming intensity.
 !
-      if (bc_ray_y=='F') then
-        Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2*weightn(idir))
-      endif
+      if (bc_ray_y=='F') Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2*weightn(idir))
 !
     endsubroutine radboundary_zx_set
 !***********************************************************************
@@ -1548,15 +1524,11 @@ module Radiation
 !
 !  No incoming intensity.
 !
-      if (bc_ray_z=='0') then
-        Qrad0_xy=-Srad(:,:,nnstart-nrad)
-      endif
+      if (bc_ray_z=='0') Qrad0_xy=-Srad(:,:,nnstart-nrad)
 !
 !  Set intensity equal to unity (as a numerical experiment for now).
 !
-      if (bc_ray_z=='1') then
-        Qrad0_xy=1.0-Srad(:,:,nnstart-nrad)
-      endif
+      if (bc_ray_z=='1') Qrad0_xy=1.0-Srad(:,:,nnstart-nrad)
 !
 !  Set intensity equal to a gaussian (as a numerical experiment).
 !
@@ -1581,40 +1553,28 @@ module Radiation
 !
 !  Set intensity equal to source function.
 !
-      if (bc_ray_z=='S') then
-        Qrad0_xy=0
-      endif
+      if (bc_ray_z=='S') Qrad0_xy=0
 !
 !  Set intensity equal to S-F.
 !
-      if (bc_ray_z=='S-F') then
-        Qrad0_xy=-Frad_boundary_ref/(2*weightn(idir))
-      endif
+      if (bc_ray_z=='S-F') Qrad0_xy=-Frad_boundary_ref/(2*weightn(idir))
 !
 !  Set intensity equal to S+F.
 !
-      if (bc_ray_z=='S+F') then
-        Qrad0_xy=+Frad_boundary_ref/(2*weightn(idir))
-      endif
+      if (bc_ray_z=='S+F') Qrad0_xy=+Frad_boundary_ref/(2*weightn(idir))
 !
 !  Set intensity equal to a pre-defined incoming intensity.
 !
-      if (bc_ray_z=='F') then
-        Qrad0_xy=-Srad(:,:,nnstart-nrad)+Frad_boundary_ref/(2*weightn(idir))
-      endif
+      if (bc_ray_z=='F') Qrad0_xy=-Srad(:,:,nnstart-nrad)+Frad_boundary_ref/(2*weightn(idir))
 !
 !  Set intensity equal to outgoing intensity.
 !
-      if (bc_ray_z=='R') then
-        Qrad0_xy=-Srad(:,:,nnstart-nrad)+Irad_refl_xy
-      endif
+      if (bc_ray_z=='R') Qrad0_xy=-Srad(:,:,nnstart-nrad)+Irad_refl_xy
 !
 !  Set intensity equal to outgoing intensity plus pre-defined flux.
 !
-      if (bc_ray_z=='R+F') then
-        Qrad0_xy=-Srad(:,:,nnstart-nrad)+ &
-            Frad_boundary_ref/(2*weightn(idir))+Irad_refl_xy
-      endif
+      if (bc_ray_z=='R+F') &
+          Qrad0_xy=-Srad(:,:,nnstart-nrad)+Frad_boundary_ref/(2*weightn(idir))+Irad_refl_xy
 !
     endsubroutine radboundary_xy_set
 !***********************************************************************
@@ -1632,7 +1592,7 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: cooling, kappa, dt1_rad, Qrad2
+      real, dimension (nx) :: cooling, kappa
       real, dimension (nx) :: cgam, ell, chi, dtrad_thick, dtrad_thin
       real, dimension (nx) :: dt1rad_cgam
       integer :: l
@@ -1646,25 +1606,22 @@ module Radiation
 ! Upper limit radiative heating by qrad_max
 !
         do l=l1-radx, l2+radx
-          if (f(l,m,n,iqrad) .gt. qrad_max) &
-                  f(l,m,n,iQrad)=qrad_max
+          if (f(l,m,n,iqrad) > qrad_max) f(l,m,n,iQrad)=qrad_max
         enddo
-      endif
-      cooling=f(l1:l2,m,n,iQrad)
-!
-!  Possibility of rescaling the radiative cooling term.
-!
-      if (scalefactor_cooling/=1.) then
-        cooling=cooling*scalefactor_cooling
       endif
 !
 !  Add radiative cooling.
 !
       if (lcooling) then
+        cooling=f(l1:l2,m,n,iQrad)
+!
+!  Possibility of rescaling the radiative cooling term.
+!
+        if (scalefactor_cooling/=1.) cooling=cooling*scalefactor_cooling
+
         if (lentropy) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%rho1*p%TT1*cooling
-        endif
-        if (ltemperature) then
+        elseif (ltemperature) then
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%rho1*p%cv1*p%TT1*cooling
         endif
 !
@@ -1708,23 +1665,6 @@ module Radiation
           !dt1_max=max(dt1_max,dt1_rad,dt1rad_cgam)
         !endif
       endif
-      if (lfirst.and.ldt) then
-        if (idiag_dtrad/=0) &
-          call max_mn_name(dt1_rad,idiag_dtrad,l_dt=.true.)
-      endif
-!
-!  Diagnostics.
-!
-      if (ldiagnos) then
-        Qrad2=f(l1:l2,m,n,iQrad)**2
-        if (idiag_Sradm/=0) call sum_mn_name(Srad(l1:l2,m,n),idiag_Sradm)
-        if (idiag_Qradrms/=0) then
-          call sum_mn_name(Qrad2,idiag_Qradrms,lsqrt=.true.)
-        endif
-        if (idiag_Qradmax/=0) then
-          call max_mn_name(Qrad2,idiag_Qradmax,lsqrt=.true.)
-        endif
-      endif
 !
     endsubroutine radiative_cooling
 !***********************************************************************
@@ -1761,20 +1701,6 @@ module Radiation
 !--     alpha=16*!pi/3*Srad*kappa
 !--     nu=kappa*rho
 !
-!  Diagnostics. Here we divide again by kapparho, so we get actual Frad.
-!
-      if (ldiagnos) then
-        if (lradflux) &
-          call sum_mn_name(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzm)
-        call sum_mn_name(f(l1:l2,m,n,ikapparho),idiag_kapparhom)
-      endif
-!
-      if (l1davgfirst) then
-        if (lradflux) &
-          call xysum_mn_name_z(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzmz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ikapparho),idiag_kapparhomz)
-      endif
-!
     endsubroutine radiative_pressure
 !***********************************************************************
     subroutine source_function(f,inu)
@@ -1796,7 +1722,6 @@ module Radiation
       integer, dimension(mx) :: ilnTT_table
       real, dimension(mx,my) :: z_cutoff1
       real, dimension(mx) :: lnTT
-      integer :: lun_input = 1
       integer :: inu
       integer :: ierr
 !
@@ -1861,10 +1786,9 @@ module Radiation
 !
       case ('blob')
         if (lfirst) then
-          Srad=Srad_const &
-              +amplSrad*spread(spread(exp(-(x/radius_Srad)**2),2,my),3,mz) &
-                       *spread(spread(exp(-(y/radius_Srad)**2),1,mx),3,mz) &
-                       *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
+          Srad=Srad_const+amplSrad*spread(spread(exp(-(x/radius_Srad)**2),2,my),3,mz) &
+                                  *spread(spread(exp(-(y/radius_Srad)**2),1,mx),3,mz) &
+                                  *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
           lfirst=.false.
         endif
 !
@@ -1872,10 +1796,9 @@ module Radiation
 !
       case ('cos')
         if (lfirst) then
-          Srad=Srad_const &
-              +amplSrad*spread(spread(cos(kx_Srad*x),2,my),3,mz) &
-                       *spread(spread(cos(ky_Srad*y),1,mx),3,mz) &
-                       *spread(spread(cos(kz_Srad*z),1,mx),2,my)
+          Srad=Srad_const+amplSrad*spread(spread(cos(kx_Srad*x),2,my),3,mz) &
+                                  *spread(spread(cos(ky_Srad*y),1,mx),3,mz) &
+                                  *spread(spread(cos(kz_Srad*z),1,mx),2,my)
           lfirst=.false.
         endif
 !
@@ -1895,15 +1818,9 @@ module Radiation
           call calc_Srad_W2(f,Srad)
         endif
 !
-!  Read from file
+!  Read from file (already done).
 !
       case ('read_file')
-        open (lun_input, file=trim(directory_prestart)//'/Srad.dat', form='unformatted')
-        read (lun_input) Srad_noghost
-        close (lun_input)
-        Srad(l1:l2,m1:m2,n1:n2)=Srad_noghost
-        Srad(l1:l2,m1:m2,n1-1)=impossible
-        Srad(l1:l2,m1:m2,n2+1)=impossible
 !
 !  Nothing.
 !
@@ -1911,14 +1828,11 @@ module Radiation
         Srad=0.0
 !
       case default
-        call fatal_error('source_function', &
-            'no such source function type: '//trim(source_function_type))
+        call fatal_error('source_function','no such source_function_type: '//trim(source_function_type))
 !
       endselect
 !
-      if (lrad_debug) then
-        call output(trim(directory_dist)//'/Srad.dat',Srad,1)
-      endif
+      if (lrad_debug) call output(trim(directory_dist)//'/Srad.dat',Srad,1)
 !
     endsubroutine source_function
 !***********************************************************************
@@ -1943,7 +1857,6 @@ module Radiation
       real, dimension(mx) :: kappa_rad,kappa_cond,kappa_tot
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
-      integer :: lun_input = 1
       integer :: i,inu
 !
       select case (opacity_type)
@@ -1977,9 +1890,8 @@ module Radiation
           kappa_cond=2.6d-7*unit_length*unit_temperature**2*exp(2*lnTT)*exp(-lnrho)
           kappa_rad=kapparho_floor+1./(1./(kappa1+kappae)+1./kappa2)
           kappa_tot=1./(1./kappa_rad+1./kappa_cond)
-          if (lcutoff_opticallythin) & 
-            kappa_tot=0.5*(1.-tanh((z(n)-0.5*z_cutoff)/(2*cool_wid)))/ &
-                      (1./kappa_rad+1./kappa_cond)
+          if (lcutoff_opticallythin) kappa_tot=0.5*(1.-tanh((z(n)-0.5*z_cutoff)/(2*cool_wid)))/ &
+                                               (1./kappa_rad+1./kappa_cond)
           do i=1,mx 
             kappa_tot(i)=min(kappa_tot(i),kappa_ceiling)
           enddo
@@ -2059,14 +1971,12 @@ module Radiation
           call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
           rho=exp(lnrho)
           TT=exp(lnTT)
-            kappa1=kappa_cst(inu)* &
-                (rho/ref_rho_opa)**expo_rho_opa* &
-                (TT/ref_temp_opa)**expo_temp_opa
-            kappa2=kappa20_cst(inu)+kappa_cst(inu)* &
-                (rho/ref_rho_opa)**expo2_rho_opa* &
-                (TT/ref_temp_opa)**expo2_temp_opa
-            f(:,m,n,ikapparho)=kapparho_floor+rho/(1./kappa1+1./kappa2) &
-                *(1.+ampl_bump*exp(-.5*((TT-TT_bump)/sigma_bump)**2))
+            kappa1=kappa_cst(inu)*(rho/ref_rho_opa)**expo_rho_opa* &
+                                  (TT/ref_temp_opa)**expo_temp_opa
+            kappa2=kappa20_cst(inu)+kappa_cst(inu)*(rho/ref_rho_opa)**expo2_rho_opa* &
+                                                   (TT/ref_temp_opa)**expo2_temp_opa
+            f(:,m,n,ikapparho)= kapparho_floor+rho/(1./kappa1+1./kappa2) &
+                               *(1.+ampl_bump*exp(-.5*((TT-TT_bump)/sigma_bump)**2))
         enddo; enddo
 !
 !AB: the following looks suspicious with *_cgs
@@ -2148,13 +2058,9 @@ module Radiation
       case ('B2+W2') !! magnetic field and vorticity
         call calc_kapparho_B2_W2(f)
 !
-!  Read from file
+!  Read from file (already done)
 !
       case ('read_file')
-        open (lun_input, file=trim(directory_prestart)//'/kapparho.dat', form='unformatted')
-        read (lun_input) kapparho_noghost
-        close (lun_input)
-        f(l1:l2,m1:m2,n1:n2,ikapparho)=kapparho_noghost
 !
       case ('nothing')
         do n=n1-radz,n2+radz
@@ -2164,7 +2070,7 @@ module Radiation
         enddo
 !
       case default
-        call fatal_error('opacity','no such opacity type: '//trim(opacity_type))
+        call fatal_error('opacity','no such opacity_type: '//trim(opacity_type))
 !
       endselect
 !
@@ -2262,7 +2168,7 @@ module Radiation
           f(l1:l2,m,n,ikapparho)=kapparho_floor+b2
 !
 !  in the ghost zones, put the magnetic field equal to the value
-!  in the layer layer inside the domain.
+!  in the layer inside the domain.
 !
           do ighost=1,nghost
             f(l1-ighost,:,:,ikapparho)=f(l1,:,:,ikapparho)
@@ -2311,7 +2217,7 @@ module Radiation
           f(l1:l2,m,n,ikapparho)=kapparho_floor+b2+o2
 !
 !  In the ghost zones, put the magnetic field equal to the value
-!  in the layer layer inside the domain.
+!  in the layer inside the domain.
 !
           do ighost=1,nghost
             f(l1-ighost,:,:,ikapparho)=f(l1,:,:,ikapparho)
@@ -2366,9 +2272,7 @@ module Radiation
         endif
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_rho1)=.true.
-        if (ltemperature) then
-          lpenc_requested(i_cv1)=.true.
-        endif
+        if (ltemperature) lpenc_requested(i_cv1)=.true.
       endif
 !
     endsubroutine pencil_criteria_radiation
@@ -2412,7 +2316,57 @@ module Radiation
       call radiative_cooling(f,df,p)
       call radiative_pressure(f,df,p)
 !
+      call calc_diagnostics_radiation(f)
+!
     endsubroutine dradiation_dt
+!***********************************************************************
+    subroutine calc_diagnostics_radiation(f)
+
+      use Diagnostics
+
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension (nx) :: Qrad2
+!
+      if (ldiagnos) then
+
+!  Radiative time step in diagnostics.
+
+        if (ldt) then
+          if (lrad_cool_diffus.or.lrad_pres_diffus) then
+            if (idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+          endif
+          if (lrad_cool_diffus.or.lrad_pres_diffus.or.lcooling) &
+            call max_mn_name(dt1_rad,idiag_dtrad,l_dt=.true.)
+        endif
+
+        call sum_mn_name(Srad(l1:l2,m,n),idiag_Sradm)
+        if (idiag_Qradrms/=0 .or. idiag_Qradmax/=0) then
+          Qrad2=f(l1:l2,m,n,iQrad)**2
+          call sum_mn_name(Qrad2,idiag_Qradrms,lsqrt=.true.)
+          call max_mn_name(Qrad2,idiag_Qradmax,lsqrt=.true.)
+        endif
+!
+!  Here we divide again by kapparho, so we get actual Frad.
+!
+        if (lradflux.and.idiag_Fradzm/=0) &
+          call sum_mn_name(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzm)
+        call sum_mn_name(f(l1:l2,m,n,ikapparho),idiag_kapparhom)
+!
+      endif
+
+      if (l1davgfirst) then
+!
+!  xy-averages
+!
+        if (lradflux.and.idiag_Fradzmz/=0) &
+          call xysum_mn_name_z(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzmz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ikapparho),idiag_kapparhomz)
+
+        if (lrevision) call xysum_mn_name_z(tau(l1:l2,m,n),idiag_taumz)
+      endif
+
+    endsubroutine calc_diagnostics_radiation
 !***********************************************************************
     subroutine read_radiation_init_pars(iostat)
 !
@@ -2553,7 +2507,7 @@ module Radiation
               if (slices%index==0) idir_last=0
               do idir=idir_last+1,ndir
                 nrad=dir(idir,3)
-                if ((nIsurf>1.and.nrad>0).or. &
+                if ((nIsurf >1.and.nrad>0).or. &
                     (nIsurf==1.and.lrad==0.and.mrad==0.and.nrad==1)) then
                   slices%xy2=>Isurf(idir)%xy2
                   slices%index=slices%index+1
@@ -2611,8 +2565,8 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: Krad,chi_rad,g2, diffus_chi,advec_crad2
-      real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick,dt1_rad
+      real, dimension (nx) :: Krad,chi_rad,g2,advec_crad2
+      real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick
       real :: fact
       integer :: j,k
 !
@@ -2686,23 +2640,10 @@ module Radiation
           dt1_rad=opt_thin*sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad_thin
           dt1_max=max(dt1_max,dt1_rad)
           diffus_chi=max(diffus_chi,opt_thick*gamma*chi_rad*dxyz_2/cdtrad_thick)
-          maxdiffus=max(maxdiffus,diffus_chi)
 !
 !--      endif
         endif
-      endif
-!
-!  Check radiative time step.
-!
-      if (lfirst.and.ldt) then
-        if (ldiagnos) then
-          if (idiag_dtchi/=0) then
-            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-          endif
-          if (idiag_dtrad/=0) then
-            call max_mn_name(dt1_rad,idiag_dtrad,l_dt=.true.)
-          endif
-        endif
+        maxdiffus=max(maxdiffus,diffus_chi)
       endif
 !
     endsubroutine calc_rad_diffusion

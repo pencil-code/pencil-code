@@ -277,7 +277,7 @@ module Equ
 !  (but this is decided in radtransfer itself)
 !
       if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
-      if (lradiation_ray) call radtransfer(f)
+      if (lradiation_ray) call radtransfer(f)     ! -> after_boundary or before_boundary?
 !
 !  Calculate shock profile (simple).
 !
@@ -468,7 +468,7 @@ module Equ
       use Pointmasses, only: calc_diagnostics_pointmasses
       use Pscalar, only: calc_diagnostics_pscalar
       use Polymer, only: calc_diagnostics_polymer
-      !use Radiation, only: calc_diagnostics_radiation
+      use Radiation, only: calc_diagnostics_radiation
       use Selfgravity, only: calc_diagnostics_selfgrav
       use Shear, only: calc_diagnostics_shear
       use Shock, only: calc_diagnostics_shock
@@ -524,7 +524,7 @@ module Equ
         call calc_diagnostics_pointmasses(p)
         call calc_diagnostics_pscalar(p)
         call calc_diagnostics_polymer(p)
-        !call calc_diagnostics_radiation(f,p)
+        call calc_diagnostics_radiation(f)
         call calc_diagnostics_selfgrav(p)
         call calc_diagnostics_shear(p)
         call calc_diagnostics_shock(p)
