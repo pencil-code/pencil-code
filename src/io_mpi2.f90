@@ -871,8 +871,9 @@ module Io
       real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
       integer, intent(in) :: nrmv
 !
+      character(len=fnlen) :: fpath
       integer, dimension(ncpus) :: rmv_list
-      integer :: etype, filetype, n
+      integer :: etype, filetype, handle, n
 !
       call keep_compiler_quiet(ipar_rmv)
       call keep_compiler_quiet(ipar_sink)
@@ -908,6 +909,17 @@ module Io
       call MPI_TYPE_COMMIT(filetype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to commit filetype")
       call fatal_error_local_collect()
+!
+!  Open log file.
+!
+      fpath = trim(directory_snap) // '/' // "rmv_par.dat"
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_RDWR, ior(MPI_MODE_CREATE, MPI_MODE_APPEND)), io_info, handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to open file '" // trim(fpath) // "'")
+!
+!  Close log file.
+!
+      call MPI_FILE_CLOSE(handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to close file '" // trim(fpath) // "'")
 !
 !  Free MPI types.
 !
