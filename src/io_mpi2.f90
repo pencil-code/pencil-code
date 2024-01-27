@@ -861,16 +861,22 @@ module Io
 !
 !  Writes the log of removed particles to a file.
 !
-!  26-jan-24/ccyang: in progress
+!  27-jan-24/ccyang: in progress
 !
       use General, only: keep_compiler_quiet
       use Messages, only: not_implemented
+      use Mpicomm, only: size_of_int
 !
       integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
       real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
       integer, intent(in) :: nrmv
 !
       integer, dimension(ncpus) :: rmv_list
+      integer :: etype, n
+!
+      call keep_compiler_quiet(ipar_rmv)
+      call keep_compiler_quiet(ipar_sink)
+      call keep_compiler_quiet(fp_sink)
 !
 !  Communicate number of removed particles.
 !
@@ -879,10 +885,23 @@ module Io
       call MPI_ALLREDUCE(MPI_IN_PLACE, rmv_list, ncpus, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to communicate nrmv")
 !
-      call keep_compiler_quiet(ipar_rmv)
-      call keep_compiler_quiet(ipar_sink)
-      call keep_compiler_quiet(fp_rmv)
-      call keep_compiler_quiet(fp_sink)
+!  Create structured MPI type for each removed or sink particle.
+!
+      n = size(fp_rmv, 1)
+      call MPI_TYPE_CREATE_STRUCT(2, (/ 1, n /), (/ 0_MPI_ADDRESS_KIND, int(size_of_int, KIND=MPI_ADDRESS_KIND) /), &
+          (/ MPI_INTEGER, mpi_precision /), etype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to create etype")
+      call fatal_error_local_collect()
+!
+      call MPI_TYPE_COMMIT(etype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to commit etype")
+      call fatal_error_local_collect()
+!
+!  Free MPI types.
+!
+      call MPI_TYPE_FREE(etype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to free etype")
+      call fatal_error_local_collect()
 !
       call not_implemented("output_part_rmv")
 !
