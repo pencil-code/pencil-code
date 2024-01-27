@@ -916,6 +916,14 @@ module Particles_sub
 !  21-jan-24/ccyang: coded
 !
       use IO, only: output_part_rmv
+      use Mpicomm, only: mpiallreduce_sum_int
+!
+      integer :: nsum
+!
+!  Check if any particle has been removed.
+!
+      call mpiallreduce_sum_int(nrmv, nsum)
+      if (nsum <= 0) return
 !
 !  Write the log.
 !
