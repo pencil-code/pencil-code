@@ -861,7 +861,7 @@ module Io
 !
 !  Writes the log of removed particles to a file.
 !
-!  21-jan-24/ccyang: stub
+!  26-jan-24/ccyang: in progress
 !
       use General, only: keep_compiler_quiet
       use Messages, only: not_implemented
@@ -870,11 +870,19 @@ module Io
       real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
       integer, intent(in) :: nrmv
 !
+      integer, dimension(ncpus) :: rmv_list
+!
+!  Communicate number of removed particles.
+!
+      rmv_list = 0
+      rmv_list(iproc+1) = nrmv
+      call MPI_ALLREDUCE(MPI_IN_PLACE, rmv_list, ncpus, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to communicate nrmv")
+!
       call keep_compiler_quiet(ipar_rmv)
       call keep_compiler_quiet(ipar_sink)
       call keep_compiler_quiet(fp_rmv)
       call keep_compiler_quiet(fp_sink)
-      call keep_compiler_quiet(nrmv)
 !
       call not_implemented("output_part_rmv")
 !
