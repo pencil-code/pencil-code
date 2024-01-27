@@ -861,7 +861,7 @@ module Io
 !
 !  Writes the log of removed particles to a file.
 !
-!  27-jan-24/ccyang: in progress
+!  27-jan-24/ccyang: coded
 !
       use General, only: keep_compiler_quiet
       use Messages, only: not_implemented
@@ -875,7 +875,7 @@ module Io
       integer, dimension(ncpus) :: rmv_list
       integer(KIND=MPI_COUNT_KIND) :: esize
       integer(KIND=MPI_OFFSET_KIND) :: disp
-      integer :: etype, filetype, handle, n
+      integer :: etype, filetype, handle, nreal, n
 !
       call keep_compiler_quiet(ipar_rmv)
       call keep_compiler_quiet(ipar_sink)
@@ -890,8 +890,8 @@ module Io
 !
 !  Create structured MPI type for each removed or sink particle.
 !
-      n = size(fp_rmv, 1)
-      call MPI_TYPE_CREATE_STRUCT(2, (/ 1, n /), (/ 0_MPI_ADDRESS_KIND, int(size_of_int, KIND=MPI_ADDRESS_KIND) /), &
+      nreal = size(fp_rmv, 1)
+      call MPI_TYPE_CREATE_STRUCT(2, (/ 1, nreal /), (/ 0_MPI_ADDRESS_KIND, int(size_of_int, KIND=MPI_ADDRESS_KIND) /), &
           (/ MPI_INTEGER, mpi_precision /), etype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to create etype")
       call fatal_error_local_collect()
@@ -935,6 +935,25 @@ module Io
       call MPI_FILE_SET_VIEW(handle, disp, etype, filetype, "native", io_info, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to set file view")
 !
+!  Write log.
+!
+      wr: do n = 1, nrmv
+        call MPI_FILE_WRITE(handle, ipar_rmv(n), 1, MPI_INTEGER, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write ipar_rmv")
+!
+        call MPI_FILE_WRITE(handle, fp_rmv(:,n), nreal, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write fp_rmv")
+!
+        sink: if (lparticles_sink) then
+          call MPI_FILE_WRITE(handle, ipar_sink(n), 1, MPI_INTEGER, status, mpi_err)
+          if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write ipar_sink")
+!
+          call MPI_FILE_WRITE(handle, fp_sink(:,n), nreal, mpi_precision, status, mpi_err)
+          if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write fp_sink")
+        endif sink
+      enddo wr
+      call fatal_error_local_collect()
+!
 !  Close log file.
 !
       call MPI_FILE_CLOSE(handle, mpi_err)
@@ -949,8 +968,6 @@ module Io
       call MPI_TYPE_FREE(etype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to free etype")
       call fatal_error_local_collect()
-!
-      call not_implemented("output_part_rmv")
 !
     endsubroutine output_part_rmv
 !***********************************************************************
