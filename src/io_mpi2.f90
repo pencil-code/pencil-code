@@ -1106,7 +1106,7 @@ module Io
 !  12-nov-20/ccyang: coded
 !
       use General, only: keep_compiler_quiet
-      use Particles_cdata, only: ixp, iyp, izp
+      use Particles_cdata, only: ixp
       use Mpicomm, only: size_of_int, size_of_real
 !
       integer, intent(in) :: mv
