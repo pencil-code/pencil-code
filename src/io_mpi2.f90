@@ -873,6 +873,8 @@ module Io
 !
       character(len=fnlen) :: fpath
       integer, dimension(ncpus) :: rmv_list
+      integer(KIND=MPI_COUNT_KIND) :: esize
+      integer(KIND=MPI_OFFSET_KIND) :: disp
       integer :: etype, filetype, handle, n
 !
       call keep_compiler_quiet(ipar_rmv)
@@ -915,6 +917,23 @@ module Io
       fpath = trim(directory_snap) // '/' // "rmv_par.dat"
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_RDWR, ior(MPI_MODE_CREATE, MPI_MODE_APPEND)), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to open file '" // trim(fpath) // "'")
+!
+!  Set the file view for data write.
+!
+      call MPI_TYPE_SIZE(etype, esize, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to find type size")
+      call fatal_error_local_collect()
+!
+      call MPI_FILE_GET_POSITION(handle, disp, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to find file position")
+      call fatal_error_local_collect()
+!
+      esize = int(sum(rmv_list(:iproc)), KIND=MPI_COUNT_KIND) * esize
+      if (lparticles_sink) esize = 2_MPI_COUNT_KIND * esize
+      disp = disp + int(esize, KIND=MPI_OFFSET_KIND)
+!
+      call MPI_FILE_SET_VIEW(handle, disp, etype, filetype, "native", io_info, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to set file view")
 !
 !  Close log file.
 !
