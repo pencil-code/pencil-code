@@ -982,6 +982,51 @@ module Hydro
           p%oo(:,3)=2.*fac*kx_uukin*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
         endif
 !
+!  Modified Roberts flow, 45 degree rotated
+!
+      case ('Roberts-IV-45')
+        if (headtt) print*,'Roberts-IV-45 flow; eps_kinflow=',eps_kinflow
+        if (eps_kinflow==0.) &
+          call inevitably_fatal_error('hydro_kinematic','kinematic_flow = "Roberts IV-45", '// &
+                                      'eps_kinflow=0')
+        fac=sqrt(1./eps_kinflow)*ampl_kinflow
+        fac2=sqrt(eps_kinflow)*ampl_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=+fac*sin(2.*ky_uukin*y(m))
+          p%uu(:,2)=+fac*sin(2.*kx_uukin*x(l1:l2))
+          p%uu(:,3)=+fac2*sin(kx_uukin*x(l1:l2)+ky_uukin*y(m))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=-fac2*kx_uukin*cos(kx_uukin*x(l1:l2)-ky_uukin*y(m))
+          p%oo(:,2)=-fac2*kx_uukin*cos(kx_uukin*x(l1:l2)-ky_uukin*y(m))
+          p%oo(:,3)=2.*fac*kx_uukin*sin(kx_uukin*x(l1:l2)-ky_uukin*y(m))*sin(ky_uukin*y(m)+kx_uukin*x(l1:l2))
+        endif
+!
+!  Modified Roberts flow, 45 degree rotated, but then also (x,y,z) -> (y,z,x)
+!  and (ux, uy, uz) ->  (uz, ux, uy)
+!
+      case ('Roberts-IV-45rot')
+        if (headtt) print*,'Roberts-IV-45 flow; eps_kinflow=',eps_kinflow
+        if (eps_kinflow==0.) &
+          call inevitably_fatal_error('hydro_kinematic','kinematic_flow = "Roberts IV-45", '// &
+                                      'eps_kinflow=0')
+        fac=sqrt(1./eps_kinflow)*ampl_kinflow
+        fac2=sqrt(eps_kinflow)*ampl_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=+fac2*sin(ky_uukin*y(m)+kz_uukin*z(n))
+          p%uu(:,2)=+fac*sin(2.*kz_uukin*z(n))
+          p%uu(:,3)=+fac*sin(2.*ky_uukin*y(m))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=-fac2*kx_uukin*cos(kx_uukin*x(l1:l2)-ky_uukin*y(m))
+          p%oo(:,2)=-fac2*kx_uukin*cos(kx_uukin*x(l1:l2)-ky_uukin*y(m))
+          p%oo(:,3)=2.*fac*kx_uukin*sin(kx_uukin*x(l1:l2)-ky_uukin*y(m))*sin(ky_uukin*y(m)+kx_uukin*x(l1:l2))
+        endif
+!
 !  Modified Roberts flow (normalization as in Rheinhardt+14 with w0=eps_kinflow)
 !
       case ('Roberts-IVc')
