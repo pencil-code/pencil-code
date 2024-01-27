@@ -872,7 +872,7 @@ module Io
       integer, intent(in) :: nrmv
 !
       integer, dimension(ncpus) :: rmv_list
-      integer :: etype, n
+      integer :: etype, filetype, n
 !
       call keep_compiler_quiet(ipar_rmv)
       call keep_compiler_quiet(ipar_sink)
@@ -897,7 +897,23 @@ module Io
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to commit etype")
       call fatal_error_local_collect()
 !
+!  Create MPI type for file view.
+!
+      n = nrmv
+      if (lparticles_sink) n = 2 * n
+      call MPI_TYPE_CONTIGUOUS(n, etype, filetype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to create filetype")
+      call fatal_error_local_collect()
+!
+      call MPI_TYPE_COMMIT(filetype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to commit filetype")
+      call fatal_error_local_collect()
+!
 !  Free MPI types.
+!
+      call MPI_TYPE_FREE(filetype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to free filetype")
+      call fatal_error_local_collect()
 !
       call MPI_TYPE_FREE(etype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to free etype")
