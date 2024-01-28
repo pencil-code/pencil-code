@@ -865,21 +865,19 @@ module Io
 !
       use General, only: keep_compiler_quiet
       use Messages, only: not_implemented
-      use Mpicomm, only: size_of_int
+      use Mpicomm, only: size_of_int, size_of_real
 !
       integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
       real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
       integer, intent(in) :: nrmv
 !
       character(len=fnlen) :: fpath
+      integer(KIND=MPI_ADDRESS_KIND), dimension(4) :: disps
+      integer, dimension(4) :: blocklengths, types
       integer, dimension(ncpus) :: rmv_list
       integer(KIND=MPI_COUNT_KIND) :: esize
       integer(KIND=MPI_OFFSET_KIND) :: disp
       integer :: etype, filetype, handle, nreal, n
-!
-      call keep_compiler_quiet(ipar_rmv)
-      call keep_compiler_quiet(ipar_sink)
-      call keep_compiler_quiet(fp_sink)
 !
 !  Communicate number of removed particles.
 !
@@ -891,8 +889,17 @@ module Io
 !  Create structured MPI type for each removed or sink particle.
 !
       nreal = size(fp_rmv, 1)
-      call MPI_TYPE_CREATE_STRUCT(2, (/ 1, nreal /), (/ 0_MPI_ADDRESS_KIND, int(size_of_int, KIND=MPI_ADDRESS_KIND) /), &
-          (/ MPI_INTEGER, mpi_precision /), etype, mpi_err)
+      blocklengths = (/ 1, 1 + nreal, 1, nreal /)
+      types = (/ MPI_INTEGER, mpi_precision, MPI_INTEGER, mpi_precision /)
+!
+      disps(1) = 0_MPI_ADDRESS_KIND
+      disps(2) = disps(1) + int(blocklengths(1) * int(size_of_int), KIND=MPI_ADDRESS_KIND)
+      sink1: if (lparticles_sink) then
+        disps(3) = disps(2) + int(blocklengths(2) * int(size_of_real), KIND=MPI_ADDRESS_KIND)
+        disps(4) = disps(3) + int(blocklengths(3) * int(size_of_int), KIND=MPI_ADDRESS_KIND)
+      endif sink1
+!
+      call MPI_TYPE_CREATE_STRUCT(merge(4, 2, lparticles_sink), blocklengths, disps, types, etype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to create etype")
       call fatal_error_local_collect()
 !
@@ -902,9 +909,7 @@ module Io
 !
 !  Create MPI type for file view.
 !
-      n = nrmv
-      if (lparticles_sink) n = 2 * n
-      call MPI_TYPE_CONTIGUOUS(n, etype, filetype, mpi_err)
+      call MPI_TYPE_CONTIGUOUS(nrmv, etype, filetype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to create filetype")
       call fatal_error_local_collect()
 !
@@ -941,16 +946,19 @@ module Io
         call MPI_FILE_WRITE(handle, ipar_rmv(n), 1, MPI_INTEGER, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write ipar_rmv")
 !
+        call MPI_FILE_WRITE(handle, real(t), 1, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write time")
+!
         call MPI_FILE_WRITE(handle, fp_rmv(:,n), nreal, mpi_precision, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write fp_rmv")
 !
-        sink: if (lparticles_sink) then
+        sink2: if (lparticles_sink) then
           call MPI_FILE_WRITE(handle, ipar_sink(n), 1, MPI_INTEGER, status, mpi_err)
           if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write ipar_sink")
 !
           call MPI_FILE_WRITE(handle, fp_sink(:,n), nreal, mpi_precision, status, mpi_err)
           if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write fp_sink")
-        endif sink
+        endif sink2
       enddo wr
       call fatal_error_local_collect()
 !
