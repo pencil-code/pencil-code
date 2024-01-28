@@ -251,8 +251,7 @@ module Timestep
       use Energy,   only: energy_after_timestep
       use Magnetic, only: magnetic_after_timestep
       use Special,  only: special_after_timestep
-      use Particles_main, only: particles_special_after_dtsub
-      use Particles_sub, only: remove_particle_writelog
+      use Particles_main, only: particles_special_after_dtsub, particles_write_rmv
 !
       logical, intent(in) :: llast
       real, dimension (mx,my,mz,mfarray) :: f
@@ -276,7 +275,7 @@ module Timestep
 !
 !  Flush the list of removed particles to the log file.
 !
-      if (lparticles) call remove_particle_writelog()
+      if (lparticles) call particles_write_rmv
 !
 !  Disables checks.
 !

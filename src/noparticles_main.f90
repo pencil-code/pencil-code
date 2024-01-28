@@ -134,6 +134,14 @@ module Particles_main
 !
     endsubroutine particles_write_block
 !***********************************************************************
+    subroutine particles_write_rmv()
+!
+!  Write the list of removed particles and clear the list.
+!
+!  28-jan-24/ccyang: stub.
+!
+    endsubroutine particles_write_rmv
+!***********************************************************************
     subroutine particles_timestep_first(f)
 !
 !  Setup dfp in the beginning of each itsub.
