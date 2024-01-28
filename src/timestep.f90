@@ -252,6 +252,7 @@ module Timestep
       use Magnetic, only: magnetic_after_timestep
       use Special,  only: special_after_timestep
       use Particles_main, only: particles_special_after_dtsub
+      use Particles_sub, only: remove_particle_writelog
 !
       logical, intent(in) :: llast
       real, dimension (mx,my,mz,mfarray) :: f
@@ -272,6 +273,10 @@ module Timestep
         call special_after_timestep(f, df, dtsub, llast)
         if (lparticles) call particles_special_after_dtsub(f, dtsub)
       endif
+!
+!  Flush the list of removed particles to the log file.
+!
+      if (lparticles) call remove_particle_writelog()
 !
 !  Disables checks.
 !
