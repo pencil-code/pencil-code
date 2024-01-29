@@ -2,16 +2,16 @@
 #
 
 if [[ $3 == '' ]]; then
-  modname=$(basename "$2" .f90)
+  modname=`grep '^ *module  *[A-Z]' $2 | sed -e's/module  *\([0-9a-zA-Z_]*\).*$/\l\1/'`
 else
   modname=$3
 fi
 
-if [[ $modname =~ entropy.* ]] || [[ $modname =~ temperature_.* ]] || [[ $modname == thermal_energy ]]; then
-  modname='energy'
-elif [[ $modname =~ eos_.* ]]; then
-  modname='equationofstate'
-fi
+#if [[ $modname =~ entropy.* ]] || [[ $modname =~ temperature_.* ]] || [[ $modname == thermal_energy ]]; then
+#  modname='energy'
+#elif [[ $modname =~ eos_.* ]]; then
+#  modname='equationofstate'
+#fi
 
 modheader=../$modname'_'$1's_c.h'
 if [[ $1 == par ]]; then
@@ -147,7 +147,7 @@ if [ -f tmp1 ]; then
          : dimen
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9]* *)\) *$/#define \2 ((\3 *) p_'$1'_'$modname'\1) \/\/ \4/
          p
-         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *([mn]\([xyz]*\)) *$/Profile_\u\3 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *([mn]\([xyz]*\)) *$/Profile_\l\3 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
          H
          : end
          $ {
