@@ -96,8 +96,8 @@ module Special
           lnTT_min=-max_real, lnTT_min_tau=1.0,lnTT_max=-max_real,lnTT_max_tau=1.0
   real :: cool_RTV,x_cutoff,TTsponge=0.0,lnTT_sponge_tau=1.0,border_width=0.1
   real :: cs0p=0.104,C_heatflux=132.0,tau_res=0.65
-  real :: heat_vol=0.0,heat_LH=0.2783,heat_FS=9.74d-4
-  real, dimension(3) :: rhog
+  real :: heat_vol=0.0,heat_LH=0.2783,heat_FS=9.74d-4,vel_hs=0.02,res_fac=2.0
+  real, dimension(4) :: rhog
   namelist /special_init_pars/ lslope_limited_special
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,nwid,nwid2,&
            posx,dposx,posy,posz,dposz,tilt,dtilt,Ilimit,poslimit,&
@@ -107,7 +107,7 @@ module Special
            cool_RTV,cool_RTV_cutoff,x_cutoff,cool_type, &
            lset_sponge_lnTT,TTsponge,lnTT_sponge_tau,border_width,&
            lactivate_reservoir,cs0p,C_heatflux,tau_res, &
-           heat_LH,heat_FS,heat_vol,rhog
+           heat_LH,heat_FS,heat_vol,rhog,vel_hs,res_fac
 ! Declare index of new variables in f array (if any).
 !
    integer :: ispecaux=0,ispecauxx=0,ispecauxy=0,ispecauxz=0
@@ -684,7 +684,6 @@ module Special
 !
       getcomaux: if (lslope_limited_special .and. llast) then
         do imn = 1, nyz
-
           m = mm(imn)
           n = nn(imn)
           call gij(f, iaa, aij, 1)
@@ -755,15 +754,15 @@ module Special
       use EquationOfState, only: get_gamma_etc
       use Mpicomm
       use Diagnostics, only: save_name
-      use Sub, only: cross,gij,curl_mn,step
+      use Sub, only: cross,gij,curl_mn,step,dot2_mn
 !
       logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
       real, dimension(mx,my,mz):: rho_tmp
-      real, dimension(my,mz,3):: rhob, TTb
-      real, dimension(nx) :: dfy,dfz
+      real, dimension(my,mz,4):: rhob, TTb
+      real, dimension(nx) :: dfy,dfz, b2
       real, dimension (nx,3) :: aa,pbb
       real, dimension(nx,3,3) :: aij
       real, dimension(3) :: tmpv,vv,uu,bb,uxb
@@ -986,24 +985,20 @@ module Special
 ! p0=-C*qx for qx<0
 ! p0=0 for qx>0
 !
-                if (lactivate_reservoir .and. ig .ge. 1) then
-!                if (lactivate_reservoir) then
-                    if (f(l1,m,n,iqx) .lt. 0.0) then
+!                if (lactivate_reservoir .and. ig .ge. 1) then
 !                   rhob(m,n)=-C_heatflux*f(l1-ig,m,n,iqx)*gamma/cs0p**2
-                      rhob(m,n,ig)=1.1*rhog(ig)
-!                      TTb(m,n,ig)=(1.0*cs0**2*cp1/(gamma-1))
-                      f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
-                      (1-(rhob(m,n,ig)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
-!                      f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
-!                      (1-(TTb(m,n,ig)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
-                    else
-                      rhob(m,n,ig)=rhog(ig)
-!                      TTb(m,n,ig)=(cs0**2*cp1/(gamma-1))
-                      f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
-                      (1-(rhob(m,n,ig)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
-!                      f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
-!                      (1-(TTb(m,n,ig)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
-                  endif
+                if (lactivate_reservoir) then
+                  TTb(m,n,ig)=(cs0**2*cp1/(gamma-1))* &
+                                  (1.0-0.5*(x(l1)-x(l1-ig))/(x(l1)-x(1)))
+                  f(l1-ig,m,n,ilnTT)=f(l1-ig,m,n,ilnTT)- &
+                       (1-(TTb(m,n,ig)/exp(f(l1-ig,m,n,ilnTT))))*dt_/tau_res
+                  rhob(m,n,ig)=res_fac*rhog(ig)
+                  f(l1-ig,m,n,ilnrho)=f(l1-ig,m,n,ilnrho)- &
+                  (1-(rhob(m,n,ig)/exp(f(l1-ig,m,n,ilnrho))))*dt_/tau_res
+                  call dot2_mn(pbb,b2)
+!                  f(l1-ig,m,n,iux)=f(l1-ig,m,n,iux)+vel_hs*pbb(1,1)*pbb(1,1)/(b2(1)+1.0e-6) 
+!                  f(l1-ig,m,n,iuy)=f(l1-ig,m,n,iuy)+vel_hs*pbb(1,1)*pbb(1,2)/(b2(1)+1.0e-6) 
+!                  f(l1-ig,m,n,iuz)=f(l1-ig,m,n,iuz)+vel_hs*pbb(1,1)*pbb(1,3)/(b2(1)+1.0e-6) 
                 endif
               enddo
 !
