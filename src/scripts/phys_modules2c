@@ -147,7 +147,7 @@ if [ -f tmp1 ]; then
          : dimen
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9]* *)\) *$/#define \2 ((\3 *) p_'$1'_'$modname'\1) \/\/ \4/
          p
-         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *([mn]\([xyz]*\)) *$/Profile_\l\3 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([mn]\)\([xyz]*\)) *$/Profile_\l\4 AC_\1[\3\4] \/\/ from '$modname'\n#define \1 \AC_\1/
          H
          : end
          $ {
