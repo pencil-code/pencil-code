@@ -202,13 +202,21 @@ pcLegend[l_List,"h",opt:OptionsPattern[]]:=DensityPlot[x,{x,Sequence@@MinMax[l]}
 
 
 (* to-do: All places where ListDensityPlot is used for a equidistant grid, for better performance *)
-pcDensityPlot[{gridx_,gridy_,data_},opts:OptionsPattern[]]:=Module[{x,y,f},
+pcDensityPlot[{gridx_,gridy_,data_},opts:OptionsPattern[]]:=Module[{x,y,f,frameLabel},
   {x,y,f}=Transpose[{gridx,gridy,data}]//Sort//Transpose;
   f=Reverse[Transpose@Partition[f,y//Union//Length]];
-  ArrayPlot[f,opts,
+  
+  (* by default ArrayPlot will transpose the xy frame labels; here is a fix *)
+  frameLabel=With[{op=Association[opts]},
+    If[KeyExistsQ[op,FrameLabel],
+      If[Length[op[FrameLabel]]==2,Reverse[op[FrameLabel]],op[FrameLabel]],
+      None
+    ]
+  ];
+  ArrayPlot[f,FrameLabel->frameLabel,opts,
     DataRange->{x//MinMax,y//MinMax},AspectRatio->Length[y//Union]/Length[x//Union],
-    PlotRangePadding->None,
-    FrameTicks->{{Subdivide[Sequence@@MinMax[x],4],Automatic},{Subdivide[Sequence@@MinMax[y],4],Automatic}},
+    PlotRangePadding->None,ColorFunction->pcColors["Rainbow"],
+    FrameTicks->{{Subdivide[Sequence@@MinMax[y],4],Automatic},{Subdivide[Sequence@@MinMax[x],4],Automatic}},
     FrameStyle->Directive[Black,AbsoluteThickness[1]],
     FrameTicksStyle->ConstantArray[{pcLabelStyle,Directive[FontOpacity->0,FontSize->0]},2],
     LabelStyle->pcLabelStyle,PlotLegends->Automatic
