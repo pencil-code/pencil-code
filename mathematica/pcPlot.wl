@@ -204,8 +204,8 @@ pcLegend[l_List,"h",opt:OptionsPattern[]]:=DensityPlot[x,{x,Sequence@@MinMax[l]}
 (* to-do: All places where ListDensityPlot is used for a equidistant grid, for better performance *)
 pcDensityPlot[{gridx_,gridy_,data_},opts:OptionsPattern[]]:=Module[{x,y,f},
   {x,y,f}=Transpose[{gridx,gridy,data}]//Sort//Transpose;
-  f=Transpose@Partition[f,y//Union//Length];
-  ArrayPlot[f,opts,DataReversed->True,
+  f=Reverse[Transpose@Partition[f,y//Union//Length]];
+  ArrayPlot[f,opts,
     DataRange->{x//MinMax,y//MinMax},AspectRatio->Length[y//Union]/Length[x//Union],
     PlotRangePadding->None,
     FrameTicks->{{Subdivide[Sequence@@MinMax[x],4],Automatic},{Subdivide[Sequence@@MinMax[y],4],Automatic}},
