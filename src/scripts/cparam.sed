@@ -6,6 +6,7 @@ s/huge *(0)/INT_MAX/g
 s/huge *(int.*)/INT_MAX/g 
 s/huge *(0\.0*)/FLT_MAX/g 
 s/huge *(0\.*0*d0)/DBL_MAX/g 
+s/^\(.*rkind8.*\)huge *( *[a-zA-Z0-9_]* *)/\1HUGE_VAL/g
 s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /tiny *(/ d
 /selected[a-z_]* *(/ d
@@ -22,13 +23,14 @@ s/^ *module .*$/#pragma once \n#include <float.h>\n#include <limits.h>\n#include
 /end *module / d
 s/integer *( *kind *= *ikind8 *) *, *parameter *::/const long long /
 s/integer *( *kind *= *ikind4 *) *, *parameter *::/const long /
+s/real *( *kind *= *rkind8 *) *, *parameter *::/const double /
+s/int *(\([a-zA-Z0-9_]*\) *, *kind *= *ikind8 *)/(long long)\1/g
 s/integer *, *parameter *::/const FINT /
 s/logical *, *parameter *::/const int /
 s/real *, *parameter *::/const REAL /
 s/\([^0-9a-zA-Z_]\)min(/\1MIN(/g
 s/\([^0-9a-zA-Z_]\)max(/\1MAX(/g
 s/double  *precision *, *parameter *::/const double /
-/,kind=ikind8/ d
 s/\.true\./true/g
 s/\.false\./false/g
 s/\(^[^#].*[^&">]\) *$/\1;/
