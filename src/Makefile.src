@@ -480,9 +480,13 @@ ifneq ($(GPU),nogpu)
       $(warning  No CUDA or ROCM module seems to be loaded!)
       $(info Try (one of) the following: $(shell (module avail |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
       $(info or: $(shell (module avail |& grep -i rocm | sed -e's/^.* \([^ ]*[Rr][Oo][Cc][Mm][^ ]*\) .*$$/\1/') ) )
-      YESNO ?= $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
+      YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
       ifeq ($(YESNO),N)
-        $(error Exit) 
+        $(error Exit)
+      else
+        ifeq ($(YESNO),n)
+          $(error Exit)
+        endif
       endif
     endif
   endif
