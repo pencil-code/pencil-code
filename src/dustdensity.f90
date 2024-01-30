@@ -99,7 +99,7 @@ module Dustdensity
   logical :: lself_collisions=.false.,lmice=.false.
   logical :: llog10_for_admom_above10=.true., lmomcons=.false., lmomconsb=.false.
   logical :: lmomcons2=.false., lmomcons3=.false., lmomcons3b=.false.
-  logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false., lmice=.false.
+  logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
