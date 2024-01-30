@@ -4,7 +4,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lradiation = .false.
+! CPARAM logical, parameter :: lradiation = .false., lradiation_ray=.false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0

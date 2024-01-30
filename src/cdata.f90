@@ -21,12 +21,14 @@ module Cdata
 !
 !  Cartesian coordinate system.
 !
+  real, dimension (nx,3) :: dline_1
+  real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6, dVol
+  real, dimension (nx) :: dxmax_pencil,dxmin_pencil
+!BEGIN C BINDING
   real, dimension (mx) :: x,dx_1,dx2,dx_tilde,xprim,dVol_x,dVol1_x
   real, dimension (my) :: y,dy_1,dy2,dy_tilde,yprim,dVol_y,dVol1_y
   real, dimension (mz) :: z,dz_1,dz2,dz_tilde,zprim,dVol_z,dVol1_z
-  real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6, dVol
   real :: dx,dy,dz,dxmin,dxmax
-  real, dimension (nx) :: dxmax_pencil,dxmin_pencil
   real, dimension (-nghost:nghost) :: dx2_bound=0., dy2_bound=0., dz2_bound=0.
   real, dimension (nxgrid) :: xgrid, dx1grid, dxtgrid
   real, dimension (nygrid) :: ygrid, dy1grid, dytgrid
@@ -81,7 +83,6 @@ module Cdata
   real, dimension (nygrid) :: sinth_weight_across_proc
   real, dimension (nx) :: rcyl_mn=1.,rcyl_mn1=1.,rcyl_mn2=1.,rcyl_weight
   real, dimension (nx) :: glnCrossSec
-  real, dimension (nx,3) :: dline_1
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (mx) :: x12    ! for slope-limted-diffusion
   real, dimension (my) :: y12    ! for slope-limted-diffusion
@@ -114,16 +115,6 @@ module Cdata
   real, dimension(0:nprocx) :: procx_bounds
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds
-!
-!  Polar grid
-!
-  integer :: ncoarse=0
-  logical :: lcoarse=.false., lcoarse_mn=.false.
-  integer, dimension(2) :: mexts=(/-1,-1/)
-  integer, dimension(:), allocatable :: nphis
-  real, dimension(:), allocatable :: nphis1, nphis2
-  integer, dimension(:,:), allocatable :: nexts
-  integer, dimension(:,:,:), allocatable :: ninds
 
   integer, dimension(3) :: dim_mask=(/1,2,3/)
 !
@@ -142,6 +133,17 @@ module Cdata
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
+!END C BINDING
+!
+!  Polar grid
+!
+  integer :: ncoarse=0
+  logical :: lcoarse=.false., lcoarse_mn=.false.
+  integer, dimension(2) :: mexts=(/-1,-1/)
+  integer, dimension(:), allocatable :: nphis
+  real, dimension(:), allocatable :: nphis1, nphis2
+  integer, dimension(:,:), allocatable :: nexts
+  integer, dimension(:,:,:), allocatable :: ninds
 !
 !  Time integration parameters.
 !
@@ -293,8 +295,7 @@ module Cdata
   logical :: ldensity_nolog=.false., &
              lreference_state=.false., lfullvar_in_slices=.false., &
              lsubstract_reference_state=.false., ldensity_linearstart=.false.
-  logical :: lmpicomm=.false., lforcing_cont=.false.
-  logical :: lpostproc=.false.
+  logical :: lforcing_cont=.false.
   logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
   logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
   logical :: lwrite_sound=.false.
@@ -303,8 +304,7 @@ module Cdata
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
-  logical :: lgravr=.false.,lgravr_gas=.false.
-  logical :: lgravr_neutrals=.false.,lgravr_dust=.false.
+  logical :: lgravr=.false.
   logical :: lwrite_ic=.true.,lnowrite=.false.,lserial_io=.false.
   logical :: lmodify=.false.
   logical :: lroot=.true.,lcaproot=.false.,ldebug=.false.,lfft=.true.
@@ -318,17 +318,11 @@ module Cdata
   logical :: lnorth_pole=.false.,lsouth_pole=.false.
   logical :: lpscalar_nolog=.false.
   logical :: lalpm=.false., lalpm_alternate=.false.
-  logical :: lradiation_ray=.false.,lradiation_fld=.false.
-  logical :: ldustdensity_log=.false.,lmdvar=.false.
+  logical :: ldustdensity_log=.false.,lmdvar=.false.,ldcore=.false.
   logical :: lneutraldensity_nolog=.false.
-  logical :: lglobal=.false., lglobal_nolog_density=.false.
-  logical :: lvisc_hyper=.false.
-  logical :: lvisc_smagorinsky=.false.
   logical :: lvisc_smag=.false.
   logical :: lslope_limit_diff=.false.
-  logical :: leos_temperature_ionization=.false.
   logical :: ltemperature_nolog=.false.
-  logical :: leos_fixed_ionization=.false.
   logical :: ltestperturb=.false.
   logical :: lweno_transport=.false.
   logical :: lstart=.false., lrun=.false., lreloading=.false.
@@ -813,9 +807,5 @@ module Cdata
 ! threadprivate definitions for OpenMP, copyin routine.
 !
 !$ include 'cdata_omp.inc'
-!***********************************************************************
-!***********************************************************************
-!***       Do not add declarations here - will break the build!      ***
-!***********************************************************************
 !***********************************************************************
 endmodule Cdata

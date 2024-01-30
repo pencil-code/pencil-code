@@ -3,10 +3,13 @@
 !  Dummy module for MPI communication. This allows the code to run on a
 !  single CPU.
 !
+! CPARAM logical, parameter :: lmpicomm = .false.
+!
+!***************************************************************
+!
 module Mpicomm
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet
 !
   implicit none
@@ -43,8 +46,6 @@ module Mpicomm
 !
       mpi_precision = -1; MPI_CMPLX=-1
 !
-      lmpicomm = .false.
-
     endsubroutine mpicomm_init
 !***********************************************************************
     subroutine initialize_mpicomm

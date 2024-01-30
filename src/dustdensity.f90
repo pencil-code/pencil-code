@@ -96,10 +96,10 @@ module Dustdensity
   logical :: reinitialize_nd=.false., ldustcondensation_simplified=.false.
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
   logical :: lzero_upper_kern=.false., ldustcoagulation_simplified=.false.
-  logical :: lself_collisions=.false.
+  logical :: lself_collisions=.false.,lmice=.false.
   logical :: llog10_for_admom_above10=.true., lmomcons=.false., lmomconsb=.false.
   logical :: lmomcons2=.false., lmomcons3=.false., lmomcons3b=.false.
-  logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false., lmice=.false.,ldcore=.false.
+  logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false., lmice=.false.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd

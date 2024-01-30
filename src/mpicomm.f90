@@ -43,10 +43,13 @@
 !    unaffected by ghost information plus boundcond for m1,m2):
 !                        m1i+2:m2i-2
 !
+! CPARAM logical, parameter :: lmpicomm = .true.
+!
+!***************************************************************
+!
 module Mpicomm
 !
   use Cdata
-  use Cparam
   use General, only: find_proc, ioptest
   use Yinyang
 !
@@ -191,8 +194,6 @@ module Mpicomm
       integer :: iapp=0
       integer :: flag
 
-      lmpicomm = .true.
-!
       call MPI_INIT(mpierr)
 !
 ! Size and rank w.r.t. MPI_COMM_WORLD

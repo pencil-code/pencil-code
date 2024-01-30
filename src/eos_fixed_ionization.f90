@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: leos = .true., leos_ionization = .true.
+! CPARAM logical, parameter :: leos = .true., leos_ionization = .true., leos_temperature_ionization=.false.
 ! CPARAM logical, parameter :: leos_idealgas = .false., leos_chemistry = .false.
 !
 ! MVAR CONTRIBUTION 0
@@ -67,8 +67,6 @@ module EquationOfState
 !  14-jun-03/axel: adapted from register_ionization
 !
       use SharedVariables, only: put_shared_variable
-!
-      leos_fixed_ionization=.true.
 !
       iyH = 0
       ilnTT = 0

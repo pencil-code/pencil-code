@@ -17,7 +17,6 @@
 !***************************************************************
 module Gravity
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -106,9 +105,6 @@ module Gravity
       if (lroot) call svn_id("$Id: gravity_r.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
 !
       lgravr=.true.
-      lgravr_gas =.true.
-      lgravr_dust=.true.
-      lgravr_neutrals=.true.
 !
 !  Register global_gg, so we can later retrieve gravity via get_global.
 !  Ensure the reserved f-array slots are initialized to zero, so we can add

@@ -397,7 +397,7 @@ module Density
 !  check that cs2bot,cs2top are ok
 !  for runs with ionization or fixed ionization, don't print them
 !
-      if (leos_ionization .or. leos_fixed_ionization) then
+      if (leos_ionization) then
         cs2top=impossible
         cs2bot=impossible
       else

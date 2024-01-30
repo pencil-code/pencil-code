@@ -9,7 +9,6 @@
 module Snapshot
 !
   use Cdata
-  use Cparam
   use Messages
   use Gpu, only: copy_farray_from_GPU
 !
@@ -964,7 +963,6 @@ module Snapshot
       use EquationOfState, only: ioncalc
       use Radiation, only: radtransfer
       use Shock, only: calc_shock_profile,calc_shock_profile_simple
-      use Viscosity, only: lvisc_first,calc_viscosity
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: a
 !
@@ -974,9 +972,6 @@ module Snapshot
       endif
       if (leos_ionization.or.leos_temperature_ionization) call ioncalc(a)
       if (lradiation_ray)  call radtransfer(a)
-      if (lvisc_hyper.or.lvisc_smagorinsky) then
-        if (.not.lvisc_first.or.lfirst) call calc_viscosity(a)
-      endif
 !
     endsubroutine update_auxiliaries
 !***********************************************************************
