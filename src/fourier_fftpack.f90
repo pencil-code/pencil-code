@@ -4040,6 +4040,7 @@ module Fourier
 !
 !  Only parallelization along z (or not at all).
 !
+        nprocy_used=1
         a_re_new(1:ny,1:nz_new)=a_re(1:ny,1:nz_new)
       endif
 !
