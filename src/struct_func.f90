@@ -178,7 +178,6 @@ module struct_func
       !
       do direction=1,nr_directions
         do l=1,nx
-          if (lroot .and. lpostproc) print*,'l=',l
           do lb_ll=1,lb_nxgrid*2-2
             if (lb_ll == 1) then
               exp2=0

@@ -6,7 +6,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: leos = .true., leos_ionization=.false.
+! CPARAM logical, parameter :: leos = .true., leos_ionization=.false., leos_temperature_ionization=.false.
 ! CPARAM logical, parameter :: leos_idealgas = .true., leos_chemistry = .false.
 !
 ! MVAR CONTRIBUTION 0

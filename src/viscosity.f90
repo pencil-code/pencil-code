@@ -18,7 +18,6 @@
 !***************************************************************
 module Viscosity
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -58,7 +57,6 @@ module Viscosity
   real, dimension(:), pointer :: etat_z, detat_z
   real, dimension(3) :: nu_aniso_hyper3=0.0
   real, dimension(mx) :: LV0_rprof,LV1_rprof,LH1_rprof,der_LV0_rprof,der_LV1_rprof
-  logical :: lvisc_first=.false.
   logical :: lvisc_simplified=.false.
   logical :: lvisc_nu_non_newtonian=.false.
   logical :: lvisc_rho_nu_const=.false.
@@ -2407,14 +2405,6 @@ module Viscosity
       endselect
 !
     endsubroutine getnu_non_newtonian
-!***********************************************************************
-    subroutine calc_viscosity(f)
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_viscosity
 !***********************************************************************
     subroutine get_gradnu(tmp,ljumpx,ljumpr,p,gradnu)
 !

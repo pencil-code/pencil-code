@@ -3921,7 +3921,7 @@ module Solid_Cells
     dline_1_ogrid(:,3) = dz_1_ogrid(n_ogrid)
 !
     dxmax_pencil_ogrid = 0.
-    dxmin_pencil = 0.
+    dxmin_pencil_ogrid = 0.
     if (nxgrid_ogrid /= 1) then 
       dxmax_pencil_ogrid =     1.0 / dline_1_ogrid(:,1)
       dxmin_pencil_ogrid =     1.0 / dline_1_ogrid(:,1)

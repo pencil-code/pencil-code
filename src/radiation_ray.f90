@@ -20,7 +20,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lradiation = .true.
+! CPARAM logical, parameter :: lradiation = .true., lradiation_ray = .true.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 2
@@ -196,8 +196,6 @@ module Radiation
 !
       use FArrayManager
       use SharedVariables, only: put_shared_variable
-!
-      lradiation_ray=.true.
 !
 !  Set indices for auxiliary variables.
 !
