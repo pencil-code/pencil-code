@@ -3992,7 +3992,7 @@ module Fourier
 !  Degenerate z-direction. Let y-root processor do the shift of the single
 !  nygrid pencil.
 !
-          nprocy_used=nprocy
+          nprocy_used = 1
           do ipy_from=1,nprocy-1
             if (lfirst_proc_y) then
               call mpirecv_real( a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,1), &
