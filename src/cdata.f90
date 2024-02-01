@@ -804,8 +804,14 @@ module Cdata
 !$ integer :: num_threads = 0
 !$ logical :: lthread_safe
 !
-! threadprivate definitions for OpenMP, copyin routine.
+! threadprivate definitions for OpenMP
 !
-!$ include 'cdata_omp.inc'
+!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil&
+!$omp ,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
+!$omp threadprivate(lfirstpoint)
+!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
+!$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
+!$omp threadprivate(it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
+!
 !***********************************************************************
 endmodule Cdata
