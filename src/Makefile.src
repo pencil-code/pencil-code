@@ -3238,7 +3238,7 @@ endif
 #
 cdata.o:  cdata.f90 cparam.local cparam.inc cparam_pencils.inc
 ifneq ($(and $(IS_CRAY), $(filter-out $(GPU),nogpu)),)
-	@sed -e'/BEGIN C BINDING/,/END C BINDING/ s/ ::/,bind(C) ::/' -e'/parameter,/ s/,bind(C)//' -e'/character/ s/,bind(C)//' cdata.f90 > cdata_tmp.f90
+	@sed -e'/BEGIN C BINDING/,/END C BINDING/ s/ ::/,bind(C) ::/' -e'/parameter,/ s/,bind(C)//' -e'/character/ s/,bind(C)//' -e'/allocatable/ s/,bind(C)//' cdata.f90 > cdata_tmp.f90
 #       -e's/integer, *dimension/integer,bind(C), dimension/' cdata.f90
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata_tmp.f90
 	@rm -rf cdata_tmp.f90
