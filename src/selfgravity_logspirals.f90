@@ -482,17 +482,16 @@ module Selfgravity
 !
     endsubroutine calc_selfpotential
 !***********************************************************************
-    subroutine duu_dt_selfgrav(f,df,p)
+    subroutine addselfgrav(df,p)
 !
 !  Add self gravity acceleration on gas.
 !
 !  15-may-06/anders+jeff: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(in) :: f,p
+      intent(in) :: p
       intent(inout) :: df
 !
 !  Add self-gravity acceleration on the gas and on the dust.
@@ -507,9 +506,7 @@ module Selfgravity
 !
       call calc_diagnostics_selfgrav(p)
 
-      call keep_compiler_quiet(f)
-!
-    endsubroutine duu_dt_selfgrav
+    endsubroutine addselfgrav
 !***********************************************************************
     subroutine calc_diagnostics_selfgrav(p)
 

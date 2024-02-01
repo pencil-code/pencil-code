@@ -452,26 +452,23 @@ module Gravity
 !
     endsubroutine calc_pencils_gravity
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,p)
+    subroutine addgravity(df,p)
 !
 !  add duu/dt according to gravity
 !
 !  10-jan-02/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer :: k
 !
 ! if statement for testing purposes
 !
-      if (lgravity_gas) then
+      if (lgravity_gas) &
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + (1.0-ionbeta)*p%gg !!!AJWR
-      endif
 !
-      if (lneutralvelocity.and.lgravity_neutrals) then
+      if (lneutralvelocity.and.lgravity_neutrals) &
         df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) + p%gg
-      endif
 !
       if (ldustvelocity.and.lgravity_dust) then
         do k=1,ndustspec
@@ -483,9 +480,7 @@ module Gravity
 !
       if (lcorotational_frame) call indirect_plus_inertial_terms(df,p)
 !
-      call keep_compiler_quiet(f)
-!
-    endsubroutine duu_dt_grav
+    endsubroutine addgravity
 !***********************************************************************
     subroutine gravity_after_boundary(f)
 !

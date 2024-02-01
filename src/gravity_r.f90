@@ -535,26 +535,21 @@ module Gravity
 !
     endsubroutine calc_pencils_gravity
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,p)
+    subroutine addgravity(df,p)
 !
 !  add duu/dt according to gravity
 !
 !  10-jan-02/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+!
       integer :: k
 !
-! if statement for testing purposes
+      if (lgravity_gas) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%gg
 !
-      if (lgravity_gas) then
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%gg
-      endif
-!
-      if (lneutralvelocity.and.lgravity_neutrals) then
+      if (lneutralvelocity.and.lgravity_neutrals) &
         df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) + p%gg
-      endif
 !
       if (ldustvelocity.and.lgravity_dust) then
         do k=1,ndustspec
@@ -568,9 +563,7 @@ module Gravity
 !
       call calc_diagnostics_gravity(p)
 
-      call keep_compiler_quiet(f)
-
-    endsubroutine duu_dt_grav
+    endsubroutine addgravity
 !***********************************************************************
     subroutine calc_diagnostics_gravity(p)
 
@@ -630,9 +623,9 @@ module Gravity
 !
 !  Do not allow secondary before t_start_secondary
 !
-      if (lsecondary_wait .and. t <= t_start_secondary) then
-        g2 = 0. 
-      endif
+      if (lsecondary_wait .and. t <= t_start_secondary) g2 = 0. 
+!
+!  No effect on neutrals and dust considered here. Why not?
 !
       if (lcylindrical_coords) then
 !
@@ -708,8 +701,7 @@ module Gravity
         case ('sinusoidal')
            gp = gp * (sin(t*t1_ramp_mass*.5*pi))**2
         case default
-           call fatal_error("rampup_secondary_mass",&
-                "no ramping function selected")
+           call fatal_error("rampup_secondary_mass","no such iramp_function: "//trim(iramp_function))
         endselect
       endif
 !
@@ -1177,12 +1169,8 @@ module Gravity
 !           
       case default
 !
-!  Catch unknown values
-!           
-        if (lroot) print*, 'secondary_body_gravity: '//&
-             'No such value for ipotential: ', trim(ipotential_secondary)
-        call fatal_error("","")
-!
+        call fatal_error("secondary_body_gravity","No such value for ipotential_secondary: "// &
+                         trim(ipotential_secondary))
       endselect
 !
       if (lsecondary_wait.and.(t<=t_start_secondary)) gp = 0.
