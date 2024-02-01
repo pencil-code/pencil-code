@@ -1939,7 +1939,7 @@ sub get_current_revision {
                 $current_revision = "Problem obtaining SVN revision!";
             } else {
                 # GIT hash
-                $current_hash = `wget -q "https://pencil-code.org/translate.php?output=plain&revision=$current_revision" -O -`;
+                $current_hash = `wget -q "http://pencil-code.org/translate.php?output=plain&revision=$current_revision" -O -`;
                 chomp ($current_hash);
             }
             if (!$current_hash) { $current_hash = "No network connection to pencil-code.org!"; }
