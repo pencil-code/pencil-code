@@ -876,16 +876,13 @@ module Equ
         if (lneutraldensity) call dlnrhon_dt(f,df,p)
         if (lneutralvelocity) call duun_dt(f,df,p)
 !
-!  Add gravity, if present
+!  Gravity
 !
-        if (lgrav) then
-          if (lhydro.or.ldustvelocity.or.lneutralvelocity) &
-               call duu_dt_grav(f,df,p)
-        endif
+        if (lgrav) call addgravity(df,p)
 !
 !  Self-gravity
 !
-        if (lselfgravity) call duu_dt_selfgrav(f,df,p)
+        if (lselfgravity) call addselfgrav(df,p)
 !
 !  Cosmic ray energy density
 !

@@ -552,7 +552,7 @@ module Heatflux
 !   pc_auto-test may digest at maximum 2 digits in the exponent
 !
         tmp = qsat/(qabs+sqrt(tini))
-        where (tmp > 1d50) tmp = 1d50
+        where (tmp > impossible) tmp = impossible
         if (idiag_qsatmin/=0) call max_mn_name(-tmp,idiag_qsatmin,lneg=.true.)
         call sum_mn_name(tmp,idiag_qsatrms)
       endif

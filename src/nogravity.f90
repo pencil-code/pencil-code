@@ -14,7 +14,6 @@
 !***************************************************************
 module Gravity
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -157,21 +156,19 @@ module Gravity
 !
     endsubroutine calc_pencils_gravity
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,p)
+    subroutine addgravity(df,p)
 !
 !  Add nothing to duu/dt.
 !
 !  28-mar-02/axel: adapted from grav_z
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
-    endsubroutine duu_dt_grav
+    endsubroutine addgravity
 !***********************************************************************
     subroutine calc_diagnostics_gravity(p)
 

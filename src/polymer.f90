@@ -213,7 +213,7 @@ module Polymer
           call not_implemented('pencil_criteria_polymer','poly_algo: cholesky decomposition')
         case('nothing')
           call fatal_error('pencil_criteria_polymer', &
-              'poly_algo: please chosse an algorithm to solve the polymer equations')
+              'please choose an poly_algo to solve the polymer equations')
       endselect
 !
 ! Diagnostic pencils
@@ -397,8 +397,7 @@ module Polymer
 !  Add backreaction due to the polymer to momentum equation (default).
 !
       if (lhydro.and.lpolyback) then
-        if (tau_poly/=0.0) &
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) + mu_poly*tau_poly1*p%div_frC
+        if (tau_poly/=0.0) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) + mu_poly*tau_poly1*p%div_frC
       endif
 !
 !  If we are advecting the polymer (which is default).
@@ -427,8 +426,7 @@ module Polymer
       case('cholesky')
         call not_implemented('dpoly_dt','poly_algo: cholesky decomposition')
       case('nothing')
-        call fatal_error('dpoly_dt', &
-            'poly_algo: please choose an algorithm to solve the polymer equations')
+        call fatal_error('dpoly_dt', 'no such poly_algo: '//trim(poly_algo))
       endselect
 !
 !  polymer diffusion (sometime only for numerical stability)
@@ -437,8 +435,7 @@ module Polymer
         ipk=0
         do ipi=1,3
           do ipj=ipi,3
-            df(l1:l2,m,n,ipoly+ipk)= &
-                df(l1:l2,m,n,ipoly+ipk)-eta_poly*p%del2poly(:,ipi,ipj)
+            df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)-eta_poly*p%del2poly(:,ipi,ipj)
             ipk=ipk+1
           enddo
         enddo
@@ -448,8 +445,7 @@ module Polymer
         if (lfirst.and.ldt) then
           diffus_eta_poly=eta_poly*dxyz_2
           maxdiffus=max(maxdiffus,diffus_eta_poly)
-          if (headtt.or.ldebug) &
-            print*, 'dpoly_dt: max(diffus_eta_poly) =', maxval(diffus_eta_poly)
+          if (headtt.or.ldebug) print*, 'dpoly_dt: max(diffus_eta_poly) =', maxval(diffus_eta_poly)
         endif
       endif
 !
@@ -483,8 +479,7 @@ module Polymer
       ipk=0
       do ipi=1,3
         do ipj=ipi,3
-          df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)+ &
-              GraduDotC(:,ipi,ipj)+CDotGraduT(:,ipi,ipj)
+          df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)+GraduDotC(:,ipi,ipj)+CDotGraduT(:,ipi,ipj)
           if (tau_poly/=0.) &
             df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)- &
                 tau_poly1*(p%frC(:,ipi,ipj)-kronecker_delta(ipi,ipj))
@@ -510,7 +505,7 @@ module Polymer
             f(ix,iy,iz,ipoly_fr) = (fenep_L**2-3)/(fenep_L**2-rsqr)
           enddo; enddo; enddo
         case default
-          call fatal_error('init_poly','no such polymer model')
+          call fatal_error('init_poly','no such poly_model: '//trim(poly_model))
         endselect
 !
     endsubroutine calc_polymer_after_boundary

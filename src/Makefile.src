@@ -255,7 +255,7 @@ ifeq ($(GSL),gsl_wrapper)
 no_gsl_message:
 	@echo ";;;"
 	@echo ";;; No GSL module seems to be loaded! Exit."
-	@echo ";;; Try (one of) the following: $(shell (module avail |& grep -i gsl | sed -e's/^.* \([^ ]*[Gg][Ss][Ll][^ ]*\) .*$$/\1/') )"
+	@echo ";;; Try (one of) the following: $(shell (module spider |& grep -i gsl | sed -e's/^.* \([^ ]*[Gg][Ss][Ll][^ ]*\) .*$$/\1/') )"
 	@echo ";;;"
 	@exit 1
 
@@ -478,8 +478,8 @@ ifneq ($(GPU),nogpu)
     ROCM_LOADED := $(shell (module list |& grep -i rocm) )
     ifeq ($(CUDA_LOADED)$(ROCM_LOADED),)
       $(warning  No CUDA or ROCM module seems to be loaded!)
-      $(info Try (one of) the following: $(shell (module avail |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
-      $(info or: $(shell (module avail |& grep -i rocm | sed -e's/^.* \([^ ]*[Rr][Oo][Cc][Mm][^ ]*\) .*$$/\1/') ) )
+      $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
+      $(info or: $(shell (module spider |& grep -i rocm | sed -e's/^.* \([^ ]*[Rr][Oo][Cc][Mm][^ ]*\) .*$$/\1/') ) )
       YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
       ifeq ($(YESNO),N)
         $(error Exit)
@@ -541,7 +541,7 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
 no_hdf5_message:
 	@echo ";;;"
 	@echo ";;; No HDF5 module seems to be loaded! Exit."
-	@echo ";;; Try (one of) the following: $(shell (module avail |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') )"
+	@echo ";;; Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') )"
 	@echo ";;;"
 	@exit 1
 
@@ -3009,10 +3009,11 @@ endif
 	  replcmt=`sed -f dsl.sed $$file`; \
 	  if [[ "$$replcmt" != "" ]]; then \
 	    sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
-	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\1/'`; \
-	    echo '  write( '$$fieldname', rk3(previous('$$fieldname'), value('$$fieldname'), d'$$fieldname'_dt()))' >> $(DSL_WORKDIR)/solve.ac; \
-	    if ( ! grep 'd'$$fieldname'_dt(){ }' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
-	      echo 'd'$$fieldname'_dt(){ }' >> $(DSL_WORKDIR)/equations.h; \
+	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\U\1/'`; \
+	    funcname=`grep '^ *subroutine  *d[a-zA-Z_0-9_][a-zA-Z_0-9_]*_dt' $$file | sed -e's/^ *subroutine  *d/d/' -e's/ *(.*$$//'`; \
+	    echo '  write( '$$fieldname', rk3(previous('$$fieldname'), value('$$fieldname'), '$$funcname'()))' >> $(DSL_WORKDIR)/solve.ac; \
+	    if ( ! grep $$funcname'(){ }' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
+	      echo $$funcname'(){ }' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '' >> $(DSL_WORKDIR)/equations.h; \
 	    fi \
           fi \
