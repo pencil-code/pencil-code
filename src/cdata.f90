@@ -19,6 +19,16 @@ module Cdata
 !
   character (len=linelen) :: cvsid='no cvsid is given in start.in or run.in!'
 !
+!  Polar grid
+!
+  integer :: ncoarse=0
+  logical :: lcoarse=.false., lcoarse_mn=.false.
+  integer, dimension(2) :: mexts=(/-1,-1/)
+  integer, dimension(:), allocatable :: nphis
+  real, dimension(:), allocatable :: nphis1, nphis2
+  integer, dimension(:,:), allocatable :: nexts
+  integer, dimension(:,:,:), allocatable :: ninds
+!
 !  Cartesian coordinate system.
 !
   real, dimension (nx,3) :: dline_1
@@ -126,24 +136,14 @@ module Cdata
 !  Box dimensions.
 !
   character (len=labellen), dimension(3) :: xyz_units='one'
-  real, dimension(3) :: Lxyz=impossible,xyz0=-pi,xyz1=impossible,xyz_star=0.0
+  real, dimension(3) :: Lxyz=impossible
+  real, dimension(3) :: xyz0=-pi,xyz1=impossible,xyz_star=0.0
   real, dimension(3) :: Lxyz_loc,xyz0_loc,xyz1_loc
   real :: x0, y0, z0, Lx, Ly, Lz, wav1=impossible, wav1z=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
-!END C BINDING
-!
-!  Polar grid
-!
-  integer :: ncoarse=0
-  logical :: lcoarse=.false., lcoarse_mn=.false.
-  integer, dimension(2) :: mexts=(/-1,-1/)
-  integer, dimension(:), allocatable :: nphis
-  real, dimension(:), allocatable :: nphis1, nphis2
-  integer, dimension(:,:), allocatable :: nexts
-  integer, dimension(:,:,:), allocatable :: ninds
 !
 !  Time integration parameters.
 !
@@ -515,6 +515,7 @@ module Cdata
   logical :: lav_smallx=.false.,loutside_avg=.false.
   real :: xav_max=impossible
   real :: nVol,nVol1  !  For calculating averages in non-Cartesian coordinates
+!END C BINDING
 !
 ! Averages of half the computational box:
 ! fname_half has two indices, the first contains the quantity averaged
