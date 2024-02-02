@@ -24,9 +24,7 @@ s/(\/.*\/)//g
 #replace double precision exponent symbol by single precision one
 s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 #remove lines containing implicit none
-/implicit  *none/ d
-s/integer *( *kind *= *ikind8 *) *::/long long/
-s/real *( *kind *= *rkind8 *) *::/ double/ 
+/^ *implicit  *none/ d
 #remove comment at line end
 s/\([^ ]\) *!.*$/\1/
 #insert pragma and includes instead of module
@@ -41,6 +39,8 @@ s/integer *\([*]*\):: */extern FINT \1,/
 s/real *\([*]*\):: */extern REAL \1,/
 s/logical *\([*]*\):: */extern int \1,/
 s/double  *precision *\([*]*\):: */extern double \1,/
+s/integer *( *kind *= *ikind8 *) *\([*]*\):: */extern long long \1,/
+s/real *( *kind *= *rkind8 *) *\([*]*\):: */extern double \1,/ 
 #remove initializations for non-constant items
 /const/ !s/ *= *[a-zA-Z0-9_]* *([^)][^)]*)[^,]*,/,/g
 /const/ !s/ *= *[a-zA-Z0-9_]* *([^)][^)]*)[^,]*$//
