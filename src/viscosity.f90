@@ -18,7 +18,6 @@
 !***************************************************************
 module Viscosity
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -59,7 +58,6 @@ module Viscosity
   real, dimension(:), pointer :: etat_z, detat_z
   real, dimension(3) :: nu_aniso_hyper3=0.0
   real, dimension(mx) :: LV0_rprof,LV1_rprof,LH1_rprof,der_LV0_rprof,der_LV1_rprof
-  logical :: lvisc_first=.false.
   logical :: lvisc_simplified=.false.
   logical :: lvisc_nu_non_newtonian=.false.
   logical :: lvisc_rho_nu_const=.false.
@@ -145,8 +143,8 @@ module Viscosity
 !
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
-  integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration
-  integer :: idiag_fviscmax=0   ! DIAG_DOC: Max value of viscous acceleration
+  integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration (redundant)
+  integer :: idiag_fviscmax=0   ! DIAG_DOC: Max absolute viscous acceleration
   integer :: idiag_fviscrmsx=0  ! DIAG_DOC: Rms value of viscous acceleration
                                 ! DIAG_DOC: for the vis_xaver_range
   integer :: idiag_num=0        ! DIAG_DOC: Mean value of viscosity
@@ -1194,6 +1192,13 @@ module Viscosity
         lpenc_requested(i_del2u)=.true.
         lpenc_requested(i_d2uidxj)=.true.
       endif
+!
+!  fviscmax has been revised to show absolute maximum rather than component
+!  maximum and largest component negative no longer computed. Sign of the
+!  maximum force is arbitrary.
+!
+      if (idiag_fviscmin/=0) call warning("pencil_criteria_viscosity",&
+          "fviscmin redundant equivalent to fviscmax (absolute)")
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
@@ -2406,14 +2411,6 @@ module Viscosity
 !
     endsubroutine getnu_non_newtonian
 !***********************************************************************
-    subroutine calc_viscosity(f)
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_viscosity
-!***********************************************************************
     subroutine get_gradnu(tmp,ljumpx,ljumpr,p,gradnu)
 !
 !  Calculate grad nu for vicosity jump in different
@@ -2601,8 +2598,8 @@ module Viscosity
                                                p%uu(:,2)*p%fvisc(:,2)+ &
                                                p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
 
-        if (idiag_fviscmin/=0) call max_mn_name(-fvisc2,idiag_fviscmin,lneg=.true.,lsqrt=.true.)
-        call max_mn_name(fvisc2,idiag_fviscmax,lsqrt=.true.)
+        if (idiag_fviscmin/=0) call max_mn_name(fvisc2,idiag_fviscmin,lsqrt=.true.)
+        if (idiag_fviscmax/=0) call max_mn_name(fvisc2,idiag_fviscmax,lsqrt=.true.)
 
         if (idiag_fviscrmsx/=0) call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
         call sum_mn_name(p%visc_heat,idiag_visc_heatm)

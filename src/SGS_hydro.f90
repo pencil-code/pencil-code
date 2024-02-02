@@ -82,8 +82,8 @@ print*, 'aasmooth=', iaasmooth
 !  visc_forc is written to snapshots and can be easily analyzed later).
 !
       if (lSGS_forc_as_aux) then
-        call farray_register_auxiliary('SGS_forc',iSGS_force,vector=3)
-        aux_var(aux_count)=',SGS_forc'
+        call farray_register_auxiliary('SGS_force',iSGS_force,vector=3)
+        aux_var(aux_count)=',SGS_force'
         if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
         aux_count=aux_count+3
       endif
@@ -300,6 +300,7 @@ print*, 'aasmooth=', iaasmooth
             enddo
           endif
         enddo
+
         if (lmagnetic) then
           if (iaasmooth==iuusmooth+3) then
             call update_ghosts(f,iuusmooth,iaasmooth+2)
@@ -310,7 +311,7 @@ print*, 'aasmooth=', iaasmooth
         else
           call update_ghosts(f,iuusmooth,iuusmooth+2)
         endif
-        ! if not periodic bcs are required
+
         do n=n1,n2; do m=m1,m2
           call gij(f,iuusmooth,uij,1)
           call div(f,iuusmooth,penc)
@@ -318,7 +319,7 @@ print*, 'aasmooth=', iaasmooth
           call traceless_strain(uij,penc,sij,uu)!,lshear_rateofstrain)
           sij2=sum(sum(sij**2,2),2)
           call tauij_SGS(uij,sij2,cReyStress,f,itauSGSRey) ! remember rho
-          ! what would be good bcs for stresses when not lperi
+
           if (lmagnetic) then
             call gij_etc(f,iaasmooth,BIJ=uij)
             call traceless_strain(uij,sij=mij)
@@ -326,6 +327,7 @@ print*, 'aasmooth=', iaasmooth
             call tauij_SGS(uij,mij2,cMaxStress,f,itauSGSMax)
           endif
         enddo; enddo
+
         if (lmagnetic) then
           if (itauSGSMax==itauSGSRey+6) then
             call update_ghosts(f,itauSGSRey,itauSGSMax+5)

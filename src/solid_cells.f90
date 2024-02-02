@@ -86,6 +86,10 @@ module Solid_Cells
   real :: r_ogrid
   real :: r_int_outer
   real, dimension(3) :: xorigo_ogrid
+!  Added for multithreading purposes
+  real, pointer, dimension(:) :: p_c_dragy, p_c_dragx, p_c_dragz, p_Nusselt, p_c_dragx_p, p_c_dragz_p, p_c_dragy_p
+  real, pointer :: p_rhosum
+  integer, pointer  :: p_irhocount
 !
   contains
 !***********************************************************************
@@ -3744,5 +3748,61 @@ module Solid_Cells
       gp=0.
 !
     endsubroutine interpolate_particles_ogrid
+!***********************************************************************
+  subroutine sc_init_diags_accumulators
+!
+!  Need to initialize accumulators since master thread does not take part in diagnostics
+!
+!  25-aug-23/TP: Coded
+!
+        p_rhosum = 0
+        p_irhocount = 0
+        if (allocated(c_dragy)) p_c_dragy = 0
+        if (allocated(c_dragz)) p_c_dragz = 0
+        if (allocated(c_dragx)) p_c_dragx = 0
+        if (allocated(Nusselt)) p_Nusselt = 0
+        if (allocated(c_dragx_p)) p_c_dragx_p = 0
+        if (allocated(c_dragy_p)) p_c_dragy_p = 0
+        if (allocated(c_dragz_p)) p_c_dragz_p = 0
+ 
+  endsubroutine sc_init_diags_accumulators
+!***********************************************************************
+  subroutine sc_diags_reductions
+!
+!  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
+!
+!  30-mar-23/TP: coded
+!
+      if (ldiagnos) then
+        p_rhosum = p_rhosum + rhosum
+        p_irhocount = p_irhocount + irhocount
+        if (allocated(c_dragy)) p_c_dragy = p_c_dragy + c_dragy
+        if (allocated(c_dragz)) p_c_dragz = p_c_dragz + c_dragz
+        if (allocated(c_dragx)) p_c_dragx = p_c_dragx + c_dragx
+        if (allocated(Nusselt)) p_Nusselt = p_Nusselt + Nusselt
+        if (allocated(c_dragx_p)) p_c_dragx_p = p_c_dragx_p + c_dragx_p
+        if (allocated(c_dragy_p)) p_c_dragy_p = p_c_dragy_p + c_dragy_p
+        if (allocated(c_dragz_p)) p_c_dragz_p = p_c_dragz_p + c_dragz_p
+      endif
+
+  endsubroutine sc_diags_reductions
+!***********************************************************************
+  subroutine sc_init_reduc_pointers
+!
+!  Initiliazes solid_cells specific pointers needed in thread_reductions 
+!
+!  30-mar-23/TP: Coded
+!
+    p_rhosum => rhosum
+    p_irhocount => irhocount
+    p_c_dragy => c_dragy
+    p_c_dragx => c_dragx
+    p_c_dragz => c_dragz
+    p_Nusselt => Nusselt
+    p_c_dragx_p => c_dragx_p
+    p_c_dragy_p => c_dragy_p
+    p_c_dragz_p => c_dragz_p
+
+  endsubroutine sc_init_reduc_pointers
 !***********************************************************************
 endmodule Solid_Cells

@@ -32,6 +32,7 @@ module Special
   real, dimension(mx,my,mz) :: rr1,siny,cosy  !  1/r,sin(th) and cos(th)
   real, dimension(mx,my,mz,3) :: Bext=0.  !  time-dependent external field
 !  constants for unit conversion
+  real :: gamma=1.
   real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
   real :: pp2Pa=1., TT2K=1., tt2s=1., g2m3_s2=1.
 !
@@ -56,8 +57,12 @@ module Special
   real :: tauradtop=1.d4, tauradbot=1.d7  ! unit: [s]
   real :: pradtop=1.d3, pradbot=1.d6      ! unit: [Pa]
   real :: pbot0=1.e7                       ! unit: [Pa]
+  real :: q_damping=0.0
+  !
+  integer :: n_damping=0
   !
   logical :: linit_equilibrium=.false.
+  logical :: lsponge_top=.false.,lsponge_bottom=.false.,lvelocity_drag=.false.
 !
 ! Run parameters
 !
@@ -71,10 +76,11 @@ module Special
       R_planet,rho_ref,cs_ref,cp_ref,T_ref,pbot0,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
-      Bext_ampl,iBext
+      Bext_ampl,iBext,n_damping,lsponge_top,lsponge_bottom,lvelocity_drag,q_damping
 !
   namelist /special_run_pars/ &
-      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext
+      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,n_damping,&
+      lsponge_top,lsponge_bottom,lvelocity_drag,q_damping
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -146,7 +152,7 @@ module Special
           do i=1,(ipx+1)*nx
             do isub=1,nsub  !  use small length step, dx/nsub
               call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
-              rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref/3.5) / rho2kg_m3  !  in code unit
+              rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref*(gamma-1.)/gamma) / rho2kg_m3  !  in code unit
               dp = -rhoeq_tmp * g0/xglobal(i+nghost)**2 * dx/nsub * pp2Pa  ! in [Pa]
               p_tmp = p_tmp+dp
               if (p_tmp<0.) call fatal_error('init_special', &
@@ -211,6 +217,52 @@ module Special
       write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
+!***********************************************************************
+    subroutine special_calc_hydro(f,df,p)
+!
+!  Add damping layers near the top and bottom boundaries. Ref: Dowling (1998).
+!  ksp in his work is equal to n_damping.
+!  q(j) is correspond to mu0(n_damping+1-j) in eq(57).
+!
+!  24-nov-23/kuan,hongzhe: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(:), allocatable :: q
+      integer :: i, j
+!
+      if (n_damping>0 .and. (lsponge_top.or.lsponge_bottom)) then
+        allocate(q(n_damping))
+        q=0.
+      endif
+!
+      if (it>1 .and. lsponge_top .and. llast_proc_x) then
+        do j=1,n_damping
+          q=0.5*(1.-cos(pi*j/n_damping)) ! from 0 to 2
+        enddo
+!
+        do i=iux,iuz
+          df(l2-n_damping+1:l2,m,n,i) = -q * f(l2-n_damping+1:l2,m,n,i) ! from bottom to top
+        enddo
+      endif
+!
+      if (it>1 .and. lsponge_bottom .and. lfirst_proc_x) then
+        do j=1,n_damping
+          q=0.5*(1.-cos(pi*(n_damping-j+1)/n_damping)) ! from 2 to 0
+        enddo
+!
+        do i=iux,iuz
+          df(l1:l1+n_damping-1,m,n,i) = -q * f(l1:l1+n_damping-1,m,n,i) ! from bottom to top
+        enddo
+      endif
+!
+! add velocity drag, dudt = ... - q_damping * u
+!
+      if (lvelocity_drag) df(l1:l2,m,n,iux:iuz) = -q_damping * f(l1:l2,m,n,iux:iuz)
+!
+    endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
@@ -290,7 +342,7 @@ module Special
 !
       use EquationOfState, only: rho0,cs0,get_gamma_etc
 !
-      real :: gamma,cp
+      real :: cp
 !
       if (unit_system/='SI') call fatal_error('prepare_unit_conversion','please use SI system')
 !
@@ -307,8 +359,8 @@ module Special
       g2m3_s2 = r2m * u2m_s**2.      !  GM to [m3/s2]
 !
       if (lroot) then
-        print*,'Constants for uit conversion: r2m,rho2kg_m3,u2m_s,cp2si = ', &
-                r2m,rho2kg_m3,u2m_s,cp2si
+        print*,'Constants for uit conversion: gamma,r2m,rho2kg_m3,u2m_s,cp2si = ', &
+                gamma,r2m,rho2kg_m3,u2m_s,cp2si
         print*,'Constants for uit conversion: pp2Pa,TT2K,tt2s, g2m3_s2 = ', &
                 pp2Pa,TT2K,tt2s,g2m3_s2
       endif

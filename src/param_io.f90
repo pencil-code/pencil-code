@@ -41,6 +41,7 @@ module Param_IO
   use Polymer
   use Power_spectrum
   use Pscalar
+  use Python
   use Ascalar
   use Radiation
   use Selfgravity
@@ -93,7 +94,7 @@ module Param_IO
       lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, lenforce_maux_check, &
-      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, lzorder, &
+      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, nprocx_node, nprocy_node, nprocz_node, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
       lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &
@@ -102,7 +103,7 @@ module Param_IO
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
       fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, bc_slc_dir, &
       vel_spec, mag_spec, &
-      uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
+      uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, relvel_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
       bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
@@ -139,8 +140,8 @@ module Param_IO
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
       lshift_origin, lshift_origin_lower, coord_system, lconcurrent, &
-      nt, it1, it1start, it1d, itspec, it_rmv, dt, dt0, cdt, ddt, dt_incr, &
-      lfractional_tstep_advance, lfractional_tstep_negative, &
+      nt, it1, it1start, it1d, itspec, it_rmv, dt, dt0, dt_epsi, cdt, ddt, dt_incr, &
+      lfractional_tstep_advance, lfractional_tstep_negative, leps_fixed, &
       cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, cdtf, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, &
@@ -149,7 +150,7 @@ module Param_IO
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, &
       lspec_start, lspec_at_tplusdt, vel_spec, mag_spec, &
-      uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
+      uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, relvel_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
       bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
@@ -158,7 +159,7 @@ module Param_IO
       SCL_spec_boost, VCT_spec_boost, &
       StT_spec, StX_spec, &
       vel_phispec, mag_phispec, &
-      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
+      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, abs_u_spec, &
       nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, ucp_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
@@ -201,7 +202,7 @@ module Param_IO
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
       lpencil_check_small, lpencil_check_no_zeros, lpencil_check_diagnos_opti, &
       lpencil_init, penc0, lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
-      crash_file_dtmin_factor, ltestperturb, eps_rkf, lshock_heat, &
+      crash_file_dtmin_factor, ltestperturb, eps_rkf, eps_rkf0, lshock_heat, &
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
       lini_t_eq_zero, lini_t_eq_zero_once, &
       lav_smallx, xav_max, ldt_paronly, lweno_transport, &
@@ -520,7 +521,6 @@ module Param_IO
 
     endsubroutine read_all_run_pars
 !***********************************************************************
-!***********************************************************************
     subroutine read_all_namelists(linit_pars)
 !
       use Particles_main, only: read_all_particles_init_pars, read_all_particles_run_pars
@@ -612,6 +612,7 @@ module Param_IO
         call read_namelist(read_polymer_run_pars        ,'polymer'           ,lpolymer)
         call read_namelist(read_pointmasses_run_pars    ,'pointmasses'       ,lpointmasses)
         call read_namelist(read_power_spectrum_run_pars ,'power_spectrum'    ,lpower_spectrum)
+        call read_namelist(read_python_run_pars         ,'python'            ,lpython)
         call read_namelist(read_implicit_diff_run_pars  ,'implicit_diffusion',limplicit_diffusion)
 !
       call read_all_particles_run_pars
@@ -970,6 +971,7 @@ module Param_IO
           call write_power_spectrum_run_pars(unit)
           call write_polymer_run_pars(unit)
           call write_pointmasses_run_pars(unit)
+          call write_python_run_pars(unit)
           call write_implicit_diff_run_pars(unit)
 !
           call write_all_particles_run_pars(unit)

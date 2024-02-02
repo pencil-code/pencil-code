@@ -20,6 +20,7 @@ module Grid
 !
   private
 !
+  public :: calc_pencils_grid_std_test
   public :: construct_grid
   public :: pencil_criteria_grid
   public :: pencil_interdep_grid
@@ -2208,6 +2209,11 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
       enddo
 !
+!  Give some output in case of error:
+!
+      print*,'iproc,xi_star=',iproc,xi_star 
+      print*,'iproc,grid_func=',iproc,grid_func 
+      print*,'iproc,xi_lo, xi_up, x_lo, x_up, x_star=', iproc,xi_lo, xi_up, x_lo, x_up, x_star
       call fatal_error('find_star','maximum number of iterations exceeded')
 !
     endfunction find_star
@@ -2372,7 +2378,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !  25-feb-13/ccyang: construct global coordinates including ghost cells.
 !
       use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int, MPI_COMM_WORLD
-      use General, only: loptest
+      use General, only: loptest, find_proc
 !
       logical, optional :: lprecise_symmetry
 
@@ -2403,15 +2409,16 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !  The root processor, in turn, receives the data from the others
 !
         do jx=0,nprocx-1
+!
+          iproc_recv=find_proc(jx,0,0) 
           !avoid send-to-self
-          if (jx/=root) then
+          if (iproc_recv/=root) then
 !
 !  Formula of the serial processor number:
 !  iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
 !  Since for the x-row ipy=ipz=0, this reduces
 !  to iproc_recv=jx.
 !
-            iproc_recv=jx
             call mpirecv_real(xrecv,nx,iproc_recv,111)
             call mpirecv_real(x1recv,nx,iproc_recv,112)
             call mpirecv_real(x2recv,nx,iproc_recv,113)
@@ -2449,8 +2456,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         endif
       else
         do jy=0,nprocy-1
-          if (jy/=root) then
-            iproc_recv=nprocx*jy
+          iproc_recv=find_proc(0,jy,0) 
+          if (iproc_recv/=root) then
             call mpirecv_real(yrecv,ny,iproc_recv,221)
             call mpirecv_real(y1recv,ny,iproc_recv,222)
             call mpirecv_real(y2recv,ny,iproc_recv,223)
@@ -2483,8 +2490,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         endif
       else
         do jz=0,nprocz-1
-          if (jz/=root) then
-            iproc_recv=nprocx*nprocy*jz
+          iproc_recv=find_proc(0,0,jz) 
+          if (iproc_recv/=root) then
             call mpirecv_real(zrecv,nz,iproc_recv,331)
             call mpirecv_real(z1recv,nz,iproc_recv,332)
             call mpirecv_real(z2recv,nz,iproc_recv,333)
@@ -2701,4 +2708,69 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
     endsubroutine generate_halfgrid
 !***********************************************************************
+    subroutine calc_pencils_grid_std_test(p)
+!
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+! 10-oct-17/MR: coded
+!
+!
+    use Sub
+    use Deriv
+type (pencil_case) :: p
+intent(inout) :: p
+if(lpencil(i_x_mn)) then
+p%x_mn    = x((1+3):l2)
+endif
+if(lpencil(i_y_mn)) then
+p%y_mn    = spread(y(m),1,(nxgrid/nprocx))
+endif
+if(lpencil(i_z_mn)) then
+p%z_mn    = spread(z(n),1,(nxgrid/nprocx))
+endif
+if(lpencil(i_r_mn)) then
+p%r_mn    = sqrt(x((1+3):l2)**2+y(m)**2+z(n)**2)
+endif
+if(lpencil(i_rcyl_mn)) then
+p%rcyl_mn = sqrt(x((1+3):l2)**2+y(m)**2)
+endif
+if(lpencil(i_phi_mn)) then
+p%phi_mn  = atan2(y(m),x((1+3):l2))
+endif
+if(lpencil(i_rcyl_mn1)) then
+p%rcyl_mn1=1./max(p%rcyl_mn,(5*tiny(1.0)))
+endif
+if(lpencil(i_r_mn1)) then
+p%r_mn1   =1./max(p%r_mn,(5*tiny(1.0)))
+endif
+if(lpencil(i_pomx)) then
+p%pomx    = x((1+3):l2)*p%rcyl_mn1
+endif
+if(lpencil(i_pomy)) then
+p%pomy    = y(  m  )*p%rcyl_mn1
+endif
+if(lpencil(i_phix)) then
+p%phix    =-y(  m  )*p%rcyl_mn1
+endif
+if(lpencil(i_phiy)) then
+p%phiy    = x((1+3):l2)*p%rcyl_mn1
+endif
+if(lpencil(i_rr)) then
+p%rr(:,1)=p%x_mn
+p%rr(:,2)=p%y_mn
+p%rr(:,3)=p%z_mn
+endif
+if(lpencil(i_evr)) then
+p%evr(:,1) = p%rcyl_mn*p%r_mn1*p%pomx
+p%evr(:,2) = p%rcyl_mn*p%r_mn1*p%pomy
+p%evr(:,3) = z(n)*p%r_mn1
+endif
+if(lpencil(i_evth)) then
+p%evth(:,1) = z(n)*p%r_mn1*p%pomx
+p%evth(:,2) = z(n)*p%r_mn1*p%pomy
+p%evth(:,3) = -p%rcyl_mn*p%r_mn1
+endif
+    
+    endsubroutine calc_pencils_grid_std_test
 endmodule Grid

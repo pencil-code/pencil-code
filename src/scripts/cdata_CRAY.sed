@@ -1,3 +1,6 @@
+#restrict to necessary variables
+1,/BEGIN C BINDING/ d
+/END C BINDING/, $ d
 #remove user defined type definitions
 /^ *type *[a-zA-Z0-9_]* *$/,/^ *end *type *[a-zA-Z0-9_]* *$/ d
 #remove comment lines
@@ -23,9 +26,10 @@ s/.*/\L&/g
 s/(\/.*\/)//g
 #replace double precision exponent symbol by single precision one
 s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
-#remove lines containing implicit none or kind=
+#remove lines containing implicit none
 /implicit  *none/ d
-/kind=ikind8/ d
+s/integer *( *kind *= *ikind8 *) *::/long long/
+s/real *( *kind *= *rkind8 *) *::/ double/
 #remove comment at line end
 s/\([^ ]\) *!.*$/\1/
 #insert pragma and includes instead of module

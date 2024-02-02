@@ -351,7 +351,8 @@ module Energy
 !
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
-      if (lhydro.and.lpressuregradient_gas.and..not.lconservative) then
+      if (lhydro.and.lpressuregradient_gas.and..not.lconservative &
+          .and.(.not.lhydro_potential)) then
 
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres
 !

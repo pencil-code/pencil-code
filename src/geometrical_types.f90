@@ -101,10 +101,8 @@
     integer,          intent(OUT)  :: iostat
     character(LEN=*), intent(INOUT):: iomsg
 
-    write(unit=unit,iostat=iostat,iomsg=iomsg) torus%center, &
-                                               torus%th,torus%ph, &
-                                               torus%r_in, torus%thick, &
-                                               torus%height
+    write(unit=unit,iostat=iostat) torus%center, torus%th, torus%ph, torus%r_in, torus%thick, &
+                                                 torus%height
     endsubroutine torus_rect_unfmt_write
 !***********************************************************************
     subroutine torus_rect_unfmt_read(torus,unit,iostat,iomsg)
@@ -114,10 +112,8 @@
     integer,          intent(OUT)  :: iostat
     character(LEN=*), intent(INOUT):: iomsg
 
-    read(unit=unit,iostat=iostat,iomsg=iomsg) torus%center, &
-                                              torus%th,torus%ph, &
-                                              torus%r_in, torus%thick, &
-                                              torus%height
+    read(unit=unit,iostat=iostat) torus%center, torus%th, torus%ph, torus%r_in, torus%thick, &
+                                                torus%height
     endsubroutine torus_rect_unfmt_read
 !***********************************************************************
   endmodule Geometrical_types

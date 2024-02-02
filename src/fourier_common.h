@@ -1,14 +1,5 @@
-!***********************************************************************
-subroutine initialize_fourier()
-!
-!  Populate wavenumber arrays for fft and calculate Nyquist wavenumber.
-!
-!  17-May-2021/PABourdin: moved here from start.f90 and run.f90
-!
-      use Cdata
-!
       integer :: i
-!
+
       if (nxgrid/=1) then
         kx_fft=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
         kx_fft2=kx_fft**2
@@ -35,7 +26,4 @@ subroutine initialize_fourier()
         kz_fft=0.0
         kz_nyq=0.0
       endif
-!
-    endsubroutine initialize_fourier
-!***********************************************************************
 

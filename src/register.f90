@@ -245,6 +245,8 @@ module Register
       use ImplicitPhysics,  only: initialize_implicit_physics
       use Grid,             only: initialize_grid
       use GPU,              only: initialize_gpu
+!$    use OMP_lib
+!$    use mt
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -369,10 +371,9 @@ module Register
 !
       call initialize_deriv
       call initialize_diagnostics
-      call initialize_gpu
       call initialize_timeavg(f)
       call initialize_initial_condition(f)
-      call initialize_eos
+      call initialize_eos(f)
       call initialize_gravity(f)
       call initialize_selfgravity(f)
       call initialize_poisson
@@ -391,7 +392,7 @@ module Register
       call initialize_testscalar(f)
       call initialize_testfield(f)
       call initialize_testflow(f)
-      call initialize_radiation  !(f)
+      call initialize_radiation(f)
       call initialize_pscalar(f)
       call initialize_ascalar(f)
       call initialize_chiral(f)
@@ -413,6 +414,9 @@ module Register
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
       call initialize_pointmasses(f)
+      call initialize_gpu
+!$    num_of_helper_threads = omp_get_num_procs()-1
+
 !
 !  Check if MAUX is consistent with what is required.
 !
@@ -422,8 +426,6 @@ module Register
 !
       call write_varname
       call write_pt_positions
-!
-!  Initialize threads.
 !
     endsubroutine initialize_modules
 !***********************************************************************
@@ -1150,7 +1152,7 @@ module Register
 !
       if (lreset) then
         idiag_t=0; idiag_it=0; idiag_dt=0; idiag_walltime=0
-        idiag_timeperstep=0
+        idiag_timeperstep=0; idiag_eps_rkf=0
         idiag_rcylmphi=0; idiag_phimphi=0; idiag_zmphi=0; idiag_rmphi=0
         idiag_dtv=0; idiag_dtdiffus=0; idiag_dtdiffus2=0; idiag_dtdiffus3=0; idiag_Rmesh=0; idiag_Rmesh3=0
         idiag_maxadvec=0
@@ -1172,6 +1174,7 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'maxadvec',idiag_maxadvec)
         call parse_name(iname,cname(iname),cform(iname),'walltime',idiag_walltime)
         call parse_name(iname,cname(iname),cform(iname),'timeperstep',idiag_timeperstep)
+        call parse_name(iname,cname(iname),cform(iname),'eps_rkf',idiag_eps_rkf)
       enddo
 !
 !  phi-averages

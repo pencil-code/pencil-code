@@ -80,12 +80,6 @@ module Interstellar
     type (ClusterIndex) :: indx
   endtype
 !
-!  required for *put_persistant_interstellar, update integer value to match
-!  any changes to number of above types
-!
-  integer :: nSITE = 7, nFEAT = 12, nINDX = 9
-  integer :: oFEAT = 8, oINDX = 11
-!
 !  Enumeration of Supernovae types.
 !
   integer, parameter :: SNtype_I = 1, SNtype_II = 2
@@ -139,7 +133,7 @@ module Interstellar
 !
 !  Allocate time of next SNI/II and intervals until next
 !
-  real :: t_next_SNI=0.0, t_next_SNII=0.0, t_next_mass=0.0
+  real :: t_next_SNI=0.0, t_next_SNII=0.0
   real :: x_cluster=0.0, y_cluster=0.0, z_cluster=0.0, t_cluster=0.0
   real :: t_interval_SNI=impossible, t_interval_SNII=impossible
   real :: t_interval_OB=impossible
@@ -304,11 +298,6 @@ module Interstellar
   real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, T_init_cgs=1.E3
   real :: rho0ts=impossible, T_init=impossible, rho_min=impossible
 !
-!  Cooling timestep limiter coefficient
-!  (This value 0.08 is overly restrictive. cdt_tauc=0.5 is a better value.)
-!
-  real :: cdt_tauc=0.5
-!
 !  Time of most recent SNII event
 !
   real :: last_SN_t=0.
@@ -372,7 +361,6 @@ module Interstellar
 !
   logical :: laverage_SNI_heating = .false.
   logical :: laverage_SNII_heating = .false.
-  logical :: lheating_UV         = .true.
 !
 !  Remnant location flags
 !
@@ -417,7 +405,6 @@ module Interstellar
 !  Variables required for returning mass to disk given no inflow
 !  boundary condition used in addmassflux
 !
-  real :: addrate=1.0, add_scale=0.5
   real :: boldmass=0.0, old_rhom=1.0
   logical :: ladd_massflux = .false.
 !  switches required to override the persistent values when continuing a run
@@ -461,19 +448,18 @@ module Interstellar
       lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, width_SN, lSNI, lSNII, &
       luniform_zdist_SNI, SNI_area_rate, SNII_area_rate, &
       SNI_factor, SNII_factor, lSN_autofrackin, kin_max, &
-      inner_shell_proportion, outer_shell_proportion, &
       frac_ecr, frac_kin, thermal_profile,velocity_profile, mass_profile, &
       h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, lh_SNII_adjust, &
-      mass_SN_progenitor, cloud_tau, cdt_tauc, cloud_rho, cloud_TT, &
+      mass_SN_progenitor, cloud_tau, cloud_rho, cloud_TT, &
       laverage_SNI_heating, laverage_SNII_heating, coolingfunction_scalefactor, &
       heatingfunction_scalefactor, heatingfunction_fadefactor, t_settle, &
       center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
-      lheating_UV, cooling_select, heating_select, heating_rate, GammaUV, &
+      cooling_select, heating_select, heating_rate, GammaUV, &
       heatcool_shock_cutoff_rate, ladd_massflux, lcooling_revert, &
-      N_mass, addrate, add_scale, T_init, rho0ts, &
+      N_mass, T_init, rho0ts, &
       lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
       p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, &
-      kpara, average_SNII_heating, average_SNI_heating, seed_reset, &
+      average_SNII_heating, average_SNI_heating, seed_reset, &
       l_persist_overwrite_lSNI, l_persist_overwrite_lSNII, &
       l_persist_overwrite_tSNI, l_persist_overwrite_tSNII, &
       l_persist_overwrite_tcluster, l_persist_overwrite_xcluster, &
@@ -768,7 +754,7 @@ module Interstellar
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
         print*,'initialize_interstellar: finished'
       endif
-      if (ladd_massflux) call warning('initialize_interstellar','ladd_massflux now depricated,' // &
+      if (ladd_massflux) call warning('initialize_interstellar','ladd_massflux now redundant,' // &
                                       'set lconserve_total_mass, total_mass in density_run_pars instead')
 !
 !  Fred: 06-Nov-17 added SN_rate column and changed site_mass to site_Nsol
@@ -1639,10 +1625,9 @@ module Interstellar
 !
       lpenc_requested(i_heat)=.true.
       lpenc_requested(i_cool)=.true.
-      lpenc_requested(i_heatcool)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_lnTT)=.true.
-      lpenc_requested(i_ee)=.true.
+      if (ltemperature.and..not.ltemperature_nolog) lpenc_requested(i_ee)=.true.
       if (.not.(ltemperature_nolog.and.ltemperature).or.pretend_lnTT) then
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_TT1)=.true.
@@ -1650,8 +1635,16 @@ module Interstellar
       if (ltemperature_nolog) lpenc_requested(i_cv1)=.true.
       if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
 !
-      if ((ltemperature_nolog.and.ltemperature).and.(idiag_taucmin/=0.or.idiag_Hmax_ism/=0)) &
+      if (idiag_taucmin/=0.or.idiag_Hmax_ism/=0) then
+        if (ltemperature_nolog.and.ltemperature) then
           lpenc_diagnos(i_TT1)=.true.
+        else
+          lpenc_diagnos(i_ee)=.true.
+          lpenc_diagnos(i_TT)=.true.
+        endif
+        lpenc_diagnos(i_heatcool)=.true.
+      endif
+      if (idiag_rhoHCmz/=0) lpenc_diagnos(i_heatcool)=.true.
       if (idiag_Lamm/=0) lpenc_diagnos(i_rho1)=.true.
 !
 !  Diagnostic pencils
@@ -1750,28 +1743,23 @@ module Interstellar
 !
       type(pencil_case) :: p
 !
-      real, dimension(nx) :: netheat, netcool
-!
       if (ldiagnos) then
         if (idiag_Hmax_ism/=0) then
-          netheat=max(p%heatcool,0.)
           if (ltemperature.and.ltemperature_nolog) then
-            call max_mn_name(netheat*p%TT1,idiag_Hmax_ism)
+            call max_mn_name(p%heatcool*p%TT1,idiag_Hmax_ism)
           elseif (pretend_lnTT) then
-            call max_mn_name(netheat,idiag_Hmax_ism)
+            call max_mn_name(p%heatcool,idiag_Hmax_ism)
           else
-            call max_mn_name(netheat*p%TT/p%ee,idiag_Hmax_ism)
+            call max_mn_name(p%heatcool*p%TT/p%ee,idiag_Hmax_ism)
           endif
         endif
         if (idiag_taucmin/=0) then
-          netcool=-p%heatcool
-          where (p%heatcool>=0.0) netcool=1.0e-6
           if (ltemperature.and.ltemperature_nolog) then
-            call max_mn_name(netcool*p%TT1,idiag_taucmin,lreciprocal=.true.)
+            call max_mn_name(-p%heatcool*p%TT1,idiag_taucmin,lreciprocal=.true.)
           elseif (pretend_lnTT) then
-            call max_mn_name(netcool,idiag_taucmin,lreciprocal=.true.)
+            call max_mn_name(-p%heatcool,idiag_taucmin,lreciprocal=.true.)
           else
-            call max_mn_name(netcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
+            call max_mn_name(-p%heatcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
           endif
         endif
         if (idiag_Lamm/=0) call sum_mn_name(p%rho1*p%cool,idiag_Lamm)
@@ -2034,7 +2022,6 @@ module Interstellar
       !endif
 !
 !  Limit timestep by the cooling time (having subtracted any heating)
-!  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
       if (ldt.and.lfirst .or. ldiagnos) then
         if (ltemperature.or.pretend_lnTT) then
@@ -2512,7 +2499,7 @@ module Interstellar
       real, dimension(mx,my,mz,mfarray) :: f
       real :: t_interval, surface_massII
       integer :: iz
-      real, dimension(nx,ny,nz) :: disk_massII
+      real, dimension(:,:,:), allocatable :: disk_massII
       real :: MmpiII, msumtmpII
       logical :: l_SNI
 !
@@ -2531,6 +2518,8 @@ module Interstellar
 !  SNI rate=4.7E-14 mass(H1+HII)/solar_mass + 0.35 x SNII rate
 !  Mannucci et al A&A 433, 807-814 (2005)
 !
+      if (allocated(disk_massII)) deallocate(disk_massII)
+      allocate(disk_massII(nx,ny,nz))
       if (ldensity_nolog) then
         if (lcartesian_coords.and.all(lequidist)) then
           disk_massII=f(l1:l2,m1:m2,n1:n2,irho)*dVol(1)
@@ -2625,19 +2614,22 @@ module Interstellar
         do m=m1,m2
           if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
           if (ldensity_nolog) then
-            rho(1:nx)=f(l1:l2,m,n,irho)
-            call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss), lnTT=lnTT)
+            rho=f(l1:l2,m,n,irho)
           else
-            rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
-            call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),lnTT=lnTT)
+            rho=exp(f(l1:l2,m,n,ilnrho))
           endif
-          TT(1:nx)=exp(lnTT(1:nx))
-          rho_cloud(1:nx)=0.0
-          where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) rho_cloud(1:nx) = rho(1:nx)
+          if (ltemperature.or.(lentropy.and.ilnTT/=0)) then
+            lnTT=f(l1:l2,m,n,ilnTT)
+          elseif (lentropy) then
+            call eoscalc(irho_ss,rho,f(l1:l2,m,n,iss), lnTT=lnTT)
+          endif
+          TT=exp(lnTT)
+          rho_cloud=0.0
+          where (rho >= cloud_rho .and. TT(1:nx) <= cloud_TT) rho_cloud = rho
 !
 !  Multiply by volume element dVol to find total mass.
 !
-          cloud_mass=cloud_mass+sum(rho_cloud(1:nx)*dVol)
+          cloud_mass=cloud_mass+sum(rho_cloud*dVol)
         enddo
         enddo
 !
@@ -2737,6 +2729,8 @@ module Interstellar
 !
 !  Determine position for next SN (w/ fixed scale-height).
 !
+    use General, only: find_proc
+
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
 !
@@ -2777,7 +2771,7 @@ module Interstellar
       endif
       SNR%indx%ipz=(i-1)/nz   ! uses integer division
       SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
-      SNR%indx%iproc=SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
+      SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
     endif
     call share_SN_parameters(f,SNR)
 !
@@ -2791,7 +2785,7 @@ module Interstellar
 !  27-oct-16/fred: z-location revised to use non-equidistant grid needs z from
 !                  each processor - use mpi on all procs not just root
 !
-    use General, only: random_number_wrapper, random_seed_wrapper
+    use General, only: random_number_wrapper, random_seed_wrapper, find_proc
     use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max,&
                        mpiallreduce_sum, mpibcast_real
     use Grid, only: get_grid_mn
@@ -2803,9 +2797,9 @@ module Interstellar
 !  parameters required to determine the vertical centre of mass of the disk
 !
     real, dimension(nprocz) :: tmpz
-    real, dimension(nz) :: rhotmp, probmpi
+    real, dimension(nz) :: rhotmp
     integer, dimension(nprocx*nprocy) :: xyproc
-    real :: rhomax, rhosum, hSN, nlayer
+    real :: rhomax, rhosum, hSN
     real :: mpirho, mpiz
     real, dimension(ncpus):: tmpxyz
     integer :: itmp, icpu, lm_range, ii1, ii2, ii3
@@ -2961,7 +2955,7 @@ module Interstellar
           previous_SNl = int(( x_cluster - xyz0(1) )/Lx)*nxgrid +1
           previous_SNm = int(( y_cluster - xyz0(2) )/Ly)*nygrid +1
           previous_SNn = int(( z_cluster - xyz0(3) )/Lz)*nzgrid +1
-          lm_range = 2*SN_clustering_radius*nxgrid/Lx
+          lm_range = 2*int(SN_clustering_radius*nxgrid/Lx)
           if (fran3(1) < p_OB) then ! checks whether the SN is in a cluster
             if (ip==1963) print &
                 "(1x,'position_SN_gaussianz: in cluster x, y, z =',3e10.3)", &
@@ -3031,7 +3025,7 @@ module Interstellar
       if (j>nygrid) j=j-nygrid
       SNR%indx%ipy=(j-1)/ny  ! uses integer division
       SNR%indx%m=j-(SNR%indx%ipy*ny)+nghost
-      SNR%indx%iproc=SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
+      SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
       if (lnew_cluster) then
         x_cluster = (SNR%indx%l-1) * Lx/nxgrid + xyz0(1)
         y_cluster = (SNR%indx%m-1) * Ly/nygrid + xyz0(2)
@@ -3054,7 +3048,7 @@ module Interstellar
 !
 !  Determine position for next SN (w/ fixed scale-height).
 !
-    use General, only: random_seed_wrapper, random_number_wrapper
+    use General, only: random_seed_wrapper, random_number_wrapper, find_proc
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
@@ -3090,7 +3084,7 @@ module Interstellar
       if (nzgrid==1) i=1
       SNR%indx%ipz=(i-1)/nz   ! uses integer division
       SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
-      SNR%indx%iproc=SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
+      SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
     endif
 !
     call share_SN_parameters(f,SNR)
@@ -3118,7 +3112,7 @@ module Interstellar
     real, dimension(1) :: franSN
     integer, dimension(4) :: tmpsite
     real :: cloud_mass,cum_mass,cum_prob_onproc
-    real, dimension(nx) :: lnrho,rho,lnTT,TT,yH
+    real, dimension(nx) :: rho,lnTT,TT
     integer :: icpu,l,m,n, ipsn
     integer, intent(in), dimension(4,npreSN)::preSN
 !
@@ -3174,12 +3168,13 @@ module Interstellar
         do m=m1,m2
           if (ldensity_nolog) then
             rho(1:nx)=f(l1:l2,m,n,irho)
-            lnrho(1:nx)=log(rho(1:nx))
-            call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
           else
-            lnrho(1:nx)=f(l1:l2,m,n,ilnrho)
-            rho(1:nx)=exp(lnrho(1:nx))
-            call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
+            rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
+          endif
+          if (ltemperature.or.(lentropy.and.ilnTT/=0)) then
+            lnTT=f(l1:l2,m,n,ilnTT)
+          elseif (lentropy) then
+            call eoscalc(irho_ss,rho,f(l1:l2,m,n,iss), lnTT=lnTT)
           endif
           TT(1:nx)=exp(lnTT(1:nx))
           do l=1,nx
@@ -3366,7 +3361,7 @@ module Interstellar
 !  ??-nov-02/grs : coded from GalaxyCode
 !  20-may-03/tony: pencil formulation and broken into subroutines
 !
-      use EquationOfState, only: eoscalc, eosperturb
+      use EquationOfState, only: eoscalc
       use Mpicomm, only: mpiallreduce_max, mpiallreduce_sum
       use General, only: keep_compiler_quiet
       use Grid, only: get_grid_mn
@@ -3384,13 +3379,13 @@ module Interstellar
       real :: uu_sedov, rad_hot, rho_hot, rho_max
       real :: radius2, radius3, SNvol, radius2mass
 !
-      real, dimension(nx) :: deltarho, deltaEE, deltaCR
+      real, dimension(nx) :: deltarho, deltaEE, deltaCR, rho_new
       real, dimension(nx,3) :: deltauu=0., deltafcr=0.
       real, dimension(3) :: dmpi2, dmpi2_tmp
-      real, dimension(nx) ::  lnrho, yH, maskedlnTT, lnTT, rho_old, ee_old, site_rho
+      real, dimension(nx) ::  yH, maskedlnTT, lnTT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu, fcr=0.
       real :: maxlnTT, site_mass, maxTT, mmpi, mpi_tmp, etmp, ktmp, max_cmass
-      real :: t_interval_SN, SNrate, ESNres_frac, frackin, RPDS
+      real :: t_interval_SN, SNrate, frackin, RPDS
       integer :: i, mpiierr
 !
       SNR%indx%state=SNstate_exploding
@@ -3546,14 +3541,11 @@ module Interstellar
 !
       if (lSN_mass) then
         if (mass_profile=="gaussian3") then
-          cmass_SN=mass_SN/(cnorm_SN(dimensionality)* &
-              width_mass**dimensionality)
+          cmass_SN=mass_SN/(cnorm_SN(dimensionality)*width_mass**dimensionality)
         elseif (mass_profile=="gaussian2") then
-          cmass_SN=mass_SN/(cnorm_gaussian2_SN(dimensionality)* &
-              width_mass**dimensionality)
+          cmass_SN=mass_SN/(cnorm_gaussian2_SN(dimensionality)*width_mass**dimensionality)
         elseif (mass_profile=="gaussian") then
-          cmass_SN=mass_SN/(cnorm_gaussian_SN(dimensionality)* &
-              width_mass**dimensionality)
+          cmass_SN=mass_SN/(cnorm_gaussian_SN(dimensionality)*width_mass**dimensionality)
         endif
       else
         cmass_SN=0.
@@ -3612,19 +3604,18 @@ module Interstellar
 !  mass, and sum for the remnant ambient mass, and add ejecta if lSN_mass.
 !
         if (ldensity_nolog) then
-          lnrho=log(f(l1:l2,m,n,irho))
           rho_old=f(l1:l2,m,n,irho)
         else
-          lnrho=f(l1:l2,m,n,ilnrho)
-          rho_old=exp(lnrho)
+          rho_old=exp(f(l1:l2,m,n,ilnrho))
         endif
+        rho_new=rho_old
         site_rho=rho_old*dVol
         where (dr2_SN>radius2mass) site_rho = 0.0
         site_mass=site_mass+sum(site_rho)
         if (lSN_mass.and.cmass_SN>0.) then
           deltarho=0.
           call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%feat%MM)
-          lnrho=log(rho_old(1:nx)+deltarho(1:nx))
+          rho_new=rho_old(1:nx)+deltarho(1:nx)
         endif
 !
 !  Get the unperturbed energy and then add thermal energy if lSN_eth.
@@ -3632,13 +3623,16 @@ module Interstellar
 !  Check max temperature within Nsigma of any remant does
 !  not exceed TT_SN_max*SN_TT_ratio.
 !
-        call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),&
-            yH=yH,lnTT=lnTT,ee=ee_old)
-        deltaEE=0.
-        call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
         if (lSN_eth) then
-          call eoscalc(ilnrho_ee,lnrho,real( &
-              (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
+          deltaEE=0.
+          call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
+          if (ltemperature) then
+            call eoscalc(irho_lnTT,rho_old,f(l1:l2,m,n,ilnTT),ee=ee_old)
+            call eoscalc(irho_ee,rho_new,real((ee_old*rho_old+deltaEE*frac_eth)/rho_new),lnTT=lnTT)
+          elseif (lentropy) then
+            call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),ee=ee_old)
+            call eoscalc(irho_ee,rho_new,real((ee_old*rho_old+deltaEE*frac_eth)/rho_new),lnTT=lnTT)
+          endif
           maskedlnTT=lnTT
           where (dr2_SN>radius3) maskedlnTT=-10.0
           maxTT=maxval(exp(maskedlnTT))
@@ -3796,34 +3790,36 @@ module Interstellar
         else
           rho_old=exp(f(l1:l2,m,n,ilnrho))
         endif
+        rho_new=rho_old
+
         if ((lSN_mass.and.cmass_SN>0).or.(lSN_coolingmass.and.cmass_SN>0)) then
           deltarho=0.
           call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%feat%MM)
-          rho_old=rho_old+deltarho
           if (ldensity_nolog) then
-            f(l1:l2,m,n,irho)=rho_old
+            f(l1:l2,m,n,irho)=rho_old+deltarho
+            rho_new=f(l1:l2,m,n,irho)
           else
-            f(l1:l2,m,n,ilnrho)=log(rho_old)
+            f(l1:l2,m,n,ilnrho)=log(rho_old+deltarho)
+            rho_new=exp(f(l1:l2,m,n,ilnrho))
           endif
         endif
 !
 !  Get the unperturbed energy and then add thermal energy if lSN_eth.
 !  Save changes to f-array.
 !
-        call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),&
-            yH=yH,lnTT=lnTT,ee=ee_old)
-        deltaEE=0.
-        call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
-        if (lSN_eth) &
-          call eosperturb(f,nx,ee=real((ee_old*rho_old+deltaEE*frac_eth)/rho_old))
-
-        if (ldensity_nolog) then
-          call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
-        else
-          call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
+        if (lSN_eth) then
+          deltaEE=0.
+          call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
+          if (ltemperature) then
+            call eoscalc(irho_lnTT,rho_old,f(l1:l2,m,n,ilnTT),ee=ee_old)
+            call eoscalc(irho_ee,rho_new,real((ee_old*rho_old+deltaEE*frac_eth)/rho_new),lnTT=f(l1:l2,m,n,ilnTT),yH=yH)
+          elseif (lentropy) then
+            call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),ee=ee_old)
+            call eoscalc(irho_ee,rho_new,real((ee_old*rho_old+deltaEE*frac_eth)/rho_new),ss=f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
+            if (lentropy.and.ilnTT/=0) f(l1:l2,m,n,ilnTT)=lnTT
+          endif
+          if (iyH/=0) f(l1:l2,m,n,iyH)=yH
         endif
-        if (lentropy.and.ilnTT/=0) f(l1:l2,m,n,ilnTT)=lnTT
-        if (iyH/=0) f(l1:l2,m,n,iyH)=yH
 !
 !  Apply changes to the velocity field if lSN_velocity.
 !  Save changes to f-array.
@@ -3831,7 +3827,7 @@ module Interstellar
         if (lSN_velocity.and.cvelocity_SN>0.) then
           uu=f(l1:l2,m,n,iux:iuz)
           deltauu=0.
-          call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN,SNR,rho_old)
+          call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN,SNR,rho_new)
           f(l1:l2,m,n,iux:iuz)=uu+deltauu
         endif
 !
@@ -4106,11 +4102,10 @@ module Interstellar
       real :: radius2
       real :: MMtot
       real :: width_mass, width_velocity
-      real, dimension(nx) :: rho, u2, deltarho, ee_tmp, yH
+      real, dimension(nx) :: rho, u2, deltarho
       real, dimension(nx,3) :: uu
       real, dimension(nx,3) :: deltauu
       integer, dimension(nx) :: mask
-      integer :: i
       real, dimension(3) :: tmp,tmp2
 !
 !  inner rad defined to determine mean density inside rad and smooth if desired
@@ -4393,21 +4388,19 @@ module Interstellar
 !  Whether mass is moved or not, inject energy.
 !
       if (thermal_profile=="gaussian3") then
-        profile_SN=exp(-(dr2_SN(1:nx)/width**2)**3)
+        profile_SN=exp(-(dr2_SN/width**2)**3)
       elseif (thermal_profile=="gaussian2") then
-        profile_SN=exp(-(dr2_SN(1:nx)/width**2)**2)
+        profile_SN=exp(-(dr2_SN/width**2)**2)
       elseif (thermal_profile=="gaussian") then
-        profile_SN=exp(-(dr2_SN(1:nx)/width**2))
+        profile_SN=exp(-(dr2_SN/width**2))
       elseif (thermal_profile=="quadratic") then
-        profile_SN=max(1.0-(dr2_SN(1:nx)/width**2),0.0)
+        profile_SN=max(1.-(dr2_SN/width**2),0.)
       elseif (thermal_profile=="quadratictanh") then
-        profile_SN=max(1.0-(dr2_SN(1:nx)/width**2),0.0)* &
-                       0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
+        profile_SN=max(1.-(dr2_SN/width**2),0.)*0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
       elseif (thermal_profile=="quartictanh") then
-        profile_SN=max(1.0-(dr2_SN(1:nx)/width**2)**2,0.0)* &
-                       0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
+        profile_SN=max(1.-(dr2_SN/width**2)**2,0.)*0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
       elseif (thermal_profile=="tanh") then
-        profile_SN=(1.-tanh((sqrt(dr2_SN(1:nx))-width)*sigma_SN1))*0.5
+        profile_SN=(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))*0.5
       endif
 !
       deltaEE(1:nx)=c_SN*profile_SN(1:nx) ! spatial energy density

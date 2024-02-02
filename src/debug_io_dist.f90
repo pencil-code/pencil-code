@@ -233,7 +233,7 @@ contains
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: ndim
-      real, dimension (nx), intent(in) :: a
+      real, dimension (:), intent(in) :: a
 !
       real :: t_sp   ! t in single precision for backwards compatibility
       character (len=fnlen) :: filename

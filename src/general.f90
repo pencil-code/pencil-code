@@ -5,6 +5,7 @@
 module General
 !
   use Cparam
+  use Cdata
 !
   implicit none
 !
@@ -21,7 +22,8 @@ module General
 !
   public :: setup_mm_nn
   public :: find_index_range, find_index, find_index_range_hill, pos_in_array, allpos_in_array_int
-  public :: find_proc, find_proc_general, find_proc_coords_general
+  public :: find_proc, find_proc_general, find_proc_coords, find_proc_coords_general
+  public :: find_proc_node_localty, find_proc_coords_node_localty
 !
   public :: spline, tridag, pendag, complex_phase, erfcc
   public :: cspline
@@ -66,6 +68,7 @@ module General
   public :: qualify_position_bilin, qualify_position_bicub, &
             qualify_position_biquin
   public :: binomial,merge_lists,reallocate
+  public :: point_and_get_size, allocate_using_dims
 ! 
 ! 
 !
@@ -174,6 +177,59 @@ module General
   interface transform_spher_cart
     module procedure transform_spher_cart_other
   endinterface
+
+  interface point_and_get_size
+    module procedure point_and_get_size_1d
+    module procedure point_and_get_size_2d
+    module procedure point_and_get_size_2d_int
+    module procedure point_and_get_size_3d
+    module procedure point_and_get_size_4d
+  end interface
+  interface allocate_using_dims
+    module procedure allocate_using_dims_1d
+    module procedure allocate_using_dims_2d
+    module procedure allocate_using_dims_2d_int
+    module procedure allocate_using_dims_3d
+    module procedure allocate_using_dims_4d
+  end interface
+  type, public :: single_dim_array_dims
+    integer :: size 
+  end type single_dim_array_dims 
+  type, public :: two_dim_array_dims
+    integer :: x
+    integer :: y
+  end type two_dim_array_dims 
+  type, public :: three_dim_array_dims
+    integer :: x
+    integer :: y
+    integer :: z
+  end type three_dim_array_dims 
+  type, public :: four_dim_array_dims
+    integer :: x
+    integer :: y
+    integer :: z
+    integer :: w
+  end type four_dim_array_dims 
+  type, public :: pointer_with_size_info_1d
+    real, pointer, dimension(:) :: data
+    type(single_dim_array_dims) :: dims
+  end type
+  type, public :: pointer_with_size_info_2d
+    real, pointer, dimension(:,:) :: data
+    type(two_dim_array_dims) :: dims
+  end type
+  type, public :: pointer_with_size_info_2d_int
+    integer, pointer, dimension(:,:) :: data
+    type(two_dim_array_dims) :: dims
+  end type
+  type, public :: pointer_with_size_info_3d
+    real, pointer, dimension(:,:,:) :: data
+    type(three_dim_array_dims) :: dims
+  end type
+  type, public :: pointer_with_size_info_4d
+    real, pointer, dimension(:,:,:,:) :: data
+    type(four_dim_array_dims) :: dims
+  end type
 !
 !  State and default generator of random numbers.
 !
@@ -214,17 +270,44 @@ module General
 !
 !  16-sep-15/ccyang: coded.
 !
-      use Cdata, only: lprocz_slowest
+      use Cdata, only: lprocz_slowest,nprocx_node,nprocy_node,nprocz_node
 !
       integer, intent(in) :: ipx, ipy, ipz
 !
-      if (lprocz_slowest) then
-        find_proc = ipz * nprocxy + ipy * nprocx + ipx
+      if (.false..and.all((/nprocx_node,nprocy_node,nprocz_node/)>0)) then
+        find_proc = find_proc_node_localty(ipx, ipy, ipz)
       else
-        find_proc = ipy * nprocxz + ipz * nprocx + ipx
+        if (lprocz_slowest) then
+          find_proc = modulo(ipz,nprocz) * nprocxy + modulo(ipy,nprocy) * nprocx + modulo(ipx,nprocx)
+        else
+          find_proc = modulo(ipy,nprocy) * nprocxz + modulo(ipz,nprocz) * nprocx + modulo(ipx,nprocx)
+        endif
       endif
 !
     endfunction find_proc
+!***********************************************************************
+    pure integer function find_proc_node_localty(ipx_, ipy_, ipz_) result(rank)
+!
+!  Returns the rank of a process given its position in (ipx,ipy,ipz).
+!
+!  28-nov-23/ccyang: coded.
+!
+      use Cdata, only: lprocz_slowest, nprocx_node, nprocy_node, nprocz_node
+!
+      integer, intent(in) :: ipx_, ipy_, ipz_
+!
+      integer :: nprocs_node 
+      integer :: ipx, ipy, ipz
+
+      ipx=modulo(ipx_,nprocx); ipy=modulo(ipy_,nprocy); ipz=modulo(ipz_,nprocz)
+      nprocs_node=nprocx_node*nprocy_node*nprocz_node
+      rank = find_proc_general(mod(ipx,nprocx_node), mod(ipy,nprocy_node), mod(ipz,nprocz_node), &
+                               nprocx_node, nprocy_node, nprocz_node, lprocz_slowest) &
+            + ipx/nprocx_node * nprocs_node &
+            + ipy/nprocy_node * nprocx*nprocy_node*nprocz_node &
+            + ipz/nprocz_node * nprocx*nprocy*nprocz_node
+           
+    endfunction find_proc_node_localty
 !***********************************************************************
     pure integer function find_proc_general(ipx, ipy, ipz, nprocx, nprocy, nprocz, lprocz_slowest)
 !
@@ -236,9 +319,9 @@ module General
       logical, intent(in), optional :: lprocz_slowest
 !
       if (loptest(lprocz_slowest,.true.)) then
-        find_proc_general = ipz * nprocx*nprocy + ipy * nprocx + ipx
+        find_proc_general = modulo(ipz,nprocz) * nprocx*nprocy + modulo(ipy,nprocy) * nprocx + modulo(ipx,nprocx)
       else
-        find_proc_general = ipy * nprocx*nprocz + ipz * nprocx + ipx
+        find_proc_general = modulo(ipy,nprocy) * nprocx*nprocz + modulo(ipz,nprocz) * nprocx + modulo(ipx,nprocx)
       endif
 !
     endfunction find_proc_general
@@ -257,6 +340,54 @@ module General
       ipz = rank/(nprocx*nprocy)
 
     endsubroutine find_proc_coords_general
+!***********************************************************************
+    subroutine find_proc_coords(rank,ipx,ipy,ipz)
+
+      use Cdata, only: lprocz_slowest, nprocx_node, nprocy_node, nprocz_node
+
+      integer, intent(in) :: rank
+      integer, intent(out) :: ipx, ipy, ipz
+
+      if (.false..and.all((/nprocx_node,nprocy_node,nprocz_node/)>0)) then
+        call find_proc_coords_node_localty(rank,ipx,ipy,ipz)
+print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty(ipx,ipy,ipz)
+      else
+        if (lprocz_slowest) then
+          ipx = modulo(rank, nprocx)
+          ipy = modulo(rank/nprocx, nprocy)
+          ipz = rank/nprocxy
+        else
+          ipx = modulo(rank, nprocx)
+          ipy = rank/nprocxz
+          ipz = modulo(rank/nprocx, nprocz)
+        endif
+      endif
+
+    endsubroutine find_proc_coords
+!***********************************************************************
+    subroutine find_proc_coords_node_localty(rank, ipx, ipy, ipz)
+!
+!  Determines the Cartesian processor coordinates ip[xyz] of processor rank for
+!  processor layout defined by nproc[xyz].
+!
+!  6-dec-22/MR: coded
+!
+      use Cdata, only: lprocz_slowest, nprocx_node, nprocy_node, nprocz_node
+!
+      integer :: rank, ipx, ipy, ipz
+      integer :: nprocs_per_node,inodex,inodey,inodez
+
+      nprocs_per_node=nprocx_node*nprocy_node*nprocz_node
+      call find_proc_coords_general(rank/nprocs_per_node, nprocx/nprocx_node, nprocy/nprocy_node, &
+                                    nprocz/nprocz_node, inodex, inodey, inodez)
+      call find_proc_coords_general(mod(rank,nprocs_per_node),nprocx_node,nprocy_node,nprocz_node, &
+                                    ipx, ipy, ipz)
+
+      ipx = ipx+inodex*nprocx_node
+      ipy = ipy+inodey*nprocy_node
+      ipz = ipz+inodez*nprocz_node
+
+    endsubroutine find_proc_coords_node_localty
 !***********************************************************************
     subroutine setup_mm_nn
 !
@@ -6350,5 +6481,100 @@ iloop:do i=1,size(list2)
       len1=ind
 
     endsubroutine merge_lists
+!***********************************************************************
+    subroutine allocate_using_dims_1d(src, dims)
+    real, allocatable, dimension(:), target :: src
+    type(single_dim_array_dims) :: dims
+      if(.not. allocated(src)) then
+        allocate(src(dims%size))
+      endif
+    endsubroutine allocate_using_dims_1d
+!***********************************************************************
+    subroutine allocate_using_dims_2d(src, dims)
+    real, allocatable, dimension(:,:), target :: src
+    type(two_dim_array_dims) :: dims
+      if(.not. allocated(src)) then
+        allocate(src(dims%x,dims%y))
+      endif
+    endsubroutine allocate_using_dims_2d
+!***********************************************************************
+    subroutine allocate_using_dims_2d_int(src, dims)
+    integer, allocatable, dimension(:,:), target :: src
+    type(two_dim_array_dims) :: dims
+      if(.not. allocated(src)) then
+        allocate(src(dims%x,dims%y))
+      endif
+    endsubroutine allocate_using_dims_2d_int
+!***********************************************************************
+    subroutine allocate_using_dims_3d(src, dims)
+    real, allocatable, dimension(:,:,:), target :: src
+    type(three_dim_array_dims) :: dims
+      if(.not. allocated(src)) then
+        allocate(src(dims%x,dims%y,dims%z))
+      endif
+    endsubroutine allocate_using_dims_3d
+!***********************************************************************
+    subroutine allocate_using_dims_4d(src, dims)
+    real, allocatable, dimension(:,:,:,:), target :: src
+    type(four_dim_array_dims) :: dims
+      if(.not. allocated(src)) then
+        allocate(src(dims%x,dims%y,dims%z,dims%w))
+      endif
+    endsubroutine allocate_using_dims_4d
+!***********************************************************************
+    subroutine point_and_get_size_1d(dst, src)
+    type(pointer_with_size_info_1d) :: dst
+    real, allocatable, dimension(:), target :: src
+    type(single_dim_array_dims) :: dim
+      if(allocated(src)) then
+        dst%data => src
+        dst%dims%size= size(src)
+      endif
+    endsubroutine
+!***********************************************************************
+    subroutine point_and_get_size_2d(dst, src)
+    type(pointer_with_size_info_2d) :: dst
+    real, allocatable, dimension(:,:), target :: src
+    type(two_dim_array_dims) :: dim
+      if(allocated(src)) then
+        dst%data => src
+        dst%dims%x = size(src,1)
+        dst%dims%y = size(src,2)
+      endif
+    endsubroutine point_and_get_size_2d
+!***********************************************************************
+    subroutine point_and_get_size_2d_int(dst, src)
+    type(pointer_with_size_info_2d_int) :: dst
+    integer, allocatable, dimension(:,:), target :: src
+      if(allocated(src)) then
+        dst%data => src
+        dst%dims%x = size(src,1)
+        dst%dims%y = size(src,2)
+      endif
+    endsubroutine point_and_get_size_2d_int
+!***********************************************************************
+    subroutine point_and_get_size_3d(dst, src)
+    type(pointer_with_size_info_3d) :: dst
+    real, allocatable, dimension(:,:,:), target :: src
+      if(allocated(src)) then
+        dst%data => src
+        dst%dims%x = size(src,1)
+        dst%dims%y = size(src,2)
+        dst%dims%z = size(src,3)
+      endif
+    endsubroutine
+!***********************************************************************
+    subroutine point_and_get_size_4d(dst, src)
+    type(pointer_with_size_info_4d) :: dst
+    real, allocatable, dimension(:,:,:,:), target :: src
+
+      if(allocated(src)) then
+        dst%data => src
+        dst%dims%x = size(src,1)
+        dst%dims%y = size(src,2)
+        dst%dims%z = size(src,3)
+        dst%dims%w = size(src,4)
+      endif
+    endsubroutine
 !***********************************************************************
   endmodule General

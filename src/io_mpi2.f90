@@ -443,8 +443,8 @@ module Io
 
       endif
 !
-      if (lode) output_ode(file)
-
+      if (lode) call output_ode(file)
+!
     endsubroutine output_snap
 !***********************************************************************
     subroutine output_snap_finalize
@@ -857,6 +857,128 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
+    subroutine output_part_rmv(ipar_rmv, ipar_sink, fp_rmv, fp_sink, nrmv)
+!
+!  Writes the log of removed particles to a file.
+!
+!  27-jan-24/ccyang: coded
+!
+      use General, only: keep_compiler_quiet
+      use Messages, only: not_implemented
+      use Mpicomm, only: size_of_int, size_of_real
+!
+      integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
+      real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
+      integer, intent(in) :: nrmv
+!
+      character(len=fnlen) :: fpath
+      integer(KIND=MPI_ADDRESS_KIND), dimension(4) :: disps
+      integer, dimension(4) :: blocklengths, types
+      integer, dimension(ncpus) :: rmv_list
+      integer(KIND=MPI_COUNT_KIND) :: esize
+      integer(KIND=MPI_OFFSET_KIND) :: disp
+      integer :: etype, filetype, handle, nreal, n
+!
+!  Communicate number of removed particles.
+!
+      rmv_list = 0
+      rmv_list(iproc+1) = nrmv
+      call MPI_ALLREDUCE(MPI_IN_PLACE, rmv_list, ncpus, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to communicate nrmv")
+!
+!  Create structured MPI type for each removed or sink particle.
+!
+      nreal = size(fp_rmv, 1)
+      blocklengths = (/ 1, 1 + nreal, 1, nreal /)
+      types = (/ MPI_INTEGER, mpi_precision, MPI_INTEGER, mpi_precision /)
+!
+      disps(1) = 0_MPI_ADDRESS_KIND
+      disps(2) = disps(1) + int(blocklengths(1) * int(size_of_int), KIND=MPI_ADDRESS_KIND)
+      sink1: if (lparticles_sink) then
+        disps(3) = disps(2) + int(blocklengths(2) * int(size_of_real), KIND=MPI_ADDRESS_KIND)
+        disps(4) = disps(3) + int(blocklengths(3) * int(size_of_int), KIND=MPI_ADDRESS_KIND)
+      endif sink1
+!
+      call MPI_TYPE_CREATE_STRUCT(merge(4, 2, lparticles_sink), blocklengths, disps, types, etype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to create etype")
+      call fatal_error_local_collect()
+!
+      call MPI_TYPE_COMMIT(etype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to commit etype")
+      call fatal_error_local_collect()
+!
+!  Create MPI type for file view.
+!
+      call MPI_TYPE_CONTIGUOUS(nrmv, etype, filetype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to create filetype")
+      call fatal_error_local_collect()
+!
+      call MPI_TYPE_COMMIT(filetype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to commit filetype")
+      call fatal_error_local_collect()
+!
+!  Open log file.
+!
+      fpath = trim(directory_snap) // '/' // "rmv_par.dat"
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_RDWR, ior(MPI_MODE_CREATE, MPI_MODE_APPEND)), io_info, handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to open file '" // trim(fpath) // "'")
+!
+!  Set the file view for data write.
+!
+      call MPI_TYPE_SIZE(etype, esize, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to find type size")
+      call fatal_error_local_collect()
+!
+      call MPI_FILE_GET_POSITION(handle, disp, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to find file position")
+      call fatal_error_local_collect()
+!
+      esize = int(sum(rmv_list(:iproc)), KIND=MPI_COUNT_KIND) * esize
+      if (lparticles_sink) esize = 2_MPI_COUNT_KIND * esize
+      disp = disp + int(esize, KIND=MPI_OFFSET_KIND)
+!
+      call MPI_FILE_SET_VIEW(handle, disp, etype, filetype, "native", io_info, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to set file view")
+!
+!  Write log.
+!
+      wr: do n = 1, nrmv
+        call MPI_FILE_WRITE(handle, ipar_rmv(n), 1, MPI_INTEGER, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write ipar_rmv")
+!
+        call MPI_FILE_WRITE(handle, real(t), 1, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write time")
+!
+        call MPI_FILE_WRITE(handle, fp_rmv(:,n), nreal, mpi_precision, status, mpi_err)
+        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write fp_rmv")
+!
+        sink2: if (lparticles_sink) then
+          call MPI_FILE_WRITE(handle, ipar_sink(n), 1, MPI_INTEGER, status, mpi_err)
+          if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write ipar_sink")
+!
+          call MPI_FILE_WRITE(handle, fp_sink(:,n), nreal, mpi_precision, status, mpi_err)
+          if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write fp_sink")
+        endif sink2
+      enddo wr
+      call fatal_error_local_collect()
+!
+!  Close log file.
+!
+      call MPI_FILE_CLOSE(handle, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to close file '" // trim(fpath) // "'")
+!
+!  Free MPI types.
+!
+      call MPI_TYPE_FREE(filetype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to free filetype")
+      call fatal_error_local_collect()
+!
+      call MPI_TYPE_FREE(etype, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to free etype")
+      call fatal_error_local_collect()
+!
+    endsubroutine output_part_rmv
+!***********************************************************************
     subroutine output_stalker_init(num, nv, snap, ID)
 !
 !  Open stalker particle snapshot file and initialize with snapshot time.
@@ -1083,7 +1205,7 @@ module Io
 !  12-nov-20/ccyang: coded
 !
       use General, only: keep_compiler_quiet
-      use Particles_cdata, only: ixp, iyp, izp
+      use Particles_cdata, only: ixp
       use Mpicomm, only: size_of_int, size_of_real
 !
       integer, intent(in) :: mv
@@ -1339,6 +1461,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1361,7 +1484,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_logical (buffer, partner, tag_log_0D)
               global(px+1,py+1,pz+1) = buffer
@@ -1387,6 +1510,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1411,7 +1535,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_logical (buffer, nv, partner, tag_log_1D)
               global(px+1,py+1,pz+1,:) = buffer
@@ -1437,6 +1561,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1459,7 +1584,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_int (buffer, partner, tag_int_0D)
               global(px+1,py+1,pz+1) = buffer
@@ -1485,6 +1610,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1509,7 +1635,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_int (buffer, nv, partner, tag_int_1D)
               global(px+1,py+1,pz+1,:) = buffer
@@ -1535,6 +1661,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1557,7 +1684,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_real (buffer, partner, tag_real_0D)
               global(px+1,py+1,pz+1) = buffer
@@ -1583,6 +1710,7 @@ module Io
 !  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -1607,7 +1735,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpirecv_real (buffer, nv, partner, tag_real_1D)
               global(px+1,py+1,pz+1,:) = buffer
@@ -1710,6 +1838,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
@@ -1729,7 +1858,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_logical (global(px+1,py+1,pz+1), partner, tag_log_0D)
             enddo
@@ -1752,6 +1881,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
@@ -1773,7 +1903,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_logical (global(px+1,py+1,pz+1,:), nv, partner, tag_log_1D)
             enddo
@@ -1796,6 +1926,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
@@ -1815,7 +1946,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_int (global(px+1,py+1,pz+1), partner, tag_int_0D)
             enddo
@@ -1838,6 +1969,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
@@ -1859,7 +1991,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_int (global(px+1,py+1,pz+1,:), nv, partner, tag_int_1D)
             enddo
@@ -1882,6 +2014,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       real, intent(out) :: value
@@ -1901,7 +2034,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_real (global(px+1,py+1,pz+1), partner, tag_real_0D)
             enddo
@@ -1924,6 +2057,7 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
+      use General, only: find_proc
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
@@ -1945,7 +2079,7 @@ module Io
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
+              partner = find_proc(px,py,pz)
               if (iproc == partner) cycle
               call mpisend_real (global(px+1,py+1,pz+1,:), nv, partner, tag_real_1D)
             enddo
@@ -2169,80 +2303,6 @@ module Io
       endif
 !
     endsubroutine rgrid
-!***********************************************************************
-    subroutine wproc_bounds_mpi(file)
-!
-! Export processor boundaries to file.
-!
-! 12-nov-20/ccyang: coded
-!
-      character(len=*), intent(in) :: file
-!
-      integer :: handle
-!
-! Open file.
-!
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, trim(file), ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds_mpi", "could not open file "//trim(file)//" for writing")
-!
-! Write proc[xyz]_bounds.
-!
-      wproc: if (lroot) then
-!
-        call MPI_FILE_WRITE(handle, procx_bounds, nprocx + 1, mpi_precision, status, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds_mpi", "could not write procx_bounds")
-!
-        call MPI_FILE_WRITE(handle, procy_bounds, nprocy + 1, mpi_precision, status, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds_mpi", "could not write procy_bounds")
-!
-        call MPI_FILE_WRITE(handle, procz_bounds, nprocz + 1, mpi_precision, status, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error_local("wproc_bounds_mpi", "could not write procz_bounds")
-!
-      endif wproc
-      call fatal_error_local_collect()
-!
-! Close file.
-!
-      call MPI_FILE_CLOSE(handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("wproc_bounds_mpi", "could not close file " // trim(file))
-!
-    endsubroutine wproc_bounds_mpi
-!***********************************************************************
-    subroutine rproc_bounds_mpi(file)
-!
-! Import processor boundaries from file.
-!
-! 12-nov-20/ccyang: coded
-!
-      character(len=*), intent(in) :: file
-!
-      integer :: handle
-!
-! Open file.
-!
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, trim(file), MPI_MODE_RDONLY, io_info, handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not open file "//trim(file)//" for reading")
-!
-      call MPI_FILE_SET_VIEW(handle, 0_MPI_OFFSET_KIND, mpi_precision, mpi_precision, "native", io_info, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not set view")
-!
-! Read proc[xyz]_bounds.
-!
-      call MPI_FILE_READ_ALL(handle, procx_bounds, nprocx + 1, mpi_precision, status, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not read procx_bounds")
-!
-      call MPI_FILE_READ_ALL(handle, procy_bounds, nprocy + 1, mpi_precision, status, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not read procy_bounds")
-!
-      call MPI_FILE_READ_ALL(handle, procz_bounds, nprocz + 1, mpi_precision, status, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not read procz_bounds")
-!
-! Close file.
-!
-      call MPI_FILE_CLOSE(handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error("rproc_bounds_mpi", "could not close file " // trim(file))
-!
-    endsubroutine rproc_bounds_mpi
 !***********************************************************************
     include 'io_common.inc'
 !***********************************************************************

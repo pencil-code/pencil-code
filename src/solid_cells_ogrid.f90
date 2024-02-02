@@ -514,7 +514,7 @@ module Solid_Cells
 !  Get thermal diffusivity from energy module
 !
       if (iTT .ne. 0) then
-        if (.not. lchemistry) call get_shared_variable('chi',chi)
+        if (.not. lchemistry) call get_shared_variable('chi',chi,caller='initialize_solid_cells')
         call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
         call get_shared_variable('ladvection_temperature',ladvection_temperature)
         call get_shared_variable('lupw_lnTT',lupw_lnTT)
@@ -525,7 +525,7 @@ module Solid_Cells
       endif
 !
       if (lchemistry) then
-        call get_shared_variable('lheatc_chemistry',lheatc_chemistry)
+        call get_shared_variable('lheatc_chemistry',lheatc_chemistry,caller='initialize_solid_cells')
         call get_shared_variable('lflame_front_2D',lflame_front_2D)
         call get_shared_variable('linterp_pressure',linterp_pressure)
         call initialize_chemistry_og(f_ogrid)
@@ -557,7 +557,7 @@ module Solid_Cells
       use Initcond, only: gaunoise
       use HDF5_IO,  only: wdim
       use Sub,      only: control_file_exists
-      use EquationOfState, only: imass, species_constants, lpres_grad
+      use EquationOfState, only: imass, lpres_grad
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz) :: mu1_full=0
@@ -1239,9 +1239,9 @@ module Solid_Cells
 !
 !  Curvilinear to Cartesian
 !
-      if(lroot) then
+      if (lroot) then
         do iip=0,ncpus-1
-          if(iip/=root) then
+          if (iip/=root) then
             call mpirecv_int(from_proc_bufi,ncpus,iip,110)
             from_proc_curv_to_cart_glob(iip+1,:)=from_proc_bufi
             call mpirecv_int(from_proc_bufi,ncpus,iip,115)
@@ -1834,6 +1834,7 @@ module Solid_Cells
 !  apr-17/Jorgen: Coded
 !  
     use Mpicomm, only: mpisend_int,mpisend_real,mpirecv_int,mpirecv_real
+
     real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
     integer, intent(in) :: ivar1,ivar2
     integer, dimension(5) :: nbuf_farr
@@ -1877,7 +1878,7 @@ module Solid_Cells
     do iter=1,n_procs_send_cart_to_curv
       ind_send_last=n_ip_to_proc_cart_to_curv(iter)+ind_send_first-1
       send_to=send_cartesian_to_curvilinear(ind_send_last)%send_to_proc
-      if(send_to>iproc) then
+      if (send_to>iproc) then
         nbuf_farr(5)=ind_send_last-ind_send_first+1
         do ipq=1,nbuf_farr(5)
           ind=ind_send_first+ipq-1
@@ -1981,6 +1982,7 @@ module Solid_Cells
 !  
     use Mpicomm, only: mpisend_int,mpisend_real,mpirecv_int,mpirecv_real
     use EquationOfState, only: lpres_grad
+
     real, dimension(mx,my,mz,mfarray), intent(inout) :: f_cartesian
     integer, intent(in) :: ivar1,ivar2
     integer, dimension(5) :: nbuf_farr
@@ -2032,7 +2034,7 @@ module Solid_Cells
     do iter=1,n_procs_send_curv_to_cart
       ind_send_last=n_ip_to_proc_curv_to_cart(iter)+ind_send_first-1
       send_to=send_curvilinear_to_cartesian(ind_send_last)%send_to_proc
-      if(send_to>iproc) then
+      if (send_to>iproc) then
         nbuf_farr(5)=ind_send_last-ind_send_first+1
         do ipq=1,nbuf_farr(5)
           ind=ind_send_first+ipq-1
@@ -3418,7 +3420,7 @@ module Solid_Cells
 !
 !  31-jan-17/Jorgen: adapted from initialize_grid subroutine in grid.f90
 !
-    use Mpicomm, only: mpiallreduce_min,mpiallreduce_max,mpibcast_real,mpirecv_real,mpisend_real
+    use Mpicomm, only: mpiallreduce_min,mpiallreduce_max
 !
     real :: dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z, dxmax_r
     real :: Area_xy_ogrid, Area_yz_ogrid, Area_xz_ogrid
@@ -3727,6 +3729,7 @@ module Solid_Cells
 !
 !  31-jan-17/Jorgen: Adapted from construct_serial_arrays in grid.f90
 !
+    use General, only: find_proc
     use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int
 !
     real, dimension(nx_ogrid) :: xrecv, x1recv, x2recv
@@ -3764,7 +3767,7 @@ module Solid_Cells
 !  Since for the x-row ipy=ipz=0, this reduces
 !  to iproc_recv=jx.
 !
-          iproc_recv=jx
+          iproc_recv=find_proc(jx,0,0)
           call mpirecv_real(xrecv,nx_ogrid,iproc_recv,111)
           call mpirecv_real(x1recv,nx_ogrid,iproc_recv,112)
           call mpirecv_real(x2recv,nx_ogrid,iproc_recv,113)
@@ -3801,7 +3804,7 @@ module Solid_Cells
     else
       do jy=0,nprocy-1
         if (jy/=root) then
-          iproc_recv=nprocx*jy
+          iproc_recv=find_proc(0,jy,0)
           call mpirecv_real(yrecv,ny_ogrid,iproc_recv,221)
           call mpirecv_real(y1recv,ny_ogrid,iproc_recv,222)
           call mpirecv_real(y2recv,ny_ogrid,iproc_recv,223)
@@ -3832,7 +3835,7 @@ module Solid_Cells
     else
       do jz=0,nprocz-1
         if (jz/=root) then
-          iproc_recv=nprocx*nprocy*jz
+          iproc_recv=find_proc(0,0,jz)
           call mpirecv_real(zrecv,nz_ogrid,iproc_recv,331)
           call mpirecv_real(z1recv,nz_ogrid,iproc_recv,332)
           call mpirecv_real(z2recv,nz_ogrid,iproc_recv,333)
@@ -3918,7 +3921,7 @@ module Solid_Cells
     dline_1_ogrid(:,3) = dz_1_ogrid(n_ogrid)
 !
     dxmax_pencil_ogrid = 0.
-    dxmin_pencil = 0.
+    dxmin_pencil_ogrid = 0.
     if (nxgrid_ogrid /= 1) then 
       dxmax_pencil_ogrid =     1.0 / dline_1_ogrid(:,1)
       dxmin_pencil_ogrid =     1.0 / dline_1_ogrid(:,1)
@@ -4933,6 +4936,7 @@ module Solid_Cells
 !
       call mpibcast_real(xyz0_loc_all,nbcast)
       call mpibcast_real(xyz1_loc_all,nbcast)
+
     endsubroutine construct_serial_bdry_cartesian
 !***********************************************************************
     subroutine construct_serial_bdry_curv
@@ -5054,6 +5058,7 @@ module Solid_Cells
 !
       call mpibcast_real(xyz0_loc_all_ogrid,nbcast)
       call mpibcast_real(xyz1_loc_all_ogrid,nbcast)
+    
     endsubroutine construct_serial_bdry_curv
 !***********************************************************************
     subroutine find_near_ind_local_cart(inear_loc,xxp,lcheck)
@@ -6071,7 +6076,7 @@ module Solid_Cells
 !
 !  Communicate this to the other processors
 !
-      if(lroot) then
+      if (lroot) then
         do iip=0,ncpus-1
           if(iip/=root) then
             call mpirecv_logical(part_data_comm_glob(iip+1,:),ncpus,iip,899)
@@ -10081,5 +10086,34 @@ module Solid_Cells
 !    enddo
 !!
 !  endsubroutine flow_curvilinear_to_cartesian
+!***********************************************************************
+  subroutine sc_init_diagnostic_accumulators
+!
+!  Need to initialize accumulators since master thread does not take part in diagnostics
+!  Dummy for solid cells ogrid
+!
+!  25-aug-23/TP: Coded
+!
+
+  endsubroutine sc_init_diagnostic_accumulators
+!***********************************************************************
+  subroutine sc_diagnostic_reductions
+!
+!  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
+!  Dummy for solid cells ogrid
+!
+!  30-mar-23/TP: coded
+!
+  endsubroutine sc_diagnostic_reductions
+!***********************************************************************
+  subroutine sc_init_reduc_pointers
+!
+!  Initiliazes solid_cells specific pointers needed in thread_reductions 
+!  Dummy for solid cells ogrid
+!
+!  30-mar-23/TP: Coded
+!
+
+  endsubroutine sc_init_reduc_pointers
 !***********************************************************************
 endmodule solid_cells

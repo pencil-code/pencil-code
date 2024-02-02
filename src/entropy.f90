@@ -28,6 +28,7 @@ module Energy
   implicit none
 !
   include 'energy.h'
+  include 'eos_params.h'
 !
   real :: entropy_floor = impossible, TT_floor = impossible
   real, dimension(ninit) :: radius_ss=0.1, radius_ss_x=1., ampl_ss=0.0
@@ -61,8 +62,6 @@ module Energy
   real :: downflow_cs2cool_fac=1.0
   real, dimension(3) :: chi_hyper3_aniso=0.0
   real, dimension(3) :: gradS0_imposed=(/0.0,0.0,0.0/)
-  !for testing
-  !public :: grads0_imposed
   real, target :: hcond0=impossible, hcond1=impossible
   real, target :: hcondxbot=impossible, hcondxtop=0.0
   real, target :: hcondzbot=impossible, hcondztop=impossible
@@ -96,9 +95,6 @@ module Energy
   real :: Pres_cutoff=impossible
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
-  !for testing
-  ! public :: hcond0
-  ! public :: hcond
   real :: chimax_kramers=0., chimin_kramers=0.
   integer :: nsmooth_kramers=0
   real :: zheat_uniform_range=0.
@@ -179,9 +175,6 @@ module Energy
   real, dimension (mz)  :: ss_mz
   real, dimension (nx) :: chit_aniso_prof, dchit_aniso_prof
   real, dimension (:), allocatable :: hcond_prof,dlnhcond_prof
-  !for testing
-  ! public :: hcond_prof
-  ! public :: dlnhcond_prof
   real, dimension (:), allocatable :: chit_prof_stored,chit_prof_fluct_stored
   real, dimension (:), allocatable :: dchit_prof_stored,dchit_prof_fluct_stored
   real, dimension(3) :: beta_glnrho_global=0.
@@ -262,6 +255,7 @@ module Energy
 !  (need to be consistent with reset list below).
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
+  public :: idiag_dtc
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
                                 ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   acoustic time step;
@@ -488,6 +482,7 @@ module Energy
 
   real, dimension (nx) :: Hmax,ssmax,diffus_chi,diffus_chi3,cs2cool_x, &
                           chit_prof,chit_prof_fluct,hcond,K_kramers
+  public :: diffus_chi
   real, dimension (nx,3) :: gss1, gss0
   integer, parameter :: prof_nz=150
   real, dimension (prof_nz) :: prof_lnT,prof_z
@@ -1467,8 +1462,7 @@ module Energy
 !  20-jan-2015/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: isothermal_entropy, eoscalc, eosperturb, &
-                                 isothermal_lnrho_ss, ilnrho_pp
+      use EquationOfState, only: isothermal_entropy, eoscalc, isothermal_lnrho_ss
       use General, only: itoa
       use Gravity
       use Initcond
@@ -1480,7 +1474,6 @@ module Energy
 !
       real, dimension (nx) :: tmp,pot
       real, dimension (nx) :: pp,lnrho,r_mn
-      real, dimension (mx) :: ss_mx
       real :: cs2int,ss0,ssint,ztop,ss_ext,pot0,pot_ext
       real, pointer :: fac_cs
       integer, pointer :: isothmid
@@ -1515,10 +1508,15 @@ module Energy
             call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j),radius_ss_x(j))
           case ('blob_radeq')
             call blob_radeq(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
-          case ('isothermal'); call isothermal_entropy(f,T0)
+          case ('isothermal')
+            if (ldensity_nolog) then
+              call isothermal_entropy(log(f(:,:,:,irho)),T0,f(:,:,:,iss))
+            else
+              call isothermal_entropy(f(:,:,:,ilnrho),T0,f(:,:,:,iss))
+            endif
           case ('isothermal_lnrho_ss')
             if (lroot) print*, 'init_energy: Isothermal density and entropy stratification'
-            call isothermal_lnrho_ss(f,T0,rho0)
+            call isothermal_lnrho_ss(f(:,:,:,ilnrho),T0,rho0,f(:,:,:,iss))
           case ('hydrostatic-isentropic')
             call hydrostatic_isentropic(f,lnrho_bot,ss_const)
           case ('wave')
@@ -1805,12 +1803,12 @@ module Energy
       if (save_pretend_lnTT) then
         pretend_lnTT=.true.
         do m=1,my; do n=1,mz
-          ss_mx=f(:,m,n,iss)
-          call eosperturb(f,mx,ss=ss_mx)
+          call getlnrho(f(:,m,n,ilnrho),lnrho)
+          call eoscalc(ilnrho_ss,lnrho,f(l1:l2,m,n,iss),lnTT=f(l1:l2,m,n,iss))
         enddo; enddo
       endif
 
-      if (lreference_state) then    ! always meaningful?
+      if (lreference_state.and..not.pretend_lnTT) then    ! always meaningful?
         do n=n1,n2; do m=m1,m2
           f(:,m,n,iss) = f(:,m,n,iss) - reference_state(:,iref_s)
         enddo; enddo
@@ -2012,7 +2010,7 @@ module Energy
 !
 !  20-feb-04/tobi: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_ss
+      use EquationOfState, only: eoscalc
       use Gravity, only: gravz
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2123,7 +2121,7 @@ module Energy
 !  12-jul-05/axel: coded
 !  17-Nov-05/dintrans: updated using strat_MLT
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc
       use General, only: safe_character_assign
       use Gravity, only: z1
 !
@@ -2223,7 +2221,7 @@ module Energy
 !  20-oct-03/dave -- coded
 !  21-aug-08/dhruba: added spherical coordinates
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc
       use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2317,7 +2315,7 @@ module Energy
 !  for `conv_slab' style runs, with a layer of polytropic gas in [z0,z1].
 !  generalised for cp/=1.
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc
       use Gravity, only: gravz, zinfty
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2362,7 +2360,7 @@ module Energy
 !
 !  AJ: PLEASE IDENTIFY AUTHOR
 !
-      use EquationOfState, only: eoscalc, ilnrho_pp, eosperturb
+      use EquationOfState, only: eoscalc
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2427,7 +2425,7 @@ module Energy
 !
           pp=real(k_B*unit_length**3 * (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h))
 
-          call eosperturb(f,nx,pp=pp)
+          call eoscalc(irho_pp,rho,pp,ss=f(l1:l2,m,n,iss))
 !
           fmpi1=cs2bot
           call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
@@ -2455,7 +2453,7 @@ module Energy
 !  12-feb-11/fred: older subroutine now use thermal_hs_equilibrium_ism.
 !  20-jan-15/MR: changes for use of reference state.
 !
-      use EquationOfState , only: eosperturb, getmu
+      use EquationOfState , only: eoscalc, getmu
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2495,19 +2493,17 @@ module Energy
         rho=rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
         call putrho(f(:,m,n,ilnrho),rho)
 
-        if (lentropy) then
 !  Isothermal
-          pp=rho*gamma_m1/gamma*T0
-          call eosperturb(f,nx,pp=pp)
+        pp=rho*gamma_m1/gamma*T0
+        call eoscalc(irho_pp,rho,pp,ss=f(l1:l2,m,n,iss))
 !
-          fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
-          cs2bot=fmpi1
-          fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
-          cs2top=fmpi1
+        fmpi1=cs2bot
+        call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
+        cs2bot=fmpi1
+        fmpi1=cs2top
+        call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
+        cs2top=fmpi1
 !
-         endif
        enddo
      enddo
 !
@@ -2526,7 +2522,7 @@ module Energy
 !   22-jan-10/fred
 !   20-jan-15/MR: changes for use of reference state.
 !
-      use EquationOfState, only: eosperturb
+      use EquationOfState, only: eoscalc
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2542,30 +2538,27 @@ module Energy
         rho=rho0hs*exp(1 - sqrt(1 + (z(n)/H0hs)**2))
         call putrho(f(:,m,n,ilnrho),rho)
 !
-        if (lentropy) then
-!
 !  Isothermal
 !
-          pp=rho*cs0hs**2
-          call eosperturb(f,nx,pp=pp)
-          if (ldensity_nolog) then
-            if (lreference_state) then
-              ss=log(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
-            else
-              ss=log(f(l1:l2,m,n,irho))
-            endif
+        pp=rho*cs0hs**2
+        call eoscalc(irho_pp,rho,pp,ss=f(l1:l2,m,n,iss))
+        if (ldensity_nolog) then
+          if (lreference_state) then
+            ss=log(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
           else
-            ss=f(l1:l2,m,n,ilnrho)
+            ss=log(f(l1:l2,m,n,irho))
           endif
-
-          fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
-          cs2bot=fmpi1
-          fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
-          cs2top=fmpi1
-!
+        else
+          ss=f(l1:l2,m,n,ilnrho)
         endif
+
+        fmpi1=cs2bot
+        call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
+        cs2bot=fmpi1
+        fmpi1=cs2top
+        call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
+        cs2top=fmpi1
+!
       enddo
       enddo
 !
@@ -3496,17 +3489,17 @@ module Energy
               call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
             endif
           endif
-          if (idiag_Hmax/=0) call max_mn_name(Hmax/p%ee,idiag_Hmax)
-          if (idiag_tauhmin/=0) then
-            if (lthdiff_Hmax) then
-              call max_mn_name(ssmax,idiag_tauhmin,lreciprocal=.true.)
-            else
-              call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.)
-            endif
-          endif
           if (idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         endif
 
+        if (idiag_Hmax/=0) call max_mn_name(Hmax/p%ee,idiag_Hmax)
+        if (idiag_tauhmin/=0) then
+          if (lthdiff_Hmax.and.ldt) then
+            call max_mn_name(ssmax,idiag_tauhmin,lreciprocal=.true.)
+          else
+            call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.)
+          endif
+        endif
         if (idiag_ssmax/=0) call max_mn_name(p%ss*uT,idiag_ssmax)
         if (idiag_ssmin/=0) call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
         if (idiag_TTmax/=0) call max_mn_name(p%TT*uT,idiag_TTmax)
@@ -6670,7 +6663,7 @@ module Energy
 !  12-nov-10/mvaisala: adapted from calc_heat_cool
 !  12-feb-15/MR: adapted for reference state.
 !
-      use EquationOfState, only: eoscalc,ilnrho_ss,irho_ss
+      use EquationOfState, only: eoscalc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -6991,7 +6984,7 @@ module Energy
 !  26-jul-06/tony: coded
 !  12-feb-15/MR  : changes for use of reference state.
 !
-      use EquationOfState, only: eoscalc, ilnrho_ss, irho_ss
+      use EquationOfState, only: eoscalc
       use Slices_methods, only: assign_slices_scal, addto_slices, process_slices, exp2d
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -7257,6 +7250,7 @@ module Energy
     endsubroutine chit_profile
 !***********************************************************************
     subroutine get_prof_pencil(prof,dprof,l2D3D,amp,amp1,amp2,pos1,pos2,p,f,stored_prof,stored_dprof,llog)
+
 !
 !  Provides pencils for an either x or z dependent profile and its (optionally logarithmic) gradient:
 !  prof and dprof. If
@@ -7588,11 +7582,11 @@ module Energy
 !
 !  09-aug-06/dintrans: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc
       use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: lnrho,lnTT,TT,r_mn
+      real, dimension (nx) :: TT,r_mn
       real :: beta0,beta1,TT_bcz
       real :: lnrho_int,lnrho_ext,lnrho_bcz
 !
@@ -7638,9 +7632,7 @@ module Energy
           f(l1:l2,m,n,ilnrho)=lnrho_int
         endwhere
 !
-        lnrho=f(l1:l2,m,n,ilnrho)
-        lnTT=log(TT)
-        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=f(l1:l2,m,n,iss))
+        call eoscalc(ilnrho_lnTT,f(l1:l2,m,n,ilnrho),log(TT),ss=f(l1:l2,m,n,iss))
 !
       enddo
 !
@@ -7658,7 +7650,7 @@ module Energy
 !
 !  17-mar-07/dintrans: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_TT
+      use EquationOfState, only: eoscalc
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -7712,7 +7704,7 @@ module Energy
 !
 !  06-sep-07/dintrans: coded a single polytrope of index mpoly0
 !
-      use EquationOfState, only: eoscalc, ilnrho_TT
+      use EquationOfState, only: eoscalc
       use Gravity, only: gravz
       use SharedVariables, only: get_shared_variable
 !
@@ -8042,10 +8034,68 @@ module Energy
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
-    call copy_addr(dlnhcond_prof,p_par(2)) ! (nz)
-    call copy_addr(hcond_prof,p_par(3)) ! (nz)
+    if (allocated(hcond_prof))    call copy_addr(hcond_prof,p_par(2))      ! (nz)
+    if (allocated(dlnhcond_prof)) call copy_addr(dlnhcond_prof,p_par(3))   ! (nz)
 
     endsubroutine pushpars2c
+!***********************************************************************
+    subroutine calc_pencils_energy_test(f,p)
+!
+!  Calculate Entropy pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  20-nov-04/anders: coded
+!  15-mar-15/MR: changes for use of reference state.
+!
+      use Sub 
+      use Deriv
+      real, dimension((nxgrid/nprocx+2*3),(nygrid/nprocy+2*3),(nzgrid/nprocz+2*3),(5+0+0+0)), intent(in)   :: f
+type(pencil_case),                 intent(inout):: p
+integer :: j
+real, dimension ((nxgrid/nprocx)) :: tmp_1
+integer::i_1
+integer::j_1
+logical :: loptest_return_value_0_1
+! if(lpencil(i_ma2)) then
+! p%ma2=p%u2/p%cs2
+! endif
+! if(lpencil(i_ugss)) then
+! call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,upwind=.true.)
+! endif
+! if(lpencil(i_uglntt)) then
+! call u_dot_grad(f,iss,p%glntt,p%uu,p%uglntt,upwind=.true.)
+! endif
+! if(lpencil(i_sglntt)) then
+! do i_1=1,3
+! j_1=1
+! tmp_1=p%sij(:,i_1,j_1)*p%glntt(:,j_1)
+! do j_1=2,3
+! tmp_1=tmp_1+p%sij(:,i_1,j_1)*p%glntt(:,j_1)
+! enddo
+! loptest_return_value_0_1=.false.
+! p%sglntt(:,i_1)=tmp_1
+! enddo
+! endif
+! if(lpencil(i_fpres)) then
+! do j=1,3
+! p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glntt(:,j))*gamma1
+! enddo
+! endif
+! if(lpencil(i_transprhos)) then
+! p%transprhos = impossible
+! endif
+! if(lpencil(i_initlnrho).and.iglobal_lnrho0/=0) then
+! p%initlnrho=f((1+3):l2,m,n,iglobal_lnrho0)
+! endif
+! if(lpencil(i_initss).and.iglobal_ss0/=0) then
+! p%initss=f((1+3):l2,m,n,iglobal_ss0)
+! endif
+! if(lpencil(i_uuadvec_gss)) then
+! call dot_mn(p%uu_advec,p%gss,p%uuadvec_gss)
+! endif
+
+!
+    endsubroutine calc_pencils_energy_test
 !***********************************************************************
 !********************************************************************
 !********************************************************************

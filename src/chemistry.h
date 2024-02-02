@@ -46,8 +46,10 @@
 ! public :: chemistry_calc_magnetic
 
   public :: write_net_reaction
-  public :: lreactions
+  public :: lreactions, species_constants, find_species_index
   public :: chemistry_init_reduc_pointers
   public :: chemistry_diag_reductions
   public :: chemistry_read_diag_accum
   public :: chemistry_init_diag_accum
+  public :: chemistry_write_diagnostics_accumulators
+  public :: chemistry_init_private_accumulators

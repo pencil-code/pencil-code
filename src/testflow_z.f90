@@ -180,6 +180,7 @@ module Testflow
   integer :: nname_old
 !
   integer :: idiag_map(100)
+  real, dimension(nz,3) :: guumz
 !
   contains
 !
@@ -631,7 +632,7 @@ module Testflow
       use Sub
       use Mpicomm, only: stop_it
       use density, only: glnrhomz
-      use Hydro, only: uumz, guumz, coriolis_cartesian, ampl_fcont_uu
+      use Hydro, only: uumz, coriolis_cartesian, ampl_fcont_uu
       use Forcing, only: forcing_cont
       use Shear, only: shear_variables
       use Deriv, only: der5_single
@@ -1157,6 +1158,10 @@ module Testflow
       headtt_save=headtt
 
       lfirstpoint=.true.
+!
+!  Compute gradient of mean uu.
+!
+        if (lcalc_uumeanz) call distr_der(uumz,3,guumz)
 !
 zloop:do n=n1,n2
 
@@ -2021,7 +2026,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
         ifound=0
         if ( itestflow/='W11-W22' ) &
           ifound = fparse_name(iname,cname(iname),'gal',idiag_gal,cform(iname))
-
+!MR: not yet correct: fparse_name can return -1 (multiply defined diagnostic)
         ifound = ifound + fparse_name(iname,cname(iname),'aklam',idiag_aklam,cform(iname))
         ifound = ifound + fparse_name(iname,cname(iname),'gamma',idiag_gamma,cform(iname))
         ifound = ifound + fparse_name(iname,cname(iname),'nu',idiag_nu,cform(iname))

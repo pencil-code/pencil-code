@@ -97,7 +97,7 @@ module Dustdensity
   logical :: reinitialize_nd=.false., ldustcondensation_simplified=.false.
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
   logical :: lzero_upper_kern=.false., ldustcoagulation_simplified=.false.
-  logical :: lself_collisions=.false.
+  logical :: lself_collisions=.false.,lmice=.false.
   logical :: llog10_for_admom_above10=.true., lmomcons=.false., lmomconsb=.false.
   logical :: lmomcons2=.false., lmomcons3=.false., lmomcons3b=.false.
   logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false.
@@ -209,7 +209,7 @@ module Dustdensity
       if (lmice) then
         call farray_register_pde('mi',ind_tmp,array=ndustspec)
         do k=1,ndustspec
-          imd(k) = ind_tmp + k-1
+          imi(k) = ind_tmp + k-1  
         enddo
         call farray_index_append('nmi',ndustspec)
       endif
@@ -935,6 +935,15 @@ module Dustdensity
 !  Interface for user's own initial condition.
 !
       if (linitial_condition) call initial_condition_nd(f)
+!
+!  Sanity check.
+!
+      if (notanumber(f(l1:l2,m1:m2,n1:n2,ind))) &
+          call fatal_error('init_nd','Imaginary dust number density values')
+!
+!  Take logarithm if necessary (remember that nd then really means ln(nd)).
+!
+      if (ldustdensity_log) f(l1:l2,m1:m2,n1:n2,ilnnd) = log(f(l1:l2,m1:m2,n1:n2,ind))
       
       if (.not. latm_chemistry) then
         if (lmdvar) then
@@ -944,28 +953,13 @@ module Dustdensity
           do k=1,ndustspec
             f(:,:,:,imd(k)) = md(k)
           enddo
+          if (notanumber(f(l1:l2,m1:m2,n1:n2,imd))) &
+            call fatal_error('init_nd','Imaginary dust density values')
         endif
 !
 !  Initialize ice density.
 !
         if (lmice) f(:,:,:,imi) = 0.0
-      endif
-!
-!  Take logarithm if necessary (remember that nd then really means ln nd).
-!
-      if (ldustdensity_log) f(l1:l2,m1:m2,n1:n2,ilnnd) = log(f(l1:l2,m1:m2,n1:n2,ind))
-!
-!  Sanity check.
-!
-      if (notanumber(f(l1:l2,m1:m2,n1:n2,ind))) &
-          call fatal_error('init_nd','Imaginary dust number density values')
-      if (lmdvar) then
-        if (notanumber(f(l1:l2,m1:m2,n1:n2,imd))) &
-            call fatal_error('init_nd','Imaginary dust density values')
-      endif
-      if (lmice) then
-        if (notanumber(f(l1:l2,m1:m2,n1:n2,imi))) &
-            call fatal_error('init_nd','Imaginary ice density values')
       endif
 !
     endsubroutine init_nd
@@ -1113,7 +1107,7 @@ module Dustdensity
 !  20-11-04/anders: coded
 !
       lpenc_requested(i_nd)=.true.
-      if (ldustcoagulation) lpenc_requested(i_md)=.true.
+      if (ldustcoagulation.or.ldustcoagulation_simplified) lpenc_requested(i_md)=.true.
       if (ldustcondensation) then
         lpenc_requested(i_mi)=.true.
         lpenc_requested(i_rho)=.true.
@@ -1180,7 +1174,6 @@ module Dustdensity
 !        lpenc_requested(i_dndr)=.true.
         lpenc_requested(i_ccondens)=.true.
         lpenc_requested(i_fcloud)=.true.
-        if (lmdvar) lpenc_requested(i_md)=.true.
       endif
 !
 !      if (lsemi_chemistry) then
@@ -1722,7 +1715,7 @@ module Dustdensity
 ! nd
       if (ldustcoagulation_simplified) then
 !
-        call coag_kernel(f,p%TT1)
+        call coag_kernel(f,p)
         do k=1,ndustspec
           Nd_rho(:,k)=p%nd(:,k)*dsize(k)*p%rho
 !          p%nd(:,k)*(dsize(k+1)-dsize(k))*p%rho
@@ -1917,7 +1910,7 @@ module Dustdensity
 !  Calculate kernel of coagulation equation
 !
         if (ldustcoagulation) then
-          call coag_kernel(f,p%TT1)
+          call coag_kernel(f,p)
 !
 !  Dust coagulation due to sticking
 !
@@ -2085,6 +2078,7 @@ module Dustdensity
 !  do loop for dust species
 !
         do k=1,ndustspec
+!
           call sum_mn_name(p%md(:,k),idiag_mdm(k))
           call sum_mn_name(p%nd(:,k),idiag_ndm(k))
           if (idiag_nd2m(k)/=0) call sum_mn_name(p%nd(:,k)**2,idiag_nd2m(k))
@@ -2123,18 +2117,10 @@ module Dustdensity
           if (idiag_rhodmt/=0) then
             if (lfirstpoint .and. k/=1) then
               lfirstpoint = .false.
-              if (lmdvar) then
-                call sum_mn_name(f(l1:l2,m,n,imd(k))*p%nd(:,k),idiag_rhodmt)
-              else
-                call sum_mn_name(md(k)*p%nd(:,k),idiag_rhodmt)
-              endif
+              call sum_mn_name(p%md(:,k)*p%nd(:,k),idiag_rhodmt)
               lfirstpoint = .true.
             else
-              if (lmdvar) then
-                call sum_mn_name(f(l1:l2,m,n,imd(k))*p%nd(:,k),idiag_rhodmt)
-              else
-                call sum_mn_name(md(k)*p%nd(:,k),idiag_rhodmt)
-              endif
+              call sum_mn_name(p%md(:,k)*p%nd(:,k),idiag_rhodmt)
             endif
           endif
           if (idiag_rhoimt/=0) then
@@ -2150,29 +2136,9 @@ module Dustdensity
 ! If 1d averages are calculated first
 !
           if (l1davgfirst) then
-            if (idiag_rhodmz(k)/=0) then
-              if (lmdvar) then
-                call xysum_mn_name_z(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_rhodmz(k))
-              else
-                call xysum_mn_name_z(p%nd(:,k)*md(k),idiag_rhodmz(k))
-              endif
-            endif
-!
-            if (idiag_ndmx(k)/=0) then
-              if (lmdvar) then
-                call yzsum_mn_name_x(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_ndmx(k))
-              else
-                call yzsum_mn_name_x(p%nd(:,k),idiag_ndmx(k))
-              endif
-            endif
-!
-            if (idiag_ndmz(k)/=0) then
-              if (lmdvar) then
-                call xysum_mn_name_z(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_ndmz(k))
-              else
-                call xysum_mn_name_z(p%nd(:,k),idiag_ndmz(k))
-              endif
-            endif
+            if (idiag_rhodmz(k)/=0) call xysum_mn_name_z(p%nd(:,k)*p%md(:,k),idiag_rhodmz(k))
+            if (idiag_ndmx(k)/=0) call yzsum_mn_name_x(p%nd(:,k)*p%md(:,k),idiag_ndmx(k))
+            if (idiag_ndmz(k)/=0) call xysum_mn_name_z(p%nd(:,k)*p%md(:,k),idiag_ndmz(k))
           endif
         enddo    !do k=1,ndustspec
 !
@@ -2582,6 +2548,19 @@ module Dustdensity
       endselect
 !
     endsubroutine get_mfluxcond
+ !***********************************************************************
+    subroutine dustdensity_before_boundary(f)
+!
+!  Check for dust grain mass interval overflows and redistribute mdbins.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (.not. lchemistry) then
+        call null_dust_vars(f)
+        if (lmdvar .and. lfirst) call redist_mdbins(f)
+      endif
+
+    endsubroutine dustdensity_before_boundary
 !***********************************************************************
     subroutine dustdensity_after_boundary(f)
 !
@@ -2597,14 +2576,14 @@ module Dustdensity
 
     endsubroutine dustdensity_after_boundary
 !***********************************************************************
-    subroutine coag_kernel(f,TT1)
+    subroutine coag_kernel(f,p)
 !
 !  Calculate kernel of coagulation equation; collision rate = ni*nj*kernel
 !
       use Sub, only: dot2
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: TT1
+      type(pencil_case) :: p
 
       real, dimension (nx) :: TT,Kn, cor_factor, D_coeff, Di, Dk, Dik, KBC, vmean_i, vmean_k
       real, dimension (nx) :: vmean_ik, gamma_i, gamma_k, omega_i, omega_k, sigma_ik
@@ -2692,7 +2671,7 @@ module Dustdensity
 !  urms^2 = 8*kB*T/(pi*m_red)
 !
                 if (ldeltavd_thermal) then
-                  deltavd_therm = sqrt( 8*k_B/(pi*TT1(l))*(md(i)+md(j))/(md(i)*md(j)*unit_md) )
+                  deltavd_therm = sqrt( 8*k_B/(pi*p%TT1(l))*(p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md) )
                 else
                   deltavd_therm=0.
                 endif
@@ -2724,7 +2703,7 @@ module Dustdensity
 !
                 if (ludstickmax) then
                   ust = ustcst * (ad(i)*ad(j)/(ad(i)+ad(j)))**(2/3.) * &
-                        ((md(i)+md(j))/(md(i)*md(j)*unit_md))**(1/2.)
+                        ((p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md))**(1/2.)
                   if (deltavd > ust) deltavd = 0.
                 endif
 !
@@ -2764,7 +2743,7 @@ module Dustdensity
 !
         mu_air=2.e-4
         rho_air=1.2e-3 
-        TT=1./TT1
+        TT=1./p%TT1
         
         do i=1,ndustspec   
         do k=i,ndustspec 

@@ -336,6 +336,51 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
+    subroutine output_part_rmv(ipar_rmv, ipar_sink, fp_rmv, fp_sink, nrmv)
+!
+!  Writes the log of removed particles to a file.
+!
+!  21-jan-24/ccyang: adapted from remove_particle() of particles_sub.f90.
+!
+      use General, only: keep_compiler_quiet
+      use Messages, only: not_implemented
+!
+      integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
+      real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
+      integer, intent(in) :: nrmv
+!
+      integer k
+      real :: t_sp   ! t in single precision for backwards compatibility
+!
+      if (nrmv <= 0) return
+!
+!  Write particle IDs.
+!
+      t_sp = t
+      open(20, file=trim(directory_snap)//'/rmv_ipar.dat', position='append')
+      ipar: do k = 1, nrmv
+        if (ipar_sink(k) >= 0) then
+          write(20,*) ipar_rmv(k), t_sp, ipar_sink(k)
+        else
+          write(20,*) ipar_rmv(k), t_sp
+        endif
+      enddo ipar
+      close(20)
+!
+!  Write particle attributes.
+!
+      open(20, file=trim(directory_snap)//'/rmv_par.dat', position='append', form='unformatted')
+      fp: do k = 1, nrmv
+        if (ipar_sink(k) >= 0) then
+          write(20) fp_rmv(:,k), fp_sink(:,k)
+        else
+          write(20) fp_rmv(:,k)
+        endif
+      enddo fp
+      close(20)
+!
+    endsubroutine output_part_rmv
+!***********************************************************************
     subroutine output_stalker_init(num, nv, snap, ID)
 !
 !  Open stalker particle snapshot file and initialize with snapshot time.

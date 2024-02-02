@@ -43,10 +43,14 @@
 !    unaffected by ghost information plus boundcond for m1,m2):
 !                        m1i+2:m2i-2
 !
+! CPARAM logical, parameter :: lmpicomm = .true.
+!
+!***************************************************************
+!
 module Mpicomm
 !
   use Cdata
-  use Cparam
+  use General, only: find_proc, ioptest
   use Yinyang
 !
   implicit none
@@ -191,7 +195,6 @@ module Mpicomm
       integer :: iapp=0
       integer :: flag
 
-      lmpicomm = .true.
 !
 !$    call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,thread_support,mpierr)
 !$    if (thread_support < MPI_THREAD_MULTIPLE) then
@@ -262,7 +265,7 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
       if (ncpus/=nprocx*nprocy*nprocz) then
         if (lroot) then
           print*, 'Laid out for ncpus (per grid) = ', ncpus, &
-              ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
+                  ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
         endif
         call stop_it('mpicomm_init')
       endif
@@ -316,7 +319,7 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !
 !  Announce myself for pc_run to detect.
 !
-      use General, only: itoa
+      use General, only: itoa, find_proc, find_proc_coords
 
       integer :: nprocs_penc, nprocs_foreign
 
@@ -391,15 +394,16 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !  Position on the processor grid (WITHIN Yin or Yang grid!).
 !  x is fastest direction, z slowest (this is the default)
 !
-      if (lprocz_slowest) then
-        ipx = modulo(iproc, nprocx)
-        ipy = modulo(iproc/nprocx, nprocy)
-        ipz = iproc/nprocxy
-      else
-        ipx = modulo(iproc, nprocx)
-        ipy = iproc/nprocxz
-        ipz = modulo(iproc/nprocx, nprocz)
-      endif
+      call find_proc_coords(iproc,ipx,ipy,ipz)
+      !if (lprocz_slowest) then
+      !  ipx = modulo(iproc, nprocx)
+      !  ipy = modulo(iproc/nprocx, nprocy)
+      !  ipz = iproc/nprocxy
+      !else
+      !  ipx = modulo(iproc, nprocx)
+      !  ipy = iproc/nprocxz
+      !  ipz = modulo(iproc/nprocx, nprocz)
+      !endif
 !
 !  Set up flags for leading processors in each possible direction and plane
 !
@@ -427,19 +431,19 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !
 !  Set up `lower' and `upper' neighbours, refer to MPI_COMM_GRID.
 !
-      xlneigh = modulo(ipx-1,nprocx) + ipy*nprocx + ipz*nprocxy
-      xuneigh = modulo(ipx+1,nprocx) + ipy*nprocx + ipz*nprocxy
-      ylneigh = ipx + modulo(ipy-1,nprocy)*nprocx + ipz*nprocxy
-      yuneigh = ipx + modulo(ipy+1,nprocy)*nprocx + ipz*nprocxy
-      zlneigh = ipx + ipy*nprocx + modulo(ipz-1,nprocz)*nprocxy
-      zuneigh = ipx + ipy*nprocx + modulo(ipz+1,nprocz)*nprocxy
+      xlneigh = find_proc(ipx-1,ipy,ipz)  !modulo(ipx-1,nprocx) + ipy*nprocx + ipz*nprocxy
+      xuneigh = find_proc(ipx+1,ipy,ipz)  !modulo(ipx+1,nprocx) + ipy*nprocx + ipz*nprocxy
+      ylneigh = find_proc(ipx,ipy-1,ipz)  !ipx + modulo(ipy-1,nprocy)*nprocx + ipz*nprocxy
+      yuneigh = find_proc(ipx,ipy+1,ipz)  !ipx + modulo(ipy+1,nprocy)*nprocx + ipz*nprocxy
+      zlneigh = find_proc(ipx,ipy,ipz-1)  !ipx + ipy*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      zuneigh = find_proc(ipx,ipy,ipz+1)  !ipx + ipy*nprocx + modulo(ipz+1,nprocz)*nprocxy
 !
 !  Set the four corners in the yz-plane (in cyclic order).
 !
-      llcorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
-      ulcorn = ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
-      uucorn = ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
-      lucorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
+      llcorn = find_proc(ipx,ipy-1,ipz-1)  !ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      ulcorn = find_proc(ipx,ipy+1,ipz-1)  !ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      uucorn = find_proc(ipx,ipy+1,ipz+1)  !ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
+      lucorn = find_proc(ipx,ipy-1,ipz+1)  !ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
 !
 !  Overwrite with settings for boundary processors in Yin-Yang grid.
 !
@@ -637,11 +641,9 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !
 !  20-dec-15/MR: coded
 !
-      use General, only: find_proc
-!
-      real, dimension(:,:,:), allocatable :: gridbuf_midy, gridbuf_midz, &! contains grid request of direct neighbour(s)
-                                             gridbuf_left, &              !             ~         of left corner neighbour
-                                             gridbuf_right                !             ~         of right corner neighbour
+      real, dimension(:,:,:), allocatable :: gridbuf_midy, gridbuf_midz, &  ! contains grid request of direct neighbour(s)
+                                             gridbuf_left, &                !             ~         of left corner neighbour
+                                             gridbuf_right                  !             ~         of right corner neighbour
 
       integer :: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot
       integer :: ipatch
@@ -717,6 +719,7 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
 
       call MPI_TYPE_FREE(type_get,mpierr)
       call MPI_TYPE_FREE(type_store,mpierr)
+      call MPI_WIN_FREE(win,mpierr)
 
     endsubroutine scatter_snapshot
 !***********************************************************************
@@ -1485,11 +1488,16 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !  NB nprocz=2*n, n>=1, comms across y-plane parallel in z! 
 !
       if (lcommunicate_y) then
-        poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx
-        pnbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+0*nprocx+ipx !N rev
-        pnfcrn = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+0*nprocx+ipx !N fwd
-        psfcrn = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+(nprocy-1)*nprocx+ipx
-        psbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+(nprocy-1)*nprocx+ipx
+        poleneigh = find_proc(ipx,     ipy,ipz  +nprocz/2)
+        pnbcrn    = find_proc(ipx,       0,ipz-1+nprocz/2)
+        pnfcrn    = find_proc(ipx,       0,ipz+1+nprocz/2)
+        psfcrn    = find_proc(ipx,nprocy-1,ipz+1+nprocz/2)
+        psbcrn    = find_proc(ipx,nprocy-1,ipz-1+nprocz/2)
+        !poleneigh = modulo(ipz  +nprocz/2,nprocz)*nprocxy+       ipy*nprocx+ipx
+        !pnbcrn    = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+         0*nprocx+ipx !N rev
+        !pnfcrn    = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+         0*nprocx+ipx !N fwd
+        !psfcrn    = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+(nprocy-1)*nprocx+ipx
+        !psbcrn    = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+(nprocy-1)*nprocx+ipx
       endif
 !
 !  Allocate and send/receive buffers across y-planes
@@ -2455,15 +2463,25 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !     ipx_partner = the offset to the shearing neighbour within the x-row, 
 !                   either the low-x end or high-x end of the grid. 
 !                   Note iproc, ipx, etc are zero-based indexing.
-          nextnextya = ipz*nprocy*nprocx +modulo(ipy-ystep+1,nprocy)*nprocx + ipx_partner
-          nextya     = ipz*nprocy*nprocx +modulo(ipy-ystep  ,nprocy)*nprocx + ipx_partner
-          lastya     = ipz*nprocy*nprocx +modulo(ipy-ystep-1,nprocy)*nprocx + ipx_partner
-          lastlastya = ipz*nprocy*nprocx +modulo(ipy-ystep-2,nprocy)*nprocx + ipx_partner
+          nextnextya = find_proc(ipx_partner,ipy-ystep+1,ipz) 
+          nextya     = find_proc(ipx_partner,ipy-ystep  ,ipz) 
+          lastya     = find_proc(ipx_partner,ipy-ystep-1,ipz) 
+          lastlastya = find_proc(ipx_partner,ipy-ystep-2,ipz) 
 !
-          lastlastyb = ipz*nprocy*nprocx +modulo(ipy+ystep-1,nprocy)*nprocx + ipx_partner
-          lastyb     = ipz*nprocy*nprocx +modulo(ipy+ystep  ,nprocy)*nprocx + ipx_partner
-          nextyb     = ipz*nprocy*nprocx +modulo(ipy+ystep+1,nprocy)*nprocx + ipx_partner
-          nextnextyb = ipz*nprocy*nprocx +modulo(ipy+ystep+2,nprocy)*nprocx + ipx_partner
+          lastlastyb = find_proc(ipx_partner,ipy+ystep-1,ipz) 
+          lastyb     = find_proc(ipx_partner,ipy+ystep  ,ipz) 
+          nextyb     = find_proc(ipx_partner,ipy+ystep+1,ipz) 
+          nextnextyb = find_proc(ipx_partner,ipy+ystep+2,ipz) 
+!
+          !!nextnextya = ipz*nprocy*nprocx +modulo(ipy-ystep+1,nprocy)*nprocx + ipx_partner
+          !!nextya     = ipz*nprocy*nprocx +modulo(ipy-ystep  ,nprocy)*nprocx + ipx_partner
+          !!lastya     = ipz*nprocy*nprocx +modulo(ipy-ystep-1,nprocy)*nprocx + ipx_partner
+          !!lastlastya = ipz*nprocy*nprocx +modulo(ipy-ystep-2,nprocy)*nprocx + ipx_partner
+!
+          !!lastlastyb = ipz*nprocy*nprocx +modulo(ipy+ystep-1,nprocy)*nprocx + ipx_partner
+          !!lastyb     = ipz*nprocy*nprocx +modulo(ipy+ystep  ,nprocy)*nprocx + ipx_partner
+          !!nextyb     = ipz*nprocy*nprocx +modulo(ipy+ystep+1,nprocy)*nprocx + ipx_partner
+          !!nextnextyb = ipz*nprocy*nprocx +modulo(ipy+ystep+2,nprocy)*nprocx + ipx_partner
 !
 !         The data that gets passed, each set of values goes to 4 places.
 !         Only pass active grid points in y, the guard cells are not assumed to be filled yet
@@ -2475,7 +2493,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !         Here we exchange the fao and fbo data across the shearing boundary.
 !         These if statements determinie if we need to copy, or post a MPI send/recieve.
 !         Direct copying is done when we discover we are the reciever.
-!         the route from send to recieve butffer names is bassed on values of iproc:
+!         the route from send to recieve buffer names is based on values of iproc:
 !          nextnextyb -> fao => fahihi
 !          nextyb     -> fao => fahi
 !          lastyb     -> fao => falo
@@ -2621,8 +2639,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Some special cases have already finished in initiate_shearing.
 !
-      if (nygrid/=1 .and. (nprocx>1 .or. nprocy>1) .and. &
-          (lfirst_proc_x .or. llast_proc_x)) then
+      if (nygrid/=1 .and. (nprocx>1 .or. nprocy>1) .and. (lfirst_proc_x .or. llast_proc_x)) then
 !
 !  Need to wait till all communication has been recived.
 !
@@ -2987,8 +3004,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  04-sep-06/wlad: coded
 !
-      use General, only: ioptest
-
       character(LEN=*), intent(OUT) :: str
       integer,          intent(IN ) :: proc_src, tag_id
       integer, optional,intent(IN)  :: comm
@@ -3006,8 +3021,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  04-sep-06/wlad: coded
 !
-      use General, only: ioptest
-
       character(LEN=*) :: str
       integer :: proc_src, tag_id
       integer, optional :: comm
@@ -3023,8 +3036,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  04-sep-06/wlad: coded
 !
-      use General, only: ioptest
-
       logical :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -3060,8 +3071,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  02-jul-05/anders: coded
 !
-      use General, only: ioptest
-
       real :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -3087,8 +3096,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  02-jul-05/anders: coded
 !
-      use General, only: ioptest
-
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
@@ -3115,8 +3122,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  02-jul-05/anders: coded
 !
-      use General, only: ioptest
-
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer :: proc_src, tag_id, num_elements
@@ -3140,8 +3145,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  20-may-06/anders: adapted
 !
-      use General, only: ioptest
-
       integer, dimension(3) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
       integer :: proc_src, tag_id, num_elements
@@ -3170,8 +3173,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  20-may-06/anders: adapted
 !
-      use General, only: ioptest
-
       integer, dimension(3) :: nbcast_array
       complex, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
       integer :: proc_src, tag_id, num_elements
@@ -3200,8 +3201,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  20-may-06/anders: adapted
 !
-      use General, only: ioptest
-
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4)) :: bcast_array
       integer :: proc_src, tag_id, num_elements
@@ -3251,8 +3250,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  02-jul-05/anders: coded
 !
-      use General, only: ioptest
-
       integer :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -3275,8 +3272,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  02-jul-05/anders: coded
 ! 
-      use General, only: ioptest
-
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
@@ -3322,8 +3317,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  04-sep-06/wlad: coded
 !
-      use General, only: ioptest
-
       logical :: bcast_array
       integer :: proc_rec, tag_id
       integer, optional :: comm
@@ -3356,8 +3349,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  02-jul-05/anders: coded
 !
-      use General, only: ioptest
-
       real :: bcast_array
       integer :: proc_rec, tag_id
       integer, optional :: comm
@@ -3373,8 +3364,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  02-jul-05/anders: coded
 !
-      use General, only: ioptest
-
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
@@ -3394,8 +3383,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  06-oct-22/MR: coded
 !
-      use General, only: ioptest
-
       real, dimension(*) :: bcast_array
       integer(KIND=ikind8) :: offset
       integer :: nbcast_array,proc_rec,tag_id
@@ -3413,8 +3400,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Allows to communicate arrays with length > max_int.
 !  06-oct-22/MR: coded
 !
-      use General, only: ioptest
-
       real, dimension(*) :: array
       integer(KIND=ikind8) :: len_array
       integer :: partner,tag
@@ -3440,8 +3425,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Allows to communicate arrays with length > max_int.
 !  06-oct-22/MR: coded
 !     
-      use General, only: ioptest
-            
       real, dimension(*) :: array
       integer(KIND=ikind8) :: len_array
       integer :: partner,tag
@@ -3470,8 +3453,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  06-oct-22/MR: coded
 !
-      use General, only: ioptest
-
       real, dimension(*) :: bcast_array
       integer(KIND=ikind8) :: offset
       integer :: nbcast_array,proc_rec,tag_id
@@ -3492,8 +3473,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  02-jul-05/anders: coded
 !
-      use General, only: ioptest
-
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer :: proc_rec, tag_id, num_elements
@@ -3514,8 +3493,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  20-may-06/anders: adapted
 !
-      use General, only: ioptest
-
       integer, dimension(3) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
       integer :: proc_rec, tag_id, num_elements
@@ -3541,8 +3518,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  20-may-06/anders: adapted
 !
-      use General, only: ioptest
-
       integer, dimension(3) :: nbcast_array
       complex, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
       integer :: proc_rec, tag_id, num_elements
@@ -3567,8 +3542,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  20-may-06/anders: adapted
 !
-      use General, only: ioptest
-
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4)) :: bcast_array
       integer :: proc_rec, tag_id, num_elements
@@ -3602,8 +3575,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !***********************************************************************
     subroutine mpisendrecv_int_arr(send_array,sendcnt,proc_dest,sendtag, &
                                    recv_array,proc_src,recvtag,comm)
-      use General, only: ioptest
-
       integer :: sendcnt
       integer, dimension(sendcnt) :: send_array, recv_array
       integer :: proc_src, proc_dest, sendtag, recvtag
@@ -3638,8 +3609,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine mpisendrecv_real_arr(send_array,sendcnt,proc_dest,sendtag, &
                                     recv_array,proc_src,recvtag,idir)
 
-      use General, only: ioptest
-
       integer :: sendcnt
       real, dimension(sendcnt) :: send_array
       real, dimension(sendcnt) :: recv_array
@@ -3660,8 +3629,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !***********************************************************************
     subroutine mpisendrecv_real_arr2(send_array,nbcast_array,proc_dest,sendtag, &
                                      recv_array,proc_src,recvtag,idir)
-
-      use General, only: ioptest
 
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: send_array
@@ -3724,8 +3691,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  02-jul-05/anders: coded
 !
-      use General, only: ioptest
-
       integer :: bcast_array
       integer :: proc_rec, tag_id
       integer, optional :: comm
@@ -3741,8 +3706,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  12-dec-14/wlad: adapted
 !
-      use General, only: ioptest
-
       integer :: bcast_array
       integer :: proc_src, tag_id, ireq
       integer, optional :: comm
@@ -3832,8 +3795,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  07-jul-17/Jorgen: adapted
 !
-      use General, only: ioptest
-
       integer, dimension(3) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
       integer :: proc_src, tag_id, ireq, num_elements
@@ -3855,8 +3816,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  12-dec-14/wlad: adapted
 !
-      use General, only: ioptest
-
       integer, dimension(4) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4)) :: bcast_array
       integer :: proc_src, tag_id, ireq, num_elements
@@ -4037,8 +3996,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  02-jul-05/anders: coded
 !
-      use General, only: ioptest
-
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
@@ -4078,8 +4035,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Communicate logical scalar between processors.
 !
-      use General, only: ioptest
-
       logical :: lbcast_array
       integer, optional :: proc,comm
 !
@@ -4092,8 +4047,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Communicate logical array between processors.
 !
-      use General, only: ioptest
-
       integer :: nbcast_array
       logical, dimension (nbcast_array) :: lbcast_array
       integer, optional :: proc,comm
@@ -4111,8 +4064,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  25-may-08/wlad: adapted
 !
-      use General, only: ioptest
-
       integer, dimension(2) :: nbcast_array
       logical, dimension(nbcast_array(1),nbcast_array(2)) :: lbcast_array
       integer, optional :: proc,comm
@@ -4128,8 +4079,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Communicate integer scalar between processors.
 !
-      use General, only: ioptest
-
       integer :: ibcast_array
       integer, optional :: proc, comm
       call MPI_BCAST(ibcast_array,1,MPI_INTEGER,ioptest(proc,root), &
@@ -4141,8 +4090,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Communicate integer array between processors.
 !
-      use General, only: ioptest
-
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: ibcast_array
       integer, optional :: proc,comm
@@ -4160,8 +4107,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  30-apr-17/Jorgen: adapted
 !
-      use General, only: ioptest
-
       integer, dimension(2) :: nbcast_array
       integer, dimension(nbcast_array(1),nbcast_array(2)) :: ibcast_array
       integer, optional :: proc,comm
@@ -4180,8 +4125,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Communicate real scalar between processors.
 !
-      use General, only: ioptest
-
       real :: bcast_array
       integer, optional :: proc, comm
 
@@ -4194,8 +4137,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Communicate real array between processors.
 !
-      use General, only: ioptest
-
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
       integer, optional :: proc,comm
@@ -4212,8 +4153,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Communicate real array(:,:) to other processor.
 !
 !  25-feb-08/wlad: adapted
-!
-      use General, only: ioptest
 !
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
@@ -4292,8 +4231,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Communicate real scalar between processors.
 !
-      use General, only: ioptest
-
       real(KIND=rkind8) :: bcast_array
       integer, optional :: proc,comm
 !
@@ -4328,8 +4265,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Communicate character scalar between processors.
 !
-      use General, only: ioptest
-
       character(LEN=*) :: cbcast_array
       integer, optional :: proc,comm
 !
@@ -4341,8 +4276,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine mpibcast_char_arr(cbcast_array,nbcast_array,proc,comm)
 !
 !  Communicate character array between processors.
-!
-      use General, only: ioptest
 !
       integer :: nbcast_array
 !
@@ -4426,8 +4359,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Scatter real 1D-array between processors of communicator comm from rank proc.
 !
-      use General, only: ioptest
-
       real, dimension(:) :: src_array, dest_array
       integer, optional :: proc,comm
 
@@ -4505,8 +4436,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total sum for each array element and return to all processors.
 !
-      use General, only: ioptest
-
       real :: fsum_tmp,fsum
       integer, optional :: idir,comm
 !
@@ -4675,8 +4604,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate for each processor offset of local array within a global array.
 !
-      use General, only: ioptest
-
       integer :: num,offset
       integer, optional :: comm
 !
@@ -4689,8 +4616,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total sum for each array element and return to all processors.
 !
-      use General, only: ioptest
-
       integer :: fsum_tmp,fsum
       integer, optional :: comm
 !
@@ -4743,8 +4668,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total maximum element and return to all processors.
 !
-      use General, only: ioptest
-
       real(KIND=rkind4) :: fmax_tmp,fmax
       integer, optional :: comm
 !
@@ -4757,8 +4680,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total maximum element and return to all processors.
 !
-      use General, only: ioptest
-
       real(KIND=rkind8) :: fmax_tmp,fmax
       integer, optional :: comm
 !
@@ -4771,8 +4692,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total maximum and return to all processors.
 !
-      use General, only: ioptest
-
       integer :: imax_tmp,imax
       integer, optional :: comm
 !
@@ -4785,8 +4704,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total minimum and return to all processors.
 !
-      use General, only: ioptest
-
       real(KIND=rkind4) :: fmin_tmp,fmin
       integer, optional :: comm
 !
@@ -4799,8 +4716,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total minimum and return to all processors.
 !
-      use General, only: ioptest
-
       real(KIND=rkind8) :: fmin_tmp,fmin
       integer, optional :: comm
 !
@@ -4813,8 +4728,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total minimum and return to all processors.
 !
-      use General, only: ioptest
-
       integer :: imin_tmp,imin
       integer, optional :: comm
 !
@@ -4827,8 +4740,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total maximum for each array element and return to all processors.
 !
-      use General, only: ioptest
-
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax
       integer, optional :: comm
@@ -4846,8 +4757,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  14-feb-14/ccyang: coded
 !
-      use General, only: ioptest
-
       logical, intent(in) :: fland_tmp
       logical, intent(out):: fland
       integer, intent(in), optional :: comm
@@ -4866,8 +4775,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  14-feb-14/ccyang: coded
 !
-      use General, only: ioptest
-
       logical, intent(in) :: flor_tmp
       logical, intent(out):: flor
       integer, intent(in), optional :: comm
@@ -4887,8 +4794,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  14-nov-20/ccyang: coded
 !
-      use General, only: ioptest
-!
       logical, dimension(:), intent(inout) :: lor
       integer, intent(in) :: n
       integer, intent(in), optional :: comm
@@ -4902,8 +4807,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total maximum for each array element and return to root.
 !
-      use General, only: ioptest
-
       real :: fmax_tmp,fmax
       integer, intent(in), optional :: comm
 !
@@ -4916,8 +4819,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total maximum for each array element and return to root.
 !
-      use General, only: ioptest
-
       integer :: fmax_tmp,fmax
       integer, optional :: comm
 !
@@ -4930,8 +4831,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total maximum for each array element and return to root.
 !
-      use General, only: ioptest
-
       integer :: nreduce
       integer, dimension(nreduce) :: fmax_tmp,fmax
       integer, optional :: comm
@@ -4947,8 +4846,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total maximum for each array element and return to root.
 !
-      use General, only: ioptest
-
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax
       integer, optional :: comm
@@ -4964,8 +4861,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total minimum for each array element and return to root.
 !
-      use General, only: ioptest
-
       real :: fmin_tmp,fmin
       integer, optional :: comm
 !
@@ -4978,8 +4873,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total maximum for each array element and return to root.
 !
-      use General, only: ioptest
-
       integer :: nreduce
       real, dimension(nreduce) :: fmin_tmp,fmin
       integer, optional :: comm
@@ -4995,8 +4888,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate sum and return to root.
 !
-      use General, only: ioptest
-
       integer :: fsum_tmp,fsum
       integer, optional :: comm
 !
@@ -5013,8 +4904,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total sum for each array element and return to root.
 !
-      use General, only: ioptest
-
       integer :: nreduce
       integer, dimension(nreduce) :: fsum_tmp,fsum
       integer, optional :: comm
@@ -5034,8 +4923,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total sum for each array element and return to root.
 !
-      use General, only: ioptest
-
       integer, dimension(2) :: nreduce
       integer, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
       integer, optional :: comm
@@ -5055,8 +4942,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total sum for each array element and return to root.
 !
-      use General, only: ioptest
-
       integer, dimension(3) :: nreduce
       integer, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
       integer, optional :: comm
@@ -5076,8 +4961,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total sum for each array element and return to root.
 !
-      use General, only: ioptest
-
       integer, dimension(4) :: nreduce
       integer, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
       integer, optional :: comm
@@ -5126,8 +5009,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Calculate total sum for each array element and return to root.
 !
-      use General, only: ioptest
-
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
       integer, optional :: idir,comm
@@ -5262,8 +5143,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  17-sep-05/anders: coded
 !
-      use General, only: ioptest
-
       logical :: flor_tmp, flor
       integer, optional :: comm
 !
@@ -5282,8 +5161,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  17-sep-05/anders: coded
 !
-      use General, only: ioptest
-
       integer :: nreduce
       logical, dimension(nreduce) :: flor_tmp, flor
       integer, optional :: comm
@@ -5305,8 +5182,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  17-sep-05/anders: coded
 !
-      use General, only: ioptest
-
       logical :: fland_tmp, fland
       integer, optional :: comm
 !
@@ -5325,8 +5200,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  11-mar-09/anders: coded
 !
-      use General, only: ioptest
-
       integer :: nreduce
       logical, dimension(nreduce) :: fland_tmp, fland
       integer, optional :: comm
@@ -5394,8 +5267,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Synchronize nodes.
 !
 !  23-jul-2002/wolf: coded
-!
-      use General, only: ioptest
 !
       integer, optional, intent(IN) :: comm
 !
@@ -6494,7 +6365,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     subroutine sum_xy(in, out)
 !
 !  Sum up 0D data in the xy-plane and distribute back the sum.
-!  This routine needs only to be called from all processors a the xy-plane.
+!  This routine needs only to be called from all processors in an xy-plane.
 !  Several xy-planes can call this routine at once.
 !
 !  19-jan-2011/Bourdin.KIS: coded
@@ -6512,7 +6383,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         ! collect and sum up the remote data
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) cycle
             call mpirecv_real (buffer, partner, tag)
             sum = sum + buffer
@@ -6520,7 +6391,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         enddo
       else
         ! send data to collector
-        call mpisend_real (in, ipz*nprocxy, tag)
+        call mpisend_real (in, find_proc(0,0,ipz), tag)
         sum = 0.0
       endif
 !
@@ -6546,15 +6417,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-!
-      broadcaster = ipz * nprocxy
-      if (present (source_proc)) broadcaster = broadcaster + source_proc
+      broadcaster = find_proc(ioptest(source_proc,0),0,ipz)
 !
       if (iproc == broadcaster) then
         ! distribute the data
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) then
               ! data is local
               out = in
@@ -6589,13 +6458,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-!
       bnx = size (out, 1)
       bny = size (out, 2)
       nbox = bnx*bny
 !
-      broadcaster = ipz * nprocxy
-      if (present (source_proc)) broadcaster = broadcaster + source_proc
+      broadcaster = find_proc(ioptest(source_proc,0),0,ipz)
 !
       if (iproc == broadcaster) then
         ! distribute the data
@@ -6606,7 +6473,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc /= partner) then
               ! send to partner
               out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny)
@@ -6754,14 +6621,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-!
       bnx = size (out, 1)
       bny = size (out, 2)
       bnz = size (out, 3)
       nbox = bnx*bny*bnz
 !
-      broadcaster = ipz * nprocxy
-      if (present (source_proc)) broadcaster = broadcaster + source_proc
+      broadcaster = find_proc(ioptest(source_proc,0),0,ipz)
 !
       if (iproc == broadcaster) then
         ! distribute the data
@@ -6774,7 +6639,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) then
               ! data is local
               out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:)
@@ -6810,15 +6675,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-!
       bnx = size (out, 1)
       bny = size (out, 2)
       bnz = size (out, 3)
       bna = size (out, 4)
       nbox = bnx*bny*bnz*bna
 !
-      broadcaster = ipz * nprocxy
-      if (present (source_proc)) broadcaster = broadcaster + source_proc
+      broadcaster = find_proc(ioptest(source_proc,0),0,ipz)
 !
       if (iproc == broadcaster) then
         ! distribute the data
@@ -6833,7 +6696,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) then
               ! data is local
               out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:)
@@ -6869,7 +6732,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real :: buffer
 !
-!
       collector = ipz * nprocxy
       if (present (dest_proc)) collector = collector + dest_proc
 !
@@ -6882,7 +6744,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) then
               ! data is local
               out(px+1,py+1) = in
@@ -6920,7 +6782,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: buffer
 !
-!
       bnx = size (in, 1)
       bny = size (in, 2)
       nbox = bnx*bny
@@ -6940,7 +6801,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) then
               ! data is local
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny) = in
@@ -6980,7 +6841,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), allocatable :: buffer
 !
-!
       bnx = size (in, 1)
       bny = size (in, 2)
       bnz = size (in, 3)
@@ -7001,7 +6861,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) then
               ! data is local
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:) = in
@@ -7041,7 +6901,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: buffer
 !
-!
       bnx = size (in, 1)
       bny = size (in, 2)
       bnz = size (in, 3)
@@ -7067,7 +6926,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = find_proc(px,py,ipz)
             if (iproc == partner) then
               ! data is local
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:) = in
@@ -7105,14 +6964,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ytag=117
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-!
       bnx = size (out, 1)
       bny = size (out, 2)
       bnz = size (out, 3)
       nbox = bnx*bny*bnz
 !
-      broadcaster = ipx + ipy*nprocx
-      if (present (source_proc)) broadcaster = broadcaster + source_proc*nprocxy
+      broadcaster = find_proc(ipx,ipy,ioptest(source_proc,0))
 !
       if (iproc == broadcaster) then
         ! distribute the data
@@ -7124,7 +6981,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             call stop_fatal ('distribute_z_4D: input z dim must be nprocz*output', .true.)
 !
         do pz = 0, nprocz-1
-          partner = ipx + ipy*nprocx + pz*nprocxy
+          partner = find_proc(ipx,ipy,pz)
           if (iproc == partner) then
             ! data is local
             out = in(:,:,pz*bnz+1:(pz+1)*bnz)
@@ -7165,8 +7022,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       bna = size (out, 4)
       nbox = bnx*bny*bnz*bna
 !
-      broadcaster = ipx + ipy*nprocx
-      if (present (source_proc)) broadcaster = broadcaster + source_proc*nprocxy
+      broadcaster = find_proc(ipx,ipy,ioptest(source_proc,0))
 !
       if (iproc == broadcaster) then
         ! distribute the data
@@ -7180,7 +7036,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             call stop_fatal ('distribute_z_4D: 4th dim must equal between in and out', .true.)
 !
         do pz = 0, nprocz-1
-          partner = ipx + ipy*nprocx + pz*nprocxy
+          partner = find_proc(ipx,ipy,pz)
           if (iproc == partner) then
             ! data is local
             out = in(:,:,pz*bnz+1:(pz+1)*bnz,:)
@@ -7216,7 +7072,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), allocatable :: buffer
 !
-!
       bnx = size (in, 1)
       bny = size (in, 2)
       bnz = size (in, 3)
@@ -7238,7 +7093,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (alloc_err > 0) call stop_fatal ('collect_z_3D: not enough memory for buffer!', .true.)
 !
         do pz = 0, nprocz-1
-          partner = ipx + ipy*nprocx + pz*nprocxy
+          partner = find_proc(ipx,ipy,pz)
           if (iproc == partner) then
             ! data is local
             out(:,:,pz*bnz+1:(pz+1)*bnz) = in
@@ -7277,7 +7132,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: buffer
 !
-!
       bnx = size (in, 1)
       bny = size (in, 2)
       bnz = size (in, 3)
@@ -7302,7 +7156,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (alloc_err > 0) call stop_fatal ('collect_z_4D: not enough memory for buffer!', .true.)
 !
         do pz = 0, nprocz-1
-          partner = ipx + ipy*nprocx + pz*nprocxy
+          partner = find_proc(ipx,ipy,pz)
           if (iproc == partner) then
             ! data is local
             out(:,:,pz*bnz+1:(pz+1)*bnz,:) = in
@@ -7347,7 +7201,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: buffer, y_row
 !
-!
       bnx = size (in, 1)
       bny = size (in, 2)
       bnz = size (in, 3)
@@ -7360,8 +7213,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       collector = ipz * nprocxy
       if (present (dest_proc)) collector = collector + dest_proc
-      pz = ipz
-      if (present (source_pz)) pz = source_pz
+      pz = ioptest(source_pz,ipz)
 !
       if (iproc == collector) then
         if (cnx * nprocx + 2*nghost /= size (out, 1)) &
@@ -7380,7 +7232,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer and y_row!', .true.)
 !
         do py = 0, nprocy-1
-          partner = ipx + py*nprocx + pz*nprocxy
+          partner = find_proc(ipx,py,pz)
           y_add = nghost
           y_sub = nghost
           if (py == 0) y_add = 0
@@ -7407,7 +7259,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       elseif (ipz == pz) then
         ! send to collector of the y-row (lfirst_proc_y)
-        partner = ipx + ipz*nprocxy
+        partner = find_proc(ipx,0,ipz)
         call mpisend_real_arr_huge(in,nbox,partner,ytag)
         ! old version: call MPI_SEND (in, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
       endif
@@ -7418,7 +7270,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
 !
         do px = 0, nprocx-1
-          partner = px + ipy*nprocx + pz*nprocxy
+          partner = find_proc(px,ipy,pz)
           x_add = nghost
           x_sub = nghost
           if (px == 0) x_add = 0
@@ -7529,7 +7381,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (alloc_err > 0) call stop_fatal ('localize_xy: not enough memory for buffer!', .true.)
         ! distribute the y-rows
         do px = 0, nprocx-1
-          partner = px + pz*nprocxy
+          partner = find_proc(px,0,pz)
           if (iproc == partner) then
             ! data is local
             y_row = in(px*cnx+1:px*cnx+mx,:,:,:)
@@ -7556,7 +7408,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (alloc_err > 0) call stop_fatal ('localize_xy: not enough memory for buffer!', .true.)
         ! distribute the data along the y-direction
         do py = 0, nprocy-1
-          partner = ipx + py*nprocx + pz*nprocxy
+          partner = find_proc(ipx,py,pz)
           if (iproc == partner) then
             ! data is local
             out = y_row(:,py*cny+1:py*cny+my,:,:)
@@ -7571,7 +7423,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       elseif (ipz == pz) then
         ! receive local data from y-row partner (lfirst_proc_y)
-        partner = ipx + ipz*nprocxy
+        partner = find_proc(ipx,0,ipz)
 
         call mpirecv_real_arr_huge(out,nbox,partner,ytag)
         !old version: call MPI_RECV (out, int(nbox), mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
@@ -7610,7 +7462,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (alloc_err > 0) call stop_fatal ('globalize_z: not enough memory for buffer!', .true.)
 !
         do pz = 0, nprocz-1
-          partner = ipx + ipy*nprocx + pz*nprocxy
+          partner = find_proc(ipx,ipy,pz)
           z_add = nghost
           if (pz == 0) z_add = 0
           if (iproc == partner) then
@@ -7649,13 +7501,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ytag=120
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-      broadcaster = ipx + ipy * nprocx
-      if (present (source_proc)) broadcaster = broadcaster + source_proc * nprocxy
+      broadcaster = find_proc(ipx,ipy,ioptest(source_proc,0))
 !
       if (iproc == broadcaster) then
         ! collect the data
         do pz = 0, nprocz-1
-          partner = ipx + ipy*nprocx + pz*nprocxy
+          partner = find_proc(ipx,ipy,pz)
           if (iproc == partner) then
             ! data is local
             out = in(pz*nz+1:pz*nz+mz)
@@ -7689,7 +7540,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: buffer
 !
-!
       if ((nprocx == 1) .and. (nprocy == 1)) then
         out = in
         return
@@ -7710,7 +7560,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (iproc == broadcaster) then
         do ibox = 0, nprocxy-1
-          partner = ipz*nprocxy + ipy*nprocx + ibox
+          partner = find_proc(modulo(ibox,nprocx),ibox/nprocx,ipz)
           if (iproc == partner) then
             ! data is local
             out = in(:,bny*ibox+1:bny*(ibox+1))
@@ -7748,7 +7598,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: buffer
 !
-!
       if ((nprocx == 1) .and. (nprocy == 1)) then
         out = in
         return
@@ -7769,7 +7618,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (iproc == collector) then
         do ibox = 0, nprocxy-1
-          partner = ipz*nprocxy + ipy*nprocx + ibox
+          partner = find_proc(modulo(ibox,nprocx),ibox/nprocx,ipz)
           if (iproc == partner) then
             ! data is local
             out(:,bny*ibox+1:bny*(ibox+1)) = in
@@ -7804,9 +7653,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx) :: recv_buf
 !
-!
       do ibox = 0, nprocx-1
-        partner = ipz*nprocxy + ipy*nprocx + ibox
+        partner = find_proc(ibox,ipy,ipz)
         if (iproc == partner) then
           ! data is local
           out(nx*ibox+1:nx*(ibox+1)) = in
@@ -7835,7 +7683,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nxgrid), intent(in) :: in
       real, dimension(nx), intent(out) :: out
 !
-!
       out = in(nx*ipx+1:nx*(ipx+1))
 !
     endsubroutine unmap_from_pencil_x
@@ -7857,7 +7704,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !
       do ibox = 0, nprocy-1
-        partner = ipz*nprocxy + ibox*nprocx + ipx
+        partner = find_proc(ipx,ibox,ipz)
         if (iproc == partner) then
           ! data is local
           out(ny*ibox+1:ny*(ibox+1)) = in
@@ -7891,11 +7738,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx,ny) :: recv_buf
 !
-!
       nbox = nx*ny
 !
       do ibox = 0, nprocy-1
-        partner = ipz*nprocxy + ibox*nprocx + ipx
+        partner = find_proc(ipx,ibox,ipz)
         if (iproc == partner) then
           ! data is local
           out(:,ny*ibox+1:ny*(ibox+1)) = in
@@ -7930,7 +7776,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
 !
-!
       inx = size (in, 1)
       inz = size (in, 3)
       nbox = inx*ny*inz
@@ -7949,7 +7794,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_y_3D: Could not allocate memory for recv_buf', .true.)
 !
       do ibox = 0, nprocy-1
-        partner = ipz*nprocxy + ibox*nprocx + ipx
+        partner = find_proc(ipx,ibox,ipz)
         if (iproc == partner) then
           ! data is local
           out(:,ny*ibox+1:ny*(ibox+1),:) = in
@@ -7986,7 +7831,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
 !
-!
       inx = size (in, 1)
       inz = size (in, 3)
       ina = size (in, 4)
@@ -8008,7 +7852,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_y_4D: Could not allocate memory for recv_buf', .true.)
 !
       do ibox = 0, nprocy-1
-        partner = ipz*nprocxy + ibox*nprocx + ipx
+        partner = find_proc(ipx,ibox,ipz)
         if (iproc == partner) then
           ! data is local
           out(:,ny*ibox+1:ny*(ibox+1),:,:) = in
@@ -8039,7 +7883,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nygrid), intent(in) :: in
       real, dimension(ny), intent(out) :: out
 !
-!
       out = in(ny*ipy+1:ny*(ipy+1))
 !
     endsubroutine unmap_from_pencil_y_1D
@@ -8053,7 +7896,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(nx,nygrid), intent(in) :: in
       real, dimension(nx,ny), intent(out) :: out
-!
 !
       out = in(:,ny*ipy+1:ny*(ipy+1))
 !
@@ -8069,7 +7911,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
-!
       out = in(:,ny*ipy+1:ny*(ipy+1),:)
 !
     endsubroutine unmap_from_pencil_y_3D
@@ -8083,7 +7924,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
-!
 !
       out = in(:,ny*ipy+1:ny*(ipy+1),:,:)
 !
@@ -8106,7 +7946,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !
       do ibox = 0, nprocz-1
-        partner = ibox*nprocxy + ipy*nprocx + ipx
+        partner = find_proc(ipx,ipy,ibox)
         if (iproc == partner) then
           ! data is local
           out(nz*ibox+1:nz*(ibox+1)) = in
@@ -8141,7 +7981,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:), allocatable :: recv_buf
 !
-!
       ina = size (in, 2)
       nbox = nz*ina
 !
@@ -8155,9 +7994,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       ! Allocate memory for large arrays.
       allocate (recv_buf(nz,ina), stat=alloc_err)
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_z_2D: Could not allocate memory for recv_buf', .true.)
- !
+!
       do ibox = 0, nprocz-1
-        partner = ibox*nprocxy + ipy*nprocx + ipx
+        partner = find_proc(ipx,ipy,ibox)
         if (iproc == partner) then
           ! data is local
           out(nz*ibox+1:nz*(ibox+1),:) = in
@@ -8194,7 +8033,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
 !
-!
       inx = size (in, 1)
       iny = size (in, 2)
       nbox = inx*iny*nz
@@ -8213,7 +8051,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_z_3D: Could not allocate memory for recv_buf', .true.)
 !
       do ibox = 0, nprocz-1
-        partner = ibox*nprocxy + ipy*nprocx + ipx
+        partner = find_proc(ipx,ipy,ibox)
         if (iproc == partner) then
           ! data is local
           out(:,:,nz*ibox+1:nz*(ibox+1)) = in
@@ -8250,7 +8088,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
 !
-!
       inx = size (in, 1)
       iny = size (in, 2)
       ina = size (in, 4)
@@ -8272,7 +8109,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_z_4D: Could not allocate memory for recv_buf', .true.)
 !
       do ibox = 0, nprocz-1
-        partner = ibox*nprocxy + ipy*nprocx + ipx
+        partner = find_proc(ipx,ipy,ibox)
         if (iproc == partner) then
           ! data is local
           out(:,:,nz*ibox+1:nz*(ibox+1),:) = in
@@ -8318,7 +8155,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
 !
-!
       out = in(nz*ipz+1:nz*(ipz+1),:)
 !
     endsubroutine unmap_from_pencil_z_2D
@@ -8333,7 +8169,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
-!
       out = in(:,:,nz*ipz+1:nz*(ipz+1))
 !
     endsubroutine unmap_from_pencil_z_3D
@@ -8347,7 +8182,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
-!
 !
       out = in(:,:,nz*ipz+1:nz*(ipz+1),:)
 !
@@ -8372,7 +8206,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocx == 1) then
         out = in
         return
@@ -8394,7 +8227,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_2D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocxy + ipy*nprocx + ibox
+        partner = find_proc(ibox,ipy,ipz)
         if (iproc == partner) then
           ! data is local
           out(bnx*ibox+1:bnx*(ibox+1),:) = in(:,bny*ibox+1:bny*(ibox+1))
@@ -8432,7 +8265,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
-
 !
       nnx=size(in,1) ; nny=size(in,2)
       inx=nnx        ; iny=nny
@@ -8460,7 +8292,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_2D_other: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocxy + ipy*nprocx + ibox
+        partner = find_proc(ibox,ipy,ipz)
         if (iproc == partner) then
           ! data is local
           out(bnx*ibox+1:bnx*(ibox+1),:) = in(:,bny*ibox+1:bny*(ibox+1))
@@ -8545,7 +8377,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Communicate.
 !
       box: do ibox = 0, nprocx - 1
-        partner = ipz * nprocxy + ipy * nprocx + ibox
+        partner = find_proc(ibox,ipy,ipz)
         local: if (iproc == partner) then  ! data is local
           recv_buf = in(:,bny*ibox+1:bny*(ibox+1)+2*ngc,:)
         else local                         ! communicate with partner
@@ -8591,7 +8423,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocx == 1) then
         out = in
         return
@@ -8621,7 +8452,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_4D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocxy + ipy*nprocx + ibox
+        partner = find_proc(ibox,ipy,ipz)
         if (iproc == partner) then
           ! data is local
           out(bnx*ibox+1:bnx*(ibox+1),:,:,:) = in(:,bny*ibox+1:bny*(ibox+1),:,:)
@@ -8662,7 +8493,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocx == 1) then
         out = in
         return
@@ -8684,7 +8514,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_2D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocxy + ipy*nprocx + ibox
+        partner = find_proc(ibox,ipy,ipz)
         if (iproc == partner) then
           ! data is local
           out(:,bny*ibox+1:bny*(ibox+1)) = in(bnx*ibox+1:bnx*(ibox+1),:)
@@ -8753,7 +8583,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_2D_other: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocxy + ipy*nprocx + ibox
+        partner = find_proc(ibox,ipy,ipz)
         if (iproc == partner) then
           ! data is local
           out(:,bny*ibox+1:bny*(ibox+1)) = in(bnx*ibox+1:bnx*(ibox+1),:)
@@ -8839,7 +8669,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Communicate.
 !
       box: do ibox = 0, nprocx - 1
-        partner = ipz * nprocxy + ipy * nprocx + ibox
+        partner = find_proc(ibox,ipy,ipz)
         local: if (iproc == partner) then  ! data is local
           recv_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
         else local                         ! communicate with partner
@@ -8885,7 +8715,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocx == 1) then
         out = in
         return
@@ -8915,7 +8744,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_4D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocxy + ipy*nprocx + ibox
+        partner = find_proc(ibox,ipy,ipz)
         if (iproc == partner) then
           ! data is local
           out(:,bny*ibox+1:bny*(ibox+1),:,:) = in(bnx*ibox+1:bnx*(ibox+1),:,:,:)
@@ -8959,7 +8788,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
-!
 !
       inx = size (in, 1)
       iny = size (in, 2)
@@ -9066,7 +8894,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Communicate.
 !
       box: do ibox = 0, nprocxy - 1
-        partner = ipz * nprocxy + ibox
+        partner = find_proc(modulo(ibox,nprocx),ibox/nprocx,ipz)
         local: if (iproc == partner) then  ! data is local
           recv_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
         else local                        ! communicate with partner
@@ -9116,7 +8944,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
-!
 !
       inx = size (in, 1)
       iny = size (in, 2)
@@ -9201,7 +9028,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocz == 1) then
         out = in
         return
@@ -9227,7 +9053,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_yz_3D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocz-1
-        partner = ibox*nprocxy + ipy*nprocx + ipx
+        partner = find_proc(ipx,ipy,ibox)
         if (iproc == partner) then
           ! data is local
           out(:,:,bnz*ibox+1:bnz*(ibox+1)) = in(:,bny*ibox+1:bny*(ibox+1),:)
@@ -9270,7 +9096,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocz == 1) then
         out = in
         return
@@ -9300,7 +9125,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_yz_4D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocz-1
-        partner = ibox*nprocxy + ipy*nprocx + ipx
+        partner = find_proc(ipx,ipy,ibox)
         if (iproc == partner) then
           ! data is local
           out(:,:,bnz*ibox+1:bnz*(ibox+1),:) = in(:,bny*ibox+1:bny*(ibox+1),:,:)
@@ -9342,7 +9167,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocz == 1) then
         out = in
         return
@@ -9368,7 +9192,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_yz_3D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocz-1
-        partner = ibox*nprocxy + ipy*nprocx + ipx
+        partner = find_proc(ipx,ipy,ibox)
         if (iproc == partner) then
           ! data is local
           out(:,bny*ibox+1:bny*(ibox+1),:) = in(:,:,bnz*ibox+1:bnz*(ibox+1))
@@ -9410,7 +9234,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-!
       if (nprocz == 1) then
         out = in
         return
@@ -9440,7 +9263,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_yz_4D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocz-1
-        partner = ibox*nprocxy + ipy*nprocx + ipx
+        partner = find_proc(ipx,ipy,ibox)
         if (iproc == partner) then
           ! data is local
           out(:,bny*ibox+1:bny*(ibox+1),:,:) = in(:,:,bnz*ibox+1:bnz*(ibox+1),:)
@@ -9475,7 +9298,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:), intent(in) :: x,y,z
       real, dimension(:), intent(out) :: gx,gy,gz
 !
-      integer :: px, py, pz, mx, my, mz, l2, m2, n2, ie
+      integer :: px, py, pz, mx, my, mz, l2, m2, n2, ie, rank
       integer, parameter :: tag_gx=677, tag_gy=678, tag_gz=679
 !
       mx=size(x); my=size(y); mz=size(z)
@@ -9486,8 +9309,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         gx(1:mx) = x; ie=l2
         if (nprocx > 1) then
           do px = 1, nprocx-1
-            if (ldownsampling) call mpirecv_int(l2,px,tag_gx)
-            call mpirecv_real (gx(ie+1:ie+l2), l2, px, tag_gx)
+            rank=find_proc(px,0,0)
+            if (ldownsampling) call mpirecv_int(l2,rank,tag_gx)
+            call mpirecv_real (gx(ie+1:ie+l2), l2, rank, tag_gx)
             ie=ie+l2-nghost
           enddo
         endif
@@ -9495,8 +9319,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         gy(1:my) = y; ie=m2
         if (nprocy > 1) then
           do py = 1, nprocy-1
-            if (ldownsampling) call mpirecv_int(m2,py*nprocx,tag_gy)
-            call mpirecv_real (gy(ie+1:ie+m2), m2, py*nprocx, tag_gy)
+            rank=find_proc(0,py,0)
+            if (ldownsampling) call mpirecv_int(m2,rank,tag_gy)
+            call mpirecv_real (gy(ie+1:ie+m2), m2, rank, tag_gy)
             ie=ie+m2-nghost
           enddo
         endif
@@ -9504,8 +9329,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         gz(1:mz) = z; ie=n2
         if (nprocz > 1) then
           do pz = 1, nprocz-1
-            if (ldownsampling) call mpirecv_int(n2,pz*nprocxy,tag_gz)
-            call mpirecv_real (gz(ie+1:ie+n2), n2, pz*nprocxy, tag_gz)
+            rank=find_proc(0,0,pz)
+            if (ldownsampling) call mpirecv_int(n2,rank,tag_gz)
+            call mpirecv_real (gz(ie+1:ie+n2), n2, rank, tag_gz)
             ie=ie+n2-nghost
           enddo
         endif
@@ -10145,8 +9971,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  20-dec-15/MR: coded
 !
-      use General, only: find_proc
-
         integer, parameter :: nprocz_rd=nprocz/3
         integer :: lenred      
  
@@ -10513,8 +10337,6 @@ endif
     endsubroutine interpolate_yy
 !***********************************************************************
     subroutine mpiscatterv_real_plain(src,counts,dspls,dest,nlocal,comm)
-
-      use General, only: ioptest
 
       real, dimension(:) :: src, dest
       integer, dimension(:) :: counts,dspls

@@ -57,7 +57,7 @@ program start
   use Dustdensity,      only: init_nd
   use Dustvelocity,     only: init_uud
   use Energy,           only: init_energy
-  use EquationOfState,  only: ioninit
+  use EquationOfState,  only: init_eos
   use FArrayManager,    only: farray_clean_up
   use Filter
   use General
@@ -82,7 +82,7 @@ program start
   use Param_IO
   use Particles_main
   use Polymer,          only: init_poly
-  use PointMasses!,      only: init_pointmasses
+  use PointMasses
   use Pscalar,          only: init_lncc
   use Radiation,        only: init_rad, radtransfer
   use Register
@@ -130,15 +130,15 @@ program start
 !  up to nx=ny=nz=135, but not for even slightly larger grids.
 !
   allocate( f(mx,my,mz,mfarray),STAT=stat)
-  if (stat>0) call fatal_error('start','Could not allocate memory for f')
+  if (stat>0) call fatal_error('start','Could not allocate f')
 !
 !  Pre-initialize f and df to absurd value (to crash the code should we
 !  later use uninitialized slots of those fields).
 !
-  f =huge(1.0)
+  f=huge(1.0)
   if (lmodify .or. nfilter/=0) then
     allocate(df(mx,my,mz,mvar),STAT=stat)
-    if (stat>0) call fatal_error('start','Could not allocate memory for df')
+    if (stat>0) call fatal_error('start','Could not allocate df')
     df=huge(1.0)
   endif
 !
@@ -168,6 +168,9 @@ program start
 !  Register variables in the f array.
 !
   call register_modules
+  !allocate( f(mx,my,mz,nvar+naux+nscratch+nglobal),STAT=stat)
+  !allocate(df(mx,my,mz,nvar)   ,STAT=stat)
+
   if (lparticles) call particles_register_modules
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
@@ -446,14 +449,12 @@ program start
 !  If desired, the f array can be initialized in one call.
 !
   if (linitial_condition) call initial_condition_all(f)
+  call init_eos(f)     ! has to come last
 !
 !  Initialize particles.
 !
   if (lparticles) call particles_init(f)
 !
-!  Check whether we want ionization.
-!
-  if (leos_ionization) call ioninit(f)
   if (lradiation_ray) then
     call update_ghosts(f)
     call radtransfer(f)

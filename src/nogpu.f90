@@ -7,6 +7,7 @@
 !
 module GPU
 !
+  use Cdata
   use General, only: keep_compiler_quiet
 
   implicit none
@@ -56,14 +57,37 @@ contains
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
-    ! subroutine test_rhs(f,df,p,rhs_1,rhs_2)
-    !   real, dimension (mx,my,mz,mfarray) :: f
-    !   real, dimension (mx,my,mz,mfarray) :: df,df_copy
-    !   integer :: i,j,k,n
-    !   type (pencil_case) :: p
+ subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
+!  Used to test different implementations of rhs_cpu.
+!
+!  13-nov-23/TP: Written
+!
+      ! use MPIcomm
+      real, dimension (mx,my,mz,mfarray) :: f,f_copy
+      real, dimension (mx,my,mz,mfarray) :: df,df_copy
+      type (pencil_case) :: p,p_copy
+      real, dimension(1), intent(inout) :: mass_per_proc
+      logical ,intent(in) :: early_finalize
+      integer :: i,j,k,n
+      logical :: passed
+      interface
+          subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
+              import mx
+              import my
+              import mz
+              import mfarray
+              import pencil_case
+              real, dimension (mx,my,mz,mfarray) :: f
+              real, dimension (mx,my,mz,mfarray) :: df
+              type (pencil_case) :: p
+              real, dimension(1), intent(inout) :: mass_per_proc
+              logical ,intent(in) :: early_finalize
 
-    !   intent(in) :: f,p
-    !   intent(inout) :: df
-    !   call keep_compiler_quiet(df)
-    ! endsubroutine test_rhs
+              intent(inout) :: f
+              intent(inout) :: p
+              intent(out) :: df
+          endsubroutine cpu_version
+        endinterface
+  end subroutine  test_rhs_gpu
+!**************************************************************************
 endmodule  GPU

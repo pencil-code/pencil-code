@@ -1933,8 +1933,8 @@ module Particles
           if (lroot .and. (ldragforce_equi_global_eps .or. ldragforce_equi_noback)) &
               print*, 'init_particles: average dust-to-gas ratio=', eps
 !
+          uudrag: if (lhydro .and. (.not. lread_oldsnap .or. lread_oldsnap_nohydro)) then
 !  Set gas velocity field.
-          if (lhydro) then
             do l = l1,l2
               do m = m1,m2
                 do n = n1,n2
@@ -1948,7 +1948,7 @@ module Particles
                 enddo
               enddo
             enddo
-          endif
+          endif uudrag
 !  Set particle velocity field.
           do k = 1,npar_loc
 !  Take either global or local dust-to-gas ratio.
@@ -2052,7 +2052,7 @@ module Particles
 !
 !  Interface for user's own initial condition
 !
-      if (linitial_condition) call initial_condition_vvp(f,fp)
+      if (linitial_condition) call initial_condition_vvp(f, fp, ineargrid)
 !
 !  Map particle velocity on the grid.
 !

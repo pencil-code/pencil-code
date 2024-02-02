@@ -86,15 +86,21 @@ module InitialCondition
       real, dimension (:,:), pointer :: cpot
       real, dimension (:,:), pointer :: cpot2
       real, dimension (:), pointer :: g_r
+      real, pointer :: r1_pot1, r0_pot, n_pot, g0
       integer :: ir, i, j, n, m, ix, ierr
       integer :: iglobal_hcond, iglobal_glhc
       integer, parameter :: unit=1
+      character (len=labellen), dimension(:), pointer :: ipotential
 !
-!     Retrieve cv, and gravx
+!     Retrieve cv and stuff from gravity_r
 !
       call get_shared_variable('cpot', cpot)
       call get_shared_variable('cpot2', cpot2)
       call get_shared_variable('g_r', g_r)
+      call get_shared_variable('r1_pot1',r1_pot1)
+      call get_shared_variable('r0_pot',r0_pot)
+      call get_shared_variable('n_pot',n_pot)
+      call get_shared_variable('g0',g0)
       call get_gamma_etc(gamma,cv=cv)
 !
 !  Compute rr_sph (i.e. half-diagonal with radius going from zero to maximum value at the corners)
@@ -105,9 +111,18 @@ module InitialCondition
       enddo
       drr = rr_sph(2) - rr_sph(1)
 !
+!  Decide wheter cpot or cpot2 is used to calculate gg_r
+!
+      if (any(cpot2 /= 0.)) then
+         gg_r = poly( (/   cpot2(2,1),  2*cpot2(3,1),  3*cpot2(4,1),  4*cpot2(5,1),  &
+                         5*cpot2(6,1),  6*cpot2(7,1),  7*cpot2(8,1),  8*cpot2(9,1),  &
+                         9*cpot2(10,1),10*cpot2(11,1),11*cpot2(12,1),12*cpot2(13,1), &
+                        13*cpot2(14,1),14*cpot2(15,1),15*cpot2(16,1) /), rr_sph)
+      else
+!
 !  Compute gravitational acceleration (does not yet work for flattened potentials)
 !      
-      gg_r = - rr_sph * poly( (/ 2*(cpot(1,1)*cpot(4,1)-cpot(2,1)), &
+         gg_r = - rr_sph * poly( (/ 2*(cpot(1,1)*cpot(4,1)-cpot(2,1)), &
                      3*(cpot(1,1)*cpot(5,1)-cpot(3,1)), &
                      4*cpot(1,1)*cpot(3,1), &
                      cpot(5,1)*cpot(2,1)-cpot(3,1)*cpot(4,1), &
@@ -118,26 +133,36 @@ module InitialCondition
 !
 !  Compute derivative of gg_r for later use
 !
-!  cpot = a0, a2, a3, b2, b3
-      FF = poly( (/ 2*(cpot(1,1)*cpot(4,1)-cpot(2,1)), &
+!  cpot = a0, a2, a3, b2, b3 
+!
+         FF = poly( (/ 2*(cpot(1,1)*cpot(4,1)-cpot(2,1)), &
                      3*(cpot(1,1)*cpot(5,1)-cpot(3,1)), &
                      4*cpot(1,1)*cpot(3,1), &
                      cpot(5,1)*cpot(2,1)-cpot(3,1)*cpot(4,1), &
                      2*cpot(2,1)*cpot(3,1), &
                      cpot(3,1)**2  /), rr_sph)
 !
-      FF_prime = poly( (/ 3*(cpot(1,1)*cpot(5,1)-3*cpot(3,1)), &
+         FF_prime = poly( (/ 3*(cpot(1,1)*cpot(5,1)-3*cpot(3,1)), &
                      8*cpot(1,1)*cpot(3,1), &
                      3*(cpot(2,1)*cpot(5,1) - cpot(3,1)*cpot(4,1)), &
                      8*cpot(2,1)*cpot(3,1), &
                      5*cpot(3,1)**2 /), rr_sph)
 !
-      GG = poly( (/ 1., 0., cpot(4,1), cpot(5,1), &
+         GG = poly( (/ 1., 0., cpot(4,1), cpot(5,1), &
                      cpot(3,1) /), rr_sph)
-      GG_prime = poly( (/ 0., 2*cpot(4,1), 3*cpot(5,1), &
+         GG_prime = poly( (/ 0., 2*cpot(4,1), 3*cpot(5,1), &
                      4*cpot(3,1) /), rr_sph)
 
-      ggg_r = (GG**2*(FF + rr_sph*FF_prime) - 2*rr_sph*FF*GG*GG_prime)/(GG**4)
+         ggg_r = (GG**2*(FF + rr_sph*FF_prime) - 2*rr_sph*FF*GG*GG_prime)/(GG**4)
+!
+      endif
+!
+      if (g0 .ne. 0.) then
+         gg_r= -g0*r1_pot1**(3*n_pot)*rr_sph**(n_pot-1)*(r0_pot**n_pot*(r1_pot1**(2*n_pot) &
+                         + rr_sph**(2*n_pot))**(.5) + (r1_pot1*rr_sph)**n_pot)**((-1-n_pot)/n_pot) &
+                         / (r1_pot1**(2*n_pot) + rr_sph**(2*n_pot))**((-1+2*n_pot)/(2*n_pot))
+      endif
+!      print*,'gg_r =', gg_r
 !
 !  Compute profile of "polytropic index" npoly and its gradient for later use
 !

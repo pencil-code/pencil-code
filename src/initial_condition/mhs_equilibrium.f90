@@ -601,27 +601,27 @@ module InitialCondition
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: cs2,lnrho
+      real, dimension (mx) :: cs2,lnrho
 
-      do m=m1,m2; do n=n1,n2
+      do m=1,my; do n=1,mz
         if (ldensity_nolog) then 
-          lnrho=log(f(l1:l2,m,n,irho))
+          lnrho=log(f(:,m,n,irho))
         else
-          lnrho=f(l1:l2,m,n,ilnrho)
+          lnrho=f(:,m,n,ilnrho)
         endif     
 !
 !  The sound speed is stored in the energy slot
 !
         if (lentropy) then 
-          cs2=f(l1:l2,m,n,iss)
+          cs2=f(:,m,n,iss)
           if (pretend_lnTT) then
-            f(l1:l2,m,n,iss)=log(cs2*cp1/gamma_m1)
+            f(:,m,n,iss)=log(cs2*cp1/gamma_m1)
           else
-            f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
+            f(:,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
           endif
         elseif (ltemperature) then 
-          cs2=f(l1:l2,m,n,iTT)
-          f(l1:l2,m,n,iTT)=cs2*cp1/gamma_m1
+          cs2=f(:,m,n,iTT)
+          f(:,m,n,iTT)=cs2*cp1/gamma_m1
         endif
 !
       enddo;enddo

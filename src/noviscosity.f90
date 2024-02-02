@@ -26,7 +26,6 @@ module Viscosity
 !
   include 'viscosity.h'
 !
-  logical :: lvisc_first=.false.
   integer :: pushpars2c        ! should be procedure pointer (F2003)
 !
 
@@ -125,14 +124,6 @@ module Viscosity
       call keep_compiler_quiet(f)
 !
     endsubroutine viscosity_after_boundary
-!***********************************************************************
-    subroutine calc_viscosity(f)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_viscosity
 !***********************************************************************
     subroutine calc_viscous_heat(df,p,Hmax)
 !

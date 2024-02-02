@@ -12,6 +12,7 @@
   public :: particles_calc_pencils, particles_calc_selfpotential
   public :: particles_read_snapshot, particles_before_boundary
   public :: particles_write_snapshot, particles_write_dsnapshot
+  public :: particles_write_rmv
   public :: read_all_particles_init_pars, read_all_particles_run_pars
   public :: write_all_particles_init_pars, write_all_particles_run_pars
   public :: particles_pde, particles_pde_pencil, particles_write_pdim

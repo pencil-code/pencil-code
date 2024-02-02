@@ -16,7 +16,7 @@ module Particles_sink
 !
   use Cdata
   use Cparam
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet,find_proc
   use Messages
   use Particles_cdata
   use Particles_map
@@ -900,8 +900,8 @@ module Particles_sink
           do while (ipy_send>nprocy-1); ipy_send=ipy_send-nprocy; enddo
           if (ipz_send<0)        ipz_send=ipz_send+nprocz
           if (ipz_send>nprocz-1) ipz_send=ipz_send-nprocz
-          iproc_send_list(nproc_comm)= &
-              ipx_send+ipy_send*nprocx+ipz_send*nprocx*nprocy
+          iproc_send_list(nproc_comm)=find_proc(ipx_send,ipy_send,ipz_send)
+              !ipx_send+ipy_send*nprocx+ipz_send*nprocx*nprocy
 !
 !  Find index of opposite neighbour.
 !
@@ -920,8 +920,8 @@ module Particles_sink
           do while (ipy_recv>nprocy-1); ipy_recv=ipy_recv-nprocy; enddo
           if (ipz_recv<0)        ipz_recv=ipz_recv+nprocz
           if (ipz_recv>nprocz-1) ipz_recv=ipz_recv-nprocz
-          iproc_recv_list(nproc_comm)= &
-              ipx_recv+ipy_recv*nprocx+ipz_recv*nprocx*nprocy
+          iproc_recv_list(nproc_comm)=find_proc(ipx_recv,ipy_recv,ipz_recv) 
+              !ipx_recv+ipy_recv*nprocx+ipz_recv*nprocx*nprocy
 !
           if (iproc_recv_list(nproc_comm)<0 .or. &
               iproc_recv_list(nproc_comm)>ncpus-1 .or. &

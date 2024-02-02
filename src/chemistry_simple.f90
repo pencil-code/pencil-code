@@ -106,7 +106,6 @@ module Chemistry
 !
   logical :: lcheminp=.false., lchem_cdtc=.false.
   logical :: lmobility=.false.
-  ! real, dimension(nchemspec,18) :: species_constants
   integer :: iTemp1=2, iTemp2=3, iTemp3=4
   integer, dimension(7) :: iaa1, iaa2
   real, allocatable, dimension(:) :: B_n, alpha_n, E_an
@@ -125,6 +124,10 @@ module Chemistry
   logical :: lback=.true.
   real :: scale_homo = 0.
 !
+!   Species constants
+!
+  real, dimension(nchemspec,18), target :: species_constants
+!
 !   Lewis coefficients
 !
  real, dimension(nchemspec) :: Lewis_coef=1., Lewis_coef1=1.
@@ -138,7 +141,7 @@ module Chemistry
   real, allocatable, dimension(:,:) :: net_react_m, net_react_p
   !$omp threadprivate(net_react_m,net_react_p)
 ! For concurrency
-  real, pointer, dimension(:,:) :: p_net_react_m, p_net_react_p
+  type(pointer_with_size_info_2d) :: p_net_react_m, p_net_react_p
   logical :: lchemistry_diag=.false.
 !
 ! input parameters
@@ -282,6 +285,7 @@ module Chemistry
       else
         call read_thermodyn_simple
       endif
+      call put_shared_variable('species_constants',species_constants,caller='register_chemistry')
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -291,7 +295,7 @@ module Chemistry
 !
       if (lsolid_cells) then
 !
-        call put_shared_variable('lheatc_chemistry',lheatc_chemistry,caller='register_chemistry')
+        call put_shared_variable('lheatc_chemistry',lheatc_chemistry)
         call put_shared_variable('ldiffusion',ldiffusion)
         call put_shared_variable('ldiff_corr',ldiff_corr)
         call put_shared_variable('lew_exist',lew_exist)
@@ -309,7 +313,6 @@ module Chemistry
         call put_shared_variable('iaa1',iaa1)
         call put_shared_variable('iaa2',iaa2)
         call put_shared_variable('lmech_simple',lmech_simple)
-        call put_shared_variable('species_constants',species_constants)
         call put_shared_variable('imass',imass)
         call put_shared_variable('lflame_front_2D',lflame_front_2D)
         call put_shared_variable('p_init',p_init)
@@ -1067,11 +1070,6 @@ module Chemistry
         enddo
       endif
 !
-      if (unit_system == 'cgs') then
-        Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy*scale_Rgas
-      endif
-!
 !  Find logaritm of density at inlet
 !
       initial_mu1 = initial_massfractions(ichem_O2)/(mO2) &
@@ -1254,11 +1252,6 @@ module Chemistry
             if (lH2O) f(:,k,:,i_H2O) = final_massfrac_H2O
           endif
         enddo
-!
-      if (unit_system == 'cgs') then
-        Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy*scale_Rgas
-      endif
 !
 !  Find logaritm of density at inlet
 !
@@ -1684,42 +1677,6 @@ module Chemistry
 
     endsubroutine chemistry_before_boundary
 !***********************************************************************
-    subroutine read_chemistry_init_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read (parallel_unit, NML=chemistry_init_pars, IOSTAT=iostat)
-!
-    endsubroutine read_chemistry_init_pars
-!***********************************************************************
-    subroutine write_chemistry_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write (unit, NML=chemistry_init_pars)
-!
-    endsubroutine write_chemistry_init_pars
-!***********************************************************************
-    subroutine read_chemistry_run_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read (parallel_unit, NML=chemistry_run_pars, IOSTAT=iostat)
-!
-    endsubroutine read_chemistry_run_pars
-!***********************************************************************
-    subroutine write_chemistry_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write (unit, NML=chemistry_run_pars)
-!
-    endsubroutine write_chemistry_run_pars
-!***********************************************************************
     subroutine rprint_chemistry(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to chemistry
@@ -1866,6 +1823,42 @@ module Chemistry
       endif
 !
     endsubroutine get_slices_chemistry
+!***********************************************************************
+    subroutine read_chemistry_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read (parallel_unit, NML=chemistry_init_pars, IOSTAT=iostat)
+!
+    endsubroutine read_chemistry_init_pars
+!***********************************************************************
+    subroutine write_chemistry_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write (unit, NML=chemistry_init_pars)
+!
+    endsubroutine write_chemistry_init_pars
+!***********************************************************************
+    subroutine read_chemistry_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read (parallel_unit, NML=chemistry_run_pars, IOSTAT=iostat)
+!
+    endsubroutine read_chemistry_run_pars
+!***********************************************************************
+    subroutine write_chemistry_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write (unit, NML=chemistry_run_pars)
+!
+    endsubroutine write_chemistry_run_pars
 !***********************************************************************
     subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
 !
@@ -4360,6 +4353,11 @@ module Chemistry
         write (1,*) t
         write (1,'(8e10.2)') net_react_p, net_react_m
         close (1)
+!
+! Reset to zero for next time
+!
+        net_react_m = 0.
+        net_react_p = 0.
       endif
 !
     endsubroutine  write_net_reaction
@@ -5025,95 +5023,6 @@ module Chemistry
 !
  !   endsubroutine read_Lewis
 !***********************************************************************
-   subroutine read_transport_data
-!
-!  Reading of the chemkin transport data
-!
-!  01-apr-08/natalia: coded
-!  30-jun-17/MR: moved here from eos_chemistry.
-!
-      logical :: emptyfile
-      logical :: found_specie
-      integer :: file_id=123, ind_glob, ind_chem
-      character (len=80) :: ChemInpLine
-      character (len=10) :: specie_string
-      integer :: VarNumber
-      integer :: StartInd,StopInd,StartInd_1,StopInd_1
-      logical :: tranin=.false.
-      logical :: trandat=.false.
-!
-      emptyFile=.true.
-!
-      StartInd_1=1; StopInd_1 =0
-
-      inquire (file='tran.dat',exist=trandat)
-      inquire (file='tran.in',exist=tranin)
-      if (tranin .and. trandat) &
-        call fatal_error('eos_chemistry','both tran.in and tran.dat found. Please decide for one')
-
-      if (tranin) open(file_id,file='tran.in')
-      if (trandat) open(file_id,file='tran.dat')
-!
-      if (lroot) print*, 'the following species are found in tran.in/dat: beginning of the list:'
-!
-      dataloop: do
-!
-        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
-        emptyFile=.false.
-!
-        StopInd_1=index(ChemInpLine,' ')
-        specie_string=trim(ChemInpLine(1:StopInd_1-1))
-!
-        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
-!
-        if (found_specie) then
-          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' ind_chem=',ind_chem
-!
-          VarNumber=1; StartInd=1; StopInd =0
-          do while (VarNumber<7)
-!
-            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-            StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
-            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-!
-            if (StopInd==StartInd) then
-              StartInd=StartInd+1
-            else
-              if (VarNumber==1) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)' ) tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==2) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==3) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==4) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==5) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==6) then
-                read(unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') tran_data(ind_chem,VarNumber)
-              else
-                call fatal_error("read_transport_data","no such VarNumber")
-              endif
-!
-              VarNumber=VarNumber+1
-              StartInd=StopInd
-            endif
-            if (StartInd==80) exit
-          enddo
-!
-        endif
-      enddo dataloop
-!
-! Stop if tran.dat is empty
-!
-1000  if (emptyFile)  call fatal_error('read_transport_data','input file tran.dat is empty')
-!
-      if (lroot) print*, 'the following species are found in tran.dat: end of the list:'
-!
-      close(file_id)
-!
-    endsubroutine read_transport_data
-!***********************************************************************
     subroutine jacobn(f,jacob)
 !
 !   dummy routine
@@ -5158,9 +5067,7 @@ module Chemistry
 
       sum_Y=0.0 !; sum_Y2=0.0
       do k=1,nchemspec
-        if (k/=ichemsN2) then
-          sum_Y=sum_Y+f(:,:,:,ichemspec(k))
-        endif
+        if (k/=ichemsN2) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
       enddo
       f(:,:,:,isN2)=1.0-sum_Y
 !
@@ -5172,20 +5079,34 @@ module Chemistry
     endsubroutine chemistry_init_diag_accum
 !***********************************************************************
     subroutine chemistry_init_reduc_pointers
-      p_net_react_m =>  net_react_m
-      p_net_react_p =>  net_react_p
+      use General
+      call point_and_get_size(p_net_react_m, net_react_m)
+      call point_and_get_size(p_net_react_p, net_react_p)
     endsubroutine chemistry_init_reduc_pointers
 !***********************************************************************
     subroutine chemistry_diag_reductions
-      p_net_react_m = p_net_react_m + net_react_m
-      p_net_react_p = p_net_react_p + net_react_p
+      p_net_react_m%data = p_net_react_m%data + net_react_m
+      p_net_react_p%data = p_net_react_p%data + net_react_p
     endsubroutine chemistry_diag_reductions 
 !***********************************************************************
     subroutine chemistry_read_diag_accum
-      net_react_m = p_net_react_m
-      net_react_p = p_net_react_p
+      net_react_m = p_net_react_m%data
+      net_react_p = p_net_react_p%data
     endsubroutine chemistry_read_diag_accum
+!***********************************************************************
+    subroutine chemistry_write_diagnostics_accumulators
+      p_net_react_m%data = net_react_m
+      p_net_react_p%data = net_react_p
+    endsubroutine chemistry_write_diagnostics_accumulators
+!***********************************************************************
+    subroutine chemistry_init_private_accumulators
+      use General
+      if(associated(p_net_react_m%data)) call allocate_using_dims(net_react_m,p%p_net_react_m%size)
+      if(associated(p_net_react_p%data)) call allocate_using_dims(net_react_p,p%p_net_react_p%size)
+    endsubroutine chemistry_init_private_accumulators
 !***********************************************************************
 
 
+    include 'chemistry_common.inc'
+!***********************************************************************
 endmodule Chemistry

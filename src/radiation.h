@@ -7,12 +7,9 @@
   public :: rprint_radiation
   public :: get_slices_radiation
   public :: pencil_criteria_radiation, pencil_interdep_radiation
-  public :: calc_pencils_radiation
+  public :: calc_pencils_radiation, calc_diagnostics_radiation
 
   public :: init_rad, radtransfer, dradiation_dt
-
-!ajwm SHOULDN'T BE EXPORTED
-! public :: DFF_new
                                                                                                        
 
 

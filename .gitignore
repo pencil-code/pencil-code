@@ -75,3 +75,4 @@ samples/corona/driver
 !samples/backwards-compatible/data/proc0/var.dat
 !samples/backwards-compatible/data/proc0/dim.dat
 !samples/backwards-compatible/data/proc0/grid.dat
+src/*pars_c.h*

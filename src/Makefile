@@ -2957,7 +2957,7 @@ clean:  slender
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build* .moduleinfo
-	rm -f .sentinel $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_INCDIR)/PC_moduleflags.h  # for GPU
+	rm -f .sentinel $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_MAKEDIR)/PC_modulepars.h $(CUDA_MAKEDIR)/PC_moduleparfuncs.h $(CUDA_INCDIR)/PC_moduleflags.h  # for GPU
 	rm -f nompicomm_*.f90 mpicomm_*.f90 # temporary workaround to remove old "mpicomm_double.f90"
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc

@@ -4,7 +4,7 @@
 ###
 
 LDMPI=-lmpi
-
+FSTD=-std=f2003
 MPICOMM   =   mpicomm
 IO        =   io_dist
 GPU       =   gpu_astaroth
@@ -17,6 +17,6 @@ EOS       =   eos_idealgas
 
 #FORCING   =   forcing
 SHEAR     = noshear
-MULTITHREADING = OpenMP
+MULTITHREADING = openmp
 
-#REAL_PRECISION = double
+REAL_PRECISION = double

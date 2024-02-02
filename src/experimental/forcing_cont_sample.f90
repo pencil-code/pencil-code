@@ -3364,7 +3364,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,3) :: force1,force2,force_vec
+      real, dimension (mx,my,mz,3) :: force1,force_vec
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real :: phase1,phase2,p_weight
@@ -3419,16 +3419,15 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       ky2=kky(ik2)
       kz2=kkz(ik2)
 !
-!
-!  Calculate forcing function
-!
-      call hel_vec(f,kx01,ky1,kz1,phase1,kav,ifirst,force1)
-      call hel_vec(f,kx02,ky2,kz2,phase2,kav,ifirst,force2)
-!
 !  Determine weight parameter
 !
       p_weight=(tsforce-t)/dtforce
-      force_vec=p_weight*force1+(1-p_weight)*force2
+!
+!  Calculate forcing function
+!
+      force1=0.
+      call hel_vec(f,kx01,ky1,kz1,phase1,kav,ifirst,force1,pweight)
+      call hel_vec(f,kx02,ky2,kz2,phase2,kav,ifirst,force1,1.-p_weight)
 !
 ! Find energy input
 !
@@ -3489,7 +3488,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
     endsubroutine forcing_hel_smooth
 !***********************************************************************
-    subroutine hel_vec(f,kx0,ky,kz,phase,kav,ifirst,force1)
+    subroutine hel_vec(f,kx0,ky,kz,phase,kav,ifirst,force1,fac)
 !
 !  Add helical forcing function, using a set of precomputed wavevectors.
 !  The relative helicity of the forcing function is determined by the factor
@@ -3515,6 +3514,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       real, dimension (nx) :: radius,tmpx
       real, dimension (mz) :: tmpz
       real, dimension (mx,my,mz,3) :: force1
+      real, optional :: fac
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
@@ -3662,8 +3662,12 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
           jf=j+ifff-1
           do n=n1,n2
             do m=m1,m2
-               force1(l1:l2,m,n,jf) = &
-                +force_ampl*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+               if (roptest(fac,1.)/=1.) then
+                 force1(l1:l2,m,n,jf) = force1(l1:l2,m,n,jf)
+                                       +fac*force_ampl*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+               else
+                 force1(l1:l2,m,n,jf) = force_ampl*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+               endif
             enddo
           enddo
         enddo
@@ -3681,7 +3685,11 @@ call fatal_error('hel_vec','radial profile should be quenched')
             do m=m1,m2
               radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
               tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
-              force1(l1:l2,m,n,jf) =  real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
+              if (roptest(fac,1.)/=1.) then
+                force1(l1:l2,m,n,jf) = force1(l1:l2,m,n,jf)+fac*real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
+              else 
+                force1(l1:l2,m,n,jf) = real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
+              endif
             enddo
           enddo
         enddo

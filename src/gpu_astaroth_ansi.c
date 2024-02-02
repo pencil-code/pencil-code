@@ -26,6 +26,9 @@ void initializeGPU();
 void finalizeGPU();
 void substepGPU(int isubstep, int full, int early_finalize);
 void copyFarray();
+void testRHS(REAL*,REAL*);
+typedef void (*rangefunc)(const int a, const int b);
+void random_initial_condition(void);
 
 // for Gnu Compiler
 extern char *__cparam_MOD_coornames;
@@ -130,5 +133,9 @@ void FTNIZE(rhs_gpu_c)
 void FTNIZE(copy_farray_c)(REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho)
 {
   copyFarray(uu_x, uu_y, uu_z, lnrho);
+}
+void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
+{
+  testRHS(f_in,df_truth);
 }
 /* ---------------------------------------------------------------------- */

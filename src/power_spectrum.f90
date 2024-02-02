@@ -21,6 +21,8 @@
 !   11-nov-10/MR: intro'd flags for shell integration and z integration,
 !   for that, changed namelist run_pars and corresp. read and write subroutines;
 !   corresp. changes at the moment only in effect in power_xy
+!   27-sep-2023/KG: fixed calculation of wavenumbers for non-cubical boxes in
+!                   power and power_xy
 !
 module power_spectrum
 !
@@ -56,6 +58,8 @@ module power_spectrum
   integer, dimension(:), allocatable :: k2s
   integer :: nk_truebin=0
   logical :: lpowerdat_existed=.false.
+  real :: L_min, L_min_xy
+  integer :: nk_xyz, nk_xy
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
@@ -86,6 +90,16 @@ module power_spectrum
           ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
           call warning ('power_spectrum', &
           "Shell-integration will be wrong; set dx=dy=dz to fix this.")
+      
+      L_min = minval(Lxyz)
+      L_min_xy = min(Lx, Ly)
+      
+!     KG: Ideally, these would be used for calculation of nk, but that requires
+!     making all arrays of size nk into allocatables. Currently these are used
+!     only in power_xy and power.
+      nk_xyz = nint(min( nxgrid*L_min/(2*Lx), nygrid*L_min/(2*Ly), nzgrid*L_min/(2*Lz) ))
+!       nk_xy = nint(min( nxgrid*L_min/(2*Lx), nygrid*L_min/(2*Ly) ))
+      nk_xy = nint( sqrt( ((nxgrid+1)/Lx)**2+((nygrid+1)/Ly)**2 )*L_min_xy/2 )+1 !KG: I don't agree with this expression, but I am using this to avoid changing the behaviour of power_xy.
 !
 !  07-dec-20/hongzhe: import gauss-legendre quadrature from gauss_legendre_quadrature.dat
 !
@@ -121,10 +135,6 @@ module power_spectrum
 !
 ! Determine the k^2 in the range from 0 to max_k2.
 !
-        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-
         if (allocated(k2s)) deallocate(k2s)
         len=2*binomial(int(sqrt(max_k2/3.)+2),3)   ! only valid for isotropic 3D grid!
         allocate(k2s(len)); k2s=-1
@@ -133,10 +143,11 @@ module power_spectrum
 outer:  do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
-              k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+              k2=get_k2(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz)
               if (k2>max_k2) cycle
               if (pos_in_array(int(k2),k2s)==0) then
                 ind=ind+1
+!               KG: should this not be nint? (I think the below will always round down) Similar issue in subroutine power.
                 k2s(ind)=int(k2)
                 if (ind==len) exit outer
               endif
@@ -328,9 +339,6 @@ outer:  do ikz=1,nz
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb,oo
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   real :: k2
   real, dimension(:), allocatable :: spectrum,spectrum_sum
   character(LEN=fnlen) :: filename
@@ -341,18 +349,10 @@ outer:  do ikz=1,nz
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
   !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
   if (ltrue_binning) then
     nk=nk_truebin
   else
-    nk=nxgrid/2
+    nk=nk_xyz
   endif
   allocate(spectrum(nk),spectrum_sum(nk))
   spectrum=0.
@@ -374,6 +374,8 @@ outer:  do ikz=1,nz
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/2.)
      elseif (trim(sp)=='r3u') then
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/3.)
+     elseif (trim(sp)=='v') then
+        a1=f(l1:l2,m1:m2,n1:n2,ivx+ivec-1)
      elseif (trim(sp)=='o') then
         do n=n1,n2
            do m=m1,m2
@@ -413,7 +415,7 @@ outer:  do ikz=1,nz
        do ikz=1,nz
           do iky=1,ny
              do ikx=1,nx
-                k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+                k2=get_k2(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz)
                 where(int(k2)==k2s) &
                   spectrum=spectrum+a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
              enddo
@@ -423,7 +425,7 @@ outer:  do ikz=1,nz
        do ikz=1,nz
           do iky=1,ny
              do ikx=1,nx
-                k=nint(sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+                k=nint(get_k(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz))
                 if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
                      +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
              enddo
@@ -445,6 +447,8 @@ outer:  do ikz=1,nz
 !  append to diagnostics file
 !
   if (lroot) then
+!
+!  1/2 factor in the definition of energies.
 !
     spectrum_sum=.5*spectrum_sum
 !
@@ -495,6 +499,11 @@ outer:  do ikz=1,nz
   !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("power_2d", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -553,17 +562,16 @@ outer:  do ikz=1,nz
      enddo
      !
   enddo !(loop over ivec)
-  !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
-  !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  !
-  !  on root processor, write global result to file
-  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
-  !
 !
-!  append to diagnostics file
+!  Summing up the results from the different processors.
+!  The result is available only on root.
+!
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+!
+!  On root processor, write global result to file
+!  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>.
+!
+!  Append to diagnostics file.
 !
   if (lroot) then
     if (ip<10) print*,'Writing power spectra of variable',sp &
@@ -585,7 +593,7 @@ outer:  do ikz=1,nz
 !
     use Sub,      only: curli
     use General,  only: ioptest
-    use Fourier,  only: fourier_transform_xy
+    use Fourier,  only: fourier_transform_xy, fft_xy_parallel
 !
     implicit none
 !
@@ -643,14 +651,22 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-    ndelx=nxgrid/n_segment_x      ! segmented work not yet operational -> n_segment_x always 1.
-    le=0
-    do i=1,n_segment_x+1
-      la=le+1
-      if (la>nxgrid) exit
-      le=min(le+ndelx,nxgrid)
-      call fourier_transform_xy(ar(la:le,:,:),ai(la:le,:,:))
-    enddo
+    if (nygrid/=1) then
+      call fft_xy_parallel(ar,ai)
+    else
+      ndelx=nxgrid/n_segment_x      ! segmented work not yet operational -> n_segment_x always 1.
+      le=0
+      do i=1,n_segment_x+1
+        la=le+1
+        if (la>nxgrid) exit
+        le=min(le+ndelx,nxgrid)
+        call fourier_transform_xy(ar(la:le,:,:),ai(la:le,:,:))
+      enddo
+!     KG: (02-Dec-2024) fourier_transform_xy returns the transposed (ky,kx,z) output
+!     if nygrid/=1. If you modify the code to use fourier_transform_xy
+!     for nygrid/=1, you will have to call transp_xy on ar and ai (since
+!     the rest of the code now assumes that ar,ai have axis order (kx,ky,z).
+    endif
 !
    endsubroutine comp_spectrum_xy
 !***********************************************************************
@@ -673,6 +689,7 @@ outer:  do ikz=1,nz
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out_real, mpigather_and_out_cmplx, &
                       mpimerge_1d, ipz, mpibarrier, mpigather_z
    use General, only: itoa, write_full_columns, get_range_no, write_by_ranges
+  use Fourier, only: kx_fft, ky_fft
 !
   implicit none
 !
@@ -690,8 +707,6 @@ outer:  do ikz=1,nz
   real,    allocatable, dimension(:,:,:)  :: spectrum3
   complex, allocatable, dimension(:,:,:,:):: spectrum3_cmplx
 !
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
   real, dimension(nx,ny)  :: prod
   real                    :: prods
 !
@@ -746,7 +761,7 @@ outer:  do ikz=1,nz
   if (lintegrate_shell) then
 !
     title = 'Shell-integrated'
-    nk = nint( sqrt( ((nxgrid+1)/Lx)**2+((nygrid+1)/Ly)**2 )*Lx/2 )+1
+    nk = nk_xy
     allocate( kshell(nk) )
 !
 ! To initialize variables with NaN, please only use compiler flags. (Bourdin.KIS)
@@ -813,13 +828,6 @@ outer:  do ikz=1,nz
 !
   title = trim(title)//' spectrum w.r.t. x and y'
   !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)       !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)       !*2*pi/Ly
-  !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part ar1-ar3; and put imaginary part, ai1-ai3, to zero
   !
@@ -842,12 +850,11 @@ outer:  do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
 !
-            !!k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2))
-            k=nint( sqrt( (kx(ikx)/Lx)**2+(ky(iky+ipy*ny)/Ly)**2 )*Lx ) ! i.e. wavenumber index k
-                                                                        ! is |\vec{k}|/(2*pi/Lx)
+            k=nint(sqrt(get_k2_xy(ikx+ipx*nx, iky+ipy*ny))) ! i.e. wavenumber index k
+                                                            ! is |\vec{k}|/(2*pi/Lx)
             if ( k>=0 .and. k<=nk-1 ) then
 !
-              kshell(k+1) = k*2*pi/Lx
+              kshell(k+1) = k*2*pi/L_min_xy
 !
               if (l2nd) then
                 prods = 0.5*(ar(ikx,iky,ikz)*br(ikx,iky,ikz)+ai(ikx,iky,ikz)*bi(ikx,iky,ikz))
@@ -925,8 +932,8 @@ outer:  do ikz=1,nz
 !
         write(1,'(a)') 'Wavenumbers k_x ('//trim(itoa(nkx))//') and k_y ('//trim(itoa(nky))//'):'
 !
-        call write_by_ranges( 1, kx*2*pi/Lx, kxrange )
-        call write_by_ranges( 1, ky*2*pi/Ly, kyrange )
+        call write_by_ranges( 1, kx_fft, kxrange )
+        call write_by_ranges( 1, ky_fft, kyrange )
 !
       endif
 !
@@ -961,13 +968,10 @@ outer:  do ikz=1,nz
          call mpireduce_sum(spectrum2,spectrum2_sum,(/nx,ny/),3)
          call mpigather_xy( spectrum2_sum, spectrum2_global, 0 )
 !
-!  transposing output, as in Fourier_transform_xy; an unreverted transposition is performed
-!  but no transposition when nygrid=1 (e.g., in 2-D setup for 1-D spectrum)
-!
   elseif (lcomplex) then
-    call mpigather_and_out_cmplx(spectrum3_cmplx,1,.not.(nygrid==1),kxrange,kyrange,zrange)
+    call mpigather_and_out_cmplx(spectrum3_cmplx,1,.false.,kxrange,kyrange,zrange)
   else
-    call mpigather_and_out_real(spectrum3,1,.not.(nygrid==1),kxrange,kyrange,zrange)
+    call mpigather_and_out_real(spectrum3,1,.false.,kxrange,kyrange,zrange)
   endif
 !
   if (lroot) then
@@ -1064,6 +1068,11 @@ outer:  do ikz=1,nz
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerhel", "computation of wavevector is wrong for non-cubical domains")
 !
 ! Select cases where spectra are precomputed
 !
@@ -1612,6 +1621,11 @@ outer:  do ikz=1,nz
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerLor", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -1866,6 +1880,11 @@ outer:  do ikz=1,nz
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerLor_OLD", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -2079,6 +2098,11 @@ outer:  do ikz=1,nz
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerEMF", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -2272,6 +2296,11 @@ outer:  do ikz=1,nz
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerTra", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -2465,6 +2494,11 @@ outer:  do ikz=1,nz
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerGWs", "computation of wavevector is wrong for non-cubical domains")
 !
 ! Select cases where spectra are precomputed
 !
@@ -2733,6 +2767,11 @@ outer:  do ikz=1,nz
   !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("powerscl", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -2768,6 +2807,14 @@ outer:  do ikz=1,nz
       a_re=f(l1:l2,m1:m2,n1:n2,ia0)
     else
       call warning ('powerscl',"ia0=0 doesn't work.")
+    endif
+  elseif (sp=='u_m') then
+    if (ilorentz>0) then
+      a_re=sqrt(1.-1./f(l1:l2,m1:m2,n1:n2,ilorentz))
+    else
+      a_re=sqrt(f(l1:l2,m1:m2,n1:n2,iux)**2 &
+               +f(l1:l2,m1:m2,n1:n2,iuy)**2 &
+               +f(l1:l2,m1:m2,n1:n2,iuz)**2)
     endif
   elseif (sp=='ux') then
     a_re=f(l1:l2,m1:m2,n1:n2,iux)
@@ -3770,6 +3817,11 @@ endsubroutine pdf
   !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("power_vec", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -3901,6 +3953,11 @@ endsubroutine pdf
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("polar_spectrum", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -4503,6 +4560,11 @@ endsubroutine pdf
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("power_cor", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -4816,6 +4878,11 @@ endsubroutine pdf
   !  identify version
   !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("power_cor_scl", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -5070,10 +5137,16 @@ endsubroutine pdf
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=*) :: sp
+!
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("quadratic_invariants", "computation of wavevector is wrong for non-cubical domains")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -5487,6 +5560,11 @@ endsubroutine pdf
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
 !
+! KG: added warning about wrong computation of wavenumbers.
+! KG: See the function get_k2 for an example of how to calculate k2.
+  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    call warning("power_shell_filter", "computation of wavevector is wrong for non-cubical domains")
+!
 !  Define wave vector, defined here for the *full* mesh.
 !  Each processor will see only part of it.
 !  Ignore *2*pi/Lx factor, because later we want k to be integers
@@ -5698,5 +5776,51 @@ endsubroutine pdf
   endif
   !
   endsubroutine power_transfer_mag
+!***********************************************************************
+  function get_k2(ikx, iky, ikz) result(k2)
+!   Note that ik{x,y,z} are global, not per-processor, indices.
+!   The result needs to be multiplied by (2*pi/L_min)**2 to get the actual k**2.
+!   We use L_min since having the bin size smaller than the smallest wavenumber
+!   along a particular direction seems to lead to ugly aliasing artefacts.
+!
+!   27-sep-2023/KG: coded
+!
+    use Fourier, only: kx_fft2, ky_fft2, kz_fft2
+    
+    integer, intent (in) :: ikx, iky, ikz
+    real :: k2
+    
+    k2 = (L_min/(2*pi))**2 * ( kx_fft2(ikx) + ky_fft2(iky) + kz_fft2(ikz) )
+  endfunction get_k2
+!***********************************************************************
+  function get_k(ikx, iky, ikz) result(k)
+!   Note that ik{x,y,z} are global, not per-processor, indices.
+!   The result needs to be multiplied by (2*pi/L_min)to get the actual k.
+!   We use L_min since having the bin size smaller than the smallest wavenumber
+!   along a particular direction seems to lead to ugly aliasing artefacts.
+!
+!   27-sep-2023/KG: coded
+!
+    integer, intent (in) :: ikx, iky, ikz
+    real :: k
+    
+    k = sqrt(get_k2(ikx, iky, ikz))
+  endfunction get_k
+!***********************************************************************
+  function get_k2_xy(ikx, iky) result(k2)
+!   Note that ik{x,y,z} are global, not per-processor, indices.
+!   The result needs to be multiplied by (2*pi/L_min_xy)**2 to get the actual k**2.
+!   We use L_min_xy since having the bin size smaller than the smallest wavenumber
+!   along a particular direction seems to lead to ugly aliasing artefacts.
+!
+!   27-sep-2023/KG: coded
+!
+    use Fourier, only: kx_fft2, ky_fft2
+    
+    integer, intent (in) :: ikx, iky
+    real :: k2
+    
+    k2 = (L_min_xy/(2*pi))**2 * ( kx_fft2(ikx) + ky_fft2(iky) )
+  endfunction get_k2_xy
 !***********************************************************************
 endmodule power_spectrum
