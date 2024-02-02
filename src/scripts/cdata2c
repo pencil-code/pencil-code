@@ -5,8 +5,9 @@
   sed "s/(KIND=rkind8)//g" cdata_tmp_4 > cdata_tmp_3
 if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
 
-  sed -f scripts/cdata_CRAY.sed cdata_tmp_3 > cdata_c.h
-  #sed -e's/MODULE_PREFIX\(.*\)MODULE_INFIX\(.*\)MODULE_SUFFIX/\2/' tmp > defines_cdata.h
+  sed -f scripts/cdata_CRAY.sed cdata_tmp_3 > cdata_tmp5
+  echo -e '#pragma once\n#include "headers_c.h"\n#include "cdata_refs.h"\n;' | cat - cdata_tmp5 > cdata_c.h
+  sed -e's/MODULE_PREFIX\(.*\)MODULE_INFIX\(.*\)MODULE_SUFFIX/\2/' tmp > defines_cdata.h
 else
   sed -f scripts/cdata.sed cdata_tmp_3 > cdata_c.h
   sed -e's/MODULE_PREFIX/'$MODULE_PREFIX'/' -e's/MODULE_INFIX/'$MODULE_INFIX'/' -e's/MODULE_SUFFIX/'$MODULE_SUFFIX'/' tmp > defines_cdata.h

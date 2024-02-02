@@ -8,6 +8,11 @@ cd ..
 cp ./build/libastaroth.so libastaroth.so
 cp libastaroth.so astaroth_sgl.so
 cp libastaroth.so astaroth_dbl.so
-cp ./build/NUMA-scheduler/src/mod/mt.mod ../.
+mkdir -p scheduler-build
+cd scheduler-build
+cmake ../NUMA-scheduler
+make -j
+cd ..
+cp -r ./NUMA-scheduler/include .
 
 

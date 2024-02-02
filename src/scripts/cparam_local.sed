@@ -1,5 +1,3 @@
-1,/BEGIN C BINDING/ d
-/END C BINDING/, $ d
 /^ *type *[a-zA-Z0-9_]* *$/,/^ *end *type *[a-zA-Z0-9_]* *$/ d
 /^ *!/ d
 s/.*/\L&/g
@@ -39,4 +37,5 @@ s/\(^[^#].*[^&">]\) *$/\1;/
 s/const  *FINT  *nghost *= *\([0-9]*\) *;/const FINT nghost=\1;\n#ifdef NGHOST \n#undef NGHOST \n#endif \n#define NGHOST \1\n#ifdef STENCIL_ORDER\n#undef STENCIL_ORDER\n#endif \n#define STENCIL_ORDER (2\*\1)/
 s/& *$//
 s/dbl_max/DBL_MAX/g 
+
 

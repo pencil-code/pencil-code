@@ -123,35 +123,21 @@ module Cdata
 !
   character (len=labellen) :: der2_type='standard'
   logical :: lall_onesided=.false.
-!
-!  Box dimensions.
-!
   character (len=labellen), dimension(3) :: xyz_units='one'
   real, dimension(3) :: Lxyz=impossible,xyz0=-pi,xyz1=impossible,xyz_star=0.0
   real, dimension(3) :: Lxyz_loc,xyz0_loc,xyz1_loc
-  real :: x0, y0, z0, Lx, Ly, Lz, wav1=impossible, wav1z=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
-!END C BINDING
-!
-!  Polar grid
-!
-  integer :: ncoarse=0
-  logical :: lcoarse=.false., lcoarse_mn=.false.
-  integer, dimension(2) :: mexts=(/-1,-1/)
-  integer, dimension(:), allocatable :: nphis
-  real, dimension(:), allocatable :: nphis1, nphis2
-  integer, dimension(:,:), allocatable :: nexts
-  integer, dimension(:,:,:), allocatable :: ninds
+  real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
+  logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
+  logical :: ldt=.true.
 !
 !  Time integration parameters.
 !
-  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
-  real(KIND=rkind8) :: t=0., toutoff=0.
   real :: dt=0.0, dt_incr=0.0, dt0=0.
   real :: cdt=0.9, cdts=1.0, cdtr=1.0, cdtc=1.0, cdt_poly=1.0
  !real :: cdtv=0.15, cdtv2=0.03, cdtv3=0.01
@@ -166,6 +152,24 @@ module Cdata
   real :: density_scale_factor=impossible
   integer :: permute_sts=0
   integer:: ireset_tstart=2
+!END C BINDING
+
+  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
+  real(KIND=rkind8) :: t=0., toutoff=0.
+!
+!  Box dimensions.
+!
+  real :: x0, y0, z0, Lx, Ly, Lz, wav1=impossible, wav1z=impossible
+!
+!  Polar grid
+!
+  integer :: ncoarse=0
+  logical :: lcoarse=.false., lcoarse_mn=.false.
+  integer, dimension(2) :: mexts=(/-1,-1/)
+  integer, dimension(:), allocatable :: nphis
+  real, dimension(:), allocatable :: nphis1, nphis2
+  integer, dimension(:,:), allocatable :: nexts
+  integer, dimension(:,:,:), allocatable :: ninds
 !
   logical :: lini_t_eq_zero=.false.
   logical :: lini_t_eq_zero_once=.false.
@@ -269,7 +273,6 @@ module Cdata
   real(KIND=rkind8) :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es
   real(KIND=rkind8) :: c_light=impossible,G_Newton=impossible,hbar=impossible
-  real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
 !
 !  Derived units
 !
@@ -498,8 +501,7 @@ module Cdata
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
   !$omp threadprivate(inds_max_diags, inds_sum_diags)
 
-  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.,lrmv=.false.
-  logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
+  logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: ltracers=.false.,lfixed_points=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
