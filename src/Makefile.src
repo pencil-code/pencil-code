@@ -2975,8 +2975,8 @@ $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR
 .sentinel: Makefile.local
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#pragma once' > $(CUDA_INCDIR)/PC_moduleflags.h
-	@sed -i -e's/CUDA_RELPATH/'$(CUDA_RELPATH)'/' -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' $(PENCIL_HOME)/src/gpu.sed
-	@sed -f gpu.sed < Makefile.local >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@sed -e's/CUDA_RELPATH/'$(CUDA_RELPATH)'/' -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' < gpu.sed > gpu.sed.tmp
+	@sed -f gpu.sed.tmp < Makefile.local >> $(CUDA_INCDIR)/PC_moduleflags.h; rm -f gpu.sed.tmp
 ifeq ($(VISCOSITY),viscosity)
 	@echo '#define LVISCOSITY 1 // '$(CUDA_RELPATH)'/viscosity.f90' >> $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo $(CUDA_RELPATH)'/viscosity.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
@@ -3026,22 +3026,22 @@ endif
 #
 #  Compiler setting for OpenMP (gfortran and ifort only at the moment).
 #
-ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
+ifneq ($(filter openmp OpenMP openMP omp OMP,$(MULTITHREADING)),)
   FFLAGS += $(OMPFFLAGS)
   LDFLAGS += $(OMPLFLAGS)
 #  OMP_PREREQ = copyin.inc
 #  Creates code for copying in threadprivate variables. - Not needed at the moment.
 #
-copyin.inc: Makefile.local $(PENCIL_HOME)/src/copyin.inc
-	@cp -f $(PENCIL_HOME)/src/copyin.inc .
-	@for file in `grep '^ *[A-Z0-9_]* *=' Makefile.local | sed -f omp.sed`; do \
-	  use=`grep '^ *module' $$file | grep -v 'module  *procedure' | sed -e's/module/use/'`; \
-	  sub=`grep '^ *subroutine  *copyin_' $$file | sed -e's/subroutine/call/'`; \
-	  if [ "$$sub" != "" ]; then \
-	    echo "  $$use\n" "$$(cat copyin.inc)" > copyin.inc; \
-	    echo "$$sub" >> copyin.inc ; \
-	  fi \
-	done
+#copyin.inc: Makefile.local $(PENCIL_HOME)/src/copyin.inc
+#	@cp -f $(PENCIL_HOME)/src/copyin.inc .
+#	@for file in `grep '^ *[A-Z0-9_]* *=' Makefile.local | sed -f omp.sed`; do \
+#	  use=`grep '^ *module' $$file | grep -v 'module  *procedure' | sed -e's/module/use/'`; \
+#	  sub=`grep '^ *subroutine  *copyin_' $$file | sed -e's/subroutine/call/'`; \
+#	  if [ "$$sub" != "" ]; then \
+#	    echo "  $$use\n" "$$(cat copyin.inc)" > copyin.inc; \
+#	    echo "$$sub" >> copyin.inc ; \
+#	  fi \
+#	done
 else
   MULTITHREADING = 
 endif
