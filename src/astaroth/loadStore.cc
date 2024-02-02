@@ -142,7 +142,7 @@ void storeInnerFront(AcMesh& mesh, Stream stream)
         int3 end  =(int3){l2,m2,n1+halo_widths_z[BOT]-1}-1+1;   //end is exclusive
 
 //printf("storeInnerFront: start,end= %d %d %d %d %d %d \n",start.x, end.x,start.y, end.y,start.z, end.z);
-        acNodeStoreIXYPlate(node, stream, start, end, &mesh, AC_FRONT);
+        acNodeStoreIXYPlate(node, stream, start, end, &mesh, BOT);
         //acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer, AC_XY);
 }
 
@@ -151,7 +151,7 @@ void storeInnerBack(AcMesh& mesh, Stream stream)
         int3 start=(int3){l1,m1,n2-halo_widths_z[TOP]+1}-1;
         int3 end  =(int3){l2,m2,n2                     }-1+1;    //end is exclusive
 //printf("storeInnerBack: start,end= %d %d %d %d %d %d \n",start.x, end.x,start.y, end.y,start.z, end.z);
-        acNodeStoreIXYPlate(node, stream, start, end, &mesh, AC_BACK);
+        acNodeStoreIXYPlate(node, stream, start, end, &mesh, TOP);
         //acNodeStorePlate(node, stream, start, end, &mesh, halo_xy_buffer, AC_XY);
 }
 
