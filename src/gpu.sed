@@ -27,6 +27,7 @@
 /YINYANG/ b end
 /PARTICLES/ b end
 /IMPLICIT_DIFFUSION/ b end
+/MULTITHREADING/ b end
 s/^ *[A-Z0-9_]* *= *noviscosity *$/#undef LVISCOSITY/ 
 t prin
 b cont0
@@ -73,6 +74,6 @@ g
          }
 s/^\(.*\)$/MODULESOURCES= \\\1/
 : out
-w astaroth/PC_modulesources.h
+w CUDA_MAKEDIR/PC_modulesources.h
 d
 }
