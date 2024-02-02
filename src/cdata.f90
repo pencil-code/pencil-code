@@ -147,7 +147,6 @@ module Cdata
 !
 !  Time integration parameters.
 !
-  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
   real(KIND=rkind8) :: t=0., toutoff=0.
@@ -177,7 +176,6 @@ module Cdata
   real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfractional_tstep_advance=.false.
   logical :: lfractional_tstep_negative=.true.
-  logical :: lfirstpoint=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.,leps_fixed=.true.
   logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_frac_err'
@@ -282,25 +280,12 @@ module Cdata
 ! coordinate. This should be taken care of by 'shared variables' if in future
 ! Omega should be moved from cdata to hydro.
 !
-!  Random numbers.
-!
-  integer, dimension(mseed) :: seed=0, seed2=0
-  integer :: nseed=0, seed0=1812, ichannel1=1, ichannel2=1
-  integer, parameter :: ndustspec0=8
-  real, dimension (2) :: fran1,fran2
-  logical :: lseed_global=.true., lseed_procdependent=.false.
-!
 !  Module flags.
 !
   logical :: ldensity_nolog=.false., &
              lreference_state=.false., lfullvar_in_slices=.false., &
              lsubstract_reference_state=.false., ldensity_linearstart=.false.
   logical :: lforcing_cont=.false.
-  logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
-  logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
-  logical :: lwrite_sound=.false.
-  logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
-  logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
@@ -451,7 +436,6 @@ module Cdata
 !
   integer :: imn
   integer :: lglob=1
-  integer, target :: m,n
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
   integer :: necessary_imn=0
@@ -496,8 +480,17 @@ module Cdata
                                          cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
 
-  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.,lrmv=.false.
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
+!END C BINDING
+  integer, target :: m,n
+  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
+  logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
+  logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
+  logical :: lwrite_sound=.false.
+  logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
+  logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
+  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.,lrmv=.false.
+  logical :: lfirstpoint=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: ltracers=.false.,lfixed_points=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
@@ -515,7 +508,13 @@ module Cdata
   logical :: lav_smallx=.false.,loutside_avg=.false.
   real :: xav_max=impossible
   real :: nVol,nVol1  !  For calculating averages in non-Cartesian coordinates
-!END C BINDING
+!
+!  Random numbers.
+!
+  integer, dimension(mseed) :: seed=0, seed2=0
+  integer :: nseed=0, seed0=1812, ichannel1=1, ichannel2=1
+  real, dimension (2) :: fran1,fran2
+  logical :: lseed_global=.true., lseed_procdependent=.false.
 !
 ! Averages of half the computational box:
 ! fname_half has two indices, the first contains the quantity averaged
