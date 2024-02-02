@@ -934,7 +934,6 @@ module Io
       call fatal_error_local_collect()
 !
       esize = int(sum(rmv_list(:iproc)), KIND=MPI_COUNT_KIND) * esize
-      if (lparticles_sink) esize = 2_MPI_COUNT_KIND * esize
       disp = disp + int(esize, KIND=MPI_OFFSET_KIND)
 !
       call MPI_FILE_SET_VIEW(handle, disp, etype, filetype, "native", io_info, mpi_err)
