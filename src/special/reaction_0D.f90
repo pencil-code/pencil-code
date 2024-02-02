@@ -17,7 +17,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -78,10 +77,11 @@ module Special
   integer :: idiag_L4=0   ! DIAG_DOC: $L_4$
   integer :: idiag_L5=0   ! DIAG_DOC: $L_5$
 !
-
-
-  contains
+! Variable slot indices
 !
+  integer :: iqq=0
+!
+  contains
 !***********************************************************************
     subroutine register_special()
 !

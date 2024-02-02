@@ -58,4 +58,5 @@ integer, parameter :: id_record_SHEAR_DELTA_Y    = 320
 
 ! Time stepping
 integer, parameter :: id_record_TIME_STEP        = 330
+integer, parameter :: id_record_EPS_RKF          = 331
 

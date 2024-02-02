@@ -129,24 +129,25 @@ module Timestep
 !
 !  Set up particle derivative array.
 !
-        if (lparticles) call particles_timestep_first(f)
+        if (lparticles .and. .not. lgpu) call particles_timestep_first(f)
 !
 !  Set up point masses derivative array
 !
-        if (lpointmasses) call pointmasses_timestep_first(f)
+        if (lpointmasses .and. .not. lgpu) call pointmasses_timestep_first(f)
 !
 !  Set up ODE derivatives array
 !
-        if (lode) call ode_timestep_first
+        if (lode .and. .not. lgpu) call ode_timestep_first
 !
 !  Set up solid_cells time advance
 !
-        if (lsolid_cells) call solid_cells_timestep_first(f)
+        if (lsolid_cells .and. .not. lgpu) call solid_cells_timestep_first(f)
 !
 !  Change df according to the chosen physics modules.
 !
         call pde(f,df,p)
-        if (lode) call ode
+
+        if (lode .and. .not. lgpu) call ode
 
         ds=ds+1.0
 !
@@ -164,7 +165,7 @@ module Timestep
 !
 !  Apply border quenching.
 !
-        if (lborder_profiles) call border_quenching(f,df,dt_beta_ts(itsub))
+        if (lborder_profiles .and. .not. lgpu) call border_quenching(f,df,dt_beta_ts(itsub))
 !
 !  Time evolution of grid variables.
 !
@@ -173,30 +174,36 @@ module Timestep
 !
 !  Time evolution of point masses.
 !
-        if (lpointmasses) call pointmasses_timestep_second(f)
+        if (lpointmasses .and. .not. lgpu) call pointmasses_timestep_second(f)
 !
 !  Time evolution of particle variables.
 !
-        if (lparticles) call particles_timestep_second(f)
+        if (lparticles .and. .not. lgpu) call particles_timestep_second(f)
 !
 ! Time evolution of ODE variables.
 !
-        if (lode) call ode_timestep_second
+        if (lode .and. .not. lgpu) call ode_timestep_second
 !
 !  Time evolution of solid_cells.
 !
-        if (lsolid_cells) call solid_cells_timestep_second(f,dt_beta_ts(itsub),ds)
+        if (lsolid_cells .and. .not. lgpu) call solid_cells_timestep_second(f,dt_beta_ts(itsub),ds)
 !
 !  Advance deltay of the shear (and, optionally, perform shear advection
 !  by shifting all variables and their derivatives).
 !
-        if (lshear) then
+        if (lshear .and. .not. lgpu) then
           call impose_floors_ceilings(f)
           call update_ghosts(f)  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
           call advance_shear(f, df, dtsub)
         endif
+
 !
-        call update_after_substep(f,df,dtsub,llast)
+      if(.not. lgpu) call update_after_substep(f,df,dtsub,llast)
+!
+	! [PAB] according to MR this breaks the autotest.
+	! @Piyali: there must be a reason to add an additional global communication,
+	! could this be solved differently, and, if not, why? Can you enclose this in an if-clause, like above?
+        !call update_ghosts(f)  ! Necessary for boundary driving in special module
 !
 !  Increase time.
 !
@@ -206,7 +213,7 @@ module Timestep
 !
 !  Integrate operator split terms.
 !
-      call split_update(f)
+    if(.not. lgpu)  call split_update(f)
 !
     endsubroutine time_step
 !***********************************************************************
@@ -246,7 +253,7 @@ module Timestep
       use Energy,   only: energy_after_timestep
       use Magnetic, only: magnetic_after_timestep
       use Special,  only: special_after_timestep
-      use Particles_main, only: particles_special_after_dtsub
+      use Particles_main, only: particles_special_after_dtsub, particles_write_rmv
 !
       logical, intent(in) :: llast
       real, dimension (mx,my,mz,mfarray) :: f
@@ -267,6 +274,10 @@ module Timestep
         call special_after_timestep(f, df, dtsub, llast)
         if (lparticles) call particles_special_after_dtsub(f, dtsub)
       endif
+!
+!  Flush the list of removed particles to the log file.
+!
+      if (lparticles) call particles_write_rmv
 !
 !  Disables checks.
 !
@@ -312,8 +323,6 @@ module Timestep
     integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    ! call copy_addr(alpha_ts,p_par(1))  ! (3)
-    ! call copy_addr(beta_ts ,p_par(2))  ! (3)
 
     endsubroutine pushpars2c
 !***********************************************************************

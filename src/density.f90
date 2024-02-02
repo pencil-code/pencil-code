@@ -97,6 +97,7 @@ module Density
   real :: total_mass=-1.
   real :: rescale_rho=1.0
   real :: xjump_mid=0.0,yjump_mid=0.0,zjump_mid=0.0
+  real :: kgaussian_lnrho=0., initpower_lnrho=2, kpeak_lnrho=1., cutoff_lnrho=0.
   real, target :: reduce_cs2 = 1.0
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
@@ -142,8 +143,6 @@ module Density
   logical :: ldensity_slope_limited=.false.
   real :: h_sld_dens=2.0, nlf_sld_dens=1.0
   real, dimension(3) :: beta_glnrho_global = 0., beta_glnrho_scaled=0.
-  !for testing
-  public :: beta_glnrho_scaled
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
@@ -163,7 +162,7 @@ module Density
       dens_coeff, temp_coeff, temp_trans, temp_coeff_out, reduce_cs2, &
       lreduced_sound_speed, lrelativistic_eos, &
       lscale_to_cs2top, density_zaver_range, &
-      ieos_profile, width_eos_prof, &
+      ieos_profile, width_eos_prof, kpeak_lnrho, initpower_lnrho, cutoff_lnrho, &
       lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux,&
       ldensity_linearstart, xjump_mid, yjump_mid, zjump_mid
 !
@@ -174,7 +173,7 @@ module Density
       mass_source_profile, mass_source_Mdot, mass_source_sigma, &
       mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
-      lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
+      lnrho_const, rho_const,lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       density_floor_profile, density_floor_exp, &
       ldiffusion_nolog, lcheck_negative_density, &
@@ -265,6 +264,7 @@ module Density
   integer :: idiag_rho2mxy=0    ! ZAVG_DOC: $\left<\varrho^2\right>_{z}$
   integer :: idiag_sigma=0      ! ZAVG_DOC; $\Sigma\equiv\int\varrho\,\mathrm{d}z$
 !
+  public :: calc_pencils_density_std_test
   interface calc_pencils_density
     module procedure calc_pencils_density_pnc
     module procedure calc_pencils_density_std
@@ -1267,10 +1267,8 @@ module Density
           TT=spread(cs20/gamma_m1,1,nx)
           do n=n1,n2
           do m=m1,m2
-            lnrho=lnrho0-(x(l1:l2)-r_ext)/haut
-            f(l1:l2,m,n,ilnrho)=lnrho
-            call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
-            f(l1:l2,m,n,iss)=ss
+            f(l1:l2,m,n,ilnrho)=lnrho0-(x(l1:l2)-r_ext)/haut
+            call eoscalc(ilnrho_TT,f(l1:l2,m,n,ilnrho),TT,ss=f(l1:l2,m,n,iss))
           enddo
           enddo
         case ('isentropic-star')
@@ -1594,10 +1592,15 @@ module Density
             f(ix,iy,1:mz,ilnrho) = log( rho_bottom+((rho_top-rho_bottom)/(Lxyz(3)))*(z(1:mz)-xyz0(3)) )
           enddo;enddo
 !
-        case default
+!  initial spectrum
+!
+        case ('power_randomphase')
+          call power_randomphase(ampllnrho(j),initpower_lnrho,kgaussian_lnrho,kpeak_lnrho,cutoff_lnrho,&
+            f,ilnrho,ilnrho,lscale_tobox=.false.)
 !
 !  Catch unknown values
 !
+        case default
           call fatal_error('init_lnrho','No such initlnrho('//trim(iinit_str)//'): '//trim(initlnrho(j)))
 !
         endselect
@@ -1615,7 +1618,7 @@ module Density
 !  check that cs2bot,cs2top are ok
 !  for runs with ionization or fixed ionization, don't print them
 !
-      if (leos_ionization .or. leos_fixed_ionization) then
+      if (leos_ionization) then
         cs2top=impossible
         cs2bot=impossible
       else
@@ -2658,11 +2661,10 @@ module Density
         else
           tmp = fdiff
         endif
-
-        if (lhydro) then
+        if (lhydro.and.(.not.lhydro_potential)) then
+          !  when using lhydro_potential, df doesn't have iux:iuz entries
           forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
         endif
-
         if (lentropy.and.(.not.pretend_lnTT)) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
         elseif (lentropy.and.pretend_lnTT) then
@@ -2803,6 +2805,7 @@ module Density
       call timing('dlnrho_dt','finished',mnloop=.true.)
 !
     endsubroutine dlnrho_dt
+
 !***********************************************************************
     subroutine calc_diagnostics_density(f,p)
 !
@@ -3634,7 +3637,7 @@ module Density
 
       real, dimension (mx,my,mz,mfarray) :: f
       real :: haut
-      real, dimension (nx) :: lnrho,TT,ss
+      real, dimension (nx) :: TT
 !
       intent(inout) :: f
 !
@@ -3646,9 +3649,7 @@ module Density
           do m=m1,m2
             r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
             f(l1:l2,m,n,ilnrho)=lnrho0-r_mn/haut
-            lnrho=f(l1:l2,m,n,ilnrho)
-            call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
-            f(l1:l2,m,n,iss)=ss
+            call eoscalc(ilnrho_TT,f(l1:l2,m,n,ilnrho),TT,ss=f(l1:l2,m,n,iss))
           enddo
         enddo
       endif
@@ -3927,5 +3928,121 @@ module Density
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     endsubroutine pushpars2c
+!***********************************************************************
+    subroutine calc_pencils_density_std_test(f,p)
+! !
+! ! Envelope adjusting calc_pencils_density_pnc to the standard use with
+! ! lpenc_loc=lpencil
+! !
+! ! 21-sep-13/MR    : coded
+! !
+      use Deriv
+      use Sub
+      use General
+      real, dimension ((nxgrid/nprocx+2*3),(nygrid/nprocy+2*3),(nzgrid/nprocz+2*3),(5+0+0+0)),intent(in)   :: f
+type (pencil_case),                intent(inout):: p
+integer :: i_8_9
+real, dimension ((nxgrid/nprocx))::a_max_1_8_9
+logical::fast_sqrt1_1_8_9
+logical::precise_sqrt1_1_8_9
+real, dimension ((nxgrid/nprocx))::d2fdx_2_8_9
+real, dimension ((nxgrid/nprocx))::d2fdy_2_8_9
+real, dimension ((nxgrid/nprocx))::d2fdz_2_8_9
+real, dimension ((nxgrid/nprocx))::tmp_2_8_9
+real, dimension ((nxgrid/nprocx)) :: tmp_3_8_9
+integer::i_3_8_9
+integer::j_3_8_9
+real, dimension ((nxgrid/nprocx)) :: tmp_5_8_9
+integer::i_5_8_9
+integer::j_5_8_9
+logical :: loptest_return_value_4_5_8_9
+real, dimension ((nxgrid/nprocx)) :: tmp_6_8_9
+integer::i_6_8_9
+integer::j_6_8_9
+logical :: loptest_return_value_4_6_8_9
+! p%lnrho=f((1+3):l2,m,n,ilnrho)
+! if(lpencil(i_rho1)) then
+! p%rho1=exp(-f((1+3):l2,m,n,ilnrho))
+! endif
+! if(lpencil(i_rho)) then
+! p%rho=1.0/p%rho1
+! endif
+! if(lpencil(i_glnrho).or.lpencil(i_grho)) then
+! call der(f,ilnrho,p%glnrho(:,1),1)
+! call der(f,ilnrho,p%glnrho(:,2),2)
+! call der(f,ilnrho,p%glnrho(:,3),3)
+! if(notanumber(p%glnrho)) then
+! endif
+! if(lpencil(i_grho)) then
+! do i_8_9=1,3
+! p%grho(:,i_8_9)=p%rho*p%glnrho(:,i_8_9)
+! enddo
+! endif
+! endif
+! if(lpencil(i_uglnrho)) then
+! call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,upwind=.true.)
+! endif
+! if(lpencil(i_ugrho)) then
+! endif
+! if(lpencil(i_glnrho2)) then
+! fast_sqrt1_1_8_9=.false.
+! precise_sqrt1_1_8_9=.false.
+! p%glnrho2=p%glnrho(:,1)**2+p%glnrho(:,2)**2+p%glnrho(:,3)**2
+! endif
+! if(lpencil(i_del2rho)) then
+! endif
+! if(lpencil(i_del2lnrho)) then
+! call der2(f,ilnrho,d2fdx_2_8_9,1)
+! call der2(f,ilnrho,d2fdy_2_8_9,2)
+! call der2(f,ilnrho,d2fdz_2_8_9,3)
+! p%del2lnrho=d2fdx_2_8_9+d2fdy_2_8_9+d2fdz_2_8_9
+! endif
+! if(lpencil(i_del6rho)) then
+! endif
+! if(lpencil(i_hlnrho)) then
+! do j_3_8_9=1,3
+! call der2 (f,ilnrho,tmp_3_8_9,j_3_8_9)
+! p%hlnrho(:,j_3_8_9,j_3_8_9)=tmp_3_8_9
+! do i_3_8_9=j_3_8_9+1,3
+! call derij(f,ilnrho,tmp_3_8_9,i_3_8_9,j_3_8_9)
+! p%hlnrho(:,i_3_8_9,j_3_8_9)=tmp_3_8_9
+! p%hlnrho(:,j_3_8_9,i_3_8_9)=tmp_3_8_9
+! enddo
+! enddo
+! endif
+! if(lpencil(i_sglnrho)) then
+! do i_5_8_9=1,3
+! j_5_8_9=1
+! tmp_5_8_9=p%sij(:,i_5_8_9,j_5_8_9)*p%glnrho(:,j_5_8_9)
+! do j_5_8_9=2,3
+! tmp_5_8_9=tmp_5_8_9+p%sij(:,i_5_8_9,j_5_8_9)*p%glnrho(:,j_5_8_9)
+! enddo
+! loptest_return_value_4_5_8_9=.false.
+! p%sglnrho(:,i_5_8_9)=tmp_5_8_9
+! enddo
+! endif
+! if(lpencil(i_uij5glnrho)) then
+! do i_6_8_9=1,3
+! j_6_8_9=1
+! tmp_6_8_9=p%uij5(:,i_6_8_9,j_6_8_9)*p%glnrho(:,j_6_8_9)
+! do j_6_8_9=2,3
+! tmp_6_8_9=tmp_6_8_9+p%uij5(:,i_6_8_9,j_6_8_9)*p%glnrho(:,j_6_8_9)
+! enddo
+! loptest_return_value_4_6_8_9=.false.
+! p%uij5glnrho(:,i_6_8_9)=tmp_6_8_9
+! enddo
+! endif
+! if(lpencil(i_uuadvec_glnrho)) then
+! call dot_mn(p%uu_advec,p%glnrho,p%uuadvec_glnrho)
+! endif
+! if(lpencil(i_ekin)) then
+! p%ekin=0.5*p%rho*p%u2
+! endif
+! if(lpencil(i_rhos1)) then
+! endif
+! if(lpencil(i_glnrhos)) then
+! endif
+! !
+      endsubroutine calc_pencils_density_std_test
 !***********************************************************************
 endmodule Density

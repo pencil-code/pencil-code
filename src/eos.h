@@ -2,11 +2,14 @@
 
   private
 
+  public :: ilnrho_ss, ilnrho_ee, ilnrho_pp
+  public :: ilnrho_lnTT, ilnrho_cs2
+  public :: irho_cs2, irho_ss, irho_lnTT, ilnrho_TT
+  public :: irho_TT, ipp_ss, ipp_cs2
+  public :: irho_eth, ilnrho_eth, irho_ee, irho_pp
+
   public :: eoscalc,pressure_gradient,temperature_gradient
   public :: temperature_laplacian, get_gamma_etc
-  public :: ilnrho_ss, ilnrho_lnTT, ilnrho_pp, ilnrho_ee, ilnrho_TT
-  public :: ipp_ss,ipp_cs2, irho_TT, irho_ss, irho_eth, ilnrho_eth
-  public :: eosperturb
   public :: get_soundspeed
   public :: getmu
   public :: getdensity, gettemperature, getpressure
@@ -23,7 +26,7 @@
   public :: pencil_criteria_eos, pencil_interdep_eos
   public :: calc_pencils_eos
 
-  public :: ioncalc, ioninit
+  public :: ioncalc, init_eos
   public :: temperature_hessian
 
 ! Boundary conditions
@@ -53,11 +56,7 @@
   public :: cs2top,cs2bot
 
 ! chemistry
-  public :: read_thermodyn,write_thermodyn
-  public :: read_species,find_species_index,find_mass
-  public :: imass
-  public :: species_constants
-  public :: Pr_number, cp_const, lpres_grad
+  public :: Pr_number, cp_const, lpres_grad, imass
 !  public :: B_n, alpha_n, E_an, low_coeff,high_coeff,troe_coeff,a_k4
 !  public :: Mplus_case, tran_data
 !

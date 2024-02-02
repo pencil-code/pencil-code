@@ -23,6 +23,7 @@ module NSCBC
   implicit none
 !
   include 'NSCBC.h'
+  include 'eos_params.h'
 !
 ! Format: nscbc_bc = 'bottom_x:top_x','bottom_y:top_y','bottom_z:top_z'
 ! for top and bottom boundary treatment at x, y and z-boundaries.
@@ -357,8 +358,6 @@ module NSCBC
         endif
       enddo
 !
-!
-!
     endsubroutine nscbc_boundtreat_xyz
 !***********************************************************************
     subroutine bc_nscbc_prf(f,df,dir,topbot,non_reflecting_inlet,linlet,u_t,T_t,YYk)
@@ -377,8 +376,8 @@ module NSCBC
 !                    in the case of a multi-species flow
 !
       use Deriv, only: der_onesided_4_slice
+      use EquationOfState, only: imass
       use Chemistry
-      use EquationOfState, only: imass, species_constants
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1247,7 +1246,7 @@ module NSCBC
 !
 !  2010.07.26/Julien Savre: coded
 !
-      use EquationOfState, only: find_species_index
+      use Chemistry, only: find_species_index
       use General, only: keep_compiler_quiet
 !
       real, dimension(:,:,:), intent(inout) :: YYi_full
@@ -1421,7 +1420,7 @@ module NSCBC
 ! 2010.01.21/Nils Erland: coded
 !
         use Chemistry
-        use EquationOfState, only: cs0, cs20, eoscalc, irho_TT
+        use EquationOfState, only: cs0, cs20, eoscalc
 !
         real, dimension(mx,my,mz,mfarray) :: f
         integer, intent(in) :: direction, sgn,lll,imin,imax,jmin,jmax
@@ -1474,8 +1473,7 @@ module NSCBC
         if (ilnTT>0 .or. iTT>0) then
           do ii=1,imax-imin+1
             do jj=1,jmax-jmin+1
-              call eoscalc(irho_TT,rho0(ii,jj),TT(ii,jj),pp=P0(ii,jj),&
-                  cs2=cs2(ii,jj))
+              call eoscalc(irho_TT,rho0(ii,jj),TT(ii,jj),pp=P0(ii,jj),cs2=cs2(ii,jj))
             enddo
           enddo
           cs=sqrt(cs2)
@@ -3074,22 +3072,18 @@ module NSCBC
       select case (topbot)
       case ('bot')
         nnn = n1; sgn = 1
-        if (leos_chemistry) then
-          p_inf(:,:,1)=p_infty
-        endif
+        if (leos_chemistry) p_inf(:,:,1)=p_infty
       case ('top')
         nnn = n2; sgn = -1
-        if (leos_chemistry) then
-          p_inf(:,:,nz)=p_infty
-        endif
+        if (leos_chemistry) p_inf(:,:,nz)=p_infty
       case default
         print*, "bc_nscbc_subout_z: ", topbot, " should be `top' or `bot'"
       endselect
 !
-        if (leos_chemistry) then
-         cs20_ar=cs2_full(:,:,nnn)
-         cs0_ar=cs2_full(:,:,nnn)**0.5
-         gamma0=gamma_full(:,:,nnn)
+      if (leos_chemistry) then
+        cs20_ar=cs2_full(:,:,nnn)
+        cs0_ar=cs2_full(:,:,nnn)**0.5
+        gamma0=gamma_full(:,:,nnn)
 !
         if (ldensity_nolog) then
           rho_full = f(:,:,:,irho)
@@ -3103,23 +3097,23 @@ module NSCBC
            irho_tmp=ilnrho
         endif
 !
-         do i=1,my
-         do k=1,mz
+        do i=1,my
+        do k=1,mz
           if (minval(gamma_full(:,i,k))<=0.) then
-           pp(:,i,k)=0.
+            pp(:,i,k)=0.
           else
-           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
+            pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
           endif
-         enddo
-         enddo
+        enddo
+        enddo
 !
-         mom1(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iux)
-         mom2(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iuy)
-         rhoE_p(:,:,nnn)=0.5*rho_full(:,:,nnn) &
-            *(f(:,:,nnn,iux)**2+f(:,:,nnn,iuy)**2+f(:,:,nnn,iuz)**2) &
-             +gamma_full(:,:,nnn)/(gamma_full(:,:,nnn)-1)*pp(:,:,nnn)
-         rhoE_pU(:,:,nnn,1)=rhoE_p(:,:,nnn)*f(:,:,nnn,iux)
-         rhoE_pU(:,:,nnn,2)=rhoE_p(:,:,nnn)*f(:,:,nnn,iuy)
+        mom1(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iux)
+        mom2(:,:,nnn)=rho0(:,:)*f(:,:,nnn,iuy)
+        rhoE_p(:,:,nnn)=0.5*rho_full(:,:,nnn) &
+           *(f(:,:,nnn,iux)**2+f(:,:,nnn,iuy)**2+f(:,:,nnn,iuz)**2) &
+            +gamma_full(:,:,nnn)/(gamma_full(:,:,nnn)-1)*pp(:,:,nnn)
+        rhoE_pU(:,:,nnn,1)=rhoE_p(:,:,nnn)*f(:,:,nnn,iux)
+        rhoE_pU(:,:,nnn,2)=rhoE_p(:,:,nnn)*f(:,:,nnn,iuy)
 !
         Mach_num=maxval(f(l1:l2,m1:m2,nnn,iuz)/cs0_ar(l1:l2,m1:m2))
         KK=nscbc_sigma_out*(1.-Mach_num*Mach_num)*cs0_ar(l1:l2,m1:m2)/Lxyz(3)
@@ -3140,7 +3134,7 @@ module NSCBC
 !
       if (nxgrid /= 1) then
 !
-          do i=m1,m2
+        do i=m1,m2
           call der_pencil(1,f(:,i,nnn,iux),tmp11(:,i))
           call der_pencil(1,f(:,i,nnn,iuy),tmp21(:,i))
           call der_pencil(1,f(:,i,nnn,iuz),tmp31(:,i))
@@ -3148,8 +3142,7 @@ module NSCBC
           call der_pencil(1,pp(:,i,nnn),tmp1_pp(:,i))
           call der_pencil(1,mom1(:,i,nnn),dmom1_dx(:,i))
           call der_pencil(1,rhoE_pU(:,i,nnn,1),drhoE_pU(:,i,1))
-         enddo
-!
+        enddo
 !
       else
         tmp31=0
@@ -3160,11 +3153,12 @@ module NSCBC
         dmom1_dx=0
         drhoE_pU(:,:,1)=0
       endif
-        dui_dxj(:,:,1,1)=tmp11(l1:l2,m1:m2)
-        dui_dxj(:,:,2,1)=tmp21(l1:l2,m1:m2)
-        dui_dxj(:,:,3,1)=tmp31(l1:l2,m1:m2)
-        grad_rho(:,:,1)=tmp1_rho(l1:l2,m1:m2)
-        grad_pp(:,:,1)=tmp1_pp(l1:l2,m1:m2)
+
+      dui_dxj(:,:,1,1)=tmp11(l1:l2,m1:m2)
+      dui_dxj(:,:,2,1)=tmp21(l1:l2,m1:m2)
+      dui_dxj(:,:,3,1)=tmp31(l1:l2,m1:m2)
+      grad_rho(:,:,1)=tmp1_rho(l1:l2,m1:m2)
+      grad_pp(:,:,1)=tmp1_pp(l1:l2,m1:m2)
 !
       if (nygrid /= 1) then
 !
@@ -3191,7 +3185,6 @@ module NSCBC
         dui_dxj(:,:,3,2)=tmp32(l1:l2,m1:m2)
         grad_rho(:,:,2)=tmp2_rho(l1:l2,m1:m2)
         grad_pp(:,:,2)=tmp2_pp(l1:l2,m1:m2)
-!
 !
       select case (topbot)
       case ('bot')
@@ -3247,11 +3240,9 @@ module NSCBC
          df(l1:l2,m1:m2,nnn,iuz) =      df(l1:l2,m1:m2,nnn,iuz)      + T_4_x+T_4_y
          df(l1:l2,m1:m2,nnn,ilnTT) =    df(l1:l2,m1:m2,nnn,ilnTT)    + T_5_x+T_5_y
 ! if ((nxgrid /= 1) .and. (nygrid /= 1)) then
- ! if ((nxgrid /= 1) .and. (nygrid == 1)) then
-!
+! if ((nxgrid /= 1) .and. (nygrid == 1)) then
 !
 ! Corner points
-!
 !
        if (nxgrid /= 1) then
          L_1=(f(l1:l2,m1:m2,nnn,iux) - cs0_ar(l1:l2,m1:m2))&
@@ -3327,7 +3318,6 @@ module NSCBC
          lcorner_x=.false.
        endif
        enddo
-!
 !
 !
 !

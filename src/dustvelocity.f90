@@ -169,7 +169,7 @@ module Dustvelocity
 !
 !  18-mar-03/axel+anders: adapted from hydro
 !
-      use EquationOfState, only: cs0
+      use EquationOfState, only: cs20
       use BorderProfiles, only: request_border_driving
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -396,7 +396,7 @@ module Dustvelocity
       endif
 !
       if (beta_dPdr_dust/=0.0) then
-        beta_dPdr_dust_scaled=beta_dPdr_dust*Omega/cs0
+        beta_dPdr_dust_scaled=beta_dPdr_dust*Omega/sqrt(cs20)
         if (lroot) print*, 'initialize_dustvelocity: Global pressure '// &
                            'gradient with beta_dPdr_dust=', beta_dPdr_dust
       endif
@@ -529,7 +529,7 @@ module Dustvelocity
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: lnrho,rho,cs2,rhod,cp1tilde
+      real, dimension (nx) :: lnrho,rho,cs2,rhod
       real :: eps,cs,eta_glnrho,v_Kepler
       integer :: j,k,l
       logical :: lnothing
@@ -633,7 +633,7 @@ module Dustvelocity
                 else
                   rhod = f(l1:l2,m,n,ind(k))*md(k)
                 endif
-                call pressure_gradient(f,cs2,cp1tilde)
+                call pressure_gradient(f,cs2)
                 call get_stoppingtime(f(l1:l2,m,n,iudx(k):iudz(k)),f(l1:l2,m,n,iux:iuz),rho,cs2,rhod,k)
                 f(l1:l2,m,n,iudz(k)) = f(l1:l2,m,n,iudz(k)) - tausd1(:,k)**(-1)*nu_epicycle**2*z(n)
               enddo

@@ -1371,7 +1371,7 @@ module Gravity
     integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(gravz_zpencil(l1),p_par(1)) ! (mz)
+    call copy_addr(gravz_zpencil,p_par(1)) ! (mz)
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -10,6 +10,7 @@
 module Cdata
 !
   use Cparam
+!$ use mt, only: TaskHandle
 !
   implicit none
 !
@@ -21,12 +22,14 @@ module Cdata
 !
 !  Cartesian coordinate system.
 !
+  real, dimension (nx,3) :: dline_1
+  real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6, dVol
+  real, dimension (nx) :: dxmax_pencil,dxmin_pencil
+!BEGIN C BINDING
   real, dimension (mx) :: x,dx_1,dx2,dx_tilde,xprim,dVol_x,dVol1_x
   real, dimension (my) :: y,dy_1,dy2,dy_tilde,yprim,dVol_y,dVol1_y
   real, dimension (mz) :: z,dz_1,dz2,dz_tilde,zprim,dVol_z,dVol1_z
-  real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6, dVol
   real :: dx,dy,dz,dxmin,dxmax
-  real, dimension (nx) :: dxmax_pencil,dxmin_pencil
   real, dimension (-nghost:nghost) :: dx2_bound=0., dy2_bound=0., dz2_bound=0.
   real, dimension (nxgrid) :: xgrid, dx1grid, dxtgrid
   real, dimension (nygrid) :: ygrid, dy1grid, dytgrid
@@ -81,7 +84,6 @@ module Cdata
   real, dimension (nygrid) :: sinth_weight_across_proc
   real, dimension (nx) :: rcyl_mn=1.,rcyl_mn1=1.,rcyl_mn2=1.,rcyl_weight
   real, dimension (nx) :: glnCrossSec
-  real, dimension (nx,3) :: dline_1
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (mx) :: x12    ! for slope-limted-diffusion
   real, dimension (my) :: y12    ! for slope-limted-diffusion
@@ -107,20 +109,13 @@ module Cdata
   logical :: lignore_nonequi=.false.
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) :: pipe_func='error_function'
+  integer :: nghost_read_fewer=0
+!
+! Processor related
+!
   real, dimension(0:nprocx) :: procx_bounds
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds
-  integer :: nghost_read_fewer=0
-!
-!  Polar grid
-!
-  integer :: ncoarse=0
-  logical :: lcoarse=.false., lcoarse_mn=.false.
-  integer, dimension(2) :: mexts=(/-1,-1/)
-  integer, dimension(:), allocatable :: nphis
-  real, dimension(:), allocatable :: nphis1, nphis2
-  integer, dimension(:,:), allocatable :: nexts
-  integer, dimension(:,:,:), allocatable :: ninds
 
   integer, dimension(3) :: dim_mask=(/1,2,3/)
 !
@@ -139,6 +134,17 @@ module Cdata
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
+!END C BINDING
+!
+!  Polar grid
+!
+  integer :: ncoarse=0
+  logical :: lcoarse=.false., lcoarse_mn=.false.
+  integer, dimension(2) :: mexts=(/-1,-1/)
+  integer, dimension(:), allocatable :: nphis
+  real, dimension(:), allocatable :: nphis1, nphis2
+  integer, dimension(:,:), allocatable :: nexts
+  integer, dimension(:,:,:), allocatable :: ninds
 !
 !  Time integration parameters.
 !
@@ -153,9 +159,9 @@ module Cdata
 !AB: this more carefully and discuss it first in the newsletter.
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtsrc=0.2, cdtf=0.9
-  real :: eps_rkf=1e-5, eps_stiff=1e-6
+  real :: eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
   real :: ddt=0.0
-  real :: dtmin=1.0e-6, dtmax=1.0e37
+  real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7
   real :: nu_sts=0.1
   real :: density_scale_factor=impossible
   integer :: permute_sts=0
@@ -166,14 +172,14 @@ module Cdata
   real, dimension (nx) :: advec_cs2=0.
   real, dimension (nx) :: maxadvec=0., advec2=0., advec2_hypermesh=0.
   real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
-  real, dimension (nx) :: dt1_max
+  real, target, dimension (nx) :: dt1_max
   real, dimension (nx) :: reac_chem, reac_dust
   real                 :: trelax_poly, reac_pchem
   real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfractional_tstep_advance=.false.
   logical :: lfractional_tstep_negative=.true.
   logical :: lfirstpoint=.false.
-  logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
+  logical :: lmaxadvec_sum=.false.,old_cdtv=.false.,leps_fixed=.true.
   logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_frac_err'
 !
@@ -290,8 +296,7 @@ module Cdata
   logical :: ldensity_nolog=.false., &
              lreference_state=.false., lfullvar_in_slices=.false., &
              lsubstract_reference_state=.false., ldensity_linearstart=.false.
-  logical :: lmpicomm=.false., lforcing_cont=.false.
-  logical :: lpostproc=.false.
+  logical :: lforcing_cont=.false.
   logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
   logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
   logical :: lwrite_sound=.false.
@@ -300,8 +305,7 @@ module Cdata
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
-  logical :: lgravr=.false.,lgravr_gas=.false.
-  logical :: lgravr_neutrals=.false.,lgravr_dust=.false.
+  logical :: lgravr=.false.
   logical :: lwrite_ic=.true.,lnowrite=.false.,lserial_io=.false.
   logical :: lmodify=.false.
   logical :: lroot=.true.,lcaproot=.false.,ldebug=.false.,lfft=.true.
@@ -315,17 +319,11 @@ module Cdata
   logical :: lnorth_pole=.false.,lsouth_pole=.false.
   logical :: lpscalar_nolog=.false.
   logical :: lalpm=.false., lalpm_alternate=.false.
-  logical :: lradiation_ray=.false.,lradiation_fld=.false.
-  logical :: ldustdensity_log=.false.,lmdvar=.false.,lmice=.false.,ldcore=.false.
+  logical :: ldustdensity_log=.false.,lmdvar=.false.,ldcore=.false.
   logical :: lneutraldensity_nolog=.false.
-  logical :: lglobal=.false., lglobal_nolog_density=.false.
-  logical :: lvisc_hyper=.false.
-  logical :: lvisc_smagorinsky=.false.
   logical :: lvisc_smag=.false.
   logical :: lslope_limit_diff=.false.
-  logical :: leos_temperature_ionization=.false.
   logical :: ltemperature_nolog=.false.
-  logical :: leos_fixed_ionization=.false.
   logical :: ltestperturb=.false.
   logical :: lweno_transport=.false.
   logical :: lstart=.false., lrun=.false., lreloading=.false.
@@ -352,9 +350,10 @@ module Cdata
   integer :: ip21=0,ip22=0,ip23=0
   integer :: ip31=0,ip32=0,ip33=0
   integer :: ipoly_fr=0
-  integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0,iphiuu=0
+  integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0,iphiuu=0, ilorentz=0
   integer :: iuu0=0,iu0x=0,iu0y=0,iu0z=0
   integer :: ioo=0, iox=0, ioy=0, ioz=0
+  integer :: ivv=0, ivx=0, ivy=0, ivz=0
   integer :: igradu11=0,igradu12=0,igradu13=0
   integer :: igradu21=0,igradu22=0,igradu23=0
   integer :: igradu31=0,igradu32=0,igradu33=0
@@ -431,6 +430,7 @@ module Cdata
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh               ! `pole' processor neighbours
+  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0 
 !
 !  Data for registering of already updated variable ghost zones for only partly
 !  updating by the *_after_timestep routines.
@@ -567,6 +567,7 @@ module Cdata
   integer :: idiag_Rmesh=0      ! DIAG_DOC: $R_{\rm mesh}$
   integer :: idiag_Rmesh3=0     ! DIAG_DOC: $R_{\rm mesh}^{(3)}$
   integer :: idiag_maxadvec=0   ! DIAG_DOC: maxadvec
+  integer :: idiag_eps_rkf=0    ! DIAG_DOC: time step accuracy threshold
 !
 !  Emergency brake:
 !   When toggled the code will stop at the next convenient point
@@ -590,14 +591,14 @@ module Cdata
 !  Variables related to Fourier spectra and structure functions.
 !
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
-  logical :: j_spec=.false., jb_spec=.false., ja_spec=.false., oo_spec=.false.
+  logical :: j_spec=.false., jb_spec=.false., ja_spec=.false., oo_spec=.false., relvel_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
   character (LEN=labellen*4) :: xy_spec=''
   character (LEN=labellen), dimension(n_xy_specs_max) :: xy_specs=''
-  logical :: EP_spec=.false., nd_spec=.false., ud_spec=.false.
-  logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
+  logical :: EP_spec=.false., nd_spec=.false., ud_spec=.false., abs_u_spec=.false.
+  logical :: ro_spec=.false., TT_spec=.false., ss_spec=.false., cc_spec=.false., cr_spec=.false.
   logical :: sp_spec=.false., ssp_spec=.false., sssp_spec=.false., mu_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false., oun_spec=.false.
   logical :: np_spec=.false., np_ap_spec=.false., rhop_spec=.false., ele_spec=.false., pot_spec=.false.
@@ -798,20 +799,15 @@ module Cdata
 !
 !  Variables for concurrency
 ! 
-  real, pointer, dimension (:) :: p_fname,p_fname_keep
-  real, pointer, dimension (:,:) :: p_fnamer,p_fname_sound
-  integer, pointer, dimension (:,:) :: p_ncountsz
-  real, pointer, dimension (:,:,:) :: p_fnamex,p_fnamey,p_fnamez,p_fnamexy,p_fnamexz
-  real, pointer, dimension(:,:,:,:) :: p_fnamerz
   real, pointer, dimension(:) :: p_dt1_max
-  integer, volatile :: num_of_diag_iter_done = nyz
-  logical, volatile :: lstarted_writing_diagnostics=.true., lstarted_finalizing_diagnostics=.true.
-  logical, volatile :: lstarted_writing_snapshots=.true., lwritten_snapshots=.true. 
-  logical, volatile :: lwritten_diagnostics=.true., lfinalized_diagnostics=.true.
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save, lwrite_slices_save
   logical :: lchemistry_diag_save
   integer :: it_save
+  real(KIND=rkind8) :: t_save=0
+  real :: tdiagnos_save,t1ddiagnos_save,t2davgfirst_save
+!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
+  integer :: num_of_helper_threads
 ! 
 ! threadprivate definitions for OpenMP
 !
@@ -820,6 +816,6 @@ module Cdata
 !$omp threadprivate(lfirstpoint)
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
-!$omp threadprivate(it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
+!$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,t,it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
 
 endmodule Cdata

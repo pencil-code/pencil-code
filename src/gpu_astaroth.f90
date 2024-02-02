@@ -11,6 +11,7 @@ module GPU
   use Cdata
   use General, only: keep_compiler_quiet
   use Mpicomm, only: stop_it
+  use, intrinsic :: iso_c_binding
 
   implicit none
 
@@ -18,6 +19,14 @@ module GPU
   external finalize_gpu_c
   external rhs_gpu_c
   external copy_farray_c
+  external test_rhs_c
+
+!$  interface
+!$    subroutine random_initial_condition() bind(C)
+!$    endsubroutine random_initial_condition
+!$  end interface
+
+
 
   include 'gpu.h'
 
@@ -25,6 +34,12 @@ module GPU
   
 contains
 
+!***********************************************************************
+    subroutine example_func(x,y) bind(C)
+      integer, value :: x,y
+      print*,"Hi from example func"
+      print*,"x,y: ",x,y
+    endsubroutine example_func
 !***********************************************************************
     subroutine initialize_GPU
 !
@@ -198,4 +213,76 @@ contains
     !   endif
     ! endsubroutine test_rhs
 !**************************************************************************
+  subroutine hello_func() bind(C)
+    print*,"hello from Fortran"
+  endsubroutine 
+!**************************************************************************
+ subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
+!  Used to test different implementations of rhs_cpu.
+!
+!  13-nov-23/TP: Written
+!
+      use MPIcomm
+      use Boundcond
+      use ISO_fortran_env, only: stdout => output_unit
+      use, intrinsic :: iso_c_binding
+      real, dimension (mx,my,mz,mfarray) :: f,f_copy,f_copy_2
+      real, dimension (mx,my,mz,mfarray) :: df,df_copy,ds
+      type (pencil_case) :: p,p_copy
+      real, dimension(1), intent(inout) :: mass_per_proc
+      logical ,intent(in) :: early_finalize
+      integer :: i,j,k,n
+      logical :: passed
+      real, parameter :: dt = 0.001
+      real, parameter, dimension(3) :: alpha = (/0.0, -(5.0/9.0), -(153.0/128.0)/)
+      real, parameter, dimension(3) :: beta = (/ 1. / 3., 15./ 16., 8. / 15. /)
+      integer, parameter :: num_of_steps = 1
+      interface
+          subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
+              import mx
+              import my
+              import mz
+              import mfarray
+              import pencil_case
+              real, dimension (mx,my,mz,mfarray) :: f
+              real, dimension (mx,my,mz,mfarray) :: df
+              type (pencil_case) :: p
+              real, dimension(1), intent(inout) :: mass_per_proc
+              logical ,intent(in) :: early_finalize
+
+              intent(inout) :: f
+              intent(inout) :: p
+              intent(out) :: df
+          endsubroutine cpu_version
+        endinterface
+      ! call random_initial_condition()
+      ! call copy_farray_from_GPU(f)
+      df_copy = df
+      p_copy = p
+      f_copy = f
+      f_copy_2 = f
+      do n=1,num_of_steps
+        print*,"cpu step: ",n
+        ds = 0.0
+        do i=1,3
+          call boundconds_x(f_copy)
+          call initiate_isendrcv_bdry(f_copy)
+          call finalize_isendrcv_bdry(f_copy)
+          call boundconds_y(f_copy)
+          call boundconds_z(f_copy)
+          df_copy = 0.0
+          call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
+          ds = alpha(i)*ds + df_copy*dt
+          ! ds = 2.0
+          f_copy = f_copy + beta(i)*ds
+          ! f_copy = f_copy + df_copy*dt*beta(i)
+          ! df_copy = df_copy
+        enddo
+      enddo
+
+    call test_rhs_c(f_copy_2,f_copy);
+    call die_gracefully
+  end subroutine  test_rhs_gpu
+!**************************************************************************
+
 endmodule GPU

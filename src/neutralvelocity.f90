@@ -93,8 +93,6 @@ module NeutralVelocity
 
 
 
-!Public declaration added by preprocessor
-
   contains
 !***********************************************************************
     subroutine register_neutralvelocity()

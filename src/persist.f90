@@ -149,7 +149,7 @@ module Persist
       integer, intent(in) :: id
       logical, intent(inout) :: done
 !
-      real :: dely, dtmp
+      real :: dely, dtmp, deps
 !
       select case (id)
         case (id_record_RANDOM_SEEDS)
@@ -169,6 +169,11 @@ module Persist
             done=read_persist ('TIME_STEP', dtmp)
             if (.not.done) dt=dtmp
           endif
+        case (id_record_EPS_RKF)
+          if (eps_rkf0==0) then
+            done=read_persist ('EPS_RKF', deps)
+            if (.not.done) eps_rkf=deps
+          endif
       endselect
 !
     endsubroutine input_persist_general_by_id
@@ -184,7 +189,7 @@ module Persist
       use IO, only: persist_exists, read_persist
       use Messages, only: warning
 !
-      real :: dtmp
+      real :: dtmp, deps
 !
       if (persist_exists ('RANDOM_SEEDS')) then
         call random_seed_wrapper(GET=seed,CHANNEL=1)
@@ -217,6 +222,16 @@ module Persist
           dt=dtmp
         endif
       endif
+!
+      if (eps_rkf0==0.) then
+        deps=eps_rkf
+        if (read_persist ('EPS_RKF', deps)) then
+          call warning('input_persist_general_by_label','no persistent value of eps_rkf found')
+        else
+          eps_rkf=deps
+        endif
+      endif
+!
 !
     endsubroutine input_persist_general_by_label
 !***********************************************************************
@@ -254,6 +269,11 @@ module Persist
 !
       if (.not.ldt) then
         if (write_persist ('TIME_STEP', id_record_TIME_STEP, dt)) &
+          output_persistent_general = .true.
+      endif
+!
+      if (.not.ldt) then
+        if (write_persist ('EPS_RKF', id_record_EPS_RKF, eps_rkf)) &
           output_persistent_general = .true.
       endif
 !

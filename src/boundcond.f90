@@ -918,6 +918,9 @@ module Boundcond
                 case ('e2')
                   ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_2(f,topbot,j)
+                case ('e2h')
+                  ! BCX_DOC: extrapolation [describe]
+                  call bcx_extrap_frac_2(f,topbot,j)
                 case ('e3')
                   ! BCX_DOC: extrapolation in log [maintain a power law]
                   call bcx_extrap_2_3(f,topbot,j)
@@ -4713,6 +4716,57 @@ module Boundcond
 !
     endsubroutine bcx_extrap_2_2
 !***********************************************************************
+    subroutine bcx_extrap_frac_2(f,topbot,j)
+!
+!  Extrapolation boundary condition.
+!  Correct for polynomials up to 2nd order, determined 2 further degrees
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!  19-jun-03/wolf: coded
+!  01-jul-03/axel: introduced abbreviations n1p4,n2m4
+!
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+      real :: frac=0.8
+      integer :: j,l1p4,l2m4
+!
+!  abbreviations, because otherwise the ifc compiler complains
+!  for 1-D runs without vertical extent
+!
+      l1p4=l1+4
+      l2m4=l2-4
+!
+      select case (topbot)
+!
+      case(BOT)               ! bottom boundary
+        if ((j .eq. ilnrho) .or. (j .eq. ilnTT)) then
+          f(l1-1,:,:,j)=0.2*(9*f(l1,:,:,j) -  4*f(l1+2,:,:,j)- 3*f(l1+3,:,:,j)+3*f(l1p4,:,:,j))+alog(frac)
+          f(l1-2,:,:,j)=0.2*(15*f(l1,:,:,j)- 2*f(l1+1,:,:,j)-  9*f(l1+2,:,:,j)-6*f(l1+3,:,:,j)+ 7*f(l1p4,:,:,j))+alog(frac)
+          f(l1-3,:,:,j)=1.0/35.*(157*f(l1,:,:,j)-33*f(l1+1,:,:,j)-108*f(l1+2,:,:,j)-68*f(l1+3,:,:,j)+87*f(l1p4,:,:,j))+alog(frac)
+        else
+          f(l1-1,:,:,j)=0.2   *(  9*f(l1,:,:,j)                 -4*f(l1+2,:,:,j)- 3*f(l1+3,:,:,j)+ 3*f(l1p4,:,:,j))
+          f(l1-2,:,:,j)=0.2   *( 15*f(l1,:,:,j)- 2*f(l1+1,:,:,j)-9*f(l1+2,:,:,j)- 6*f(l1+3,:,:,j)+ 7*f(l1p4,:,:,j))
+          f(l1-3,:,:,j)=1./35.*(157*f(l1,:,:,j)-33*f(l1+1,:,:,j)-108*f(l1+2,:,:,j)-68*f(l1+3,:,:,j)+87*f(l1p4,:,:,j))
+        endif
+!
+      case(TOP)               ! top boundary
+        if ((j .eq. ilnrho) .or. (j .eq. ilnTT)) then
+          f(l2+1,:,:,j)=0.2*(  9*f(l2,:,:,j)-4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))+alog(frac)
+          f(l2+2,:,:,j)=0.2*( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))+alog(frac)
+          f(l2+3,:,:,j)=1.0/35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))+alog(frac)
+        else
+          f(l2+1,:,:,j)=0.2   *(  9*f(l2,:,:,j)                 - 4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))
+          f(l2+2,:,:,j)=0.2   *( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))
+          f(l2+3,:,:,j)=1./35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))
+        endif
+!
+      case default
+        call fatal_error("bcx_extrap_frac_2: ","topbot should be BOT or TOP")
+!
+      endselect
+!
+    endsubroutine bcx_extrap_frac_2
+!***********************************************************************
     subroutine bcy_extrap_2_2(f,topbot,j)
 !
 !  Extrapolation boundary condition.
@@ -5692,7 +5746,7 @@ module Boundcond
 
        integer :: tag_xl=321,tag_yl=322,tag_xr=323,tag_yr=324
        integer :: tag_tl=345,tag_tr=346,tag_dt=347
-       integer :: lend=0,ierr,frame=0,pos,iref,px,py
+       integer :: lend=0,ierr,frame=0,pos,iref,px,py,partner
        real, save :: tl=0.,tr=0.,delta_t=0.
        real  :: zmin
        logical :: quench
@@ -5748,9 +5802,10 @@ module Boundcond
            do px=0, nprocx-1
              do py=0, nprocy-1
                if ((px /= 0) .or. (py /= 0)) then
-                 call mpisend_real (tl, px+py*nprocx, tag_tl)
-                 call mpisend_real (tr, px+py*nprocx, tag_tr)
-                 call mpisend_real (delta_t, px+py*nprocx, tag_dt)
+                 partner = find_proc(px,py,0)
+                 call mpisend_real (tl, partner, tag_tl)
+                 call mpisend_real (tr, partner, tag_tr)
+                 call mpisend_real (delta_t, partner, tag_dt)
                endif
              enddo
            enddo
@@ -5776,7 +5831,7 @@ module Boundcond
              do py=0, nprocy-1
                if ((px /= 0) .or. (py /= 0)) then
                  uxl = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                 call mpisend_real (uxl, (/ nx, ny /), px+py*nprocx, tag_xl)
+                 call mpisend_real (uxl, (/ nx, ny /), find_proc(px,py,0), tag_xl)
                endif
              enddo
            enddo
@@ -5787,7 +5842,7 @@ module Boundcond
              do py=0, nprocy-1
                if ((px /= 0) .or. (py /= 0)) then
                  uyl = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                 call mpisend_real (uyl, (/ nx, ny /), px+py*nprocx, tag_yl)
+                 call mpisend_real (uyl, (/ nx, ny /), find_proc(px,py,0), tag_yl)
                endif
              enddo
            enddo
@@ -5798,7 +5853,7 @@ module Boundcond
              do py=0, nprocy-1
                if ((px /= 0) .or. (py /= 0)) then
                  uxr = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                 call mpisend_real (tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny), (/ nx, ny /), px+py*nprocx, tag_xr)
+                 call mpisend_real (tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny), (/ nx, ny /), find_proc(px,py,0), tag_xr)
                endif
              enddo
            enddo
@@ -5810,7 +5865,7 @@ module Boundcond
              do py=0, nprocy-1
                if ((px /= 0) .or. (py /= 0)) then
                  uyr = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                 call mpisend_real (tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny), (/ nx, ny /), px+py*nprocx, tag_yr)
+                 call mpisend_real (tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny), (/ nx, ny /), find_proc(px,py,0), tag_yr)
                endif
              enddo
            enddo
@@ -6015,10 +6070,11 @@ module Boundcond
         endif
 !
         do i=1,nprocxy-1
+          partner = find_proc(modulo(i,nprocx),i/nprocx,0)
           if (lroot) then
-            call mpisend_logical(luse_vel_field,i,i)
-          elseif (iproc==i) then
-            call mpirecv_logical(luse_vel_field,0,iproc)
+            call mpisend_logical(luse_vel_field,partner,partner)
+          elseif (iproc==partner) then
+            call mpirecv_logical(luse_vel_field,0,partner)
           endif
         enddo
 !
@@ -6101,7 +6157,7 @@ module Boundcond
             ! send _l data to remote
             do py = 1, nprocy
               do px = 1, nprocx
-                partner = px + py*nprocx + ipz*nprocxy
+                partner = find_proc(px-1,py-1,ipz)
                 if (partner == iproc) cycle
                 vx_l = vx_tmp(1+(px-1)*nprocx:px*nprocx,1+(py-1)*nprocy:py*nprocy)
                 vy_l = vy_tmp(1+(px-1)*nprocx:px*nprocx,1+(py-1)*nprocy:py*nprocy)
@@ -6120,7 +6176,7 @@ module Boundcond
             ! send _r data to remote
             do py = 1, nprocy
               do px = 1, nprocx
-                partner = px + py*nprocx + ipz*nprocxy
+                partner = find_proc(px-1,py-1,ipz)
                 if (partner == iproc) cycle
                 vx_r = vx_tmp(1+(px-1)*nprocx:px*nprocx,1+(py-1)*nprocy:py*nprocy)
                 vy_r = vy_tmp(1+(px-1)*nprocx:px*nprocx,1+(py-1)*nprocy:py*nprocy)
@@ -6142,7 +6198,7 @@ module Boundcond
           rec_l = 1 + (frame-1)*nprocxy
           rec_r = 1 + frame*nprocxy
           do py=1, nprocxy-1
-            partner = py + ipz*nprocxy
+            partner = find_proc(modulo(py,nprocx),py/nprocx,ipz)
             ! read Bz data for remote processors
             read (10,rec=rec_l+py) Bz0_l
             read (10,rec=rec_r+py) Bz0_r
@@ -6160,20 +6216,21 @@ module Boundcond
 !
         else
 !
+          partner = find_proc(0,0,ipz)
           if (luse_vel_field) then
             ! wait for vx and vy data from root processor
-            call mpirecv_real (vx_l, (/ nx, ny /), ipz*nprocxy, tag_l)
-            call mpirecv_real (vy_l, (/ nx, ny /), ipz*nprocxy, tag_r)
-            call mpirecv_real (vx_r, (/ nx, ny /), ipz*nprocxy, tag_l)
-            call mpirecv_real (vy_r, (/ nx, ny /), ipz*nprocxy, tag_r)
+            call mpirecv_real (vx_l, (/ nx, ny /), partner, tag_l)
+            call mpirecv_real (vy_l, (/ nx, ny /), partner, tag_r)
+            call mpirecv_real (vx_r, (/ nx, ny /), partner, tag_l)
+            call mpirecv_real (vy_r, (/ nx, ny /), partner, tag_r)
           endif
 !
           ! wait for Bz data from root processor
-          call mpirecv_real (Bz0_l, (/ bnx, bny /), ipz*nprocxy, tag_l)
-          call mpirecv_real (Bz0_r, (/ bnx, bny /), ipz*nprocxy, tag_r)
-          call mpirecv_real (t_l, ipz*nprocxy, tag_l)
-          call mpirecv_real (t_r, ipz*nprocxy, tag_r)
-          call mpirecv_real (delta_t, ipz*nprocxy, tag_dt)
+          call mpirecv_real (Bz0_l, (/ bnx, bny /), partner, tag_l)
+          call mpirecv_real (Bz0_r, (/ bnx, bny /), partner, tag_r)
+          call mpirecv_real (t_l    , partner, tag_l)
+          call mpirecv_real (t_r    , partner, tag_r)
+          call mpirecv_real (delta_t, partner, tag_dt)
 !
         endif
 !
@@ -8285,8 +8342,7 @@ module Boundcond
 !
 !   check for warnings
 !
-        if (.not. ldensity)  &
-            call warning('bc_wind',"no defined density, using rho=1 ?")
+        if (.not. ldensity) call warning('bc_wind',"no defined density, using rho=1 ?")
       endif
 !
       select case (topbot)
@@ -8301,13 +8357,12 @@ module Boundcond
 !
       case(TOP)
         ntb = n2
-        nroot = ipz*nprocx*nprocy
+        nroot = find_proc(0,0,ipz)
 !
 !  Default.
 !
       case default
         call fatal_error("bc_wind: ","topbot should be BOT or TOP")
-!
       endselect
 !
       local_flux=sum(exp(f(l1:l2,m1:m2,ntb,ilnrho))*f(l1:l2,m1:m2,ntb,iuz))
@@ -8325,7 +8380,7 @@ module Boundcond
         total_mass=local_mass
         do i=0,nprocx-1
           do j=0,nprocy-1
-            ipt = i+nprocx*j+ipz*nprocx*nprocy
+            ipt = find_proc(i,j,ipz)
             if (ipt/=nroot) then
               call mpirecv_real(get_lf,ipt,111+ipt)
               call mpirecv_real(get_lm,ipt,211+ipt)
@@ -8349,10 +8404,8 @@ module Boundcond
       else
         do i=0,nprocx-1
           do j=0,nprocy-1
-            ipt = i+nprocx*j+ipz*nprocx*nprocy
-            if (ipt/=nroot) then
-              call mpisend_real(u_add,ipt,311+ipt)
-            endif
+            ipt = find_proc(i,j,ipz)
+            if (ipt/=nroot) call mpisend_real(u_add,ipt,311+ipt)
           enddo
         enddo
       endif
@@ -8589,9 +8642,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_aa_pot_1D: ","topbot should be BOT or TOP")
-        ipos=1
-        dir=0
-!
       endselect
 !
       if (nygrid>1) call fatal_error('bc_aa_pot_1D','only for nygrid=1')
@@ -8600,7 +8650,7 @@ module Boundcond
         iay_global(1:nx) = f(l1:l2,m1,ipos,iay)
         if (nprocx>1) then
           do j=1,nprocx-1
-            call mpirecv_real(iay_global(j*nx+1:(j+1)*nx),nx,j,j*100)
+            call mpirecv_real(iay_global(j*nx+1:(j+1)*nx),nx,find_proc(j,0,0),j*100)
           enddo
         endif
         fft_az_r=iay_global
@@ -8623,7 +8673,7 @@ module Boundcond
 !
           if (nprocx>1) then
             do j=1,nprocx-1
-              call mpisend_real(A_r(j*nx+1:(j+1)*nx),nx,j,j*100)
+              call mpisend_real(A_r(j*nx+1:(j+1)*nx),nx,find_proc(j,0,0),j*100)
             enddo
           endif
         else

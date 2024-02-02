@@ -27,11 +27,11 @@ module Chemistry
 !
   include 'chemistry.h'
 !
-!Public declaration added by preprocessor
+  real, dimension(0,0) :: species_constants
 
   contains
 !***********************************************************************
-    subroutine register_chemistry()
+    subroutine register_chemistry
 !
     endsubroutine register_chemistry
 !***********************************************************************
@@ -51,7 +51,7 @@ module Chemistry
 !
     endsubroutine init_chemistry
 !***********************************************************************
-    subroutine pencil_criteria_chemistry()
+    subroutine pencil_criteria_chemistry
 !
     endsubroutine pencil_criteria_chemistry
 !***********************************************************************
@@ -112,38 +112,6 @@ module Chemistry
 
     endsubroutine calc_diagnostics_chemistry
 !***********************************************************************
-    subroutine read_chemistry_init_pars(iostat)
-!
-      integer, intent(out) :: iostat
-!
-      iostat = 0
-!
-    endsubroutine read_chemistry_init_pars
-!***********************************************************************
-    subroutine write_chemistry_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_chemistry_init_pars
-!***********************************************************************
-    subroutine read_chemistry_run_pars(iostat)
-!
-      integer, intent(out) :: iostat
-!
-      iostat = 0
-!
-    endsubroutine read_chemistry_run_pars
-!***********************************************************************
-    subroutine write_chemistry_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_chemistry_run_pars
-!***********************************************************************
     subroutine rprint_chemistry(lreset,lwrite)
 !
       logical :: lreset
@@ -172,9 +140,37 @@ module Chemistry
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
-    subroutine chemistry_clean_up()
+    subroutine chemistry_clean_up
 !
     endsubroutine chemistry_clean_up
+!***********************************************************************
+    subroutine read_chemistry_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+    endsubroutine read_chemistry_init_pars
+!***********************************************************************
+    subroutine write_chemistry_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+    endsubroutine write_chemistry_init_pars
+!***********************************************************************
+    subroutine read_chemistry_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+    endsubroutine read_chemistry_run_pars
+!***********************************************************************
+    subroutine write_chemistry_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+    endsubroutine write_chemistry_run_pars
 !***********************************************************************
     subroutine jacobn(f,jacob)
 !
@@ -297,5 +293,24 @@ module Chemistry
 !***********************************************************************
     subroutine chemistry_init_diag_accum
     endsubroutine chemistry_init_diag_accum
+!***********************************************************************
+    subroutine chemistry_write_diagnostics_accumulators
+    endsubroutine chemistry_write_diagnostics_accumulators
+!***********************************************************************
+    subroutine chemistry_init_private_accumulators
+    endsubroutine chemistry_init_private_accumulators
+!***********************************************************************
+   subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
+!
+!  Find index in the f array for specie
+!
+!  05-feb-08/nils: coded
+!
+      integer, intent(out) :: ind_glob
+      integer, intent(inout) :: ind_chem
+      character (len=*), intent(in) :: species_name
+      logical, intent(out) :: found_specie
+!
+   endsubroutine find_species_index
 !***********************************************************************
 endmodule Chemistry

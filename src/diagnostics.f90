@@ -11,7 +11,7 @@ module Diagnostics
   use Cdata
   use Messages
   use Mpicomm
-  use General, only: safe_sum, loptest
+  use General, only: safe_sum, loptest, pointer_with_size_info_1d
 !
   implicit none
 !
@@ -22,6 +22,8 @@ module Diagnostics
   public :: diagnostics_init_reduc_pointers
   public :: diagnostics_diag_reductions
   public :: diagnostics_read_diag_accum
+  public :: diagnostics_write_diagnostics_accumulators
+  public :: diagnostics_init_private_accumulators
   public :: phizaverages_r, yaverages_xz, zaverages_xy
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
@@ -97,14 +99,13 @@ module Diagnostics
   private
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
-  real, pointer, dimension (:) :: p_phiavg_norm
+  type(pointer_with_size_info_1d) :: p_phiavg_norm
   real, target, dimension (nrcyl) :: phiavg_norm
   !$omp threadprivate(phiavg_norm)
   real :: dVol_rel1
 
   character (len=intlen) :: ch1davg, ch2davg
   integer :: ixav_max
-  integer :: nfirst=0
 !
 ! Variables for Yin-Yang grid: z-averages.
 !
@@ -124,7 +125,7 @@ module Diagnostics
       real :: dxeff,dyeff,dzeff
       real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel
       integer :: i
-! 
+!
 !  Initialize rcyl for the phi-averages grid. Does not need to be
 !  done after each reload of run.in, but this is the easiest way
 !  of doing it.
@@ -137,7 +138,7 @@ module Diagnostics
                        achar(10)//"We set rcyl range to maximum possible")
           drcyl=minval((/xyz1(1),-xyz0(1),xyz0(2),-xyz1(2)/))/nrcyl
           if (drcyl<=0.) call fatal_error("initialize_diagnostics","drcyl<0 not meaningful")
-        else 
+        else
           drcyl=xyz1(1)/nrcyl
         endif
         rcyl=(/ ((i-0.5)*drcyl, i=1,nrcyl) /)
@@ -218,7 +219,6 @@ module Diagnostics
 !
       call init_xaver
 !
-      nfirst = nn(1)
 
     endsubroutine initialize_diagnostics
 !***********************************************************************
@@ -226,15 +226,15 @@ module Diagnostics
 
       if (ldiagnos.and.allocated(fname)) fname=0.
       if (l1davgfirst) then
-        if (allocated(fnamex)) fnamex=0. 
-        if (allocated(fnamey)) fnamey=0. 
-        if (allocated(fnamez)) fnamez=0. 
+        if (allocated(fnamex)) fnamex=0.
+        if (allocated(fnamey)) fnamey=0.
+        if (allocated(fnamez)) fnamez=0.
       endif
-      if (l1dphiavg.and.allocated(fnamer)) fnamer=0. 
+      if (l1dphiavg.and.allocated(fnamer)) fnamer=0.
       if (l2davgfirst) then
-        if (allocated(fnamexy)) fnamexy=0. 
-        if (allocated(fnamexz)) fnamexz=0. 
-        if (allocated(fnamerz)) fnamerz=0. 
+        if (allocated(fnamexy)) fnamexy=0.
+        if (allocated(fnamexz)) fnamexz=0.
+        if (allocated(fnamerz)) fnamerz=0.
       endif
 
     endsubroutine initialize_diagnostic_arrays
@@ -269,6 +269,7 @@ module Diagnostics
       if (lroot) then
         call save_name(tdiagnos,idiag_t)
         call save_name(dt,idiag_dt)
+        call save_name(eps_rkf,idiag_eps_rkf)
         call save_name(one_real*(it-1),idiag_it)
 !
 !  Whenever itype_name=ilabel_max_dt, scale result by dt (for printing Courant
@@ -390,7 +391,7 @@ module Diagnostics
         print*, trim(text)
         call system_cmd('sed '//trim(sedstring)//' -i '//trim(file))
 !
-!  In the case of duplicate entries, the following would keep the first and comment out the other, 
+!  In the case of duplicate entries, the following would keep the first and comment out the other,
 !  but not all unixoid systems have tac.
 !
         !call system_cmd('tac '//trim(file)//'|sed '//trim(sedstring)//'| tac > '//trim(file)//'.tmp')
@@ -463,7 +464,7 @@ module Diagnostics
                     length=len(trim(cform(iname)))
                     dlength2=floor(alog10(rlength+dlength))+1-(length-index_i-2)
                     if (dlength2>0) then
-                      length=length+dlength2 
+                      length=length+dlength2
                       index_d=min(length,index_d+dlength2)
                     endif
                     write(cform(iname)(index_i+1:), &
@@ -1142,7 +1143,7 @@ module Diagnostics
           call output_average(datadir, 'phi_z', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot)
         endif
         if (ltimer) print *, 'write_1daverages: write phi_z in ', mpiwtime() - taver, ' seconds'
-      endif 
+      endif
 !
     endsubroutine write_1daverages
 !***********************************************************************
@@ -1170,7 +1171,7 @@ module Diagnostics
       endif
 !
 !  This routine sets l1davg=T whenever its time to write 2D averages
-!    
+!
       lwrite_=lwrite
       call update_snaptime(file,t1davg,n1davg,d1davg,t,lwrite_,ch1davg)
       l1davg=lwrite_
@@ -1201,7 +1202,7 @@ module Diagnostics
       endif
 !
 !  This routine sets l2davg=T whenever its time to write 2D averages
-!    
+!
       lwrite_=lwrite
       call update_snaptime(file,t2davg,n2davg,d2davg,t,lwrite_,ch2davg)
       l2davg=lwrite_
@@ -1245,7 +1246,7 @@ module Diagnostics
           call output_average_2D('z', nnamexy, cnamexy, fnamexy, t2davgfirst, lfirst_proc_z)
         endif
         if (ltimer) print *, 'write_2daverages: write z averages in ', mpiwtime() - taver, ' seconds'
-      endif 
+      endif
 !
       if (lwrite_phiaverages) then
         if (ltimer) taver = mpiwtime()
@@ -1523,7 +1524,7 @@ module Diagnostics
 !  update nname accordingly. Takes over format from cform(ic).
 !
 !   1-apr-04/wolf: coded
-!  16-may-12/MR  : new parameter ic = position of label to be expanded in ccname 
+!  16-may-12/MR  : new parameter ic = position of label to be expanded in ccname
 !
       use General, only : lextend_vector,ioptest
 !
@@ -2467,7 +2468,7 @@ module Diagnostics
       if (lfirstpoint) fnamex(:,:,iname) = 0.0
 !
       fac=1.0
-! 
+!
       if (.not.lperi(2)) then
         if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) fac = .5*fac
       endif
@@ -2551,32 +2552,32 @@ module Diagnostics
 !  Successively calculate sum over z of a, which is supplied at each call.
 !  The result fnamexy is xy-dependent.
 !  Start from zero if lfirstpoint=.true.
-!     
+!
 !  19-jun-02/axel: adapted from xysum_mn_name
 !  08-feb-12/ccyang: add option for integration
 !   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
-!     
-      use Cdata,   only: n,m,nzgrid_eff 
+!
+      use Cdata,   only: n,m,nzgrid_eff
 !
       real, dimension(nx), intent(in) :: a
       integer,             intent(in) :: iname
       logical,   optional, intent(in) :: lint
 
       if (iname==0) return
-!         
+!
 !  Scale factor for integration
-!       
+!
       if (loptest(lint)) then
         call zsum_mn_name_xy_mpar((real(nzgrid_eff)*zprim(n))*a,m,iname)
       else
         call zsum_mn_name_xy_mpar(a,m,iname)
-      endif                                                                                                 
+      endif
 !
     endsubroutine zsum_mn_name_xy_scal
 !***********************************************************************
     subroutine zsum_mn_name_xy_arr2(arr,iname)
 !
-!  Stores multi-component diagnostics. 
+!  Stores multi-component diagnostics.
 !
 !  22-sep-20/MR: adapted from zsum_mn_name_xy_mpar
 !
@@ -2603,7 +2604,7 @@ module Diagnostics
 !***********************************************************************
     subroutine zsum_mn_name_xy_arr(arr,iname)
 !
-!  Stores multi-component diagnostics. 
+!  Stores multi-component diagnostics.
 !
 !  22-sep-20/MR: adapted from zsum_mn_name_xy_mpar
 !
@@ -2647,7 +2648,7 @@ module Diagnostics
       if (loptest(lint)) then
 !
 !  Mulitply with scale factor for integration.
-!  Not correct for Yin-Yang with non-equidistant z grid (would this happen?). 
+!  Not correct for Yin-Yang with non-equidistant z grid (would this happen?).
 !
         if (present(scal)) then
           call zsum_mn_name_xy_mpar(avec,m,iname,powers,(real(nzgrid_eff)*zprim(n))*scal)
@@ -2662,7 +2663,7 @@ module Diagnostics
 !***********************************************************************
     subroutine zsum_mn_name_xy_mpar_vec(avec,m,iname,powers,scal)
 !
-!  Calculates a general tensor component from vector avec as 
+!  Calculates a general tensor component from vector avec as
 !  avec(1)**power(1)*avec(2)**power(2)*avec(3)**power(3),
 !  optionally the scalar scal (a pencil or one-element vector)
 !  is multiplied finally.
@@ -2686,7 +2687,7 @@ module Diagnostics
 
       if (lyang) then
 !
-! On Yang procs: transform theta and phi components if necessary. 
+! On Yang procs: transform theta and phi components if necessary.
 !
         call transform_thph_yy(avec,powers,work)
       else
@@ -2736,13 +2737,13 @@ module Diagnostics
 !  Accumulates contributions to z-sum within an mn-loop
 !  which are later merged with an mpi reduce command.
 !  In the Yang part of a Yin-Yang grid, the contributions
-!  to the sum along a (extended) phi coordinate line of the Yin 
+!  to the sum along a (extended) phi coordinate line of the Yin
 !  grid are calculated by use of predetermined weights.
 !  Likewise for those coordinate lines of the Yin-phi which lie completely
 !  within the Yang grid (i.e. the polar caps).
 !
 !   3-apr-16/MR: derived from zsum_mn_name_xy_mpar; extensions for Yin-Yang grid
-!   7-jun-16/MR: outsourced initialize_zaver_yy, reduce_zsum, zsum_y and 
+!   7-jun-16/MR: outsourced initialize_zaver_yy, reduce_zsum, zsum_y and
 !                corresponding Yin-Yang specific data to Yinyang_mpi
 !
       use Cdata, only: n
@@ -2766,7 +2767,7 @@ module Diagnostics
 !
 ! Normal summing-up in Yin procs.
 ! m starts with nghost+1, so the correct index is m-nghost.
-! 
+!
         ml=m-nghost
         fnamexy(iname,:,ml)=fnamexy(iname,:,ml)+a
       endif
@@ -2796,7 +2797,7 @@ module Diagnostics
 !
       if (lfirstpoint) phiavg_norm=0.
 !
-!  Normalization factor, not depending on n, so only done for n=nfirst.
+!  Normalization factor, not depending on n, so only done for n=nn(1)
 !  As we calculate z-averages, multiply by nzgrid when used.
 !
       if (n==nn(1)) phiavg_norm=phiavg_norm+sum(phiavg_profile,2)
@@ -2804,16 +2805,24 @@ module Diagnostics
     endsubroutine calc_phiavg_profile
 !***********************************************************************
     subroutine diagnostics_init_reduc_pointers
-      p_phiavg_norm => phiavg_norm
+      p_phiavg_norm%data => phiavg_norm
+      p_phiavg_norm%dims%size = nrcyl
     endsubroutine diagnostics_init_reduc_pointers
 !***********************************************************************
     subroutine diagnostics_diag_reductions
-      p_phiavg_norm = p_phiavg_norm + phiavg_norm
+      p_phiavg_norm%data = p_phiavg_norm%data + phiavg_norm
     endsubroutine diagnostics_diag_reductions
 !***********************************************************************
     subroutine diagnostics_read_diag_accum
-      phiavg_norm = p_phiavg_norm
+      phiavg_norm = p_phiavg_norm%data
     endsubroutine diagnostics_read_diag_accum
+!***********************************************************************
+    subroutine diagnostics_write_diagnostics_accumulators
+      phiavg_norm = p_phiavg_norm%data
+    endsubroutine diagnostics_write_diagnostics_accumulators
+!***********************************************************************
+    subroutine diagnostics_init_private_accumulators 
+    endsubroutine diagnostics_init_private_accumulators
 !***********************************************************************
     subroutine phisum_mn_name_rz(a,iname)
 !
@@ -3315,7 +3324,7 @@ module Diagnostics
         elsewhere
           buf=0.
         endwhere
- 
+
         call xysum_mn_name_z(buf,idiag)
 
         nl=n-nghost
@@ -3343,7 +3352,7 @@ module Diagnostics
       if (lwrite_zaverages)    call zaverages_clean_up
       if (lwrite_phiaverages)  call phiaverages_clean_up
       if (lwrite_sound)        call sound_clean_up
-    
+
     endsubroutine diagnostics_clean_up
 !***********************************************************************
     subroutine fnames_clean_up
@@ -3469,7 +3478,7 @@ module Diagnostics
 !
        loutside_avg = xav_max<x(l1)
        if (loutside_avg) return
-!  
+!
        do lx=l1+1,l2
          if (x(lx)>xav_max) then
            ixav_max=lx-1
@@ -3573,6 +3582,6 @@ module Diagnostics
       firstcall=.false.
       firstcall_from_pencil_check=lpencil_check_at_work
 
-    endsubroutine prep_finalize_thread_diagnos
+   endsubroutine prep_finalize_thread_diagnos
 !***********************************************************************
 endmodule Diagnostics

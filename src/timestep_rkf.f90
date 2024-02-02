@@ -23,12 +23,13 @@ module Timestep
       use Messages, only: fatal_error, warning
 !
       if (lparticles) call fatal_error("initialize_timestep", "Particles are"// &
-                                                 " not yet supported by the adaptive rkf scheme")
+                                       " not yet supported by the adaptive rkf scheme")
       if (itorder/=5.and.itorder/=3) then
         call warning('initialize_timestep','itorder set to 5 for Runge-Kutta-Fehlberg')
         itorder=5
       else if (itorder==3) then
-        call warning('initialize_timestep','Runge-Kutta-Fehlberg itorder is 3: set to 5 for higher accuracy')
+        call warning('initialize_timestep',&
+                     'Runge-Kutta-Fehlberg itorder is 3: set to 5 for higher accuracy')
       endif
 !
       if (dt==0.) then
@@ -37,18 +38,23 @@ module Timestep
         dt=1e-6
       endif
 !
-      !General error condition: errcon ~1e-4 redundant with maxerr ~1. 0.1 more effective accelerator
-      errcon = 0.1!(5.0/safety)**(1.0/dt_increase)
-      !prefactor for absolute floor on value of farray in calculating err
+      if (eps_rkf0/=0.) eps_rkf=eps_rkf0
 !
-      !ldt is set after read_persistent in rsnap, so dt0==0 used to read, but ldt=F for write
+!  General error condition: errcon ~1e-4 redundant with maxerr ~1.
+!  0.1 more effective accelerator
+      errcon = 0.1!(5.0/safety)**(1.0/dt_increase)
+!
+!  ldt is set after read_persistent in rsnap, so dt0==0 used to read,
+!  but ldt=F for write
+!
       ldt=.false.
-      !overwrite the persistent time_step from dt0 in run.in if dt too high to initialize run
+      !overwrite the persistent time_step from dt0 in run.in if dt
+      !too high to initialize run
       if (dt0/=0.) dt=dt0
       dt_next=dt
       dt_increase=-1./itorder
       dt_decrease=-1./(itorder-1)
-
+!
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
@@ -64,8 +70,8 @@ module Timestep
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real :: errmax, dt_temp
-      real(KIND=rkind8) :: tnew, told!, time1, time2
+      real :: errmax, dt_temp, dt_last
+      real(KIND=rkind8) :: tnew, told
       integer :: j,i
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
@@ -73,13 +79,13 @@ module Timestep
 !      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
       do j=1,mvar
-        farraymin(j) = max(min(dxmin*maxval(abs(f(:,:,:,j))),1.),epsi)
-        if (farraymin(j)==0) farraymin(j) = 1
+        farraymin(j) = max(min(5e-3*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),1.),dt_epsi)
       enddo
       if (lroot.and.it==1) print*,"farraymin",farraymin
 !
       lfirst=.true.
       told=t
+      dt_last=dt
       dt=dt_next
       do i=1,20
         ! Do a Runge-Kutta step
@@ -112,8 +118,8 @@ module Timestep
 !
 ! Time step to try next time
 !
-!
       dt_next = safety*dt*errmax**dt_increase
+      if (.not.leps_fixed) eps_rkf = eps_rkf*(dt/dt_last)**dt_increase
 !
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt
 !
@@ -175,8 +181,9 @@ module Timestep
 !   None of those will do exctly what is intended, because they are
 !   only really modifying f during the first substep.
 !
-      intent(inout) :: f
-      intent(out)   :: df, p, errmax
+      !intent(inout) :: f
+      !intent(out)   :: df, p, errmax
+      intent(out)   :: errmax
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -188,7 +195,6 @@ module Timestep
       real, dimension(nx) :: scal, err
       real :: errmax, errmaxs, dtsub, told
       integer :: j
-      logical :: llogarithmic
 !
       df=0.
       errmax=0.
@@ -303,7 +309,6 @@ module Timestep
       t = told + dt
 !
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-        llogarithmic=((j==ilnrho.and..not.ldensity_nolog).or.(j==iss).or.(j==ilnTT))
         df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
 !
         err = dc1*k(l1:l2,m,n,j,1) + &!dc2*k(l1:l2,m,n,j,2) + &
@@ -392,8 +397,9 @@ module Timestep
 !   None of those will do exctly what is intended, because they are
 !   only really modifying f during the first substep.
 !
-      intent(inout) :: f
-      intent(out)   :: df, p, errmax
+      !intent(inout) :: f
+      !intent(out)   :: df, p, errmax
+      intent(out)   :: errmax
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -405,7 +411,6 @@ module Timestep
       real, dimension(nx) :: scal, err
       real :: errmax, errmaxs, dtsub, told
       integer :: j
-      logical :: llogarithmic
 !
       df=0.
       errmax=0.
@@ -477,7 +482,6 @@ module Timestep
       t = told + dt
 !
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-        llogarithmic=((j==ilnrho.and..not.ldensity_nolog).or.(j==iss).or.(j==ilnTT))
         df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
 !
         err = dc1*k(l1:l2,m,n,j,1) + dc2*k(l1:l2,m,n,j,2) + &

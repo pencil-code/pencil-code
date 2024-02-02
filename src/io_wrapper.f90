@@ -1,7 +1,7 @@
 !
 module Io
 !
-  use Cparam, only: mx,my,mz,mparray,labellen,fnlen
+  use Cparam, only: mx,my,mz,mparray,labellen,fnlen,fmtlen
   use Cdata, only: lstart, lroot
 !
   implicit none
@@ -37,7 +37,7 @@ module Io
         call warning('register_io','IO_LOCK file found - alternative IO strategy for input will be ignored.')
       endif
       call switch_io
-    else 
+    else
       IO_strategy = IO_strategy_
       lcollective_IO = lcollective_IO_
       call register_io_
@@ -60,7 +60,7 @@ module Io
       IO_strategy = IO_strategy_
       lcollective_IO = lcollective_IO_
 
-      call directory_names_ 
+      call directory_names_
       call register_io_
 
      if (lroot) call system_cmd("touch IO_LOCK")
@@ -258,10 +258,10 @@ module Io
 
     endfunction init_read_persist
 !***********************************************************************
-    logical function read_persist_id(label, id, lerror_prone) 
+    logical function read_persist_id(label, id, lerror_prone)
 
       use Io_in, only: read_persist_id_in => read_persist_id
-      use Io_out, only: read_persist_id_out => read_persist_id 
+      use Io_out, only: read_persist_id_out => read_persist_id
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
@@ -330,9 +330,9 @@ module Io
 
     endsubroutine wproc_bounds
 !***********************************************************************
-    subroutine output_snap(a,nv1,nv2,file) 
+    subroutine output_snap(a,nv1,nv2,file)
 
-      use Io_out, only: output_snap_ => output_snap 
+      use Io_out, only: output_snap_ => output_snap
 !
       real, dimension (:,:,:,:),  intent(IN) :: a
       integer,           optional,intent(IN) :: nv1,nv2
@@ -349,7 +349,7 @@ module Io
       use Io_out, only: output_ode_out => output_ode
 !
       character (len=*), intent(in) :: file
-        
+
       if (lswitched_to_out) then
         call output_ode_out(file)
       else
@@ -363,7 +363,7 @@ module Io
       use Io_out, only: output_snap_finalize_ => output_snap_finalize
 
       call switch_io
-      call output_snap_finalize_ 
+      call output_snap_finalize_
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
@@ -374,6 +374,7 @@ module Io
 !  01-dec-2022/ccyang: stub
 !
       use General, only: keep_compiler_quiet
+      use Messages, only: fatal_error
 !
       integer, intent(in) :: nc
       character(len=fmtlen), dimension(nc), intent(in) :: name
@@ -426,9 +427,9 @@ module Io
 !
     endsubroutine output_slice
 !***********************************************************************
-    subroutine output_part_snap(ipar, ap, mv, nv, file, label, ltruncate) 
+    subroutine output_part_snap(ipar, ap, mv, nv, file, label, ltruncate)
 
-      use Io_out, only: output_part_snap_ => output_part_snap 
+      use Io_out, only: output_part_snap_ => output_part_snap
 !
       integer, intent(in) :: mv, nv
       integer, dimension (mv), intent(in) :: ipar
@@ -442,9 +443,22 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
-    subroutine output_stalker_init(num, nv, snap, ID) 
+    subroutine output_part_rmv(ipar_rmv, ipar_sink, fp_rmv, fp_sink, nrmv)
+!
+      use Io_out, only: output_part_rmv_ => output_part_rmv
+!
+      integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
+      real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
+      integer, intent(in) :: nrmv
+!
+      call switch_io
+      call output_part_rmv_(ipar_rmv, ipar_sink, fp_rmv, fp_sink, nrmv)
+!
+    endsubroutine output_part_rmv
+!***********************************************************************
+    subroutine output_stalker_init(num, nv, snap, ID)
 
-      use Io_out, only: output_stalker_init_ => output_stalker_init 
+      use Io_out, only: output_stalker_init_ => output_stalker_init
 !
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
@@ -454,9 +468,9 @@ module Io
 !
     endsubroutine output_stalker_init
 !***********************************************************************
-    subroutine output_stalker(label, mv, nv, data, nvar, lfinalize) 
+    subroutine output_stalker(label, mv, nv, data, nvar, lfinalize)
 
-      use Io_out, only: output_stalker_ => output_stalker 
+      use Io_out, only: output_stalker_ => output_stalker
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
@@ -474,13 +488,13 @@ module Io
       use Io_out, only: output_part_finalize_ => output_part_finalize
 
       call switch_io
-      call output_part_finalize_ 
+      call output_part_finalize_
 !
     endsubroutine output_part_finalize
 !***********************************************************************
-    subroutine output_pointmass(file, labels, fq, mv, nc) 
+    subroutine output_pointmass(file, labels, fq, mv, nc)
 
-      use Io_out, only: output_pointmass_ => output_pointmass 
+      use Io_out, only: output_pointmass_ => output_pointmass
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: mv, nc
@@ -492,9 +506,9 @@ module Io
 !
     endsubroutine output_pointmass
 !***********************************************************************
-    subroutine output_globals(file, a, nv, label) 
+    subroutine output_globals(file, a, nv, label)
 
-      use Io_out, only: output_globals_ => output_globals 
+      use Io_out, only: output_globals_ => output_globals
 
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
@@ -508,7 +522,7 @@ module Io
 !***********************************************************************
     logical function persist_exists(label)
 
-      use Io_in, only: persist_exists_ => persist_exists 
+      use Io_in, only: persist_exists_ => persist_exists
 !
       character (len=*), intent(in) :: label
 !
@@ -527,9 +541,9 @@ module Io
 
     endfunction init_write_persist
 !***********************************************************************
-    logical function write_persist_id(label, id) 
+    logical function write_persist_id(label, id)
 
-      use Io_out, only: write_persist_id_ => write_persist_id 
+      use Io_out, only: write_persist_id_ => write_persist_id
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -549,7 +563,7 @@ module Io
 !
       if (lswitched_to_out) then
         read_persist_logical_0D = read_persist_logical_0D_out(label, value)
-      else  
+      else
         read_persist_logical_0D = read_persist_logical_0D_in(label, value)
       endif
 !
@@ -565,7 +579,7 @@ module Io
 !
       if (lswitched_to_out) then
         read_persist_logical_1D = read_persist_logical_1D_out(label, value)
-      else  
+      else
         read_persist_logical_1D = read_persist_logical_1D_in(label, value)
       endif
 !

@@ -217,6 +217,8 @@ module Particles_main
       call initialize_pars_diagnos_state  (f)
       call initialize_particles_diagnos_dv(f)
 !
+      call remove_particle_initialize
+!
       if (lparticles_blocks) then
         if (lrun) then
           if (lroot) print*, 'particles_initialize_modules: reblocking particles'
@@ -471,6 +473,16 @@ module Particles_main
       endif
 !
     endsubroutine particles_write_block
+!***********************************************************************
+    subroutine particles_write_rmv()
+!
+!  Write the list of removed particles and clear the list.
+!
+!  28-jan-24/ccyang: coded.
+!
+      call remove_particle_writelog
+!
+    endsubroutine particles_write_rmv
 !***********************************************************************
     subroutine particles_timestep_first(f)
 !

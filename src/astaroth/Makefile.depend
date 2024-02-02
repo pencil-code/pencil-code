@@ -10,4 +10,3 @@ PC_HEADERS = $(PCHEADER_DIR)/PC_module_parfuncs.h $(PCHEADER_DIR)/PC_modulepars.
 
 gpu_astaroth.o: gpu_astaroth.cc $(AC_HEADERS) $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_module_parfuncs.h forcing.h loadStore.h $(CHEADERS) astaroth_libs
 	bash build_cmake.sh
-

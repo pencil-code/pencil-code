@@ -17,7 +17,6 @@
 !***************************************************************
 module Gravity
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -106,9 +105,6 @@ module Gravity
       if (lroot) call svn_id("$Id: gravity_r.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
 !
       lgravr=.true.
-      lgravr_gas =.true.
-      lgravr_dust=.true.
-      lgravr_neutrals=.true.
 !
 !  Register global_gg, so we can later retrieve gravity via get_global.
 !  Ensure the reserved f-array slots are initialized to zero, so we can add
@@ -253,6 +249,10 @@ module Gravity
             if (lroot) print*,'initialize_gravity: smoothed 1/r potential'
             lpade=.false.
 !
+         case ('smoothflat-newton')
+            if (lroot) print*,'initialize_gravity: smoothed and flattened 1/r potential'
+            lpade=.false.
+!
           case ('no-smooth','newton','newtonian')
             if (lroot) print*,'initialize_gravity: non-smoothed newtonian gravity'
             lpade=.false.
@@ -318,7 +318,7 @@ module Gravity
               if (lcylindrical_gravity) then
                 rr_mn=rr_cyl
               else
-! sphere in a box
+!  sphere in a box
                 rr_mn=rr_sph
               endif
 !
@@ -350,6 +350,11 @@ module Gravity
                   !of Freeman 1970. Reference: Persic et al 1996
                   g_r=-4.134e-4*g01(j)*(.5*rr_mn/rpot(j))**1.22/&
                        ((.5*rr_mn/rpot(j))**2+1.502)**1.43/rr_mn
+                elseif (ipotential(j) == 'smoothflat-newton') then
+                  ! Generalized from Freytag et al. (2002), Astron. Nachr., 323, 213; Eq.(1)
+                  g_r=-g0*r1_pot1**(3*n_pot)*rr_mn**(n_pot-1)*(r0_pot**n_pot*(r1_pot1**(2*n_pot) &
+                        + rr_mn**(2*n_pot))**(.5) + (r1_pot1*rr_mn)**n_pot)**((-1-n_pot)/n_pot) &
+                        / (r1_pot1**(2*n_pot) + rr_mn**(2*n_pot))**((-1+2*n_pot)/(2*n_pot))
                 elseif (ipotential(j) == 'M5-flat') then
                   !experimental flattened potential for M5 star
                    g_r = poly( (/   cpot2(2,j),  2*cpot2(3,j),  3*cpot2(4,j),  4*cpot2(5,j),  &
@@ -408,7 +413,12 @@ module Gravity
 !
 !  Share g_r, cpot, and cpot2
 !
+!      call put_shared_variable('ipotential',ipotential)
       call put_shared_variable('g_r',g_r)
+      call put_shared_variable('g0',g0)
+      call put_shared_variable('r1_pot1',r1_pot1)
+      call put_shared_variable('r0_pot',r0_pot)
+      call put_shared_variable('n_pot',n_pot)
       call put_shared_variable('cpot',cpot)
       call put_shared_variable('cpot2',cpot2)
 !
@@ -753,6 +763,10 @@ module Gravity
                         /(rr**n_pot + r0_pot**n_pot)**(1.0/n_pot)
           if (present(pot0)) pot0=pot0-g0/r0_pot
 !
+        case ('smoothflat-newton')
+          pot = pot - g0/(r0_pot**n_pot + rr**n_pot/(sqrt(1+(rr/r1_pot1)**(2*n_pot))))**(1/n_pot)
+          if (present(pot0)) pot0=pot0-g0/r0_pot
+!
         case ('no-smooth','newton','newtonian')
           pot = pot -g0/rr
         case ('M5-flat')
@@ -811,6 +825,10 @@ module Gravity
       if (present(pot0)) pot0=0.
       do j=1,ninit
         select case (ipotential(j))
+!
+        case ('smoothflat-newton')
+          pot = pot - g0/(r0_pot**n_pot + rmn**n_pot/(sqrt(1+(rmn/r1_pot1)**(2*n_pot))))**(1/n_pot)
+          if (present(pot0)) pot0=pot0-g0/r0_pot
 !
         case ('geo-kws','smoothed-newton')
           !pot=pot-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)

@@ -9,7 +9,6 @@
 module Snapshot
 !
   use Cdata
-  use Cparam
   use Messages
   use Gpu, only: copy_farray_from_GPU
 !
@@ -250,10 +249,12 @@ module Snapshot
 !  28-may-21/axel: added nv1_capitalvar
 !
       use Boundcond, only: update_ghosts
-      use General, only: safe_character_assign, loptest
+      use General, only: safe_character_assign, loptest, touch_file
       use IO, only: output_snap, output_snap_finalize, log_filename_to_file
       use Persist, only: output_persistent
       use Sub, only: read_snaptime, update_snaptime
+      use File_IO, only: delete_file
+      use Mpicomm, only: mpibarrier
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
@@ -268,6 +269,7 @@ module Snapshot
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
+      real, dimension(:), allocatable, save :: snaptimes
       character (len=fnlen) :: file
       character (len=intlen) :: ch
       integer :: nv1_capitalvar
@@ -283,6 +285,7 @@ module Snapshot
 !
         if (lfirst_call) then
           call read_snaptime(file,tsnap,nsnap,dsnap,t)
+          !call read_predef_snaptimes('snaptimes.txt',snaptimes)
           lfirst_call=.false.
         endif
 !
@@ -304,9 +307,12 @@ module Snapshot
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
+          if (lroot) call touch_file(trim(workdir)//'/WRITING')
           call output_snap(a,nv1=nv1_capitalvar,nv2=msnap,file=file)
           if (lpersist) call output_persistent(file)
           call output_snap_finalize
+          call mpibarrier
+          if (lroot) call delete_file(trim(workdir)//'/WRITING')
           if (present(flist)) call log_filename_to_file(file,flist)
           lsnap=.false.
         endif
@@ -324,9 +330,12 @@ module Snapshot
         ! update ghosts, because 'update_auxiliaries' may change the data
         if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
+        if (lroot) call touch_file(trim(workdir)//'/WRITING')
         call output_snap(a,nv2=msnap,file=file)
         if (lpersist) call output_persistent(file)
         call output_snap_finalize
+        call mpibarrier
+        if (lroot) call delete_file(trim(workdir)//'/WRITING')
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
 !
@@ -334,6 +343,13 @@ module Snapshot
       if (ltec) call output_snap_tec (file,a,msnap)
 !
     endsubroutine wsnap
+!***********************************************************************
+    subroutine read_predef_snaptimes(file,snaptimes)
+
+      character(LEN=fnlen) :: file
+      real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
+      
+    endsubroutine read_predef_snaptimes
 !***********************************************************************
     subroutine rsnap(chsnap,f,msnap,lread_nogrid)
 !
@@ -696,12 +712,13 @@ module Snapshot
 
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f)
         lfirstcall_powerhel=.true.
-
         if (ldo_all)  call update_ghosts(f)
+!
         if (vel_spec) call power(f,'u')
         if (r2u_spec) call power(f,'r2u')
         if (r3u_spec) call power(f,'r3u')
         if (oo_spec)  call power(f,'o')
+        if (relvel_spec) call power(f,'v')
         if (mag_spec) call power(f,'b')
         if (vec_spec) call power(f,'a')
         if (j_spec)   call power_vec(f,'j')
@@ -739,6 +756,7 @@ module Snapshot
         if (EP_spec)  call powerhel(f,'bEP',lfirstcall_powerhel)
         if (a0_spec)  call powerscl(f,'a0')
         if (ro_spec)  call powerscl(f,'ro')
+        if (abs_u_spec) call powerscl(f,'u_m')
         if (ux_spec)  call powerscl(f,'ux')
         if (uy_spec)  call powerscl(f,'uy')
         if (uy_spec)  call powerscl(f,'uz')
@@ -945,7 +963,6 @@ module Snapshot
       use EquationOfState, only: ioncalc
       use Radiation, only: radtransfer
       use Shock, only: calc_shock_profile,calc_shock_profile_simple
-      use Viscosity, only: lvisc_first,calc_viscosity
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: a
 !
@@ -955,9 +972,6 @@ module Snapshot
       endif
       if (leos_ionization.or.leos_temperature_ionization) call ioncalc(a)
       if (lradiation_ray)  call radtransfer(a)
-      if (lvisc_hyper.or.lvisc_smagorinsky) then
-        if (.not.lvisc_first.or.lfirst) call calc_viscosity(a)
-      endif
 !
     endsubroutine update_auxiliaries
 !***********************************************************************

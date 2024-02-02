@@ -197,7 +197,7 @@ module Magnetic
   logical :: lresi_hyper3_mesh=.false.
   logical :: lresi_hyper3_csmesh=.false.
   logical :: lresi_hyper3_strict=.false.
-  logical :: lresi_zdep, lresi_ydep, lresi_xdep, lresi_rdep, lresi_xydep
+  logical :: lresi_zdep=.false., lresi_ydep=.false., lresi_xdep=.false., lresi_rdep=.false., lresi_xydep=.false.
   logical, dimension(7) :: lresi_dep=.false.
   logical :: lresi_dust=.false.
   logical :: lresi_hyper3_aniso=.false.
@@ -242,8 +242,8 @@ module Magnetic
   logical :: lambipolar_diffusion=.false.
   logical :: lpower_profile_file=.false.
   logical :: lskip_projection_aa=.false.
-  logical :: lscale_tobox=.true.
-  logical :: lbraginsky=.false.
+  logical :: lscale_tobox=.true., lsquash_aa=.false.
+  logical :: lbraginsky=.false., l2d_aa=.false.
   logical :: lcoulomb=.false.
   logical :: lfactors_aa=.false., lvacuum=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
@@ -259,7 +259,7 @@ module Magnetic
       alp_aniso, ljj_as_comaux, lsmooth_jj, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
-      lscale_tobox, kgaussian_aa, z1_aa, z2_aa, &
+      lscale_tobox, lsquash_aa, kgaussian_aa, z1_aa, z2_aa, &
       lcheck_positive_va2, lskip_projection_aa, &
       ladd_disp_current_from_aux, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux, &
@@ -276,7 +276,7 @@ module Magnetic
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
-      lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, &
+      lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian
 !
 ! Run parameters
@@ -1034,8 +1034,6 @@ module Magnetic
 
 
 
-!Public declaration added by preprocessor
-
   contains
 !***********************************************************************
     subroutine register_magnetic
@@ -1210,7 +1208,7 @@ module Magnetic
       use BorderProfiles, only: request_border_driving
       use FArrayManager
       use SharedVariables, only: get_shared_variable, put_shared_variable
-      use EquationOfState, only: cs0, get_gamma_etc
+      use EquationOfState, only: cs20, get_gamma_etc
       use Initcond
       use Forcing, only: n_forcing_cont
       use Yinyang_mpi, only: initialize_zaver_yy
@@ -1576,7 +1574,7 @@ module Magnetic
         case ('eta_j2')
           if (lroot) print*, 'resistivity: eta_j2'
           lresi_etaj2=.true.
-          etaj20 = eta_j2 * mu0**2 * dxmax**3 / cs0
+          etaj20 = eta_j2 * mu0**2 * dxmax**3 / sqrt(cs20)
         case ('eta_jrho')
           if (lroot) print*, 'resistivity: eta_jrho'
           lresi_etajrho=.true.
@@ -2033,8 +2031,9 @@ module Magnetic
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
-            lskip_projection_aa, lvectorpotential, lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
-            lpower_profile_file=lpower_profile_file, qexp=qexp_aa,nfact0=nfact_aa, lfactors0=lfactors_aa)
+            lskip_projection_aa, lvectorpotential, lscale_tobox, lsquash_aa, k1hel=k1hel, k2hel=k2hel, &
+            lpower_profile_file=lpower_profile_file, qexp=qexp_aa,nfact0=nfact_aa, lfactors0=lfactors_aa, &
+            l2d=l2d_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')
@@ -2099,7 +2098,7 @@ module Magnetic
         case ('hor-fluxlayer-y'); call hfluxlayer_y(amplaa(j),f,iaa,z0aa,widthaa(1),ladd_bb_init)
         case ('hor-fluxlayer-y-theta'); call hfluxlayer_y_theta(amplaa(j),f,iaa)
         case ('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,x0aa,widthaa(1))
-        case ('mag-support'); call magsupport(amplaa(j),f,gravz,cs0,rho0)
+        case ('mag-support'); call magsupport(amplaa(j),f,gravz,sqrt(cs20),rho0)
         case ('arcade-x'); call arcade_x(amplaa(j),f,iaa,kx_aa(j),kz_aa(j))
         case ('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa)
         case ('halfcos-Bz'); call halfcos_z(amplaa(j),f,iaa)
@@ -2481,7 +2480,7 @@ module Magnetic
 !  The beq2 expression for 2*mu0*p is not general yet.
 !
       if (lpress_equil.or.lpress_equil_via_ss) then
-        if (lroot) print*,'init_aa: adjust lnrho to have pressure equilib; cs0=',cs0
+        if (lroot) print*,'init_aa: adjust lnrho to have pressure equilib; cs20=',cs20
         call boundconds_x(f)
         call initiate_isendrcv_bdry(f)
         call finalize_isendrcv_bdry(f)
@@ -2495,9 +2494,9 @@ module Magnetic
           call curl(f,iaa,bb)
           call dot2_mn(bb,b2)
           if (gamma==1.0) then
-            f(l1:l2,m,n,ilnrho)=log(exp(f(l1:l2,m,n,ilnrho))-b2/(2.*cs0**2))
+            f(l1:l2,m,n,ilnrho)=log(exp(f(l1:l2,m,n,ilnrho))-b2/(2.*cs20))
           else
-            beq2=2.*rho0*cs0**2
+            beq2=2.*rho0*cs20
             fact=max(1.0e-6,1.0-b2/beq2)
             if (lentropy.and.lpress_equil_via_ss) then
               if (lpress_equil_alt) then
@@ -2517,7 +2516,7 @@ module Magnetic
                   gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0))      ! lnrho0 added for generality
               else
                 !f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
-                beq2_pencil=2.*rho0*cs0**2*exp(gamma*(f(l1:l2,m,n,ilnrho)-lnrho0))
+                beq2_pencil=2.*rho0*cs20*exp(gamma*(f(l1:l2,m,n,ilnrho)-lnrho0))
                 fact=max(1.0e-6,1.0-b2/beq2_pencil)
                 f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+alog(fact)/gamma
               endif
@@ -5694,7 +5693,6 @@ module Magnetic
       integer :: isound,lspoint,mspoint,nspoint,j
       real, dimension (nx,3) :: uxbxb,poynting,uxbb
 
-      if (lpencil(i_uxb)) call cross(p%uu,p%bbb,uxbb)
 !
 ! Magnetic field components at the list of points written out in sound.dat
 ! lwrite_sound is false if either no sound output is required, or if none of
@@ -5711,6 +5709,7 @@ module Magnetic
           nspoint=sound_coords_list(isound,3)
 !
           if ((m==mspoint).and.(n==nspoint)) then
+            if (lpencil(i_uxb)) call cross(p%uu,p%bbb,uxbb)
             call save_name_sound(f(lspoint,mspoint,nspoint,iax),idiag_axpt,isound)
             call save_name_sound(f(lspoint,mspoint,nspoint,iay),idiag_aypt,isound)
             call save_name_sound(f(lspoint,mspoint,nspoint,iaz),idiag_azpt,isound)
@@ -7001,6 +7000,8 @@ module Magnetic
             else
               eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
             endif
+          case ('standard2')
+            eta_tdep=eta*(1.+max(real(t-eta_tdep_toffset)/eta_tdep_t0,0.))**eta_tdep_exponent
           case ('log-switch-on')
             eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
                      *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
@@ -8900,7 +8901,7 @@ module Magnetic
 !
       use General, only: erfcc
       use Sub, only: step, der_step, cubic_step, cubic_der_step,erfunc
-      use EquationOfState, only: cs0
+      use EquationOfState, only: cs20
 !
       character(len=labellen), intent(in) :: zdep_profile
       integer, intent(in) :: nz
@@ -8920,8 +8921,8 @@ module Magnetic
           if (present(geta_z)) geta_z=-eta*eta_ampl*sin(z)
 !
         case ('fs')
-          if (cs0 > 0. .and. Omega > 0.) then
-            h = sqrt(2.) * cs0 / Omega
+          if (cs20 > 0. .and. Omega > 0.) then
+            h = sqrt(2. * cs20) / Omega
           else
             h = 1.
           endif
@@ -10678,7 +10679,7 @@ module Magnetic
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=2
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(eta,p_par(1))

@@ -58,8 +58,7 @@ program run
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
-  use Equ,             only: debug_imn_arrays,initialize_pencils,write_diagnostics
-  use EquationOfState, only: ioninit
+  use Equ,             only: debug_imn_arrays,initialize_pencils,write_diagnostics, write_diagnostics_wrapper
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use Filter
@@ -81,6 +80,7 @@ program run
   use Particles_main
   use Pencil_check,    only: pencil_consistency_check
   use PointMasses
+  use Python
   use Register
   use SharedVariables, only: sharedvars_clean_up
   use Signal_handling, only: signal_prepare, emergency_stop
@@ -96,6 +96,10 @@ program run
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
   use Timestep,        only: time_step, initialize_timestep
+!$ use OMP_lib
+!$ use mt, only: wait_all_thread_pool, push_task, make_threadpool,&
+!$ free_thread_pool, depend_on_all, default_task_type
+!$ use, intrinsic :: iso_c_binding
 !
   implicit none
 !
@@ -119,9 +123,18 @@ program run
 !
   call mpicomm_init
 !
-!  Initialize GPU use.
+!  Initialize GPU use and make threadpool.
 !
   call gpu_init
+!$ call make_threadpool(1)
+!
+!  Initialize Python use.
+!
+  call python_init
+!
+!   Initialize OpenMP use
+!
+!$ num_of_helper_threads= OMP_get_num_procs()
 !
 !  Identify version.
 !
@@ -426,10 +439,6 @@ program run
   if (mglobal/=0 .and. lread_global) call input_globals('global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
-!  Initialize ionization array.
-!
-  if (leos_ionization) call ioninit(f)
-!
 !  Prepare particles.
 !
   if (lparticles) call particles_initialize_modules(f)
@@ -521,15 +530,6 @@ program run
 !
 !  Do loop in time.
 !
-!$omp parallel firstprivate(p) copyin(dxyz_2,dxyz_4,dxyz_6,&
-!$omp dvol,dxmax_pencil,dxmin_pencil,&
-!$omp dline_1,lcoarse_mn,&
-!$omp lfirstpoint, seed, m, n, &
-!$omp fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,&
-!$omp l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,&
-!$omp it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
-!$omp master
-
   Time_loop: do while (it<=nt)
 !
     lout = (mod(it-1,it1) == 0) .and. (it > it1start)
@@ -779,9 +779,6 @@ program run
       if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
     endif
 
-!TP: TODO: make this a task
-!!$omp task
-!$  lstarted_writing_snapshots = .true.
     if (lparticles) call write_snapshot_particles(f,ENUM=.true.)
     if (lpointmasses) call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
 !
@@ -791,19 +788,19 @@ program run
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
     if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
-!$  lwritten_snapshots = .false.
-!!$omp end task
 !
 !   Diagnostic output in concurrent thread.
 !
 !
-    ! do while(.not. lfinalized_diagnostics)
-    ! enddo
-!$  if (lfinalized_diagnostics .and. .not. lstarted_writing_diagnostics) then
-!$omp task
+
+    if(lgpu) then
+      if (lout.or.l1davg.or.l1dphiavg.or.l2davg) then
+!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
+      endif
+    else
       call write_diagnostics(f)
-!$omp end task
-!$  endif
+    endif
+
 !
 !
 !  Write tracers (for animation purposes).
@@ -889,8 +886,8 @@ program run
     it=it+1
     headt=.false.
   enddo Time_loop
-!$omp end master
-!$omp end parallel
+!$ call wait_all_thread_pool()
+!$ call free_thread_pool()
 !
   if (lroot) then
     print*
@@ -992,6 +989,7 @@ program run
 !  Stop MPI.
 !
   call mpifinalize
+  call python_finalize
 !
 !  Free any allocated memory.
 !  MR: Is this needed? the program terminates anyway

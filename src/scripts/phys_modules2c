@@ -2,16 +2,16 @@
 #
 
 if [[ $3 == '' ]]; then
-  modname=$(basename "$2" .f90)
+  modname=`grep -m 1 '^ *module  *[a-zA-Z_]' $2 | sed -e's/module  *\([0-9a-zA-Z_]*\).*$/\L\1/'`
 else
   modname=$3
 fi
 
-if [[ $modname =~ entropy.* ]] || [[ $modname =~ temperature_.* ]] || [[ $modname == thermal_energy ]]; then
-  modname='energy'
-elif [[ $modname =~ eos_.* ]]; then
-  modname='equationofstate'
-fi
+#if [[ $modname =~ entropy.* ]] || [[ $modname =~ temperature_.* ]] || [[ $modname == thermal_energy ]]; then
+#  modname='energy'
+#elif [[ $modname =~ eos_.* ]]; then
+#  modname='equationofstate'
+#fi
 
 modheader=../$modname'_'$1's_c.h'
 if [[ $1 == par ]]; then
@@ -65,7 +65,7 @@ if [[ $MODULE_NAME_ORDER == 'CRAY' ]]; then
        p
        : cont
        g
-       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$modname$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
+       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/for (int i=0;i<n_pars_'$modname';i++)p_'$1'_'$modname'[i]=NULL;\n'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$modname$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
     }
   ' < tmp >> $modfuncs
 else
@@ -79,21 +79,23 @@ else
        p
        : cont
        g
-       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/'$MODULE_PREFIX$modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
+       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/for (int i=0;i<n_pars_'$modname';i++)p_'$1'_'$modname'[i]=NULL;\n'$MODULE_PREFIX$modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
     }
   ' < tmp >> $modfuncs
 fi
 #
 if [[ $1 == 'par' ]]; then
   sed -n '
-          /call  *copy_addr *(/ {
-            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *$/ config.real_params[\uA\uC\l_\1]=\1; \/\/ [\2-1] \1 real/w tmp1
+          /[^!]*call  *copy_addr *(/ {
+            s/^.*call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *$/ config.real_params[\uA\uC\l_\1]=\1; \/\/ [\2-1] \1 real/w tmp1
             t cont
-            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z]*\) *$/ config.\3_params[\uA\uC\l_\1]=\1; \/\/ [\2-1] \1 \3/w tmp1
+            s/^.*call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z]*\) *$/ config.\3_params[\uA\uC\l_\1]=\1; \/\/ [\2-1] \1 \3/w tmp1
             t cont
-            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ config.profiles[\uA\uC\l_\1]=\1\; \/\/ [\2-1] \1 real(\3)/w tmp1
+            s/^.*call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ config.profiles[\uA\uC\l_\1]=\1; \/\/ [\2-1] \1 real(\3)/w tmp1
+#            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ \/\/memcpy(config.real_arr_params[\uA\uC\l_\1],\1,\3*sizeof(real)); \/\/ [\2-1] \1 real(\3)/w tmp1
             t cont
-            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z]*\) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ \/\/memcpy(config.\3_arr_params[\uA\uC\l_\1],\1,\4*sizeof(\3));  \/\/ [\2-1] \1 \3(\4)/w tmp1
+            s/^.*call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z]*\) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ config.\3_arrays[\uA\uC\l_\1]=\1;  \/\/ [\2-1] \1 \3(\4)/w tmp1
+#            s/call  *copy_addr *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z]*\) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ \/\/memcpy(config.\3_arr_params[\uA\uC\l_\1],\1,\4*sizeof(\3));  \/\/ [\2-1] \1 \3(\4)/w tmp1
             : cont
             p
           }
@@ -143,9 +145,9 @@ if [ -f tmp1 ]; then
          H
          b end
          : dimen
-         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9]* *)\) *$/#define \2 ((\3 *) p_par_'$1'_'$modname'\1) \/\/ \4/
+         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9]* *)\) *$/#define \2 ((\3 *) p_'$1'_'$modname'\1) \/\/ \4/
          p
-         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_]*\)) *$/\2[\3] AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([mn]\)\([xyz]*\)) *$/Profile_\l\4 AC_\1[\3\4] \/\/ from '$modname'\n#define \1 \AC_\1/
          H
          : end
          $ {
@@ -153,7 +155,7 @@ if [ -f tmp1 ]; then
             w '$modecs'
            }
          ' < tmp1 >> $modfuncs
-#  rm -f tmp1
+  rm -f tmp1
 fi
 #
 # writes #include "$modname_$1s_c.h" into /PC_module$1s.h
@@ -166,4 +168,5 @@ if [[ $1 == 'par' ]]; then
   cat $modecs >> $headerdir/PC_modulepardecs.h
   rm -f tmp2
 fi
+
 

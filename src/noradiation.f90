@@ -4,7 +4,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lradiation = .false.
+! CPARAM logical, parameter :: lradiation = .false., lradiation_ray=.false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -114,13 +114,11 @@ module Radiation
 
     endsubroutine dradiation_dt
 !***********************************************************************
-    subroutine calc_diagnostics_radiation(f,p)
+    subroutine calc_diagnostics_radiation(f)
 
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
 
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine calc_diagnostics_radiation
 !***********************************************************************

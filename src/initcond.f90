@@ -5104,11 +5104,11 @@ module Initcond
 !***********************************************************************
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
-      lskip_projection,lvectorpotential,lscale_tobox, &
+      lskip_projection,lvectorpotential,lscale_tobox, lsquash, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,time,cs,lreinit, &
-      ltime_old,ltime_new,lrho_nonuni,ilnr)
+      ltime_old,ltime_new,lrho_nonuni,ilnr,l2d)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5134,192 +5134,121 @@ module Initcond
 !                    broken power law
 !
       use Fourier, only: fft_xyz_parallel
-      use General, only: loptest
+      use General, only: loptest, roptest
 !
-      logical, intent(in), optional :: lscale_tobox, lremain_in_fourier, ltime_old
+      logical, intent(in), optional :: lscale_tobox, lsquash, lremain_in_fourier, ltime_old
       logical, intent(in), optional :: ltime_new, lrho_nonuni
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
-      logical, intent(in), optional :: llogbranch0,ldouble0, lreinit
-      logical :: lvectorpotential, lscale_tobox1, lremain_in_fourier1, lno_noise1
+      logical, intent(in), optional :: llogbranch0,ldouble0, lreinit, l2d
+      logical :: lvectorpotential, lscale_tobox1, lsquash1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
-      logical :: ltime_new1, lrho_nonuni1
+      logical :: ltime_new1, lrho_nonuni1, l2d1
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
       integer, intent(in), optional :: ilnr
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
       real, intent(in), optional :: initpower_med0, kpeak_log0, kbreak0
       real, intent(in), optional :: nfactd0, qirro, time, cs
-      real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
-      real, dimension (:,:,:), allocatable :: k2, r, r2, lnr_re, lnr_im
+      real, dimension (:,:,:,:), allocatable :: u_re, u_im
+      real, dimension(3) :: v_re, v_im
+      real, dimension (:,:,:), allocatable :: k2, r
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (:), allocatable :: kk, lgkk, power_factor, lgff
-      real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,initpower2,mhalf,cutoff,kpeak,scale_factor,relhel
       real :: nfact, kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
       real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, D3, compk
       real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
       real :: nfactd,nexp3,nexp4
-      real :: qirro1, p, time1, cs1, cs2, cs21, om
+      real :: qirro1, p, time1, cs1, om, ctime, stime
+!
+      if (ampl==0.) then
+        if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
+        f(:,:,:,i1:i2) = 0.
+        return
+      endif
 !
 !  By default, don't scale wavenumbers to the box size.
 !
-      if (present(lscale_tobox)) then
-        lscale_tobox1 = lscale_tobox
-      else
-        lscale_tobox1 = .true.
-      endif
+      lscale_tobox1 = loptest(lscale_tobox,.true.)
+!
+      lsquash1 = loptest(lsquash,.true.)
 !
 !  Check whether or not we want to remain in Fourier space
 !
-      if (present(lremain_in_fourier)) then
-        lremain_in_fourier1 = lremain_in_fourier
-      else
-        lremain_in_fourier1 = .false.
-      endif
+      lremain_in_fourier1 = loptest(lremain_in_fourier)
 !
 !  Check whether or not we want ltime_old
 !
-      if (present(ltime_old)) then
-        ltime_old1 = ltime_old
-      else
-        ltime_old1 = .false.
-      endif
+      ltime_old1 = loptest(ltime_old)
 !
 !  Check whether or not we want ltime_new
 !
-      if (present(ltime_new)) then
-        ltime_new1 = ltime_new
-      else
-        ltime_new1 = .false.
-      endif
+      ltime_new1 = loptest(ltime_new)
 !
 !  Check whether or not we want lrho_nonuni
 !
-      if (present(lrho_nonuni)) then
-        lrho_nonuni1 = lrho_nonuni
-        if (present(ilnr)) then
-          ilnr1 = ilnr
-        else
-          call fatal_error('power_randomphase_hel','must define ilnr')
-        endif
-      else
-        lrho_nonuni1 = .false.
+      lrho_nonuni1 = loptest(lrho_nonuni)
+      if (lrho_nonuni1) then
+        ilnr1 = ioptest(ilnr)
+        if (ilnr1 <= 0) call fatal_error('power_randomphase_hel','must provide ilnr')
       endif
 !
 !  Check whether we want no_noise or not
 !
-      if (present(lno_noise)) then
-        lno_noise1 = lno_noise
-      else
-        lno_noise1 = .false.
-      endif
+      lno_noise1 = loptest(lno_noise)
+!
+!  Check whether we want l2d or not
+!
+      l2d1 = loptest(l2d)
 !
 !  qirro, is the vortical contribution, qirro=1 for fully irrotational.
 !
-     if (present(qirro)) then
-       qirro1 = qirro     
-     else
-       qirro1 = 0.
-     endif 
+     qirro1 = roptest(qirro)
 !
 !  time
 !
-     if (present(time)) then
-       time1 = time     
-       ltime=.true.
-     else
-       time1 = 0.
-       ltime=.false.
-     endif 
+     time1 = roptest(time)
+     ltime = time1/=0.
 !
 !  cs
 !
-     if (present(cs)) then
-       cs1 = cs     
-       cs2 = cs**2
-       cs21 = 1./cs2
-     else
-       cs1 = 1.
-       cs2 = 1.
-       cs21 = 1.
-     endif 
+     cs1 = roptest(cs,1.)
 !
-!  alberto: added option to compesate spectral shape by a power of k
+!  alberto: added option to compensate spectral shape by a power of k
 !
-      if (present(compk0)) then
-        compk = compk0
-      else
-        compk = 0.
-      endif
+     compk = roptest(compk0)
 !
 !  alberto: added option to use different values of nfact
 !  Here, nfact is the exponent on k/k0, with an 1/nfact outside [1+(k/k0)^n]^(1/nfact).
 !  By default, we use a large nfact=4 to have a sharp transition.
 !
-     if (present(nfact0)) then
-       nfact = nfact0
-     else
-       nfact = 4.
-     endif
-     if (present(lfactors0)) then
-       lfactors = lfactors0
-     else
-       lfactors = .false.
-     endif
+     nfact = roptest(nfact0,4.)
+     lfactors = loptest(lfactors0)
 !
 !  alberto: added option to include additional logarithmic branch
 !
-      if (present(llogbranch0)) then
-        llogbranch = llogbranch0
-      else
-        llogbranch = .false.
-      endif
+      llogbranch = loptest(llogbranch0)
 !
 !  alberto: added option to use double smoothed broken power laws
 !           logbranch is set to False if ldouble is used
 !
-      if (present(ldouble0)) then
-        ldouble = ldouble0
-        if (ldouble) then
-          llogbranch = .false.
-        endif
-      else
-        ldouble = .false.
-      endif
+      ldouble = loptest(ldouble0)
+      if (ldouble) llogbranch = .false.
 !
 !  Check if the parameters of the logarithmic branch or the
 !  double broken power law are given
 !
-      if ((llogbranch).or.(ldouble)) then
+      if (llogbranch.or.ldouble) then
 
-        if (present(initpower_med0)) then
-          initpower_med = initpower_med0
-        else
-          initpower_med = 1.
-        endif
-        if (present(kbreak0)) then
-          kbreak = kbreak0
-        else
-          kbreak = .5
-        endif
+        initpower_med = roptest(initpower_med0,1.)
+        kbreak = roptest(kbreak0,.5)
         kbreak1=1./kbreak
         kbreak2=kbreak**2
         kbreak21=kbreak1**2
 
-        if (llogbranch) then
-          if (present(kpeak_log0)) then
-            kpeak_log = kpeak_log0
-          else
-            kpeak_log = 1.
-          endif
-        endif
+        if (llogbranch) kpeak_log = roptest(kpeak_log0,1.)
+        if (ldouble) nfactd = roptest(nfactd0,4.)
 
-        if (ldouble) then
-          if (present(nfactd0)) then
-            nfactd = nfactd0
-          else
-            nfactd = 4.
-          endif
-        endif
       endif
 !
 !  Debug output
@@ -5329,7 +5258,7 @@ module Initcond
         print*,'ampl,initpower,initpower2=',ampl,initpower,initpower2
         print*,'cutoff,ncutoff,kpeak,i1,i2,relhel,kgaussian=',cutoff,ncutoff,kpeak,i1,i2,relhel,kgaussian
         !print*,'lskip_projection,lvectorpotential,lscale_tobox1=',lskip_projection,lvectorpotential,lscale_tobox1
-        print*,'lskip_projection,lscale_tobox1=',lskip_projection,lscale_tobox1
+        print*,'lskip_projection,lscale_tobox1,lsquash1=',lskip_projection,lscale_tobox1,lsquash1
         !print*,'k1hel,k2hel,lremain_in_fourier,lpower_profile_file,qexp=',k1hel,k2hel,lremain_in_fourier,lpower_profile_file,qexp
         print*,'lremain_in_fourier1',lremain_in_fourier1
   !     print*,'lno_noise,nfact,lfactors=',lno_noise,nfact,lfactors
@@ -5340,132 +5269,89 @@ module Initcond
 !  Allocate memory for arrays.
 !
       allocate(k2(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for k2')
+      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate k2')
       allocate(r(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for r')
-!
-      if (present(qexp)) then
-        if (qexp/=0.) then
-          allocate(r2(nx,ny,nz),stat=stat)
-          if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for r2')
-        endif
-      endif
+      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate r')
 !
       if (i2==i1) then
         allocate(u_re(nx,ny,nz,1),stat=stat)
-        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for u_re')
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_re')
         allocate(u_im(nx,ny,nz,1),stat=stat)
-        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for u_im')
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_im')
       else
         allocate(u_re(nx,ny,nz,3),stat=stat)
-        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for u_re')
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_re')
         allocate(u_im(nx,ny,nz,3),stat=stat)
-        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for u_im')
-        allocate(v_re(nx,ny,nz,3),stat=stat)
-        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for v_re')
-        allocate(v_im(nx,ny,nz,3),stat=stat)
-        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for v_im')
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_im')
       endif
 !
       allocate(kx(nxgrid),stat=stat)
-      if (stat>0) call fatal_error('power_randomphase_hel', &
-          'Could not allocate memory for kx')
+      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate kx')
       allocate(ky(nygrid),stat=stat)
-      if (stat>0) call fatal_error('power_randomphase_hel', &
-          'Could not allocate memory for ky')
+      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate ky')
       allocate(kz(nzgrid),stat=stat)
-      if (stat>0) call fatal_error('power_randomphase_hel', &
-          'Could not allocate memory for kz')
+      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate kz')
 !
-      if (lrho_nonuni1) then
-        allocate(lnr_re(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for lnr_re')
-        allocate(lnr_im(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate memory for lnr_im')
-      endif
+!  calculate k^2. If lscale_tobox1=T, then k is calculated as if the
+!  box is 2pi in all three directions.
+!  If lsquash_aa=T, then the box size in the y and z directions is the
+!  same as in the x direction. It is called that way, because, if the
+!  aspect ratio is is different from unity, it makes the field squashed.
 !
-      if (ampl==0) then
-        if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
-      else
+      scale_factor=1
+      if (.not.lscale_tobox1) scale_factor=2*pi/Lx
+      kx=cshift((/(i-nxgrid/2,i=0,nxgrid-1)/),nxgrid/2)*scale_factor
+      if (lroot.and.ip<10) print*,'AXEL: kx=',kx
 !
-!  calculate k^2
-!
-        scale_factor=1
-        if (.not.lscale_tobox1) scale_factor=2*pi/Lx
-        kx=cshift((/(i-nxgrid/2,i=0,nxgrid-1)/),nxgrid/2)*scale_factor
-!
+      if (.not. lsquash1) then
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Ly
-        ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),nygrid/2)*scale_factor
+      endif
+      ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),nygrid/2)*scale_factor
+      if (lroot.and.ip<10) print*,'AXEL: ky=',ky
 !
+      if (.not. lsquash1) then
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Lz
-        kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2)*scale_factor
+      endif
+      kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2)*scale_factor
+      if (lroot.and.ip<10) print*,'AXEL: kz=',kz
 !
 !  Set k^2 array.
 !
 !  Note: for multiple processors, there may still be a problem n 1-D
 !
 !  In 1-D
-        if (nzgrid==1.and.nygrid==1) then
-          ikz=1
-          iky=1
-          do ikx=1,nx
-            k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2
-          enddo
+      if (nzgrid==1.and.nygrid==1) then
+        ikz=1
+        iky=1
+        do ikx=1,nx
+          k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2
+        enddo
 !  In 2-D
-        elseif (nzgrid==1) then
-          ikz=1
-          do iky=1,ny
-            do ikx=1,nx
-              k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-            enddo
+      elseif (nzgrid==1) then
+        ikz=1
+        do iky=1,ny
+          do ikx=1,nx
+            k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
           enddo
+        enddo
 !  In 3-D
-        else
-          do ikz=1,nz
-            do iky=1,ny
-                do ikx=1,nx
-                  k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-                enddo
-            enddo
+      else
+        do ikz=1,nz
+          do iky=1,ny
+              do ikx=1,nx
+                k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+              enddo
           enddo
-        endif
-        if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
+        enddo
+      endif
+      if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
 !  Generate flat spectrum with random phase (between -pi and pi) for qexp=0.
 !
-        if (present(qexp)) then
-          if (qexp==0.) then
-            if (lno_noise1) then
-              u_re=ampl
-              u_im=0.
-            else
-              do i=1,i2-i1+1
-                call random_number_wrapper(r)
-                u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
-                u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
-              enddo
-            endif
-          else
-!
-!  Random nongaussian amplitudes for other values of q with exponential
-!  distribution (for q=1) and super-exponential (for q>1) first in real
-!  space, and then transform into spectral space.
-!
-            do i=1,i2-i1+1
-              call random_number_wrapper(r)
-              call random_number_wrapper(r2)
-              if (qexp==1.) then
-                u_re(:,:,:,i)=ampl*alog(r)*tanh(100.*(r2-.5))
-              else
-                u_re(:,:,:,i)=ampl*(r**(1.-qexp)-1.)/(1.-qexp)*tanh(100.*(r2-.5))
-              endif
-              u_im(:,:,:,i)=0.
-              call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i))
-            enddo !i
-          endif
-        else
+      if (present(qexp)) then
+        if (qexp==0.) then
           if (lno_noise1) then
             u_re=ampl
             u_im=0.
@@ -5474,141 +5360,171 @@ module Initcond
               call random_number_wrapper(r)
               u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
               u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
-            enddo !i
+            enddo
           endif
+        else
+!
+!  Random nongaussian amplitudes for other values of q with exponential
+!  distribution (for q=1) and super-exponential (for q>1) first in real
+!  space, and then transform into spectral space.
+!
+          do i=1,i2-i1+1
+            call random_number_wrapper(r)
+            call random_number_wrapper(u_re(:,:,:,i))   ! use u_re for r2
+            if (qexp==1.) then
+              u_re(:,:,:,i)=ampl*alog(r)*tanh(100.*(u_re(:,:,:,i)-.5))
+            else
+              u_re(:,:,:,i)=ampl*(r**(1.-qexp)-1.)/(1.-qexp)*tanh(100.*(u_re(:,:,:,i)-.5))
+            endif
+            u_im(:,:,:,i)=0.
+            call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i))
+          enddo
         endif
+      else  ! (present(qexp))
+        if (lno_noise1) then
+          u_re=ampl
+          u_im=0.
+        else
+          do i=1,i2-i1+1
+            call random_number_wrapper(r)
+            u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
+            u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
+          enddo
+        endif
+      endif  ! (present(qexp))
 !
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1 in 3-D.
 !  In general, E(k) ~ u^2 k^(D-1), so we have n=2m+D-1, so m=(n-D+1)/2
 !  Further, since we operate on k^2, we need m/2 (called mhalf below)
 !
-        mhalf=.25*(initpower-dimensionality+1)
+      mhalf=.25*(initpower-dimensionality+1)
 !
 !  generate all 3 velocity components separately
 !  generate k^n spectrum with random phase (between -pi and pi)
 !
-        nexp1=.25*nfact*(initpower-initpower2)
-        !
-        !  alberto: adapt input power law exponents to parameters that appear in the
-        !           broken power law when a logarithmic branch is included or when
-        !           a double broken power law is included
-        !
-        if ((llogbranch).or.(ldouble)) then
-          nexp1=.25*nfact*(initpower_med-initpower2)
-          initpower_log=.5*(initpower-initpower_med)
-        endif
-        if (ldouble) then
-          mhalf=.25*(initpower_med-dimensionality+1)
-          nexp3=1./nfactd
-          nexp4=.5*nfactd*initpower_log
-        endif
-        nexp2=1./nfact
-        kpeak1=1./kpeak
-        kpeak21=1./kpeak**2
+      nexp1=.25*nfact*(initpower-initpower2)
+      !
+      !  alberto: adapt input power law exponents to parameters that appear in the
+      !           broken power law when a logarithmic branch is included or when
+      !           a double broken power law is included
+      !
+      if (llogbranch.or.ldouble) then
+        nexp1=.25*nfact*(initpower_med-initpower2)
+        initpower_log=.5*(initpower-initpower_med)
+      endif
+      if (ldouble) then
+        mhalf=.25*(initpower_med-dimensionality+1)
+        nexp3=1./nfactd
+        nexp4=.5*nfactd*initpower_log
+      endif
+      nexp2=1./nfact
+      kpeak1=1./kpeak
+      kpeak21=1./kpeak**2
 !
 !  alberto: added option to compensate amplitude and peak using D1 and D2
 !           such that the maximum of the spectrum is located at kpeak
 !           or at the plateau (if present)
 !
-        D1=0.
-        D2=1.
-        D3=1.
-        fact=1.
-        if (lfactors) then
-          if (llogbranch) then
-            !  alberto: changing sign of nfact allows to use spectral shapes with
-            !           initpower - initpower2 > 0
-            if (initpower_med<initpower2) then
-              nexp1=-nexp1
-              nexp2=-nexp2
-              nfact=-nfact
-            endif
-            if (initpower2/=0) then
-              if (initpower_med/=0) then
-                if (initpower2*initpower_med<0) then
-                  D1=-initpower_med/initpower2
-                else
-                  D1=1.
-                endif
-                D2=D1
-              endif
-              fact=fact*log(1+kpeak_log*kpeak1)**(-initpower_log)
-            else
-              if (initpower_med==0) fact=fact*(1+D2)**nexp2
-              fact=fact*(kpeak_log*kpeak1)**(-initpower_log)
-            endif
-            if ((initpower>=0).and.(initpower_med<0)) then
-              fact=(1+D1)**(-nexp2)*(kbreak*kpeak1)**(-.5*initpower)
-              fact=fact*(1+D2*(kbreak*kpeak1)**(.5*nfact*(initpower_med-initpower2)))**(-nexp2)
-              fact=fact*log(1+kpeak_log*kbreak1)**(-initpower_log)
-              if (initpower_med==initpower2) fact=fact*(1+D2)**(2*nexp2)
-            endif
-          elseif (ldouble) then
-            !  alberto: changing sign of nfact allows to use spectral shapes with
-            !           initpower - initpower2 > 0
-            if (initpower_med<initpower2) then
-              nexp1=-nexp1
-              nexp2=-nexp2
-            endif
-            if (initpower<initpower_med) then
-              nexp3=-nexp3
-              nexp4=-nexp4
-            endif
-            if (initpower2/=0) then
-              if (initpower_med/=0) then
-                if (initpower_med*initpower2<0) then
-                  D1=-initpower_med/initpower2
-                else
-                  D1=1.
-                endif
-                D2=D1
-              endif
-              fact=fact*(1+D3*(kpeak*kbreak1)**(-2*nexp4))**nexp3
-            else
-              if (initpower_med==0) then
-                fact=fact*(1+D2)**nexp2
-                if (initpower==0) then
-                  fact=fact*(1+D1)**nexp2*(1+D3)**nexp3
-                endif
-              endif
-            endif
-            if ((initpower>=0).and.(initpower_med<0)) then
-              fact=1.
-              if ((initpower_med*initpower<0).and.(initpower2/=0)) then
+      D1=0.
+      D2=1.
+      D3=1.
+      fact=1.
+      if (lfactors) then
+        if (llogbranch) then
+          !  alberto: changing sign of nfact allows to use spectral shapes with
+          !           initpower - initpower2 > 0
+          if (initpower_med<initpower2) then
+            nexp1=-nexp1
+            nexp2=-nexp2
+            nfact=-nfact
+          endif
+          if (initpower2/=0) then
+            if (initpower_med/=0) then
+              if (initpower2*initpower_med<0) then
                 D1=-initpower_med/initpower2
-                D2=D1
+              else
+                D1=1.
               endif
-              if (initpower2*initpower_med>0) D2=1.
-              if (initpower/=0) then
-                D3=-initpower_med/initpower
-                fact=fact*(1 + D3)**nexp3
-              endif
-              fact=fact*(1+D1)**(-nexp2)*(kbreak*kpeak1)**(-.5*initpower_med)
-              fact=fact*(1+D2*(kbreak*kpeak1)**(2*nexp1))**nexp2
-            endif
-          else
-            !  alberto: changing sign of nfact allows to use spectral shapes with
-            !           initpower - initpower2 > 0
-            if ((initpower-initpower2)<0) then
-              nexp1=-nexp1
-              nexp2=-nexp2
-            endif
-            if ((initpower*initpower2)<0) then
-              D1=-initpower/initpower2
               D2=D1
-            elseif ((initpower*initpower2)==0) then
-              if ((initpower==0).and.(initpower2)==0) then
-                fact=fact*(1+D2)**nexp2
-              elseif (initpower2==0) then
-                fact=fact*D2**nexp2
+            endif
+            fact=fact*log(1+kpeak_log*kpeak1)**(-initpower_log)
+          else
+            if (initpower_med==0) fact=fact*(1+D2)**nexp2
+            fact=fact*(kpeak_log*kpeak1)**(-initpower_log)
+          endif
+          if ((initpower>=0).and.(initpower_med<0)) then
+            fact=(1+D1)**(-nexp2)*(kbreak*kpeak1)**(-.5*initpower)
+            fact=fact*(1+D2*(kbreak*kpeak1)**(.5*nfact*(initpower_med-initpower2)))**(-nexp2)
+            fact=fact*log(1+kpeak_log*kbreak1)**(-initpower_log)
+            if (initpower_med==initpower2) fact=fact*(1+D2)**(2*nexp2)
+          endif
+        elseif (ldouble) then
+          !  alberto: changing sign of nfact allows to use spectral shapes with
+          !           initpower - initpower2 > 0
+          if (initpower_med<initpower2) then
+            nexp1=-nexp1
+            nexp2=-nexp2
+          endif
+          if (initpower<initpower_med) then
+            nexp3=-nexp3
+            nexp4=-nexp4
+          endif
+          if (initpower2/=0) then
+            if (initpower_med/=0) then
+              if (initpower_med*initpower2<0) then
+                D1=-initpower_med/initpower2
+              else
+                D1=1.
               endif
-            else
+              D2=D1
+            endif
+            fact=fact*(1+D3*(kpeak*kbreak1)**(-2*nexp4))**nexp3
+          else
+            if (initpower_med==0) then
               fact=fact*(1+D2)**nexp2
+              if (initpower==0) then
+                fact=fact*(1+D1)**nexp2*(1+D3)**nexp3
+              endif
             endif
           endif
+          if ((initpower>=0).and.(initpower_med<0)) then
+            fact=1.
+            if ((initpower_med*initpower<0).and.(initpower2/=0)) then
+              D1=-initpower_med/initpower2
+              D2=D1
+            endif
+            if (initpower2*initpower_med>0) D2=1.
+            if (initpower/=0) then
+              D3=-initpower_med/initpower
+              fact=fact*(1 + D3)**nexp3
+            endif
+            fact=fact*(1+D1)**(-nexp2)*(kbreak*kpeak1)**(-.5*initpower_med)
+            fact=fact*(1+D2*(kbreak*kpeak1)**(2*nexp1))**nexp2
+          endif
+        else  ! (ldouble)
+          !  alberto: changing sign of nfact allows to use spectral shapes with
+          !           initpower - initpower2 > 0
+          if ((initpower-initpower2)<0) then
+            nexp1=-nexp1
+            nexp2=-nexp2
+          endif
+          if ((initpower*initpower2)<0) then
+            D1=-initpower/initpower2
+            D2=D1
+          elseif ((initpower*initpower2)==0) then
+            if ((initpower==0).and.(initpower2)==0) then
+              fact=fact*(1+D2)**nexp2
+            elseif (initpower2==0) then
+              fact=fact*D2**nexp2
+            endif
+          else
+            fact=fact*(1+D2)**nexp2
+          endif
         endif
-        fact=fact*(1+D1)**nexp2
+      endif  ! (lfactors)
+!
+      fact=fact*(1+D1)**nexp2
 !
 !  Multiply by kpeak1**1.5 to eliminate scaling with kpeak,
 !  which comes from a kpeak^3 factor in the k^2 dk integration.
@@ -5619,19 +5535,19 @@ module Initcond
 !           so avoid scaling in such case, also avoided scaling with domain size
 !           (only tested for 1D GW fields)
 !
-        if (lfactors) then
-          fact=fact*(2*pi/Lx)**0.5
-        else
-          fact=fact*(kpeak1*scale_factor)**1.5
-        endif
-        if (lvectorpotential) then
-          fact=fact*kpeak1
-          if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))
-        else
-          if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
-        endif
-        r=fact*((k2*kpeak21)**mhalf)/(1.+D2*(k2*kpeak21)**nexp1)**nexp2
-        if (lroot.and.ip<10) print*,'kpeak,mhalf,nexp1,nexp2=',kpeak,mhalf,nexp1,nexp2
+      if (lfactors) then
+        fact=fact*(2*pi/Lx)**0.5
+      else
+        fact=fact*(kpeak1*scale_factor)**1.5
+      endif
+      if (lvectorpotential) then
+        fact=fact*kpeak1
+        if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))
+      else
+        if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
+      endif
+      r=fact*((k2*kpeak21)**mhalf)/(1.+D2*(k2*kpeak21)**nexp1)**nexp2
+      if (lroot.and.ip<10) print*,'kpeak,mhalf,nexp1,nexp2=',kpeak,mhalf,nexp1,nexp2
 !
 !  Examples: for initpower=4., initpower2=-2., get mhalf,nexp1,nexp2 = 0.75, 6.0, 0.25
 !  while for Jani Dahl setup, we put: initpower=3., initpower2=-3., nfact_uu=.6666667
@@ -5640,13 +5556,12 @@ module Initcond
 !  alberto: added possibility to multiply spectrum by a power of k (useful for GW for example)
 !           the final spectrum will be compensated by k^(4*compk)
 !
-        r=r*k2**compk
+      r=r*k2**compk
 !
 !  alberto: added model for double smoothed broken power law
 !
-        if (ldouble) then
-          r=r/(1.+D3*(k2*kbreak21)**(-nexp4))**nexp3
-        endif
+      if (ldouble) r=r/(1.+D3*(k2*kbreak21)**(-nexp4))**nexp3
+!
 !  alberto: multiply the broken power law by the logarithmic branch using
 !           the condition k < kbreak
 !
@@ -5659,89 +5574,83 @@ module Initcond
 !  The resulting spectrum asymptotically has slopes k^initpower at k < kbreak,
 !  k^initpower_med at kbreak < k < kpeak, k^(-initpower2) at k > kpeak
 !
-        if (llogbranch) then
-          do ikz=1,nz
-            do iky=1,ny
-              do ikx=1,nx
-                if (k2(ikx,iky,ikz)<kbreak2) then
-                  r(ikx,iky,ikz)=r(ikx,iky,ikz)*log(1+kpeak_log*kbreak1)**initpower_log
-                else
-                  r(ikx,iky,ikz)=r(ikx,iky,ikz)*log(1+kpeak_log/sqrt(k2(ikx,iky,ikz)))**initpower_log
-                endif
-              enddo
-            enddo
-          enddo
-        endif
+      if (llogbranch) then
+        where (k2<kbreak2)
+          r = r*log(1+kpeak_log*kbreak1)**initpower_log
+        elsewhere
+          r = r*log(1+kpeak_log/sqrt(k2))**initpower_log
+        endwhere
+      endif
 !
 !  cutoff (changed to hyperviscous cutoff filter).
 !  The 1/2 factor is needed to account for the fact that the
 !  spectrum (velocity squared) is proportional to exp(-k^2/cutoff^2).
 !  For ncutoff/=1, one has exp(-(k^2/cutoff^2)^ncutoff).
 !
-        if (cutoff /= 0.) r=r*exp(-.5*(k2/cutoff**2.)**ncutoff)
+      if (cutoff /= 0.) r=r*exp(-.5*(k2/cutoff**2.)**ncutoff)
 !
 !  apply Gaussian on top of everything
 !
-        if (kgaussian /= 0.) r=r*exp(-.25*(k2/kgaussian**2.-1.))
+      if (kgaussian /= 0.) r=r*exp(-.25*(k2/kgaussian**2.-1.))
 !
 !  apply additional profile read from file;
 !  first check whether or not we want to read from file
 !
-        if (loptest(lpower_profile_file)) then
-          open(9,file='power_profile.dat',status='old')
-          read(9,*) nk,lgk0,dlgk
-          if (lroot) print*,'power_randomphase_hel: nk,lgk0,dlgk=',nk,lgk0,dlgk
-          if (allocated(kk)) deallocate(kk,power_factor,lgkk,lgff)
-          allocate(kk(nk),power_factor(nk),lgkk(nk),lgff(nk))
-          do ik=1,nk
-            read(9,*) kk(ik),power_factor(ik)
-          enddo
-          close(9)
-          lgkk=alog10(kk)
-          lgff=alog10(power_factor)
+      if (loptest(lpower_profile_file)) then
+        open(9,file='power_profile.dat',status='old')
+        read(9,*) nk,lgk0,dlgk
+        if (lroot) print*,'power_randomphase_hel: nk,lgk0,dlgk=',nk,lgk0,dlgk
+        if (allocated(kk)) deallocate(kk,power_factor,lgkk,lgff)
+        allocate(kk(nk),power_factor(nk),lgkk(nk),lgff(nk))
+        do ik=1,nk
+          read(9,*) kk(ik),power_factor(ik)
+        enddo
+        close(9)
+        lgkk=alog10(kk)
+        lgff=alog10(power_factor)
 !
 !  Go through each mesh point and interpolate logarithmically to the
 !  correct scaling factor for the power (energy) spectrum.
 !
-          do ikz=1,nz
-            do iky=1,ny
-              do ikx=1,nx
-                lgk=alog10(sqrt(k2(ikx,iky,ikz)))
-                ik=int((lgk-lgk0)/dlgk)+1
-                if (ik<1.or.ik>nk) then
-                  print*,'ikz,iky,ikx,lgk,ik,k2=',ikz,iky,ikx,lgk,ik,k2(ikx,iky,ikz)
-                  call fatal_error('power_randomphase_hel','ik<1.or.ik>nk')
-                endif
-                lgk1=lgkk(ik)
-                lgk2=lgkk(ik+1)
-                lgf1=lgff(ik)
-                lgf2=lgff(ik+1)
-                lgf=lgf1+(lgk-lgk1)*(lgf2-lgf1)/(lgk2-lgk1)
-                r(ikx,iky,ikz)=r(ikx,iky,ikz)*10**lgf
-                if (ip<14) print*,'iproc,lgk1,lgk,lgk2=',iproc,lgk1,lgk,lgk2
-              enddo
+        do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+              lgk=alog10(sqrt(k2(ikx,iky,ikz)))
+              ik=int((lgk-lgk0)/dlgk)+1
+              if (ik<1.or.ik>nk) then
+                print*,'ikz,iky,ikx,lgk,ik,k2=',ikz,iky,ikx,lgk,ik,k2(ikx,iky,ikz)
+                call fatal_error('power_randomphase_hel','ik<1.or.ik>nk')
+              endif
+              lgk1=lgkk(ik)
+              lgk2=lgkk(ik+1)
+              lgf1=lgff(ik)
+              lgf2=lgff(ik+1)
+              lgf=lgf1+(lgk-lgk1)*(lgf2-lgf1)/(lgk2-lgk1)
+              r(ikx,iky,ikz)=r(ikx,iky,ikz)*10**lgf
+              if (ip<14) print*,'iproc,lgk1,lgk,lgk2=',iproc,lgk1,lgk,lgk2
             enddo
           enddo
-        endif
+        enddo
+      endif
 !
 !  Scale with r: allow for special case with *scalars* here.
 !  Note that this adds to anything that was set previously.
 !
-        if (i2==i1) then
-          u_re(:,:,:,1)=r*u_re(:,:,:,1)
-          u_im(:,:,:,1)=r*u_im(:,:,:,1)
-          if (lremain_in_fourier1) then
-            f(l1:l2,m1:m2,n1:n2,i1  )=f(l1:l2,m1:m2,n1:n2,i1  )+u_re(:,:,:,1)
-            f(l1:l2,m1:m2,n1:n2,i1+1)=f(l1:l2,m1:m2,n1:n2,i1+1)+u_im(:,:,:,1)
-          else
-            call fft_xyz_parallel(u_re(:,:,:,1),u_im(:,:,:,1),linv=.true.)
-            f(l1:l2,m1:m2,n1:n2,i1)=f(l1:l2,m1:m2,n1:n2,i1)+u_re(:,:,:,1)
-          endif
+      if (i2==i1) then
+        u_re(:,:,:,1)=r*u_re(:,:,:,1)
+        u_im(:,:,:,1)=r*u_im(:,:,:,1)
+        if (lremain_in_fourier1) then
+          f(l1:l2,m1:m2,n1:n2,i1  )=f(l1:l2,m1:m2,n1:n2,i1  )+u_re(:,:,:,1)
+          f(l1:l2,m1:m2,n1:n2,i1+1)=f(l1:l2,m1:m2,n1:n2,i1+1)+u_im(:,:,:,1)
         else
-          do i=1,3
-            u_re(:,:,:,i)=r*u_re(:,:,:,i)
-            u_im(:,:,:,i)=r*u_im(:,:,:,i)
-          enddo !i
+          call fft_xyz_parallel(u_re(:,:,:,1),u_im(:,:,:,1),linv=.true.)
+          f(l1:l2,m1:m2,n1:n2,i1)=f(l1:l2,m1:m2,n1:n2,i1)+u_re(:,:,:,1)
+        endif
+      else
+        do i=1,3
+          u_re(:,:,:,i)=r*u_re(:,:,:,i)
+          u_im(:,:,:,i)=r*u_im(:,:,:,i)
+        enddo
 !
 !  Apply projection operator
 !  Use r=1/k^2 for normalization in khat_i * khat_j = ki*kj/k2.
@@ -5750,57 +5659,56 @@ module Initcond
 !  To allow also for the possibility of longitudinal initial fields, we write
 !  (1-q)*(delij-kikj) + q*kikj = (1-q)*delij - (1-2*q)*kikj.
 !
-          if (lskip_projection) then
-            v_re=u_re
-            v_im=u_im
-          else
+!
+!  Here, u_re, u_im is what was v_re, v_im before!
+!
+        if (.not.lskip_projection) then
 !
 !  Allow for possibility of irrotational contributions of fraction q,
 !  so the vortical fraction is (1-q) == p.
 !
-            p=1.-qirro1
+          p=1.-qirro1
 !
 !  In 2-D
-            if (nz==1) then
-              ikz=1
-              do iky=1,ny
-                do ikx=1,nx
+!
+          if (nz==1) then
+            ikz=1
+            do iky=1,ny
+              do ikx=1,nx
 !
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, ==> vi = ui - ki kj uj, but now we write:
 !  (kk.uu)/k2, ==> vi = (1-q)*ui - (1-2q) ki kj uj
 !
-                  r(ikx,iky,ikz)=(1.-2.*qirro1)* &
-                      (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
-                      +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                  v_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)
+                r(ikx,iky,ikz)=(1.-2.*qirro1) * (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                                                +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)
 !
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                  r(ikx,iky,ikz)=(1.-2.*qirro1)* &
-                      (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
-                      +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                  v_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)
-                enddo
+                r(ikx,iky,ikz)=(1.-2.*qirro1) * (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                                                +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)
               enddo
+            enddo
 !  In 3-D
-            else
-              do ikz=1,nz
-                do iky=1,ny
-                  do ikx=1,nx
+          else
+            do ikz=1,nz
+              do iky=1,ny
+                do ikx=1,nx
 !
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                    r(ikx,iky,ikz)=(1.-2.*qirro1)* &
-                        (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
-                        +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
-                        +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+                  r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                      (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                      +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
+                      +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
 !
 !  Possibility of a kinematic time dependence.
 !  Commented out for now. This does not seem correct here and would overwrite r
@@ -5813,210 +5721,198 @@ module Initcond
 !                      r(ikx,iky,ikz)=r(ikx,iky,ikz)*sin(om*time1)
 !                    endif
 !
-                    v_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                    v_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                    v_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
+                  u_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                  u_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                  u_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
 !
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                    r(ikx,iky,ikz)=(1.-2.*qirro1)* &
-                        (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
-                        +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
-                        +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
-                    v_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
-                    v_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
-                    v_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
-                  enddo
+                  r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                      (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                      +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
+                      +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
+                  u_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)-kz(ikz+ipz*nz)*r(ikx,iky,ikz)
                 enddo
               enddo
-            endif
-          endif
+            enddo
+          endif  ! 3D
+        endif  !(.not.lskip_projection)
 !
 !  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ikhat_k*sigma.
 !  Use r=sigma/k for normalization of sigma*khat_i = sigma*ki/sqrt(k2).
 !  Put r(k=0)=0, but this is only true for the root processor.
 !
-          r=relhel/sqrt(k2)
-          if (lroot) r(1,1,1)=0.
+!  From now on, k2 := sqrt(k2)!
+!
+        k2=sqrt(k2)
+        r=relhel/k2
+        if (lroot) r(1,1,1)=0.
 !
 !  put sigma=0 outside [r1hel,r2hel]
 !
-          if (present(k1hel) .and. present(k2hel)) then
-            if (k1hel>0. .and. k2hel<max_real) then
-              where (k2<k1hel**2 .or. k2>k2hel**2)
-                r = 0.
-              endwhere
-            endif
+        if (present(k1hel) .and. present(k2hel)) then
+          if (k1hel>0. .and. k2hel<max_real) then
+            where (k2<k1hel .or. k2>k2hel) r = 0.
           endif
+        endif
 !
 !  In 2-D
-          if (nz==1) then
+        if (nz==1) then
+          do iky=1,ny
+            do ikx=1,nx
+              ikz=1
+!
+!  (vx, vy, vz) -> ux
+              v_re = u_re(ikx,iky,ikz,:); v_im = u_im(ikx,iky,ikz,:)
+              if (l2d1) then
+                u_re(ikx,iky,ikz,1:2)=0.
+                u_im(ikx,iky,ikz,1:2)=0.
+              else
+!
+                u_re(ikx,iky,ikz,1)=v_re(1) - ky(iky+ipy*ny)*v_im(3)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,1)=v_im(1) + ky(iky+ipy*ny)*v_re(3)*r(ikx,iky,ikz)
+!
+!  (vx, vy, vz) -> uy
+!
+                u_re(ikx,iky,ikz,2)=v_re(2) + kx(ikx+ipx*nx)*v_im(3)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,2)=v_im(2) - kx(ikx+ipx*nx)*v_re(3)*r(ikx,iky,ikz)
+              endif
+!
+!  (vx, vy, vz) -> uz
+!
+              u_re(ikx,iky,ikz,3)=v_re(3) + ky(iky+ipy*ny)*v_im(1)*r(ikx,iky,ikz) &
+                                          - kx(ikx+ipx*nx)*v_im(2)*r(ikx,iky,ikz)
+              u_im(ikx,iky,ikz,3)=v_im(3) - ky(iky+ipy*ny)*v_re(1)*r(ikx,iky,ikz) &
+                                          + kx(ikx+ipx*nx)*v_re(2)*r(ikx,iky,ikz)
+            enddo
+          enddo
+!  In 3-D
+        else
+          do ikz=1,nz
             do iky=1,ny
               do ikx=1,nx
-                ikz=1
+!
+                v_re = u_re(ikx,iky,ikz,:); v_im = u_im(ikx,iky,ikz,:)
 !
 !  (vx, vy, vz) -> ux
 !
-                u_re(ikx,iky,ikz,1)=v_re(ikx,iky,ikz,1) &
-                    -ky(iky+ipy*ny)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-                u_im(ikx,iky,ikz,1)=v_im(ikx,iky,ikz,1) &
-                    +ky(iky+ipy*ny)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,1)=v_re(1) + kz(ikz+ipz*nz)*v_im(2)*r(ikx,iky,ikz) &
+                                            - ky(iky+ipy*ny)*v_im(3)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,1)=v_im(1) - kz(ikz+ipz*nz)*v_re(2)*r(ikx,iky,ikz) &
+                                            + ky(iky+ipy*ny)*v_re(3)*r(ikx,iky,ikz)
 !
 !  (vx, vy, vz) -> uy
 !
-                u_re(ikx,iky,ikz,2)=v_re(ikx,iky,ikz,2) &
-                    +kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-                u_im(ikx,iky,ikz,2)=v_im(ikx,iky,ikz,2) &
-                    -kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,2)=v_re(2) + kx(ikx+ipx*nx)*v_im(3)*r(ikx,iky,ikz) &
+                                            - kz(ikz+ipz*nz)*v_im(1)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,2)=v_im(2) - kx(ikx+ipx*nx)*v_re(3)*r(ikx,iky,ikz) &
+                                            + kz(ikz+ipz*nz)*v_re(1)*r(ikx,iky,ikz)
 !
 !  (vx, vy, vz) -> uz
 !
-                u_re(ikx,iky,ikz,3)=v_re(ikx,iky,ikz,3) &
-                    +ky(iky+ipy*ny)*v_im(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
-                    -kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,2)*r(ikx,iky,ikz)
-                u_im(ikx,iky,ikz,3)=v_im(ikx,iky,ikz,3) &
-                    -ky(iky+ipy*ny)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
-                    +kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz)
+                u_re(ikx,iky,ikz,3)=v_re(3) + ky(iky+ipy*ny)*v_im(1)*r(ikx,iky,ikz) &
+                                            - kx(ikx+ipx*nx)*v_im(2)*r(ikx,iky,ikz)
+                u_im(ikx,iky,ikz,3)=v_im(3) - ky(iky+ipy*ny)*v_re(1)*r(ikx,iky,ikz) &
+                                            + kx(ikx+ipx*nx)*v_re(2)*r(ikx,iky,ikz)
+!
               enddo
             enddo
-!  In 3-D
-          else
-            do ikz=1,nz
-              do iky=1,ny
-                do ikx=1,nx
-!
-!  (vx, vy, vz) -> ux
-!
-                  u_re(ikx,iky,ikz,1)=v_re(ikx,iky,ikz,1) &
-                      +kz(ikz+ipz*nz)*v_im(ikx,iky,ikz,2)*r(ikx,iky,ikz) &
-                      -ky(iky+ipy*ny)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-                  u_im(ikx,iky,ikz,1)=v_im(ikx,iky,ikz,1) &
-                      -kz(ikz+ipz*nz)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz) &
-                      +ky(iky+ipy*ny)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz)
-!
-!  (vx, vy, vz) -> uy
-!
-                  u_re(ikx,iky,ikz,2)=v_re(ikx,iky,ikz,2) &
-                      +kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,3)*r(ikx,iky,ikz) &
-                      -kz(ikz+ipz*nz)*v_im(ikx,iky,ikz,1)*r(ikx,iky,ikz)
-                  u_im(ikx,iky,ikz,2)=v_im(ikx,iky,ikz,2) &
-                      -kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,3)*r(ikx,iky,ikz) &
-                      +kz(ikz+ipz*nz)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz)
-!
-!  (vx, vy, vz) -> uz
-!
-                  u_re(ikx,iky,ikz,3)=v_re(ikx,iky,ikz,3) &
-                      +ky(iky+ipy*ny)*v_im(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
-                      -kx(ikx+ipx*nx)*v_im(ikx,iky,ikz,2)*r(ikx,iky,ikz)
-                  u_im(ikx,iky,ikz,3)=v_im(ikx,iky,ikz,3) &
-                      -ky(iky+ipy*ny)*v_re(ikx,iky,ikz,1)*r(ikx,iky,ikz) &
-                      +kx(ikx+ipx*nx)*v_re(ikx,iky,ikz,2)*r(ikx,iky,ikz)
-!
-                enddo
-              enddo
-            enddo
-          endif
+          enddo
+        endif
 !
 !  Possibility of a kinematic time dependence.
 !
-          if (lrho_nonuni1) then
-            do ikz=1,nz
-              do iky=1,ny
-                do ikx=1,nx
-                  lnr_re(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
-                                      +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
-                                      +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3) &
-                                      )/sqrt(cs2*k2(ikx,iky,ikz))
-                  lnr_im(ikx,iky,ikz)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
-                                      +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
-                                      +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3) &
-                                      )/sqrt(cs2*k2(ikx,iky,ikz))
-                enddo
-              enddo
-            enddo
-          endif
-!
-!  Possibility of a kinematic time dependence.
-!
-          if (ltime) then
-            if (ltime_new1.and..not.lskip_projection) &
-              call fatal_error('power_randomphase_hel','must have lskip_projection=T')
-            do ikz=1,nz
-              do iky=1,ny
-                do ikx=1,nx
-                  om=cs1*sqrt(k2(ikx,iky,ikz))
+        if (ltime) then
+          if (ltime_new1.and..not.lskip_projection) &
+            call fatal_error('power_randomphase_hel','must have lskip_projection=T')
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
+                  om=cs1*k2(ikx,iky,ikz)
+                  ctime=cos(om*time1); stime=sin(om*time1)
                   if (ltime_new1) then
 !
-!  Pretent that u_re(ikx,iky,ikz,1) and u_im(ikx,iky,ikz,1) is a complex random number,
+!  Pretend that u_re(ikx,iky,ikz,1) and u_im(ikx,iky,ikz,1) is a complex random number,
 !  then, after multiplying by i, we have i*z = i*(z'+i*z") = -z" + i*z'.
 !
-                    u_re(ikx,iky,ikz,1)=-kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1)*cos(om*time1)
-                    u_im(ikx,iky,ikz,1)=+kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1)*cos(om*time1)
-                    u_re(ikx,iky,ikz,2)=-ky(iky+ipy*ny)*u_im(ikx,iky,ikz,1)*cos(om*time1)
-                    u_im(ikx,iky,ikz,2)=+ky(iky+ipy*ny)*u_re(ikx,iky,ikz,1)*cos(om*time1)
-                    u_re(ikx,iky,ikz,3)=-kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,1)*cos(om*time1)
-                    u_im(ikx,iky,ikz,3)=+kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,1)*cos(om*time1)
-!no need            lnr_re(ikx,iky,ikz)=-kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,1)*sin(om*time1)*cs21
-!no need            lnr_im(ikx,iky,ikz)=+kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,1)*sin(om*time1)*cs21
-                  elseif (ltime_old1) then
-                    u_re(ikx,iky,ikz,1:3)=+u_re(ikx,iky,ikz,1:3)*sin(om*time1)
-                    u_im(ikx,iky,ikz,1:3)=-u_im(ikx,iky,ikz,1:3)*cos(om*time1)
-                  else
-                    u_re(ikx,iky,ikz,1:3)=+u_re(ikx,iky,ikz,1:3)*cos(om*time1)
-                    u_im(ikx,iky,ikz,1:3)=+u_im(ikx,iky,ikz,1:3)*cos(om*time1)
-                  endif
-                enddo
+                  u_re(ikx,iky,ikz,1)=-kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1)*ctime
+                  u_im(ikx,iky,ikz,1)=+kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1)*ctime
+                  u_re(ikx,iky,ikz,2)=-ky(iky+ipy*ny)*u_im(ikx,iky,ikz,1)*ctime
+                  u_im(ikx,iky,ikz,2)=+ky(iky+ipy*ny)*u_re(ikx,iky,ikz,1)*ctime
+                  u_re(ikx,iky,ikz,3)=-kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,1)*ctime
+                  u_im(ikx,iky,ikz,3)=+kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,1)*ctime
+                elseif (ltime_old1) then
+                  u_re(ikx,iky,ikz,1:3)=+u_re(ikx,iky,ikz,1:3)*stime
+                  u_im(ikx,iky,ikz,1:3)=-u_im(ikx,iky,ikz,1:3)*ctime
+                else
+                  u_re(ikx,iky,ikz,1:3)=+u_re(ikx,iky,ikz,1:3)*ctime
+                  u_im(ikx,iky,ikz,1:3)=+u_im(ikx,iky,ikz,1:3)*ctime
+                endif
               enddo
             enddo
-          endif
+          enddo
+        endif
 !
 !  back to real space, unless lremain_in_fourier=T, in which case
 !  we assume that the imaginary part is just next to the real part.
 !
-          if (lremain_in_fourier1) then
-            f(l1:l2,m1:m2,n1:n2,i1  :i2  )=f(l1:l2,m1:m2,n1:n2,i1  :i2  )+u_re
-            f(l1:l2,m1:m2,n1:n2,i1+3:i2+3)=f(l1:l2,m1:m2,n1:n2,i1+3:i2+3)+u_im
+        if (lremain_in_fourier1) then
+          f(l1:l2,m1:m2,n1:n2,i1  :i2  )=f(l1:l2,m1:m2,n1:n2,i1  :i2  )+u_re
+          f(l1:l2,m1:m2,n1:n2,i1+3:i2+3)=f(l1:l2,m1:m2,n1:n2,i1+3:i2+3)+u_im
+        else
+          do i=1,3
+            call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+          enddo
+          if (loptest(lreinit)) then
+            f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
           else
-            do i=1,3
-              call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
-            enddo !i
-!no need    if (ltime_new1) call fft_xyz_parallel(lnr_re(:,:,:),lnr_im(:,:,:),linv=.true.)
-            if (loptest(lreinit)) then
-              f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
-            else
-              f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
-            endif
-            if (lrho_nonuni1) then
-              call fft_xyz_parallel(lnr_re,lnr_im,linv=.true.)
-              f(l1:l2,m1:m2,n1:n2,ilnr1)=lnr_re
-            endif
+            f(l1:l2,m1:m2,n1:n2,i1:i2)=f(l1:l2,m1:m2,n1:n2,i1:i2)+u_re
+          endif
+!
+          if (lrho_nonuni1) then
+!
+!  u_re, u_im now used for lnrho.
+!
+            do ikz=1,nz
+              do iky=1,ny
+                do ikx=1,nx
+                  u_re(ikx,iky,ikz,1)=(kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                                      +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
+                                      +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3) &
+                                      )/(cs1*k2(ikx,iky,ikz))
+                  u_im(ikx,iky,ikz,1)=(kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                                      +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
+                                      +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3) &
+                                      )/(cs1*k2(ikx,iky,ikz))
+                enddo
+              enddo
+            enddo
+            call fft_xyz_parallel(u_re(:,:,:,1),u_im(:,:,:,1),linv=.true.)
+            f(l1:l2,m1:m2,n1:n2,ilnr1)=u_re(:,:,:,1)
           endif
         endif
+      endif   !(i2==i1)
 !
 !  notification
 !
-        if (lroot.and..not.ltime) then
-print*,'AXEL ltime3: time1=',time1
-          if (cutoff==0) then
-            print*,'power_randomphase_hel: k^',initpower,' spectrum : var  i=',i
-          else
-            print*,'power_randomphase_hel: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
-                initpower,', k0 =',cutoff,' : var  i=',i
-          endif
+      if (lroot.and..not.ltime) then
+        if (cutoff==0) then
+          print*,'power_randomphase_hel: k^',initpower,' spectrum: var  i=',i
+        else
+          print*,'power_randomphase_hel: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
+                 initpower,', k0 =',cutoff,' : var  i=',i
         endif
-!
-      endif !(ampl==0)
+      endif
 !
 !  Deallocate arrays.
 !
-      if (allocated(k2))   deallocate(k2)
+      if (allocated(k2)) deallocate(k2)
       if (allocated(r))  deallocate(r)
-      if (allocated(r2))  deallocate(r2)
       if (allocated(u_re)) deallocate(u_re)
       if (allocated(u_im)) deallocate(u_im)
-      if (allocated(v_re)) deallocate(v_re)
-      if (allocated(v_im)) deallocate(v_im)
       if (allocated(kx)) deallocate(kx)
       if (allocated(ky)) deallocate(ky)
       if (allocated(kz)) deallocate(kz)
@@ -6543,11 +6439,9 @@ print*,'AXEL ltime3: time1=',time1
 !  Allocate memory for arrays.
 !
       allocate (Bz(bnx,bny), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error('mag_init', &
-          'Could not allocate memory for Bz', .true.)
+      if (alloc_err > 0) call fatal_error('mag_init','Could not allocate Bz', .true.)
       allocate (exp_fact(enx,eny,mz), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error('mag_init', &
-          'Could not allocate memory for exp_fact', .true.)
+      if (alloc_err > 0) call fatal_error('mag_init','Could not allocate exp_fact', .true.)
 !
       if (lroot) then
         inquire (file=mag_field_dat, exist=exists)
@@ -6556,7 +6450,7 @@ print*,'AXEL ltime3: time1=',time1
         inquire (iolength=rec_len) 1.0d0
         open (unit, file=mag_field_dat, form='unformatted', recl=rec_len*bnx*bny, access='direct')
         do py = 1, nprocxy-1
-          partner = py + ipz*nprocxy
+          partner = find_proc(modulo(py,nprocx),py/nprocx,0)
           ! read Bz data for remote processors
           read (unit, rec=1+py) Bz
           ! send Bz data to remote
@@ -6569,7 +6463,6 @@ print*,'AXEL ltime3: time1=',time1
         call stop_it_if_any(.false.,'')
         if (lfirst_proc_z) then
           ! receive Bz data
-          partner = ipy + ipz*nprocxy
           call mpirecv_real (Bz, (/ bnx, bny /), 0, tag_xy)
         endif
       endif
@@ -6578,11 +6471,11 @@ print*,'AXEL ltime3: time1=',time1
         ! distribute Bz along the z-direction
         if (lfirst_proc_z) then
           do pz = 1, nprocz-1
-            partner = ipx + ipy*nprocx + pz*nprocxy
+            partner = find_proc(ipx,ipy,pz)
             call mpisend_real (Bz, (/ bnx, bny /), partner, tag_z)
           enddo
         else
-          partner = ipx + ipy*nprocx
+          partner = find_proc(ipx,ipy,0)
           call mpirecv_real (Bz, (/ bnx, bny /), partner, tag_z)
         endif
       endif
@@ -6743,7 +6636,7 @@ print*,'AXEL ltime3: time1=',time1
                 f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
               endif
             else
-              partner = ipx + ipy*nprocx + pz*nprocxy
+              partner = find_proc(ipx,ipy,pz)
               call mpisend_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
             endif
           enddo
@@ -6753,7 +6646,7 @@ print*,'AXEL ltime3: time1=',time1
         call stop_it_if_any(.false.,'')
         do comp = 1, 3
           if (lfirst_proc_xy) then
-            partner = ipx + ipy*nprocx
+            partner = find_proc(ipx,ipy,0)
             call mpirecv_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
             call distribute_xy(A_local, A_global)
           else

@@ -116,6 +116,7 @@ module Sub
   public :: vortex
   public :: find_index_by_bisection
   public :: calc_scl_factor
+!$ public :: get_dxyz_2
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -3288,7 +3289,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
+      real, dimension (nx,3) :: uu,ff,ugradf
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,ladd
@@ -3300,8 +3301,7 @@ module Sub
 !
       do j=1,3
 !
-        grad_f_tmp = gradf(:,j,:)
-        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=upwind)
+        call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
         if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -9172,5 +9172,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       endif
 !
     endsubroutine calc_scl_factor
+!***********************************************************************    
+!$    real function get_dxyz_2() bind(C)
+!$      get_dxyz_2 = dxyz_2(nghost)
+!$    end function get_dxyz_2
 !***********************************************************************    
 endmodule Sub

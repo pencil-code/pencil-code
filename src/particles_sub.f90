@@ -20,7 +20,8 @@ module Particles_sub
   public :: input_particles, output_particles
   public :: append_npvar, append_npaux, boundconds_particles
   public :: sum_par_name, max_par_name, integrate_par_name
-  public :: remove_particle, get_particles_interdistance
+  public :: remove_particle, remove_particle_initialize, remove_particle_writelog
+  public :: get_particles_interdistance
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
   public :: find_interpolation_indeces, get_gas_density
@@ -34,6 +35,12 @@ module Particles_sub
     module procedure get_rhopswarm_pencil
     module procedure get_rhopswarm_block
   endinterface
+!
+! Module Variables
+!
+  integer, dimension(:), allocatable :: ipar_rmv, ipar_sink
+  real, dimension(:,:), allocatable :: fp_rmv, fp_sink
+  integer :: mrmv = 1, nrmv = 0  ! number of removed particles
 !
   contains
 !***********************************************************************
@@ -812,39 +819,13 @@ module Particles_sub
       integer, dimension (mpar_loc,3), optional :: ineargrid
       integer, intent(in), optional :: ks
 !
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
       intent (inout) :: fp, dfp, ineargrid
       intent (in)    :: k
 !
-      t_sp = t
+!  Log the particle to be removed.
 !
-!  Write to the respective processor that the particle is removed.
-!  We also write the time.
-!
-!  TODO: It would be better to write this information in binary format to avoid
-!  conversion problems when reading t_rmv with pc_read_pvar.
-!
-!      open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
-      open(20,file=trim(directory_snap)//'/rmv_ipar.dat',position='append') !21-08-14/XYLI.
-      if (present(ks)) then
-        write(20,*) ipar(k), t_sp, ipar(ks)
-      else
-        write(20,*) ipar(k), t_sp
-      endif
-      close(20)
-!
-!      open(20,file=trim(directory)//'/rmv_par.dat', & !21-08-14/XYLI
-      open(20,file=trim(directory_snap)//'/rmv_par.dat', &
-          position='append',form='unformatted')
-      if (present(ks)) then
-        write(20) fp(k,:), fp(ks,:)
-      else
-        write(20) fp(k,:)
-      endif
-      close(20)
-!
-      if (ip<=8) print*, 'removed particle ', ipar(k)
+      call remove_particle_log(fp, ipar, k, ks)
+      if (ip <= 8) print *, 'remove particle ', ipar(k)
 !
 !  Switch the removed particle with the last particle present in the processor
 !  npar_loc
@@ -860,6 +841,99 @@ module Particles_sub
       npar_loc=npar_loc-1
 !
     endsubroutine remove_particle
+!***********************************************************************
+    subroutine remove_particle_initialize
+!
+!  Allocates buffers for logging removed particles.
+!
+!  21-jan-24/ccyang: coded
+!
+      allocate (ipar_rmv(mrmv), ipar_sink(mrmv), fp_rmv(mparray,mrmv), fp_sink(mparray,mrmv))
+!
+    endsubroutine remove_particle_initialize
+!***********************************************************************
+    subroutine remove_particle_log(fp, ipar, k, ks)
+!
+!  Logs the attributes of each removed particle, and optionally those of
+!  the sink particle that accreted it.
+!
+!  21-jan-24/ccyang: coded
+!
+      real, dimension(mpar_loc,mparray) :: fp
+      integer, dimension(mpar_loc) :: ipar
+      integer :: k
+      integer, optional :: ks
+!
+      integer, dimension(:), allocatable :: itmp
+      real, dimension(:,:), allocatable :: rtmp
+      integer :: mrmv_new
+!
+!  Increment the buffer.
+!
+      nrmv = nrmv + 1
+      cap: if (nrmv > mrmv) then
+        allocate (itmp(2*mrmv), rtmp(mparray,2*mrmv))
+!
+        itmp(:mrmv) = ipar_rmv
+        itmp(mrmv+1:) = ipar_sink
+        rtmp(:,:mrmv) = fp_rmv(:,:)
+        rtmp(:,mrmv+1:) = fp_sink(:,:)
+!
+        deallocate (ipar_rmv, ipar_sink, fp_rmv, fp_sink)
+        mrmv_new = 2 * mrmv
+        allocate (ipar_rmv(mrmv_new), ipar_sink(mrmv_new), fp_rmv(mparray,mrmv_new), fp_sink(mparray,mrmv_new))
+!
+        ipar_rmv(:mrmv) = itmp(:mrmv)
+        ipar_sink(:mrmv) = itmp(mrmv+1:)
+        fp_rmv(:,:mrmv) = rtmp(:,:mrmv)
+        fp_sink(:,:mrmv) = rtmp(:,mrmv+1:)
+!
+        deallocate (itmp, rtmp)
+        mrmv = mrmv_new
+      endif cap
+!
+!  Log the removed particle.
+!
+      ipar_rmv(nrmv) = ipar(k)
+      fp_rmv(:,nrmv) = fp(k,:)
+!
+!  Log the sink particle, if noted.
+!
+      sink: if (present(ks)) then
+        ipar_sink(nrmv) = ipar(ks)
+        fp_sink(:,nrmv) = fp(ks,:)
+      else sink
+        ipar_sink(nrmv) = -1
+        fp_sink(:,nrmv) = 0.0
+      endif sink
+!
+    endsubroutine remove_particle_log
+!***********************************************************************
+    subroutine remove_particle_writelog()
+!
+!  Writes the log of removed particles and clears the log.
+!
+!  21-jan-24/ccyang: coded
+!
+      use IO, only: output_part_rmv
+      use Mpicomm, only: mpiallreduce_sum_int
+!
+      integer :: nsum
+!
+!  Check if any particle has been removed.
+!
+      call mpiallreduce_sum_int(nrmv, nsum)
+      if (nsum <= 0) return
+!
+!  Write the log.
+!
+      call output_part_rmv(ipar_rmv, ipar_sink, fp_rmv, fp_sink, nrmv)
+!
+!  Clear the log.
+!
+      nrmv = 0
+!
+    endsubroutine remove_particle_writelog
 !***********************************************************************
     subroutine count_particles(ipar,npar_found)
 !

@@ -15,9 +15,7 @@ module InitialCondition
   use General, only: keep_compiler_quiet  
   use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
   use Messages
-  use Streamlines, only: trace_field, int_q, trace_streamlines
   use Boundcond ! for the core boundary communication
-  use Fixed_point, only: fixed_points_all, trace_sub, merge_fixed, fixed_points, fidx_all, fidx, buffer_tmp, get_fixed_points
 !
   implicit none
 !
@@ -149,31 +147,11 @@ module InitialCondition
     integer :: l, j, ju, k
     real, dimension (nx,ny,nz,3) :: jj, tmpJ  ! This is phi for poisson.f90
 !
-!   In case field line tracing is applied, use this array.
-!   The last axis is used for the following:
-!   1, 2    for the initial seed position (x0,y0)
-!   3, 4, 5 for the current position in 3d space
-!   6       for the streamline length
-!   7       for the integrated quantity
-    real, pointer, dimension (:,:) :: tracers
-!   the traced field
-    real, pointer, dimension (:,:,:,:) :: vv
-!   filename for the tracer and fixed point output
-    character(len=1024) :: filename, str_tmp
-!
 !   increment variable for the processor index
     integer :: proc_idx
     integer, dimension (MPI_STATUS_SIZE) :: status
 !
-!   array with indices of fixed points to discard (doubles and too close ones)
-    integer :: discard(1000)
-!
     real :: F_L ! auxiliary to make H=A.B gauge-independent
-!
-    if (trace_field == 'bb' .and. ipz == 0) then
-!     allocate memory for the traced field
-      allocate(vv(nx,ny,nz,3))
-    endif
 !
 !   check the braid word
     wordn = word
@@ -460,15 +438,6 @@ module InitialCondition
       call boundconds_y(f)
       call boundconds_z(f)
       call MPI_BARRIER(MPI_comm_world, ierr)
-!
-!     convert the magnetic vector potential into the magnetic field
-      if (trace_field == 'bb' .and. ipz == 0) then
-        do m=m1,m2
-          do n=n1,n2
-            call curl(f,iaa,vv(:,m-nghost,n-nghost,:))
-          enddo
-        enddo
-      endif
     endif
 !
 !   In case the blob configuration is wished create it.
@@ -493,15 +462,6 @@ module InitialCondition
           f(l,m,:,iay) = f(l,m,:,iay) + x(l)*B_bkg/2.
         enddo
       enddo
-!
-!     convert the magnetic vector potential into the magnetic field
-      if (trace_field == 'bb' .and. ipz == 0) then
-        do m=m1,m2
-          do n=n1,n2
-            call curl(f,iaa,vv(:,m-nghost,n-nghost,:))
-          enddo
-        enddo
-      endif
     endif
 !
 !   Apply boundary condition which makes A.B gauge-independent.
@@ -513,114 +473,6 @@ module InitialCondition
     call MPI_BARRIER(MPI_comm_world, ierr)
     call MPI_BCAST(F_L, 1, MPI_REAL, 0, MPI_Comm_world, ierr)
     f(:,:,:,iaz) = f(:,:,:,iaz) - F_L
-!
-!   Trace the specified field lines
-!
-    if (trace_field == 'bb' .and. ipz == 0) then
-!
-!     allocate the memory for the tracers
-      allocate(tracers(nx*ny*trace_sub**2,7))
-!     create the initial seeds at z(1+nghost)-ipz*nz*dz+dz
-      do k=1,ny*trace_sub
-        do j=1,nx*trace_sub
-          tracers(j+(k-1)*(nx*trace_sub),1) = x(1+nghost) + (dx/trace_sub)*(j-1)
-          tracers(j+(k-1)*(nx*trace_sub),2) = y(1+nghost) + (dy/trace_sub)*(k-1)
-          tracers(j+(k-1)*(nx*trace_sub),3) = tracers(j+(k-1)*(nx*trace_sub),1)
-          tracers(j+(k-1)*(nx*trace_sub),4) = tracers(j+(k-1)*(nx*trace_sub),2)
-          tracers(j+(k-1)*(nx*trace_sub),5) = z(n1)-ipz*nz*dz+dz
-          tracers(j+(k-1)*(nx*trace_sub),6) = 0.
-          tracers(j+(k-1)*(nx*trace_sub),7) = 0.
-        enddo
-      enddo
-!
-!     find the tracers
-!
-      call trace_streamlines(f,tracers,nx*ny*trace_sub**2,vv)
-!     write into output file
-      write(str_tmp, "(I10.1,A)") iproc, '/tracers.dat'
-      write(filename, *) 'data/proc', adjustl(trim(str_tmp))
-      open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")
-      write(1) 0., tracers(:,:)
-      close(1)
-!
-!     find the fixed points
-!
-      if (int_q == 'curlyA') then
-        call get_fixed_points(f,tracers,vv)
-!       communicate the fixed points to proc0
-        call MPI_BARRIER(MPI_comm_world, ierr)
-        if (iproc == 0) then
-          fixed_points_all(1:fidx,:) = fixed_points(1:fidx,:)
-!         receive the fixed_points from the other cores
-          fidx_all = fidx
-          do proc_idx=1,(nprocx*nprocy*nprocz-1)
-!           receive the number of fixed points of that proc
-            fidx = 0
-            call MPI_RECV(fidx, 1, MPI_integer, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
-            if (ierr /= MPI_SUCCESS) &
-                call fatal_error("streamlines", "MPI_RECV could not receive")
-!           receive the fixed points form that proc
-            if (fidx > 0) then
-              call MPI_RECV(buffer_tmp, fidx*3, MPI_real, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
-              fixed_points_all(fidx_all+1:fidx_all+fidx,:) = transpose(buffer_tmp(:,1:fidx))
-              if (ierr /= MPI_SUCCESS) &
-                  call fatal_error("streamlines", "MPI_RECV could not receive")
-              fidx_all = fidx_all + fidx
-            endif
-          enddo
-!
-!         Check whether fixed points are too close or out of the domain.
-!
-          discard(:) = 0
-          do j=1,fidx_all
-            if ((fixed_points_all(j,1) < x0) .or. (fixed_points_all(j,1) > (x0+Lx)) .or. &
-              (fixed_points_all(j,2) < y0) .or. (fixed_points_all(j,2) > (y0+Ly))) then
-              discard(j) = 1
-            else
-              do l=j+1,fidx_all
-                if ((abs(fixed_points_all(l,1) - fixed_points_all(j,1)) < dx/2) .and. &
-                    (abs(fixed_points_all(l,2) - fixed_points_all(j,2)) < dy/2)) then
-                  discard(l) = 1
-                endif
-              enddo
-            endif
-          enddo
-!
-          open(unit = 1, file = 'data/fixed_points.dat', form = "unformatted")
-          write(1) 0.
-          write(1) float(fidx_all-sum(discard))
-          do l=1,fidx_all
-            if (discard(l) == 0) then
-              write(1) fixed_points_all(l,:)
-            endif
-          enddo
-          close(1)
-!
-        else
-          call MPI_SEND(fidx, 1, MPI_integer, 0, MERGE_FIXED, MPI_comm_world, ierr)
-          if (ierr /= MPI_SUCCESS) &
-              call fatal_error("streamlines", "MPI_SEND could not send")
-          buffer_tmp = transpose(fixed_points)
-          call MPI_SEND(buffer_tmp, fidx*3, MPI_real, 0, MERGE_FIXED, MPI_comm_world, ierr)              
-          if (ierr /= MPI_SUCCESS) &
-              call fatal_error("streamlines", "MPI_SEND could not send")
-        endif
-          
-        write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
-        write(filename, *) 'data/proc', adjustl(trim(str_tmp))
-        open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")
-        write(1) 0.
-        write(1) float(fidx)
-        do l=1,fidx
-          write(1) fixed_points(l,:)
-        enddo
-        close(1)
-      endif
-!
-!     free allocated memory
-      deallocate(tracers)
-      deallocate(vv)
-    endif
 !
   endsubroutine initial_condition_aa
 !***********************************************************************

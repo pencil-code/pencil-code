@@ -2587,10 +2587,8 @@ module Interstellar
 !  ??-nov-02/grs : coded from GalaxyCode
 !  20-may-03/tony: pencil formulation and broken into subroutines
 !
-      use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb ,&
-                                 ilnrho_ss, irho_ss
-      use Mpicomm, only: mpireduce_max, mpibcast_real, &
-                         mpireduce_sum, mpibcast_int
+      use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, ilnrho_ss, irho_ss
+      use Mpicomm, only: mpireduce_max, mpibcast_real, mpireduce_sum, mpibcast_int
       use General, only: keep_compiler_quiet
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
@@ -2871,15 +2869,22 @@ module Interstellar
           f(l1:l2,m,n,ilnrho)=lnrho
         endif
         if (lSN_eth) then
-          call eosperturb &
-              (f,nx,ee=real((ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)))
+          if (lentropy) then
+            call eoscalc(lnrho_ee,lnrho,real((ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)),ss=f(l1:l2,m,n,iss))
+          elseif (ltemperature) then
+            if (ltemperature_nolog) then
+              call eoscalc(lnrho_ee,lnrho,real((ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)),TT=f(l1:l2,m,n,iTT))
+            else
+              call eoscalc(lnrho_ee,lnrho,real((ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)),lnTT=f(l1:l2,m,n,ilnTT))
+            endif
+          elseif (ltthermal_energy) then
+            call eoscalc(lnrho_ee,lnrho,real((ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)),eth=f(l1:l2,m,n,iss))
+          endif
         endif
         if (ldensity_nolog) then
-          call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss),&
-            yH=yH,lnTT=lnTT)
+          call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
         else
-          call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),&
-            yH=yH,lnTT=lnTT)
+          call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
         endif
         lnTT=log(TT)
         if (lentropy.and.ilnTT/=0) f(l1:l2,m,n,ilnTT)=lnTT
