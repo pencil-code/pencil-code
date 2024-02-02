@@ -508,7 +508,7 @@ ifneq ($(GPU),nogpu)
       GPU_DEPS = gpu_preps
       #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
-      LDFLAGS_LIB = -L astaroth/build/NUMA-scheduler/src -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -L astaroth/submodule/build/src/utils -lastaroth_core -lkernels  -l:libmt-fortran.a -l:libmt.a -lstdc++ -lastaroth_utils -l:$(LIBGPU)
+      LDFLAGS_LIB = -L astaroth/scheduler-build/src -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -L astaroth/submodule/build/src/utils -lastaroth_core -lkernels  -l:libmt-fortran.a -l:libmt.a -lstdc++ -lastaroth_utils -l:$(LIBGPU)
   #   the following needed?
       LDFLAGS_LIB += -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -ldl
   #-fzero-link

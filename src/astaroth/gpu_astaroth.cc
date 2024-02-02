@@ -649,7 +649,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
     df_mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal *)malloc(sizeof(AcReal) * mw);
     next_mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal *)malloc(sizeof(AcReal) * mw);
   }
-  constexpr AcReal epsilon = pow(0.1,12);
+  const AcReal epsilon = pow(0.1,12);
   // constexpr AcReal epsilon = 0.0;
   constexpr AcReal local_dt = 0.001;
   acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, local_dt);

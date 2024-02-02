@@ -6,6 +6,7 @@ module Cparam
 !
   implicit none
 !
+!BEGIN C BINDING
   integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
   integer, parameter :: ikind4=selected_int_kind(9)   ! 4-byte integer kind
   integer, parameter :: ikind1=selected_int_kind(2)   ! 1-byte integer kind
@@ -159,19 +160,6 @@ module Cparam
   integer, parameter :: ilabel_sum_weighted=7,ilabel_sum_weighted_sqrt=8
   integer, parameter :: ilabel_sum_lim=9,ilabel_complex=100
 !
-!  pi and its derivatives.
-!
-  real, parameter :: pi=3.14159265358979323846264338327950d0
-  real, parameter :: pi_1=1./pi,pi4_1=pi**(-4),pi5_1=pi**(-5)
-  real, parameter :: sqrtpi=1.77245385090551602729816748334115d0
-  real, parameter :: sqrt2=1.41421356237309504880168872420970d0
-  real, parameter :: sqrt2pi=sqrt2*sqrtpi
-  real, parameter :: four_pi_over_three=4.0/3.0*pi
-  real, parameter :: onethird=1./3., twothird=2./3., fourthird=4./3., onesixth=1./6.
-  real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958d0
-  real, parameter :: twopi = 6.2831853071795864769252867665590d0
-  real, parameter :: dtor = pi/180.d0
-!
   real, parameter :: lntwo=0.69314718055995d0
 !
 !  first zeros of Bessel functions of order 0 and 1
@@ -179,30 +167,6 @@ module Cparam
 !
   real, parameter :: k1bessel0=2.4048255577, k1bessel1=3.8317060
   real, parameter :: k2bessel0=5.5200781
-!
-!  Physical constants, taken from
-!  http://physics.nist.gov/cuu/Constants/index.html.
-!
-  real(KIND=rkind8), parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
-  real(KIND=rkind8), parameter :: k_B_cgs=1.3806505d-16     ! [erg/K]
-  real(KIND=rkind8), parameter :: m_u_cgs=1.66053886d-24    ! [g]
-  real(KIND=rkind8), parameter :: mu0_cgs=4*pi              ! [cgs]
-  ! Better express R_cgs as a derived quantity (i.e. don't define here...)
-  ! (Not done yet since it breaks the interstellar test)
-  !real(KIND=rkind8), parameter :: R_cgs=k_B_cgs/m_u_cgs    ! [erg/g/K]
-  real(KIND=rkind8), parameter :: R_cgs=8.3144D7            ! [erg/g/K]
-  ! It would be better to specify the following masses in units of m_u:
-  real(KIND=rkind8), parameter :: m_p_cgs=1.67262158d-24    ! [g]
-  real(KIND=rkind8), parameter :: m_e_cgs=9.10938188d-28    ! [g]
-  real(KIND=rkind8), parameter :: m_H_cgs=m_e_cgs+m_p_cgs   ! [g]
-  real(KIND=rkind8), parameter :: eV_cgs=1.602176462d-12    ! [erg]
-  real(KIND=rkind8), parameter :: sigmaSB_cgs=5.670400d-5   ! [erg/cm^2/s/K^4]
-! unclear source (probably just guessing?)
-  real(KIND=rkind8), parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
-  real(KIND=rkind8), parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
-  real(KIND=rkind8), parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
-  real(KIND=rkind8), parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
-  real(KIND=rkind8), parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
 !
   logical, parameter :: ALWAYS_FALSE=.false.
 !
@@ -256,5 +220,43 @@ module Cparam
 !  The order of the patches is the same as in MATINS.
 !
   integer, parameter :: XPLUS=1, YPLUS=2, XMINUS=3, YMINUS=4, ZPLUS=5, ZMINUS=6
+!END C BINDING
 !
+!
+!  pi and its derivatives.
+!
+  real, parameter :: pi=3.14159265358979323846264338327950d0
+  real, parameter :: pi_1=1./pi,pi4_1=pi**(-4),pi5_1=pi**(-5)
+  real, parameter :: sqrtpi=1.77245385090551602729816748334115d0
+  real, parameter :: sqrt2=1.41421356237309504880168872420970d0
+  real, parameter :: sqrt2pi=sqrt2*sqrtpi
+  real, parameter :: four_pi_over_three=4.0/3.0*pi
+  real, parameter :: onethird=1./3., twothird=2./3., fourthird=4./3., onesixth=1./6.
+  real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958d0
+  real, parameter :: twopi = 6.2831853071795864769252867665590d0
+  real, parameter :: dtor = pi/180.d0
+!
+!  Physical constants, taken from
+!  http://physics.nist.gov/cuu/Constants/index.html.
+!
+  real(KIND=rkind8), parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
+  real(KIND=rkind8), parameter :: k_B_cgs=1.3806505d-16     ! [erg/K]
+  real(KIND=rkind8), parameter :: m_u_cgs=1.66053886d-24    ! [g]
+  real(KIND=rkind8), parameter :: mu0_cgs=4*pi              ! [cgs]
+  ! Better express R_cgs as a derived quantity (i.e. don't define here...)
+  ! (Not done yet since it breaks the interstellar test)
+  !real(KIND=rkind8), parameter :: R_cgs=k_B_cgs/m_u_cgs    ! [erg/g/K]
+  real(KIND=rkind8), parameter :: R_cgs=8.3144D7            ! [erg/g/K]
+  ! It would be better to specify the following masses in units of m_u:
+  real(KIND=rkind8), parameter :: m_p_cgs=1.67262158d-24    ! [g]
+  real(KIND=rkind8), parameter :: m_e_cgs=9.10938188d-28    ! [g]
+  real(KIND=rkind8), parameter :: m_H_cgs=m_e_cgs+m_p_cgs   ! [g]
+  real(KIND=rkind8), parameter :: eV_cgs=1.602176462d-12    ! [erg]
+  real(KIND=rkind8), parameter :: sigmaSB_cgs=5.670400d-5   ! [erg/cm^2/s/K^4]
+! unclear source (probably just guessing?)
+  real(KIND=rkind8), parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
+  real(KIND=rkind8), parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
+  real(KIND=rkind8), parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
+  real(KIND=rkind8), parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
+  real(KIND=rkind8), parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
 endmodule Cparam
