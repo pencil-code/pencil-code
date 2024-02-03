@@ -66,7 +66,7 @@ CPP = nvcc
 #CRAY with HIP
 CPP = hipcc
 #CC -xhip
-	CCP $(CCFLAGS) $(ENVIRON) -DAC_USE_HIP=1 -dc $< -o $@
+	CPP $(CCFLAGS) $(ENVIRON) -DAC_USE_HIP=1 -dc $< -o $@
 
 astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
 	mkdir -p build
