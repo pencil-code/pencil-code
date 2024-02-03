@@ -66,6 +66,7 @@ CPP = nvcc
 #CRAY with HIP
 CPP = hipcc
 #CC -xhip
+	CCP $(CCFLAGS) $(ENVIRON) -DAC_USE_HIP=1 -dc $< -o $@
 
 astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
 	mkdir -p build
@@ -100,7 +101,7 @@ update_astaroth_libs:
 #export DSL_MODULE=pc_mhd_solver && \
 
 %.o: %.cc
-	CC $(CCFLAGS) $(ENVIRON) -DAC_USE_HIP=1 -dc $< -o $@
+	CCP $(CCFLAGS) $(ENVIRON) -DAC_USE_HIP=1 -dc $< -o $@
 $(PC_HEADERS): .sentinel
 .sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
 	@rm -f $(PCHEADER_DIR)/PC_modulepars.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
