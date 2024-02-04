@@ -398,6 +398,12 @@ AcReal max_diffus()
 #endif
 #if LMAGNETIC
   maxdiffus_ = std::max(maxdiffus_, eta * dxyz_2_val);
+        //maxdiffus_=nu*dxyz_2[nghost-1];
+        //maxdiffus_=nu/(dx*dx);
+#endif
+#if LMAGNETIC
+        //maxdiffus_=std::max(maxdiffus_,eta*dxyz_2[nghost-1]);
+        //maxdiffus_=eta/(dx*dx);
 #endif
   return maxdiffus_;
 }

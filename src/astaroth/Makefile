@@ -50,7 +50,8 @@ OBJECTS = $(SOURCES:.cc=.o)
 
 CCFLAGS = $(OPTFLAGS) -std=c++11 -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -g -G -lm
 #CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
-CCFLAGS = $(OPTFLAGS) -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm 
+#CCFLAGS = $(OPTFLAGS) -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm 
+CCFLAGS = $(OPTFLAGS) -Xcompiler -shared -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm
 
 PCHEADER_DIR=.
 #DSL_MODULE_DIR=Pencil
@@ -61,6 +62,10 @@ include Makefile.extern
 
 #export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
 #export CUDA_NVCC_FLAGS='-shared -fPIC'
+CPP = nvcc
+#CRAY with HIP
+CPP = hipcc
+#CC -xhip
 
 astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
 	mkdir -p build
@@ -71,14 +76,19 @@ astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_modu
 	cp ./build/libastaroth_sgl.so libastaroth_sgl.so
 	cp libastaroth_sgl.so astaroth_sgl.so
 
+#	$(CPP) $(CCFLAGS) $(CUFLAGS) -shared -o astaroth_$(PREC).so $(OBJECTS) -L submodule/build/src/core -L submodule/build/src/core/kernels -L submodule/build/src/utils -lastaroth_core -lkernels -Isubmodule/include
+#-lastaroth_utils
 
 astaroth_libs:
 	mkdir -p submodule/build && cd submodule/build && \
 	export DSL_MODULE=$(DSL_MODULE_DIR); export CMAKE_PREC=$(CMAKE_PREC); cmake -DMULTIGPU_ENABLED=ON -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DUSE_OMP=ON -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DUSE_CUDA_AWARE_MPI=OFF\
               -D$(CMAKE_PACKED) -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF  -DADJACENT_VERTEX_BUFFERS=ON -DUSE_HIP=ON -DLINEAR_PROC_MAPPING=ON -DUSE_EXTERNAL_DECOMP=ON -DVERBOSE=OFF -DCMAKE_BUILD_TYPE=Debug -DOPTIMIZE_MEM_ACCESSES=ON -DAUTOTUNE_TASKGRAPHS=OFF -DBUILD_STANDALONE=OFF .. \
 	&& make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
+#	export DSL_MODULE=$(DSL_MODULE_DIR); cmake -DMULTIGPU_ENABLED=OFF -DBUILD_SHARED=ON -DSINGLEPASS_INTEGRATION=OFF -DBUILD_STANDALONE=OFF -DBUILD_UTILS=OFF \
+#              -D$(CMAKE_PACKED) -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=DEBUG -DADJACENT_VERTEX_BUFFERS=ON -DUSE_HIP=ON -DBUILD_SHARED_LIBS=ON .. \
 	@echo PRECISION=$(CMAKE_PREC)
 	@echo ENVIRON: $(ENVIRON)
+
 update_astaroth_libs:
 	cd submodule/build && \
 	make -I../../.. VERBOSE=0 # Build the core Astaroth library
@@ -89,7 +99,8 @@ update_astaroth_libs:
 #-DCMAKE_CXX_COMPILER=/appl/spack/install-tree/gcc-4.8.5/gcc-8.3.0-qzmzn5/bin/c++ .. \
 #export DSL_MODULE=pc_mhd_solver && \
 
-
+%.o: %.cc
+	$(CPP) $(CCFLAGS) $(ENVIRON) -DAC_USE_HIP=1 -dc $< -o $@
 $(PC_HEADERS): .sentinel
 .sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
 	@rm -f $(PCHEADER_DIR)/PC_modulepars.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
