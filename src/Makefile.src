@@ -509,10 +509,13 @@ ifneq ($(GPU),nogpu)
       #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
       LDFLAGS_LIB = -L astaroth/scheduler-build/src -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -L astaroth/submodule/build/src/utils -lastaroth_core -lkernels  -l:libmt-fortran.a -l:libmt.a -lstdc++ -lastaroth_utils -l:$(LIBGPU)
+      LDFLAGS+= -L src/astaroth/scheduler-build/src -L astaroth/scheduler-build/src
   #   the following needed?
       LDFLAGS_LIB += -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -ldl
-  #-fzero-link
+  #-fzero-link  
 
+print_vendor:
+	echo GPU_VENDOR=$(GPU_VENDOR) > astaroth/Makefile.vendor
     else
       $(error Directory src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
     endif
@@ -522,6 +525,26 @@ ifneq ($(GPU),nogpu)
 #
 else
   GPU_INTERFACE=
+endif
+ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
+  #FFLAGS = $(FFLAGS) -I./astaroth/include
+  override FFLAGS += -homp
+  LDFLAGS_MAIN = $(LDFLAGS_MAIN) $(OMPLFLAGS)
+#  OMP_PREREQ = copyin.inc
+#  Creates code for copying in threadprivate variables. - Not needed at the moment.
+#
+#copyin.inc: Makefile.local $(PENCIL_HOME)/src/copyin.inc
+#	@cp -f $(PENCIL_HOME)/src/copyin.inc .
+#	@for file in `grep '^ *[A-Z0-9_]* *=' Makefile.local | sed -f omp.sed`; do \
+#	  use=`grep '^ *module' $$file | grep -v 'module  *procedure' | sed -e's/module/use/'`; \
+#	  sub=`grep '^ *subroutine  *copyin_' $$file | sed -e's/subroutine/call/'`; \
+#	  if [ "$$sub" != "" ]; then \
+#	    echo "  $$use\n" "$$(cat copyin.inc)" > copyin.inc; \
+#	    echo "$$sub" >> copyin.inc ; \
+#	  fi \
+# done
+else
+  MULTITHREADING = 
 endif
 #
 ifneq ($(filter $(IO) $(IO_IN), io_hdf5),)
@@ -3026,27 +3049,6 @@ endif
 #
 #  Compiler setting for OpenMP (gfortran and ifort only at the moment).
 #
-ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
-  FFLAGS += $(OMPFFLAGS)
-  FFLAGS += -I./astaroth/include
-  FFLAGS += -ffree-line-length-none
-  LDFLAGS += $(OMPLFLAGS)
-#  OMP_PREREQ = copyin.inc
-#  Creates code for copying in threadprivate variables. - Not needed at the moment.
-#
-copyin.inc: Makefile.local $(PENCIL_HOME)/src/copyin.inc
-	@cp -f $(PENCIL_HOME)/src/copyin.inc .
-	@for file in `grep '^ *[A-Z0-9_]* *=' Makefile.local | sed -f omp.sed`; do \
-	  use=`grep '^ *module' $$file | grep -v 'module  *procedure' | sed -e's/module/use/'`; \
-	  sub=`grep '^ *subroutine  *copyin_' $$file | sed -e's/subroutine/call/'`; \
-	  if [ "$$sub" != "" ]; then \
-	    echo "  $$use\n" "$$(cat copyin.inc)" > copyin.inc; \
-	    echo "$$sub" >> copyin.inc ; \
-	  fi \
-	done
-else
-  MULTITHREADING = 
-endif
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
