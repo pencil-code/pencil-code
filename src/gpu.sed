@@ -28,6 +28,7 @@
 /PARTICLES/ b end
 /IMPLICIT_DIFFUSION/ b end
 /MULTITHREADING/ b end
+/GPU_VENDOR/ b end
 s/^ *[A-Z0-9_]* *= *noviscosity *$/#undef LVISCOSITY/ 
 t prin
 b cont0

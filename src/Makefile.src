@@ -527,9 +527,8 @@ else
   GPU_INTERFACE=
 endif
 ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
-  #FFLAGS = $(FFLAGS) -I./astaroth/include
-  override FFLAGS += -homp
-  LDFLAGS_MAIN = $(LDFLAGS_MAIN) $(OMPLFLAGS)
+  override FFLAGS += $(OMPFFLAGS) -I./astaroth/include
+  override LDFLAGS += $(OMPLFLAGS)
 #  OMP_PREREQ = copyin.inc
 #  Creates code for copying in threadprivate variables. - Not needed at the moment.
 #
