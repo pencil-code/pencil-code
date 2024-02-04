@@ -933,9 +933,7 @@ module Io
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to find file position")
       call fatal_error_local_collect()
 !
-      esize = int(sum(rmv_list(:iproc)), KIND=MPI_COUNT_KIND) * esize
-      disp = disp + int(esize, KIND=MPI_OFFSET_KIND)
-!
+      disp = disp + int(sum(rmv_list(:iproc)) * int(esize), KIND=MPI_OFFSET_KIND)
       call MPI_FILE_SET_VIEW(handle, disp, MPI_INTEGER, filetype, "native", io_info, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to set file view")
 !
