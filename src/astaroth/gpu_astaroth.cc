@@ -7,7 +7,6 @@
            ANSI C and standard library callable function wrappers for ASTAROTH-nucleus functions to be called from Fortran.
   Comments: 
 */
-
 //General
 //#include <cmath>
 #include <algorithm>
