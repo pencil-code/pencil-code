@@ -46,6 +46,8 @@
 ; /addghosts: Adds ghost layers to the given x/y/z starting/ending coordinates.
 ;   /trimall: Remove ghost layers from the returned data, dim and grid.
 ;     /quiet: Suppress any information messages and summary statistics.
+;       /sim: Simulates only -> proc subdirectories and varfiles need not to exist;
+;             calculates needed memory size.
 ;
 ; EXAMPLES:
 ;
@@ -68,7 +70,7 @@
 pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datadir, var_list=var_list, varcontent=varcontent, $
                         start_param=start_param, run_param=run_param, trimall=trimall, allprocs=allprocs, reduced=reduced, $
                         xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, addghosts=addghosts, dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid, $
-                        time=time, name=name, quiet=quiet, swap_endian=swap_endian, f77=f77, single=single, help=help
+                        time=time, name=name, quiet=quiet, swap_endian=swap_endian, f77=f77, single=single, help=help, simulate=sim
 
 	; Use common block belonging to derivative routines etc. so they can be set up properly.
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -89,6 +91,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	if (keyword_set (name)) then name += "_" else name = "pc_read_subvol_raw_"
 	if (keyword_set (reduced)) then allprocs = 1
 	default, single, 0
+	default, sim, 0
 
 	; Default data directory.
 	datadir = pc_get_datadir(datadir)
@@ -162,8 +165,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	; Get necessary parameters quietly.
 	pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
 	pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet
-	if not is_defined(run_param) then $
-  	  print, 'Could not find '+datadir+'/param2.nml'
+	if not is_defined(run_param) then print, 'Could not find '+datadir+'/param2.nml'
 
 	; Set the coordinate system.
 	coord_system = start_param.coord_system
@@ -172,7 +174,10 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet, single=single
 
 	; Read timestamp.
-	pc_read_var_time, time=time, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=start_param, /quiet, single=single
+        if (not sim) then $
+	  pc_read_var_time, time=time, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=start_param, /quiet, single=single $
+        else $
+          time=0.
 
 	; Generate dim structure of the sub-volume.
 	sub_dim = dim
@@ -267,15 +272,17 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		name += "trimmed_"
 	endif
 
-	if (not keyword_set (quiet)) then begin
-		print, ' t = ', time
-		print, ''
-	endif
-
-	name += strtrim (xgs, 2)+"_"+strtrim (xge, 2)+"_"+strtrim (ygs, 2)+"_"+strtrim (yge, 2)+"_"+strtrim (zgs, 2)+"_"+strtrim (zge, 2)
-	sub_grid = create_struct (name=name, $
-		['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Ox', 'Oy', 'Oz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
-		time, x, y, z, dx, dy, dz, Ox, Oy, Oz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
+	if (not sim) then begin
+  	  if (not keyword_set (quiet)) then begin
+  		print, ' t = ', time
+  		print, ''
+  	  endif
+  
+  	  name += strtrim (xgs, 2)+"_"+strtrim (xge, 2)+"_"+strtrim (ygs, 2)+"_"+strtrim (yge, 2)+"_"+strtrim (zgs, 2)+"_"+strtrim (zge, 2)
+  	  sub_grid = create_struct (name=name, $
+  		['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Ox', 'Oy', 'Oz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
+  		time, x, y, z, dx, dy, dz, Ox, Oy, Oz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
+        endif
 
 	; Load HDF5 varfile if requested or available.
 	if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
@@ -333,7 +340,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		if (file_test (datadir+'/allprocs/'+varfile)) then begin
 			allprocs = 1
 		end else if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then begin
-			allprocs = 2
+			if (not sim) then allprocs = 2
 		end
 	end
 	default, allprocs, 0
@@ -433,6 +440,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	end
 
 	; Iterate over processors.
+        if sim then print, 'Files to be read:'
 	for ipz = ipz_start, ipz_end do begin
 		if (num_read le 0) then continue
 		for ipy = ipy_start, ipy_end do begin
@@ -449,7 +457,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 				pz_delta = pz_end - pz_start + 1
 
 				; Initialize read buffer.
-				buffer = make_array (px_delta, type=type_idl)
+				if (not sim) then buffer = make_array (px_delta, type=type_idl)
 
 				; Initialize processor specific parameters.
 				iproc = ipx + ipy*dim.nprocx + ipz*dim.nprocx*dim.nprocy
@@ -465,35 +473,40 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 				; Build the full path and filename.
 				filename = datadir+'/'+procdir+'/'+varfile
 
-				; Check for existence and read the data.
-				if (not file_test(filename)) then message, 'ERROR: File not found "'+filename+'"'
+				if (not sim) then begin
+				  ; Check for existence and read the data.
+				  if (not file_test(filename)) then message, 'ERROR: File not found "'+filename+'"'
 
 				; Open a varfile and read some data!
-				openr, lun, filename, swap_endian=swap_endian, /get_lun
-				mx = long64 (procdim.mx)
-				mxy = mx * procdim.my
-				mxyz = mxy * procdim.mz
-				for pos = 0, num_read-1 do begin
-					pa = indices[pos]
-					for pz = pz_start, pz_end do begin
-						for py = py_start, py_end do begin
-							point_lun, lun, data_bytes * (px_start + py*mx + pz*mxy + pa*mxyz) + long64 (markers*4)
-							readu, lun, buffer
-							object[x_off:x_off+px_delta-1,y_off+py-py_start,z_off+pz-pz_start,pos] = buffer
-						endfor
-					endfor
-				endfor
-				close, lun
-				free_lun, lun
+                                  openr, lun, filename, swap_endian=swap_endian, /get_lun
+				  mx = long64 (procdim.mx)
+				  mxy = mx * procdim.my
+				  mxyz = mxy * procdim.mz
+				  for pos = 0, num_read-1 do begin
+				  	pa = indices[pos]
+				  	for pz = pz_start, pz_end do begin
+				  		for py = py_start, py_end do begin
+				  			point_lun, lun, data_bytes * (px_start + py*mx + pz*mxy + pa*mxyz) + long64 (markers*4)
+				  			readu, lun, buffer
+				  			object[x_off:x_off+px_delta-1,y_off+py-py_start,z_off+pz-pz_start,pos] = buffer
+				  		endfor
+				  	endfor
+				  endfor
+				  close, lun
+				  free_lun, lun
+                                endif else $
+                                  print, filename
 			end
 		end
 	end
+        if sim then begin
+          print, 'Needs ', gx_delta*gy_delta*gz_delta*num_read*(single ? 4 : data_bytes), ' Bytes of memory.'
+        endif else begin
+	  ; Tidy memory a little.
+	  undefine, buffer
 
-	; Tidy memory a little.
-	undefine, buffer
-
-	; Remove ghost zones from data, if requested.
-	if (keyword_set (trimall) and (num_read ge 1)) then object = object[l1:l2,m1:m2,n1:n2,*]
-
+	  ; Remove ghost zones from data, if requested.
+	  if (keyword_set (trimall) and (num_read ge 1)) then object = object[l1:l2,m1:m2,n1:n2,*]
+        endelse
 END
 
