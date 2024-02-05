@@ -1,7 +1,3 @@
-[submodule "src/astaroth/submodule"]
-	path = src/astaroth/submodule
-	url = git@bitbucket.org:jpekkila/astaroth.git
-	branch = pencil-merge
 [submodule "src/astaroth/NUMA-scheduler"]
 	path = src/astaroth/NUMA-scheduler
 	url = https://github.com/ToxPuro/NUMA-scheduler.git
