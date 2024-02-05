@@ -40,9 +40,9 @@ endif
 ;
 datadir = pc_get_datadir(datadir)
 default, down, 0
-pc_read_dim, obj=dim, datadir=datadir, quiet=quiet, down=down
-pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
-pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
+if not is_defined(dim) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet, down=down
+if not is_defined(param) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
+if not is_defined(run_param) then pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
 default, noaux, 0
 default, hdf5, 0
 default, single, 0
