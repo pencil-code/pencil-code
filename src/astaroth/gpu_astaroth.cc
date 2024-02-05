@@ -19,14 +19,14 @@
 
 #define CUDA_ERRCHK(X)
 
-#include "submodule/acc-runtime/api/errchk.h"
-#include "submodule/acc-runtime/api/math_utils.h"
-#include "submodule/include/astaroth.h"
-#include "submodule/build/acc-runtime/api/user_defines.h"
-#include "submodule/src/core/kernels/kernels.h"
-#include "submodule/src/core/task.h"
-#include "submodule/acc-runtime/api/math_utils.h"
-#include "submodule/include/astaroth_utils.h"
+#include "errchk.h"
+#include "math_utils.h"
+#include "astaroth.h"
+#include "user_defines.h"
+#include "kernels.h"
+#include "task.h"
+#include "math_utils.h"
+#include "astaroth_utils.h"
 #define real AcReal
 #define EXTERN
 #define FINT int
@@ -1033,6 +1033,13 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
   //TODO make cleaner.
   //Needed since based on the sample used some profiles might not have been 
   //allocated
+  for(int profile=0;profile<NUM_PROFILES;profile++)
+  {
+    if(mesh.info.profiles[profile] == nullptr)
+    {
+      mesh.info.profiles[profile] = (AcReal*)malloc(mesh.info.int_params[profile_lengths[profile]]*sizeof(AcReal));
+    }
+  }
   acGridInit(mesh.info);
 
   VertexBufferHandle all_fields[NUM_VTXBUF_HANDLES];
