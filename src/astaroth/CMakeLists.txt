@@ -168,16 +168,19 @@ add_definitions(-DAC_DEFAULT_CONFIG="${CMAKE_SOURCE_DIR}/config/astaroth.conf")
 include_directories(./submodule/include)                                  # Library headers
 include_directories(./submodule/build)
 include_directories(./submodule/build/acc-runtime/api)
+include_directories(./submodule/acc-runtime/api)
 include_directories(./..)
 include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}) # CUDA headers
-include_directories(./NUMA-scheduler/include)
 include_directories(./submodule/build/src/core)
 include_directories(./submodule/build/src/core/kernels)
 include_directories(./submodule/build/src/utils)
+include_directories(./submodule/src/core/kernels)
+include_directories(./submodule/src/core)
 
 link_directories(./submodule/build/src/core)
 link_directories(./submodule/build/src/core/kernels)
 link_directories(./submodule/build/src/utils)
+link_directories(./submodule/build/acc-runtime/api)
 
 add_compile_options(-DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX})
 add_compile_options(-DPACKED_DATA_TRANSFERS=1)
