@@ -287,7 +287,11 @@ class SliceSeries(object):
                         slice_series = np.zeros([nt, vsize, hsize], dtype=precision)
                         for it in iter_list:
                             if ds.__contains__(str(it)):
-                                slice_series[istart] = ds[str(it) + "/data"][::downsample,::downsample]
+                                try:
+                                    slice_series[istart] = ds[str(it) + "/data"][::downsample,::downsample]
+                                except:
+                                    print("{} data corrupted or missing".format(it))
+                                    continue
                             else:
                                 print("no data at {} in ".format(it) + file_name)
                             istart += 1
