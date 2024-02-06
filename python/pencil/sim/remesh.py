@@ -15,13 +15,13 @@ from scipy.interpolate import interp1d
 import subprocess as sub
 import sys
 from sys import stdout
-
+import os
 from pencil.math.derivatives import grad
 from pencil.io import open_h5, group_h5, dataset_h5
 from os.path import exists
 
 
-def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True):
+def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True, kind="linear"):
     """
     local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True)
 
@@ -45,19 +45,19 @@ def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True):
         print("x", tmp.shape, xsrc.min(), xsrc.max(), xdst.min(), xdst.max())
         print("x", tmp.shape, xsrc.shape, xdst.shape)
     if not xsrc.size == xdst.size:
-        interp = interp1d(xsrc, tmp, axis=-1, fill_value="extrapolate")
+        interp = interp1d(xsrc, tmp, axis=-1, kind=kind, fill_value="extrapolate")
         tmp = interp(xdst)
     if not quiet:
         print("y", tmp.shape, ysrc.min(), ysrc.max(), ydst.min(), ydst.max())
         print("y", tmp.shape, ysrc.shape, ydst.shape)
     if not ysrc.size == ydst.size:
-        interp = interp1d(ysrc, tmp, axis=-2, fill_value="extrapolate")
+        interp = interp1d(ysrc, tmp, axis=-2, kind=kind, fill_value="extrapolate")
         tmp = interp(ydst)
     if not quiet:
         print("z", tmp.shape, zsrc.min(), zsrc.max(), zdst.min(), zdst.max())
         print("z", tmp.shape, zsrc.shape, zdst.shape)
     if not zsrc.size == zdst.size:
-        interp = interp1d(zsrc, tmp, axis=-3, fill_value="extrapolate")
+        interp = interp1d(zsrc, tmp, axis=-3, kind=kind, fill_value="extrapolate")
         tmp = interp(zdst)
 
     return tmp
@@ -224,6 +224,7 @@ def src2dst_remesh(
     nxyz=None,
     multxyz=[2, 2, 2],
     fracxyz=[1, 1, 1],
+    srcchunks=None,
     srcghost=3,
     dstghost=3,
     srcdatadir="data/allprocs",
@@ -231,6 +232,7 @@ def src2dst_remesh(
     dstprecision=[b"D"],
     lsymmetric=True,
     quiet=True,
+    kind="linear",
     check_grid=True,
     optionals=True,
     nmin=32,
@@ -392,9 +394,12 @@ def src2dst_remesh(
         if rank == 0 or rank == size - 1:
             print('src2dst_remesh ERROR: src"' + src + '" is not a valid simulation path')
         return 1
+    print("dst is sim",is_sim_dir(dst))
     if is_sim_dir(dst):
         dstsim = simulation(dst, quiet=quiet)
+        mode = "r+"
     else:
+        mode = "w"
         print("setting up simulation")
         if rank == 0:
             dstname = str.split(dst, "/")[-1]
@@ -421,99 +426,105 @@ def src2dst_remesh(
         if rank == 0:
             with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
                 print("opening {} file on rank{}".format(join(srcsim.path, srcdatadir, h5in),rank))
-                with h5py.File(join(dstsim.path, dstdatadir, h5out),"w") as dsth5:
-                    get_dstgrid(
-                        srch5,
-                        srcsim.param,
-                        dsth5,
-                        ncpus=ncpus,
-                        nxyz=nxyz,
-                        multxyz=multxyz,
-                        fracxyz=fracxyz,
-                        srcghost=srcghost,
-                        dstghost=dstghost,
-                        dtype=dtype,
-                        lsymmetric=lsymmetric,
-                        quiet=quiet,
-                        dstprecision=dstprecision,
-                        status="w"
-                        )
-                    print("get_dstgrid completed on rank {}".format(rank))
-                    # use settings to determine available proc dist then set ncpus
-                    factors = cpu_optimal(
-                        dsth5["settings/nx"][0],
-                        dsth5["settings/ny"][0],
-                        dsth5["settings/nz"][0],
-                        mvar=dsth5["settings/mvar"][0],
-                        maux=dsth5["settings/maux"][0],
-                        par=srcsim.param,
-                        nmin=nmin,
-                        MBmin=MBmin,
-                        remesh=remesh
-                    )
-                    print(
-                        "remesh check grid: optional cpus up to min grid of "
-                        + "nmin={}\n".format(nmin)
-                        + "cpu options {}\n".format(factors)
-                        + "new mesh: {}, {}, {}\n".format(
+                cmd = "cp "+join(dstsim.path, dstdatadir, h5out)+" "+join(dstsim.path, dstdatadir, h5out+"copy")
+                os.system(cmd)
+                with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
+                    print("dst is sim",is_sim_dir(dst))
+                    if not is_sim_dir(dst):
+                        get_dstgrid(
+                            srch5,
+                            srcsim.param,
+                            dsth5,
+                            ncpus=ncpus,
+                            nxyz=nxyz,
+                            multxyz=multxyz,
+                            fracxyz=fracxyz,
+                            srcghost=srcghost,
+                            dstghost=dstghost,
+                            dtype=dtype,
+                            lsymmetric=lsymmetric,
+                            quiet=quiet,
+                            dstprecision=dstprecision,
+                            status=mode
+                            )
+                        print("get_dstgrid completed on rank {}".format(rank))
+                        # use settings to determine available proc dist then set ncpus
+                        factors = cpu_optimal(
                             dsth5["settings/nx"][0],
                             dsth5["settings/ny"][0],
                             dsth5["settings/nz"][0],
+                            mvar=dsth5["settings/mvar"][0],
+                            maux=dsth5["settings/maux"][0],
+                            par=srcsim.param,
+                            nmin=nmin,
+                            MBmin=MBmin,
+                            remesh=remesh
                         )
-                        + 'To execute remesh set "check_grid=False".'
-                    )
-                    if ncpus == [1, 1, 1]:
-                        ncpus = [factors[1][0], factors[1][1], factors[1][2]]
-                    dsth5["settings/nprocx"][0] = ncpus[0]
-                    dsth5["settings/nprocy"][0] = ncpus[1]
-                    dsth5["settings/nprocz"][0] = ncpus[2]
-                    nprocs = ncpus[0] * ncpus[1] * ncpus[2]
-                    srcprocs = (
-                          srch5["settings/nprocx"][0]
-                        * srch5["settings/nprocy"][0]
-                        * srch5["settings/nprocz"][0]
-                    )
-                    if srcprocs > nprocs:
                         print(
-                             "\n**********************************************************\n"
-                             + "remesh WARNING: {} procs reduced from {}.\n".format(
-                                 nprocs, srcprocs
-                             )
-                             + "Review multxyz {} and fracxyz {} for more\n".format(
-                                 multxyz, fracxyz
-                             )
-                             + "efficient parallel processing options."
-                             + "\n**********************************************************\n"
+                            "remesh check grid: optional cpus up to min grid of "
+                            + "nmin={}\n".format(nmin)
+                            + "cpu options {}\n".format(factors)
+                            + "new mesh: {}, {}, {}\n".format(
+                                dsth5["settings/nx"][0],
+                                dsth5["settings/ny"][0],
+                                dsth5["settings/nz"][0],
                             )
-                        if check_grid:
-                            return 1
-                    dsth5.require_group("unit")
-                    for key in srch5["unit"].keys():
-                        dsth5["unit"].create_dataset(key,data=srch5["unit"][key][()])
-                    gridh5 = h5py.File(join(dstsim.datadir, "grid.h5"), "w")
-                    dsth5["settings/nprocx"][0] = ncpus[0]
-                    dsth5["settings/nprocy"][0] = ncpus[1]
-                    dsth5["settings/nprocz"][0] = ncpus[2]
-                    dsth5.copy("settings", gridh5)
-                    dsth5.copy("grid", gridh5)
-                    dsth5.copy("unit", gridh5)
-                    gridh5.close()
-                    if "persist" in srch5.keys():
-                        pers=dsth5.require_group("persist")
-                        for key in srch5["persist"].keys():
-                            tmp = np.zeros(nprocs)
-                            tmp[:] = srch5["persist"][key][0]
-                            pers.create_dataset(key, data=tmp)
-                    dsth5.create_dataset("time", data=srch5["time"][()], dtype=dtype)
+                            + 'To execute remesh set "check_grid=False".'
+                        )
+                        if ncpus == [1, 1, 1]:
+                            ncpus = [factors[1][0], factors[1][1], factors[1][2]]
+                        dsth5["settings/nprocx"][0] = ncpus[0]
+                        dsth5["settings/nprocy"][0] = ncpus[1]
+                        dsth5["settings/nprocz"][0] = ncpus[2]
+                        nprocs = ncpus[0] * ncpus[1] * ncpus[2]
+                        srcprocs = (
+                              srch5["settings/nprocx"][0]
+                            * srch5["settings/nprocy"][0]
+                            * srch5["settings/nprocz"][0]
+                        )
+                        if srcprocs > nprocs:
+                            print(
+                                 "\n**********************************************************\n"
+                                 + "remesh WARNING: {} procs reduced from {}.\n".format(
+                                     nprocs, srcprocs
+                                 )
+                                 + "Review multxyz {} and fracxyz {} for more\n".format(
+                                     multxyz, fracxyz
+                                 )
+                                 + "efficient parallel processing options."
+                                 + "\n**********************************************************\n"
+                                )
+                            if check_grid:
+                                return 1
+                        dsth5.require_group("unit")
+                        for key in srch5["unit"].keys():
+                            dsth5["unit"].create_dataset(key,data=srch5["unit"][key][()])
+                        gridh5 = h5py.File(join(dstsim.datadir, "grid.h5"), mode)
+                        dsth5["settings/nprocx"][0] = ncpus[0]
+                        dsth5["settings/nprocy"][0] = ncpus[1]
+                        dsth5["settings/nprocz"][0] = ncpus[2]
+                        dsth5.copy("settings", gridh5)
+                        dsth5.copy("grid", gridh5)
+                        dsth5.copy("unit", gridh5)
+                        gridh5.close()
+                        if "persist" in srch5.keys():
+                            pers=dsth5.require_group("persist")
+                            for key in srch5["persist"].keys():
+                                tmp = np.zeros(nprocs)
+                                tmp[:] = srch5["persist"][key][0]
+                                pers.create_dataset(key, data=tmp)
+                        dsth5.create_dataset("time", data=srch5["time"][()], dtype=dtype)
     if comm:
         comm.Barrier()
         driver = "mpio"
         sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r", driver=driver, comm=comm)
         dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver, comm=comm)
     else:
-        driver = None
-        sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r", driver=driver)
-        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver)
+        #driver = None
+        sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r" )
+        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+" )
+    print("dh5 name", dh5.filename)
+    print("dh5 settings", dh5.keys(), dh5["settings"].keys())
     if data == "all" or data == "data":
         with sh5 as srch5:
             if comm:
@@ -529,11 +540,29 @@ def src2dst_remesh(
                 * srch5["settings/nprocy"][0]
                 * srch5["settings/nprocz"][0]
             )
-            xin, yin, zin = (
-                  srch5["grid/x"][()],
-                  srch5["grid/y"][()],
-                  srch5["grid/z"][()]
+            if srcchunks:
+                nxsub = srcchunks[0][1]-srcchunks[0][0]
+                nysub = srcchunks[1][1]-srcchunks[1][0]
+                nzsub = srcchunks[2][1]-srcchunks[2][0]
+                l1,l2=srcchunks[0][0], srcchunks[0][1]
+                m1,m2=srcchunks[1][0], srcchunks[1][1]
+                n1,n2=srcchunks[2][0], srcchunks[2][1]
+                xin, yin, zin = (
+                  srch5["grid/x"][l1:l2],
+                  srch5["grid/y"][m1:m2],
+                  srch5["grid/z"][n1:n2]
                   )
+                print("start and end values {},{}".format(l1,l2))
+            else:
+                nxsub, nysub, nzsub = nx, ny, nz
+                l1,l2=srch5["settings/l1"][0], srch5["settings/l2"][0]
+                m1,m2=srch5["settings/m1"][0], srch5["settings/m2"][0]
+                n1,n2=srch5["settings/n1"][0], srch5["settings/n2"][0]
+                xin, yin, zin = (
+                      srch5["grid/x"][()],
+                      srch5["grid/y"][()],
+                      srch5["grid/z"][()]
+                      )
             print("xin, yin, zin", xin, yin, zin)
             print("nxin, nyin, nzin", xin.size, yin.size, zin.size)
             if not farray:
@@ -597,7 +626,7 @@ def src2dst_remesh(
                 except:
                     print("atomic not supported with driver {}".format(driver))
                 print(dsth5.filename,"atomic status:",dsth5.atomic)
-            nx, ny, nz = (
+            nx, ny, nz =(
                 dsth5["settings"]["nx"][0],
                 dsth5["settings"]["ny"][0],
                 dsth5["settings"]["nz"][0],
@@ -731,7 +760,7 @@ def src2dst_remesh(
                     if rank == 0 or rank == size - 1:
                         print("remeshing " + key)
                     if not lchunks:
-                        invar = srch5["data"][key][()]
+                        invar = srch5["data"][key][n1:n2,m1:m2,l1:l2]
                         var = local_remesh(
                             invar,
                             xin,
@@ -741,10 +770,14 @@ def src2dst_remesh(
                             yout,
                             zout,
                             quiet=quiet,
+                            kind=kind,
                         )
                         if rank == 0 or rank == size - 1:
                             print("serial rank {} writing {} shape {}".format(rank,key,var.shape))
-                        dsth5["data"].create_dataset(key, data=var, dtype=dtype)
+                        if dsth5["data"].__contains__(key):
+                            dsth5["data"][key][()] = var
+                        else:
+                            dsth5["data"].create_dataset(key, data=var, dtype=dtype)
                     else:
                         dsth5["data"].require_dataset(key, shape=(mz, my, mx), dtype=dtype)
                         print("xin {}, yin {}, zin {}, xout {}, yout {}, zout {}".format(xin.shape, yin.shape, zin.shape, xout.shape, yout.shape, zout.shape))
@@ -909,6 +942,8 @@ def src2dst_remesh(
         + "efficient parallel processing options."
             + "\n**********************************************************\n"
         )
+    cmd = "rm -f "+join(dstsim.path, dstdatadir, h5out+"copy")
+    os.system(cmd)
     if comm:
         comm.Barrier()
     end_time = time.time()
