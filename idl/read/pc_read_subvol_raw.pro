@@ -170,9 +170,6 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	; Set the coordinate system.
 	coord_system = start_param.coord_system
 
-	; Read the grid, if needed.
-	pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet, single=single
-
 	; Read timestamp.
         if (not sim) then $
 	  pc_read_var_time, time=time, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=start_param, /quiet, single=single $
@@ -216,71 +213,77 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	n1 = sub_dim.n1
 	n2 = sub_dim.n2
 
-	; Crop grid.
-	x = grid.x[xgs:xge]
-	y = grid.y[ygs:yge]
-	z = grid.z[zgs:zge]
+        if (not sim) then begin 
+	  ; Read the grid, if needed.
+	  pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet, single=single
 
-	; Prepare for derivatives.
-	dx = grid.dx
-	dy = grid.dy
-	dz = grid.dz
-	dx_1 = grid.dx_1[xgs:xge]
-	dy_1 = grid.dy_1[ygs:yge]
-	dz_1 = grid.dz_1[zgs:zge]
-	dx_tilde = grid.dx_tilde[xgs:xge]
-	dy_tilde = grid.dy_tilde[ygs:yge]
-	dz_tilde = grid.dz_tilde[zgs:zge]
-	Ox = grid.Ox
-	Oy = grid.Oy
-	Oz = grid.Oz
-	Lx = grid.Lx
-	Ly = grid.Ly
-	Lz = grid.Lz
-	if (xge-xgs ne mxgrid-1) then begin
-		Ox = grid.x[xns]
-		Lx = total (1.0/grid.dx_1[xns:xne])
-		lperi[0] = 0
-	endif
-	if (yge-ygs ne mygrid-1) then begin
-		Oy = grid.y[yns]
-		Ly = total (1.0/grid.dy_1[yns:yne])
-		lperi[1] = 0
-	endif
-	if (zge-zgs ne mzgrid-1) then begin
-		Oz = grid.z[zns]
-		Lz = total (1.0/grid.dz_1[zns:zne])
-		lperi[2] = 0
-	endif
-	ldegenerated = [ xge-xgs, yge-ygs, zge-zgs ] lt 2 * [ nghostx, nghosty, nghostz ]
+	  ; Crop grid.
+	  x = grid.x[xgs:xge]
+	  y = grid.y[ygs:yge]
+	  z = grid.z[zgs:zge]
 
-	if (keyword_set (reduced)) then name += "reduced_"
+	  ; Prepare for derivatives.
+	  dx = grid.dx
+	  dy = grid.dy
+	  dz = grid.dz
+	  dx_1 = grid.dx_1[xgs:xge]
+	  dy_1 = grid.dy_1[ygs:yge]
+	  dz_1 = grid.dz_1[zgs:zge]
+	  dx_tilde = grid.dx_tilde[xgs:xge]
+	  dy_tilde = grid.dy_tilde[ygs:yge]
+	  dz_tilde = grid.dz_tilde[zgs:zge]
+	  Ox = grid.Ox
+	  Oy = grid.Oy
+	  Oz = grid.Oz
+	  Lx = grid.Lx
+	  Ly = grid.Ly
+	  Lz = grid.Lz
+	  if (xge-xgs ne mxgrid-1) then begin
+	  	Ox = grid.x[xns]
+	  	Lx = total (1.0/grid.dx_1[xns:xne])
+	  	lperi[0] = 0
+	  endif
+	  if (yge-ygs ne mygrid-1) then begin
+	  	Oy = grid.y[yns]
+	  	Ly = total (1.0/grid.dy_1[yns:yne])
+	  	lperi[1] = 0
+	  endif
+	  if (zge-zgs ne mzgrid-1) then begin
+	  	Oz = grid.z[zns]
+	  	Lz = total (1.0/grid.dz_1[zns:zne])
+	  	lperi[2] = 0
+	  endif
 
-	; Remove ghost zones from grid, if requested.
-	if (keyword_set (trimall)) then begin
-		x = x[l1:l2]
-		y = y[m1:m2]
-		z = z[n1:n2]
-		dx_1 = dx_1[l1:l2]
-		dy_1 = dy_1[m1:m2]
-		dz_1 = dz_1[n1:n2]
-		dx_tilde = dx_tilde[l1:l2]
-		dy_tilde = dy_tilde[m1:m2]
-		dz_tilde = dz_tilde[n1:n2]
-		ldegenerated = [ l1, m1, n1 ] eq [ l2, m2, n2 ]
-		name += "trimmed_"
-	endif
+	  ldegenerated = [ xge-xgs, yge-ygs, zge-zgs ] lt 2 * [ nghostx, nghosty, nghostz ]
 
-	if (not sim) then begin
-  	  if (not keyword_set (quiet)) then begin
-  		print, ' t = ', time
-  		print, ''
-  	  endif
+	  if (keyword_set (reduced)) then name += "reduced_"
+
+	  ; Remove ghost zones from grid, if requested.
+	  if (keyword_set (trimall)) then begin
+	  	x = x[l1:l2]
+	  	y = y[m1:m2]
+	  	z = z[n1:n2]
+	  	dx_1 = dx_1[l1:l2]
+	  	dy_1 = dy_1[m1:m2]
+	  	dz_1 = dz_1[n1:n2]
+	  	dx_tilde = dx_tilde[l1:l2]
+	  	dy_tilde = dy_tilde[m1:m2]
+	  	dz_tilde = dz_tilde[n1:n2]
+	  	ldegenerated = [ l1, m1, n1 ] eq [ l2, m2, n2 ]
+	  	name += "trimmed_"
+	  endif
+
+	  if (not sim) then begin
+  	    if (not keyword_set (quiet)) then begin
+  	  	print, ' t = ', time
+  	  	print, ''
+  	    endif
   
-  	  name += strtrim (xgs, 2)+"_"+strtrim (xge, 2)+"_"+strtrim (ygs, 2)+"_"+strtrim (yge, 2)+"_"+strtrim (zgs, 2)+"_"+strtrim (zge, 2)
-  	  sub_grid = create_struct (name=name, $
-  		['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Ox', 'Oy', 'Oz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
-  		time, x, y, z, dx, dy, dz, Ox, Oy, Oz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
+  	    name += strtrim (xgs, 2)+"_"+strtrim (xge, 2)+"_"+strtrim (ygs, 2)+"_"+strtrim (yge, 2)+"_"+strtrim (zgs, 2)+"_"+strtrim (zge, 2)
+  	    sub_grid = create_struct (name=name, $
+  	  	['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Ox', 'Oy', 'Oz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
+  	  	time, x, y, z, dx, dy, dz, Ox, Oy, Oz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
+          endif
         endif
 
 	; Load HDF5 varfile if requested or available.
@@ -332,7 +335,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		end
 		h5_close_file
 		return
-	end
+	end   ; HDF5
 
 	; Automatically switch to allprocs, if necessary.
 	if (size (allprocs, /type) eq 0) then begin
@@ -498,7 +501,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		end
 	end
         if sim then begin
-          print, 'Needs ', gx_delta*gy_delta*gz_delta*num_read*(single ? 4 : data_bytes), ' Bytes of memory.'
+          print, 'Needs ', long64(gx_delta)*gy_delta*gz_delta*long64(num_read)*(single ? 4 : data_bytes), ' Bytes of memory.'
         endif else begin
 	  ; Tidy memory a little.
 	  undefine, buffer
