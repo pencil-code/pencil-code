@@ -193,7 +193,6 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	sub_dim.nxgrid = sub_dim.nx
 	sub_dim.nygrid = sub_dim.ny
 	sub_dim.nzgrid = sub_dim.nz
-	sub_dim.mw = sub_dim.mx * sub_dim.my * sub_dim.mz
 	sub_dim.l1 = nghostx
 	sub_dim.m1 = nghosty
 	sub_dim.n1 = nghostz
@@ -359,7 +358,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		ipy_end = 0
 		ipz_end = 0
 	end else begin
-		pc_read_dim, object=procdim, proc=0, datadir=datadir, /quiet
+		pc_read_dim, object=procdim, proc=0, datadir=datadir, /quiet, globdim=dim
 		if (allprocs eq 2) then begin
 			ipx_end = 0
 			ipy_end = 0
@@ -367,7 +366,6 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 			procdim.ny = procdim.nygrid
 			procdim.mx = procdim.mxgrid
 			procdim.my = procdim.mygrid
-			procdim.mw = procdim.mx * procdim.my * procdim.mz
 		end else begin
 			ipx_start = xgs / procdim.nx
 			ipy_start = ygs / procdim.ny
@@ -481,7 +479,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
                                   openr, lun, filename, swap_endian=swap_endian, /get_lun
 				  mx = long64 (procdim.mx)
 				  mxy = mx * procdim.my
-				  mxyz = mxy * procdim.mz
+				  mxyz = procdim.mw
 				  for pos = 0, num_read-1 do begin
 				  	pa = indices[pos]
 				  	for pz = pz_start, pz_end do begin
