@@ -13,7 +13,7 @@ cp libastaroth.so astaroth_sgl.so
 cp libastaroth.so astaroth_dbl.so
 mkdir -p scheduler-build
 cd scheduler-build
-cmake ../NUMA-scheduler
+cmake -DUSE_OPENMP=ON ../NUMA-scheduler
 make -j
 cd ..
 cp -r ./NUMA-scheduler/include .

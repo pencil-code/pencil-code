@@ -2,7 +2,7 @@
                                --------------------
 
    Date:   8-Feb-2017
-   Author: M. Rheinhardt & J. Pekkilae
+   Author: M. Rheinhardt & j. Pekkilae
    Description:
            ANSI C and standard library callable function wrappers for ASTAROTH-nucleus functions to be called from Fortran.
   Comments: 
@@ -1101,6 +1101,8 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
   acGridExecuteTaskGraph(graph_2,1);
   acGridExecuteTaskGraph(graph_3,1);
   load_stencil_from_config(mesh.info);
+  printf("DONE initializeGPU\n");
+  fflush(stdout);
 }
 /***********************************************************************************************/
 extern "C" void copyFarray()

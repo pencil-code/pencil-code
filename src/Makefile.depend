@@ -15,7 +15,12 @@ io_dist.o: io_dist.h
 #
 # Explicit dependencies for the different infrastructure modules.
 #
-$(CPARAM_OBJ): $(CPARAM_SRC) cparam.local cparam.inc
+
+  ifneq ($(findstring gpu_astaroth, $(GPU)),)
+$(CPARAM_OBJ): $(CPARAM_SRC) cparam.local cparam.inc ./astaroth/Makefile.vendor
+  else
+$(CPARAM_OBJ): $(CPARAM_SRC) cparam.local cparam.inc 
+  endif
 #
 $(CDATA_OBJ): $(CDATA_SRC) $(CPARAM_OBJ)
 #

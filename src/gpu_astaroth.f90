@@ -117,41 +117,11 @@ contains
       logical,                            intent(IN)    :: early_finalize
 !
       integer :: ll, mm, nn
-      real :: val
       logical, save :: lvery_first=.true.
 
-      goto 1
-      val=1.
-      do nn=1,mz
-        do mm=1,my
-          do ll=1,mx
-            f(ll,mm,nn,iux)=val; val=val+1.
-      enddo; enddo; enddo
-
-      print*, 'vor integrate'
-      do nn=1,3
-        if (notanumber(f(:,:,nn,iux))) print*,'NaN in ux, lower z', nn
-      enddo
-      print*, '---------------'
-
-1     continue
       call rhs_gpu_c(isubstep,lvery_first,early_finalize)
 !
       lvery_first=.false.
-
-      return
-!
-      if (.not.lroot) return
-      do nn=1,mz   !  nghost+1,mz-nghost
-        print*, 'nn=', nn
-        do mm=1,my
-          print'(22(1x,f7.0))',f(:,mm,nn,iux)
-      enddo; enddo
-
-      do nn=1,3
-        if (notanumber(f(:,:,nn,iux))) print*,'NaN in ux, lower z', nn                
-      enddo
-
     endsubroutine rhs_GPU
 !**************************************************************************
     subroutine copy_farray_from_GPU(f)

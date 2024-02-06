@@ -43,14 +43,9 @@
 !  website http://www.nordita.org/software/pencil-code/.
 !
 !***********************************************************************
-program run
-!
-!  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
-!               address
-! 31-oct-13/MR: replaced rparam by read_all_init_pars
-! 10-feb-14/MR: initialize_mpicomm now called before read_all_run_pars
-! 13-feb-13/MR: call of wsnap_down added
-!
+module run_module
+contains
+subroutine main_sub()
   use Boundcond,       only: update_ghosts, initialize_boundcond
   use Cdata
   use Chemistry,       only: chemistry_clean_up, write_net_reaction
@@ -58,7 +53,7 @@ program run
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
-  use Equ,             only: debug_imn_arrays,initialize_pencils,write_diagnostics, write_diagnostics_wrapper
+  use Equ 
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use Filter
@@ -97,11 +92,10 @@ program run
   use Timeavg
   use Timestep,        only: time_step, initialize_timestep
 !$ use OMP_lib
-!$ use mt, only: wait_all_thread_pool, push_task, make_threadpool,&
+!$ use mt, only: wait_all_thread_pool, push_task, mt_split,&
 !$ free_thread_pool, depend_on_all, default_task_type
 !$ use, intrinsic :: iso_c_binding
-!
-  implicit none
+!$ use, intrinsic :: iso_fortran_env
 !
   type (pencil_case) :: p
   character(len=fnlen) :: fproc_bounds
@@ -117,24 +111,11 @@ program run
   logical :: lonemorestep = .false.
   logical :: lexist
 !
-  lrun = .true.
-!
-!  Get processor numbers and define whether we are root.
-!
-  call mpicomm_init
-!
-!  Initialize GPU use and make threadpool.
-!
-  call gpu_init
-!$ call make_threadpool(1)
-!
 !  Initialize Python use.
 !
   call python_init
 !
 !   Initialize OpenMP use
-!
-!$ num_of_helper_threads= OMP_get_num_procs()
 !
 !  Identify version.
 !
@@ -1002,5 +983,83 @@ program run
   if (lparticles) call particles_cleanup
   call finalize
 !
+endsubroutine main_sub
+endmodule run_module
+program run
+!
+!  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
+!               address
+! 31-oct-13/MR: replaced rparam by read_all_init_pars
+! 10-feb-14/MR: initialize_mpicomm now called before read_all_run_pars
+! 13-feb-13/MR: call of wsnap_down added
+!
+  use run_module
+  use Boundcond,       only: update_ghosts, initialize_boundcond
+  use Cdata
+  use Chemistry,       only: chemistry_clean_up, write_net_reaction
+  use Density,         only: boussinesq
+  use Diagnostics
+  use Dustdensity,     only: init_nd
+  use Dustvelocity,    only: init_uud
+  !use Equ,             only: debug_imn_arrays,initialize_pencils,write_diagnostics, write_diagnostics_wrapper
+  use Equ
+  use FArrayManager,   only: farray_clean_up
+  use Farray_alloc
+  use Filter
+  use Fixed_point,     only: fixed_points_prepare, wfixed_points
+  use Forcing,         only: forcing_clean_up,addforce
+  use General,         only: random_seed_wrapper, touch_file, itoa
+  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays, &
+                             coarsegrid_interp
+  use Gpu,             only: gpu_init, register_gpu
+  use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
+  use Hydro,           only: hydro_clean_up
+  use ImplicitPhysics, only: calc_heatcond_ADI
+  use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
+  use Magnetic,        only: rescaling_magnetic
+  use Messages
+  use Mpicomm
+  use NSCBC,           only: NSCBC_clean_up
+  use Param_IO
+  use Particles_main
+  use Pencil_check,    only: pencil_consistency_check
+  use PointMasses
+  use Python
+  use Register
+  use SharedVariables, only: sharedvars_clean_up
+  use Signal_handling, only: signal_prepare, emergency_stop
+  use Slices
+  use Snapshot,        only: powersnap, rsnap, powersnap_prepare, wsnap, wsnap_down, output_form
+  use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid,wsnap_ogrid
+  use Special,         only: initialize_mult_special
+  use Streamlines,     only: tracers_prepare, wtracers
+  use Sub
+  use Syscalls,        only: is_nan, memusage
+  use Testscalar,      only: rescaling_testscalar
+  use Testfield,       only: rescaling_testfield
+  use TestPerturb,     only: testperturb_begin, testperturb_finalize
+  use Timeavg
+  use Timestep,        only: time_step, initialize_timestep
+!$ use OMP_lib
+!$ use mt, only: wait_all_thread_pool, push_task, mt_split,&
+!$ free_thread_pool, depend_on_all, default_task_type
+!$ use, intrinsic :: iso_c_binding
+!
+!
+!
+  lrun = .true.
+!
+!  Get processor numbers and define whether we are root.
+!
+  call mpicomm_init
+!
+!  Initialize GPU use and make threadpool.
+!
+  call gpu_init
+!$  if(.true.) then
+!$    call mt_split(main_sub,1)
+!$else
+  call main_sub
+!$endif
 endprogram run
 !**************************************************************************
