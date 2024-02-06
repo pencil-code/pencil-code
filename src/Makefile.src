@@ -2996,8 +2996,8 @@ $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR
 .sentinel: Makefile.local
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#pragma once' > $(CUDA_INCDIR)/PC_moduleflags.h
-	@sed -e's/CUDA_RELPATH/'$(CUDA_RELPATH)'/' -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' < gpu.sed > gpu.sed.tmp
-	@sed -f gpu.sed.tmp < Makefile.local >> $(CUDA_INCDIR)/PC_moduleflags.h; rm -f gpu.sed.tmp
+	@sed -i -e's/CUDA_RELPATH/'$(CUDA_RELPATH)'/' -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' $(PENCIL_HOME)/src/gpu.sed
+	@sed -f gpu.sed < Makefile.local >> $(CUDA_INCDIR)/PC_moduleflags.h
 ifeq ($(VISCOSITY),viscosity)
 	@echo '#define LVISCOSITY 1 // '$(CUDA_RELPATH)'/viscosity.f90' >> $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo $(CUDA_RELPATH)'/viscosity.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
@@ -3047,28 +3047,6 @@ endif
 #
 #  Compiler setting for OpenMP (gfortran and ifort only at the moment).
 #
-<<<<<<< HEAD
-=======
-ifneq ($(filter openmp OpenMP openMP omp OMP,$(MULTITHREADING)),)
-  FFLAGS += $(OMPFFLAGS)
-  LDFLAGS += $(OMPLFLAGS)
-#  OMP_PREREQ = copyin.inc
-#  Creates code for copying in threadprivate variables. - Not needed at the moment.
-#
-#copyin.inc: Makefile.local $(PENCIL_HOME)/src/copyin.inc
-#	@cp -f $(PENCIL_HOME)/src/copyin.inc .
-#	@for file in `grep '^ *[A-Z0-9_]* *=' Makefile.local | sed -f omp.sed`; do \
-#	  use=`grep '^ *module' $$file | grep -v 'module  *procedure' | sed -e's/module/use/'`; \
-#	  sub=`grep '^ *subroutine  *copyin_' $$file | sed -e's/subroutine/call/'`; \
-#	  if [ "$$sub" != "" ]; then \
-#	    echo "  $$use\n" "$$(cat copyin.inc)" > copyin.inc; \
-#	    echo "$$sub" >> copyin.inc ; \
-#	  fi \
-#	done
-else
-  MULTITHREADING = 
-endif
->>>>>>> origin/master
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
@@ -3262,11 +3240,7 @@ endif
 #
 cdata.o:  cdata.f90 cparam.local cparam.inc cparam_pencils.inc
 ifneq ($(and $(IS_CRAY), $(filter-out $(GPU),nogpu)),)
-<<<<<<< HEAD
 	@sed -e'/BEGIN C BINDING/,/END C BINDING/ s/ ::/,bind(C) ::/' -e'/parameter,/ s/,bind(C)//' -e'/character/ s/,bind(C)//' cdata.f90 > cdata_tmp.f90
-=======
-	@sed -e'/BEGIN C BINDING/,/END C BINDING/ s/ ::/,bind(C) ::/' -e'/parameter,/ s/,bind(C)//' -e'/character/ s/,bind(C)//' -e'/allocatable/ s/,bind(C)//' cdata.f90 > cdata_tmp.f90
->>>>>>> origin/master
 #       -e's/integer, *dimension/integer,bind(C), dimension/' cdata.f90
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata_tmp.f90
 	@rm -rf cdata_tmp.f90
@@ -3455,6 +3429,8 @@ clean:  slender
 	rm -f nompicomm_*.f90 mpicomm_*.f90 # temporary workaround to remove old "mpicomm_double.f90"
 	#done so the interface make can clean after this, otherwise that clean has to come first
 	touch ./astaroth/PC_modulesources.h
+	rm -f $(CUDA_MAKEDIR)/Makefile.vendor
+	rm -f $(CUDA_MAKEDIR)/Makefile.module_info
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
 #
@@ -3495,6 +3471,17 @@ include Makefile.library
 ifneq ($(findstring gpu_astaroth, $(GPU)),)
 ./astaroth/Makefile.vendor: Makefile.local
 	@echo GPU_VENDOR=$(GPU_VENDOR) > ./astaroth/Makefile.vendor
+	@echo MODULE_INFIX=${MODULE_INFIX}
+
+	@echo MODULE_INFIX=$(MODULE_INFIX) > ./astaroth/Makefile.module_info
+	@echo MODULE_INFIX=$(MODULE_INFIX) > ./astaroth/Makefile.module_info
+	@echo export MODULE_INFIX=$(MODULE_SUFFIX) >> ./astaroth/Makefile.module_info
+
+	@echo MODULE_PREFIX=$(MODULE_PREFIX) >> ./astaroth/Makefile.module_info
+	@echo export MODULE_PREFIX=$(MODULE_PREFIX) >> ./astaroth/Makefile.module_info
+
+	@echo MODULE_NAME_ORDER=$(MODULE_NAME_ORDER) >> ./astaroth/Makefile.module_info
+	@echo export MODULE_NAME_ORDER=$(MODULE_NAME_ORDER) >> ./astaroth/Makefile.module_info
 endif
 include Makefile.depend
 

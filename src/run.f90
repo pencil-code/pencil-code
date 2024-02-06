@@ -780,7 +780,8 @@ subroutine main_sub()
 
     if(lgpu) then
       if (lout.or.l1davg.or.l1dphiavg.or.l2davg) then
-!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
+!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task,&
+!$      1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
       endif
     else
       call write_diagnostics(f)
@@ -1062,8 +1063,8 @@ program run
   call gpu_init
 !$  if(.true.) then
 !$    call mt_split(main_sub,1)
-!$else
+!$  else
   call main_sub
-!$endif
+!$  endif
 endprogram run
 !**************************************************************************

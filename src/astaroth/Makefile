@@ -36,6 +36,7 @@ SOURCES = gpu_astaroth.cc
 
 USE_HIP=
 include Makefile.vendor
+include Makefile.module_info
 ifeq ($(GPU_VENDOR),amd)
 	USE_HIP=ON
 else
