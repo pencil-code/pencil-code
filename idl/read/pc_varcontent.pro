@@ -40,9 +40,9 @@ endif
 ;
 datadir = pc_get_datadir(datadir)
 default, down, 0
-pc_read_dim, obj=dim, datadir=datadir, quiet=quiet, down=down
-pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
-pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
+if not is_defined(dim) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet, down=down
+if not is_defined(param) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
+if not is_defined(run_param) then pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
 default, noaux, 0
 default, hdf5, 0
 default, single, 0
@@ -164,6 +164,10 @@ indices = [ $
   { name:'iuutest', label:'Testmethod velocity', dims:ntestflow }, $
   { name:'icctest', label:'Testmethod scalar', dims:ntestscalar }, $
   { name:'ilnrhotest', label:'Testmethod log(rho)', dims:ntestlnrho }, $
+; { name:'ivv', label:'velocity when conservative', dims:3 }, $
+  { name:'ivx', label:'x-velocity when conservative', dims:1 }, $
+  { name:'ivy', label:'y-velocity when conservative', dims:1 }, $
+  { name:'ivz', label:'z-velocity when conservative', dims:1 }, $
   { name:'iuun', label:'Velocity of neutrals', dims:3 }, $
   { name:'ispitzer', label:'Heat flux vector according to Spitzer', dims:3 }, $
   { name:'iqq', label:'heatflux vector', dims:3 }, $
@@ -197,13 +201,21 @@ indices = [ $
   { name:'iaxi_chi', label:'axi_chi', dims:1 }, $
   { name:'iaxi_chidot', label:'axi_chidot', dims:1 }, $
   { name:'iaxi_psi', label:'axi_psi', dims:1 }, $
+  { name:'iaxi_psiL', label:'axi_psiL', dims:1 }, $
   { name:'iaxi_psidot', label:'axi_psidot', dims:1 }, $
+  { name:'iaxi_psiLdot', label:'axi_psiLdot', dims:1 }, $
   { name:'iaxi_impsi', label:'axi_impsi', dims:1 }, $
+  { name:'iaxi_impsiL', label:'axi_impsiL', dims:1 }, $
   { name:'iaxi_impsidot', label:'axi_impsidot', dims:1 }, $
+  { name:'iaxi_impsiLdot', label:'axi_impsiLdot', dims:1 }, $
   { name:'iaxi_TR', label:'axi_TR', dims:1 }, $
+  { name:'iaxi_TL', label:'axi_TL', dims:1 }, $
   { name:'iaxi_imTR', label:'axi_imTR', dims:1 }, $
+  { name:'iaxi_imTL', label:'axi_imTL', dims:1 }, $
   { name:'iaxi_TRdot', label:'axi_imTRdot', dims:1 }, $
+  { name:'iaxi_TLdot', label:'axi_imTLdot', dims:1 }, $
   { name:'iaxi_imTRdot', label:'axi_TRdot', dims:1 }, $
+  { name:'iaxi_imTLdot', label:'axi_TLdot', dims:1 }, $
   { name:'ialpm', label:'alpm', dims:1 }, $
   { name:'ietat', label:'etat', dims:1 }, $
   { name:'ieta', label:'Dust resistivity', dims:1 }, $

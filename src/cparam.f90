@@ -23,6 +23,7 @@ module Cparam
   integer, parameter :: nprocyz=nprocy*nprocz
   integer, parameter :: nprocxz=nprocx*nprocz
   integer, parameter :: n_forcing_cont_max=2
+  integer, parameter :: ndustspec0=8
   character, dimension(3), parameter :: coornames=(/'x','y','z'/)
   character(LEN=2), dimension(12), parameter :: compnames=(/'x ','y ','z ','xx','xy','xz','yx','yy','yz','zx','zy','zz'/)
   integer, dimension(6),parameter :: compinds_6=(/1,2,3,5,6,9/)

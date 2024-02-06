@@ -6,6 +6,13 @@
 Contains the classes and methods to read the power spectra.
 """
 
+import os
+import numpy as np
+from pencil import read
+from pencil.util import ffloat
+import re
+import warnings
+import functools
 
 def power(*args, **kwargs):
     """
@@ -65,7 +72,7 @@ class Power(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, datadir="data", file_name="", quiet=False):
+    def read(self, datadir="data", file_name=None, quiet=False):
         """
         read(datadir='data', file_name='', quiet=False)
     
@@ -102,45 +109,29 @@ class Power(object):
         hel_kin
         """
 
-        import os
-        import os.path as op
-        import numpy as np
-        import h5py
-        from pencil import read
-        from pencil.util import ffloat
-
-        # import sys
-        import matplotlib as plt
-        import re
-
         power_list = []
         file_list = []
 
-        if file_name:
-            print("Reading only ", file_name)
-            try:
-                if op.isfile(op.join(datadir, file_name)):
-                    # print("read one file")
-                    if file_name[:5] == "power" and file_name[-4:] == ".dat":
-                        if file_name[:6] == "power_":
-                            power_list.append(file_name.split(".")[0][6:])
+        if file_name is not None:
+            if not quiet:
+                print("Reading only ", file_name)
+
+            if os.path.isfile(os.path.join(datadir, file_name)):
+                if file_name[:5] == "power" and file_name[-4:] == ".dat":
+                    if file_name[:6] == "power_":
+                        power_list.append(file_name.split(".")[0][6:])
+                        if not quiet:
                             print("appending", file_name.split(".")[0][6:])
-                        else:
-                            power_list.append(file_name.split(".")[0][5:])
+                    else:
+                        power_list.append(file_name.split(".")[0][5:])
+                        if not quiet:
                             print("appending", file_name.split(".")[0][5:])
-                        file_list.append(file_name)
-                else:
-                    print("File does not exist, exiting")
-            except IOError:
-                print("File does not exist, exiting")
-                return
+
+                    file_list.append(file_name)
+            else:
+                raise ValueError(f"File {file_name} does not exist.")
 
         else:
-
-            # Find the existing power files.
-
-            # power_list = []
-            # file_list = []
             for file_name in os.listdir(datadir):
                 if file_name[:5] == "power" and file_name[-4:] == ".dat":
                     if file_name[:6] == "power_":
@@ -149,204 +140,250 @@ class Power(object):
                         power_list.append(file_name.split(".")[0][5:])
                     file_list.append(file_name)
 
-        dim = read.dim(datadir=datadir)
-        # param is needed to figure out the options passed to power_xy
-        param = read.param(datadir=datadir)
-
-        block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
-
         # Read the power spectra.
-        for power_idx, file_name in enumerate(file_list):
-            # Read the raw file.
-            infile = open(os.path.join(datadir, file_name), "r")
-            line_list = infile.readlines()
-            infile.close()
-
-            # Extract the numbers from the file strings.
-            n_blocks = int(len(line_list) / block_size)
-
+        for power_name, file_name in zip(power_list, file_list):
             if not quiet:
                 print(file_name)
 
-            # For the moment, exclude some incompatible files.
-            # if file_name == 'powero.dat' or file_name == 'poweru.dat' or \
             if (
                 file_name == "powero.dat"
                 or file_name == "powerb.dat"
                 or file_name == "powera.dat"
-            ):
-                continue
+                ):
+                # Exclude some incompatible files.
+                pass
             elif re.match("power.*_xy.dat", file_name):
-                # This file has a different number of k
-
-                # This files has the k vector, and irrational numbers
-                # Get k vectors:
-                if param.lintegrate_shell:
-                    nk = int(
-                        line_list[1]
-                        .split()[line_list[1].split().index("k") + 1]
-                        .split(")")[0][1:]
-                    )
-                    ini = 2
-                    k = []
-                    for i in range(ini, int(np.ceil(nk / 8)) + ini):
-                        k.extend([float(j) for j in line_list[i].split()])
-                    k = np.array(k)
-                    setattr(self, "k", k)
-                    ini = i + 1
-                else:
-                    nkx = int(
-                        line_list[1]
-                        .split()[line_list[1].split().index("k_x") + 1]
-                        .split(")")[0][1:]
-                    )
-                    ini = 2
-                    kx = []
-                    for i in range(ini, int(np.ceil(nkx / 8)) + ini):
-                        kx.extend([float(j) for j in line_list[i].split()])
-                    kx = np.array(kx)
-                    setattr(self, "kx", kx)
-                    ini = i + 1
-
-                    nky = int(
-                        line_list[1]
-                        .split()[line_list[1].split().index("k_y") + 1]
-                        .split(")")[0][1:]
-                    )
-                    ky = []
-                    for i in range(ini, int(np.ceil(nky / 8)) + ini):
-                        ky.extend([float(j) for j in line_list[i].split()])
-                    ky = np.array(ky)
-                    setattr(self, "ky", ky)
-                    ini = i + 1
-
-                    nk = nkx*nky
-
-                # Now read z-positions, if any
-                if param.lintegrate_z:
-                    nzpos = 1
-                else:
-                    if "z-pos" in line_list[ini]:
-                        print("More than 1 z-pos")
-                        nzpos = int(re.search(r"\((\d+)\)", line_list[ini])[1])
-                        ini += 1
-                        zpos = np.array([float(j) for j in line_list[ini].split()])
-                        ini += 1
-                    else:
-                        nzpos = dim.nzgrid
-                        grid = read.grid(datadir=datadir, trim=True, quiet=True)
-                        zpos = grid.z
-                    setattr(self, "zpos", zpos)
-                setattr(self, "nzpos", nzpos)
-
-                # Now read the rest of the file
-                line_list = line_list[ini:]
-                time = []
-                power_array = []
-                linelen = len(line_list[1].strip().split())
-
-                # If more than one z-pos, the file will give the results concatenated for the 3 positions and the length of the block will increase
-                if param.lintegrate_shell:
-                    block_size = np.ceil(nk / 8) * nzpos + 1
-                else:
-                    block_size = np.ceil(int(nk * nzpos) / 8) + 1
-                n_blocks = int(len(line_list) / block_size)
-
-                for line_idx, line in enumerate(line_list):
-                    if np.mod(line_idx, block_size) == 0:
-                        time.append(float(line.strip()))
-                    else:
-                        # The power spectrum can be complex or real, hence len 8 or 16
-                        if linelen == 8:
-                            for value_string in line.strip().split():
-                                power_array.append(ffloat(value_string))
-
-                        elif linelen == 16:
-                            re = line.strip().split()[0::2]
-                            im = line.strip().split()[1::2]
-                            for a,b in zip(re,im):
-                                power_array.append(ffloat(a) + 1j*ffloat(b))
-
-                time = np.array(time)
-
-                if linelen == 8:
-                    power_array = np.array(power_array, dtype=np.float32)
-                elif linelen == 16:
-                    power_array = np.array(power_array, dtype=complex)
-
-                if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
-                    power_array = power_array.reshape([n_blocks, nzpos, nk])
-                else:
-                    power_array = power_array.reshape([n_blocks, nzpos, nkx, nky])
-
-                self.t = time.astype(np.float32)
-                setattr(self, power_list[power_idx], power_array)
-
+                self._read_power2d(power_name, file_name, datadir)
             elif (
                 file_name == "poweruz_x.dat"
                 or file_name == "powerux_x.dat"
                 or file_name == "poweruy_x.dat"
-            ):
-                # this has irrational numbers
-
-                time = []
-                # print('complex reading of file ', file_name)
-                power_array = []
-                for line_idx, line in enumerate(line_list):
-                    if np.mod(line_idx, block_size) == 0:
-                        # print(float(line.strip()))
-                        time.append(float(line.strip()))
-                    else:
-                        if (
-                            line.find(",") == -1
-                        ):  # if the line does not contain ',', assume it represents a series of real numbers.
-                            for value_string in line.strip().split():
-                                power_array.append(float(value_string))
-                        else:  # Assume we have complex numbers.
-                            for value_string in line.strip().split("( ")[1:]:
-                                value_string = (
-                                    value_string.replace(")", "j")
-                                    .strip()
-                                    .replace(", ", "")
-                                    .replace(" ", "+")
-                                )
-                                power_array.append(complex(value_string))
-
-                time = np.array(time)
-                power_array = np.array(power_array).reshape(
-                    [n_blocks, int(dim.nxgrid / 2)]
-                )
-                self.t = time
-                setattr(self, power_list[power_idx], power_array)
-
+                ):
+                self._read_power_1d(power_name, file_name, datadir)
             elif file_name == "power_krms.dat":
-                power_array = []
-                for line_idx, line in enumerate(line_list):
-                    if line_idx < block_size - 1:
-                        for value_string in line.strip().split():
-                            power_array.append(float(value_string))
-                power_array = (
-                    np.array(power_array)
-                    .reshape([int(dim.nxgrid / 2)])
-                    .astype(np.float32)
-                )
-                setattr(self, power_list[power_idx], power_array)
+                self._read_power_krms(power_name, file_name, datadir)
             else:
-                time = []
-                power_array = []
-                for line_idx, line in enumerate(line_list):
-                    if np.mod(line_idx, block_size) == 0:
-                        time.append(float(line.strip()))
+                self._read_power(power_name, file_name, datadir)
+
+    def _read_power2d(self, power_name, file_name, datadir):
+        """
+        Handles output of power_xy subroutine.
+        """
+        dim = read.dim(datadir=datadir)
+        param = read.param(datadir=datadir)
+
+        with open(os.path.join(datadir, file_name), "r") as f:
+            _ = f.readline()  # ignore first line
+            header = f.readline()
+
+            # Get k vectors:
+            if param.lintegrate_shell:
+                nk = int(
+                    header
+                    .split()[header.split().index("k") + 1]
+                    .split(")")[0][1:]
+                    )
+                k = []
+                for _ in range(int(np.ceil(nk / 8))):
+                    line = f.readline()
+                    k.extend([float(j) for j in line.split()])
+                k = np.array(k)
+                self.k = k
+            else:
+                nkx = int(
+                    header
+                    .split()[header.split().index("k_x") + 1]
+                    .split(")")[0][1:]
+                    )
+                kx = []
+                for _ in range(int(np.ceil(nkx / 8))):
+                    line = f.readline()
+                    kx.extend([float(j) for j in line.split()])
+                kx = np.array(kx)
+                self.kx = kx
+
+                nky = int(
+                    header
+                    .split()[header.split().index("k_y") + 1]
+                    .split(")")[0][1:]
+                    )
+                ky = []
+                for _ in range(int(np.ceil(nky / 8))):
+                    line = f.readline()
+                    ky.extend([float(j) for j in line.split()])
+                ky = np.array(ky)
+                self.ky = ky
+
+                nk = nkx * nky
+
+            # Now read z-positions, if any
+            if param.lintegrate_z:
+                nzpos = 1
+            else:
+                ini = f.tell()
+                line = f.readline()
+                if "z-pos" in line:
+                    nzpos = int(re.search(r"\((\d+)\)", line)[1])
+                    block_size = int(np.ceil(nzpos / 8))
+                    zpos = []
+                    for _ in range(block_size):
+                        line = f.readline()
+                        zpos.extend([ffloat(j) for j in line.split()])
+                    self.zpos = np.array(zpos)
+                else:
+                    # there was no list of z-positions, so reset the position of the reader.
+                    f.seek(ini)
+
+                    nzpos = dim.nzgrid
+                    grid = read.grid(datadir=datadir, trim=True, quiet=True)
+                    self.zpos = grid.z
+
+            # Now read the rest of the file
+            time = []
+            power_array = []
+
+            if param.lintegrate_shell:
+                block_size = np.ceil(nk / 8) * nzpos + 1
+            else:
+                block_size = np.ceil(int(nk * nzpos) / 8) + 1
+
+            for line_idx, line in enumerate(f):
+                if line_idx % block_size == 0:
+                    time.append(float(line.strip()))
+                else:
+                    lsp = line.strip().split()
+
+                    if param.lcomplex:
+                        # complex power spectrum
+                        real = lsp[0::2]
+                        imag = lsp[1::2]
+                        for a, b in zip(real, imag):
+                            power_array.append(ffloat(a) + 1j * ffloat(b))
                     else:
-                        for value_string in line.strip().split():
+                        for value_string in lsp:
                             power_array.append(ffloat(value_string))
 
-                # Reformat into arrays.
-                time = np.array(time)
-                power_array = (
-                    np.array(power_array)
-                    .reshape([n_blocks, int(dim.nxgrid / 2)])
-                    .astype(np.float32)
-                )
-                self.t = time.astype(np.float32)
-                setattr(self, power_list[power_idx], power_array)
+        time = np.array(time)
+
+        if param.lcomplex:
+            power_array = np.array(power_array, dtype=complex)
+        else:
+            power_array = np.array(power_array, dtype=np.float32)
+
+        if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
+            power_array = power_array.reshape([len(time), nzpos, nk])
+        else:
+            power_array = power_array.reshape([len(time), nzpos, nky, nkx])
+
+        self.t = time.astype(np.float32)
+        self.nzpos = nzpos
+        setattr(self, power_name, power_array)
+
+    def _read_power_1d(self, power_name, file_name, datadir):
+        """
+        Handle output of subroutine power_1d
+        """
+        dim = read.dim(datadir=datadir)
+
+        block_size = np.ceil(int(dim.nxgrid / 2) / 8.0) + 1
+
+        time = []
+        power_array = []
+        with open(os.path.join(datadir, file_name), "r") as f:
+            for line_idx, line in enumerate(f):
+                if line_idx % block_size == 0:
+                    time.append(float(line.strip()))
+                elif line.find(",") == -1:
+                    # if the line does not contain ',', assume it represents a series of real numbers.
+                    for value_string in line.strip().split():
+                        power_array.append(float(value_string))
+                else:
+                    # Assume we have complex numbers.
+                    for value_string in line.strip().split("( ")[1:]:
+                        value_string = (
+                            value_string.replace(")", "j")
+                            .strip()
+                            .replace(", ", "")
+                            .replace(" ", "+")
+                        )
+                        power_array.append(complex(value_string))
+
+        time = np.array(time)
+        power_array = np.array(power_array).reshape([len(time), int(dim.nxgrid / 2)])
+        self.t = time
+        setattr(self, power_name, power_array)
+
+    def _read_power_krms(self, power_name, file_name, datadir):
+        """
+        Read power_krms.dat.
+        """
+        nk = self._get_nk_xyz(datadir)
+        block_size = np.ceil(nk/8)
+
+        power_array = []
+        with open(os.path.join(datadir, file_name), "r") as f:
+            for line_idx, line in enumerate(f):
+                # KG: Is this file expected to contain extra lines? If not, the if below can be removed.
+                if line_idx < block_size:
+                    for value_string in line.strip().split():
+                        power_array.append(float(value_string))
+        power_array = (
+            np.array(power_array).reshape([nk]).astype(np.float32)
+        )
+        setattr(self, power_name, power_array)
+
+    def _read_power(self, power_name, file_name, datadir):
+        """
+        Handles output of power subroutine.
+        """
+        nk = self._get_nk_xyz(datadir)
+        block_size = np.ceil(nk/8) + 1
+
+        time = []
+        power_array = []
+        with open(os.path.join(datadir, file_name), "r") as f:
+            for line_idx, line in enumerate(f):
+                if line_idx % block_size == 0:
+                    time.append(float(line.strip()))
+                else:
+                    for value_string in line.strip().split():
+                        power_array.append(ffloat(value_string))
+
+        # Reformat into arrays.
+        time = np.array(time)
+        power_array = (
+            np.array(power_array)
+            .reshape([len(time), nk])
+            .astype(np.float32)
+        )
+        self.t = time.astype(np.float32)
+        setattr(self, power_name, power_array)
+
+    @functools.lru_cache
+    def _get_nk_xyz(self, datadir):
+        """
+        See variable nk_xyz in power_spectrum.f90.
+
+        NOTE: If you want to read output from non-cubic-box simulations run using older versions of Pencil where the number of k-vectors was always taken as nxgrid/2, you can do
+        ```
+        >>> class Power_wrong(pc.read.powers.Power):
+        ...     def _get_nk_xyz(self, dim, grid):
+        ...         return int(dim.nxgrid/2)
+
+        >>> p = Power_wrong.read()
+        ```
+        """
+        dim = read.dim(datadir=datadir)
+        try:
+            grid = read.grid(datadir=datadir, quiet=True)
+        except FileNotFoundError:
+            # KG: Handling this case because there is no grid.dat in `tests/input/serial-1/proc0` and we don't want the test to fail. Should we just drop this and add a grid.dat in the test input?
+            warnings.warn("grid.dat not found. Assuming the box is cubical.")
+            return int(dim.nxgrid/2)
+
+        Lx = grid.Lx
+        Ly = grid.Ly
+        Lz = grid.Lz
+
+        L_min = min(Lx, Ly, Lz)
+        return int(np.round(min( dim.nxgrid*L_min/(2*Lx), dim.nygrid*L_min/(2*Ly), dim.nzgrid*L_min/(2*Lz) )))

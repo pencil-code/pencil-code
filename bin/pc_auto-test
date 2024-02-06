@@ -1504,6 +1504,11 @@ sub test_rundir {
         }
     }
 
+    # Remove orphaned or broken data directory links
+    if (-l "data" && !-e "data") {
+        unlink ("data");
+    }
+
     # 1. Test compilation
     test_compile($dir, $makeopts, $t0);
     return if ($test_status);
@@ -1930,11 +1935,14 @@ sub get_current_revision {
             #$current_revision = `svn info "$pencil_home" --show-item revision`;
             my $result = `svn info "$pencil_home" --xml`;
             if ($result =~ /revision\s*=\s*"(\d+)"/is) { $current_revision = $1; }
-            if (!$current_revision) { $current_revision = "Problem obtaining SVN revision!"; }
-            # GIT hash
-            $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
-            if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $current_hash = $1; }
-            if (!$current_hash) { $current_hash = "No network connection to github!"; }
+            if (!$current_revision) {
+                $current_revision = "Problem obtaining SVN revision!";
+            } else {
+                # GIT hash
+                $current_hash = `wget -q "http://pencil-code.org/translate.php?output=plain&revision=$current_revision" -O -`;
+                chomp ($current_hash);
+            }
+            if (!$current_hash) { $current_hash = "No network connection to pencil-code.org!"; }
         }
         elsif (-e "$pencil_home/.git") {
             # GIT hash
@@ -2040,7 +2048,7 @@ END {
             } elsif ($ntests > 1) {
                 print "All $ntests tests succeeded.\n";
                 # pc_update_validated
-                system("$pencil_home/bin/pc_update_validated.sh &");
+                # system("$pencil_home/bin/pc_update_validated.sh &");
             }
             elsif (($ntests < 1) && ! $failed) {
                 print "There was no test to run???\n";
@@ -2108,6 +2116,10 @@ END {
             print "The following configuration has been used:\n";
             system(@pc_dump_config);
             printf "Perl version v%vd\n", $^V;
+
+            get_current_revision();
+            print "SVN: ".$current_revision."\n";
+            print "GIT: ".$current_hash."\n";
         }
     }
 

@@ -1,0 +1,6 @@
+#!/bin/sh
+git commit -m "current version; message generated automatically on: `uname -ns` ($USER)"
+git stash
+git pull --rebase
+git push
+git stash pop

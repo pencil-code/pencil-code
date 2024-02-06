@@ -18,7 +18,7 @@ pro pc_read_dim, mx=mx, my=my, mz=mz, mw=mw, mvar=mvar, $
     nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, $
     ipx=ipx,ipy=ipy,ipz=ipz, $
     l1=l1, l2=l2, m1=m1, m2=m2, n1=n1, n2=n2, $
-    object=object, datadir=datadir, proc=proc, reduced=reduced, $
+    object=object, datadir=datadir, proc=proc, reduced=reduced, globdim=globdim, $
     print=print, quiet=quiet, help=help, down=down, ogrid=ogrid
 ;
 COMPILE_OPT IDL2, HIDDEN
@@ -74,6 +74,7 @@ COMPILE_OPT IDL2, HIDDEN
     print, "   n1, n2: first & last index of non-ghost-point in z                              [integer]"
     print, ""
     print, "   object: optional structure in which to return all the above as tags           [structure]"
+    print, "  globdim: optional structure containing the data of data/dim.dat                [structure]"
     print, ""
     print, "   /PRINT: instruction to print all variables to standard output                            "
     print, "   /QUIET: instruction not to print any 'helpful' information                               "
@@ -186,7 +187,57 @@ COMPILE_OPT IDL2, HIDDEN
 ;
 ;  Check for existence and read the data.
 ;
-    if (not file_test(filename)) then message, 'ERROR: cannot find file ' + filename
+    if (not file_test(filename)) then begin
+      if is_defined(globdim) then begin
+        if not quiet then message, 'WARNING: cannot find file '+filename+'; object entries set from globdim',/info
+        nxgrid=0L & nygrid=0L & nzgrid=0L
+        mxgrid=0L & mygrid=0L & mzgrid=0L
+        l1=0L & l2=0L & m1=0L & m2=0L & n1=0L & n2=0L 
+        object = create_struct(name='PC_DIM:'+strtrim(filename,2),$
+                               ['mx','my','mz','mw', $
+                                'mvar','maux','mglobal', $
+                                'precision', $
+                                'nx','ny','nz','nw', $
+                                'nghostx','nghosty','nghostz', $
+                                'nxgrid','nygrid','nzgrid', $
+                                'mxgrid','mygrid','mzgrid', $
+                                'l1','l2','m1','m2','n1','n2', $
+                                'ipx','ipy','ipz', $
+                                'nprocx','nprocy','nprocz'], $
+                                mx,my,mz,mw, $
+                                mvar,maux,mglobal, $
+                                precision, $
+                                nx,ny,nz,nw, $
+                                nghostx,nghosty,nghostz, $
+                                nxgrid, nygrid, nzgrid, $
+                                mxgrid, mygrid, mzgrid, $
+                                l1,l2,m1,m2,n1,n2, $
+                                ipx, ipy, ipz, $
+                                nprocx,nprocy,nprocz)
+;
+;  Set fromm globdim.
+;
+        object = globdim
+        object.nx = globdim.nxgrid / globdim.nprocx
+        object.ny = globdim.nygrid / globdim.nprocy
+        object.nz = globdim.nzgrid / globdim.nprocz
+        object.nw = object.nx * object.ny * object.nz
+        object.mx = object.nx + 2 * object.nghostx
+        object.my = object.ny + 2 * object.nghosty
+        object.mz = object.nz + 2 * object.nghostz
+        object.mw = object.mx * object.my * object.mz
+        object.l2 = object.mx-object.nghostx-1
+        object.m2 = object.my-object.nghosty-1
+        object.n2 = object.mz-object.nghostz-1
+        object.ipx = proc mod object.nprocx
+        object.ipy = (proc / object.nprocx) mod object.nprocy
+        object.ipz = proc / (object.nprocx * object.nprocy)
+        return
+
+      endif else $
+        message, 'ERROR: cannot find file ' + filename
+    endif
+
     if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
     openr, file, filename, /get_lun
     if (execute('readf,file,mx,my,mz,mvar,maux,mglobal') ne 1) then begin
@@ -201,10 +252,10 @@ COMPILE_OPT IDL2, HIDDEN
       mglobal = 0
     end
 
-    precision_new = ''
-    readf, file, precision_new
-    pc_set_precision, precision=precision_new
-    if arg_present(precision_new) then precision_new=precision_new
+    precision_new_ = ''
+    readf, file, precision_new_
+    pc_set_precision, precision=precision_new_
+    if arg_present(precision_new) then precision_new=precision_new_
 
     readf, file, nghostx, nghosty, nghostz
     if (size(proc, /type) ne 0) then begin
@@ -214,9 +265,9 @@ COMPILE_OPT IDL2, HIDDEN
     end
     close,file
     free_lun, file
-    ;
+
     if (size(proc, /type) ne 0) then begin
-      pc_read_dim, obj=globdim, datadir=datadir, /quiet
+      if (not is_defined(globdim)) then pc_read_dim, obj=globdim, datadir=datadir, /quiet
       nprocx = globdim.nprocx
       nprocy = globdim.nprocy
       nprocz = globdim.nprocz
@@ -226,14 +277,14 @@ COMPILE_OPT IDL2, HIDDEN
       mxgrid = globdim.mxgrid
       mygrid = globdim.mygrid
       mzgrid = globdim.mzgrid
-    end else begin
+    endif else begin
       mxgrid = mx
       mygrid = my
       mzgrid = mz
       nxgrid = mxgrid - (2 * nghostx)
       nygrid = mygrid - (2 * nghosty)
       nzgrid = mzgrid - (2 * nghostz)
-    end
+    endelse
   end
 ;
 ;  Calculate any derived quantities
@@ -291,5 +342,5 @@ COMPILE_OPT IDL2, HIDDEN
     print, '   (mxgrid,mygrid,mzgrid) = (',mxgrid,',',mygrid,',',mzgrid,')'
     print, '   (nprocx,nprocy,nprocz) = (',nprocx,',',nprocy,',',nprocz,')'
   end
-;
+
 end

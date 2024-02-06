@@ -961,31 +961,41 @@ class __Simulation__(object):
 
         return [a[0] - da / 2, a[-1] + da / 2, b[0] - db / 2, b[-1] + db / 2]
 
-    def get_varlist(self, pos=False, particle=False):
-        """Get a list of all existing VAR# file names.
+    def get_varlist(self, pos=False, particle=False, down=False):
+        """
+        Get a list of all existing VAR# file names.
 
         pos = False:                 give full list
         pos = 'last'/'first':        give latest/first var file
         pos = 'lastXXX' / 'firstXXX' give last/first XXX varfiles
         pos = list of numbers:       give varfiles at this positions
-        particle = True:             return PVAR- instead of VAR-list"""
+        particle = True:             return PVAR- instead of VAR-list
+        down = True:                 return list of downsampled snapshots
+        """
 
         import glob
         from os.path import join as join
         from os.path import basename
         from pencil.math import natural_sort
 
-        key = "VAR"
-        if particle == True:
+        if particle:
             key = "PVAR"
+        elif down:
+            key = "VARd"
+        else:
+            key = "VAR"
+
+        if isinstance(self.param, dict) and self.param['io_strategy'] == 'HDF5':
+            proc = "allprocs"
+        else:
+            proc = "proc0"
 
         varlist = natural_sort(
             [
                 basename(i)
-                for i in glob.glob(join(self.datadir, "proc0") + "/" + key + "*")
+                for i in glob.glob(join(self.datadir, proc) + "/" + key + "*")
             ]
         )
-        # if particle: varlist = ['P'+i for i in varlist]
 
         if pos == False:
             return varlist

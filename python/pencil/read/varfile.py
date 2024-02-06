@@ -235,7 +235,6 @@ class DataCube(object):
         from scipy.io import FortranFile
         from pencil.math.derivatives import curl, curl2
         from pencil import read
-        from pencil.sim import __Simulation__
 
         def persist(self, infile=None, precision="d", quiet=quiet):
             """An open Fortran file potentially containing persistent variables appended
@@ -272,53 +271,43 @@ class DataCube(object):
                             )
             return self
 
-        dim = None
-        param = None
-        index = None
-        grid = None
+        if sim is None:
+            datadir = os.path.expanduser(datadir)
+            dim = read.dim(datadir, proc)
+            param = read.param(datadir=datadir, quiet=quiet, conflicts_quiet=True)
+            index = read.index(datadir=datadir)
 
-        if isinstance(sim, __Simulation__):
+            try:
+                grid = read.grid(datadir=datadir, quiet=True)
+            except FileNotFoundError:
+                # KG: Handling this case because there is no grid.dat in `tests/input/serial-1/proc0` and we don't want the test to fail. Should we just drop this and add a grid.dat in the test input?
+                warnings.warn("Grid.dat not found. Assuming the grid is uniform.")
+                grid = None
+        else:
             datadir = os.path.expanduser(sim.datadir)
             dim = sim.dim
             param = read.param(datadir=sim.datadir, quiet=True, conflicts_quiet=True)
             index = read.index(datadir=sim.datadir)
-            grid = read.grid(datadir=sim.datadir, quiet=True)
-        else:
-            datadir = os.path.expanduser(datadir)
-            if dim is None:
-                if var_file[0:2].lower() == "og":
-                    dim = read.ogdim(datadir, proc)
-                else:
-                    if var_file[0:4] == "VARd":
-                        dim = read.dim(datadir, proc, down=True)
-                    else:
-                        dim = read.dim(datadir, proc)
-            if param is None:
-                param = read.param(datadir=datadir, quiet=quiet, conflicts_quiet=True)
-            if index is None:
-                index = read.index(datadir=datadir)
-            if grid is None:
-                try:
-                    grid = read.grid(datadir=datadir, quiet=True)
-                except FileNotFoundError:
-                    # KG: Handling this case because there is no grid.dat in `tests/input/serial-1/proc0` and we don't want the test to fail. Should we just drop this and add a grid.dat in the test input?
-                    warnings.warn("Grid.dat not found. Assuming the grid is uniform.")
+            grid = sim.grid
+
+        if var_file[0:2].lower() == "og":
+            dim = read.ogdim(datadir, proc)
+        elif var_file[0:4] == "VARd":
+            dim = read.dim(datadir, proc, down=True)
+            warnings.warn(
+                "Reading downsampled grid is currently not implemented. Assuming the grid is uniform."
+            )
+            grid = None
+
+        # Used later on to support the case where only some of the variables were written into the snapshots.
+        index_max = dim.mvar + dim.maux
 
         if param.lwrite_aux:
             total_vars = dim.mvar + dim.maux
         else:
             total_vars = dim.mvar
 
-        lh5 = False
-        if not param:
-            param = read.param(datadir=datadir, quiet=True)
-        if hasattr(param, "io_strategy"):
-            if param.io_strategy == "HDF5":
-                lh5 = True
-        # Keep this for sims that were converted from Fortran to hdf5
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
-            lh5 = True
-        if lh5:
+        if param.io_strategy == "HDF5":
             #
             #  Read HDF5 files.
             #
@@ -361,8 +350,7 @@ class DataCube(object):
                         self.__setattr__(
                             key, (tmp["persist"][key][0]).astype(precision)
                         )
-        elif (hasattr(param, "io_strategy") and param.io_strategy == "dist"
-             ) or not hasattr(param, "io_strategy"):
+        elif param.io_strategy == "dist":
             #
             #  Read scattered Fortran binary files.
             #
@@ -575,7 +563,7 @@ class DataCube(object):
                         :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
                     ]
             if "bbtest" in magic:
-                if lh5:
+                if param.io_strategy == "HDF5":
                     # Compute the magnetic field before doing trimall.
                     for j in range(int(len(aatest) / 3)):
                         key = aatest[j*3][:-1]
@@ -714,19 +702,20 @@ class DataCube(object):
                 and "uutest" not in key
             ):
                 value = index.__dict__[key]
-                setattr(self, key, self.f[value - 1, ...])
+                if value <= index_max:
+                    setattr(self, key, self.f[value - 1, ...])
         # Special treatment for vector quantities.
-        if hasattr(index, "ux"):
+        if hasattr(index, "ux") and index.uz <= index_max:
             setattr(self, "uu", self.f[index.ux - 1 : index.uz, ...])
-        if hasattr(index, "ax"):
+        if hasattr(index, "ax") and index.az <= index_max:
             setattr(self, "aa", self.f[index.ax - 1 : index.az, ...])
-        if hasattr(index, "uu_sph"):
+        if hasattr(index, "uu_sph") and index.uu_sphz <= index_max:
             self.uu_sph = self.f[index.uu_sphx - 1 : index.uu_sphz, ...]
-        if hasattr(index, "bb_sph"):
+        if hasattr(index, "bb_sph") and index.bb_sphz <= index_max:
             self.bb_sph = self.f[index.bb_sphx - 1 : index.bb_sphz, ...]
         # Special treatment for test method vector quantities.
         # Note index 1,2,3,...,0 last vector may be the zero field/flow
-        if not lh5:
+        if param.io_strategy != "HDF5":
             if hasattr(index, "aatest1"):
                 naatest = int(len(aatest) / 3)
                 for j in range(0, naatest):

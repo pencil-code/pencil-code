@@ -923,7 +923,7 @@ module Io
       call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_RDWR, ior(MPI_MODE_CREATE, MPI_MODE_APPEND)), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to open file '" // trim(fpath) // "'")
 !
-!  Set the file view for data write.
+!  Expand file.
 !
       call MPI_TYPE_SIZE(etype, esize, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to find type size")
@@ -933,11 +933,13 @@ module Io
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to find file position")
       call fatal_error_local_collect()
 !
-      esize = int(sum(rmv_list(:iproc)), KIND=MPI_COUNT_KIND) * esize
-      if (lparticles_sink) esize = 2_MPI_COUNT_KIND * esize
-      disp = disp + int(esize, KIND=MPI_OFFSET_KIND)
+      call MPI_FILE_PREALLOCATE(handle, disp + int(sum(rmv_list) * int(esize), KIND=MPI_OFFSET_KIND), mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to expand file")
 !
-      call MPI_FILE_SET_VIEW(handle, disp, etype, filetype, "native", io_info, mpi_err)
+!  Set the file view for data write.
+!
+      disp = disp + int(sum(rmv_list(:iproc)) * int(esize), KIND=MPI_OFFSET_KIND)
+      call MPI_FILE_SET_VIEW(handle, disp, MPI_INTEGER, filetype, "native", io_info, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to set file view")
 !
 !  Write log.

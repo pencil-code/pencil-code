@@ -466,11 +466,21 @@ sub mark_all_succeeded {
     my $hash = "";
     if (-d "$pencil_home/.svn") {
         # SVN revision
-        $revision = `svn info --show-item revision`;
+        ###$revision = `svn info --show-item revision`;
         # GIT hash
-        $result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
-        if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $hash = $1; }
-        if (!$hash) { $hash = "No network connection to github!"; }
+        ###$result = `svn log -l 1 --with-revprop git-commit --xml "$pencil_home"`;
+        ###if ($result =~ /name\s*=\s*"git-commit"\s*>(.*?)<\/property>/is) { $hash = $1; }
+        ###if (!$hash) { $hash = "No network connection to github!"; }
+        my $result = `svn info "$pencil_home" --xml`;
+        if ($result =~ /revision\s*=\s*"(\d+)"/is) { $revision = $1; }
+        if (!$revision) {
+            $revision = "Problem obtaining SVN revision!";
+        } else {
+            # GIT hash
+            $hash = `wget -q "http://pencil-code.org/translate.php?output=plain&revision=$revision" -O -`;
+            chomp ($hash);
+        }
+        if (!$hash) { $hash = "No network connection to pencil-code.org!"; }
     }
     elsif (-e "$pencil_home/.git") {
         # GIT hash
