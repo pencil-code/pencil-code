@@ -171,16 +171,6 @@ module Cdata
 !
   real :: x0, y0, z0, Lx, Ly, Lz, wav1=impossible, wav1z=impossible
 !
-!  Polar grid
-!
-  integer :: ncoarse=0
-  logical :: lcoarse=.false., lcoarse_mn=.false.
-  integer, dimension(2) :: mexts=(/-1,-1/)
-  integer, dimension(:), allocatable :: nphis
-  real, dimension(:), allocatable :: nphis1, nphis2
-  integer, dimension(:,:), allocatable :: nexts
-  integer, dimension(:,:,:), allocatable :: ninds
-!
   logical :: lini_t_eq_zero=.false.
   logical :: lini_t_eq_zero_once=.false.
   real, dimension (nx) :: advec_cs2=0.
@@ -302,14 +292,11 @@ module Cdata
              lreference_state=.false., lfullvar_in_slices=.false., &
              lsubstract_reference_state=.false., ldensity_linearstart=.false.
   logical :: lforcing_cont=.false.
-<<<<<<< HEAD
   logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
   logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
   logical :: lwrite_sound=.false.
   logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
   logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
-=======
->>>>>>> origin/master
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
@@ -505,21 +492,7 @@ module Cdata
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
   !$omp threadprivate(inds_max_diags, inds_sum_diags)
 
-<<<<<<< HEAD
   logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
-=======
-  logical :: lfirst=.false.,llast=.false.,ldt=.true.,ldt_paronly=.false.
-!END C BINDING
-  integer, target :: m,n
-  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
-  logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
-  logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
-  logical :: lwrite_sound=.false.
-  logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
-  logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
-  logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
-  logical :: lfirstpoint=.false.
->>>>>>> origin/master
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: ltracers=.false.,lfixed_points=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
@@ -825,7 +798,6 @@ module Cdata
   real :: lambda5 = 0.0
 !
 !  Variables for concurrency
-<<<<<<< HEAD
 ! 
   real, pointer, dimension(:) :: p_dt1_max
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
@@ -845,25 +817,5 @@ module Cdata
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
 !$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,t,it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
-
-=======
-!
-  logical :: lwriting_snapshots=.false.
-  logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
-!
-!$ integer :: num_cores = 0
-!$ integer :: num_threads = 0
-!$ logical :: lthread_safe
-!
-! threadprivate definitions for OpenMP
-!
-!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil&
-!$omp ,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
-!$omp threadprivate(lfirstpoint)
-!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
-!$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
-!$omp threadprivate(it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
-!
 !***********************************************************************
->>>>>>> origin/master
 endmodule Cdata

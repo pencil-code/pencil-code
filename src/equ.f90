@@ -347,7 +347,8 @@ module Equ
           call copy_farray_from_GPU(f)
           call init_reduc_pointers
           call init_diagnostics_accumulators
-!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
+!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
+!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
         endif
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
@@ -439,7 +440,8 @@ module Equ
     endif
       if(lgpu) then
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
-!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),last_pushed_task, 1, default_task_type, 1, depend_on_all)
+!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),&
+!$        last_pushed_task, 1, default_task_type, 1, depend_on_all)
         endif
       else
         if(lfirst) call finalize_diagnostics
