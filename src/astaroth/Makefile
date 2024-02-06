@@ -131,6 +131,9 @@ clean:
 	@rm -f $(OBJECTS)
 	@rm -f *.so .sentinel
 	@if [[ -d submodule/build ]]; then rm -f -rI submodule/build; fi # Removes the files generated with cmake for the Astaroth code
+	@rm -rf build
+	@rm -rf scheduler-build
+	@rm -rf include
 
 # Deep cleaning, e.g. necessary with compiler change
 #

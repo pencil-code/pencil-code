@@ -15,6 +15,7 @@
   lpencil_check_small=F
   lbidiagonal_derij=T  !(uses the slightly more accurate formulation for derij)
   luse_oldgrid=F
+  num_of_helper_threads=10
 /
 &hydro_run_pars
   theta=0.,

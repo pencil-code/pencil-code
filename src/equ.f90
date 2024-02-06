@@ -343,7 +343,7 @@ module Equ
         call rhs_gpu(f,itsub,early_finalize)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
           !wait in case the last diagnostic tasks are not finished
-          call wait_all_thread_pool()
+!$        call wait_all_thread_pool()
           call copy_farray_from_GPU(f)
           call init_reduc_pointers
           call init_diagnostics_accumulators
@@ -776,11 +776,11 @@ module Equ
       integer, value :: istart,iend
 !
 !
-!$omp parallel firstprivate(p) num_threads(num_of_helper_threads)
+!$omp parallel firstprivate(p) num_threads(3)
       call init_private_accumulators
 !$    call read_diagnostic_flags
       lfirstpoint=.true.
-      print*,"TP thread num: ",omp_get_thread_num()
+!$    print*,"TP thread num: ",omp_get_thread_num()
       !$omp do
       do imn=istart,iend
 
@@ -829,12 +829,12 @@ module Equ
       !$omp end do
       !$omp barrier
       do imn=0,num_of_helper_threads-1
-        if(omp_get_thread_num() == imn) then
+!$      if(omp_get_thread_num() == imn) then
 !$omp critical
 !$   call prep_finalize_thread_diagnos
 !$   call diagnostics_reductions
 !$omp end critical
-        endif
+!$      endif
       !$omp barrier
       enddo
 !$omp end parallel

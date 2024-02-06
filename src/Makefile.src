@@ -508,14 +508,13 @@ ifneq ($(GPU),nogpu)
       GPU_DEPS = gpu_preps
       #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
-      LDFLAGS_LIB = -L astaroth/scheduler-build/src -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -L astaroth/submodule/build/src/utils -lastaroth_core -lkernels  -l:libmt-fortran.a -l:libmt.a -lstdc++ -lastaroth_utils -l:$(LIBGPU)
-      LDFLAGS+= -L src/astaroth/scheduler-build/src -L astaroth/scheduler-build/src
+      LDFLAGS_LIB = -L astaroth/scheduler-build/src -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -L astaroth/submodule/build/src/utils -lastaroth_core -lkernels -lastaroth_utils -l:$(LIBGPU)
+	  override LDFLAGS += -l:libmt-fortran.a -l:libmt.a -lstdc++
+      override LDFLAGS+= -L astaroth/scheduler-build/src
   #   the following needed?
       LDFLAGS_LIB += -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -ldl
   #-fzero-link  
 
-print_vendor:
-	echo GPU_VENDOR=$(GPU_VENDOR) > astaroth/Makefile.vendor
     else
       $(error Directory src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
     endif
@@ -528,7 +527,7 @@ else
 endif
 ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
   override FFLAGS += $(OMPFFLAGS) -I./astaroth/include
-  override LDFLAGS += $(OMPLFLAGS)
+  override LDFLAGS += $(OMPLFLAGS) -I./astaroth/include
 #  OMP_PREREQ = copyin.inc
 #  Creates code for copying in threadprivate variables. - Not needed at the moment.
 #
@@ -3426,8 +3425,10 @@ clean:  slender
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build* .moduleinfo
-	rm -f .sentinel $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_INCDIR)/PC_moduleflags.h  # for GPU
+	rm -f .sentinel $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_INCDIR)/PC_moduleflags.h  $(CUDA_MAKEDIR)/PC_module_parfuncs.h $(CUDA_MAKEDIR)/PC_modulepars.h # for GPU
 	rm -f nompicomm_*.f90 mpicomm_*.f90 # temporary workaround to remove old "mpicomm_double.f90"
+	#done so the interface make can clean after this, otherwise that clean has to come first
+	touch ./astaroth/PC_modulesources.h
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
 #
@@ -3465,6 +3466,10 @@ include Makefile.library
 #
 #  Dependencies for regular files.
 #
+ifneq ($(findstring gpu_astaroth, $(GPU)),)
+./astaroth/Makefile.vendor: Makefile.local
+	@echo GPU_VENDOR=$(GPU_VENDOR) > ./astaroth/Makefile.vendor
+endif
 include Makefile.depend
 
 # DO NOT DELETE
