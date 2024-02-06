@@ -896,7 +896,7 @@ module Gravity
 !
     endsubroutine calc_pencils_gravity
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,p)
+    subroutine addgravity(df,p)
 !
 !  Add gravitational acceleration to gas and dust.
 !
@@ -909,11 +909,10 @@ module Gravity
 !   5-dec-06/petri: added Boussinesq approximation
 !  20-jan-15/MR: changes for use of reference state
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(in) :: f,p
+      intent(in) :: p
       intent(inout) :: df
 !
       integer :: k
@@ -972,11 +971,11 @@ module Gravity
         enddo
       endif
 
-      call calc_diagnostics_gravity(p)
+      if (lneutralvelocity) df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) + p%gg
 
-      call keep_compiler_quiet(f)
+      call calc_diagnostics_gravity(p)
 !
-    endsubroutine duu_dt_grav
+    endsubroutine addgravity
 !***********************************************************************
     subroutine calc_diagnostics_gravity(p)
 

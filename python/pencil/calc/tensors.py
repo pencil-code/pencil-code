@@ -86,7 +86,7 @@ class Tensors(object):
 
         os.chdir(datatopdir)  # return to working directory
         if isinstance(aver,list):
-            aver = read.aver('z',proc=proc)
+            aver = read.aver('z',proc=proc,quiet=True)
         grid = read.grid(proc=proc, trim=True, quiet=True)
         # if iy None or scalar create numpy array
         try:

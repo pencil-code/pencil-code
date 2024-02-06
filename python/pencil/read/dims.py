@@ -87,33 +87,40 @@ class Dim(object):
           dimensions. If proc is >=0, then read the dim.dat in the
           corresponding processor directory.
 
+        down : bool
+          whether to read dim_down.dat
         Returns
         -------
         Class containing the domain dimension information.
         """
-
+        import glob
         import os
 
-        lh5 = False
         if not param:
             param = read.param(datadir=datadir, quiet=True)
-        if hasattr(param, "io_strategy"):
-            if param.io_strategy == "HDF5":
-                lh5 = True
-        # Keep this for sims that were converted from Fortran to hdf5
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
-            lh5 = True
-        if lh5:
+
+        if param.io_strategy == "HDF5":
             import h5py
 
-            with h5py.File(os.path.join(datadir,"allprocs","var.h5"), "r") as tmp:
+            if down:
+                # KG: dim_down.h5 contains only per-processor output (wrong for for nproc{x,y,z} != 1), so we do this instead.
+                vardfiles = glob.glob(os.path.join(datadir, "allprocs", "VARd*"))
+                if len(vardfiles) == 0:
+                    raise RuntimeError(
+                        "No downsampled snapshots were saved, so we cannot get their dimensions."
+                    )
+                filename = os.path.basename(vardfiles[0])
+            else:
+                filename = "var.h5"
+
+            with h5py.File(os.path.join(datadir, "allprocs", filename), "r") as tmp:
                 self.mx = np.array(tmp["settings"]["mx"]).item()
                 self.my = np.array(tmp["settings"]["my"]).item()
                 self.mz = np.array(tmp["settings"]["mz"]).item()
                 self.mvar = np.array(tmp["settings"]["mvar"]).item()
                 self.maux = np.array(tmp["settings"]["maux"]).item()
                 self.mglobal = np.array(tmp["settings"]["mglobal"])
-                self.precision = np.array(tmp["settings"]["precision"]).item()
+                self.precision = np.array(tmp["settings"]["precision"]).item().decode()
                 self.nghostx = np.array(tmp["settings"]["nghost"]).item()
                 self.nghosty = np.array(tmp["settings"]["nghost"]).item()
                 self.nghostz = np.array(tmp["settings"]["nghost"]).item()

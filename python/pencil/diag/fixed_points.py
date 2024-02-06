@@ -215,8 +215,11 @@ class FixedPoint(object):
                 proc[i_proc].terminate()
 
             # Discard fixed points which lie too close to each other.
+#            fixed, fixed_tracers, fixed_sign = self.__discard_close_fixed_points(
+#                np.array(fixed), np.array(fixed_sign), np.array(fixed_tracers), var
+#            )
             fixed, fixed_tracers, fixed_sign = self.__discard_close_fixed_points(
-                np.array(fixed), np.array(fixed_sign), np.array(fixed_tracers), var
+                np.array(fixed), np.array(fixed_sign), fixed_tracers, var
             )
             if self.fixed_points is None:
                 self.fixed_points = []
@@ -653,7 +656,7 @@ class FixedPoint(object):
 
         return (
             np.array(fixed_new),
-            np.array(fixed_tracers_new),
+            fixed_tracers_new,
             np.array(fixed_sign_new),
         )
 

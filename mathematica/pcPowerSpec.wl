@@ -15,6 +15,17 @@ BeginPackage["pcPowerSpec`"]
 (*Usage messages*)
 
 
+powerTS::usage="powerTS[ts] computes PSD of light curves. The normalization is
+Total[psd] = mean of flux^2.
+Input:
+  ts: 1D List of time series, { {t1,f1},{t2,f2},... }. If t_i are equally distributed,
+      the built-in Fourier function shall be used which is the default. Otherwise, use
+      \"lFTbyHand\"->True to do the Fourier transform by hand.
+Options:
+  \"lFTbyHand\": if -> True, then force to do Fourier transform by hand.
+Output:
+  PSD { {k1,p1},{k2,p2},... } where k1=0 is the zero mode."
+
 power1D::usage="power1D[data,{nx,ny,nz}] computes the 1D power spectrum of data. The normalization is
 Total[powerSpectrum]=Mean[data^2].
 Input:
@@ -44,6 +55,39 @@ Begin["`Private`"]
 (* ::Section:: *)
 (*1D power spectrum*)
 
+
+Options[powerTS]={"lFTbyHand"->False}
+powerTS[ts_List,OptionsPattern[]]:=Module[{t,f,n,n2,T,dt,k,fft,psd},
+  {t,f}=Transpose[ts];
+  dt=t//Differences//Mean;
+  n=Length[t];
+
+  If[OptionValue["lFTbyHand"],
+    (* do integration by hand *)
+    If[EvenQ[n],{t,f}=Rest/@{t,f}];
+    {t,f}=Rest/@{t,f};
+    T=t[[-1]]-t[[1]];
+    n=n-1;
+    
+    k=2\[Pi]/T*Range[0,n/2];
+    fft=Total[f*Exp[-I*#*t]*dt]&/@k;
+    psd=Abs[fft]^2;
+    psd[[2;;]]=2*psd[[2;;]],
+    
+    (* use built-in Fourier *)
+    T=t[[-1]]-t[[1]];
+    t=Flatten@{0,t};
+    f=Flatten@{0,f};
+    n=n+1;
+    n2=Floor[n/2];
+    k=2\[Pi]/T*Range[0,n2];
+    fft=Fourier[f,FourierParameters->{-1,-1}];
+    psd=Abs[fft[[2;;n2+1]]]^2+Abs[fft[[-1;;-n2;;-1]]]^2;
+    psd=Flatten@{Abs[fft[[1]]]^2,psd};
+  ];
+  psd=psd/Total[psd*2\[Pi]/T]*Total[f^2*dt];
+  Transpose[{k,psd}]
+]
 
 (* shell-integrated power spectrum *)
 Options[power1D]={"Method"->"kxyz1"}
@@ -121,7 +165,7 @@ End[]
 
 
 Protect[
-  power1D,power1DintZ
+  powerTS,power1D,power1DintZ
 ]
 
 

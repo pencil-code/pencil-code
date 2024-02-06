@@ -20,6 +20,16 @@ module Cdata
 !
   character (len=linelen) :: cvsid='no cvsid is given in start.in or run.in!'
 !
+!  Polar grid
+!
+  integer :: ncoarse=0
+  logical :: lcoarse=.false., lcoarse_mn=.false.
+  integer, dimension(2) :: mexts=(/-1,-1/)
+  integer, dimension(:), allocatable :: nphis
+  real, dimension(:), allocatable :: nphis1, nphis2
+  integer, dimension(:,:), allocatable :: nexts
+  integer, dimension(:,:,:), allocatable :: ninds
+!
 !  Cartesian coordinate system.
 !
   real, dimension (nx,3) :: dline_1
@@ -286,25 +296,20 @@ module Cdata
 ! coordinate. This should be taken care of by 'shared variables' if in future
 ! Omega should be moved from cdata to hydro.
 !
-!  Random numbers.
-!
-  integer, dimension(mseed) :: seed=0, seed2=0
-  integer :: nseed=0, seed0=1812, ichannel1=1, ichannel2=1
-  integer, parameter :: ndustspec0=8
-  real, dimension (2) :: fran1,fran2
-  logical :: lseed_global=.true., lseed_procdependent=.false.
-!
 !  Module flags.
 !
   logical :: ldensity_nolog=.false., &
              lreference_state=.false., lfullvar_in_slices=.false., &
              lsubstract_reference_state=.false., ldensity_linearstart=.false.
   logical :: lforcing_cont=.false.
+<<<<<<< HEAD
   logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
   logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
   logical :: lwrite_sound=.false.
   logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
   logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
+=======
+>>>>>>> origin/master
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
@@ -455,7 +460,6 @@ module Cdata
 !
   integer :: imn
   integer :: lglob=1
-  integer, target :: m,n
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
   integer :: necessary_imn=0
@@ -501,7 +505,21 @@ module Cdata
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
   !$omp threadprivate(inds_max_diags, inds_sum_diags)
 
+<<<<<<< HEAD
   logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
+=======
+  logical :: lfirst=.false.,llast=.false.,ldt=.true.,ldt_paronly=.false.
+!END C BINDING
+  integer, target :: m,n
+  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
+  logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
+  logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
+  logical :: lwrite_sound=.false.
+  logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
+  logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
+  logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
+  logical :: lfirstpoint=.false.
+>>>>>>> origin/master
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: ltracers=.false.,lfixed_points=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
@@ -519,6 +537,13 @@ module Cdata
   logical :: lav_smallx=.false.,loutside_avg=.false.
   real :: xav_max=impossible
   real :: nVol,nVol1  !  For calculating averages in non-Cartesian coordinates
+!
+!  Random numbers.
+!
+  integer, dimension(mseed) :: seed=0, seed2=0
+  integer :: nseed=0, seed0=1812, ichannel1=1, ichannel2=1
+  real, dimension (2) :: fran1,fran2
+  logical :: lseed_global=.true., lseed_procdependent=.false.
 !
 ! Averages of half the computational box:
 ! fname_half has two indices, the first contains the quantity averaged
@@ -800,6 +825,7 @@ module Cdata
   real :: lambda5 = 0.0
 !
 !  Variables for concurrency
+<<<<<<< HEAD
 ! 
   real, pointer, dimension(:) :: p_dt1_max
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
@@ -820,4 +846,24 @@ module Cdata
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
 !$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,t,it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
 
+=======
+!
+  logical :: lwriting_snapshots=.false.
+  logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
+!
+!$ integer :: num_cores = 0
+!$ integer :: num_threads = 0
+!$ logical :: lthread_safe
+!
+! threadprivate definitions for OpenMP
+!
+!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil&
+!$omp ,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
+!$omp threadprivate(lfirstpoint)
+!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
+!$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
+!$omp threadprivate(it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
+!
+!***********************************************************************
+>>>>>>> origin/master
 endmodule Cdata

@@ -91,16 +91,10 @@ class ParticleData(object):
                 sim = get_sim()
         datadir = sim.datadir
 
-        lh5 = False
         if not param:
             param = read.param(datadir=datadir, quiet=True)
-        if hasattr(param, "io_strategy"):
-            if param.io_strategy == "HDF5":
-                lh5 = True
-        # Keep this for sims that were converted from Fortran to hdf5
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
-            lh5 = True
-        if not lh5:
+
+        if param.io_strategy != "HDF5":
             try:
                 cwd = os.getcwd()
                 from idlpy import IDL
@@ -123,7 +117,7 @@ class ParticleData(object):
                 print("! ")
                 return None
 
-        if not lh5:
+        if param.io_strategy != "HDF5":
             if quiet == False:
                 quiet = "0"
             else:
@@ -146,7 +140,7 @@ class ParticleData(object):
             varfile = "pvar.dat"
         if varfile[:3] == "VAR":
             varfile = "P" + varfile
-        if lh5:
+        if param.io_strategy == "HDF5":
             import h5py
             varfile = str.strip(varfile, ".dat") + ".h5"
             with h5py.File(os.path.join(datadir, "allprocs", varfile), "r") as hf:

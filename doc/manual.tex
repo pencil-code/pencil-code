@@ -493,7 +493,7 @@ An up to date list of Pencil Code contributors can be found at
   jaarnes & \htmladdnormallink{J{\o}rgen Aarnes}{https://github.com/pencil-code/pencil-code} & Trondheim \\
   joishi  & \htmladdnormallink{Jeff S.\ Oishi}{http://cms.jsoishi.org/} & Bates College\\
   JenSchober & \htmladdnormallink{Jennifer Schober}{https://jennifer-schober.com/} & EPFL, Lausanne \\
-  Illarl & Illa R.\ Losada & Nordita \\
+  Illarl & Illa R.\ Losada & McDonald Observatory, USA \\
   Iomsn1 & \htmladdnormallink{Simon Candelaresi}{https://www.gla.ac.uk/schools/mathematicsstatistics/staff/simoncandelaresi/} & University of Glasgow \\
   grsarson & \htmladdnormallink{Graeme R. Sarson}{http://www.mas.ncl.ac.uk/~ngrs/home.html} & University of Newcastle\\
   fredgent  & \htmladdnormallink{Frederick Gent}{http://fagent.wikidot.com/} & Aalto University, Espoo\\
@@ -3059,7 +3059,7 @@ your own new script than figuring out how something else works.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{RELOAD and STOP files}
+\subsection{RELOAD, STOP and SAVE files}
 \label{S-RELOAD}
 
 The code periodically (every \var{it} time steps) checks
@@ -3105,6 +3105,14 @@ output.
 % \file{src/run.x}. If you run without the \file{run.csh} script you need
 % to remember doing this by hand.
 
+\paragraph{Saving a snapshot}
+In the directory where you started the code, create the file
+\file{SAVE} with
+\begin{alltt}
+  \prompt{unix> } touch SAVE \
+\end{alltt}
+to save the current state of the simulation in the file {\tt var.dat}.
+See {\bf Stopping the code} for when this action is taken. 
 % ---------------------------------------------------------------------- %
 
 \subsection{RERUN and NEWDIR files}
@@ -7156,6 +7164,39 @@ They would leave gaps in the counting of entries in your
 
 % ---------------------------------------------------------------------- %
 
+\subsection{Programming new slices}
+
+{\bf Q}:
+I'm creating a new special module with a few new variables \code{f(:,:,:,inew1)}, \code{f(:,:,:,inew2)} etc.
+I'm wondering how to add new output of slices (i.e. video files)
+of these new variables (say \code{p\%inew1}) and their combinations (say
+\code{p\%inew1**2+p\%inew2**2})? I tried to look into other modules to find an
+example but got confused. If someone could clarify the calling tree it
+would be great!
+
+{\bf A}:
+Best you look into hydro.f90. For slices, which contain simply f-array variables,
+you do something like
+\begin{Verbatim}
+  case ('uu'); call assign_slices_vec(slices,f,iuu)
+\end{Verbatim}
+in \code{get\_slices\_hydro}. For slices, which contain derived quantities like your \code{p\%inew1**2+p\%inew2**2}
+you have to declare slice buffers as for divu in hydro (divu\_xy etc.), you have to allocate them like
+\begin{Verbatim}
+  if (ivid_divu/=0) call alloc_slice_buffers(divu_xy,divu_xz, &
+    divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
+\end{Verbatim}
+to fill them in \code{calc\_diagnostics\_special} like
+\begin{Verbatim}
+  if (ivid_divu/=0) call store_slices(p%divu,divu_xy,divu_xz, &
+    divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
+\end{Verbatim}
+and finally to store them in \code{get\_slices\_special} like
+\begin{Verbatim}
+  call assign_slices_scal(slices,divu_xy,divu_xz,divu_yz, &
+    divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
+\end{Verbatim}
+
 \subsection{General questions}
 
 %%%
@@ -8717,6 +8758,8 @@ where \code{nw=nx*ny*nz}.
 9216&Triolith&$1.28{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x36x64& 1-mar-14 & AB \\
 9216&Triolith&$1.30{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x32x72& 1-mar-14 & AB \\
 16384&Hermit&$6.4{\!\times\!}10^{-4}$&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&16x32x32&22-aug-13&PJK\\
+16384&Dardel&$1.37{\!\times\!}10^{-4}$&$16384{\!\times\!}16384$&2D-MHD-6th&128x128&6-feb-24&AB\\
+16384&Dardel&$2.05{\!\times\!}10^{-4}$&$16384{\!\times\!}16384$&2D-MHD-10th&128x128&6-feb-24&AB\\
 18432 & Kraken& 0.00316  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 24x48x16 &13-jan-12 & WL\\
 18432 & Kraken&$8.8{\!\times\!}10^{-4}$  &$768{\!\times\!}1536{\!\times\!}512$ & magn/noentro & 24x48x16 &17-jan-12 & WL\\
 18432 & Kraken& $4.0{\!\times\!}10^{-4}$ &$1536{\!\times\!}3072{\!\times\!}1024$ & magn/noentro & 24x48x16 &18-jan-12 & WL\\

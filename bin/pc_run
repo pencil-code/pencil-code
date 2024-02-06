@@ -299,6 +299,7 @@ sub start_cmd {
     honour_nostart();
     setup_datadir();
     run_extra_setup_script();
+    setup_environment();
     setup_local_disc();
     handle_local_binary($start_x);
     identify_revision($start_x);
@@ -314,6 +315,7 @@ sub start_cmd {
 sub run_cmd {
 # Run run.x
 
+    setup_environment();
     setup_local_disc();
     handle_local_binary($run_x);
     distribute_var_files();
@@ -356,11 +358,6 @@ sub mpi_run_cmd {
     }
     my $extra_opts = $runtime_params{'extra_opts'  } || '';
     my @extra_opts = split('\s+', $extra_opts);
-#
-# Set environment.
-#
-#    $ENV{'PC_MODULES_LIST'} = `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special[/]//g'`;
-#    print "MODULES:", $ENV{'PC_MODULES_LIST'}, "\n";
 #
     print "", (scalar localtime()), "\n";
 
@@ -449,6 +446,11 @@ sub dump_parameters {
         printf $fmt, '$PARENT_PID',         $ENV{PARENT_PID};
         printf $fmt, '$copy_snapshots',     $copy_snapshots;
     }
+}
+# ---------------------------------------------------------------------- #
+sub setup_environment {
+    $ENV{PC_MODULES_LIST} = `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special.//g'`;
+    #print "pc_run:MODULES:", $ENV{PC_MODULES_LIST}, "\n";
 }
 # ---------------------------------------------------------------------- #
 sub setup_local_disc {

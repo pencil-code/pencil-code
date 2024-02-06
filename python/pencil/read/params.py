@@ -9,6 +9,8 @@
 """
 Contains the parameters of the simulation.
 """
+import warnings
+
 try:
     import f90nml
 
@@ -152,7 +154,7 @@ class Param(object):
         # Verify path of files in list.
         for filen in files:
             if not os.path.exists(filen):
-                raise ValueError("read.param: no such file {0}.".format(filen))
+                raise ValueError("read.params: no such file {0}.".format(filen))
 
         # Read the parameters into a dictionary.
         param_list = dict()
@@ -267,24 +269,33 @@ class Param(object):
                     return -1
 
         if append_units:
-            setattr(self, "unit_time", self.unit_length / self.unit_velocity)
-            setattr(self, "unit_mass", self.unit_density * self.unit_length ** 3)
-            setattr(self, "unit_flux", self.unit_mass / self.unit_time ** 3)
-            setattr(self, "unit_energy", self.unit_mass * self.unit_velocity ** 2)
-            setattr(
-                self, "unit_energy_density", self.unit_density * self.unit_velocity ** 2
-            )
-            setattr(
-                self, "unit_entropy", self.unit_velocity ** 2 / self.unit_temperature
-            )
-            if hasattr(param, "mu0"):
-                setattr(
-                    self,
-                    "unit_current",
-                    self.unit_magnetic * self.unit_length / self.mu0,
-                )
-        # IL: updating the list of keys as a list
+            self.unit_time = self.unit_length / self.unit_velocity
+            self.unit_mass = self.unit_density * self.unit_length ** 3
+            self.unit_flux = self.unit_mass / self.unit_time ** 3
+            self.unit_energy = self.unit_mass * self.unit_velocity ** 2
+            self.unit_energy_density = self.unit_density * self.unit_velocity ** 2
+            self.unit_entropy = self.unit_velocity ** 2 / self.unit_temperature
+            if hasattr(self, "mu0"):
+                self.unit_current = self.unit_magnetic * self.unit_length / self.mu0
 
+        if not hasattr(self, "io_strategy"):
+            if exists(join(datadir, "grid.h5")):
+                """
+                This handles
+                1. sims that were converted from Fortran to hdf5
+                2. reading old simulations performed before commit https://github.com/pencil-code/pencil-code/commit/d28aff2e37f0b6439c524f7bcbd2b385904fbf54
+                """
+                warnings.warn(
+                    "io_strategy was not found in params.nml, but grid.h5 was found; assuming HDF5 IO. If this is wrong, please edit param.nml by hand."
+                )
+                self.io_strategy = "HDF5"
+            else:
+                warnings.warn(
+                    "io_strategy was not found in params.nml; assuming io_dist was used. If this is wrong, please edit param.nml by hand."
+                )
+                self.io_strategy = "dist"
+
+        # IL: updating the list of keys as a list
         self.keys = list(self.__dict__.keys())
         return 0
 

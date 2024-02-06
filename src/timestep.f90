@@ -205,6 +205,11 @@ module Timestep
 	! could this be solved differently, and, if not, why? Can you enclose this in an if-clause, like above?
         !call update_ghosts(f)  ! Necessary for boundary driving in special module
 !
+	! [PAB] according to MR this breaks the autotest.
+	! @Piyali: there must be a reason to add an additional global communication,
+	! could this be solved differently, and, if not, why? Can you enclose this in an if-clause, like above?
+        !call update_ghosts(f)  ! Necessary for boundary driving in special module
+!
 !  Increase time.
 !
         t = t + dtsub

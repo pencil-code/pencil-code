@@ -45,6 +45,8 @@ s/integer *\([*]*\):: */extern FINT \1,/
 s/real *\([*]*\):: */extern REAL \1,/
 s/logical *\([*]*\):: */extern int \1,/
 s/double  *precision *\([*]*\):: */extern double \1,/
+s/integer *( *kind *= *ikind8 *) *\([*]*\)::/extern long long \1,/
+s/real *( *kind *= *rkind8 *) *\([*]*\)::/extern double \1,/
 #remove initializations for non-constant items
 /const/ !s/ *= *[a-zA-Z0-9_]* *([^)][^)]*)[^,]*,/,/g
 /const/ !s/ *= *[a-zA-Z0-9_]* *([^)][^)]*)[^,]*$//

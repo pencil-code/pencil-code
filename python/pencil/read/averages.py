@@ -6,11 +6,14 @@
 """
 Contains the classes and methods to read average files.
 """
+import warnings
 import sys
+import numpy as np
 from pencil import read
 from pencil.math import natural_sort
 import glob
 import time
+import os
 
 def aver(*args, **kwargs):
     """
@@ -74,14 +77,24 @@ class Averages(object):
         """
         Fill members with default values.
         """
+        self._t = np.array([])
 
-        import numpy as np
+    @property
+    def t(self):
+        return self._t
 
-        self.t = np.array([])
+    @t.setter
+    def t(self, arr):
+        if len(self.t) > 0 and np.any(self.t != arr):
+            warnings.warn("Mismatch between the times of different kinds of averages (usually happens when 1D and 2D averages are stored at different times). Please use the t attributes of the respective planes (e.g. av.xy.t, rather than av.t).")
+        self._t = arr
 
+    @property
     def keys(self):
-        for i in self.__dict__.keys():
-            print(i)
+        ks = list(self.__dict__.keys())
+        ks.remove("_t")
+        ks.append("t")
+        return ks
 
     def read(
         self,
@@ -100,6 +113,7 @@ class Averages(object):
         proc=-1,
         precision="f",
         comp_time=False,
+        quiet=True
     ):
         """
         read(plane_list=None, datadir='data', proc=-1, var_index=-1, proc=-1):
@@ -154,6 +168,10 @@ class Averages(object):
         precision : string
             Float (f), double (d) or half (half).
 
+        quiet : bool
+            Whether to suppress diagnostic output.
+            Default: True
+
         Returns
         -------
         Class containing the averages.
@@ -174,25 +192,16 @@ class Averages(object):
                 iter_list = [iter_list]
             for it in iter_list:
                 if not isinstance(it, int):
-                    print("read.aver Error: iter_list contains {}, but must be integers".format(it))
-                    exit()
+                    raise ValueError(f"read.aver Error: iter_list contains {it}, but must be integers")
 
-        import os
         from os.path import join, abspath
 
         simdir = abspath(simdir)
 
-        lh5 = False
         if isinstance(param, list):
             param = read.param(datadir=datadir, quiet=True)
-        if hasattr(param, "io_strategy"):
-            if param.io_strategy == "HDF5":
-                lh5 = True
-        # Keep this for sims that were converted from Fortran to hdf5
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
-            lh5 = True
 
-        if not lh5:
+        if param.io_strategy != "HDF5":
             #Reading averages from Fortran binary and ascii files
             # Initialize the planes list.
             if plane_list:
@@ -225,10 +234,9 @@ class Averages(object):
                         for plane in plane_list:
                             in_file_name_list.append(prefix + "aver.in")
                     else:
-                        print(
+                        raise ValueError(
                             "plane_list and avfile_list must have matching length and order"
                         )
-                        sys.stdout.flush()
             else:
                 aver_file_name_list = []
                 in_file_name_list = []
@@ -257,19 +265,16 @@ class Averages(object):
                         in_file_name_list.append("data/averages/phiavg.list")
                         aver_file_name_list.append(os.path.join("averages", "phi.h5"))
                 if not in_file_name_list:
-                    print("error: invalid plane name")
-                    sys.stdout.flush()
-                    return -1
+                    raise ValueError("invalid plane name")
 
-            class Foo(object):
-                pass
-
-            print(plane_list, in_file_name_list, aver_file_name_list)
+            if not quiet:
+                print(plane_list, in_file_name_list, aver_file_name_list)
+            
             for plane, in_file_name, aver_file_name in zip(
                 plane_list, in_file_name_list, aver_file_name_list
             ):
                 # This one will store the data.
-                ext_object = Foo()
+                ext_object = _Plane()
 
                 # Get the averaged quantities.
                 file_id = open(os.path.join(simdir, in_file_name))
@@ -279,7 +284,8 @@ class Averages(object):
                     v.strip("\n") for v in variables if v[0] != "#" and not v.isspace()
                 ]  # Ignore commented variables and blank lines in the .in file.
                 n_vars = len(variables)
-                print(variables)
+                if not quiet:
+                    print(variables)
                 if len(var_names) > 0:
                     if isinstance(var_names, list):
                         plane_var_names = var_names
@@ -289,7 +295,7 @@ class Averages(object):
                         if not var_name in variables:
                             plane_var_names.remove(var_name)
                     if len(plane_var_names) < 1:
-                        print("Warning read.aver: var_names has no match in {} - reading all variables instead".format(in_file_name))
+                        warnings.warn("read.aver: var_names has no match in {} - reading all variables instead".format(in_file_name))
                     else:
                         var_index = list()
                         for indx, var in zip(range(n_vars),variables):
@@ -309,7 +315,7 @@ class Averages(object):
                         proc,
                         precision=precision,
                     )
-                if plane == "y" or plane == "z" or plane == "phi":
+                elif plane == "y" or plane == "z" or plane == "phi":
                     t, raw_data = self.__read_1d_aver(
                         plane,
                         datadir,
@@ -323,12 +329,15 @@ class Averages(object):
                         proc,
                         precision=precision,
                     )
+                else:
+                    raise ValueError(f"Unknown plane {plane}.")
 
                 # Add the raw data to self.
                 var_idx = 0
                 if not isinstance(var_index,list):
                     for var in variables:
-                        print('var_index',var_index)
+                        if not quiet:
+                            print('var_index',var_index)
                         if var_index >= 0:
                             if var_idx == var_index:
                                 setattr(ext_object, var.strip(), raw_data[:, ...])
@@ -339,12 +348,8 @@ class Averages(object):
                     for var, var_idx in zip(plane_var_names,
                                                 range(len(plane_var_names))):
                         setattr(ext_object, var.strip(), raw_data[:, var_idx, ...])
-                plane_keys = ext_object.__dict__.keys()
-                plane_keys = list(ext_object.__dict__.keys())
-                if "keys" in plane_keys:
-                    plane_keys.remove("keys")
-                setattr(ext_object, "keys", plane_keys)
 
+                ext_object.t = t
                 self.t = t
                 setattr(self, plane, ext_object)
 
@@ -358,13 +363,9 @@ class Averages(object):
                     if not ".h5" in av_file[-3:]:
                         av_files.remove(av_file)
                 if len(av_files) == 0:
-                    print('read.aver error: no averages files in '+join(datadir,"averages"))
-                    sys.stdout.flush()
-                    return -1
+                    raise RuntimeError(f"read.aver error: no averages files in {join(datadir,'averages')}")
             else:
-                print('read.aver error: no averages files in '+join(datadir,"averages"))
-                sys.stdout.flush()
-                return -1
+                raise RuntimeError(f"read.aver error: no averages files in {join(datadir,'averages')}")
             av_files_in = list()
             # Initialize the av_files_list of planes.
             if avfile_list:
@@ -382,7 +383,7 @@ class Averages(object):
                     # Check matches in avfile_list if present
                     if avfile_list:
                         if not prefix+".h5" in avfile_list:
-                            print(prefix+" does not match in avfile_list and plane_list")
+                            warnings.warn(prefix+" does not match in avfile_list and plane_list")
                             plane_list.remove(prefix)
                         else:
                             if join(datadir,"averages",prefix+".h5") in av_files:
@@ -393,9 +394,7 @@ class Averages(object):
                         else:
                             plane_list.remove(prefix)
                 if len(av_files_in) == 0:
-                    print('read.aver error: plane_lists and avlist or av_files have no match'.format(plane_list, av_files))
-                    sys.stdout.flush()
-                    return -1
+                    raise RuntimeError(f"read.aver error: {plane_list =} and {av_files = } have no match.")
             else:
                 plane_list = list()
                 for av_file in av_files:
@@ -407,11 +406,10 @@ class Averages(object):
                         av_files_in.append(av_file)
                         plane_list.append(av_file.split('/')[-1].split('_')[-1][:-3])
                 if len(av_files_in) == 0:
-                    print('read.aver error: avfile_list has no match in av_files'.format(avlist, av_files))
-                    sys.stdout.flush()
-                    return -1
+                    raise RuntimeError(f"read.aver error: {avfile_list =} has no match in {av_files = }")
 
-            print(av_files_in)
+            if not quiet:
+                print(av_files_in)
             for av_file, plane in zip(av_files_in, plane_list):
 
                 # Get the averaged quantities
@@ -427,11 +425,12 @@ class Averages(object):
                         simdir,
                         precision=precision,
                         comp_time=comp_time,
+                        quiet=quiet,
                     )
 
+                ext_object.t = t
                 self.t = t
                 setattr(self, plane, ext_object)
-        return 0
 
     def __equal_newline(self, line):
         """
@@ -453,19 +452,16 @@ class Averages(object):
         simdir,
         precision="f",
         comp_time=False,
+        quiet=True,
     ):
         """
-        Read the yaverages.dat, zaverages.dat.
         Return the raw data and the time array.
         """
 
-        import os
-        import numpy as np
-        from scipy.io import FortranFile
-        from pencil import read
         import h5py
 
-        print(av_file)
+        if not quiet:
+            print(av_file)
         with open(os.path.join(simdir, plane+"aver.in")) as file_id:
             variables = file_id.readlines()
         variables = [
@@ -493,7 +489,7 @@ class Averages(object):
                     itlist = range(n_times,n_times+1,iter_step)
                 elif len(iter_list) == 2:
                     if iter_list[0] >= iter_list[1]:
-                        print("Warning read.aver: iter_list pair must be list of integer - reading full series instead")
+                        warnings.warn("read.aver: iter_list pair must be list of integer - reading full series instead")
                     itlist = range(max(0,iter_list[0]),min(n_times,iter_list[1]),iter_step)
                 else:
                     itlist = iter_list
@@ -501,7 +497,7 @@ class Averages(object):
                     if not str(it) in tmp.keys():
                         itlist.remove(it)
                 if not len(itlist) > 0:
-                    print("Warning read.aver: iter_list has no match in {} keys - reading only {} instead".format(av_file,tmp['last'][0]))
+                    warnings.warn("read.aver: iter_list has no match in {} keys - reading only {} instead".format(av_file,tmp['last'][0]))
                     itlist.append(tmp['last'][0])
             else:
                 itlist = natural_sort(tmp.keys())[:n_times]
@@ -513,9 +509,7 @@ class Averages(object):
                         if tmp[str(t_idx) + "/time"][()].item() <= end_time:
                             tmplist.append(t_idx)
                 if len(tmplist) == 0:
-                    print('read.aver error: no data in {{av_file}} within time range {{time_range}}.')
-                    sys.stdout.flush()
-                    return -1
+                    raise RuntimeError(f"read.aver error: no data in {av_file} within time range {time_range}.")
                 else:
                     itlist = tmplist
             # Determine the structure of the xy/xz/yz/y/z averages.
@@ -526,24 +520,18 @@ class Averages(object):
                 else:
                     var_names = [var_names]
                 for var_name in var_names:
-                    #if not var_name in tmp[str(itlist[0])].keys():
                     if not var_name in variables:
                         var_names.remove(var_name)
                 if len(var_names) < 1:
-                    print("Warning read.aver: var_names has no match in {} keys - reading all variables instead".format(av_file))
-                    #var_names = list(tmp[str(itlist[0])].keys())
+                    warnings.warn("read.aver: var_names has no match in {} keys - reading all variables instead".format(av_file))
                     var_names = variables
             else:
-                #var_names = list(tmp[str(itlist[0])].keys())
                 var_names = variables
             if "time" in var_names:
                 var_names.remove('time')
 
-            class Foo(object):
-                pass
-
             # This one will store the data.
-            ext_object = getattr(self, plane, Foo())
+            ext_object = getattr(self, plane, _Plane())
             if comp_time:
                 start_time = time.time()
                 data_shape = None
@@ -566,25 +554,21 @@ class Averages(object):
                     setattr(ext_object, var, raw_data)
             else:
                 start_time = time.time()
-                tmpkeys = list(tmp[str(itlist[0])].keys())
-                tmpkeys.remove('time')
-                data_shape = [len(itlist),]
-                for dshape in tmp[str(itlist[0])][tmpkeys[0]].shape:
-                    data_shape.append(dshape)
+
+                data_shape = [len(itlist), *tmp[str(itlist[0])][var_names[0]].shape]
                 t = np.zeros(data_shape[0], dtype=precision)
                 for var in var_names:
                     setattr(ext_object, var, np.zeros(data_shape, dtype=precision))
-                for t_idx, tmp_idx in zip(range(len(itlist)),itlist):
-                    t[int(t_idx)] = tmp[str(tmp_idx) + "/time"][()]
+                for t_idx, tmp_idx in enumerate(itlist):
+                    t[t_idx] = tmp[f"{tmp_idx}/time"][()]
                     for var in var_names:
                         if var in tmp[str(tmp_idx)].keys():
-                            getattr(ext_object, var)[int(t_idx)] = tmp[str(tmp_idx) + "/" + var][()]
-            plane_keys = list(ext_object.__dict__.keys())
-            if "keys" in plane_keys:
-                plane_keys.remove("keys")
-            setattr(ext_object, "keys", plane_keys)
+                            getattr(ext_object, var)[t_idx] = tmp[f"{tmp_idx}/{var}"][()]
+
         end_time = time.time()-start_time
-        print("{} object reading time {:.0f} seconds".format(plane,end_time))
+        if not quiet:
+            print("{} object reading time {:.0f} seconds".format(plane,end_time))
+
         return t, ext_object
 
     def __read_1d_aver(
@@ -606,10 +590,7 @@ class Averages(object):
         Return the raw data and the time array.
         """
 
-        import os
-        import numpy as np
         from scipy.io import FortranFile
-        from pencil import read
 
         # Read the data
         glob_dim = read.dim(datadir)
@@ -798,10 +779,6 @@ class Averages(object):
         Return the raw data and the time array.
         """
 
-        import os
-        import numpy as np
-        from pencil import read
-
         # Determine the structure of the xy/xz/yz averages.
         if plane == "xy":
             nw = getattr(read.dim(datadir=datadir), "nz")
@@ -835,8 +812,7 @@ class Averages(object):
                     raw_idx += 1
                 line_idx += 1
         except:
-            print("Error: There was a problem reading {} at line {}.\nCalculated values: n_vars = {}, nw = {}.\nAre these correct?".format(aver_file_name, line_idx, n_vars, nw))
-            raise
+            raise RuntimeError(f"Error: There was a problem reading {aver_file_name} at line {line_idx}.\nCalculated values: {n_vars = }, {n_w = }.\nAre these correct?")
 
         # Restructure the raw data and add it to the Averages object.
         raw_data = np.reshape(raw_data, [n_times, n_vars, nw])
@@ -853,3 +829,14 @@ class Averages(object):
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
         return sorted(l, key=alphanum_key)
+
+class _Plane():
+    """
+    Used to store the averages in a particular plane
+    """
+    @property
+    def keys(self):
+        ks = list(self.__dict__.keys())
+        if "keys" in ks:
+            ks.remove("ks")
+        return ks

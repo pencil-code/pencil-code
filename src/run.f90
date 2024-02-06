@@ -117,6 +117,10 @@ subroutine main_sub()
 !
 !   Initialize OpenMP use
 !
+!  Initialize Python use.
+!
+  call python_init
+!
 !  Identify version.
 !
   if (lroot) call svn_id('$Id$')

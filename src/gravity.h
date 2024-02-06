@@ -6,7 +6,7 @@
   public :: read_gravity_init_pars, write_gravity_init_pars
   public :: read_gravity_run_pars,  write_gravity_run_pars
   public :: rprint_gravity
-  public :: init_gg, calc_pencils_gravity, duu_dt_grav
+  public :: init_gg, calc_pencils_gravity, addgravity
   public :: pencil_criteria_gravity,pencil_interdep_gravity
   public :: compute_gravity_star
   public :: get_xgravity
