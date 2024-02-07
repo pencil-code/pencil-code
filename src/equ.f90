@@ -165,7 +165,6 @@ module Equ
                      lvisc_smag .or. &
                      lyinyang .or. lgpu .or. &   !!!
                      ncoarse>1 
-      early_finalize = .true.
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -789,6 +788,7 @@ module Equ
 
         n=nn(imn)
         m=mm(imn)
+!TP: for the moment calc_all_module_diagnostics does not support coarse grid
 !
 !  Skip points not belonging to coarse grid.
 !
