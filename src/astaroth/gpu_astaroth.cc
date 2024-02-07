@@ -34,6 +34,11 @@ __thread int tp_int;
 typedef void (*rangefunc)(const int a, const int b);
 //PC interface
 #include "PC_moduleflags.h"
+AcReal
+cpu_pow(AcReal const val, AcReal exponent)
+{
+  return std::pow(val, exponent);
+}
 #include "../cparam_c.h"
 #include "../cdata_c.h"
 #include "../sub_c.h"       // provides set_dt
@@ -80,6 +85,7 @@ static AcReal *ybot_buffer;
 // static ForcingParams forcing_params;
 // #include "../forcing_c.h"
 #endif
+
 int DCONST(const AcIntParam param)
 {
   return mesh.info.int_params[param];

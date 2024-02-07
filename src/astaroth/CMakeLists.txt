@@ -35,77 +35,77 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For IDE highlighting (clangd)
 
 ## Build type
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release") # Default
+set(CMAKE_BUILD_TYPE "Release") # Default
 endif()
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 
 
 ## CUDA/HIP
 if (USE_HIP)
-    add_definitions(-DAC_USE_HIP=1)
+add_definitions(-DAC_USE_HIP=1)
 
-    set(GPU_TARGETS "gfx908" CACHE STRING "GPU target")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --offload-arch=gfx908 --offload-arch=gfx90a")
+set(GPU_TARGETS "gfx908" CACHE STRING "GPU target")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --offload-arch=gfx908 --offload-arch=gfx90a")
 
-    # Workaround for finding HIP on Triton
-    list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
+# Workaround for finding HIP on Triton
+list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
 
-    # Rocm
-    #include_directories(/opt/rocm/include)
-    #link_directories(/opt/rocm/lib)
+# Rocm
+#include_directories(/opt/rocm/include)
+#link_directories(/opt/rocm/lib)
 
-    # Roctracer
-    include_directories(/opt/rocm/roctracer/include)
-    link_directories(/opt/rocm/roctracer/lib)
+# Roctracer
+include_directories(/opt/rocm/roctracer/include)
+link_directories(/opt/rocm/roctracer/lib)
 
-    # Rocrand
-    include_directories(/opt/rocm/hiprand/include)
-    include_directories(/opt/rocm/rocrand/include)
-    link_directories(/opt/rocm/hiprand/lib)
-    link_directories(/opt/rocm/rocrand/lib)
+# Rocrand
+include_directories(/opt/rocm/hiprand/include)
+include_directories(/opt/rocm/rocrand/include)
+link_directories(/opt/rocm/hiprand/lib)
+link_directories(/opt/rocm/rocrand/lib)
 
-    find_package(hip)
+find_package(hip)
 else ()
-    enable_language(CUDA)
+enable_language(CUDA)
 
-    # Commented out CUDA host compiler flags: seem to be ignored anyways
-    #string (REPLACE " " "," CUDA_COMMON_FLAGS "${COMMON_FLAGS}")
-    #set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -forward-unknown-to-host-compiler -Wall -Wextra -Wdouble-promotion -Wfloat-conversion -Wshadow --compiler-options=${CUDA_COMMON_FLAGS}")
+# Commented out CUDA host compiler flags: seem to be ignored anyways
+#string (REPLACE " " "," CUDA_COMMON_FLAGS "${COMMON_FLAGS}")
+#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -forward-unknown-to-host-compiler -Wall -Wextra -Wdouble-promotion -Wfloat-conversion -Wshadow --compiler-options=${CUDA_COMMON_FLAGS}")
 
-    # To inspect ptx, run
-    # cmake .. && make -j && nvcc -DAC_DOUBLE_PRECISION=1 --generate-code=arch=compute_60,code=[compute_60,sm_60] -c ../src/core/kernels/kernels.cu -I acc-runtime/api/ -I ../include/ -I ../acc-runtime/api/ -I ../acc-runtime -ptx -Xptxas=-Werror,--warn-on-double-precision-use
-    # less kernels.ptx
-    # Additional compilation info: --resource-usage
+# To inspect ptx, run
+# cmake .. && make -j && nvcc -DAC_DOUBLE_PRECISION=1 --generate-code=arch=compute_60,code=[compute_60,sm_60] -c ../src/core/kernels/kernels.cu -I acc-runtime/api/ -I ../include/ -I ../acc-runtime/api/ -I ../acc-runtime -ptx -Xptxas=-Werror,--warn-on-double-precision-use
+# less kernels.ptx
+# Additional compilation info: --resource-usage
 
-    # Not supported with older CUDA
-    # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --Werror all-warnings")
-    if (NOT DOUBLE_PRECISION)
-      set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas=--warn-on-double-precision-use") # -Werror,
-    endif()
-    #set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas -dlcm=ca") # Cache global loads in L1
-    #set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas -dlcm=cg") # Cache global loads in L2 (default on >= NVIDIA Fermi)
+# Not supported with older CUDA
+# set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --Werror all-warnings")
+if (NOT DOUBLE_PRECISION)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas=--warn-on-double-precision-use") # -Werror,
+endif()
+#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas -dlcm=ca") # Cache global loads in L1
+#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas -dlcm=cg") # Cache global loads in L2 (default on >= NVIDIA Fermi)
 
-    # Set device code architecture
-    if (NOT CUDA_ARCHITECTURES)
-        set(CMAKE_CUDA_ARCHITECTURES 60 61 70 80) # Default
-    else ()
-        set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES}) # User-specified
-    endif()
+# Set device code architecture
+if (NOT CUDA_ARCHITECTURES)
+set(CMAKE_CUDA_ARCHITECTURES 60 61 70 80) # Default
+else ()
+set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES}) # User-specified
+endif()
 endif()
 if(USE_OMP)
 find_package(OpenMP)
-    if (OPENMP_FOUND)
-        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-        set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-    endif()
+if (OPENMP_FOUND)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 endif()
 include(FetchContent)
 
 ## Global flags
 if (DOUBLE_PRECISION)
-    add_definitions(-DAC_DOUBLE_PRECISION=1)
-    add_definitions(-DDOUBLE_PRECISION)
+add_definitions(-DAC_DOUBLE_PRECISION=1)
+add_definitions(-DDOUBLE_PRECISION)
 endif ()
 find_package(MPI REQUIRED COMPONENTS C)
 include_directories(${MPI_C_INCLUDE_DIRS})
@@ -120,7 +120,7 @@ include_directories(./submodule/build)
 include_directories(./submodule/build/acc-runtime/api)
 include_directories(./submodule/acc-runtime/api)
 include_directories(./..)
-include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}) # CUDA headers
+#include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}) # CUDA headers
 include_directories(./submodule/build/src/core)
 include_directories(./submodule/build/src/core/kernels)
 include_directories(./submodule/build/src/utils)
