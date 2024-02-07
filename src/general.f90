@@ -6480,6 +6480,9 @@ iloop:do i=1,size(list2)
     endsubroutine merge_lists
 !***********************************************************************
     subroutine allocate_using_dims_1d(src, dims)
+!
+! 7-feb-24/TP: coded
+!
     real, allocatable, dimension(:), target :: src
     type(single_dim_array_dims) :: dims
       if(.not. allocated(src)) then
@@ -6488,6 +6491,9 @@ iloop:do i=1,size(list2)
     endsubroutine allocate_using_dims_1d
 !***********************************************************************
     subroutine allocate_using_dims_2d(src, dims)
+!
+! 7-feb-24/TP: coded
+!
     real, allocatable, dimension(:,:), target :: src
     type(two_dim_array_dims) :: dims
       if(.not. allocated(src)) then
@@ -6496,6 +6502,9 @@ iloop:do i=1,size(list2)
     endsubroutine allocate_using_dims_2d
 !***********************************************************************
     subroutine allocate_using_dims_2d_int(src, dims)
+!
+! 7-feb-24/TP: coded
+!
     integer, allocatable, dimension(:,:), target :: src
     type(two_dim_array_dims) :: dims
       if(.not. allocated(src)) then
@@ -6504,6 +6513,9 @@ iloop:do i=1,size(list2)
     endsubroutine allocate_using_dims_2d_int
 !***********************************************************************
     subroutine allocate_using_dims_3d(src, dims)
+!
+! 7-feb-24/TP: coded
+!
     real, allocatable, dimension(:,:,:), target :: src
     type(three_dim_array_dims) :: dims
       if(.not. allocated(src)) then
@@ -6512,6 +6524,9 @@ iloop:do i=1,size(list2)
     endsubroutine allocate_using_dims_3d
 !***********************************************************************
     subroutine allocate_using_dims_4d(src, dims)
+!
+! 7-feb-24/TP: coded
+!
     real, allocatable, dimension(:,:,:,:), target :: src
     type(four_dim_array_dims) :: dims
       if(.not. allocated(src)) then
@@ -6520,6 +6535,9 @@ iloop:do i=1,size(list2)
     endsubroutine allocate_using_dims_4d
 !***********************************************************************
     subroutine point_and_get_size_1d(dst, src)
+!
+! 7-feb-24/TP: coded
+!
     type(pointer_with_size_info_1d) :: dst
     real, allocatable, dimension(:), target :: src
     type(single_dim_array_dims) :: dim
@@ -6530,6 +6548,9 @@ iloop:do i=1,size(list2)
     endsubroutine
 !***********************************************************************
     subroutine point_and_get_size_2d(dst, src)
+!
+! 7-feb-24/TP: coded
+!
     type(pointer_with_size_info_2d) :: dst
     real, allocatable, dimension(:,:), target :: src
     type(two_dim_array_dims) :: dim
@@ -6541,6 +6562,9 @@ iloop:do i=1,size(list2)
     endsubroutine point_and_get_size_2d
 !***********************************************************************
     subroutine point_and_get_size_2d_int(dst, src)
+!
+! 7-feb-24/TP: coded
+!
     type(pointer_with_size_info_2d_int) :: dst
     integer, allocatable, dimension(:,:), target :: src
       if(allocated(src)) then
@@ -6551,6 +6575,9 @@ iloop:do i=1,size(list2)
     endsubroutine point_and_get_size_2d_int
 !***********************************************************************
     subroutine point_and_get_size_3d(dst, src)
+!
+! 7-feb-24/TP: coded
+!
     type(pointer_with_size_info_3d) :: dst
     real, allocatable, dimension(:,:,:), target :: src
       if(allocated(src)) then
@@ -6562,6 +6589,9 @@ iloop:do i=1,size(list2)
     endsubroutine
 !***********************************************************************
     subroutine point_and_get_size_4d(dst, src)
+!
+! 7-feb-24/TP: coded
+!
     type(pointer_with_size_info_4d) :: dst
     real, allocatable, dimension(:,:,:,:), target :: src
 
