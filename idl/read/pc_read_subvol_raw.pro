@@ -20,7 +20,7 @@
 ;           start_param=start_param, run_param=run_param, allprocs=allprocs, $
 ;           xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, /addghosts, /trimall,  $
 ;           dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid,          $
-;           time=time, name=name, /quiet, /swap_endian, /f77, /reduced
+;           time=time, name=name, /quiet, /swap_endian, /f77, /reduced, /simulate
 ;
 ; KEYWORD PARAMETERS:
 ;    datadir: Specifies the root data directory. Default: './data'.  [string]
@@ -46,7 +46,7 @@
 ; /addghosts: Adds ghost layers to the given x/y/z starting/ending coordinates.
 ;   /trimall: Remove ghost layers from the returned data, dim and grid.
 ;     /quiet: Suppress any information messages and summary statistics.
-;       /sim: Simulates only -> proc subdirectories and varfiles need not to exist;
+;  /simulate: Simulates only -> proc subdirectories and varfiles need not to exist;
 ;             calculates needed memory size.
 ;
 ; EXAMPLES:
@@ -66,6 +66,18 @@
 ;       $Id$
 ;       Adapted from: pc_read_slice_raw.pro, 4th May 2012
 ;
+;
+pro print_bytes, bytes
+
+  if bytes lt 1024L then $
+    print, 'Needs ', bytes, ' Bytes of memory.' $
+  else if bytes lt 1024.^2 then $
+    print, 'Needs ', bytes/1024., ' kBytes of memory.' $
+  else if bytes lt 1024.^3 then $
+    print, 'Needs ', bytes/1024.^2, ' MBytes of memory.' $
+  else $
+    print, 'Needs ', bytes/1024.^3, ' GBytes of memory.'
+end
 ;
 pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datadir, var_list=var_list, varcontent=varcontent, $
                         start_param=start_param, run_param=run_param, trimall=trimall, allprocs=allprocs, reduced=reduced, $
@@ -273,18 +285,16 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	  	name += "trimmed_"
 	  endif
 
-	  if (not sim) then begin
-  	    if (not keyword_set (quiet)) then begin
-  	  	print, ' t = ', time
-  	  	print, ''
-  	    endif
+  	  if (not keyword_set (quiet)) then begin
+  	      print, ' t = ', time
+  	      print, ''
+  	  endif
   
-  	    name += strtrim (xgs, 2)+"_"+strtrim (xge, 2)+"_"+strtrim (ygs, 2)+"_"+strtrim (yge, 2)+"_"+strtrim (zgs, 2)+"_"+strtrim (zge, 2)
-  	    sub_grid = create_struct (name=name, $
+  	  name += strtrim (xgs, 2)+"_"+strtrim (xge, 2)+"_"+strtrim (ygs, 2)+"_"+strtrim (yge, 2)+"_"+strtrim (zgs, 2)+"_"+strtrim (zge, 2)
+  	  sub_grid = create_struct (name=name, $
   	  	['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Ox', 'Oy', 'Oz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
   	  	time, x, y, z, dx, dy, dz, Ox, Oy, Oz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
-          endif
-        endif
+        endif ; if (not sim) 
 
 	; Load HDF5 varfile if requested or available.
 	if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
@@ -292,7 +302,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		if (size (varcontent, /type) ne 8) then begin
 			varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
 		end
-		time = pc_read ('time', file=varfile, datadir=datadir, single=single)
+		if (not sim) then time = pc_read ('time', file=varfile, datadir=datadir, single=single)
 
 		quantities = varcontent[*].idlvar
 		num_quantities = n_elements (quantities)
@@ -304,36 +314,42 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 			gy_delta -= 2*nghosty
 			gz_delta -= 2*nghostz
 		end
-		object = make_array(gx_delta, gy_delta, gz_delta, num_quantities, type=single ? 4 : type_idl)
-		tags = { time:time }
-		start = [ xgs, ygs, zgs ]
-		count = [ gx_delta, gy_delta, gz_delta ]
-		for pos = 0L, num_quantities-1 do begin
-			if (quantities[pos] eq 'dummy') then continue
-			num_skip = varcontent[pos].skip
-			if (num_skip eq 2) then begin
-				length = strlen (quantities[pos])
-				if ((length eq 2) and (strmid (quantities[pos], 0, 1) eq strmid (quantities[pos], 1, 1))) then length--
-				label = strmid (quantities[pos], 0, length)
-				object[*,*,*,pos] = pc_read ('data/'+label+'x', start=start, count=count, dim=dim)
-				object[*,*,*,pos+1] = pc_read ('data/'+label+'y', start=start, count=count, dim=dim)
-				object[*,*,*,pos+2] = pc_read ('data/'+label+'z', start=start, count=count, dim=dim)
-				tags = create_struct (tags, quantities[pos], pos + indgen (num_skip+1), label+'x', pos, label+'y', pos+1, label+'z', pos+2)
-				pos += num_skip
-			end else if (num_skip ge 1) then begin
-				tags = create_struct (tags, quantities[pos], pos + indgen (num_skip+1))
-				for comp = 0, num_skip do begin
-				label = quantities[pos] + strtrim(comp+1, 2)
-				object[*,*,*,pos+comp] = pc_read ('data/'+label, start=start, count=count, dim=dim)
-				tags = create_struct (tags, label, pos + comp)
-				end
-				pos += num_skip
-			end else begin
-				object[*,*,*,pos] = pc_read ('data/'+quantities[pos], start=start, count=count, dim=dim)
-				tags = create_struct (tags, quantities[pos], pos)
-			end
-		end
-		h5_close_file
+		if (not sim) then begin
+                  object = make_array(gx_delta, gy_delta, gz_delta, num_quantities, type=single ? 4 : type_idl)
+		  tags = { time:time }
+		  start = [ xgs, ygs, zgs ]
+		  count = [ gx_delta, gy_delta, gz_delta ]
+		  for pos = 0L, num_quantities-1 do begin
+		  	if (quantities[pos] eq 'dummy') then continue
+		  	num_skip = varcontent[pos].skip
+		  	if (num_skip eq 2) then begin
+		  		length = strlen (quantities[pos])
+		  		if ((length eq 2) and (strmid (quantities[pos], 0, 1) eq strmid (quantities[pos], 1, 1))) then length--
+		  		label = strmid (quantities[pos], 0, length)
+		  		object[*,*,*,pos] = pc_read ('data/'+label+'x', start=start, count=count, dim=dim)
+		  		object[*,*,*,pos+1] = pc_read ('data/'+label+'y', start=start, count=count, dim=dim)
+		  		object[*,*,*,pos+2] = pc_read ('data/'+label+'z', start=start, count=count, dim=dim)
+		  		tags = create_struct (tags, quantities[pos], pos + indgen (num_skip+1), label+'x', pos, label+'y', pos+1, label+'z', pos+2)
+		  		pos += num_skip
+		  	end else if (num_skip ge 1) then begin
+		  		tags = create_struct (tags, quantities[pos], pos + indgen (num_skip+1))
+		  		for comp = 0, num_skip do begin
+		  		label = quantities[pos] + strtrim(comp+1, 2)
+		  		object[*,*,*,pos+comp] = pc_read ('data/'+label, start=start, count=count, dim=dim)
+		  		tags = create_struct (tags, label, pos + comp)
+		  		end
+		  		pos += num_skip
+		  	end else begin
+		  		object[*,*,*,pos] = pc_read ('data/'+quantities[pos], start=start, count=count, dim=dim)
+		  		tags = create_struct (tags, quantities[pos], pos)
+		  	end
+		  end
+		  h5_close_file
+                endif else begin
+                  bytes=long64(gx_delta)*gy_delta*gz_delta*long64(num_quantities)*(single ? 4 : data_bytes)
+                  print_byte, bytes
+                endelse
+
 		return
 	end   ; HDF5
 
@@ -432,12 +448,12 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	if (f77 eq 0) then markers = 0 else markers = 1
 
 	if (num_read le 0) then begin
-		if (not keyword_set (quiet)) then message, 'WARNING: nothing to read!'
+	  if (not keyword_set (quiet)) then message, 'WARNING: nothing to read!'
 	end else begin
-		indices = indices[where (indices ge 0)]
+	  indices = indices[where (indices ge 0)]
 
-		; Initialize output buffer.
-		object = make_array(gx_delta, gy_delta, gz_delta, num_read, type=single ? 4 : type_idl)
+	  ; Initialize output buffer.
+	  if (not sim) then object = make_array(gx_delta, gy_delta, gz_delta, num_read, type=single ? 4 : type_idl)
 	end
 
 	; Iterate over processors.
@@ -501,7 +517,8 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		end
 	end
         if sim then begin
-          print, 'Needs ', long64(gx_delta)*gy_delta*gz_delta*long64(num_read)*(single ? 4 : data_bytes), ' Bytes of memory.'
+          bytes=long64(gx_delta)*gy_delta*gz_delta*long64(num_read)*(single ? 4 : data_bytes)
+          print_bytes, bytes
         endif else begin
 	  ; Tidy memory a little.
 	  undefine, buffer
