@@ -35,12 +35,6 @@ module GPU
 contains
 
 !***********************************************************************
-    subroutine example_func(x,y) bind(C)
-      integer, value :: x,y
-      print*,"Hi from example func"
-      print*,"x,y: ",x,y
-    endsubroutine example_func
-!***********************************************************************
     subroutine initialize_GPU
 !
       character(LEN=512) :: str
@@ -132,12 +126,8 @@ contains
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
-  subroutine hello_func() bind(C)
-    print*,"hello from Fortran"
-  endsubroutine 
-!**************************************************************************
  subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
-!  Used to test different implementations of rhs_cpu.
+!  Used to test the CPU rhs vs the DSL code
 !
 !  13-nov-23/TP: Written
 !
@@ -174,6 +164,7 @@ contains
               intent(out) :: df
           endsubroutine cpu_version
         endinterface
+      !TP: uncomment if want to test from random initial condition
       ! call random_initial_condition()
       ! call copy_farray_from_GPU(f)
       df_copy = df
@@ -181,7 +172,7 @@ contains
       f_copy = f
       f_copy_2 = f
       do n=1,num_of_steps
-        print*,"cpu step: ",n
+        print*,"GPU rhs test:\tcpu step: ",n
         ds = 0.0
         do i=1,3
           call boundconds_x(f_copy)
@@ -192,10 +183,7 @@ contains
           df_copy = 0.0
           call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
           ds = alpha(i)*ds + df_copy*dt
-          ! ds = 2.0
           f_copy = f_copy + beta(i)*ds
-          ! f_copy = f_copy + df_copy*dt*beta(i)
-          ! df_copy = df_copy
         enddo
       enddo
 
@@ -203,5 +191,4 @@ contains
     call die_gracefully
   end subroutine  test_rhs_gpu
 !**************************************************************************
-
 endmodule GPU

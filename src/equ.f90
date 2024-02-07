@@ -529,10 +529,9 @@ module Equ
 !***********************************************************************
     subroutine init_private_accumulators 
 !
-!   Reads the diagnostics flags and reduced accumulators after diagnostics
-!   are calcualted 
+!   allocates data the thread needs for diagnostics if it doesn't have it 
 !
-!   13-nov-23/TP: Written
+!   7-feb-24/TP: Written
 !
 
     use Chemistry
@@ -554,6 +553,9 @@ module Equ
     endsubroutine init_private_accumulators 
 !***********************************************************************
 !$   subroutine write_diagnostics_wrapper(f) bind(C)
+!    
+!    7-feb-24/TP: needed since can't use bind(C) in general
+!
 !$    real, dimension(mx,my,mz,mfarray) :: f
 !$    !only needed since can't use bind(C) generally
 !$    call write_diagnostics(f)
@@ -574,8 +576,6 @@ module Equ
         !
         !  Print diagnostic averages to screen and file.
         !
-        !task here
-        print*,"TP hi from write_diagnostics"
             if (lout) then
                 call prints
                 if (lchemistry) call write_net_reaction
@@ -741,6 +741,7 @@ module Equ
 !  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
 !
 !  10-sep-2019/MR: coded
+!  7-feb-2024/TP: separated into calculating slices and added reductions
 !
       use Ascalar, only: calc_diagnostics_ascalar
       use Chemistry, only: calc_diagnostics_chemistry
@@ -845,9 +846,11 @@ module Equ
     endsubroutine all_module_diags_slice
 !*****************************************************************************
 !$    subroutine calc_all_module_diagnostics_wrapper(f) bind(C)
+!    
+!    7-feb-24/TP: needed since can't use bind(C) in general
+!
 !$    real, dimension(mx,my,mz,mfarray) :: f
 !$
-!$      !only needed since can't use bind(C) generally
 !$      call calc_all_module_diagnostics(f)
 !$    endsubroutine calc_all_module_diagnostics_wrapper 
 !***********************************************************************
@@ -856,6 +859,7 @@ module Equ
 !  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
 !
 !  10-sep-2019/MR: coded
+!  7-feb-2024/TP: separated call to all_module_diags_slice
 !
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
@@ -867,6 +871,9 @@ module Equ
     endsubroutine calc_all_module_diagnostics
 !****************************************************************************
 !$    subroutine finalize_diagnostics_wrapper() bind(C)
+!    
+!    7-feb-24/TP: needed since can't use bind(C) in general
+!
 !$      !only needed since can't use bind(C) in general
 !$      call finalize_diagnostics
 !$    endsubroutine finalize_diagnostics_wrapper
