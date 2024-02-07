@@ -106,7 +106,7 @@ astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_modu
 
 astaroth_libs:
 	mkdir -p submodule/build && cd submodule/build && \
-	cmake -DMULTIGPU_ENABLED=OFF -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DUSE_OMP=ON -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DUSE_CUDA_AWARE_MPI=OFF\
+	cmake -DMULTIGPU_ENABLED=OFF -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DUSE_OMP=ON -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DUSE_CUDA_AWARE_MPI=ON\
               -D$(CMAKE_PACKED) -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF  -DADJACENT_VERTEX_BUFFERS=ON -DUSE_HIP=$(USE_HIP) -DLINEAR_PROC_MAPPING=ON -DUSE_EXTERNAL_DECOMP=ON -DVERBOSE=OFF -DCMAKE_BUILD_TYPE=Debug -DOPTIMIZE_MEM_ACCESSES=ON -DAUTOTUNE_TASKGRAPHS=OFF -DBUILD_STANDALONE=OFF .. \
 	&& make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
@@ -154,7 +154,7 @@ clean:
 # Deep cleaning, e.g. necessary with compiler change
 #
 cleann: clean
-	@rm -f ../cparam_c.h ../defines_cdata.h ../diagnostics_c.h ../forcing_c.h ../forcing_pars_c.h ../sub_c.h ../mpicomm_c.h ../boundcond_c.h
+	@rm -f ../cparam_c.h ../defines_cdata.h ../diagnostics_c.h ../forcing_c.h ../forcing_pars_c.h ../sub_c.h ../mpicomm_c.h ../boundcond_c.h ../cdata_c.h
 	@rm -f submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h
 	@rm -f $(PC_HEADER_DIR)/PC_modulepars.h
 
