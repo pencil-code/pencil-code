@@ -205,8 +205,6 @@ module Forcing
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 25
 !
-
-
   contains
 !
 !***********************************************************************

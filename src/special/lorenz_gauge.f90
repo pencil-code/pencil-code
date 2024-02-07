@@ -52,8 +52,6 @@ module Special
   integer :: idiag_phibzm=0     ! DIAG_DOC: $\left<\phi B_z\right>$
   integer :: idiag_phibzmz=0    ! DIAG_DOC: $\left<\phi B_z\right>_{xy}$
 !
-
-
   contains
 !
 !***********************************************************************

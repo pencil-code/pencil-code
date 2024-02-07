@@ -46,8 +46,6 @@ module Special
 !
   integer :: idiag_xx=0,idiag_yy=0,idiag_zz=0
 !
-
-
   contains
 
 !***********************************************************************
