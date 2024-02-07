@@ -25,8 +25,6 @@ module Special
 !
   real, dimension(nghost) :: top = 0.0, bot = 0.0
 !
-
-
   contains
 !***********************************************************************
     subroutine register_special()

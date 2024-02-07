@@ -92,8 +92,6 @@ module Special
 !
 !!   integer :: idiag_POSSIBLEDIAGNOSTIC=0
 !
-
-
   contains
 !****************************************************************************
     subroutine initialize_special(f)

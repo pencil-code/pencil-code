@@ -142,10 +142,6 @@ module Special
   type(GridPointers), allocatable :: grid(:)
   integer :: ngrid
 !
-
-
-
-
 contains
 !***********************************************************************
     subroutine register_special()
@@ -1970,6 +1966,4 @@ contains
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
-
 endmodule Special

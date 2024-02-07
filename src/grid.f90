@@ -20,7 +20,6 @@ module Grid
 !
   private
 !
-  public :: calc_pencils_grid_std_test
   public :: construct_grid
   public :: pencil_criteria_grid
   public :: pencil_interdep_grid
@@ -2708,69 +2707,4 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
     endsubroutine generate_halfgrid
 !***********************************************************************
-    subroutine calc_pencils_grid_std_test(p)
-!
-! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
-! lpenc_loc=lpencil
-!
-! 10-oct-17/MR: coded
-!
-!
-    use Sub
-    use Deriv
-type (pencil_case) :: p
-intent(inout) :: p
-if(lpencil(i_x_mn)) then
-p%x_mn    = x((1+3):l2)
-endif
-if(lpencil(i_y_mn)) then
-p%y_mn    = spread(y(m),1,(nxgrid/nprocx))
-endif
-if(lpencil(i_z_mn)) then
-p%z_mn    = spread(z(n),1,(nxgrid/nprocx))
-endif
-if(lpencil(i_r_mn)) then
-p%r_mn    = sqrt(x((1+3):l2)**2+y(m)**2+z(n)**2)
-endif
-if(lpencil(i_rcyl_mn)) then
-p%rcyl_mn = sqrt(x((1+3):l2)**2+y(m)**2)
-endif
-if(lpencil(i_phi_mn)) then
-p%phi_mn  = atan2(y(m),x((1+3):l2))
-endif
-if(lpencil(i_rcyl_mn1)) then
-p%rcyl_mn1=1./max(p%rcyl_mn,(5*tiny(1.0)))
-endif
-if(lpencil(i_r_mn1)) then
-p%r_mn1   =1./max(p%r_mn,(5*tiny(1.0)))
-endif
-if(lpencil(i_pomx)) then
-p%pomx    = x((1+3):l2)*p%rcyl_mn1
-endif
-if(lpencil(i_pomy)) then
-p%pomy    = y(  m  )*p%rcyl_mn1
-endif
-if(lpencil(i_phix)) then
-p%phix    =-y(  m  )*p%rcyl_mn1
-endif
-if(lpencil(i_phiy)) then
-p%phiy    = x((1+3):l2)*p%rcyl_mn1
-endif
-if(lpencil(i_rr)) then
-p%rr(:,1)=p%x_mn
-p%rr(:,2)=p%y_mn
-p%rr(:,3)=p%z_mn
-endif
-if(lpencil(i_evr)) then
-p%evr(:,1) = p%rcyl_mn*p%r_mn1*p%pomx
-p%evr(:,2) = p%rcyl_mn*p%r_mn1*p%pomy
-p%evr(:,3) = z(n)*p%r_mn1
-endif
-if(lpencil(i_evth)) then
-p%evth(:,1) = z(n)*p%r_mn1*p%pomx
-p%evth(:,2) = z(n)*p%r_mn1*p%pomy
-p%evth(:,3) = -p%rcyl_mn*p%r_mn1
-endif
-    
-    endsubroutine calc_pencils_grid_std_test
 endmodule Grid

@@ -1032,8 +1032,6 @@ module Magnetic
 
   real :: gamma, gamma1, gamma_m1
 
-
-
   contains
 !***********************************************************************
     subroutine register_magnetic
@@ -10696,6 +10694,4 @@ module Magnetic
 
     endsubroutine pushdiags2c
 !***********************************************************************
-
-
 endmodule Magnetic

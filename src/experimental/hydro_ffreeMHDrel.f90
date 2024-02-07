@@ -63,8 +63,6 @@ module Hydro
 
   real, dimension(nx) :: advec_uu
 
-
-
   contains
 !***********************************************************************
     subroutine register_hydro

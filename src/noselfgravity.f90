@@ -25,8 +25,6 @@ module Selfgravity
 !
   real :: rhs_poisson_const=0.0
 !
-
-
   contains
 !***********************************************************************
     subroutine register_selfgravity

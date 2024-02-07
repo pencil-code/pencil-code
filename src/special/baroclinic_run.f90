@@ -80,11 +80,6 @@ module Special
   integer :: idiag_pstratm=0,idiag_pstratmax=0,idiag_pstratmin=0
 !
   real :: gamma, gamma1, gamma_m1, cv1
-
-
-
-
-
   contains
 !
 !***********************************************************************
@@ -441,6 +436,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
-
 endmodule Special

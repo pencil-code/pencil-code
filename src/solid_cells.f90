@@ -15,7 +15,7 @@ module Solid_Cells
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, pointer_with_size_info_1d
   use Messages
 !
   implicit none
@@ -87,9 +87,10 @@ module Solid_Cells
   real :: r_int_outer
   real, dimension(3) :: xorigo_ogrid
 !  Added for multithreading purposes
-  real, pointer, dimension(:) :: p_c_dragy, p_c_dragx, p_c_dragz, p_Nusselt, p_c_dragx_p, p_c_dragz_p, p_c_dragy_p
+  type(pointer_with_size_info_1d) :: p_c_dragy, p_c_dragx, p_c_dragz, p_Nusselt, p_c_dragx_p, p_c_dragz_p, p_c_dragy_p
   real, pointer :: p_rhosum
-  integer, pointer  :: p_irhocount
+  integer, pointer :: p_irhocount
+  !$omp threadprivate(c_dragx, c_dragy, c_dragz, Nusselt, c_dragx_p, c_dragy_p, c_dragz_p, irhocount, rhosum)
 !
   contains
 !***********************************************************************
@@ -3749,7 +3750,7 @@ module Solid_Cells
 !
     endsubroutine interpolate_particles_ogrid
 !***********************************************************************
-  subroutine sc_init_diags_accumulators
+  subroutine sc_init_diag_accum
 !
 !  Need to initialize accumulators since master thread does not take part in diagnostics
 !
@@ -3757,15 +3758,15 @@ module Solid_Cells
 !
         p_rhosum = 0
         p_irhocount = 0
-        if (allocated(c_dragy)) p_c_dragy = 0
-        if (allocated(c_dragz)) p_c_dragz = 0
-        if (allocated(c_dragx)) p_c_dragx = 0
-        if (allocated(Nusselt)) p_Nusselt = 0
-        if (allocated(c_dragx_p)) p_c_dragx_p = 0
-        if (allocated(c_dragy_p)) p_c_dragy_p = 0
-        if (allocated(c_dragz_p)) p_c_dragz_p = 0
+        if (allocated(c_dragy)) p_c_dragy%data = 0
+        if (allocated(c_dragz)) p_c_dragz%data = 0
+        if (allocated(c_dragx)) p_c_dragx%data = 0
+        if (allocated(Nusselt)) p_Nusselt%data = 0
+        if (allocated(c_dragx_p)) p_c_dragx_p%data = 0
+        if (allocated(c_dragy_p)) p_c_dragy_p%data = 0
+        if (allocated(c_dragz_p)) p_c_dragz_p%data = 0
  
-  endsubroutine sc_init_diags_accumulators
+  endsubroutine sc_init_diag_accum
 !***********************************************************************
   subroutine sc_diags_reductions
 !
@@ -3776,13 +3777,13 @@ module Solid_Cells
       if (ldiagnos) then
         p_rhosum = p_rhosum + rhosum
         p_irhocount = p_irhocount + irhocount
-        if (allocated(c_dragy)) p_c_dragy = p_c_dragy + c_dragy
-        if (allocated(c_dragz)) p_c_dragz = p_c_dragz + c_dragz
-        if (allocated(c_dragx)) p_c_dragx = p_c_dragx + c_dragx
-        if (allocated(Nusselt)) p_Nusselt = p_Nusselt + Nusselt
-        if (allocated(c_dragx_p)) p_c_dragx_p = p_c_dragx_p + c_dragx_p
-        if (allocated(c_dragy_p)) p_c_dragy_p = p_c_dragy_p + c_dragy_p
-        if (allocated(c_dragz_p)) p_c_dragz_p = p_c_dragz_p + c_dragz_p
+        if (allocated(c_dragy)) p_c_dragy%data = p_c_dragy%data + c_dragy
+        if (allocated(c_dragz)) p_c_dragz%data = p_c_dragz%data + c_dragz
+        if (allocated(c_dragx)) p_c_dragx%data = p_c_dragx%data + c_dragx
+        if (allocated(Nusselt)) p_Nusselt%data = p_Nusselt%data + Nusselt
+        if (allocated(c_dragx_p)) p_c_dragx_p%data = p_c_dragx_p%data + c_dragx_p
+        if (allocated(c_dragy_p)) p_c_dragy_p%data = p_c_dragy_p%data + c_dragy_p
+        if (allocated(c_dragz_p)) p_c_dragz_p%data = p_c_dragz_p%data + c_dragz_p
       endif
 
   endsubroutine sc_diags_reductions
@@ -3794,15 +3795,50 @@ module Solid_Cells
 !  30-mar-23/TP: Coded
 !
     p_rhosum => rhosum
-    p_irhocount => irhocount
-    p_c_dragy => c_dragy
-    p_c_dragx => c_dragx
-    p_c_dragz => c_dragz
-    p_Nusselt => Nusselt
-    p_c_dragx_p => c_dragx_p
-    p_c_dragy_p => c_dragy_p
-    p_c_dragz_p => c_dragz_p
+    p_irhocount => irhocount 
+    call point_and_get_size(p_c_dragx, c_dragx)
+    call point_and_get_size(p_c_dragy, c_dragy)
+    call point_and_get_size(p_c_dragz, c_dragz)
+    call point_and_get_size(p_Nusselt, Nusselt)
+    call point_and_get_size(p_c_dragx_p, c_dragx_p)
+    call point_and_get_size(p_c_dragy_p, c_dragy_p)
+    call point_and_get_size(p_c_dragz_p, c_dragz_p)
 
   endsubroutine sc_init_reduc_pointers
+!***********************************************************************
+    subroutine sc_init_private_accumulators
+      use General
+      if(associated(p_c_dragx%data)) call allocate_using_dims(c_dragx,p%p_c_dragx%size)
+      if(associated(p_c_dragy%data)) call allocate_using_dims(c_dragy,p%p_c_dragy%size)
+      if(associated(p_c_dragz%data)) call allocate_using_dims(c_dragz,p%p_c_dragz%size)
+      if(associated(p_Nusselt%data)) call allocate_using_dims(Nusselt,p%p_Nusselt%size)
+      if(associated(p_c_dragx_p%data)) call allocate_using_dims(c_dragx_p,p%p_c_dragx_p%size)
+      if(associated(p_c_dragy_p%data)) call allocate_using_dims(c_dragy_p,p%p_c_dragy_p%size)
+      if(associated(p_c_dragz_p%data)) call allocate_using_dims(c_dragz_p,p%p_c_dragz_p%size)
+    endsubroutine chemistry_init_private_accumulators
+!***********************************************************************
+    subroutine sc_read_diag_accum
+      rhosum = p_rhosum%data
+      irhocount = p_irhocount%data
+      c_dragx = p_c_dragx%data
+      c_dragy = p_c_dragy%data
+      c_dragz = p_c_dragz%data
+      Nusselt = p_Nusselt%data 
+      c_dragx_p = p_c_dragx_p%data
+      c_dragy_p = p_c_dragy_p%data
+      c_dragz_p = p_c_dragz_p%data
+    endsubroutine sc_read_diag_accum
+!***********************************************************************
+    subroutine sc_write_diag_accum
+      p_rhosum%data = rhosum 
+      p_irhocount%data = irhocount 
+      p_c_dragx%data = c_dragx 
+      p_c_dragy%data = c_dragy 
+      p_c_dragz%data = c_dragz 
+      p_Nusselt%data  = Nusselt 
+      p_c_dragx_p%data = c_dragx_p 
+      p_c_dragy_p%data = c_dragy_p 
+      p_c_dragz_p%data = c_dragz_p 
+    endsubroutine sc_read_diag_accum
 !***********************************************************************
 endmodule Solid_Cells

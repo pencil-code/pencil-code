@@ -101,8 +101,6 @@ module Special
   integer :: idiag_betm=0      ! DIAG_DOC: $\left<\beta\right>$
   integer :: idiag_massm=0      ! DIAG_DOC: $\left<m\right>$
 !
-
-
   contains
 !****************************************************************************
     subroutine register_special

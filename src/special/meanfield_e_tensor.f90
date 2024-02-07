@@ -293,10 +293,6 @@ module Special
     module procedure smooth_rbound_4d
   end interface
 
-
-
-
-
   contains
 !***********************************************************************
     subroutine register_special
@@ -2652,6 +2648,4 @@ endif
 !**                                                                **
     include '../special_dummies.inc'
 !***********************************************************************
-
-
 endmodule Special

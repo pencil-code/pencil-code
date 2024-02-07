@@ -4642,7 +4642,7 @@ module EquationOfState
 !
       call get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
-   endsubroutine set_stratz
+    endsubroutine set_stratz
 !***********************************************************************
     subroutine pushpars2c(p_par)
 !

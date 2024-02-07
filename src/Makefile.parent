@@ -142,7 +142,7 @@ Fortran_standard:
 	    echo "FSTD=$(FSTD_2003)" > src/Makefile-standard.inc; \
 	    ;; \
 	*) \
-	    echo "FSTD=$(FSTD_2003)" > src/Makefile-standard.inc; \
+	    echo "FSTD=$(FSTD_95)" > src/Makefile-standard.inc; \
 	    ;; \
 	esac;
 

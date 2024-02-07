@@ -52,8 +52,6 @@ module Special
   integer :: idiag_bmx2m=0,idiag_bmy2m=0
   integer :: idiag_bmxpt=0,idiag_bmypt=0,idiag_bmxp2=0,idiag_bmyp2=0
 !
-
-
   contains
 !
 !***********************************************************************

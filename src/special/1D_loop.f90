@@ -91,8 +91,6 @@ module Special
   real :: Ksaturation_SI = 7e7,Ksaturation=0.,ln_unit_TT=0.
   real :: gamma
 !
-
-
   contains
 !***********************************************************************
     subroutine register_special()

@@ -124,8 +124,6 @@ module Special
   integer :: idiag_grandxy=0      ! ZAVG_DOC: $\left< {\cal T}^Q\right>_{z}$
   integer :: idiag_grantxy=0      ! ZAVG_DOC: $\left< {\cal T}^\chi\right>_{z}$
 !
-
-
   contains
 !
 !***********************************************************************

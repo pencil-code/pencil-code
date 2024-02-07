@@ -55,8 +55,6 @@ module Messages
   character(LEN=2*labellen) :: scaller=''
   character(LEN=linelen) :: message_stored=''
 !
-
-
   contains
 !***********************************************************************
     subroutine initialize_messages
@@ -1035,6 +1033,4 @@ module Messages
 
   endsubroutine memory_usage
 !***********************************************************************
-
-
 endmodule Messages

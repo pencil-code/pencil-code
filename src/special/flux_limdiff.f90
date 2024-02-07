@@ -74,10 +74,6 @@ module Special
 !
   real :: gamma, gamma_m1, cp1, cv1
 !
-
-
-
-
   contains
 !***********************************************************************
     subroutine register_special()
@@ -451,7 +447,5 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
-
 endmodule Special
 

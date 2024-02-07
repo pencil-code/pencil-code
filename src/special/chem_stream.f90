@@ -100,8 +100,6 @@ module Special
   integer :: idiag_dtcrad=0
   integer :: idiag_dtchi=0
 !
-
-
   contains
 !
 !***********************************************************************

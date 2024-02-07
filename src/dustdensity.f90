@@ -3485,6 +3485,4 @@ module Dustdensity
 !
     endsubroutine initnd_lognormal
 !***********************************************************************
-
-
 endmodule Dustdensity

@@ -25,8 +25,6 @@ module NeutralVelocity
 !
   include 'neutralvelocity.h'
 !
-
-
   contains
 !***********************************************************************
     subroutine register_neutralvelocity

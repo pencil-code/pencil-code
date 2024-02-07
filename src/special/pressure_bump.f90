@@ -62,8 +62,6 @@ module Special
 !
     real, dimension(:), pointer :: beta_glnrho_scaled
 !
-
-
     contains
 !***********************************************************************
 subroutine pb_special_setup

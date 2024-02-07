@@ -818,10 +818,6 @@ module Magnetic
   real :: eta_shock_jump1
   real :: gamma, gamma1, gamma_m1
 !
-
-
-
-
   contains
 !***********************************************************************
     subroutine register_magnetic()
@@ -8027,6 +8023,4 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
     endsubroutine get_bext
 !***********************************************************************
-
-
 endmodule Magnetic

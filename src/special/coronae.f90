@@ -162,8 +162,6 @@ module Special
   real, dimension(nx) :: diffus_chi
   real :: gamma, gamma1, gamma_m1, cp1
 !
-
-
   contains
 !
 !***********************************************************************

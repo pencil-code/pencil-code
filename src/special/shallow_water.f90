@@ -129,10 +129,6 @@ module Special
   integer :: idiag_dtgh=0
   integer :: idiag_totKE=0
 !
-
-
-
-
   contains
 !
 !***********************************************************************
@@ -881,6 +877,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
-
 endmodule Special

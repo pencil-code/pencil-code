@@ -115,10 +115,6 @@ module Special
 !
    logical :: lsecond_order,lsixth_order
 !
-
-
-
-
   contains
 !***********************************************************************
     subroutine register_special()
@@ -1071,6 +1067,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
-
 endmodule Special

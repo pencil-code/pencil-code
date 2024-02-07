@@ -108,8 +108,6 @@ module Energy
 !
   real, dimension (nx) :: diffus_chi,diffus_chi3
 !
-
-
   contains
 !***********************************************************************
     subroutine register_energy

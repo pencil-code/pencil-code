@@ -87,9 +87,6 @@ module NeutralVelocity
   integer :: idiag_divunm=0,idiag_dtnun=0
 !
 
-
-
-
   contains
 !***********************************************************************
     subroutine register_neutralvelocity()
@@ -1016,6 +1013,4 @@ module NeutralVelocity
 !
     endsubroutine rprint_neutralvelocity
 !***********************************************************************
-
-
 endmodule Neutralvelocity

@@ -122,8 +122,6 @@ module Special
      module procedure sigma_to_mdot_pt
    endinterface
 !
-
-
   contains
 !***********************************************************************
     subroutine register_special
