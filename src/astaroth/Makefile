@@ -75,11 +75,28 @@ CPP = nvcc
 CPP = hipcc
 #CC -xhip
 
+
+gpu_astaroth.o: gpu_astaroth.cc $(AC_HEADERS) $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_module_parfuncs.h forcing.h loadStore.h $(CHEADERS) astaroth_libs
+	mkdir -p build && \
+	echo $(USE_HIP) && \
+	echo $(CMAKE_PREC) && \
+	cd build && \
+	cmake -D$(CMAKE_PREC) -DUSE_HIP=$(USE_HIP) .. && \
+	make -j && \
+	cd .. && \
+	cp ./build/libastaroth.so libastaroth.so && \
+	cp libastaroth.so astaroth_sgl.so && \
+	cp libastaroth.so astaroth_dbl.so && \
+	mkdir -p scheduler-build && \
+	cd scheduler-build && \
+	cmake -DUSE_OPENMP=ON ../NUMA-scheduler && \
+	make -j && \
+	cd .. && \
+	cp -r ./NUMA-scheduler/include .
+
 astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
 	mkdir -p build
 	cd build
-	cmake -DMULTIGPU_ENABLED=OFF -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DUSE_OMP=ON -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DUSE_CUDA_AWARE_MPI=OFF -DUSE_EXTERNAL_DECOMP=ON -DLINEAR_PROC_MAPPING=ON -DBUILD_SAMPLES=OFF -DBUILD_STANDALONE=OFF 
-	make -j
 	cd ..
 	cp ./build/libastaroth_sgl.so libastaroth_sgl.so
 	cp libastaroth_sgl.so astaroth_sgl.so

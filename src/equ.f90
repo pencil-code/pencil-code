@@ -507,6 +507,7 @@ module Equ
 !
 
     use Chemistry
+    use Solid_Cells
     use Diagnostics
     use OMP_lib
 
@@ -524,6 +525,7 @@ module Equ
     call read_diagnostic_flags
     call diagnostics_read_diag_accum
     call chemistry_read_diag_accum
+    call sc_read_diag_accum
 
     endsubroutine read_diagnostics_accumulators
 !***********************************************************************
@@ -537,6 +539,7 @@ module Equ
     use Chemistry
     use Diagnostics
     use General
+    use Solid_Cells
     if(associated(p_fname%data)) call allocate_using_dims(fname, p_fname%dims)
     if(associated(p_fnamex%data)) call allocate_using_dims(fnamex, p_fnamex%dims)
     if(associated(p_fnamey%data)) call allocate_using_dims(fnamey, p_fnamey%dims)
@@ -549,6 +552,7 @@ module Equ
     if(associated(p_ncountsz%data)) call allocate_using_dims(ncountsz, p_ncountsz%dims)
     call diagnostics_init_private_accumulators
     call chemistry_init_private_accumulators
+    call sc_init_private_accumulators
 
     endsubroutine init_private_accumulators 
 !***********************************************************************
@@ -603,6 +607,7 @@ module Equ
 !
     use Diagnostics
     use Chemistry
+    use Solid_Cells
     integer :: imn
       if (allocated(fname)) then
         p_fname%data = fname
@@ -626,6 +631,7 @@ module Equ
       if (allocated(ncountsz)) p_ncountsz%data =  ncountsz
       call diagnostics_write_diagnostics_accumulators
       call chemistry_write_diagnostics_accumulators
+      call sc_write_diag_accum
     endsubroutine write_diagnostics_accumulators
 !***********************************************************************
     subroutine init_reduc_pointers
@@ -636,6 +642,8 @@ module Equ
 !  
       use Diagnostics
       use General
+      use Chemistry
+      use Solid_Cells
 
       call point_and_get_size(p_fname, fname)
       call point_and_get_size(p_fname_keep, fname_keep)
@@ -649,6 +657,8 @@ module Equ
       call point_and_get_size(p_ncountsz, ncountsz)
       call point_and_get_size(p_fnamer, fnamer)
       call diagnostics_init_reduc_pointers
+      call chemistry_init_reduc_pointers
+      call sc_init_reduc_pointers
  
     endsubroutine init_reduc_pointers
 !***********************************************************************
@@ -659,6 +669,7 @@ module Equ
 !  25-aug-23/TP: Coded
 !
     use Chemistry
+    use Solid_Cells
     if (allocated(fname))      p_fname%data = 0.
     if (allocated(fnamex))     p_fnamex%data = 0.
     if (allocated(fnamey))     p_fnamey%data = 0.
@@ -736,7 +747,7 @@ module Equ
 
     endsubroutine diagnostics_reductions
 !***********************************************************************
-    subroutine all_module_diags_slice(istart,iend)
+    subroutine all_module_diags_slice(f,istart,iend)
 !
 !  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
 !
@@ -770,17 +781,17 @@ module Equ
       use Shock, only: calc_diagnostics_shock
       use Viscosity, only: calc_diagnostics_viscosity
       use Diagnostics
-      use Farray_alloc, only: f
 !$    use OMP_lib
 
       type (pencil_case) :: p
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 
       integer :: imn
       integer, value :: istart,iend
 !
 !
-!$omp parallel firstprivate(p) num_threads(3)
-      call init_private_accumulators
+!$omp parallel firstprivate(p) num_threads(num_of_helper_threads)
+!$    call init_private_accumulators
 !$    call read_diagnostic_flags
       lfirstpoint=.true.
 !$    print*,"TP thread num: ",omp_get_thread_num()
@@ -867,7 +878,7 @@ module Equ
 
       integer :: imn
 
-      call all_module_diags_slice(1,nyz)
+      call all_module_diags_slice(f,1,nyz)
     endsubroutine calc_all_module_diagnostics
 !****************************************************************************
 !$    subroutine finalize_diagnostics_wrapper() bind(C)
@@ -1885,6 +1896,7 @@ subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
               intent(out) :: df
           endsubroutine rhs_2 
       endinterface
+      max_relative_diff = -1.0
       df_copy = df
       p_copy = p
       f_copy = f

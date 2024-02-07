@@ -13,7 +13,7 @@ DATE 17-Feb-2017: Omer Anjum: Added description of the functions
 //C libraries
 #include <stdio.h>
 #include <stdlib.h>
-#include <cmath>
+//#include <cmath>
 
 //CUDA libraries
 //#include <cfloat>

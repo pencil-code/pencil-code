@@ -6,7 +6,6 @@ module Cparam
 !
   implicit none
 !
-!BEGIN C BINDING
   integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
   integer, parameter :: ikind4=selected_int_kind(9)   ! 4-byte integer kind
   integer, parameter :: ikind1=selected_int_kind(2)   ! 1-byte integer kind
@@ -221,8 +220,7 @@ module Cparam
 !  The order of the patches is the same as in MATINS.
 !
   integer, parameter :: XPLUS=1, YPLUS=2, XMINUS=3, YMINUS=4, ZPLUS=5, ZMINUS=6
-!END C BINDING
-!
+
 !
 !  pi and its derivatives.
 !
@@ -236,6 +234,7 @@ module Cparam
   real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958d0
   real, parameter :: twopi = 6.2831853071795864769252867665590d0
   real, parameter :: dtor = pi/180.d0
+!
 !
 !  Physical constants, taken from
 !  http://physics.nist.gov/cuu/Constants/index.html.

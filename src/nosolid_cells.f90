@@ -305,14 +305,14 @@ module Solid_Cells
 !
     endsubroutine interpolate_particles_ogrid
 !***********************************************************************
-  subroutine sc_init_diags_accumulators
+  subroutine sc_init_diag_accum
 !
 !  Need to initialize accumulators since master thread does not take part in diagnostics
 !  Dummy for solid cells ogrid
 !
 !  25-aug-23/TP: Coded
 !
-  endsubroutine sc_init_diags_accumulators
+  endsubroutine sc_init_diag_accum
 !***********************************************************************
   subroutine sc_diags_reductions
 !

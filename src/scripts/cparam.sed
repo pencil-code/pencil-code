@@ -1,5 +1,3 @@
-1,/BEGIN C BINDING/ d
-/END C BINDING/, $ d
 /^ *type *[a-zA-Z0-9_]* *$/,/^ *end *type *[a-zA-Z0-9_]* *$/ d
 /^ *!/ d
 s/.*/\L&/g
@@ -15,9 +13,9 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /implicit  *none/ d
 /cparam_pencils\.inc/ d
 /dimension *(/ d
-s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\)\([,$]\)/pow(\1,\2)\3/g
-s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\) *$/pow(\1,\2)/g
-#s/\([a-zA-Z0-9_]*\) *\*\* *\([(]?[-]?[a-zA-Z0-9_]*[)]?\)/pow(\1,\2)/
+s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\)\([,$]\)/cpu_pow(\1,\2)\3/g
+s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\) *$/cpu_pow(\1,\2)/g
+#s/\([a-zA-Z0-9_]*\) *\*\* *\([(]?[-]?[a-zA-Z0-9_]*[)]?\)/cpu_pow(\1,\2)/
 s/include *.\([a-z]*\.inc\). *$/# include "\1_c.h"/
 s/include *.\([a-z]*\.local\). *$/# include "\1_c.h"/
 s/\([^ ]\) *!.*$/\1/
