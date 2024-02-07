@@ -1030,16 +1030,6 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
   mesh.info.int3_params[AC_domain_decomposition] = decomp;
   checkConfig(mesh.info);
   fflush(stdout);
-  //TODO make cleaner.
-  //Needed since based on the sample used some profiles might not have been 
-  //allocated
-  for(int profile=0;profile<NUM_PROFILES;profile++)
-  {
-    if(mesh.info.profiles[profile] == nullptr)
-    {
-      mesh.info.profiles[profile] = (AcReal*)malloc(mesh.info.int_params[profile_lengths[profile]]*sizeof(AcReal));
-    }
-  }
   acGridInit(mesh.info);
 
   VertexBufferHandle all_fields[NUM_VTXBUF_HANDLES];
