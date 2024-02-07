@@ -1078,7 +1078,7 @@ program run
 !  Initialize GPU use and make threadpool.
 !
   call gpu_init
-!$ call omp_set_max_active_levels(2)
+!$ include omp_init.h
 !$  if(.true.) then
 !$omp parallel num_threads(2)
 !$      if(omp_get_thread_num() == 0) then
