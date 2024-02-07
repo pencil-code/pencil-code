@@ -18,6 +18,7 @@ module Equ
   public :: pde, debug_imn_arrays, initialize_pencils
   public :: impose_floors_ceilings, finalize_diagnostics
   public :: read_diagnostics_accumulators, write_diagnostics
+  public :: perform_diagnostics
 !$ public :: write_diagnostics_wrapper
 !
   private
@@ -342,12 +343,13 @@ module Equ
         call rhs_gpu(f,itsub,early_finalize)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
           !wait in case the last diagnostic tasks are not finished
-!$        call wait_all_thread_pool()
+!!$        call wait_all_thread_pool()
           call copy_farray_from_GPU(f)
           call init_reduc_pointers
           call init_diagnostics_accumulators
-!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
-!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
+!$        lhelper_perform_diagnostics = .true.
+!!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
+!!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
         endif
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
@@ -439,8 +441,8 @@ module Equ
     endif
       if(lgpu) then
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
-!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),&
-!$        last_pushed_task, 1, default_task_type, 1, depend_on_all)
+!!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),&
+!!$        last_pushed_task, 1, default_task_type, 1, depend_on_all)
         endif
       else
         if(lfirst) call finalize_diagnostics
@@ -855,6 +857,16 @@ module Equ
 !$omp end parallel
 
     endsubroutine all_module_diags_slice
+!*****************************************************************************
+      subroutine perform_diagnostics
+        use Farray_alloc
+
+        call calc_all_module_diagnostics(f)
+        call finalize_diagnostics
+        call write_diagnostics(f) 
+!$      lhelper_perform_diagnostics = .false.
+
+      endsubroutine perform_diagnostics
 !*****************************************************************************
 !$    subroutine calc_all_module_diagnostics_wrapper(f) bind(C)
 !    

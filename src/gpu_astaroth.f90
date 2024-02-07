@@ -121,7 +121,8 @@ contains
     subroutine copy_farray_from_GPU(f)
 
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
-
+!$    do while(lhelper_perform_diagnostics)
+!$    enddo
       call copy_farray_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho))
 
     endsubroutine copy_farray_from_GPU
