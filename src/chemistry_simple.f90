@@ -5074,39 +5074,55 @@ module Chemistry
     endsubroutine chemspec_normalization_N2
 !***********************************************************************
     subroutine chemistry_init_diag_accum
+  !
+  ! 7-feb-24/TP:  since master thread doesn't take part in diagnostics set accumulators to zero at start
+  !
       net_react_m = 0.0
       net_react_p = 0.0
     endsubroutine chemistry_init_diag_accum
 !***********************************************************************
     subroutine chemistry_init_reduc_pointers
+  !
+  ! 7-feb-24/TP:  allocates memory needed for reductions
+  !
       use General
       call point_and_get_size(p_net_react_m, net_react_m)
       call point_and_get_size(p_net_react_p, net_react_p)
     endsubroutine chemistry_init_reduc_pointers
 !***********************************************************************
     subroutine chemistry_diag_reductions
+  !
+  ! 7-feb-24/TP:  diag_reductions for chemistry
+  !
       p_net_react_m%data = p_net_react_m%data + net_react_m
       p_net_react_p%data = p_net_react_p%data + net_react_p
     endsubroutine chemistry_diag_reductions 
 !***********************************************************************
     subroutine chemistry_read_diag_accum
+  !
+  ! 7-feb-24/TP:  reads chemistry diagnostics accumulators
+  !
       net_react_m = p_net_react_m%data
       net_react_p = p_net_react_p%data
     endsubroutine chemistry_read_diag_accum
 !***********************************************************************
     subroutine chemistry_write_diagnostics_accumulators
+  !
+  ! 7-feb-24/TP:  writes chemistry diagnostics accumulators
+  !
       p_net_react_m%data = net_react_m
       p_net_react_p%data = net_react_p
     endsubroutine chemistry_write_diagnostics_accumulators
 !***********************************************************************
     subroutine chemistry_init_private_accumulators
+  !
+  ! 7-feb-24/TP:  allocates memory for chemistry diagnostic reductions 
+  !
       use General
       if(associated(p_net_react_m%data)) call allocate_using_dims(net_react_m,p%p_net_react_m%size)
       if(associated(p_net_react_p%data)) call allocate_using_dims(net_react_p,p%p_net_react_p%size)
     endsubroutine chemistry_init_private_accumulators
 !***********************************************************************
-
-
     include 'chemistry_common.inc'
 !***********************************************************************
 endmodule Chemistry

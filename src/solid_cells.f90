@@ -3818,6 +3818,9 @@ module Solid_Cells
     endsubroutine chemistry_init_private_accumulators
 !***********************************************************************
     subroutine sc_read_diag_accum
+!
+!    7-feb-24/TP: reads the global solid cells diagnostic accumulators to local state
+!
       rhosum = p_rhosum%data
       irhocount = p_irhocount%data
       c_dragx = p_c_dragx%data
@@ -3830,6 +3833,9 @@ module Solid_Cells
     endsubroutine sc_read_diag_accum
 !***********************************************************************
     subroutine sc_write_diag_accum
+!
+!    7-feb-24/TP: writes solid cells diagnostic accumulators to global state
+!
       p_rhosum%data = rhosum 
       p_irhocount%data = irhocount 
       p_c_dragx%data = c_dragx 

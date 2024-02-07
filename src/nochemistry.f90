@@ -283,21 +283,39 @@ module Chemistry
     endsubroutine chemspec_normalization_N2
 !***********************************************************************
     subroutine chemistry_init_reduc_pointers
+!
+!    7-feb-24 TP: dummy
+!
     endsubroutine chemistry_init_reduc_pointers
 !***********************************************************************
     subroutine chemistry_diag_reductions
+!
+!    7-feb-24 TP: dummy
+!
     endsubroutine chemistry_diag_reductions 
 !***********************************************************************
     subroutine chemistry_read_diag_accum
+!
+!    7-feb-24 TP: dummy
+!
     endsubroutine chemistry_read_diag_accum
 !***********************************************************************
     subroutine chemistry_init_diag_accum
+!
+!    7-feb-24 TP: dummy
+!
     endsubroutine chemistry_init_diag_accum
 !***********************************************************************
     subroutine chemistry_write_diagnostics_accumulators
+!
+!    7-feb-24 TP: dummy
+!
     endsubroutine chemistry_write_diagnostics_accumulators
 !***********************************************************************
     subroutine chemistry_init_private_accumulators
+!
+!    7-feb-24 TP: dummy
+!
     endsubroutine chemistry_init_private_accumulators
 !***********************************************************************
    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)

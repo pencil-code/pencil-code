@@ -333,12 +333,21 @@ module Solid_Cells
   endsubroutine sc_init_reduc_pointers
 !***********************************************************************
   subroutine sc_write_diag_accum
+!
+!  7-feb-24-TP: Dummy
+!
   endsubroutine sc_write_diag_accum
 !***********************************************************************
   subroutine sc_read_diag_accum
+!
+!  7-feb-24-TP: Dummy
+!
   endsubroutine sc_read_diag_accum
 !***********************************************************************
   subroutine sc_init_private_accumulators
+!
+!  7-feb-24-TP: Dummy
+!
   endsubroutine sc_init_private_accumulators
 !***********************************************************************
 endmodule Solid_Cells
