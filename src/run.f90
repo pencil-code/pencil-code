@@ -45,6 +45,21 @@
 !***********************************************************************
 module run_module
 contains
+subroutine helper_loop
+  use Equ
+  use Cdata
+!
+!  hotloop for helper thread to wait to perform diagnostics
+!
+! 7-feb-24/TP: coded
+!
+!$  do while(lhelper_run)
+!$    do while(.not. lhelper_perform_diagnostics)
+!$    enddo
+!$    call perform_diagnostics
+!$  enddo
+endsubroutine helper_loop
+!***********************************************************************
 subroutine main_sub()
   use Boundcond,       only: update_ghosts, initialize_boundcond
   use Cdata
@@ -780,8 +795,8 @@ subroutine main_sub()
 
     if(lgpu) then
       if (lout.or.l1davg.or.l1dphiavg.or.l2davg) then
-!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task,&
-!$      1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
+!!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task,&
+!!$      1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
       endif
     else
       call write_diagnostics(f)
@@ -872,9 +887,9 @@ subroutine main_sub()
     it=it+1
     headt=.false.
   enddo Time_loop
-!$ call wait_all_thread_pool()
-!$ call free_thread_pool()
-!
+!!$ call wait_all_thread_pool()
+!!$ call free_thread_pool()
+!$  lhelper_run = .false.
   if (lroot) then
     print*
     print*, 'Simulation finished after ', icount, ' time-steps'
@@ -1046,6 +1061,7 @@ program run
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
   use Timestep,        only: time_step, initialize_timestep
+  use, intrinsic :: iso_fortran_env
 !$ use OMP_lib
 !$ use mt, only: wait_all_thread_pool, push_task, mt_split,&
 !$ free_thread_pool, depend_on_all, default_task_type
@@ -1062,8 +1078,15 @@ program run
 !  Initialize GPU use and make threadpool.
 !
   call gpu_init
+!$ call omp_set_max_active_levels(2)
 !$  if(.true.) then
-!$    call mt_split(main_sub,1)
+!$omp parallel num_threads(2)
+!$      if(omp_get_thread_num() == 0) then
+!$         call main_sub
+!$      else
+!$         call helper_loop
+!$      endif
+!$omp end parallel
 !$  else
   call main_sub
 !$  endif
