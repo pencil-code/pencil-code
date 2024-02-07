@@ -3083,5 +3083,3 @@ module Energy
     include 'energy_common.inc'
 !***********************************************************************
 endmodule Energy
-
-
