@@ -265,8 +265,6 @@ module Special
 
   type(GWspectra) :: spectra
 
-
-
   contains
 !***********************************************************************
     subroutine register_special

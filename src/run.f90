@@ -997,6 +997,7 @@ program run
 ! 31-oct-13/MR: replaced rparam by read_all_init_pars
 ! 10-feb-14/MR: initialize_mpicomm now called before read_all_run_pars
 ! 13-feb-13/MR: call of wsnap_down added
+! 7-feb-24/TP: made main_sub for easier multithreading
 !
   use run_module
   use Boundcond,       only: update_ghosts, initialize_boundcond
