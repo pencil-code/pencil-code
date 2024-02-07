@@ -141,9 +141,6 @@ module SharedVariables
 !
   character(LEN=2*labellen) :: scaller=''
 !
-
-
-
   contains
 !
 !***********************************************************************
@@ -827,7 +824,7 @@ module SharedVariables
 !***********************************************************************
     subroutine put_variable_logical1d(varname,variable,ierr,caller)
 !
-!  mment me.
+!  Comment me.
 !
       character (len=*) :: varname
       logical, dimension(:), target :: variable
@@ -1019,6 +1016,4 @@ module SharedVariables
 
     endsubroutine fetch_profile_3d
 !***********************************************************************
-
-
 endmodule SharedVariables

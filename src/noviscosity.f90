@@ -28,8 +28,6 @@ module Viscosity
 !
   integer :: pushpars2c        ! should be procedure pointer (F2003)
 !
-
-
   contains
 !***********************************************************************
     subroutine register_viscosity()

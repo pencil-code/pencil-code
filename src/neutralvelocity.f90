@@ -91,8 +91,6 @@ module NeutralVelocity
 !
   real, dimension(nx) :: cions_rhon,cneut_rho,diffus_nun
 
-
-
   contains
 !***********************************************************************
     subroutine register_neutralvelocity()
@@ -1040,6 +1038,4 @@ module NeutralVelocity
 !
     endsubroutine rprint_neutralvelocity
 !***********************************************************************
-
-
 endmodule Neutralvelocity

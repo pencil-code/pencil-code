@@ -72,8 +72,6 @@ module Special
   namelist /special_run_pars/  &
        turb_inlet_dir
 !
-
-
   contains
 !
 !***********************************************************************

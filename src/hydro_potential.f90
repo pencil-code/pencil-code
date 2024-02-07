@@ -603,8 +603,6 @@ module Hydro
 !
   real, dimension(:,:), pointer :: reference_state
 !
-
-
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -3894,6 +3892,4 @@ module Hydro
 
     endsubroutine pushdiags2c
 !***********************************************************************
-
-
 endmodule Hydro

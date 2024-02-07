@@ -105,10 +105,6 @@ module Special
 !
   integer :: idiag_brbpmr=0,idiag_urupmr=0,idiag_mdotmr=0
 !
-
-
-
-
   contains
 !
 !***********************************************************************
@@ -677,6 +673,4 @@ module Special
     include '../special_dummies.inc'
 !********************************************************************
 !
-
-
 endmodule Special

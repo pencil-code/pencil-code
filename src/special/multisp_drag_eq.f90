@@ -65,8 +65,6 @@ module Special
   integer :: idiag_drhopmx = 0
   integer :: idiag_drhop2mx = 0
 !
-
-
   contains
 !****************************************************************************
     subroutine initialize_special(f)

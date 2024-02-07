@@ -146,8 +146,6 @@ module Energy
 !
   real :: gamma, gamma_m1
 
-
-
   contains
 !***********************************************************************
     subroutine register_energy

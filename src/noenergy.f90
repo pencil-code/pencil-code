@@ -28,8 +28,6 @@ module Energy
 !
   include 'energy.h'
 !
-
-
   contains
 !***********************************************************************
     subroutine register_energy

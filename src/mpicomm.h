@@ -75,14 +75,12 @@
 ! Foreign application routines.
   public :: initialize_foreign_comm, get_foreign_snap_initiate, get_foreign_snap_finalize, update_foreign_data
 ! Variables
-!TP: should remove lroot,lyang,iproc,ip[x-y] since it comes from cdata
-  public :: lroot,lyang,iproc,ipx,ipy,ipz
-  public :: mpi_precision, MPI_CMPLX, nprocs
+  public :: ipx, ipy, ipz, lroot, iproc, mpi_precision, MPI_CMPLX, nprocs
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
   public :: llast_proc_x, llast_proc_y, llast_proc_z, llast_proc_xy, llast_proc_yz, llast_proc_xz, llast_proc_xyz
   public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, &
             MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, MPI_COMM_RSLICE, &
-            MPI_INFO_NULL, MPI_ANY_TAG
+            MPI_INFO_NULL, MPI_ANY_TAG, lyang
   public :: size_of_int, size_of_real, size_of_double
 !
   interface mpirecv_logical

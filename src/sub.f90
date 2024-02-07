@@ -602,19 +602,18 @@ module Sub
       intent(inout) :: c
 !
       integer :: i
-      ! logical :: l0
+      logical :: l0
 !
-      ! l0 = .not.loptest(ladd)
-      if(.not.loptest(ladd)) then
-          c=a(:,1)*b(:,1)
-        do i=2,size(a,2)
+      l0 = .not.loptest(ladd)
+
+      do i=1,size(a,2)
+        if (l0) then
+          c=a(:,i)*b(:,i)
+          l0=.false.
+        else
           c=c+a(:,i)*b(:,i)
-        enddo
-      else
-        do i=1,size(a,2)
-          c=c+a(:,i)*b(:,i)
-        enddo
-      endif
+        endif
+      enddo
 !
     endsubroutine dot_mn
 !***********************************************************************
@@ -3296,7 +3295,6 @@ module Sub
 !
       if (k<1 .or. k>mfarray) then
         call fatal_error('u_dot_grad_vec','variable index is out of bounds')
-        ! return
       endif
 !
       do j=1,3

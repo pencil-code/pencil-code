@@ -27,7 +27,6 @@ void finalizeGPU();
 void substepGPU(int isubstep, int full, int early_finalize);
 void copyFarray();
 void testRHS(REAL*,REAL*);
-typedef void (*rangefunc)(const int a, const int b);
 void random_initial_condition(void);
 
 // for Gnu Compiler

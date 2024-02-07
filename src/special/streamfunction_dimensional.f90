@@ -120,10 +120,6 @@ module Special
    !  module procedure sigma_to_mdot_pt
    !endinterface
 !
-
-
-
-
   contains
 !***********************************************************************
     subroutine register_special()
@@ -1168,6 +1164,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
-
 endmodule Special

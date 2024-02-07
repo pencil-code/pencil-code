@@ -48,8 +48,6 @@ module Special
 !
   integer :: idiag_Lreal=0,idiag_Limag=0,idiag_Rreal=0,idiag_Rimag
 !
-
-
   contains
 !
 !***********************************************************************

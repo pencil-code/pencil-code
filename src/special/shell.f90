@@ -99,8 +99,6 @@ module Special
 !
    integer :: idiag_uuGOY=0, idiag_deltM=0, idiag_eddy_time=0
 !
-
-
   contains
 !***********************************************************************
     subroutine register_special

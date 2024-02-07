@@ -31,8 +31,6 @@ module Viscosity
 !
   namelist /viscosity_run_pars/ nu,lvisc_first,ivisc,C_smag
 !
-
-
   contains
 !***********************************************************************
     subroutine register_viscosity()

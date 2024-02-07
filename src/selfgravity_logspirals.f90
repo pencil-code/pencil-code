@@ -70,10 +70,6 @@ module Selfgravity
   real, dimension(mz) :: rho0z = 0.0
   real :: gm1, c
 !
-
-
-
-
   contains
 !***********************************************************************
     subroutine register_selfgravity()
@@ -722,6 +718,4 @@ module Selfgravity
 !
     endsubroutine rprint_selfgravity
 !***********************************************************************
-
-
 endmodule Selfgravity

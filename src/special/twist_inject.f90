@@ -118,8 +118,6 @@ module Special
 !
   real :: gamma, cp1
 !
-
-
   contains
 !***********************************************************************
     subroutine register_special()

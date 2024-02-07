@@ -83,8 +83,6 @@ module Special
   integer :: idiag_etamax=0
   integer :: idiag_etam=0
 !
-
-
   contains
 !***********************************************************************
     subroutine register_special()

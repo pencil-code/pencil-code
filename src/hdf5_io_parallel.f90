@@ -83,8 +83,6 @@ module HDF5_IO
   endtype element
   type (element), pointer :: last => null(), last_particle => null(), last_pointmass => null()
 !
-
-
   contains
 !***********************************************************************
     subroutine initialize_hdf5(nxyz,ngrid,mvar_,maux_)
@@ -1012,8 +1010,6 @@ module HDF5_IO
       call check_error (h5_err, 'close torus data space', name)
       call h5tclose_f (h5_torustype, h5_err)
       call check_error (h5_err, 'close torus data type', name)
-
-
 
       contains
 !----------------------------------------------------------------------
@@ -2984,6 +2980,4 @@ module HDF5_IO
 !
     endsubroutine output_settings
 !***********************************************************************
-
-
 endmodule HDF5_IO

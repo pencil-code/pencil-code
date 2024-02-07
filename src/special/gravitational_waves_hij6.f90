@@ -158,8 +158,6 @@ module Special
   integer :: idiag_hijij2m=0     ! DIAG_DOC: $\bra{h_{ij,ij}^2}$
   integer :: idiag_gijij2m=0     ! DIAG_DOC: $\bra{g_{ij,ij}^2}$
 !
-
-
   contains
 !***********************************************************************
     subroutine register_special()

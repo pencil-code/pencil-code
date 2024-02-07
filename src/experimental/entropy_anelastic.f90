@@ -215,8 +215,6 @@ module Energy
   real, dimension(nx) :: diffus_chi, diffus_chi3
   real :: gamma, gamma1, gamma_m1, cp1
 !
-
-
   contains
 !
 !***********************************************************************

@@ -5,7 +5,6 @@
 module General
 !
   use Cparam
-  use Cdata
 !
   implicit none
 !
@@ -69,8 +68,6 @@ module General
             qualify_position_biquin
   public :: binomial,merge_lists,reallocate
   public :: point_and_get_size, allocate_using_dims
-! 
-! 
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0

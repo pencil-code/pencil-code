@@ -128,10 +128,6 @@ module Special
 !
   logical :: lgauss_seidel,lomega_jacobi
 !
-
-
-
-
     contains
 !***********************************************************************
     subroutine register_special()
@@ -1314,6 +1310,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
-
 endmodule Special

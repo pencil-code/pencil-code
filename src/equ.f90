@@ -691,6 +691,7 @@ module Equ
     if (l2davgfirst) t2davgfirst_save=t ! (2-D averages are for THIS time)
 
     call chemistry_init_diag_accum
+    call sc_init_diag_accum
 
     endsubroutine init_diagnostics_accumulators
 !***********************************************************************

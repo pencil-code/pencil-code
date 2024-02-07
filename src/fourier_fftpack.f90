@@ -360,7 +360,7 @@ module Fourier
 !
     endsubroutine fourier_transform_xz
 !***********************************************************************
-    subroutine fourier_transform_x(a_re,a_im,linv,lnormalize)
+    subroutine fourier_transform_x(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in the x-direction.
 !  WARNING: It is not cache efficient to Fourier transform in any other

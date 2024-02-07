@@ -255,7 +255,6 @@ module Energy
 !  (need to be consistent with reset list below).
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
-  public :: idiag_dtc
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
                                 ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   acoustic time step;
@@ -482,7 +481,6 @@ module Energy
 
   real, dimension (nx) :: Hmax,ssmax,diffus_chi,diffus_chi3,cs2cool_x, &
                           chit_prof,chit_prof_fluct,hcond,K_kramers
-  public :: diffus_chi
   real, dimension (nx,3) :: gss1, gss0
   integer, parameter :: prof_nz=150
   real, dimension (prof_nz) :: prof_lnT,prof_z
@@ -1238,7 +1236,7 @@ module Energy
             if (file_exists('hcond_glhc.dat').or.file_exists('hcond_glhc.ascii')) then
               call warning('initialize_energy','lhcond_global=T, but file hcond_glhc.* exists:'// &
                            ' assuming lread_hcond=T and lhcond_global=F')
-              !lhcond_global=.false.; lread_hcond=.true.
+              lhcond_global=.false.; lread_hcond=.true.
             endif
           endif
 
@@ -3459,7 +3457,6 @@ module Energy
 
     endsubroutine denergy_dt
 !***********************************************************************
- 
     subroutine calc_0d_diagnostics_energy(p)
 !
 !  Calculate entropy related diagnostics.
@@ -7250,7 +7247,6 @@ module Energy
     endsubroutine chit_profile
 !***********************************************************************
     subroutine get_prof_pencil(prof,dprof,l2D3D,amp,amp1,amp2,pos1,pos2,p,f,stored_prof,stored_dprof,llog)
-
 !
 !  Provides pencils for an either x or z dependent profile and its (optionally logarithmic) gradient:
 !  prof and dprof. If
@@ -8039,64 +8035,6 @@ module Energy
 
     endsubroutine pushpars2c
 !***********************************************************************
-    subroutine calc_pencils_energy_test(f,p)
-!
-!  Calculate Entropy pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
-!  20-nov-04/anders: coded
-!  15-mar-15/MR: changes for use of reference state.
-!
-      use Sub 
-      use Deriv
-      real, dimension((nxgrid/nprocx+2*3),(nygrid/nprocy+2*3),(nzgrid/nprocz+2*3),(5+0+0+0)), intent(in)   :: f
-type(pencil_case),                 intent(inout):: p
-integer :: j
-real, dimension ((nxgrid/nprocx)) :: tmp_1
-integer::i_1
-integer::j_1
-logical :: loptest_return_value_0_1
-! if(lpencil(i_ma2)) then
-! p%ma2=p%u2/p%cs2
-! endif
-! if(lpencil(i_ugss)) then
-! call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,upwind=.true.)
-! endif
-! if(lpencil(i_uglntt)) then
-! call u_dot_grad(f,iss,p%glntt,p%uu,p%uglntt,upwind=.true.)
-! endif
-! if(lpencil(i_sglntt)) then
-! do i_1=1,3
-! j_1=1
-! tmp_1=p%sij(:,i_1,j_1)*p%glntt(:,j_1)
-! do j_1=2,3
-! tmp_1=tmp_1+p%sij(:,i_1,j_1)*p%glntt(:,j_1)
-! enddo
-! loptest_return_value_0_1=.false.
-! p%sglntt(:,i_1)=tmp_1
-! enddo
-! endif
-! if(lpencil(i_fpres)) then
-! do j=1,3
-! p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glntt(:,j))*gamma1
-! enddo
-! endif
-! if(lpencil(i_transprhos)) then
-! p%transprhos = impossible
-! endif
-! if(lpencil(i_initlnrho).and.iglobal_lnrho0/=0) then
-! p%initlnrho=f((1+3):l2,m,n,iglobal_lnrho0)
-! endif
-! if(lpencil(i_initss).and.iglobal_ss0/=0) then
-! p%initss=f((1+3):l2,m,n,iglobal_ss0)
-! endif
-! if(lpencil(i_uuadvec_gss)) then
-! call dot_mn(p%uu_advec,p%gss,p%uuadvec_gss)
-! endif
-
-!
-    endsubroutine calc_pencils_energy_test
-!***********************************************************************
 !********************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING        *************
@@ -8107,6 +8045,4 @@ logical :: loptest_return_value_0_1
 !**                                                                **
     include 'energy_common.inc'
 !***********************************************************************
-
-
 endmodule Energy

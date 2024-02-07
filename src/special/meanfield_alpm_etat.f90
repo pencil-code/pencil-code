@@ -59,8 +59,6 @@ module Special
   logical, pointer :: lmeanfield_theory
   real, pointer :: meanfield_etat,eta
 !
-
-
   contains
 !
 !***********************************************************************

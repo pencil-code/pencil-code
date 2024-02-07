@@ -10116,4 +10116,13 @@ module Solid_Cells
 
   endsubroutine sc_init_reduc_pointers
 !***********************************************************************
+  subroutine sc_write_diag_accum
+  endsubroutine sc_write_diag_accum
+!***********************************************************************
+  subroutine sc_read_diag_accum
+  endsubroutine sc_read_diag_accum
+!***********************************************************************
+  subroutine sc_init_private_accumulators
+  endsubroutine sc_init_private_accumulators
+!***********************************************************************
 endmodule solid_cells

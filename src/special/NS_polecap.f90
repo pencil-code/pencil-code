@@ -45,8 +45,6 @@ module Special
   integer, parameter :: nkramers=1
   real :: unit_cond=1.
 
-
-
   contains
 !***********************************************************************
     subroutine initialize_special(f)

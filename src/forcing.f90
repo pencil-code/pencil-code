@@ -6306,6 +6306,4 @@ module Forcing
 
     endsubroutine pushpars2c
 !*******************************************************************
-
-
 endmodule Forcing

@@ -96,8 +96,6 @@ module Special
 !
 !!   integer :: idiag_POSSIBLEDIAGNOSTIC=0
 !
-
-
   contains
 !***********************************************************************
     subroutine register_special()

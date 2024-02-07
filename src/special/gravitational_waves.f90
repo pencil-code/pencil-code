@@ -119,8 +119,6 @@ module Special
   integer :: idiag_strTpt=0      ! DIAG_DOC: $S_{\rm T}(x_1,y_1,z_1,t)$
   integer :: idiag_strXpt=0      ! DIAG_DOC: $S_{\rm X}(x_1,y_1,z_1,t)$
 !
-
-
   contains
 !***********************************************************************
     subroutine register_special()
