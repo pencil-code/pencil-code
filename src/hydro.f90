@@ -43,7 +43,6 @@ module Hydro
 !
 !  Slice precalculation buffers.
 !
-  public :: duu_dt_copy
   real, target, dimension (:,:,:), allocatable :: oo_xy,oo_xy2,oo_xy3,oo_xy4
   real, target, dimension (:,:,:), allocatable :: oo_xz,oo_yz,oo_xz2
   real, target, dimension (:,:,:), allocatable :: uu_sph_xy,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4
@@ -3943,54 +3942,6 @@ module Hydro
       call timing('duu_dt','finished',mnloop=.true.)
 !
     endsubroutine duu_dt
-subroutine duu_dt_copy(f,df,p)
-real, dimension (nxgrid/nprocx+2*3,nygrid/nprocy+2*3,nzgrid/nprocz+2*3,5+0+0+0) :: f
-real, dimension (nxgrid/nprocx+2*3,nygrid/nprocy+2*3,nzgrid/nprocz+2*3,5) :: df
-type (pencil_case) :: p
-intent(inout) :: p
-intent(inout) :: f,df
-real, dimension (nxgrid/nprocx,3) :: uu1
-real, dimension (nxgrid/nprocx) :: tmp, ftot, ugu_schur_x, ugu_schur_y, ugu_schur_z
-real, dimension (nxgrid/nprocx,3,3) :: puij_schur
-integer :: i, j, ju
-real::c2_3
-real::s2_3
-integer :: i_5
-real, dimension (nxgrid/nprocx)::reshock_4_5
-real, dimension (nxgrid/nprocx)::fvisc2_4_5
-real, dimension (nxgrid/nprocx)::uus_4_5
-real, dimension (nxgrid/nprocx)::tmp_4_5
-real, dimension (nxgrid/nprocx)::qfvisc_4_5
-real, dimension (nxgrid/nprocx,3)::nud2uxb_4_5
-real, dimension (nxgrid/nprocx,3)::fluxv_4_5
-fmax=1./3.9085e37
-if(n==nn(1).and.m==mm(1)) then
- lproc_print=.true.
-endif
-call timing('duu_dt','entered',mnloop=.true.)
-if(headtt.or..false.) then
- print*,'duu_dt: solve'
-endif
-if(headtt) then
-write(*,'(a,a10,",  x: <",a8,">, y: <",a8,">,  z: <",a8,">")')  'bcs for ', 'ux',  trim(bcx(iux)), trim(bcy(iux)), trim(bcz(iux))
-write(*,'(a,a10,",  x: <",a8,">, y: <",a8,">,  z: <",a8,">")')  'bcs for ', 'uy',  trim(bcx(iuy)), trim(bcy(iuy)), trim(bcz(iuy))
-write(*,'(a,a10,",  x: <",a8,">, y: <",a8,">,  z: <",a8,">")')  'bcs for ', 'uz',  trim(bcx(iuz)), trim(bcy(iuz)), trim(bcz(iuz))
-endif
-df(1+3:l2,m,n,iux:iuz)=df(1+3:l2,m,n,iux:iuz)-p%ugu
-if(headtt) then
- print*,'coriolis_cartesian: add coriolis force; omega=',0.100000001
-endif
-c2_3=2*0.100000001
-df(1+3:l2,m,n,iux  )=df(1+3:l2,m,n,iux  )+c2_3*p%uu(:,2)
-df(1+3:l2,m,n,iux+1)=df(1+3:l2,m,n,iux+1)-c2_3*p%uu(:,1)
-df(1+3:l2,m,n,iux:iuz) = df(1+3:l2,m,n,iux:iuz) + p%fvisc
-if(lforcing_cont_uu) then
- df(1+3:l2,m,n,iux:iuz)=df(1+3:l2,m,n,iux:iuz) + 1.00000000*p%fcont(:,:,1)
-endif
-call calc_diagnostics_hydro(f,p)
-call timing('duu_dt','finished',mnloop=.true.)
-endsubroutine duu_dt_copy
-
 !*******************************************************************************
     subroutine calc_0d_diagnostics_hydro(f,p)
 !

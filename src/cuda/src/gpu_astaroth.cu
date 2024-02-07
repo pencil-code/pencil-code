@@ -12,7 +12,7 @@
 //C libraries
 #include <stdio.h>
 #include <stdlib.h>
-#include <cmath>
+//#include <cmath>
 
 //Headers
 #define EXTERN

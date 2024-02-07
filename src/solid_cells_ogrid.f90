@@ -10087,7 +10087,7 @@ module Solid_Cells
 !!
 !  endsubroutine flow_curvilinear_to_cartesian
 !***********************************************************************
-  subroutine sc_init_diagnostic_accumulators
+  subroutine sc_init_diag_accum
 !
 !  Need to initialize accumulators since master thread does not take part in diagnostics
 !  Dummy for solid cells ogrid
@@ -10095,7 +10095,7 @@ module Solid_Cells
 !  25-aug-23/TP: Coded
 !
 
-  endsubroutine sc_init_diagnostic_accumulators
+  endsubroutine sc_init_diag_accum
 !***********************************************************************
   subroutine sc_diagnostic_reductions
 !
