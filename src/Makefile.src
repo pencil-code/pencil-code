@@ -3471,14 +3471,15 @@ include Makefile.library
 ifneq ($(findstring gpu_astaroth, $(GPU)),)
 ./astaroth/Makefile.vendor: Makefile.local
 	@echo GPU_VENDOR=$(GPU_VENDOR) > ./astaroth/Makefile.vendor
-	@echo MODULE_INFIX=${MODULE_INFIX}
 
-	@echo MODULE_INFIX=$(MODULE_INFIX) > ./astaroth/Makefile.module_info
-	@echo MODULE_INFIX=$(MODULE_INFIX) > ./astaroth/Makefile.module_info
-	@echo export MODULE_INFIX=$(MODULE_SUFFIX) >> ./astaroth/Makefile.module_info
-
-	@echo MODULE_PREFIX=$(MODULE_PREFIX) >> ./astaroth/Makefile.module_info
+	@echo MODULE_PREFIX=$(MODULE_PREFIX) > ./astaroth/Makefile.module_info
 	@echo export MODULE_PREFIX=$(MODULE_PREFIX) >> ./astaroth/Makefile.module_info
+
+	@echo MODULE_INFIX=$(MODULE_INFIX) >> ./astaroth/Makefile.module_info
+	@echo export MODULE_INFIX=$(MODULE_INFIX) >> ./astaroth/Makefile.module_info
+
+	@echo MODULE_SUFFIX=$(MODULE_SUFFIX) >> ./astaroth/Makefile.module_info
+	@echo export MODULE_SUFFIX=$(MODULE_SUFFIX) >> ./astaroth/Makefile.module_info
 
 	@echo MODULE_NAME_ORDER=$(MODULE_NAME_ORDER) >> ./astaroth/Makefile.module_info
 	@echo export MODULE_NAME_ORDER=$(MODULE_NAME_ORDER) >> ./astaroth/Makefile.module_info
