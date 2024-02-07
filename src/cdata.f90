@@ -163,7 +163,7 @@ module Cdata
   integer :: permute_sts=0
   integer:: ireset_tstart=2
 !END C BINDING
-
+  integer, target :: m,n
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   real(KIND=rkind8) :: t=0., toutoff=0.
 !
