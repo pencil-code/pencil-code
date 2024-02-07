@@ -807,6 +807,7 @@ module Cdata
   real(KIND=rkind8) :: t_save=0
   real :: tdiagnos_save,t1ddiagnos_save,t2davgfirst_save
 !$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
+!$ logical, volatile :: lhelper_run=.true., lhelper_perform_diagnostics=.false.
   integer :: num_of_helper_threads
 ! 
 ! threadprivate definitions for OpenMP
