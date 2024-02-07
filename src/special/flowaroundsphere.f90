@@ -99,8 +99,6 @@ module Special
 ! Other variables (needs to be consistent with reset list below)
 !
 !
-
-
   contains
 !
 !***********************************************************************

@@ -278,6 +278,4 @@ module WENO_transport
 !
     endsubroutine weno5_1d
 !***********************************************************************
-
-
 endmodule WENO_transport
