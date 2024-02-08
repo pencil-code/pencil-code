@@ -157,9 +157,9 @@ module Cdata
 !AB: this more carefully and discuss it first in the newsletter.
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtsrc=0.2, cdtf=0.9
-  real :: eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
+  real :: eps_rkf=1e-3, eps_stiff=1e-6, eps_rkf0=0., dtinc=0.5, dtdec=0.5
   real :: ddt=0.0
-  real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7
+  real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7, dt_ratio=0.01
   real :: nu_sts=0.1
   real :: density_scale_factor=impossible
   integer :: permute_sts=0
@@ -414,7 +414,7 @@ module Cdata
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh               ! `pole' processor neighbours
-  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0 
+  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0
 !
 !  Data for registering of already updated variable ghost zones for only partly
 !  updating by the *_after_timestep routines.
