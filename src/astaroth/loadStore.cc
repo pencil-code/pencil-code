@@ -10,7 +10,7 @@
 //C libraries
 #include <stdio.h>
 #include <stdlib.h>
-#include <cmath>
+#include <math.h>
 #include <algorithm>
 
 #define real AcReal

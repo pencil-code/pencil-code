@@ -465,7 +465,7 @@ link_astaroth_files()
   cd $src/astaroth
   to_link=
 #  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
-  for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* \
+  for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* $srcdir/astaroth/*.txt \
               $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include/*.*h \
               $srcdir/astaroth/submodule/acc/CMakeLists.txt \
               $srcdir/astaroth/submodule/acc-runtime/CMakeLists.txt \
