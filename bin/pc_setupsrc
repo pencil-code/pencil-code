@@ -492,8 +492,6 @@ link_astaroth_files()
     ln -s $file `echo $file | sed -r 's/^.*astaroth\///'`
   done
   
-  mkdir $srcdir/astaroth/DSL
-  ln -s $srcdir/astaroth/DSL $srcdir/astaroth/submodule/acc-runtime/Pencil
   cd $old_dir
 }
 #
