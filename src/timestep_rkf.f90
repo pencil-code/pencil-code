@@ -95,7 +95,7 @@ module Timestep
 !  dt_epsi is the lower bound for the denominator on any variable or processor
 !
       do j=1,mvar
-        farraymin(j) = max(min(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),1.),dt_epsi)
+        farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
       enddo
       if (lroot.and.it==1) print*,"farraymin",farraymin
 !
