@@ -75,3 +75,14 @@ samples/corona/driver
 !samples/backwards-compatible/data/proc0/var.dat
 !samples/backwards-compatible/data/proc0/dim.dat
 !samples/backwards-compatible/data/proc0/grid.dat
+!src/astaroth/DSL/.DS_Store
+!src/astaroth/DSL/*.directory
+!src/astaroth/DSL/*.pyc
+!src/astaroth/DSL/*~
+!src/astaroth/DSL/.*.swp
+!src/astaroth/DSL/host-ID
+!src/astaroth/DSL/revision.txt
+!src/astaroth/DSL/*-eps-converted-to.pdf
+!src/astaroth/DSL/.pc_build_history
+!src/astaroth/DSL/.run_directories.log
+!src/astaroth/DSL/pc_build_tmp_*
