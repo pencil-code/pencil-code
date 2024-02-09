@@ -457,7 +457,11 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	end
 
 	; Iterate over processors.
-        if sim then print, 'Files to be read:'
+        if sim then begin
+          openw, lunl, 'filelist.txt', /get_lun
+          print, 'Files to be read:'
+        endif
+        count=0
 	for ipz = ipz_start, ipz_end do begin
 		if (num_read le 0) then continue
 		for ipy = ipy_start, ipy_end do begin
@@ -489,6 +493,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 				; Build the full path and filename.
 				filename = datadir+'/'+procdir+'/'+varfile
+                                count++
 
 				if (not sim) then begin
 				  ; Check for existence and read the data.
@@ -511,12 +516,16 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 				  endfor
 				  close, lun
 				  free_lun, lun
-                                endif else $
+                                endif else begin
                                   print, filename
+                                  printf, lunl, filename
+                                endelse
 			end
 		end
 	end
         if sim then begin
+          print, count, ' files in total'
+          close, lunl
           bytes=long64(gx_delta)*gy_delta*gz_delta*long64(num_read)*(single ? 4 : data_bytes)
           print_bytes, bytes
         endif else begin
