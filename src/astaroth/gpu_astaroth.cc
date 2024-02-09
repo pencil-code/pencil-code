@@ -470,7 +470,6 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
     AcReal dt1_ = sqrt(pow(dt1_advec, 2) + pow(dt1_diffus, 2));
     set_dt(dt1_);
   }
-  acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, dt);
   acGridSynchronizeStream(STREAM_DEFAULT);
   //Transfer the updated ghost zone to the device(s) in the node
 
@@ -485,9 +484,10 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
     acGridSynchronizeStream(STREAM_ALL);
   }
   acGridSynchronizeStream(STREAM_ALL);
-  acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, dt);
   if (isubstep == 1)
   {
+    acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, dt);
+    acGridSynchronizeStream(STREAM_ALL);
     acGridExecuteTaskGraph(graph_1, 1);
   }
   if (isubstep == 2)
@@ -1006,6 +1006,7 @@ void loadProfiles(AcMeshInfo &config)
   // acGridLoadProfile(STREAM_DEFAULT, PROFILE_X, config);
 }
 /***********************************************************************************************/
+AcResult skip_prepare(const TaskStepInfo){ return AC_SUCCESS; };
 extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 {
   Device device = acGridGetDevice();
@@ -1044,52 +1045,42 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
     all_fields[i] = (VertexBufferHandle)i;
   }
 
-  randomize_graph = acGridBuildTaskGraph({
-
-      acHaloExchange(all_fields),
-      acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-      acCompute(KERNEL_randomize, all_fields),
-  });
   rhs_test_graph = acGridBuildTaskGraph({
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-      acCompute(KERNEL_twopass_solve_intermediate_step0, all_fields),
-      acCompute(KERNEL_twopass_solve_final_step0, all_fields),
+      acCompute(KERNEL_twopass_solve_intermediate_step0, all_fields,skip_prepare),
+      acCompute(KERNEL_twopass_solve_final_step0, all_fields,skip_prepare),
 
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-      acCompute(KERNEL_twopass_solve_intermediate_step1, all_fields),
-      acCompute(KERNEL_twopass_solve_final_step1, all_fields),
+      acCompute(KERNEL_twopass_solve_intermediate_step1, all_fields,skip_prepare),
+      acCompute(KERNEL_twopass_solve_final_step1, all_fields,skip_prepare),
 
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-      acCompute(KERNEL_twopass_solve_intermediate_step2, all_fields),
-      acCompute(KERNEL_twopass_solve_final_step2, all_fields), //
-  });
-  rhs_test_graph_2 = acGridBuildTaskGraph({
-      acCompute(KERNEL_twopass_solve_intermediate_step1, all_fields),
-      acCompute(KERNEL_twopass_solve_final_step1, all_fields),
+      acCompute(KERNEL_twopass_solve_intermediate_step2, all_fields,skip_prepare),
+      acCompute(KERNEL_twopass_solve_final_step2, all_fields,skip_prepare), //
   });
   
   graph_1 = acGridBuildTaskGraph({
     acHaloExchange(all_fields),
     acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-    acCompute(KERNEL_twopass_solve_intermediate_step0, all_fields),
-    acCompute(KERNEL_twopass_solve_final_step0, all_fields),
+    acCompute(KERNEL_twopass_solve_intermediate_step0, all_fields, skip_prepare),
+    acCompute(KERNEL_twopass_solve_final_step0, all_fields,skip_prepare),
   });
   graph_2 = acGridBuildTaskGraph(
     {
         acHaloExchange(all_fields),
         acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-        acCompute(KERNEL_twopass_solve_intermediate_step1, all_fields),
-        acCompute(KERNEL_twopass_solve_final_step1, all_fields),
+        acCompute(KERNEL_twopass_solve_intermediate_step1, all_fields, skip_prepare),
+        acCompute(KERNEL_twopass_solve_final_step1, all_fields,skip_prepare),
     });
   graph_3 = acGridBuildTaskGraph(
     {
         acHaloExchange(all_fields),
         acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-        acCompute(KERNEL_twopass_solve_intermediate_step2, all_fields),
-        acCompute(KERNEL_twopass_solve_final_step2, all_fields),
+        acCompute(KERNEL_twopass_solve_intermediate_step2, all_fields, skip_prepare),
+        acCompute(KERNEL_twopass_solve_final_step2, all_fields, skip_prepare),
     });
   printf("BUILD graphs\n");
   acGridExecuteTaskGraph(rhs_test_graph,1);
@@ -1126,7 +1117,8 @@ extern "C" void finalizeGPU()
 extern "C" void random_initial_condition()
 {
   acGridSynchronizeStream(STREAM_ALL);
-  acGridExecuteTaskGraph(randomize_graph, 1);
+  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  acGridLaunchKernel(STREAM_DEFAULT, randomize, dims.n0, dims.n1);
   acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
