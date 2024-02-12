@@ -3011,12 +3011,21 @@ endif
 	    sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
 	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\U\1/'`; \
 	    funcname=`grep '^ *subroutine  *d[a-zA-Z_0-9_][a-zA-Z_0-9_]*_dt' $$file | sed -e's/^ *subroutine  *d/d/' -e's/ *(.*$$//'`; \
-	    echo '  write( '$$fieldname', rk3(previous('$$fieldname'), value('$$fieldname'), '$$funcname'()))' >> $(DSL_WORKDIR)/solve.ac; \
-	    if ( ! grep $$funcname'(){ }' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
-	      echo $$funcname'(){ }' >> $(DSL_WORKDIR)/equations.h; \
+	    if [[ "$$replcmt" =~ .*\#define[^a-zA-Z_].* ]]; then \
+	      suffix=_vector; \
+	      prefix=vec; \
+	      init="real3(0.,0.,0.)"; \
+	    else \
+	      suffix=; \
+	      prefix=; \
+	      init="0."; \
+	    fi; \
+	    echo '  write'$$suffix'( '$$fieldname', rk3'$$suffix'('$$prefix'previous('$$fieldname'), '$$prefix'value('$$fieldname'), '$$funcname'()))' >> $(DSL_WORKDIR)/solve.ac; \
+	    if ( ! grep $$funcname'(){.*}' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
+	      echo $$funcname'(){'$$init'}' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '' >> $(DSL_WORKDIR)/equations.h; \
 	    fi \
-          fi \
+	  fi \
 	done 
 	@sed -i -e'/^ *\/\// d' $(DSL_WORKDIR)/fieldecs.h
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac

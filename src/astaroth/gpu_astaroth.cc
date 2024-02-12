@@ -53,7 +53,7 @@ AcReal max_advec()
 {
         AcReal maxadvec_=0.;
 #if LHYDRO
-        AcReal umax=acReduceVec(RTYPE_MAX,VTXBUF_UUX,VTXBUF_UUY,VTXBUF_UUZ);
+        AcReal umax=acReduceVec(RTYPE_MAX,UUX,UUY,UUZ);
 #endif
         return maxadvec_;
 }
