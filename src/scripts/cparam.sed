@@ -13,13 +13,13 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /implicit  *none/ d
 /cparam_pencils\.inc/ d
 /dimension *(/ d
-s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\)\([,$]\)/pow(\1,\2)\3/g
-s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\) *$/pow(\1,\2)/g
-#s/\([a-zA-Z0-9_]*\) *\*\* *\([(]?[-]?[a-zA-Z0-9_]*[)]?\)/pow(\1,\2)/
+s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\)\([,$]\)/power(\1,\2)\3/g
+s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\) *$/power(\1,\2)/g
+#s/\([a-zA-Z0-9_]*\) *\*\* *\([(]?[-]?[a-zA-Z0-9_]*[)]?\)/power(\1,\2)/
 s/include *.\([a-z]*\.inc\). *$/# include "\1_c.h"/
 s/include *.\([a-z]*\.local\). *$/# include "\1_c.h"/
 s/\([^ ]\) *!.*$/\1/
-s/^ *module .*$/#pragma once \n#include <float.h>\n#include <limits.h>\n#include "headers_c.h"\n#define y0 y0_\n/ 
+s/^ *module .*$/#pragma once \n#include <float.h>\n#include <limits.h>\n#include "headers_c.h"\n#define y0 y0_\nREAL power(REAL b, REAL e){ return std::pow(b,e); }\n/ 
 /end *module / d
 s/integer *( *kind *= *ikind8 *) *, *parameter *::/const long long /
 s/integer *( *kind *= *ikind4 *) *, *parameter *::/const long /
