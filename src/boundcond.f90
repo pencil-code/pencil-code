@@ -693,6 +693,7 @@ module Boundcond
       integer :: ivar1, ivar2, j, topbot
       logical :: ip_ok
       type (boundary_condition) :: bc
+      real :: XXi, XXi0, tau_XXi
 !
       if (nghost<=0) return
 
@@ -876,6 +877,15 @@ module Boundcond
                 case ('set')
                   ! BCX_DOC: set boundary value to \var{fbcx}
                   call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx(:,topbot))
+                case ('st')
+                  ! BCX_DOC: set boundary value to \var{fbcx}
+                  ! Special time-dependent boundary condition to model temporal changes.
+                  ! The functional form and the functional values should be generalized.
+                  XXi0=0.04
+                  tau_XXi=10.
+                  XXi=XXi0*(1.-(1.+t/tau_XXi)*exp(-t/tau_XXi))
+                  fbcx(:,topbot)=XXi
+                  call bc_sym_x_ydep(f,-1,topbot,j,REL=.true.,val=fbcx(:,topbot))
                 case ('der')
                   ! BCX_DOC: set derivative on boundary to \var{fbcx}
                   call bc_set_der_x(f,topbot,j,fbcx(j,topbot))
@@ -2129,6 +2139,59 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_x
+!***********************************************************************
+    subroutine bc_sym_x_ydep(f,sgn,topbot,j,rel,val)
+!
+!  Symmetry boundary conditions.
+!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
+!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
+!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+!
+!  11-nov-02/wolf: coded
+!
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+      real, dimension (:), optional :: val
+      integer :: sgn,i,j
+      logical, optional :: rel
+      logical :: relative
+!
+      real :: ky
+!
+      ky=2.*pi/Lxyz(2)
+!print*,'AXEL: t,m,y(m)=',t,m,y(m)
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+!
+      select case (topbot)
+!
+      case(BOT)               ! bottom boundary
+        !if (present(val)) f(l1,:,:,j)=val(j)
+        if (present(val)) f(l1,:,:,j)=-.5+val(j)*spread(cos(ky*y),2,mz)
+        if (relative) then
+          do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
+        else
+          do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
+          if (sgn<0) f(l1,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
+        endif
+!
+      case(TOP)               ! top boundary
+        !if (present(val)) f(l2,:,:,j)=val(j)
+        if (present(val)) f(l2,:,:,j)=-.5+val(j)*spread(cos(ky*y),2,mz)
+        if (relative) then
+          do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
+        else
+          do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
+          if (sgn<0) f(l2,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
+        endif
+!
+      case default
+        call fatal_error("bc_sym_x: ","topbot should be BOT or TOP")
+!
+      endselect
+!
+    endsubroutine bc_sym_x_ydep
 !***********************************************************************
     subroutine bc_cpc_x(f,topbot,j)
 !

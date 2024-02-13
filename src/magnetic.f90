@@ -124,7 +124,7 @@ module Magnetic
   real, dimension(3) :: eta_aniso_hyper3=0.0
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
-  real, dimension(nx) :: xmask_mag
+  real, dimension(nx) :: xmask_mag, xmask1_mag
   real, dimension(nz) :: zmask_mag
   real :: sheet_position=1.,sheet_thickness=0.1,sheet_hyp=1.
   real :: t_bext = 0.0, t0_bext = 0.0
@@ -601,6 +601,8 @@ module Magnetic
   integer :: idiag_betam = 0    ! DIAG_DOC: $\langle\beta\rangle$
   integer :: idiag_betamax = 0  ! DIAG_DOC: $\max\beta$
   integer :: idiag_betamin = 0  ! DIAG_DOC: $\min\beta$
+  integer :: idiag_Azmid_min=0  ! DIAG_DOC: $\min A_z^{\rm mid}$
+  integer :: idiag_Azmid_max=0  ! DIAG_DOC: $\max A_z^{\rm mid}$
   integer :: idiag_bxm=0        ! DIAG_DOC: $\left<B_x\right>$
   integer :: idiag_bym=0        ! DIAG_DOC: $\left<B_y\right>$
   integer :: idiag_bzm=0        ! DIAG_DOC: $\left<B_z\right>$
@@ -1274,6 +1276,7 @@ module Magnetic
         elsewhere
           xmask_mag = 0.
         endwhere
+        xmask1_mag = xmask_mag
         magnetic_xaver_range(1) = max(magnetic_xaver_range(1), xyz0(1))
         magnetic_xaver_range(2) = min(magnetic_xaver_range(2), xyz1(1))
         if (lspherical_coords) then
@@ -5792,6 +5795,9 @@ module Magnetic
 
       if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
 
+      if (idiag_Azmid_min /= 0) call max_mn_name(-p%aa(:,3)*xmask1_mag, idiag_Azmid_min, lneg=.true.)
+      if (idiag_Azmid_max /= 0) call max_mn_name(+p%aa(:,3)           , idiag_Azmid_max)
+
       if (.not.lgpu) then
 !
 !  These diagnostics rely upon mn-dependent quantities which are not in the pencil case.
@@ -9562,6 +9568,7 @@ module Magnetic
         idiag_bij_cov_diffmax=0
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
         idiag_betam = 0; idiag_betamax = 0; idiag_betamin = 0
+        idiag_Azmid_min=0; idiag_Azmid_max=0
         idiag_betamz = 0; idiag_beta2mz = 0
         idiag_betamx = 0; idiag_beta2mx = 0
         idiag_aym=0; idiag_azm=0
@@ -9789,6 +9796,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'betam',idiag_betam)
         call parse_name(iname,cname(iname),cform(iname),'betamax',idiag_betamax)
         call parse_name(iname,cname(iname),cform(iname),'betamin',idiag_betamin)
+        call parse_name(iname,cname(iname),cform(iname),'Azmid_min',idiag_Azmid_min)
+        call parse_name(iname,cname(iname),cform(iname),'Azmid_max',idiag_Azmid_max)
         call parse_name(iname,cname(iname),cform(iname),'dtb',idiag_dtb)
         call parse_name(iname,cname(iname),cform(iname),'dtHr',idiag_dtHr)
         call parse_name(iname,cname(iname),cform(iname),'dtFr',idiag_dtFr)
