@@ -13,8 +13,8 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /implicit  *none/ d
 /cparam_pencils\.inc/ d
 /dimension *(/ d
-s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\)\([,$]\)/power(\1,\2)\3/g
-s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\) *$/power(\1,\2)/g
+s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\)\([,$]\)/power(\1,REAL(\2))\3/g
+s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\) *$/power(\1,REAL(\2))/g
 #s/\([a-zA-Z0-9_]*\) *\*\* *\([(]?[-]?[a-zA-Z0-9_]*[)]?\)/power(\1,\2)/
 s/include *.\([a-z]*\.inc\). *$/# include "\1_c.h"/
 s/include *.\([a-z]*\.local\). *$/# include "\1_c.h"/
