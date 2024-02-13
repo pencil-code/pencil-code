@@ -163,7 +163,7 @@ module Cparam
 !  pi and its derivatives.
 !
   real, parameter :: pi=3.14159265358979323846264338327950d0
-  real, parameter :: pi_1=1./pi,pi4_1=pi**(-4),pi5_1=pi**(-5)
+  real, parameter :: pi_1=1./pi,pi4_1=pi**(-4.),pi5_1=pi**(-5.)
   real, parameter :: sqrtpi=1.77245385090551602729816748334115d0
   real, parameter :: sqrt2=1.41421356237309504880168872420970d0
   real, parameter :: sqrt2pi=sqrt2*sqrtpi
