@@ -545,6 +545,18 @@ module Forcing
 !
     endsubroutine addforce
 !***********************************************************************
+    subroutine forcing_after_boundary(f)
+!
+!  precalculate parameters that are new at each timestep,
+!  but the same for all pencils
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine forcing_after_boundary
+!***********************************************************************
     subroutine forcing_2drandom_xy(f)
 !
 !  Random force in two dimensions (x and y) limited to bands of wave-vector
@@ -3422,9 +3434,10 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       p_weight=(tsforce-t)/dtforce
 !
 !  Calculate forcing function
+!  At the moment, the hel_vec routine XXX
 !
       force1=0.
-      call hel_vec(f,kx01,ky1,kz1,phase1,kav,ifirst,force1,pweight)
+      call hel_vec(f,kx01,ky1,kz1,phase1,kav,ifirst,force1,p_weight)
       call hel_vec(f,kx02,ky2,kz2,phase2,kav,ifirst,force1,1.-p_weight)
 !
 ! Find energy input
@@ -3661,7 +3674,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
           do n=n1,n2
             do m=m1,m2
                if (roptest(fac,1.)/=1.) then
-                 force1(l1:l2,m,n,jf) = force1(l1:l2,m,n,jf)
+                 force1(l1:l2,m,n,jf) = force1(l1:l2,m,n,jf) &
                                        +fac*force_ampl*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
                else
                  force1(l1:l2,m,n,jf) = force_ampl*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
@@ -3762,6 +3775,16 @@ call fatal_error('hel_vec','radial profile should be quenched')
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_forcing
+!***********************************************************************
+    subroutine calc_diagnostics_forcing(p)
+!
+!  dummy routine
+!
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostics_forcing
 !***********************************************************************
     subroutine forcing_cont(force)
 !
@@ -3961,6 +3984,23 @@ call fatal_error('hel_vec','radial profile should be quenched')
       endif
 !
     endsubroutine rprint_forcing
+!***********************************************************************
+    subroutine forcing_pars_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
+!
+      use General, only: keep_compiler_quiet
+!
+      real,                   intent(in ) :: force_fact,kav
+      integer,                intent(in ) :: nk
+      real,    dimension (nk),intent(in ) :: kkx,kky,kkz
+      real,    dimension (3), intent(out) :: coef1,coef2,coef3,kk,fda
+      real,                   intent(out) :: phase,fact
+
+      call keep_compiler_quiet(force_fact,kav,phase,fact)
+      call keep_compiler_quiet(kkx,kky,kkz,fda)
+      call keep_compiler_quiet(coef1,coef2,coef3,kk)
+      call keep_compiler_quiet(nk)
+
+    endsubroutine forcing_pars_hel
 !***********************************************************************
     subroutine forcing_clean_up
 !
