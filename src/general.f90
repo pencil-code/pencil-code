@@ -68,7 +68,7 @@ module General
             qualify_position_biquin
   public :: binomial,merge_lists,reallocate
   public :: point_and_get_size, allocate_using_dims
-!
+! 
   interface random_number_wrapper
     module procedure random_number_wrapper_0
     module procedure random_number_wrapper_1
@@ -182,6 +182,7 @@ module General
     module procedure point_and_get_size_3d
     module procedure point_and_get_size_4d
   end interface
+
   interface allocate_using_dims
     module procedure allocate_using_dims_1d
     module procedure allocate_using_dims_2d
@@ -189,6 +190,7 @@ module General
     module procedure allocate_using_dims_3d
     module procedure allocate_using_dims_4d
   end interface
+
   type, public :: single_dim_array_dims
     integer :: size 
   end type single_dim_array_dims 
@@ -6468,13 +6470,13 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       integer :: ind,i,j
 
       ind=len1
-iloop:do i=1,size(list2)
+      do i=1,size(list2)
         do j=1,len1
           if (list2(i)==list1(j)) cycle iloop
         enddo
         ind=ind+1
         list1(ind)=list2(i)
-      enddo iloop
+      enddo
       len1=ind
 
     endsubroutine merge_lists
@@ -6485,9 +6487,9 @@ iloop:do i=1,size(list2)
 !
     real, allocatable, dimension(:), target :: src
     type(single_dim_array_dims) :: dims
-      if(.not. allocated(src)) then
-        allocate(src(dims%size))
-      endif
+
+      if (.not. allocated(src)) allocate(src(dims%size))
+
     endsubroutine allocate_using_dims_1d
 !***********************************************************************
     subroutine allocate_using_dims_2d(src, dims)
@@ -6496,9 +6498,9 @@ iloop:do i=1,size(list2)
 !
     real, allocatable, dimension(:,:), target :: src
     type(two_dim_array_dims) :: dims
-      if(.not. allocated(src)) then
-        allocate(src(dims%x,dims%y))
-      endif
+
+      if (.not. allocated(src)) allocate(src(dims%x,dims%y))
+
     endsubroutine allocate_using_dims_2d
 !***********************************************************************
     subroutine allocate_using_dims_2d_int(src, dims)
@@ -6507,9 +6509,9 @@ iloop:do i=1,size(list2)
 !
     integer, allocatable, dimension(:,:), target :: src
     type(two_dim_array_dims) :: dims
-      if(.not. allocated(src)) then
-        allocate(src(dims%x,dims%y))
-      endif
+
+      if (.not. allocated(src)) allocate(src(dims%x,dims%y))
+
     endsubroutine allocate_using_dims_2d_int
 !***********************************************************************
     subroutine allocate_using_dims_3d(src, dims)
@@ -6518,9 +6520,9 @@ iloop:do i=1,size(list2)
 !
     real, allocatable, dimension(:,:,:), target :: src
     type(three_dim_array_dims) :: dims
-      if(.not. allocated(src)) then
-        allocate(src(dims%x,dims%y,dims%z))
-      endif
+
+      if (.not. allocated(src)) allocate(src(dims%x,dims%y,dims%z))
+
     endsubroutine allocate_using_dims_3d
 !***********************************************************************
     subroutine allocate_using_dims_4d(src, dims)
@@ -6529,9 +6531,9 @@ iloop:do i=1,size(list2)
 !
     real, allocatable, dimension(:,:,:,:), target :: src
     type(four_dim_array_dims) :: dims
-      if(.not. allocated(src)) then
-        allocate(src(dims%x,dims%y,dims%z,dims%w))
-      endif
+
+      if (.not. allocated(src)) allocate(src(dims%x,dims%y,dims%z,dims%w))
+
     endsubroutine allocate_using_dims_4d
 !***********************************************************************
     subroutine point_and_get_size_1d(dst, src)
@@ -6541,10 +6543,12 @@ iloop:do i=1,size(list2)
     type(pointer_with_size_info_1d) :: dst
     real, allocatable, dimension(:), target :: src
     type(single_dim_array_dims) :: dim
-      if(allocated(src)) then
+
+      if (allocated(src)) then
         dst%data => src
         dst%dims%size= size(src)
       endif
+
     endsubroutine
 !***********************************************************************
     subroutine point_and_get_size_2d(dst, src)
@@ -6554,11 +6558,13 @@ iloop:do i=1,size(list2)
     type(pointer_with_size_info_2d) :: dst
     real, allocatable, dimension(:,:), target :: src
     type(two_dim_array_dims) :: dim
-      if(allocated(src)) then
+
+      if (allocated(src)) then
         dst%data => src
         dst%dims%x = size(src,1)
         dst%dims%y = size(src,2)
       endif
+
     endsubroutine point_and_get_size_2d
 !***********************************************************************
     subroutine point_and_get_size_2d_int(dst, src)
@@ -6567,11 +6573,13 @@ iloop:do i=1,size(list2)
 !
     type(pointer_with_size_info_2d_int) :: dst
     integer, allocatable, dimension(:,:), target :: src
-      if(allocated(src)) then
+
+      if (allocated(src)) then
         dst%data => src
         dst%dims%x = size(src,1)
         dst%dims%y = size(src,2)
       endif
+
     endsubroutine point_and_get_size_2d_int
 !***********************************************************************
     subroutine point_and_get_size_3d(dst, src)
@@ -6580,12 +6588,14 @@ iloop:do i=1,size(list2)
 !
     type(pointer_with_size_info_3d) :: dst
     real, allocatable, dimension(:,:,:), target :: src
-      if(allocated(src)) then
+
+      if (allocated(src)) then
         dst%data => src
         dst%dims%x = size(src,1)
         dst%dims%y = size(src,2)
         dst%dims%z = size(src,3)
       endif
+
     endsubroutine
 !***********************************************************************
     subroutine point_and_get_size_4d(dst, src)
@@ -6595,13 +6605,14 @@ iloop:do i=1,size(list2)
     type(pointer_with_size_info_4d) :: dst
     real, allocatable, dimension(:,:,:,:), target :: src
 
-      if(allocated(src)) then
+      if (allocated(src)) then
         dst%data => src
         dst%dims%x = size(src,1)
         dst%dims%y = size(src,2)
         dst%dims%z = size(src,3)
         dst%dims%w = size(src,4)
       endif
+
     endsubroutine
 !***********************************************************************
   endmodule General
