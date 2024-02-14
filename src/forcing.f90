@@ -1130,6 +1130,9 @@ module Forcing
           if (lroot) print*,'forcing_cont: xz'
           profx_ampl=ampl_ff(i)*(x(l1:l2)-xyz0(1))*(xyz1(1)-x(l1:l2))
           profz_ampl=(z-xyz0(3))*(xyz1(3)-z)
+        elseif (iforcing_cont(i)=='1-(4/3)(1-r^2/4)*r^2') then
+          if (lroot) print*,'forcing_cont: 1-(4/3)(1-r^2/4)*r^2'
+          profx_ampl=ampl_ff(i)*(1.-4./3.*(1.-.25*x(l1:l2)**2)*x(l1:l2)**2)
        elseif (iforcing_cont(i)=='from_file') then
           if (allocated(fcont_from_file)) deallocate(fcont_from_file)
           allocate(fcont_from_file(3,nxgrid,nygrid,nzgrid))
