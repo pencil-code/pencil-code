@@ -26,8 +26,6 @@ module GPU
 !$    endsubroutine random_initial_condition
 !$  end interface
 
-
-
   include 'gpu.h'
 
   integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
@@ -128,6 +126,7 @@ contains
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
  subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
+!
 !  Used to test the CPU rhs vs the DSL code
 !
 !  13-nov-23/TP: Written
@@ -190,6 +189,7 @@ contains
 
     call test_rhs_c(f_copy_2,f_copy);
     call die_gracefully
+
   end subroutine  test_rhs_gpu
 !**************************************************************************
 endmodule GPU

@@ -537,21 +537,22 @@ module Equ
 !
 !   7-feb-24/TP: Written
 !
-
     use Chemistry
     use Diagnostics
     use General
     use Solid_Cells
-    if(associated(p_fname%data)) call allocate_using_dims(fname, p_fname%dims)
-    if(associated(p_fnamex%data)) call allocate_using_dims(fnamex, p_fnamex%dims)
-    if(associated(p_fnamey%data)) call allocate_using_dims(fnamey, p_fnamey%dims)
-    if(associated(p_fnamez%data)) call allocate_using_dims(fnamez, p_fnamez%dims)
-    if(associated(p_fnamer%data)) call allocate_using_dims(fnamer, p_fnamer%dims)
-    if(associated(p_fnamexy%data)) call allocate_using_dims(fnamexy, p_fnamexy%dims)
-    if(associated(p_fnamerz%data)) call allocate_using_dims(fnamerz, p_fnamerz%dims)
-    if(associated(p_fname_keep%data)) call allocate_using_dims(fname_keep, p_fname_keep%dims)
-    if(associated(p_fname_sound%data)) call allocate_using_dims(fname_sound, p_fname_sound%dims)
-    if(associated(p_ncountsz%data)) call allocate_using_dims(ncountsz, p_ncountsz%dims)
+
+    if (associated(p_fname%data)) call allocate_using_dims(fname, p_fname%dims)
+    if (associated(p_fnamex%data)) call allocate_using_dims(fnamex, p_fnamex%dims)
+    if (associated(p_fnamey%data)) call allocate_using_dims(fnamey, p_fnamey%dims)
+    if (associated(p_fnamez%data)) call allocate_using_dims(fnamez, p_fnamez%dims)
+    if (associated(p_fnamer%data)) call allocate_using_dims(fnamer, p_fnamer%dims)
+    if (associated(p_fnamexy%data)) call allocate_using_dims(fnamexy, p_fnamexy%dims)
+    if (associated(p_fnamerz%data)) call allocate_using_dims(fnamerz, p_fnamerz%dims)
+    if (associated(p_fname_keep%data)) call allocate_using_dims(fname_keep, p_fname_keep%dims)
+    if (associated(p_fname_sound%data)) call allocate_using_dims(fname_sound, p_fname_sound%dims)
+    if (associated(p_ncountsz%data)) call allocate_using_dims(ncountsz, p_ncountsz%dims)
+
     call diagnostics_init_private_accumulators
     call chemistry_init_private_accumulators
     call sc_init_private_accumulators
@@ -565,6 +566,7 @@ module Equ
 !$    real, dimension(mx,my,mz,mfarray) :: f
 !$    !only needed since can't use bind(C) generally
 !$    call write_diagnostics(f)
+!
 !$   endsubroutine write_diagnostics_wrapper
 !***********************************************************************
    subroutine write_diagnostics(f)
@@ -576,6 +578,7 @@ module Equ
     use Chemistry
     use Slices
     use Diagnostics
+
     real, dimension (mx,my,mz,mfarray) :: f
 
 !$          call read_diagnostics_accumulators
@@ -599,6 +602,29 @@ module Equ
         !
             if (lvideo .and. lwrite_slices) call wvid(f)
         !
+=======
+!$    call read_diagnostics_accumulators
+!
+!  Print diagnostic averages to screen and file.
+!
+      if (lout) then
+        call prints
+        if (lchemistry) call write_net_reaction
+      endif
+!
+      if (l1davg) call write_1daverages
+      if (l2davg) call write_2daverages
+!
+      if (lout_sound) then
+        call write_sound(tsound)
+        lout_sound = .false.
+      endif
+!
+!  Write slices (for animation purposes).
+!
+      if (lvideo .and. lwrite_slices) call wvid(f)
+!
+>>>>>>> 26f9e8c88 (MR: deleted uneeded; coding style)
     endsubroutine write_diagnostics
 !***********************************************************************
   subroutine write_diagnostics_accumulators

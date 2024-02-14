@@ -2802,7 +2802,6 @@ module Density
       call timing('dlnrho_dt','finished',mnloop=.true.)
 !
     endsubroutine dlnrho_dt
-
 !***********************************************************************
     subroutine calc_diagnostics_density(f,p)
 !
