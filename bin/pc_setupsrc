@@ -434,8 +434,6 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule/src/utils
 #  adddir $src/astaroth/submodule/scripts
 #  adddir $src/astaroth/submodule/acc
-#  adddir $src/astaroth/submodule/acc/pc_mhd_solver
-#  adddir $src/astaroth/submodule/acc/pencil
   adddir $src/astaroth/submodule/acc-runtime
   adddir $src/astaroth/submodule/acc-runtime/acc
   adddir $src/astaroth/submodule/acc-runtime/api
@@ -468,26 +466,23 @@ link_astaroth_files()
   to_link=
 #  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
   for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* \
-$srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include/*.*h \
-$srcdir/astaroth/submodule/acc/CMakeLists.txt \
-$srcdir/astaroth/submodule/acc-runtime/CMakeLists.txt \
-$srcdir/astaroth/submodule/acc-runtime/acc/* \
-$srcdir/astaroth/submodule/acc-runtime/api/* \
-$srcdir/astaroth/submodule/acc-runtime/Pencil/prerequisites.h \
-$srcdir/astaroth/submodule/acc-runtime/stdlib/*.h \
-$srcdir/astaroth/submodule/acc-runtime/samples/mhd/* \
-$srcdir/astaroth/submodule/acc-runtime/samples/gputest/* \
-$srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \
-$srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cc \
-$srcdir/astaroth/submodule/src/utils/*.h $srcdir/astaroth/submodule/src/utils/*.c $srcdir/astaroth/submodule/src/utils/*.cc $srcdir/astaroth/submodule/src/utils/CMakeLists.txt \
-$srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/src/core/kernels/* \
-$srcdir/astaroth/submodule/acc/*.sh $srcdir/astaroth/submodule/acc/src/* $srcdir/astaroth/submodule/acc/pc_mhd_solver/* \
-$srcdir/astaroth/stencil_loader.h \
-$srcdir/astaroth/CMakeLists.txt \
-$srcdir/astaroth/NUMA-scheduler \
-$srcdir/astaroth/NUMA-scheduler/src \
-$srcdir/astaroth/submodule/acc/pencil/*.h $srcdir/astaroth/submodule/acc/stdlib/*.h \
-$srcdir/astaroth/submodule/*
+             $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include/*.*h \
+             $srcdir/astaroth/submodule/acc-runtime/CMakeLists.txt \
+             $srcdir/astaroth/submodule/acc-runtime/acc/* \
+             $srcdir/astaroth/submodule/acc-runtime/api/* \
+             $srcdir/astaroth/submodule/acc-runtime/Pencil/prerequisites.h \
+             $srcdir/astaroth/submodule/acc-runtime/stdlib/*.h \
+             $srcdir/astaroth/submodule/acc-runtime/samples/mhd/* \
+             $srcdir/astaroth/submodule/acc-runtime/samples/gputest/* \
+             $srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \
+             $srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cc \
+             $srcdir/astaroth/submodule/src/utils/*.h $srcdir/astaroth/submodule/src/utils/*.c $srcdir/astaroth/submodule/src/utils/*.cc $srcdir/astaroth/submodule/src/utils/CMakeLists.txt \
+             $srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/src/core/kernels/* \
+             $srcdir/astaroth/stencil_loader.h \
+             $srcdir/astaroth/CMakeLists.txt \
+             $srcdir/astaroth/NUMA-scheduler \
+             $srcdir/astaroth/NUMA-scheduler/src \
+             $srcdir/astaroth/submodule/*
   do
     file_for_link $file
   done

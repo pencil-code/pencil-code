@@ -220,7 +220,6 @@ module Cparam
 !  The order of the patches is the same as in MATINS.
 !
   integer, parameter :: XPLUS=1, YPLUS=2, XMINUS=3, YMINUS=4, ZPLUS=5, ZMINUS=6
-
 !
 !  pi and its derivatives.
 !

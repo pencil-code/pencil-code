@@ -812,8 +812,7 @@ module Cdata
 ! 
 ! threadprivate definitions for OpenMP
 !
-!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil&
-!$omp ,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
+!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
 !$omp threadprivate(lfirstpoint)
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)

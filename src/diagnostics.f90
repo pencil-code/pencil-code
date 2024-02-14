@@ -2805,20 +2805,28 @@ module Diagnostics
     endsubroutine calc_phiavg_profile
 !***********************************************************************
     subroutine diagnostics_init_reduc_pointers
+!
       p_phiavg_norm%data => phiavg_norm
       p_phiavg_norm%dims%size = nrcyl
+!
     endsubroutine diagnostics_init_reduc_pointers
 !***********************************************************************
     subroutine diagnostics_diag_reductions
+!
       p_phiavg_norm%data = p_phiavg_norm%data + phiavg_norm
+!
     endsubroutine diagnostics_diag_reductions
 !***********************************************************************
     subroutine diagnostics_read_diag_accum
+!
       phiavg_norm = p_phiavg_norm%data
+!
     endsubroutine diagnostics_read_diag_accum
 !***********************************************************************
     subroutine diagnostics_write_diagnostics_accumulators
+!
       phiavg_norm = p_phiavg_norm%data
+!
     endsubroutine diagnostics_write_diagnostics_accumulators
 !***********************************************************************
     subroutine diagnostics_init_private_accumulators 
