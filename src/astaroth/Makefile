@@ -65,17 +65,6 @@ PCHEADER_DIR=.
 #DSL_MODULE_DIR=Pencil
 DSL_MODULE_DIR=samples/gputest
 
-include Makefile.depend
-include Makefile.extern
-
-#export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
-#export CUDA_NVCC_FLAGS='-shared -fPIC'
-CPP = nvcc
-#CRAY with HIP
-CPP = hipcc
-#CC -xhip
-
-
 gpu_astaroth.o: gpu_astaroth.cc $(AC_HEADERS) $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_module_parfuncs.h forcing.h loadStore.h $(CHEADERS) astaroth_libs
 	mkdir -p build && \
 	echo $(USE_HIP) && \
@@ -93,6 +82,18 @@ gpu_astaroth.o: gpu_astaroth.cc $(AC_HEADERS) $(PCHEADER_DIR)/PC_moduleflags.h $
 	make -j && \
 	cd .. && \
 	cp -r ./NUMA-scheduler/include .
+
+include Makefile.depend
+include Makefile.extern
+
+#export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
+#export CUDA_NVCC_FLAGS='-shared -fPIC'
+CPP = nvcc
+#CRAY with HIP
+CPP = hipcc
+#CC -xhip
+
+
 
 astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
 	mkdir -p build
