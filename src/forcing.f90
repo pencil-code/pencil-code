@@ -6045,6 +6045,18 @@ module Forcing
         force(:,2) = 0.
         force(:,3) = ampl_ff(i)*expmk2x2(l1:l2,i)*expmk2y2(m,i)
 !
+!  The following 2 entries were taken verbatim from
+!  src/experimental/forcing_cont_sample.f90
+!
+      case('xz')
+        force(:,1)=0.
+        force(:,2)=profx_ampl*profz_ampl(n)
+        force(:,3)=0.
+      case ('1-(4/3)(1-r^2/4)*r^2')
+        force(:,1)=0.
+        force(:,2)=0.
+        force(:,3)=profx_ampl
+!
 !  possibility of putting zero, e.g., for purely magnetic forcings
 !
         case('zero')
