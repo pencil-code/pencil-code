@@ -2595,7 +2595,6 @@ module Dustdensity
       real, parameter :: kB=1.38e-16
       integer :: i,j,l,k,lgh
 !
-      deltavd_turbu = 0.
       if (ldustcoagulation) then
 !
 !  As a test, can set kernel to a constant 
@@ -2690,9 +2689,10 @@ module Dustdensity
                   elseif (tausd1(l,i) > teta1 .and. tausd1(l,j) > teta1) then
                     deltavd_turbu = ueta/teta*(tausd1(l,i)/tausd1(l,j)-1.)
                   else
-                    deltavd_turbu=0.
                     call fatal_error('coag_kernel','this should never happen')
                   endif
+                else
+                  deltavd_turbu = 0.
                 endif
 !
 !  Add all speed contributions quadratically

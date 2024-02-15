@@ -2,7 +2,8 @@
 !
 ! MODULE_DOC: This module contains GPU related dummy types and functions.
 !
-! CPARAM logical, parameter :: lgpu = .false.  !
+! CPARAM logical, parameter :: lgpu = .false.
+!
 !**************************************************************************
 !
 module GPU
@@ -15,7 +16,6 @@ module GPU
   include 'gpu.h'
 
 contains
-
 !***********************************************************************
     subroutine initialize_GPU
 !
@@ -57,37 +57,38 @@ contains
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
- subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
+    subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
+!
 !  Used to test different implementations of rhs_cpu.
 !
 !  13-nov-23/TP: Written
 !
-      ! use MPIcomm
-      real, dimension (mx,my,mz,mfarray) :: f,f_copy
-      real, dimension (mx,my,mz,mfarray) :: df,df_copy
-      type (pencil_case) :: p,p_copy
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: df
+      type (pencil_case) :: p
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
-      integer :: i,j,k,n
-      logical :: passed
-      interface
-          subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
-              import mx
-              import my
-              import mz
-              import mfarray
-              import pencil_case
-              real, dimension (mx,my,mz,mfarray) :: f
-              real, dimension (mx,my,mz,mfarray) :: df
-              type (pencil_case) :: p
-              real, dimension(1), intent(inout) :: mass_per_proc
-              logical ,intent(in) :: early_finalize
 
-              intent(inout) :: f
-              intent(inout) :: p
-              intent(out) :: df
-          endsubroutine cpu_version
-        endinterface
-  end subroutine  test_rhs_gpu
+      interface
+        subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
+          import mx
+          import my
+          import mz
+          import mfarray
+          import pencil_case
+          real, dimension (mx,my,mz,mfarray) :: f
+          real, dimension (mx,my,mz,mfarray) :: df
+          type (pencil_case) :: p
+          real, dimension(1), intent(inout) :: mass_per_proc
+          logical ,intent(in) :: early_finalize
+
+          intent(inout) :: f
+          intent(inout) :: p
+          intent(out) :: df
+
+        endsubroutine cpu_version
+      endinterface
+
+    endsubroutine test_rhs_gpu
 !**************************************************************************
 endmodule  GPU

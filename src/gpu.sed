@@ -75,6 +75,6 @@ g
          }
 s/^\(.*\)$/MODULESOURCES= \\\1/
 : out
-w astaroth/PC_modulesources.h
+w CUDA_MAKEDIR/PC_modulesources.h
 d
 }

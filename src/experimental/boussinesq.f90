@@ -795,12 +795,4 @@ module Density
 
     endsubroutine pushpars2c
 !***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    integer(KIND=ikind8), dimension(:) :: p_diag
-
-    call keep_compiler_quiet(p_diag)
-
-    endsubroutine pushdiags2c
-!***********************************************************************
 endmodule Density

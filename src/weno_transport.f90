@@ -3,12 +3,11 @@
 !  This module take care of WENO (weighted essentially non oscillatory)
 !  transport.
 !
-!  The key idea of ENO schemes is to use the ‘‘smoothest’’ stencil among
+!  The key idea of ENO schemes is to use the smoothest stencil among
 !  several candidates to approximate the fluxes at cell boundaries to a high
 !  order accuracy and at the same time to avoid spurious oscillations.
 !
-!  See e.g. ``Efficient Implementation of Weighted ENO Schemes'' by Jiang†& Shu
-!  1996.
+!  See e.g. ``Efficient Implementation of Weighted ENO Schemes'' by Jiang & Shu 1996.
 !
 module WENO_transport
 !
@@ -18,7 +17,8 @@ module WENO_transport
 !
   public :: weno_transp
 !
-  integer, parameter :: nw=3
+  integer, parameter :: nw=3           ! shouldn't that be nghost?
+  real, dimension(-nw:nw,mx) :: f,df
 !
   contains
 !***********************************************************************
@@ -58,16 +58,11 @@ module WENO_transport
       real, dimension(size(fq,1)) :: vsig, dq, fl, fr, tmp
       integer :: i, mx, nghost
       logical :: lref,lref1
-
-      real, allocatable, dimension(:,:) :: f, df    !TP: moved to local ones
 !
 !  Possible to multiply transported variable by another variables, e.g. to
 !  transport the momentum rho*u.
 !
-      if (iq1==0) then
-        print*, 'weno5: iq1 is zero - are you using ldensity_nolog=T ?'
-        STOP
-      endif
+      if (iq1==0) call fatal_error('weno5','iq1 is zero - are you using ldensity_nolog=T?')
 !
       lref=present(ref); lref1=present(ref1)
 !
@@ -75,11 +70,6 @@ module WENO_transport
 !
       mx=size(fq,1)
       nghost=(mx-size(dq_out))/2
-!
-!  Allocate arrays.
-!
-      if (.not. allocated(f))  allocate( f(-nw:nw,mx))
-      if (.not. allocated(df)) allocate(df(-nw:nw,mx))
 !
 !  WENO transport in x-direction.
 !
@@ -191,10 +181,6 @@ module WENO_transport
 !  Return transport pencil without ghost cells.
 !
       dq_out(:)=dq(nghost+1:mx-nghost)
-!
-!  Deallocate arrays.
-!
-      deallocate(f,df)
 !
     endsubroutine weno5
 !***********************************************************************

@@ -137,7 +137,7 @@ module Timestep
 !
 !  Set up ODE derivatives array
 !
-        if (lode .and. .not. lgpu) call ode_timestep_first
+        if (lode) call ode_timestep_first
 !
 !  Set up solid_cells time advance
 !
@@ -147,7 +147,7 @@ module Timestep
 !
         call pde(f,df,p)
 
-        if (lode .and. .not. lgpu) call ode
+        if (lode) call ode
 
         ds=ds+1.0
 !
@@ -182,7 +182,7 @@ module Timestep
 !
 ! Time evolution of ODE variables.
 !
-        if (lode .and. .not. lgpu) call ode_timestep_second
+        if (lode) call ode_timestep_second
 !
 !  Time evolution of solid_cells.
 !
@@ -198,12 +198,7 @@ module Timestep
         endif
 
 !
-      if(.not. lgpu) call update_after_substep(f,df,dtsub,llast)
-!
-	! [PAB] according to MR this breaks the autotest.
-	! @Piyali: there must be a reason to add an additional global communication,
-	! could this be solved differently, and, if not, why? Can you enclose this in an if-clause, like above?
-        !call update_ghosts(f)  ! Necessary for boundary driving in special module
+      if (.not. lgpu) call update_after_substep(f,df,dtsub,llast)
 !
 	! [PAB] according to MR this breaks the autotest.
 	! @Piyali: there must be a reason to add an additional global communication,
@@ -218,7 +213,7 @@ module Timestep
 !
 !  Integrate operator split terms.
 !
-    if(.not. lgpu)  call split_update(f)
+    if (.not. lgpu)  call split_update(f)
 !
     endsubroutine time_step
 !***********************************************************************
@@ -328,6 +323,8 @@ module Timestep
     integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
+    !!call copy_addr(alpha_ts,p_par(1))  ! (3)
+    !!call copy_addr(beta_ts ,p_par(2))  ! (3)
 
     endsubroutine pushpars2c
 !***********************************************************************

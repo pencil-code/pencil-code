@@ -3293,9 +3293,7 @@ module Sub
       integer :: j,k
       logical, optional :: upwind,ladd
 !
-      if (k<1 .or. k>mfarray) then
-        call fatal_error('u_dot_grad_vec','variable index is out of bounds')
-      endif
+      if (k<1 .or. k>mfarray) call fatal_error('u_dot_grad_vec','variable index k is out of bounds')
 !
       do j=1,3
 !
@@ -3349,10 +3347,7 @@ module Sub
       logical, optional :: ladd
       logical :: ladd1
 !
-      if (k<1 .or. k>mfarray) then
-        call fatal_error('u_dot_grad_vec','variable index is out of bounds')
-        return
-      endif
+      if (k<1 .or. k>mfarray) call fatal_error('u_dot_grad_vec','variable index k is out of bounds')
 !
       ladd1=loptest(ladd)
 !
@@ -9172,7 +9167,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
     endsubroutine calc_scl_factor
 !***********************************************************************    
 !$    real function get_dxyz_2() bind(C)
+
 !$      get_dxyz_2 = dxyz_2(nghost)
+
 !$    end function get_dxyz_2
 !***********************************************************************    
 endmodule Sub
