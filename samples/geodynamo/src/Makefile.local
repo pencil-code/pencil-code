@@ -20,3 +20,5 @@ GRAVITY   =   gravity_r
 FORCING   = noforcing
 SHEAR     = noshear
 TIMEAVG   = notimeavg
+
+MULTITHREADING = openmp
