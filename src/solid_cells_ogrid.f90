@@ -10094,7 +10094,6 @@ module Solid_Cells
 !
 !  25-aug-23/TP: Coded
 !
-
   endsubroutine sc_init_diag_accum
 !***********************************************************************
   subroutine sc_diagnostic_reductions
@@ -10113,7 +10112,6 @@ module Solid_Cells
 !
 !  30-mar-23/TP: Coded
 !
-
   endsubroutine sc_init_reduc_pointers
 !***********************************************************************
   subroutine sc_write_diag_accum

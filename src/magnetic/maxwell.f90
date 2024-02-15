@@ -103,7 +103,7 @@ module Magnetic
   logical :: reinitialize_aa=.false.
   logical, dimension(7) :: lresi_dep=.false. 
   logical :: lcoulomb=.false.
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+  integer :: pushpars2c  ! should be procedure pointer (F2003)
   integer :: iLam=0
 !
   integer :: idiag_axmz=0,idiag_aymz=0
@@ -176,14 +176,13 @@ module Magnetic
   integer :: iakx, iaky, iakz, iakxim, iakyim, iakzim
   integer :: iekx, ieky, iekz, iekxim, iekyim, iekzim
   integer, parameter :: nk=nxgrid/2
+
   type :: magspectra
     real, dimension(nk) :: mag   ,ele
     real, dimension(nk) :: maghel,elehel
   endtype magspectra
 
   type(magspectra) :: spectra
-
-
 
   contains
 !***********************************************************************
@@ -1526,7 +1525,6 @@ module Magnetic
       enddo; enddo
 !
 !  preparations; j is the first index of the array for the complex part.
-!
 !
       if (kx>0.and.kx<=nx-1) then
         if (ipx==0) then

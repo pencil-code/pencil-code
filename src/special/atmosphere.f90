@@ -904,7 +904,7 @@ module Special
       integer :: jjj,kkk
       real :: value1, value2, rad_2
       !TP: why not a scalar?
-      real, parameter, dimension (2) :: jet_center
+      real, parameter, dimension (2) :: jet_center=0.
       real, dimension (my,mz) :: u_profile
 !
       do jjj=1,my

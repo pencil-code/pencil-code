@@ -108,7 +108,6 @@ module Magnetic
   real, dimension(3) :: eta_aniso_hyper3
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
-  real, dimension(nx,3) :: uxbb
   real, dimension(nx) :: eta_BB
   real, dimension(nx) :: xmask_mag
   real, dimension(nz) :: zmask_mag
@@ -3071,7 +3070,6 @@ module Magnetic
 !
 !  Identify module and boundary conditions.
 !
-      if (lpenc_loc(i_uxb)) then call cross_mn(p%uu,p%bbb,uxbb)
       call timing('daa_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'daa_dt: SOLVE'
       if (headtt) then
@@ -4106,6 +4104,7 @@ module Magnetic
             .or. idiag_uxbmz/=0) then
           call dot(B_ext_inv,p%uxb,uxb_dotB0)
           if (idiag_uxbm/=0) call sum_mn_name(uxb_dotB0,idiag_uxbm)
+          call cross_mn(p%uu,p%bbb,uxbb)
           if (idiag_uxbmx/=0) call sum_mn_name(uxbb(:,1),idiag_uxbmx)
           if (idiag_uxbmy/=0) call sum_mn_name(uxbb(:,2),idiag_uxbmy)
           if (idiag_uxbmz/=0) call sum_mn_name(uxbb(:,3),idiag_uxbmz)

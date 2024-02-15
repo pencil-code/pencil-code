@@ -808,7 +808,7 @@ module Cdata
   real :: tdiagnos_save,t1ddiagnos_save,t2davgfirst_save
 !$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
 !$ logical, volatile :: lhelper_run=.true., lhelper_perform_diagnostics=.false.
-  integer :: num_of_helper_threads
+!$ integer :: num_helper_threads
 ! 
 ! threadprivate definitions for OpenMP
 !
@@ -817,5 +817,6 @@ module Cdata
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
 !$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,t,it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
+!
 !***********************************************************************
 endmodule Cdata

@@ -2830,6 +2830,7 @@ module Diagnostics
     endsubroutine diagnostics_write_diagnostics_accumulators
 !***********************************************************************
     subroutine diagnostics_init_private_accumulators 
+! MR: purpose?
     endsubroutine diagnostics_init_private_accumulators
 !***********************************************************************
     subroutine phisum_mn_name_rz(a,iname)
@@ -3551,12 +3552,12 @@ module Diagnostics
 !
     endfunction name_is_present
 !***********************************************************************
-   subroutine prep_finalize_thread_diagnos
-   !
-   ! For accumulated diagnostic variables get which reduction to perform
-   !
-   ! 25-aug-23/TP: modified, bug fix
-   !
+    subroutine prep_finalize_thread_diagnos
+!
+! For accumulated diagnostic variables get which reduction to perform
+!
+! 25-aug-23/TP: modified, bug fix
+!
       use General, only: allpos_in_array_int
 
       integer :: nmax, nsum, nmin, i
@@ -3590,6 +3591,6 @@ module Diagnostics
       firstcall=.false.
       firstcall_from_pencil_check=lpencil_check_at_work
 
-   endsubroutine prep_finalize_thread_diagnos
+    endsubroutine prep_finalize_thread_diagnos
 !***********************************************************************
 endmodule Diagnostics

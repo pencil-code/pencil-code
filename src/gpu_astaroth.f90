@@ -119,8 +119,10 @@ contains
     subroutine copy_farray_from_GPU(f)
 
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
+
 !$    do while(lhelper_perform_diagnostics)
 !$    enddo
+
       call copy_farray_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho))
 
     endsubroutine copy_farray_from_GPU
@@ -146,24 +148,26 @@ contains
       real, parameter, dimension(3) :: alpha = (/0.0, -(5.0/9.0), -(153.0/128.0)/)
       real, parameter, dimension(3) :: beta = (/ 1. / 3., 15./ 16., 8. / 15. /)
       integer, parameter :: num_of_steps = 1
-      interface
-          subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
-              import mx
-              import my
-              import mz
-              import mfarray
-              import pencil_case
-              real, dimension (mx,my,mz,mfarray) :: f
-              real, dimension (mx,my,mz,mfarray) :: df
-              type (pencil_case) :: p
-              real, dimension(1), intent(inout) :: mass_per_proc
-              logical ,intent(in) :: early_finalize
 
-              intent(inout) :: f
-              intent(inout) :: p
-              intent(out) :: df
-          endsubroutine cpu_version
-        endinterface
+      interface
+        subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
+          import mx
+          import my
+          import mz
+          import mfarray
+          import pencil_case
+          real, dimension (mx,my,mz,mfarray) :: f
+          real, dimension (mx,my,mz,mfarray) :: df
+          type (pencil_case) :: p
+          real, dimension(1), intent(inout) :: mass_per_proc
+          logical ,intent(in) :: early_finalize
+
+          intent(inout) :: f
+          intent(inout) :: p
+          intent(out) :: df
+        endsubroutine cpu_version
+      endinterface
+
       !TP: uncomment if want to test from random initial condition
       ! call random_initial_condition()
       ! call copy_farray_from_GPU(f)
@@ -171,6 +175,7 @@ contains
       p_copy = p
       f_copy = f
       f_copy_2 = f
+
       do n=1,num_of_steps
         print*,"GPU rhs test:\tcpu step: ",n
         ds = 0.0
@@ -190,6 +195,6 @@ contains
     call test_rhs_c(f_copy_2,f_copy);
     call die_gracefully
 
-  end subroutine  test_rhs_gpu
+  endsubroutine  test_rhs_gpu
 !**************************************************************************
 endmodule GPU

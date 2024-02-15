@@ -3938,16 +3938,13 @@ module Energy
        fact_rho=1.
        fact_wsld=1.
        if (lsld_char_cslimit) then 
-        w_sldrat2=w_sldchar_ene2**2./(w_sldchar_ene**2.+tini)
+         w_sldrat2=w_sldchar_ene2**2./(w_sldchar_ene**2.+tini)
        else
-        w_sldrat2=1.0
+         w_sldrat2=1.0
        endif
-
-
 !
        if (lsld_char_wprofr) fact_wsld=1 + (w_sldchar_ene2/w_sldchar_ene -1.) &
                                            *(x/w_sldchar_ene_r0)**w_sldchar_ene_p
-!
        do m=1,my
        do n=1,mz
          if (ldensity_nolog) then

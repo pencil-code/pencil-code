@@ -44,10 +44,14 @@
 !
 !***********************************************************************
 module run_module
-contains
-subroutine helper_loop
-  use Equ
+
   use Cdata
+!
+contains
+!***********************************************************************
+subroutine helper_loop
+
+  use Equ
 !
 !  hotloop for helper thread to wait to perform diagnostics
 !
@@ -58,11 +62,12 @@ subroutine helper_loop
 !$    enddo
 !$    call perform_diagnostics
 !$  enddo
+
 endsubroutine helper_loop
 !***********************************************************************
-subroutine main_sub()
+subroutine main_sub
+
   use Boundcond,       only: update_ghosts, initialize_boundcond
-  use Cdata
   use Chemistry,       only: chemistry_clean_up, write_net_reaction
   use Density,         only: boussinesq
   use Diagnostics
@@ -106,11 +111,11 @@ subroutine main_sub()
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
   use Timestep,        only: time_step, initialize_timestep
+!
 !$ use OMP_lib
 !$ use mt, only: wait_all_thread_pool, push_task, mt_split,&
 !$ free_thread_pool, depend_on_all, default_task_type
-!$ use, intrinsic :: iso_c_binding
-!$ use, intrinsic :: iso_fortran_env
+!$ use, intrinsic :: iso_c_binding, iso_fortran_env
 !
   type (pencil_case) :: p
   character(len=fnlen) :: fproc_bounds
@@ -125,12 +130,6 @@ subroutine main_sub()
   logical :: lnoreset_tzero=.false.
   logical :: lonemorestep = .false.
   logical :: lexist
-!
-!  Initialize Python use.
-!
-  call python_init
-!
-!   Initialize OpenMP use
 !
 !  Initialize Python use.
 !
@@ -791,9 +790,7 @@ subroutine main_sub()
 !
 !   Diagnostic output in concurrent thread.
 !
-!
-
-    if(lgpu) then
+    if (lgpu) then
       if (lout.or.l1davg.or.l1dphiavg.or.l2davg) then
 !!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task,&
 !!$      1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
@@ -801,8 +798,6 @@ subroutine main_sub()
     else
       call write_diagnostics(f)
     endif
-
-!
 !
 !  Write tracers (for animation purposes).
 !
@@ -886,10 +881,13 @@ subroutine main_sub()
 !
     it=it+1
     headt=.false.
+
   enddo Time_loop
-!!$ call wait_all_thread_pool()
-!!$ call free_thread_pool()
+
+!!$ call wait_all_thread_pool
+!!$ call free_thread_pool
 !$  lhelper_run = .false.
+
   if (lroot) then
     print*
     print*, 'Simulation finished after ', icount, ' time-steps'
@@ -1004,7 +1002,9 @@ subroutine main_sub()
   call finalize
 !
 endsubroutine main_sub
+!***********************************************************************
 endmodule run_module
+!***********************************************************************
 program run
 !
 !  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
@@ -1015,59 +1015,13 @@ program run
 ! 7-feb-24/TP: made main_sub for easier multithreading
 !
   use run_module
-  use Boundcond,       only: update_ghosts, initialize_boundcond
-  use Cdata
-  use Chemistry,       only: chemistry_clean_up, write_net_reaction
-  use Density,         only: boussinesq
-  use Diagnostics
-  use Dustdensity,     only: init_nd
-  use Dustvelocity,    only: init_uud
-  !use Equ,             only: debug_imn_arrays,initialize_pencils,write_diagnostics, write_diagnostics_wrapper
-  use Equ
-  use FArrayManager,   only: farray_clean_up
-  use Farray_alloc
-  use Filter
-  use Fixed_point,     only: fixed_points_prepare, wfixed_points
-  use Forcing,         only: forcing_clean_up,addforce
-  use General,         only: random_seed_wrapper, touch_file, itoa
-  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays, &
-                             coarsegrid_interp
-  use Gpu,             only: gpu_init, register_gpu
-  use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
-  use Hydro,           only: hydro_clean_up
-  use ImplicitPhysics, only: calc_heatcond_ADI
-  use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
-  use Magnetic,        only: rescaling_magnetic
-  use Messages
-  use Mpicomm
-  use NSCBC,           only: NSCBC_clean_up
-  use Param_IO
-  use Particles_main
-  use Pencil_check,    only: pencil_consistency_check
-  use PointMasses
-  use Python
-  use Register
-  use SharedVariables, only: sharedvars_clean_up
-  use Signal_handling, only: signal_prepare, emergency_stop
-  use Slices
-  use Snapshot,        only: powersnap, rsnap, powersnap_prepare, wsnap, wsnap_down, output_form
-  use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid,wsnap_ogrid
-  use Special,         only: initialize_mult_special
-  use Streamlines,     only: tracers_prepare, wtracers
-  use Sub
-  use Syscalls,        only: is_nan, memusage
-  use Testscalar,      only: rescaling_testscalar
-  use Testfield,       only: rescaling_testfield
-  use TestPerturb,     only: testperturb_begin, testperturb_finalize
-  use Timeavg
-  use Timestep,        only: time_step, initialize_timestep
-  use, intrinsic :: iso_fortran_env
+  use Gpu,     only: gpu_init
+  use Mpicomm, only: mpicomm_init        
+!
 !$ use OMP_lib
 !$ use mt, only: wait_all_thread_pool, push_task, mt_split,&
 !$ free_thread_pool, depend_on_all, default_task_type
-!$ use, intrinsic :: iso_c_binding
-!
-!
+!$ use, intrinsic :: iso_c_binding, iso_fortran_env
 !
   lrun = .true.
 !
@@ -1078,17 +1032,22 @@ program run
 !  Initialize GPU use and make threadpool.
 !
   call gpu_init
+!
+!  Initialize OpenMP use
+!
 !$ include 'omp_init.h'
-!$  if(.true.) then
+
+!$  if (.true.) then
 !$omp parallel num_threads(2)
-!$      if(omp_get_thread_num() == 0) then
-!$         call main_sub
-!$      else
-!$         call helper_loop
-!$      endif
+!$    if (omp_get_thread_num() == 0) then
+!$      call main_sub
+!$    else
+!$      call helper_loop
+!$    endif
 !$omp end parallel
 !$  else
-  call main_sub
+      call main_sub
 !$  endif
+
 endprogram run
 !**************************************************************************

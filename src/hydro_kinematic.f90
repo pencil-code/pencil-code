@@ -72,7 +72,7 @@ module Hydro
   logical :: lwrite_random_location=.false., lwrite_random_wavenumber=.false.
   logical :: lrandom_wavenumber=.false., lwrite_random_ampl=.false.
   integer :: ll_sh=0, mm_sh=0, n_xprof=-1
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+  integer :: pushpars2c  ! should be procedure pointer (F2003)
 !
 !  init parameters
 !  (none)
@@ -621,9 +621,9 @@ module Hydro
       endif
 !
     endsubroutine pencil_interdep_hydro
-  
 !***********************************************************************
     logical function get_lupdate_aux
+
       get_lupdate_aux = .true.
       select case (kinematic_flow)
         case ('from-snap','from-foreign-snap')
@@ -635,6 +635,7 @@ module Hydro
         case('spher-harm-poloidal-per')
           get_lupdate_aux = .false.
       end select 
+
     endsubroutine get_lupdate_aux
 !***********************************************************************
     subroutine calc_pencils_hydro_std(f,p)
@@ -699,7 +700,6 @@ module Hydro
 !
 !  Choose from a list of different flow profiles.
 !  Begin with a
-!
 !
       eps1=1.
       select case (kinematic_flow)

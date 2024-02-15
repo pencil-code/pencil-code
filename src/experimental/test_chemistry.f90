@@ -4953,6 +4953,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       p%DYDt_diff = 0.
       diff_k = chem_diff
+      sum_diff=0.; sum_gdiff=0.
 !
 !  Loop over all chemical species.
 !

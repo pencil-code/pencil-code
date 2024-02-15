@@ -415,8 +415,6 @@ module Register
       call initialize_heatflux(f)
       call initialize_pointmasses(f)
       call initialize_gpu
-!$    num_of_helper_threads = omp_get_max_threads()-1
-
 !
 !  Check if MAUX is consistent with what is required.
 !

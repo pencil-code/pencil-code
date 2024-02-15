@@ -190,11 +190,9 @@ module Mpicomm
 !
       use Syscalls, only: sizeof_real
 !
-      !integer(KIND=ikind8) :: iapp
 !$    integer :: thread_support
-      integer :: iapp=0
+      integer :: iapp=0         ! (KIND=ikind8) ?
       integer :: flag
-
 !
 !$    call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,thread_support,mpierr)
 !$    if (thread_support < MPI_THREAD_MULTIPLE) then
@@ -208,7 +206,6 @@ module Mpicomm
 !
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
-!if (lroot) print*, 'Pencil0: nprocs,MPI_COMM_WORLD', nprocs, MPI_COMM_WORLD 
 !
 ! If mpirun/mpiexec calls also other applications than Pencil:
 ! Get rank within the set of applications, iapp.
@@ -225,7 +222,6 @@ module Mpicomm
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL, mpierr)
       call MPI_COMM_RANK(MPI_COMM_PENCIL, iproc, mpierr)
-if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MPI_COMM_PENCIL, MPI_COMM_WORLD
 !
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_PENCIL!
 !

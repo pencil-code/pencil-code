@@ -46,7 +46,7 @@ module Selfgravity
 !
   logical :: ljeans_stiffening = .false.
   integer :: nj_stiff = 8
-  real :: stiff_gamma = 5. / 3.
+  real :: stiff_gamma = 5./3.
 !
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
@@ -276,7 +276,6 @@ module Selfgravity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      ! logical :: first=.true.
       real :: c
 !
       intent(inout) :: f, p
@@ -294,14 +293,13 @@ module Selfgravity
           print*, 'calc_pencils_selfgravity: stiffening is applied to the EOS with '
           print*, 'calc_pencils_selfgravity: ', nj_stiff, ' points per Jeans length and adiabatic index ', stiff_gamma
         endif
-        ! if (first) then
-          if (dimensionality == 2) then
-            c = gravitational_const * real(nj_stiff) * dxmax
-          else
-            c = gravitational_const * (real(nj_stiff) * dxmax)**2 / pi
-          endif
-          ! first = .false.
-        ! endif
+
+        if (dimensionality == 2) then    ! and if dimensionality==1?
+          c = gravitational_const * real(nj_stiff) * dxmax
+        else
+          c = gravitational_const * (real(nj_stiff) * dxmax)**2 / pi
+        endif
+
         p%fpres = p%fpres * spread(1. + stiff_gamma * (c * p%rho / p%cs2)**(stiff_gamma-1.), 2, 3)
       endif
 !
