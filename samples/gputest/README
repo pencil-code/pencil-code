@@ -16,10 +16,12 @@ To build with Astaroth:
 On Clusters, an appropriate CUDA (for NVIDIA devices) or HIP (for AMD) module must be loaded, perhaps also CMake.
 Set 
 
-GPU = gpu_astaroth
+GPU            = gpu_astaroth
+GPU_VENDOR     = [nvidia|amd]     # nvidia is default
 MULTITHREADING = openmp
 
 in Makefile.local. At first time, this implies to repeat pc_setupsrc.
+
 The build has three stages:
 1) build Pencil Code as usual by make or pc_build - will fail at first during link stage because shared object
    astaroth_[sgl|dbl].so is found to be missing;
