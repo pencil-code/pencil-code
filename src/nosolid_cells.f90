@@ -307,28 +307,19 @@ module Solid_Cells
 !***********************************************************************
   subroutine sc_init_diag_accum
 !
-!  Need to initialize accumulators since master thread does not take part in diagnostics
-!  Dummy for solid cells ogrid
-!
-!  25-aug-23/TP: Coded
+!  30-mar-23/TP: Dummy
 !
   endsubroutine sc_init_diag_accum
 !***********************************************************************
   subroutine sc_diags_reductions
 !
-!  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
-!  Dummy for solid cells ogrid
-!
-!  30-mar-23/TP: coded
+!  30-mar-23/TP: Dummy
 !
   endsubroutine sc_diags_reductions
 !***********************************************************************
   subroutine sc_init_reduc_pointers
 !
-!  Initiliazes solid_cells specific pointers needed in thread_reductions 
-!  Dummy for solid cells ogrid
-!
-!  30-mar-23/TP: Coded
+!  30-mar-23/TP: Dummy
 !
   endsubroutine sc_init_reduc_pointers
 !***********************************************************************

@@ -56,8 +56,6 @@ module Hydro
   real, target, dimension (:,:), allocatable :: divu_yz,u2_yz,o2_yz,mach_yz
   real, target, dimension (:,:), allocatable :: ou_xy,ou_xy2,ou_xy3,ou_xy4
   real, target, dimension (:,:), allocatable :: ou_xz,ou_yz,ou_xz2
-  public :: calc_pencils_hydro_nonlinear_test
-  public :: calc_pencils_hydro_std_test
   real, target, dimension (:,:,:,:,:), allocatable :: divu_r,u2_r,o2_r,mach_r,ou_r
   real, target, dimension (:,:,:,:,:,:), allocatable :: oo_r,uu_sph_r
 
@@ -8217,16 +8215,6 @@ endif
 
     endsubroutine pushpars2c
 !***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    use Syscalls, only: copy_addr
-    use Diagnostics, only: set_type
-
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(n_diags) :: p_diag
-
-    endsubroutine pushdiags2c
-!***********************************************************************
     subroutine calc_pencils_hydro_nonlinear_test(f,p,lpenc_loc)
 !
 !  Calculate Hydro pencils.
@@ -8258,7 +8246,8 @@ endif
       real, dimension (nx,3,3) :: tmp33
       real :: cs201,outest
       integer :: i, j, ju, jj, kk, jk
-      integer :: j_4_49_50,i_4_49_50
+
+integer :: j_4_49_50,i_4_49_50
 real, dimension ((nxgrid/nprocx),3)::grad_f_tmp_21_49_50
 real, dimension ((nxgrid/nprocx))::tmp_21_49_50
 integer :: j_21_49_50
@@ -8296,7 +8285,7 @@ integer :: i_14_19_21_49_50
         call div_mn(p%uij,p%divu,p%uu)
       endif
 ! sij
-      do j_4_49_50=1,3
+do j_4_49_50=1,3
 p%sij(:,j_4_49_50,j_4_49_50)=p%uij(:,j_4_49_50,j_4_49_50)-(1./3.)*p%divu
 do i_4_49_50=j_4_49_50+1,3
 p%sij(:,i_4_49_50,j_4_49_50)=.5*(p%uij(:,i_4_49_50,j_4_49_50)+p%uij(:,j_4_49_50,i_4_49_50))
@@ -8412,7 +8401,7 @@ enddo
 ! transpurho
 
     endsubroutine calc_pencils_hydro_nonlinear_test
-
+!***********************************************************************
 subroutine calc_pencils_hydro_std_test(f,p)
 use Deriv
 use Sub
@@ -8808,6 +8797,5 @@ integer::kincrement_12_17_18
 ! enddo
 ! endif
 endsubroutine calc_pencils_hydro_std_test
-
-
+!***********************************************************************
 endmodule Hydro

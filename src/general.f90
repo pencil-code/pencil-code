@@ -194,37 +194,45 @@ module General
   type, public :: single_dim_array_dims
     integer :: size 
   end type single_dim_array_dims 
+
   type, public :: two_dim_array_dims
     integer :: x
     integer :: y
   end type two_dim_array_dims 
+
   type, public :: three_dim_array_dims
     integer :: x
     integer :: y
     integer :: z
   end type three_dim_array_dims 
+
   type, public :: four_dim_array_dims
     integer :: x
     integer :: y
     integer :: z
     integer :: w
   end type four_dim_array_dims 
+
   type, public :: pointer_with_size_info_1d
     real, pointer, dimension(:) :: data
     type(single_dim_array_dims) :: dims
   end type
+
   type, public :: pointer_with_size_info_2d
     real, pointer, dimension(:,:) :: data
     type(two_dim_array_dims) :: dims
   end type
+
   type, public :: pointer_with_size_info_2d_int
     integer, pointer, dimension(:,:) :: data
     type(two_dim_array_dims) :: dims
   end type
+
   type, public :: pointer_with_size_info_3d
     real, pointer, dimension(:,:,:) :: data
     type(three_dim_array_dims) :: dims
   end type
+
   type, public :: pointer_with_size_info_4d
     real, pointer, dimension(:,:,:,:) :: data
     type(four_dim_array_dims) :: dims
@@ -6470,13 +6478,13 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       integer :: ind,i,j
 
       ind=len1
-      do i=1,size(list2)
+iloop:do i=1,size(list2)
         do j=1,len1
           if (list2(i)==list1(j)) cycle iloop
         enddo
         ind=ind+1
         list1(ind)=list2(i)
-      enddo
+      enddo iloop
       len1=ind
 
     endsubroutine merge_lists

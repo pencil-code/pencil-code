@@ -86,7 +86,7 @@ module Solid_Cells
   real :: r_ogrid
   real :: r_int_outer
   real, dimension(3) :: xorigo_ogrid
-!  Added for multithreading purposes
+!  For multithreading purposes
   type(pointer_with_size_info_1d) :: p_c_dragy, p_c_dragx, p_c_dragz, p_Nusselt, p_c_dragx_p, p_c_dragz_p, p_c_dragy_p
   real, pointer :: p_rhosum
   integer, pointer :: p_irhocount
@@ -3807,14 +3807,17 @@ module Solid_Cells
   endsubroutine sc_init_reduc_pointers
 !***********************************************************************
     subroutine sc_init_private_accumulators
+
       use General
-      if(associated(p_c_dragx%data)) call allocate_using_dims(c_dragx,p%p_c_dragx%size)
-      if(associated(p_c_dragy%data)) call allocate_using_dims(c_dragy,p%p_c_dragy%size)
-      if(associated(p_c_dragz%data)) call allocate_using_dims(c_dragz,p%p_c_dragz%size)
-      if(associated(p_Nusselt%data)) call allocate_using_dims(Nusselt,p%p_Nusselt%size)
-      if(associated(p_c_dragx_p%data)) call allocate_using_dims(c_dragx_p,p%p_c_dragx_p%size)
-      if(associated(p_c_dragy_p%data)) call allocate_using_dims(c_dragy_p,p%p_c_dragy_p%size)
-      if(associated(p_c_dragz_p%data)) call allocate_using_dims(c_dragz_p,p%p_c_dragz_p%size)
+
+      if (associated(p_c_dragx%data)) call allocate_using_dims(c_dragx,p%p_c_dragx%size)
+      if (associated(p_c_dragy%data)) call allocate_using_dims(c_dragy,p%p_c_dragy%size)
+      if (associated(p_c_dragz%data)) call allocate_using_dims(c_dragz,p%p_c_dragz%size)
+      if (associated(p_Nusselt%data)) call allocate_using_dims(Nusselt,p%p_Nusselt%size)
+      if (associated(p_c_dragx_p%data)) call allocate_using_dims(c_dragx_p,p%p_c_dragx_p%size)
+      if (associated(p_c_dragy_p%data)) call allocate_using_dims(c_dragy_p,p%p_c_dragy_p%size)
+      if (associated(p_c_dragz_p%data)) call allocate_using_dims(c_dragz_p,p%p_c_dragz_p%size)
+
     endsubroutine chemistry_init_private_accumulators
 !***********************************************************************
     subroutine sc_read_diag_accum
@@ -3830,6 +3833,7 @@ module Solid_Cells
       c_dragx_p = p_c_dragx_p%data
       c_dragy_p = p_c_dragy_p%data
       c_dragz_p = p_c_dragz_p%data
+
     endsubroutine sc_read_diag_accum
 !***********************************************************************
     subroutine sc_write_diag_accum
@@ -3845,6 +3849,7 @@ module Solid_Cells
       p_c_dragx_p%data = c_dragx_p 
       p_c_dragy_p%data = c_dragy_p 
       p_c_dragz_p%data = c_dragz_p 
+
     endsubroutine sc_read_diag_accum
 !***********************************************************************
 endmodule Solid_Cells

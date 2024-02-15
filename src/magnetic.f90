@@ -19,7 +19,7 @@
 ! PENCILS PROVIDED b2; b21; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); jj_ohm(3); (3)
 ! PENCILS PROVIDED curlb(3); e3xa(3)
 ! PENCILS PROVIDED el(3); e2; bijtilde(3,3),bij_cov_corr(3,3)
-! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uj; ob; uxb(3); uxb2
+! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uj; ob; uxb(3); uxbb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
 ! PENCILS PROVIDED ujxb; oxuxb(3); jxbxb(3); jxbrxb(3)
@@ -1562,7 +1562,7 @@ module Magnetic
           lresi_eta_shock_perp=.true.
           if (.not.lshock) call fatal_error('initialize_magnetic','shock-perp resistivity, but SHOCK=noshock')
           if (.not.ldivu_perp) &
-            call fatal_error('initialize_magnetic','shock-perp resistivity, but not ldivu_perp=.true.')
+            call fatal_error('initialize_magnetic','shock-perp resistivity, but ldivu_perp=.false.')
         case ('eta_va')
           if (lroot) print*, 'resistivity: eta_va'
           lresi_etava=.true.
@@ -2816,7 +2816,7 @@ module Magnetic
 !
 !  ua pencil if lua_as_aux
 !
-      if (lua_as_aux) lpenc_diagnos(i_ua)=.true.
+      if (lua_as_aux) lpenc_diagnos(i_ua)=.true.   !MR: diagnostics pencil???
 !
 !  Request unit vectors for transformation of magnetic field from
 !  Cartesian to spherical coordinates.
@@ -2954,6 +2954,12 @@ module Magnetic
 !
       if (idiag_djuidjbim/=0 .or. idiag_uxDxuxbm/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_uxjm/=0) lpenc_diagnos(i_uxj)=.true.
+
+      if (idiag_uxbm/=0 .or. idiag_uxbmx/=0 .or. idiag_uxbmy/=0 .or. idiag_uxbmz/=0 &
+          .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
+          .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 &
+          .or. idiag_Expt/=0 .or. idiag_Eypt/=0 .or. idiag_Ezpt/=0) lpenc_diagnos(i_uxbb)=.true.
+  
       if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0 .or. idiag_Rmmz/=0) &
           lpenc_diagnos(i_uxb2)=.true.
       if (idiag_beta1m/=0 .or. idiag_beta1max/=0 .or. idiag_beta1mz/=0) &
@@ -3819,6 +3825,8 @@ module Magnetic
           if (iglobal_eext(j)/=0) p%uxb(:,j)=p%uxb(:,j)+f(l1:l2,m,n,iglobal_eext(j))
         enddo
       endif
+! u x bbb
+      if (lpenc_loc(i_uxbb)) call cross(p%uu,p%bbb,p%uxbb)
 ! uga
       if (lpenc_loc(i_uga)) call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
 !
@@ -5689,7 +5697,7 @@ module Magnetic
       type(pencil_case) :: p
 
       integer :: isound,lspoint,mspoint,nspoint,j
-      real, dimension (nx,3) :: uxbxb,poynting,uxbb
+      real, dimension (nx,3) :: uxbxb,poynting
 
 !
 ! Magnetic field components at the list of points written out in sound.dat
@@ -5707,7 +5715,6 @@ module Magnetic
           nspoint=sound_coords_list(isound,3)
 !
           if ((m==mspoint).and.(n==nspoint)) then
-            if (lpencil(i_uxb)) call cross(p%uu,p%bbb,uxbb)
             call save_name_sound(f(lspoint,mspoint,nspoint,iax),idiag_axpt,isound)
             call save_name_sound(f(lspoint,mspoint,nspoint,iay),idiag_aypt,isound)
             call save_name_sound(f(lspoint,mspoint,nspoint,iaz),idiag_azpt,isound)
@@ -5720,16 +5727,16 @@ module Magnetic
             call save_name_sound(p%jj(lspoint-nghost,1),idiag_jxpt,isound)
             call save_name_sound(p%jj(lspoint-nghost,2),idiag_jypt,isound)
             call save_name_sound(p%jj(lspoint-nghost,3),idiag_jzpt,isound)
-            call save_name_sound(uxbb(lspoint-nghost,1),idiag_Expt,isound)
-            call save_name_sound(uxbb(lspoint-nghost,2),idiag_Eypt,isound)
-            call save_name_sound(uxbb(lspoint-nghost,3),idiag_Ezpt,isound)
+            call save_name_sound(p%uxbb(lspoint-nghost,1),idiag_Expt,isound)
+            call save_name_sound(p%uxbb(lspoint-nghost,2),idiag_Eypt,isound)
+            call save_name_sound(p%uxbb(lspoint-nghost,3),idiag_Ezpt,isound)
           endif
         enddo
       endif
 
       call calc_2d_diagnostics_magnetic(p)
       call calc_1d_diagnostics_magnetic(p)
-      if (ldiagnos) call calc_0d_diagnostics_magnetic(f,p,uxbb)
+      if (ldiagnos) call calc_0d_diagnostics_magnetic(f,p)
 
 !
 !  Write B-slices for output in wvid in run.f90.
@@ -5763,7 +5770,7 @@ module Magnetic
 
     endsubroutine calc_diagnostics_magnetic
 !******************************************************************************
-    subroutine calc_0d_diagnostics_magnetic(f,p,uxbb)
+    subroutine calc_0d_diagnostics_magnetic(f,p)
 !
 !  Calculate diagnostic quantities.
 !
@@ -5774,7 +5781,6 @@ module Magnetic
 
       real, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
-      real, dimension (nx,3), intent(in) :: uxbb
 
       real, dimension (nx,3,3) :: bhatij
       real, dimension (nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv, gLam
@@ -6177,21 +6183,20 @@ module Magnetic
 !  Calculate emf for alpha effect (for imposed field).
 !  Note that uxbm means <EMF.B0>/B0^2, so it gives already alpha=EMF/B0.
 !
-      if (idiag_uxbm/=0 .or. idiag_uxbmx/=0 .or. idiag_uxbmy/=0 &
+      if (idiag_uxbm/=0 .or. idiag_uxbmx/=0 .or. idiag_uxbmy/=0 .or. idiag_uxbmz/=0 &
           .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
-          .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 &
-          .or. idiag_uxbmz/=0) then
+          .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 ) then
         if (idiag_uxbm/=0) then
           call dot(B_ext_inv,p%uxb,uxb_dotB0)
           call sum_mn_name(uxb_dotB0,idiag_uxbm)
         endif
-        call sum_mn_name(uxbb(:,1),idiag_uxbmx)
-        call sum_mn_name(uxbb(:,2),idiag_uxbmy)
-        call sum_mn_name(uxbb(:,3),idiag_uxbmz)
-        if (idiag_uxbcmx/=0) call sum_mn_name(uxbb(:,1)*coskz(n),idiag_uxbcmx)
-        if (idiag_uxbcmy/=0) call sum_mn_name(uxbb(:,2)*coskz(n),idiag_uxbcmy)
-        if (idiag_uxbsmx/=0) call sum_mn_name(uxbb(:,1)*sinkz(n),idiag_uxbsmx)
-        if (idiag_uxbsmy/=0) call sum_mn_name(uxbb(:,2)*sinkz(n),idiag_uxbsmy)
+        call sum_mn_name(p%uxbb(:,1),idiag_uxbmx)
+        call sum_mn_name(p%uxbb(:,2),idiag_uxbmy)
+        call sum_mn_name(p%uxbb(:,3),idiag_uxbmz)
+        if (idiag_uxbcmx/=0) call sum_mn_name(p%uxbb(:,1)*coskz(n),idiag_uxbcmx)
+        if (idiag_uxbcmy/=0) call sum_mn_name(p%uxbb(:,2)*coskz(n),idiag_uxbcmy)
+        if (idiag_uxbsmx/=0) call sum_mn_name(p%uxbb(:,1)*sinkz(n),idiag_uxbsmx)
+        if (idiag_uxbsmy/=0) call sum_mn_name(p%uxbb(:,2)*sinkz(n),idiag_uxbsmy)
       endif
 !
 !  Calculate part I of magnetic helicity flux (ExA contribution).
@@ -10677,21 +10682,11 @@ module Magnetic
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=2
+    integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(eta,p_par(1))
 
     endsubroutine pushpars2c
-!***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    use Syscalls, only: copy_addr
-    use Diagnostics, only: set_type
-
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(n_diags) :: p_diag
-
-    endsubroutine pushdiags2c
 !***********************************************************************
 endmodule Magnetic

@@ -35,7 +35,7 @@ module WENO_transport
       call keep_compiler_quiet(m,n,iq,iq1)
       call keep_compiler_quiet(iux,iuy,iuz)
       call keep_compiler_quiet(dx_1,dy_1,dz_1)
-      call keep_compiler_quiet(dq,ref,ref1)
+      call keep_compiler_quiet(ref,ref1)
 !
     endsubroutine weno_transp
 !***********************************************************************

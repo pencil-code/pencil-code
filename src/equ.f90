@@ -10,9 +10,8 @@ module Equ
   use Mpicomm
   use Grid, only: calc_pencils_grid, get_grid_mn
   use General, only: point_and_get_size, allocate_using_dims, &
-  pointer_with_size_info_1d, pointer_with_size_info_2d, &
-  pointer_with_size_info_2d_int, pointer_with_size_info_3d, pointer_with_size_info_4d
-!
+                     pointer_with_size_info_1d, pointer_with_size_info_2d, &
+                     pointer_with_size_info_2d_int, pointer_with_size_info_3d, pointer_with_size_info_4d
   implicit none
 !
   public :: pde, debug_imn_arrays, initialize_pencils
@@ -580,29 +579,7 @@ module Equ
     use Diagnostics
 
     real, dimension (mx,my,mz,mfarray) :: f
-
-!$          call read_diagnostics_accumulators
-        !
-        !  Print diagnostic averages to screen and file.
-        !
-            if (lout) then
-                call prints
-                if (lchemistry) call write_net_reaction
-            endif
-        !
-            if (l1davg) call write_1daverages
-            if (l2davg) call write_2daverages
-        !
-            if (lout_sound) then
-                call write_sound(tsound)
-                lout_sound = .false.
-            endif
-        !
-        !  Write slices (for animation purposes).
-        !
-            if (lvideo .and. lwrite_slices) call wvid(f)
-        !
-=======
+!
 !$    call read_diagnostics_accumulators
 !
 !  Print diagnostic averages to screen and file.
@@ -624,7 +601,6 @@ module Equ
 !
       if (lvideo .and. lwrite_slices) call wvid(f)
 !
->>>>>>> 26f9e8c88 (MR: deleted uneeded; coding style)
     endsubroutine write_diagnostics
 !***********************************************************************
   subroutine write_diagnostics_accumulators
@@ -637,6 +613,7 @@ module Equ
     use Chemistry
     use Solid_Cells
     integer :: imn
+!
       if (allocated(fname)) then
         p_fname%data = fname
       endif
@@ -657,9 +634,11 @@ module Equ
       if (allocated(fname_keep)) p_fname_keep%data =  fname_keep
       if (allocated(fname_sound)) p_fname_sound%data =  fname_sound
       if (allocated(ncountsz)) p_ncountsz%data =  ncountsz
+!
       call diagnostics_write_diagnostics_accumulators
       call chemistry_write_diagnostics_accumulators
       call sc_write_diag_accum
+!
     endsubroutine write_diagnostics_accumulators
 !***********************************************************************
     subroutine init_reduc_pointers
@@ -698,6 +677,7 @@ module Equ
 !
     use Chemistry
     use Solid_Cells
+!
     if (allocated(fname))      p_fname%data = 0.
     if (allocated(fnamex))     p_fnamex%data = 0.
     if (allocated(fnamey))     p_fnamey%data = 0.
@@ -709,7 +689,6 @@ module Equ
     if (allocated(fname_keep)) p_fname_keep%data = 0.
     if (allocated(fname_sound))p_fname_sound%data= 0.
     if (allocated(ncountsz))   p_ncountsz%data= 0
-
 
     l1davgfirst_save = l1davgfirst
     ldiagnos_save = ldiagnos
@@ -724,6 +703,7 @@ module Equ
     lwrite_slices_save = lwrite_slices
     it_save = it
     t_save = t
+
     if (ldiagnos   ) tdiagnos_save  =t ! (diagnostics are for THIS time)
     if (l1davgfirst) t1ddiagnos_save=t ! (1-D averages are for THIS time)
     if (l2davgfirst) t2davgfirst_save=t ! (2-D averages are for THIS time)
@@ -739,10 +719,11 @@ module Equ
 !
 !  30-mar-23/TP: Coded
 !
-
 !$  use OMP_lib
     use Diagnostics
+
     integer :: imn
+
       if (ldiagnos .and. allocated(fname)) then
         do imn=1,size(fname)
           if (any(inds_max_diags == imn) .and. fname(imn) /= 0.) then
@@ -771,7 +752,6 @@ module Equ
       if (allocated(ncountsz)) p_ncountsz%data = p_ncountsz%data + ncountsz
 
       call diagnostics_diag_reductions
-
 
     endsubroutine diagnostics_reductions
 !***********************************************************************
@@ -817,8 +797,7 @@ module Equ
       integer :: imn
       integer, value :: istart,iend
 !
-!
-!$omp parallel firstprivate(p) num_threads(num_of_helper_threads)
+!$omp parallel firstprivate(p) num_threads(num_helper_threads)
 !$    call init_private_accumulators
 !$    call read_diagnostic_flags
       lfirstpoint=.true.
@@ -828,6 +807,7 @@ module Equ
 
         n=nn(imn)
         m=mm(imn)
+!
 !TP: for the moment calc_all_module_diagnostics does not support coarse grid
 !
 !  Skip points not belonging to coarse grid.
@@ -871,15 +851,15 @@ module Equ
       enddo
       !$omp end do
       !$omp barrier
-      do imn=0,num_of_helper_threads-1
-!$      if(omp_get_thread_num() == imn) then
+!$    do imn=0,num_helper_threads-1
+!$      if (omp_get_thread_num() == imn) then
 !$omp critical
-!$   call prep_finalize_thread_diagnos
-!$   call diagnostics_reductions
+!$        call prep_finalize_thread_diagnos
+!$        call diagnostics_reductions
 !$omp end critical
 !$      endif
       !$omp barrier
-      enddo
+!$    enddo
 !$omp end parallel
 
     endsubroutine all_module_diags_slice
@@ -901,6 +881,7 @@ module Equ
 !$    real, dimension(mx,my,mz,mfarray) :: f
 !$
 !$      call calc_all_module_diagnostics(f)
+!
 !$    endsubroutine calc_all_module_diagnostics_wrapper 
 !***********************************************************************
     subroutine calc_all_module_diagnostics(f)
@@ -917,6 +898,7 @@ module Equ
       integer :: imn
 
       call all_module_diags_slice(f,1,nyz)
+!
     endsubroutine calc_all_module_diagnostics
 !****************************************************************************
 !$    subroutine finalize_diagnostics_wrapper() bind(C)
@@ -925,6 +907,7 @@ module Equ
 !
 !$      !only needed since can't use bind(C) in general
 !$      call finalize_diagnostics
+!
 !$    endsubroutine finalize_diagnostics_wrapper
 !****************************************************************************
     subroutine finalize_diagnostics() 
@@ -938,8 +921,7 @@ module Equ
       use Magnetic
       use Pscalar
 !$    use OMP_lib
-
-!!
+!
 !  Restore options that were used when calc_all_module_diagnostics was called
 !
 !$   call read_diagnostics_accumulators

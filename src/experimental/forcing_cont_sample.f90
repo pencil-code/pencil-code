@@ -3968,7 +3968,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !   12-aug-09/dhruba: coded
 !
       if (iforce=='chandra-kendall') then
-        print*,'Deallocating arrays relevent to Chanrasekhar-Kendall forcing ..'
+        print*,'Deallocating arrays relevant to Chanrasekhar-Kendall forcing ..'
         deallocate(psif,cklist)
         if (lfastCK)  deallocate(Zpsi_list,RYlm_list)
         print*,'Done.'
@@ -3976,18 +3976,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine forcing_clean_up
 !***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(:) :: p_diag
-
-    call keep_compiler_quiet(p_diag)
-
-    endsubroutine pushdiags2c
-!***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call keep_compiler_quiet(p_par)
