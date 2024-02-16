@@ -45,7 +45,7 @@ module NeutralDensity
   real :: star_form_threshold=1.,star_form_exponent=1.5
   character (len=labellen), dimension(ninit) :: initlnrhon='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiffn=''
-  character (len=labellen) :: borderlnrhon='nothing'
+  character (len=labellen) :: borderlnrhon='nothing', alpha_prescription='const'
   character (len=intlen) :: iinit_str
 !
   namelist /neutraldensity_init_pars/ &
@@ -54,7 +54,8 @@ module NeutralDensity
        idiffn,lneutraldensity_nolog,    &
        lcontinuity_neutral,lnrhon0,lnrhon_left,lnrhon_right, &
        alpha,zeta,kx_lnrhon,ky_lnrhon,kz_lnrhon,lpretend_star,&
-       star_form_threshold,lramp_up,star_form_exponent
+       star_form_threshold,lramp_up,star_form_exponent, &
+       alpha_prescription
 !
   namelist /neutraldensity_run_pars/ &
        diffrhon,diffrhon_hyper3,diffrhon_shock,   &
@@ -63,7 +64,8 @@ module NeutralDensity
        lfreeze_lnrhonint,lfreeze_lnrhonext,         &
        lnrhon_const,lcontinuity_neutral,borderlnrhon,    &
        diffrhon_hyper3_aniso,alpha,zeta,lpretend_star, &
-       star_form_threshold,lramp_up,star_form_exponent
+       star_form_threshold,lramp_up,star_form_exponent, &
+       alpha_prescription
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -72,7 +74,7 @@ module NeutralDensity
   integer :: idiag_lnrhonmphi=0,idiag_rhonmphi=0,idiag_dtnd=0
   integer :: idiag_rhonmz=0, idiag_rhonmy=0, idiag_rhonmx=0
   integer :: idiag_rhonmxy=0, idiag_rhonmr=0
-  integer :: idiag_neutralmass=0
+  integer :: idiag_neutralmass=0, idiag_alprec=0
 !
 ! Auxiliaries
 !
@@ -425,6 +427,7 @@ module NeutralDensity
         lpenc_diagnos(i_rhon)=.true.
       if (idiag_lnrhon2m/=0) lpenc_diagnos(i_lnrhon)=.true.
       if (idiag_unglnrhonm/=0) lpenc_diagnos(i_unglnrhon)=.true.
+      if (idiag_alprec/=0) lpenc_diagnos(i_alpha)=.true.
 !
     endsubroutine pencil_criteria_neutraldensity
 !***********************************************************************
@@ -570,7 +573,22 @@ module NeutralDensity
         p%alpha=(alpha_time*smooth_step_threshold)*(p%uu(:,2)*p%rcyl_mn1)*p%rho1**(2-star_form_exponent)
 !
       else
-        p%alpha=alpha
+!
+!  Choice of different alpha prescriptions
+!
+        select case (alpha_prescription)
+        case ('const'); p%alpha=alpha
+        case ('Temp_dep')
+          if (lentropy) then
+            p%alpha=alpha*.1 !(test)
+          else
+            call fatal_error('calc_pencils_neutraldensity', &
+              'no energy equation is used')
+          endif
+        case default
+          call fatal_error('calc_pencils_neutraldensity', &
+            'No such value for alpha_prescription')
+        endselect
       endif
 !
     endsubroutine calc_pencils_neutraldensity
@@ -784,6 +802,7 @@ module NeutralDensity
 !
       if (ldiagnos) then
         call sum_mn_name(p%rhon,idiag_rhonm)
+        call sum_mn_name(p%alpha,idiag_alprec)
         call sum_lim_mn_name(p%rhon,idiag_neutralmass,p)
         if (idiag_rhonmin/=0)  call max_mn_name(-p%rhon,idiag_rhonmin,lneg=.true.)
         call max_mn_name(p%rhon,idiag_rhonmax)
@@ -862,7 +881,7 @@ module NeutralDensity
         idiag_lnrhonmphi=0; idiag_rhonmphi=0
         idiag_rhonmz=0; idiag_rhonmy=0; idiag_rhonmx=0
         idiag_rhonmxy=0; idiag_rhonmr=0; idiag_neutralmass=0
-        diffrhon=0.
+        diffrhon=0.; idiag_alprec=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -877,6 +896,7 @@ module NeutralDensity
         call parse_name(iname,cname(iname),cform(iname),'unglnrhonm',idiag_unglnrhonm)
         call parse_name(iname,cname(iname),cform(iname),'dtnd',idiag_dtnd)
         call parse_name(iname,cname(iname),cform(iname),'neutralmass',idiag_neutralmass)
+        call parse_name(iname,cname(iname),cform(iname),'alprec',idiag_alprec)
       enddo
 !
 !  check for those quantities for which we want xy-averages

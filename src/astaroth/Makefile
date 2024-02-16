@@ -1,5 +1,4 @@
 # Settings for taito-gpu
-CUFLAGS = 
 #-gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 
 #-gencode arch=compute_60,code=sm_60 --expt-relaxed-constexpr
 OPTFLAGS = -O1 
@@ -13,12 +12,9 @@ OPTFLAGS = -O1
 #CCFLAGS = -ccbin gcc -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. 
 ##CCFLAGS = -ccbin icpc -Xcompiler -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. 
 
-# Settings for Omer's machine
-#CFLAGS = -gencode arch=compute_52,code=sm_52 --shared --relocatable-device-code=true --compiler-options '-fPIC'
 
 #Importing environ variables into preprocessor
 ENVIRON = -DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX}
-###-DCMAKE_BUILD_TYPE=Debug    make VERBOSE=1
 
 PRECISION =
 include PC_modulesources.h
@@ -56,15 +52,11 @@ ENVIRON += -DAC_MPI_ENABLED=1
 
 OBJECTS = $(SOURCES:.cc=.o) 
 
-CCFLAGS = $(OPTFLAGS) -std=c++11 -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -g -G -lm
-#CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
-#CCFLAGS = $(OPTFLAGS) -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm 
+#CCFLAGS = $(OPTFLAGS) -std=c++11 -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -g -G -lm
 CCFLAGS = $(OPTFLAGS) -Xcompiler -shared -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm
-
+#CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
 PCHEADER_DIR=.
-#DSL_MODULE_DIR=Pencil
 DSL_MODULE_DIR=samples/gputest
-
 gpu_astaroth.o: gpu_astaroth.cc $(AC_HEADERS) $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_module_parfuncs.h forcing.h loadStore.h $(CHEADERS) astaroth_libs
 	mkdir -p build && \
 	echo $(USE_HIP) && \
@@ -82,15 +74,35 @@ gpu_astaroth.o: gpu_astaroth.cc $(AC_HEADERS) $(PCHEADER_DIR)/PC_moduleflags.h $
 	make -j && \
 	cd .. && \
 	cp -r ./NUMA-scheduler/include .
+IS_CRAY = $(shell ftn --version | grep -i Cray)
+ifeq ($(IS_CRAY),)
+#GCC with CUDA
+#export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
+  CPP = nvcc
+#these come from configs
+##  MODULE_NAME_ORDER=
+##  CMAKE_USE_HIP=OFF
+else
+#CRAY with HIP
+  CPP = hipcc
+#these come from configs
+##  CCFLAGS += -DAC_USE_HIP=1
+##  CMAKE_USE_HIP=ON
+##  MODULE_NAME_ORDER=CRAY
+##  MODULE_INFIX=$
+##  MODULE_SUFFIX=_
+#CC -xhip
+endif
+SINGLEPASS_INTEGRATION=OFF
 
 include Makefile.depend
 include Makefile.extern
 
 #export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
 #export CUDA_NVCC_FLAGS='-shared -fPIC'
-CPP = nvcc
+#CPP = nvcc
 #CRAY with HIP
-CPP = hipcc
+#CPP = hipcc
 #CC -xhip
 
 
@@ -120,11 +132,13 @@ update_astaroth_libs:
 	@echo ENVIRON: $(ENVIRON)
 
 
+#	@echo PRECISION=$(CMAKE_PREC)
 #-DCMAKE_CXX_COMPILER=/appl/spack/install-tree/gcc-4.8.5/gcc-8.3.0-qzmzn5/bin/c++ .. \
 #export DSL_MODULE=pc_mhd_solver && \
 
 %.o: %.cc
-	$(CPP) $(CCFLAGS) $(ENVIRON) -DAC_USE_HIP=1 -dc $< -o $@
+	$(CPP) $(CCFLAGS) $(ENVIRON) -c $< -o $@
+
 $(PC_HEADERS): .sentinel
 .sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
 	@rm -f $(PCHEADER_DIR)/PC_modulepars.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
@@ -136,14 +150,14 @@ $(PC_HEADERS): .sentinel
 	then ../scripts/phys_modules2c par $$file equationofstate; \
         else ../scripts/phys_modules2c par $$file; fi; done
 	@touch .sentinel
-
+#
 #@echo '// automatically generated; do not edit!' > diagnostics/PC_modulediags.h
 #@rm -f diagnostics/PC_modulediags_init.h
 #@sed -e's/_diags_/_diags_init_/' <  diagnostics/PC_modulediags.h > diagnostics/PC_modulediags_init.h
 #        @for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
 #        then ../scripts/phys_modules2c par $$file equationofstate; ../scripts/phys_modules2c diag $$file equationofstate;\
 #        else ../scripts/phys_modules2c par $$file; ../scripts/phys_modules2c diag $$file; fi; done
-
+#
 clean:
 	@rm -f $(OBJECTS)
 	@rm -f *.so .sentinel

@@ -3807,6 +3807,9 @@ module Solid_Cells
   endsubroutine sc_init_reduc_pointers
 !***********************************************************************
     subroutine sc_init_private_accumulators
+!
+!    7-feb-24/TP: allocates memory needed for solid cells diagnostics reductions
+!
       use General
       if(associated(p_c_dragx%data)) call allocate_using_dims(c_dragx,p%p_c_dragx%size)
       if(associated(p_c_dragy%data)) call allocate_using_dims(c_dragy,p%p_c_dragy%size)
