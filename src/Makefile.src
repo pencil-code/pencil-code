@@ -3023,7 +3023,7 @@ endif
 	fi
 	@echo '#include "prerequisites.h"' > $(DSL_WORKDIR)/solve.ac
 	@echo '' >> $(DSL_WORKDIR)/solve.ac
-	@echo 'Kernel solve() {' >> $(DSL_WORKDIR)/solve.ac
+	@echo 'Kernel singlepass_solve() {' >> $(DSL_WORKDIR)/solve.ac
 	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm tmp; \
 	for file in $$MODULESOURCES; do \
 	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
@@ -3032,12 +3032,21 @@ endif
 	    sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
 	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\U\1/'`; \
 	    funcname=`grep '^ *subroutine  *d[a-zA-Z_0-9_][a-zA-Z_0-9_]*_dt' $$file | sed -e's/^ *subroutine  *d/d/' -e's/ *(.*$$//'`; \
-	    echo '  write( '$$fieldname', rk3(previous('$$fieldname'), value('$$fieldname'), '$$funcname'()))' >> $(DSL_WORKDIR)/solve.ac; \
-	    if ( ! grep $$funcname'(){ }' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
-	      echo $$funcname'(){ }' >> $(DSL_WORKDIR)/equations.h; \
+	    if [[ "$$replcmt" =~ .*\#define[^a-zA-Z_].* ]]; then \
+	      suffix=_vector; \
+	      prefix=vec; \
+	      init="real3(0.,0.,0.)"; \
+	    else \
+	      suffix=; \
+	      prefix=; \
+	      init="0."; \
+	    fi; \
+	    echo '  write'$$suffix'( '$$fieldname', rk3'$$suffix'('$$prefix'previous('$$fieldname'), '$$prefix'value('$$fieldname'), '$$funcname'()))' >> $(DSL_WORKDIR)/solve.ac; \
+	    if ( ! grep $$funcname'(){.*}' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
+	      echo $$funcname'(){'$$init'}' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '' >> $(DSL_WORKDIR)/equations.h; \
 	    fi \
-          fi \
+	  fi \
 	done 
 	@sed -i -e'/^ *\/\// d' $(DSL_WORKDIR)/fieldecs.h
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac
@@ -3361,8 +3370,8 @@ endif
 #  When you use this you must be certain that everying is consistent.
 #
 linkonly:
-	$(LD) $(start) start.o $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LIBGPU) -o start.x
-	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LIBGPU) -o run.x
+	$(LD) $(start) start.o $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
+	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #
 #  Use sloppier compiler for a few files that use F77 syntax.
 #  (and also for param_io.f90, since `gfortran-4.4.5 -std=f95' doesn't

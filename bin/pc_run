@@ -451,6 +451,14 @@ sub dump_parameters {
 sub setup_environment {
     $ENV{PC_MODULES_LIST} = `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special.//g'`;
     #print "pc_run:MODULES:", $ENV{PC_MODULES_LIST}, "\n";
+    if ($settings{'multithread'}) {
+      $ENV{OMP_PROC_BIND} = 'TRUE';
+      $ENV{SRUN_CPUS_PER_TASK} = '$SLURM_CPUS_PER_TASK';    # shall not be effective!
+      $ENV{OMP_NUM_THREADS} = '$SLURM_CPUS_PER_TASK';
+    }
+    if ($settings{'mpich'}) {
+      $ENV{MPICH_GPU_SUPPORT_ENABLED} = '1';
+    }
 }
 # ---------------------------------------------------------------------- #
 sub setup_local_disc {
@@ -761,6 +769,26 @@ sub local_settings {
     ($settings{'ncpus'}) = match_line_ix(
         '^ \s* integer\b [^\!]* ncpus \s*=\s* ([0-9]*)', 'src/cparam.local'
     );
+
+    # Multithreading from Makefile.local
+    $settings{'multithread'} = 0 + defined(match_line_ix(
+        '^ \s* MULTITHREADING *= *[a-zA-Z]', 'src/Makefile.local'));
+    identify_setting('multithread', %settings);
+
+    # GPU from Makefile.local
+    $settings{'gpu'} = 0 + defined(match_line_ix(
+        '^ \s* GPU *= *[a-zA-Z_]', 'src/Makefile.local'));
+    identify_setting('gpu', %settings);
+
+    # MPICH from loaded modules
+    if ($settings{'mpi'} && $settings{'gpu'}) {
+
+      my $module_cmd = system('command -v module > /dev/null');
+      if ($module_cmd == 0) {
+        $settings{'mpich'} = `module list |& grep -i mpich | wc -l`;
+        identify_setting('mpich', %settings);
+      }
+    }
 
     my @nodes = get_node_list($settings{'ncpus'});
     my $N = @nodes + 0;

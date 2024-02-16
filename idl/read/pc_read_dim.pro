@@ -108,6 +108,8 @@ COMPILE_OPT IDL2, HIDDEN
   nprocx = 0L
   nprocy = 0L
   nprocz = 0L
+
+  default, quiet, 0
 ;
 ; Default filename
 ;

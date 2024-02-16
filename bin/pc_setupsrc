@@ -487,7 +487,10 @@ $srcdir/astaroth/CMakeLists.txt \
 $srcdir/astaroth/NUMA-scheduler \
 $srcdir/astaroth/NUMA-scheduler/src \
 $srcdir/astaroth/submodule/acc/pencil/*.h $srcdir/astaroth/submodule/acc/stdlib/*.h \
-$srcdir/astaroth/submodule/*
+$srcdir/astaroth/submodule/* \
+$srcdir/astaroth/submodule/acc-runtime/Pencil/prerequisites.h \
+$srcdir/astaroth/submodule/acc-runtime/stdlib/*.h \
+$srcdir/astaroth/*.cc $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* $srcdir/astaroth/*.txt $srcdir/astaroth/*.sed $srcdir/astaroth/DSL
   do
     file_for_link $file
   done
@@ -498,8 +501,6 @@ $srcdir/astaroth/submodule/*
     ln -s $file `echo $file | sed -r 's/^.*astaroth\///'`
   done
   
-  mkdir $srcdir/astaroth/DSL
-  ln -s $srcdir/astaroth/DSL $srcdir/astaroth/submodule/acc-runtime/Pencil
   cd $old_dir
 }
 #
