@@ -72,7 +72,7 @@ class Power(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, datadir="data", file_name=None, quiet=False):
+    def read(self, datadir="data", file_name=None, quiet=False, time_range=None):
         """
         read(datadir='data', file_name='', quiet=False)
 
@@ -164,6 +164,27 @@ class Power(object):
                 self._read_power_krms(power_name, file_name, datadir)
             else:
                 self._read_power(power_name, file_name, datadir)
+        if time_range:
+            if isinstance(time_range, list):
+                time_range = time_range
+            else:
+                time_range = [time_range]
+            if len(time_range) == 1:
+                start_time = 0.
+                end_time = time_range[0]
+            elif len(time_range) == 2:
+                start_time = time_range[0]
+                end_time = time_range[1]
+            ilist = list()
+            for i, time in zip(range(self.t.size),self.t):
+                if time >= start_time:
+                    if time <= end_time:
+                        ilist.append(i)
+            for key in self.__dict__.keys():
+                if not key=="krms":
+                    tmp = self.__getattribute__(key)[ilist]
+                    self.__delattr__(key)
+                    setattr(self, key, tmp)
 
     def _read_power2d(self, power_name, file_name, datadir):
         """
