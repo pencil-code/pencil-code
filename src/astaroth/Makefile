@@ -57,6 +57,9 @@ CCFLAGS = $(OPTFLAGS) -Xcompiler -shared -fPIC --debug -I.. -Isubmodule/include 
 #CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
 PCHEADER_DIR=.
 DSL_MODULE_DIR=samples/gputest
+include Makefile.depend
+
+
 gpu_astaroth.o: gpu_astaroth.cc $(AC_HEADERS) $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_module_parfuncs.h forcing.h loadStore.h $(CHEADERS) astaroth_libs
 	mkdir -p build && \
 	echo $(USE_HIP) && \
@@ -74,6 +77,9 @@ gpu_astaroth.o: gpu_astaroth.cc $(AC_HEADERS) $(PCHEADER_DIR)/PC_moduleflags.h $
 	make -j && \
 	cd .. && \
 	cp -r ./NUMA-scheduler/include .
+
+include Makefile.extern
+
 IS_CRAY = $(shell ftn --version | grep -i Cray)
 ifeq ($(IS_CRAY),)
 #GCC with CUDA
@@ -95,8 +101,6 @@ else
 endif
 SINGLEPASS_INTEGRATION=OFF
 
-include Makefile.depend
-include Makefile.extern
 
 #export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
 #export CUDA_NVCC_FLAGS='-shared -fPIC'
