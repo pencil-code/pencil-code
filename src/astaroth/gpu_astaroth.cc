@@ -8,11 +8,7 @@
   Comments: 
 */
 //General
-<<<<<<< HEAD
-//#include <cmath>
-=======
 #include <math.h>
->>>>>>> origin/master
 #include <algorithm>
 #include <chrono>
 #include <iostream>
@@ -393,12 +389,7 @@ AcReal max_advec()
 {
   AcReal maxadvec_ = 0.;
 #if LHYDRO
-<<<<<<< HEAD
-  AcReal umax;
-  acGridReduceVec(STREAM_DEFAULT, RTYPE_MAX, VTXBUF_UUX, VTXBUF_UUY, VTXBUF_UUZ, &umax);
-=======
-        AcReal umax=acReduceVec(RTYPE_MAX,UUX,UUY,UUZ);
->>>>>>> origin/master
+        AcReal umax=acReduceVec(RTYPE_MAX,VTXBUF_UUX,VTXBUF_UUY,VTXBUF_UUZ);
 #endif
   return maxadvec_;
 }
@@ -408,21 +399,12 @@ AcReal max_diffus()
   AcReal dxyz_2_val = get_dxyz_2();
   AcReal maxdiffus_ = 0.;
 #if LVISCOSITY
-<<<<<<< HEAD
   maxdiffus_ = nu * dxyz_2_val;
 #endif
 #if LMAGNETIC
   maxdiffus_ = std::max(maxdiffus_, eta * dxyz_2_val);
         //maxdiffus_=nu*dxyz_2[nghost-1];
         //maxdiffus_=nu/(dx*dx);
-=======
-        //maxdiffus_=nu*dxyz_2[nghost-1];
-        maxdiffus_=nu/(dx*dx);
-#endif
-#if LMAGNETIC
-        //maxdiffus_=std::max(maxdiffus_,eta*dxyz_2[nghost-1]);
-        maxdiffus_=std::max(maxdiffus_,eta/(dx*dx));
->>>>>>> origin/master
 #endif
 #if LMAGNETIC
         //maxdiffus_=std::max(maxdiffus_,eta*dxyz_2[nghost-1]);
