@@ -11,7 +11,7 @@ module Timestep
   include 'timestep.h'
 !
 ! Parameters for adaptive time stepping
-  real, parameter :: safety      =  0.9
+  real, parameter :: safety      =  0.95
   real            :: errcon, dt_next, dt_increase, dt_decrease
   real, dimension(mvar) :: farraymin
 !
@@ -42,7 +42,7 @@ module Timestep
 !
 !  General error condition: errcon ~1e-4 redundant with maxerr ~1.
 !  0.1 more effective accelerator
-      errcon = 0.1!(5.0/safety)**(1.0/dt_increase)
+!      errcon = 0.1!(5.0/safety)**(1.0/dt_increase)
 !
 !  ldt is set after read_persistent in rsnap, so dt0==0 used to read,
 !  but ldt=F for write
@@ -52,8 +52,8 @@ module Timestep
       !too high to initialize run
       if (dt0/=0.) dt=dt0
       dt_next=dt
-      dt_increase=-1./itorder
-      dt_decrease=-1./(itorder-1)
+      dt_increase=-1./(itorder+dtinc)
+      dt_decrease=-1./(itorder-dtdec)
 !
     endsubroutine initialize_timestep
 !***********************************************************************
@@ -63,6 +63,19 @@ module Timestep
 !  To use this, set itorder to 5.
 !
 !  22-jun-06/tony: coded
+!  08-feb-24/fred: revisions based on high resolution simulations of SN-driven turbulence
+!     notes: Courant time is insufficient to safeguard high Mach number turbulence with
+!     significant sources and sinks, and strong viscous stresses that are beyond the Courant
+!     analysis, hence tried RKF. Fifth order produces large time step than previous ISM
+!     methods used but the increased iterations over the pde results in longer total
+!     integration time. 3rd order has fewer overheads than default CFT method and some savings in
+!     redundant timestep calculations, providing the number of iterations of rkck can be
+!     minimised. Cash-Karp 5th order method uses dt_increase=-1/5 and dt_devrease=-1/4.
+!     dtinc and dtdec optimal around 0.5 for 3rd order scheme, but resolution sensitve, so worth
+!     testing on a new physical setup to optimise algorithm. Cash-Karp saftey=0.9 revised here to
+!     0.95 as 0.9 overshoots, saftey<1 for dt_temp can actually reduce the timestep, so now omitted.
+!     "cons_frac_err" for relative error normalisation only method verified and sensitive to choices
+!     dt_epsi and dt_ratio. Sensitivity to eps_rkf very nonlinear and resolution dependent.
 !
       use Messages, only: warning
 
@@ -78,8 +91,11 @@ module Timestep
 !
 !      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
+!  dt_ratio is lower bound on a processor for the denominator of each variable
+!  dt_epsi is the lower bound for the denominator on any variable or processor
+!
       do j=1,mvar
-        farraymin(j) = max(min(5e-3*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),1.),dt_epsi)
+        farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
       enddo
       if (lroot.and.it==1) print*,"farraymin",farraymin
 !
@@ -100,7 +116,7 @@ module Timestep
         dt_temp = safety*dt*errmax**dt_decrease
         ! Don't decrease the time step by more than a factor of ten
         dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
-        if (lroot.and.ip==7) print*,"Decreasing dt, dt_temp, errmax",dt,dt_temp,errmax
+        if (lroot.and.ip==7) print*,"time_step: dt",dt,"to dt_temp",dt_temp,"at errmax",errmax
         tnew=told+dt
         if (tnew == told) then
           ! Guard against infinitesimal time steps
@@ -110,16 +126,24 @@ module Timestep
         endif
         t=told
       enddo
+!
+!  The algorithm is optimised if the number of iterations is mainly 1 and occasionally 2
+!  errmax should not be much less than 1, otherwise dt_next is more likely to overshoot
+!  and there will be more iterations. The ratio of dt/dt_next should not be small if dt_next
+!  is a reasonable try.
+!
       if (lroot.and.ip==7) then
-        print*,"time_step: rkck took",i,"iterations to converge to errmax",errmax
-        print*,"time_step: tried time",dt_next,"reducing to",dt,"reduction rate",dt/dt_next
+        print*,"time_step: rkck",i,"iterations"
+        print*,"time_step: rkck",errmax,"converged errmax"
+        print*,"time_step: rkck",dt_next,"tried dt_next"
+        print*,"time_step: rkck",dt,"used dt"
+        print*,"time_step: rkck",dt/dt_next,"ratio reduction"
       endif
       call update_after_substep(f,df,dt,.true.)
 !
 ! Time step to try next time
 !
-      dt_next = safety*dt*errmax**dt_increase
-      if (.not.leps_fixed) eps_rkf = eps_rkf*(dt/dt_last)**dt_increase
+      dt_next = dt*errmax**dt_increase
 !
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt
 !
