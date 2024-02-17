@@ -302,16 +302,19 @@ module EquationOfState
 !  Writing files for use with IDL
 !
         aux_count = aux_count+1
+        aux_var(aux_count)=',gpx $'
 !
         call farray_register_auxiliary('gpy',igpy)
 !
 !  Writing files for use with IDL
 !
         aux_count = aux_count+1
+        aux_var(aux_count)=',gpy $'
+
       endif
 !
-      if (lentropy.and.gamma_m1==0.) call warning('initialize_eos','gamma=1 not allowed w/entropy')
-      if (gamma_m1==0.and..not.lanelastic) call warning('initialize_eos','gamma=1 not allowed w/entropy')
+      if ((lentropy.or.ltemperature).and.gamma==1.) &
+          call fatal_error('initialize_eos','gamma=1 not allowed w/entropy')
 !
     endsubroutine initialize_eos
 !***********************************************************************
