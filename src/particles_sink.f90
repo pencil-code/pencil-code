@@ -253,7 +253,6 @@ module Particles_sink
 !  25-aug-15/ccyang: added switch to create at most one sink per cell
 !  03-jan-23/urs: added switch to create at most one sink in each cube of 3x3x3 cells
 !
-      use Boundcond
       use Diagnostics
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -270,9 +269,7 @@ module Particles_sink
       real :: rhoc,rhop_interp_diag
 !
       if (ip<=6) then
-        print*, 'create_particles_sink: entering, iproc, it, itsub=', &
-            iproc, it, itsub
-      endif
+        print*, 'create_particles_sink: entering, iproc, it, itsub=', iproc, it, itsub
 !
 !  Leave the subroutine if new sink particles are never created.
 !
