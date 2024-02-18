@@ -2187,7 +2187,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bc_sym_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_sym_x_ydep: ","topbot should be BOT or TOP")
 !
       endselect
 !
