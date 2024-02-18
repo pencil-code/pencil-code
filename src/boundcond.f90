@@ -2149,6 +2149,7 @@ module Boundcond
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
+!  18-feb-24/axel: adapted from bc_sym_x to model Comisso+15; use sin instead of cos(ky).
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
@@ -2160,7 +2161,6 @@ module Boundcond
       real :: ky
 !
       ky=2.*pi/Lxyz(2)
-!print*,'AXEL: t,m,y(m)=',t,m,y(m)
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 !
@@ -2168,7 +2168,7 @@ module Boundcond
 !
       case(BOT)               ! bottom boundary
         !if (present(val)) f(l1,:,:,j)=val(j)
-        if (present(val)) f(l1,:,:,j)=-.5+val(j)*spread(cos(ky*y),2,mz)
+        if (present(val)) f(l1,:,:,j)=-.5+val(j)*spread(sin(ky*y),2,mz)
         if (relative) then
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
         else
@@ -2178,7 +2178,7 @@ module Boundcond
 !
       case(TOP)               ! top boundary
         !if (present(val)) f(l2,:,:,j)=val(j)
-        if (present(val)) f(l2,:,:,j)=-.5+val(j)*spread(cos(ky*y),2,mz)
+        if (present(val)) f(l2,:,:,j)=-.5+val(j)*spread(sin(ky*y),2,mz)
         if (relative) then
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
         else
