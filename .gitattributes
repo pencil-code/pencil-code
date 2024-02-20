@@ -3769,9 +3769,6 @@ samples/superparticle_condensation/k.dat -text
 samples/superparticle_condensation/print.in -text
 samples/superparticle_condensation/reference.out -text
 samples/superparticle_condensation/run.in -text
-samples/superparticle_condensation/src/.build-history -text
-samples/superparticle_condensation/src/.buildinfo -text
-samples/superparticle_condensation/src/.buildtime -text
 samples/superparticle_condensation/src/.current-precision -text
 samples/superparticle_condensation/src/Makefile.local -text
 samples/superparticle_condensation/src/cparam.local -text
