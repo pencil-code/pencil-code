@@ -2380,6 +2380,7 @@ module Diagnostics
 !
 !   2-oct-05/anders: adapted from xysum_mn_name_z
 !   3-sep-13/MR: derived from yzsum_mn_name_x, m now parameter
+!   22-feb-2024/Kishore: fix for non-Cartesian coordinates
 !
       real, dimension (nx), intent(IN) :: a
       integer,              intent(IN) :: iname,m
@@ -2393,11 +2394,14 @@ module Diagnostics
         if (lfirstpoint) fnamex(:,:,iname)=0.0
 !
 !  Use different volume differentials for different coordinate systems.
+!  Note that in spherical/cylindrical coordinates, the line elements for
+!  the y and z coordinates depend on x. However, since we are not summing
+!  over x, that would simply cancel out when the final normalization is
+!  performed in yzaverages_x, and so we simply drop the factors of x in
+!  both the places.
 !
         if (lspherical_coords) then
-          fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+x(l1:l2)**2*sinth(m)*a
-        elseif (lcylindrical_coords) then
-          fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+x(l1:l2)*a
+          fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+sinth(m)*a
         else
           fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+a
         endif
