@@ -95,7 +95,7 @@ module Diagnostics
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   real, dimension (nrcyl) :: phiavg_norm
-  real :: dVol_rel1
+  real :: dVol_rel1, dA_xy_rel1, dA_yz_rel1, dA_xz_rel1
 
   character (len=intlen) :: ch1davg, ch2davg
   integer :: ixav_max
@@ -115,9 +115,10 @@ module Diagnostics
 !  14-aug-03/axel: added dxy, dyz, and dxz
 !  26-aug-13/MR: removed switch first; moved calculation of dVol_rel1 from diagnostic
 !  31-mar-15/MR: added switch for proper volume averaging
+!  22-feb-2024/Kishore: added dA_{xy,yz,xz}_rel1, required for 1D averages in curvilinear coordinates.
 !
       real :: dxeff,dyeff,dzeff
-      real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel
+      real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel, intrdr_sph
       integer :: i
 !
 !  Initialize rcyl for the phi-averages grid. Does not need to be
@@ -161,8 +162,10 @@ module Diagnostics
 !
         if (nxgrid/=1) then
           intdr_rel = (xyz1(1)**3-xyz0(1)**3)/(3.*dx)
+          intrdr_sph = (xyz1(1)**2-xyz0(1)**2)/(2.*dx)
         else
           intdr_rel = 1.
+          intrdr_sph = 1.
         endif
 !
         if (nygrid/=1) then
@@ -178,6 +181,9 @@ module Diagnostics
         endif
 !
         dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
+        dA_xy_rel1 = 1./(intrdr_sph*nygrid)
+        dA_yz_rel1 = 1./(intdtheta_rel*intdphi_rel)
+        dA_xz_rel1 = 1./(intrdr_sph*intdphi_rel)
 !
       elseif (lcylindrical_coords) then
 !
@@ -202,12 +208,23 @@ module Diagnostics
         endif
 !
         dVol_rel1=1./(intdr_rel*intdphi_rel*intdz_rel)
+        dA_xy_rel1 = 1./(intdr_rel*intdphi_rel)
+        dA_yz_rel1 = 1./(intdphi_rel*intdz_rel)
+        dA_xz_rel1 = 1./(nxgrid*intdz_rel)
 !
       else
         dVol_rel1=1./nwgrid
+        dA_xy_rel1 = 1./nxygrid
+        dA_xz_rel1 = 1./nxzgrid
+        dA_yz_rel1 = 1./nyzgrid
       endif
 !
-      if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1
+      if (lroot.and.ip<=10) then
+        print*,'dVol_rel1=',dVol_rel1
+        print*,'dA_xy_rel1=',dA_xy_rel1
+        print*,'dA_xz_rel1=',dA_xz_rel1
+        print*,'dA_yz_rel1=',dA_yz_rel1
+      endif
 !
 !  Limits to xaveraging.
 !
@@ -913,10 +930,10 @@ module Diagnostics
 !
               call mpiallreduce_sum_int(ncount,nsum,nz,IXYPLANE)
 !
-!  Form average by dividing by nsum. Multiplication with nxygrid
-!  necessary as below the average is divided by that.
+!  Form average by dividing by nsum. Dividing by dA_xy_rel1
+!  necessary as below the average is multiplied by that.
 !
-              where (nsum>0) fnamez(:,ipz+1,idiag)=fnamez(:,ipz+1,idiag)*(nxygrid/nsum)
+              where (nsum>0) fnamez(:,ipz+1,idiag)=fnamez(:,ipz+1,idiag)/(dA_xy_rel1*nsum)
               ncountsz(:,idiag)=0
 
             endif
@@ -927,7 +944,7 @@ module Diagnostics
 !  The result is only present on the root processor
 !
         call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,nnamez/))
-        if (lroot) fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/nxygrid
+        if (lroot) fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)*dA_xy_rel1
       endif
 !
     endsubroutine xyaverages_z
@@ -945,7 +962,9 @@ module Diagnostics
 !
       if (nnamey>0) then
         call mpireduce_sum(fnamey,fsumy,(/ny,nprocy,nnamey/))
-        if (lroot) fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/nxzgrid
+        if (lroot) then
+          fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)*dA_xz_rel1
+        endif
       endif
 !
     endsubroutine xzaverages_y
@@ -963,7 +982,7 @@ module Diagnostics
 !
       if (nnamex>0) then
         call mpireduce_sum(fnamex,fsumx,(/nx,nprocx,nnamex/))
-        if (lroot) fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)/nyzgrid
+        if (lroot) fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)*dA_yz_rel1
       endif
 !
     endsubroutine yzaverages_x
