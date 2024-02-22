@@ -113,11 +113,9 @@ subroutine main_sub
   use Timestep,        only: time_step, initialize_timestep
 !
 !$ use OMP_lib
-!$ use mt, only: wait_all_thread_pool, push_task, mt_split,&
-!$ free_thread_pool, depend_on_all, default_task_type
 !$ use, intrinsic :: iso_c_binding, iso_fortran_env
+!!$ use mt, only: wait_all_thread_pool, push_task, free_thread_pool, depend_on_all, default_task_type
 !
-  type (pencil_case) :: p
   character(len=fnlen) :: fproc_bounds
   real(KIND=rkind8) :: time1, time2, tvar1
   real(KIND=rkind8) :: time_last_diagnostic, time_this_diagnostic
@@ -790,7 +788,7 @@ subroutine main_sub
 !
 !   Diagnostic output in concurrent thread.
 !
-    if (lgpu) then
+    if (lmultithread) then
       if (lout.or.l1davg.or.l1dphiavg.or.l2davg) then
 !!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task,&
 !!$      1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
@@ -1016,12 +1014,10 @@ program run
 !
   use run_module
   use Gpu,     only: gpu_init
-  use Mpicomm, only: mpicomm_init        
+  use Mpicomm, only: mpicomm_init
+  use Diagnostics, only: phiavg_norm
 !
 !$ use OMP_lib
-!$ use mt, only: wait_all_thread_pool, push_task, mt_split,&
-!$ free_thread_pool, depend_on_all, default_task_type
-!$ use, intrinsic :: iso_c_binding, iso_fortran_env
 !
   lrun = .true.
 !
@@ -1037,17 +1033,14 @@ program run
 !
 !$ include 'omp_init.h'
 
-!$  if (.true.) then
-!$omp parallel num_threads(2)
+!$omp parallel num_threads(2) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+
 !$    if (omp_get_thread_num() == 0) then
-!$      call main_sub
+        call main_sub
 !$    else
 !$      call helper_loop
 !$    endif
 !$omp end parallel
-!$  else
-      call main_sub
-!$  endif
 
 endprogram run
 !**************************************************************************

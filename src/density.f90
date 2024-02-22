@@ -2797,7 +2797,7 @@ module Density
 !
       endif   !  if (lSchur_3D3D1D) then ... else
 !
-      call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
+      call timing('dlnrho_dt','before calc_diagnostics',mnloop=.true.)
       call calc_diagnostics_density(f,p)
       call timing('dlnrho_dt','finished',mnloop=.true.)
 !
@@ -2948,7 +2948,7 @@ module Density
         if (idiag_drhom/=0)    call sum_mn_name(p%rho-rho0,idiag_drhom)
         call sum_mn_name(p%ugrho,idiag_ugrhom)
         call sum_mn_name(p%uglnrho,idiag_uglnrhom)
-        if (.not.lgpu) then
+        if (.not.lmultithread) then
           if (idiag_dtd/=0) call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
           if (idiag_dtd3/=0) call max_mn_name(diffus_diffrho3/cdtv3,idiag_dtd3,l_dt=.true.)
         endif

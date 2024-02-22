@@ -5698,7 +5698,6 @@ module Magnetic
 
       integer :: isound,lspoint,mspoint,nspoint,j
       real, dimension (nx,3) :: uxbxb,poynting
-
 !
 ! Magnetic field components at the list of points written out in sound.dat
 ! lwrite_sound is false if either no sound output is required, or if none of
@@ -5755,7 +5754,7 @@ module Magnetic
         if (ivid_ab/=0) call store_slices(p%ab,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2,ab_r)
         if (ivid_beta1/=0) call store_slices(p%beta1,beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
                                              beta1_xy3,beta1_xy4,beta1_xz2,beta1_r)
-        if (.not.lgpu.and.ivid_poynting/=0) then
+        if (ivid_poynting/=0) then
           call cross(p%uxb,p%bb,uxbxb)
           do j=1,3
             poynting(:,j) = eta_total*p%jxb(:,j) - mu01*uxbxb(:,j)
@@ -5800,7 +5799,7 @@ module Magnetic
 
       if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
 
-      if (.not.lgpu) then
+      if (.not.lmultithread) then
 !
 !  These diagnostics rely upon mn-dependent quantities which are not in the pencil case.
 !
@@ -5809,61 +5808,61 @@ module Magnetic
           call max_mn_name(Fmax,idiag_dtFr,l_dt=.true.)
           call max_mn_name(dAmax,idiag_dtBr,l_dt=.true.)
         endif
-!
-!  Integrate velocity in time, to calculate correlation time later.
-!
-        if (idiag_b2tm/=0) then
-          call dot(p%bb,f(l1:l2,m,n,ibxt:ibzt),b2t)
-          call sum_mn_name(b2t,idiag_b2tm)
-        endif
-!
-!  Integrate velocity in time, to calculate correlation time later.
-!
-        if (idiag_jbtm/=0) then
-          call dot(p%jj,f(l1:l2,m,n,ibxt:ibzt),jbt)
-          call sum_mn_name(jbt,idiag_jbtm)
-        endif
-!
-!  Integrate velocity in time, to calculate correlation time later.
-!
-        if (idiag_bjtm/=0) then
-          call dot(p%bb,f(l1:l2,m,n,ijxt:ijzt),bjt)
-          call sum_mn_name(bjt,idiag_bjtm)
-        endif
-!
-!  Integrate velocity in time, to calculate correlation time later.
-!
-        if (idiag_jutm/=0) then
-          call dot(p%jj,f(l1:l2,m,n,iuxt:iuzt),jut)
-          call sum_mn_name(jut,idiag_jutm)
-        endif
-!
-!  Integrate velocity in time, to calculate correlation time later.
-!
-        if (idiag_ujtm/=0) then
-          call dot(p%uu,f(l1:l2,m,n,ijxt:ijzt),ujt)
-          call sum_mn_name(ujt,idiag_ujtm)
-        endif
-!
-!  Integrate velocity in time, to calculate correlation time later.
-!
-        if (idiag_butm/=0) then
-          call dot(p%bb,f(l1:l2,m,n,iuxt:iuzt),but)
-          call sum_mn_name(but,idiag_butm)
-        endif
-!
-!  Integrate velocity in time, to calculate correlation time later.
-!
-        if (idiag_ubtm/=0) then
-          call dot(p%uu,f(l1:l2,m,n,ibxt:ibzt),ubt)
-          call sum_mn_name(ubt,idiag_ubtm)
-        endif
 
         if (idiag_Bresrms/=0 .or. idiag_Rmrms/=0) then
           call dot2_mn(fres,fres2)
           call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
           if (idiag_Rmrms/=0) call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
         endif
+      endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+      if (idiag_b2tm/=0) then
+        call dot(p%bb,f(l1:l2,m,n,ibxt:ibzt),b2t)
+        call sum_mn_name(b2t,idiag_b2tm)
+      endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+      if (idiag_jbtm/=0) then
+        call dot(p%jj,f(l1:l2,m,n,ibxt:ibzt),jbt)
+        call sum_mn_name(jbt,idiag_jbtm)
+      endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+      if (idiag_bjtm/=0) then
+        call dot(p%bb,f(l1:l2,m,n,ijxt:ijzt),bjt)
+        call sum_mn_name(bjt,idiag_bjtm)
+      endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+      if (idiag_jutm/=0) then
+        call dot(p%jj,f(l1:l2,m,n,iuxt:iuzt),jut)
+        call sum_mn_name(jut,idiag_jutm)
+      endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+      if (idiag_ujtm/=0) then
+        call dot(p%uu,f(l1:l2,m,n,ijxt:ijzt),ujt)
+        call sum_mn_name(ujt,idiag_ujtm)
+      endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+      if (idiag_butm/=0) then
+        call dot(p%bb,f(l1:l2,m,n,iuxt:iuzt),but)
+        call sum_mn_name(but,idiag_butm)
+      endif
+!
+!  Integrate velocity in time, to calculate correlation time later.
+!
+      if (idiag_ubtm/=0) then
+        call dot(p%uu,f(l1:l2,m,n,ibxt:ibzt),ubt)
+        call sum_mn_name(ubt,idiag_ubtm)
       endif
 !
 !  Contributions to vertical Poynting vector. Consider them here
@@ -6113,7 +6112,7 @@ module Magnetic
       call sum_mn_name(p%j2,idiag_jrms,lsqrt=.true.)
       call sum_mn_name(p%hj2,idiag_hjrms,lsqrt=.true.)
       call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
-      if (.not.lgpu) then
+      if (.not.lmultithread) then
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
         if (ldt) then
           if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
@@ -6129,7 +6128,7 @@ module Magnetic
 !
 !  Resistivity.
 !
-      if (.not.lgpu) then
+      if (.not.lmultithread) then
         call sum_mn_name(eta_smag,idiag_etasmagm)
         if (idiag_etasmagmin/=0) call max_mn_name(-eta_smag,idiag_etasmagmin,lneg=.true.)
         call max_mn_name(eta_smag,idiag_etasmagmax)
@@ -6143,7 +6142,7 @@ module Magnetic
 !
 !  Not correct for hyperresistivity:
 !
-      if (.not.lgpu) then
+      if (.not.lmultithread) then
         if (idiag_epsM/=0) call sum_mn_name(eta_total*mu0*p%j2,idiag_epsM)
       endif
 !
@@ -6578,7 +6577,7 @@ module Magnetic
         if (idiag_uybzmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%bb(:,3),idiag_uybzmz)
         if (idiag_uzbzmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%bb(:,3),idiag_uzbzmz)
         call xysum_mn_name_z(p%ujxb,idiag_ujxbmz)
-        if (.not.lgpu) then
+        if (.not.lmultithread) then
           if (idiag_epsMmz/=0) call xysum_mn_name_z(eta_total*mu0*p%j2,idiag_epsMmz)
           call yzsum_mn_name_x(eta_total,idiag_etatotalmx)
           call xysum_mn_name_z(eta_total,idiag_etatotalmz)
@@ -6627,7 +6626,7 @@ module Magnetic
         call xysum_mn_name_z(p%b2,idiag_b2mz)
         call xysum_mn_name_z(p%bf2,idiag_bf2mz)
         call xysum_mn_name_z(p%j2,idiag_j2mz)
-        if (.not.lgpu) then
+        if (.not.lmultithread) then
           if (idiag_poynzmz/=0) call xysum_mn_name_z(eta_total*p%jxb(:,3)-mu01* &
             (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmz)
         endif
@@ -6642,7 +6641,7 @@ module Magnetic
         call xzintegrate_mn_name_y(p%bb(:,2),idiag_mflux_y)
         call xyintegrate_mn_name_z(p%bb(:,3),idiag_mflux_z)
 
-        if (.not.lgpu) then
+        if (.not.lmultithread) then
 !
 !  This diagnostic relies upon mn-dependent quantities which are not in the pencil case.
 !
@@ -6778,7 +6777,7 @@ module Magnetic
         call zsum_mn_name_xy(p%uxb(:,1),idiag_Exmxy)
         call zsum_mn_name_xy(p%uxb,idiag_Eymxy,(/0,1,0/))
         call zsum_mn_name_xy(p%uxb,idiag_Ezmxy,(/0,0,1/))
-        if (.not.lgpu) then
+        if (.not.lmultithread) then
           if (idiag_poynxmxy/=0) &
               call zsum_mn_name_xy(eta_total*p%jxb(:,1)-mu01* &
               (p%uxb(:,2)*p%bb(:,3)-p%uxb(:,3)*p%bb(:,2)),idiag_poynxmxy)

@@ -21,9 +21,8 @@ module Diagnostics
   public :: xyaverages_z, xzaverages_y, yzaverages_x
   public :: diagnostics_init_reduc_pointers
   public :: diagnostics_diag_reductions
-  public :: diagnostics_read_diag_accum
-  public :: diagnostics_write_diagnostics_accumulators
-  public :: diagnostics_init_private_accumulators
+  !public :: diagnostics_read_diag_accum, diagnostics_write_diag_accum
+  !public :: diagnostics_init_private_accumulators
   public :: phizaverages_r, yaverages_xz, zaverages_xy
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
@@ -96,12 +95,15 @@ module Diagnostics
     module procedure zsum_mn_name_xy_mpar_vec
   endinterface zsum_mn_name_xy_mpar
 !
+  real, target, dimension (nrcyl) :: phiavg_norm
+  public :: phiavg_norm
+  !$omp threadprivate(phiavg_norm)
+
   private
 !
+  !!type(pointer_with_size_info_1d) :: p_phiavg_norm
+  real, pointer, dimension(:) :: p_phiavg_norm
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
-  type(pointer_with_size_info_1d) :: p_phiavg_norm
-  real, target, dimension (nrcyl) :: phiavg_norm
-  !$omp threadprivate(phiavg_norm)
   real :: dVol_rel1
 
   character (len=intlen) :: ch1davg, ch2davg
@@ -219,11 +221,12 @@ module Diagnostics
 !
       call init_xaver
 !
-
     endsubroutine initialize_diagnostics
 !***********************************************************************
     subroutine initialize_diagnostic_arrays
-
+!
+!  Not needed so far.
+!
       if (ldiagnos.and.allocated(fname)) fname=0.
       if (l1davgfirst) then
         if (allocated(fnamex)) fnamex=0.
@@ -2806,32 +2809,15 @@ module Diagnostics
 !***********************************************************************
     subroutine diagnostics_init_reduc_pointers
 !
-      p_phiavg_norm%data => phiavg_norm
-      p_phiavg_norm%dims%size = nrcyl
+      p_phiavg_norm => phiavg_norm
 !
     endsubroutine diagnostics_init_reduc_pointers
 !***********************************************************************
     subroutine diagnostics_diag_reductions
 !
-      p_phiavg_norm%data = p_phiavg_norm%data + phiavg_norm
+      p_phiavg_norm = p_phiavg_norm + phiavg_norm
 !
     endsubroutine diagnostics_diag_reductions
-!***********************************************************************
-    subroutine diagnostics_read_diag_accum
-!
-      phiavg_norm = p_phiavg_norm%data
-!
-    endsubroutine diagnostics_read_diag_accum
-!***********************************************************************
-    subroutine diagnostics_write_diagnostics_accumulators
-!
-      phiavg_norm = p_phiavg_norm%data
-!
-    endsubroutine diagnostics_write_diagnostics_accumulators
-!***********************************************************************
-    subroutine diagnostics_init_private_accumulators 
-! MR: purpose?
-    endsubroutine diagnostics_init_private_accumulators
 !***********************************************************************
     subroutine phisum_mn_name_rz(a,iname)
 !
@@ -3554,15 +3540,18 @@ module Diagnostics
 !***********************************************************************
     subroutine prep_finalize_thread_diagnos
 !
-! For accumulated diagnostic variables get which reduction to perform
+!  For accumulated diagnostic variables get which reduction to perform:
+!  inds_max_diags/inds_sum_diags hold the indices of the fname entries,
+!  which need to be reduced by max/sum. Will be determined only once.
+!  Index vectors are threadprivate.
 !
-! 25-aug-23/TP: modified, bug fix
+!  25-aug-23/TP: modified, bug fix
 !
       use General, only: allpos_in_array_int
 
       integer :: nmax, nsum, nmin, i
       logical :: firstcall=.true., firstcall_from_pencil_check=.false.
-      integer,dimension(2) ::max_range, sum_range
+      integer, dimension(2) :: max_range, sum_range
       !$omp threadprivate(firstcall)
 
       max_range(1) = -5
@@ -3572,15 +3561,16 @@ module Diagnostics
       sum_range(2) = 40
       
 !  Have to do this ugly workaround since the pencil tests call this function
-!  and we want the first non pencil test call
+!  and we want the first non-pencil-test call.
 !
       if (firstcall_from_pencil_check .and. .not. lpencil_check_at_work) then
         firstcall = .true.
         deallocate(inds_max_diags)
         deallocate(inds_sum_diags)
-      end if
+      endif
 
       if (.not.firstcall) return
+
       nmax = allpos_in_array_int(max_range,itype_name)
       allocate(inds_max_diags(nmax))
       nmax = allpos_in_array_int(max_range,itype_name,inds_max_diags)

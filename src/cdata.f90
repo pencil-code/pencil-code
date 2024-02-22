@@ -10,7 +10,7 @@
 module Cdata
 !
   use Cparam
-!$ use mt, only: TaskHandle
+!!$ use mt, only: TaskHandle
 !
   implicit none
 !
@@ -148,14 +148,13 @@ module Cdata
 !
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
-  real :: dt=0.0, dt_incr=0.0, dt0=0.
+  real :: dt_incr=0.0, dt0=0.
   real :: cdt=0.9, cdts=1.0, cdtr=1.0, cdtc=1.0, cdt_poly=1.0
  !real :: cdtv=0.15, cdtv2=0.03, cdtv3=0.01
 !AB: 5 autotests failed after having decreased cdtv. I suggest to reassess
 !AB: this more carefully and discuss it first in the newsletter.
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtsrc=0.2, cdtf=0.9
-  real :: eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
   real :: ddt=0.0
   real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7
   real :: nu_sts=0.1
@@ -166,6 +165,8 @@ module Cdata
   integer, target :: m,n
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   real(KIND=rkind8) :: t=0., toutoff=0.
+  real :: dt=0.0, tslice 
+  real :: eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
 !
 !  Box dimensions.
 !
@@ -799,14 +800,14 @@ module Cdata
 !
 !  Variables for concurrency
 ! 
-  real, pointer, dimension(:) :: p_dt1_max
+  logical :: lmultithread=.false.
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save, lwrite_slices_save
   logical :: lchemistry_diag_save
   integer :: it_save
-  real(KIND=rkind8) :: t_save=0
-  real :: tdiagnos_save,t1ddiagnos_save,t2davgfirst_save
-!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
+  real(KIND=rkind8) :: t_save
+  real :: tdiagnos_save,t1ddiagnos_save,t2davgfirst_save,eps_rkf_save,tslice_save,tsound_save,dt_save
+!!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
 !$ logical, volatile :: lhelper_run=.true., lhelper_perform_diagnostics=.false.
 !$ integer :: num_helper_threads
 ! 
@@ -814,9 +815,9 @@ module Cdata
 !
 !$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
 !$omp threadprivate(lfirstpoint)
-!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
-!$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
-!$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,t,it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
+!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
+!$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo)
+!$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,dt,it,eps_rkf) !,lwrite_slices)
 !
 !***********************************************************************
 endmodule Cdata
