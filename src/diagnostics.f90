@@ -121,6 +121,29 @@ module Diagnostics
       real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel, intrdr_sph
       integer :: i
 !
+!  Since many of the averaging routines used for diagnostics don't account
+!  for nonequidistant coordinates, warn the user.
+      if (lroot) then
+        if ((.not.lproper_averages).and.any(.not.lequidist)) call warning('initialize_diagnostics', &
+          'volume averages are calculated wrongly for nonequidistant grids unless lproper_averages=T.')
+!
+        if (lwrite_xyaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
+          '1D averages are calculated wrongly for non-equidistant grids.')
+        if (lwrite_xzaverages.and..not.(lequidist(1).and.lequidist(3))) call warning('initialize_diagnostics', &
+          '1D averages are calculated wrongly for non-equidistant grids.')
+        if (lwrite_yzaverages.and..not.(lequidist(2).and.lequidist(3))) call warning('initialize_diagnostics', &
+          '1D averages are calculated wrongly for non-equidistant grids.')
+        if (lwrite_phiaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
+          '1D averages are calculated wrongly for non-equidistant grids.')
+!
+        if (lwrite_yaverages.and..not.lequidist(2)) call warning('initialize_diagnostics', &
+          '2D averages are calculated wrongly for non-equidistant grids.')
+        if (lwrite_zaverages.and..not.lequidist(3)) call warning('initialize_diagnostics', &
+          '2D averages are calculated wrongly for non-equidistant grids.')
+        if (lwrite_phiaverages.and.any(.not.lequidist)) call warning('initialize_diagnostics', &
+          '2D averages are calculated wrongly for non-equidistant grids.')
+      endif
+!
 !  Initialize rcyl for the phi-averages grid. Does not need to be
 !  done after each reload of run.in, but this is the easiest way
 !  of doing it.
