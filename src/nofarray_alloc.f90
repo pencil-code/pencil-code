@@ -4,8 +4,9 @@
 
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
+  type (pencil_case) :: p
 
-  public :: f,df
+  public :: f,df,p
   public :: initialize, finalize
 
   contains

@@ -16,16 +16,17 @@ module Equ
 !
   public :: pde, debug_imn_arrays, initialize_pencils
   public :: impose_floors_ceilings, finalize_diagnostics
-  public :: read_diagnostics_accumulators, write_diagnostics
+  public :: write_diagnostics
   public :: perform_diagnostics
 !$ public :: write_diagnostics_wrapper
 !
   private
-  type(pointer_with_size_info_1d) :: p_fname, p_fname_keep
-  type(pointer_with_size_info_2d) :: p_fnamer,p_fname_sound
-  type(pointer_with_size_info_2d_int) :: p_ncountsz
-  type(pointer_with_size_info_3d) :: p_fnamex,p_fnamey,p_fnamez,p_fnamexy,p_fnamexz
-  type(pointer_with_size_info_4d) :: p_fnamerz
+!
+  real, dimension(:)      , pointer :: p_fname, p_fname_keep
+  real, dimension(:,:)    , pointer :: p_fnamer, p_fname_sound
+  real, dimension(:,:,:)  , pointer :: p_fnamex, p_fnamey, p_fnamez, p_fnamexy, p_fnamexz
+  real, dimension(:,:,:,:), pointer :: p_fnamerz
+  integer, dimension(:,:) , pointer :: p_ncountsz
 !
   contains
 !***********************************************************************
@@ -88,7 +89,7 @@ module Equ
       use OMP_lib
       use Mpicomm
 !$    use, intrinsic :: iso_c_binding
-!$    use mt, only: push_task, depend_on_all, default_task_type, wait_all_thread_pool
+!!$    use mt, only: push_task, depend_on_all, default_task_type, wait_all_thread_pool
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -109,7 +110,7 @@ module Equ
            "$Id$")
 !
 !  Initialize counter for calculating and communicating print results.
-!  Do diagnostics only in the first of the 3 (=itorder) substeps.
+!  Do diagnostics only in the first of the itorder substeps.
 !
 
       ldiagnos   =lfirst.and.lout
@@ -143,7 +144,6 @@ module Equ
 !  time-step. Useful for smearing out possible x-dependent numerical
 !  diffusion, e.g. in a linear shear flow.
 !
-
       if (lfirst .and. lshift_datacube_x) then
         call boundconds_x(f)
         do  n=n1,n2; do m=m1,m2
@@ -219,7 +219,7 @@ module Equ
 !  2. communication
 !  3. y- and z-boundaries
 !
-      if(.not. lgpu) then
+      if (.not. lgpu) then
         if (nghost>0) then
           if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
           call initiate_isendrcv_bdry(f)
@@ -337,15 +337,14 @@ module Equ
 !
       call timing('pde','after "after_boundary" calls')
 !
-
       if (lgpu) then
         call rhs_gpu(f,itsub,early_finalize)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
           !wait in case the last diagnostic tasks are not finished
-!!$        call wait_all_thread_pool()
+!!$        call wait_all_thread_pool
           call copy_farray_from_GPU(f)
-          call init_reduc_pointers
-          call init_diagnostics_accumulators
+!!!acc          call init_diagnostics_accumulators
+!$        call save_diagnostic_controls
 !$        lhelper_perform_diagnostics = .true.
 !!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
@@ -357,7 +356,7 @@ module Equ
 !  Doing df-related work which cannot be finished inside the main mn-loop.
 !  (At the moment relevant for anelastic and Schur flows.)
 !
-    if(.not. lgpu) then
+    if (.not. lgpu) then
       call density_after_mn(f, df, mass_per_proc)
 !
       call timing('pde','after the end of the mn_loop')
@@ -438,13 +437,13 @@ module Equ
 !
       if (lnscbc) call nscbc_boundtreat(f,df)
     endif
-      if(lgpu) then
+      if (lmultithread) then
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
 !!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all)
         endif
       else
-        if(lfirst) call finalize_diagnostics
+        if (lfirst) call finalize_diagnostics
       endif
 !
 !  Calculate rhoccm and cc2m (this requires that these are set in print.in).
@@ -471,15 +470,12 @@ module Equ
 !
     endsubroutine pde
 !***********************************************************************
-    subroutine read_diagnostic_flags
+    subroutine restore_diagnostic_controls
 !
-!   Reads the diagnostics flags that were set when started calculating diagnostics
+!   Restores the diagnostics flags that were saved when calculating diagnostics started.
 !
 !   13-nov-23/TP: Written
 !
-!
-    use Chemistry
-!$  use OMP_lib
     l1davgfirst = l1davgfirst_save 
     ldiagnos = ldiagnos_save 
     l1dphiavg = l1dphiavg_save 
@@ -491,79 +487,24 @@ module Equ
     lout_sound = lout_sound_save
     lvideo = lvideo_save
     lwrite_slices = lwrite_slices_save
-    it = it_save
     t = t_save
+    it = it_save
+    dt = dt_save
+    eps_rkf = eps_rkf_save
     tdiagnos = tdiagnos_save 
     t1ddiagnos = t1ddiagnos_save 
     t2davgfirst= t2davgfirst_save
+    tslice = tslice_save
+    tsound = tsound_save
 
-    endsubroutine read_diagnostic_flags
-!****************************************************************************
-    subroutine read_diagnostics_accumulators
-!
-!   Reads the diagnostics flags and reduced accumulators after diagnostics
-!   are calculated 
-!
-!   13-nov-23/TP: Written
-!
-
-    use Chemistry
-    use Solid_Cells
-    use Diagnostics
-    use OMP_lib
-
-    if (allocated(fname))      fname = p_fname%data
-    if (allocated(fnamex))     fnamex = p_fnamex%data
-    if (allocated(fnamey))     fnamey = p_fnamey%data 
-    if (allocated(fnamez))     fnamez = p_fnamez%data
-    if (allocated(fnamer))     fnamer = p_fnamer%data
-    if (allocated(fnamexy))    fnamexy = p_fnamexy%data
-    if (allocated(fnamexz))    fnamexz = p_fnamexz%data
-    if (allocated(fnamerz))    fnamerz = p_fnamerz%data
-    if (allocated(fname_keep)) fname_keep = p_fname_keep%data
-    if (allocated(fname_sound))fname_sound = p_fname_sound%data
-    if (allocated(ncountsz))   ncountsz = p_ncountsz%data
-    call read_diagnostic_flags
-    call diagnostics_read_diag_accum
-    call chemistry_read_diag_accum
-    call sc_read_diag_accum
-
-    endsubroutine read_diagnostics_accumulators
-!***********************************************************************
-    subroutine init_private_accumulators 
-!
-!   allocates data the thread needs for diagnostics if it doesn't have it 
-!
-!   7-feb-24/TP: Written
-!
-    use Chemistry
-    use Diagnostics
-    use General
-    use Solid_Cells
-
-    if (associated(p_fname%data)) call allocate_using_dims(fname, p_fname%dims)
-    if (associated(p_fnamex%data)) call allocate_using_dims(fnamex, p_fnamex%dims)
-    if (associated(p_fnamey%data)) call allocate_using_dims(fnamey, p_fnamey%dims)
-    if (associated(p_fnamez%data)) call allocate_using_dims(fnamez, p_fnamez%dims)
-    if (associated(p_fnamer%data)) call allocate_using_dims(fnamer, p_fnamer%dims)
-    if (associated(p_fnamexy%data)) call allocate_using_dims(fnamexy, p_fnamexy%dims)
-    if (associated(p_fnamerz%data)) call allocate_using_dims(fnamerz, p_fnamerz%dims)
-    if (associated(p_fname_keep%data)) call allocate_using_dims(fname_keep, p_fname_keep%dims)
-    if (associated(p_fname_sound%data)) call allocate_using_dims(fname_sound, p_fname_sound%dims)
-    if (associated(p_ncountsz%data)) call allocate_using_dims(ncountsz, p_ncountsz%dims)
-
-    call diagnostics_init_private_accumulators
-    call chemistry_init_private_accumulators
-    call sc_init_private_accumulators
-
-    endsubroutine init_private_accumulators 
+    endsubroutine restore_diagnostic_controls
 !***********************************************************************
 !$   subroutine write_diagnostics_wrapper(f) bind(C)
 !    
-!    7-feb-24/TP: needed since can't use bind(C) in general
+!  7-feb-24/TP: needed since can't use bind(C) in general (only for threadpool)
 !
 !$    real, dimension(mx,my,mz,mfarray) :: f
-!$    !only needed since can't use bind(C) generally
+!
 !$    call write_diagnostics(f)
 !
 !$   endsubroutine write_diagnostics_wrapper
@@ -580,8 +521,6 @@ module Equ
 
     real, dimension (mx,my,mz,mfarray) :: f
 !
-!$    call read_diagnostics_accumulators
-!
 !  Print diagnostic averages to screen and file.
 !
       if (lout) then
@@ -597,99 +536,46 @@ module Equ
         lout_sound = .false.
       endif
 !
-!  Write slices (for animation purposes).
+!  Write slices (e.g., for animation purposes).
 !
       if (lvideo .and. lwrite_slices) call wvid(f)
 !
     endsubroutine write_diagnostics
 !***********************************************************************
-  subroutine write_diagnostics_accumulators
-!
-!   Writes the threadprivate diagnostics accumulators to the global ones
-!
-!   13-nov-23/TP: Written
-!
-    use Diagnostics
-    use Chemistry
-    use Solid_Cells
-    integer :: imn
-!
-      if (allocated(fname)) then
-        p_fname%data = fname
-      endif
-
-      if (l1davgfirst) then
-        if (allocated(fnamex)) p_fnamex%data =  fnamex
-        if (allocated(fnamey)) p_fnamey%data =  fnamey
-        if (allocated(fnamez)) p_fnamez%data =  fnamez
-        if (allocated(fnamer)) p_fnamer%data =  fnamer
-      endif
-
-      if (l2davgfirst) then
-        if (allocated(fnamexy)) p_fnamexy%data =  fnamexy
-        if (allocated(fnamexz)) p_fnamexz%data =  fnamexz
-        if (allocated(fnamerz)) p_fnamerz%data =  fnamerz
-      endif
-
-      if (allocated(fname_keep)) p_fname_keep%data =  fname_keep
-      if (allocated(fname_sound)) p_fname_sound%data =  fname_sound
-      if (allocated(ncountsz)) p_ncountsz%data =  ncountsz
-!
-      call diagnostics_write_diagnostics_accumulators
-      call chemistry_write_diagnostics_accumulators
-      call sc_write_diag_accum
-!
-    endsubroutine write_diagnostics_accumulators
-!***********************************************************************
     subroutine init_reduc_pointers
 !
 !  Initializes pointers used in diagnostics_reductions
 !
-!  30-mar-23/TP: Coded
+!  20-feb-23/MR: Coded
 !  
       use Diagnostics
-      use General
       use Chemistry
       use Solid_Cells
 
-      call point_and_get_size(p_fname, fname)
-      call point_and_get_size(p_fname_keep, fname_keep)
-      call point_and_get_size(p_fname_sound, fname_sound)
-      call point_and_get_size(p_fnamex, fnamex)
-      call point_and_get_size(p_fnamey, fnamey)
-      call point_and_get_size(p_fnamez, fnamez)
-      call point_and_get_size(p_fnamexy, fnamexy)
-      call point_and_get_size(p_fnamexz, fnamexz)
-      call point_and_get_size(p_fnamerz, fnamerz)
-      call point_and_get_size(p_ncountsz, ncountsz)
-      call point_and_get_size(p_fnamer, fnamer)
+      p_fname => fname
+      p_fname_keep => fname_keep
+      p_fname_sound => fname_sound
+      p_fnamex => fnamex
+      p_fnamey => fnamey
+      p_fnamez => fnamez
+      p_fnamexy => fnamexy
+      p_fnamexz => fnamexz
+      p_fnamerz => fnamerz
+      p_ncountsz => ncountsz
+      p_fnamer => fnamer
+
       call diagnostics_init_reduc_pointers
       call chemistry_init_reduc_pointers
       call sc_init_reduc_pointers
  
     endsubroutine init_reduc_pointers
 !***********************************************************************
-   subroutine init_diagnostics_accumulators 
+   subroutine save_diagnostic_controls 
 !    
 !  Need to initialize accumulators since master thread does not take part in diagnostics
 !
 !  25-aug-23/TP: Coded
 !
-    use Chemistry
-    use Solid_Cells
-!
-    if (allocated(fname))      p_fname%data = 0.
-    if (allocated(fnamex))     p_fnamex%data = 0.
-    if (allocated(fnamey))     p_fnamey%data = 0.
-    if (allocated(fnamez))     p_fnamez%data = 0.
-    if (allocated(fnamer))     p_fnamer%data = 0.
-    if (allocated(fnamexy))    p_fnamexy%data = 0.
-    if (allocated(fnamexz))    p_fnamexz%data = 0.
-    if (allocated(fnamerz))    p_fnamerz%data = 0.
-    if (allocated(fname_keep)) p_fname_keep%data = 0.
-    if (allocated(fname_sound))p_fname_sound%data= 0.
-    if (allocated(ncountsz))   p_ncountsz%data= 0
-
     l1davgfirst_save = l1davgfirst
     ldiagnos_save = ldiagnos
     l1dphiavg_save = l1dphiavg
@@ -700,26 +586,25 @@ module Equ
     l2davg_save = l2davg
     lout_sound_save = lout_sound
     lvideo_save = lvideo
-    lwrite_slices_save = lwrite_slices
-    it_save = it
     t_save = t
+    it_save = it
+    dt_save = dt
+    eps_rkf_save = eps_rkf
 
     if (ldiagnos   ) tdiagnos_save  =t ! (diagnostics are for THIS time)
     if (l1davgfirst) t1ddiagnos_save=t ! (1-D averages are for THIS time)
     if (l2davgfirst) t2davgfirst_save=t ! (2-D averages are for THIS time)
+    if (lvideo     ) tslice_save=t ! (slices are for THIS time)
+    if (lout_sound ) tsound_save=t
 
-    call chemistry_init_diag_accum
-    call sc_init_diag_accum
-
-    endsubroutine init_diagnostics_accumulators
+    endsubroutine save_diagnostic_controls
 !***********************************************************************
-    subroutine diagnostics_reductions() 
+    subroutine diagnostics_reductions
 !
 !  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
 !
 !  30-mar-23/TP: Coded
 !
-!$  use OMP_lib
     use Diagnostics
 
     integer :: imn
@@ -727,40 +612,39 @@ module Equ
       if (ldiagnos .and. allocated(fname)) then
         do imn=1,size(fname)
           if (any(inds_max_diags == imn) .and. fname(imn) /= 0.) then
-            p_fname%data(imn) = max(p_fname%data(imn),fname(imn))
+            p_fname(imn) = max(p_fname(imn),fname(imn))
           else if (any(inds_sum_diags == imn)) then
-            p_fname%data(imn) = p_fname%data(imn) + fname(imn)
+            p_fname(imn) = p_fname(imn) + fname(imn)
           endif
         enddo
       endif
 
       if (l1davgfirst) then
-        if (allocated(fnamex)) p_fnamex%data = p_fnamex%data + fnamex
-        if (allocated(fnamey)) p_fnamey%data = p_fnamey%data + fnamey
-        if (allocated(fnamez)) p_fnamez%data = p_fnamez%data + fnamez
-        if (allocated(fnamer)) p_fnamer%data = p_fnamer%data + fnamer
+        if (allocated(fnamex)) p_fnamex = p_fnamex + fnamex
+        if (allocated(fnamey)) p_fnamey = p_fnamey + fnamey
+        if (allocated(fnamez)) p_fnamez = p_fnamez + fnamez
+        if (allocated(fnamer)) p_fnamer = p_fnamer + fnamer
       endif
 
       if (l2davgfirst) then
-        if (allocated(fnamexy)) p_fnamexy%data = p_fnamexy%data + fnamexy
-        if (allocated(fnamexz)) p_fnamexz%data = p_fnamexz%data + fnamexz
-        if (allocated(fnamerz)) p_fnamerz%data = p_fnamerz%data + fnamerz
+        if (allocated(fnamexy)) p_fnamexy = p_fnamexy + fnamexy
+        if (allocated(fnamexz)) p_fnamexz = p_fnamexz + fnamexz
+        if (allocated(fnamerz)) p_fnamerz = p_fnamerz + fnamerz
       endif
 
-      if (allocated(fname_keep)) p_fname_keep%data = p_fname_keep%data + fname_keep
-      if (allocated(fname_sound)) p_fname_sound%data = p_fname_sound%data + fname_sound
-      if (allocated(ncountsz)) p_ncountsz%data = p_ncountsz%data + ncountsz
+      if (allocated(fname_keep)) p_fname_keep = p_fname_keep + fname_keep
+      if (allocated(fname_sound)) p_fname_sound = p_fname_sound + fname_sound
+      if (allocated(ncountsz)) p_ncountsz = p_ncountsz + ncountsz
 
       call diagnostics_diag_reductions
 
     endsubroutine diagnostics_reductions
 !***********************************************************************
-    subroutine all_module_diags_slice(f,istart,iend)
+    subroutine calc_all_module_diagnostics(f,p)
 !
-!  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
+!  Calculates most module diagnostics (but not those in special modules).
 !
 !  10-sep-2019/MR: coded
-!  7-feb-2024/TP: separated into calculating slices and added reductions
 !
       use Ascalar, only: calc_diagnostics_ascalar
       use Chemistry, only: calc_diagnostics_chemistry
@@ -795,15 +679,19 @@ module Equ
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 
       integer :: imn
-      integer, value :: istart,iend
 !
-!$omp parallel firstprivate(p) num_threads(num_helper_threads)
-!$    call init_private_accumulators
-!$    call read_diagnostic_flags
+!  Parallelization across all helper threads.
+!
+      call init_reduc_pointers
+!$omp parallel firstprivate(p) num_threads(num_helper_threads)  !MR: firstprivate(p) perhaps not needed
+!!!acc$    call init_private_accumulators
+!$    call restore_diagnostic_controls
+
       lfirstpoint=.true.
-!$    print*,"TP thread num: ",omp_get_thread_num()
+!!$    print*,"TP thread num: ",omp_get_thread_num()
+
       !$omp do
-      do imn=istart,iend
+      do imn=1,nyz
 
         n=nn(imn)
         m=mm(imn)
@@ -849,70 +737,59 @@ module Equ
 
         lfirstpoint=.false.
       enddo
-      !$omp end do
-      !$omp barrier
-!$    do imn=0,num_helper_threads-1
-!$      if (omp_get_thread_num() == imn) then
-!$omp critical
+!
+!  Perform reductions across threads.
+!
+!!      !$omp barrier
+!!$    do imn=0,num_helper_threads-1   !MR: loop to enforce ordered accumulation
+!!$      if (omp_get_thread_num() == imn) then
 !$        call prep_finalize_thread_diagnos
-!$        call diagnostics_reductions
-!$omp end critical
-!$      endif
-      !$omp barrier
-!$    enddo
-!$omp end parallel
+!$omp critical !finalize_thread_diags
+!$        if (omp_get_thread_num() /= 0) call diagnostics_reductions  ! all threads except diagmaster
+!$omp end critical !finalize_thread_diags
+!!$      endif
+!!$    enddo
+!$omp barrier
 
-    endsubroutine all_module_diags_slice
+!$omp end parallel   ! all helper threads
+
+      endsubroutine calc_all_module_diagnostics
 !*****************************************************************************
       subroutine perform_diagnostics
+
         use Farray_alloc
 
-        call calc_all_module_diagnostics(f)
-        call finalize_diagnostics
-        call write_diagnostics(f) 
+        call calc_all_module_diagnostics(f,p)     ! by all helper threads
+        call finalize_diagnostics                 ! by diagmaster (MPI comm.)
+        call write_diagnostics(f)                 !       ~
+
 !$      lhelper_perform_diagnostics = .false.
 
       endsubroutine perform_diagnostics
 !*****************************************************************************
-!$    subroutine calc_all_module_diagnostics_wrapper(f) bind(C)
+!$    subroutine calc_all_module_diagnostics_wrapper(f,p) bind(C)
 !    
-!    7-feb-24/TP: needed since can't use bind(C) in general
+!    7-feb-24/TP: needed since can't use bind(C) in general (only for threadpool)
 !
 !$    real, dimension(mx,my,mz,mfarray) :: f
-!$
-!$      call calc_all_module_diagnostics(f)
+!$    type (pencil_case) :: p
+!
+!$      call calc_all_module_diagnostics(f,p)
 !
 !$    endsubroutine calc_all_module_diagnostics_wrapper 
 !***********************************************************************
-    subroutine calc_all_module_diagnostics(f)
-!
-!  Calculates module diagnostics (so far only density, energy, hydro, magnetic)
-!
-!  10-sep-2019/MR: coded
-!  7-feb-2024/TP: separated call to all_module_diags_slice
-!
-
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
-      type (pencil_case) :: p
-
-      integer :: imn
-
-      call all_module_diags_slice(f,1,nyz)
-!
-    endsubroutine calc_all_module_diagnostics
-!****************************************************************************
 !$    subroutine finalize_diagnostics_wrapper() bind(C)
 !    
-!    7-feb-24/TP: needed since can't use bind(C) in general
+!    7-feb-24/TP: needed since can't use bind(C) in general (only for threadpool)
 !
-!$      !only needed since can't use bind(C) in general
 !$      call finalize_diagnostics
 !
 !$    endsubroutine finalize_diagnostics_wrapper
 !****************************************************************************
-    subroutine finalize_diagnostics() 
+    subroutine finalize_diagnostics
 !
-!  Finalizes all module diagnostics by MPI communication.
+!  Finalizes all module diagnostics by MPI communication. 
+!  Result is only in (diagmaster of) root.
 !
 !  25-aug-23/TP: refactored from pde
 !
@@ -920,14 +797,16 @@ module Equ
       use Hydro
       use Magnetic
       use Pscalar
-!$    use OMP_lib
 !
-!  Restore options that were used when calc_all_module_diagnostics was called
+!  Restore options that were used when calc_all_module_diagnostics was called.
+!  Transfer reduced diagnostics from global accumulators to fname* vars of diagmaster.
 !
-!$   call read_diagnostics_accumulators
+!!!acc!$   call read_diagnostics_accumulators
+!!!acc!$   call read_diagnostic_flags
 !
 !TP: best would be to to pass p_fname vars as input but there are simply too
 !many calls because of the calc_mfield etc.
+!
 !  0-D Diagnostics.
 !
       if (lout) then
@@ -941,8 +820,8 @@ module Equ
         if (lwrite_xyaverages) call xyaverages_z(fnamez,ncountsz)
         if (lwrite_xzaverages) call xzaverages_y(fnamey)
         if (lwrite_yzaverages) call yzaverages_x(fnamex)
+        if (lcylinder_in_a_box) call phizaverages_r(fnamer)
       endif
-      if (lcylinder_in_a_box.and.l1davg) call phizaverages_r(fnamer)
 !
 !  2-D averages.
 !
@@ -966,15 +845,12 @@ module Equ
         if (lhydro)    call calc_mflow
         if (lpscalar)  call calc_mpscalar
       endif
-
-!$    call write_diagnostics_accumulators
  
     endsubroutine finalize_diagnostics
 !****************************************************************************
     subroutine calc_all_pencils(f,p)
 
       use Diagnostics, only: calc_phiavg_profile
-
       use Ascalar
       use BorderProfiles, only: calc_pencils_borderprofiles
       use Chiral
@@ -1382,8 +1258,6 @@ module Equ
 !
       enddo mn_loop
 !
-!!$     call prep_finalize_thread_diagnos
-!
       if (ltime_integrals.and.llast) then
         if (lhydro) call update_for_time_integrals_hydro
       endif
@@ -1420,6 +1294,7 @@ module Equ
       character (len=1) :: icrash_string
 !
       if ( (it>1) .and. lfirst .and. (dt<=crash_file_dtmin_factor*dtmin) ) then
+
         write(icrash_string, fmt='(i1)') icrash
         filename='crash'//icrash_string//'.dat'
         call wsnap(filename,f,mvar_io,ENUM=.false.)
@@ -1434,6 +1309,7 @@ module Equ
 !
         icrash=icrash+1
         icrash=mod(icrash,10)
+
       endif
 !
     endsubroutine output_crash_files
@@ -1675,8 +1551,6 @@ module Equ
 !
       enddo
 !
-!!$omp end do
-!
     endsubroutine freeze
 !***********************************************************************
     subroutine set_dt1_max(p)
@@ -1805,38 +1679,41 @@ module Equ
       intent(in) :: p
       intent(inout) :: df
       logical :: passed
+
       interface
-          subroutine rhs_1(f,df,p)
-              import mx
-              import my
-              import mz
-              import mfarray
-              import pencil_case
-              real, dimension (mx,my,mz,mfarray) :: f
-              real, dimension (mx,my,mz,mfarray) :: df
-              type (pencil_case) :: p
+        subroutine rhs_1(f,df,p)
+          import mx
+          import my
+          import mz
+          import mfarray
+          import pencil_case
+          real, dimension (mx,my,mz,mfarray) :: f
+          real, dimension (mx,my,mz,mfarray) :: df
+          type (pencil_case) :: p
 
-              intent(inout) :: f
-              intent(in) :: p
-              intent(inout) :: df
-          endsubroutine rhs_1 
-        endinterface
-        interface
-          subroutine rhs_2(f,df,p)
-              import mx
-              import my
-              import mz
-              import mfarray
-              import pencil_case
-              real, dimension (mx,my,mz,mfarray) :: f
-              real, dimension (mx,my,mz,mfarray) :: df
-              type (pencil_case) :: p
-
-              intent(inout) :: f
-              intent(in) :: p
-              intent(inout) :: df
-          endsubroutine rhs_2 
+          intent(inout) :: f
+          intent(in) :: p
+          intent(inout) :: df
+        endsubroutine rhs_1 
       endinterface
+
+      interface
+        subroutine rhs_2(f,df,p)
+          import mx
+          import my
+          import mz
+          import mfarray
+          import pencil_case
+          real, dimension (mx,my,mz,mfarray) :: f
+          real, dimension (mx,my,mz,mfarray) :: df
+          type (pencil_case) :: p
+
+          intent(inout) :: f
+          intent(in) :: p
+          intent(inout) :: df
+        endsubroutine rhs_2 
+      endinterface
+
       df_copy = df
       p_copy = p
       f_copy = f
@@ -1847,7 +1724,7 @@ module Equ
         do j=1,my
           do k=1,mz
             do n=1,mfarray
-              if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
+              if (df_copy(i,j,k,n) /= df(i,j,k,n)) then
                 print*,"Wrong at: ",i,j,k,n
                 print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
                 passed = .false.
@@ -1862,11 +1739,12 @@ module Equ
         print*,"did not pass test :/"
       endif
       print*,iux,iuy,iuz,iss,ilnrho
+
       call die_gracefully
       
     endsubroutine test_dt
 !***********************************************************************
-subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
+    subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
 
 !  Used to test different implementations of rhs_cpu.
 !
@@ -1877,45 +1755,49 @@ subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
       type (pencil_case) :: p,p_copy
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
+
       integer :: i,j,k,n
       logical :: passed
       real :: relative_diff,max_relative_diff
+
       interface
-          subroutine rhs_1(f,df,p,mass_per_proc,early_finalize)
-              import mx
-              import my
-              import mz
-              import mfarray
-              import pencil_case
-              real, dimension (mx,my,mz,mfarray) :: f
-              real, dimension (mx,my,mz,mfarray) :: df
-              type (pencil_case) :: p
-              real, dimension(1), intent(inout) :: mass_per_proc
-              logical ,intent(in) :: early_finalize
+        subroutine rhs_1(f,df,p,mass_per_proc,early_finalize)
+          import mx
+          import my
+          import mz
+          import mfarray
+          import pencil_case
+          real, dimension (mx,my,mz,mfarray) :: f
+          real, dimension (mx,my,mz,mfarray) :: df
+          type (pencil_case) :: p
+          real, dimension(1), intent(inout) :: mass_per_proc
+          logical ,intent(in) :: early_finalize
 
-              intent(inout) :: f
-              intent(inout) :: p
-              intent(out) :: df
-          endsubroutine rhs_1 
-        endinterface
-        interface
-          subroutine rhs_2(f,df,p,mass_per_proc,early_finalize)
-              import mx
-              import my
-              import mz
-              import mfarray
-              import pencil_case
-              real, dimension (mx,my,mz,mfarray) :: f
-              real, dimension (mx,my,mz,mfarray) :: df
-              type (pencil_case) :: p
-              real, dimension(1), intent(inout) :: mass_per_proc
-              logical ,intent(in) :: early_finalize
-
-              intent(inout) :: f
-              intent(inout) :: p
-              intent(out) :: df
-          endsubroutine rhs_2 
+          intent(inout) :: f
+          intent(inout) :: p
+          intent(out) :: df
+        endsubroutine rhs_1 
       endinterface
+
+      interface
+        subroutine rhs_2(f,df,p,mass_per_proc,early_finalize)
+          import mx
+          import my
+          import mz
+          import mfarray
+          import pencil_case
+          real, dimension (mx,my,mz,mfarray) :: f
+          real, dimension (mx,my,mz,mfarray) :: df
+          type (pencil_case) :: p
+          real, dimension(1), intent(inout) :: mass_per_proc
+          logical ,intent(in) :: early_finalize
+
+          intent(inout) :: f
+          intent(inout) :: p
+          intent(out) :: df
+        endsubroutine rhs_2 
+      endinterface
+
       max_relative_diff = -1.0
       df_copy = df
       p_copy = p
@@ -1927,7 +1809,7 @@ subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
         do j=1,my
           do k=1,mz
             do n=1,mfarray
-              if(df_copy(i,j,k,n) /= df(i,j,k,n)) then
+              if (df_copy(i,j,k,n) /= df(i,j,k,n)) then
                 print*,"Wrong at: ",i,j,k,n
                 relative_diff = (df_copy(i,j,k,n) - df(i,j,k,n))/df(i,j,k,n)
                 print*,"relative diff:",relative_diff
@@ -1938,14 +1820,14 @@ subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
           enddo
         enddo
       enddo
-      if(passed) then
+      if (passed) then
         print*,"passed test :)"
       else
         print*,"did not pass test :/"
         call die_gracefully
       endif
       print*,"max relative diff: ",max_relative_diff
+
     endsubroutine test_rhs
 !***********************************************************************
-
 endmodule Equ
