@@ -3477,13 +3477,15 @@ module Energy
         !uT=unit_temperature !(define shorthand to avoid long lines below)
         uT=1. !(AB: for the time being; to keep compatible with auto-test
 
-        if (ldt) then   !.not.lgpu) then
-          if (idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-          if (idiag_dtH/=0) then
-            if (lthdiff_Hmax) then
-              call max_mn_name(ssmax/cdts,idiag_dtH,l_dt=.true.)
-            else
-              call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
+        if (ldt) then
+          if (.not.lmultithread) then
+            if (idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+            if (idiag_dtH/=0) then
+              if (lthdiff_Hmax) then
+                call max_mn_name(ssmax/cdts,idiag_dtH,l_dt=.true.)
+              else
+                call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
+              endif
             endif
           endif
           if (idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)

@@ -6072,7 +6072,7 @@ module Forcing
 !***********************************************************************
     subroutine calc_diagnostics_forcing(p)
 !
-!  add a continuous forcing term (used to be in hydro.f90)
+!  Calculate diagnostics for continuous forcing.
 !
 !  17-sep-06/axel: coded
 !
