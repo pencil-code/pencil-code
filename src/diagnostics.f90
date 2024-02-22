@@ -2528,6 +2528,7 @@ module Diagnostics
 !
 !   7-jun-05/axel: adapted from zsum_mn_name_xy
 !   3-sep-13/MR: derived from ysum_mn_name_xz, n now parameter
+!   22-feb-2024/Kishore: fix for non-Cartesian coordinates
 !
       real, dimension (nx), intent(IN) :: a
       integer,              intent(IN) :: iname,n
@@ -2545,11 +2546,12 @@ module Diagnostics
 !
       nl=n-nghost
 !
-      if (lspherical_coords.or.lcylindrical_coords)then
-        fnamexz(:,nl,iname) = fnamexz(:,nl,iname)+a*x(l1:l2)
-      else
-        fnamexz(:,nl,iname) = fnamexz(:,nl,iname)+a
-      endif
+!  Note that in spherical/cylindrical coordinates, the line element for
+!  the y coordinate is actually x*dy. However, since we are not summing
+!  over x, that would simply cancel out when the final normalization is
+!  performed in yaverages_xz, and so we simply drop the factor of x in
+!  both the places.
+      fnamexz(:,nl,iname) = fnamexz(:,nl,iname)+a
 !
     endsubroutine ysum_mn_name_xz_npar
 !***********************************************************************
