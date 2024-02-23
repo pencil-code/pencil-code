@@ -420,7 +420,7 @@ module Energy
   integer :: idiag_uyTTmx=0     ! YZAVG_DOC: $\left< u_y T \right>_{yz}$
   integer :: idiag_uzTTmx=0     ! YZAVG_DOC: $\left< u_z T \right>_{yz}$
   integer :: idiag_fconvxmx=0   ! YZAVG_DOC: $\left< c_p \varrho u_x T \right>_{yz}$
-  integer :: idiag_fradmx=0     ! YZAVG_DOC: $\left<F_{\rm rad}\right>_{yz}$
+  integer :: idiag_fradmx=0     ! YZAVG_DOC: $\left<F_{\rm rad}\right>_{yz}$ (for K-profile or constant K)
   integer :: idiag_fturbmx=0    ! YZAVG_DOC: $\left<\varrho T \chi_t \nabla_x
                                 ! YZAVG_DOC: s\right>_{yz}$ \quad(turbulent
                                 ! YZAVG_DOC: heat flux)
