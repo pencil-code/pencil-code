@@ -428,6 +428,7 @@ module Energy
   integer :: idiag_dcoolx=0     ! YZAVG_DOC: surface cooling flux
   integer :: idiag_fradx_kramers=0 ! YZAVG_DOC: $F_{\rm rad}$ (from Kramers'
                                    ! YZAVG_DOC: opacity)
+  integer :: idiag_fradx_constchi=0     ! YZAVG_DOC: $\left<F_{\rm rad}\right>_{yz}$ (for chi-const)
 !
 ! y averaged diagnostics given in yaver.in
 !
@@ -1322,6 +1323,7 @@ module Energy
         idiag_fradr_constchixy=0
       endif
       if (.not.(lheatc_Kprof.or.lheatc_Kconst)) idiag_fradmx=0
+      if (.not.lheatc_chiconst) idiag_fradx_constchi=0
 
       if (.not.lheatc_Kprof) then
         idiag_fradz_Kprof=0; idiag_fturbmx=0; idiag_fradxy_Kprof=0
@@ -3774,6 +3776,8 @@ module Energy
         call xysum_mn_name_z(K_kramers, idiag_Kkramersmz)
         call yzsum_mn_name_x(K_kramers, idiag_Kkramersmx)
         if (idiag_fradx_kramers/=0) call yzsum_mn_name_x(-K_kramers*p%rho*p%TT*p%glnTT(:,1),idiag_fradx_kramers)
+! from calc_heatcond_constchi
+        call yzsum_mn_name_x(-chi*p%rho*p%TT*p%glnTT(:,1)/p%cp1,idiag_fradx_constchi)
 
       endif
 !
@@ -6734,7 +6738,8 @@ module Energy
         idiag_uxTTmx=0; idiag_uyTTmx=0; idiag_uzTTmx=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; idiag_fturbmx=0
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
-        idiag_fradx_kramers=0; idiag_fradz_kramers=0; idiag_fradxy_kramers=0
+        idiag_fradx_kramers=0; idiag_fradx_constchi=0
+        idiag_fradz_kramers=0; idiag_fradxy_kramers=0
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolx=0; idiag_dcoolxy=0
         idiag_dcoolmphi=0; idiag_divcoolmphi=0; idiag_divheatmphi=0
         idiag_fradrsphmphi_kramers=0; idiag_fradrsphmphi_Kconst=0
@@ -6819,6 +6824,7 @@ module Energy
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'Kkramersmx',idiag_Kkramersmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'dcoolx',idiag_dcoolx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fradx_kramers',idiag_fradx_kramers)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'fradx_constchi',idiag_fradx_constchi)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
