@@ -5788,8 +5788,9 @@ module Energy
 !  Spherical gravity in spherical coordinate case:
 !  heat at centre, cool outer layers.
 !
-      if (lgravx .and. lspherical_coords .and. (luminosity/=0 .or. cool/=0)) &
-          call get_heat_cool_gravx_spherical(heat,p)
+      if (lgravx .and. lspherical_coords .and. (.not.lcooling_general) .and. &
+        (luminosity/=0 .or. cool/=0)) &
+        call get_heat_cool_gravx_spherical(heat,p)
 !
 !  In Cartesian coordinates, but with the gravity in the
 !  x-direction the same module may be used.
