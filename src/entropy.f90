@@ -6076,12 +6076,10 @@ module Energy
        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
      case('Temp2')
        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
-     case('rho_cs2')
+     case('rho_cs2', 'square-well')
        heat=heat-cool*prof*p%rho*(p%cs2-cs2cool)
      case ('two-layer')
        heat = heat - cool *prof *p%rho*(p%cs2-cs2cool) - cool2*prof2*p%rho*(p%cs2-cs2cool2)
-     case ('square-well')
-       heat = heat - cool *prof *p%rho*(p%cs2-cs2cool)
      case('plain')
        heat=heat-cool*prof
      case default
