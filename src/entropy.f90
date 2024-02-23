@@ -6025,6 +6025,11 @@ module Energy
       case ('surface_z')
         prof=spread(.5*(1.+erfunc((z(n)-zcool)/wcool)),1,l2-l1+1)
 !
+!  Error function cooling profile in x direction
+!
+      case ('surface_x')
+        prof=.5*(1.+erfunc((x(l1:l2)-rcool)/wcool))
+!
 !  Error function cooling profile (two-layer).
 !
       case ('two-layer')
