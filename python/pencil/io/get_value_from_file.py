@@ -78,8 +78,7 @@ def get_value_from_file(
     if filepath == False:
         if sim == False:
             sim = get_sim()
-        else:
-            filepath = sim.path
+        filepath = sim.path
         search_paths = [
             sim.path,
             join(sim.path, "src"),
