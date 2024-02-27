@@ -6430,6 +6430,7 @@ module Boundcond
 !                introduced heatflux_boundcond_x (necessary for nonequidistant grid)
 !   5-feb-15/MR: added reference state
 !  11-feb-15/MR: corrected use of reference state
+!  27-feb-2024/Kishore: implemented for iheatcond=chi-const
 !
       use EquationOfState, only: lnrho0, cs20
       use SharedVariables, only: get_shared_variable
@@ -6439,8 +6440,8 @@ module Boundcond
 !
       real, dimension (:,:), allocatable :: tmp_yz,work_yz
       real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp
-      real, pointer :: hcond0_kramers, nkramers
-      logical, pointer :: lheatc_kramers
+      real, pointer :: hcond0_kramers, nkramers, chi
+      logical, pointer :: lheatc_kramers, lheatc_chiconst
       integer :: i,stat
       real, dimension (:,:), pointer :: reference_state
       real :: fac
@@ -6448,6 +6449,9 @@ module Boundcond
 !  Do the 'c1' boundary condition (constant heat flux) for entropy.
 !
       call get_shared_variable('lheatc_kramers',lheatc_kramers, caller='bc_ss_flux_x')
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst, caller='bc_ss_flux_x')
+      if (lheatc_kramers.and.lheatc_chiconst) call fatal_error('bc_ss_flux_x', &
+        'Having both Kramers and chi-const at the same time is not supported')
 !
 !  Allocate memory for large arrays.
 !
@@ -6461,8 +6465,11 @@ module Boundcond
         call get_shared_variable('nkramers',nkramers)
 !
       endif
+      if (lheatc_chiconst) then
+        call get_shared_variable('chi',chi)
+      endif
 !
-      if (lheatc_kramers.or.lreference_state) then
+      if (lheatc_kramers.or.lheatc_chiconst.or.lreference_state) then
         allocate(work_yz(size(f,2),size(f,3)),stat=stat)
         if (stat>0) call fatal_error('bc_ss_flux_x', &
                                      'Could not allocate memory for work_yz')
@@ -6501,7 +6508,7 @@ module Boundcond
 !  Both, bottom and top boundary conditions are corrected for linear density
 !
           if (ldensity_nolog) then
-            if (lheatc_kramers) work_yz=f(l1,:,:,irho)
+            if (lheatc_kramers.or.lheatc_chiconst) work_yz=f(l1,:,:,irho)
             if (lreference_state) then
               tmp_yz= cs20*exp(gamma_m1*(log(f(l1,:,:,irho)+reference_state(1,iref_rho))-lnrho0)  &
                      +gamma*(f(l1,:,:,iss)+reference_state(1,iref_s)))
@@ -6509,9 +6516,7 @@ module Boundcond
               tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho))-lnrho0)+gamma*f(l1,:,:,iss))
             endif
           else
-            if (lheatc_kramers) work_yz=exp(f(l1,:,:,ilnrho))
-!print*, 'bc_ss_flux_x: iproc, lnrho, ss=', iproc, maxval(f(l1,:,:,ilnrho)), &
-!minval(f(l1,:,:,ilnrho)), maxval(f(l1,:,:,iss)), minval(f(l1,:,:,iss))
+            if (lheatc_kramers.or.lheatc_chiconst) work_yz=exp(f(l1,:,:,ilnrho))
             tmp_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
           endif
           if (lheatc_kramers) then
@@ -6522,6 +6527,11 @@ module Boundcond
             tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
 !
+          else if (lheatc_chiconst) then
+            call get_shared_variable('Fbot',Fbot)
+            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
+            
+            tmp_yz=Fbot/(work_yz*chi*tmp_yz)
           else
             tmp_yz=FbotKbot/tmp_yz
           endif
@@ -6560,7 +6570,7 @@ module Boundcond
 !  calculate Ftop/(K*cs2)
 !
           if (ldensity_nolog) then
-            if (lheatc_kramers) work_yz=f(l2,:,:,irho)
+            if (lheatc_kramers.or.lheatc_chiconst) work_yz=f(l2,:,:,irho)
             if (lreference_state) then
               tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho)+reference_state(nx,iref_rho))-lnrho0) &
                      +gamma*(f(l2,:,:,iss)+reference_state(nx,iref_s)))
@@ -6568,7 +6578,7 @@ module Boundcond
               tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho))-lnrho0)+gamma*f(l2,:,:,iss))
             endif
           else
-            if (lheatc_kramers) work_yz=exp(f(l2,:,:,ilnrho))
+            if (lheatc_kramers.or.lheatc_chiconst) work_yz=exp(f(l2,:,:,ilnrho))
             tmp_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
           endif
           if (lheatc_kramers) then
@@ -6578,6 +6588,11 @@ module Boundcond
 !
             tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
+          else if (lheatc_chiconst) then
+            call get_shared_variable('Ftop',Ftop)
+            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Ftop=',Ftop
+            
+            tmp_yz=Ftop/(work_yz*chi*tmp_yz)
           else
             tmp_yz=FtopKtop/tmp_yz
           endif
