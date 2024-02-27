@@ -924,18 +924,13 @@ void setupConfig(AcMeshInfo &config)
 {
 
   printf("nx etc. %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
-  config.int_params[AC_nx] = nxgrid;
-  config.int_params[AC_ny] = nygrid;
-  config.int_params[AC_nz] = nzgrid;
-  config.int_params[AC_mx] = mxgrid;
-  config.int_params[AC_my] = mygrid;
-  config.int_params[AC_mz] = mzgrid;
-  config.int_params[AC_nx_min] = l1;
-  config.int_params[AC_nx_max] = l2;
-  config.int_params[AC_ny_min] = m1;
-  config.int_params[AC_ny_max] = m2;
-  config.int_params[AC_nz_min] = n1;
-  config.int_params[AC_nz_max] = n2;
+  config.int_params[AC_nxgrid] = nxgrid;
+  config.int_params[AC_nygrid] = nygrid;
+  config.int_params[AC_nzgrid] = nzgrid;
+  //use external decomp = 1
+  config.int_params[AC_decompose_strategy] = 1;
+  //linear proc mapping = 1
+  config.int_params[AC_proc_mapping_strategy] = 1;
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
