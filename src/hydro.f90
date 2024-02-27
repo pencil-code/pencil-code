@@ -725,8 +725,8 @@ module Hydro
   integer :: idiag_uguxmx=0     ! YZAVG_DOC:
   integer :: idiag_uguymx=0     ! YZAVG_DOC:
   integer :: idiag_uguzmx=0     ! YZAVG_DOC:
-  integer :: idiag_ekinmx=0     ! YZAVG_DOC: $\langle{1\over2}\rho u^2\rangle_{xy}$
-  integer :: idiag_fkinxmx=0    ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$
+  integer :: idiag_ekinmx=0     ! YZAVG_DOC: $\langle{1\over2}\rho u^2\rangle_{yz}$
+  integer :: idiag_fkinxmx=0    ! YZAVG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$
 !
 ! y averaged diagnostics given in yaver.in
 !
