@@ -44,7 +44,6 @@ cpu_pow(AcReal const val, AcReal exponent)
 #include "../sub_c.h"       // provides set_dt
 #include "../boundcond_c.h" // provides boundconds[xyz] etc.
 #include "../mpicomm_c.h"   // provides finalize_sendrcv_bdry
-#include "./stencil_loader.h"
 //#include "diagnostics/diagnostics.h"
 #if PACKED_DATA_TRANSFERS
 //#include "loadStore.h"
@@ -108,6 +107,8 @@ int DEVICE_VTXBUF_IDX(const int x, const int y, const int z)
 {
   return x + mx * y + mx * my * z;
 }
+//TP: for testing not usually used
+/***
 AcReal
 derxx(const int x, const int y, const int z, AcMesh mesh, const int field)
 {
@@ -290,6 +291,7 @@ gradients(const int x, const int y, const int z, AcMesh mesh, const int field)
   if(symmetric_der) return gradients_symmetric(x,y,z,mesh,field);
   return gradients_astaroth(x,y,z,mesh,field);
 }
+***/
 /***********************************************************************************************/
 void print_diagnostics(const int pid, const int step, const AcReal dt, const AcReal simulation_time,
                        FILE *diag_file, const AcReal sink_mass, const AcReal accreted_mass,
@@ -1081,7 +1083,6 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
   acGridExecuteTaskGraph(graph_1,1);
   acGridExecuteTaskGraph(graph_2,1);
   acGridExecuteTaskGraph(graph_3,1);
-  load_stencil_from_config(mesh.info);
   printf("DONE initializeGPU\n");
   fflush(stdout);
 }
