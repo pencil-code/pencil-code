@@ -476,6 +476,11 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
 
   if (full)
   {
+    if(has_nans(mesh))
+    {
+      printf("had nans before starting GPU comp\n");
+      exit(0);
+    }
     acGridSynchronizeStream(STREAM_DEFAULT);
     acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
     acGridSynchronizeStream(STREAM_ALL);
@@ -930,9 +935,9 @@ void setupConfig(AcMeshInfo &config)
   config.int_params[AC_nygrid] = nygrid;
   config.int_params[AC_nzgrid] = nzgrid;
   //use external decomp = 1
-  config.int_params[AC_decompose_strategy] = 1;
+  config.int_params[AC_decompose_strategy] = (int)AcDecomposeStrategy::External;
   //linear proc mapping = 1
-  config.int_params[AC_proc_mapping_strategy] = 1;
+  config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Linear;
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
@@ -946,6 +951,7 @@ void setupConfig(AcMeshInfo &config)
   config.real_params[AC_yorig] = -3.14159274;
   config.real_params[AC_zorig] = -3.14159274;
   config.real_params[AC_mu0] = mu0;
+  config.int3_params[AC_domain_decomposition] = (int3) {nprocx, nprocy, nprocz};
 
 #include "PC_modulepars.h"
   printf("Done setUpConfig\n");
@@ -1023,16 +1029,9 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
 #endif
   setupConfig(mesh.info);
 
-  printf("Setting domain int3\n");
-  int3 decomp = {nprocx, nprocy, nprocz};
-  fflush(stdout);
   acCheckDeviceAvailability();
-  printf("Setted domain int3\n");
-  fflush(stdout);
 
-  mesh.info.int3_params[AC_domain_decomposition] = decomp;
   checkConfig(mesh.info);
-  fflush(stdout);
   acGridInit(mesh.info);
 
   VertexBufferHandle all_fields[NUM_VTXBUF_HANDLES];
@@ -1089,16 +1088,14 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
 /***********************************************************************************************/
 extern "C" void copyFarray()
 {
-  //    AcResult res=acGridStoreMesh(STREAM_DEFAULT, &mesh);
-  // acGridGetDevice();
-  // AcReal* vba_in = acGridGetVBApointerIn();
-  // acGridSynchronizeStream(STREAM_ALL);
-  // // hipMemcpy(&mesh.vertex_buffer[0],vba_in,mw*NUM_VTXBUF_HANDLES*sizeof(AcReal),hipMemcpyDeviceToHost);
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
-  // acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
   acGridSynchronizeStream(STREAM_ALL);
-  // printf("store all %d \n",res); fflush(stdout);
+  if(has_nans(mesh)){
+    printf("found nans while copying\n");
+    exit(0);
+  }
+
 }
 /***********************************************************************************************/
 extern "C" void finalizeGPU()

@@ -246,7 +246,7 @@ module Register
       use Grid,             only: initialize_grid
       use GPU,              only: initialize_gpu
 !$    use OMP_lib
-!$    use mt
+!!$    use mt
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
