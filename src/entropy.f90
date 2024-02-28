@@ -1544,6 +1544,21 @@ module Energy
           case('x-y-jump'); call jump(f,iss,ss_left,ss_right,widthss,xjump_mid,yjump_mid,zjump_mid,'x-y')
           case('sinxsinz'); call sinxsinz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
           case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
+
+        !  28-feb-2024/sambit: sinwave & coswave ICs
+          case ('sinwave-x')
+            call sinwave(ampl_ss(j),f,ilnrho,kx=kx_ss)
+          case ('sinwave-y')
+            call sinwave(ampl_ss(j),f,ilnrho,ky=ky_ss)
+          case ('sinwave-z')
+            call sinwave(ampl_ss(j),f,ilnrho,kz=kz_ss)
+          case ('coswave-x')
+            call coswave(ampl_ss(j),f,ilnrho,kx=kx_ss)
+          case ('coswave-y')
+            call coswave(ampl_ss(j),f,ilnrho,ky=ky_ss)
+          case ('coswave-z')
+            call coswave(ampl_ss(j),f,ilnrho,kz=kz_ss)
+
           case('hor-fluxtube')
             call htube(ampl_ss(j),f,iss,iss,radius_ss(j),epsilon_ss,center1_x(j),center1_z(j))
           case ('hor-tube')
