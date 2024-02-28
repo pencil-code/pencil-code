@@ -11,7 +11,7 @@ module Diagnostics
   use Cdata
   use Messages
   use Mpicomm
-  use General, only: safe_sum, loptest, pointer_with_size_info_1d
+  use General, only: safe_sum, loptest
 !
   implicit none
 !
@@ -101,7 +101,6 @@ module Diagnostics
 
   private
 !
-  !!type(pointer_with_size_info_1d) :: p_phiavg_norm
   real, pointer, dimension(:) :: p_phiavg_norm
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   real :: dVol_rel1
