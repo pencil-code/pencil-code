@@ -127,7 +127,12 @@ module Equ
 !
 !  Record times for diagnostic and 2d average output.
 !
-      if (ldiagnos   ) tdiagnos  =t ! (diagnostics are for THIS time)
+      if (ldiagnos   ) then
+         tdiagnos  = t ! (diagnostics are for THIS time)
+         dtdiagnos = dt
+         itdiagnos = it
+         eps_rkf_diagnos = eps_rkf
+      endif
       if (l1davgfirst) t1ddiagnos=t ! (1-D averages are for THIS time)
       if (l2davgfirst)  then
         t2davgfirst=t ! (2-D averages are for THIS time)
@@ -338,7 +343,6 @@ module Equ
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
-        call rhs_gpu(f,itsub,early_finalize)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
           !wait in case the last diagnostic tasks are not finished
 !!$        call wait_all_thread_pool
@@ -349,6 +353,7 @@ module Equ
 !!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
         endif
+        call rhs_gpu(f,itsub,early_finalize)
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif
@@ -488,14 +493,17 @@ module Equ
     lvideo = lvideo_save
     lwrite_slices = lwrite_slices_save
     t = t_save
-    it = it_save
-    dt = dt_save
-    eps_rkf = eps_rkf_save
-    tdiagnos = tdiagnos_save 
     t1ddiagnos = t1ddiagnos_save 
     t2davgfirst= t2davgfirst_save
     tslice = tslice_save
     tsound = tsound_save
+
+    if (ldiagnos) then
+      tdiagnos  = t ! (diagnostics are for THIS time)
+      dtdiagnos = dt
+      itdiagnos = it
+      eps_rkf_diagnos = eps_rkf
+    endif
 
     endsubroutine restore_diagnostic_controls
 !***********************************************************************
@@ -571,8 +579,8 @@ module Equ
     endsubroutine init_reduc_pointers
 !***********************************************************************
    subroutine save_diagnostic_controls 
-!    
-!  Need to initialize accumulators since master thread does not take part in diagnostics
+!
+!  Saves threadprivate variables to shared ones.  
 !
 !  25-aug-23/TP: Coded
 !
@@ -587,11 +595,7 @@ module Equ
     lout_sound_save = lout_sound
     lvideo_save = lvideo
     t_save = t
-    it_save = it
-    dt_save = dt
-    eps_rkf_save = eps_rkf
 
-    if (ldiagnos   ) tdiagnos_save  =t ! (diagnostics are for THIS time)
     if (l1davgfirst) t1ddiagnos_save=t ! (1-D averages are for THIS time)
     if (l2davgfirst) t2davgfirst_save=t ! (2-D averages are for THIS time)
     if (lvideo     ) tslice_save=t ! (slices are for THIS time)
@@ -606,6 +610,8 @@ module Equ
 !  30-mar-23/TP: Coded
 !
     use Diagnostics
+    use Chemistry, only: chemistry_diags_reductions
+    use Solid_cells, only: sc_diags_reductions
 
     integer :: imn
 
@@ -637,6 +643,8 @@ module Equ
       if (allocated(ncountsz)) p_ncountsz = p_ncountsz + ncountsz
 
       call diagnostics_diag_reductions
+      call chemistry_diags_reductions
+      call sc_diags_reductions
 
     endsubroutine diagnostics_reductions
 !***********************************************************************
@@ -675,8 +683,8 @@ module Equ
       use Diagnostics
 !$    use OMP_lib
 
-      type (pencil_case) :: p
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      type (pencil_case) :: p
 
       integer :: imn
 !
@@ -755,9 +763,10 @@ module Equ
 
       endsubroutine calc_all_module_diagnostics
 !*****************************************************************************
-      subroutine perform_diagnostics
+      subroutine perform_diagnostics(f,p)
 
-        use Farray_alloc
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      type (pencil_case) :: p
 
         call calc_all_module_diagnostics(f,p)     ! by all helper threads
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)

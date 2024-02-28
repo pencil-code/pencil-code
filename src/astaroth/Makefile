@@ -34,9 +34,9 @@ else
 endif
 SOURCES = gpu_astaroth.cc
 
-USE_HIP=
 include Makefile.vendor
 include Makefile.module_info
+
 ifeq ($(GPU_VENDOR),amd)
 	USE_HIP=ON
 else
@@ -93,8 +93,6 @@ CPP = nvcc
 CPP = hipcc
 #CC -xhip
 
-
-
 astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
 	mkdir -p build
 	cd build
@@ -119,13 +117,14 @@ update_astaroth_libs:
 	@echo PRECISION=$(CMAKE_PREC)
 	@echo ENVIRON: $(ENVIRON)
 
-
 #-DCMAKE_CXX_COMPILER=/appl/spack/install-tree/gcc-4.8.5/gcc-8.3.0-qzmzn5/bin/c++ .. \
 #export DSL_MODULE=pc_mhd_solver && \
 
 %.o: %.cc
 	$(CPP) $(CCFLAGS) $(ENVIRON) -DAC_USE_HIP=1 -dc $< -o $@
+
 $(PC_HEADERS): .sentinel
+
 .sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
 	@rm -f $(PCHEADER_DIR)/PC_modulepars.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
 #diagnostics/PC_modulediags.h

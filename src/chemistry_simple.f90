@@ -141,7 +141,7 @@ module Chemistry
   real, allocatable, dimension(:,:) :: net_react_m, net_react_p
   !$omp threadprivate(net_react_m,net_react_p)
 ! For concurrency
-  type(pointer_with_size_info_2d) :: p_net_react_m, p_net_react_p
+  real, pointer :: p_net_react_m, p_net_react_p
   logical :: lchemistry_diag=.false.
 !
 ! input parameters
@@ -4595,7 +4595,7 @@ module Chemistry
           cv_full = cp_full - f(l1:l2,m1:m2,index,iRR)
           slice = cp_full/cv_full * f(l1:l2,m1:m2,index,iRR)*TT_full
         else
-           call fatal_error('get_cs2_slice','no such dir')
+          call fatal_error('get_cs2_slice','no such dir')
         endif
 !
       endif
@@ -4639,9 +4639,8 @@ module Chemistry
            allocate (cv_full(ny,nz))
            cp_full = f(index,m1:m2,n1:n2,icp)
            do k=1,nchemspec
-             if (species_constants(k,imass)>0.) then
+             if (species_constants(k,imass)>0.) &
                cv_full = cv_full + cv_k(k)*f(index,m1:m2,n1:n2,ichemspec(k))
-             endif
            enddo
           slice = cp_full/cv_full
         elseif (dir == 2) then
@@ -4649,9 +4648,8 @@ module Chemistry
            allocate (cv_full(nx,nz))
            cp_full = f(l1:l2,index,n1:n2,icp)
            do k=1,nchemspec
-             if (species_constants(k,imass)>0.) then
+             if (species_constants(k,imass)>0.) &
                cv_full = cv_full + cv_k(k)*f(l1:l2,index,n1:n2,ichemspec(k))
-             endif
            enddo
           slice = cp_full/cv_full
         elseif (dir == 3) then
@@ -4659,9 +4657,8 @@ module Chemistry
            allocate (cv_full(nx,ny))
            cp_full = f(l1:l2,m1:m2,index,icp)
            do k=1,nchemspec
-             if (species_constants(k,imass)>0.) then
+             if (species_constants(k,imass)>0.) &
                cv_full = cv_full + cv_k(k)*f(l1:l2,m1:m2,index,ichemspec(k))
-             endif
            enddo
           slice = cp_full/cv_full
         else
@@ -4892,9 +4889,7 @@ module Chemistry
         endif
       endif
 
-      if (nxgrid>1) then
-        f(:,:,:,iux)=f(:,:,:,iux)+velx
-      endif
+      if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+velx
 
       if (lroot) print*, 'Air temperature, K', TT
       if (lroot) print*, 'Air pressure, dyn', PP
@@ -5073,63 +5068,25 @@ module Chemistry
 !
     endsubroutine chemspec_normalization_N2
 !***********************************************************************
-    subroutine chemistry_init_diag_accum
-!
-! 7-feb-24/TP:  since master thread doesn't take part in diagnostics set accumulators to zero at start
-!
-      net_react_m = 0.0
-      net_react_p = 0.0
-!
-    endsubroutine chemistry_init_diag_accum
-!***********************************************************************
     subroutine chemistry_init_reduc_pointers
 !
 ! 7-feb-24/TP:  allocates memory needed for reductions
 !
       use General
 !
-      call point_and_get_size(p_net_react_m, net_react_m)
-      call point_and_get_size(p_net_react_p, net_react_p)
+      if (allocated(net_react_m)) p_net_react_m => net_react_m
+      if (allocated(net_react_p)) p_net_react_p => net_react_p
 !
     endsubroutine chemistry_init_reduc_pointers
 !***********************************************************************
-    subroutine chemistry_diag_reductions
+    subroutine chemistry_diags_reductions
 !
 ! 7-feb-24/TP:  diag_reductions for chemistry
 !
-      p_net_react_m%data = p_net_react_m%data + net_react_m
-      p_net_react_p%data = p_net_react_p%data + net_react_p
+      if (allocated(net_react_m)) p_net_react_m = p_net_react_m + net_react_m
+      if (allocated(net_react_p)) p_net_react_p = p_net_react_p + net_react_p
 !
-    endsubroutine chemistry_diag_reductions 
-!***********************************************************************
-    subroutine chemistry_read_diag_accum
-!
-! 7-feb-24/TP:  reads chemistry diagnostics accumulators
-!
-      net_react_m = p_net_react_m%data
-      net_react_p = p_net_react_p%data
-!
-    endsubroutine chemistry_read_diag_accum
-!***********************************************************************
-    subroutine chemistry_write_diagnostics_accumulators
-!
-! 7-feb-24/TP:  writes chemistry diagnostics accumulators
-!
-      p_net_react_m%data = net_react_m
-      p_net_react_p%data = net_react_p
-!
-    endsubroutine chemistry_write_diagnostics_accumulators
-!***********************************************************************
-    subroutine chemistry_init_private_accumulators
-!
-! 7-feb-24/TP:  allocates memory for chemistry diagnostic reductions 
-!
-      use General
-!
-      if (associated(p_net_react_m%data)) call allocate_using_dims(net_react_m,p%p_net_react_m%size)
-      if (associated(p_net_react_p%data)) call allocate_using_dims(net_react_p,p%p_net_react_p%size)
-!
-    endsubroutine chemistry_init_private_accumulators
+    endsubroutine chemistry_diags_reductions 
 !***********************************************************************
     include 'chemistry_common.inc'
 !***********************************************************************

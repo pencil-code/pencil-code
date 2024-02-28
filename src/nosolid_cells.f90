@@ -305,40 +305,16 @@ module Solid_Cells
 !
     endsubroutine interpolate_particles_ogrid
 !***********************************************************************
-  subroutine sc_init_diag_accum
+    subroutine sc_diags_reductions
 !
 !  30-mar-23/TP: Dummy
 !
-  endsubroutine sc_init_diag_accum
+    endsubroutine sc_diags_reductions
 !***********************************************************************
-  subroutine sc_diags_reductions
+    subroutine sc_init_reduc_pointers
 !
 !  30-mar-23/TP: Dummy
 !
-  endsubroutine sc_diags_reductions
-!***********************************************************************
-  subroutine sc_init_reduc_pointers
-!
-!  30-mar-23/TP: Dummy
-!
-  endsubroutine sc_init_reduc_pointers
-!***********************************************************************
-  subroutine sc_write_diag_accum
-!
-!  7-feb-24-TP: Dummy
-!
-  endsubroutine sc_write_diag_accum
-!***********************************************************************
-  subroutine sc_read_diag_accum
-!
-!  7-feb-24-TP: Dummy
-!
-  endsubroutine sc_read_diag_accum
-!***********************************************************************
-  subroutine sc_init_private_accumulators
-!
-!  7-feb-24-TP: Dummy
-!
-  endsubroutine sc_init_private_accumulators
+    endsubroutine sc_init_reduc_pointers
 !***********************************************************************
 endmodule Solid_Cells

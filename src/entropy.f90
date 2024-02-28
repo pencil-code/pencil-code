@@ -2671,7 +2671,7 @@ module Energy
       enddo
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (ladvection_entropy) then
-        if (lweno_transport) then
+        if (lweno_transport.and.ldensity_nolog) then
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_transprho)=.true.
           lpenc_requested(i_transprhos)=.true.
@@ -3221,7 +3221,7 @@ module Energy
         endif
       endif
 !  transprhos
-      if (lpencil(i_transprhos)) then
+      if (lpencil(i_transprhos).and.ldensity_nolog) then
         if (lreference_state) then
           call weno_transp(f,m,n,iss,irho,iux,iuy,iuz,p%transprhos,dx_1,dy_1,dz_1, &
                            reference_state(:,iref_s), reference_state(:,iref_rho))

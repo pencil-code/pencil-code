@@ -271,8 +271,8 @@ module Diagnostics
 !
       if (lroot) then
         call save_name(tdiagnos,idiag_t)
-        call save_name(dt,idiag_dt)
-        call save_name(eps_rkf,idiag_eps_rkf)
+        call save_name(dtdiagnos,idiag_dt)
+        call save_name(eps_rkf_diagnos,idiag_eps_rkf)
         call save_name(one_real*(it-1),idiag_it)
 !
 !  Whenever itype_name=ilabel_max_dt, scale result by dt (for printing Courant
