@@ -9,9 +9,7 @@ module Equ
   use Boundcond
   use Mpicomm
   use Grid, only: calc_pencils_grid, get_grid_mn
-  use General, only: point_and_get_size, allocate_using_dims, &
-                     pointer_with_size_info_1d, pointer_with_size_info_2d, &
-                     pointer_with_size_info_2d_int, pointer_with_size_info_3d, pointer_with_size_info_4d
+
   implicit none
 !
   public :: pde, debug_imn_arrays, initialize_pencils
