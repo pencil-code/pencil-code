@@ -667,10 +667,11 @@ module PointMasses
             elseif (lspherical_coords) then
               velocity(ks,3) = kep_vel(ks) - velocity_baricenter_secondaries
             endif
+            if (lcorrect_gasgravity_lstart) call initcond_correct_gasgravity(f,velocity,ks)
           endif
-       enddo
+        enddo
 !       
-        if (lcorrect_gasgravity_lstart) call initcond_correct_gasgravity(f,velocity,isecondary)
+
 !
 !  The last one (star) fixes the CM also with velocity zero
 !
