@@ -606,6 +606,9 @@ module Magnetic
   integer :: idiag_bxm=0        ! DIAG_DOC: $\left<B_x\right>$
   integer :: idiag_bym=0        ! DIAG_DOC: $\left<B_y\right>$
   integer :: idiag_bzm=0        ! DIAG_DOC: $\left<B_z\right>$
+  integer :: idiag_jxm=0        ! DIAG_DOC: $\left<J_x\right>$
+  integer :: idiag_jym=0        ! DIAG_DOC: $\left<J_y\right>$
+  integer :: idiag_jzm=0        ! DIAG_DOC: $\left<J_z\right>$
   integer :: idiag_bxbym=0      ! DIAG_DOC: $\left<B_x B_y\right>$
   integer :: idiag_bxbzm=0      ! DIAG_DOC: $\left<B_x B_z\right>$
   integer :: idiag_bybzm=0      ! DIAG_DOC: $\left<B_y B_z\right>$
@@ -2162,6 +2165,12 @@ module Magnetic
              f(l1:l2,m,n,iax)=0.
              f(l1:l2,m,n,iay)=0.
              f(l1:l2,m,n,iaz)=2*amplaa(j)*step(x(l1:l2),xyz0(1)+Lxyz(1)/2.,widthaa(1)) - amplaa(j)
+          enddo; enddo
+        case ('By_tanh')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0.
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=-amplaa(j)*alog(cosh(x(l1:l2)/widthaa(1)))/widthaa(1)
           enddo; enddo
         case ('crazy', '5'); call crazy(amplaa(j),f,iaa)
         case ('strange'); call strange(amplaa(j),f,iaa)
@@ -6041,6 +6050,9 @@ module Magnetic
 !  Mean field <B_i>, and mean components of the correlation matrix <B_i B_j>.
 !  Note that this quantity does not include any imposed field!
 !
+      call sum_mn_name(p%jj(:,1),idiag_jxm)
+      call sum_mn_name(p%jj(:,2),idiag_jym)
+      call sum_mn_name(p%jj(:,3),idiag_jzm)
       call sum_mn_name(p%bbb(:,1),idiag_bxm)
       call sum_mn_name(p%bbb(:,2),idiag_bym)
       call sum_mn_name(p%bbb(:,3),idiag_bzm)
@@ -9567,6 +9579,7 @@ module Magnetic
         idiag_divarms = 0
         idiag_bij_cov_diffmax=0
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
+        idiag_jxm=0; idiag_jym=0; idiag_jzm=0
         idiag_betam = 0; idiag_betamax = 0; idiag_betamin = 0
         idiag_Azmid_min=0; idiag_Azmid_max=0
         idiag_betamz = 0; idiag_beta2mz = 0
@@ -9805,6 +9818,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bxm',idiag_bxm)
         call parse_name(iname,cname(iname),cform(iname),'bym',idiag_bym)
         call parse_name(iname,cname(iname),cform(iname),'bzm',idiag_bzm)
+        call parse_name(iname,cname(iname),cform(iname),'jxm',idiag_jxm)
+        call parse_name(iname,cname(iname),cform(iname),'jym',idiag_jym)
+        call parse_name(iname,cname(iname),cform(iname),'jzm',idiag_jzm)
         call parse_name(iname,cname(iname),cform(iname),'bx2m',idiag_bx2m)
         call parse_name(iname,cname(iname),cform(iname),'by2m',idiag_by2m)
         call parse_name(iname,cname(iname),cform(iname),'bz2m',idiag_bz2m)
