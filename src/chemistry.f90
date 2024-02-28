@@ -6116,8 +6116,6 @@ module Chemistry
 !
 ! 7-feb-24/TP:  allocates memory needed for reductions
 !
-      use General
-!
       if (allocated(net_react_m)) p_net_react_m => net_react_m
       if (allocated(net_react_p)) p_net_react_p => net_react_p
 !

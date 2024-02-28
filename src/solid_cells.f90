@@ -3777,13 +3777,13 @@ module Solid_Cells
 !
       p_rhosum => rhosum
       p_irhocount => irhocount 
-      p_c_dragx => c_dragx
-      p_c_dragy => c_dragy
-      p_c_dragz => c_dragz
-      p_Nusselt => Nusselt
-      p_c_dragx_p => c_dragx_p
-      p_c_dragy_p => c_dragy_p
-      p_c_dragz_p => c_dragz_p
+      if (allocated(c_dragx)) p_c_dragx => c_dragx
+      if (allocated(c_dragy)) p_c_dragy => c_dragy
+      if (allocated(c_dragz)) p_c_dragz => c_dragz
+      if (allocated(Nusselt)) p_Nusselt => Nusselt
+      if (allocated(c_dragx_p)) p_c_dragx_p => c_dragx_p
+      if (allocated(c_dragy_p)) p_c_dragy_p => c_dragy_p
+      if (allocated(c_dragz_p)) p_c_dragz_p => c_dragz_p
 
     endsubroutine sc_init_reuc_pointers
 !***********************************************************************
