@@ -163,7 +163,7 @@ module Cdata
   integer:: ireset_tstart=2
 !END C BINDING
   integer, target :: m,n
-  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
+  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0, itdiagnos
   real(KIND=rkind8) :: t=0., toutoff=0.
   real :: dt=0.0, tslice 
   real :: eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
@@ -474,7 +474,7 @@ module Cdata
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
   integer :: nname_sound=0, ncoords_sound=0
   integer :: nr_directions=1
-  real :: tdiagnos,t1ddiagnos,t2davgfirst
+  real :: tdiagnos,dtdiagnos,t1ddiagnos,t2davgfirst,eps_rkf_diagnos
   integer, parameter :: mname=100
   real, dimension (mname) :: fweight=0.0
   integer, dimension(:)   , allocatable :: itype_name
@@ -804,11 +804,10 @@ module Cdata
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save, lwrite_slices_save
   logical :: lchemistry_diag_save
-  integer :: it_save
   real(KIND=rkind8) :: t_save
-  real :: tdiagnos_save,t1ddiagnos_save,t2davgfirst_save,eps_rkf_save,tslice_save,tsound_save,dt_save
+  real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 !!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
-!$ logical, volatile :: lhelper_run=.true., lhelper_perform_diagnostics=.false.
+!$ logical, volatile :: lhelper_perform_diagnostics=.false.
 !$ integer :: num_helper_threads
 ! 
 ! threadprivate definitions for OpenMP
@@ -817,7 +816,7 @@ module Cdata
 !$omp threadprivate(lfirstpoint)
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo)
-!$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,dt,it,eps_rkf) !,lwrite_slices)
+!$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)  !,lwrite_slices)
 !
 !***********************************************************************
 endmodule Cdata

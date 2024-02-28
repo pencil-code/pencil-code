@@ -2687,9 +2687,8 @@ module Hydro
       if (lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) &
         lpenc_requested(i_uij) = .true.
       if (ladvection_velocity) then
-        if (lweno_transport) then
+        if (lweno_transport.and.ldensity_nolog) then
           lpenc_requested(i_rho1)=.true.
-          lpenc_requested(i_transprho)=.true.
           lpenc_requested(i_transpurho)=.true.
         else
           lpenc_requested(i_ugu)=.true.
@@ -3322,7 +3321,7 @@ module Hydro
         enddo
       endif
 ! transpurho
-      if (lpenc_loc(i_transpurho)) then
+      if (lpenc_loc(i_transpurho).and.ldensity_nolog) then
         if (lreference_state) then
           call weno_transp(f,m,n,iux,irho,iux,iuy,iuz,p%transpurho(:,1),dx_1,dy_1,dz_1, &
                            ref1=reference_state(:,iref_rho))

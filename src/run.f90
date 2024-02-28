@@ -43,15 +43,24 @@
 !  website http://www.nordita.org/software/pencil-code/.
 !
 !***********************************************************************
-module run_module
+module Run_module
 
-  use Cdata
+    use Cdata
 !
+    implicit none
+!$  logical, volatile :: lhelper_run=.true.
+
+    integer :: icount, it_last_diagnostic
+    real(KIND=rkind8) :: time1, time_last_diagnostic
+
 contains
 !***********************************************************************
-subroutine helper_loop
-
-  use Equ
+subroutine helper_loop(f,p)
+!
+  use Equ, only: perform_diagnostics
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+  type (pencil_case) :: p
 !
 !  hotloop for helper thread to wait to perform diagnostics
 !
@@ -60,74 +69,492 @@ subroutine helper_loop
 !$  do while(lhelper_run)
 !$    do while(.not. lhelper_perform_diagnostics)
 !$    enddo
-!$    call perform_diagnostics
+!$    call perform_diagnostics(f,p)
 !$  enddo
 
 endsubroutine helper_loop
 !***********************************************************************
-subroutine main_sub
-
+subroutine timeloop(f,df,p)
+!
+!  Do loop in time.
+!
+! 26-feb-24/MR: carved out from main_sub
+!
   use Boundcond,       only: update_ghosts, initialize_boundcond
-  use Chemistry,       only: chemistry_clean_up, write_net_reaction
   use Density,         only: boussinesq
-  use Diagnostics
-  use Dustdensity,     only: init_nd
-  use Dustvelocity,    only: init_uud
-  use Equ 
-  use FArrayManager,   only: farray_clean_up
-  use Farray_alloc
-  use Filter
+  use Diagnostics,     only: write_1daverages_prepare, save_name, report_undefined_diagnostics, &
+                             diagnostics_clean_up, write_2daverages_prepare
+  use Equ,             only: write_diagnostics
+  use Filter,          only: rmwig, rmwig_xyaverage
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
-  use Forcing,         only: forcing_clean_up,addforce
-  use General,         only: random_seed_wrapper, touch_file, itoa
-  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays, &
-                             coarsegrid_interp
-  use Gpu,             only: gpu_init, register_gpu
-  use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
+  use Forcing,         only: addforce, forcing_clean_up
+  use HDF5_IO,         only: initialize_hdf5
   use Hydro,           only: hydro_clean_up
   use ImplicitPhysics, only: calc_heatcond_ADI
-  use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
+  use IO,              only: output_globals
   use Magnetic,        only: rescaling_magnetic
-  use Messages
-  use Mpicomm
-  use NSCBC,           only: NSCBC_clean_up
-  use Param_IO
-  use Particles_main
-  use Pencil_check,    only: pencil_consistency_check
-  use PointMasses
-  use Python
-  use Register
-  use SharedVariables, only: sharedvars_clean_up
-  use Signal_handling, only: signal_prepare, emergency_stop
-  use Slices
-  use Snapshot,        only: powersnap, rsnap, powersnap_prepare, wsnap, wsnap_down, output_form
-  use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid,wsnap_ogrid
-  use Special,         only: initialize_mult_special
-  use Streamlines,     only: tracers_prepare, wtracers
-  use Sub
-  use Syscalls,        only: is_nan, memusage
+  use Messages,        only: timing, fatal_error_local_collect
+  use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD
+  use Param_IO,        only: read_all_run_pars, write_all_run_pars
+  use Particles_main,  only: write_snapshot_particles, particles_initialize_modules, & 
+                             particles_load_balance, particles_stochastic
+  use PointMasses,     only: pointmasses_write_snapshot
+  use Register,        only: initialize_modules, rprint_list, choose_pencils
+  use Signal_handling, only: emergency_stop
+  use Sub,             only: control_file_exists, calc_scl_factor
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
-  use Timeavg
+  use Timeavg,         only: ltavg, update_timeavgs, wsnap_timeavgs
   use Timestep,        only: time_step, initialize_timestep
+  use Slices,          only: wvid_prepare
+  use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
+  use Solid_Cells,     only: time_step_ogrid, wsnap_ogrid, solid_cells_clean_up
+  use Streamlines,     only: tracers_prepare, wtracers
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension (mx,my,mz,mvar) :: df
+  type (pencil_case) :: p
+!
+  logical :: lstop=.false., timeover=.false., resubmit=.false., lreload_file, lreload_always_file, &
+             lonemorestep=.false.
+  integer :: isave_shift=0, it_this_diagnostic
+  real :: wall_clock_time=0., tvar1, dtmp, time_per_step=0.
+  real(KIND=rkind8) :: time_this_diagnostic
+
+  Time_loop: do while (it<=nt)
+!
+    lout = (mod(it-1,it1) == 0) .and. (it > it1start)
+!
+    if (lout .or. emergency_stop) then
+!
+!  Exit do loop if file `STOP' exists.
+!
+      lstop=control_file_exists('STOP',DELETE=.true.)
+      if (lstop .or. emergency_stop) then
+        if (lroot) then
+          print*
+          if (emergency_stop) print*, 'Emergency stop requested'
+          if (lstop) print*, 'Found STOP file'
+        endif
+        resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
+        if (resubmit) print*, 'Cannot be resubmitted'
+        exit Time_loop
+      endif
+!
+!  initialize timer
+!
+      call timing('run','entered Time_loop',INSTRUCT='initialize')
+!
+!  Re-read parameters if file `RELOAD' exists; then remove the file
+!  (this allows us to change parameters on the fly).
+!  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
+!  (only useful for debugging RELOAD issues).
+!
+      lreload_file       =control_file_exists('RELOAD')
+      lreload_always_file=control_file_exists('RELOAD_ALWAYS')
+      lreloading         =lreload_file .or. lreload_always_file
+!
+      if (lreloading) then
+        if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
+!
+!  Re-read configuration
+!
+! If rkf timestep retain the current dt for continuity rather than reset
+! with option to initialize_timestep to dt0/=0 from run.in if intended.
+!
+        if (ldt) then
+          dt=0.0
+        else
+          dtmp=dt
+        endif
+        call read_all_run_pars
+        if (.not.ldt) dt=dtmp
+!
+!  Before reading the rprint_list deallocate the arrays allocated for
+!  1-D and 2-D diagnostics.
+!
+        call diagnostics_clean_up
+        if (lforcing)            call forcing_clean_up
+        if (lhydro_kinematic)    call hydro_clean_up
+        if (lsolid_cells)        call solid_cells_clean_up
+
+        call rprint_list(LRESET=.true.) !(Re-read output list)
+        if (lparticles) call particles_rprint_list(.false.) !MR: shouldn't this be called with lreset=.true.?
+        call report_undefined_diagnostics
+
+        call initialize_hdf5
+        call initialize_timestep
+        call initialize_modules(f)
+        call initialize_boundcond
+        if (lparticles) call particles_initialize_modules(f)
+
+        call choose_pencils
+        call write_all_run_pars('IDL')       ! data to param2.nml
+        call write_all_run_pars              ! diff data to params.log
+!
+        lreload_file=control_file_exists('RELOAD', DELETE=.true.)
+        lreload_file        = .false.
+        lreload_always_file = .false.
+        lreloading          = .false.
+      endif
+    endif
+!
+!  calculate scale factor of the universe
+!
+    if (lread_scl_factor_file_new) call calc_scl_factor
+!
+    if (lwrite_sound) then
+      if ( .not.lout_sound .and. abs( t-tsound - dsound )<= 1.1*dt ) then
+        lout_sound = .true.
+        tsound = t
+      endif
+    endif
+!
+!  1-D timestep control
+!
+    if (lwrite_1daverages) then
+      if (d1davg==impossible) then
+        l1davg = (mod(it-1,it1d) == 0)
+      else
+        call write_1daverages_prepare(t == 0.0 .and. lwrite_ic)
+      endif
+    endif
+!
+!  Average removal timestep control.
+!
+    if (it_rmv==0) then
+      lrmv=.true.
+    else
+      lrmv = (mod(it-1,it_rmv) == 0)
+    endif
+!
+!  Remove wiggles in lnrho in sporadic time intervals.
+!  Necessary on moderate-sized grids. When this happens,
+!  this is often an indication of bad boundary conditions!
+!  iwig=500 is a typical value. For iwig=0 no action is taken.
+!  (The two queries below must come separately on compaq machines.)
+!
+!  N.B.: We now (July 2003) know that boundary conditions
+!  change practically nothing, apart from avoiding stationary
+!  stagnation points/surfaces in the first place.
+!    rmwig is superseeded by the switches lupw_lnrho, lupw_ss,
+!  which should provide a far better solution to the problem.
+!
+    if (iwig/=0) then
+      if (mod(it,iwig)==0) then
+        if (lrmwig_xyaverage) call rmwig_xyaverage(f,ilnrho)
+        if (lrmwig_full) call rmwig(f,df,ilnrho,ilnrho,awig)
+        if (lrmwig_rho) call rmwig(f,df,ilnrho,ilnrho,awig,explog=.true.)
+      endif
+    endif
+!
+!  If we want to write out video data, wvid_prepare sets lvideo=.true.
+!  This allows pde to prepare some of the data.
+!
+    if (lwrite_slices) then
+      call wvid_prepare
+      if (t == 0.0 .and. lwrite_ic) lvideo = .true.
+    endif
+!
+    if (lwrite_2daverages) call write_2daverages_prepare(t == 0.0 .and. lwrite_ic)
+!
+!  Exit do loop if maximum simulation time is reached; allow one extra
+!  step if any diagnostic output needs to be produced.
+!
+    if (t >= tmax) then
+      if (lonemorestep .or. .not. (lout .or. lvideo .or. l2davg)) then
+        if (lroot) print *, 'Maximum simulation time exceeded'
+        exit Time_loop
+      endif
+      lonemorestep = .true.
+    endif
+!
+!   Prepare for the writing of the tracers and the fixed points.
+!
+    if (lwrite_tracers) call tracers_prepare
+    if (lwrite_fixed_points) call fixed_points_prepare
+!
+!  Find out which pencils to calculate at current time-step.
+!
+    lpencil = lpenc_requested
+!  MR: the following should only be done in the first substep, shouldn't it?
+!  AB: yes, so this is the right place, right?
+!  MR: I mean, it should be reversed to lpencil = lpenc_requested for 2nd and further substeps.
+!  AB: the line above says lpencil = lpenc_requested, and now you want to revert to it. How?
+    if (l1davg.or.lout) lpencil=lpencil .or. lpenc_diagnos
+    if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
+    if (lvideo) lpencil=lpencil .or. lpenc_video
+!
+!  Save state vector prior to update for the (implicit) ADI scheme.
+!
+    if (lADI) f(:,:,:,iTTold)=f(:,:,:,iTT)
+!
+    if (ltestperturb) call testperturb_begin(f,df)
+!
+!  Decide here whether or not we will need a power spectrum.
+!  At least for the graviational wave spectra, this requires
+!  advance warning so the relevant components of the f-array
+!  can be filled.
+!
+    if (dspec==impossible) then
+      lspec = (mod(it-1,itspec) == 0)
+    else
+      call powersnap_prepare
+    endif
+!
+!  Time advance.
+!
+    call time_step(f,df,p)
+!
+!  If overlapping grids are used to get body-confined grid around the solids
+!  in the flow, call time step on these grids.
+!
+    if (lsolid_cells) call time_step_ogrid(f)
+!
+    lrmv=.false.
+!
+!  Ensure better load balancing of particles by giving equal number of
+!  particles to each CPU. This only works when block domain decomposition of
+!  particles is activated.
+!
+    if (lparticles) call particles_load_balance(f)
+!
+!  07-Sep-07/dintrans+gastine: Implicit advance of the radiative diffusion
+!  in the temperature equation (using the implicit_physics module).
+!
+    if (lADI) call calc_heatcond_ADI(f)
+!
+    if (ltestperturb) call testperturb_finalize(f)
+!
+    if (lboussinesq) call boussinesq(f)
+!
+    if (lroot) icount=icount+1  !  reliable loop count even for premature exit
+!
+!  Update time averages and time integrals.
+!
+    if (ltavg) call update_timeavgs(f,dt)
+!
+!  Add forcing and/or do rescaling (if applicable).
+!
+    if (lforcing.and..not.lgpu) call addforce(f)
+    if (lparticles_lyapunov) call particles_stochastic
+!    if (lspecial) call special_stochastic
+    if (lrescaling_magnetic)  call rescaling_magnetic(f)
+    if (lrescaling_testfield) call rescaling_testfield(f)
+    if (lrescaling_testscalar) call rescaling_testscalar(f)
+!
+!  Check wall clock time, for diagnostics and for user supplied simulation time
+!  limit.
+!
+    if (lroot.and.(idiag_walltime/=0.or.max_walltime/=0.0)) then
+      wall_clock_time=mpiwtime()-time1
+      if (lout) call save_name(wall_clock_time,idiag_walltime)
+    endif
+!
+    if (lout.and.lroot.and.idiag_timeperstep/=0) then
+      it_this_diagnostic   = it
+      time_this_diagnostic = mpiwtime()
+      time_per_step = (time_this_diagnostic - time_last_diagnostic) &
+                     /(  it_this_diagnostic -   it_last_diagnostic)
+      it_last_diagnostic   =   it_this_diagnostic
+      time_last_diagnostic = time_this_diagnostic
+      call save_name(time_per_step,idiag_timeperstep)
+    endif
+!
+!  Setting ialive=1 can be useful on flaky machines!
+!  The iteration number is written into the file "data/proc*/alive.info".
+!  Set ialive=0 to fully switch this off.
+!
+    if (ialive /= 0) then
+      if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
+    endif
+
+    if (lparticles) call write_snapshot_particles(f,ENUM=.true.)
+    if (lpointmasses) call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
+!
+!  Added possibility of outputting only the chunks starting
+!  from nv1_capitalvar in the capitalvar file.
+!
+    call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
+    if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
+    call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
+!
+!   Diagnostic output in concurrent thread.
+!
+    if (lmultithread) then
+      if (lout.or.l1davg.or.l1dphiavg.or.l2davg) then
+!!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task,&
+!!$      1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
+      endif
+    else
+      call write_diagnostics(f)
+    endif
+!
+!  Write tracers (for animation purposes).
+!
+    if (ltracers.and.lwrite_tracers) call wtracers(f,trim(directory)//'/tracers_')
+!
+!  Write fixed points (for animation purposes).
+!
+    if (lfixed_points.and.lwrite_fixed_points) call wfixed_points(f,trim(directory)//'/fixed_points_')
+!
+!  Save snapshot every isnap steps in case the run gets interrupted or when SAVE file is found.
+!  The time needs also to be written.
+!
+    if (lout) lsave = control_file_exists('SAVE', DELETE=.true.)
+
+    if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
+      if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
+        lsave = .false.
+        if (ip<=12.and.lroot) tvar1=mpiwtime()
+        call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
+        if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
+                                     mpiwtime()-tvar1,' seconds'
+        call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
+        if (lparticles) call write_snapshot_particles(f,ENUM=.false.)
+        if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
+        if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
+        if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
+      endif
+    endif
+!
+!  Allow here for the possibility to have spectral output
+!  *after* the first time. As explained in the comment to
+!  the GW module, the stress spectrum is only available
+!  when the GW solver has advanced by one step, but the time
+!  of the stress spectrum is said to be t+dt, even though
+!  it really belongs to the time t. The GW spectra, on the
+!  other hand, are indeed at the correct d+dt. Therefore,
+!  when lspec_first=T, we output spectra for both t and t+dt.
+!
+    if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) lspec=.true.
+!
+!  Save spectrum snapshot.
+!
+    if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
+!
+!  Save global variables.
+!
+    if (isaveglobal/=0) then
+      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) &
+        call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+    endif
+!
+!  Do exit when timestep has become too short.
+!  This may indicate an MPI communication problem, so the data are useless
+!  and won't be saved!
+!
+    if ((it<nt) .and. (dt<dtmin)) then
+      if (lroot) write(*,*) ' Time step has become too short: dt = ', dt
+      save_lastsnap=.false.
+      exit Time_loop
+    endif
+!
+!  Exit do loop if wall_clock_time has exceeded max_walltime.
+!
+    if (max_walltime>0.0) then
+      if (lroot.and.(wall_clock_time>max_walltime)) timeover=.true.
+      call mpibcast_logical(timeover,comm=MPI_COMM_WORLD)
+      if (timeover) then
+        if (lroot) then
+          print*
+          print*, 'Maximum walltime exceeded'
+        endif
+        exit Time_loop
+      endif
+    endif
+!
+!  Fatal errors sometimes occur only on a specific processor. In that case all
+!  processors must be informed about the problem before the code can stop.
+!
+    call fatal_error_local_collect
+    call timing('run','at the end of Time_loop',INSTRUCT='finalize')
+!
+    it=it+1
+    headt=.false.
+
+  enddo Time_loop
+
+!!$ call wait_all_thread_pool
+!!$ call free_thread_pool
+!$  lhelper_run = .false.
+
+endsubroutine timeloop
+!***********************************************************************
+endmodule Run_module
+!***********************************************************************
+program run
+!
+!  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
+!               address
+! 31-oct-13/MR: replaced rparam by read_all_init_pars
+! 10-feb-14/MR: initialize_mpicomm now called before read_all_run_pars
+! 13-feb-13/MR: call of wsnap_down added
+! 7-feb-24/TP: made main_sub for easier multithreading
+!
+  use Boundcond,       only: update_ghosts, initialize_boundcond
+  use Chemistry,       only: chemistry_clean_up
+  use Diagnostics,     only: phiavg_norm, report_undefined_diagnostics, trim_averages, diagnostics_clean_up
+  use Equ,             only: initialize_pencils, debug_imn_arrays
+  use FArrayManager,   only: farray_clean_up
+  use Farray_alloc
+  use Forcing,         only: forcing_clean_up
+  use General,         only: random_seed_wrapper, touch_file, itoa
+  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
+                             construct_serial_arrays, coarsegrid_interp
+  use Gpu,             only: gpu_init, register_gpu
+  use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
+  use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
+  use Messages
+  use Mpicomm
+  use NSCBC,           only: NSCBC_clean_up
+  use Param_IO,        only: read_all_init_pars, read_all_run_pars, write_all_run_pars, write_pencil_info, get_downpars
+  use Particles_main
+  use Pencil_check,    only: pencil_consistency_check
+  use PointMasses,     only: pointmasses_read_snapshot, pointmasses_write_snapshot
+  use Python,          only: python_init, python_finalize
+  use Register
+  use SharedVariables, only: sharedvars_clean_up
+  use Signal_handling, only: signal_prepare
+  use Slices,          only: setup_slices
+  use Snapshot,        only: powersnap, rsnap, powersnap_prepare, wsnap
+  use Solid_Cells,     only: solid_cells_clean_up, wsnap_ogrid
+  use Special,         only: initialize_mult_special
+  use Sub,             only: control_file_exists, get_nseed
+  use Syscalls,        only: memusage
+  use Timeavg,         only: wsnap_timeavgs
+  use Timestep,        only: initialize_timestep
+  use Run_module
 !
 !$ use OMP_lib
-!$ use, intrinsic :: iso_c_binding, iso_fortran_env
+!$ use, intrinsic :: iso_c_binding !, iso_fortran_env
 !!$ use mt, only: wait_all_thread_pool, push_task, free_thread_pool, depend_on_all, default_task_type
 !
+  implicit none
+
   character(len=fnlen) :: fproc_bounds
-  real(KIND=rkind8) :: time1, time2, tvar1
-  real(KIND=rkind8) :: time_last_diagnostic, time_this_diagnostic
-  real :: wall_clock_time=0.0, time_per_step=0.0, dtmp
-  integer :: icount, mvar_in, isave_shift=0
-  integer :: it_last_diagnostic, it_this_diagnostic, memuse, memory, memcpu
-  logical :: lstop=.false., timeover=.false., resubmit=.false.
+  real(KIND=rkind8) :: time2, tvar1
+  real :: wall_clock_time=0.
+  integer :: mvar_in
+  integer :: memuse, memory, memcpu
   logical :: suppress_pencil_check=.false.
-  logical :: lreload_file=.false., lreload_always_file=.false.
   logical :: lnoreset_tzero=.false.
-  logical :: lonemorestep = .false.
   logical :: lexist
+!
+  lrun = .true.
+!
+!  Get processor numbers and define whether we are root.
+!
+  call mpicomm_init
+!
+!  Initialize GPU use and make threadpool.
+!
+  call gpu_init
+!
+!  Initialize OpenMP use
+!
+!$ include 'omp_init.h'
 !
 !  Initialize Python use.
 !
@@ -525,367 +952,15 @@ subroutine main_sub
 !
   call trim_averages
 !
-!  Do loop in time.
+!$omp parallel num_threads(2) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!
+!$ if (omp_get_thread_num() == 0) then
+     call timeloop(f,df,p)
+!$ else
+!$   call helper_loop(f,p)
+!$ endif
+!$omp end parallel
 !
-  Time_loop: do while (it<=nt)
-!
-    lout = (mod(it-1,it1) == 0) .and. (it > it1start)
-!
-    if (lout .or. emergency_stop) then
-!
-!  Exit do loop if file `STOP' exists.
-!
-      lstop=control_file_exists('STOP',DELETE=.true.)
-      if (lstop .or. emergency_stop) then
-        if (lroot) then
-          print*
-          if (emergency_stop) print*, 'Emergency stop requested'
-          if (lstop) print*, 'Found STOP file'
-        endif
-        resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
-        if (resubmit) print*, 'Cannot be resubmitted'
-        exit Time_loop
-      endif
-!
-!  initialize timer
-!
-      call timing('run','entered Time_loop',INSTRUCT='initialize')
-!
-!  Re-read parameters if file `RELOAD' exists; then remove the file
-!  (this allows us to change parameters on the fly).
-!  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
-!  (only useful for debugging RELOAD issues).
-!
-      lreload_file       =control_file_exists('RELOAD')
-      lreload_always_file=control_file_exists('RELOAD_ALWAYS')
-      lreloading         =lreload_file .or. lreload_always_file
-!
-      if (lreloading) then
-        if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
-!
-!  Re-read configuration
-!
-! If rkf timestep retain the current dt for continuity rather than reset
-! with option to initialize_timestep to dt0/=0 from run.in if intended.
-!
-        if (ldt) then
-          dt=0.0
-        else
-          dtmp=dt
-        endif
-        call read_all_run_pars
-        if (.not.ldt) dt=dtmp
-!
-!  Before reading the rprint_list deallocate the arrays allocated for
-!  1-D and 2-D diagnostics.
-!
-        call diagnostics_clean_up
-        if (lforcing)            call forcing_clean_up
-        if (lhydro_kinematic)    call hydro_clean_up
-        if (lsolid_cells)        call solid_cells_clean_up
-
-        call rprint_list(LRESET=.true.) !(Re-read output list)
-        if (lparticles) call particles_rprint_list(.false.) !MR: shouldn't this be called with lreset=.true.?
-        call report_undefined_diagnostics
-
-        call initialize_hdf5
-        call initialize_timestep
-        call initialize_modules(f)
-        call initialize_boundcond
-        if (lparticles) call particles_initialize_modules(f)
-
-        call choose_pencils
-        call write_all_run_pars('IDL')       ! data to param2.nml
-        call write_all_run_pars              ! diff data to params.log
-!
-        lreload_file=control_file_exists('RELOAD', DELETE=.true.)
-        lreload_file        = .false.
-        lreload_always_file = .false.
-        lreloading          = .false.
-      endif
-    endif
-!
-!  calculate scale factor of the universe
-!
-    if (lread_scl_factor_file_new) call calc_scl_factor
-!
-    if (lwrite_sound) then
-      if ( .not.lout_sound .and. abs( t-tsound - dsound )<= 1.1*dt ) then
-        lout_sound = .true.
-        tsound = t
-      endif
-    endif
-!
-!  1-D timestep control
-!
-    if (lwrite_1daverages) then
-      if (d1davg==impossible) then
-        l1davg = (mod(it-1,it1d) == 0)
-      else
-        call write_1daverages_prepare(t == 0.0 .and. lwrite_ic)
-      endif
-    endif
-!
-!  Average removal timestep control.
-!
-    if (it_rmv==0) then
-      lrmv=.true.
-    else
-      lrmv = (mod(it-1,it_rmv) == 0)
-    endif
-!
-!  Remove wiggles in lnrho in sporadic time intervals.
-!  Necessary on moderate-sized grids. When this happens,
-!  this is often an indication of bad boundary conditions!
-!  iwig=500 is a typical value. For iwig=0 no action is taken.
-!  (The two queries below must come separately on compaq machines.)
-!
-!  N.B.: We now (July 2003) know that boundary conditions
-!  change practically nothing, apart from avoiding stationary
-!  stagnation points/surfaces in the first place.
-!    rmwig is superseeded by the switches lupw_lnrho, lupw_ss,
-!  which should provide a far better solution to the problem.
-!
-    if (iwig/=0) then
-      if (mod(it,iwig)==0) then
-        if (lrmwig_xyaverage) call rmwig_xyaverage(f,ilnrho)
-        if (lrmwig_full) call rmwig(f,df,ilnrho,ilnrho,awig)
-        if (lrmwig_rho) call rmwig(f,df,ilnrho,ilnrho,awig,explog=.true.)
-      endif
-    endif
-!
-!  If we want to write out video data, wvid_prepare sets lvideo=.true.
-!  This allows pde to prepare some of the data.
-!
-    if (lwrite_slices) then
-      call wvid_prepare
-      if (t == 0.0 .and. lwrite_ic) lvideo = .true.
-    endif
-!
-    if (lwrite_2daverages) call write_2daverages_prepare(t == 0.0 .and. lwrite_ic)
-!
-!  Exit do loop if maximum simulation time is reached; allow one extra
-!  step if any diagnostic output needs to be produced.
-!
-    if (t >= tmax) then
-      if (lonemorestep .or. .not. (lout .or. lvideo .or. l2davg)) then
-        if (lroot) print *, 'Maximum simulation time exceeded'
-        exit Time_loop
-      endif
-      lonemorestep = .true.
-    endif
-!
-!   Prepare for the writing of the tracers and the fixed points.
-!
-    if (lwrite_tracers) call tracers_prepare
-    if (lwrite_fixed_points) call fixed_points_prepare
-!
-!  Find out which pencils to calculate at current time-step.
-!
-    lpencil = lpenc_requested
-!  MR: the following should only be done in the first substep, shouldn't it?
-!  AB: yes, so this is the right place, right?
-!  MR: I mean, it should be reversed to lpencil = lpenc_requested for 2nd and further substeps.
-!  AB: the line above says lpencil = lpenc_requested, and now you want to revert to it. How?
-    if (l1davg.or.lout) lpencil=lpencil .or. lpenc_diagnos
-    if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
-    if (lvideo) lpencil=lpencil .or. lpenc_video
-!
-!  Save state vector prior to update for the (implicit) ADI scheme.
-!
-    if (lADI) f(:,:,:,iTTold)=f(:,:,:,iTT)
-!
-    if (ltestperturb) call testperturb_begin(f,df)
-!
-!  Decide here whether or not we will need a power spectrum.
-!  At least for the graviational wave spectra, this requires
-!  advance warning so the relevant components of the f-array
-!  can be filled.
-!
-    if (dspec==impossible) then
-      lspec = (mod(it-1,itspec) == 0)
-    else
-      call powersnap_prepare
-    endif
-!
-!  Time advance.
-!
-    call time_step(f,df,p)
-!
-!  If overlapping grids are used to get body-confined grid around the solids
-!  in the flow, call time step on these grids.
-!
-    if (lsolid_cells) call time_step_ogrid(f)
-!
-    lrmv=.false.
-!
-!  Ensure better load balancing of particles by giving equal number of
-!  particles to each CPU. This only works when block domain decomposition of
-!  particles is activated.
-!
-    if (lparticles) call particles_load_balance(f)
-!
-!  07-Sep-07/dintrans+gastine: Implicit advance of the radiative diffusion
-!  in the temperature equation (using the implicit_physics module).
-!
-    if (lADI) call calc_heatcond_ADI(f)
-!
-    if (ltestperturb) call testperturb_finalize(f)
-!
-    if (lboussinesq) call boussinesq(f)
-!
-    if (lroot) icount=icount+1  !  reliable loop count even for premature exit
-!
-!  Update time averages and time integrals.
-!
-    if (ltavg) call update_timeavgs(f,dt)
-!
-!  Add forcing and/or do rescaling (if applicable).
-!
-    if (lforcing.and..not.lgpu) call addforce(f)
-    if (lparticles_lyapunov) call particles_stochastic
-!    if (lspecial) call special_stochastic
-    if (lrescaling_magnetic)  call rescaling_magnetic(f)
-    if (lrescaling_testfield) call rescaling_testfield(f)
-    if (lrescaling_testscalar) call rescaling_testscalar(f)
-!
-!  Check wall clock time, for diagnostics and for user supplied simulation time
-!  limit.
-!
-    if (lroot.and.(idiag_walltime/=0.or.max_walltime/=0.0)) then
-      time2=mpiwtime()
-      wall_clock_time=time2-time1
-      if (lout) call save_name(wall_clock_time,idiag_walltime)
-    endif
-!
-    if (lout.and.lroot.and.idiag_timeperstep/=0) then
-      it_this_diagnostic   = it
-      time_this_diagnostic = mpiwtime()
-      time_per_step = (time_this_diagnostic - time_last_diagnostic) &
-                     /(  it_this_diagnostic -   it_last_diagnostic)
-      it_last_diagnostic   =   it_this_diagnostic
-      time_last_diagnostic = time_this_diagnostic
-      call save_name(time_per_step,idiag_timeperstep)
-    endif
-!
-!  Setting ialive=1 can be useful on flaky machines!
-!  The iteration number is written into the file "data/proc*/alive.info".
-!  Set ialive=0 to fully switch this off.
-!
-    if (ialive /= 0) then
-      if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
-    endif
-
-    if (lparticles) call write_snapshot_particles(f,ENUM=.true.)
-    if (lpointmasses) call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
-!
-!  Added possibility of outputting only the chunks starting
-!  from nv1_capitalvar in the capitalvar file.
-!
-    call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
-    if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
-    call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
-!
-!   Diagnostic output in concurrent thread.
-!
-    if (lmultithread) then
-      if (lout.or.l1davg.or.l1dphiavg.or.l2davg) then
-!!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task,&
-!!$      1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
-      endif
-    else
-      call write_diagnostics(f)
-    endif
-!
-!  Write tracers (for animation purposes).
-!
-    if (ltracers.and.lwrite_tracers) call wtracers(f,trim(directory)//'/tracers_')
-!
-!  Write fixed points (for animation purposes).
-!
-    if (lfixed_points.and.lwrite_fixed_points) call wfixed_points(f,trim(directory)//'/fixed_points_')
-!
-!  Save snapshot every isnap steps in case the run gets interrupted or when SAVE file is found.
-!  The time needs also to be written.
-!
-    if (lout) lsave = control_file_exists('SAVE', DELETE=.true.)
-
-    if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
-      if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
-        lsave = .false.
-        if (ip<=12.and.lroot) tvar1=mpiwtime()
-        call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
-        if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
-                                     mpiwtime()-tvar1,' seconds'
-        call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
-        if (lparticles) call write_snapshot_particles(f,ENUM=.false.)
-        if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
-        if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
-        if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
-      endif
-    endif
-!
-!  Allow here for the possibility to have spectral output
-!  *after* the first time. As explained in the comment to
-!  the GW module, the stress spectrum is only available
-!  when the GW solver has advanced by one step, but the time
-!  of the stress spectrum is said to be t+dt, even though
-!  it really belongs to the time t. The GW spectra, on the
-!  other hand, are indeed at the correct d+dt. Therefore,
-!  when lspec_first=T, we output spectra for both t and t+dt.
-!
-    if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) lspec=.true.
-!
-!  Save spectrum snapshot.
-!
-    if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
-!
-!  Save global variables.
-!
-    if (isaveglobal/=0) then
-      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) &
-        call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
-    endif
-!
-!  Do exit when timestep has become too short.
-!  This may indicate an MPI communication problem, so the data are useless
-!  and won't be saved!
-!
-    if ((it<nt) .and. (dt<dtmin)) then
-      if (lroot) write(*,*) ' Time step has become too short: dt = ', dt
-      save_lastsnap=.false.
-      exit Time_loop
-    endif
-!
-!  Exit do loop if wall_clock_time has exceeded max_walltime.
-!
-    if (max_walltime>0.0) then
-      if (lroot.and.(wall_clock_time>max_walltime)) timeover=.true.
-      call mpibcast_logical(timeover,comm=MPI_COMM_WORLD)
-      if (timeover) then
-        if (lroot) then
-          print*
-          print*, 'Maximum walltime exceeded'
-        endif
-        exit Time_loop
-      endif
-    endif
-!
-!  Fatal errors sometimes occur only on a specific processor. In that case all
-!  processors must be informed about the problem before the code can stop.
-!
-    call fatal_error_local_collect
-    call timing('run','at the end of Time_loop',INSTRUCT='finalize')
-!
-    it=it+1
-    headt=.false.
-
-  enddo Time_loop
-
-!!$ call wait_all_thread_pool
-!!$ call free_thread_pool
-!$  lhelper_run = .false.
-
   if (lroot) then
     print*
     print*, 'Simulation finished after ', icount, ' time-steps'
@@ -999,48 +1074,5 @@ subroutine main_sub
   if (lparticles) call particles_cleanup
   call finalize
 !
-endsubroutine main_sub
-!***********************************************************************
-endmodule run_module
-!***********************************************************************
-program run
-!
-!  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
-!               address
-! 31-oct-13/MR: replaced rparam by read_all_init_pars
-! 10-feb-14/MR: initialize_mpicomm now called before read_all_run_pars
-! 13-feb-13/MR: call of wsnap_down added
-! 7-feb-24/TP: made main_sub for easier multithreading
-!
-  use run_module
-  use Gpu,     only: gpu_init
-  use Mpicomm, only: mpicomm_init
-  use Diagnostics, only: phiavg_norm
-!
-!$ use OMP_lib
-!
-  lrun = .true.
-!
-!  Get processor numbers and define whether we are root.
-!
-  call mpicomm_init
-!
-!  Initialize GPU use and make threadpool.
-!
-  call gpu_init
-!
-!  Initialize OpenMP use
-!
-!$ include 'omp_init.h'
-
-!$omp parallel num_threads(2) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
-
-!$    if (omp_get_thread_num() == 0) then
-        call main_sub
-!$    else
-!$      call helper_loop
-!$    endif
-!$omp end parallel
-
 endprogram run
 !**************************************************************************
