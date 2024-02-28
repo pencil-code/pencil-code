@@ -527,7 +527,7 @@ else
 endif
 ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
   override FFLAGS += $(OMPFFLAGS) -I./astaroth/include
-  override LDFLAGS += $(OMPLFLAGS) -I./astaroth/include
+  override LDFLAGS += $(OMPLFLAGS)
 #  OMP_PREREQ = copyin.inc
 #  Creates code for copying in threadprivate variables. - Not needed at the moment.
 #
@@ -2786,8 +2786,10 @@ ifneq (,$(shell $(FC) --version | grep -i GNU))
     ALLOW_ARG_MISMATCH = -fallow-argument-mismatch
   endif
   IS_CRAY =
+  MODULE_NAME_ORDER =
 else
   IS_CRAY = $(shell $(FC) --version | grep -i Cray)
+  MODULE_NAME_ORDER = CRAY
 endif
 #
 #
@@ -2988,10 +2990,10 @@ CUDA_INCDIR=$(CUDA_MAKEDIR)
 CUDA_RELPATH=..
 DSL_WORKDIR=$(CUDA_MAKEDIR)/submodule/acc-runtime/Pencil
 
-gpu_preps: $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
+gpu_preps: $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
 #
 #$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac:: .sentinel
-$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac: .sentinel
+$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor (CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac: .sentinel
 #
 .sentinel: Makefile.local
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h

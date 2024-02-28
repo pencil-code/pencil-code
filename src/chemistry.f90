@@ -176,7 +176,7 @@ module Chemistry
   real, allocatable, dimension(:,:) :: net_react_m, net_react_p
   !$omp threadprivate(net_react_m,net_react_p)
 ! For concurrency
-  type(pointer_with_size_info_2d) :: p_net_react_m, p_net_react_p
+  real, pointer :: p_net_react_m, p_net_react_p
 !
   real, dimension(nchemspec) :: Ythresh=0.
   logical :: lchemistry_diag=.false.
@@ -3977,7 +3977,6 @@ module Chemistry
                     enddo
                     goto 100 ! this is an excellent example of "spaghetti code" [Bourdin.KIS]
 
-
                   else
                     found_new_reaction=.true.
                   endif
@@ -4039,15 +4038,12 @@ module Chemistry
                     StartInd=StartInd+1
                   else
                     if (VarNumber==1) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                          B_n(k)
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') B_n(k)
                       if (B_n(k)/=0.) B_n(k)=log(B_n(k))
                     elseif (VarNumber==2) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                          alpha_n(k)
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') alpha_n(k)
                     elseif (VarNumber==3) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                          E_an(k)
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') E_an(k)
                     else
                       call fatal_error("read_reactions","no such VarNumber: "//trim(itoa(VarNumber)))
                     endif
@@ -4385,12 +4381,8 @@ module Chemistry
 !  Set reaction rate to zero when mass fractions of propane of oxygen is
 !  very close to zero.
 !
-      where (f(l1:l2,m,n,i_C3H8) < 1e-12)
-        vreact_p(:,1) = 0.
-      endwhere
-      where (f(l1:l2,m,n,i_O2) < 1e-12)
-        vreact_p(:,1) = 0.
-      endwhere
+      where (f(l1:l2,m,n,i_C3H8) < 1e-12) vreact_p(:,1) = 0.
+      where (f(l1:l2,m,n,i_O2) < 1e-12) vreact_p(:,1) = 0.
       vreact_m(:,1) = 0.
 !
     endsubroutine roux
@@ -5176,11 +5168,9 @@ module Chemistry
             StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
             read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') YY_k
-            if (lroot) print*, ' volume fraction, %,    ', YY_k, &
-                species_constants(ind_chem,imass)
-            if (species_constants(ind_chem,imass)>0.) then
+            if (lroot) print*, ' volume fraction, %,    ', YY_k,species_constants(ind_chem,imass)
+            if (species_constants(ind_chem,imass)>0.) &
              air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
-            endif
 
             if (StartInd==80) exit
 
@@ -5221,12 +5211,10 @@ module Chemistry
             f(:,:,:,ilnTT)=alog(TT)!+f(:,:,:,ilnTT)
           endif
           if (ldensity_nolog) then
-            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-              air_mass/TT)/unit_mass*unit_length**3
+            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3
           else
-            tmp=(PP/(k_B_cgs/m_u_cgs)*&
-              air_mass/TT)/unit_mass*unit_length**3
-              f(:,:,:,ilnrho)=alog(tmp)
+            tmp=(PP/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3
+            f(:,:,:,ilnrho)=alog(tmp)
           endif
           if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
         endif
@@ -5239,8 +5227,7 @@ module Chemistry
           f(:,:,:,ilnrho)=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3
         else
-          tmp=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/TT)/unit_mass*unit_length**3
+          tmp=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3
           f(:,:,:,ilnrho)=alog(tmp)
         endif
         if (ltemperature_nolog) then
@@ -5267,29 +5254,21 @@ module Chemistry
 
       if (linit_temperature) then
         do i=1,mx
-        if (x(i)<=init_x1) then
-          f(i,:,:,ilnTT)=alog(init_TT1)
-        endif
-        if (x(i)>=init_x2) then
-          f(i,:,:,ilnTT)=alog(init_TT2)
-        endif
-        if (x(i)>init_x1 .and. x(i)<init_x2) then
-          if (init_x1 /= init_x2) then
-            f(i,:,:,ilnTT)=&
-               alog((x(i)-init_x1)/(init_x2-init_x1) &
-               *(init_TT2-init_TT1)+init_TT1)
+          if (x(i)<=init_x1) f(i,:,:,ilnTT)=alog(init_TT1)
+          if (x(i)>=init_x2) f(i,:,:,ilnTT)=alog(init_TT2)
+          if (x(i)>init_x1 .and. x(i)<init_x2) then
+            if (init_x1 /= init_x2) &
+              f(i,:,:,ilnTT)=&
+                 alog((x(i)-init_x1)/(init_x2-init_x1)*(init_TT2-init_TT1)+init_TT1)
           endif
-        endif
         enddo
       endif
 
       if (linit_density) then
         if (ldensity_nolog) then
-          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
         else
-          tmp=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+          tmp=(PP/(k_B_cgs/m_u_cgs)*air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
           f(:,:,:,ilnrho)=alog(tmp)
         endif
       endif
@@ -6133,63 +6112,25 @@ module Chemistry
 !
     endsubroutine read_Lewis
 !***********************************************************************
-    subroutine chemistry_init_diag_accum
-!
-! 7-feb-24/TP:  since master thread doesn't take part in diagnostics set accumulators to zero at start
-!
-      net_react_m = 0.0
-      net_react_p = 0.0
-!
-    endsubroutine chemistry_init_diag_accum
-!***********************************************************************
     subroutine chemistry_init_reduc_pointers
 !
 ! 7-feb-24/TP:  allocates memory needed for reductions
 !
       use General
 !
-      call point_and_get_size(p_net_react_m, net_react_m)
-      call point_and_get_size(p_net_react_p, net_react_p)
+      if (allocated(net_react_m)) p_net_react_m => net_react_m
+      if (allocated(net_react_p)) p_net_react_p => net_react_p
 !
     endsubroutine chemistry_init_reduc_pointers
 !***********************************************************************
-    subroutine chemistry_diag_reductions
+    subroutine chemistry_diags_reductions
 !
 ! 7-feb-24/TP:  diag_reductions for chemistry
 !
-      p_net_react_m%data = p_net_react_m%data + net_react_m
-      p_net_react_p%data = p_net_react_p%data + net_react_p
+      if (allocated(net_react_m)) p_net_react_m = p_net_react_m + net_react_m
+      if (allocated(net_react_p)) p_net_react_p = p_net_react_p + net_react_p
 !
-    endsubroutine chemistry_diag_reductions 
-!***********************************************************************
-    subroutine chemistry_read_diag_accum
-!
-! 7-feb-24/TP:  reads chemistry diagnostics accumulators
-!
-      net_react_m = p_net_react_m%data
-      net_react_p = p_net_react_p%data
-!
-    endsubroutine chemistry_read_diag_accum
-!***********************************************************************
-    subroutine chemistry_write_diagnostics_accumulators
-!
-! 7-feb-24/TP:  writes chemistry diagnostics accumulators
-!
-      p_net_react_m%data = net_react_m
-      p_net_react_p%data = net_react_p
-!
-    endsubroutine chemistry_write_diagnostics_accumulators
-!***********************************************************************
-    subroutine chemistry_init_private_accumulators
-!
-! 7-feb-24/TP:  allocates memory for chemistry diagnostic reductions 
-!
-      use General
-!
-      if (associated(p_net_react_m%data)) call allocate_using_dims(net_react_m,p%p_net_react_m%size)
-      if (associated(p_net_react_p%data)) call allocate_using_dims(net_react_p,p%p_net_react_p%size)
-!
-    endsubroutine chemistry_init_private_accumulators
+    endsubroutine chemistry_diags_reductions 
 !***********************************************************************
     include 'chemistry_common.inc'
 !***********************************************************************
