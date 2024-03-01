@@ -741,6 +741,9 @@ module Hydro
   integer :: idiag_uyuzmxz=0    ! YAVG_DOC: $\left< u_y u_z \right>_{y}$
   integer :: idiag_oumxz=0      ! YAVG_DOC: $\left<\boldsymbol{\omega}
                                 ! YAVG_DOC: \cdot\uv\right>_{y}$
+  integer :: idiag_ox2mxz=0     ! YAVG_DOC: $\left< \omega_x^2 \right>_{y}$
+  integer :: idiag_oy2mxz=0     ! YAVG_DOC: $\left< \omega_y^2 \right>_{y}$
+  integer :: idiag_oz2mxz=0     ! YAVG_DOC: $\left< \omega_z^2 \right>_{y}$
 !
 ! z averaged diagnostics given in zaver.in
 !
@@ -2750,7 +2753,8 @@ module Hydro
       lpenc_diagnos(i_uu)=.true.
       if (idiag_oumphi/=0 .or. idiag_oumxy/=0 .or. &
           idiag_oumxz/=0) lpenc_diagnos2d(i_ou)=.true.
-      if (idiag_ozmphi/=0) lpenc_diagnos2d(i_oo)=.true.
+      if (idiag_ozmphi/=0 .or. idiag_ox2mxz/=0 .or. &
+          idiag_oy2mxz/=0 .or. idiag_oz2mxz/=0) lpenc_diagnos2d(i_oo)=.true.
       if (idiag_u2mphi/=0) lpenc_diagnos2d(i_u2)=.true.
       if (idiag_ox2m/=0 .or. idiag_oy2m/=0 .or. idiag_oz2m/=0 .or. &
           idiag_ox3m/=0 .or. idiag_oy3m/=0 .or. idiag_oz3m/=0 .or. &
@@ -4688,6 +4692,9 @@ module Hydro
         if (idiag_uxuzmxz/=0) call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,3),idiag_uxuzmxz)
         if (idiag_uyuzmxz/=0) call ysum_mn_name_xz(p%uu(:,2)*p%uu(:,3),idiag_uyuzmxz)
         call ysum_mn_name_xz(p%ou,idiag_oumxz)
+        call ysum_mn_name_xz(p%oo(:,1)**2,idiag_ox2mxz)
+        call ysum_mn_name_xz(p%oo(:,2)**2,idiag_oy2mxz)
+        call ysum_mn_name_xz(p%oo(:,3)**2,idiag_oz2mxz)
 !
         call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
 !
@@ -6232,6 +6239,9 @@ endif
         idiag_uxuymxz=0
         idiag_uxuzmxz=0
         idiag_uyuzmxz=0
+        idiag_ox2mxz=0
+        idiag_oy2mxz=0
+        idiag_oz2mxz=0
         idiag_uxmxy=0
         idiag_uymxy=0
         idiag_uzmxy=0
@@ -6825,6 +6835,9 @@ endif
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uxuzmxz',idiag_uxuzmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uyuzmxz',idiag_uyuzmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oumxz',idiag_oumxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'ox2mxz',idiag_ox2mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oy2mxz',idiag_oy2mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oz2mxz',idiag_oz2mxz)
       enddo
 !
 !  check for those quantities for which we want z-averages
