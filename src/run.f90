@@ -107,8 +107,6 @@ subroutine main_sub()
   use Timeavg
   use Timestep,        only: time_step, initialize_timestep
 !$ use OMP_lib
-!$ use mt, only: wait_all_thread_pool, push_task, mt_split,&
-!$ free_thread_pool, depend_on_all, default_task_type
 !$ use, intrinsic :: iso_c_binding
 !$ use, intrinsic :: iso_fortran_env
 !
@@ -1063,8 +1061,6 @@ program run
   use Timestep,        only: time_step, initialize_timestep
   use, intrinsic :: iso_fortran_env
 !$ use OMP_lib
-!$ use mt, only: wait_all_thread_pool, push_task, mt_split,&
-!$ free_thread_pool, depend_on_all, default_task_type
 !$ use, intrinsic :: iso_c_binding
 !
 !

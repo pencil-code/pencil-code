@@ -703,19 +703,12 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
     // acGridSwapBuffers();
     // acGridSynchronizeStream(STREAM_ALL);
 
-    acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_final_step1, dims.n0,dims.n1);
+    // acGridExecuteTaskGraph(rhs_test_graph,1);
+    acGridExecuteTaskGraph(graph_1,1);
     acGridSynchronizeStream(STREAM_ALL);
-    acGridSwapBuffers();
+    acGridExecuteTaskGraph(graph_2,1);
     acGridSynchronizeStream(STREAM_ALL);
-
-    acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step2, dims.n0,dims.n1);
-    acGridSynchronizeStream(STREAM_ALL);
-    acGridSwapBuffers();
-    acGridSynchronizeStream(STREAM_ALL);
-
-    acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_final_step2, dims.n0,dims.n1);
-    acGridSynchronizeStream(STREAM_ALL);
-    acGridSwapBuffers();
+    acGridExecuteTaskGraph(graph_3,1);
     acGridSynchronizeStream(STREAM_ALL);
 
   acGridSynchronizeStream(STREAM_ALL);
@@ -797,7 +790,14 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 
   //actual run
   for(int i=0;i<num_of_steps;i++){
-    acGridExecuteTaskGraph(rhs_test_graph,1);
+    {
+    acGridExecuteTaskGraph(graph_1,1);
+    acGridSynchronizeStream(STREAM_ALL);
+    acGridExecuteTaskGraph(graph_2,1);
+    acGridSynchronizeStream(STREAM_ALL);
+    acGridExecuteTaskGraph(graph_3,1);
+    acGridSynchronizeStream(STREAM_ALL);
+  }
     // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step0, dims.n0,dims.n1);
     // acGridSynchronizeStream(STREAM_ALL);
     // acGridSwapBuffers();
@@ -1008,7 +1008,12 @@ void loadProfiles(AcMeshInfo &config)
   // acGridLoadProfile(STREAM_DEFAULT, PROFILE_X, config);
 }
 /***********************************************************************************************/
-AcResult skip_prepare(const TaskStepInfo){ return AC_SUCCESS; };
+
+extern "C" void getFArrayIn(AcReal **p_f_in)
+{
+  Device device = acGridGetDevice();
+  *p_f_in = device->vba.in[0];
+}
 extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 {
   Device device = acGridGetDevice();
@@ -1016,11 +1021,7 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
   *out = device->vba.out[0];
 }
 
-extern "C" void getFArrayIn(AcReal **p_f_in)
-{
-  Device device = acGridGetDevice();
-  *p_f_in = device->vba.in[0];
-}
+
 extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
 {
   //Setup configurations used for initializing and running the GPU code
@@ -1040,42 +1041,32 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
     all_fields[i] = (VertexBufferHandle)i;
   }
 
-  rhs_test_graph = acGridBuildTaskGraph({
+  AcTaskDefinition rhs_ops[] =  {
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-      acCompute(KERNEL_twopass_solve_intermediate_step0, all_fields,skip_prepare),
-      acCompute(KERNEL_twopass_solve_final_step0, all_fields,skip_prepare),
-
-      acHaloExchange(all_fields),
-      acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-      acCompute(KERNEL_twopass_solve_intermediate_step1, all_fields,skip_prepare),
-      acCompute(KERNEL_twopass_solve_final_step1, all_fields,skip_prepare),
-
-      acHaloExchange(all_fields),
-      acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-      acCompute(KERNEL_twopass_solve_intermediate_step2, all_fields,skip_prepare),
-      acCompute(KERNEL_twopass_solve_final_step2, all_fields,skip_prepare), //
-  });
+      acCompute(twopass_solve_intermediate, all_fields),
+      acCompute(twopass_solve_final, all_fields)};
+  rhs_test_graph = acGridBuildTaskGraph(rhs_ops,(size_t)3);
   
   graph_1 = acGridBuildTaskGraph({
     acHaloExchange(all_fields),
     acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-    acCompute(KERNEL_twopass_solve_intermediate_step0, all_fields, skip_prepare),
-    acCompute(KERNEL_twopass_solve_final_step0, all_fields,skip_prepare),
+    acCompute(twopass_solve_intermediate, all_fields, 0),
+    acCompute(twopass_solve_final, all_fields,0),
   });
   graph_2 = acGridBuildTaskGraph(
     {
         acHaloExchange(all_fields),
         acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-        acCompute(KERNEL_twopass_solve_intermediate_step1, all_fields, skip_prepare),
-        acCompute(KERNEL_twopass_solve_final_step1, all_fields,skip_prepare),
+        acCompute(twopass_solve_intermediate, all_fields, 1),
+        acCompute(twopass_solve_final, all_fields,1),
     });
   graph_3 = acGridBuildTaskGraph(
     {
         acHaloExchange(all_fields),
         acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-        acCompute(KERNEL_twopass_solve_intermediate_step2, all_fields, skip_prepare),
-        acCompute(KERNEL_twopass_solve_final_step2, all_fields, skip_prepare),
+        acCompute(twopass_solve_intermediate, all_fields, 2),
+        acCompute(twopass_solve_final, all_fields, 2),
     });
   printf("BUILD graphs\n");
   acGridExecuteTaskGraph(rhs_test_graph,1);
