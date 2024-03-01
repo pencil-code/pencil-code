@@ -89,7 +89,6 @@ module Equ
       use OMP_lib
       use Mpicomm
 !$    use, intrinsic :: iso_c_binding
-!$    use mt, only: push_task, depend_on_all, default_task_type, wait_all_thread_pool
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
