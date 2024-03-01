@@ -622,7 +622,7 @@ module Hydro
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
-    logical function get_lupdate_aux
+    logical function get_lupdate_aux()
 
       get_lupdate_aux = .true.
       select case (kinematic_flow)
@@ -636,7 +636,7 @@ module Hydro
           get_lupdate_aux = .false.
       end select 
 
-    endsubroutine get_lupdate_aux
+    endfunction get_lupdate_aux
 !***********************************************************************
     subroutine calc_pencils_hydro_std(f,p)
 !

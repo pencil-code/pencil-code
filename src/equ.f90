@@ -690,7 +690,6 @@ module Equ
 !
       call init_reduc_pointers
 !$omp parallel firstprivate(p) num_threads(num_helper_threads)  !MR: firstprivate(p) perhaps not needed
-!!!acc$    call init_private_accumulators
 !$    call restore_diagnostic_controls
 
       lfirstpoint=.true.

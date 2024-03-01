@@ -1,7 +1,116 @@
-# Settings for taito-gpu
-CUFLAGS = 
-#-gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 
-#-gencode arch=compute_60,code=sm_60 --expt-relaxed-constexpr
+
+#Importing environ variables into preprocessor
+ENVIRON = -DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX}
+
+include PC_modulesources.h
+
+ifeq ($(PRECISION),DOUBLE)
+  ENVIRON += -DAC_DOUBLE_PRECISION=1 -DDOUBLE_PRECISION
+  PREC=dbl
+#  OPTFLAGS += -fsingle-PRECision-constant
+  CMAKE_PREC = DOUBLE_PRECISION=ON
+else
+  ENVIRON += -DAC_DOUBLE_PRECISION=0
+  PREC=sgl
+  CMAKE_PREC = DOUBLE_PRECISION=OFF
+endif
+
+include Makefile.vendor
+include Makefile.module_info
+
+ifeq ($(GPU_VENDOR),amd)
+  USE_HIP=ON
+else
+  USE_HIP=OFF
+endif
+
+SOURCES = gpu_astaroth.cc 
+
+DATA_TRANSFERS = 
+#PACKED
+ifeq ($(DATA_TRANSFERS),PACKED)
+  ENVIRON += -DPACKED_DATA_TRANSFERS=1
+  CMAKE_PACKED = 'PACKED_DATA_TRANSFERS=ON'
+  SOURCES += loadStore.cc loadStore.h
+else
+  ENVIRON += -DPACKED_DATA_TRANSFERS=0
+  CMAKE_PACKED = 'PACKED_DATA_TRANSFERS=OFF'
+endif
+
+OBJECTS = $(SOURCES:.cc=.o) 
+
+DSL_MODULE_DIR=samples/gputest
+#DSL_MODULE_DIR=Pencil
+
+# C headers in submodule
+AC_HEADERS=submodule/include/astaroth.h submodule/acc-runtime/api/math_utils.h
+
+# C headers in pencil-code/src 
+CHEADERS = ../cparam_c.h ../cdata_c.h ../sub_c.h ../headers_c.h ../forcing_c.h ../boundcond_c.h ../mpicomm_c.h
+
+# Pencil Code related C headers in . (pencil-code/src/astaroth)
+PCHEADER_DIR = .
+PC_HEADERS = $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_module_parfuncs.h $(PCHEADER_DIR)/PC_modulepars.h 
+
+astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS) astaroth_libs
+	mkdir -p build && \
+	echo USE_HIP=$(USE_HIP) && \
+	echo PRECISION=$(CMAKE_PREC) && \
+	cd build && \
+	cmake -D$(CMAKE_PREC) -DUSE_HIP=$(USE_HIP) .. && \
+	make -j && \
+	cd .. && \
+	mv ./build/libastaroth.so astaroth_$(PREC).so
+
+#	mkdir -p scheduler-build && \
+#	cd scheduler-build && \
+#	cmake -DUSE_OPENMP=ON ../NUMA-scheduler && \
+#	make -j && \
+#	cd .. && \
+#	cp -r ./NUMA-scheduler/include .
+
+astaroth_libs:
+	mkdir -p submodule/build && cd submodule/build && \
+	cmake -DMULTIGPU_ENABLED=OFF -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DUSE_OMP=ON -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DUSE_CUDA_AWARE_MPI=ON \
+              -D$(CMAKE_PACKED) -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DADJACENT_VERTEX_BUFFERS=OFF -DUSE_HIP=$(USE_HIP) -DVERBOSE=OFF -DOPTIMIZE_MEM_ACCESSES=ON -DAUTOTUNE_TASKGRAPHS=OFF -DBUILD_STANDALONE=OFF -DBUILD_UTILS=OFF .. \
+	&& make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
+	@echo PRECISION=$(CMAKE_PREC)
+
+update_astaroth_libs:
+	cd submodule/build && \
+	make -I../../.. VERBOSE=0 # Build the core Astaroth library with existing Makefile.
+	@echo PRECISION=$(CMAKE_PREC)
+
+include Makefile.extern
+
+$(PC_HEADERS): .sentinel
+
+.sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
+	@rm -f $(PCHEADER_DIR)/PC_modulepars.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
+	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepars.h
+	@echo '// automatically generated; do not edit!' > submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h
+	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \
+        for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
+	then ../scripts/phys_modules2c par $$file equationofstate; \
+        else ../scripts/phys_modules2c par $$file; fi; done
+	@touch .sentinel
+#
+clean:
+	@rm -f $(OBJECTS)
+	@rm -f *.so .sentinel
+	@if [[ -d submodule/build ]]; then rm -f -rI submodule/build; fi # Removes the files generated with cmake for the Astaroth code
+	@rm -rf build
+	@rm -rf scheduler-build
+	@rm -rf include
+#
+# Deep cleaning, e.g. necessary with compiler change
+#
+cleann: clean
+	@rm -f ../cparam_c.h ../defines_cdata.h ../forcing_c.h ../forcing_pars_c.h ../sub_c.h ../mpicomm_c.h ../boundcond_c.h ../cdata_c.h
+	@rm -f submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h
+	@rm -f $(PC_HEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_module_parfuncs.h
+#
+#--------------------------------------------------------------------------------------------------------------------------------------------
 OPTFLAGS = -O1 
 #-funroll-loops -march=native 
 # -gencode arch=compute_60,code=sm_60
@@ -13,128 +122,29 @@ OPTFLAGS = -O1
 #CCFLAGS = -ccbin gcc -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. 
 ##CCFLAGS = -ccbin icpc -Xcompiler -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. 
 
-# Settings for Omer's machine
-#CFLAGS = -gencode arch=compute_52,code=sm_52 --shared --relocatable-device-code=true --compiler-options '-fPIC'
-
-#Importing environ variables into preprocessor
-ENVIRON = -DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX}
-###-DCMAKE_BUILD_TYPE=Debug    make VERBOSE=1
-
-PRECISION =
-include PC_modulesources.h
-ifeq ($(PRECISION),DOUBLE)
-  ENVIRON += -DAC_DOUBLE_PRECISION=1 -DDOUBLE_PRECISION
-  PREC=dbl
-#  OPTFLAGS += -fsingle-PRECision-constant
-  CMAKE_PREC = DOUBLE_PRECISION=ON
-else
-  ENVIRON += -DAC_DOUBLE_PRECISION=0
-  PREC=sgl
-  CMAKE_PREC = DOUBLE_PRECISION=OFF
-endif
-SOURCES = gpu_astaroth.cc
-
-include Makefile.vendor
-include Makefile.module_info
-
-ifeq ($(GPU_VENDOR),amd)
-	USE_HIP=ON
-else
-	USE_HIP=OFF
-endif
-
-DATA_TRANSFERS = PACKED
-ifeq ($(DATA_TRANSFERS),PACKED)
-  ENVIRON += -DPACKED_DATA_TRANSFERS=1
-  CMAKE_PACKED = 'PACKED_DATA_TRANSFERS=ON'
-  SOURCES += loadStore.cc
-else
-  ENVIRON += -DPACKED_DATA_TRANSFERS=0
-  CMAKE_PACKED = 'PACKED_DATA_TRANSFERS=OFF'
-endif
-ENVIRON += -DAC_MPI_ENABLED=1
-
-OBJECTS = $(SOURCES:.cc=.o) 
-
-CCFLAGS = $(OPTFLAGS) -std=c++11 -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -g -G -lm
-#CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
-#CCFLAGS = $(OPTFLAGS) -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm 
+#CCFLAGS = $(OPTFLAGS) -std=c++11 -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -g -G -lm
 CCFLAGS = $(OPTFLAGS) -Xcompiler -shared -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm
-
-PCHEADER_DIR=.
-#DSL_MODULE_DIR=Pencil
-DSL_MODULE_DIR=samples/gputest
-
-gpu_astaroth.o: gpu_astaroth.cc $(AC_HEADERS) $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_module_parfuncs.h forcing.h loadStore.h $(CHEADERS) astaroth_libs
-	mkdir -p build && \
-	echo $(USE_HIP) && \
-	echo $(CMAKE_PREC) && \
-	cd build && \
-	cmake -D$(CMAKE_PREC) -DUSE_HIP=$(USE_HIP) .. && \
-	make -j && \
-	cd .. && \
-	cp ./build/libastaroth.so libastaroth.so && \
-	cp libastaroth.so astaroth_sgl.so && \
-	cp libastaroth.so astaroth_dbl.so && \
-	mkdir -p scheduler-build && \
-	cd scheduler-build && \
-	cmake -DUSE_OPENMP=ON ../NUMA-scheduler && \
-	make -j && \
-	cd .. && \
-	cp -r ./NUMA-scheduler/include .
-
-include Makefile.depend
-include Makefile.extern
+#CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
 
 #export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
 #export CUDA_NVCC_FLAGS='-shared -fPIC'
-CPP = nvcc
-#CRAY with HIP
-CPP = hipcc
-#CC -xhip
 
-astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
-	mkdir -p build
-	cd build
-	cd ..
-	cp ./build/libastaroth_sgl.so libastaroth_sgl.so
-	cp libastaroth_sgl.so astaroth_sgl.so
-
+#astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
 #	$(CPP) $(CCFLAGS) $(CUFLAGS) -shared -o astaroth_$(PREC).so $(OBJECTS) -L submodule/build/src/core -L submodule/build/src/core/kernels -L submodule/build/src/utils -lastaroth_core -lkernels -Isubmodule/include
 #-lastaroth_utils
 
-astaroth_libs:
-	mkdir -p submodule/build && cd submodule/build && \
-	cmake -DMULTIGPU_ENABLED=OFF -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DUSE_OMP=ON -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DUSE_CUDA_AWARE_MPI=ON\
-              -D$(CMAKE_PACKED) -D$(CMAKE_PREC) -DBUILD_SAMPLES=OFF  -DADJACENT_VERTEX_BUFFERS=ON -DUSE_HIP=$(USE_HIP) -DLINEAR_PROC_MAPPING=ON -DUSE_EXTERNAL_DECOMP=ON -DVERBOSE=OFF -DCMAKE_BUILD_TYPE=Debug -DOPTIMIZE_MEM_ACCESSES=ON -DAUTOTUNE_TASKGRAPHS=OFF -DBUILD_STANDALONE=OFF .. \
-	&& make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
-	@echo PRECISION=$(CMAKE_PREC)
-	@echo ENVIRON: $(ENVIRON)
-
-update_astaroth_libs:
-	cd submodule/build && \
-	make -I../../.. VERBOSE=0 # Build the core Astaroth library
-	@echo PRECISION=$(CMAKE_PREC)
-	@echo ENVIRON: $(ENVIRON)
-
 #-DCMAKE_CXX_COMPILER=/appl/spack/install-tree/gcc-4.8.5/gcc-8.3.0-qzmzn5/bin/c++ .. \
-#export DSL_MODULE=pc_mhd_solver && \
+
+ifeq ($(USE_HIP),OFF)
+#GCC with CUDA
+  CPP = nvcc
+else
+#CRAY with HIP
+  CPP = hipcc
+endif
 
 %.o: %.cc
-	$(CPP) $(CCFLAGS) $(ENVIRON) -DAC_USE_HIP=1 -dc $< -o $@
-
-$(PC_HEADERS): .sentinel
-
-.sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
-	@rm -f $(PCHEADER_DIR)/PC_modulepars.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
-#diagnostics/PC_modulediags.h
-	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepars.h
-	@echo '// automatically generated; do not edit!' > submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h
-	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \
-        for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
-	then ../scripts/phys_modules2c par $$file equationofstate; \
-        else ../scripts/phys_modules2c par $$file; fi; done
-	@touch .sentinel
+	$(CPP) $(CCFLAGS) $(ENVIRON) -c $< -o $@
 
 #@echo '// automatically generated; do not edit!' > diagnostics/PC_modulediags.h
 #@rm -f diagnostics/PC_modulediags_init.h
@@ -142,21 +152,6 @@ $(PC_HEADERS): .sentinel
 #        @for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
 #        then ../scripts/phys_modules2c par $$file equationofstate; ../scripts/phys_modules2c diag $$file equationofstate;\
 #        else ../scripts/phys_modules2c par $$file; ../scripts/phys_modules2c diag $$file; fi; done
-
-clean:
-	@rm -f $(OBJECTS)
-	@rm -f *.so .sentinel
-	@if [[ -d submodule/build ]]; then rm -f -rI submodule/build; fi # Removes the files generated with cmake for the Astaroth code
-	@rm -rf build
-	@rm -rf scheduler-build
-	@rm -rf include
-
-# Deep cleaning, e.g. necessary with compiler change
-#
-cleann: clean
-	@rm -f ../cparam_c.h ../defines_cdata.h ../diagnostics_c.h ../forcing_c.h ../forcing_pars_c.h ../sub_c.h ../mpicomm_c.h ../boundcond_c.h ../cdata_c.h
-	@rm -f submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h
-	@rm -f $(PC_HEADER_DIR)/PC_modulepars.h
 
 #@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h | xargs rm -f
 #@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < $(PC_HEADER_DIR)/PC_modulepars.h | xargs rm -f

@@ -528,10 +528,12 @@ program run
   use Run_module
 !
 !$ use OMP_lib
-!$ use, intrinsic :: iso_c_binding !, iso_fortran_env
+!!$ use, intrinsic :: iso_c_binding !, iso_fortran_env
 !!$ use mt, only: wait_all_thread_pool, push_task, free_thread_pool, depend_on_all, default_task_type
 !
   implicit none
+
+  type (pencil_case) :: p
 
   character(len=fnlen) :: fproc_bounds
   real(KIND=rkind8) :: time2, tvar1

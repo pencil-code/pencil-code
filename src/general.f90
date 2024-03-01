@@ -190,7 +190,10 @@ module General
     module procedure allocate_using_dims_3d
     module procedure allocate_using_dims_4d
   end interface
-
+!
+!  TP: structures holding array dimensions
+!  used with pointers with size info
+!
   type, public :: single_dim_array_dims
     integer :: size 
   end type single_dim_array_dims 
@@ -212,7 +215,9 @@ module General
     integer :: z
     integer :: w
   end type four_dim_array_dims 
-
+!
+!  TP: structures holding a pointer to an array and the corresponding arrays dimensions
+!
   type, public :: pointer_with_size_info_1d
     real, pointer, dimension(:) :: data
     type(single_dim_array_dims) :: dims
@@ -237,6 +242,7 @@ module General
     real, pointer, dimension(:,:,:,:) :: data
     type(four_dim_array_dims) :: dims
   end type
+  
 !
 !  State and default generator of random numbers.
 !
@@ -6491,6 +6497,8 @@ iloop:do i=1,size(list2)
 !***********************************************************************
     subroutine allocate_using_dims_1d(src, dims)
 !
+! Allocates allocatable arrays usind 1d dimensions
+!
 ! 7-feb-24/TP: coded
 !
     real, allocatable, dimension(:), target :: src
@@ -6501,6 +6509,8 @@ iloop:do i=1,size(list2)
     endsubroutine allocate_using_dims_1d
 !***********************************************************************
     subroutine allocate_using_dims_2d(src, dims)
+!
+! Allocates allocatable arrays usind 2d dimensions
 !
 ! 7-feb-24/TP: coded
 !
@@ -6513,6 +6523,8 @@ iloop:do i=1,size(list2)
 !***********************************************************************
     subroutine allocate_using_dims_2d_int(src, dims)
 !
+! Allocates allocatable integer arrays usind 2d dimensions
+!
 ! 7-feb-24/TP: coded
 !
     integer, allocatable, dimension(:,:), target :: src
@@ -6523,6 +6535,8 @@ iloop:do i=1,size(list2)
     endsubroutine allocate_using_dims_2d_int
 !***********************************************************************
     subroutine allocate_using_dims_3d(src, dims)
+!
+! Allocates allocatable arrays usind 3d dimensions
 !
 ! 7-feb-24/TP: coded
 !
@@ -6535,6 +6549,8 @@ iloop:do i=1,size(list2)
 !***********************************************************************
     subroutine allocate_using_dims_4d(src, dims)
 !
+! Allocates allocatable arrays usind 4d dimensions
+!
 ! 7-feb-24/TP: coded
 !
     real, allocatable, dimension(:,:,:,:), target :: src
@@ -6545,6 +6561,8 @@ iloop:do i=1,size(list2)
     endsubroutine allocate_using_dims_4d
 !***********************************************************************
     subroutine point_and_get_size_1d(dst, src)
+!
+! Associates a pointer to 1d array and stores the dimension info alongside the pointer 
 !
 ! 7-feb-24/TP: coded
 !
@@ -6560,6 +6578,8 @@ iloop:do i=1,size(list2)
     endsubroutine
 !***********************************************************************
     subroutine point_and_get_size_2d(dst, src)
+!
+! Associates a pointer to 2d array and stores the dimension info alongside the pointer 
 !
 ! 7-feb-24/TP: coded
 !
@@ -6577,6 +6597,8 @@ iloop:do i=1,size(list2)
 !***********************************************************************
     subroutine point_and_get_size_2d_int(dst, src)
 !
+! Associates a pointer to 2d integer array and stores the dimension info alongside the pointer 
+!
 ! 7-feb-24/TP: coded
 !
     type(pointer_with_size_info_2d_int) :: dst
@@ -6591,6 +6613,8 @@ iloop:do i=1,size(list2)
     endsubroutine point_and_get_size_2d_int
 !***********************************************************************
     subroutine point_and_get_size_3d(dst, src)
+!
+! Associates a pointer to 3d array and stores the dimension info alongside the pointer 
 !
 ! 7-feb-24/TP: coded
 !
@@ -6607,6 +6631,8 @@ iloop:do i=1,size(list2)
     endsubroutine
 !***********************************************************************
     subroutine point_and_get_size_4d(dst, src)
+!
+! Associates a pointer to 4d array and stores the dimension info alongside the pointer 
 !
 ! 7-feb-24/TP: coded
 !

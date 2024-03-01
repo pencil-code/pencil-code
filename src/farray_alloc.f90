@@ -5,9 +5,8 @@
 ! Dynamical allocation of f and df.
 !
   real, dimension(:,:,:,:), allocatable :: f,df
-  type (pencil_case) :: p
 
-  public :: f,df,p
+  public :: f,df
   public :: initialize, finalize
 
   contains

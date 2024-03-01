@@ -35,6 +35,3 @@
     module procedure calc_pencils_hydro_pencpar
     module procedure calc_pencils_hydro_std
   endinterface calc_pencils_hydro
-
-  public :: calc_pencils_hydro_nonlinear_test
-  public :: calc_pencils_hydro_std_test  

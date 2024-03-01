@@ -21,7 +21,11 @@ s/\([^0-9a-zA-Z_]\)zgrid$/\1/
 #remove allocatable quantities
 /( *:/ d
 #make everything lowercase
-s/.*/\L&/g
+#!!!s/.*/\L&/g
+#use 3-vector types
+s/integer *, *dimension *( *3 *) *::/int3arr/
+s/logical *, *dimension *( *3 *) *::/int3arr/
+s/real *, *dimension *( *3 *) *::/real3arr/
 #remove array initializations
 s/(\/.*\/)//g
 #replace double precision exponent symbol by single precision one
@@ -30,6 +34,8 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /implicit  *none/ d
 s/integer *( *kind *= *ikind8 *) *::/long long/
 s/real *( *kind *= *rkind8 *) *::/ double/
+#remove volatile
+s/, *volatile//
 #remove comment at line end
 s/\([^ ]\) *!.*$/\1/
 #insert pragma and includes instead of module
@@ -40,6 +46,7 @@ s/, *dimension(\([^,:]*\)) *:: *\([a-zA-Z0-9_]*\)/:: \2[\1]/
 s/, *dimension.*::/*::/
 #transform parameter attribute to const
 s/integer *, *parameter *\([\*]*\):: */const FINT \1/
+s/real *, *parameter *\([\*]*\):: */const REAL \1/
 #transform integer, real, logical, double precision with and without * into extern <type>, replace :: by ,. * remains
 s/integer *\([*]*\):: */extern FINT \1,/
 s/real *\([*]*\):: */extern REAL \1,/
