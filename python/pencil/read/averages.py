@@ -469,8 +469,7 @@ class Averages(object):
         ]  # Ignore commented variables and blank lines in the .in file.
         with h5py.File(av_file, "r") as tmp:
             n_times = len(tmp.keys()) - 1
-            if tmp['last'][()].item() < n_times-2:
-                n_times = tmp['last'][()].item() + 1
+            n_times = min(n_times,tmp['last'][()].item() + 1)
             start_time, end_time = 0, tmp[str(n_times-1)]['time'][()].item()
             if time_range:
                 if isinstance(time_range, list):
