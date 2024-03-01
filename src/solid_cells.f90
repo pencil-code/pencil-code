@@ -3785,6 +3785,6 @@ module Solid_Cells
       if (allocated(c_dragy_p)) p_c_dragy_p => c_dragy_p
       if (allocated(c_dragz_p)) p_c_dragz_p => c_dragz_p
 
-    endsubroutine sc_init_reuc_pointers
+    endsubroutine sc_init_reduc_pointers
 !***********************************************************************
 endmodule Solid_Cells

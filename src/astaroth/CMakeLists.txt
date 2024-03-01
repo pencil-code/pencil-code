@@ -136,5 +136,5 @@ add_compile_options(-DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=$
 add_compile_options(-DPACKED_DATA_TRANSFERS=1)
 add_definitions(-DAC_DOUBLE_PRECISION=1)
 add_library(astaroth SHARED gpu_astaroth.cc)
-target_link_libraries(astaroth astaroth_core kernels astaroth_utils)
+target_link_libraries(astaroth astaroth_core kernels) 
 

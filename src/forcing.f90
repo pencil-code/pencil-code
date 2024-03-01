@@ -1126,7 +1126,14 @@ module Forcing
         elseif (iforcing_cont(i)=='exp(-x2-y2)') then
           expmk2x2(:,i)=exp(-kf_fcont(i)**2*x**2)
           expmk2y2(:,i)=exp(-kf_fcont(i)**2*y**2)
-        elseif (iforcing_cont(i)=='from_file') then
+        elseif (iforcing_cont(i)=='xz') then
+          if (lroot) print*,'forcing_cont: xz'
+          profx_ampl=ampl_ff(i)*(x(l1:l2)-xyz0(1))*(xyz1(1)-x(l1:l2))
+          profz_ampl=(z-xyz0(3))*(xyz1(3)-z)
+        elseif (iforcing_cont(i)=='1-(4/3)(1-r^2/4)*r^2') then
+          if (lroot) print*,'forcing_cont: 1-(4/3)(1-r^2/4)*r^2'
+          profx_ampl=ampl_ff(i)*(1.-4./3.*(1.-.25*x(l1:l2)**2)*x(l1:l2)**2)
+       elseif (iforcing_cont(i)=='from_file') then
           if (allocated(fcont_from_file)) deallocate(fcont_from_file)
           allocate(fcont_from_file(3,nxgrid,nygrid,nzgrid))
           
@@ -6045,28 +6052,41 @@ module Forcing
         force(:,2) = 0.
         force(:,3) = ampl_ff(i)*expmk2x2(l1:l2,i)*expmk2y2(m,i)
 !
+!  The following 2 entries were taken verbatim from
+!  src/experimental/forcing_cont_sample.f90
+!
+      case('xz')
+        force(:,1)=0.
+        force(:,2)=profx_ampl*profz_ampl(n)
+        force(:,3)=0.
+
+      case ('1-(4/3)(1-r^2/4)*r^2')
+        force(:,1)=0.
+        force(:,2)=0.
+        force(:,3)=profx_ampl
+!
 !  possibility of putting zero, e.g., for purely magnetic forcings
 !
-        case('zero')
-          force=0.
+      case('zero')
+        force=0.
 !
 !   Read forcing profile from file. Currently can be used only for one variable
 !   (e.g. either uu or aa).
 !
-        case('from_file')
-          force(:,1) = fcont_from_file(1,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
-          force(:,2) = fcont_from_file(2,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
-          force(:,3) = fcont_from_file(3,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
-          force=ampl_ff(i)*force
+      case('from_file')
+        force(:,1) = fcont_from_file(1,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
+        force(:,2) = fcont_from_file(2,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
+        force(:,3) = fcont_from_file(3,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
+        force=ampl_ff(i)*force
 !
 !  nothing 
 !
-        case ('nothing')
-          call warning('forcing_cont',"iforcing_cont='nothing'")
+      case ('nothing')
+        call warning('forcing_cont',"iforcing_cont='nothing'")
 !
-        case default
-          call fatal_error('forcing_cont','no such iforcing_cont: '//trim(iforcing_cont(i)))
-        endselect
+      case default
+        call fatal_error('forcing_cont','no such iforcing_cont: '//trim(iforcing_cont(i)))
+      endselect
 !
     endsubroutine forcing_cont
 !***********************************************************************
