@@ -111,6 +111,7 @@ subroutine timeloop(f,df,p)
   use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
   use Solid_Cells,     only: time_step_ogrid, wsnap_ogrid, solid_cells_clean_up
   use Streamlines,     only: tracers_prepare, wtracers
+!$ use OMP_lib
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
@@ -1077,4 +1078,4 @@ program run
   call finalize
 !
 endprogram run
-!**************************************************************************
+!***********************************************************************
