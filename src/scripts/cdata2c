@@ -1,17 +1,9 @@
-
-  sed "s/, bind(C)//g" cdata.f90 > cdata_tmp
-  sed "s/, bind(c)//g" cdata_tmp > cdata_tmp_2
-  sed "s/, volatile//g" cdata_tmp_2 > cdata_tmp_4
-  sed "s/(KIND=rkind8)//g" cdata_tmp_4 > cdata_tmp_3
-if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
-
-  sed -f scripts/cdata_CRAY.sed cdata_tmp_3 > cdata_tmp5
-  echo -e '#pragma once\n#include "headers_c.h"\n#include "cdata_refs.h"\n;' | cat - cdata_tmp5 > cdata_c.h
-  sed -e's/MODULE_PREFIX\(.*\)MODULE_INFIX\(.*\)MODULE_SUFFIX/\2/' tmp > defines_cdata.h
-else
-  sed -f scripts/cdata.sed cdata_tmp_3 > cdata_c.h
-  sed -e's/MODULE_PREFIX/'$MODULE_PREFIX'/' -e's/MODULE_INFIX/'$MODULE_INFIX'/' -e's/MODULE_SUFFIX/'$MODULE_SUFFIX'/' tmp > defines_cdata.h
-  rm -f tmp
-fi
-sed "s/extern REAL dxyz_2_,dxyz_4_,dxyz_6_,dvol_;/extern thread_local REAL dxyz_2_,dxyz_4_,dxyz_6_,dvol_;/g" cdata_refs.h > tmp
-cp tmp cdata_refs.h
+  if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
+    echo -e '#pragma once\n#include "headers_c.h"\n' > cdata_c.h
+    echo -e '  typedef REAL real3arr[3];\n  typedef int int3arr[3];\n' >> cdata_c.h
+    sed -f scripts/cdata_CRAY.sed cdata.f90 >> cdata_c.h
+  else
+    sed -f scripts/cdata.sed cdata.f90 > cdata_c.h
+    sed -e's/MODULE_PREFIX/'$MODULE_PREFIX'/' -e's/MODULE_INFIX/'$MODULE_INFIX'/' -e's/MODULE_SUFFIX/'$MODULE_SUFFIX'/' tmp > defines_cdata.h
+    rm -f tmp
+  fi

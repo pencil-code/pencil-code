@@ -44,9 +44,9 @@ module Cdata
   real, dimension (nxgrid) :: xgrid, dx1grid, dxtgrid
   real, dimension (nygrid) :: ygrid, dy1grid, dytgrid
   real, dimension (nzgrid) :: zgrid, dz1grid, dztgrid
-  real, dimension(mxgrid) :: xglobal
-  real, dimension(mygrid) :: yglobal
-  real, dimension(mzgrid) :: zglobal
+  real, dimension (mxgrid) :: xglobal
+  real, dimension (mygrid) :: yglobal
+  real, dimension (mzgrid) :: zglobal
   real :: kx_nyq,ky_nyq,kz_nyq
 !
 !  Exact coefficients for non-equidistant grid at boundaries
@@ -146,6 +146,7 @@ module Cdata
 !
 !  Time integration parameters.
 !
+  real :: dt=0.0
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
   real :: dt_incr=0.0, dt0=0.
@@ -155,8 +156,8 @@ module Cdata
 !AB: this more carefully and discuss it first in the newsletter.
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtsrc=0.2, cdtf=0.9
-  real :: ddt=0.0
-  real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7
+  real :: ddt=0.0, dtinc=0.5, dtdec=0.5
+  real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7, dt_ratio=0.01
   real :: nu_sts=0.1
   real :: density_scale_factor=impossible
   integer :: permute_sts=0
@@ -165,8 +166,7 @@ module Cdata
   integer, target :: m,n
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0, itdiagnos
   real(KIND=rkind8) :: t=0., toutoff=0.
-  real :: dt=0.0, tslice 
-  real :: eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
+  real :: tslice, eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
 !
 !  Box dimensions.
 !
@@ -426,7 +426,7 @@ module Cdata
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh               ! `pole' processor neighbours
-  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0 
+  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0
 !
 !  Data for registering of already updated variable ghost zones for only partly
 !  updating by the *_after_timestep routines.
@@ -804,6 +804,7 @@ module Cdata
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save, lwrite_slices_save
   logical :: lchemistry_diag_save
+
   real(KIND=rkind8) :: t_save
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 !!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
