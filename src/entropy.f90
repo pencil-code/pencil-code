@@ -3780,12 +3780,20 @@ module Energy
 !  Radiative flux.
 !
 ! from calc_heatcond
-        if (hcond0/=0.) then
-          if (idiag_fradz_Kprof/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
-          if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
+        if (lheatc_Kprof) then
+!         if statement above guards against using uninitialized hcond
+!         Note that when lread_hcond=T, hcond is read from a file, and
+!         so hcond0 is irrelevant.
+          call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
+          call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
         endif
 ! from calc_heatcond_constK
-        if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond_Kconst*p%TT*p%glnTT(:,1),idiag_fradmx)
+        if (lheatc_Kconst) then
+!         if statement above guards against using uninitialized hcond_Kconst
+!         (initializing it to zero would still presumably lead to lots of
+!         unnecessary computation).
+          call yzsum_mn_name_x(-hcond_Kconst*p%TT*p%glnTT(:,1),idiag_fradmx)
+        endif
 ! from calc_heatcond_kramers
         if (idiag_fradz_kramers/=0) call xysum_mn_name_z(-K_kramers*p%TT*p%glnTT(:,3),idiag_fradz_kramers)
         call xysum_mn_name_z(K_kramers, idiag_Kkramersmz)
