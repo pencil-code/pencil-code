@@ -6463,6 +6463,7 @@ module Boundcond
 !
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
         call get_shared_variable('nkramers',nkramers)
+        call get_shared_variable('cp',cp)
 !
       endif
       if (lheatc_chiconst) then
