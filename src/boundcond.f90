@@ -6471,6 +6471,7 @@ module Boundcond
       endif
       if (lheatc_chiconst) then
         call get_shared_variable('chi',chi)
+        call get_shared_variable('cp',cp)
       endif
 !
       if (lheatc_kramers.or.lheatc_chiconst.or.lreference_state) then
@@ -6540,7 +6541,7 @@ module Boundcond
             tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
           else if (lheatc_chiconst) then
-            tmp_yz=Fbot/(work_yz*chi*tmp_yz)
+            tmp_yz=Fbot/(work_yz*chi*cp*tmp_yz)
           else
             tmp_yz=FbotKbot/tmp_yz
           endif
@@ -6607,7 +6608,7 @@ module Boundcond
             tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
           else if (lheatc_chiconst) then
-            tmp_yz=Ftop/(work_yz*chi*tmp_yz)
+            tmp_yz=Ftop/(work_yz*chi*cp*tmp_yz)
           else
             tmp_yz=FtopKtop/tmp_yz
           endif
