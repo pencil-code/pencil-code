@@ -2427,7 +2427,7 @@ module Diagnostics
 !
 !   18-jun-07/tobi: adapted from xysum_mn_name_z
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a, tmp
       integer :: iname
       real :: fac,suma
       integer :: nl
@@ -2445,10 +2445,16 @@ module Diagnostics
         if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) fac = .5
       endif
 !
-      if (lperi(1)) then
-        suma = fac*sum(a)
+      if (lproper_averages) then
+        tmp = a*dAxy_x(l1:l2)*dAxy_y(m)
       else
-        suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
+        tmp  = a
+      endif
+!
+      if (lperi(1)) then
+        suma = fac*sum(tmp)
+      else
+        suma = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
       endif
 !
 !  n starts with nghost=4, so the correct index is n-nghost.
