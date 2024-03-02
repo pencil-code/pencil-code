@@ -58,10 +58,16 @@ class Averages(object):
             print(i)
 
     def read(
-        self, datadir="data", avg_file=None, var_index=-1, iter_list=None, precision="f", param=list()
+        self,
+        datadir="data",
+        avg_file=None,
+        var_index=-1,
+        iter_list=None,
+        precision="f",
+        param=None,
     ):
         """
-         read(datadir="data", avg_file="1", var_index=-1, iter_list=None, precision="f", param=list())
+         read(datadir="data", avg_file="1", var_index=-1, iter_list=None, precision="f", param=None)
 
          Read Pencil Code phi-averaged data.
 
@@ -92,7 +98,7 @@ class Averages(object):
         import numpy as np
         from pencil import read
 
-        if not param:
+        if param is None:
             param = read.param(datadir=datadir, quiet=True)
 
         lh5 = (param.io_strategy == "HDF5")
