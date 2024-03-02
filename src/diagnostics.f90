@@ -176,9 +176,7 @@ module Diagnostics
 !
 !  Calculate relative volume integral.
 !
-      if (lproper_averages) then
-        dVol_rel1=1./box_volume
-      elseif (lspherical_coords) then
+      if (lspherical_coords) then
 !
 !  Prevent zeros from less than 3-dimensional runs
 !  (maybe this should be 2pi, but maybe not).
@@ -240,6 +238,10 @@ module Diagnostics
         dA_xy_rel1 = 1./nxygrid
         dA_xz_rel1 = 1./nxzgrid
         dA_yz_rel1 = 1./nyzgrid
+      endif
+!
+      if (lproper_averages) then
+        dVol_rel1=1./box_volume
       endif
 !
       if (lroot.and.ip<=10) then
