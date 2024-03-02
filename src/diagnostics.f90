@@ -2471,7 +2471,7 @@ module Diagnostics
 !
 !   18-jun-07/tobi: adapted from xzsum_mn_name_y
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a, tmp
       integer :: iname
       real :: fac,suma
 !
@@ -2488,10 +2488,16 @@ module Diagnostics
         if ((n==n1.and.lfirst_proc_z).or.(n==n2.and.llast_proc_z)) fac = .5
       endif
 !
-      if (lperi(1)) then
-        suma = fac*sum(a)
+      if (lproper_averages) then
+        tmp = a*dAxz_x(l1:l2)*dAxz_z(n)
       else
-        suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
+        tmp  = a
+      endif
+!
+      if (lperi(1)) then
+        suma = fac*sum(tmp)
+      else
+        suma = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
       endif
 !
 !  m starts with mghost+1=4, so the correct index is m-nghost.
