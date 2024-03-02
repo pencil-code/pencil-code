@@ -2501,7 +2501,7 @@ module Diagnostics
 !
 !   18-jun-07/tobi: adapted from yzsum_mn_name_x
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a, tmp
       integer :: iname
       real :: fac
 !
@@ -2521,7 +2521,14 @@ module Diagnostics
         if ((n==n1.and.lfirst_proc_z).or.(n==n2.and.llast_proc_z)) fac = .5*fac
       endif
 !
-      fnamex(:,ipx+1,iname) = fnamex(:,ipx+1,iname) + fac*a
+!
+      if (lproper_averages) then
+        tmp = a*dAyz_y(m)*dAyz_z(n)
+      else
+        tmp  = a
+      endif
+!
+      fnamex(:,ipx+1,iname) = fnamex(:,ipx+1,iname) + fac*tmp
 !
     endsubroutine yzintegrate_mn_name_x
 !***********************************************************************
