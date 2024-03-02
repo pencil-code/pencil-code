@@ -6442,6 +6442,7 @@ module Boundcond
       real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp
       real, pointer :: hcond0_kramers, nkramers, chi
       logical, pointer :: lheatc_kramers, lheatc_chiconst
+      logical, pointer :: lheatc_Kprof, lheatc_Kconst
       integer :: i,stat
       real, dimension (:,:), pointer :: reference_state
       real :: fac
@@ -6450,6 +6451,8 @@ module Boundcond
 !
       call get_shared_variable('lheatc_kramers',lheatc_kramers, caller='bc_ss_flux_x')
       call get_shared_variable('lheatc_chiconst',lheatc_chiconst, caller='bc_ss_flux_x')
+      call get_shared_variable('lheatc_Kprof',lheatc_Kprof)
+      call get_shared_variable('lheatc_Kconst',lheatc_Kconst)
       if (lheatc_kramers.and.lheatc_chiconst) call fatal_error('bc_ss_flux_x', &
         'Having both Kramers and chi-const at the same time is not supported')
 !
@@ -6491,6 +6494,11 @@ module Boundcond
       case(BOT)
 !
         if (pretend_lnTT.or..not.(lheatc_chiconst.or.lheatc_kramers)) then
+          if (headtt.and..not.(lheatc_Kprof.or.lheatc_Kconst)) then
+!           Kishore: I am not sure if FbotKbot is correctly set for any
+!           other iheatcond, so I will leave this as a warning for now.
+            call warning('bc_ss_flux_x', 'FbotKbot may not be correctly set. Please check it.')
+          endif
           call get_shared_variable('FbotKbot',FbotKbot)
           if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
         endif
@@ -6557,6 +6565,11 @@ module Boundcond
       case(TOP)
 !
         if (pretend_lnTT.or..not.(lheatc_chiconst.or.lheatc_kramers)) then
+          if (headtt.and..not.(lheatc_Kprof.or.lheatc_Kconst)) then
+!           Kishore: I am not sure if FtopKtop is correctly set for any
+!           other iheatcond, so I will leave this as a warning for now.
+            call warning('bc_ss_flux_x', 'FtopKtop may not be correctly set. Please check it.')
+          endif
           call get_shared_variable('FtopKtop',FtopKtop)
           if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
         endif
