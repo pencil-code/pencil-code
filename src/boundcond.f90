@@ -6490,8 +6490,10 @@ module Boundcond
 !
       case(BOT)
 !
-        call get_shared_variable('FbotKbot',FbotKbot)
-        if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
+        if (pretend_lnTT.or..not.(lheatc_chiconst.or.lheatc_kramers)) then
+          call get_shared_variable('FbotKbot',FbotKbot)
+          if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
+        endif
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FbotKbot/T
@@ -6554,8 +6556,10 @@ module Boundcond
 !
       case(TOP)
 !
-        call get_shared_variable('FtopKtop',FtopKtop)
-         if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
+        if (pretend_lnTT.or..not.(lheatc_chiconst.or.lheatc_kramers)) then
+          call get_shared_variable('FtopKtop',FtopKtop)
+          if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
+        endif
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FtopKtop/T
