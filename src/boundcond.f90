@@ -6520,18 +6520,16 @@ module Boundcond
             if (lheatc_kramers.or.lheatc_chiconst) work_yz=exp(f(l1,:,:,ilnrho))
             tmp_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
           endif
-          if (lheatc_kramers) then
 !
+          if (lheatc_kramers.or.lheatc_chiconst) then
             call get_shared_variable('Fbot',Fbot)
             if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
+          endif
 !
+          if (lheatc_kramers) then
             tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
-!
           else if (lheatc_chiconst) then
-            call get_shared_variable('Fbot',Fbot)
-            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
-            
             tmp_yz=Fbot/(work_yz*chi*tmp_yz)
           else
             tmp_yz=FbotKbot/tmp_yz
@@ -6582,17 +6580,16 @@ module Boundcond
             if (lheatc_kramers.or.lheatc_chiconst) work_yz=exp(f(l2,:,:,ilnrho))
             tmp_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
           endif
+!
+          if (lheatc_kramers.or.lheatc_chiconst) then
+            call get_shared_variable('Fbot',Fbot)
+            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
+          endif
+!
           if (lheatc_kramers) then
-!
-            call get_shared_variable('Ftop',Ftop)
-            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Ftop=',Ftop
-!
             tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
           else if (lheatc_chiconst) then
-            call get_shared_variable('Ftop',Ftop)
-            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Ftop=',Ftop
-            
             tmp_yz=Ftop/(work_yz*chi*tmp_yz)
           else
             tmp_yz=FtopKtop/tmp_yz
