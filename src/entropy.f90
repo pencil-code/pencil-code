@@ -623,6 +623,8 @@ module Energy
       call put_shared_variable('chit_prof1',chit_prof1)
       call put_shared_variable('chit_prof2',chit_prof2)
       call put_shared_variable('lmultilayer',lmultilayer)
+      call put_shared_variable('lheatc_Kprof',lheatc_Kprof)
+      call put_shared_variable('lheatc_Kconst',lheatc_Kconst)
       call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
       call put_shared_variable('lheatc_kramers',lheatc_kramers)
