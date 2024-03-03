@@ -97,7 +97,7 @@ readSlice[sim_,var_,sl_]:=Module[
     pos=BinaryRead[file,p];
     nend=BinaryRead[file,"Integer32"];
     If[nstart!=nend,Message[readSlice::badformat];Return[$Failed]];
-    Return[{Partition[slice,n1],t,pos,BinaryRead[file,"Integer32"]}]
+    Return[{Transpose@Partition[slice,n1],t,pos,BinaryRead[file,"Integer32"]}]
   ];
   Close[file]//Quiet;
   data=NestWhileList[readOneTime,{BinaryRead[file,"Integer32"]},(Last[#]=!=EndOfFile)&];
