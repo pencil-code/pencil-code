@@ -63,7 +63,7 @@ static AcTaskGraph *rhs_test_graph;
 static AcTaskGraph *rhs_test_graph_2;
 
 // Other.
-static int pid;
+static int rank;
 int halo_xz_size[2] = {0, 0}, halo_yz_size[2] = {0, 0};
 //static AcReal *xtop_buffer, *xbot_buffer, *ytop_buffer, *ybot_buffer;
 
@@ -287,7 +287,7 @@ gradients(const int x, const int y, const int z, AcMesh mesh, const int field)
 }
 ***/
 /***********************************************************************************************/
-void print_diagnostics(const int pid, const int step, const AcReal dt, const AcReal simulation_time,
+void print_diagnostics(const int pid, const int step, const AcReal dt_, const AcReal simulation_time,
                        FILE *diag_file, const AcReal sink_mass, const AcReal accreted_mass,
                        int *found_nan)
 {
@@ -303,10 +303,10 @@ void print_diagnostics(const int pid, const int step, const AcReal dt, const AcR
 
   if (pid == 0)
   {
-    //(pid, "Step %d, t_step %.3e, dt %e s\n", step, double(simulation_time), double(dt));
+    //(pid, "Step %d, t_step %.3e, dt %e s\n", step, double(simulation_time), double(dt_));
     //(pid, "  %*s: min %.3e,\trms %.3e,\tmax %.3e\n", max_name_width, "uu total",
     // double(buf_min), double(buf_rms), double(buf_max));
-    fprintf(diag_file, "%d %e %e %e %e %e ", step, double(simulation_time), double(dt),
+    fprintf(diag_file, "%d %e %e %e %e %e ", step, double(simulation_time), double(dt_),
             double(buf_min), double(buf_rms), double(buf_max));
   }
 
@@ -483,7 +483,7 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
   // fflush(stdout);
   // int found_nan;
   // FILE* diag_file = fopen("astaroth_timeseries.ts", "a");
-  // print_diagnostics(pid, 1, dt, dt,diag_file, 0.0001, 0.0001, &found_nan);
+  // print_diagnostics(rank, 1, dt, dt,diag_file, 0.0001, 0.0001, &found_nan);
   return;
 }
 /***********************************************************************************************/
@@ -660,8 +660,8 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
     offset += mw;
   }
   AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  printf("n0: %d,%d,%d\tpid: %d\n", dims.n0.x, dims.n0.y, dims.n0.z, pid);
-  printf("n1: %d,%d,%d\tpid: %d\n", dims.n1.x, dims.n1.y, dims.n1.z, pid);
+  printf("n0: %d,%d,%d\trank: %d\n", dims.n0.x, dims.n0.y, dims.n0.z, rank);
+  printf("n1: %d,%d,%d\trank: %d\n", dims.n1.x, dims.n1.y, dims.n1.z, rank);
 
   //dryrun
   // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step0, dims.n0,dims.n1);
@@ -826,7 +826,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
             // printf("rhs val wrong at %d,%d,%d\n", i, j, k);
             // printf("field = %d", ivar);
             // printf("GPU val: %.7e\tTRUE val: %.7e\n", out_val, true_val);
-            // printf("PID: %d\n", pid);
+            // printf("PID: %d\n", rank);
             if (max_abs_not_passed_val<abs(out_val)){
               max_abs_not_passed_val = abs(out_val);
               true_pair = true_val;
@@ -875,7 +875,7 @@ extern "C" void registerGPU(AcReal *farray)
   // }
   // mesh.profiles[PROFILE_X] = profile_x_host;
 
-  MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   size_t offset = 0;
   for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
@@ -908,7 +908,7 @@ void setupConfig(AcMeshInfo &config)
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
-  printf("%d: l1 etc. %d %d %d %d %d %d \n", pid, l1, l2, n1, n2, m1, m2);
+  printf("%d: l1 etc. %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
   config.real_params[AC_dsmin] = std::min(dx, std::min(dy, dz));
   config.real_params[AC_xlen] = Lxyz[0];
   config.real_params[AC_ylen] = Lxyz[1];
@@ -1003,12 +1003,12 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
     all_fields[i] = (VertexBufferHandle)i;
   }
 
-  AcTaskDefinition rhs_ops[] =  {
-      acHaloExchange(all_fields),
-      acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-      acCompute(twopass_solve_intermediate, all_fields),
-      acCompute(twopass_solve_final, all_fields)};
-  rhs_test_graph = acGridBuildTaskGraph(rhs_ops,(size_t)3);
+  //AcTaskDefinition rhs_ops[] =  {
+  //    acHaloExchange(all_fields),
+  //    acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
+  //    acCompute(twopass_solve_intermediate, all_fields),
+  //    acCompute(twopass_solve_final, all_fields)};
+  //rhs_test_graph = acGridBuildTaskGraph(rhs_ops,(size_t)4);
   
   graph_1 = acGridBuildTaskGraph(
     {
@@ -1035,7 +1035,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
     });
 
   printf("BUILD graphs\n");
-  acGridExecuteTaskGraph(rhs_test_graph,1);
+  //acGridExecuteTaskGraph(rhs_test_graph,1);
   acGridExecuteTaskGraph(graph_1,1);
   acGridExecuteTaskGraph(graph_2,1);
   acGridExecuteTaskGraph(graph_3,1);
