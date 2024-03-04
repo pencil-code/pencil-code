@@ -2900,6 +2900,8 @@ module Hydro
         lpenc_diagnos(i_fpres)=.true.
       endif
 !
+      if (idiag_fum/=0) lpenc_diagnos(i_fcont)=.true.
+!
 ! check whether right variables are set for half-box calculations.
 !
       if (idiag_urmsn/=0 .or. idiag_ormsn/=0 .or. idiag_oumn/=0) then
