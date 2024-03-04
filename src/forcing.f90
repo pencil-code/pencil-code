@@ -180,11 +180,20 @@ module Forcing
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_rufm=0, idiag_rufint=0, idiag_ufm=0, idiag_ofm=0
-  integer :: idiag_qfm=0, idiag_ffm=0
-  integer :: idiag_ruxfxm=0, idiag_ruyfym=0, idiag_ruzfzm=0
-  integer :: idiag_ruxfym=0, idiag_ruyfxm=0
-  integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
+  integer :: idiag_rufm=0       ! DIAG_DOC: $\left<\rho\fv\cdot\uv\right>$
+  integer :: idiag_rufint=0
+  integer :: idiag_ufm=0        ! DIAG_DOC: $\left<\fv\cdot\uv\right>$
+  integer :: idiag_ofm=0        ! DIAG_DOC: $\left<\ov\cdot\fv\right>$
+  integer :: idiag_qfm=0
+  integer :: idiag_ffm=0
+  integer :: idiag_ruxfxm=0
+  integer :: idiag_ruyfym=0
+  integer :: idiag_ruzfzm=0
+  integer :: idiag_ruxfym=0
+  integer :: idiag_ruyfxm=0
+  integer :: idiag_fxbxm=0
+  integer :: idiag_fxbym=0
+  integer :: idiag_fxbzm=0
 !
 ! Auxiliaries
 !
