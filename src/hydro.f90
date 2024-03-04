@@ -481,7 +481,7 @@ module Hydro
   integer :: idiag_ourms=0      ! DIAG_DOC: $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$
   integer :: idiag_oxurms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$
   integer :: idiag_ou_int=0     ! DIAG_DOC: $\int_V\boldsymbol{\omega}\cdot\uv\,dV$
-  integer :: idiag_fum=0        ! DIAG_DOC: $\left<\fv\cdot\uv\right>$
+  integer :: idiag_fum=0        ! DIAG_DOC: $\left<\fv\cdot\uv\right>$ (continuous forcing only)
   integer :: idiag_odel2um=0    ! DIAG_DOC: $\left<\boldsymbol{\omega}\nabla^2\uv\right>$
   integer :: idiag_o2m=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>
                                 ! DIAG_DOC:   \equiv \left<(\curl\uv)^2\right>$
