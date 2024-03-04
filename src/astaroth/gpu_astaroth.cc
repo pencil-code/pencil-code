@@ -1008,7 +1008,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
   //    acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
   //    acCompute(twopass_solve_intermediate, all_fields),
   //    acCompute(twopass_solve_final, all_fields)};
-  //rhs_test_graph = acGridBuildTaskGraph(rhs_ops,(size_t)4);
+  //rhs_test_graph = acGridBuildTaskGraph(rhs_ops,(size_t)3);
   
   graph_1 = acGridBuildTaskGraph(
     {
