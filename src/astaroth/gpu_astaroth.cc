@@ -465,7 +465,7 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
     acGridSynchronizeStream(STREAM_ALL);
     //set output buffer to 0 since if we are reading from it we don't want NaNs
     AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-    acGridLaunchKernel(STREAM_DEFAULT, reset, dims.n0, dims.n1);
+    acGridLaunchKernel(STREAM_DEFAULT, AC_BUILTIN_RESET, dims.n0, dims.n1);
     acGridSynchronizeStream(STREAM_ALL);
   }
   acGridSynchronizeStream(STREAM_ALL);
@@ -749,7 +749,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   }
 
   //set output buffer to 0 since if we are reading from it we don't want NaNs
-  acGridLaunchKernel(STREAM_DEFAULT, reset, dims.n0, dims.n1);
+  acGridLaunchKernel(STREAM_DEFAULT, AC_BUILTIN_RESET, dims.n0, dims.n1);
   acGridSynchronizeStream(STREAM_ALL);
   // acGridExecuteTaskGraph(rhs_test_graph, 1);
   // acGridSynchronizeStream(STREAM_ALL);
