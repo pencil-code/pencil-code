@@ -88,9 +88,9 @@ AcReal3 DCONST(const AcReal3Param param)
   return mesh.info.real3_params[param];
 }
 /***********************************************************************************************/
-int DEVICE_VTXBUF_IDX(const int x, const int y, const int z)
+int DEVICE_VTXBUF_IDX(const int ix, const int iy, const int iz)
 {
-  return x + mx * y + mx * my * z;
+  return ix + mx * iy + mx * my * iz;
 }
 /***********************************************************************************************/
 //TP: for testing not usually used
@@ -1008,30 +1008,42 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
   //    acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
   //    acCompute(twopass_solve_intermediate, all_fields),
   //    acCompute(twopass_solve_final, all_fields)};
-  //rhs_test_graph = acGridBuildTaskGraph(rhs_ops,(size_t)4);
+  //rhs_test_graph = acGridBuildTaskGraph(rhs_ops,(size_t)3);
   
   graph_1 = acGridBuildTaskGraph(
     {
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
+#if SINGLEPASS
+      acCompute(singlepass_solve, all_fields,0),
+#else
       acCompute(twopass_solve_intermediate, all_fields, 0),
       acCompute(twopass_solve_final, all_fields,0),
+#endif
     });
 
   graph_2 = acGridBuildTaskGraph(
     {
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
+#if SINGLEPASS
+      acCompute(singlepass_solve, all_fields,1),
+#else
       acCompute(twopass_solve_intermediate, all_fields, 1),
       acCompute(twopass_solve_final, all_fields,1),
+#endif
     });
 
   graph_3 = acGridBuildTaskGraph(
     {
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
+#if SINGLEPASS
+      acCompute(singlepass_solve, all_fields,2),
+#else
       acCompute(twopass_solve_intermediate, all_fields, 2),
       acCompute(twopass_solve_final, all_fields, 2),
+#endif
     });
 
   printf("BUILD graphs\n");

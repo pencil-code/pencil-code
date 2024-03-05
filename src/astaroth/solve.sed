@@ -6,14 +6,14 @@
               s/ *[vec]*value[^,]*,/ /
               p
               g
-              s/rk3_intermediate\(.*,.*value.*\),.*)/rk3_final\1))/
+              s/rk3_intermediate\(.*,.*value *( *[a-zA-Z0-9_]* *)\),.*)/rk3_final\1, ac_input_step_num) )/
               t store
               b cont
               : store
               h
               w sedtmp
               : cont
-              $ { a Kernel twopass_solve_final()\{
+              $ { a Kernel twopass_solve_final(int ac_input_step_num)\{
                   r sedtmp
                   a \}
                 }
