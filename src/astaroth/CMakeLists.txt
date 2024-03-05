@@ -5,19 +5,17 @@
 cmake_minimum_required(VERSION 3.19)
 
 ## Options
-option(DOUBLE_PRECISION   "Generates double precision code."                    ON)
-option(USE_HIP     "Use HIP as the underlying GPGPU library instead of CUDA" ON)
-option(USE_OMP "Enables use of openmp" ON)
-option(PACKED_DATA_TRANSFERS    "Enables kernel for packed data transfers"          OFF)
-
+option(DOUBLE_PRECISION       "Generates double precision code."                        ON)
+option(USE_HIP                "Use HIP as the underlying GPGPU library instead of CUDA" ON)
+option(USE_OMP                "Enables use of openmp"                                   ON)
+option(PACKED_DATA_TRANSFERS  "Enables kernel for packed data transfers"                OFF)
+option(SINGLEPASS_INTEGRATION "Enables single pass integration"                         OFF)
 
 if (USE_HIP)
     find_program(CMAKE_HIP_COMPILER hipcc REQUIRED)
     set(CMAKE_C_COMPILER ${CMAKE_HIP_COMPILER})
     set(CMAKE_CXX_COMPILER ${CMAKE_HIP_COMPILER})
 endif()
-
-
 
 ## Project settings
 project(astaroth C CXX)
@@ -34,7 +32,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For IDE highlighting (clangd)
 
 ## Build type
-if(NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE "Release") # Default
 endif()
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
@@ -92,21 +90,26 @@ else ()
 set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES}) # User-specified
 endif()
 endif()
-if(USE_OMP)
-find_package(OpenMP)
-if (OPENMP_FOUND)
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
-endif()
+#if (USE_OMP)
+#find_package(OpenMP)
+#if (OPENMP_FOUND)
+#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+#set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+#endif()
+#endif()
 include(FetchContent)
 
 ## Global flags
 if (DOUBLE_PRECISION)
 add_definitions(-DAC_DOUBLE_PRECISION=1)
 add_definitions(-DDOUBLE_PRECISION)
-endif ()
+endif()
+
+if (SINGLEPASS_INTEGRATION)
+add_definitions(-DSINGLEPASS=1)
+endif()
+
 find_package(MPI REQUIRED COMPONENTS C)
 include_directories(${MPI_C_INCLUDE_DIRS})
 add_definitions(-DAC_MPI_ENABLED=1)
