@@ -44,7 +44,7 @@ module Special
   real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
-  real :: Mpl2=1., Hdot=0., lamf, Hscript
+  real :: Mpl2=1., Hdot=0., lamf, Hscript, epsilon_sr=0.
   real, dimension (nx) :: grand, grant, dgrant
   real, dimension (nx) :: xmask_axion
   real, dimension (2) :: axion_sum_range=(/0.,1./)
@@ -63,6 +63,7 @@ module Special
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   logical :: lim_psi_TR=.false., lleft_psiL_TL=.false., lkeep_mQ_const=.false.
+  logical :: lhubble_var=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
@@ -76,7 +77,8 @@ module Special
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
     nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
-    ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn
+    ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn, &
+    lhubble_var
 !
   ! k array
   real, dimension (nx) :: k
@@ -479,11 +481,21 @@ module Special
 !
       Uprime=-mu**4/fdecay*sin(chi/fdecay)
       if (lconf_time) then
-        a=-1./(H*t)
-        Hscript=a*H
-        if (.not.lkeep_mQ_const) then
-          xi=lamf*chidot*(-0.5*t)
-          epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
+        if (lhubble_var) then
+          epsilon_sr=0.1*(1+tanh(0.3*(alog(-1/(H*t))-25)))*0.5
+          a=-1./(H*t*(1-epsilon_sr))
+          Hscript=a*H
+          if (.not.lkeep_mQ_const) then
+            xi=lamf*chidot*(0.5/Hscript)
+            epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
+          endif
+        else
+          a=-1./(H*t)
+          Hscript=a*H
+          if (.not.lkeep_mQ_const) then
+            xi=lamf*chidot*(-0.5*t)
+            epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
+          endif
         endif
       else
         a=exp(H*t)
@@ -755,9 +767,17 @@ module Special
 !
       Uprime=-mu**4/fdecay*sin(chi/fdecay)
       if (lconf_time) then
-        a=-1./(H*t)
-        Hscript=a*H
-        xi=lamf*chidot*(-0.5*t)
+        if (lhubble_var) then
+          epsilon_sr=0.1*(1+tanh(0.3*(alog(-1/(H*t))-25)))*0.5
+          a=-1./(H*t*(1-epsilon_sr))
+          Hscript=a*H
+          xi=lamf*chidot*(0.5/Hscript)
+          Hdot=-epsilon_sr*H**2
+        else
+          a=-1./(H*t)
+          Hscript=a*H
+          xi=lamf*chidot*(-0.5*t)
+        endif
       else
         a=exp(H*t)
         xi=lamf*chidot/(2.*H)
@@ -913,8 +933,14 @@ module Special
 !  For conformal time, there is a 1/a factor in Qdot/a+H
 !
       if (lconf_time) then
-        a=-1./(H*t)
-        xi=lamf*chidot*(-0.5*t)
+        if (lhubble_var) then
+          epsilon_sr=0.1*(1+tanh(0.3*(alog(-1/(H*t))-25)))*0.5
+          a=-1./(H*t*(1-epsilon_sr))
+          xi=lamf*chidot*(0.5/(a*H))
+        else
+          a=-1./(H*t)
+          xi=lamf*chidot*(-0.5*t)
+        endif
       else
         a=exp(H*t)
         xi=lamf*chidot/(2.*H)
@@ -1153,7 +1179,6 @@ module Special
           TLeff2km=(4.*pi*k**3*dlnk)*TLeff2*(k/a)
           TLeff2m=(4.*pi*k**3*dlnk)*TLeff2
           !grand=grand+(4.*pi*k**3*dlnk)*(xi*H-k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
-          !grant=grant+(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
 !AB: here, for TL, we use the opposite sign in front of the k/a terms.
           grand=grand+(4.*pi*k**3*dlnk)*(xi*H+k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
           grant=grant+(4.*pi*k**3*dlnk)*(mQ*H+k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
