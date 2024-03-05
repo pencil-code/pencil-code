@@ -462,9 +462,8 @@ module NeutralVelocity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(in) :: f
-      intent(out) :: df
-      intent(inout) :: p
+      intent(in)    :: f
+      intent(inout) :: df,p
 !
       real, dimension (nx) :: ionization,recombination
 !
@@ -758,7 +757,7 @@ module NeutralVelocity
       use Deriv, only: der6
       use Diagnostics
       use General, only: itoa
-      use Sub, only: multmv
+      use Sub, only: multmv, gij
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
