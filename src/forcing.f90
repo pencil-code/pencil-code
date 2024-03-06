@@ -6312,9 +6312,9 @@ module Forcing
     integer, parameter :: n_pars=9
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(k1_ff,p_par(1))
-    call copy_addr(tforce_stop,p_par(2))
-    call copy_addr(iforcing_zsym,p_par(3))
+    call copy_addr(k1_ff,p_par(1))         ! real
+    call copy_addr(tforce_stop,p_par(2))   ! real
+    call copy_addr(iforcing_zsym,p_par(3)) ! int
     call copy_addr(profx_ampl,p_par(4))  ! (nx)
     call copy_addr(profy_ampl,p_par(5))  ! (my)
     call copy_addr(profz_ampl,p_par(6))  ! (mz)

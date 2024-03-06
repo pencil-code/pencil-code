@@ -39,17 +39,16 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 #include "PC_moduleflags.h"
 #include "../cparam_c.h"
 #include "../cdata_c.h"
-#include "../sub_c.h"       // provides set_dt
-#include "../boundcond_c.h" // provides boundconds[xyz] etc.
-#include "../mpicomm_c.h"   // provides finalize_sendrcv_bdry
-#include "PC_module_parfuncs.h"
+#include "../sub_c.h"           // provides set_dt
+#include "../boundcond_c.h"     // provides boundconds[xyz] etc.
+#include "../mpicomm_c.h"       // provides finalize_sendrcv_bdry
+#include "PC_module_parfuncs.h" // provides stuff from physics modules
 
 #if PACKED_DATA_TRANSFERS
-#include "loadStore.h"
+  #include "loadStore.h"
 #endif
 #if LFORCING
-// static ForcingParams forcing_params;
-//#include "forcing.h"
+  #include "forcing.h"
 #endif
 
 // Astaroth objects instantiation.
@@ -438,15 +437,14 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
 //
 {
 #if LFORCING
-  // //Update forcing params
+  //Update forcing params
 
-  // if (isubstep == itorder)
-  //      forcing_params.Update();  // calculate on CPU and load into GPU
+   if (isubstep == itorder) forcing_params.Update(mesh.info);  // calculate on CPU and load into GPU
 #endif
   if (lfirst && ldt)
   {
-    AcReal dt1_advec = max_advec() / cdt;
-    AcReal dt1_diffus = max_diffus() / cdtv;
+    AcReal dt1_advec = max_advec()/cdt;
+    AcReal dt1_diffus = max_diffus()/cdtv;
     AcReal dt1_ = sqrt(pow(dt1_advec, 2) + pow(dt1_diffus, 2));
     set_dt(dt1_);
   }

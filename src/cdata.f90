@@ -161,10 +161,11 @@ module Cdata
   real :: nu_sts=0.1
   real :: density_scale_factor=impossible
   integer :: permute_sts=0
-  integer:: ireset_tstart=2
+  integer :: ireset_tstart=2
+  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
 !END C BINDING
   integer, target :: m,n
-  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0, itdiagnos
+  integer :: itdiagnos
   real(KIND=rkind8) :: t=0., toutoff=0.
   real :: tslice, eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
 !

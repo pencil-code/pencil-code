@@ -151,12 +151,6 @@ module Timestep
 
         ds=ds+1.0
 !
-!  If we are in the first time substep we need to calculate timestep dt.
-!  Takes minimum over and distributes to all processors.
-!  With GPUs this is done on the CUDA side.
-!
-        if (lfirst.and.ldt.and..not.lgpu) call set_dt(maxval(dt1_max))
-!
 !  Calculate dt_beta_ts.
 !
         if (ldt) dt_beta_ts=dt*beta_ts
@@ -196,13 +190,12 @@ module Timestep
           call update_ghosts(f)  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
           call advance_shear(f, df, dtsub)
         endif
-
 !
       if (.not. lgpu) call update_after_substep(f,df,dtsub,llast)
 !
-	! [PAB] according to MR this breaks the autotest.
-	! @Piyali: there must be a reason to add an additional global communication,
-	! could this be solved differently, and, if not, why? Can you enclose this in an if-clause, like above?
+        ! [PAB] according to MR this breaks the autotest.
+        ! @Piyali: there must be a reason to add an additional global communication,
+        ! could this be solved differently, and, if not, why? Can you enclose this in an if-clause, like above?
         !call update_ghosts(f)  ! Necessary for boundary driving in special module
 !
 !  Increase time.
