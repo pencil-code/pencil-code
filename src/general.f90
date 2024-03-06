@@ -242,7 +242,27 @@ module General
     real, pointer, dimension(:,:,:,:) :: data
     type(four_dim_array_dims) :: dims
   end type
-  
+
+!
+! TP: type to make interop with C easier
+!
+  type int3
+    integer :: x, y, z
+  end type
+!
+! TP: used for morton curve process mapping (come from morton_helper.c)
+!
+interface
+        pure type(int3) function getmortonrank3d(rank, decomp_x, decomp_y, decomp_z) result(res)
+          import int3
+          integer, intent(in) :: rank, decomp_x, decomp_y, decomp_z
+        endfunction
+        endinterface
+        interface
+        pure integer function getmortonrank(x, y, z, decomp_x, decomp_y, decomp_z)
+          integer, intent(in) ::  x, y, z, decomp_x, decomp_y, decomp_z
+        endfunction
+        endinterface
 !
 !  State and default generator of random numbers.
 !
@@ -283,14 +303,16 @@ module General
 !
 !  16-sep-15/ccyang: coded.
 !
-      use Cdata, only: lprocz_slowest,nprocx_node,nprocy_node,nprocz_node
+      use Cdata, only: lprocz_slowest,lmorton_curve,nprocx_node,nprocy_node,nprocz_node
 !
       integer, intent(in) :: ipx, ipy, ipz
 !
       if (.false..and.all((/nprocx_node,nprocy_node,nprocz_node/)>0)) then
         find_proc = find_proc_node_localty(ipx, ipy, ipz)
       else
-        if (lprocz_slowest) then
+        if (lmorton_curve) then
+          find_proc = getmortonrank(ipx,ipy,ipz,nprocx,nprocy,nprocz)
+        else if (lprocz_slowest) then
           find_proc = modulo(ipz,nprocz) * nprocxy + modulo(ipy,nprocy) * nprocx + modulo(ipx,nprocx)
         else
           find_proc = modulo(ipy,nprocy) * nprocxz + modulo(ipz,nprocz) * nprocx + modulo(ipx,nprocx)
@@ -322,16 +344,18 @@ module General
            
     endfunction find_proc_node_localty
 !***********************************************************************
-    pure integer function find_proc_general(ipx, ipy, ipz, nprocx, nprocy, nprocz, lprocz_slowest)
+    pure integer function find_proc_general(ipx, ipy, ipz, nprocx, nprocy, nprocz, lprocz_slowest, lmorton_curve)
 !
 !  Returns the rank of a process given its position in (ipx,ipy,ipz).
 !
 !  23-may-22/monteiro: coded.
 !
       integer, intent(in) :: ipx, ipy, ipz, nprocx, nprocy, nprocz 
-      logical, intent(in), optional :: lprocz_slowest
+      logical, intent(in), optional :: lprocz_slowest, lmorton_curve
 !
-      if (loptest(lprocz_slowest,.true.)) then
+      if (loptest(lmorton_curve,.false.)) then
+        find_proc_general = getmortonrank(ipx,ipy,ipz,nprocx,nprocy,nprocz)
+      else if (loptest(lprocz_slowest,.true.)) then
         find_proc_general = modulo(ipz,nprocz) * nprocx*nprocy + modulo(ipy,nprocy) * nprocx + modulo(ipx,nprocx)
       else
         find_proc_general = modulo(ipy,nprocy) * nprocx*nprocz + modulo(ipz,nprocz) * nprocx + modulo(ipx,nprocx)
@@ -339,7 +363,7 @@ module General
 !
     endfunction find_proc_general
 !***********************************************************************
-    subroutine find_proc_coords_general(rank, nprocx, nprocy, nprocz, ipx, ipy, ipz)
+    subroutine find_proc_coords_general(rank, nprocx, nprocy, nprocz, ipx, ipy, ipz, lmorton_curve)
 !
 !  Determines the Cartesian processor coordinates ip[xyz] of processor rank for
 !  processor layout defined by nproc[xyz].
@@ -347,25 +371,40 @@ module General
 !  6-dec-22/MR: coded
 !
       integer :: rank, nprocx, nprocy, nprocz, ipx, ipy, ipz
-
-      ipx = modulo(rank,nprocx)
-      ipy = modulo(rank/nprocx,nprocy)
-      ipz = rank/(nprocx*nprocy)
+      logical, intent(in), optional :: lmorton_curve
+      type(int3) :: proc_coords
+      
+      if(loptest(lmorton_curve)) then 
+         proc_coords = getmortonrank3d(rank,nprocx,nprocy,nprocz)
+         ipx = proc_coords%x
+         ipy = proc_coords%y
+         ipz = proc_coords%z
+      else
+        ipx = modulo(rank,nprocx)
+        ipy = modulo(rank/nprocx,nprocy)
+        ipz = rank/(nprocx*nprocy)
+      endif
 
     endsubroutine find_proc_coords_general
 !***********************************************************************
     subroutine find_proc_coords(rank,ipx,ipy,ipz)
 
-      use Cdata, only: lprocz_slowest, nprocx_node, nprocy_node, nprocz_node
+      use Cdata, only: lprocz_slowest, lmorton_curve, nprocx_node, nprocy_node, nprocz_node
 
       integer, intent(in) :: rank
       integer, intent(out) :: ipx, ipy, ipz
+      type(int3) :: proc_coords
 
       if (.false..and.all((/nprocx_node,nprocy_node,nprocz_node/)>0)) then
         call find_proc_coords_node_localty(rank,ipx,ipy,ipz)
 print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty(ipx,ipy,ipz)
       else
-        if (lprocz_slowest) then
+        if (lmorton_curve) then
+          proc_coords = getmortonrank3d(rank,nprocx,nprocy,nprocz)
+          ipx = proc_coords%x
+          ipy = proc_coords%y
+          ipz = proc_coords%z
+        else if (lprocz_slowest) then
           ipx = modulo(rank, nprocx)
           ipy = modulo(rank/nprocx, nprocy)
           ipz = rank/nprocxy
