@@ -3992,7 +3992,7 @@ module Sub
       if (ddt > 0.) dt1_local=max(dt1_local,dt1_last)
       call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
 !
-!  not set the actual time step, based on dt1
+!  now set the actual time step, based on dt1
 !
       dt=1.0/dt1
       if (loutput_varn_at_exact_tsnap) call shift_dt(dt)

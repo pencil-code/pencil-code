@@ -125,12 +125,13 @@ module Equ
 !
 !  Record times for diagnostic and 2d average output.
 !
-      if (ldiagnos   ) then
-         tdiagnos  = t ! (diagnostics are for THIS time)
-         dtdiagnos = dt
-         itdiagnos = it
-         eps_rkf_diagnos = eps_rkf
+      if (ldiagnos) then
+        tdiagnos  = t ! (diagnostics are for THIS time)
+        dtdiagnos = dt
+        itdiagnos = it
+        eps_rkf_diagnos = eps_rkf
       endif
+
       if (l1davgfirst) t1ddiagnos=t ! (1-D averages are for THIS time)
       if (l2davgfirst)  then
         t2davgfirst=t ! (2-D averages are for THIS time)
@@ -354,39 +355,37 @@ module Equ
         call rhs_gpu(f,itsub,early_finalize)
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
-      endif
 !
 !  Doing df-related work which cannot be finished inside the main mn-loop.
 !  (At the moment relevant for anelastic and Schur flows.)
 !
-    if (.not. lgpu) then
-      call density_after_mn(f, df, mass_per_proc)
+        call density_after_mn(f, df, mass_per_proc)
 !
-      call timing('pde','after the end of the mn_loop')
+        call timing('pde','after the end of the mn_loop')
 !
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
 !
-      if (lsolid_cells) call dsolid_dt_integrate
+        if (lsolid_cells) call dsolid_dt_integrate
 !
 !  Calculate the gradient of the potential if there is room allocated in the
 !  f-array.
 !
-      if (igpotselfx/=0) then
-        call initiate_isendrcv_bdry(f,igpotselfx,igpotselfz)
-        call finalize_isendrcv_bdry(f,igpotselfx,igpotselfz)
-        call boundconds_x(f,igpotselfx,igpotselfz)
-        call boundconds_y(f,igpotselfx,igpotselfz)
-        call boundconds_z(f,igpotselfx,igpotselfz)
-      endif
+        if (igpotselfx/=0) then
+          call initiate_isendrcv_bdry(f,igpotselfx,igpotselfz)
+          call finalize_isendrcv_bdry(f,igpotselfx,igpotselfz)
+          call boundconds_x(f,igpotselfx,igpotselfz)
+          call boundconds_y(f,igpotselfx,igpotselfz)
+          call boundconds_z(f,igpotselfx,igpotselfz)
+        endif
 !
 !  Change df and dfp according to the chosen particle modules.
 !
-      if (lparticles) then
-        call particles_pde_blocks(f,df)
-        call particles_pde(f,df)
-      endif
+        if (lparticles) then
+          call particles_pde_blocks(f,df)
+          call particles_pde(f,df)
+        endif
 !
-      if (lpointmasses) call pointmasses_pde(f,df)
+        if (lpointmasses) call pointmasses_pde(f,df)
 !
 !  Electron inertia: our df(:,:,:,iax:iaz) so far is
 !  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
@@ -405,18 +404,18 @@ module Equ
 !  Take care of flux-limited diffusion
 !  This is now commented out, because we always use radiation_ray instead.
 !
-!--   if (lradiation_fld) f(:,:,:,idd)=DFF_new
+!--     if (lradiation_fld) f(:,:,:,idd)=DFF_new
 !
 !  Fold df from first ghost zone into main df.
 !
-      if (lfold_df) then
-        if (lhydro .and. (.not. lpscalar) .and. (.not. lchemistry)) then
-          call fold_df(df,iux,iuz)
-        else
-          call fold_df(df,iux,mvar)
+        if (lfold_df) then
+          if (lhydro .and. (.not. lpscalar) .and. (.not. lchemistry)) then
+            call fold_df(df,iux,iuz)
+          else
+            call fold_df(df,iux,mvar)
+          endif
         endif
-      endif
-      if (lfold_df_3points) call fold_df_3points(df,iux,mvar)
+        if (lfold_df_3points) call fold_df_3points(df,iux,mvar)
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
@@ -425,7 +424,7 @@ module Equ
 !  Freezing must be done after the full (m,n) loop, as df may be modified
 !  outside of the considered pencil.
 !
-      call freeze(df,p)
+        call freeze(df,p)
 
 !  Boundary treatment of the df-array.
 !
@@ -438,15 +437,24 @@ module Equ
 !  The treatment should be done after the y-z-loop, but before the Runge-
 !  Kutta solver adds to the f-array.
 !
-      if (lnscbc) call nscbc_boundtreat(f,df)
-    endif
+        if (lnscbc) call nscbc_boundtreat(f,df)
+!
+!  If we are in the first time substep we need to calculate timestep dt.
+!  Takes minimum over and distributes to all processors.
+!  With GPUs this is done on the CUDA side.
+!
+        if (lfirst.and.ldt.and..not.lgpu) call set_dt(maxval(dt1_max))
+
+      endif     ! if (.not. lgpu)
+
       if (lmultithread) then
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
 !!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all)
         endif
-      else
-        if (lfirst) call finalize_diagnostics
+      elseif (lfirst) then 
+        if (lout) dtdiagnos = dt
+        call finalize_diagnostics
       endif
 !
 !  Calculate rhoccm and cc2m (this requires that these are set in print.in).
