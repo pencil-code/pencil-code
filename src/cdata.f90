@@ -161,11 +161,34 @@ module Cdata
   real :: nu_sts=0.1
   real :: density_scale_factor=impossible
   integer :: permute_sts=0
-  integer :: ireset_tstart=2
+  integer:: ireset_tstart=2
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
+!
+!  Parameters related to message passing.
+!
+  integer, dimension(-1:1,-1:1,-1:1) :: neighbors = 0
+  integer, dimension(26) :: iproc_comm = -1
+  integer :: nproc_comm = 0
+  integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1  !MR: dangerous names  ix -> ix_slice
+  integer :: ix_loc=1,iy_loc=1, iy2_loc=1
+  integer :: iz_loc=1,iz2_loc=1, iz3_loc=1, iz4_loc=1
+  integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
+  logical :: lprocz_slowest=.true., lzorder=.false., lmorton_curve=.false.
+  integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
+  integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
+  integer :: poleneigh               ! `pole' processor neighbours
+  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0
+!
+!  Data for registering of already updated variable ghost zones for only partly
+!  updating by the *_after_timestep routines.
+!  num_after_timestep: number of such routines; updated_var_ranges: list of already updated
+!  variable ranges; ighosts_updated: counter for those, if -1 no registration is performed (default).
+!
+  integer, parameter :: num_after_timestep=5
+  integer, dimension(2,2*num_after_timestep) :: updated_var_ranges=0
+  integer :: ighosts_updated=-1
 !END C BINDING
   integer, target :: m,n
-  integer :: itdiagnos
   real(KIND=rkind8) :: t=0., toutoff=0.
   real :: tslice, eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
 !
@@ -414,30 +437,6 @@ module Cdata
   integer :: iuu_sph=0, iuu_sphr=0, iuu_spht=0, iuu_sphp=0
   integer :: ics=0
 !
-!  Parameters related to message passing.
-!
-  integer, dimension(-1:1,-1:1,-1:1) :: neighbors = 0
-  integer, dimension(26) :: iproc_comm = -1
-  integer :: nproc_comm = 0
-  integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1  !MR: dangerous names  ix -> ix_slice
-  integer :: ix_loc=1,iy_loc=1, iy2_loc=1
-  integer :: iz_loc=1,iz2_loc=1, iz3_loc=1, iz4_loc=1
-  integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
-  logical :: lprocz_slowest=.true., lzorder=.false.
-  integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
-  integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
-  integer :: poleneigh               ! `pole' processor neighbours
-  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0
-!
-!  Data for registering of already updated variable ghost zones for only partly
-!  updating by the *_after_timestep routines.
-!  num_after_timestep: number of such routines; updated_var_ranges: list of already updated
-!  variable ranges; ighosts_updated: counter for those, if -1 no registration is performed (default).
-!
-  integer, parameter :: num_after_timestep=5
-  integer, dimension(2,2*num_after_timestep) :: updated_var_ranges=0
-  integer :: ighosts_updated=-1
-!
 !  Variables to count the occurance of derivative calls per timestep
 !  for optimisation purposes.  To use uncomment the array and
 !  set optimise_ders=.true.
@@ -475,6 +474,7 @@ module Cdata
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
   integer :: nname_sound=0, ncoords_sound=0
   integer :: nr_directions=1
+  integer :: itdiagnos
   real :: tdiagnos,dtdiagnos,t1ddiagnos,t2davgfirst,eps_rkf_diagnos
   integer, parameter :: mname=100
   real, dimension (mname) :: fweight=0.0

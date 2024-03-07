@@ -901,8 +901,10 @@ void setupConfig(AcMeshInfo &config)
   config.int_params[AC_nzgrid] = nzgrid;
   //use external decomp = 1
   config.int_params[AC_decompose_strategy] = (int)AcDecomposeStrategy::External;
-  //linear proc mapping = 1
-  config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Linear;
+  if(lmorton_curve)
+  	config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Morton;
+  else
+  	config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Linear;
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
@@ -1006,7 +1008,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
   //    acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
   //    acCompute(twopass_solve_intermediate, all_fields),
   //    acCompute(twopass_solve_final, all_fields)};
-  //rhs_test_graph = acGridBuildTaskGraph(rhs_ops,(size_t)3);
+  //rhs_test_graph = acGridBuildTaskGraphWithIterations(rhs_ops,3);
   
   graph_1 = acGridBuildTaskGraph(
     {
