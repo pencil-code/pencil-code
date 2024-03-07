@@ -374,6 +374,12 @@ module NeutralDensity
       lpenc_requested(i_alpha)=.true.
       lpenc_requested(i_zeta)=.true.
 !
+!  needed for temperature prescription
+!
+      if (alpha_prescription=='Temp_dep') then
+        lpenc_requested(i_TT)=.true.
+      endif
+
       if (.not.lneutraldensity_nolog) then
         lpenc_requested(i_rho1) =.true.
         lpenc_requested(i_rhon1)=.true.
@@ -483,6 +489,7 @@ module NeutralDensity
       intent(inout) :: f,p
 !
       real, dimension (nx) :: tmp,smooth_step_threshold
+      real :: unit_alpha=impossible
       integer :: i
 !
 ! lnrhon
@@ -580,7 +587,10 @@ module NeutralDensity
         case ('const'); p%alpha=alpha
         case ('Temp_dep')
           if (lentropy) then
-            p%alpha=alpha*.1 !(test)
+            unit_alpha=1./(unit_time*unit_density)
+            p%alpha=unit_alpha*1.14e-19*4.309e6*p%TT**(-.6166)/(1.+.6703*p%TT**.53)
+            if (ip<10) print*,'AXEL: p%alpha=',p%alpha
+            if (ip<10) print*,'AXEL: unit_alpha=',unit_alpha
           else
             call fatal_error('calc_pencils_neutraldensity', &
               'no energy equation is used')
@@ -673,6 +683,7 @@ module NeutralDensity
       endif
 !
 !  Ionization and recombination
+!  If the helium fraction Y_He=0.079 is to be included, we can redefine alpha correspondingly.
 !
       if (lneutraldensity_nolog) then
          df(l1:l2,m,n,irhon)   = df(l1:l2,m,n,irhon)   - p%zeta*p%rhon        + p%alpha*p%rho**2
