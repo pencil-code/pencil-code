@@ -439,7 +439,7 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
 #if LFORCING
   //Update forcing params
 
-   if (isubstep == itorder) forcing_params.Update(mesh.info);  // calculate on CPU and load into GPU
+   if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
   if (lfirst && ldt)
   {
