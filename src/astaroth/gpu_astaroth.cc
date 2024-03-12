@@ -17,6 +17,8 @@
 
 #define CUDA_ERRCHK(X)
 #include "PC_nghost.h"
+#define STENCIL_ORDER (2*NGHOST)
+
 // Astaroth headers.
 #include "errchk.h"
 #include "math_utils.h"
