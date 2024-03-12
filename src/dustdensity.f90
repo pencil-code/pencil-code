@@ -3284,7 +3284,7 @@ module Dustdensity
       real, dimension (nx,ndustspec) ::  ff,dff_dr
       real, dimension (ndustspec) :: dsize_loc
 
-      integer :: k,
+      integer :: k
       integer, parameter :: i1=1,i2=2,i3=3
       integer, parameter :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
       real :: rr1=0.,rr2=0.,rr3=0.

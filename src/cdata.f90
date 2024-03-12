@@ -162,6 +162,7 @@ module Cdata
   real :: density_scale_factor=impossible
   integer :: permute_sts=0
   integer:: ireset_tstart=2
+  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
 !
 !  Parameters related to message passing.
 !
@@ -188,7 +189,6 @@ module Cdata
   integer :: ighosts_updated=-1
 !END C BINDING
   integer, target :: m,n
-  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0, itdiagnos
   real(KIND=rkind8) :: t=0., toutoff=0.
   real :: tslice, eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
 !
@@ -474,6 +474,7 @@ module Cdata
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
   integer :: nname_sound=0, ncoords_sound=0
   integer :: nr_directions=1
+  integer :: itdiagnos
   real :: tdiagnos,dtdiagnos,t1ddiagnos,t2davgfirst,eps_rkf_diagnos
   integer, parameter :: mname=100
   real, dimension (mname) :: fweight=0.0

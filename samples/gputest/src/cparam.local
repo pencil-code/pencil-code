@@ -5,10 +5,8 @@
 !  This file is included by cparam.f90
 !
 integer, parameter :: ncpus=1
-!get nprocx, nprocy and nprocz from ncpus and morton decomp by including morton_decomp.h
+integer, parameter :: nprocy=1,nprocz=1,nprocx=1
+!alternatively, get nprocx, nprocy and nprocz from ncpus and morton decomp by including morton_decomp.h:
 !include 'morton_decomp.h'
-integer, parameter :: nprocs_pow_two = int(log(real(ncpus))/log(real(2)))
-integer, parameter :: nprocx= 2**(nprocs_pow_two/3)
-integer, parameter :: nprocy = 2**((nprocs_pow_two+1)/3)
-integer, parameter :: nprocz = 2**((nprocs_pow_two+2)/3)
+
 integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
