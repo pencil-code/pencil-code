@@ -213,9 +213,6 @@ class SliceSeries(object):
                 # Remove duplicates.
                 extension_list = list(set(extension_list))
 
-            class Foo(object):
-                pass
-
             if len(iter_list) > 0:
                 nt = len(iter_list)
                 if tstart > 0 or tend:
@@ -227,14 +224,14 @@ class SliceSeries(object):
                 tend = None
             else:
                 nt = None
-            pos_object = Foo()
-            ind_object = Foo()
+            pos_object = _Foo()
+            ind_object = _Foo()
             for extension in extension_list:
                 if not quiet:
                     print("Extension: " + str(extension))
                     sys.stdout.flush()
                 # This one will store the data.
-                ext_object = Foo()
+                ext_object = _Foo()
                 pos_list = []
                 ind_list = []
                 for field in field_list:
@@ -370,9 +367,6 @@ class SliceSeries(object):
                 except:
                     pass
 
-            class Foo(object):
-                pass
-
             if len(iter_list) > 0:
                 nt = len(iter_list)
                 if tstart > 0 or tend:
@@ -384,8 +378,8 @@ class SliceSeries(object):
                 tend = None
             else:
                 nt = None
-            pos_object = Foo()
-            ind_object = Foo()
+            pos_object = _Foo()
+            ind_object = _Foo()
             inds = list()
             if not "r" in extension_list:
                 slicepos_fn = os.path.join(datadir, "slice_position.dat")
@@ -404,7 +398,7 @@ class SliceSeries(object):
                     print("Extension: " + str(extension))
                     sys.stdout.flush()
                 # This one will store the data.
-                ext_object = Foo()
+                ext_object = _Foo()
                 pos_list = list()
                 ind_list = list()
                 for field in field_list:
@@ -537,3 +531,5 @@ class SliceSeries(object):
                 setattr(self, extension, ext_object)
                 setattr(self, "position", pos_object)
                 setattr(self, "coordinate", ind_object)
+
+class _Foo(object): pass
