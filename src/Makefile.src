@@ -469,8 +469,13 @@ special_message:
   endif
 endif
 #
+CUDA_MAKEDIR=astaroth
+CUDA_INCDIR=$(CUDA_MAKEDIR)
+CUDA_RELPATH=..
+DSL_WORKDIR=$(CUDA_MAKEDIR)/submodule/acc-runtime/Pencil
 LIBGPU =
 GPU_DEPS =
+gpu_preps = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
 ifneq ($(GPU),nogpu)
 #
   ifneq ($(MODULE_CMD),)
@@ -505,7 +510,7 @@ ifneq ($(GPU),nogpu)
 
 #  GPU_DEPS = $(LIBGPU) gpu_preps
 
-      GPU_DEPS = gpu_preps
+      GPU_DEPS = $(gpu_preps)
       #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
       LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l:$(LIBGPU)
@@ -2989,15 +2994,14 @@ endif
 #
 # writes moduleflags in $(CUDA_INCDIR)/PC_moduleflags.h, list of needed physics module source files in $(CUDA_MAKEDIR)/PC_modulesources.h
 # 
-CUDA_MAKEDIR=astaroth
-CUDA_INCDIR=$(CUDA_MAKEDIR)
-CUDA_RELPATH=..
-DSL_WORKDIR=$(CUDA_MAKEDIR)/submodule/acc-runtime/Pencil
 
-gpu_preps: $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
 #
-#$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac:: .sentinel
-$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor (CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac: .sentinel
+$(CUDA_INCDIR)/PC_modulesources.h: .sentinel
+$(CUDA_INCDIR)/PC_moduleflags.h: .sentinel
+$(CUDA_MAKEDIR)/Makefile.vendor: .sentinel
+$(DSL_WORKDIR)/fieldecs.h: .sentinel
+$(DSL_WORKDIR)/equations.h: .sentinel
+$(DSL_WORKDIR)/solve.ac: .sentinel
 #
 .sentinel: Makefile.local
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
