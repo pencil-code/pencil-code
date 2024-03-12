@@ -16,6 +16,7 @@
 #include <mpi.h>
 
 #define CUDA_ERRCHK(X)
+#include "PC_nghost.h"
 // Astaroth headers.
 #include "errchk.h"
 #include "math_utils.h"
@@ -919,7 +920,7 @@ void setupConfig(AcMeshInfo &config)
   config.real_params[AC_mu0] = mu0;
 
   // Enter physics related parameters in config.
-#include "PC_modulepars.h"
+  #include "PC_modulepars.h"
 
   printf("Done setupConfig\n");
   fflush(stdout);
