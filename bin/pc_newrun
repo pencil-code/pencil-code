@@ -193,6 +193,15 @@ if [ $same_source ]; then
     cd $targetdir/src 
     if [ -n "`ls $olddir/src/*.x 2>/dev/null`" ]; then ln -s $olddir/src/*.x . ; fi
     if [ -n "`ls $olddir/src/*.so 2>/dev/null`" ]; then ln -s $olddir/src/*.so . ; fi
+    if [ -n "`ls $olddir/src/astaroth/*.so 2>/dev/null`" ]; then ln -s $olddir/src/astaroth/*.so ./astaroth ; fi
+    if [ -n "`ls $olddir/src/astaroth/submodule/build/src/core/*.so 2>/dev/null`" ]; then
+      if [ ! -n "`ls astaroth/submodule/build/src/core 2>/dev/null`" ]; then mkdir -p astaroth/submodule/build/src/core ; fi
+      ln -s $olddir/src/astaroth/submodule/build/src/core/*.so astaroth/submodule/build/src/core
+    fi
+    if [ -n "`ls $olddir/src/astaroth/submodule/build/src/core/kernels/*.so 2>/dev/null`" ]; then
+      if [ ! -n "`ls astaroth/submodule/build/src/core/kernels 2>/dev/null`" ]; then mkdir -p astaroth/submodule/build/src/core/kernels ; fi
+      ln -s $olddir/src/astaroth/submodule/build/src/core/kernels/*.so astaroth/submodule/build/src/core/kernels
+    fi
   fi
   cp $olddir/src/*.inc .
   [ -f $olddir/src/revision.txt ] && cp $olddir/src/revision.txt .

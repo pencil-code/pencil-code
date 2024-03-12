@@ -432,12 +432,10 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule/src/core
   adddir $src/astaroth/submodule/src/core/kernels
 #  adddir $src/astaroth/submodule/scripts
-#  adddir $src/astaroth/submodule/acc
   adddir $src/astaroth/submodule/acc-runtime
   adddir $src/astaroth/submodule/acc-runtime/acc
   adddir $src/astaroth/submodule/acc-runtime/api
   adddir $src/astaroth/submodule/acc-runtime/Pencil
-  adddir $src/astaroth/submodule/acc-runtime/stdlib
   adddir $src/astaroth/submodule/acc-runtime/samples
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd_modular
@@ -470,7 +468,7 @@ link_astaroth_files()
               $srcdir/astaroth/submodule/acc-runtime/acc/* \
               $srcdir/astaroth/submodule/acc-runtime/api/* \
               $srcdir/astaroth/submodule/acc-runtime/Pencil/prerequisites.h \
-              $srcdir/astaroth/submodule/acc-runtime/stdlib/*.h \
+              $srcdir/astaroth/submodule/acc-runtime/stdlib \
               $srcdir/astaroth/submodule/acc-runtime/samples/mhd/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/gputest/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \
