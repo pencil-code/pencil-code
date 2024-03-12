@@ -58,7 +58,7 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 	echo USE_HIP=$(USE_HIP) && \
 	echo PRECISION=$(CMAKE_PREC) && \
 	cd build && \
-	cmake -D$(CMAKE_PREC) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) .. && \
+	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) .. && \
 	make -j && \
 	cd .. && \
 	mv ./build/libastaroth.so astaroth_$(PREC).so
