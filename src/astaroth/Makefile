@@ -61,7 +61,7 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) .. && \
 	make -j && \
 	cd .. && \
-	mv ./build/libastaroth.so astaroth_$(PREC).so
+	mv ./build/libastaroth_$(PREC).so .
 
 #	mkdir -p scheduler-build && \
 #	cd scheduler-build && \
