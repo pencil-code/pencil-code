@@ -85,7 +85,7 @@ class Averages(object):
 
     @t.setter
     def t(self, arr):
-        if len(self.t) > 0 and np.any(self.t != arr):
+        if len(self.t) > 0 and (len(self.t) != len(arr) or np.any(self.t != arr)):
             warnings.warn("Mismatch between the times of different kinds of averages (usually happens when 1D and 2D averages are stored at different times). Please use the t attributes of the respective planes (e.g. av.xy.t, rather than av.t).")
         self._t = arr
 
