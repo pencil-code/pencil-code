@@ -88,9 +88,9 @@ AcReal3 DCONST(const AcReal3Param param)
   return mesh.info.real3_params[param];
 }
 /***********************************************************************************************/
-int DEVICE_VTXBUF_IDX(const int ix, const int iy, const int iz)
+int DEVICE_VTXBUF_IDX(const int x_coordinate, const int y_coordinate, const int z_coordinate)
 {
-  return ix + mx * iy + mx * my * iz;
+  return x_coordinate + mx * y_coordinate + mx * my * z_coordinate;
 }
 /***********************************************************************************************/
 //TP: for testing not usually used
