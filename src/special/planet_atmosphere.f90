@@ -56,17 +56,18 @@ module Special
   real :: peqtop=1.d2, peqbot=1.d6        ! unit: [Pa]
   real :: tauradtop=1.d4, tauradbot=1.d7  ! unit: [s]
   real :: pradtop=1.d3, pradbot=1.d6      ! unit: [Pa]
-  real :: pbot0=1.e7                       ! unit: [Pa]
-  real :: q_damping=0.0
+  real :: pbot0=1.e7                      ! unit: [Pa]
+  real :: q_drag=0.0
+  real :: q_sponge=0.0
   !
-  integer :: n_damping=0
+  integer :: n_sponge=0
   !
   logical :: linit_equilibrium=.false.
-  logical :: lsponge_top=.false.,lsponge_bottom=.false.,lvelocity_drag=.false.
+  logical :: lsponge_top=.false.,lsponge_bottom=.false.,lvelocity_drag=.false.,lsponge_dt=.false.
 !
 ! Run parameters
 !
-  real :: tau_slow_heating=-1.,t0_slow_heating=0.
+  real :: tau_slow_heating=-1.,t0_slow_heating=0.,dTeq_max=1000.
   real :: Bext_ampl=0.
   character (len=labellen) :: iBext='nothing'
 !
@@ -76,11 +77,13 @@ module Special
       R_planet,rho_ref,cs_ref,cp_ref,T_ref,pbot0,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
-      Bext_ampl,iBext,n_damping,lsponge_top,lsponge_bottom,lvelocity_drag,q_damping
+      Bext_ampl,iBext,n_sponge,lsponge_top,lsponge_bottom,&
+      lvelocity_drag,q_drag,q_sponge,lsponge_dt
 !
   namelist /special_run_pars/ &
-      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,n_damping,&
-      lsponge_top,lsponge_bottom,lvelocity_drag,q_damping
+      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,n_sponge,&
+      lsponge_top,lsponge_bottom,lvelocity_drag,q_drag,q_sponge,lsponge_dt,&
+      dTeq_max,dTeqtop,dTeqbot
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -149,7 +152,7 @@ module Special
           p_tmp = pbot0  !  in [Pa]
           do i=1,(ipx+1)*nx
             do isub=1,nsub  !  use small length step, dx/nsub
-              call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
+              call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k,1.) ! Teq in [K]
               rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref*(gamma-1.)/gamma) / rho2kg_m3  !  in code unit
               dp = -rhoeq_tmp * g0/xglobal(i+nghost)**2 * dx/nsub * pp2Pa  ! in [Pa]
               p_tmp = p_tmp+dp
@@ -219,10 +222,11 @@ module Special
     subroutine special_calc_hydro(f,df,p)
 !
 !  Add damping layers near the top and bottom boundaries. Ref: Dowling (1998).
-!  ksp in his work is equal to n_damping.
-!  q(j) is correspond to mu0(n_damping+1-j) in eq(57).
+!  ksp in his work is equal to n_sponge.
+!  q(j) is correspond to mu0(n_sponge+1-j) in eq(57).
 !
 !  24-nov-23/kuan,hongzhe: coded
+!  21-feb-24/kuan: revised sponge layer
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -231,34 +235,39 @@ module Special
       real, dimension(:), allocatable :: q
       integer :: i, j
 !
-      if (n_damping>0 .and. (lsponge_top.or.lsponge_bottom)) then
-        allocate(q(n_damping))
+      if (n_sponge>0 .and. (lsponge_top.or.lsponge_bottom)) then
+        allocate(q(n_sponge))
         q=0.
       endif
 !
-      if (it>1 .and. lsponge_top .and. llast_proc_x) then
-        do j=1,n_damping
-          q=0.5*(1.-cos(pi*j/n_damping)) ! from 0 to 2
-        enddo
+!  Add top or bottom sponge layer
 !
+      if (lsponge_top .and. llast_proc_x .and. it>1) then
+        do j=1,n_sponge
+          q=q_sponge*(1.-cos(pi*j/n_sponge))
+        enddo
+        if (lsponge_dt) q=q/dt
+        !
         do i=iux,iuz
-          df(l2-n_damping+1:l2,m,n,i) = -q * f(l2-n_damping+1:l2,m,n,i) ! from bottom to top
+          df(l2-n_sponge+1:l2,m,n,i) = df(l2-n_sponge+1:l2,m,n,i) - q * f(l2-n_sponge+1:l2,m,n,i)
         enddo
       endif
 !
-      if (it>1 .and. lsponge_bottom .and. lfirst_proc_x) then
-        do j=1,n_damping
-          q=0.5*(1.-cos(pi*(n_damping-j+1)/n_damping)) ! from 2 to 0
+      if (lsponge_bottom .and. lfirst_proc_x .and. it>1) then
+        do j=1,n_sponge
+          q=q_sponge*(1.-cos(pi*(n_sponge-j+1)/n_sponge))
         enddo
-!
+        if (lsponge_dt) q=q/dt
+        !
         do i=iux,iuz
-          df(l1:l1+n_damping-1,m,n,i) = -q * f(l1:l1+n_damping-1,m,n,i) ! from bottom to top
+          df(l1:l1+n_sponge-1,m,n,i) = df (l1:l1+n_sponge-1,m,n,i) - q * f(l1:l1+n_sponge-1,m,n,i)
         enddo
       endif
 !
-! add velocity drag, dudt = ... - q_damping * u
+! Add velocity drag, dudt = ... - q_drag * u
 !
-      if (lvelocity_drag) df(l1:l2,m,n,iux:iuz) = -q_damping * f(l1:l2,m,n,iux:iuz)
+      if (lvelocity_drag) &
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - q_drag * f(l1:l2,m,n,iux:iuz)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -267,6 +276,7 @@ module Special
 !  08-sep-23/hongzhe: specific things for planet atmospheres.
 !                     Reference: Rogers & Komacek (2014)
 !  27-sep-23/hongzhe: outsourced from temperature_idealgas.f90
+!  26-feb-24/kuan: Possibility of slowly turning on the heating term
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -280,18 +290,16 @@ module Special
 !  for all l at m,n, given the local pressure.
 !  Teq_x is in [K] and tau_rad_x is in [s].
 !
-      call calc_Teq_tau_mn(Teq_x,tau_rad_x,p%pp*pp2Pa,m,n)
-!
-!  Possibility of slowly turning on the heating term
-!
       if (tau_slow_heating>0) then
-        f_slow_heating = min(1.d0,(t-t0_slow_heating)/tau_slow_heating)
+        f_slow_heating = min(1.0d0*dTeq_max/dTeqtop,1.0+(t-t0_slow_heating)/tau_slow_heating*(dTeq_max-dTeqtop)/dTeqtop)
       else
         f_slow_heating = 1.
       endif
-      if (t<t0_slow_heating) f_slow_heating=0.
+      if (t<t0_slow_heating) f_slow_heating=1.
 !
-      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - f_slow_heating*(p%TT-Teq_x/TT2K)/(tau_rad_x/tt2s)
+      call calc_Teq_tau_mn(Teq_x,tau_rad_x,p%pp*pp2Pa,m,n,f_slow_heating)
+!
+      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - (p%TT-Teq_x/TT2K)/(tau_rad_x/tt2s)
 !
     endsubroutine special_calc_energy
 !***********************************************************************
@@ -489,7 +497,7 @@ module Special
     subroutine calc_Bext
 !
 !  Calculate the external B field originated from the planet interior.
-!  This contributes an extra uxb term in du/dt.
+!  This contributes an extra uxb term in dA/dt.
 !
 !  13-nov-23/hongzhe: coded
 !
@@ -499,8 +507,8 @@ module Special
       case ('dipole')
         ! dipole = mu0/(4pi) * ( 3*rhat*(rhat dot m)-m ) / |r|^3
         !        = mu0/(4pi) * m * { 2*costh/r^3, sinth/r^3, 0 }
-        Bext(:,:,:,1) = Bext_ampl * 2.*cosy*rr1**3.
-        Bext(:,:,:,2) = Bext_ampl * siny*rr1**3.
+        Bext(:,:,:,1) = Bext_ampl * 2.*cosy * (xyz0(1)*rr1)**3.
+        Bext(:,:,:,2) = Bext_ampl * siny    * (xyz0(1)*rr1)**3.
         Bext(:,:,:,3) = 0.
       case default
         call fatal_error('calc_Bext','no such iBext')
@@ -508,7 +516,7 @@ module Special
 !
     endsubroutine  calc_Bext
 !***********************************************************************
-    subroutine calc_Teq_tau_pmn(T_local,tau_local,press,m,n)
+    subroutine calc_Teq_tau_pmn(T_local,tau_local,press,m,n,f_slow)
 !
 !  Given the local pressure p and position m,n, calculate the equilibrium
 !  temperature T_local and the radiative cooling time tau_local, by
@@ -517,9 +525,10 @@ module Special
 !  the input press is in [Pa].
 !
 !  23-oct-23/hongzhe: outsourced from special_calc_energy
+!  26-feb-24/kuan: added slow heating term
 !
       real, intent(out) :: T_local,tau_local
-      real, intent(in) :: press
+      real, intent(in) :: press,f_slow
       integer, intent(in) :: m,n
 !
       real :: log10pp,Teq_local1,Teq_local2
@@ -533,17 +542,17 @@ module Special
 !  Interpolation for T_local and tau_local
 !
       if (ip>=nref) then
-        T_local = Teq_night(nref) + dTeq(nref)*max(0.,mu_ss(m,n))
+        T_local = (Teq_night(nref)-0.5*(f_slow-1.)*dTeq(nref)) + dTeq(nref)*max(0.,mu_ss(m,n))*f_slow
         tau_local = tau_rad(nref)
       elseif (ip<=1) then
-        T_local = Teq_night(1)    + dTeq(1)*max(0.,mu_ss(m,n))
+        T_local = (Teq_night(1)-0.5*(f_slow-1.)*dTeq(1)) + dTeq(1)*max(0.,mu_ss(m,n))*f_slow
         tau_local = tau_rad(1)
       else
 !
 !  The two closest values of equilibrium T given press,m,n
 !
-        Teq_local1 = Teq_night(ip)   + dTeq(ip)  *max(0.,mu_ss(m,n))
-        Teq_local2 = Teq_night(ip+1) + dTeq(ip+1)*max(0.,mu_ss(m,n))
+        Teq_local1 = (Teq_night(ip)  -0.5*(f_slow-1.)*dTeq(ip))   + dTeq(ip)  *max(0.,mu_ss(m,n))*f_slow
+        Teq_local2 = (Teq_night(ip+1)-0.5*(f_slow-1.)*dTeq(ip+1)) + dTeq(ip+1)*max(0.,mu_ss(m,n))*f_slow
         T_local = Teq_local1+(Teq_local2-Teq_local1)*   &
                   (log10pp-logp_ref(ip))/   &
                   (logp_ref(ip+1)-logp_ref(ip))   ! unit of K
@@ -557,7 +566,7 @@ module Special
 !
     endsubroutine calc_Teq_tau_pmn
 !***********************************************************************
-    subroutine calc_Teq_tau_mn(T_local,tau_local,press,m,n)
+    subroutine calc_Teq_tau_mn(T_local,tau_local,press,m,n,f_slow)
 !
 !  Same as calc_Teq_tau_pmn, but for an array of pressure values
 !
@@ -565,12 +574,13 @@ module Special
 !
     real, dimension(nx), intent(out) :: T_local,tau_local
     real, dimension(nx), intent(in) :: press
+    real, intent(in) :: f_slow
     integer, intent(in) :: m,n
 !
     integer :: i
 !
     do i=1,nx
-      call calc_Teq_tau_pmn( T_local(i),tau_local(i), press(i),m,n )
+      call calc_Teq_tau_pmn( T_local(i),tau_local(i), press(i),m,n,f_slow)
     enddo
 !
     endsubroutine calc_Teq_tau_mn
