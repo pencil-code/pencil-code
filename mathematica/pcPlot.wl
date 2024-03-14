@@ -181,6 +181,11 @@ pcPlotStyle[]:=Module[{setOps},
     },{
       DensityPlot,ListDensityPlot
     }];
+  setOps[{
+      RegionBoundaryStyle->None,RegionFillingStyle->None
+    },{
+      ListVectorPlot,ListStreamPlot,ListVectorDensityPlot,ListStreamDensityPlot
+    }];
   (*Options for ListDensity Plot*)
   setOps[{
       InterpolationOrder->0
@@ -197,6 +202,9 @@ pcPopup[plot_]:=CreateDocument[plot,
 
 pcTicks["10^i",max_:99]:=Table[{10^i,Superscript["10",ToString@i]},{i,-max,max}]
 pcTicks["Log10i",max_:99]:=Table[{10^i,ToString@i},{i,-max,max}]
+pcTicks["Range"][range_,pd_]:=List[
+  {#,StringPadRight[ToString[#],pd,"0"]}&/@range, Automatic
+]
 
 pcInset[str_String,posx_,posy_]:=Inset[Style[str,pcLabelStyle],Scaled[{posx,posy}]]
 
