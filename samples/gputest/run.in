@@ -7,7 +7,7 @@
   ip=13,
   nt=200, it1=10, isave=500, itorder=3, 
   nt=20, it1=4, isave=500, itorder=3, 
-  nt=5, it1=1, isave=10, itorder=3, 
+  nt=20, it1=1, isave=10, itorder=3, 
   cdt=0.4, cdtv=0.3, dtmin=1e-6, dt=1.e-3
   random_gen='nr_f90',
   slice_position='e'

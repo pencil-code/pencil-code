@@ -25,7 +25,8 @@ void registerGPU(REAL*);
 void initializeGPU();
 void finalizeGPU();
 void substepGPU(int isubstep, int full, int early_finalize);
-void copyFarray();
+void copyFarray(REAL* f);
+void loadFarray();
 void testRHS(REAL*,REAL*);
 void random_initial_condition(void);
 
@@ -129,9 +130,13 @@ void FTNIZE(rhs_gpu_c)
   substepGPU(*isubstep, *full, *early_finalize);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(copy_farray_c)(REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho)
+void FTNIZE(copy_farray_c)(REAL* f)
 {
-  copyFarray(uu_x, uu_y, uu_z, lnrho);
+  copyFarray(f);
+}
+void FTNIZE(load_farray_c)()
+{
+  loadFarray();
 }
 void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
 {
