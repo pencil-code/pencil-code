@@ -918,20 +918,18 @@ void setupConfig(AcMeshInfo &config)
   // Enter basic grid and geometry parameters in config.
 
   config.int3_params[AC_domain_decomposition] = (int3) {nprocx, nprocy, nprocz};
-  printf("n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
   config.int_params[AC_nxgrid] = nxgrid;
   config.int_params[AC_nygrid] = nygrid;
   config.int_params[AC_nzgrid] = nzgrid;
   //use external decomp = 1
   config.int_params[AC_decompose_strategy] = (int)AcDecomposeStrategy::External;
-  if(lmorton_curve)
+  if (lmorton_curve)
   	config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Morton;
   else
   	config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Linear;
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
-  printf("%d: l1 etc. %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
   config.real_params[AC_dsmin] = std::min(dx, std::min(dy, dz));
   config.real_params[AC_xlen] = Lxyz[0];
   config.real_params[AC_ylen] = Lxyz[1];
@@ -951,6 +949,8 @@ void setupConfig(AcMeshInfo &config)
 void checkConfig(AcMeshInfo &config)
 {
   printf("Check that config is correct\n");
+  printf("n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
+  printf("rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
 #if LENTROPY
   printf("lpressuregradientgas= %d %d \n", lpressuregradient_gas, config.int_params[AC_lpressuregradient_gas]);
   printf("chi= %f %f \n", chi, config.real_params[AC_chi]);
@@ -973,10 +973,10 @@ void checkConfig(AcMeshInfo &config)
   printf("lnrho0= %f %f \n", lnrho0, config.real_params[AC_lnrho0]);
 #endif
 #if LFORCING
-  //printf("iforcing_zsym= %f %f \n", iforcing_zsym, config.int_params[AC_iforcing_zsym]);
-  //printf("k1_ff= %f %f \n", k1_ff, config.real_params[AC_k1_ff]);
-  //printf("tforce_stop= %f %f \n", tforce_stop, config.real_params[AC_tforce_stop]);
-  //printf("k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
+  printf("iforcing_zsym= %f %f \n", iforcing_zsym, config.int_params[AC_iforcing_zsym]);
+  printf("k1_ff= %f %f \n", k1_ff, config.real_params[AC_k1_ff]);
+  printf("tforce_stop= %f %f \n", tforce_stop, config.real_params[AC_tforce_stop]);
+  printf("k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
 #endif
   printf("mu0= %f %f \n", mu0, config.real_params[AC_mu0]);
 }
