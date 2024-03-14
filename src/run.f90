@@ -66,8 +66,9 @@ subroutine helper_loop(f,p)
 !
 ! 7-feb-24/TP: coded
 !
-!$  do while(lhelper_run)
+!$  do 
 !$    do while(.not. lhelper_perform_diagnostics)
+!$      if (.not.lhelper_run) return
 !$    enddo
 !$    call perform_diagnostics(f,p)
 !$  enddo
