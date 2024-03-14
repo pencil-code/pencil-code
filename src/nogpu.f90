@@ -57,6 +57,14 @@ contains
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
+    subroutine load_farray_to_GPU(f)
+
+      real, dimension (:,:,:,:), intent(OUT) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine  load_farray_to_GPU
+!**************************************************************************
     subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
 !
 !  Used to test different implementations of rhs_cpu.

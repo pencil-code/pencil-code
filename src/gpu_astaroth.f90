@@ -19,6 +19,7 @@ module GPU
   external finalize_gpu_c
   external rhs_gpu_c
   external copy_farray_c
+  external load_farray_c 
   external test_rhs_c
 
 !$  interface
@@ -106,23 +107,30 @@ contains
       logical,                            intent(IN)    :: early_finalize
 !
       integer :: ll, mm, nn
-      logical, save :: lvery_first=.true.
-
-      call rhs_gpu_c(isubstep,lvery_first,early_finalize)
-!
+      logical, save :: lvery_first = .true.
+      call rhs_gpu_c(isubstep,.false.,early_finalize)
       lvery_first=.false.
+!
     endsubroutine rhs_GPU
 !**************************************************************************
     subroutine copy_farray_from_GPU(f)
 
+!$    use General, only: signal_wait
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
 
-!$    do while(lhelper_perform_diagnostics)
-!$    enddo
-
-      call copy_farray_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho))
+!      Have to wait since if doing diagnostics don't want overwrite f
+!$     call signal_wait(lhelper_perform_diagnostics,.false.)
+       call copy_farray_c()
 
     endsubroutine copy_farray_from_GPU
+!**************************************************************************
+    subroutine load_farray_to_GPU(f)
+
+      real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
+
+       call load_farray_c()
+
+    endsubroutine load_farray_to_GPU
 !**************************************************************************
  subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
 !
@@ -144,7 +152,7 @@ contains
       real, parameter :: dt = 0.001
       real, parameter, dimension(3) :: alpha = (/0.0, -(5.0/9.0), -(153.0/128.0)/)
       real, parameter, dimension(3) :: beta = (/ 1. / 3., 15./ 16., 8. / 15. /)
-      integer, parameter :: num_of_steps = 1
+      integer, parameter :: num_of_steps = 100
 
       interface
         subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
@@ -183,9 +191,14 @@ contains
           call boundconds_y(f_copy)
           call boundconds_z(f_copy)
           df_copy = 0.0
+          ldiagnos =.true.
+          lfirst = .true.
+          lout = .true.
+          itsub = 1
           call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
           ds = alpha(i)*ds + df_copy*dt
           f_copy = f_copy + beta(i)*ds
+          !call perform_diagnostics(f_copy,p)
         enddo
       enddo
 
