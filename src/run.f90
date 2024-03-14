@@ -58,6 +58,7 @@ contains
 subroutine helper_loop(f,p)
 !
   use Equ, only: perform_diagnostics
+!$ use General, only: signal_wait
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
@@ -66,11 +67,9 @@ subroutine helper_loop(f,p)
 !
 ! 7-feb-24/TP: coded
 !
-!$  do 
-!$    do while(.not. lhelper_perform_diagnostics)
-!$      if (.not.lhelper_run) return
-!$    enddo
-!$    call perform_diagnostics(f,p)
+!$  do while(lhelper_run)
+!$    call signal_wait(lhelper_perform_diagnostics,.true.)
+!$    if (helper_run) call perform_diagnostics(f,p)
 !$  enddo
 
 endsubroutine helper_loop
@@ -113,6 +112,7 @@ subroutine timeloop(f,df,p)
   use Solid_Cells,     only: time_step_ogrid, wsnap_ogrid, solid_cells_clean_up
   use Streamlines,     only: tracers_prepare, wtracers
 !$ use OMP_lib
+!$ use General, only: signal_send
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
@@ -481,6 +481,9 @@ subroutine timeloop(f,df,p)
 !!$ call wait_all_thread_pool
 !!$ call free_thread_pool
 !$  lhelper_run = .false.
+!TP: This is set to .true. to free the helper in case in it is in a hotloop waiting for diagnostics but we are finished
+!currently will perform one extra diagnostics calculation but that doesn't matter
+!$  call signal_send(lhelper_perform_diagnostics,.true.)
 
 endsubroutine timeloop
 !***********************************************************************
@@ -505,7 +508,7 @@ program run
   use General,         only: random_seed_wrapper, touch_file, itoa
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
-  use Gpu,             only: gpu_init, register_gpu
+  use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU
   use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
   use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
   use Messages
@@ -855,6 +858,8 @@ program run
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond
+  !load to gpu
+  call load_farray_to_GPU(f)
 !
   if (it1d==impossible_int) then
     it1d=it1

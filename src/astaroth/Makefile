@@ -37,6 +37,9 @@ else
   CMAKE_PACKED = OFF
 endif
 
+#for now set packed data transfers off
+CMAKE_PACKED=OFF
+
 CMAKE_SINGLEPASS = OFF
 OBJECTS = $(SOURCES:.cc=.o) 
 

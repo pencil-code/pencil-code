@@ -68,6 +68,7 @@ module General
             qualify_position_biquin
   public :: binomial,merge_lists,reallocate
   public :: point_and_get_size, allocate_using_dims
+!$ public :: signal_wait, signal_send
 ! 
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -6687,5 +6688,35 @@ iloop:do i=1,size(list2)
       endif
 
     endsubroutine
+!***********************************************************************
+!$  subroutine signal_wait(lflag, lvalue)
+!
+!  Makes the current thread wait until lflag = lvalue 
+!  Could have a better implementation with condition variables
+!  But for now waiting is done with spinlocking
+!
+! 14-Mar-24/TP: coded
+!
+!$  logical :: lflag, lvalue
+!
+!$    if (lvalue) then
+!$      do while(.not. lflag)
+!$      enddo
+!$    else
+!$      do while(lflag)
+!$      enddo
+!$    endif
+!$  endsubroutine signal_wait
+!***********************************************************************
+!$  subroutine signal_send(lflag, lvalue)
+!
+!  Sets lflag that some thread is waiting on to lvalue
+!  Exists so it is easy to extend if we want to do waiting with f.e. condition variables
+!
+! 14-Mar-24/TP: coded
+!
+!$  logical :: lflag, lvalue
+!$    lflag = lvalue
+!$  endsubroutine signal_send
 !***********************************************************************
   endmodule General

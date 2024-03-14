@@ -26,6 +26,7 @@ void initializeGPU(REAL**,REAL**);
 void finalizeGPU();
 void substepGPU(int isubstep, int full, int early_finalize);
 void copyFarray();
+void loadFarray();
 void testRHS(REAL*,REAL*);
 
 // for Gnu Compiler
@@ -125,6 +126,11 @@ void FTNIZE(rhs_gpu_c)
 void FTNIZE(copy_farray_c)()
 {
   copyFarray();
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(load_farray_c)()
+{
+  loadFarray();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)

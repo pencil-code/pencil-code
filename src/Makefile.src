@@ -513,7 +513,8 @@ ifneq ($(GPU),nogpu)
       GPU_DEPS = $(gpu_preps)
       #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
-      LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU)
+      #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI
+      LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU) -L /opt/cray/pe/lib64 -lmpi_gtl_hsa
 #      override LDFLAGS += -l:libmt-fortran.a -l:libmt.a -lstdc++
 #      override LDFLAGS_LIB += -L astaroth/scheduler-build/src
   #   the following needed?
@@ -2996,14 +2997,14 @@ endif
 # 
 
 #
-$(CUDA_INCDIR)/PC_modulesources.h: .sentinel
-$(CUDA_INCDIR)/PC_moduleflags.h: .sentinel
-$(CUDA_MAKEDIR)/Makefile.vendor: .sentinel
-$(DSL_WORKDIR)/fieldecs.h: .sentinel
-$(DSL_WORKDIR)/equations.h: .sentinel
-$(DSL_WORKDIR)/solve.ac: .sentinel
 #
-.sentinel: Makefile.local
+##$(CUDA_INCDIR)/PC_modulesources.h: .sentinel
+##$(CUDA_MAKEDIR)/Makefile.vendor: .sentinel
+##$(DSL_WORKDIR)/fieldecs.h: .sentinel
+##$(DSL_WORKDIR)/equations.h: .sentinel
+##$(DSL_WORKDIR)/solve.ac: Makefile.local
+#
+$(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#pragma once' > $(CUDA_INCDIR)/PC_moduleflags.h
 	@sed -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' $(PENCIL_HOME)/src/gpu.sed > gpu.sed.tmp
@@ -3243,9 +3244,8 @@ cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 ifneq ($(and $(IS_CRAY), $(filter-out $(GPU),nogpu)),)
-	@sed -e'/BEGIN C BINDING/,/END C BINDING/ s/ ::/,bind(C) ::/' -e'/parameter,/ s/,bind(C)//' -e'/character/ s/,bind(C)//' cparam.f90 > cparam_tmp.f90
+	@sed -e'/BEGIN C BINDING/,/END C BINDING/ s/ ::/, bind(C) ::/' -e'/parameter,/ s/, bind(C)//' -e'/character/ s/, bind(C)//' cparam.f90 > cparam_tmp.f90
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam_tmp.f90
-	@rm -f cparam_tmp.f90
 else
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 endif
