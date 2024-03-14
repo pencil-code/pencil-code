@@ -38,6 +38,7 @@ module EquationOfState
   real :: cs2bot=1.0, cs2top=1.0
   real :: Cp_const=impossible
   real :: Pr_number=0.7
+  real :: lnTT0=impossible, TT0=impossible
   logical :: lpres_grad=.false.
 
   contains
