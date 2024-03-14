@@ -3638,8 +3638,8 @@ module Forcing
       real :: force_ampl, force_tmp
 !
       real, dimension (3) :: fran
-      real, dimension (nx) :: radius2,gaussian,gaussian_fact,ruf,rho,rho1
-      real, dimension (nx,3) :: variable_rhs,force_all,delta
+      real, dimension (nx) :: radius2,gaussian,gaussian_fact,ruf,rho,rho1, qf
+      real, dimension (nx,3) :: variable_rhs,force_all,delta, curlo
       integer :: j, jf, ilocation
       real :: fact,width_ff21
 !
@@ -3733,6 +3733,7 @@ module Forcing
 !
 !  loop over all pencils
 !
+        lfirstpoint = .true.
         do n=n1,n2
           do m=m1,m2
 !
@@ -3819,8 +3820,14 @@ module Forcing
                   call dot_mn(variable_rhs,force_all,ruf)
                   call sum_mn_name(ruf,idiag_rufm)
                 endif
+                if (idiag_qfm/=0) then
+                  call del2v_etc(f,iuu,curlcurl=curlo)
+                  call dot_mn(curlo/dt,variable_rhs,qf)
+                  call sum_mn_name(qf,idiag_qfm)
+                endif
               endif
             enddo
+            lfirstpoint = .false.
           enddo
         enddo
       endif
@@ -3829,6 +3836,7 @@ module Forcing
 !
       if (lout) then
         if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
+        if (idiag_qfm/=0) call mpireduce_sum(fname(idiag_qfm)/nwgrid,fname(idiag_qfm))
       endif
 !
       if (ip<=9) print*,'forcing_gaussianpot: forcing OK'
