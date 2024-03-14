@@ -65,7 +65,6 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 	make -j && \
 	cd .. && \
 	mv ./build/libastaroth_$(PREC).so libastaroth_$(PREC).so
-	cp astaroth_$(PREC).so libastaroth.so
 
 #	mkdir -p scheduler-build && \
 #	cd scheduler-build && \
