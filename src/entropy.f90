@@ -49,7 +49,7 @@ module Energy
   real :: chi_hyper3_mesh=5.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
-  real :: khor_ss=1.0, ss_const=0.0
+  real :: khor_ss=1.0, ss_const=0.0, TT_const=0.0
   real :: pp_const=0.0
   real :: tau_ss_exterior=0.0, T0=0.0, T0_cgs=0.0
   real :: ampl_imp_ss=0.01
@@ -196,7 +196,7 @@ module Energy
       widthss, epsilon_ss, &
       mixinglength_flux, entropy_flux, &
       chi_t, chi_rho, pp_const, ss_left, ss_right, &
-      ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
+      ss_const, TT_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
 !      ss_const, mpoly0, mpoly1, mpoly2, khor_ss, &
       thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
@@ -216,7 +216,7 @@ module Energy
       luminosity, wheat, cooling_profile, cooltype, cool, cool1, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool1, &
       wcool2, Fbot, lcooling_general, gradS0_imposed, &
-      ss_const, chi_t, chi_rho, chit_prof1, zcool1, zcool2, &
+      ss_const, TT_const, chi_t, chi_rho, chit_prof1, zcool1, zcool2, &
       chit_prof2, chi_shock, chi_shock2, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
@@ -1463,7 +1463,9 @@ module Energy
 !  20-jan-2015/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: isothermal_entropy, eoscalc, isothermal_lnrho_ss
+      use EquationOfState, only: isothermal_entropy, eoscalc, isothermal_lnrho_ss, cs20, lnrho0, lnTT0
+      use Density, only: mean_density
+!
       use General, only: itoa
       use Gravity
       use Initcond
@@ -1504,6 +1506,9 @@ module Energy
 !
           case ('zero', '0'); f(:,:,:,iss) = 0.
           case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
+          case ('const_TT')
+            ss_const=cv*(alog(TT_const)-lnTT0-gamma_m1*(alog(mean_density(f))-lnrho0))
+            f(:,:,:,iss)=f(:,:,:,iss)+ss_const
           case ('gaussian-noise'); call gaunoise(ampl_ss(j),f,iss,iss)
           case ('blob')
             call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j),radius_ss_x(j))

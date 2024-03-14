@@ -49,7 +49,7 @@
   public :: pushpars2c
 
 !ajwm SHOULDN'T BE PUBLIC
-  public :: cs0,cs20,lnrho0,rho0
+  public :: cs0,cs20,lnrho0,rho0,lnTT0
 !Shouldn't be public, certainly means don't add anymore!!
 !,mu,Rgas    BREAKS THE AUTO-TEST
 
