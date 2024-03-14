@@ -514,6 +514,7 @@ ifneq ($(GPU),nogpu)
       #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
       #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI
+      #good that this is still here
       LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU) -L /opt/cray/pe/lib64 -lmpi_gtl_hsa
 #      override LDFLAGS += -l:libmt-fortran.a -l:libmt.a -lstdc++
 #      override LDFLAGS_LIB += -L astaroth/scheduler-build/src
