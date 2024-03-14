@@ -25,6 +25,8 @@ module Equ
   real, dimension(:,:,:)  , pointer :: p_fnamex, p_fnamey, p_fnamez, p_fnamexy, p_fnamexz
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
+  real ::  dt_save,eps_rkf_save
+  integer :: it_save
 !
   contains
 !***********************************************************************
@@ -88,6 +90,7 @@ module Equ
       use Mpicomm
 !$    use, intrinsic :: iso_c_binding
 !!$    use mt, only: push_task, depend_on_all, default_task_type, wait_all_thread_pool
+!$    use General, only: signal_send 
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -126,10 +129,10 @@ module Equ
 !  Record times for diagnostic and 2d average output.
 !
       if (ldiagnos) then
-        tdiagnos  = t ! (diagnostics are for THIS time)
-        dtdiagnos = dt
-        itdiagnos = it
-        eps_rkf_diagnos = eps_rkf
+        t_save  = t ! (diagnostics are for THIS time)
+        dt_save = dt
+        it_save = it
+        eps_rkf_save = eps_rkf
       endif
 
       if (l1davgfirst) t1ddiagnos=t ! (1-D averages are for THIS time)
@@ -342,13 +345,15 @@ module Equ
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
+        !call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
           !wait in case the last diagnostic tasks are not finished
 !!$        call wait_all_thread_pool
+!         Not done for the first step since we haven't loaded any data to the GPU yet
           call copy_farray_from_GPU(f)
 !!!acc          call init_diagnostics_accumulators
 !$        call save_diagnostic_controls
-!$        lhelper_perform_diagnostics = .true.
+!$        call signal_send(lhelper_perform_diagnostics,.true.)
 !!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
         endif
@@ -498,17 +503,16 @@ module Equ
     lout_sound = lout_sound_save
     lvideo = lvideo_save
     lwrite_slices = lwrite_slices_save
-    t = t_save
     t1ddiagnos = t1ddiagnos_save 
     t2davgfirst= t2davgfirst_save
     tslice = tslice_save
     tsound = tsound_save
 
     if (ldiagnos) then
-      tdiagnos  = t ! (diagnostics are for THIS time)
-      dtdiagnos = dt
-      itdiagnos = it
-      eps_rkf_diagnos = eps_rkf
+      tdiagnos  = t_save 
+      dtdiagnos = dt_save
+      itdiagnos = it_save
+      eps_rkf_diagnos = eps_rkf_save
     endif
 
     endsubroutine restore_diagnostic_controls
@@ -600,13 +604,11 @@ module Equ
     l2davg_save = l2davg
     lout_sound_save = lout_sound
     lvideo_save = lvideo
-    t_save = t
 
     if (l1davgfirst) t1ddiagnos_save=t ! (1-D averages are for THIS time)
     if (l2davgfirst) t2davgfirst_save=t ! (2-D averages are for THIS time)
     if (lvideo     ) tslice_save=t ! (slices are for THIS time)
     if (lout_sound ) tsound_save=t
-
     endsubroutine save_diagnostic_controls
 !***********************************************************************
     subroutine diagnostics_reductions
@@ -770,6 +772,9 @@ module Equ
 !*****************************************************************************
       subroutine perform_diagnostics(f,p)
 
+
+
+!$    use General, only: signal_send
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case) :: p
 
@@ -777,7 +782,7 @@ module Equ
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
         call write_diagnostics(f)                 !       ~
 
-!$      lhelper_perform_diagnostics = .false.
+!$      call signal_send(lhelper_perform_diagnostics,.false.)
 
       endsubroutine perform_diagnostics
 !*****************************************************************************

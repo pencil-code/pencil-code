@@ -23,7 +23,6 @@
 #include "astaroth.h"
 #include "kernels.h"
 #include "task.h"
-#include "astaroth_utils.h"
 #define real AcReal
 #define EXTERN
 #define FINT int
@@ -51,7 +50,6 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 #if LFORCING
   #include "forcing.h"
 #endif
-
 // Astaroth objects instantiation.
 static AcMesh mesh;
 //static AcMesh test_mesh;
@@ -287,6 +285,7 @@ gradients(const int x, const int y, const int z, AcMesh mesh, const int field)
 }
 ***/
 /***********************************************************************************************/
+/****
 void print_diagnostics(const int pid, const int step, const AcReal dt_, const AcReal simulation_time,
                        FILE *diag_file, const AcReal sink_mass, const AcReal accreted_mass,
                        int *found_nan)
@@ -364,6 +363,7 @@ void print_diagnostics(const int pid, const int step, const AcReal dt_, const Ac
   fflush(diag_file);
   fflush(stdout);
 }
+***/
 /***********************************************************************************************/
 AcReal max_advec()
 {
@@ -459,7 +459,8 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
       printf("had nans before starting GPU comp\n");
       exit(0);
     }
-    acGridSynchronizeStream(STREAM_DEFAULT);
+    printf("doing full i.e. loading\n");
+    acGridSynchronizeStream(STREAM_ALL);
     acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
     acGridSynchronizeStream(STREAM_ALL);
     //set output buffer to 0 since if we are reading from it we don't want NaNs
@@ -470,7 +471,7 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
   acGridSynchronizeStream(STREAM_ALL);
   if (isubstep == 1)
   {
-    acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, dt);
+    acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, 0.001);
     acGridSynchronizeStream(STREAM_ALL);
     acGridExecuteTaskGraph(graph_1, 1);
   }
@@ -510,7 +511,7 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
   // cp = 1.0;
   // AcReal gamma_m1 = 0.666666627;
 
-  //Run the gpu code serially
+  //Emulate the gpu code serially
   int3 dims = {mx, my, 1};
   for (int i = 0; i < dims.x; i++)
   {
@@ -624,7 +625,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   // thread_pool.WaitAll();
   constexpr real alpha[3] = {0.0, -(5.0 / 9.0), -(153.0 / 128.0)};
   constexpr real beta[3] = {(1.0 / 3.0), (15.0 / 16.0), (8.0 / 15.0)};
-  constexpr int num_of_steps = 1;
+  constexpr int num_of_steps = 100;
 
   printf("HI from testRHS\n");
   fflush(stdout);
@@ -763,7 +764,28 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
     acGridSynchronizeStream(STREAM_ALL);
     acGridExecuteTaskGraph(graph_3,1);
     acGridSynchronizeStream(STREAM_ALL);
+    acGridSynchronizeStream(STREAM_ALL);
+    acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+    acGridSynchronizeStream(STREAM_ALL);
+    AcReal max_uux2 = 0.0;
+    AcReal max_uuy2 = 0.0;
+    AcReal max_uuz2 = 0.0;
+  for (int i = dims.n0.x; i < dims.n1.x; i++)
+  {
+    for (int j = dims.n0.y; j < dims.n1.y; j++)
+    {
+      for (int k = dims.n0.z; k < dims.n1.z; k++)
+      {
+          max_uux2 = max(max_uux2,pow(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(i,j,k)],2));
+          max_uuy2 = max(max_uuy2,pow(mesh.vertex_buffer[1][DEVICE_VTXBUF_IDX(i,j,k)],2));
+          max_uuz2 = max(max_uuz2,pow(mesh.vertex_buffer[2][DEVICE_VTXBUF_IDX(i,j,k)],2));
+      }
+    }
   }
+  printf("GPU: uumax: %.7e\n", pow(max_uux2+max_uuy2+max_uuz2,0.5));
+    acGridSynchronizeStream(STREAM_ALL);
+  }
+    acGridSynchronizeStream(STREAM_ALL);
   // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step0, dims.n0,dims.n1);
   // acGridSynchronizeStream(STREAM_ALL);
   // acGridSwapBuffers();
@@ -990,7 +1012,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
 {
   //Setup configurations used for initializing and running the GPU code
 #if PACKED_DATA_TRANSFERS
-  initLoadStore();
+  //initLoadStore();
 #endif
   setupConfig(mesh.info);
   checkConfig(mesh.info);
@@ -1048,30 +1070,40 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
     });
 
   printf("BUILD graphs\n");
-  //acGridExecuteTaskGraph(rhs_test_graph,1);
-  acGridExecuteTaskGraph(graph_1,1);
-  acGridExecuteTaskGraph(graph_2,1);
-  acGridExecuteTaskGraph(graph_3,1);
+  acGridSynchronizeStream(STREAM_ALL);
   printf("DONE initializeGPU\n");
   fflush(stdout);
 }
 /***********************************************************************************************/
-extern "C" void copyFarray()
+extern "C" void copyFarray(AcReal* f)
 {
-  acGridSynchronizeStream(STREAM_ALL);
-  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
-  acGridSynchronizeStream(STREAM_ALL);
-
+  /**
   if (has_nans(mesh)){
     printf("found nans while copying\n");
     exit(0);
   }
+  **/
+  acGridSynchronizeStream(STREAM_ALL);
+  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+  acGridSynchronizeStream(STREAM_ALL);
+}
+extern "C" void loadFarray()
+{
+  /**
+  if (has_nans(mesh)){
+    printf("found nans while copying\n");
+    exit(0);
+  }
+  **/
+  acGridSynchronizeStream(STREAM_ALL);
+  acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
+  acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
 extern "C" void finalizeGPU()
 {
 #if PACKED_DATA_TRANSFERS
-  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);  // needed?
+  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);  // needed?
 #endif
   // Deallocate everything on the GPUs and reset
   AcResult res = acGridQuit();

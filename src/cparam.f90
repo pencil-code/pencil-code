@@ -16,6 +16,7 @@ module Cparam
 !
   include 'cparam.local'
 !
+!
   integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz,nyz=ny*nz
   integer, parameter :: nxygrid=nxgrid*nygrid,nxzgrid=nxgrid*nzgrid,nyzgrid=nygrid*nzgrid
   integer, parameter :: nprocxy=nprocx*nprocy
@@ -35,6 +36,7 @@ module Cparam
   integer, parameter :: penc_name_len=16
 !
   include 'cparam_pencils.inc'
+!BEGIN C BINDING
 !
 !  Derived and fixed parameters.
 !
@@ -87,6 +89,7 @@ module Cparam
 !  Number of slots in initlnrho etc.
 !
   integer, parameter :: ninit=5
+!END C BINDING
 !
 !  Name:          Maximum string length of a:
 !  --------------------------------------------
