@@ -37,6 +37,9 @@ else
   CMAKE_PACKED = OFF
 endif
 
+#for now set packed data transfers off
+CMAKE_PACKED=OFF
+
 CMAKE_SINGLEPASS = OFF
 OBJECTS = $(SOURCES:.cc=.o) 
 
@@ -61,7 +64,8 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) .. && \
 	make -j && \
 	cd .. && \
-	mv ./build/libastaroth_$(PREC).so .
+	mv ./build/libastaroth.so astaroth_$(PREC).so
+	cp astaroth_$(PREC).so libastaroth.so
 
 #	mkdir -p scheduler-build && \
 #	cd scheduler-build && \
