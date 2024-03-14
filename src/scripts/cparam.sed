@@ -13,6 +13,7 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /implicit  *none/ d
 /cparam_pencils\.inc/ d
 /dimension *(/ d
+s/, *bind *( *c *)//
 s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\)\([,$]\)/cpu_pow(\1,\2)\3/g
 s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\) *$/cpu_pow(\1,\2)/g
 #s/\([a-zA-Z0-9_]*\) *\*\* *\([(]?[-]?[a-zA-Z0-9_]*[)]?\)/cpu_pow(\1,\2)/
@@ -38,11 +39,11 @@ s/& *$//
 s/dbl_max/DBL_MAX/g 
 /const  *FINT  *nghost *=/ {
 h
-s/const  *FINT  *nghost *= *\([0-9]*\) *;/#undef NGHOST\n#define NGHOST \1\n#undef STENCIL_ORDER\n/
+s/const  *FINT  *nghost *= *\([0-9]*\) *;/#undef NGHOST\n#define NGHOST \1\n#undef STENCIL_ORDER\nhostdefine STENCIL_ORDER (2*NGHOST)\n/
 t cont
 b end
 : cont
-w astaroth/PC_nghost.h
+w astaroth/submodule/acc-runtime/Pencil/PC_nghost.h
 : end
 g
 }

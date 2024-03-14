@@ -503,9 +503,9 @@ ifneq ($(GPU),nogpu)
       #FFLAGS_GENERAL += -mcmodel=medium
       GPU_INTERFACE = gpu_astaroth_ansi.o
       ifeq ($(REAL_PRECISION),double)
-        LIBGPU = astaroth_dbl.so
+        LIBGPU = astaroth_dbl
       else
-        LIBGPU = astaroth_sgl.so
+        LIBGPU = astaroth_sgl
       endif
 
 #  GPU_DEPS = $(LIBGPU) gpu_preps
@@ -515,7 +515,6 @@ ifneq ($(GPU),nogpu)
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
       #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI
       LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l:$(LIBGPU) -L /opt/cray/pe/lib64 -lmpi_gtl_hsa
-
 #      override LDFLAGS += -l:libmt-fortran.a -l:libmt.a -lstdc++
 #      override LDFLAGS_LIB += -L astaroth/scheduler-build/src
   #   the following needed?
@@ -3250,7 +3249,6 @@ ifneq ($(and $(IS_CRAY), $(filter-out $(GPU),nogpu)),)
 else
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 endif
-
 #ifeq ($(FARRAY_ALLOC),farray_alloc)
 #	@sed -e'/BEGIN CHANGE/,/END CHANGE/ {s/integer, parameter/integer/; s/= *[A-Za-z0-9_][A-Za-z0-9_+ -]*//}' cparam.f90 > cparam_tmp.f90
 #	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam_tmp.f90
