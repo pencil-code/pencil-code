@@ -1,8 +1,8 @@
-    S = stress_tensor(UU)
-    inv_pT = 1. / (exp(value(LNRHO)) * exp(lnT()))
-    j = (1. / AC_mu0) * (gradient_of_divergence(AA) - veclaplace(AA))
-    RHS = (0) - (0) + AC_eta * AC_mu0 * dot(j, j) +
-                       2. * exp(value(LNRHO)) * AC_nu * contract(S) +
-                       AC_zeta * exp(value(LNRHO)) * divergence(UU) * divergence(UU)
+    rho = exp(value(LNRHO))
+    inv_pT = 1. / rho // * exp(lnT()))
+    j = (gradient_of_divergence(AA) - veclaplace(AA))/mu0
+    rhs =    eta * mu0 * dot(j, j)
+           + 2. * rho * nu * contract(stress_tensor(UU)) 
+           + zeta * rho * divergence(UU) * divergence(UU)
 
-    return -dot(vecvalue(UU), gradient(SS)) + inv_pT * RHS + heat_conduction()
+    return -dot(vecvalue(UU), gradient(SS)) + inv_pT * rhs + heat_conduction()

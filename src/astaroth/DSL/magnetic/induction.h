@@ -1,2 +1,2 @@
-    return cross(vecvalue(UU), curl(AA)) + AC_eta * veclaplace(AA)
+    return cross(vecvalue(UU), curl(AA)) + eta * veclaplace(AA)
 

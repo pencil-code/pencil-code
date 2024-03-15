@@ -1,11 +1,13 @@
-heat_conduction_const_chi() {
+heat_conduction() {
     
-    // lnTT=lnTT0+cv1*ss+gamma_m1*(lnrho-lnrho0)
+// heat conduction for constant diffusivity.
 
-    inv_AC_cv = 1. / AC_cv
-    grad_lnrho = gradient(VTXBUF_LNRHO)
-    grad_lnT = (AC_gamma-1) * grad_lnrho            + inv_AC_cv * gradient(VTXBUF_ENTROPY)
-    del2_lnT = (AC_gamma-1) * laplace(VTXBUF_LNRHO) + inv_AC_cv * laplace(VTXBUF_ENTROPY)
+// lnTT=lnTT0+cv1*ss+gamma_m1*(lnrho-lnrho0)
 
-    return AC_cp * AC_chi * ( dot(grad_lnrho+grad_lnT,grad_lnT) + del2_lnT )
+    cv1 = 1./cv
+    grad_lnrho = gradient(LNRHO)
+    grad_lnT = (gamma-1) * gradient(LNRHO)+ cv1 * gradient(SS)
+    del2_lnT = (gamma-1) * laplace(LNRHO) + cv1 * laplace(SS)
+
+    return cp * chi * ( dot(grad_lnrho+grad_lnT,grad_lnT) + del2_lnT )
 }
