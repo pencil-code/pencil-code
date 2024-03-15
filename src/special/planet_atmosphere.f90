@@ -38,9 +38,9 @@ module Special
 !
 ! variables in the temperature reference profile
 !
-  real :: dlogp_ref, logp_ref_min, logp_ref_max
-  real, dimension(:), allocatable :: p_temp_ref,tau_rad,temp_ref,logp_ref,dTeq,Teq_night
-  integer :: nref
+  real :: dlog10p_T_ref, log10p_T_ref_min, log10p_T_ref_max
+  real, dimension(:), allocatable :: tau_rad,logp_ref,dTeq,Teq_night
+  integer :: n_T_ref
 !
 ! variables in the magnetic diffusivity reference profile
 !
@@ -391,9 +391,10 @@ module Special
 !
 !   28-sep-23/xianyu,hongzhe: coded
 !
-    real :: alpha
-    integer :: i
-    logical :: lTref_file_exists
+      real, dimension(:), allocatable :: p_temp_ref,temp_ref
+      real :: alpha
+      integer :: i
+      logical :: lTref_file_exists
 !
 !  read in Tref, in physical unit.
 !
@@ -404,18 +405,17 @@ module Special
 !
       open(1,file='iro-teq-tint100K-regrid-Pa.txt')
       read(1,*)
-      read(1,*) dlogp_ref, logp_ref_min, logp_ref_max  ! in log10(bar)
-      read(1,*) nref
+      read(1,*) dlog10p_T_ref, log10p_T_ref_min, log10p_T_ref_max
+      read(1,*) n_T_ref
       if(allocated(logp_ref)) deallocate(logp_ref)
-      if(allocated(temp_ref)) deallocate(temp_ref)
-      allocate(logp_ref(nref),temp_ref(nref))
+      allocate(logp_ref(n_T_ref),temp_ref(n_T_ref))
       read(1,*) logp_ref,temp_ref
       if (lroot) then
-        print*, 'nref=',nref
+        print*, 'n_T_ref=',n_T_ref
         print *,'Here is the baseline radiative equil T profile'
         print *,'used in the Newtonian relaxation:'
         print *,'p [Pa] and T_eq[K]:'
-        do i=1,nref
+        do i=1,n_T_ref
           print*, 'logp_ref,temp_ref=',logp_ref(i),temp_ref(i)
         enddo
       endif
@@ -423,11 +423,10 @@ module Special
 !
 !  convert units, and calculate tau_rad, dTeq, and Teq_night
 !
-      if(allocated(p_temp_ref)) deallocate(p_temp_ref)
       if(allocated(tau_rad))    deallocate(tau_rad)
       if(allocated(dTeq))       deallocate(dTeq)
       if(allocated(Teq_night))  deallocate(Teq_night)
-      allocate( p_temp_ref(nref), tau_rad(nref), dTeq(nref),Teq_night(nref) )
+      allocate( p_temp_ref(n_T_ref), tau_rad(n_T_ref), dTeq(n_T_ref),Teq_night(n_T_ref) )
       p_temp_ref = 10.**logp_ref
   !
       where (p_temp_ref>=peqtop .and. p_temp_ref<=peqbot)
@@ -548,13 +547,13 @@ module Special
 !  Index of the logp_ref that is just smaller than log10(pressure)
 !
       log10pp = log10(press)
-      ip = 1+floor((log10pp-logp_ref_min)/dlogp_ref)
+      ip = 1+floor((log10pp-log10p_T_ref_min)/dlog10p_T_ref)
 !
 !  Interpolation for T_local and tau_local
 !
-      if (ip>=nref) then
-        T_local = (Teq_night(nref)-0.5*(f_slow-1.)*dTeq(nref)) + dTeq(nref)*max(0.,mu_ss(m,n))*f_slow
-        tau_local = tau_rad(nref)
+      if (ip>=n_T_ref) then
+        T_local = (Teq_night(n_T_ref)-0.5*(f_slow-1.)*dTeq(n_T_ref)) + dTeq(n_T_ref)*max(0.,mu_ss(m,n))*f_slow
+        tau_local = tau_rad(n_T_ref)
       elseif (ip<=1) then
         T_local = (Teq_night(1)-0.5*(f_slow-1.)*dTeq(1)) + dTeq(1)*max(0.,mu_ss(m,n))*f_slow
         tau_local = tau_rad(1)
@@ -644,6 +643,45 @@ module Special
       endif
 !
     endsubroutine  prepare_eta
+!***********************************************************************
+    subroutine calc_eta_p(eta_local,press)
+!
+!  Given the local pressure p, calculate the magnetic diffusivity
+!  eta_local by interpolation. !  The output eta_local is in [m^2/s].
+!
+!  15-mar-24/hongzhe: coded
+!
+      real, dimension(nx), intent(out) :: eta_local
+      real, dimension(nx), intent(in) :: press
+!
+      real :: log10pp
+      integer :: ix,ip
+!
+!  Index of the logp_ref that is just smaller than log10(pressure)
+!
+      do ix=1,nx
+        log10pp = log10(press(ix))
+        ip = 1+floor((log10pp-log10p_eta_ref_min)/dlog10p_eta_ref)
+!
+!  Interpolation for eta_local
+!
+        if (ip>=n_eta_ref) then
+          eta_local(ix) = eta_ref(n_eta_ref)
+        elseif (ip<=1) then
+          eta_local(ix) = eta_ref(1)
+        else
+!
+!  The two closest values of eta(P) given the pressure
+!
+          eta_local(ix) = log10(eta_ref(ip))+  &
+                      (log10(eta_ref(ip+1))-log10(eta_ref(ip))) * &
+                      (log10pp-log10p_eta_ref(ip))/   &
+                      (log10p_eta_ref(ip+1)-log10p_eta_ref(ip))
+          eta_local(ix) = 10.**eta_local(ix)  ! [m^2/s]
+        endif
+      enddo
+!
+    endsubroutine calc_eta_p
 !***********************************************************************
 !********************************************************************
 !********************************************************************
