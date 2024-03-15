@@ -49,6 +49,7 @@ module EquationOfState
   real :: cs20=impossible, lnrho0=impossible
   logical :: lpp_as_aux=.false., lcp_as_aux=.false.
   real :: gamma=impossible
+  real :: lnTT0=impossible, TT0=impossible
   real :: cs2bot=impossible, cs2top=impossible
 ! input parameters
   namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux

@@ -37,8 +37,6 @@ module EquationOfState
 !
   integer :: iglobal_cs2, iglobal_glnTT
 !
-  real :: lnTT0=impossible
-!
   real :: mu=1.
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
@@ -46,6 +44,7 @@ module EquationOfState
   real :: Rgas_cgs=0., Rgas, Rgas_unit_sys=1., error_cp=1e-6, scale_Rgas=1.
   real :: cp=impossible
   real :: cs2bot=1., cs2top=1.
+  real :: lnTT0=impossible, TT0=impossible
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   integer :: ll1,ll2,mm1,mm2,nn1,nn2
   logical :: leos_isothermal=.false., leos_isentropic=.false.

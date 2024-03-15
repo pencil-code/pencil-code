@@ -42,6 +42,7 @@ module EquationOfState
 !
   real :: xHe=0.1, yH_const=0.0, yMetals=0.0, tau_relax=1.0
   real :: chiH_eV=13.6, chiHminus_eV=0.754
+  real :: lnTT0=impossible, TT0=impossible
   logical :: lrevise_chiH_eV=.false., lrevise_chiHminus_eV=.false.
   logical :: lconst_yH=.false., lHminus_opacity_correction=.false.
 !

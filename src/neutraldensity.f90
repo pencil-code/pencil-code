@@ -589,8 +589,8 @@ module NeutralDensity
           if (lentropy) then
             unit_alpha=1./(unit_time*unit_density)
             p%alpha=unit_alpha*1.14e-19*4.309e6*p%TT**(-.6166)/(1.+.6703*p%TT**.53)
-            if (ip<10) print*,'AXEL: p%alpha=',p%alpha
-            if (ip<10) print*,'AXEL: unit_alpha=',unit_alpha
+  !         if (ip<10) print*,'AXEL: p%alpha=',p%alpha
+  !         if (ip<10) print*,'AXEL: unit_alpha=',unit_alpha
           else
             call fatal_error('calc_pencils_neutraldensity', &
               'no energy equation is used')
