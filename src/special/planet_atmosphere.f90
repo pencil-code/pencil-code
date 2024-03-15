@@ -36,11 +36,17 @@ module Special
   real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
   real :: pp2Pa=1., TT2K=1., tt2s=1., g2m3_s2=1.
 !
-! variables in the reference profile
+! variables in the temperature reference profile
 !
   real :: dlogp_ref, logp_ref_min, logp_ref_max
   real, dimension(:), allocatable :: p_temp_ref,tau_rad,temp_ref,logp_ref,dTeq,Teq_night
   integer :: nref
+!
+! variables in the magnetic diffusivity reference profile
+!
+  real :: dlog10p_eta_ref, log10p_eta_ref_min, log10p_eta_ref_max
+  real, dimension(:), allocatable :: log10p_eta_ref, eta_ref
+  integer :: n_eta_ref
 !
 ! Init parameters
 !
@@ -50,6 +56,7 @@ module Special
   real :: cs_ref=2.e3      !  unit: [m/s]
   real :: cp_ref=1.44e4    !  unit: [J/(kg*K)]
   real :: T_ref=1533       !  unit: [K]
+  real :: eta0_ref=1.12314e6  !  [m^2/s], eta at T_ref
   !
   real :: lon_ss=0., lat_ss=0.            ! unit: [degree]
   real :: dTeqbot=0., dTeqtop=100.        ! unit: [K]
@@ -78,7 +85,7 @@ module Special
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
       Bext_ampl,iBext,n_sponge,lsponge_top,lsponge_bottom,&
-      lvelocity_drag,q_drag,q_sponge,lsponge_dt
+      lvelocity_drag,q_drag,q_sponge,lsponge_dt,eta0_ref
 !
   namelist /special_run_pars/ &
       tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,n_sponge,&
@@ -122,6 +129,10 @@ module Special
 !  read in the reference P-T profile, and calculate Teq and tau_rad etc.
 !
       call prepare_Tref_and_tau
+!
+!  read in the reference eta(P,T) profile
+!
+      if (lmagnetic) call prepare_eta
 !
       call keep_compiler_quiet(f)
 !
@@ -584,6 +595,55 @@ module Special
     enddo
 !
     endsubroutine calc_Teq_tau_mn
+!***********************************************************************
+    subroutine prepare_eta
+!
+!   Read the reference eta profile.
+!   All quantities in this subroutine are in SI units.
+!
+!   13-mar-24/hongzhe: coded
+!
+      integer :: i
+      logical :: leta_file_exists
+!
+!  read in eta, in SI unit
+!
+      inquire(FILE='eta_P.txt', EXIST=leta_file_exists)
+      if (.not.leta_file_exists) call fatal_error('prepare_eta', &
+          'Must provide an eta(P) file')
+!
+      open(1,file='eta_P.txt')
+      read(1,*)
+      read(1,*) dlog10p_eta_ref, log10p_eta_ref_min, log10p_eta_ref_max
+      read(1,*) n_eta_ref
+      if(allocated(log10p_eta_ref)) deallocate(log10p_eta_ref)
+      if(allocated(eta_ref)) deallocate(eta_ref)
+      allocate(log10p_eta_ref(n_eta_ref),eta_ref(n_eta_ref))
+      read(1,*) log10p_eta_ref,eta_ref
+      if (lroot) then
+        print*, 'n_eta_ref=',n_eta_ref
+        print *,'Here is the eta(P) profile:'
+        print *,'p [Pa] and eta[m^2/s]:'
+        do i=1,n_eta_ref
+          print*, 'log10p_eta_ref,eta_ref=',log10p_eta_ref(i),eta_ref(i)
+        enddo
+      endif
+      close(1)
+!
+!  normalize by eta at T=T_ref
+!
+      eta_ref=eta_ref/eta0_ref
+!
+!  for debug purpose, output the result
+!
+      if (lroot) then
+        open(1,file=trim(datadir)//'/eta_P_normalized.dat',status='replace')
+        write(1,*) log10p_eta_ref
+        write(1,*) eta_ref
+        close(1)
+      endif
+!
+    endsubroutine  prepare_eta
 !***********************************************************************
 !********************************************************************
 !********************************************************************
