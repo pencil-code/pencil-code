@@ -3638,8 +3638,8 @@ module Forcing
       real :: force_ampl, force_tmp
 !
       real, dimension (3) :: fran
-      real, dimension (nx) :: radius2,gaussian,gaussian_fact,ruf,rho,rho1, qf
-      real, dimension (nx,3) :: variable_rhs,force_all,delta, curlo
+      real, dimension (nx) :: radius2,gaussian,gaussian_fact,ruf,rho,rho1,qf
+      real, dimension (nx,3) :: variable_rhs,force_all,delta,curlo,forcing_rhs
       integer :: j, jf, ilocation
       real :: fact,width_ff21
 !
@@ -3789,11 +3789,12 @@ module Forcing
                   if (lactive_dimension(j)) then
                     jf=j+ifff-1
                     if (iforce_profile=='nothing') then
-                      f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j)
+                      forcing_rhs(:,j)=gaussian_fact*delta(:,j)
                     else
-                      f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j) &
+                      forcing_rhs(:,j)=gaussian_fact*delta(:,j) &
                                        *profx_ampl*profy_ampl(m)*profz_ampl(n)
                     endif
+                    f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+forcing_rhs(:,j)
                   endif
                 enddo
               else
@@ -3802,8 +3803,10 @@ module Forcing
 !
                 if (iforce_profile=='nothing') then
                   f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian    !MR: only one component?
+                  forcing_rhs(:,1)=gaussian
                 else
                   f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian*profx_ampl*profy_ampl(m)*profz_ampl(n)
+                  forcing_rhs(:,1)=gaussian
                 endif
               endif
 !
@@ -3816,13 +3819,15 @@ module Forcing
               if (lout) then
                 if (idiag_rufm/=0) then
                   call getrho(f(:,m,n,ilnrho),rho)
-                  call multsv_mn(rho/dt,spread(gaussian,2,3)*delta,force_all)
+                  call multsv_mn(rho/dt,forcing_rhs,force_all)
                   call dot_mn(variable_rhs,force_all,ruf)
                   call sum_mn_name(ruf,idiag_rufm)
                 endif
                 if (idiag_qfm/=0) then
                   call del2v_etc(f,iuu,curlcurl=curlo)
-                  call dot_mn(curlo/dt,variable_rhs,qf)
+                  call getrho(f(:,m,n,ilnrho),rho)
+                  call multsv_mn(rho/dt,forcing_rhs,force_all)
+                  call dot_mn(curlo,forcing_rhs,qf)
                   call sum_mn_name(qf,idiag_qfm)
                 endif
               endif
