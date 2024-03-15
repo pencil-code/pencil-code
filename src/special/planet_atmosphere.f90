@@ -75,8 +75,8 @@ module Special
 ! Run parameters
 !
   real :: tau_slow_heating=-1.,t0_slow_heating=0.,dTeq_max=1000.
-  real :: Bext_ampl=0.
-  character (len=labellen) :: iBext='nothing'
+  real :: Bext_ampl=0.,f_eta=0.
+  character (len=labellen) :: iBext='nothing',ietaPT='nothing',ieta_order='1'
 !
 !
 !
@@ -90,7 +90,7 @@ module Special
   namelist /special_run_pars/ &
       tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,n_sponge,&
       lsponge_top,lsponge_bottom,lvelocity_drag,q_drag,q_sponge,lsponge_dt,&
-      dTeq_max,dTeqtop,dTeqbot
+      dTeq_max,dTeqtop,dTeqbot,ietaPT,f_eta,ieta_order
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -132,7 +132,16 @@ module Special
 !
 !  read in the reference eta(P,T) profile
 !
-      if (lmagnetic) call prepare_eta
+      if (lmagnetic) then
+        select case (ietaPT)
+        case ('nothing')
+          !  do nothing
+        case ('eta_P')
+          call prepare_eta_P
+        case default
+          call fatal_error('initialize_special','no such ietaPT')
+        endselect
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -191,6 +200,17 @@ module Special
     lpenc_requested(i_rho)=.true.
     lpenc_requested(i_pp)=.true.
     lpenc_requested(i_uu)=.true.
+!
+    if (lmagnetic .and. ietaPT/='nothing') then
+      select case (ieta_order)
+      case ('1')
+        lpenc_requested(i_del2a)=.true.
+      case ('3')
+        lpenc_requested(i_del6a)=.true.
+      case default
+        call fatal_error('pencil_criteria_special','no such ieta_order')
+      endselect
+    endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -324,10 +344,35 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: uxb_ext
+      real, dimension (nx,3) :: uxb_ext,fres
+      real, dimension (nx) :: eta_x
 !
       call cross_mn(p%uu,Bext(l1:l2,m,n,:),uxb_ext)
       df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_ext
+!
+!  add customized eta profile
+!
+      select case (ietaPT)
+      case ('nothing')
+        ! do nothing
+      case ('eta_P')
+        call calc_eta_p(eta_x,p%pp*pp2Pa)
+      case default
+        call fatal_error('special_calc_magnetic','no such ietaPT')
+      endselect
+!
+      if (ietaPT/='nothing') then
+        select case (ieta_order)
+        case ('1')
+          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
+              f_eta * p%del2a * spread(eta_x,2,3)
+        case ('3')
+          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
+              f_eta * p%del6a * spread(eta_x,2,3)
+        case default
+          call fatal_error('special_calc_magnetic','no such ieta_order')
+        endselect
+      endif
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
@@ -595,7 +640,7 @@ module Special
 !
     endsubroutine calc_Teq_tau_mn
 !***********************************************************************
-    subroutine prepare_eta
+    subroutine prepare_eta_P
 !
 !   Read the reference eta profile.
 !   All quantities in this subroutine are in SI units.
@@ -608,7 +653,7 @@ module Special
 !  read in eta, in SI unit
 !
       inquire(FILE='eta_P.txt', EXIST=leta_file_exists)
-      if (.not.leta_file_exists) call fatal_error('prepare_eta', &
+      if (.not.leta_file_exists) call fatal_error('prepare_eta_P', &
           'Must provide an eta(P) file')
 !
       open(1,file='eta_P.txt')
@@ -642,12 +687,12 @@ module Special
         close(1)
       endif
 !
-    endsubroutine  prepare_eta
+    endsubroutine  prepare_eta_P
 !***********************************************************************
     subroutine calc_eta_p(eta_local,press)
 !
 !  Given the local pressure p, calculate the magnetic diffusivity
-!  eta_local by interpolation. !  The output eta_local is in [m^2/s].
+!  eta_local by interpolation. The output eta_local is dimensionless.
 !
 !  15-mar-24/hongzhe: coded
 !
@@ -677,7 +722,7 @@ module Special
                       (log10(eta_ref(ip+1))-log10(eta_ref(ip))) * &
                       (log10pp-log10p_eta_ref(ip))/   &
                       (log10p_eta_ref(ip+1)-log10p_eta_ref(ip))
-          eta_local(ix) = 10.**eta_local(ix)  ! [m^2/s]
+          eta_local(ix) = 10.**eta_local(ix)
         endif
       enddo
 !
