@@ -926,9 +926,9 @@ void setupConfig(AcMeshInfo &config)
   //use external decomp = 1
   config.int_params[AC_decompose_strategy] = (int)AcDecomposeStrategy::External;
   if (lmorton_curve)
-  	config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Morton;
+    config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Morton;
   else
-  	config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Linear;
+    config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Linear;
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
@@ -1140,6 +1140,7 @@ extern "C" void copyFarray(AcReal* f)
   acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
   acGridSynchronizeStream(STREAM_ALL);
 }
+/***********************************************************************************************/
 extern "C" void loadFarray()
 {
   /**

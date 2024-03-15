@@ -22,31 +22,26 @@
 
 void initGPU();
 void registerGPU(REAL*);
-void initializeGPU();
+void initializeGPU(REAL**,REAL**);
 void finalizeGPU();
 void substepGPU(int isubstep, int full, int early_finalize);
-void copyFarray(REAL* f);
+void copyFarray();
 void loadFarray();
 void testRHS(REAL*,REAL*);
-void random_initial_condition(void);
 
 // for Gnu Compiler
 extern char *__cparam_MOD_coornames;
 extern REAL __cdata_MOD_y[14];
 extern REAL __cdata_MOD_dx, __cdata_MOD_dy, __cdata_MOD_dz;
-extern FINT __cdata_MOD_llast_proc_x;
-extern FINT __hydro_MOD_idiag_umax;
 // ----------------------------------------------------------------------
 void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out)
-/* Initializes GPU.
-*/
+// Initializes GPU.
 {
   /*
   printf("nx = %d\n", *nx);
   printf("ny = %d\n", *ny);
   printf("nz = %d\n", *nz);
   printf("omega = %e\n", cdata_mp_omega_);
-  printf("__hydro_MOD_idiag_umax = %d\n", __hydro_MOD_idiag_umax);
   */
   //printf("coornames(1)= %s", __cparam_MOD_coornames[0]);
 
@@ -54,8 +49,6 @@ void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out)
   //printf("dx = %f\n", __cdata_MOD_dx);
   //printf("dy = %f\n", __cdata_MOD_dy);
   //printf("dz = %f\n", __cdata_MOD_dz);
-  //printf("llast_proc_x = %d\n", __cdata_MOD_llast_proc_x);
-  //printf("ldiagnos = %d\n", ldiagnos);
 
   initializeGPU(farr_GPU_in,farr_GPU_out);
 
@@ -130,14 +123,16 @@ void FTNIZE(rhs_gpu_c)
   substepGPU(*isubstep, *full, *early_finalize);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(copy_farray_c)(REAL* f)
+void FTNIZE(copy_farray_c)()
 {
-  copyFarray(f);
+  copyFarray();
 }
+/* ---------------------------------------------------------------------- */
 void FTNIZE(load_farray_c)()
 {
   loadFarray();
 }
+/* ---------------------------------------------------------------------- */
 void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
 {
   testRHS(f_in,df_truth);

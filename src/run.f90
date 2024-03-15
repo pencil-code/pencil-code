@@ -69,7 +69,7 @@ subroutine helper_loop(f,p)
 !
 !$  do while(lhelper_run)
 !$    call signal_wait(lhelper_perform_diagnostics,.true.)
-!$    call perform_diagnostics(f,p)
+!$    if (lhelper_run) call perform_diagnostics(f,p)
 !$  enddo
 
 endsubroutine helper_loop
@@ -481,8 +481,7 @@ subroutine timeloop(f,df,p)
 !!$ call wait_all_thread_pool
 !!$ call free_thread_pool
 !$  lhelper_run = .false.
-!TP: This is set to .true. to free the helper in case in it is in a hotloop waiting for diagnostics but we are finished
-!currently will perform one extra diagnostics calculation but that doesn't matter
+!TP: This is set to .true. to free the helper in case it is in a hotloop waiting for diagnostics but we are finished.
 !$  call signal_send(lhelper_perform_diagnostics,.true.)
 
 endsubroutine timeloop
@@ -858,7 +857,7 @@ program run
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond
-  !load to gpu
+! Load farray to gpu
   call load_farray_to_GPU(f)
 !
   if (it1d==impossible_int) then
