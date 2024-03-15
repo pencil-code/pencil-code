@@ -471,7 +471,9 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
   acGridSynchronizeStream(STREAM_ALL);
   if (isubstep == 1)
   {
-    acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, 0.001);
+    //acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, 0.001);
+    Device dev = acGridGetDevice();
+    dev->local_config.real_params[AC_dt] = 0.001;
     acGridSynchronizeStream(STREAM_ALL);
     acGridExecuteTaskGraph(graph_1, 1);
   }
@@ -1033,15 +1035,66 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
   //    acCompute(twopass_solve_final, all_fields)};
   //rhs_test_graph = acGridBuildTaskGraphWithIterations(rhs_ops,3);
   
+#if SINGLEPASS
+  auto single_loader0= [](ParamLoadingInfo p)
+  {
+	  p.params -> singlepass_solve.ac_input_step_num = 0;
+	  p.params -> singlepass_solve.ac_input_dt = p.device->local_config.real_params[AC_dt];
+  };
+  auto single_loader1= [](ParamLoadingInfo p)
+  {
+	  p.params -> singlepass_solve.ac_input_step_num = 1;
+	  p.params -> singlepass_solve.ac_input_dt = p.device->local_config.real_params[AC_dt];
+  };
+  auto single_loader2= [](ParamLoadingInfo p)
+  {
+	  p.params -> singlepass_solve.ac_input_step_num = 2;
+	  p.params -> singlepass_solve.ac_input_dt = p.device->local_config.real_params[AC_dt];
+  };
+#else
+
+  auto intermediate_loader_0= [](ParamLoadingInfo p)
+  {
+	  p.params -> twopass_solve_intermediate.ac_input_step_num = 0;
+	  p.params -> twopass_solve_intermediate.ac_input_dt = p.device->local_config.real_params[AC_dt];
+  };
+  auto final_loader_0 = [](ParamLoadingInfo p)
+  {
+	  p.params -> twopass_solve_final.ac_input_step_num = 0;
+  };
+  
+
+
+  auto intermediate_loader_1= [](ParamLoadingInfo p)
+  {
+	  p.params -> twopass_solve_intermediate.ac_input_step_num = 1;
+	  p.params -> twopass_solve_intermediate.ac_input_dt = p.device->local_config.real_params[AC_dt];
+  };
+  auto final_loader_1 = [](ParamLoadingInfo p)
+  {
+	  p.params -> twopass_solve_final.ac_input_step_num = 1;
+  };
+
+
+  auto intermediate_loader_2= [](ParamLoadingInfo p)
+  {
+	  p.params -> twopass_solve_intermediate.ac_input_step_num = 2;
+	  p.params -> twopass_solve_intermediate.ac_input_dt = p.device->local_config.real_params[AC_dt];
+  };
+  auto final_loader_2= [](ParamLoadingInfo p)
+  {
+	  p.params -> twopass_solve_final.ac_input_step_num = 2;
+  };
+#endif
   graph_1 = acGridBuildTaskGraph(
     {
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
 #if SINGLEPASS
-      acCompute(singlepass_solve, all_fields,0),
+      acCompute(KERNEL_singlepass_solve, all_fields,single_loader0),
 #else
-      acCompute(twopass_solve_intermediate, all_fields, 0),
-      acCompute(twopass_solve_final, all_fields,0),
+      acComputeWithParams(KERNEL_twopass_solve_intermediate, all_fields,intermediate_loader_0),
+      acComputeWithParams(KERNEL_twopass_solve_final, all_fields,final_loader_0),
 #endif
     });
 
@@ -1050,10 +1103,10 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
 #if SINGLEPASS
-      acCompute(singlepass_solve, all_fields,1),
+      acCompute(KERNEL_singlepass_solve, all_fields,single_loader1),
 #else
-      acCompute(twopass_solve_intermediate, all_fields, 1),
-      acCompute(twopass_solve_final, all_fields,1),
+      acComputeWithParams(KERNEL_twopass_solve_intermediate, all_fields,intermediate_loader_1),
+      acComputeWithParams(KERNEL_twopass_solve_final,all_fields,final_loader_1),
 #endif
     });
 
@@ -1062,10 +1115,10 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
 #if SINGLEPASS
-      acCompute(singlepass_solve, all_fields,2),
+      acCompute(KERNEL_singlepass_solve, all_fields,single_loader2),
 #else
-      acCompute(twopass_solve_intermediate, all_fields, 2),
-      acCompute(twopass_solve_final, all_fields, 2),
+      acComputeWithParams(KERNEL_twopass_solve_intermediate, all_fields,intermediate_loader_2),
+      acComputeWithParams(KERNEL_twopass_solve_final, all_fields,final_loader_2),
 #endif
     });
 
@@ -1075,7 +1128,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
   fflush(stdout);
 }
 /***********************************************************************************************/
-extern "C" void copyFarray()
+extern "C" void copyFarray(AcReal* f)
 {
   /**
   if (has_nans(mesh)){
