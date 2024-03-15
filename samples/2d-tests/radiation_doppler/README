@@ -1,0 +1,15 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/radiation_doppler
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]org>
+Added:
+    15-Mar-2024
+Status:
+    succeeds
+Recommended resolution:
+    1x1x128
+Comments:
+    1-D Alfven wave with radiative Damping.
+    This is under development with Kandaswamy Subramanian
+    and Ramkishor Sharms.
+

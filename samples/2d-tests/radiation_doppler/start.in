@@ -1,0 +1,46 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.2 2024/03/15 11:34:15 brandenb Exp $'
+  unit_length=3e21              ! (= 1 kpc)
+  unit_velocity=1e5             ! (= 1 km/s)
+  unit_density=1e-18            ! (= 1 ag/cm^3)
+  unit_temperature=1e0          ! (= 1 K)
+  unit_magnetic=1e-3            ! (= 1 mG)
+  !wav1=1.
+  wav1=100.
+  lwrite_aux=T
+  lwrite_ic=F
+/
+&eos_init_pars
+  cs0=1., rho0=10., mu=.6
+/
+&hydro_init_pars
+  !inituu='coswave-z', ampluu=1e-9, kz_uu=200.
+/
+&density_init_pars
+  !initlnrho='coswave-z', ampllnrho=1e-9, kz_lnrho=1.
+/
+&entropy_init_pars
+  initss='const_TT', TT_const=3e3
+/
+&magnetic_init_pars
+  !B_ext=0.,0.,1.
+  !initaa='Alfven-z'
+  !kz_aa=200.
+  !amplaa=1e-9
+  initaa='power_randomphase_hel', amplaa=2e-4, relhel_aa=0.
+  initpower_aa=2., initpower2_aa=-4., kpeak_aa=10.
+/
+&radiation_init_pars
+  ldoppler_rad=T
+  radx=0,rady=0,radz=1,rad2max=1     ! use only vertical rays
+  bc_rad='p:p','p:p','p:p', lradflux=T, lradpress=T
+  opacity_type='kappa_cst'
+  kappa_cst=1e-4, ldoppler_rad_includeQ=T, ldoppler_rad_includeQder=T  !(1e-3 kpc mfp for 10 ag/cm^3)
+  kappa_cst=1e-6, ldoppler_rad_includeQ=T, ldoppler_rad_includeQder=T  !(1e-3 kpc mfp for 10 ag/cm^3)
+  angle_weight='constant', lfix_radweight_1d=F
+/

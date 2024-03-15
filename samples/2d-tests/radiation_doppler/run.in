@@ -1,0 +1,51 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2024/03/15 11:34:15 brandenb Exp $'
+  dspec=5e-3, lspec_start=T, ou_spec=T, ab_spec=T, !saffman_mag=T
+  nt=500, it1=20, isave=5000, itorder=3, cdt=.7
+  dsnap=5., dvid=1e-1
+  !lpencil_check_small=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  ! !ldamp_fade=T, tdamp=1., dampu=10.
+  ! lpressuregradient_gas=F
+  ! ladvection_velocity=F
+  lupw_uu=T
+/
+&density_run_pars
+  ! lcontinuity_gas=F, ladvection_density=F
+  lupw_lnrho=F
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  !lupw_lnTT=T
+  !iheatcond='chi-const', chi=3e-2
+  ! ladvection_entropy=F
+  lupw_ss=F
+/
+&magnetic_run_pars
+  iresistivity='eta-const'
+  eta=1e-4
+/
+&radiation_run_pars
+  scalefactor_radpressure=1e-0
+  scalefactor_radpressure1=1e-0, scalefactor_radpressure2=1e-0
+  !expo_rho_opa=.5, expo_temp_opa=8.  !(Hminus)
+  !cdtrad=.03
+  lradpressure=T
+  !lno_rad_heating=T
+  lcooling=F
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=1e-4
+/
+&power_spectrum_run_pars
+/
