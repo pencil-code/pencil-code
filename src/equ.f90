@@ -699,7 +699,8 @@ module Equ
 !  Parallelization across all helper threads.
 !
       call init_reduc_pointers
-!$omp parallel firstprivate(p) num_threads(num_helper_threads)  !MR: firstprivate(p) perhaps not needed
+!$omp parallel private(p) num_threads(num_helper_threads) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+
 !$    call restore_diagnostic_controls
 
       lfirstpoint=.true.
