@@ -107,7 +107,6 @@ my %tests = (
                          2d-tests/globaldisc
                          2d-tests/cylindrical_gdisk
                          2d-tests/planet-disk-fargo
-                         #2d-tests/radiation_doppler
                          spherical-globaldisk
                          spherical-globaldisk-mhd
                          spherical-gdisk-planet-thermo
@@ -234,6 +233,7 @@ my %tests = (
              # compile sucessfully
              8 => [qw(
                          multigrid
+                         2d-tests/radiation_doppler
                      )],
             );
 # ---------------------------------------------------------------------- #
