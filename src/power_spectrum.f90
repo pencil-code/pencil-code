@@ -2914,9 +2914,9 @@ outer:  do ikz=1,nz
   hor_spectrum_sum=0.
   ver_spectrum=0.
   ver_spectrum_sum=0.
-!TP: all private variable still have to be added
-!$omp parallel private(k,k2) num_threads(num_helper_threads) reduction(+:spectrum,hor_spectrum,ver_spectrum)
+!$omp parallel private(k,k2,bbi,fact) num_threads(num_helper_threads) reduction(+:spectrum,hor_spectrum,ver_spectrum)
   !
+
   !  In fft, real and imaginary parts are handled separately.
   !  For "kin", calculate spectra of <uk^2> and <ok.uk>
   !  For "mag", calculate spectra of <bk^2> and <ak.bk>
@@ -3052,7 +3052,7 @@ outer:  do ikz=1,nz
       do n=n1,n2
         do ivec=1,3
           call curli(f,iaa,bbi,ivec)
-          a_re(:,m-nghost,n-nghost)=a_re(:,im,in)+bbi*f(l1:l2,m,n,iaa-1+ivec)
+          a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi*f(l1:l2,m,n,iaa-1+ivec)
         enddo
       enddo
     enddo
@@ -3068,7 +3068,7 @@ outer:  do ikz=1,nz
       do n=n1,n2
         do ivec=1,3
           call curli(f,iaa,bbi,ivec)
-          a_re(:,m-nghost,n-nghost)=a_re(:,im,in)+bbi**2
+          a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi**2
         enddo
       enddo
     enddo
@@ -3085,7 +3085,7 @@ outer:  do ikz=1,nz
         call grad(f,ispecialvar,gLam)
         do ivec=1,3
           call curli(f,iaa,bbi,ivec)
-          a_re(:,m-nghost,n-nghost)=a_re(:,im,in)+bbi*(f(l1:l2,m,n,iaa-1+ivec)+&
+          a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi*(f(l1:l2,m,n,iaa-1+ivec)+&
               gLam(:,ivec))
         enddo
       enddo
@@ -3101,7 +3101,9 @@ outer:  do ikz=1,nz
 !  Allow for talking the square root defined for pos/neg arguments.
 !
   if (present(lsqrt)) then
+    !$omp workshare
     a_re=sqrt(abs(a_re))*sign(a_re,1.)
+    !$omp end workshare
   endif
 !
 !  Doing the Fourier transform
@@ -3230,57 +3232,6 @@ outer:  do ikz=1,nz
     if (lroot .AND. ip<10) call svn_id( &
         "$Id$")
 !
-!  In fft, real and imaginary parts are handled separately.
-!  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
-!
-    if (sp=='u') then
-      if (lhydro .or. lhydro_kinematic.and.iuu /= 0) then
-        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
-      else
-        if (lroot) &
-            print*, 'power_1d: must have velocity in f-array for velocity power'
-        call fatal_error('power_1d','')
-      endif
-    elseif (sp=='b') then
-      if (lmagnetic) then
-        do n=n1,n2; do m=m1,m2
-          call curli(f,iaa,bb,ivec)
-          im=m-nghost
-          in=n-nghost
-          a1(:,im,in)=bb
-        enddo; enddo
-      else
-        if (lroot) &
-            print*, 'power_1d: must have magnetic module for magnetic power'
-        call fatal_error('power_1d','')
-      endif
-    elseif (sp=='a') then
-      if (lmagnetic) then
-        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
-      else
-        if (lroot) &
-            print*, 'power_1d: must have magnetic module for magnetic power'
-        call fatal_error('power_1d','')
-      endif
-    elseif (sp=='p') then
-      if (present(ivar)) then
-        if (ivar>0) then
-          a1=f(l1:l2,m1:m2,n1:n2,ivar)
-        else
-          if (lroot) &
-              print*, 'power_1d: ivar must be >0, ivar=', ivar
-          call fatal_error('power_1d','')
-        endif
-      else
-        call fatal_error('power_1d','ivar not set')
-      endif
-    else
-      if (lroot) print*,'There is no such spectra variable: sp=',sp
-      call fatal_error('power_1d','')
-    endif
-    b1=0
-    a2=a1
-!
     if (lcomplex) then
       nc=2
     else
@@ -3297,6 +3248,66 @@ outer:  do ikz=1,nz
     spectrumz=0.
     spectrumz_sum=0.
 !
+!  In fft, real and imaginary parts are handled separately.
+!  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+!
+!$omp parallel private(bb) num_threads(num_helper_threads) reduction(+:spectrumx,spectrumy,spectrumz)
+    if (sp=='u') then
+      if (lhydro .or. lhydro_kinematic.and.iuu /= 0) then
+        !$omp workshare
+        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+        !$omp end workshare
+      else
+        if (lroot) &
+            print*, 'power_1d: must have velocity in f-array for velocity power'
+        call fatal_error('power_1d','')
+      endif
+    elseif (sp=='b') then
+      if (lmagnetic) then
+        !$omp do
+        do n=n1,n2; do m=m1,m2
+          call curli(f,iaa,bb,ivec)
+          a1(:,m-nghost,n-nghost)=bb
+        enddo; enddo
+      else
+        if (lroot) &
+            print*, 'power_1d: must have magnetic module for magnetic power'
+        call fatal_error('power_1d','')
+      endif
+    elseif (sp=='a') then
+      if (lmagnetic) then
+        !$omp workshare
+        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+        !$omp end workshare
+      else
+        if (lroot) &
+            print*, 'power_1d: must have magnetic module for magnetic power'
+        call fatal_error('power_1d','')
+      endif
+    elseif (sp=='p') then
+      if (present(ivar)) then
+        if (ivar>0) then
+          !$omp workshare
+          a1=f(l1:l2,m1:m2,n1:n2,ivar)
+          !$omp end workshare
+        else
+          if (lroot) &
+              print*, 'power_1d: ivar must be >0, ivar=', ivar
+          call fatal_error('power_1d','')
+        endif
+      else
+        call fatal_error('power_1d','ivar not set')
+      endif
+    else
+      if (lroot) print*,'There is no such spectra variable: sp=',sp
+      call fatal_error('power_1d','')
+    endif
+    !$omp workshare
+    b1=0
+    a2=a1
+    !$omp end workshare
+
+!
 !  Do the Fourier transform
 !
     call fourier_transform_x(a1,b1)
@@ -3310,6 +3321,7 @@ outer:  do ikz=1,nz
 !
    if (.not.lintegrate_z) then
     !print*,'NISHANT inz=',inz
+    !$omp do
     do ikx=1,nk; do iy=1,ny
       if (lcomplex) then
         spectrumx(:,ikx) = spectrumx(:,ikx) + &
@@ -3320,6 +3332,7 @@ outer:  do ikz=1,nz
       endif
     enddo; enddo
    else
+    !$omp do
     do ikx=1,nk; do iy=1,ny; do iz=1,nz
       if (lcomplex) then
         spectrumx(:,ikx) = spectrumx(:,ikx) + &
@@ -3333,7 +3346,9 @@ outer:  do ikz=1,nz
 !
 !  Multiply all modes, except the constant mode, by two.
 !
+    !$omp workshare
     spectrumx(:,2:nk)=2*spectrumx(:,2:nk)
+    !$omp end workshare
 !
 !  Doing fourier spectra in all directions if onedall=T
 !
@@ -3342,33 +3357,44 @@ outer:  do ikz=1,nz
 !  Spectra in y-direction
 !
       if (nygrid/=1) then
+        !$omp workshare
         a1=a2
         b1=0
+        !$omp end workshare
         call transp(a1,'y')
         call fourier_transform_x(a1,b1)
+        !$omp do
         do iky=1,nk; do ix=1,nxgrid/nprocy; do iz=1,nz
           spectrumy(iky) = spectrumy(iky) + &
               sqrt(a1(iky,ix,iz)**2 + b1(iky,ix,iz)**2)
         enddo; enddo; enddo
 !  Multiply all modes, except the constant mode, by two.
+        !$omp workshare
         spectrumy(2:nk)=2*spectrumy(2:nk)
+        !$omp end workshare
       endif
 !
 !  Spectra in z-direction
 !
       if (nzgrid/=1) then
+        !$omp workshare
         a1=a2
         b1=0
+        !$omp end workshare
         call transp(a1,'z')
         call fourier_transform_x(a1,b1)
+        !$omp do
         do ikz=1,nk; do ix=1,nxgrid/nprocz; do iy=1,ny
           spectrumz(ikz) = spectrumz(ikz) + &
               sqrt(a1(ikz,iy,ix)**2 + b1(ikz,iy,ix)**2)
         enddo; enddo; enddo
 !  Multiply all modes, except the constant mode, by two.
+        !$omp workshare
         spectrumz(2:nk)=2*spectrumz(2:nk)
+        !$omp end workshare
       endif
     endif
+!$omp end parallel
 !
 !  Summing up the results from the different processors
 !  The result is available only on root
@@ -3492,6 +3518,8 @@ outer:  do ikz=1,nz
 !
 !  m-n loop
 !
+!$omp parallel private(pdf_var,logscale,gcc,gcc2,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) reduction(+:pdf_yy)
+   !$omp do
    do n=n1,n2
    do m=m1,m2
 !
@@ -3547,6 +3575,7 @@ outer:  do ikz=1,nz
      endif
    enddo
    enddo
+!$omp end parallel
 !
 !  Communicate and append from root processor.
 !
@@ -3608,8 +3637,10 @@ endsubroutine pdf
   !
   !  Obtain vector fields
   !
+!$omp parallel private(bbi,aa,bb,ab,ang,ipdf) num_threads(num_helper_threads) reduction(+:pdf_ang)
   if (sp=='jb') then
     if (iaa==0)  call fatal_error('pdf_ang_1d','iaa=0')
+    !$omp do
     do n=n1,n2; do m=m1,m2
       call curl(f,iaa,bbi)
       b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  magnetic field
@@ -3618,22 +3649,31 @@ endsubroutine pdf
     enddo; enddo
   elseif (sp=='ub') then
     if (iaa==0)  call fatal_error('pdf_ang_1d','iaa=0')
+    !$omp do
     do n=n1,n2; do m=m1,m2
       call curl(f,iaa,bbi)
       b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  magnetic field
     enddo; enddo
+    !$omp workshare
     a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
+    !$omp end workshare
   elseif (sp=='ou') then
+    !$omp do
     do n=n1,n2; do m=m1,m2
       call curl(f,iuu,bbi)
       b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  vorticity field
     enddo; enddo
+    !$omp workshare
     a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
+    !$omp end workshare
   endif  !  sp
   !
   !  compute kr-dependent pdf
   !
+  !$omp workshare
   pdf_ang=0
+  !$omp end workshare
+  !$omp do
   do kr=1,nk-1
     !
     !  initialize a.a, b.b, and a.b, for filtered fields
@@ -3665,6 +3705,7 @@ endsubroutine pdf
       endif
     enddo; enddo; enddo
   enddo  !  kr
+!$omp end parallel
   !
   !  sum over processors
   !
@@ -3733,26 +3774,32 @@ endsubroutine pdf
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
   !
+!$omp parallel private(bb,spec_real,aatemp,spectrumy,spectrum,spec_real,spec_imag) num_threads(num_helper_threads)
+!reduction(+:spectrum_sum,spectrumy_sum,nVol2d)
   do ivec=1,3
     !
     if (trim(sp)=='u') then
+      !$omp workshare
       a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      !$omp end workshare
     elseif (trim(sp)=='b') then
+      !$omp do
       do n=n1,n2
         do m=m1,m2
           call curli(f,iaa,bb,ivec)
-          im=m-nghost
-          in=n-nghost
-          a1(:,im,in)=bb
+          a1(:,m-nghost,n-nghost)=bb
         enddo
       enddo
     elseif (trim(sp)=='a') then
+      !$omp workshare
       a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+      !$omp end workshare
     else
       print*,'There are no such sp=',trim(sp)
     endif
 !
     ifirst_fft=1
+    !$omp do
     do l=1,nx
       if (lspherical_coords) then
         do m=1,ny
@@ -3767,6 +3814,7 @@ endsubroutine pdf
             if (lroot) then
 !             write(*,*)l,m,j,'got data shall fft'
               call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
+              !$omp atomic
               ifirst_fft = ifirst_fft+1
               spectrum(1)=(aatemp(1)**2)&
                      *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
@@ -3797,6 +3845,7 @@ endsubroutine pdf
             if (lroot) then
 !             write(*,*)l,n,j,'got data shall fft'
               call fourier_transform_real_1(aatempy,nygrid,ifirst_fft,fftpack_temp)
+              !$omp atomic
               ifirst_fft = ifirst_fft+1
               spectrumy(1)=(aatempy(1)**2)&
                      *rcyl_weight(l)
@@ -3821,6 +3870,7 @@ endsubroutine pdf
     enddo     ! loop over nx
 !
   enddo !(from loop over ivec)
+!$omp end parallel
 !
 !  append to diagnostics file
 !
@@ -3868,7 +3918,7 @@ endsubroutine pdf
   real, dimension(nzgrid/2) :: spectrumhel,spectrumhel_sum
   real, dimension(nzgrid) :: aatemp,bbtemp
   real, dimension(2*nzgrid+15) :: fftpack_temp
-  real :: nVol2d,spec_reala,spec_imaga,spec_realb,spec_imagb
+  real :: spec_reala,spec_imaga,spec_realb,spec_imagb
   character (len=*) :: sp
 !
 !  identify version
@@ -3892,33 +3942,37 @@ endsubroutine pdf
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
 !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
 !
+!$omp parallel private(bbi,spectrum,spectrumhel,aatemp,bbtemp,spec_reala,spec_imaga,spec_realb,spec_imagb) num_threads(num_helper_threads) reduction(+:spectrum_sum,spectrumhel_sum)
   do ivec=1,3
      !
      if (trim(sp)=='kin') then
+       !$omp do
        do n=n1,n2
          do m=m1,m2
            call curli(f,iuu,bbi,ivec)
-           im=m-nghost
-           in=n-nghost
-           a1(:,im,in)=bbi  !(this corresponds to vorticity)
+           a1(:,m-nghost,n-nghost)=bbi  !(this corresponds to vorticity)
          enddo
        enddo
+       !$omp workshare
        b1=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1) !(this corresponds to velocity)
+       !$omp end workshare
      elseif (trim(sp)=='mag') then
+        !$omp do
         do n=n1,n2
            do m=m1,m2
               call curli(f,iaa,bbi,ivec)
-              im=m-nghost
-              in=n-nghost
-              b1(:,im,in)=bbi !(this corresponds to magnetic field)
+              b1(:,m-nghost,n-nghost)=bbi !(this corresponds to magnetic field)
            enddo
         enddo
+        !$omp workshare
         a1=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1) !(this corresponds to vector potential)
+        !$omp end workshare
      else
         print*,'There are no such sp=',trim(sp)
      endif
 !
      ifirst_fft=1
+     !$omp do
      do l=1,nx
        do m=1,ny
          do j=1,nprocy
@@ -3931,6 +3985,7 @@ endsubroutine pdf
 !             write(*,*)l,m,j,'got data shall fft'
              call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
              call fourier_transform_real_1(bbtemp,nzgrid,ifirst_fft,fftpack_temp)
+             !$omp atomic
              ifirst_fft = ifirst_fft+1
              spectrum(1)=(bbtemp(1)*bbtemp(1))&
                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
@@ -3952,15 +4007,13 @@ endsubroutine pdf
                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
              spectrum_sum=spectrum_sum+spectrum
              spectrumhel_sum=spectrumhel_sum+spectrumhel
-             nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-           else
-             nVol2d=1.
            endif
          enddo ! loop over yproc
        enddo   ! loop over ny
      enddo     ! loop over nx
 !
    enddo !(from loop over ivec)
+!$omp end parallel
 !
 !  append to diagnostics file
 !
@@ -4030,8 +4083,10 @@ endsubroutine pdf
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
   !
+!$omp parallel private(k,tmp_a1) num_threads(num_helper_threads) reduction(+:spectrum_sum)
   if (trim(sp)=='j') then
      ! compute j = curl(curl(x))
+     !$omp do
      do n=n1,n2
        do m=m1,m2
          call del2v_etc(f,iaa,curlcurl=tmp_a1)
@@ -4041,7 +4096,9 @@ endsubroutine pdf
   else
      print*,'There are no such sp=',trim(sp)
   endif
+  !$omp workshare
   b1=0
+  !$omp end workshare
 !
 !  Doing the Fourier transform
 !
@@ -4051,6 +4108,7 @@ endsubroutine pdf
 !  integration over shells
 !
      if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+     !$omp do
      do ikz=1,nz
         do iky=1,ny
            do ikx=1,nx
@@ -4062,6 +4120,7 @@ endsubroutine pdf
      enddo
      !
   enddo !(from loop over ivec)
+!$omp end parallel
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
@@ -4086,7 +4145,7 @@ endsubroutine pdf
   !
   endsubroutine power_vec
 !***********************************************************************
-  subroutine polar_spectrum(f,sp)
+ subroutine polar_spectrum(f,sp)
 !
 !  In k space, calculate azimuthally averaged spectra in polar coordinates,
 !  and perform legendre decomposition.
@@ -4461,7 +4520,7 @@ endsubroutine pdf
                 polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*&
                     ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
                 polar_spec(ikr+1,ikmu+1)=polar_spec(ikr+1,ikmu+1)+jac(ikr+1,ikmu+1)*0.5*&
-                    ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )  
+                    ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
                 polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*&
                     ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                     +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
@@ -4532,7 +4591,7 @@ endsubroutine pdf
         write(1,'(i4,2p,8e10.2,3p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),dmu(ikr,ikmu),polar_spechel_sum(ikr,ikmu)
       enddo; enddo
       close(1)
-      !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,..., 
+      !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,...,
       open(1,file=trim(datadir)//'/polarspec_lcoeff_'//trim(sp)//'.dat',position='append')
       write(1,*) t
       do i=1,legendre_lmax+1; do ikr=1,nk
@@ -4568,7 +4627,7 @@ endsubroutine pdf
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, im, in, ivec
-  integer :: k3, k
+  integer :: k3,k
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: bbi
@@ -4600,6 +4659,7 @@ endsubroutine pdf
   !
   !  loop over all the components
   !
+!$omp parallel private(bbi,k3) num_threads(num_helper_threads) reduction(+:spectrum, spectrumhel)
   do ivec=1,3
     !
     !  In fft, real and imaginary parts are handled separately.
@@ -4608,34 +4668,36 @@ endsubroutine pdf
     !
     if (sp=='kin') then
       if (iuu==0) call fatal_error('powerhel','iuu=0')
+      !$omp do
       do n=n1,n2
         do m=m1,m2
           call curli(f,iuu,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+          a_re(:,m-nghost,n-nghost)=bbi  !(this corresponds to vorticity)
         enddo
       enddo
+      !$omp workshare
       b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
       a_im=0.
       b_im=0.
+      !$omp end workshare
 !
 !  magnetic power spectra (spectra of |B|^2 and A.B)
 !
     elseif (sp=='mag') then
       if (iaa==0) call fatal_error('powerhel','iaa=0')
       if (lmagnetic) then
+        !$omp do
         do n=n1,n2
           do m=m1,m2
             call curli(f,iaa,bbi,ivec)
-            im=m-nghost
-            in=n-nghost
-            b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+            b_re(:,m-nghost,n-nghost)=bbi  !(this corresponds to magnetic field)
           enddo
         enddo
+        !$omp workshare
         a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
         a_im=0.
         b_im=0.
+        !$omp end workshare
       else
         if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
       endif
@@ -4649,6 +4711,7 @@ endsubroutine pdf
 !  integration over shells
 !
     if (lroot .AND. ip<10) print*,'fft done; now integrate over the xy plane...'
+    !$omp do
     do ikz=1,nz
       k3=nint(kz(ikz+ipz*nz))
       if (k3>=0 .and. k3<=nk-1) then
@@ -4664,9 +4727,13 @@ endsubroutine pdf
         enddo
       endif
     enddo
+    !$omp barrier
+    !$omp single
     spectrum(1)=spectrum(1)/2
+    !$omp end single
     !
   enddo !(from loop over ivec)
+!$omp end parallel
   !
   !  Summing up the results from the different processors.
   !  The result is available only on root.
@@ -4788,6 +4855,7 @@ endsubroutine pdf
   !
   !  loop over all the components
   !
+!$omp parallel private(k,k2,jkx,jkz) num_threads(num_helper_threads) reduction(+:spectrum, spectrumhel,correlation,correlationhel,cyl_spectrum,cyl_spectrumhel,k2m,nks)
   do ivec=1,3
     !
     !  Spectrum of iuu.iuut
@@ -4795,10 +4863,12 @@ endsubroutine pdf
     if (sp=='uut') then
       if (iuu==0)  call fatal_error('power_cor','iuu=0')
       if (iuut==0) call fatal_error('power_cor','iuut=0')
+      !$omp workshare
       b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
       b_im=0.
       a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
       a_im=0.
+      !$omp end workshare
     !
     !  correlation of u(t') with omega(t)
     !
@@ -4806,20 +4876,24 @@ endsubroutine pdf
       if (iuu==0)  call fatal_error('power_cor','iuu=0')
       if (iuut==0) call fatal_error('power_cor','iuut=0')
       if (ioo==0)  call fatal_error('power_cor','ioo=0')
+      !$omp workshare
       b_re=f(l1:l2,m1:m2,n1:n2,ioo+ivec-1)
       b_im=0.
       a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
       a_im=0.
+      !$omp end workshare
     !
     !  omega(t') with u(t)
     !
     elseif (sp=='uot') then
       if (iuu==0)  call fatal_error('power_cor','iuu=0')
       if (ioot==0) call fatal_error('power_cor','ioot=0')
+      !$omp workshare
       b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
       b_im=0.
       a_re=f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)
       a_im=0.
+      !$omp end workshare
     endif
 !
 !  Transform a and b to the shear frame.
@@ -4833,6 +4907,7 @@ endsubroutine pdf
 !
 !  before doing fft, compute real-space correlation
 !
+    !$omp do
     do ikx=1,nx
       do iky=1,ny
         do ikz=1,nz
@@ -4851,6 +4926,7 @@ endsubroutine pdf
 !  integration over shells
 !
     if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    !$omp do
     do ikz=1,nz
       do iky=1,ny
         do ikx=1,nx
@@ -4885,6 +4961,7 @@ endsubroutine pdf
 !
     if (lcylindrical_spectra) then
       if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+      !$omp do
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
@@ -4911,6 +4988,7 @@ endsubroutine pdf
     endif
     !
   enddo !(from loop over ivec)
+!$omp end parallel
   !
   !  Summing up the results from the different processors.
   !  The result is available only on root.
@@ -5135,15 +5213,14 @@ endsubroutine pdf
       lconvol=.true.
   end select
   !
+!$omp parallel private(k,k2,jkx,jkz) num_threads(num_helper_threads) reduction(+:spectrum, spectrumhel,correlation,correlationhel,cyl_spectrum,cyl_spectrumhel)
   if (.not.lconvol) then
     do ivec=1,3
-      a_re = f(l1:l2,m1:m2,n1:n2,ivar2+ivec-1)
-      b_re = f(l1:l2,m1:m2,n1:n2,ivar1+ivec-1)
-      h_re = h_re + a_re*b_re
-      !
+      !$omp workshare
       a_re = f(l1:l2,m1:m2,n1:n2,ivar2t+ivec-1)
       b_re = f(l1:l2,m1:m2,n1:n2,ivar1t+ivec-1)
       ht_re = ht_re + a_re*b_re
+      !$omp end workshare
     enddo
     !
     !  transform to the shear frame.
@@ -5152,57 +5229,80 @@ endsubroutine pdf
       if (.not. lshear) call fatal_error('power_cor_scl',&
           'lshear=F; cannot do frame transform')
       call get_shared_variable('t_cor',t_cor)
+      !$omp barrier
+      !$omp single
       call shear_frame_transform(ht_re,t_cor)
       call shear_frame_transform(h_re)
+      !$omp end single
+      !$omp barrier
     endif
   else
     do ivec=1,3
+      !$omp workshare
       a_re = f(l1:l2,m1:m2,n1:n2,ivar2+ivec-1)
       b_re = f(l1:l2,m1:m2,n1:n2,ivar1+ivec-1)
       a_im = 0.
       b_im = 0.
+      !$omp end workshare
       !  Need convolution between a_re and b_re in the shear frame; do via FFT
       if (lshear_frame_correlation) then
         if (.not. lshear) call fatal_error( &
             'power_cor','lshear=F; cannot do frame transform')
+        !$omp barrier
+        !$omp single
         call shear_frame_transform(a_re)
         call shear_frame_transform(b_re)
+        !$omp end single
+        !$omp barrier
       endif
       call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
       call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
+      !$omp workshare
       h_re = h_re + a_re*b_re + a_im*b_im
       h_im = h_im + a_im*b_re - a_re*b_im
+      !$omp end workshare
     enddo
     call fft_xyz_parallel(h_re,h_im,linv=.true.,lignore_shear=lshear_frame_correlation)
     !
     do ivec=1,3
+      !$omp workshare
       a_re = f(l1:l2,m1:m2,n1:n2,ivar2t+ivec-1)
       b_re = f(l1:l2,m1:m2,n1:n2,ivar1t+ivec-1)
       a_im = 0.
       b_im = 0.
+      !$omp end workshare
       !  Need convolution between a_re and b_re in the shear frame; do via FFT
       if (lshear_frame_correlation) then
         if (.not. lshear) call fatal_error( &
             'power_cor','lshear=F; cannot do frame transform')
         call get_shared_variable('t_cor',t_cor)
+        !$omp barrier
+        !$omp single
         call shear_frame_transform(a_re,t_cor)
         call shear_frame_transform(b_re,t_cor)
+        !$omp end single
+        !$omp barrier
       endif
       call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
       call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
+      !$omp workshare
       ht_re = ht_re + a_re*b_re + a_im*b_im
       ht_im = ht_im + a_im*b_re - a_re*b_im
+      !$omp end workshare
     enddo
     call fft_xyz_parallel(ht_re,ht_im,linv=.true.,lignore_shear=lshear_frame_correlation)
     !
   endif  !  lconvol
+  !$omp workshare
   a_re = ht_re
   a_im = ht_im
   b_re = h_re
   b_im = h_im
+  !$omp end workshare
   !
   !  before doing fft, compute real-space correlation
   !
+  !$omp do
   do ikx=1,nx; do iky=1,ny; do ikz=1,nz
     jkx=ikx+ipx*nx
     correlation(jkx)   = correlation(jkx)    +b_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
@@ -5216,6 +5316,7 @@ endsubroutine pdf
   !
   !  shell-integrated correlation
   !
+  !$omp do
   do ikz=1,nz; do iky=1,ny; do ikx=1,nx
     k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
     k=nint(sqrt(k2))
@@ -5230,6 +5331,7 @@ endsubroutine pdf
   !
   if (lcylindrical_spectra) then
     if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+    !$omp do
     do ikz=1,nz; do iky=1,ny; do ikx=1,nx
       k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
       jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
@@ -5247,6 +5349,7 @@ endsubroutine pdf
   !  Summing up the results from the different processors.
   !  The result is available only on root.
   !
+  !$omp end parallel
   call mpireduce_sum(spectrum,spectrum_sum,nk)
   call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
   !  real-space correlation
@@ -5614,50 +5717,70 @@ endsubroutine pdf
   !
   !  loop over all components
   !
+!$omp parallel private(bbi,jkx,jky,jkz) num_threads(num_helper_threads) reduction(+:fft)
   do ivec=1,ncomp
     !
     !  initialize fft(real/imaginary,kx,ky,kz)
     !
+    !$omp workshare
     fft=0.
     fft_sum=0.
+    !$omp end workshare
     !
     if (sp=='uu') then
       if (iuu==0)  call fatal_error('power_fft3d_vec','iuu=0')
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
       a_im=0.
+      !$omp end workshare
     elseif (sp=='oo') then
       if (iuu==0)  call fatal_error('power_fft3d_vec','iuu=0')
+      !$omp do
       do n=n1,n2; do m=m1,m2
         call curli(f,iuu,bbi,ivec)
         a_re(:,m-nghost,n-nghost)=bbi
       enddo; enddo
+      !$omp workshare
       a_im=0.
+      !$omp end workshare
     elseif (sp=='bb') then
       if (iaa==0)  call fatal_error('power_fft3d_vec','iaa=0')
+      !$omp do
       do n=n1,n2; do m=m1,m2
         call curli(f,iaa,bbi,ivec)
         a_re(:,m-nghost,n-nghost)=bbi
       enddo; enddo
+      !$omp workshare
       a_im=0.
+      !$omp end workshare
     elseif (sp=='jj') then
       if (iaa==0)  call fatal_error('power_fft3d_vec','iaa=0')
+      !$omp do
       do n=n1,n2; do m=m1,m2
         call del2vi_etc(f,iaa,ivec,curlcurl=bbi)
         a_re(:,m-nghost,n-nghost)=bbi
       enddo; enddo
+      !$omp workshare
       a_im=0.
+      !$omp end workshare
     elseif (sp=='ee') then
       if (iee==0) call fatal_error('power_fft3d_vec','iee=0')
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,iee+ivec-1)
       a_im=0.
+      !$omp end workshare
     elseif (sp=='gwT') then
       if (iStressT==0) call fatal_error('power_fft3d_vec','iStressT=0')
       if (ivec==1) then
+        !$omp workshare
         a_re=f(l1:l2,m1:m2,n1:n2,iStressT)
         a_im=f(l1:l2,m1:m2,n1:n2,iStressTim)
+        !$omp end workshare
       else
+        !$omp workshare
         a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
         a_im=f(l1:l2,m1:m2,n1:n2,iStressXim)
+        !$omp end workshare
       endif
     endif
     !
@@ -5666,7 +5789,12 @@ endsubroutine pdf
     if (lshear_frame_correlation) then
       if (.not. lshear) call fatal_error('power_fft3d_vec',&
           'lshear=F; cannot do frame transform')
+      !TODO: multithread
+      !$omp barrier
+      !$omp single
       call shear_frame_transform(a_re)
+      !$omp end single
+      !$omp barrier
     endif
     !
     !  Fourier transformation
@@ -5680,6 +5808,7 @@ endsubroutine pdf
       endif
     endif
     !
+    !$omp do 
     do ikz=1,nz
       jkz=nint(kz(ikz+ipz*nz))+(kkoutz-1)/2+1
       if ( jkz>=1 .and. jkz<=kkoutz ) then
@@ -5704,6 +5833,8 @@ endsubroutine pdf
     !
     !  Summing up the results from the different processors.
     !
+    !$omp barrier
+    !$omp single
     call mpireduce_sum(fft,fft_sum,(/2,kkoutx,kkouty,kkoutz/))
     !
     !  append to diagnostics file
@@ -5724,8 +5855,11 @@ endsubroutine pdf
       write(1,'(1p,8e10.2)') fft_sum(2,:,:,:)
       close(1)
     endif
+    !$omp end single
+    !$omp barrier
     !
   enddo  ! ivec
+!$omp end parallel
   !
   deallocate(fft,fft_sum)
   !
@@ -5931,9 +6065,7 @@ endsubroutine pdf
       do iky=1,ny
       do ikz=1,nz
         uu=u_tmp(:,iky,ikz,:)
-        bb=b_tmp(:,iky,ikz,:)
-        call cross_mn(uu,bb,uxb)
-        emf_q(:,iky,ikz,:)=uxb
+        bb=b_tmp(:,iky,ikz,:); call cross_mn(uu,bb,uxb); emf_q(:,iky,ikz,:)=uxb
       enddo
       enddo
       !
