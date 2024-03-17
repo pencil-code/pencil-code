@@ -10,7 +10,7 @@ module Snapshot
 !
   use Cdata
   use Messages
-  use Gpu, only: copy_farray_from_GPU
+  use Gpu, only: copy_farray_from_GPU, lsnap_flags_to_wait_on
 !
   implicit none
 !
@@ -61,6 +61,7 @@ module Snapshot
       integer, dimension(nghost) :: inds
       real, dimension(nghost) :: dxs_ghost, dys_ghost, dzs_ghost
 
+
       call safe_character_assign(file,trim(datadir)//'/tsnap_down.dat')
 !
 !  At first call, need to initialize tsnap.
@@ -74,7 +75,7 @@ module Snapshot
       call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap_down,ch)
       if (lsnap_down) then
 !
-        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
 !
 !  Set the range for the variable index.
 !  Not yet possible: both mvar_down and maux_down>0, but mvar_down<mvar,
@@ -303,7 +304,7 @@ module Snapshot
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
         if (lsnap) then
-          if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
+          if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
@@ -322,7 +323,7 @@ module Snapshot
 !  Write snapshot without label (typically, var.dat). For dvar.dat we need to
 !  make sure that ghost zones are not set on df!
 !
-        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
         if (msnap==mfarray) then
           if (.not. loptest(noghost)) call update_ghosts(a)
           call update_auxiliaries(a) ! Not if e.g. dvar.dat.
@@ -710,7 +711,7 @@ module Snapshot
 !
       if (lspec.or.llwrite_only) then
 
-        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f)
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f,lsnap_flags_to_wait_on)
         lfirstcall_powerhel=.true.
         if (ldo_all)  call update_ghosts(f)
 !

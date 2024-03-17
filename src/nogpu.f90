@@ -9,9 +9,13 @@
 module GPU
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, lpointer
 
   implicit none
+  type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
+  type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
+  logical, target :: always_false_ng = .false.
+  logical, target :: always_true_ng = .true.
 
   include 'gpu.h'
 
@@ -30,6 +34,8 @@ contains
       real, dimension(:,:,:,:), intent(IN) :: f
 
       call keep_compiler_quiet(f)
+      lsnap_flags_to_wait_on(1)%p => always_true_ng
+      ldiag_flags_to_wait_on(1)%p => always_true_ng
 !
     endsubroutine register_GPU
 !**************************************************************************

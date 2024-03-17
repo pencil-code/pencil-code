@@ -350,10 +350,10 @@ module Equ
           !wait in case the last diagnostic tasks are not finished
 !!$        call wait_all_thread_pool
 !         Not done for the first step since we haven't loaded any data to the GPU yet
-          call copy_farray_from_GPU(f)
+          call copy_farray_from_GPU(f, ldiag_flags_to_wait_on)
 !!!acc          call init_diagnostics_accumulators
 !$        call save_diagnostic_controls
-!$        call signal_send(lhelper_perform_diagnostics,.true.)
+!$        call signal_send(ldiag_perform_diagnostics,.true.)
 !!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
         endif
@@ -783,7 +783,7 @@ module Equ
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
         call write_diagnostics(f)                 !       ~
 
-!$      call signal_send(lhelper_perform_diagnostics,.false.)
+!$      call signal_send(ldiag_perform_diagnostics,.false.)
 
       endsubroutine perform_diagnostics
 !*****************************************************************************

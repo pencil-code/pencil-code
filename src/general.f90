@@ -243,6 +243,11 @@ module General
     real, pointer, dimension(:,:,:,:) :: data
     type(four_dim_array_dims) :: dims
   end type
+  !This is needed to make an array of logical pointers
+  !If someone knows a better way to do this we can remove this
+  type, public :: lpointer
+    logical, pointer :: p
+  end type
 
 !
 ! TP: type to make interop with C easier

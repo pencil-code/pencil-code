@@ -1136,8 +1136,16 @@ extern "C" void copyFarray(AcReal* f)
     exit(0);
   }
   **/
+  AcMesh mesh_to_copy;
+  size_t offset = 0;
+  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+  {
+    mesh_to_copy.vertex_buffer[VertexBufferHandle(i)] = &f[offset];
+    offset += mw;
+  }
+
   acGridSynchronizeStream(STREAM_ALL);
-  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
   acGridSynchronizeStream(STREAM_ALL);
 }
 extern "C" void loadFarray()

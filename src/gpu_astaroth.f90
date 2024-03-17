@@ -9,7 +9,7 @@
 module GPU
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, lpointer
   use Mpicomm, only: stop_it
 !$ use, intrinsic :: iso_c_binding
 
@@ -27,10 +27,13 @@ module GPU
 !$    endsubroutine random_initial_condition
 !$  end interface
 
-  include 'gpu.h'
 
+  logical, target :: always_true_g = .true.
+  logical, target :: always_false_g = .false.
   integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
-  
+  type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
+!$   type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
+  include 'gpu.h'
 contains
 
 !***********************************************************************
@@ -89,6 +92,13 @@ contains
       real, dimension(:,:,:,:), intent(IN) :: f
 
       call register_gpu_c(f)
+!$    if(.true.) then      
+!$      lsnap_flags_to_wait_on(1)%p => ldiag_perform_diagnostics
+!$      ldiag_flags_to_wait_on(1)%p => ldiag_perform_diagnostics
+!$    else
+        lsnap_flags_to_wait_on(1)%p => always_true_g
+        ldiag_flags_to_wait_on(1)%p => always_true_g 
+!$    endif
 !
     endsubroutine register_GPU
 !**************************************************************************
@@ -113,14 +123,18 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
-    subroutine copy_farray_from_GPU(f)
+    subroutine copy_farray_from_GPU(f,lflags_to_wait_on)
 
 !$    use General, only: signal_wait
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
+      type(lpointer), dimension(:) :: lflags_to_wait_on
+      integer :: i
 
 !      Have to wait since if doing diagnostics don't want overwrite f
-!$     call signal_wait(lhelper_perform_diagnostics,.false.)
-       call copy_farray_c()
+!$     do i = 1,size(lflags_to_wait_on) 
+!$        call signal_wait(lflags_to_wait_on(i)%p, .false.)
+!$     enddo 
+       call copy_farray_c(f)
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
