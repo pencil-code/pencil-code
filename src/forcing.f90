@@ -3843,7 +3843,7 @@ module Forcing
                 if (idiag_qfm/=0) then
                   call del2v_etc(f,iuu,curlcurl=curlo)
                   call dot_mn(curlo,forcing_rhs,qf)
-                  call sum_mn_name(qf,idiag_qfm)
+                  call sum_mn_name(qf/dt,idiag_qfm)
                 endif
               endif
             enddo
