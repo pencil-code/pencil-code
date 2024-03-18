@@ -21,6 +21,11 @@ pc_build_tmp_*
 # first directory level
 samples/*/src/*
 !samples/*/src/*.local
+!samples/*/src/astaroth
+samples/*/src/astaroth/*
+!samples/*/src/astaroth/DSL
+samples/*/src/astaroth/DSL/*
+!samples/*/src/astaroth/DSL/local
 samples/*/*.csh
 samples/*/*.log
 samples/*/Makefile

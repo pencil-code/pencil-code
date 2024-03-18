@@ -473,7 +473,7 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
   {
     //acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, 0.001);
     Device dev = acGridGetDevice();
-    dev->local_config.real_params[AC_dt] = 0.001;
+    dev->local_config.real_params[AC_dt] = dt;
     acGridSynchronizeStream(STREAM_ALL);
     acGridExecuteTaskGraph(graph_1, 1);
   }

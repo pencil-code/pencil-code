@@ -429,9 +429,6 @@ make_astaroth_dir()
   [ -h $src/astaroth/submodule ] && rm $src/astaroth/submodule
   adddir $src/astaroth/submodule
 ## subdirectories of submodule
-  adddir $src/astaroth/submodule/src
-#  adddir $src/astaroth/submodule/scripts
-  adddir $src/astaroth/submodule/acc-runtime
   adddir $src/astaroth/submodule/acc-runtime/samples
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd_modular
@@ -458,12 +455,6 @@ link_astaroth_files()
   cd $src/astaroth
   to_link=
 #  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
-	      #These should do the same as the line above put I think it is a bad idea to to explicitly name them since if somethings gets added this script breaks
-	      #But it links also uneeed sources, which I wanted to avoid - see no other way to exclude them.
-              #$srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/device.cc \
-	      #$srcdir/astaroth/submodule/src/core/grid.cc $srcdir/astaroth/submodule/src/core/task.cc $srcdir/astaroth/submodule/src/core/node.cc \
-	      #$srcdir/astaroth/submodule/src/core/astaroth.cc $srcdir/astaroth/submodule/src/core/debug.cc $srcdir/astaroth/submodule/src/core/logging.c \
-	      #
   for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.h $srcdir/astaroth/Makefile* $srcdir/astaroth/*.txt $srcdir/astaroth/*.sed $srcdir/astaroth/DSL/* \
               $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include \
               $srcdir/astaroth/submodule/acc-runtime/CMakeLists.txt \
@@ -472,13 +463,13 @@ link_astaroth_files()
               $srcdir/astaroth/submodule/acc-runtime/samples/mhd/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/gputest/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \
-              $srcdir/astaroth/submodule/src/core \
+              $srcdir/astaroth/submodule/src \
               $srcdir/astaroth/NUMA-scheduler
   do
     file_for_link $file
   done
 
-  ln -s $srcdir/submodule/acc-runtime/stdlib DSL/stdlib
+  ln -s $srcdir/astaroth/submodule/acc-runtime/stdlib DSL/stdlib
 
   for file in $to_link
   do

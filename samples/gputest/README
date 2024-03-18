@@ -23,19 +23,24 @@ MULTITHREADING = openmp
 in Makefile.local. At first time, this implies to repeat pc_setupsrc.
 
 The build has three stages:
-1) build Pencil Code as usual by make or pc_build - will fail at first during link stage because shared object
-   astaroth_[sgl|dbl].so is found to be missing;
-2) to obtain the missing object, go to src/astaroth and call make - will build three shared objects;
+1) build Pencil Code as usual by make or pc_build
+   - when building with make, you need to set the MODULE_[PRE|IN|SUF]FIX environment variables as given in the config file for the chosen compiler on the given machine
+   - when building with pc_build, you must use the flag -s|--serial as make can't correctly parallelize for this sample
+   The build will fail at first during link stage because shared object libastaroth_[sgl|dbl].so is found to be missing;
+2) to obtain the missing object, go to src/astaroth and call make - will build three shared objects (in case of unclear trouble, do "make clean" first)
 3) return to working directory and repeat build of Pencil Code - only the linker stage will be performed (fast)
 
 To run:
 -------
-In SLURM, set the following in the sbatch-script:
+In SLURM, set the following in the sbatch script:
 --ntasks          = <total number of MPI processes = total number of GPUs employed>
 --ntasks-per-node = <...> # ideally the number of all GPUs per node
---cpus-per-task   = <...> # ideally the number of CPUs per node, divided by ntasks-per-node
+--cpus-per-task   = <...> # ideally the number of CPUs per node, divided by ntasks-per-node (some systems won't allow this maximum, so try less)
+on Puhti:
 --gres            = gpu:<device type>:<ntasks-per-node>
+on LUMI/Dardel:
+--gpus-per-node   = <ntasks-per-node>
 
 Also, there are usually separate partitions for GPU use.
 On some imperfectly configured machines, additional settings are required.
-
+[which OMP/MPI enironment settings?]
