@@ -1433,7 +1433,7 @@ module Forcing
 !
       use Diagnostics, only: sum_mn_name
       use General, only: random_number_wrapper
-      use Sub, only: del2v_etc,dot
+      use Sub, only: del2v_etc,dot, dot_mn
       use Mpicomm, only: mpireduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
