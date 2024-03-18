@@ -1191,7 +1191,6 @@ module Forcing
 !
 !  calculate and add forcing function
 !
-
         select case (iforce)
         case ('2drandom_xy');     call forcing_2drandom_xy(f)
         case ('2drxy_simple');    call forcing_2drandom_xy_simple(f)
@@ -1219,8 +1218,7 @@ module Forcing
         case ('twist');           call forcing_twist(f)
         case ('tidal');           call forcing_tidal(f,force)
         case ('zero'); if (headt.and.ip<10) print*,'addforce: No forcing'
-        case default
-          if (lroot) call warning('addforce','No such iforce: '//trim(iforce))
+        case default;  call warning('addforce','no such iforce: '//trim(iforce))
         endselect
       endif
 !
@@ -1531,7 +1529,8 @@ module Forcing
       ikk(3)=cmplx(0.,kz)
 !
 !  Loop over all directions, but skip over directions with no extent.
-!
+! 
+      lfirstpoint=.true.
       do n=n1,n2
       do m=m1,m2
 !
@@ -1561,10 +1560,11 @@ module Forcing
         if (lout) then
           if (idiag_qfm/=0) then
             call del2v_etc(f,iuu,curlcurl=curlo)
-            call dot(curlo,forcing_rhs,qf)
+            call dot_mn(curlo,forcing_rhs,qf)
             call sum_mn_name(qf,idiag_qfm)
           endif
         endif
+        lfirstpoint=.false.
       enddo
       enddo
 !
@@ -2039,6 +2039,7 @@ module Forcing
 !  Here standard case. The case rcyl_ff==0 is to be removed sometime.
 !
       if (rcyl_ff == 0) then
+        lfirstpoint = .true.
         do n=n1,n2
           do m=m1,m2
 !
@@ -2244,6 +2245,7 @@ module Forcing
 !
 !  End of mn loop.
 !
+            lfirstpoint = .false.
           enddo
         enddo
       else
@@ -2354,6 +2356,7 @@ module Forcing
 !  outside this loop.
 !
       call random_number_wrapper(phi,CHANNEL=channel_force); phi = phi*2*pi
+      lfirstpoint = .true.
       do n=n1,n2
 !
 !  normally we want to use the wavevectors as they are,
@@ -2652,6 +2655,7 @@ module Forcing
                 endif
               endif
             endif
+            lfirstpoint = .false.
           enddo
 
         else
@@ -2685,6 +2689,7 @@ module Forcing
                 else
                   f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
                 endif
+                lfirstpoint = .false.
               enddo
             endif
           enddo
@@ -3243,6 +3248,7 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
+      lfirstpoint = .false.
       do m=m1,m2
         cosx=cos(k1_ff*x+cost)
         sinx=sin(k1_ff*x+cost)
@@ -3262,6 +3268,7 @@ module Forcing
               call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
+          lfirstpoint = .false.
         enddo
       enddo
 !
@@ -3316,6 +3323,7 @@ module Forcing
       cosx=cos(k1_ff*x+cost)
       sinx=sin(k1_ff*x+cost)
       forcing_rhs(:,2)=-fact*cosx(l1:l2)
+      lfirstpoint = .true.
       do m=m1,m2
         cosym=cos(k1_ff*y(m)+sint)
         sinym=sin(k1_ff*y(m)+sint)
@@ -3332,6 +3340,7 @@ module Forcing
               call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
+          lfirstpoint = .false.
         enddo
       enddo
 !
@@ -3392,6 +3401,7 @@ module Forcing
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
       forcing_rhs(:,3)=0.
+      lfirstpoint = .true.
       do n=n1,n2
         do m=m1,m2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
@@ -3411,6 +3421,7 @@ module Forcing
               call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
+          lfirstpoint = .false.
         enddo
       enddo
 !
@@ -3473,6 +3484,7 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
+      lfirstpoint = .true.
       do n=n1,n2
         forcing_rhs(:,2)=fact*(sinx(l1:l2)+cosz(n))
         do m=m1,m2
@@ -3497,6 +3509,7 @@ module Forcing
               endif
             endif
           endif
+          lfirstpoint = .false.
         enddo
       enddo
 !
@@ -3589,6 +3602,7 @@ module Forcing
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
       forcing_rhs(:,2)=fact*sinx(l1:l2)
+      lfirstpoint = .true.
       do n=n1,n2
         forcing_rhs(:,1)=fact*sinz(n)
         do m=m1,m2
@@ -3608,6 +3622,7 @@ module Forcing
               call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
+          lfirstpoint = .false.
         enddo
       enddo
 !
@@ -3639,7 +3654,7 @@ module Forcing
 !
       real, dimension (3) :: fran
       real, dimension (nx) :: radius2,gaussian,gaussian_fact,ruf,rho,rho1,qf
-      real, dimension (nx,3) :: variable_rhs,force_all,delta,curlo,forcing_rhs
+      real, dimension (nx,3) :: variable_rhs,delta,curlo,forcing_rhs
       integer :: j, jf, ilocation
       real :: fact,width_ff21
 !
@@ -3759,14 +3774,14 @@ module Forcing
                       delta(:,2) = 2*atan(tan(.5*(delta(:,2) + 2.*deltay*atan(1000.*tan(.25* &
                                    (pi+x(l1:l2)-location(1)))))))
                     else
-                      delta(:,j)=2*atan(tan(.5*delta(:,j)))
+                      delta(:,j) = 2*atan(tan(.5*delta(:,j)))
                     endif
                   else
                     where (delta(:,j) >  Lxyz(j)/2.) delta(:,j)=delta(:,j)-Lxyz(j)
                     where (delta(:,j) < -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
                   endif
-              endif
-              if (.not.lactive_dimension(j)) delta(:,j)=0.
+                endif
+                if (.not.lactive_dimension(j)) delta(:,j)=0.
               enddo
 !
 !  compute gaussian blob and set to forcing function
@@ -3783,6 +3798,9 @@ module Forcing
               else
                 gaussian_fact=gaussian*fact
               endif
+!
+!  Forced variable before adding time-integrated (Euler's method) force.
+!
               variable_rhs=f(l1:l2,m,n,iffx:iffz)
               if (iphiuu==0) then
                 do j=1,3
@@ -3791,23 +3809,22 @@ module Forcing
                     if (iforce_profile=='nothing') then
                       forcing_rhs(:,j)=gaussian_fact*delta(:,j)
                     else
-                      forcing_rhs(:,j)=gaussian_fact*delta(:,j) &
-                                       *profx_ampl*profy_ampl(m)*profz_ampl(n)
+                      forcing_rhs(:,j)=gaussian_fact*delta(:,j)*profx_ampl*profy_ampl(m)*profz_ampl(n)
                     endif
                     f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+forcing_rhs(:,j)
                   endif
                 enddo
               else
 !
-!  add possibility of modulation (but only if iphiuu/=0)
+!  add possibility of "potential forcing" (but only if iphiuu/=0, i.e., hydro_potential in use)
 !
                 if (iforce_profile=='nothing') then
-                  f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian    !MR: only one component?
                   forcing_rhs(:,1)=gaussian
                 else
-                  f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian*profx_ampl*profy_ampl(m)*profz_ampl(n)
-                  forcing_rhs(:,1)=gaussian
+                  forcing_rhs(:,1)=gaussian*profx_ampl*profy_ampl(m)*profz_ampl(n)
                 endif
+                forcing_rhs(:,2:3)=0.
+                f(l1:l2,m,n,iphiuu)=f(l1:l2,m,n,iphiuu)+forcing_rhs(:,1)
               endif
 !
 !  test
@@ -3819,14 +3836,12 @@ module Forcing
               if (lout) then
                 if (idiag_rufm/=0) then
                   call getrho(f(:,m,n,ilnrho),rho)
-                  call multsv_mn(rho/dt,forcing_rhs,force_all)
-                  call dot_mn(variable_rhs,force_all,ruf)
+                  call multsv_mn(rho/dt,forcing_rhs,forcing_rhs)
+                  call dot_mn(variable_rhs,forcing_rhs,ruf)
                   call sum_mn_name(ruf,idiag_rufm)
                 endif
                 if (idiag_qfm/=0) then
                   call del2v_etc(f,iuu,curlcurl=curlo)
-                  call getrho(f(:,m,n,ilnrho),rho)
-                  call multsv_mn(rho/dt,forcing_rhs,force_all)
                   call dot_mn(curlo,forcing_rhs,qf)
                   call sum_mn_name(qf,idiag_qfm)
                 endif
@@ -3948,6 +3963,7 @@ module Forcing
 !
 !  loop over all pencils
 !
+        lfirstpoint = .true.
         do n=n1,n2; do m=m1,m2
 !
 !  Obtain distance to center of blob
@@ -3962,7 +3978,7 @@ module Forcing
                   delta(:,2) = 2*atan(tan(.5*(delta(:,2)+2.*deltay*atan(1000.*tan(.25* &
                                (pi+x(l1:l2)-location(1)))))))
                 else
-                  delta(:,j)=2*atan(tan(.5*delta(:,j)))
+                  delta(:,j) = 2*atan(tan(.5*delta(:,j)))
                 endif
               else
                 where (delta(:,j) >  Lxyz(j)/2.) delta(:,j)=delta(:,j)-Lxyz(j)
@@ -4018,6 +4034,7 @@ module Forcing
               call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
+          lfirstpoint = .false.
         enddo; enddo
 !
 !  For printouts, rufm needs to be communicated to other processors.
@@ -4080,6 +4097,7 @@ module Forcing
 !
 !  loop over all pencils
 !
+      lfirstpoint = .true.
       do n=n1,n2
         do m=m1,m2
           do j=1,3
@@ -4108,6 +4126,7 @@ module Forcing
               call sum_mn_name(ruf,idiag_rufm)
             endif
           endif
+          lfirstpoint = .false.
         enddo
       enddo
 !
@@ -4802,6 +4821,7 @@ module Forcing
 !
       if (lout.and.idiag_rufm/=0 .or. lwork_ff) then
 
+        lfirstpoint = .true.
         do n=n1,n2
           do m=m1,m2
             forcing_rhs=force_vec(l1:l2,m,n,:)
@@ -4810,6 +4830,7 @@ module Forcing
             call multsv_mn(rho/dt,forcing_rhs,force_all)
             call dot_mn(variable_rhs,force_all,ruf)
             call sum_mn_name(ruf,idiag_rufm)
+            lfirstpoint = .false.
           enddo
         enddo
 !
@@ -4883,6 +4904,7 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
+      lfirstpoint = .true.
       do n=n1,n2
         do m=m1,m2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
@@ -4926,6 +4948,7 @@ module Forcing
               endif
             endif
           endif
+          lfirstpoint = .false.
         enddo
       enddo
 !
@@ -5798,7 +5821,7 @@ module Forcing
           force(:,2)=+fact*kx*sinx(l1:l2,i)*cosy(m,i) - fact2*kx*siny(m,i)*cosy(m,i)
           force(:,3)=+fact*relhel*kf*cosx(l1:l2,i)*cosy(m,i)
 !
-          if ( Omega/=0. .and. theta==0. ) then              ! Obs, only implemented for rotation axis in z direction.
+          if ( Omega/=0. .and. theta==0. ) then  ! Obs, only implemented for rotation axis in z direction.
             fact = 2.*ampl_ff(i)*Omega
             force(:,1)= force(:,1)-fact*kx*sinx(l1:l2,i)*cosy(m,i)
             force(:,2)= force(:,2)-fact*ky*cosx(l1:l2,i)*siny(m,i)
@@ -6340,7 +6363,7 @@ module Forcing
 
     call copy_addr(k1_ff,p_par(1))
     call copy_addr(tforce_stop,p_par(2))
-    call copy_addr(iforcing_zsym,p_par(3))
+    call copy_addr(iforcing_zsym,p_par(3)) ! int
     call copy_addr(profx_ampl,p_par(4))  ! (nx)
     call copy_addr(profy_ampl,p_par(5))  ! (my)
     call copy_addr(profz_ampl,p_par(6))  ! (mz)
