@@ -3654,7 +3654,7 @@ module Forcing
 !
       real, dimension (3) :: fran
       real, dimension (nx) :: radius2,gaussian,gaussian_fact,ruf,rho,rho1,qf
-      real, dimension (nx,3) :: variable_rhs,delta,curlo,forcing_rhs
+      real, dimension (nx,3) :: variable_rhs,delta,curlo,forcing_rhs,force_all
       integer :: j, jf, ilocation
       real :: fact,width_ff21
 !
@@ -3836,8 +3836,8 @@ module Forcing
               if (lout) then
                 if (idiag_rufm/=0) then
                   call getrho(f(:,m,n,ilnrho),rho)
-                  call multsv_mn(rho/dt,forcing_rhs,forcing_rhs)
-                  call dot_mn(variable_rhs,forcing_rhs,ruf)
+                  call multsv_mn(rho/dt,forcing_rhs,force_all)
+                  call dot_mn(variable_rhs,force_all,ruf)
                   call sum_mn_name(ruf,idiag_rufm)
                 endif
                 if (idiag_qfm/=0) then
