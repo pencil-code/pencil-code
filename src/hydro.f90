@@ -3949,12 +3949,12 @@ module Hydro
       real, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: uxo
+      real, dimension (nx,3) :: uxo,temp
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,uref,curlo2,qo,quxo,graddivu2
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask
-      real :: kx
+      real :: kx,zbot
       integer :: k
       logical, save :: lcorr_zero_dt=.false.
 !
@@ -4251,7 +4251,10 @@ module Hydro
         endif
 
         if (idiag_quysm/=0) then
-          call sum_mn_name( tau_diffrot1*(prof_amp3(n)-p%uu(:,2))*p%curlo(:,2),idiag_quysm)
+          !call sum_mn_name( tau_diffrot1*(prof_amp3(n)-p%uu(:,2))*p%curlo(:,2),idiag_quysm)
+          zbot=xyz0(3)
+          call sum_mn_name(-kz_diffrot*ampl1_diffrot*&
+                  reshape(spread(sin(kz_diffrot*(z-zbot)-phase_diffrot),2,3), shape(p%uu(:,3)))*p%uu(:,3)*p%curlo(:,2),idiag_quysm)
         endif
 
 !
