@@ -27,12 +27,11 @@ module GPU
 !$    endsubroutine random_initial_condition
 !$  end interface
 
-
   logical, target :: always_true_g = .true.
   logical, target :: always_false_g = .false.
   integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
   type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
-!$   type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
+  type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
   include 'gpu.h'
 contains
 
@@ -44,8 +43,6 @@ contains
       str=''
       if (lanelastic) str=trim(str)//', '//'anelastic'
       if (lboussinesq) str=trim(str)//', '//'boussinesq'
-      if (ltemperature) str=trim(str)//', '//'temperature'
-      if (lheatflux) str=trim(str)//', '//'heatflux'
       if (lhyperresistivity_strict) str=trim(str)//', '//'hyperresi_strict'
       if (lhyperviscosity_strict) str=trim(str)//', '//'hypervisc_strict'
       if (lADI) str=trim(str)//', '//'implicit_physics'
@@ -56,14 +53,10 @@ contains
       if (ltestfield) str=trim(str)//', '//'testfield'
       if (ltestflow) str=trim(str)//', '//'testflow'
       if (linterstellar) str=trim(str)//', '//'interstellar'
-      if (lcosmicray) str=trim(str)//', '//'cosmicray'
-      if (lcosmicrayflux) str=trim(str)//', '//'cosmicrayflux'
       if (lshear) str=trim(str)//', '//'shear'
       if (lpscalar) str=trim(str)//', '//'pscalar'
-      if (lascalar) str=trim(str)//', '//'ascalar'
       if (lradiation) str=trim(str)//', '//'radiation'
       if (lchemistry) str=trim(str)//', '//'chemistry'
-      if (lchiral) str=trim(str)//', '//'chiral'
       if (ldetonate) str=trim(str)//', '//'detonate'
       if (lopacity) str=trim(str)//', '//'opacity'
       if (lpolymer) str=trim(str)//', '//'polymer'

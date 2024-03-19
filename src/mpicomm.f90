@@ -5486,6 +5486,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Doing x-y transpose if var='y'
 !
+      !$omp single
       if (var=='y') then
 !
         if (mod(nxgrid,nygrid)/=0) then
@@ -5631,6 +5632,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       else
         if (lroot) print*,'transp: No clue what var=', var, 'is supposed to mean'
       endif
+      !$omp end single
 !
     endsubroutine transp
 !***********************************************************************
@@ -5651,6 +5653,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ytag=101,partner
       integer :: ibox,iy
 !
+      !$omp single
       if (nprocx>1) then
         print*,'transp_xy: nprocx must be equal to 1'
         call stop_it_if_any(.true.,'Inconsistency: nprocx>1')
@@ -5741,6 +5744,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           tmp=transpose(a(iy+1:iy+ny,:)); a(iy+1:iy+ny,:)=tmp
         enddo
       enddo
+      !$omp end single
 !
     endsubroutine transp_xy
 !***********************************************************************
@@ -5762,6 +5766,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ibox,iy,nx_other,ny_other
       integer :: nxgrid_other,nygrid_other
 !
+      !$omp single
       nx_other=size(a,1); ny_other=size(a,2)
       nxgrid_other=nx_other
       nygrid_other=ny_other*nprocy
@@ -5851,6 +5856,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           tmp=transpose(a(iy+1:iy+ny_other,:)); a(iy+1:iy+ny_other,:)=tmp
         enddo
       enddo
+      !$omp end single
 !
     endsubroutine transp_xy_other
 !***********************************************************************
@@ -5876,6 +5882,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: m,n,ibox,ix,nx_other,ny_other,nz_other
       integer :: nxgrid_other,nygrid_other,nzgrid_other
 !
+      !$omp single
       nx_other=size(a,1); ny_other=size(a,2) ; nz_other=size(a,3)
       nxgrid_other=nx_other
       nygrid_other=ny_other*nprocy
@@ -6027,6 +6034,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (lroot) print*,'transp_other: No clue what var=', var, &
              'is supposed to mean'
       endif
+      !$omp end single
 !
     endsubroutine transp_other
 !***********************************************************************
@@ -6046,6 +6054,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: sendc,px
       integer :: ztag=101,partner
 !
+      !$omp single
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
         call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nprocz)/=0')
@@ -6067,6 +6076,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           b(px*nz+1:(px+1)*nz,:)=transpose(buf)
         endif
       enddo
+      !$omp end single
 !
     endsubroutine transp_xz
 !***********************************************************************
@@ -6086,6 +6096,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: sendc,px
       integer :: ztag=101,partner
 !
+      !$omp single
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_zx: nxgrid needs to be an integer multiple of nprocz'
         call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nprocz)/=0')
@@ -6107,6 +6118,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           b(px*nxt+1:(px+1)*nxt,:)=transpose(buf)
         endif
       enddo
+      !$omp end single
 !
     endsubroutine transp_zx
 !***********************************************************************
@@ -7649,6 +7661,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx) :: recv_buf
 !
+      !$omp single
       do ibox = 0, nprocx-1
         partner = find_proc(ibox,ipy,ipz)
         if (iproc == partner) then
@@ -7666,6 +7679,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           out(nx*ibox+1:nx*(ibox+1)) = recv_buf
         endif
       enddo
+      !$omp end single
 !
     endsubroutine remap_to_pencil_x
 !***********************************************************************
@@ -7698,7 +7712,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(ny) :: recv_buf
 !
-!
+      !$omp single
       do ibox = 0, nprocy-1
         partner = find_proc(ipx,ibox,ipz)
         if (iproc == partner) then
@@ -7716,6 +7730,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           out(ny*ibox+1:ny*(ibox+1)) = recv_buf
         endif
       enddo
+      !$omp end single
 !
     endsubroutine remap_to_pencil_y_1D
 !***********************************************************************
@@ -7734,6 +7749,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx,ny) :: recv_buf
 !
+      !$omp single
       nbox = nx*ny
 !
       do ibox = 0, nprocy-1
@@ -7753,6 +7769,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           out(:,ny*ibox+1:ny*(ibox+1)) = recv_buf
         endif
       enddo
+      !$omp end single
 !
     endsubroutine remap_to_pencil_y_2D
 !***********************************************************************
@@ -7772,6 +7789,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
 !
+      !$omp single
       inx = size (in, 1)
       inz = size (in, 3)
       nbox = inx*ny*inz
@@ -7808,6 +7826,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       if (allocated (recv_buf)) deallocate (recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_y_3D
 !***********************************************************************
@@ -7827,6 +7846,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
 !
+      !$omp single
       inx = size (in, 1)
       inz = size (in, 3)
       ina = size (in, 4)
@@ -7866,6 +7886,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_y_4D
 !***********************************************************************
@@ -7940,7 +7961,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nz) :: recv_buf
 !
-!
+      !$omp single
       do ibox = 0, nprocz-1
         partner = find_proc(ipx,ipy,ibox)
         if (iproc == partner) then
@@ -7958,6 +7979,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           out(nz*ibox+1:nz*(ibox+1)) = recv_buf
         endif
       enddo
+      !$omp end single
 !
     endsubroutine remap_to_pencil_z_1D
 !***********************************************************************
@@ -7977,6 +7999,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:), allocatable :: recv_buf
 !
+      !$omp single
       ina = size (in, 2)
       nbox = nz*ina
 !
@@ -8010,6 +8033,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_z_2D
 !***********************************************************************
@@ -8029,6 +8053,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
 !
+      !$omp single
       inx = size (in, 1)
       iny = size (in, 2)
       nbox = inx*iny*nz
@@ -8065,6 +8090,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_z_3D
 !***********************************************************************
@@ -8084,6 +8110,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
 !
+      !$omp single
       inx = size (in, 1)
       iny = size (in, 2)
       ina = size (in, 4)
@@ -8123,6 +8150,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_z_4D
 !***********************************************************************
@@ -8202,6 +8230,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       if (nprocx == 1) then
         out = in
         return
@@ -8242,6 +8271,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_xy_2D
 !***********************************************************************
@@ -8262,6 +8292,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       nnx=size(in,1) ; nny=size(in,2)
       inx=nnx        ; iny=nny
       onx=nprocx*nnx ; ony=nny/nprocx
@@ -8307,6 +8338,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_xy_2D_other
 !***********************************************************************
@@ -8332,10 +8364,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  No need to remap if nprocx = 1.
 !
-      nox: if (nprocx == 1) then
+      !$omp single
+      if (nprocx == 1) then
         out = in
         return
-      endif nox
+      endif
 !
 !  Check the dimensions.
 !
@@ -8396,6 +8429,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Deallocate working arrays.
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_xy_3D
 !***********************************************************************
@@ -8419,6 +8453,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       if (nprocx == 1) then
         out = in
         return
@@ -8467,6 +8502,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_xy_4D
 !***********************************************************************
@@ -8489,6 +8525,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       if (nprocx == 1) then
         out = in
         return
@@ -8529,6 +8566,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine unmap_from_pencil_xy_2D
 !***********************************************************************
@@ -8549,6 +8587,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       if (nxgrid/=nygrid) &
            call stop_fatal("unmap_from_pencil_xy_2D_other: this subroutine works only for nxgrid==nygrid",lfirst_proc_xy)
 !
@@ -8598,6 +8637,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine unmap_from_pencil_xy_2D_other
 !***********************************************************************
@@ -8624,6 +8664,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  No need to unmap if nprocx = 1.
 !
+      !$omp single
       nox: if (nprocx == 1) then
         out = in
         return
@@ -8688,6 +8729,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Deallocate working arrays.
 !
       deallocate(send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine unmap_from_pencil_xy_3D
 !***********************************************************************
@@ -8711,6 +8753,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       if (nprocx == 1) then
         out = in
         return
@@ -8759,6 +8802,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine unmap_from_pencil_xy_4D
 !***********************************************************************
@@ -8785,6 +8829,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       inx = size (in, 1)
       iny = size (in, 2)
       onx = size (out, 1)
@@ -8829,6 +8874,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine transp_pencil_xy_2D
 !***********************************************************************
@@ -8857,6 +8903,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Check if ghost cells are included.
 !
+      !$omp single
       ngc = 0
       if (present(lghost)) then
         if (lghost) ngc = nghost
@@ -8915,6 +8962,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Deallocate working arrays.
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine transp_pencil_xy_3D
 !***********************************************************************
@@ -8941,6 +8989,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       inx = size (in, 1)
       iny = size (in, 2)
       inz = size (in, 3)
@@ -9001,6 +9050,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine transp_pencil_xy_4D
 !***********************************************************************
@@ -9024,6 +9074,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       if (nprocz == 1) then
         out = in
         return
@@ -9069,6 +9120,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_yz_3D
 !***********************************************************************
@@ -9092,6 +9144,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       if (nprocz == 1) then
         out = in
         return
@@ -9140,6 +9193,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine remap_to_pencil_yz_4D
 !***********************************************************************
@@ -9163,6 +9217,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       if (nprocz == 1) then
         out = in
         return
@@ -9207,6 +9262,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine unmap_from_pencil_yz_3D
 !***********************************************************************
@@ -9230,6 +9286,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
+      !$omp single
       if (nprocz == 1) then
         out = in
         return
@@ -9278,6 +9335,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
 !
       deallocate (send_buf, recv_buf)
+      !$omp end single
 !
     endsubroutine unmap_from_pencil_yz_4D
 !***********************************************************************

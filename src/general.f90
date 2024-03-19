@@ -248,7 +248,6 @@ module General
   type, public :: lpointer
     logical, pointer :: p
   end type
-
 !
 ! TP: type to make interop with C easier
 !

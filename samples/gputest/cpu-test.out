@@ -1,0 +1,307 @@
+
+Lmod is automatically replacing "craype-x86-rome" with "craype-x86-trento".
+
+
+Lmod is automatically replacing "craype-accel-host" with
+"craype-accel-amd-gfx90a".
+
+/pfs/lustrep2/users/toukopur/pencil-code/samples/gputest
+1 CPUs
+HOSTNAME = nid005002
+USER = toukopur
+Running under MPI
+masterhost=lumi
+Simple Linux Utility for Resource Management (SLURM) job
+SLURM_NODELIST = nid005002
+SLURM_TASKS_PER_NODE = 1
+Lumi - CSC, Kajaani, Finland
+Running job: 6484822
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <1>
+$ncpus          =  <1>
+$npops          =  <-n 1>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-118493>
+$hn             =  <nid005002>
+$masterhost     =  <lumi>
+$mpirun         =  <srun>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <nid005002>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <118493>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+/bin/ls: No match.
+/bin/ls: No match.
+Revision: c30fecdc7
+ M bin/pc_setupsrc
+ M config/hosts/lumi/host-uan01-GNU_Linux.conf
+ M samples/gputest/run.in
+ M samples/gputest/src/Makefile.local
+ M samples/gputest/start.in
+ M src/Makefile.parent
+ M src/Makefile.src
+ M src/astaroth/Makefile
+ M src/astaroth/gpu_astaroth.cc
+ M src/astaroth/submodule
+ M src/cparam.f90
+ M src/equ.f90
+ M src/gpu.h
+ M src/gpu_astaroth.f90
+ M src/gpu_astaroth_ansi.c
+ M src/nogpu.f90
+ M src/run.f90
+Wed 13 Mar 2024 07:47:58 PM EET
+srun  -n 1  src/start.x 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ nxgrid, nygrid, nzgrid= 3*32
+ units_general: unit_velocity= 1.
+ units_general: unit_density= 1.
+ units_general: unit_length= 1.
+ units_general: unit_magnetic= 3.5449077018110318
+ units_eos: unit_temperature= 4.81088837471901876E-9
+ units_eos: cp, lnTT0, cs0, pp0, Rgas= 1.,  0.40546510810816422,  1.,  0.59999999999999998,  0.40000000000000002
+ diffusion: nothing (i.e. no mass diffusion)
+ initialize_density: no need to read initial stratification for lanti_shockdiffusion=F.
+ select_eos_variable: Using lnrho and ss
+ initialize_energy: nheatc_max,iheatcond= 4 nothing                                 nothing                                 nothing                                 nothing                                 
+ heat conduction: nothing
+ resistivity: constant eta
+ ABC flow
+ init_lnrho: initlnrho(1) = const_lnrho
+ init_lnrho: cs2bot,cs2top= 2*1.
+ init_energy: nothing
+ init_aa: nothing
+ 
+ start.x has completed successfully
+ 
+0.018u 0.032s 0:01.48 2.7%	0+0k 426+192io 11pf+0w
+
+Wed 13 Mar 2024 07:48:00 PM EET
+1 CPUs
+HOSTNAME = nid005002
+USER = toukopur
+Running under MPI
+masterhost=lumi
+Simple Linux Utility for Resource Management (SLURM) job
+SLURM_NODELIST = nid005002
+SLURM_TASKS_PER_NODE = 1
+Lumi - CSC, Kajaani, Finland
+Running job: 6484822
+datadir = data
+-- DEBUG CONFIG --
+$mpi            =  <1>
+$ncpus          =  <1>
+$npops          =  <-n 1>
+$local_disc     =  <0>
+$one_local_disc =  <0>
+$remote_top     =  <0>
+$local_binary   =  <0>
+$datadir        =  <data>
+$SCRATCH_DIR    =  </scratch/pencil-118599>
+$hn             =  <nid005002>
+$masterhost     =  <lumi>
+$mpirun         =  <srun>
+$mpirunops      =  <>
+$mpirunops2     =  <>
+$x_ops          =  <>
+$NODELIST       =  <nid005002>
+$SSH            =  <ssh>
+$SCP            =  <scp>
+$PARENT_PID     =  <118599>
+$copysnapshots  =  <copy-snapshots>
+$particles      =  <0>
+$pointmasses    =  <0>
+--
+Revision: c30fecdc7
+ M bin/pc_setupsrc
+ M config/hosts/lumi/host-uan01-GNU_Linux.conf
+ M samples/gputest/run.in
+ M samples/gputest/src/Makefile.local
+ M samples/gputest/start.in
+ M src/Makefile.parent
+ M src/Makefile.src
+ M src/astaroth/Makefile
+ M src/astaroth/gpu_astaroth.cc
+ M src/astaroth/submodule
+ M src/cparam.f90
+ M src/equ.f90
+ M src/gpu.h
+ M src/gpu_astaroth.f90
+ M src/gpu_astaroth_ansi.c
+ M src/nogpu.f90
+ M src/run.f90
+Wed 13 Mar 2024 07:48:00 PM EET
+srun  -n 1  src/run.x 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$               
+ bcx1,bcx2= p  p  p  p  p  p  p  p   : p  p  p  p  p  p  p  p  
+ bcy1,bcy2= p  p  p  p  p  p  p  p   : p  p  p  p  p  p  p  p  
+ bcz1,bcz2= p  p  p  p  p  p  p  p   : p  p  p  p  p  p  p  p  
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+ The verbose level is ip= 13  (ldebug= F )
+ This is a 3-D run
+ nxgrid, nygrid, nzgrid= 3*32
+ Lx, Ly, Lz= 3*6.2831853071795862
+       Vbox= 248.05021344239853
+ rprint_list: nname= 11
+ rprint_list: ix,iy,iz,iz2= 4*-1
+ rprint_list: nnamev= 0
+ rprint_list: nnamez= -1
+ rprint_list: nnamey= -1
+ rprint_list: nnamex= -1
+ rprint_list: nnamer= 0
+ rprint_list: nnamexz= -1
+ rprint_list: nnamexy= -1
+ rprint_list: nnamerz= -1
+ rprint_general: run through parse list
+ rprint_hydro: run through parse list
+ rprint_hydro: run through parse list
+ rprint_density: run through parse list
+ rprint_viscosity: run through parse list
+ units_general: unit_velocity= 1.
+ units_general: unit_density= 1.
+ units_general: unit_length= 1.
+ units_general: unit_magnetic= 3.5449077018110318
+ units_eos: unit_temperature= 4.81088837471901876E-9
+ units_eos: cp, lnTT0, cs0, pp0, Rgas= 1.,  0.40546510810816422,  1.,  0.59999999999999998,  0.40000000000000008
+ fixed timestep or initial guess for timestep, dt= 1.00000000000000002E-3
+ xmask_den= 32*1.
+ zmask_den= 32*1.
+ diffusion: nothing (i.e. no mass diffusion)
+ initialize_density: no need to read initial stratification for lanti_shockdiffusion=F.
+ xmask_hyd= 32*1.
+ zmask_hyd= 32*1.
+WARNING: initialize_hydro: need to set orms in print.in to get othresh. Disabled othresh!
+ select_eos_variable: Using lnrho and ss
+ initialize_energy: nheatc_max,iheatcond= 4 nothing                                 nothing                                 nothing                                 nothing                                 
+ heat conduction: nothing
+ xmask_mag= 32*1.
+ zmask_mag= 32*1.
+ resistivity: constant eta
+ viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+ xmask_vis= 32*1.
+ choose_pencils: finding out which pencils are needed for the pencil case.
+ write_pencil_info: pencil information written to the file pencils.list.
+ pde: ENTER
+SVN: -------            v.         (                   ) $Id$
+ duu_dt: SOLVE
+Bcs for         ux,  x: <       p>, y: <       p>,  z: <       p>
+Bcs for         uy,  x: <       p>, y: <       p>,  z: <       p>
+Bcs for         uz,  x: <       p>, y: <       p>,  z: <       p>
+ dlnrho_dt: SOLVE
+Bcs for      lnrho,  x: <       p>, y: <       p>,  z: <       p>
+ denergy_dt: SOLVE denergy_dt
+Bcs for         ss,  x: <       p>, y: <       p>,  z: <       p>
+ denergy_dt: lnTT,cs2,cp1= 1.2254651081081642,  2.2704998375324057,  0.
+ daa_dt: SOLVE
+Bcs for         Ax,  x: <       p>, y: <       p>,  z: <       p>
+Bcs for         Ay,  x: <       p>, y: <       p>,  z: <       p>
+Bcs for         Az,  x: <       p>, y: <       p>,  z: <       p>
+ daa_dt: iresistivity=eta-const                                                                                                                                                       
+ 
+ ----it--------t--------dt-------urms------umax------epsK-----rhom----rhorms----dtc-----dtu-----dtnu--
+        0      0.000 1.00E-03   1.73205   2.43390 4.105E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+        1      0.000 1.00E-03   1.73205   2.43430 4.105E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+        2      0.000 1.00E-03   1.73204   2.43468 4.105E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+        3      0.000 1.00E-03   1.73205   2.43505 4.105E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+        4      0.000 1.00E-03   1.73205   2.43539 4.106E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+        5      0.000 1.00E-03   1.73206   2.43572 4.106E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+        6      0.000 1.00E-03   1.73207   2.43602 4.106E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+        7      0.000 1.00E-03   1.73209   2.43631 4.107E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+        8      0.000 1.00E-03   1.73211   2.43658 4.107E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+        9      0.000 1.00E-03   1.73213   2.43683 4.107E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+       10      0.000 1.00E-03   1.73215   2.43707 4.108E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+       11      0.000 1.00E-03   1.73218   2.43728 4.109E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+       12      0.000 1.00E-03   1.73222   2.43748 4.109E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+       13      0.000 1.00E-03   1.73225   2.43765 4.110E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+       14      0.000 1.00E-03   1.73229   2.43781 4.111E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+       15      0.000 1.00E-03   1.73234   2.43795 4.112E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+       16      0.000 1.00E-03   1.73238   2.43807 4.112E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+       17      0.000 1.00E-03   1.73243   2.43817 4.113E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+       18      0.000 1.00E-03   1.73249   2.43825 4.114E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+       19      0.000 1.00E-03   1.73254   2.43832 4.116E-02   3.4212   3.4212  0.0000  0.0000  0.0000
+ 
+ Simulation finished after  20  time-steps
+ 
+ Writing final snapshot at time t = 1.99999999999999969E-2
+ 
+ Wall clock time [hours] =  3.904E-04 (+/-  5.5556E-12)
+ Wall clock time/timestep/meshpoint [microsec] =  2.144515    
+ Maximum used memory per cpu [MBytes] =    60.824
+ Maximum used memory [MBytes] =       60.824
+ 
+0.013u 0.025s 0:01.72 1.7%	0+0k 36+24io 0pf+0w
+Wed 13 Mar 2024 07:48:02 PM EET
+Done

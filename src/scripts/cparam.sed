@@ -43,7 +43,7 @@ s/const  *FINT  *nghost *= *\([0-9]*\) *;/#undef NGHOST\n#define NGHOST \1\n#und
 t cont
 b end
 : cont
-w astaroth/submodule/acc-runtime/Pencil/PC_nghost.h
+w astaroth/DSL/local/PC_nghost.h
 : end
 g
 }

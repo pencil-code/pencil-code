@@ -55,9 +55,10 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
-    subroutine copy_farray_from_GPU(f)
+    subroutine copy_farray_from_GPU(f,lflags_to_wait_on)
 
       real, dimension (:,:,:,:), intent(OUT) :: f
+      type(lpointer), dimension(:) :: lflags_to_wait_on
 
       call keep_compiler_quiet(f)
 

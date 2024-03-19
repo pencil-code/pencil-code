@@ -472,7 +472,7 @@ endif
 CUDA_MAKEDIR=astaroth
 CUDA_INCDIR=$(CUDA_MAKEDIR)
 CUDA_RELPATH=..
-DSL_WORKDIR=$(CUDA_MAKEDIR)/submodule/acc-runtime/Pencil
+DSL_WORKDIR=$(CUDA_MAKEDIR)/DSL/local
 LIBGPU =
 GPU_DEPS =
 gpu_preps = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
@@ -2996,16 +2996,15 @@ endif
 #
 # writes moduleflags in $(CUDA_INCDIR)/PC_moduleflags.h, list of needed physics module source files in $(CUDA_MAKEDIR)/PC_modulesources.h
 # 
-
-#
-#
 ##$(CUDA_INCDIR)/PC_modulesources.h: .sentinel
 ##$(CUDA_MAKEDIR)/Makefile.vendor: .sentinel
 ##$(DSL_WORKDIR)/fieldecs.h: .sentinel
 ##$(DSL_WORKDIR)/equations.h: .sentinel
 ##$(DSL_WORKDIR)/solve.ac: Makefile.local
 #
-$(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local
+#$(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local
+$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_MAKEDIR)/Makefile.vendor $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac: .sentinel
+.sentinel: Makefile.local
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#pragma once' > $(CUDA_INCDIR)/PC_moduleflags.h
 	@sed -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' $(PENCIL_HOME)/src/gpu.sed > gpu.sed.tmp
@@ -3033,7 +3032,7 @@ endif
           echo '' >> $(DSL_WORKDIR)/equations.h; \
 	  echo '' >> $(DSL_WORKDIR)/equations.h; \
 	fi
-	@echo '#include "prerequisites.h"' > $(DSL_WORKDIR)/solve.ac
+	@echo '#include "../prerequisites.h"' > $(DSL_WORKDIR)/solve.ac
 	@echo '' >> $(DSL_WORKDIR)/solve.ac
 	@echo 'Kernel singlepass_solve(int ac_input_step_num) {' >> $(DSL_WORKDIR)/solve.ac
 	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm tmp; \

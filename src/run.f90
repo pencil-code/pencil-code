@@ -48,7 +48,7 @@ module Run_module
     use Cdata
 !
     implicit none
-!$  logical, volatile :: ldiag_run=.true.
+!$  logical, volatile :: lhelper_run=.true.
 
     integer :: icount, it_last_diagnostic
     real(KIND=rkind8) :: time1, time_last_diagnostic
@@ -67,9 +67,9 @@ subroutine helper_loop(f,p)
 !
 ! 7-feb-24/TP: coded
 !
-!$  do while(ldiag_run)
+!$  do while(lhelper_run)
 !$    call signal_wait(ldiag_perform_diagnostics,.true.)
-!$    call perform_diagnostics(f,p)
+!$    if (lhelper_run) call perform_diagnostics(f,p)
 !$  enddo
 
 endsubroutine helper_loop
@@ -96,7 +96,7 @@ subroutine timeloop(f,df,p)
   use Messages,        only: timing, fatal_error_local_collect
   use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD
   use Param_IO,        only: read_all_run_pars, write_all_run_pars
-  use Particles_main,  only: write_snapshot_particles, particles_initialize_modules, & 
+  use Particles_main,  only: particles_rprint_list, write_snapshot_particles, particles_initialize_modules, & 
                              particles_load_balance, particles_stochastic
   use PointMasses,     only: pointmasses_write_snapshot
   use Register,        only: initialize_modules, rprint_list, choose_pencils
@@ -480,9 +480,8 @@ subroutine timeloop(f,df,p)
 
 !!$ call wait_all_thread_pool
 !!$ call free_thread_pool
-!$  ldiag_run = .false.
-!TP: This is set to .true. to free the helper in case in it is in a hotloop waiting for diagnostics but we are finished
-!currently will perform one extra diagnostics calculation but that doesn't matter
+!$  lhelper_run = .false.
+!TP: This is set to .true. to free the helper in case it is in a hotloop waiting for diagnostics but we are finished.
 !$  call signal_send(ldiag_perform_diagnostics,.true.)
 
 endsubroutine timeloop
@@ -858,7 +857,8 @@ program run
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond
-  !load to gpu
+
+! Load farray to gpu
   call load_farray_to_GPU(f)
 !
   if (it1d==impossible_int) then

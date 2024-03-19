@@ -16,7 +16,8 @@ fi
 modheader=../$modname'_'$1's_c.h'
 if [[ $1 == par ]]; then
   ptype=void
-  headerdir=submodule/acc-runtime/$DSL_MODULE_DIR
+  headerdir=DSL/local
+#submodule/acc-runtime/$DSL_MODULE_DIR
   modinit=$modheader
   modecs=tmp2
 else

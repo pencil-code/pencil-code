@@ -809,13 +809,14 @@ module Cdata
   real(KIND=rkind8) :: t_save
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 !!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
+
 !$ logical, target, volatile :: ldiag_perform_diagnostics=.false.
-!$ integer :: num_helper_threads
+  integer :: num_helper_threads=0, thread_id=1
 ! 
 ! threadprivate definitions for OpenMP
 !
 !$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
-!$omp threadprivate(lfirstpoint)
+!$omp threadprivate(lfirstpoint,thread_id)
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo)
 !$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)  !,lwrite_slices)
