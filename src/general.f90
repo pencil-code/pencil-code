@@ -6703,13 +6703,9 @@ iloop:do i=1,size(list2)
 !
 !$  logical :: lflag, lvalue
 !
-!$    if (lvalue) then
-!$      do while(.not. lflag)
-!$      enddo
-!$    else
-!$      do while(lflag)
-!$      enddo
-!$    endif
+!$    do while(lflag .neqv. lvalue)
+!$    enddo
+
 !$  endsubroutine signal_wait
 !***********************************************************************
 !$  subroutine signal_send(lflag, lvalue)

@@ -81,6 +81,9 @@
   public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, &
             MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, MPI_COMM_RSLICE, &
             MPI_INFO_NULL, MPI_ANY_TAG, lyang
+  public :: MPI_COMM_DIAG
+  public :: MPI_COMM_XBEAM_DIAG,MPI_COMM_YBEAM_DIAG,MPI_COMM_ZBEAM_DIAG
+  public :: MPI_COMM_XYPLANE_DIAG,MPI_COMM_XZPLANE_DIAG,MPI_COMM_YZPLANE_DIAG
   public :: size_of_int, size_of_real, size_of_double
 !
   interface mpirecv_logical
@@ -411,6 +414,9 @@
   integer :: MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM
   integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE,MPI_COMM_RSLICE
   integer :: root_rslice
+  integer :: MPI_COMM_DIAG
+  integer :: MPI_COMM_XBEAM_DIAG,MPI_COMM_YBEAM_DIAG,MPI_COMM_ZBEAM_DIAG
+  integer :: MPI_COMM_XYPLANE_DIAG,MPI_COMM_XZPLANE_DIAG,MPI_COMM_YZPLANE_DIAG
 !
 ! for protecting MPI_COMM_WORLD to be redefined by preprocessor
 ! 
@@ -419,6 +425,7 @@
 ! symbolic constants for beams and planes
 !
   integer, parameter, public :: IXBEAM=1, IYBEAM=2, IZBEAM=3, IXYPLANE=12, IXZPLANE=13, IYZPLANE=23
+  integer, parameter, public :: IXBEAM_DIAG=101, IYBEAM_DIAG=102, IZBEAM_DIAG=103, IXYPLANE_DIAG=112, IXZPLANE_DIAG=113, IYZPLANE_DIAG=123, IDIAG=100
 
   character(LEN=4), public :: cyinyang=' '
 

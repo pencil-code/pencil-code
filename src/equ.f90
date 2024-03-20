@@ -90,7 +90,7 @@ module Equ
       use Mpicomm
 !$    use, intrinsic :: iso_c_binding
 !!$    use mt, only: push_task, depend_on_all, default_task_type, wait_all_thread_pool
-!$    use General, only: signal_send 
+!$    use General, only: signal_send, signal_wait
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -125,19 +125,8 @@ module Equ
 !  For chemistry with LSODE
 !
       lchemonly=.false.
-!
-!  Record times for diagnostic and 2d average output.
-!
-      if (ldiagnos) then
-        t_save  = t ! (diagnostics are for THIS time)
-        dt_save = dt
-        it_save = it
-        eps_rkf_save = eps_rkf
-      endif
 
-      if (l1davgfirst) t1ddiagnos=t ! (1-D averages are for THIS time)
       if (l2davgfirst)  then
-        t2davgfirst=t ! (2-D averages are for THIS time)
 !
 !  [AB: Isn't it true that not all 2-D averages use rcyl_mn?
 !  lwrite_phiaverages=T is required, and perhaps only that.]
@@ -350,6 +339,7 @@ module Equ
           !wait in case the last diagnostic tasks are not finished
 !!$        call wait_all_thread_pool
 !         Not done for the first step since we haven't loaded any data to the GPU yet
+          call signal_wait(ldiag_perform_diagnostics,.false.)
           call copy_farray_from_GPU(f, ldiag_flags_to_wait_on)
 !!!acc          call init_diagnostics_accumulators
 !$        call save_diagnostic_controls
@@ -508,13 +498,15 @@ module Equ
     tslice = tslice_save
     tsound = tsound_save
 
-    if (ldiagnos) then
+    if(ldiagnos) then
       tdiagnos  = t_save 
       dtdiagnos = dt_save
       itdiagnos = it_save
       eps_rkf_diagnos = eps_rkf_save
     endif
-
+    t = t_save
+    dt = dt_save
+    it = it_save
     endsubroutine restore_diagnostic_controls
 !***********************************************************************
 !$   subroutine write_diagnostics_wrapper(f) bind(C)
@@ -605,10 +597,20 @@ module Equ
     lout_sound_save = lout_sound
     lvideo_save = lvideo
 
+!
+!  Record times for diagnostic and 2d average output.
+!
+
     if (l1davgfirst) t1ddiagnos_save=t ! (1-D averages are for THIS time)
     if (l2davgfirst) t2davgfirst_save=t ! (2-D averages are for THIS time)
     if (lvideo     ) tslice_save=t ! (slices are for THIS time)
     if (lout_sound ) tsound_save=t
+      if (ldiagnos) then
+        t_save  = t ! (diagnostics are for THIS time)
+        dt_save = dt
+        it_save = it
+        eps_rkf_save = eps_rkf
+      endif
     endsubroutine save_diagnostic_controls
 !***********************************************************************
     subroutine diagnostics_reductions

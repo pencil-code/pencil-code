@@ -129,7 +129,7 @@ module Fourier
 !
         if (nygrid/=1) then
           if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
 !
@@ -149,7 +149,7 @@ module Fourier
 !
         if (nzgrid/=1) then
           if (nzgrid/=nxgrid) call fatal_error('fourier_transform','must have nzgrid=nxgrid')
-          !$omp barrier
+          
           call transp(a_re,'z')
           call transp(a_im,'z')
 !
@@ -191,7 +191,7 @@ module Fourier
           if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
 !
           if (nzgrid/=1) then
-            !$omp barrier
+            
             call transp(a_re,'z')
             call transp(a_im,'z')
           endif
@@ -209,7 +209,7 @@ module Fourier
 !  Transform x-direction back. Transpose to go from (y,x,z) to (x,y,z).
 !
         if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in x'
-        !$omp barrier
+        
         if (nygrid==1) then
           call transp(a_re,'z')
           call transp(a_im,'z')
@@ -273,7 +273,7 @@ module Fourier
 !
         if (nygrid/=1) then
           if (nygrid/=nxgrid) call fatal_error('fourier_transform_xy','must have nygrid=nxgrid')
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
 !
@@ -309,7 +309,7 @@ module Fourier
 !
         if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
         if (nygrid/=1) then
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
         endif
@@ -369,7 +369,7 @@ module Fourier
         a_im(:,m,n)=aimag(ax(1:nx))
       enddo; enddo
 
-      !$omp barrier
+      
       call transp(a_re,'z')
       call transp(a_im,'z')
 !
@@ -521,7 +521,7 @@ module Fourier
 !
         if (lroot .and. ip<10) print*,'fourier_transform_y: nxgrid>=nygrid'
 !
-        !$omp barrier
+        
         call transp(a_re,'y') ; call transp(a_im,'y')
         !$omp do collapse(3)
         do n=1,nz; do l=1,ny
@@ -680,7 +680,7 @@ module Fourier
 !
         if (nygrid/=1) then
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
           !$omp do collapse(2)
@@ -700,7 +700,7 @@ module Fourier
 !
         if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nygrid/=1) then
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
         endif
@@ -716,7 +716,7 @@ module Fourier
 !
         if (nzgrid/=1) then
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in z'
-          !$omp barrier
+          
           call transp(a_re,'z')
           call transp(a_im,'z')
           !$omp do collapse(2)
@@ -746,7 +746,7 @@ module Fourier
 !
         if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nzgrid/=1) then
-          !$omp barrier
+          
           call transp(a_re,'z')
           call transp(a_im,'z')
         endif
@@ -763,7 +763,7 @@ module Fourier
 !  the y-direction last.
 !
         if (nygrid/=1) then
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
@@ -831,7 +831,7 @@ module Fourier
 !
         if (nygrid>1) then
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
           !$omp do collapse(2)
@@ -851,7 +851,7 @@ module Fourier
 !  Transform x-direction. Normalization is included.
 !
         if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
-        !$omp barrier
+        
         if (nygrid/=1) then
           call transp(a_re,'y')
           call transp(a_im,'y')
@@ -881,7 +881,7 @@ module Fourier
 !  the y-direction last.
 !
         if (nygrid>1) then
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
@@ -1078,12 +1078,14 @@ module Fourier
 !
 !  Transform y-direction.
 !
-          !$omp barrier
+          
           call transp_xy(a_re)
           if (lcompute_im) then
             call transp_xy(a_im)
           else
+            !$omp workshare
             a_im=0.0
+            !$omp end workshare
           endif
 !
           !$omp do collapse(2)
@@ -1137,7 +1139,7 @@ module Fourier
 !
 !  Transform y-direction back.
 !
-          !$omp barrier
+          
           call transp_xy(a_re)
           call transp_xy(a_im)
 !
@@ -1209,7 +1211,7 @@ module Fourier
 !
 !  Transform y-direction.
 !
-          !$omp barrier
+          
           call transp_xy_other(a_re)
           call transp_xy_other(a_im)
 !
@@ -1266,7 +1268,7 @@ module Fourier
 !
 !  Transform y-direction back.
 !
-          !$omp barrier
+          
           call transp_xy_other(a_re)
           call transp_xy_other(a_im)
 !
@@ -1332,7 +1334,11 @@ module Fourier
           call fatal_error ('fft_x_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_1d(nxgrid), p_im_1d(nxgrid), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_x_parallel_1D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_x_parallel_1D', 'Shearing', lfirst_proc_x)
@@ -1342,12 +1348,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_x (a_re, p_re_1d)
         if (lcompute_im) then
           call remap_to_pencil_x (a_im, p_im_1d)
         else
+          !$omp workshare
           p_im_1d = 0.0
+          !$omp end workshare
         endif
 !
         ! Transform x-direction and normalize.
@@ -1357,7 +1365,7 @@ module Fourier
         p_im_1d = aimag (ax)/nxgrid
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_x (p_re_1d, a_re)
         call unmap_from_pencil_x (p_im_1d, a_im)
 !
@@ -1366,7 +1374,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_x (a_re, p_re_1d)
         call remap_to_pencil_x (a_im, p_im_1d)
 !
@@ -1377,13 +1385,16 @@ module Fourier
         if (lcompute_im) p_im_1d = aimag (ax)
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_x (p_re_1d, a_re)
         if (lcompute_im) call unmap_from_pencil_x (p_im_1d, a_im)
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_1d, p_im_1d)
+      !$omp end single
 !
     endsubroutine fft_x_parallel_1D
 !***********************************************************************
@@ -1426,7 +1437,11 @@ module Fourier
           call fatal_error ('fft_x_parallel_2D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny),stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate p' , .true.)
 !
       if (lshear_loc) call not_implemented('fft_x_parallel_2D', 'Shearing', lfirst_proc_x)
@@ -1436,12 +1451,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_2d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_2d)
         else
+          !$omp workshare
           p_im_2d = 0.0
+          !$omp end workshare
         endif
 !
         ! Transform x-direction and normalize.
@@ -1462,7 +1479,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_2d)
         call remap_to_pencil_xy (a_im, p_im_2d)
 !
@@ -1481,7 +1498,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d)
+      !$omp end single
 !
     endsubroutine fft_x_parallel_2D
 !***********************************************************************
@@ -1534,7 +1554,11 @@ module Fourier
           call fatal_error ('fft_x_parallel_3D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(pnx,pny,inz), p_im_3d(pnx,pny,inz), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_x_parallel_3D', 'Shearing', lfirst_proc_x)
@@ -1544,12 +1568,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_3d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_3d)
         else
+          !$omp workshare
           p_im_3d = 0.0
+          !$omp end workshare
         endif
 !
         !$omp do collapse(2)
@@ -1572,7 +1598,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_3d)
         call remap_to_pencil_xy (a_im, p_im_3d)
 !
@@ -1593,7 +1619,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d)
+      !$omp end single
 !
     endsubroutine fft_x_parallel_3D
 !***********************************************************************
@@ -1650,7 +1679,11 @@ module Fourier
           call fatal_error ('fft_x_parallel_4D','nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_4d(pnx,pny,inz,ina), p_im_4d(pnx,pny,inz,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_x_parallel_4D', 'Shearing', lfirst_proc_x)
@@ -1660,12 +1693,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_4d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_4d)
         else
+          !$omp workshare
           p_im_4d = 0.0
+          !$omp end workshare
         endif
 !
         !$omp do collapse(3)
@@ -1690,7 +1725,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_4d)
         call remap_to_pencil_xy (a_im, p_im_4d)
 !
@@ -1713,7 +1748,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_4d, p_im_4d)
+      !$omp end single
 !
     endsubroutine fft_x_parallel_4D
 !***********************************************************************
@@ -1756,7 +1794,11 @@ module Fourier
           call fatal_error ('fft_y_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_1d(nygrid), p_im_1d(nygrid), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_y_parallel_1D', 'Shearing for 1D data', lfirst_proc_y)
@@ -1767,12 +1809,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_1d)
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_1d)
         else
+          !$omp workshare
           p_im_1d = 0.0
+          !$omp end workshare
         endif
 !
         ! Transform y-direction and normalize.
@@ -1783,7 +1827,7 @@ module Fourier
         p_im_1d = aimag (ay)/nygrid
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_y (p_re_1d, a_re)
         call unmap_from_pencil_y (p_im_1d, a_im)
 !
@@ -1792,7 +1836,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_1d)
         call remap_to_pencil_y (a_im, p_im_1d)
 !
@@ -1803,13 +1847,16 @@ module Fourier
         p_im_1d = aimag (ay)
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_y (p_re_1d, a_re)
         if (lcompute_im) call unmap_from_pencil_y (p_im_1d, a_im)
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_1d, p_im_1d)
+      !$omp end single
 !
     endsubroutine fft_y_parallel_1D
 !***********************************************************************
@@ -1849,7 +1896,11 @@ module Fourier
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(nx,nygrid), p_im_2d(nx,nygrid), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
@@ -1860,12 +1911,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_2d)
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_2d)
         else
+          !$omp workshare
           p_im_2d = 0.0
+          !$omp end workshare
         endif
 !
         ! Transform y-direction and normalize.
@@ -1888,7 +1941,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_2d)
         call remap_to_pencil_y (a_im, p_im_2d)
 !
@@ -1908,7 +1961,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d)
+      !$omp end single
 !
     endsubroutine fft_y_parallel_2D
 !***********************************************************************
@@ -1960,7 +2016,11 @@ module Fourier
           call fatal_error ('fft_y_parallel_3D', 'imaginary array size mismatch /= nx,ny', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(nx,nygrid,inz), p_im_3d(nx,nygrid,inz), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
@@ -1975,7 +2035,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_3d)
         else
+          !$omp workshare
           p_im_3d = 0.0
+          !$omp end workshare
         endif
 !
         ! Transform y-direction and normalize.
@@ -2000,7 +2062,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_3d)
         call remap_to_pencil_y (a_im, p_im_3d)
 !
@@ -2022,7 +2084,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d)
+      !$omp end single
 !
     endsubroutine fft_y_parallel_3D
 !***********************************************************************
@@ -2078,7 +2143,11 @@ module Fourier
           call fatal_error ('fft_y_parallel_4D', 'imaginary array size mismatch /= nx,ny', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_4d(nx,nygrid,inz,ina), p_im_4d(nx,nygrid,inz,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
@@ -2089,12 +2158,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_4d)
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_4d)
         else
+          !$omp workshare
           p_im_4d= 0.0
+          !$omp end workshare
         endif
 !
         ! Transform y-direction and normalize.
@@ -2144,7 +2215,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_4d, p_im_4d)
+      !$omp end single
 !
     endsubroutine fft_y_parallel_4D
 !***********************************************************************
@@ -2188,7 +2262,11 @@ module Fourier
           call fatal_error ('fft_z_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_1d(nzgrid), p_im_1d(nzgrid), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_z_parallel_1D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_z_parallel_1D', 'Shearing', lfirst_proc_z)
@@ -2200,12 +2278,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_1d)
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_1d)
         else
+          !$omp workshare
           p_im_1d= 0.0
+          !$omp end workshare
         endif
 !
         ! Transform z-direction and normalize.
@@ -2216,7 +2296,7 @@ module Fourier
         p_im_1d = aimag (az)/nzgrid
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_z (p_re_1d, a_re)
         call unmap_from_pencil_z (p_im_1d, a_im)
 !
@@ -2225,7 +2305,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_1d)
         call remap_to_pencil_z (a_im, p_im_1d)
 !
@@ -2236,13 +2316,16 @@ module Fourier
         p_im_1d= aimag (az)
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_z (p_re_1d, a_re)
         if (lcompute_im) call unmap_from_pencil_z (p_im_1d, a_im)
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_1d, p_im_1d)
+      !$omp end single
 !
     endsubroutine fft_z_parallel_1D
 !***********************************************************************
@@ -2294,13 +2377,21 @@ module Fourier
           call fatal_error ('fft_z_parallel_2D', 'second dimension differs for real and imaginary part', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(nzgrid,ina), p_im_2d(nzgrid,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_z_parallel_2D', 'Shearing', lfirst_proc_z)
 !
       if (lshift) then
+        !$omp barrier
+        !$omp single
         allocate (dshift_z(ina), stat=stat)
+        !$omp end single
+        !$omp barrier
         if (stat > 0) call fatal_error ('fft_z_parallel_2D','Could not allocate shift', .true.)
         dshift_z = shift_z
       endif
@@ -2310,12 +2401,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_2d)
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_2d)
         else
+          !$omp workshare
           p_im_2d= 0.0
+          !$omp end workshare
         endif
 !
         ! Transform z-direction and normalize.
@@ -2337,7 +2430,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_2d)
         call remap_to_pencil_z (a_im, p_im_2d)
 !
@@ -2356,7 +2449,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d)
+      !$omp end single
 !
     endsubroutine fft_z_parallel_2D
 !***********************************************************************
@@ -2401,7 +2497,11 @@ module Fourier
           call fatal_error ('fft_z_parallel_3D', 'third dimension must be the z-coordinate (nz)', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(inx,iny,nzgrid), p_im_3d(inx,iny,nzgrid), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_z_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_z_parallel_3D', 'Shearing', lfirst_proc_z)
@@ -2411,12 +2511,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_3d)
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_3d)
         else
+          !$omp workshare
           p_im_3d= 0.0
+          !$omp end workshare
         endif
 !
         ! Transform z-direction and normalize.
@@ -2439,7 +2541,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_3d)
         call remap_to_pencil_z (a_im, p_im_3d)
 !
@@ -2460,7 +2562,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d)
+      !$omp end single
 !
     endsubroutine fft_z_parallel_3D
 !***********************************************************************
@@ -2508,7 +2613,11 @@ module Fourier
           call fatal_error ('fft_z_parallel_4D', 'fourth dimension differs for real and imaginary part', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_4d(inx,iny,nzgrid,ina), p_im_4d(inx,iny,nzgrid,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_z_parallel_4D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_z_parallel_3D', 'Shearing', lfirst_proc_z)
@@ -2518,12 +2627,14 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_4d)
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_4d)
         else
+          !$omp workshare
           p_im_4d= 0.0
+          !$omp end workshare
         endif
 !
         ! Transform z-direction and normalize.
@@ -2548,7 +2659,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_4d)
         call remap_to_pencil_z (a_im, p_im_4d)
 !
@@ -2571,7 +2682,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_4d, p_im_4d)
+      !$omp end single
 !
     endsubroutine fft_z_parallel_4D
 !***********************************************************************
@@ -2638,7 +2752,11 @@ module Fourier
           call fatal_error ('fft_xy_parallel_2D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny), t_re_2d(tnx,tny), t_im_2d(tnx,tny), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
@@ -2660,7 +2778,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_2d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_2d)
@@ -2670,7 +2788,7 @@ module Fourier
           !$omp end workshare
         endif
 !
-        !$omp barrier
+        
         call transp_pencil_xy (p_re_2d, t_re_2d)
         call transp_pencil_xy (p_im_2d, t_im_2d)
 !
@@ -2706,7 +2824,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_2d)
         call remap_to_pencil_xy (a_im, p_im_2d)
 !
@@ -2732,18 +2850,21 @@ module Fourier
           if (lcompute_im) t_im_2d(:,l) = aimag (ay)
         enddo
 !
-        !$omp barrier
+        
         call transp_pencil_xy (t_re_2d, p_re_2d)
         if (lcompute_im) call transp_pencil_xy (t_im_2d, p_im_2d)
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_xy (p_re_2d, a_re)
         if (lcompute_im) call unmap_from_pencil_xy (p_im_2d, a_im)
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d, t_re_2d, t_im_2d)
+      !$omp end single
 !
     endsubroutine fft_xy_parallel_2D
 !***********************************************************************
@@ -2812,7 +2933,11 @@ module Fourier
           'nygrid_other needs to be an integer multiple of nprocx*nprocy',lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny), t_re_2d(tnx,tny), t_im_2d(tnx,tny), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error('fft_xy_parallel_2D','Could not allocate p and t', .true.)
 !
       call cffti(nxgrid_other,wsavex_other)
@@ -2823,7 +2948,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy_2D_other(a_re,p_re_2d)
         call remap_to_pencil_xy_2D_other(a_im,p_im_2d)
 !
@@ -2860,7 +2985,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy_2D_other(a_re, p_re_2d)
         call remap_to_pencil_xy_2D_other(a_im, p_im_2d)
 !
@@ -2894,7 +3019,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d, t_re_2d, t_im_2d)
+      !$omp end single
 !
     endsubroutine fft_xy_parallel_2D_other
 !***********************************************************************
@@ -2973,7 +3101,11 @@ module Fourier
           call fatal_error ('fft_xy_parallel_3D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(pnx,pny,inz), p_im_3d(pnx,pny,inz), t_re_3d(tnx,tny,inz), t_im_3d(tnx,tny,inz), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
@@ -2991,15 +3123,17 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_3d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_3d)
         else
+          !$omp workshare
           p_im_3d= 0.0
+          !$omp end workshare
         endif
 !
-        !$omp barrier
+        
         call transp_pencil_xy (p_re_3d, t_re_3d)
         call transp_pencil_xy (p_im_3d, t_im_3d)
 !
@@ -3040,7 +3174,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_3d)
         call remap_to_pencil_xy (a_im, p_im_3d)
 !
@@ -3074,13 +3208,16 @@ module Fourier
         if (lcompute_im) call transp_pencil_xy (t_im_3d, p_im_3d)
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_xy (p_re_3d, a_re)
         if (lcompute_im) call unmap_from_pencil_xy (p_im_3d, a_im)
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d, t_re_3d, t_im_3d)
+      !$omp end single
 !
     endsubroutine fft_xy_parallel_3D
 !***********************************************************************
@@ -3165,7 +3302,11 @@ module Fourier
           call fatal_error ('fft_xy_parallel_4D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_4d(pnx,pny,inz,ina), p_im_4d(pnx,pny,inz,ina), t_re_4d(tnx,tny,inz,ina), t_im_4d(tnx,tny,inz,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
@@ -3183,15 +3324,17 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_4d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_4d)
         else
+          !$omp workshare
           p_im_4d= 0.0
+          !$omp end workshare
         endif
 !
-        !$omp barrier
+        
         call transp_pencil_xy (p_re_4d, t_re_4d)
         call transp_pencil_xy (p_im_4d, t_im_4d)
 !
@@ -3277,7 +3420,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_4d, p_im_4d, t_re_4d, t_im_4d)
+      !$omp end single
 !
     endsubroutine fft_xy_parallel_4D
 !***********************************************************************
@@ -3340,7 +3486,11 @@ module Fourier
           call fatal_error ('fft_xyz_parallel_3D', 'nygrid needs to be an integer multiple of nprocy*nprocz', lroot)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(nx,pny,pnz), p_im_3d(nx,pny,pnz), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_xyz_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lforward) then
@@ -3354,7 +3504,7 @@ module Fourier
         endif
 !
         ! Remap the data we need into z-pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_yz (a_re, p_re_3d)
         call remap_to_pencil_yz (a_im, p_im_3d)
 !
@@ -3378,7 +3528,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed z-pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_yz (a_re, p_re_3d)
         call remap_to_pencil_yz (a_im, p_im_3d)
 !
@@ -3405,7 +3555,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d)
+      !$omp end single
 !
     endsubroutine fft_xyz_parallel_3D
 !***********************************************************************
@@ -3472,7 +3625,11 @@ module Fourier
           call fatal_error ('fft_xyz_parallel_4D', 'nygrid needs to be an integer multiple of nprocy*nprocz', lroot)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_4d(nx,pny,pnz,ina), p_im_4d(nx,pny,pnz,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_xyz_parallel_4D', 'Could not allocate p', .true.)
 !
       if (lforward) then
@@ -3486,7 +3643,7 @@ module Fourier
         endif
 !
         ! Remap the data we need into z-pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_yz (a_re, p_re_4d)
         call remap_to_pencil_yz (a_im, p_im_4d)
 !
@@ -3512,7 +3669,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_yz (a_re, p_re_4d)
         call remap_to_pencil_yz (a_im, p_im_4d)
 !
@@ -3541,7 +3698,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_4d, p_im_4d)
+      !$omp end single
 !
     endsubroutine fft_xyz_parallel_4D
 !***********************************************************************
@@ -3577,7 +3737,11 @@ module Fourier
       if ((size (factor, 1) /= enx) .or. (size (factor, 2) /= eny)) &
           call fatal_error ('setup_extrapol_fact', 'factor x/y-dimension is invalid', lfirst_proc_xy)
 !
+      !$omp barrier
+      !$omp single
       allocate (k_2(enx,eny), stat=alloc_err)
+      !$omp end single
+      !$omp barrier
       if (alloc_err > 0) call fatal_error ('setup_extrapol_fact', 'Could not allocate k_2', .true.)
 !
       ! Get wave numbers in transposed pencil shape and calculate exp(|k|)
@@ -3602,7 +3766,10 @@ module Fourier
         factor(:,:,pos_z) = factor(:,:,onz) ** delta_z / (k_2 * nxgrid*nygrid)
       enddo
 !
+      !$omp barrier
+      !$omp single
       deallocate (k_2)
+      !$omp end single
 !
     endsubroutine setup_extrapol_fact
 !***********************************************************************
@@ -3663,11 +3830,15 @@ module Fourier
       if (lshear) call not_implemented('vect_pot_extrapol_z_parallel','shearing',lfirst_proc_xy) 
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(pnx,pny,ona), p_im_3d(pnx,pny,ona), t_re_3d(tnx,tny,ona), t_im_3d(tnx,tny,ona), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate p and t', .true.)
 !
       ! Collect the data we need.
-      !$omp barrier
+      
       call remap_to_pencil_xy (in, p_re_3d)
       p_im_3d= 0.
 !
@@ -3685,9 +3856,16 @@ module Fourier
       call transp_pencil_xy (p_re_3d, t_re_3d)
       call transp_pencil_xy (p_im_3d, t_im_3d)
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d)
+      !$omp end single
 !
+      !$omp barrier
+      !$omp single
       allocate (e_re(tnx,tny,onz,ona), e_im(tnx,tny,onz,ona), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate e', .true.)
 !
       !$omp do collapse(2)
@@ -3707,16 +3885,26 @@ module Fourier
         enddo
       enddo
 !
+      !$omp barrier
+      !$omp single
       deallocate (t_re_3d, t_im_3d)
-!
-      allocate (b_re(pnx,pny,onz,ona), b_im(pnx,pny,onz,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate b', .true.)
+      !$omp end single
 !
       !$omp barrier
+      !$omp single
+      allocate (b_re(pnx,pny,onz,ona), b_im(pnx,pny,onz,ona), stat=stat)
+      !$omp end single
+      !$omp barrier
+      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate b', .true.)
+!
+      
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
 !
+      !$omp barrier
+      !$omp single
       deallocate (e_re, e_im)
+      !$omp end single
 !
       ! Transform x-direction back in each z layer.
       !$omp do collapse(3)
@@ -3733,7 +3921,10 @@ module Fourier
       ! Distribute the results back in normal shape.
       call unmap_from_pencil_xy (b_re, out)
 !
+      !$omp barrier
+      !$omp single
       deallocate (b_re, b_im)
+      !$omp end single
 !
     endsubroutine vect_pot_extrapol_z_parallel
 !***********************************************************************
@@ -3794,7 +3985,11 @@ module Fourier
       if (lshear) call not_implemented('field_extrapol_z_parallel','shearing', lfirst_proc_xy) 
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny), t_re_2d(tnx,tny), t_im_2d(tnx,tny), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate p and t', .true.)
 !
       ! Collect the data we need.
@@ -3815,9 +4010,16 @@ module Fourier
       call transp_pencil_xy (p_re_2d, t_re_2d)
       call transp_pencil_xy (p_im_2d, t_im_2d)
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d)
+      !$omp end single
 !
+      !$omp barrier
+      !$omp single
       allocate (e_re(tnx,tny,onz,2), e_im(tnx,tny,onz,2), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate e', .true.)
 !
       !$omp do
@@ -3842,16 +4044,26 @@ module Fourier
         enddo
       enddo
 !
+      !$omp barrier
+      !$omp single
       deallocate (t_re_2d, t_im_2d)
+      !$omp end single
 !
+      !$omp barrier
+      !$omp single
       allocate (b_re(pnx,pny,onz,2), b_im(pnx,pny,onz,2), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate b', .true.)
 
-      !$omp barrier
+      
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
 !
+      !$omp barrier
+      !$omp single
       deallocate (e_re, e_im)
+      !$omp end single
 !
       ! Transform x-direction back.
       !$omp do collapse(2)
@@ -3871,7 +4083,10 @@ module Fourier
       ! Distribute the results.
       call unmap_from_pencil_xy (b_re, out)
 !
+      !$omp barrier
+      !$omp single
       deallocate (b_re, b_im)
+      !$omp end single
 !
     endsubroutine field_extrapol_z_parallel
 !***********************************************************************
@@ -4088,7 +4303,11 @@ module Fourier
           ! re-distribute data in elongated pencil shape
           ! all processors need to send their data portion
           ! each participating processor receives data
+          !$omp barrier
+          !$omp single
           allocate (buffer(ny,nz_new))
+          !$omp end single
+          !$omp barrier
           do ipy_from=0,nprocy-1
             iproc_from=find_proc(ipx,ipy_from,ipz)   !ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
@@ -4117,8 +4336,10 @@ module Fourier
 !
       ! perform FFT on all participating procesors
       if (ipy < nprocy_used) then
+        !$omp workshare
         a_im_new=0.0
         cmplx_shift=exp(cmplx(0.0,-ky_fft*shift_y))
+        !$omp end workshare
 !
 !  Transform to Fourier space.
 !
@@ -4173,7 +4394,10 @@ module Fourier
               enddo
             endif
           enddo
+          !$omp barrier
+          !$omp single
           deallocate (buffer)
+          !$omp end single
         endif
       else
 !  Only parallelization along z (or not at all).
@@ -4212,7 +4436,9 @@ module Fourier
 !
       if (lroot.and.ip<10) print*, 'fourier_shift_y: doing FFTpack in y'
       if (nygrid/=1) then
+        !$omp workshare
         a_im=0.0
+        !$omp end workshare
         call transp(a_re,'y')
         !$omp do collapse(2)
         do n=1,nz; do l=1,ny

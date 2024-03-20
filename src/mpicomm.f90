@@ -50,7 +50,7 @@
 module Mpicomm
 !
   use Cdata
-  use General, only: find_proc, ioptest
+  use General, only: find_proc, ioptest,loptest
   use Yinyang
 !
   implicit none
@@ -243,6 +243,7 @@ module Mpicomm
       endif
 
       call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID,mpierr)
+      call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_DIAG,mpierr)
       iproc_world=iproc
 !
 !  Remeber the sizes of some MPI elementary types.
@@ -516,16 +517,22 @@ module Mpicomm
 !
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy+nprocy*ipz, ipx, &
                           MPI_COMM_XBEAM, mpierr)
+      call MPI_COMM_DUP(MPI_COMM_XBEAM, MPI_COMM_XBEAM_DIAG, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipz, ipy, &
                           MPI_COMM_YBEAM, mpierr)
+      call MPI_COMM_DUP(MPI_COMM_YBEAM, MPI_COMM_YBEAM_DIAG, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipy, ipz, &
                           MPI_COMM_ZBEAM, mpierr)
+      call MPI_COMM_DUP(MPI_COMM_ZBEAM, MPI_COMM_ZBEAM_DIAG, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipz, ipx+nprocx*ipy, &
                           MPI_COMM_XYPLANE, mpierr)
+      call MPI_COMM_DUP(MPI_COMM_XYPLANE, MPI_COMM_XYPLANE_DIAG, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy, ipx+nprocx*ipz, &
                           MPI_COMM_XZPLANE, mpierr)
+      call MPI_COMM_DUP(MPI_COMM_XZPLANE, MPI_COMM_XZPLANE_DIAG, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx, ipy+nprocy*ipz, &
                           MPI_COMM_YZPLANE, mpierr)
+      call MPI_COMM_DUP(MPI_COMM_YZPLANE, MPI_COMM_YZPLANE_DIAG, mpierr)
 !
     endsubroutine initialize_mpicomm
 !***********************************************************************
@@ -1523,7 +1530,7 @@ if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
         endif
 
         nbufy=bufact*bufsizes_yz(INYL,IRCV)
-!if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INYL,IRCV), ' from', ylneigh
+!if (ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INYL,IRCV), ' from', ylneigh
         call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,mpi_precision, &
                        ylneigh,touppyr,comm,irecv_rq_fromlowy,mpierr)
 
@@ -1589,7 +1596,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         endif
 
         nbufz=bufact*bufsizes_yz(INZL,IRCV)
-!if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INZL,IRCV), ' from', zlneigh
+!if (ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INZL,IRCV), ' from', zlneigh
         call MPI_IRECV(lbufzi(:,:,:,ivar1:ivar2),nbufz,mpi_precision, &
                        zlneigh,touppzr,comm,irecv_rq_fromlowz,mpierr)
 
@@ -1741,7 +1748,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         endif
 
         nbufyz=bufact*product(bufsizes_yz_corn(:,INUL,IRCV))
-! if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INUL,IRCV), &
+! if (ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INUL,IRCV), &
 !' from', ulcornr
         if (ulcornr>=0) call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,mpi_precision, &
                                        ulcornr,TOlur,comm,irecv_rq_FRul,mpierr)
@@ -1801,7 +1808,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         endif
 
         nbufyz=bufact*product(bufsizes_yz_corn(:,INLU,IRCV))
-!if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INLU,IRCV), &
+!if (ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INLU,IRCV), &
 !' from', lucornr
         if (lucornr>=0) call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,mpi_precision, &
                                        lucornr,TOulr,comm,irecv_rq_FRlu,mpierr)
@@ -5459,7 +5466,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine check_emergency_brake
 !***********************************************************************
-    subroutine transp(a,var)
+    subroutine transp(a,var, lsync)
 !
 !  Doing the transpose of information distributed on several processors
 !  Used for doing FFTs in the y and z directions.
@@ -5483,9 +5490,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: sendc_y,recvc_y,sendc_z,recvc_z,px
       integer :: ystag=111,yrtag=112,zstag=113,zrtag=114,partner
       integer :: m,n,ibox,ix
+      logical, optional :: lsync
 !
 !  Doing x-y transpose if var='y'
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       if (var=='y') then
 !
@@ -5634,9 +5645,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
       !$omp end single
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
     endsubroutine transp
 !***********************************************************************
-    subroutine transp_xy(a)
+    subroutine transp_xy(a,lsync)
 !
 !  Doing the transpose of information distributed on several processors.
 !  This routine transposes 2D arrays in x and y only.
@@ -5652,7 +5666,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: sendc_y,recvc_y,px
       integer :: ytag=101,partner
       integer :: ibox,iy
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       if (nprocx>1) then
         print*,'transp_xy: nprocx must be equal to 1'
@@ -5745,10 +5763,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         enddo
       enddo
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine transp_xy
 !***********************************************************************
-    subroutine transp_xy_other(a)
+    subroutine transp_xy_other(a,lsync)
 !
 !  Doing the transpose of information distributed on several processors.
 !  This routine transposes 2D arrays of arbitrary size in x and y only.
@@ -5765,7 +5786,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ytag=101,partner
       integer :: ibox,iy,nx_other,ny_other
       integer :: nxgrid_other,nygrid_other
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       nx_other=size(a,1); ny_other=size(a,2)
       nxgrid_other=nx_other
@@ -5857,10 +5882,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         enddo
       enddo
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine transp_xy_other
 !***********************************************************************
-    subroutine transp_other(a,var)
+    subroutine transp_other(a,var,lsync)
 !
 !  Doing the transpose of information distributed on several processors.
 !  This routine transposes 3D arrays but is presently restricted to the
@@ -5881,7 +5909,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ytag=101,ztag=202,partner
       integer :: m,n,ibox,ix,nx_other,ny_other,nz_other
       integer :: nxgrid_other,nygrid_other,nzgrid_other
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       nx_other=size(a,1); ny_other=size(a,2) ; nz_other=size(a,3)
       nxgrid_other=nx_other
@@ -6035,10 +6067,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
              'is supposed to mean'
       endif
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine transp_other
 !***********************************************************************
-    subroutine transp_xz(a,b)
+    subroutine transp_xz(a,b,lsync)
 !
 !  Doing the transpose of information distributed on several processors.
 !  This routine transposes 2D arrays in x and z only.
@@ -6053,7 +6088,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc,px
       integer :: ztag=101,partner
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
@@ -6077,10 +6116,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine transp_xz
 !***********************************************************************
-    subroutine transp_zx(a,b)
+    subroutine transp_zx(a,b,lsync)
 !
 !  Doing the transpose of information distributed on several processors.
 !  This routine transposes 2D arrays in x and z only.
@@ -6095,7 +6137,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc,px
       integer :: ztag=101,partner
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_zx: nxgrid needs to be an integer multiple of nprocz'
@@ -6119,6 +6165,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine transp_zx
 !***********************************************************************
@@ -7646,7 +7695,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine collect_from_pencil_xy_2D
 !***********************************************************************
-    subroutine remap_to_pencil_x(in, out)
+    subroutine remap_to_pencil_x(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 1D arrays in x only for nprocx>1.
@@ -7660,7 +7709,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx) :: recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       do ibox = 0, nprocx-1
         partner = find_proc(ibox,ipy,ipz)
@@ -7680,6 +7733,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_x
 !***********************************************************************
@@ -7697,7 +7753,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine unmap_from_pencil_x
 !***********************************************************************
-    subroutine remap_to_pencil_y_1D(in, out)
+    subroutine remap_to_pencil_y_1D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 1D arrays in y only for nprocy>1.
@@ -7711,7 +7767,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(ny) :: recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       do ibox = 0, nprocy-1
         partner = find_proc(ipx,ibox,ipz)
@@ -7731,10 +7791,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_y_1D
 !***********************************************************************
-    subroutine remap_to_pencil_y_2D(in, out)
+    subroutine remap_to_pencil_y_2D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in y only for nprocy>1.
@@ -7748,7 +7811,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx,ny) :: recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       nbox = nx*ny
 !
@@ -7770,10 +7837,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_y_2D
 !***********************************************************************
-    subroutine remap_to_pencil_y_3D(in, out)
+    subroutine remap_to_pencil_y_3D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 3D arrays in y only for nprocy>1.
@@ -7788,7 +7858,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, inz ! size of the first and third dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       inx = size (in, 1)
       inz = size (in, 3)
@@ -7827,10 +7901,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (allocated (recv_buf)) deallocate (recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_y_3D
 !***********************************************************************
-    subroutine remap_to_pencil_y_4D(in, out)
+    subroutine remap_to_pencil_y_4D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 4D arrays in y only for nprocy>1.
@@ -7845,7 +7922,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, inz, ina ! size of the first, third, and fourth dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       inx = size (in, 1)
       inz = size (in, 3)
@@ -7887,6 +7968,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_y_4D
 !***********************************************************************
@@ -7946,7 +8030,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine unmap_from_pencil_y_4D
 !***********************************************************************
-    subroutine remap_to_pencil_z_1D(in, out)
+    subroutine remap_to_pencil_z_1D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 1D arrays in z only for nprocz>1.
@@ -7960,7 +8044,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nz) :: recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       do ibox = 0, nprocz-1
         partner = find_proc(ipx,ipy,ibox)
@@ -7980,10 +8068,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_z_1D
 !***********************************************************************
-    subroutine remap_to_pencil_z_2D(in, out)
+    subroutine remap_to_pencil_z_2D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in z only for nprocz>1.
@@ -7998,7 +8089,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ina ! size of the second dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:), allocatable :: recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       ina = size (in, 2)
       nbox = nz*ina
@@ -8034,10 +8129,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_z_2D
 !***********************************************************************
-    subroutine remap_to_pencil_z_3D(in, out)
+    subroutine remap_to_pencil_z_3D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 3D arrays in z only for nprocz>1.
@@ -8052,7 +8150,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, iny ! size of the first and third dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       inx = size (in, 1)
       iny = size (in, 2)
@@ -8091,10 +8193,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_z_3D
 !***********************************************************************
-    subroutine remap_to_pencil_z_4D(in, out)
+    subroutine remap_to_pencil_z_4D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 4D arrays in z only for nprocz>1.
@@ -8109,7 +8214,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, iny, ina ! size of the first, second, and fourth dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       inx = size (in, 1)
       iny = size (in, 2)
@@ -8151,6 +8260,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_z_4D
 !***********************************************************************
@@ -8211,7 +8323,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine unmap_from_pencil_z_4D
 !***********************************************************************
-    subroutine remap_to_pencil_xy_2D(in, out)
+    subroutine remap_to_pencil_xy_2D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in x and y only for nprocx>1.
@@ -8229,10 +8341,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
 !
       if (nprocx == 1) then
         out = in
         return
+      endif
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
       endif
       !$omp single
 !
@@ -8272,10 +8388,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_xy_2D
 !***********************************************************************
-    subroutine remap_to_pencil_xy_2D_other(in, out)
+    subroutine remap_to_pencil_xy_2D_other(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in x and y only for nprocx>1.
@@ -8291,17 +8410,22 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
-!
-      nnx=size(in,1) ; nny=size(in,2)
-      inx=nnx        ; iny=nny
-      onx=nprocx*nnx ; ony=nny/nprocx
-      bnx=nnx        ; bny=nny/nprocx ! transfer box sizes
+      logical, optional :: lsync
 !
       if (nprocx == 1) then
         out = in
         return
       endif
+
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
+      nnx=size(in,1) ; nny=size(in,2)
+      inx=nnx        ; iny=nny
+      onx=nprocx*nnx ; ony=nny/nprocx
+      bnx=nnx        ; bny=nny/nprocx ! transfer box sizes
+!
 !
       nbox = bnx*bny
 !
@@ -8339,10 +8463,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_xy_2D_other
 !***********************************************************************
-    subroutine remap_to_pencil_xy_3D(in, out)
+    subroutine remap_to_pencil_xy_3D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 3D arrays in x and y only for nprocx>1.
@@ -8361,12 +8488,16 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: onx, ony, onz
       integer :: ibox, partner, nbox, alloc_err
       integer :: ngc
+      logical, optional :: lsync
 !
 !  No need to remap if nprocx = 1.
 !
       if (nprocx == 1) then
         out = in
         return
+      endif
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
       endif
       !$omp single
 !
@@ -8430,10 +8561,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_xy_3D
 !***********************************************************************
-    subroutine remap_to_pencil_xy_4D(in, out)
+    subroutine remap_to_pencil_xy_4D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 4D arrays in x and y only for nprocx>1.
@@ -8452,10 +8586,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
 !
       if (nprocx == 1) then
         out = in
         return
+      endif
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
       endif
       !$omp single
 !
@@ -8503,10 +8641,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_xy_4D
 !***********************************************************************
-    subroutine unmap_from_pencil_xy_2D(in, out)
+    subroutine unmap_from_pencil_xy_2D(in, out,lsync)
 !
 !  Unmaps pencil shaped 2D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocx>1.
@@ -8524,10 +8665,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
 !
       if (nprocx == 1) then
         out = in
         return
+      endif
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
       endif
       !$omp single
 !
@@ -8567,10 +8712,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine unmap_from_pencil_xy_2D
 !***********************************************************************
-    subroutine unmap_from_pencil_xy_2D_other(in, out)
+    subroutine unmap_from_pencil_xy_2D_other(in, out,lsync)
 !
 !  Unmaps pencil shaped 2D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocx>1.
@@ -8586,7 +8734,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
+
+      if (nprocx == 1) then
+        out = in
+        return
+      endif
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
+      !$omp single
       if (nxgrid/=nygrid) &
            call stop_fatal("unmap_from_pencil_xy_2D_other: this subroutine works only for nxgrid==nygrid",lfirst_proc_xy)
 !
@@ -8595,12 +8753,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       inx=nxgrid_other        ; iny=nny/nprocx
       onx=nnx                 ; ony=nny
       bnx=nnx                 ; bny=nny/nprocx ! transfer box sizes
-!
-      if (nprocx == 1) then
-        out = in
-        return
-      endif
-      !$omp single
 !
       nbox = bnx*bny
 !
@@ -8638,10 +8790,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine unmap_from_pencil_xy_2D_other
 !***********************************************************************
-    subroutine unmap_from_pencil_xy_3D(in, out)
+    subroutine unmap_from_pencil_xy_3D(in, out,lsync)
 !
 !  Unmaps pencil shaped 3D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocx>1.
@@ -8661,12 +8816,16 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: onx, ony, onz
       integer :: ibox, partner, nbox, alloc_err
       integer :: ngc
+      logical, optional :: lsync
 !
 !  No need to unmap if nprocx = 1.
 !
       if (nprocx == 1) then
         out = in
         return
+      endif
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
       endif
       !$omp single
 !
@@ -8730,10 +8889,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate(send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine unmap_from_pencil_xy_3D
 !***********************************************************************
-    subroutine unmap_from_pencil_xy_4D(in, out)
+    subroutine unmap_from_pencil_xy_4D(in, out,lsync)
 !
 !  Unmaps pencil shaped 4D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocx>1.
@@ -8752,10 +8914,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
 !
       if (nprocx == 1) then
         out = in
         return
+      endif
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
       endif
       !$omp single
 !
@@ -8803,10 +8969,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine unmap_from_pencil_xy_4D
 !***********************************************************************
-    subroutine transp_pencil_xy_2D(in, out)
+    subroutine transp_pencil_xy_2D(in, out,lsync)
 !
 !  Transpose 2D data distributed on several processors.
 !  This routine transposes arrays in x and y only.
@@ -8828,7 +8997,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       inx = size (in, 1)
       iny = size (in, 2)
@@ -8875,10 +9048,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine transp_pencil_xy_2D
 !***********************************************************************
-    subroutine transp_pencil_xy_3D(in, out, lghost)
+    subroutine transp_pencil_xy_3D(in, out, lghost,lsync)
 !
 !  Transpose 3D data distributed on several processors.
 !  This routine transposes arrays in x and y only.
@@ -8900,9 +9076,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, iny, inz, onx, ony, onz ! sizes of in and out arrays
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
       integer :: ibox, partner, alloc_err, iz, ngc
+      logical, optional :: lsync
 !
 !  Check if ghost cells are included.
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       ngc = 0
       if (present(lghost)) then
@@ -8963,10 +9143,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine transp_pencil_xy_3D
 !***********************************************************************
-    subroutine transp_pencil_xy_4D(in, out)
+    subroutine transp_pencil_xy_4D(in, out,lsync)
 !
 !  Transpose 4D data distributed on several processors.
 !  This routine transposes arrays in x and y only.
@@ -8988,7 +9171,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
 !
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
       !$omp single
       inx = size (in, 1)
       iny = size (in, 2)
@@ -9051,10 +9238,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine transp_pencil_xy_4D
 !***********************************************************************
-    subroutine remap_to_pencil_yz_3D(in, out)
+    subroutine remap_to_pencil_yz_3D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into z-pencil shape.
 !  This routine remaps 3D arrays in y and z only for nprocz>1.
@@ -9073,10 +9263,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
 !
       if (nprocz == 1) then
         out = in
         return
+      endif
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
       endif
       !$omp single
 !
@@ -9121,10 +9315,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_yz_3D
 !***********************************************************************
-    subroutine remap_to_pencil_yz_4D(in, out)
+    subroutine remap_to_pencil_yz_4D(in, out,lsync)
 !
 !  Remaps data distributed on several processors into z-pencil shape.
 !  This routine remaps 4D arrays in y and z only for nprocz>1.
@@ -9143,10 +9340,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
 !
       if (nprocz == 1) then
         out = in
         return
+      endif
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
       endif
       !$omp single
 !
@@ -9194,10 +9395,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine remap_to_pencil_yz_4D
 !***********************************************************************
-    subroutine unmap_from_pencil_yz_3D(in, out)
+    subroutine unmap_from_pencil_yz_3D(in, out,lsync)
 !
 !  Unmaps z-pencil shaped 3D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocz>1.
@@ -9216,10 +9420,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
 !
       if (nprocz == 1) then
         out = in
         return
+      endif
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
       endif
       !$omp single
 !
@@ -9263,10 +9471,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine unmap_from_pencil_yz_3D
 !***********************************************************************
-    subroutine unmap_from_pencil_yz_4D(in, out)
+    subroutine unmap_from_pencil_yz_4D(in, out,lsync)
 !
 !  Unmaps z-pencil shaped 4D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocz>1.
@@ -9285,10 +9496,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      logical, optional :: lsync
 !
       if (nprocz == 1) then
         out = in
         return
+      endif
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
       endif
       !$omp single
 !
@@ -9336,6 +9551,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+      if (loptest(lsync,.true.)) then
+              !$omp barrier
+      endif
 !
     endsubroutine unmap_from_pencil_yz_4D
 !***********************************************************************
@@ -9931,18 +10149,32 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, intent(in) :: idir
 !
       select case(idir)
-        case(1)
+        case(IXBEAM)
           mpigetcomm=MPI_COMM_XBEAM
-        case(2)
+        case(IYBEAM)
           mpigetcomm=MPI_COMM_YBEAM
-        case(3)
+        case(IZBEAM)
           mpigetcomm=MPI_COMM_ZBEAM
-        case(12)
+        case(IXYPLANE)
           mpigetcomm=MPI_COMM_XYPLANE
-        case(13)
+        case(IXZPLANE)
           mpigetcomm=MPI_COMM_XZPLANE
-        case(23)
+        case(IYZPLANE)
           mpigetcomm=MPI_COMM_YZPLANE
+        case(IDIAG)
+          mpigetcomm=MPI_COMM_DIAG
+        case(IXBEAM_DIAG)
+          mpigetcomm=MPI_COMM_XBEAM_DIAG
+        case(IYBEAM_DIAG)
+          mpigetcomm=MPI_COMM_YBEAM_DIAG
+        case(IZBEAM_DIAG)
+          mpigetcomm=MPI_COMM_ZBEAM_DIAG
+        case(IXYPLANE_DIAG)
+          mpigetcomm=MPI_COMM_XYPLANE_DIAG
+        case(IXZPLANE_DIAG)
+          mpigetcomm=MPI_COMM_XZPLANE_DIAG
+        case(IYZPLANE_DIAG)
+          mpigetcomm=MPI_COMM_YZPLANE_DIAG
         case default
           mpigetcomm=MPI_COMM_GRID
       endselect
@@ -10867,7 +11099,7 @@ print*, 'Pencil: after barrier'
         enddo
       enddo 
 !GM: Wait for the saving command      
-if(iproc==0) then 
+if (iproc==0) then 
 !  print*, 'PENCIL Before RECEIVED LOGICAL SAVE', lesav
   call mpirecv_logical(lesav,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !  if (lesav) then
@@ -10909,9 +11141,9 @@ stop
             do iv=1,nvars
               call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
                                 (/lenx_loc,my,mz/),peer+ncpus,peer,MPI_COMM_WORLD)
-!              if(iv.eq.1) write(100+iproc) frgn_buffer(:,:,:,iv)
-!              if(iv.eq.2) write(400+iproc) frgn_buffer(:,:,:,iv)
-!              if(iv.eq.3) write(700+iproc) frgn_buffer(:,:,:,iv)
+!              if (iv.eq.1) write(100+iproc) frgn_buffer(:,:,:,iv)
+!              if (iv.eq.2) write(400+iproc) frgn_buffer(:,:,:,iv)
+!              if (iv.eq.3) write(700+iproc) frgn_buffer(:,:,:,iv)
 !print *,'PENCIL MINMAX FRGN',iproc, minval(frgn_buffer), maxval(frgn_buffer)
             enddo
 !
@@ -10966,62 +11198,62 @@ stop
       if (trim(frgn_setup%name)=='EULAG') then           
 
         if (loptest(lnonblock)) call mpiwait(frgn_setup%recv_req(px))
-        if(size(frgn_buffer,1) > size(f,1)) lf1 = 2
+        if (size(frgn_buffer,1) > size(f,1)) lf1 = 2
 !!!        f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU  !ORIGINAL SETUP
         if (lfirst_proc_y .and. nprocy==1) then
-          if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
+          if (lfirst_proc_x .and. nprocx==1) then!if only one proc in X
             f(l1:l2,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
-          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+          else if (.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
             f(:,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
           else if (lfirst_proc_x) then! on processors of first XBEAM
 !          
             f(l1:,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
-          else if(llast_proc_x) then!on processors of last XBEAM
+          else if (llast_proc_x) then!on processors of last XBEAM
             f(:l2,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
 
-        else if(.not.(lfirst_proc_y .or. llast_proc_y)) then!MID of YBEAM 
+        else if (.not.(lfirst_proc_y .or. llast_proc_y)) then!MID of YBEAM 
 !
-          if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
+          if (lfirst_proc_x .and. nprocx==1) then!if only one proc in X
             f(l1:l2,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
-          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+          else if (.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
             f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
           else if (lfirst_proc_x) then! on processors of first XBEAM
 !          
             f(l1:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
-          else if(llast_proc_x) then!on processors of last XBEAM
+          else if (llast_proc_x) then!on processors of last XBEAM
             f(:l2,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
 
 !       i
         else if (lfirst_proc_y) then! on processors of first YBEAM
-          if(lfirst_proc_x .and. nprocx==1) then !if only one proc in X
+          if (lfirst_proc_x .and. nprocx==1) then !if only one proc in X
             f(l1:l2,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
-          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+          else if (.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
             f(:,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !        
           else if (lfirst_proc_x) then! on processors of first XBEAM
 !          
             f(l1:,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
-          else if(llast_proc_x) then!on processors of last XBEAM
+          else if (llast_proc_x) then!on processors of last XBEAM
             f(:l2,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
 !          
-        else if(llast_proc_y) then!on processors of last YBEAM
-          if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
+        else if (llast_proc_y) then!on processors of last YBEAM
+          if (lfirst_proc_x .and. nprocx==1) then!if only one proc in X
             f(l1:l2,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
-          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+          else if (.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
             f(:,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           else if (lfirst_proc_x) then! on processors of first XBEAM
 !          
             f(l1:,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
-          else if(llast_proc_x) then!on processors of last XBEAM
+          else if (llast_proc_x) then!on processors of last XBEAM
             f(:l2,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
         endif
@@ -11033,7 +11265,7 @@ stop
 !print*,'PENCILFin4', iproc, size(frgn_buffer,1) , size(frgn_buffer,2)
 
 !GM: Wait for the saving command/ IF SAVING HERE IS NEEDED
-!if(iproc==0) then
+!if (iproc==0) then
 !  print*, 'PENCIL Before RECEIVED LOGICAL SAVE', lesav
 !  call mpirecv_logical(lesav,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !  print*, 'PENCIL RECEIVED LOGICAL SAVE', lesav

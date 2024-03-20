@@ -7220,7 +7220,7 @@ endif
 !  24-aug-15/MR: corrected declaration of umx2
 !
       use Diagnostics, only: save_name
-      use Mpicomm, only: mpibcast_real, mpireduce_sum, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, mpireduce_sum, MPI_COMM_WORLD, IYBEAM_DIAG, IXBEAM_DIAG
 !
       logical,save :: first=.true.
       real, dimension (nx,ny) :: fsumxy
@@ -7240,14 +7240,14 @@ endif
           umx=0.
         else
           if (lfirst_proc_z) then
-            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM_DIAG)
             uxmx=sum(fsumxy,dim=2)/nygrid
-            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM_DIAG)
             uymx=sum(fsumxy,dim=2)/nygrid
-            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM_DIAG)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
-          if (lfirst_proc_yz) call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=1)
+          if (lfirst_proc_yz) call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=IXBEAM_DIAG)
           umx=sqrt(sum(umx2)/nxgrid)
         endif
         call save_name(umx,idiag_umx)
@@ -7264,14 +7264,14 @@ endif
           umy=0.
         else
           if (lfirst_proc_z) then
-            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM_DIAG)
             uxmy=sum(fsumxy,dim=1)/nxgrid
-            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM_DIAG)
             uymy=sum(fsumxy,dim=1)/nxgrid
-            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM_DIAG)
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
-          if (lfirst_proc_xz) call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,ny,idir=2)
+          if (lfirst_proc_xz) call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,ny,idir=IYBEAM_DIAG)
           umy=sqrt(sum(umy2)/nygrid)
         endif
         call save_name(umy,idiag_umy)

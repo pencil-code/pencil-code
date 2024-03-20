@@ -3699,9 +3699,9 @@ endsubroutine pdf
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
   !
-!$omp parallel private(bb,spec_real,aatemp,spectrumy,spectrum,spec_real,spec_imag) num_threads(num_helper_threads)
+!$omp parallel private(bb,spec_real,aatemp,spectrumy,spectrum,spec_real,spec_imag) num_threads(num_helper_threads) reduction(+:spectrum_sum,spectrumy_sum,nVol2d)
 !$ thread_id = omp_get_thread_num()+1
-!reduction(+:spectrum_sum,spectrumy_sum,nVol2d)
+!r
   do ivec=1,3
     !
     if (trim(sp)=='u') then
@@ -3760,7 +3760,6 @@ endsubroutine pdf
           enddo ! loop over yproc
         enddo   ! loop over ny
       elseif (lcylindrical_coords) then
-        !$omp do collapse(2)
         do n=1,nz
           do j=1,nprocz
             call y2x(a1,l,n,j,aatempy)
@@ -4615,7 +4614,7 @@ endsubroutine pdf
     elseif (sp=='mag') then
       if (iaa==0) call fatal_error('powerhel','iaa=0')
       if (lmagnetic) then
-        !$omp do collpase(2)
+        !$omp do collapse(2)
         do n=n1,n2
           do m=m1,m2
             call curli(f,iaa,bbi,ivec)
