@@ -62,6 +62,7 @@ class ParticleData(object):
         swap_endian=False,
         quiet=False,
         DEBUG=False,
+        param=None,
     ):
         """
         Read PVAR files from Pencil Code using IDL.
@@ -81,7 +82,7 @@ class ParticleData(object):
 
         import numpy as np
         import os
-        from pencil import get_sim
+        from pencil import get_sim, read
         from pencil.math import is_number
         from sys import byteorder
 
