@@ -1330,7 +1330,11 @@ module Fourier
           call fatal_error ('fft_x_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_1d(nxgrid), p_im_1d(nxgrid), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_x_parallel_1D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_x_parallel_1D', 'Shearing', lfirst_proc_x)
@@ -1345,7 +1349,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_x (a_im, p_im_1d)
         else
+          !$omp workshare
           p_im_1d = 0.0
+          !$omp end workshare
         endif
 !
         ! Transform x-direction and normalize.
@@ -1381,7 +1387,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_1d, p_im_1d)
+      !$omp end single
 !
     endsubroutine fft_x_parallel_1D
 !***********************************************************************
@@ -1424,7 +1433,11 @@ module Fourier
           call fatal_error ('fft_x_parallel_2D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny),stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate p' , .true.)
 !
       if (lshear_loc) call not_implemented('fft_x_parallel_2D', 'Shearing', lfirst_proc_x)
@@ -1479,7 +1492,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d)
+      !$omp end single
 !
     endsubroutine fft_x_parallel_2D
 !***********************************************************************
@@ -1532,7 +1548,11 @@ module Fourier
           call fatal_error ('fft_x_parallel_3D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(pnx,pny,inz), p_im_3d(pnx,pny,inz), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_x_parallel_3D', 'Shearing', lfirst_proc_x)
@@ -1591,7 +1611,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d)
+      !$omp end single
 !
     endsubroutine fft_x_parallel_3D
 !***********************************************************************
@@ -1648,7 +1671,11 @@ module Fourier
           call fatal_error ('fft_x_parallel_4D','nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_4d(pnx,pny,inz,ina), p_im_4d(pnx,pny,inz,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_x_parallel_4D', 'Shearing', lfirst_proc_x)
@@ -1711,7 +1738,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_4d, p_im_4d)
+      !$omp end single
 !
     endsubroutine fft_x_parallel_4D
 !***********************************************************************
@@ -1754,7 +1784,11 @@ module Fourier
           call fatal_error ('fft_y_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_1d(nygrid), p_im_1d(nygrid), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_y_parallel_1D', 'Shearing for 1D data', lfirst_proc_y)
@@ -1807,7 +1841,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_1d, p_im_1d)
+      !$omp end single
 !
     endsubroutine fft_y_parallel_1D
 !***********************************************************************
@@ -1847,7 +1884,11 @@ module Fourier
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(nx,nygrid), p_im_2d(nx,nygrid), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
@@ -1906,7 +1947,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d)
+      !$omp end single
 !
     endsubroutine fft_y_parallel_2D
 !***********************************************************************
@@ -1958,7 +2002,11 @@ module Fourier
           call fatal_error ('fft_y_parallel_3D', 'imaginary array size mismatch /= nx,ny', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(nx,nygrid,inz), p_im_3d(nx,nygrid,inz), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
@@ -2020,7 +2068,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d)
+      !$omp end single
 !
     endsubroutine fft_y_parallel_3D
 !***********************************************************************
@@ -2076,7 +2127,11 @@ module Fourier
           call fatal_error ('fft_y_parallel_4D', 'imaginary array size mismatch /= nx,ny', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_4d(nx,nygrid,inz,ina), p_im_4d(nx,nygrid,inz,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
@@ -2142,7 +2197,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_4d, p_im_4d)
+      !$omp end single
 !
     endsubroutine fft_y_parallel_4D
 !***********************************************************************
@@ -2186,7 +2244,11 @@ module Fourier
           call fatal_error ('fft_z_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_1d(nzgrid), p_im_1d(nzgrid), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_z_parallel_1D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_z_parallel_1D', 'Shearing', lfirst_proc_z)
@@ -2240,7 +2302,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_1d, p_im_1d)
+      !$omp end single
 !
     endsubroutine fft_z_parallel_1D
 !***********************************************************************
@@ -2292,13 +2357,21 @@ module Fourier
           call fatal_error ('fft_z_parallel_2D', 'second dimension differs for real and imaginary part', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(nzgrid,ina), p_im_2d(nzgrid,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_z_parallel_2D', 'Shearing', lfirst_proc_z)
 !
       if (lshift) then
+        !$omp barrier
+        !$omp single
         allocate (dshift_z(ina), stat=stat)
+        !$omp end single
+        !$omp barrier
         if (stat > 0) call fatal_error ('fft_z_parallel_2D','Could not allocate shift', .true.)
         dshift_z = shift_z
       endif
@@ -2354,7 +2427,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d)
+      !$omp end single
 !
     endsubroutine fft_z_parallel_2D
 !***********************************************************************
@@ -2399,7 +2475,11 @@ module Fourier
           call fatal_error ('fft_z_parallel_3D', 'third dimension must be the z-coordinate (nz)', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(inx,iny,nzgrid), p_im_3d(inx,iny,nzgrid), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_z_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_z_parallel_3D', 'Shearing', lfirst_proc_z)
@@ -2458,7 +2538,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d)
+      !$omp end single
 !
     endsubroutine fft_z_parallel_3D
 !***********************************************************************
@@ -2506,7 +2589,11 @@ module Fourier
           call fatal_error ('fft_z_parallel_4D', 'fourth dimension differs for real and imaginary part', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_4d(inx,iny,nzgrid,ina), p_im_4d(inx,iny,nzgrid,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_z_parallel_4D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) call not_implemented('fft_z_parallel_3D', 'Shearing', lfirst_proc_z)
@@ -2569,7 +2656,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_4d, p_im_4d)
+      !$omp end single
 !
     endsubroutine fft_z_parallel_4D
 !***********************************************************************
@@ -2636,7 +2726,11 @@ module Fourier
           call fatal_error ('fft_xy_parallel_2D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny), t_re_2d(tnx,tny), t_im_2d(tnx,tny), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
@@ -2741,7 +2835,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d, t_re_2d, t_im_2d)
+      !$omp end single
 !
     endsubroutine fft_xy_parallel_2D
 !***********************************************************************
@@ -2810,7 +2907,11 @@ module Fourier
           'nygrid_other needs to be an integer multiple of nprocx*nprocy',lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny), t_re_2d(tnx,tny), t_im_2d(tnx,tny), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error('fft_xy_parallel_2D','Could not allocate p and t', .true.)
 !
       call cffti(nxgrid_other,wsavex_other)
@@ -2892,7 +2993,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d, t_re_2d, t_im_2d)
+      !$omp end single
 !
     endsubroutine fft_xy_parallel_2D_other
 !***********************************************************************
@@ -2971,7 +3075,11 @@ module Fourier
           call fatal_error ('fft_xy_parallel_3D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(pnx,pny,inz), p_im_3d(pnx,pny,inz), t_re_3d(tnx,tny,inz), t_im_3d(tnx,tny,inz), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
@@ -3078,7 +3186,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d, t_re_3d, t_im_3d)
+      !$omp end single
 !
     endsubroutine fft_xy_parallel_3D
 !***********************************************************************
@@ -3163,7 +3274,11 @@ module Fourier
           call fatal_error ('fft_xy_parallel_4D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_4d(pnx,pny,inz,ina), p_im_4d(pnx,pny,inz,ina), t_re_4d(tnx,tny,inz,ina), t_im_4d(tnx,tny,inz,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
@@ -3275,7 +3390,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_4d, p_im_4d, t_re_4d, t_im_4d)
+      !$omp end single
 !
     endsubroutine fft_xy_parallel_4D
 !***********************************************************************
@@ -3338,7 +3456,11 @@ module Fourier
           call fatal_error ('fft_xyz_parallel_3D', 'nygrid needs to be an integer multiple of nprocy*nprocz', lroot)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(nx,pny,pnz), p_im_3d(nx,pny,pnz), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_xyz_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lforward) then
@@ -3403,7 +3525,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d)
+      !$omp end single
 !
     endsubroutine fft_xyz_parallel_3D
 !***********************************************************************
@@ -3470,7 +3595,11 @@ module Fourier
           call fatal_error ('fft_xyz_parallel_4D', 'nygrid needs to be an integer multiple of nprocy*nprocz', lroot)
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_4d(nx,pny,pnz,ina), p_im_4d(nx,pny,pnz,ina), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('fft_xyz_parallel_4D', 'Could not allocate p', .true.)
 !
       if (lforward) then
@@ -3539,7 +3668,10 @@ module Fourier
 !
       endif
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_4d, p_im_4d)
+      !$omp end single
 !
     endsubroutine fft_xyz_parallel_4D
 !***********************************************************************
@@ -3575,7 +3707,11 @@ module Fourier
       if ((size (factor, 1) /= enx) .or. (size (factor, 2) /= eny)) &
           call fatal_error ('setup_extrapol_fact', 'factor x/y-dimension is invalid', lfirst_proc_xy)
 !
+      !$omp barrier
+      !$omp single
       allocate (k_2(enx,eny), stat=alloc_err)
+      !$omp end single
+      !$omp barrier
       if (alloc_err > 0) call fatal_error ('setup_extrapol_fact', 'Could not allocate k_2', .true.)
 !
       ! Get wave numbers in transposed pencil shape and calculate exp(|k|)
@@ -3600,7 +3736,10 @@ module Fourier
         factor(:,:,pos_z) = factor(:,:,onz) ** delta_z / (k_2 * nxgrid*nygrid)
       enddo
 !
+      !$omp barrier
+      !$omp single
       deallocate (k_2)
+      !$omp end single
 !
     endsubroutine setup_extrapol_fact
 !***********************************************************************
@@ -3661,7 +3800,11 @@ module Fourier
       if (lshear) call not_implemented('vect_pot_extrapol_z_parallel','shearing',lfirst_proc_xy) 
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_3d(pnx,pny,ona), p_im_3d(pnx,pny,ona), t_re_3d(tnx,tny,ona), t_im_3d(tnx,tny,ona), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate p and t', .true.)
 !
       ! Collect the data we need.
@@ -3683,9 +3826,16 @@ module Fourier
       call transp_pencil_xy (p_re_3d, t_re_3d)
       call transp_pencil_xy (p_im_3d, t_im_3d)
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_3d, p_im_3d)
+      !$omp end single
 !
+      !$omp barrier
+      !$omp single
       allocate (e_re(tnx,tny,onz,ona), e_im(tnx,tny,onz,ona), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate e', .true.)
 !
       !$omp do collapse(2)
@@ -3705,16 +3855,26 @@ module Fourier
         enddo
       enddo
 !
+      !$omp barrier
+      !$omp single
       deallocate (t_re_3d, t_im_3d)
+      !$omp end single
 !
+      !$omp barrier
+      !$omp single
       allocate (b_re(pnx,pny,onz,ona), b_im(pnx,pny,onz,ona), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate b', .true.)
 !
       
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
 !
+      !$omp barrier
+      !$omp single
       deallocate (e_re, e_im)
+      !$omp end single
 !
       ! Transform x-direction back in each z layer.
       !$omp do collapse(3)
@@ -3731,7 +3891,10 @@ module Fourier
       ! Distribute the results back in normal shape.
       call unmap_from_pencil_xy (b_re, out)
 !
+      !$omp barrier
+      !$omp single
       deallocate (b_re, b_im)
+      !$omp end single
 !
     endsubroutine vect_pot_extrapol_z_parallel
 !***********************************************************************
@@ -3792,7 +3955,11 @@ module Fourier
       if (lshear) call not_implemented('field_extrapol_z_parallel','shearing', lfirst_proc_xy) 
 !
       ! Allocate memory for large arrays.
+      !$omp barrier
+      !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny), t_re_2d(tnx,tny), t_im_2d(tnx,tny), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate p and t', .true.)
 !
       ! Collect the data we need.
@@ -3813,9 +3980,16 @@ module Fourier
       call transp_pencil_xy (p_re_2d, t_re_2d)
       call transp_pencil_xy (p_im_2d, t_im_2d)
 !
+      !$omp barrier
+      !$omp single
       deallocate (p_re_2d, p_im_2d)
+      !$omp end single
 !
+      !$omp barrier
+      !$omp single
       allocate (e_re(tnx,tny,onz,2), e_im(tnx,tny,onz,2), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate e', .true.)
 !
       !$omp do
@@ -3840,16 +4014,26 @@ module Fourier
         enddo
       enddo
 !
+      !$omp barrier
+      !$omp single
       deallocate (t_re_2d, t_im_2d)
+      !$omp end single
 !
+      !$omp barrier
+      !$omp single
       allocate (b_re(pnx,pny,onz,2), b_im(pnx,pny,onz,2), stat=stat)
+      !$omp end single
+      !$omp barrier
       if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate b', .true.)
 
       
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
 !
+      !$omp barrier
+      !$omp single
       deallocate (e_re, e_im)
+      !$omp end single
 !
       ! Transform x-direction back.
       !$omp do collapse(2)
@@ -3869,7 +4053,10 @@ module Fourier
       ! Distribute the results.
       call unmap_from_pencil_xy (b_re, out)
 !
+      !$omp barrier
+      !$omp single
       deallocate (b_re, b_im)
+      !$omp end single
 !
     endsubroutine field_extrapol_z_parallel
 !***********************************************************************
@@ -4086,7 +4273,11 @@ module Fourier
           ! re-distribute data in elongated pencil shape
           ! all processors need to send their data portion
           ! each participating processor receives data
+          !$omp barrier
+          !$omp single
           allocate (buffer(ny,nz_new))
+          !$omp end single
+          !$omp barrier
           do ipy_from=0,nprocy-1
             iproc_from=find_proc(ipx,ipy_from,ipz)   !ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
@@ -4171,7 +4362,10 @@ module Fourier
               enddo
             endif
           enddo
+          !$omp barrier
+          !$omp single
           deallocate (buffer)
+          !$omp end single
         endif
       else
 !  Only parallelization along z (or not at all).
