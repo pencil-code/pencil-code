@@ -1081,7 +1081,9 @@ module Fourier
           if (lcompute_im) then
             call transp_xy(a_im)
           else
+            !$omp workshare
             a_im=0.0
+            !$omp end workshare
           endif
 !
           !$omp do collapse(2)
@@ -1452,7 +1454,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_2d)
         else
+          !$omp workshare
           p_im_2d = 0.0
+          !$omp end workshare
         endif
 !
         ! Transform x-direction and normalize.
@@ -1567,7 +1571,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_3d)
         else
+          !$omp workshare
           p_im_3d = 0.0
+          !$omp end workshare
         endif
 !
         !$omp do collapse(2)
@@ -1690,7 +1696,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_4d)
         else
+          !$omp workshare
           p_im_4d = 0.0
+          !$omp end workshare
         endif
 !
         !$omp do collapse(3)
@@ -1804,7 +1812,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_1d)
         else
+          !$omp workshare
           p_im_1d = 0.0
+          !$omp end workshare
         endif
 !
         ! Transform y-direction and normalize.
@@ -1904,7 +1914,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_2d)
         else
+          !$omp workshare
           p_im_2d = 0.0
+          !$omp end workshare
         endif
 !
         ! Transform y-direction and normalize.
@@ -2021,7 +2033,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_3d)
         else
+          !$omp workshare
           p_im_3d = 0.0
+          !$omp end workshare
         endif
 !
         ! Transform y-direction and normalize.
@@ -2147,7 +2161,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_4d)
         else
+          !$omp workshare
           p_im_4d= 0.0
+          !$omp end workshare
         endif
 !
         ! Transform y-direction and normalize.
@@ -2265,7 +2281,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_1d)
         else
+          !$omp workshare
           p_im_1d= 0.0
+          !$omp end workshare
         endif
 !
         ! Transform z-direction and normalize.
@@ -2386,7 +2404,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_2d)
         else
+          !$omp workshare
           p_im_2d= 0.0
+          !$omp end workshare
         endif
 !
         ! Transform z-direction and normalize.
@@ -2494,7 +2514,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_3d)
         else
+          !$omp workshare
           p_im_3d= 0.0
+          !$omp end workshare
         endif
 !
         ! Transform z-direction and normalize.
@@ -2608,7 +2630,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_4d)
         else
+          !$omp workshare
           p_im_4d= 0.0
+          !$omp end workshare
         endif
 !
         ! Transform z-direction and normalize.
@@ -3102,7 +3126,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_3d)
         else
+          !$omp workshare
           p_im_3d= 0.0
+          !$omp end workshare
         endif
 !
         
@@ -3301,7 +3327,9 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_4d)
         else
+          !$omp workshare
           p_im_4d= 0.0
+          !$omp end workshare
         endif
 !
         
@@ -4306,8 +4334,10 @@ module Fourier
 !
       ! perform FFT on all participating procesors
       if (ipy < nprocy_used) then
+        !$omp workshare
         a_im_new=0.0
         cmplx_shift=exp(cmplx(0.0,-ky_fft*shift_y))
+        !$omp end workshare
 !
 !  Transform to Fourier space.
 !
@@ -4404,7 +4434,9 @@ module Fourier
 !
       if (lroot.and.ip<10) print*, 'fourier_shift_y: doing FFTpack in y'
       if (nygrid/=1) then
+        !$omp workshare
         a_im=0.0
+        !$omp end workshare
         call transp(a_re,'y')
         !$omp do collapse(2)
         do n=1,nz; do l=1,ny
