@@ -8230,11 +8230,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
-      !$omp single
       if (nprocx == 1) then
         out = in
         return
       endif
+      !$omp single
 !
       nbox = bnx*bny
 !
@@ -8292,7 +8292,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
-      !$omp single
       nnx=size(in,1) ; nny=size(in,2)
       inx=nnx        ; iny=nny
       onx=nprocx*nnx ; ony=nny/nprocx
@@ -8302,6 +8301,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
+      !$omp single
 !
       nbox = bnx*bny
 !
@@ -8364,11 +8364,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  No need to remap if nprocx = 1.
 !
-      !$omp single
       if (nprocx == 1) then
         out = in
         return
       endif
+      !$omp single
 !
 !  Check the dimensions.
 !
@@ -8453,11 +8453,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-      !$omp single
       if (nprocx == 1) then
         out = in
         return
       endif
+      !$omp single
 !
       inz = size (in, 3)
       ina = size (in, 4)
@@ -8525,11 +8525,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
-      !$omp single
       if (nprocx == 1) then
         out = in
         return
       endif
+      !$omp single
 !
       nbox = bnx*bny
 !
@@ -8587,7 +8587,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
-      !$omp single
       if (nxgrid/=nygrid) &
            call stop_fatal("unmap_from_pencil_xy_2D_other: this subroutine works only for nxgrid==nygrid",lfirst_proc_xy)
 !
@@ -8601,6 +8600,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
+      !$omp single
 !
       nbox = bnx*bny
 !
@@ -8664,11 +8664,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  No need to unmap if nprocx = 1.
 !
-      !$omp single
-      nox: if (nprocx == 1) then
+      if (nprocx == 1) then
         out = in
         return
-      endif nox
+      endif
+      !$omp single
 !
 !  Check the dimensions.
 !
@@ -8753,11 +8753,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-      !$omp single
       if (nprocx == 1) then
         out = in
         return
       endif
+      !$omp single
 !
       inz = size (in, 3)
       ina = size (in, 4)
@@ -9074,11 +9074,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
 !
-      !$omp single
       if (nprocz == 1) then
         out = in
         return
       endif
+      !$omp single
 !
       inx = size (in, 1)
       onx = size (out, 1)
@@ -9144,11 +9144,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-      !$omp single
       if (nprocz == 1) then
         out = in
         return
       endif
+      !$omp single
 !
       inx = size (in, 1)
       ina = size (in, 4)
@@ -9217,11 +9217,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
 !
-      !$omp single
       if (nprocz == 1) then
         out = in
         return
       endif
+      !$omp single
 !
       inx = size (in, 1)
       onx = size (out, 1)
@@ -9286,11 +9286,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
-      !$omp single
       if (nprocz == 1) then
         out = in
         return
       endif
+      !$omp single
 !
       inx = size (in, 1)
       ina = size (in, 4)

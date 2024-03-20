@@ -76,14 +76,16 @@ module Fourier
     subroutine initialize_fourier
 
       include 'fourier_common.h'
+
+      integer :: nthreads
 !
 !  Initializations of module auxiliaries.
 !
         if (lactive_dimension(1)) allocate(wsavex(4*nxgrid+15,num_helper_threads))
         if (lactive_dimension(2)) allocate(wsavey(4*nygrid+15,num_helper_threads))
         if (lactive_dimension(3)) allocate(wsavez(4*nzgrid+15,num_helper_threads))
- 
-!$omp parallel num_threads(num_helper_threads)
+        nthreads = max(num_helper_threads,1)
+!$omp parallel num_threads(nthreads)
 !$ thread_id = omp_get_thread_num()+1
         if (lactive_dimension(1)) call cffti(nxgrid,wsavex(:,thread_id))
         if (lactive_dimension(2)) call cffti(nygrid,wsavey(:,thread_id))
