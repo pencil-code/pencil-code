@@ -422,8 +422,8 @@ has_nans(AcMesh mesh_in)
           if (isnan(mesh_in.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)]))
           {
             res = true;
-            printf("nan at %d,%d,%d\n", i, j, k);
-            printf("field = %d", ivar);
+            acLogFromRootProc(rank,"nan at %d,%d,%d\n", i, j, k);
+            acLogFromRootProc(rank,"field = %d", ivar);
           }
         }
       }
@@ -456,10 +456,10 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
   {
     if (has_nans(mesh))
     {
-      printf("had nans before starting GPU comp\n");
+      acLogFromRootProc(rank,"had nans before starting GPU comp\n");
       exit(0);
     }
-    printf("doing full i.e. loading\n");
+    acLogFromRootProc(rank,"doing full i.e. loading\n");
     acGridSynchronizeStream(STREAM_ALL);
     acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
     acGridSynchronizeStream(STREAM_ALL);
@@ -481,7 +481,7 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
   if (isubstep == 3) acGridExecuteTaskGraph(graph_3, 1);
 
   acGridSynchronizeStream(STREAM_ALL);
-  // printf("Done substep: %d\n",isubstep);
+  // acLogFromRootProc(rank,"Done substep: %d\n",isubstep);
   // fflush(stdout);
   // int found_nan;
   // FILE* diag_file = fopen("astaroth_timeseries.ts", "a");
@@ -549,9 +549,9 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
           if (fabs(out_val - true_val) > epsilon)
           {
             passed = false;
-            printf("C val wrong at %d,%d,%d\n", i, j, k);
-            printf("field = %d", ivar);
-            printf("C val: %f\tF val: %f\n", out_val, true_val);
+            acLogFromRootProc(rank,"C val wrong at %d,%d,%d\n", i, j, k);
+            acLogFromRootProc(rank,"field = %d", ivar);
+            acLogFromRootProc(rank,"C val: %f\tF val: %f\n", out_val, true_val);
           }
         }
       }
@@ -559,26 +559,26 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
   }
   if (passed)
   {
-    printf("Passed C test :)\n");
+    acLogFromRootProc(rank,"Passed C test :)\n");
   }
   else
   {
-    printf("Did not pass C test :(\n");
+    acLogFromRootProc(rank,"Did not pass C test :(\n");
   }
   if (!passed) return;
-  printf("Starting GPUtest\n");
+  acLogFromRootProc(rank,"Starting GPUtest\n");
   fflush(stdout);
   acGridSynchronizeStream(STREAM_ALL);
   // acGridLoadMesh(STREAM_DEFAULT,mesh);
-  // printf("loaded mesh\n");
+  // acLogFromRootProc(rank,"loaded mesh\n");
   // acGridTestBCKernel({mx,my,1});
 
   acGridSynchronizeStream(STREAM_ALL);
-  printf("after bc kernel\n");
+  acLogFromRootProc(rank,"after bc kernel\n");
   fflush(stdout);
   acGridStoreMesh(STREAM_DEFAULT, &mesh);
   acGridSynchronizeStream(STREAM_ALL);
-  printf("after store\n");
+  acLogFromRootProc(rank,"after store\n");
   fflush(stdout);
   AcReal max_abs_not_passed=-1.0;
   for (int i = 0; i < mx; i++)
@@ -594,23 +594,23 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
           if (fabs(out_val - true_val) > epsilon)
           {
             passed = false;
-            printf("GPU val wrong at %d,%d,%d\n", i, j, k);
-            printf("field = %d", ivar);
-            printf("GPU val: %f\tTRUE val: %f\tDIFF: %f\n", out_val, true_val, fabs(out_val - true_val));
+            acLogFromRootProc(rank,"GPU val wrong at %d,%d,%d\n", i, j, k);
+            acLogFromRootProc(rank,"field = %d", ivar);
+            acLogFromRootProc(rank,"GPU val: %f\tTRUE val: %f\tDIFF: %f\n", out_val, true_val, fabs(out_val - true_val));
             if (fabs(out_val)>max_abs_not_passed) max_abs_not_passed = out_val;
           }
         }
       }
     }
   }
-  printf("maximum abs incorrect val: %f\n",max_abs_not_passed);
+  acLogFromRootProc(rank,"maximum abs incorrect val: %f\n",max_abs_not_passed);
   if (passed)
   {
-    printf("Passed GPU test :)\n");
+    acLogFromRootProc(rank,"Passed GPU test :)\n");
   }
   else
   {
-    printf("Did not pass GPU test :(\n");
+    acLogFromRootProc(rank,"Did not pass GPU test :(\n");
   }
   return;
 }
@@ -620,7 +620,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   // __energy_MOD_pushpars2c(p_par_energy);
   // mesh.info.profiles[AC_dlnhcond_prof]=dlnhcond_prof; // [2-1] dlnhcond_prof real(nz)
   // for (int i=20;i<30;++i)
-  //   printf("C: dlnhcond_prof %d=%f\n",i,mesh.info.profiles[AC_dlnhcond_prof][i]);
+  //   acLogFromRootProc(rank,"C: dlnhcond_prof %d=%f\n",i,mesh.info.profiles[AC_dlnhcond_prof][i]);
   // fflush(stdout);
   // return;
   // make_tasks(diagnostics_func, reduction_func, finalize_func, write_func);
@@ -629,7 +629,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   constexpr real beta[3] = {(1.0 / 3.0), (15.0 / 16.0), (8.0 / 15.0)};
   constexpr int num_of_steps = 100;
 
-  printf("HI from testRHS\n");
+  acLogFromRootProc(rank,"HI from testRHS\n");
   fflush(stdout);
   AcMesh mesh_true;
   AcMesh mesh_test;
@@ -662,8 +662,8 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
     offset += mw;
   }
   AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  printf("n0: %d,%d,%d\trank: %d\n", dims.n0.x, dims.n0.y, dims.n0.z, rank);
-  printf("n1: %d,%d,%d\trank: %d\n", dims.n1.x, dims.n1.y, dims.n1.z, rank);
+  acLogFromRootProc(rank,"n0: %d,%d,%d\trank: %d\n", dims.n0.x, dims.n0.y, dims.n0.z, rank);
+  acLogFromRootProc(rank,"n1: %d,%d,%d\trank: %d\n", dims.n1.x, dims.n1.y, dims.n1.z, rank);
 
   //dryrun
   // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step0, dims.n0,dims.n1);
@@ -706,9 +706,9 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
           if (out_val != true_val)
           {
             loaded_correct = false;
-            printf("Loaded val wrong at %d,%d,%d\n", i, j, k);
-            printf("field = %d", ivar);
-            printf("Loaded val: %f\tTRUE val: %f\n", out_val, true_val);
+            acLogFromRootProc(rank,"Loaded val wrong at %d,%d,%d\n", i, j, k);
+            acLogFromRootProc(rank,"field = %d", ivar);
+            acLogFromRootProc(rank,"Loaded val: %f\tTRUE val: %f\n", out_val, true_val);
           }
         }
       }
@@ -737,17 +737,17 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   // derx_normal += AC_inv_dsx*DER1_1*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x+1,y,z)]);
   // derx_normal += AC_inv_dsx*DER1_2*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x+2,y,z)]);
   // derx_normal += AC_inv_dsx*DER1_3*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x+3,y,z)]);
-  // printf("test derx_ux: %.7e\n",derx_ux);
-  // printf("normal derx_ux. %.7e\n",derx_normal);
+  // acLogFromRootProc(rank,"test derx_ux: %.7e\n",derx_ux);
+  // acLogFromRootProc(rank,"normal derx_ux. %.7e\n",derx_normal);
   fflush(stdout);
   // return;
   if (loaded_correct)
   {
-    printf("loaded correct data\n");
+    acLogFromRootProc(rank,"loaded correct data\n");
   }
   else
   {
-    printf("loaded incorrect data :(\n");
+    acLogFromRootProc(rank,"loaded incorrect data :(\n");
   }
 
   //set output buffer to 0 since if we are reading from it we don't want NaNs
@@ -784,7 +784,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
       }
     }
   }
-  printf("GPU: uumax: %.7e\n", pow(max_uux2+max_uuy2+max_uuz2,0.5));
+  acLogFromRootProc(rank,"GPU: uumax: %.7e\n", pow(max_uux2+max_uuy2+max_uuz2,0.5));
     acGridSynchronizeStream(STREAM_ALL);
   }
     acGridSynchronizeStream(STREAM_ALL);
@@ -846,10 +846,10 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
           {
             passed = false;
             num_of_points_where_different[ivar]++;
-            // printf("rhs val wrong at %d,%d,%d\n", i, j, k);
-            // printf("field = %d", ivar);
-            // printf("GPU val: %.7e\tTRUE val: %.7e\n", out_val, true_val);
-            // printf("PID: %d\n", rank);
+            // acLogFromRootProc(rank,"rhs val wrong at %d,%d,%d\n", i, j, k);
+            // acLogFromRootProc(rank,"field = %d", ivar);
+            // acLogFromRootProc(rank,"GPU val: %.7e\tTRUE val: %.7e\n", out_val, true_val);
+            // acLogFromRootProc(rank,"PID: %d\n", rank);
             if (max_abs_not_passed_val<abs(out_val)){
               max_abs_not_passed_val = abs(out_val);
               true_pair = true_val;
@@ -864,28 +864,28 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
           }
           if (isnan(out_val))
           {
-            printf("TP: nan before at %d,%d,%d,%d!\n!",i,j,k,ivar);
-            printf("%.7e\n",out_val);
+            acLogFromRootProc(rank,"nan before at %d,%d,%d,%d!\n!",i,j,k,ivar);
+            acLogFromRootProc(rank,"%.7e\n",out_val);
           }
         }
       }
     }
   }
   for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
-    printf("ratio of values wrong for field: %d\t %f\n",ivar,(double)num_of_points_where_different[ivar]/volume_size(dims.n1-dims.n0));
+    acLogFromRootProc(rank,"ratio of values wrong for field: %d\t %f\n",ivar,(double)num_of_points_where_different[ivar]/volume_size(dims.n1-dims.n0));
   passed &= !has_nans(mesh);
   if (passed)
   {
-    printf("Passed GPU test :)\n");
+    acLogFromRootProc(rank,"Passed GPU test :)\n");
   }
   else
   {
-    printf("Did not pass GPU test :(\n");
+    acLogFromRootProc(rank,"Did not pass GPU test :(\n");
   }
-  printf("max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
-  printf("max abs relative difference val: %.7e\n",max_abs_relative_difference);
-  printf("largest difference: %.7e\t%.7e\n",gpu_val_for_largest_diff, true_val_for_largest_diff);
-  printf("abs range: %.7e-%7e\n",min_abs_value,max_abs_value);
+  acLogFromRootProc(rank,"max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
+  acLogFromRootProc(rank,"max abs relative difference val: %.7e\n",max_abs_relative_difference);
+  acLogFromRootProc(rank,"largest difference: %.7e\t%.7e\n",gpu_val_for_largest_diff, true_val_for_largest_diff);
+  acLogFromRootProc(rank,"abs range: %.7e-%7e\n",min_abs_value,max_abs_value);
   fflush(stdout);
 }
 /***********************************************************************************************/
@@ -894,7 +894,7 @@ extern "C" void registerGPU(AcReal *farray)
   // AcReal* profile_x_host = (AcReal*)malloc(sizeof(AcReal)*mx);
   // for (int i=0;i<mx;i++){
   //     profile_x_host[i] = (AcReal)i;
-  //     printf("profile_x_host[%d]=%f\n",i,profile_x_host[i]);
+  //     acLogFromRootProc(rank,"profile_x_host[%d]=%f\n",i,profile_x_host[i]);
   // }
   // mesh.profiles[PROFILE_X] = profile_x_host;
 
@@ -944,43 +944,44 @@ void setupConfig(AcMeshInfo &config)
   // Enter physics related parameters in config.
   #include "PC_modulepars.h"
 
-  printf("Done setupConfig\n");
+  acLogFromRootProc(rank, "Done setupConfig\n");
   fflush(stdout);
 }
 /***********************************************************************************************/
 void checkConfig(AcMeshInfo &config)
 {
-  printf("Check that config is correct\n");
-  printf("n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
-  printf("rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
+ acLogFromRootProc(rank,"Check that config is correct\n");
+ acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
+ acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
+
 #if LENTROPY
-  printf("lpressuregradientgas= %d %d \n", lpressuregradient_gas, config.int_params[AC_lpressuregradient_gas]);
-  printf("chi= %f %f \n", chi, config.real_params[AC_chi]);
+ acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, config.int_params[AC_lpressuregradient_gas]);
+ acLogFromRootProc(rank,"chi= %f %f \n", chi, config.real_params[AC_chi]);
 #endif
 #if LVISCOSITY
-  printf("nu= %f %f \n", nu, config.real_params[AC_nu]);
-  printf("zeta= %f %f \n", zeta, config.real_params[AC_zeta]);
+ acLogFromRootProc(rank,"nu= %f %f \n", nu, config.real_params[AC_nu]);
+ acLogFromRootProc(rank,"zeta= %f %f \n", zeta, config.real_params[AC_zeta]);
 #endif
 #if LMAGNETIC
-  printf("eta= %f %f \n", eta, config.real_params[AC_eta]);
+  acLogFromRootProc(rank,"eta= %f %f \n", eta, config.real_params[AC_eta]);
 #endif
 #if LEOS
-  printf("cs20= %f %f \n", cs20, config.real_params[AC_cs20]);
-  //  printf("gamma= %f %f \n", gamma, config.real_params[AC_gamma]);
-  printf("gamma_m1= %f %f \n", gamma_m1, config.real_params[AC_gamma_m1]);
-  printf("gamma1= %f %f \n", gamma1, config.real_params[AC_gamma1]);
-  printf("cv= %f %f \n", cv, config.real_params[AC_cv]);
-  printf("cp= %f %f \n", cp, config.real_params[AC_cp]);
-  printf("lnT0= %f %f \n", lnTT0, config.real_params[AC_lnTT0]);
-  printf("lnrho0= %f %f \n", lnrho0, config.real_params[AC_lnrho0]);
+  acLogFromRootProc(rank,"cs20= %f %f \n", cs20, config.real_params[AC_cs20]);
+  //  acLogFromRootProc(rank,"gamma= %f %f \n", gamma, config.real_params[AC_gamma]);
+  acLogFromRootProc(rank,"gamma_m1= %f %f \n", gamma_m1, config.real_params[AC_gamma_m1]);
+  acLogFromRootProc(rank,"gamma1= %f %f \n", gamma1, config.real_params[AC_gamma1]);
+  acLogFromRootProc(rank,"cv= %f %f \n", cv, config.real_params[AC_cv]);
+  acLogFromRootProc(rank,"cp= %f %f \n", cp, config.real_params[AC_cp]);
+  acLogFromRootProc(rank,"lnT0= %f %f \n", lnTT0, config.real_params[AC_lnTT0]);
+  acLogFromRootProc(rank,"lnrho0= %f %f \n", lnrho0, config.real_params[AC_lnrho0]);
 #endif
 #if LFORCING
-  printf("iforcing_zsym= %f %f \n", iforcing_zsym, config.int_params[AC_iforcing_zsym]);
-  printf("k1_ff= %f %f \n", k1_ff, config.real_params[AC_k1_ff]);
-  printf("tforce_stop= %f %f \n", tforce_stop, config.real_params[AC_tforce_stop]);
-  printf("k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
+  acLogFromRootProc(rank,"iforcing_zsym= %f %f \n", iforcing_zsym, config.int_params[AC_iforcing_zsym]);
+  acLogFromRootProc(rank,"k1_ff= %f %f \n", k1_ff, config.real_params[AC_k1_ff]);
+  acLogFromRootProc(rank,"tforce_stop= %f %f \n", tforce_stop, config.real_params[AC_tforce_stop]);
+  acLogFromRootProc(rank,"k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
 #endif
-  printf("mu0= %f %f \n", mu0, config.real_params[AC_mu0]);
+  acLogFromRootProc(rank,"mu0= %f %f \n", mu0, config.real_params[AC_mu0]);
 }
 /***********************************************************************************************/
 
@@ -1038,52 +1039,52 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
 #if SINGLEPASS
   auto single_loader0= [](ParamLoadingInfo p)
   {
-	  p.params -> singlepass_solve.ac_input_step_num = 0;
-	  p.params -> singlepass_solve.ac_input_dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> singlepass_solve.step_num = 0;
+	  p.params -> singlepass_solve.dt = p.device->local_config.real_params[AC_dt];
   };
   auto single_loader1= [](ParamLoadingInfo p)
   {
-	  p.params -> singlepass_solve.ac_input_step_num = 1;
-	  p.params -> singlepass_solve.ac_input_dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> singlepass_solve.step_num = 1;
+	  p.params -> singlepass_solve.dt = p.device->local_config.real_params[AC_dt];
   };
   auto single_loader2= [](ParamLoadingInfo p)
   {
-	  p.params -> singlepass_solve.ac_input_step_num = 2;
-	  p.params -> singlepass_solve.ac_input_dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> singlepass_solve.step_num = 2;
+	  p.params -> singlepass_solve.dt = p.device->local_config.real_params[AC_dt];
   };
 #else
 
   auto intermediate_loader_0= [](ParamLoadingInfo p)
   {
-	  p.params -> twopass_solve_intermediate.ac_input_step_num = 0;
-	  p.params -> twopass_solve_intermediate.ac_input_dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> twopass_solve_intermediate.step_num = 0;
+	  p.params -> twopass_solve_intermediate.dt = p.device->local_config.real_params[AC_dt];
   };
   auto final_loader_0 = [](ParamLoadingInfo p)
   {
-	  p.params -> twopass_solve_final.ac_input_step_num = 0;
+	  p.params -> twopass_solve_final.step_num = 0;
   };
   
 
 
   auto intermediate_loader_1= [](ParamLoadingInfo p)
   {
-	  p.params -> twopass_solve_intermediate.ac_input_step_num = 1;
-	  p.params -> twopass_solve_intermediate.ac_input_dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> twopass_solve_intermediate.step_num = 1;
+	  p.params -> twopass_solve_intermediate.dt = p.device->local_config.real_params[AC_dt];
   };
   auto final_loader_1 = [](ParamLoadingInfo p)
   {
-	  p.params -> twopass_solve_final.ac_input_step_num = 1;
+	  p.params -> twopass_solve_final.step_num = 1;
   };
 
 
   auto intermediate_loader_2= [](ParamLoadingInfo p)
   {
-	  p.params -> twopass_solve_intermediate.ac_input_step_num = 2;
-	  p.params -> twopass_solve_intermediate.ac_input_dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> twopass_solve_intermediate.step_num = 2;
+	  p.params -> twopass_solve_intermediate.dt = p.device->local_config.real_params[AC_dt];
   };
   auto final_loader_2= [](ParamLoadingInfo p)
   {
-	  p.params -> twopass_solve_final.ac_input_step_num = 2;
+	  p.params -> twopass_solve_final.step_num = 2;
   };
 #endif
   graph_1 = acGridBuildTaskGraph(
@@ -1122,9 +1123,8 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
 #endif
     });
 
-  printf("BUILD graphs\n");
   acGridSynchronizeStream(STREAM_ALL);
-  printf("DONE initializeGPU\n");
+  acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
 }
 /***********************************************************************************************/
@@ -1132,7 +1132,7 @@ extern "C" void copyFarray(AcReal* f)
 {
   /**
   if (has_nans(mesh)){
-    printf("found nans while copying\n");
+    acLogFromRootProc(rank,"found nans while copying\n");
     exit(0);
   }
   **/
@@ -1153,7 +1153,7 @@ extern "C" void loadFarray()
 {
   /**
   if (has_nans(mesh)){
-    printf("found nans while copying\n");
+    acLogFromRootProc(rank,"found nans while copying\n");
     exit(0);
   }
   **/

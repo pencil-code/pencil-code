@@ -68,7 +68,7 @@ subroutine helper_loop(f,p)
 ! 7-feb-24/TP: coded
 !
 !$  do while(lhelper_run)
-!$    call signal_wait(ldiag_perform_diagnostics,.true.)
+!$    call signal_wait(ldiag_perform_diagnostics,lhelper_run)
 !$    if (lhelper_run) call perform_diagnostics(f,p)
 !$  enddo
 
@@ -478,11 +478,7 @@ subroutine timeloop(f,df,p)
 
   enddo Time_loop
 
-!!$ call wait_all_thread_pool
-!!$ call free_thread_pool
 !$  lhelper_run = .false.
-!TP: This is set to .true. to free the helper in case it is in a hotloop waiting for diagnostics but we are finished.
-!$  call signal_send(ldiag_perform_diagnostics,.true.)
 
 endsubroutine timeloop
 !***********************************************************************

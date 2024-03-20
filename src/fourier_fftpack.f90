@@ -127,7 +127,7 @@ module Fourier
 !
         if (nygrid/=1) then
           if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
 !
@@ -147,7 +147,7 @@ module Fourier
 !
         if (nzgrid/=1) then
           if (nzgrid/=nxgrid) call fatal_error('fourier_transform','must have nzgrid=nxgrid')
-          !$omp barrier
+          
           call transp(a_re,'z')
           call transp(a_im,'z')
 !
@@ -189,7 +189,7 @@ module Fourier
           if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
 !
           if (nzgrid/=1) then
-            !$omp barrier
+            
             call transp(a_re,'z')
             call transp(a_im,'z')
           endif
@@ -207,7 +207,7 @@ module Fourier
 !  Transform x-direction back. Transpose to go from (y,x,z) to (x,y,z).
 !
         if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in x'
-        !$omp barrier
+        
         if (nygrid==1) then
           call transp(a_re,'z')
           call transp(a_im,'z')
@@ -271,7 +271,7 @@ module Fourier
 !
         if (nygrid/=1) then
           if (nygrid/=nxgrid) call fatal_error('fourier_transform_xy','must have nygrid=nxgrid')
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
 !
@@ -307,7 +307,7 @@ module Fourier
 !
         if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
         if (nygrid/=1) then
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
         endif
@@ -367,7 +367,7 @@ module Fourier
         a_im(:,m,n)=aimag(ax(1:nx))
       enddo; enddo
 
-      !$omp barrier
+      
       call transp(a_re,'z')
       call transp(a_im,'z')
 !
@@ -519,7 +519,7 @@ module Fourier
 !
         if (lroot .and. ip<10) print*,'fourier_transform_y: nxgrid>=nygrid'
 !
-        !$omp barrier
+        
         call transp(a_re,'y') ; call transp(a_im,'y')
         !$omp do collapse(3)
         do n=1,nz; do l=1,ny
@@ -678,7 +678,7 @@ module Fourier
 !
         if (nygrid/=1) then
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
           !$omp do collapse(2)
@@ -698,7 +698,7 @@ module Fourier
 !
         if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nygrid/=1) then
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
         endif
@@ -714,7 +714,7 @@ module Fourier
 !
         if (nzgrid/=1) then
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in z'
-          !$omp barrier
+          
           call transp(a_re,'z')
           call transp(a_im,'z')
           !$omp do collapse(2)
@@ -744,7 +744,7 @@ module Fourier
 !
         if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nzgrid/=1) then
-          !$omp barrier
+          
           call transp(a_re,'z')
           call transp(a_im,'z')
         endif
@@ -761,7 +761,7 @@ module Fourier
 !  the y-direction last.
 !
         if (nygrid/=1) then
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
@@ -829,7 +829,7 @@ module Fourier
 !
         if (nygrid>1) then
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
           !$omp do collapse(2)
@@ -849,7 +849,7 @@ module Fourier
 !  Transform x-direction. Normalization is included.
 !
         if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
-        !$omp barrier
+        
         if (nygrid/=1) then
           call transp(a_re,'y')
           call transp(a_im,'y')
@@ -879,7 +879,7 @@ module Fourier
 !  the y-direction last.
 !
         if (nygrid>1) then
-          !$omp barrier
+          
           call transp(a_re,'y')
           call transp(a_im,'y')
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
@@ -1076,7 +1076,7 @@ module Fourier
 !
 !  Transform y-direction.
 !
-          !$omp barrier
+          
           call transp_xy(a_re)
           if (lcompute_im) then
             call transp_xy(a_im)
@@ -1135,7 +1135,7 @@ module Fourier
 !
 !  Transform y-direction back.
 !
-          !$omp barrier
+          
           call transp_xy(a_re)
           call transp_xy(a_im)
 !
@@ -1207,7 +1207,7 @@ module Fourier
 !
 !  Transform y-direction.
 !
-          !$omp barrier
+          
           call transp_xy_other(a_re)
           call transp_xy_other(a_im)
 !
@@ -1264,7 +1264,7 @@ module Fourier
 !
 !  Transform y-direction back.
 !
-          !$omp barrier
+          
           call transp_xy_other(a_re)
           call transp_xy_other(a_im)
 !
@@ -1340,7 +1340,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_x (a_re, p_re_1d)
         if (lcompute_im) then
           call remap_to_pencil_x (a_im, p_im_1d)
@@ -1355,7 +1355,7 @@ module Fourier
         p_im_1d = aimag (ax)/nxgrid
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_x (p_re_1d, a_re)
         call unmap_from_pencil_x (p_im_1d, a_im)
 !
@@ -1364,7 +1364,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_x (a_re, p_re_1d)
         call remap_to_pencil_x (a_im, p_im_1d)
 !
@@ -1375,7 +1375,7 @@ module Fourier
         if (lcompute_im) p_im_1d = aimag (ax)
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_x (p_re_1d, a_re)
         if (lcompute_im) call unmap_from_pencil_x (p_im_1d, a_im)
 !
@@ -1434,7 +1434,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_2d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_2d)
@@ -1460,7 +1460,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_2d)
         call remap_to_pencil_xy (a_im, p_im_2d)
 !
@@ -1542,7 +1542,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_3d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_3d)
@@ -1570,7 +1570,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_3d)
         call remap_to_pencil_xy (a_im, p_im_3d)
 !
@@ -1658,7 +1658,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_4d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_4d)
@@ -1688,7 +1688,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_4d)
         call remap_to_pencil_xy (a_im, p_im_4d)
 !
@@ -1765,7 +1765,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_1d)
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_1d)
@@ -1781,7 +1781,7 @@ module Fourier
         p_im_1d = aimag (ay)/nygrid
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_y (p_re_1d, a_re)
         call unmap_from_pencil_y (p_im_1d, a_im)
 !
@@ -1790,7 +1790,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_1d)
         call remap_to_pencil_y (a_im, p_im_1d)
 !
@@ -1801,7 +1801,7 @@ module Fourier
         p_im_1d = aimag (ay)
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_y (p_re_1d, a_re)
         if (lcompute_im) call unmap_from_pencil_y (p_im_1d, a_im)
 !
@@ -1858,7 +1858,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_2d)
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_2d)
@@ -1886,7 +1886,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_2d)
         call remap_to_pencil_y (a_im, p_im_2d)
 !
@@ -1998,7 +1998,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_3d)
         call remap_to_pencil_y (a_im, p_im_3d)
 !
@@ -2087,7 +2087,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_y (a_re, p_re_4d)
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_4d)
@@ -2198,7 +2198,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_1d)
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_1d)
@@ -2214,7 +2214,7 @@ module Fourier
         p_im_1d = aimag (az)/nzgrid
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_z (p_re_1d, a_re)
         call unmap_from_pencil_z (p_im_1d, a_im)
 !
@@ -2223,7 +2223,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_1d)
         call remap_to_pencil_z (a_im, p_im_1d)
 !
@@ -2234,7 +2234,7 @@ module Fourier
         p_im_1d= aimag (az)
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_z (p_re_1d, a_re)
         if (lcompute_im) call unmap_from_pencil_z (p_im_1d, a_im)
 !
@@ -2308,7 +2308,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_2d)
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_2d)
@@ -2335,7 +2335,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_2d)
         call remap_to_pencil_z (a_im, p_im_2d)
 !
@@ -2409,7 +2409,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_3d)
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_3d)
@@ -2437,7 +2437,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_3d)
         call remap_to_pencil_z (a_im, p_im_3d)
 !
@@ -2516,7 +2516,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_4d)
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_4d)
@@ -2546,7 +2546,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_z (a_re, p_re_4d)
         call remap_to_pencil_z (a_im, p_im_4d)
 !
@@ -2658,7 +2658,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_2d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_2d)
@@ -2668,7 +2668,7 @@ module Fourier
           !$omp end workshare
         endif
 !
-        !$omp barrier
+        
         call transp_pencil_xy (p_re_2d, t_re_2d)
         call transp_pencil_xy (p_im_2d, t_im_2d)
 !
@@ -2704,7 +2704,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_2d)
         call remap_to_pencil_xy (a_im, p_im_2d)
 !
@@ -2730,12 +2730,12 @@ module Fourier
           if (lcompute_im) t_im_2d(:,l) = aimag (ay)
         enddo
 !
-        !$omp barrier
+        
         call transp_pencil_xy (t_re_2d, p_re_2d)
         if (lcompute_im) call transp_pencil_xy (t_im_2d, p_im_2d)
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_xy (p_re_2d, a_re)
         if (lcompute_im) call unmap_from_pencil_xy (p_im_2d, a_im)
 !
@@ -2821,7 +2821,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy_2D_other(a_re,p_re_2d)
         call remap_to_pencil_xy_2D_other(a_im,p_im_2d)
 !
@@ -2858,7 +2858,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy_2D_other(a_re, p_re_2d)
         call remap_to_pencil_xy_2D_other(a_im, p_im_2d)
 !
@@ -2989,7 +2989,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_3d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_3d)
@@ -2997,7 +2997,7 @@ module Fourier
           p_im_3d= 0.0
         endif
 !
-        !$omp barrier
+        
         call transp_pencil_xy (p_re_3d, t_re_3d)
         call transp_pencil_xy (p_im_3d, t_im_3d)
 !
@@ -3038,7 +3038,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_3d)
         call remap_to_pencil_xy (a_im, p_im_3d)
 !
@@ -3072,7 +3072,7 @@ module Fourier
         if (lcompute_im) call transp_pencil_xy (t_im_3d, p_im_3d)
 !
         ! Unmap the results back to normal shape.
-        !$omp barrier
+        
         call unmap_from_pencil_xy (p_re_3d, a_re)
         if (lcompute_im) call unmap_from_pencil_xy (p_im_3d, a_im)
 !
@@ -3181,7 +3181,7 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_xy (a_re, p_re_4d)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_4d)
@@ -3189,7 +3189,7 @@ module Fourier
           p_im_4d= 0.0
         endif
 !
-        !$omp barrier
+        
         call transp_pencil_xy (p_re_4d, t_re_4d)
         call transp_pencil_xy (p_im_4d, t_im_4d)
 !
@@ -3352,7 +3352,7 @@ module Fourier
         endif
 !
         ! Remap the data we need into z-pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_yz (a_re, p_re_3d)
         call remap_to_pencil_yz (a_im, p_im_3d)
 !
@@ -3376,7 +3376,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed z-pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_yz (a_re, p_re_3d)
         call remap_to_pencil_yz (a_im, p_im_3d)
 !
@@ -3484,7 +3484,7 @@ module Fourier
         endif
 !
         ! Remap the data we need into z-pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_yz (a_re, p_re_4d)
         call remap_to_pencil_yz (a_im, p_im_4d)
 !
@@ -3510,7 +3510,7 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        !$omp barrier
+        
         call remap_to_pencil_yz (a_re, p_re_4d)
         call remap_to_pencil_yz (a_im, p_im_4d)
 !
@@ -3665,7 +3665,7 @@ module Fourier
       if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate p and t', .true.)
 !
       ! Collect the data we need.
-      !$omp barrier
+      
       call remap_to_pencil_xy (in, p_re_3d)
       p_im_3d= 0.
 !
@@ -3710,7 +3710,7 @@ module Fourier
       allocate (b_re(pnx,pny,onz,ona), b_im(pnx,pny,onz,ona), stat=stat)
       if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate b', .true.)
 !
-      !$omp barrier
+      
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
 !
@@ -3845,7 +3845,7 @@ module Fourier
       allocate (b_re(pnx,pny,onz,2), b_im(pnx,pny,onz,2), stat=stat)
       if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate b', .true.)
 
-      !$omp barrier
+      
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
 !

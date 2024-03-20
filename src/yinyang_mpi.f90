@@ -78,7 +78,7 @@ module Yinyang_mpi
 !  25-apr-16/MR: outsourced from zaverages_xy
 !
       use General, only: find_proc
-      use Mpicomm, only: mpireduce_sum, mpisend_real, mpirecv_real, mpiwait, mpibarrier
+      use Mpicomm, only: mpireduce_sum, mpisend_real, mpirecv_real, mpiwait, mpibarrier, IZBEAM_DIAG
       use Cdata
 
       real, dimension(:,:,:), intent(IN) :: arrm
@@ -100,7 +100,7 @@ module Yinyang_mpi
 !  Summation of local fnamexy arrays (of Yin grid) into fsumxy of z root
 !  processors of Yin grid.
 !
-        if (.not.lyang) call mpireduce_sum(arrm,temp,sz,idir=3)
+        if (.not.lyang) call mpireduce_sum(arrm,temp,sz,idir=IZBEAM_DIAG)
 
         if (lyinyang) then
           if (lyang) then
