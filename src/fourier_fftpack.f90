@@ -76,9 +76,9 @@ module Fourier
 !***********************************************************************
     subroutine initialize_fourier
 
+      integer :: nthreads
       include 'fourier_common.h'
 
-      integer :: nthreads
 !
 !  Initializations of module auxiliaries.
 !
