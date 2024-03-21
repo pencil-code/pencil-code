@@ -49,6 +49,7 @@ if (! $?_sourceme) then		# called for the fist time?
                        $PENCIL_HOME/utils \
 		       $PENCIL_HOME/utils/axel \
                        $PENCIL_HOME/src/scripts \
+                       $PENCIL_HOME/src/astaroth \
 		       $PENCIL_HOME/remesh/bin)
 
 		       #  Set path for DX macros

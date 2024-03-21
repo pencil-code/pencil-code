@@ -880,7 +880,7 @@ else if (($hn =~ atlas*) && ($USER =~ monteiro)) then
   set local_binary = 0
 #--------------------------------------------------
 
-else if (($hn =~ nid* && $masterhost == lumi)) then
+else if (($hn =~ uan* && $masterhost == lumi)) then
   echo "Lumi - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
