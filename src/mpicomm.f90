@@ -5466,7 +5466,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine check_emergency_brake
 !***********************************************************************
-    subroutine transp(a,var, lsync)
+    subroutine transp(a,var, comm, lsync)
 !
 !  Doing the transpose of information distributed on several processors
 !  Used for doing FFTs in the y and z directions.
@@ -5490,6 +5490,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: sendc_y,recvc_y,sendc_z,recvc_z,px
       integer :: ystag=111,yrtag=112,zstag=113,zrtag=114,partner
       integer :: m,n,ibox,ix
+      integer, optional :: comm
       logical, optional :: lsync
 
 
@@ -5652,7 +5653,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
     endsubroutine transp
 !***********************************************************************
-    subroutine transp_xy(a,lsync)
+    subroutine transp_xy(a,comm,lsync)
 !
 !  Doing the transpose of information distributed on several processors.
 !  This routine transposes 2D arrays in x and y only.
@@ -5668,7 +5669,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: sendc_y,recvc_y,px
       integer :: ytag=101,partner
       integer :: ibox,iy
+      integer, optional :: comm
       logical, optional :: lsync
+      
 !
       if(loptest(lsync,.true.)) then
               !$omp barrier
@@ -5736,11 +5739,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             iy=(ibox*nprocy+px)*ny
             send_buf_y=a(iy+1:iy+ny,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,mpierr)
-              call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
             elseif (px>ipy) then  ! below diagonal: receive first, send then
-              call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,stat,mpierr)
-              call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),mpierr)
             endif
             a(iy+1:iy+ny,:)=recv_buf_y
           endif
@@ -5771,7 +5774,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine transp_xy
 !***********************************************************************
-    subroutine transp_xy_other(a,lsync)
+    subroutine transp_xy_other(a,comm,lsync)
 !
 !  Doing the transpose of information distributed on several processors.
 !  This routine transposes 2D arrays of arbitrary size in x and y only.
@@ -5788,6 +5791,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ytag=101,partner
       integer :: ibox,iy,nx_other,ny_other
       integer :: nxgrid_other,nygrid_other
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -5855,11 +5859,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             iy=(ibox*nprocy+px)*ny_other
             send_buf_y=a(iy+1:iy+ny_other,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,mpierr)
-              call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
             elseif (px>ipy) then  ! below diagonal: receive first, send then
-              call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,stat,mpierr)
-              call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),mpierr)
             endif
             a(iy+1:iy+ny_other,:)=recv_buf_y
           endif
@@ -5890,7 +5894,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine transp_xy_other
 !***********************************************************************
-    subroutine transp_other(a,var,lsync)
+    subroutine transp_other(a,var,comm,lsync)
 !
 !  Doing the transpose of information distributed on several processors.
 !  This routine transposes 3D arrays but is presently restricted to the
@@ -5911,6 +5915,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ytag=101,ztag=202,partner
       integer :: m,n,ibox,ix,nx_other,ny_other,nz_other
       integer :: nxgrid_other,nygrid_other,nzgrid_other
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -5984,11 +5989,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               ix=(ibox*nprocy+px)*ny_other
               send_buf_y=a(ix+1:ix+ny_other,:,:)
               if (px<ipy) then      ! above diagonal: send first, receive then
-                call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,mpierr)
-                call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
               elseif (px>ipy) then  ! below diagonal: receive first, send then
-                call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,stat,mpierr)
-                call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,MPI_COMM_GRID,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ytag,ioptest(comm,MPI_COMM_GRID),mpierr)
               endif
               a(ix+1:ix+ny_other,:,:)=recv_buf_y
             endif
@@ -6045,11 +6050,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
             send_buf_z=a(px*nz_other+1:(px+1)*nz_other,:,:)
             if (px<ipz) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_z,sendc_z,mpi_precision,partner,ztag,MPI_COMM_GRID,mpierr)
-              call MPI_RECV (recv_buf_z,recvc_z,mpi_precision,partner,ztag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_z,sendc_z,mpi_precision,partner,ztag,ioptest(comm,MPI_COMM_GRID),mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,mpi_precision,partner,ztag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
             elseif (px>ipz) then  ! below diagonal: receive first, send then
-              call MPI_RECV (recv_buf_z,recvc_z,mpi_precision,partner,ztag,MPI_COMM_GRID,stat,mpierr)
-              call MPI_SEND(send_buf_z,sendc_z,mpi_precision,partner,ztag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,mpi_precision,partner,ztag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
+              call MPI_SEND(send_buf_z,sendc_z,mpi_precision,partner,ztag,ioptest(comm,MPI_COMM_GRID),mpierr)
             endif
             a(px*nz_other+1:(px+1)*nz_other,:,:)=recv_buf_z
           endif
@@ -6075,7 +6080,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine transp_other
 !***********************************************************************
-    subroutine transp_xz(a,b,lsync)
+    subroutine transp_xz(a,b,comm,lsync)
 !
 !  Doing the transpose of information distributed on several processors.
 !  This routine transposes 2D arrays in x and z only.
@@ -6090,6 +6095,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc,px
       integer :: ztag=101,partner
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -6113,7 +6119,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (px/=ipz) then
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
           buf=a(px*nxt+1:(px+1)*nxt,:)
-          call MPI_SENDRECV_REPLACE(buf,sendc,mpi_precision,partner,ztag,partner,ztag,MPI_COMM_GRID,stat,mpierr)
+          call MPI_SENDRECV_REPLACE(buf,sendc,mpi_precision,partner,ztag,partner,ztag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
           b(px*nz+1:(px+1)*nz,:)=transpose(buf)
         endif
       enddo
@@ -6124,7 +6130,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine transp_xz
 !***********************************************************************
-    subroutine transp_zx(a,b,lsync)
+    subroutine transp_zx(a,b,comm,lsync)
 !
 !  Doing the transpose of information distributed on several processors.
 !  This routine transposes 2D arrays in x and z only.
@@ -6139,6 +6145,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc,px
       integer :: ztag=101,partner
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -6162,7 +6169,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (px/=ipz) then
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
           buf=a(px*nz+1:(px+1)*nz,:)
-          call MPI_SENDRECV_REPLACE(buf,sendc,mpi_precision,partner,ztag,partner,ztag,MPI_COMM_GRID,stat,mpierr)
+          call MPI_SENDRECV_REPLACE(buf,sendc,mpi_precision,partner,ztag,partner,ztag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
           b(px*nxt+1:(px+1)*nxt,:)=transpose(buf)
         endif
       enddo
@@ -6173,7 +6180,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine transp_zx
 !***********************************************************************
-    subroutine communicate_vect_field_ghosts(f,topbot,start_index)
+    subroutine communicate_vect_field_ghosts(f,topbot,start_index,comm)
 !
 !  Helper routine for communication of ghost cell values of a vector field.
 !  Needed by potential field extrapolations, which only compute nx*ny arrays.
@@ -6190,6 +6197,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension (nx,nghost,nghost+1,3) :: lbufyo,ubufyo,lbufyi,ubufyi
       real, dimension (nghost,size(f,2),nghost+1,3) :: lbufxo,ubufxo,lbufxi,ubufxi
       integer :: nbufx,nbufy,nn1,nn2,is,ie
+      integer, optional :: comm
 !
       is = iax
       if (present (start_index)) is = start_index
@@ -6212,13 +6220,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         nbufy=nx*nghost*(nghost+1)*3
 !
         call MPI_IRECV(ubufyi,nbufy,mpi_precision,yuneigh,tolowy, &
-                       MPI_COMM_GRID,irecv_rq_fromuppy,mpierr)
+                       ioptest(comm,MPI_COMM_GRID),irecv_rq_fromuppy,mpierr)
         call MPI_IRECV(lbufyi,nbufy,mpi_precision,ylneigh,touppy, &
-                       MPI_COMM_GRID,irecv_rq_fromlowy,mpierr)
+                       ioptest(comm,MPI_COMM_GRID),irecv_rq_fromlowy,mpierr)
         call MPI_ISEND(lbufyo,nbufy,mpi_precision,ylneigh,tolowy, &
-                       MPI_COMM_GRID,isend_rq_tolowy,mpierr)
+                       ioptest(comm,MPI_COMM_GRID),isend_rq_tolowy,mpierr)
         call MPI_ISEND(ubufyo,nbufy,mpi_precision,yuneigh,touppy, &
-                       MPI_COMM_GRID,isend_rq_touppy,mpierr)
+                       ioptest(comm,MPI_COMM_GRID),isend_rq_touppy,mpierr)
 !
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
@@ -6246,13 +6254,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         nbufx=nghost*size(f,2)*(nghost+1)*3
 !
         call MPI_IRECV(ubufxi,nbufx,mpi_precision,xuneigh,tolowx, &
-                       MPI_COMM_GRID,irecv_rq_fromuppx,mpierr)
+                       ioptest(comm,MPI_COMM_GRID),irecv_rq_fromuppx,mpierr)
         call MPI_IRECV(lbufxi,nbufx,mpi_precision,xlneigh,touppx, &
-                       MPI_COMM_GRID,irecv_rq_fromlowx,mpierr)
+                       ioptest(comm,MPI_COMM_GRID),irecv_rq_fromlowx,mpierr)
         call MPI_ISEND(lbufxo,nbufx,mpi_precision,xlneigh,tolowx, &
-                       MPI_COMM_GRID,isend_rq_tolowx,mpierr)
+                       ioptest(comm,MPI_COMM_GRID),isend_rq_tolowx,mpierr)
         call MPI_ISEND(ubufxo,nbufx,mpi_precision,xuneigh,touppx, &
-                       MPI_COMM_GRID,isend_rq_touppx,mpierr)
+                       ioptest(comm,MPI_COMM_GRID),isend_rq_touppx,mpierr)
 !
         call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
@@ -6272,7 +6280,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine communicate_vect_field_ghosts
 !***********************************************************************
-    subroutine communicate_xy_ghosts(data)
+    subroutine communicate_xy_ghosts(data,comm)
 !
 !  Helper routine for communication of ghost cells in horizontal direction.
 !
@@ -6282,6 +6290,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension (nx,nghost) :: lbufyo,ubufyo,lbufyi,ubufyi
       real, dimension (nghost,size(data,2)) :: lbufxo,ubufxo,lbufxi,ubufxi
+      integer, optional :: comm
       integer :: nbufx,nbufy
 !
 !  Periodic boundaries in y -- communicate along y if necessary
@@ -6294,13 +6303,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         nbufy = nx * nghost
 !
         call MPI_IRECV (ubufyi, nbufy, mpi_precision, yuneigh, tolowy, &
-                       MPI_COMM_GRID, irecv_rq_fromuppy, mpierr)
+                       ioptest(comm,MPI_COMM_GRID), irecv_rq_fromuppy, mpierr)
         call MPI_IRECV (lbufyi, nbufy, mpi_precision, ylneigh, touppy, &
-                       MPI_COMM_GRID, irecv_rq_fromlowy, mpierr)
+                       ioptest(comm,MPI_COMM_GRID), irecv_rq_fromlowy, mpierr)
         call MPI_ISEND (lbufyo, nbufy, mpi_precision, ylneigh, tolowy, &
-                       MPI_COMM_GRID, isend_rq_tolowy, mpierr)
+                       ioptest(comm,MPI_COMM_GRID), isend_rq_tolowy, mpierr)
         call MPI_ISEND (ubufyo, nbufy, mpi_precision, yuneigh, touppy, &
-                       MPI_COMM_GRID, isend_rq_touppy, mpierr)
+                       ioptest(comm,MPI_COMM_GRID), isend_rq_touppy, mpierr)
 !
         call MPI_WAIT (irecv_rq_fromuppy, irecv_stat_fu, mpierr)
         call MPI_WAIT (irecv_rq_fromlowy, irecv_stat_fl, mpierr)
@@ -6328,13 +6337,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         nbufx = nghost * size(data,2)
 !
         call MPI_IRECV (ubufxi, nbufx, mpi_precision, xuneigh, tolowx, &
-                       MPI_COMM_GRID, irecv_rq_fromuppx, mpierr)
+                       ioptest(comm,MPI_COMM_GRID), irecv_rq_fromuppx, mpierr)
         call MPI_IRECV (lbufxi, nbufx, mpi_precision, xlneigh, touppx, &
-                       MPI_COMM_GRID, irecv_rq_fromlowx, mpierr)
+                       ioptest(comm,MPI_COMM_GRID), irecv_rq_fromlowx, mpierr)
         call MPI_ISEND (lbufxo, nbufx, mpi_precision, xlneigh, tolowx, &
-                       MPI_COMM_GRID, isend_rq_tolowx, mpierr)
+                       ioptest(comm,MPI_COMM_GRID), isend_rq_tolowx, mpierr)
         call MPI_ISEND (ubufxo, nbufx, mpi_precision, xuneigh, touppx, &
-                       MPI_COMM_GRID, isend_rq_touppx, mpierr)
+                       ioptest(comm,MPI_COMM_GRID), isend_rq_touppx, mpierr)
 !
         call MPI_WAIT (irecv_rq_fromuppx, irecv_stat_fu, mpierr)
         call MPI_WAIT (irecv_rq_fromlowx, irecv_stat_fl, mpierr)
@@ -6354,7 +6363,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine communicate_xy_ghosts
 !***********************************************************************
-    subroutine fill_zghostzones_3vec(vec,ivar)
+    subroutine fill_zghostzones_3vec(vec,ivar,comm)
 !
 !  Fills z-direction ghostzones of (mz,3)-array vec depending on the number of
 !  processors in z-direction.
@@ -6370,6 +6379,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       integer                    :: nbuf, j
       real, dimension (nghost,3) :: lbufi,ubufi,lbufo,ubufo
+      integer, optional :: comm
 !
       if (nprocz>1) then
 !
@@ -6379,14 +6389,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         nbuf=nghost*3
 !
         call MPI_IRECV(ubufi,nbuf,mpi_precision, &
-                       zuneigh,tolowz,MPI_COMM_GRID,irecv_rq_fromuppz,mpierr)
+                       zuneigh,tolowz,ioptest(comm,MPI_COMM_GRID),irecv_rq_fromuppz,mpierr)
         call MPI_IRECV(lbufi,nbuf,mpi_precision, &
-                       zlneigh,touppz,MPI_COMM_GRID,irecv_rq_fromlowz,mpierr)
+                       zlneigh,touppz,ioptest(comm,MPI_COMM_GRID),irecv_rq_fromlowz,mpierr)
 !
         call MPI_ISEND(lbufo,nbuf,mpi_precision, &
-                       zlneigh,tolowz,MPI_COMM_GRID,isend_rq_tolowz,mpierr)
+                       zlneigh,tolowz,ioptest(comm,MPI_COMM_GRID),isend_rq_tolowz,mpierr)
         call MPI_ISEND(ubufo,nbuf,mpi_precision, &
-                       zuneigh,touppz,MPI_COMM_GRID,isend_rq_touppz,mpierr)
+                       zuneigh,touppz,ioptest(comm,MPI_COMM_GRID),isend_rq_touppz,mpierr)
 !
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
@@ -6459,7 +6469,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine sum_xy
 !***********************************************************************
-    subroutine distribute_xy_0D(out, in, source_proc)
+    subroutine distribute_xy_0D(out, in, source_proc,comm)
 !
 !  This routine distributes a scalar on the source processor
 !  to all processors in the xy-plane.
@@ -6475,6 +6485,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: px, py, broadcaster, partner
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer, optional :: comm
 !
       broadcaster = find_proc(ioptest(source_proc,0),0,ipz)
 !
@@ -6488,18 +6499,18 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               out = in
             else
               ! send to partner
-              call MPI_SEND (in, 1, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+              call MPI_SEND (in, 1, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, 1, mpi_precision, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, 1, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_0D
 !***********************************************************************
-    subroutine distribute_xy_2D(out, in, source_proc)
+    subroutine distribute_xy_2D(out, in, source_proc, comm)
 !
 !  This routine divides a large array of 2D data on the source processor
 !  and distributes it to all processors in the xy-plane.
@@ -6511,6 +6522,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:), intent(out) :: out
       real, dimension(:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
+      integer, optional :: comm
 !
       integer :: bnx, bny ! transfer box sizes
       integer :: px, py, broadcaster, partner, nbox
@@ -6536,7 +6548,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             if (iproc /= partner) then
               ! send to partner
               out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny)
-              call MPI_SEND (out, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+              call MPI_SEND (out, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
             endif
           enddo
         enddo
@@ -6544,12 +6556,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in(ipx*bnx+1:(ipx+1)*bnx,ipy*bny+1:(ipy+1)*bny)
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_2D
 !***********************************************************************
-    subroutine distribute_yz_3D(out, in)
+    subroutine distribute_yz_3D(out, in, comm)
 !
 !  This routine divides a large array of 3D data on the source processor
 !  and distributes it to all processors in the yz-plane.
@@ -6558,6 +6570,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:), intent(out):: out
       real, dimension(:,:,:), intent(in) :: in
+      integer, optional :: comm
 !
       integer :: bnx, bny, bnz ! transfer box sizes
       integer :: pz, py, partner, nbox
@@ -6662,7 +6675,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine distribute_yz_4D
 !***********************************************************************
-    subroutine distribute_xy_3D(out, in, source_proc)
+    subroutine distribute_xy_3D(out, in, source_proc, comm)
 !
 !  This routine divides a large array of 3D data on the source processor
 !  and distributes it to all processors in the xy-plane.
@@ -6678,6 +6691,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: bnx, bny, bnz ! transfer box sizes
       integer :: px, py, broadcaster, partner, nbox
       integer, parameter :: ytag=115
+      integer, optional :: comm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       bnx = size (out, 1)
@@ -6705,18 +6719,18 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             else
               ! send to partner
               call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:), &
-                  nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+                  nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_3D
 !***********************************************************************
-    subroutine distribute_xy_4D(out, in, source_proc)
+    subroutine distribute_xy_4D(out, in, source_proc, comm)
 !
 !  This routine divides a large array of 4D data on the source processor
 !  and distributes it to all processors in the xy-plane.
@@ -6728,6 +6742,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:,:), intent(out) :: out
       real, dimension(:,:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
+      integer, optional :: comm
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
       integer :: px, py, broadcaster, partner, nbox
@@ -6762,18 +6777,18 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             else
               ! send to partner
               call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:), &
-                  nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+                  nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_4D
 !***********************************************************************
-    subroutine collect_xy_0D(in, out, dest_proc)
+    subroutine collect_xy_0D(in, out, dest_proc, comm)
 !
 !  Collect 0D data from all processors in the xy-plane
 !  and combine it into one large array on one destination processor.
@@ -6785,6 +6800,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, intent(in) :: in
       real, dimension(:,:), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
+      integer, optional :: comm
 !
       integer :: px, py, collector, partner
       integer, parameter :: ytag=116
@@ -6809,19 +6825,19 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               out(px+1,py+1) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, 1, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+              call MPI_RECV (buffer, 1, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
               out(px+1,py+1) = buffer
             endif
           enddo
         enddo
       else
         ! send to collector
-        call MPI_SEND (in, 1, mpi_precision, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, 1, mpi_precision, collector, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine collect_xy_0D
 !***********************************************************************
-    subroutine collect_xy_2D(in, out, dest_proc)
+    subroutine collect_xy_2D(in, out, dest_proc, comm)
 !
 !  Collect 2D data from all processors in the xy-plane
 !  and combine it into one large array on one destination processor.
@@ -6833,6 +6849,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
+      integer, optional :: comm
 !
       integer :: bnx, bny ! transfer box sizes
       integer :: px, py, collector, partner, nbox, alloc_err
@@ -6866,7 +6883,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+              call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny) = buffer
             endif
           enddo
@@ -6875,12 +6892,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, mpi_precision, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, nbox, mpi_precision, collector, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine collect_xy_2D
 !***********************************************************************
-    subroutine collect_xy_3D(in, out, dest_proc)
+    subroutine collect_xy_3D(in, out, dest_proc, comm)
 !
 !  Collect 3D data from all processors in the xy-plane
 !  and combine it into one large array on one destination processor.
@@ -6892,6 +6909,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
+      integer, optional :: comm
 !
       integer :: bnx, bny, bnz ! transfer box sizes
       integer :: px, py, collector, partner, nbox, alloc_err
@@ -6926,7 +6944,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+              call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:) = buffer
             endif
           enddo
@@ -6935,12 +6953,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, mpi_precision, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, nbox, mpi_precision, collector, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine collect_xy_3D
 !***********************************************************************
-    subroutine collect_xy_4D(in, out, dest_proc)
+    subroutine collect_xy_4D(in, out, dest_proc, comm)
 !
 !  Collect 4D data from all processors in the xy-plane
 !  and combine it into one large array on one destination processor.
@@ -6952,6 +6970,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
+      integer, optional :: comm
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
       integer :: px, py, collector, partner, nbox, alloc_err
@@ -6991,7 +7010,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+              call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:) = buffer
             endif
           enddo
@@ -7000,12 +7019,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, mpi_precision, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, nbox, mpi_precision, collector, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine collect_xy_4D
 !***********************************************************************
-    subroutine distribute_z_3D(out, in, source_proc)
+    subroutine distribute_z_3D(out, in, source_proc, comm)
 !
 !  This routine divides a large array of 3D data on the source processor
 !  and distributes it to all processors in the z-direction.
@@ -7017,6 +7036,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(out) :: out
       real, dimension(:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
+      integer, optional :: comm
 !
       integer :: bnx, bny, bnz ! transfer box sizes
       integer :: pz, broadcaster, partner, nbox
@@ -7046,17 +7066,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out = in(:,:,pz*bnz+1:(pz+1)*bnz)
           else
             ! send to partner
-            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz), nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz), nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
     endsubroutine distribute_z_3D
 !***********************************************************************
-    subroutine distribute_z_4D(out, in, source_proc)
+    subroutine distribute_z_4D(out, in, source_proc, comm)
 !
 !  This routine divides a large array of 4D data on the source processor
 !  and distributes it to all processors in the z-direction.
@@ -7068,6 +7088,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:,:), intent(out) :: out
       real, dimension(:,:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
+      integer, optional :: comm
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
       integer :: pz, broadcaster, partner, nbox
@@ -7101,17 +7122,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out = in(:,:,pz*bnz+1:(pz+1)*bnz,:)
           else
             ! send to partner
-            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz,:), nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz,:), nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
     endsubroutine distribute_z_4D
 !***********************************************************************
-    subroutine collect_z_3D(in, out, dest_proc)
+    subroutine collect_z_3D(in, out, dest_proc, comm)
 !
 !  Collect 3D data from all processors in the z-direction
 !  and combine it into one large array on one destination processor.
@@ -7123,6 +7144,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
+      integer, optional :: comm
 !
       integer :: bnx, bny, bnz ! transfer box sizes
       integer :: pz, collector, partner, nbox, alloc_err
@@ -7158,7 +7180,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out(:,:,pz*bnz+1:(pz+1)*bnz) = in
           else
             ! receive from partner
-            call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
             out(:,:,pz*bnz+1:(pz+1)*bnz) = buffer
           endif
         enddo
@@ -7166,12 +7188,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, mpi_precision, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, nbox, mpi_precision, collector, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine collect_z_3D
 !***********************************************************************
-    subroutine collect_z_4D(in, out, dest_proc)
+    subroutine collect_z_4D(in, out, dest_proc, comm)
 !
 !  Collect 4D data from all processors in the z-direction
 !  and combine it into one large array on one destination processor.
@@ -7183,6 +7205,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
+      integer, optional :: comm
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
       integer :: pz, collector, partner, nbox, alloc_err
@@ -7221,7 +7244,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out(:,:,pz*bnz+1:(pz+1)*bnz,:) = in
           else
             ! receive from partner
-            call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
             out(:,:,pz*bnz+1:(pz+1)*bnz,:) = buffer
           endif
         enddo
@@ -7229,7 +7252,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, mpi_precision, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, nbox, mpi_precision, collector, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine collect_z_4D
@@ -7492,7 +7515,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine localize_xy
 !***********************************************************************
-    subroutine globalize_z(in, out, dest_proc)
+    subroutine globalize_z(in, out, dest_proc, comm)
 !
 !  Globalizes local 1D data in the z-direction to the destination processor.
 !  The local data is supposed to include the ghost cells.
@@ -7505,6 +7528,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(mz), intent(in) :: in
       real, dimension(mzgrid), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
+      integer, optional :: comm
 !
       integer :: pz, z_add, collector, partner, alloc_err
       integer, parameter :: ytag=119
@@ -7529,7 +7553,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out(pz*nz+1+z_add:pz*nz+mz) = in(1+z_add:mz)
           else
             ! receive from partner
-            call MPI_RECV (buffer, mz, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_RECV (buffer, mz, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
             out(pz*nz+1+z_add:pz*nz+mz) = buffer(1+z_add:mz)
           endif
         enddo
@@ -7537,12 +7561,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, mz, mpi_precision, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (in, mz, mpi_precision, collector, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine globalize_z
 !***********************************************************************
-    subroutine localize_z(out, in, source_proc)
+    subroutine localize_z(out, in, source_proc, comm)
 !
 !  Localizes global 1D data to all processors along the z-direction.
 !  The global data is supposed to include the outer ghost layers.
@@ -7555,6 +7579,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(mz), intent(out) :: out
       real, dimension(mzgrid), intent(in) :: in
       integer, intent(in), optional :: source_proc
+      integer, optional :: comm
 !
       integer :: pz, broadcaster, partner
       integer, parameter :: ytag=120
@@ -7571,17 +7596,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out = in(pz*nz+1:pz*nz+mz)
           else
             ! send to partner
-            call MPI_SEND (in(pz*nz+1:pz*nz+mz), mz, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_SEND (in(pz*nz+1:pz*nz+mz), mz, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, mz, mpi_precision, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (out, mz, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
 !
     endsubroutine localize_z
 !***********************************************************************
-    subroutine distribute_to_pencil_xy_2D(in, out, broadcaster)
+    subroutine distribute_to_pencil_xy_2D(in, out, broadcaster, comm)
 !
 !  Distribute data to several processors and reform into pencil shape.
 !  This routine divides global data and distributes it in the xy-plane.
@@ -7591,6 +7616,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
       integer, intent(in) :: broadcaster
+      integer, optional :: comm
 !
       integer :: bnx, bny ! transfer box sizes
       integer :: ibox, partner, nbox, alloc_err
@@ -7626,12 +7652,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           else
             ! send to partner
             buffer = in(:,bny*ibox+1:bny*(ibox+1))
-            call MPI_SEND (buffer, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_SEND (buffer, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (buffer, nbox, mpi_precision, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
+        call MPI_RECV (buffer, nbox, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
         out = buffer
       endif
 !
@@ -7639,7 +7665,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine distribute_to_pencil_xy_2D
 !***********************************************************************
-    subroutine collect_from_pencil_xy_2D(in, out, collector)
+    subroutine collect_from_pencil_xy_2D(in, out, collector, comm)
 !
 !  Collect 2D data from several processors and combine into global shape.
 !  This routine collects 2D pencil shaped data distributed in the xy-plane.
@@ -7649,6 +7675,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
       integer, intent(in) :: collector
+      integer, optional :: comm
 !
       integer :: bnx, bny ! transfer box sizes
       integer :: ibox, partner, nbox, alloc_err
@@ -7683,21 +7710,21 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             out(:,bny*ibox+1:bny*(ibox+1)) = in
           else
             ! receive from partner
-            call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_RECV (buffer, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
             out(:,bny*ibox+1:bny*(ibox+1)) = buffer
           endif
         enddo
       else
         ! send to collector
         buffer = in
-        call MPI_SEND (buffer, nbox, mpi_precision, collector, ytag, MPI_COMM_GRID, mpierr)
+        call MPI_SEND (buffer, nbox, mpi_precision, collector, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
       deallocate (buffer)
 !
     endsubroutine collect_from_pencil_xy_2D
 !***********************************************************************
-    subroutine remap_to_pencil_x(in, out,lsync)
+    subroutine remap_to_pencil_x(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 1D arrays in x only for nprocx>1.
@@ -7711,6 +7738,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx) :: recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -7725,11 +7753,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nx, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nx, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nx, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nx, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nx, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nx, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nx, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (in, nx, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(nx*ibox+1:nx*(ibox+1)) = recv_buf
         endif
@@ -7751,11 +7779,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nxgrid), intent(in) :: in
       real, dimension(nx), intent(out) :: out
 !
+      !$omp workshare
       out = in(nx*ipx+1:nx*(ipx+1))
+      !$omp end workshare
 !
     endsubroutine unmap_from_pencil_x
 !***********************************************************************
-    subroutine remap_to_pencil_y_1D(in, out,lsync)
+    subroutine remap_to_pencil_y_1D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 1D arrays in y only for nprocy>1.
@@ -7769,6 +7799,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(ny) :: recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -7783,11 +7814,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, ny, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, ny, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, ny, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, ny, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, ny, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, ny, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, ny, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (in, ny, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(ny*ibox+1:ny*(ibox+1)) = recv_buf
         endif
@@ -7799,7 +7830,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_y_1D
 !***********************************************************************
-    subroutine remap_to_pencil_y_2D(in, out,lsync)
+    subroutine remap_to_pencil_y_2D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in y only for nprocy>1.
@@ -7813,6 +7844,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx,ny) :: recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -7829,11 +7861,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1)) = recv_buf
         endif
@@ -7845,7 +7877,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_y_2D
 !***********************************************************************
-    subroutine remap_to_pencil_y_3D(in, out,lsync)
+    subroutine remap_to_pencil_y_3D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 3D arrays in y only for nprocy>1.
@@ -7860,6 +7892,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, inz ! size of the first and third dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -7891,11 +7924,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1),:) = recv_buf
         endif
@@ -7909,7 +7942,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_y_3D
 !***********************************************************************
-    subroutine remap_to_pencil_y_4D(in, out,lsync)
+    subroutine remap_to_pencil_y_4D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 4D arrays in y only for nprocy>1.
@@ -7924,6 +7957,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, inz, ina ! size of the first, third, and fourth dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -7958,11 +7992,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1),:,:) = recv_buf
         endif
@@ -7986,7 +8020,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nygrid), intent(in) :: in
       real, dimension(ny), intent(out) :: out
 !
+      !$omp workshare
       out = in(ny*ipy+1:ny*(ipy+1))
+      !$omp end workshare
 !
     endsubroutine unmap_from_pencil_y_1D
 !***********************************************************************
@@ -8000,7 +8036,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nx,nygrid), intent(in) :: in
       real, dimension(nx,ny), intent(out) :: out
 !
+      !$omp workshare
       out = in(:,ny*ipy+1:ny*(ipy+1))
+      !$omp end workshare
 !
     endsubroutine unmap_from_pencil_y_2D
 !***********************************************************************
@@ -8014,7 +8052,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
+      !$omp workshare
       out = in(:,ny*ipy+1:ny*(ipy+1),:)
+      !$omp end workshare
 !
     endsubroutine unmap_from_pencil_y_3D
 !***********************************************************************
@@ -8028,11 +8068,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
 !
+      !$omp workshare
       out = in(:,ny*ipy+1:ny*(ipy+1),:,:)
+      !$omp end workshare
 !
     endsubroutine unmap_from_pencil_y_4D
 !***********************************************************************
-    subroutine remap_to_pencil_z_1D(in, out,lsync)
+    subroutine remap_to_pencil_z_1D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 1D arrays in z only for nprocz>1.
@@ -8046,6 +8088,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nz) :: recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -8060,11 +8103,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nz, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nz, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nz, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nz, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nz, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nz, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nz, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (in, nz, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(nz*ibox+1:nz*(ibox+1)) = recv_buf
         endif
@@ -8076,7 +8119,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_z_1D
 !***********************************************************************
-    subroutine remap_to_pencil_z_2D(in, out,lsync)
+    subroutine remap_to_pencil_z_2D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in z only for nprocz>1.
@@ -8091,6 +8134,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ina ! size of the second dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:), allocatable :: recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -8119,11 +8163,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(nz*ibox+1:nz*(ibox+1),:) = recv_buf
         endif
@@ -8137,7 +8181,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_z_2D
 !***********************************************************************
-    subroutine remap_to_pencil_z_3D(in, out,lsync)
+    subroutine remap_to_pencil_z_3D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 3D arrays in z only for nprocz>1.
@@ -8152,6 +8196,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, iny ! size of the first and third dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -8183,11 +8228,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,:,nz*ibox+1:nz*(ibox+1)) = recv_buf
         endif
@@ -8201,7 +8246,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_z_3D
 !***********************************************************************
-    subroutine remap_to_pencil_z_4D(in, out,lsync)
+    subroutine remap_to_pencil_z_4D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 4D arrays in z only for nprocz>1.
@@ -8216,6 +8261,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, iny, ina ! size of the first, second, and fourth dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -8250,11 +8296,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (in, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,:,nz*ibox+1:nz*(ibox+1),:) = recv_buf
         endif
@@ -8279,7 +8325,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nz), intent(out) :: out
 !
 !
+      !$omp workshare
       out = in(nz*ipz+1:nz*(ipz+1))
+      !$omp end workshare
 !
     endsubroutine unmap_from_pencil_z_1D
 !***********************************************************************
@@ -8293,7 +8341,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
 !
+      !$omp workshare
       out = in(nz*ipz+1:nz*(ipz+1),:)
+      !$omp end workshare
 !
     endsubroutine unmap_from_pencil_z_2D
 !***********************************************************************
@@ -8307,7 +8357,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
+      !$omp workshare
       out = in(:,:,nz*ipz+1:nz*(ipz+1))
+      !$omp end workshare
 !
     endsubroutine unmap_from_pencil_z_3D
 !***********************************************************************
@@ -8321,11 +8373,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
 !
+      !$omp workshare
       out = in(:,:,nz*ipz+1:nz*(ipz+1),:)
+      !$omp end workshare
 !
     endsubroutine unmap_from_pencil_z_4D
 !***********************************************************************
-    subroutine remap_to_pencil_xy_2D(in, out,lsync)
+    subroutine remap_to_pencil_xy_2D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in x and y only for nprocx>1.
@@ -8343,6 +8397,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if (nprocx == 1) then
@@ -8378,11 +8433,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -8396,7 +8451,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_xy_2D
 !***********************************************************************
-    subroutine remap_to_pencil_xy_2D_other(in, out,lsync)
+    subroutine remap_to_pencil_xy_2D_other(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in x and y only for nprocx>1.
@@ -8412,6 +8467,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if (nprocx == 1) then
@@ -8453,11 +8509,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -8471,7 +8527,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_xy_2D_other
 !***********************************************************************
-    subroutine remap_to_pencil_xy_3D(in, out,lsync)
+    subroutine remap_to_pencil_xy_3D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 3D arrays in x and y only for nprocx>1.
@@ -8490,6 +8546,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: onx, ony, onz
       integer :: ibox, partner, nbox, alloc_err
       integer :: ngc
+      integer, optional :: comm
       logical, optional :: lsync
 !
 !  No need to remap if nprocx = 1.
@@ -8545,11 +8602,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else local                         ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1)+2*ngc,:)
           commun: if (iproc > partner) then  ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else commun                        ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND(send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND(send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif commun
         endif local
         out(ngc+bnx*ibox+1:ngc+bnx*(ibox+1),:,:) = recv_buf(ngc+1:ngc+bnx,:,:)
@@ -8569,7 +8626,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_xy_3D
 !***********************************************************************
-    subroutine remap_to_pencil_xy_4D(in, out,lsync)
+    subroutine remap_to_pencil_xy_4D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 4D arrays in x and y only for nprocx>1.
@@ -8588,6 +8645,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if (nprocx == 1) then
@@ -8631,11 +8689,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:,:,:) = recv_buf
         endif
@@ -8649,7 +8707,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_xy_4D
 !***********************************************************************
-    subroutine unmap_from_pencil_xy_2D(in, out,lsync)
+    subroutine unmap_from_pencil_xy_2D(in, out,comm,lsync)
 !
 !  Unmaps pencil shaped 2D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocx>1.
@@ -8667,6 +8725,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if (nprocx == 1) then
@@ -8702,17 +8761,18 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1)) = recv_buf
         endif
       enddo
 !
       deallocate (send_buf, recv_buf)
+      
       !$omp end single
       if(loptest(lsync,.true.)) then
               !$omp barrier
@@ -8720,7 +8780,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine unmap_from_pencil_xy_2D
 !***********************************************************************
-    subroutine unmap_from_pencil_xy_2D_other(in, out,lsync)
+    subroutine unmap_from_pencil_xy_2D_other(in, out,comm,lsync)
 !
 !  Unmaps pencil shaped 2D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocx>1.
@@ -8736,6 +8796,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 
       if (nprocx == 1) then
@@ -8781,11 +8842,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1)) = recv_buf
         endif
@@ -8799,7 +8860,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine unmap_from_pencil_xy_2D_other
 !***********************************************************************
-    subroutine unmap_from_pencil_xy_3D(in, out,lsync)
+    subroutine unmap_from_pencil_xy_3D(in, out,comm,lsync)
 !
 !  Unmaps pencil shaped 3D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocx>1.
@@ -8819,6 +8880,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: onx, ony, onz
       integer :: ibox, partner, nbox, alloc_err
       integer :: ngc
+      integer, optional :: comm
       logical, optional :: lsync
 !
 !  No need to unmap if nprocx = 1.
@@ -8874,11 +8936,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else local                         ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
           commun: if (iproc > partner) then  ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else commun                        ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND(send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND(send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif commun
         endif local
         out(:,ngc+bny*ibox+1:ngc+bny*(ibox+1),:) = recv_buf(:,ngc+1:ngc+bny,:)
@@ -8898,7 +8960,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine unmap_from_pencil_xy_3D
 !***********************************************************************
-    subroutine unmap_from_pencil_xy_4D(in, out,lsync)
+    subroutine unmap_from_pencil_xy_4D(in, out,comm,lsync)
 !
 !  Unmaps pencil shaped 4D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocx>1.
@@ -8917,6 +8979,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if (nprocx == 1) then
@@ -8960,11 +9023,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:,:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:,:) = recv_buf
         endif
@@ -8978,7 +9041,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine unmap_from_pencil_xy_4D
 !***********************************************************************
-    subroutine transp_pencil_xy_2D(in, out,lsync)
+    subroutine transp_pencil_xy_2D(in, out,comm,lsync)
 !
 !  Transpose 2D data distributed on several processors.
 !  This routine transposes arrays in x and y only.
@@ -9000,6 +9063,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -9039,11 +9103,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = transpose (in(bny*ibox+1:bny*(ibox+1),:))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -9057,7 +9121,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine transp_pencil_xy_2D
 !***********************************************************************
-    subroutine transp_pencil_xy_3D(in, out, lghost,lsync)
+    subroutine transp_pencil_xy_3D(in, out, lghost,comm,lsync)
 !
 !  Transpose 3D data distributed on several processors.
 !  This routine transposes arrays in x and y only.
@@ -9079,6 +9143,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: inx, iny, inz, onx, ony, onz ! sizes of in and out arrays
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
       integer :: ibox, partner, alloc_err, iz, ngc
+      integer, optional :: comm
       logical, optional :: lsync
 !
 !  Check if ghost cells are included.
@@ -9126,11 +9191,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else local                        ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
           if (iproc > partner) then  ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else
-            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND(send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND(send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
         endif local
         do iz = 1, inz
@@ -9152,7 +9217,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine transp_pencil_xy_3D
 !***********************************************************************
-    subroutine transp_pencil_xy_4D(in, out,lsync)
+    subroutine transp_pencil_xy_4D(in, out,comm,lsync)
 !
 !  Transpose 4D data distributed on several processors.
 !  This routine transposes arrays in x and y only.
@@ -9174,6 +9239,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if(loptest(lsync,.true.)) then
@@ -9229,11 +9295,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             enddo
           enddo
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, utag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ltag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:,:,:) = recv_buf
         endif
@@ -9247,7 +9313,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine transp_pencil_xy_4D
 !***********************************************************************
-    subroutine remap_to_pencil_yz_3D(in, out,lsync)
+    subroutine remap_to_pencil_yz_3D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into z-pencil shape.
 !  This routine remaps 3D arrays in y and z only for nprocz>1.
@@ -9266,6 +9332,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if (nprocz == 1) then
@@ -9305,11 +9372,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
 !
           out(:,:,bnz*ibox+1:bnz*(ibox+1)) = recv_buf
@@ -9324,7 +9391,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_yz_3D
 !***********************************************************************
-    subroutine remap_to_pencil_yz_4D(in, out,lsync)
+    subroutine remap_to_pencil_yz_4D(in, out,comm,lsync)
 !
 !  Remaps data distributed on several processors into z-pencil shape.
 !  This routine remaps 4D arrays in y and z only for nprocz>1.
@@ -9343,6 +9410,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if (nprocz == 1) then
@@ -9386,11 +9454,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,:,bnz*ibox+1:bnz*(ibox+1),:) = recv_buf
         endif
@@ -9404,7 +9472,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine remap_to_pencil_yz_4D
 !***********************************************************************
-    subroutine unmap_from_pencil_yz_3D(in, out,lsync)
+    subroutine unmap_from_pencil_yz_3D(in, out,comm,lsync)
 !
 !  Unmaps z-pencil shaped 3D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocz>1.
@@ -9423,6 +9491,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if (nprocz == 1) then
@@ -9462,11 +9531,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,:,bnz*ibox+1:bnz*(ibox+1))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:) = recv_buf
         endif
@@ -9480,7 +9549,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine unmap_from_pencil_yz_3D
 !***********************************************************************
-    subroutine unmap_from_pencil_yz_4D(in, out,lsync)
+    subroutine unmap_from_pencil_yz_4D(in, out,comm,lsync)
 !
 !  Unmaps z-pencil shaped 4D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocz>1.
@@ -9499,6 +9568,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+      integer, optional :: comm
       logical, optional :: lsync
 !
       if (nprocz == 1) then
@@ -9542,11 +9612,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           ! communicate with partner
           send_buf = in(:,:,bnz*ibox+1:bnz*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+            call MPI_SEND (send_buf, nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:,:) = recv_buf
         endif
@@ -9776,7 +9846,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpigather_z
 !***********************************************************************
-    subroutine mpigather( sendbuf, recvbuf )
+    subroutine mpigather( sendbuf, recvbuf , comm)
 !
 !  Gathers the chunks of a 3D array from each processor in a big array at root.
 !
@@ -9786,6 +9856,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(nxgrid,ny,nz):: sendbuf   ! nx=nxgrid !
       real, dimension(:,:,:)       :: recvbuf
+      integer, optional :: comm
 !
       integer :: ncnt, i
 !
@@ -9823,18 +9894,19 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       do i=1,nz
         call MPI_GATHERV(sendbuf(1,1,i), ncnt, mpi_precision, recvbuf(1,1,i), counts, int(shifts), &
-                         mpi_precision, root, MPI_COMM_GRID, mpierr)
+                         mpi_precision, root, ioptest(comm,MPI_COMM_GRID), mpierr)
       enddo
 !
     endsubroutine mpigather
 !***********************************************************************
-    subroutine mpigather_scl_str(string,string_arr)
+    subroutine mpigather_scl_str(string,string_arr, comm)
 
       character(LEN=*) :: string
       character(LEN=*), dimension(:) :: string_arr
+      integer, optional :: comm
 
       call MPI_GATHER(string, len(string), MPI_CHARACTER, string_arr, len(string), &
-                      MPI_CHARACTER, root, MPI_COMM_GRID, mpierr)
+                      MPI_CHARACTER, root, ioptest(comm,MPI_COMM_GRID), mpierr)
 
     endsubroutine mpigather_scl_str
 !***********************************************************************
@@ -9860,7 +9932,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 
     endfunction get_limits
 !***********************************************************************
-    subroutine mpigather_and_out_real( sendbuf, unit, ltransp, kxrange, kyrange,zrange )
+    subroutine mpigather_and_out_real( sendbuf, unit, ltransp, kxrange, kyrange,zrange,comm)
 !
 !  Transfers the chunks of a 3D array from each processor to root
 !  and writes them out in right order.
@@ -9882,6 +9954,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(3,*),    optional,intent(in   ) :: kxrange, kyrange, zrange
 !
       integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
+      integer, optional :: comm
 !
       integer, dimension(MPI_STATUS_SIZE) :: status
       integer :: ipz, ipy, ipx, ic, ncomp, n1g, n2g, m1g, m2g, l1g, l2g, ig, iy, iz, &
@@ -10034,10 +10107,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
                               endif
                             else
                               if (lcomplex) then
-                                call MPI_RECV(rowbuf_cmplx, nsend, MPI_CMPLX, ig, tag, MPI_COMM_GRID, status, mpierr)
+                                call MPI_RECV(rowbuf_cmplx, nsend, MPI_CMPLX, ig, tag, ioptest(comm,MPI_COMM_GRID), status, mpierr)
                                 !print*, 'iy,irx,ixa:ixe:ixs,kxrangel(:,irx)=', iy,irx,ixa,ixe,ixs , kxrangel(:,irx)
                               else
-                                call MPI_RECV(rowbuf, nsend, mpi_precision, ig, tag, MPI_COMM_GRID, status, mpierr)
+                                call MPI_RECV(rowbuf, nsend, mpi_precision, ig, tag, ioptest(comm,MPI_COMM_GRID), status, mpierr)
                               endif
                             endif
                             if (lcomplex) then
@@ -10050,18 +10123,18 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
                             if (lcomplex) then
                               if (ltrans) then
                                 call MPI_SEND(sendbuf_cmplx(iy,ixa:ixe:ixs,iz,ic), &
-                                              nsend, MPI_CMPLX, root, tag, MPI_COMM_GRID, mpierr)
+                                              nsend, MPI_CMPLX, root, tag, ioptest(comm,MPI_COMM_GRID), mpierr)
                               else
                                 call MPI_SEND(sendbuf_cmplx(ixa:ixe:ixs,iy,iz,ic), &
-                                              nsend, MPI_CMPLX, root, tag, MPI_COMM_GRID, mpierr)
+                                              nsend, MPI_CMPLX, root, tag, ioptest(comm,MPI_COMM_GRID), mpierr)
                               endif
                             else
                               if (ltrans) then
                                 call MPI_SEND(sendbuf(iy,ixa:ixe:ixs,iz), &
-                                              nsend, mpi_precision, root, tag, MPI_COMM_GRID, mpierr)
+                                              nsend, mpi_precision, root, tag, ioptest(comm,MPI_COMM_GRID), mpierr)
                               else
                                 call MPI_SEND(sendbuf(ixa:ixe:ixs,iy,iz), &
-                                              nsend, mpi_precision, root, tag, MPI_COMM_GRID, mpierr)
+                                              nsend, mpi_precision, root, tag, ioptest(comm,MPI_COMM_GRID), mpierr)
                               endif
                             endif
 !
@@ -10069,7 +10142,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
                         endif
                       enddo
                     enddo
-                    call MPI_BARRIER(MPI_COMM_GRID, mpierr)
+                    call MPI_BARRIER(ioptest(comm,MPI_COMM_GRID), mpierr)
                   enddo
                 enddo
               enddo
