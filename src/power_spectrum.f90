@@ -1211,9 +1211,9 @@ outer:  do ikz=1,nz
           call del2vi_etc(f,iaa,ivec,curlcurl=jji)
           b_re(:,m-nghost,n-nghost)=jji  !(this corresponds to the current density)
           enddo
-          a_re(:,:,n) =f(l1:l2,m1:m2,n,iaa+ivec-1)  !(corresponds to vector potential)
-          a_im(:,:,n) =0.
-          b_im(:,:,n) =0.
+          a_re(:,:,n)=f(l1:l2,m1:m2,n,iaa+ivec-1)  !(corresponds to vector potential)
+          a_im(:,:,n)=0.
+          b_im(:,:,n)=0.
         enddo
       else
         if (headt) print*,'magnetic power spectra only work if lmagnetic=T'

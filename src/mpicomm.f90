@@ -1530,7 +1530,7 @@ if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
         endif
 
         nbufy=bufact*bufsizes_yz(INYL,IRCV)
-!if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INYL,IRCV), ' from', ylneigh
+!if (ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INYL,IRCV), ' from', ylneigh
         call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,mpi_precision, &
                        ylneigh,touppyr,comm,irecv_rq_fromlowy,mpierr)
 
@@ -1596,7 +1596,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         endif
 
         nbufz=bufact*bufsizes_yz(INZL,IRCV)
-!if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INZL,IRCV), ' from', zlneigh
+!if (ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INZL,IRCV), ' from', zlneigh
         call MPI_IRECV(lbufzi(:,:,:,ivar1:ivar2),nbufz,mpi_precision, &
                        zlneigh,touppzr,comm,irecv_rq_fromlowz,mpierr)
 
@@ -1748,7 +1748,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         endif
 
         nbufyz=bufact*product(bufsizes_yz_corn(:,INUL,IRCV))
-! if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INUL,IRCV), &
+! if (ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INUL,IRCV), &
 !' from', ulcornr
         if (ulcornr>=0) call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,mpi_precision, &
                                        ulcornr,TOlur,comm,irecv_rq_FRul,mpierr)
@@ -1808,7 +1808,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
         endif
 
         nbufyz=bufact*product(bufsizes_yz_corn(:,INLU,IRCV))
-!if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INLU,IRCV), &
+!if (ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INLU,IRCV), &
 !' from', lucornr
         if (lucornr>=0) call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,mpi_precision, &
                                        lucornr,TOulr,comm,irecv_rq_FRlu,mpierr)
@@ -5492,12 +5492,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: m,n,ibox,ix
       integer, optional :: comm
       logical, optional :: lsync
-
-
 !
 !  Doing x-y transpose if var='y'
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -5648,7 +5646,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
       !$omp end single
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
     endsubroutine transp
@@ -5673,7 +5671,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
       
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -5768,7 +5766,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         enddo
       enddo
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -5794,7 +5792,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -5888,7 +5886,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         enddo
       enddo
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -5918,7 +5916,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -6074,7 +6072,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
              'is supposed to mean'
       endif
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -6098,7 +6096,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -6124,7 +6122,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -6148,7 +6146,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -6174,7 +6172,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -7741,7 +7739,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -7763,7 +7761,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -7802,7 +7800,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -7824,7 +7822,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -7847,7 +7845,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -7871,7 +7869,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -7895,7 +7893,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -7936,7 +7934,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (allocated (recv_buf)) deallocate (recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -7960,7 +7958,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8004,7 +8002,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8091,7 +8089,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8113,7 +8111,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         endif
       enddo
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8137,7 +8135,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8175,7 +8173,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8199,7 +8197,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8240,7 +8238,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8264,7 +8262,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8308,7 +8306,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8404,7 +8402,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8445,7 +8443,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8475,7 +8473,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
 
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8521,7 +8519,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8555,7 +8553,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8620,7 +8618,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8652,7 +8650,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8701,7 +8699,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8732,7 +8730,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8774,7 +8772,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8804,7 +8802,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8816,7 +8814,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       inx=nxgrid_other        ; iny=nny/nprocx
       onx=nnx                 ; ony=nny
       bnx=nnx                 ; bny=nny/nprocx ! transfer box sizes
-!
 !
       nbox = bnx*bny
 !
@@ -8854,7 +8851,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8885,11 +8882,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  No need to unmap if nprocx = 1.
 !
-      nox: if (nprocx == 1) then
+      if (nprocx == 1) then
         out = in
         return
-      endif nox
-      if(loptest(lsync,.true.)) then
+      endif
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -8954,7 +8951,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate(send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -8986,7 +8983,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -9035,7 +9032,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -9066,7 +9063,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -9115,7 +9112,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -9148,7 +9145,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Check if ghost cells are included.
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -9211,7 +9208,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -9242,7 +9239,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -9307,7 +9304,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -9339,7 +9336,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -9385,7 +9382,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -9417,7 +9414,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -9466,7 +9463,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -9498,7 +9495,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -9543,7 +9540,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -9575,7 +9572,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
         return
       endif
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
       !$omp single
@@ -9624,7 +9621,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
-      if(loptest(lsync,.true.)) then
+      if (loptest(lsync,.true.)) then
               !$omp barrier
       endif
 !
@@ -11175,7 +11172,7 @@ print*, 'Pencil: after barrier'
         enddo
       enddo 
 !GM: Wait for the saving command      
-if(iproc==0) then 
+if (iproc==0) then 
 !  print*, 'PENCIL Before RECEIVED LOGICAL SAVE', lesav
   call mpirecv_logical(lesav,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !  if (lesav) then
@@ -11217,9 +11214,9 @@ stop
             do iv=1,nvars
               call mpirecv_real(frgn_buffer(istart:istart+lenx_loc-1,:,:,iv), &
                                 (/lenx_loc,my,mz/),peer+ncpus,peer,MPI_COMM_WORLD)
-!              if(iv.eq.1) write(100+iproc) frgn_buffer(:,:,:,iv)
-!              if(iv.eq.2) write(400+iproc) frgn_buffer(:,:,:,iv)
-!              if(iv.eq.3) write(700+iproc) frgn_buffer(:,:,:,iv)
+!              if (iv.eq.1) write(100+iproc) frgn_buffer(:,:,:,iv)
+!              if (iv.eq.2) write(400+iproc) frgn_buffer(:,:,:,iv)
+!              if (iv.eq.3) write(700+iproc) frgn_buffer(:,:,:,iv)
 !print *,'PENCIL MINMAX FRGN',iproc, minval(frgn_buffer), maxval(frgn_buffer)
             enddo
 !
@@ -11274,62 +11271,62 @@ stop
       if (trim(frgn_setup%name)=='EULAG') then           
 
         if (loptest(lnonblock)) call mpiwait(frgn_setup%recv_req(px))
-        if(size(frgn_buffer,1) > size(f,1)) lf1 = 2
+        if (size(frgn_buffer,1) > size(f,1)) lf1 = 2
 !!!        f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU  !ORIGINAL SETUP
         if (lfirst_proc_y .and. nprocy==1) then
-          if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
+          if (lfirst_proc_x .and. nprocx==1) then!if only one proc in X
             f(l1:l2,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
-          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+          else if (.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
             f(:,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
           else if (lfirst_proc_x) then! on processors of first XBEAM
 !          
             f(l1:,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
-          else if(llast_proc_x) then!on processors of last XBEAM
+          else if (llast_proc_x) then!on processors of last XBEAM
             f(:l2,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
 
-        else if(.not.(lfirst_proc_y .or. llast_proc_y)) then!MID of YBEAM 
+        else if (.not.(lfirst_proc_y .or. llast_proc_y)) then!MID of YBEAM 
 !
-          if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
+          if (lfirst_proc_x .and. nprocx==1) then!if only one proc in X
             f(l1:l2,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
-          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+          else if (.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
             f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
           else if (lfirst_proc_x) then! on processors of first XBEAM
 !          
             f(l1:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
-          else if(llast_proc_x) then!on processors of last XBEAM
+          else if (llast_proc_x) then!on processors of last XBEAM
             f(:l2,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
 
 !       i
         else if (lfirst_proc_y) then! on processors of first YBEAM
-          if(lfirst_proc_x .and. nprocx==1) then !if only one proc in X
+          if (lfirst_proc_x .and. nprocx==1) then !if only one proc in X
             f(l1:l2,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
-          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+          else if (.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
             f(:,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !        
           else if (lfirst_proc_x) then! on processors of first XBEAM
 !          
             f(l1:,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
-          else if(llast_proc_x) then!on processors of last XBEAM
+          else if (llast_proc_x) then!on processors of last XBEAM
             f(:l2,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
 !          
-        else if(llast_proc_y) then!on processors of last YBEAM
-          if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
+        else if (llast_proc_y) then!on processors of last YBEAM
+          if (lfirst_proc_x .and. nprocx==1) then!if only one proc in X
             f(l1:l2,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
-          else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
+          else if (.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
             f(:,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           else if (lfirst_proc_x) then! on processors of first XBEAM
 !          
             f(l1:,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
-          else if(llast_proc_x) then!on processors of last XBEAM
+          else if (llast_proc_x) then!on processors of last XBEAM
             f(:l2,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
         endif
@@ -11341,7 +11338,7 @@ stop
 !print*,'PENCILFin4', iproc, size(frgn_buffer,1) , size(frgn_buffer,2)
 
 !GM: Wait for the saving command/ IF SAVING HERE IS NEEDED
-!if(iproc==0) then
+!if (iproc==0) then
 !  print*, 'PENCIL Before RECEIVED LOGICAL SAVE', lesav
 !  call mpirecv_logical(lesav,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !  print*, 'PENCIL RECEIVED LOGICAL SAVE', lesav
