@@ -189,7 +189,7 @@ contains
       f_copy_2 = f
 
       do n=1,num_of_steps
-        print*,"GPU rhs test:\tcpu step: ",n
+        if(iproc == 0) print*,"GPU rhs test:    tcpu step: ",n
         ds = 0.0
         do i=1,3
           call boundconds_x(f_copy)
