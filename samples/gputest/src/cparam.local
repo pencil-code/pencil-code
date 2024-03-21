@@ -4,9 +4,9 @@
 !  Local settings concerning grid size and number of CPUs.
 !  This file is included by cparam.f90
 !
-integer, parameter :: ncpus=1
-integer, parameter :: nprocy=1,nprocz=1,nprocx=1
+integer, parameter :: ncpus=16
+integer, parameter :: nprocy=4,nprocz=2,nprocx=2
 !alternatively, get nprocx, nprocy and nprocz from ncpus and morton decomp by including morton_decomp.h:
 !include 'morton_decomp.h'
 
-integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
+integer, parameter :: nxgrid=64,nygrid=nxgrid,nzgrid=nxgrid

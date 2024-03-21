@@ -6,7 +6,7 @@ module Fourier
 !
   use Cdata
   use Messages
-  use Mpicomm, only: transp,transp_other
+  use Mpicomm, only: transp,transp_other, MPI_COMM_GRID
 !$ use OMP_LIB
 !
   implicit none
@@ -21,6 +21,7 @@ module Fourier
   real, dimension (:,:), allocatable :: wsavex
   real, dimension (:,:), allocatable :: wsavey
   real, dimension (:,:), allocatable :: wsavez
+  integer :: MPI_COMM_FFT
 
   interface fourier_transform_other
     module procedure fourier_transform_other_1
@@ -75,9 +76,9 @@ module Fourier
 !***********************************************************************
     subroutine initialize_fourier
 
+      integer :: nthreads
       include 'fourier_common.h'
 
-      integer :: nthreads
 !
 !  Initializations of module auxiliaries.
 !
@@ -91,6 +92,7 @@ module Fourier
         if (lactive_dimension(2)) call cffti(nygrid,wsavey(:,thread_id))
         if (lactive_dimension(3)) call cffti(nzgrid,wsavez(:,thread_id))
 !$omp end parallel
+      call MPI_COMM_DUP(MPI_COMM_GRID, MPI_COMM_FFT)
 !
     endsubroutine initialize_fourier
 !***********************************************************************
@@ -130,8 +132,9 @@ module Fourier
         if (nygrid/=1) then
           if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
           
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
+          
 !
 !  The length of the array in the y-direction is nx.
 !
@@ -150,8 +153,9 @@ module Fourier
         if (nzgrid/=1) then
           if (nzgrid/=nxgrid) call fatal_error('fourier_transform','must have nzgrid=nxgrid')
           
-          call transp(a_re,'z')
-          call transp(a_im,'z')
+          
+          call transp(a_re,'z',comm = MPI_COMM_FFT)
+          call transp(a_im,'z',comm = MPI_COMM_FFT)
 !
 !  The length of the array in the z-direction is also nx.
 !
@@ -192,8 +196,8 @@ module Fourier
 !
           if (nzgrid/=1) then
             
-            call transp(a_re,'z')
-            call transp(a_im,'z')
+            call transp(a_re,'z',comm = MPI_COMM_FFT)
+            call transp(a_im,'z',comm = MPI_COMM_FFT)
           endif
 !
           if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in y'
@@ -211,11 +215,11 @@ module Fourier
         if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in x'
         
         if (nygrid==1) then
-          call transp(a_re,'z')
-          call transp(a_im,'z')
+          call transp(a_re,'z',comm = MPI_COMM_FFT)
+          call transp(a_im,'z',comm = MPI_COMM_FFT)
         else
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
         endif
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
@@ -274,8 +278,8 @@ module Fourier
         if (nygrid/=1) then
           if (nygrid/=nxgrid) call fatal_error('fourier_transform_xy','must have nygrid=nxgrid')
           
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
 !
 !  The length of the array in the y-direction is nx.
 !
@@ -310,8 +314,8 @@ module Fourier
         if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
         if (nygrid/=1) then
           
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
         endif
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
@@ -370,8 +374,8 @@ module Fourier
       enddo; enddo
 
       
-      call transp(a_re,'z')
-      call transp(a_im,'z')
+      call transp(a_re,'z',comm = MPI_COMM_FFT)
+      call transp(a_im,'z',comm = MPI_COMM_FFT)
 !
 !  The length of the array in the z-direction is also nx. Normalization is included.
 !
@@ -522,7 +526,7 @@ module Fourier
         if (lroot .and. ip<10) print*,'fourier_transform_y: nxgrid>=nygrid'
 !
         
-        call transp(a_re,'y') ; call transp(a_im,'y')
+        call transp(a_re,'y',comm = MPI_COMM_FFT) ; call transp(a_im,'y',comm = MPI_COMM_FFT)
         !$omp do collapse(3)
         do n=1,nz; do l=1,ny
 !  Divide a_re into arrays of size nygrid to fit ay
@@ -539,7 +543,7 @@ module Fourier
           enddo
         enddo;enddo
 
-        call transp(a_re,'y') ; call transp(a_im,'y')
+        call transp(a_re,'y',comm = MPI_COMM_FFT) ; call transp(a_im,'y',comm = MPI_COMM_FFT)
 !
 ! Normalize if forward
 !
@@ -578,7 +582,7 @@ module Fourier
 !
 ! Transpose, transform, transpose back
 !
-        call transp_other(tmp_re,'y') ; call transp_other(tmp_im,'y')
+        call transp_other(tmp_re,'y',comm = MPI_COMM_FFT) ; call transp_other(tmp_im,'y',comm = MPI_COMM_FFT)
         !$omp do collapse(2)
         do n=1,nz;do l=1,ny
           ay=cmplx(tmp_re(:,l,n),tmp_im(:,l,n))
@@ -590,7 +594,7 @@ module Fourier
           tmp_re(:,l,n)=real(ay)
           tmp_im(:,l,n)=aimag(ay)
         enddo; enddo
-        call transp_other(tmp_re,'y') ; call transp_other(tmp_im,'y')
+        call transp_other(tmp_re,'y',comm = MPI_COMM_FFT) ; call transp_other(tmp_im,'y',comm = MPI_COMM_FFT)
 !
 ! Normalize if forward
 !
@@ -681,8 +685,8 @@ module Fourier
         if (nygrid/=1) then
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
           
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -701,8 +705,8 @@ module Fourier
         if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nygrid/=1) then
           
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
         endif
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
@@ -717,8 +721,8 @@ module Fourier
         if (nzgrid/=1) then
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in z'
           
-          call transp(a_re,'z')
-          call transp(a_im,'z')
+          call transp(a_re,'z',comm = MPI_COMM_FFT)
+          call transp(a_im,'z',comm = MPI_COMM_FFT)
           !$omp do collapse(2)
           do l=1,nz; do m=1,ny
             az(1:nx)=cmplx(a_re(:,m,l),a_im(:,m,l))
@@ -747,8 +751,8 @@ module Fourier
         if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nzgrid/=1) then
           
-          call transp(a_re,'z')
-          call transp(a_im,'z')
+          call transp(a_re,'z',comm = MPI_COMM_FFT)
+          call transp(a_im,'z',comm = MPI_COMM_FFT)
         endif
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
@@ -764,8 +768,8 @@ module Fourier
 !
         if (nygrid/=1) then
           
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
@@ -777,8 +781,8 @@ module Fourier
             a_re(:,l,n)=real(ay(1:nx))
             a_im(:,l,n)=aimag(ay(1:nx))
           enddo; enddo
-          call transp(a_re,'y')  ! Deliver array back in (x,y,z) order.
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)  ! Deliver array back in (x,y,z) order.
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
         endif
       endif
 !
@@ -832,8 +836,8 @@ module Fourier
         if (nygrid>1) then
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
           
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -853,8 +857,8 @@ module Fourier
         if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
         
         if (nygrid/=1) then
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
         endif
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
@@ -882,8 +886,8 @@ module Fourier
 !
         if (nygrid>1) then
           
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
           if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
@@ -895,8 +899,8 @@ module Fourier
             a_re(:,l,n)=real(ay(1:nx))
             a_im(:,l,n)=aimag(ay(1:nx))
           enddo; enddo
-          call transp(a_re,'y')  ! Deliver array back in (x,y,z) order.
-          call transp(a_im,'y')
+          call transp(a_re,'y',comm = MPI_COMM_FFT)  ! Deliver array back in (x,y,z) order.
+          call transp(a_im,'y',comm = MPI_COMM_FFT)
         endif
       endif
 !
@@ -1079,9 +1083,9 @@ module Fourier
 !  Transform y-direction.
 !
           
-          call transp_xy(a_re)
+          call transp_xy(a_re,comm = MPI_COMM_FFT)
           if (lcompute_im) then
-            call transp_xy(a_im)
+            call transp_xy(a_im,comm = MPI_COMM_FFT)
           else
             !$omp workshare
             a_im=0.0
@@ -1100,8 +1104,8 @@ module Fourier
             enddo
           enddo
 !
-          call transp_xy(a_re)
-          call transp_xy(a_im)
+          call transp_xy(a_re,comm = MPI_COMM_FFT)
+          call transp_xy(a_im,comm = MPI_COMM_FFT)
 !
         endif
 !
@@ -1140,8 +1144,8 @@ module Fourier
 !  Transform y-direction back.
 !
           
-          call transp_xy(a_re)
-          call transp_xy(a_im)
+          call transp_xy(a_re,comm = MPI_COMM_FFT)
+          call transp_xy(a_im,comm = MPI_COMM_FFT)
 !
           !$omp do collapse(2)
           do ibox=0,nxgrid/nygrid-1
@@ -1155,8 +1159,8 @@ module Fourier
             enddo
           enddo
 !
-          call transp_xy(a_re)
-          if (lcompute_im) call transp_xy(a_im)
+          call transp_xy(a_re,comm = MPI_COMM_FFT)
+          if (lcompute_im) call transp_xy(a_im,comm = MPI_COMM_FFT)
 !
         endif
 !
@@ -1212,8 +1216,8 @@ module Fourier
 !  Transform y-direction.
 !
           
-          call transp_xy_other(a_re)
-          call transp_xy_other(a_im)
+          call transp_xy_other(a_re,comm = MPI_COMM_FFT)
+          call transp_xy_other(a_im,comm = MPI_COMM_FFT)
 !
           call cffti(nygrid_other,wsavey)
 !
@@ -1225,8 +1229,8 @@ module Fourier
             a_im(:,l)=aimag(ay)
           enddo
 !
-          call transp_xy_other(a_re)
-          call transp_xy_other(a_im)
+          call transp_xy_other(a_re,comm = MPI_COMM_FFT)
+          call transp_xy_other(a_im,comm = MPI_COMM_FFT)
 !
       endif
 !
@@ -1269,8 +1273,8 @@ module Fourier
 !  Transform y-direction back.
 !
           
-          call transp_xy_other(a_re)
-          call transp_xy_other(a_im)
+          call transp_xy_other(a_re,comm = MPI_COMM_FFT)
+          call transp_xy_other(a_im,comm = MPI_COMM_FFT)
 !
           call cffti(nygrid_other,wsavey)
 !
@@ -1282,8 +1286,8 @@ module Fourier
             a_im(:,l)=aimag(ay)
           enddo
 !
-          call transp_xy_other(a_re)
-          call transp_xy_other(a_im)
+          call transp_xy_other(a_re,comm = MPI_COMM_FFT)
+          call transp_xy_other(a_im,comm = MPI_COMM_FFT)
 !
         endif
 !
@@ -1349,9 +1353,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_x (a_re, p_re_1d)
+        call remap_to_pencil_x (a_re, p_re_1d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_x (a_im, p_im_1d)
+          call remap_to_pencil_x (a_im, p_im_1d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_1d = 0.0
@@ -1375,8 +1379,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_x (a_re, p_re_1d)
-        call remap_to_pencil_x (a_im, p_im_1d)
+        call remap_to_pencil_x (a_re, p_re_1d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_x (a_im, p_im_1d,comm = MPI_COMM_FFT)
 !
         ! Transform x-direction back.
         ax = cmplx (p_re_1d, p_im_1d)
@@ -1452,9 +1456,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_2d)
+        call remap_to_pencil_xy (a_re, p_re_2d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_xy (a_im, p_im_2d)
+          call remap_to_pencil_xy (a_im, p_im_2d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_2d = 0.0
@@ -1471,8 +1475,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy (p_re_2d, a_re)
-        call unmap_from_pencil_xy (p_im_2d, a_im)
+        call unmap_from_pencil_xy (p_re_2d, a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_xy (p_im_2d, a_im,comm = MPI_COMM_FFT)
 !
       else
 !
@@ -1480,8 +1484,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_2d)
-        call remap_to_pencil_xy (a_im, p_im_2d)
+        call remap_to_pencil_xy (a_re, p_re_2d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_xy (a_im, p_im_2d,comm = MPI_COMM_FFT)
 !
         !$omp do
         do m = 1, pny
@@ -1493,8 +1497,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy (p_re_2d, a_re)
-        if (lcompute_im) call unmap_from_pencil_xy (p_im_2d, a_im)
+        call unmap_from_pencil_xy (p_re_2d, a_re,comm = MPI_COMM_FFT)
+        if (lcompute_im) call unmap_from_pencil_xy (p_im_2d, a_im,comm = MPI_COMM_FFT)
 !
       endif
 !
@@ -1569,9 +1573,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_3d)
+        call remap_to_pencil_xy (a_re, p_re_3d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_xy (a_im, p_im_3d)
+          call remap_to_pencil_xy (a_im, p_im_3d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_3d = 0.0
@@ -1590,8 +1594,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy (p_re_3d, a_re)
-        call unmap_from_pencil_xy (p_im_3d, a_im)
+        call unmap_from_pencil_xy (p_re_3d, a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_xy (p_im_3d, a_im,comm = MPI_COMM_FFT)
 !
       else
 !
@@ -1599,8 +1603,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_3d)
-        call remap_to_pencil_xy (a_im, p_im_3d)
+        call remap_to_pencil_xy (a_re, p_re_3d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_xy (a_im, p_im_3d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(2)
         do pos_z = 1, inz
@@ -1614,8 +1618,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy (p_re_3d, a_re)
-        if (lcompute_im) call unmap_from_pencil_xy (p_im_3d, a_im)
+        call unmap_from_pencil_xy (p_re_3d, a_re,comm = MPI_COMM_FFT)
+        if (lcompute_im) call unmap_from_pencil_xy (p_im_3d, a_im,comm = MPI_COMM_FFT)
 !
       endif
 !
@@ -1694,9 +1698,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_4d)
+        call remap_to_pencil_xy (a_re, p_re_4d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_xy (a_im, p_im_4d)
+          call remap_to_pencil_xy (a_im, p_im_4d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_4d = 0.0
@@ -1717,8 +1721,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy (p_re_4d, a_re)
-        call unmap_from_pencil_xy (p_im_4d, a_im)
+        call unmap_from_pencil_xy (p_re_4d, a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_xy (p_im_4d, a_im,comm = MPI_COMM_FFT)
 !
       else
 !
@@ -1726,8 +1730,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_4d)
-        call remap_to_pencil_xy (a_im, p_im_4d)
+        call remap_to_pencil_xy (a_re, p_re_4d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_xy (a_im, p_im_4d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(3)
         do pos_a = 1, ina
@@ -1743,8 +1747,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy (p_re_4d, a_re)
-        if (lcompute_im) call unmap_from_pencil_xy (p_im_4d, a_im)
+        call unmap_from_pencil_xy (p_re_4d, a_re,comm = MPI_COMM_FFT)
+        if (lcompute_im) call unmap_from_pencil_xy (p_im_4d, a_im,comm = MPI_COMM_FFT)
 !
       endif
 !
@@ -1810,9 +1814,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_y (a_re, p_re_1d)
+        call remap_to_pencil_y (a_re, p_re_1d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_y (a_im, p_im_1d)
+          call remap_to_pencil_y (a_im, p_im_1d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_1d = 0.0
@@ -1837,8 +1841,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_y (a_re, p_re_1d)
-        call remap_to_pencil_y (a_im, p_im_1d)
+        call remap_to_pencil_y (a_re, p_re_1d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_y (a_im, p_im_1d,comm = MPI_COMM_FFT)
 !
         ! Transform y-direction back.
         ay = cmplx (p_re_1d, p_im_1d)
@@ -1912,9 +1916,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_y (a_re, p_re_2d)
+        call remap_to_pencil_y (a_re, p_re_2d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_y (a_im, p_im_2d)
+          call remap_to_pencil_y (a_im, p_im_2d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_2d = 0.0
@@ -1942,8 +1946,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_y (a_re, p_re_2d)
-        call remap_to_pencil_y (a_im, p_im_2d)
+        call remap_to_pencil_y (a_re, p_re_2d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_y (a_im, p_im_2d,comm = MPI_COMM_FFT)
 !
         ! Transform y-direction back.
         !$omp do
@@ -2031,9 +2035,9 @@ module Fourier
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        call remap_to_pencil_y (a_re, p_re_3d)
+        call remap_to_pencil_y (a_re, p_re_3d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_y (a_im, p_im_3d)
+          call remap_to_pencil_y (a_im, p_im_3d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_3d = 0.0
@@ -2063,8 +2067,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_y (a_re, p_re_3d)
-        call remap_to_pencil_y (a_im, p_im_3d)
+        call remap_to_pencil_y (a_re, p_re_3d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_y (a_im, p_im_3d,comm = MPI_COMM_FFT)
 !
         ! Transform y-direction back.
         !$omp do collapse(2)
@@ -2159,9 +2163,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_y (a_re, p_re_4d)
+        call remap_to_pencil_y (a_re, p_re_4d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_y (a_im, p_im_4d)
+          call remap_to_pencil_y (a_im, p_im_4d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_4d= 0.0
@@ -2192,8 +2196,8 @@ module Fourier
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        call remap_to_pencil_y (a_re, p_re_4d)
-        call remap_to_pencil_y (a_im, p_im_4d)
+        call remap_to_pencil_y (a_re, p_re_4d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_y (a_im, p_im_4d,comm = MPI_COMM_FFT)
 !
         ! Transform y-direction back.
         !$omp do collapse(3)
@@ -2279,9 +2283,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_z (a_re, p_re_1d)
+        call remap_to_pencil_z (a_re, p_re_1d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_z (a_im, p_im_1d)
+          call remap_to_pencil_z (a_im, p_im_1d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_1d= 0.0
@@ -2306,8 +2310,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_z (a_re, p_re_1d)
-        call remap_to_pencil_z (a_im, p_im_1d)
+        call remap_to_pencil_z (a_re, p_re_1d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_z (a_im, p_im_1d,comm = MPI_COMM_FFT)
 !
         ! Transform z-direction back.
         az = cmplx (p_re_1d, p_im_1d)
@@ -2402,9 +2406,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_z (a_re, p_re_2d)
+        call remap_to_pencil_z (a_re, p_re_2d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_z (a_im, p_im_2d)
+          call remap_to_pencil_z (a_im, p_im_2d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_2d= 0.0
@@ -2431,8 +2435,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_z (a_re, p_re_2d)
-        call remap_to_pencil_z (a_im, p_im_2d)
+        call remap_to_pencil_z (a_re, p_re_2d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_z (a_im, p_im_2d,comm = MPI_COMM_FFT)
 !
         ! Transform z-direction back.
         !$omp do
@@ -2512,9 +2516,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_z (a_re, p_re_3d)
+        call remap_to_pencil_z (a_re, p_re_3d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_z (a_im, p_im_3d)
+          call remap_to_pencil_z (a_im, p_im_3d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_3d= 0.0
@@ -2542,8 +2546,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_z (a_re, p_re_3d)
-        call remap_to_pencil_z (a_im, p_im_3d)
+        call remap_to_pencil_z (a_re, p_re_3d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_z (a_im, p_im_3d,comm = MPI_COMM_FFT)
 !
         ! Transform z-direction back.
         !$omp do collapse(2)
@@ -2628,9 +2632,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_z (a_re, p_re_4d)
+        call remap_to_pencil_z (a_re, p_re_4d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_z (a_im, p_im_4d)
+          call remap_to_pencil_z (a_im, p_im_4d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_4d= 0.0
@@ -2660,8 +2664,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_z (a_re, p_re_4d)
-        call remap_to_pencil_z (a_im, p_im_4d)
+        call remap_to_pencil_z (a_re, p_re_4d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_z (a_im, p_im_4d,comm = MPI_COMM_FFT)
 !
         ! Transform z-direction back.
         !$omp do collapse(3)
@@ -2761,16 +2765,12 @@ module Fourier
 !
       if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
-        !$omp workshare
         deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
-        !$omp end workshare
       endif
 !
       if (lshift) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
-        !$omp workshare
         dshift_y = shift_y(x_offset:x_offset+tny-1)
-        !$omp end workshare
       endif
 !
       if (lforward) then
@@ -2779,9 +2779,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_2d)
+        call remap_to_pencil_xy (a_re, p_re_2d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_xy (a_im, p_im_2d)
+          call remap_to_pencil_xy (a_im, p_im_2d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_2d= 0.0
@@ -2789,8 +2789,8 @@ module Fourier
         endif
 !
         
-        call transp_pencil_xy (p_re_2d, t_re_2d)
-        call transp_pencil_xy (p_im_2d, t_im_2d)
+        call transp_pencil_xy (p_re_2d, t_re_2d,comm = MPI_COMM_FFT)
+        call transp_pencil_xy (p_im_2d, t_im_2d,comm = MPI_COMM_FFT)
 !
         ! Transform y-direction.
         !$omp do
@@ -2803,8 +2803,8 @@ module Fourier
           t_im_2d(:,l) = aimag (ay)
         enddo
 !
-        call transp_pencil_xy (t_re_2d, p_re_2d)
-        call transp_pencil_xy (t_im_2d, p_im_2d)
+        call transp_pencil_xy (t_re_2d, p_re_2d,comm = MPI_COMM_FFT)
+        call transp_pencil_xy (t_im_2d, p_im_2d,comm = MPI_COMM_FFT)
 !
         ! Transform x-direction.
         !$omp do
@@ -2816,8 +2816,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy (p_re_2d, a_re)
-        call unmap_from_pencil_xy (p_im_2d, a_im)
+        call unmap_from_pencil_xy (p_re_2d, a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_xy (p_im_2d, a_im,comm = MPI_COMM_FFT)
 !
       else
 !
@@ -2825,8 +2825,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_2d)
-        call remap_to_pencil_xy (a_im, p_im_2d)
+        call remap_to_pencil_xy (a_re, p_re_2d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_xy (a_im, p_im_2d,comm = MPI_COMM_FFT)
 !
         !$omp do
         do m = 1, pny
@@ -2837,8 +2837,8 @@ module Fourier
           p_im_2d(:,m) = aimag (ax)
         enddo
 !
-        call transp_pencil_xy (p_re_2d, t_re_2d)
-        call transp_pencil_xy (p_im_2d, t_im_2d)
+        call transp_pencil_xy (p_re_2d, t_re_2d,comm = MPI_COMM_FFT)
+        call transp_pencil_xy (p_im_2d, t_im_2d,comm = MPI_COMM_FFT)
 !
         !$omp do
         do l = 1, tny
@@ -2851,13 +2851,13 @@ module Fourier
         enddo
 !
         
-        call transp_pencil_xy (t_re_2d, p_re_2d)
-        if (lcompute_im) call transp_pencil_xy (t_im_2d, p_im_2d)
+        call transp_pencil_xy (t_re_2d, p_re_2d,comm = MPI_COMM_FFT)
+        if (lcompute_im) call transp_pencil_xy (t_im_2d, p_im_2d,comm = MPI_COMM_FFT)
 !
         ! Unmap the results back to normal shape.
         
-        call unmap_from_pencil_xy (p_re_2d, a_re)
-        if (lcompute_im) call unmap_from_pencil_xy (p_im_2d, a_im)
+        call unmap_from_pencil_xy (p_re_2d, a_re,comm = MPI_COMM_FFT)
+        if (lcompute_im) call unmap_from_pencil_xy (p_im_2d, a_im,comm = MPI_COMM_FFT)
 !
       endif
 !
@@ -2949,8 +2949,8 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_xy_2D_other(a_re,p_re_2d)
-        call remap_to_pencil_xy_2D_other(a_im,p_im_2d)
+        call remap_to_pencil_xy_2D_other(a_re,p_re_2d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_xy_2D_other(a_im,p_im_2d,comm = MPI_COMM_FFT)
 !
         ! Transform x-direction.
         !$omp do
@@ -2961,8 +2961,8 @@ module Fourier
           p_im_2d(:,m) = aimag(ax_other)
         enddo
 !
-        call transp_pencil_xy(p_re_2d,t_re_2d)
-        call transp_pencil_xy(p_im_2d,t_im_2d)
+        call transp_pencil_xy(p_re_2d,t_re_2d,comm = MPI_COMM_FFT)
+        call transp_pencil_xy(p_im_2d,t_im_2d,comm = MPI_COMM_FFT)
 !
         ! Transform y-direction and normalize.
         !$omp do
@@ -2973,12 +2973,12 @@ module Fourier
           t_im_2d(:,l) = aimag(ay_other)/(nxgrid_other*nygrid_other)
         enddo
 !
-        call transp_pencil_xy(t_re_2d,p_re_2d)
-        call transp_pencil_xy(t_im_2d,p_im_2d)
+        call transp_pencil_xy(t_re_2d,p_re_2d,comm = MPI_COMM_FFT)
+        call transp_pencil_xy(t_im_2d,p_im_2d,comm = MPI_COMM_FFT)
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy_2D_other(p_re_2d,a_re)
-        call unmap_from_pencil_xy_2D_other(p_im_2d,a_im)
+        call unmap_from_pencil_xy_2D_other(p_re_2d,a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_xy_2D_other(p_im_2d,a_im,comm = MPI_COMM_FFT)
 !
       else
 !
@@ -2986,11 +2986,11 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_xy_2D_other(a_re, p_re_2d)
-        call remap_to_pencil_xy_2D_other(a_im, p_im_2d)
+        call remap_to_pencil_xy_2D_other(a_re, p_re_2d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_xy_2D_other(a_im, p_im_2d,comm = MPI_COMM_FFT)
 !
-        call transp_pencil_xy(p_re_2d, t_re_2d)
-        call transp_pencil_xy(p_im_2d, t_im_2d)
+        call transp_pencil_xy(p_re_2d, t_re_2d,comm = MPI_COMM_FFT)
+        call transp_pencil_xy(p_im_2d, t_im_2d,comm = MPI_COMM_FFT)
 !
         !$omp do
         do l=1,tny
@@ -3001,8 +3001,8 @@ module Fourier
           t_im_2d(:,l) = aimag(ay_other)
         enddo
 !
-        call transp_pencil_xy(t_re_2d,p_re_2d)
-        call transp_pencil_xy(t_im_2d,p_im_2d)
+        call transp_pencil_xy(t_re_2d,p_re_2d,comm = MPI_COMM_FFT)
+        call transp_pencil_xy(t_im_2d,p_im_2d,comm = MPI_COMM_FFT)
 !
         !$omp do
         do m=1,pny
@@ -3014,8 +3014,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy_2D_other(p_re_2d,a_re)
-        call unmap_from_pencil_xy_2D_other(p_im_2d,a_im)
+        call unmap_from_pencil_xy_2D_other(p_re_2d,a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_xy_2D_other(p_im_2d,a_im,comm = MPI_COMM_FFT)
 !
       endif
 !
@@ -3124,9 +3124,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_3d)
+        call remap_to_pencil_xy (a_re, p_re_3d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_xy (a_im, p_im_3d)
+          call remap_to_pencil_xy (a_im, p_im_3d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_3d= 0.0
@@ -3134,8 +3134,8 @@ module Fourier
         endif
 !
         
-        call transp_pencil_xy (p_re_3d, t_re_3d)
-        call transp_pencil_xy (p_im_3d, t_im_3d)
+        call transp_pencil_xy (p_re_3d, t_re_3d,comm = MPI_COMM_FFT)
+        call transp_pencil_xy (p_im_3d, t_im_3d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(2)
         do pos_z = 1, inz
@@ -3151,8 +3151,8 @@ module Fourier
           enddo
         enddo
 !
-        call transp_pencil_xy (t_re_3d, p_re_3d)
-        call transp_pencil_xy (t_im_3d, p_im_3d)
+        call transp_pencil_xy (t_re_3d, p_re_3d,comm = MPI_COMM_FFT)
+        call transp_pencil_xy (t_im_3d, p_im_3d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(2)
         do pos_z = 1, inz
@@ -3166,8 +3166,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy (p_re_3d, a_re)
-        call unmap_from_pencil_xy (p_im_3d, a_im)
+        call unmap_from_pencil_xy (p_re_3d, a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_xy (p_im_3d, a_im,comm = MPI_COMM_FFT)
 !
       else
 !
@@ -3175,8 +3175,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_3d)
-        call remap_to_pencil_xy (a_im, p_im_3d)
+        call remap_to_pencil_xy (a_re, p_re_3d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_xy (a_im, p_im_3d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(2)
         do pos_z = 1, inz
@@ -3189,8 +3189,8 @@ module Fourier
           enddo
         enddo
 !
-        call transp_pencil_xy (p_re_3d, t_re_3d)
-        call transp_pencil_xy (p_im_3d, t_im_3d)
+        call transp_pencil_xy (p_re_3d, t_re_3d,comm = MPI_COMM_FFT)
+        call transp_pencil_xy (p_im_3d, t_im_3d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(2)
         do pos_z = 1, inz
@@ -3204,13 +3204,13 @@ module Fourier
           enddo
         enddo
 !
-        call transp_pencil_xy (t_re_3d, p_re_3d)
-        if (lcompute_im) call transp_pencil_xy (t_im_3d, p_im_3d)
+        call transp_pencil_xy (t_re_3d, p_re_3d,comm = MPI_COMM_FFT)
+        if (lcompute_im) call transp_pencil_xy (t_im_3d, p_im_3d,comm = MPI_COMM_FFT)
 !
         ! Unmap the results back to normal shape.
         
-        call unmap_from_pencil_xy (p_re_3d, a_re)
-        if (lcompute_im) call unmap_from_pencil_xy (p_im_3d, a_im)
+        call unmap_from_pencil_xy (p_re_3d, a_re,comm = MPI_COMM_FFT)
+        if (lcompute_im) call unmap_from_pencil_xy (p_im_3d, a_im,comm = MPI_COMM_FFT)
 !
       endif
 !
@@ -3325,9 +3325,9 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_xy (a_re, p_re_4d)
+        call remap_to_pencil_xy (a_re, p_re_4d,comm = MPI_COMM_FFT)
         if (lcompute_im) then
-          call remap_to_pencil_xy (a_im, p_im_4d)
+          call remap_to_pencil_xy (a_im, p_im_4d,comm = MPI_COMM_FFT)
         else
           !$omp workshare
           p_im_4d= 0.0
@@ -3335,8 +3335,8 @@ module Fourier
         endif
 !
         
-        call transp_pencil_xy (p_re_4d, t_re_4d)
-        call transp_pencil_xy (p_im_4d, t_im_4d)
+        call transp_pencil_xy (p_re_4d, t_re_4d, comm = MPI_COMM_FFT)
+        call transp_pencil_xy (p_im_4d, t_im_4d, comm = MPI_COMM_FFT)
 !
         !$omp do collapse(3)
         do pos_a = 1, ina
@@ -3353,8 +3353,8 @@ module Fourier
           enddo
         enddo
 !
-        call transp_pencil_xy (t_re_4d, p_re_4d)
-        call transp_pencil_xy (t_im_4d, p_im_4d)
+        call transp_pencil_xy (t_re_4d, p_re_4d, comm = MPI_COMM_FFT)
+        call transp_pencil_xy (t_im_4d, p_im_4d, comm = MPI_COMM_FFT)
 !
         !$omp do collapse(3)
         do pos_a = 1, ina
@@ -3370,16 +3370,16 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy (p_re_4d, a_re)
-        call unmap_from_pencil_xy (p_im_4d, a_im)
+        call unmap_from_pencil_xy (p_re_4d, a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_xy (p_im_4d, a_im,comm = MPI_COMM_FFT)
 !
       else
 !
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        call remap_to_pencil_xy (a_re, p_re_4d)
-        call remap_to_pencil_xy (a_im, p_im_4d)
+        call remap_to_pencil_xy (a_re, p_re_4d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_xy (a_im, p_im_4d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(3)
         do pos_a = 1, ina
@@ -3394,8 +3394,8 @@ module Fourier
           enddo
         enddo
 !
-        call transp_pencil_xy (p_re_4d, t_re_4d)
-        call transp_pencil_xy (p_im_4d, t_im_4d)
+        call transp_pencil_xy (p_re_4d, t_re_4d, comm = MPI_COMM_FFT)
+        call transp_pencil_xy (p_im_4d, t_im_4d, comm = MPI_COMM_FFT)
 !
         !$omp do collapse(3)
         do pos_a = 1, ina
@@ -3411,12 +3411,12 @@ module Fourier
           enddo
         enddo
 !
-        call transp_pencil_xy (t_re_4d, p_re_4d)
-        if (lcompute_im) call transp_pencil_xy (t_im_4d, p_im_4d)
+        call transp_pencil_xy (t_re_4d, p_re_4d, comm = MPI_COMM_FFT)
+        if (lcompute_im) call transp_pencil_xy (t_im_4d, p_im_4d, comm = MPI_COMM_FFT)
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy (p_re_4d, a_re)
-        if (lcompute_im) call unmap_from_pencil_xy (p_im_4d, a_im)
+        call unmap_from_pencil_xy (p_re_4d, a_re, comm = MPI_COMM_FFT)
+        if (lcompute_im) call unmap_from_pencil_xy (p_im_4d, a_im, comm = MPI_COMM_FFT)
 !
       endif
 !
@@ -3505,8 +3505,8 @@ module Fourier
 !
         ! Remap the data we need into z-pencil shape.
         
-        call remap_to_pencil_yz (a_re, p_re_3d)
-        call remap_to_pencil_yz (a_im, p_im_3d)
+        call remap_to_pencil_yz (a_re, p_re_3d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_yz (a_im, p_im_3d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(2)
         do l = 1, nx
@@ -3520,8 +3520,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_yz (p_re_3d, a_re)
-        call unmap_from_pencil_yz (p_im_3d, a_im)
+        call unmap_from_pencil_yz (p_re_3d, a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_yz (p_im_3d, a_im,comm = MPI_COMM_FFT)
 !
       else
 !
@@ -3529,8 +3529,8 @@ module Fourier
 !
         ! Remap the data we need into transposed z-pencil shape.
         
-        call remap_to_pencil_yz (a_re, p_re_3d)
-        call remap_to_pencil_yz (a_im, p_im_3d)
+        call remap_to_pencil_yz (a_re, p_re_3d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_yz (a_im, p_im_3d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(2) 
         do l = 1, nx
@@ -3544,8 +3544,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_yz (p_re_3d, a_re)
-        call unmap_from_pencil_yz (p_im_3d, a_im)
+        call unmap_from_pencil_yz (p_re_3d, a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_yz (p_im_3d, a_im,comm = MPI_COMM_FFT)
 !
         if (lshift) then
           call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y, lignore_shear=lnoshear)
@@ -3644,8 +3644,8 @@ module Fourier
 !
         ! Remap the data we need into z-pencil shape.
         
-        call remap_to_pencil_yz (a_re, p_re_4d)
-        call remap_to_pencil_yz (a_im, p_im_4d)
+        call remap_to_pencil_yz (a_re, p_re_4d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_yz (a_im, p_im_4d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(3)
         do pos_a = 1, ina
@@ -3661,8 +3661,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_yz (p_re_4d, a_re)
-        call unmap_from_pencil_yz (p_im_4d, a_im)
+        call unmap_from_pencil_yz (p_re_4d, a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_yz (p_im_4d, a_im,comm = MPI_COMM_FFT)
 !
       else
 !
@@ -3670,8 +3670,8 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_yz (a_re, p_re_4d)
-        call remap_to_pencil_yz (a_im, p_im_4d)
+        call remap_to_pencil_yz (a_re, p_re_4d,comm = MPI_COMM_FFT)
+        call remap_to_pencil_yz (a_im, p_im_4d,comm = MPI_COMM_FFT)
 !
         !$omp do collapse(3)
         do pos_a = 1, ina
@@ -3687,8 +3687,8 @@ module Fourier
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_yz (p_re_4d, a_re)
-        call unmap_from_pencil_yz (p_im_4d, a_im)
+        call unmap_from_pencil_yz (p_re_4d, a_re,comm = MPI_COMM_FFT)
+        call unmap_from_pencil_yz (p_im_4d, a_im,comm = MPI_COMM_FFT)
 !
         if (lshift) then
           call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y, lignore_shear=lnoshear)
@@ -3839,7 +3839,7 @@ module Fourier
 !
       ! Collect the data we need.
       
-      call remap_to_pencil_xy (in, p_re_3d)
+      call remap_to_pencil_xy (in, p_re_3d,comm = MPI_COMM_FFT)
       p_im_3d= 0.
 !
       !$omp do collapse(2)
@@ -3853,8 +3853,8 @@ module Fourier
         enddo
       enddo
 !
-      call transp_pencil_xy (p_re_3d, t_re_3d)
-      call transp_pencil_xy (p_im_3d, t_im_3d)
+      call transp_pencil_xy (p_re_3d, t_re_3d,comm = MPI_COMM_FFT)
+      call transp_pencil_xy (p_im_3d, t_im_3d,comm = MPI_COMM_FFT)
 !
       !$omp barrier
       !$omp single
@@ -3898,8 +3898,8 @@ module Fourier
       if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate b', .true.)
 !
       
-      call transp_pencil_xy (e_re, b_re)
-      call transp_pencil_xy (e_im, b_im)
+      call transp_pencil_xy (e_re, b_re,comm = MPI_COMM_FFT)
+      call transp_pencil_xy (e_im, b_im,comm = MPI_COMM_FFT)
 !
       !$omp barrier
       !$omp single
@@ -3919,7 +3919,7 @@ module Fourier
       enddo
 !
       ! Distribute the results back in normal shape.
-      call unmap_from_pencil_xy (b_re, out)
+      call unmap_from_pencil_xy (b_re, out,comm = MPI_COMM_FFT)
 !
       !$omp barrier
       !$omp single
@@ -4007,8 +4007,8 @@ module Fourier
         p_im_2d(:,m) = aimag (ax)
       enddo
 !
-      call transp_pencil_xy (p_re_2d, t_re_2d)
-      call transp_pencil_xy (p_im_2d, t_im_2d)
+      call transp_pencil_xy (p_re_2d, t_re_2d,comm = MPI_COMM_FFT)
+      call transp_pencil_xy (p_im_2d, t_im_2d,comm = MPI_COMM_FFT)
 !
       !$omp barrier
       !$omp single
@@ -4057,8 +4057,8 @@ module Fourier
       if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate b', .true.)
 
       
-      call transp_pencil_xy (e_re, b_re)
-      call transp_pencil_xy (e_im, b_im)
+      call transp_pencil_xy (e_re, b_re,comm = MPI_COMM_FFT)
+      call transp_pencil_xy (e_im, b_im,comm = MPI_COMM_FFT)
 !
       !$omp barrier
       !$omp single
@@ -4081,7 +4081,7 @@ module Fourier
       enddo
 !
       ! Distribute the results.
-      call unmap_from_pencil_xy (b_re, out)
+      call unmap_from_pencil_xy (b_re, out,comm = MPI_COMM_FFT)
 !
       !$omp barrier
       !$omp single
@@ -4123,14 +4123,14 @@ module Fourier
             do ipy_send=1,nprocy-1
               partner=find_proc(0,ipy+ipy_send,ipz)
               call mpirecv_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,partner,itag1)   !iproc+ipy_send,itag1)
+                  ny,partner,itag1,comm = MPI_COMM_FFT)   !iproc+ipy_send,itag1)
               call mpirecv_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,partner,itag2)   !iproc+ipy_send,itag2)
+                  ny,partner,itag2,comm = MPI_COMM_FFT)   !iproc+ipy_send,itag2)
             enddo
           else
             partner=find_proc(0,0,ipz)
-            call mpisend_real(a_re,ny,partner,itag1)
-            call mpisend_real(a_im,ny,partner,itag2)
+            call mpisend_real(a_re,ny,partner,itag1,comm = MPI_COMM_FFT)
+            call mpisend_real(a_im,ny,partner,itag2,comm = MPI_COMM_FFT)
           endif
 !
           if (lfirst_proc_y) then
@@ -4146,13 +4146,13 @@ module Fourier
             do ipy_send=1,nprocy-1
               partner=find_proc(0,ipy+ipy_send,ipz)
               call mpisend_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,partner,itag1)    !iproc+ipy_send,itag1)
+                  ny,partner,itag1,comm = MPI_COMM_FFT)    !iproc+ipy_send,itag1)
               call mpisend_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,partner,itag2)    !iproc+ipy_send,itag2)
+                  ny,partner,itag2,comm = MPI_COMM_FFT)    !iproc+ipy_send,itag2)
             enddo
           else
-            call mpirecv_real(a_re,ny,partner,itag1)   !iproc-ipy,itag1)
-            call mpirecv_real(a_im,ny,partner,itag2)   !iproc-ipy,itag2)
+            call mpirecv_real(a_re,ny,partner,itag1,comm = MPI_COMM_FFT)   !iproc-ipy,itag1)
+            call mpirecv_real(a_im,ny,partner,itag2,comm = MPI_COMM_FFT)   !iproc-ipy,itag2)
           endif
 !
         endif
@@ -4168,14 +4168,14 @@ module Fourier
             do ipy_send=1,nprocy-1
               partner=find_proc(0,ipy+ipy_send,ipz)
               call mpirecv_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,partner,itag1)    !iproc+ipy_send,itag1)
+                  ny,partner,itag1,comm = MPI_COMM_FFT)    !iproc+ipy_send,itag1)
               call mpirecv_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,partner,itag2)    !iproc+ipy_send,itag2)
+                  ny,partner,itag2,comm = MPI_COMM_FFT)    !iproc+ipy_send,itag2)
             enddo
           else
             partner=find_proc(0,0,ipz)
-            call mpisend_real(a_re,ny,partner,itag1)   !iproc-ipy,itag1)
-            call mpisend_real(a_im,ny,partner,itag2)   !iproc-ipy,itag2)
+            call mpisend_real(a_re,ny,partner,itag1,comm = MPI_COMM_FFT)   !iproc-ipy,itag1)
+            call mpisend_real(a_im,ny,partner,itag2,comm = MPI_COMM_FFT)   !iproc-ipy,itag2)
           endif
 !
           if (lfirst_proc_y) then
@@ -4191,13 +4191,13 @@ module Fourier
             do ipy_send=1,nprocy-1
               partner=find_proc(0,ipy+ipy_send,ipz)
               call mpisend_real(a_re_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,partner,itag1)    !iproc+ipy_send,itag1)
+                  ny,partner,itag1,comm = MPI_COMM_FFT)    !iproc+ipy_send,itag1)
               call mpisend_real(a_im_full(ipy_send*ny+1:(ipy_send+1)*ny), &
-                  ny,partner,itag2)    !iproc+ipy_send,itag2)
+                  ny,partner,itag2,comm = MPI_COMM_FFT)    !iproc+ipy_send,itag2)
             enddo
           else
-            call mpirecv_real(a_re,ny,partner,itag1)    !iproc-ipy,itag1)
-            call mpirecv_real(a_im,ny,partner,itag2)    !iproc-ipy,itag2)
+            call mpirecv_real(a_re,ny,partner,itag1,comm = MPI_COMM_FFT)    !iproc-ipy,itag1)
+            call mpirecv_real(a_im,ny,partner,itag2,comm = MPI_COMM_FFT)    !iproc-ipy,itag2)
           endif
 !
         endif
@@ -4281,10 +4281,10 @@ module Fourier
           do ipy_from=1,nprocy-1
             if (lfirst_proc_y) then
               call mpirecv_real( a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,1), &
-                  ny,find_proc(ipx,ipy_from,0),itag)     !ipy_from*nprocx+ipx,itag)
+                  ny,find_proc(ipx,ipy_from,0),itag,comm = MPI_COMM_FFT)     !ipy_from*nprocx+ipx,itag)
             else
               if (ipy==ipy_from) &
-                  call mpisend_real(a_re(:,1),ny,find_proc(ipx,0,0),itag)   !ipy_to*nprocx+ipx,itag)
+                  call mpisend_real(a_re(:,1),ny,find_proc(ipx,0,0),itag,comm = MPI_COMM_FFT)   !ipy_to*nprocx+ipx,itag)
             endif
           enddo
           if (lfirst_proc_y) a_re_new(1:ny,1)=a_re(:,1)
@@ -4312,7 +4312,7 @@ module Fourier
             iproc_from=find_proc(ipx,ipy_from,ipz)   !ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
               if (ipy<nprocy_used) then
-                call mpirecv_real(buffer,(/ny,nz_new/),iproc_from,itag)
+                call mpirecv_real(buffer,(/ny,nz_new/),iproc_from,itag,comm = MPI_COMM_FFT)
                 a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:) = buffer
               endif
             else
@@ -4321,7 +4321,7 @@ module Fourier
               do ipy_to=0,nprocy_used-1
                 iproc_to=find_proc(ipx,ipy_to,ipz)   !ipz*nprocy*nprocx+ipy_to*nprocx+ipx
                 if (ipy/=ipy_to) call mpisend_real( &
-                    a_re(:,ipy_to*nz_new+1:(ipy_to+1)*nz_new),(/ny,nz_new/),iproc_to,itag)
+                    a_re(:,ipy_to*nz_new+1:(ipy_to+1)*nz_new),(/ny,nz_new/),iproc_to,itag,comm = MPI_COMM_FFT)
               enddo
             endif
           enddo
@@ -4366,10 +4366,10 @@ module Fourier
           if (lfirst_proc_y) then
             do ipy_to=1,nprocy-1
               call mpisend_real( a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,1), &
-                  ny,find_proc(ipx,ipy_to,0),itag)    !ipy_to*nprocx+ipx,itag)
+                  ny,find_proc(ipx,ipy_to,0),itag,comm = MPI_COMM_FFT)    !ipy_to*nprocx+ipx,itag)
             enddo
           else
-            call mpirecv_real(a_re(:,1),ny,find_proc(ipx,0,0),itag)  !ipx,itag)
+            call mpirecv_real(a_re(:,1),ny,find_proc(ipx,0,0),itag,comm = MPI_COMM_FFT)  !ipx,itag)
           endif
           if (lfirst_proc_y) a_re(:,1)=a_re_new(1:ny,1)
         else
@@ -4381,7 +4381,7 @@ module Fourier
             iproc_from=find_proc(ipx,ipy_from,ipz)    !ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
               call mpirecv_real( a_re(:,ipy_from*nz_new+1:(ipy_from+1)*nz_new), &
-                  (/ny,nz_new/),iproc_from,itag+100)
+                  (/ny,nz_new/),iproc_from,itag+100,comm = MPI_COMM_FFT)
             else
               if (ipy<nprocy_used) a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)= &
                   a_re_new(ipy*ny+1:(ipy+1)*ny,:)
@@ -4389,7 +4389,7 @@ module Fourier
                 iproc_to=find_proc(ipx,ipy_to,ipz)    !ipz*nprocy*nprocx+ipy_to*nprocx+ipx
                 if (ipy/=ipy_to) then
                   buffer = a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:)
-                  call mpisend_real(buffer,(/ny,nz_new/),iproc_to,itag+100)
+                  call mpisend_real(buffer,(/ny,nz_new/),iproc_to,itag+100,comm = MPI_COMM_FFT)
                 endif
               enddo
             endif
@@ -4439,7 +4439,8 @@ module Fourier
         !$omp workshare
         a_im=0.0
         !$omp end workshare
-        call transp(a_re,'y')
+        call transp(a_re,'y',comm = MPI_COMM_FFT)
+        
         !$omp do collapse(2)
         do n=1,nz; do l=1,ny
           ay=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -4462,8 +4463,8 @@ module Fourier
           a_im(:,l,n)=aimag(ay)/nygrid
         enddo; enddo
 
-        call transp(a_re,'y')
-        call transp(a_im,'y')
+        call transp(a_re,'y',comm = MPI_COMM_FFT)
+        call transp(a_im,'y',comm = MPI_COMM_FFT)
       endif
 !
     endsubroutine fourier_shift_y
@@ -4510,4 +4511,5 @@ module Fourier
     endsubroutine fourier_transform_real_1
 !***********************************************************************
 endmodule Fourier
+
 

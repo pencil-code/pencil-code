@@ -471,7 +471,6 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
   acGridSynchronizeStream(STREAM_ALL);
   if (isubstep == 1)
   {
-    //acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, 0.001);
     Device dev = acGridGetDevice();
     dev->local_config.real_params[AC_dt] = dt;
     acGridSynchronizeStream(STREAM_ALL);
@@ -629,8 +628,6 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   constexpr real beta[3] = {(1.0 / 3.0), (15.0 / 16.0), (8.0 / 15.0)};
   constexpr int num_of_steps = 100;
 
-  acLogFromRootProc(rank,"HI from testRHS\n");
-  fflush(stdout);
   AcMesh mesh_true;
   AcMesh mesh_test;
   AcMesh df_mesh;
@@ -646,7 +643,8 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   const AcReal epsilon = pow(0.1,12);
   // constexpr AcReal epsilon = 0.0;
   constexpr AcReal local_dt = 0.001;
-  acGridLoadScalarUniform(STREAM_DEFAULT, AC_dt, local_dt);
+  Device dev = acGridGetDevice();
+  dev->local_config.real_params[AC_dt] = local_dt;
   acGridSynchronizeStream(STREAM_ALL);
 
   size_t offset = 0;
@@ -768,24 +766,24 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
     acGridSynchronizeStream(STREAM_ALL);
     acGridSynchronizeStream(STREAM_ALL);
     acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
-    acGridSynchronizeStream(STREAM_ALL);
-    AcReal max_uux2 = 0.0;
-    AcReal max_uuy2 = 0.0;
-    AcReal max_uuz2 = 0.0;
-  for (int i = dims.n0.x; i < dims.n1.x; i++)
-  {
-    for (int j = dims.n0.y; j < dims.n1.y; j++)
-    {
-      for (int k = dims.n0.z; k < dims.n1.z; k++)
-      {
-          max_uux2 = max(max_uux2,pow(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(i,j,k)],2));
-          max_uuy2 = max(max_uuy2,pow(mesh.vertex_buffer[1][DEVICE_VTXBUF_IDX(i,j,k)],2));
-          max_uuz2 = max(max_uuz2,pow(mesh.vertex_buffer[2][DEVICE_VTXBUF_IDX(i,j,k)],2));
-      }
-    }
-  }
-  acLogFromRootProc(rank,"GPU: uumax: %.7e\n", pow(max_uux2+max_uuy2+max_uuz2,0.5));
-    acGridSynchronizeStream(STREAM_ALL);
+  //  acGridSynchronizeStream(STREAM_ALL);
+  //  AcReal max_uux2 = 0.0;
+  //  AcReal max_uuy2 = 0.0;
+  //  AcReal max_uuz2 = 0.0;
+  //for (int i = dims.n0.x; i < dims.n1.x; i++)
+  //{
+  //  for (int j = dims.n0.y; j < dims.n1.y; j++)
+  //  {
+  //    for (int k = dims.n0.z; k < dims.n1.z; k++)
+  //    {
+  //        max_uux2 = max(max_uux2,pow(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(i,j,k)],2));
+  //        max_uuy2 = max(max_uuy2,pow(mesh.vertex_buffer[1][DEVICE_VTXBUF_IDX(i,j,k)],2));
+  //        max_uuz2 = max(max_uuz2,pow(mesh.vertex_buffer[2][DEVICE_VTXBUF_IDX(i,j,k)],2));
+  //    }
+  //  }
+  //}
+  //acLogFromRootProc(rank,"GPU: uumax: %.7e\n", pow(max_uux2+max_uuy2+max_uuz2,0.5));
+  //  acGridSynchronizeStream(STREAM_ALL);
   }
     acGridSynchronizeStream(STREAM_ALL);
   // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step0, dims.n0,dims.n1);

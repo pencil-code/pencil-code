@@ -504,9 +504,6 @@ module Equ
       itdiagnos = it_save
       eps_rkf_diagnos = eps_rkf_save
     endif
-    t = t_save
-    dt = dt_save
-    it = it_save
     endsubroutine restore_diagnostic_controls
 !***********************************************************************
 !$   subroutine write_diagnostics_wrapper(f) bind(C)
