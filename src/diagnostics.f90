@@ -758,9 +758,9 @@ module Diagnostics
 !
 !  Communicate over all processors.
 !
-      call mpireduce_max(fmax_tmp,fmax,nmax_count,DIAG_MPI_COMMS%world)
-      call mpireduce_sum(fsum_tmp,fsum,nsum_count,comm=DIAG_MPI_COMMS%world)  !,nonblock=maxreq)        ! wrong for Yin-Yang due to overlap
-      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count,comm=DIAG_MPI_COMMS%world)!   ~
+      call mpireduce_max(fmax_tmp,fmax,nmax_count)
+      call mpireduce_sum(fsum_tmp,fsum,nsum_count)  !,nonblock=maxreq)        ! wrong for Yin-Yang due to overlap
+      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count)!   ~
       !call mpiwait(maxreq)
 !
 !  The result is present only on the root processor.
@@ -935,7 +935,7 @@ module Diagnostics
 !  Communicate over all processors.
 !  The result is only present on the root processor
 !
-        call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,nnamez/), DIAG_MPI_COMMS%world)
+        call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,nnamez/))
         if (lroot) fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/nxygrid
       endif
 !
@@ -954,7 +954,7 @@ module Diagnostics
 !  The result is only present on the root processor.
 !
       if (nnamey>0) then
-        call mpireduce_sum(fnamey,fsumy,(/ny,nprocy,nnamey/), DIAG_MPI_COMMS%world)
+        call mpireduce_sum(fnamey,fsumy,(/ny,nprocy,nnamey/))
         if (lroot) fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/nxzgrid
       endif
 !
@@ -973,7 +973,7 @@ module Diagnostics
 !  The result is only present on the root processor.
 !
       if (nnamex>0) then
-        call mpireduce_sum(fnamex,fsumx,(/nx,nprocx,nnamex/), DIAG_MPI_COMMS%world)
+        call mpireduce_sum(fnamex,fsumx,(/nx,nprocx,nnamex/))
         if (lroot) fnamex(:,:,1:nnamex)=fsumx(:,:,1:nnamex)/nyzgrid
       endif
 !
@@ -996,7 +996,7 @@ module Diagnostics
 !
       if (nnamer>0) then
         call mpireduce_sum(fnamer,fsumr,(/nrcyl,nnamer/))
-        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl,comm=DIAG_MPI_COMMS%xyplane)
+        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl)
         if (lroot) then
           do iname=1,nnamer
             fnamer(:,iname)=fsumr(:,iname)/(norm*nzgrid)
@@ -1019,7 +1019,7 @@ module Diagnostics
 !  The result is only present on the y-root processors.
 !
       if (nnamexz>0) then
-        call mpireduce_sum(fnamexz,fsumxz,(/nx,nz,nnamexz/),idir=IXBEAM,comms=DIAG_MPI_COMMS)
+        call mpireduce_sum(fnamexz,fsumxz,(/nx,nz,nnamexz/),idir=IXBEAM)
         if (lfirst_proc_y) fnamexz(:,:,1:nnamexz)=fsumxz(:,:,1:nnamexz)/nygrid
       endif
 !
@@ -1085,7 +1085,7 @@ module Diagnostics
 !
       if (nnamerz>0) then
         call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz,nprocz,nnamerz/))
-        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl,comm=DIAG_MPI_COMMS%xyplane)  ! avoid double comm!
+        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl)  ! avoid double comm!
         if (lroot) then
           do i=1,nnamerz
             fnamerz(:,:,:,i)=fsumrz(:,:,:,i)/spread(spread(norm,2,nz),3,nprocz)

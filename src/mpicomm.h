@@ -12,6 +12,8 @@
         integer :: yzplane
   end type mpi_comms 
 
+  public :: create_communicators
+
   public :: remap_to_pencil_xy_2D_other, unmap_from_pencil_xy_2D_other
 
   public :: update_neighbors, index_to_iproc_comm
@@ -424,12 +426,6 @@
   integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE,MPI_COMM_RSLICE
   integer :: root_rslice
 
-  public :: DIAG_MPI_COMMS
-  type(mpi_comms) :: DIAG_MPI_COMMS
-
-  public :: SNAP_MPI_COMMS
-  type(mpi_comms) :: SNAP_MPI_COMMS
-
   type(mpi_comms) :: DEFAULT_COMMS
 !
 ! for protecting MPI_COMM_WORLD to be redefined by preprocessor
@@ -443,3 +439,4 @@
   character(LEN=4), public :: cyinyang=' '
 
   integer :: mpi_precision, MPI_CMPLX
+  !$omp threadprivate(MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XBEAM, MPI_COMM_YBEAM, MPI_COMM_ZBEAM, MPI_COMM_XYPLANE, MPI_COMM_YZPLANE, MPI_COMM_RSLICE)

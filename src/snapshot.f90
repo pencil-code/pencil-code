@@ -11,7 +11,6 @@ module Snapshot
   use Cdata
   use Messages
   use Gpu, only: copy_farray_from_GPU, lsnap_flags_to_wait_on
-  use MpiComm, only: SNAP_MPI_COMMS
 !
   implicit none
 !
@@ -184,7 +183,7 @@ module Snapshot
         if (lfirst_proc_x.or.llast_proc_x) then
           l2s=l2; l2is=l2i; l2=ilastx; l2i=l2-nghost+1
           if (lperi(1).and.nprocx>1) then
-            call periodic_bdry_x(buffer,nv1,nv2,SNAP_MPI_COMMS)
+            call periodic_bdry_x(buffer,nv1,nv2)
           else
             call boundconds_x(buffer)
           endif
@@ -192,7 +191,7 @@ module Snapshot
         if (lfirst_proc_y.or.llast_proc_y) then
           m2s=m2; m2is=m2i; m2=ilasty; m2i=m2-nghost+1
           if (lperi(2).and.nprocy>1) then
-            call periodic_bdry_y(buffer,nv1,nv2,SNAP_MPI_COMMS)
+            call periodic_bdry_y(buffer,nv1,nv2)
           else
             call boundconds_y(buffer)
           endif
@@ -200,7 +199,7 @@ module Snapshot
         if (lfirst_proc_z.or.llast_proc_z) then
           n2s=n2; n2is=n2i; n2=ilastz; n2i=n2-nghost+1
           if (lperi(3).and.nprocz>1) then
-            call periodic_bdry_z(buffer,nv1,nv2,SNAP_MPI_COMMS)
+            call periodic_bdry_z(buffer,nv1,nv2)
           else
             call boundconds_z(buffer)
           endif
@@ -313,7 +312,7 @@ module Snapshot
           call output_snap(a,nv1=nv1_capitalvar,nv2=msnap,file=file)
           if (lpersist) call output_persistent(file)
           call output_snap_finalize
-          call mpibarrier(SNAP_MPI_COMMS%world)
+          call mpibarrier
           if (lroot) call delete_file(trim(workdir)//'/WRITING')
           if (present(flist)) call log_filename_to_file(file,flist)
           lsnap=.false.
@@ -336,7 +335,7 @@ module Snapshot
         call output_snap(a,nv2=msnap,file=file)
         if (lpersist) call output_persistent(file)
         call output_snap_finalize
-        call mpibarrier(SNAP_MPI_COMMS%world)
+        call mpibarrier
         if (lroot) call delete_file(trim(workdir)//'/WRITING')
         if (present(flist)) call log_filename_to_file(file,flist)
       endif

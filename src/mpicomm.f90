@@ -243,8 +243,6 @@ module Mpicomm
       endif
 
       call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID,mpierr)
-      call MPI_COMM_DUP(MPI_COMM_PENCIL,DIAG_MPI_COMMS%world,mpierr)
-      call MPI_COMM_DUP(MPI_COMM_PENCIL,SNAP_MPI_COMMS%world,mpierr)
       iproc_world=iproc
 !
 !  Remeber the sizes of some MPI elementary types.
@@ -518,29 +516,16 @@ module Mpicomm
 !
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy+nprocy*ipz, ipx, &
                           MPI_COMM_XBEAM, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_XBEAM, DIAG_MPI_COMMS%xbeam, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_XBEAM, SNAP_MPI_COMMS%xbeam, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipz, ipy, &
                           MPI_COMM_YBEAM, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_YBEAM, DIAG_MPI_COMMS%ybeam, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_YBEAM, SNAP_MPI_COMMS%ybeam, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipy, ipz, &
                           MPI_COMM_ZBEAM, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_ZBEAM, DIAG_MPI_COMMS%zbeam, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_ZBEAM, SNAP_MPI_COMMS%zbeam, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipz, ipx+nprocx*ipy, &
                           MPI_COMM_XYPLANE, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_XYPLANE, SNAP_MPI_COMMS%xyplane, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_XYPLANE, SNAP_MPI_COMMS%xyplane, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy, ipx+nprocx*ipz, &
                           MPI_COMM_XZPLANE, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_XZPLANE, DIAG_MPI_COMMS%xzplane, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_XZPLANE, SNAP_MPI_COMMS%xzplane, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx, ipy+nprocy*ipz, &
                           MPI_COMM_YZPLANE, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_YZPLANE, DIAG_MPI_COMMS%yzplane, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_YZPLANE, SNAP_MPI_COMMS%yzplane, mpierr)
-
 
       DEFAULT_COMMS%world = MPI_COMM_GRID
       DEFAULT_COMMS%xbeam = MPI_COMM_XBEAM
@@ -552,6 +537,26 @@ module Mpicomm
       DEFAULT_COMMS%yzplane = MPI_COMM_YZPLANE
 !
     endsubroutine initialize_mpicomm
+!***********************************************************************
+    subroutine create_communicators()
+
+      !For code coupling with f.e. EULAG you have to split MPI_COMM_PENCIL
+      !Not done now simply because its simpler this way
+      call MPI_COMM_DUP(MPI_COMM_WORLD, MPI_COMM_PENCIL, mpierr)
+      call MPI_COMM_DUP(MPI_COMM_PENCIL, MPI_COMM_GRID, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy+nprocy*ipz, ipx, &
+                          MPI_COMM_XBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipz, ipy, &
+                          MPI_COMM_YBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipy, ipz, &
+                          MPI_COMM_ZBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipz, ipx+nprocx*ipy, &
+                          MPI_COMM_XYPLANE, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy, ipx+nprocx*ipz, &
+                          MPI_COMM_XZPLANE, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx, ipy+nprocy*ipz, &
+                          MPI_COMM_YZPLANE, mpierr)
+    endsubroutine
 !***********************************************************************
     subroutine update_neighbors
 !
