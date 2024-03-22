@@ -6,7 +6,7 @@ module Fourier
 !
   use Cdata
   use Messages
-  use Mpicomm, only: transp,transp_other, MPI_COMM_GRID
+  use Mpicomm, only: transp,transp_other 
   use General, only: ioptest
 !$ use OMP_LIB
 !
@@ -3893,8 +3893,8 @@ module Fourier
       !$omp barrier
       if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate b', .true.)
 !
-      call transp_pencil_xy (e_re, b_re,comm = MPI_COMM_FFT)
-      call transp_pencil_xy (e_im, b_im,comm = MPI_COMM_FFT)
+      call transp_pencil_xy (e_re, b_re)
+      call transp_pencil_xy (e_im, b_im)
 !
       !$omp barrier
       !$omp single
