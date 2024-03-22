@@ -28,6 +28,7 @@ module power_spectrum
 !
   use Cdata
   use Messages, only: svn_id, warning, fatal_error
+  use Mpicomm, only: SNAP_MPI_COMMS
 !
   implicit none
 !
@@ -76,7 +77,7 @@ module power_spectrum
 !
       use Messages
       use General, only: binomial, pos_in_array, quick_sort
-      use Mpicomm, only: mpiallreduce_merge
+      use Mpicomm, only: mpiallreduce_merge 
 
       integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len
       real :: k2
@@ -157,7 +158,7 @@ outer:  do ikz=1,nz
 
         nk_truebin=ind
 
-        call mpiallreduce_merge(k2s,nk_truebin)
+        call mpiallreduce_merge(k2s,nk_truebin,comm = SNAP_MPI_COMMS%world)
         allocate(order(nk_truebin))
         call quick_sort(k2s(:nk_truebin),order)
 
@@ -415,7 +416,7 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-     call fft_xyz_parallel(a1,b1)
+     call fft_xyz_parallel(a1,b1,comm=SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -452,7 +453,7 @@ outer:  do ikz=1,nz
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm=SNAP_MPI_COMMS%world)
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -563,7 +564,8 @@ outer:  do ikz=1,nz
 !  Doing the Fourier transform
 !
      !print*, 'ivec1=', ivec
-     call fourier_transform_xz(a1,b1)    !!!! MR: causes error - ivec is set back from 1 to 0
+     
+     call fourier_transform_xz(a1,b1,comm = SNAP_MPI_COMMS%world)    !!!! MR: causes error - ivec is set back from 1 to 0
      !print*, 'ivec2=', ivec
 !    to be replaced by comp_spectrum( f, sp, ivec, ar, ai, fourier_transform_xz )
 !
@@ -589,7 +591,7 @@ outer:  do ikz=1,nz
 !  Summing up the results from the different processors.
 !  The result is available only on root.
 !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
 !
 !  On root processor, write global result to file
 !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>.
@@ -689,7 +691,7 @@ outer:  do ikz=1,nz
 !  Doing the Fourier transform
 !
     if (nygrid/=1) then
-      call fft_xy_parallel(ar,ai)
+      call fft_xy_parallel(ar,ai,comm=SNAP_MPI_COMMS%world)
     else
       ndelx=nxgrid/n_segment_x      ! segmented work not yet operational -> n_segment_x always 1.
       le=0
@@ -697,7 +699,7 @@ outer:  do ikz=1,nz
         la=le+1
         if (la>nxgrid) exit
         le=min(le+ndelx,nxgrid)
-        call fourier_transform_xy(ar(la:le,:,:),ai(la:le,:,:))
+        call fourier_transform_xy(ar(la:le,:,:),ai(la:le,:,:),comm = SNAP_MPI_COMMS%world)
       enddo
 !     KG: (02-Dec-2024) fourier_transform_xy returns the transposed (ky,kx,z) output
 !     if nygrid/=1. If you modify the code to use fourier_transform_xy
@@ -933,7 +935,7 @@ outer:  do ikz=1,nz
 !
   enddo ! do ivec=iveca,iveca+ncomp-1
 !
-  if (lintegrate_shell .and. firstout<n_spectra .and. ipz==0) call mpimerge_1d(kshell,nk,12) ! filling of the shell-wavenumber vector
+  if (lintegrate_shell .and. firstout<n_spectra .and. ipz==0) call mpimerge_1d(kshell,nk,12,comm = SNAP_MPI_COMMS%world) ! filling of the shell-wavenumber vector
 !
   if (lroot) then
 !
@@ -998,20 +1000,20 @@ outer:  do ikz=1,nz
   if (lintegrate_shell) then
 !
     if (lintegrate_z) then
-      call mpireduce_sum(spectrum1,spectrum1_sum,nk)
+      call mpireduce_sum(spectrum1,spectrum1_sum,nk,comm = SNAP_MPI_COMMS%world)
     else
-      call mpireduce_sum(spectrum2,spectrum2_sum,(/nk,nz/),12)
-      call mpigather_z(spectrum2_sum,spectrum2_global,nk)
+      call mpireduce_sum(spectrum2,spectrum2_sum,(/nk,nz/),12,comm = SNAP_MPI_COMMS%world)
+      call mpigather_z(spectrum2_sum,spectrum2_global,nk,comms = SNAP_MPI_COMMS)
     endif
 !
   elseif (lintegrate_z) then
-         call mpireduce_sum(spectrum2,spectrum2_sum,(/nx,ny/),3)
-         call mpigather_xy( spectrum2_sum, spectrum2_global, 0 )
+         call mpireduce_sum(spectrum2,spectrum2_sum,(/nx,ny/),3,comm = SNAP_MPI_COMMS%world)
+         call mpigather_xy( spectrum2_sum, spectrum2_global, 0 ,comms = SNAP_MPI_COMMS)
 !
   elseif (lcomplex) then
-    call mpigather_and_out_cmplx(spectrum3_cmplx,1,.false.,kxrange,kyrange,zrange)
+    call mpigather_and_out_cmplx(spectrum3_cmplx,1,.false.,kxrange,kyrange,zrange,comm = SNAP_MPI_COMMS%world)
   else
-    call mpigather_and_out_real(spectrum3,1,.false.,kxrange,kyrange,zrange)
+    call mpigather_and_out_real(spectrum3,1,.false.,kxrange,kyrange,zrange,comm = SNAP_MPI_COMMS%world)
   endif
 !
   if (lroot) then
@@ -1042,7 +1044,7 @@ outer:  do ikz=1,nz
 !
   endif
 !
-  call mpibarrier          ! necessary ?
+  call mpibarrier(SNAP_MPI_COMMS%world) 
 !  print*, 'nach barrier:', iproc, ipy, ipz
 !
   if (lintegrate_shell) then
@@ -1467,8 +1469,8 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-    call fft_xyz_parallel(a_re,a_im)
-    call fft_xyz_parallel(b_re,b_im)
+    call fft_xyz_parallel(a_re,a_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(b_re,b_im,comm=SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -1544,19 +1546,19 @@ outer:  do ikz=1,nz
   !  Summing up the results from the different processors.
   !  The result is available only on root.
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk,comm = SNAP_MPI_COMMS%world)
   !
   if (lcylindrical_spectra) then
-    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
-    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
+    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/),comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/),comm = SNAP_MPI_COMMS%world)
   endif
 !
 !  compute krms only once
 !
   if (lwrite_krms) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
+    call mpireduce_sum(k2m,k2m_sum,nk,comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(nks,nks_sum,nk,comm = SNAP_MPI_COMMS%world)
     if (iproc/=root) lwrite_krms=.false.
   endif
   !
@@ -1761,9 +1763,9 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-    call fft_xyz_parallel(a_re,a_im)
-    call fft_xyz_parallel(b_re,b_im)
-    if (.not.lhydro) call fft_xyz_parallel(c_re,c_im)
+    call fft_xyz_parallel(a_re,a_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(b_re,b_im,comm=SNAP_MPI_COMMS%world)
+    if (.not.lhydro) call fft_xyz_parallel(c_re,c_im,comm=SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -1818,16 +1820,16 @@ outer:  do ikz=1,nz
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
-  call mpireduce_sum(spectrum2,spectrum2_sum,nk)
-  call mpireduce_sum(spectrum2hel,spectrum2hel_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrum2,spectrum2_sum,nk,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrum2hel,spectrum2hel_sum,nk,comm = SNAP_MPI_COMMS%world)
 !
 !  compute krms only once
 !
   if (lwrite_krms) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
+    call mpireduce_sum(k2m,k2m_sum,nk,comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(nks,nks_sum,nk,comm = SNAP_MPI_COMMS%world)
     if (iproc/=root) lwrite_krms=.false.
   endif
   !
@@ -2018,9 +2020,9 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-    call fft_xyz_parallel(a_re,a_im)
-    call fft_xyz_parallel(b_re,b_im)
-    if (.not.lhydro) call fft_xyz_parallel(c_re,c_im)
+    call fft_xyz_parallel(a_re,a_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(b_re,b_im,comm=SNAP_MPI_COMMS%world)
+    if (.not.lhydro) call fft_xyz_parallel(c_re,c_im,comm=SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -2067,14 +2069,14 @@ outer:  do ikz=1,nz
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk,comm = SNAP_MPI_COMMS%world)
 !
 !  compute krms only once
 !
   if (lwrite_krms) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
+    call mpireduce_sum(k2m,k2m_sum,nk,comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(nks,nks_sum,nk,comm = SNAP_MPI_COMMS%world)
     if (iproc/=root) lwrite_krms=.false.
   endif
   !
@@ -2226,10 +2228,10 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-    call fft_xyz_parallel(a_re,a_im)
-    call fft_xyz_parallel(b_re,b_im)
-    call fft_xyz_parallel(c_re,c_im)
-    call fft_xyz_parallel(d_re,d_im)
+    call fft_xyz_parallel(a_re,a_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(b_re,b_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(c_re,c_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(d_re,d_im,comm=SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -2271,14 +2273,14 @@ outer:  do ikz=1,nz
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk,comm = SNAP_MPI_COMMS%world)
 !
 !  compute krms only once
 !
   if (lwrite_krms) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
+    call mpireduce_sum(k2m,k2m_sum,nk,comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(nks,nks_sum,nk,comm = SNAP_MPI_COMMS%world)
     if (iproc/=root) lwrite_krms=.false.
   endif
   !
@@ -2429,9 +2431,9 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-    call fft_xyz_parallel(a_re,a_im)
-    call fft_xyz_parallel(b_re,b_im)
-    call fft_xyz_parallel(c_re,c_im)
+    call fft_xyz_parallel(a_re,a_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(b_re,b_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(c_re,c_im,comm=SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -2473,14 +2475,14 @@ outer:  do ikz=1,nz
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk,comm = SNAP_MPI_COMMS%world)
 !
 !  compute krms only once
 !
   if (lwrite_krms) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
+    call mpireduce_sum(k2m,k2m_sum,nk,comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(nks,nks_sum,nk,comm = SNAP_MPI_COMMS%world)
     if (iproc/=root) lwrite_krms=.false.
   endif
   !
@@ -2652,10 +2654,10 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-    !call fft_xyz_parallel(a_re,a_im)
-    !call fft_xyz_parallel(b_re,b_im)
-    call fourier_transform(a_re,a_im)
-    call fourier_transform(b_re,b_im)
+    !call fft_xyz_parallel(a_re,a_im,comm=SNAP_MPI_COMMS%world)
+    !call fft_xyz_parallel(b_re,b_im,comm=SNAP_MPI_COMMS%world)
+    call fourier_transform(a_re,a_im,comm = SNAP_MPI_COMMS%world)
+    call fourier_transform(b_re,b_im,comm = SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -2732,22 +2734,22 @@ outer:  do ikz=1,nz
 !  transposing output, as in Fourier_transform_xy; an unreverted transposition is performed
 !  but no transposition when nygrid=1 (e.g., in 2-D setup for 1-D spectrum)
 !
-    call mpireduce_sum(spectrumhel,spectrumhel_sum,nxgrid)
-    call mpireduce_sum(spectrum,spectrum_sum,nxgrid)
+    call mpireduce_sum(spectrumhel,spectrumhel_sum,nxgrid,comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(spectrum,spectrum_sum,nxgrid,comm = SNAP_MPI_COMMS%world)
   else
 !
 !  Summing up the results from the different processors
 !  The result is available only on root
 !
-    call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
-    call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+    call mpireduce_sum(spectrum   ,spectrum_sum   ,nk,comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(spectrumhel,spectrumhel_sum,nk,comm = SNAP_MPI_COMMS%world)
   endif
 !
 !  compute krms only once
 !
   if (lwrite_krms_GWs) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
+    call mpireduce_sum(k2m,k2m_sum,nk,comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(nks,nks_sum,nk,comm = SNAP_MPI_COMMS%world)
     if (iproc/=root) lwrite_krms_GWs=.false.
   endif
   !
@@ -3050,7 +3052,7 @@ outer:  do ikz=1,nz
 !
 !  Doing the Fourier transform
 !
-  call fft_xyz_parallel(a_re,a_im)
+  call fft_xyz_parallel(a_re,a_im,comm=SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -3100,9 +3102,9 @@ outer:  do ikz=1,nz
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  if (lhorizontal_spectra) call mpireduce_sum(hor_spectrum,hor_spectrum_sum,nk)
-  if (lvertical_spectra) call mpireduce_sum(ver_spectrum,ver_spectrum_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
+  if (lhorizontal_spectra) call mpireduce_sum(hor_spectrum,hor_spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
+  if (lvertical_spectra) call mpireduce_sum(ver_spectrum,ver_spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -3322,9 +3324,9 @@ outer:  do ikz=1,nz
 !  Summing up the results from the different processors
 !  The result is available only on root
 !
-    call mpireduce_sum(spectrumx,spectrumx_sum,(/nc,nk/))
-    if (onedall.and.nygrid/=1) call mpireduce_sum(spectrumy,spectrumy_sum,nk)
-    if (onedall.and.nzgrid/=1) call mpireduce_sum(spectrumz,spectrumz_sum,nk)
+    call mpireduce_sum(spectrumx,spectrumx_sum,(/nc,nk/),comm = SNAP_MPI_COMMS%world)
+    if (onedall.and.nygrid/=1) call mpireduce_sum(spectrumy,spectrumy_sum,nk,comm = SNAP_MPI_COMMS%world)
+    if (onedall.and.nzgrid/=1) call mpireduce_sum(spectrumz,spectrumz_sum,nk,comm = SNAP_MPI_COMMS%world)
 !
 !  on root processor, write global result to file
 !  don't need to multiply by 1/2 to get \int E(k) dk = (1/2) <u^2>
@@ -3503,7 +3505,7 @@ outer:  do ikz=1,nz
 !
 !  Communicate and append from root processor.
 !
-  call mpireduce_sum_int(pdf_yy,pdf_yy_sum,n_pdf)
+  call mpireduce_sum_int(pdf_yy,pdf_yy_sum,n_pdf,comm = SNAP_MPI_COMMS%world)
   if (lroot) then
      pdf_file=trim(datadir)//'/pdf_'//trim(variabl)//'.dat'
      open(1,file=trim(pdf_file),position='append')
@@ -3634,7 +3636,7 @@ endsubroutine pdf
   !
   !  sum over processors
   !
-  call mpireduce_sum_int(pdf_ang,pdf_ang_sum,(/nk-1,npdf/))
+  call mpireduce_sum_int(pdf_ang,pdf_ang_sum,(/nk-1,npdf/),comm = SNAP_MPI_COMMS%world)
   !
   !  write to file
   !
@@ -4030,7 +4032,7 @@ endsubroutine pdf
 !  Doing the Fourier transform
 !
   do ivec=1,3
-     call fourier_transform(a1(:,:,:,ivec),b1(:,:,:,ivec))
+     call fourier_transform(a1(:,:,:,ivec),b1(:,:,:,ivec),comm = SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -4052,7 +4054,7 @@ endsubroutine pdf
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -4197,9 +4199,9 @@ endsubroutine pdf
     ux_re=f(l1:l2,m1:m2,n1:n2,iuu+1-1); ux_im=0.
     uy_re=f(l1:l2,m1:m2,n1:n2,iuu+2-1); uy_im=0.
     uz_re=f(l1:l2,m1:m2,n1:n2,iuu+3-1); uz_im=0.
-    call fft_xyz_parallel(ux_re,ux_im)
-    call fft_xyz_parallel(uy_re,uy_im)
-    call fft_xyz_parallel(uz_re,uz_im)
+    call fft_xyz_parallel(ux_re,ux_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(uy_re,uy_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(uz_re,uz_im,comm=SNAP_MPI_COMMS%world)
     !  initialize correlation functions
     allocate( vxx(nk,nmu(nk)) )
     allocate( vzz(nk,nmu(nk)) )
@@ -4288,9 +4290,9 @@ endsubroutine pdf
       enddo
     enddo
     !  sum up results
-    call mpireduce_sum(legendre_al_a,legendre_al_a_sum,(/legendre_lmax+1,nk/))
-    call mpireduce_sum(legendre_al_b,legendre_al_b_sum,(/legendre_lmax+1,nk/))
-    call mpireduce_sum(legendre_al_c,legendre_al_c_sum,(/legendre_lmax+1,nk/))
+    call mpireduce_sum(legendre_al_a,legendre_al_a_sum,(/legendre_lmax+1,nk/),comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(legendre_al_b,legendre_al_b_sum,(/legendre_lmax+1,nk/),comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(legendre_al_c,legendre_al_c_sum,(/legendre_lmax+1,nk/),comm = SNAP_MPI_COMMS%world)
     !  on root processor, write to file; always in lformat
     if (lroot) then
       if (ip<10) print*,'Writing two point correlations to'  &
@@ -4430,8 +4432,8 @@ endsubroutine pdf
           b_im=0.
       endif
       !
-      call fft_xyz_parallel(a_re,a_im)
-      call fft_xyz_parallel(b_re,b_im)
+      call fft_xyz_parallel(a_re,a_im,comm=SNAP_MPI_COMMS%world)
+      call fft_xyz_parallel(b_re,b_im,comm=SNAP_MPI_COMMS%world)
       !  compute polar spectra as functions of kr=norm(kx,ky,kz) and kz/kr
       if (lroot .AND. ip<10) print*,'fft done; now integrate azimuthally in k space...'
       do ikz=1,nz
@@ -4493,10 +4495,10 @@ endsubroutine pdf
 !  Summing up the results from the different processors.
 !  The result is available only on root.
 !
-    call mpireduce_sum(polar_spec,polar_spec_sum,(/nk,nmu(nk)/))
-    call mpireduce_sum(polar_spechel,polar_spechel_sum,(/nk,nmu(nk)/))
-    call mpireduce_sum(legendre_al,legendre_al_sum,(/legendre_lmax+1,nk/))
-    call mpireduce_sum(legendre_alhel,legendre_alhel_sum,(/legendre_lmax+1,nk/))
+    call mpireduce_sum(polar_spec,polar_spec_sum,(/nk,nmu(nk)/),comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(polar_spechel,polar_spechel_sum,(/nk,nmu(nk)/),comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(legendre_al,legendre_al_sum,(/legendre_lmax+1,nk/),comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(legendre_alhel,legendre_alhel_sum,(/legendre_lmax+1,nk/),comm = SNAP_MPI_COMMS%world)
 !
 !  on root processor, write global result to file
 !  everything is in lformat
@@ -4633,8 +4635,8 @@ endsubroutine pdf
 !
 !  Doing the Fourier transform
 !
-    call fft_xyz_parallel(a_re,a_im)
-    call fft_xyz_parallel(b_re,b_im)
+    call fft_xyz_parallel(a_re,a_im,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(b_re,b_im,comm=SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -4666,8 +4668,8 @@ endsubroutine pdf
   !  Summing up the results from the different processors.
   !  The result is available only on root.
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk,comm = SNAP_MPI_COMMS%world)
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -4852,8 +4854,8 @@ endsubroutine pdf
 !
 !  Doing the Fourier transform
 !
-    call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
-    call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
+    call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
+    call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
 !
 !  integration over shells
 !
@@ -4925,22 +4927,22 @@ endsubroutine pdf
   !  Summing up the results from the different processors.
   !  The result is available only on root.
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk,comm = SNAP_MPI_COMMS%world)
   !  real-space correlation
-  call mpireduce_sum(correlation,correlation_sum,nxgrid)
-  call mpireduce_sum(correlationhel,correlationhel_sum,nxgrid)
+  call mpireduce_sum(correlation,correlation_sum,nxgrid,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(correlationhel,correlationhel_sum,nxgrid,comm = SNAP_MPI_COMMS%world)
   !
   if (lcylindrical_spectra) then
-    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
-    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
+    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/),comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/),comm = SNAP_MPI_COMMS%world)
   endif
 !
 !  compute krms only once
 !
   if (lwrite_krms) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
+    call mpireduce_sum(k2m,k2m_sum,nk,comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(nks,nks_sum,nk,comm = SNAP_MPI_COMMS%world)
     if (iproc/=root) lwrite_krms=.false.
   endif
   !
@@ -5188,14 +5190,14 @@ endsubroutine pdf
         !$omp end single
         !$omp barrier
       endif
-      call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
-      call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
+      call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
+      call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
       !$omp workshare
       h_re = h_re + a_re*b_re + a_im*b_im
       h_im = h_im + a_im*b_re - a_re*b_im
       !$omp end workshare
     enddo
-    call fft_xyz_parallel(h_re,h_im,linv=.true.,lignore_shear=lshear_frame_correlation)
+    call fft_xyz_parallel(h_re,h_im,linv=.true.,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
     !
     do ivec=1,3
       !$omp workshare
@@ -5215,14 +5217,14 @@ endsubroutine pdf
         !$omp end single
         !$omp barrier
       endif
-      call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
-      call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
+      call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
+      call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
       !$omp workshare
       ht_re = ht_re + a_re*b_re + a_im*b_im
       ht_im = ht_im + a_im*b_re - a_re*b_im
       !$omp end workshare
     enddo
-    call fft_xyz_parallel(ht_re,ht_im,linv=.true.,lignore_shear=lshear_frame_correlation)
+    call fft_xyz_parallel(ht_re,ht_im,linv=.true.,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
     !
   endif  !  lconvol
   !$omp workshare
@@ -5243,8 +5245,8 @@ endsubroutine pdf
   !
   !  Doing the Fourier transform
   !
-  call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
-  call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
+  call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
+  call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
   !
   !  shell-integrated correlation
   !
@@ -5282,15 +5284,15 @@ endsubroutine pdf
   !  The result is available only on root.
   !
   !$omp end parallel
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk,comm = SNAP_MPI_COMMS%world)
   !  real-space correlation
-  call mpireduce_sum(correlation,correlation_sum,nxgrid)
-  call mpireduce_sum(correlationhel,correlationhel_sum,nxgrid)
+  call mpireduce_sum(correlation,correlation_sum,nxgrid,comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(correlationhel,correlationhel_sum,nxgrid,comm = SNAP_MPI_COMMS%world)
   !
   if (lcylindrical_spectra) then
-    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
-    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
+    call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/),comm = SNAP_MPI_COMMS%world)
+    call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/),comm = SNAP_MPI_COMMS%world)
   endif
   !
   !  append to diagnostics file
@@ -5503,7 +5505,7 @@ endsubroutine pdf
           hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum)+ &
           h_re(ikx,iky,ikz)*dx*dy*dz
     enddo; enddo; enddo
-    call mpireduce_sum(hv,hv_sum,(/nsub,nsub,nsub/))
+    call mpireduce_sum(hv,hv_sum,(/nsub,nsub,nsub/),comm = SNAP_MPI_COMMS%world)
     if (lroot) Iv(ikr)=sum(hv_sum**2)/(Lx*Ly*Lz)
     deallocate(hv,hv_sum)
   enddo
@@ -5511,7 +5513,7 @@ endsubroutine pdf
   !  the spectral method
   !  Take into account that k is not normalized, so dx -> dx_2pi_box.
   !
-  call fft_xyz_parallel(h_re,h_im)
+  call fft_xyz_parallel(h_re,h_im,comm=SNAP_MPI_COMMS%world)
   h_re = h_re*h_re + h_im*h_im  !  this is h^*(k) h(k)
   !
   dx_2pi_box=twopi/nxgrid
@@ -5546,8 +5548,8 @@ endsubroutine pdf
     enddo; enddo; enddo
   enddo
   !
-  call mpireduce_sum(correl,correl_sum,(/4,nk/))
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(correl,correl_sum,(/4,nk/),comm = SNAP_MPI_COMMS%world)
+  call mpireduce_sum(spectrum,spectrum_sum,nk,comm = SNAP_MPI_COMMS%world)
   !
   if (lroot) then
     open(1,file=trim(datadir)//'/Iv_bcc_'//trim(sp)//'.dat',position='append')
@@ -5734,10 +5736,10 @@ endsubroutine pdf
     !
     if (lfft) then
       if (sp2=='xkyz') then
-        call fft_y_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
-        call fft_z_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+        call fft_y_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
+        call fft_z_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
       else
-        call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
+        call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation,comm=SNAP_MPI_COMMS%world)
       endif
     endif
     !
@@ -5768,7 +5770,7 @@ endsubroutine pdf
     !
     !$omp barrier
     !$omp single
-    call mpireduce_sum(fft,fft_sum,(/2,kkoutx,kkouty,kkoutz/))
+    call mpireduce_sum(fft,fft_sum,(/2,kkoutx,kkouty,kkoutz/),comm = SNAP_MPI_COMMS%world)
     !
     !  append to diagnostics file
     !
@@ -5834,7 +5836,7 @@ endsubroutine pdf
 !
   a_re(:,:,:)=a(:,:,:)
   a_im=0.
-  call fft_xyz_parallel(a_re,a_im)
+  call fft_xyz_parallel(a_re,a_im,comm=SNAP_MPI_COMMS%world)
 !
   do ikx=1,nx
   do iky=1,ny
@@ -5849,7 +5851,7 @@ endsubroutine pdf
   enddo
   enddo
 !
-  call fft_xyz_parallel(a_re,a_im,linv=.true.,lneed_im=.false.)
+  call fft_xyz_parallel(a_re,a_im,linv=.true.,lneed_im=.false.,comm=SNAP_MPI_COMMS%world)
   ap(:,:,:)=a_re(:,:,:)
 !
   endsubroutine power_shell_filter
@@ -6019,7 +6021,7 @@ endsubroutine pdf
 !
 !  sum over processors
 !
-  call mpireduce_sum(Tpq,Tpq_sum,(/nlk_p,nlk_q/))
+  call mpireduce_sum(Tpq,Tpq_sum,(/nlk_p,nlk_q/),comm = SNAP_MPI_COMMS%world)
 !
 !  append to diagnostics file
 !

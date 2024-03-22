@@ -7578,7 +7578,7 @@ module Magnetic
 !
 !  The following calculation involving spatial averages
 !
-      use Mpicomm, only: mpibcast_real,MPI_COMM_WORLD, MPI_COMM_DIAG
+      use Mpicomm, only: mpibcast_real,DIAG_MPI_COMMS
 
       if (idiag_bmx/=0) call calc_bmx
       if (idiag_bmy/=0) call calc_bmy
@@ -7607,7 +7607,7 @@ module Magnetic
 !  A = Atarget - factor*(Aactual-Atarget).
 !
       ampl_beltrami=ampl_ff-forcing_continuous_aa_amplfact*(bmz-ampl_ff)
-      call mpibcast_real(ampl_beltrami,comm=MPI_COMM_DIAG)
+      call mpibcast_real(ampl_beltrami,comm=DIAG_MPI_COMMS%world)
 !
     endsubroutine calc_mfield
 !***********************************************************************
@@ -7636,12 +7636,12 @@ module Magnetic
         bmx2=0.0
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(idiag_bymxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM_DIAG)
+          call mpireduce_sum(fnamexy(idiag_bymxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM,comms=DIAG_MPI_COMMS)
           bymx=sum(fsumxy,dim=2)/nygrid
-          call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM_DIAG)
+          call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM,comms=DIAG_MPI_COMMS)
           bzmx=sum(fsumxy,dim=2)/nygrid
         endif
-        if (lfirst_proc_yz) call mpireduce_sum(bymx**2+bzmx**2,bmx2,nx,idir=IXBEAM_DIAG)
+        if (lfirst_proc_yz) call mpireduce_sum(bymx**2+bzmx**2,bmx2,nx,idir=IXBEAM,comms=DIAG_MPI_COMMS)
       endif
 !
 !  Save the name in the idiag_bmx slot and set first to false.
@@ -7682,12 +7682,12 @@ module Magnetic
         bmy2=0.0
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(idiag_bxmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM_DIAG)
+          call mpireduce_sum(fnamexy(idiag_bxmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM,comms=DIAG_MPI_COMMS)
           bxmy=sum(fsumxy,dim=1)/nxgrid
-          call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM_DIAG)
+          call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM,comms=DIAG_MPI_COMMS)
           bzmy=sum(fsumxy,dim=1)/nxgrid
         endif
-        if (lfirst_proc_xz) call mpireduce_sum(bxmy**2+bzmy**2,bmy2,ny,idir=IYBEAM_DIAG)
+        if (lfirst_proc_xz) call mpireduce_sum(bxmy**2+bzmy**2,bmy2,ny,idir=IYBEAM,comms=DIAG_MPI_COMMS)
       endif
 !
 !  Save the name in the idiag_bmy slot and set first to false.
@@ -7838,12 +7838,12 @@ module Magnetic
         jmx2=0.
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(idiag_jymxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM_DIAG)
+          call mpireduce_sum(fnamexy(idiag_jymxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM,comms=DIAG_MPI_COMMS)
           jymx=sum(fsumxy,dim=2)/nygrid
-          call mpireduce_sum(fnamexy(idiag_jzmxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM_DIAG)
+          call mpireduce_sum(fnamexy(idiag_jzmxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM,comms=DIAG_MPI_COMMS)
           jzmx=sum(fsumxy,dim=2)/nygrid
         endif
-        if (lfirst_proc_yz) call mpireduce_sum(jymx**2+jzmx**2,jmx2,nx,idir=IXBEAM_DIAG)
+        if (lfirst_proc_yz) call mpireduce_sum(jymx**2+jzmx**2,jmx2,nx,idir=IXBEAM,comms=DIAG_MPI_COMMS)
       endif
 !
 !  Save the name in the idiag_jmx slot and set first to false.
@@ -7883,12 +7883,12 @@ module Magnetic
         jmy2=0.
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(idiag_jxmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM_DIAG)
+          call mpireduce_sum(fnamexy(idiag_jxmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM,comms=DIAG_MPI_COMMS)
           jxmy=sum(fsumxy,dim=1)/nxgrid
-          call mpireduce_sum(fnamexy(idiag_jzmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM_DIAG)
+          call mpireduce_sum(fnamexy(idiag_jzmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM,comms=DIAG_MPI_COMMS)
           jzmy=sum(fsumxy,dim=1)/nxgrid
         endif
-        if (lfirst_proc_xz) call mpireduce_sum(jxmy**2+jzmy**2,jmy2,ny,idir=IYBEAM_DIAG)
+        if (lfirst_proc_xz) call mpireduce_sum(jxmy**2+jzmy**2,jmy2,ny,idir=IYBEAM,comms=DIAG_MPI_COMMS)
       endif
 !
 !  Save the name in the idiag_jmy slot and set first to false.
@@ -8166,7 +8166,7 @@ module Magnetic
             b2mxy_local(2) = b2mxy_local(2) + nVol2d_local
           enddo
         enddo
-        call mpireduce_sum(b2mxy_local(:),b2mxy,2,idir=IYBEAM_DIAG)
+        call mpireduce_sum(b2mxy_local(:),b2mxy,2,idir=IYBEAM,comms=DIAG_MPI_COMMS)
         if (lfirst_proc_x) then
           if (lcartesian_coords) bmxy_rms = sqrt(b2mxy(1) / (nxgrid*nygrid))
           if (lspherical_coords) bmxy_rms = sqrt(b2mxy(1) / b2mxy(2))
