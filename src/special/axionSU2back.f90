@@ -45,11 +45,12 @@ module Special
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
   real :: Mpl2=1., Hdot=0., lamf, Hscript, epsilon_sr=0.
+  real :: m_inflaton=1.275e-7, inflaton_ini=16.
   real, dimension (nx) :: grand, grant, dgrant
   real, dimension (nx) :: xmask_axion
   real, dimension (2) :: axion_sum_range=(/0.,1./)
   integer, dimension (nx) :: kindex_array
-  real :: grand_sum, grant_sum, dgrant_sum
+  real :: grand_sum, grant_sum, dgrant_sum, inflaton
   real :: TRdoteff2km_sum, TRdoteff2m_sum, TReff2km_sum, TReff2m_sum
   real :: TLdoteff2km_sum, TLdoteff2m_sum, TLeff2km_sum, TLeff2m_sum
   real :: TRpsim_sum, TRpsikm_sum, TRpsidotm_sum, TRdotpsim_sum
@@ -69,7 +70,7 @@ module Special
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
-    nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn
+    nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn, m_inflaton, inflaton_ini
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -303,6 +304,12 @@ module Special
             psidot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
             TR=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
             TRdot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+            if (lim_psi_TR) then
+              impsi=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
+              impsidot=(k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              imTR=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
+              imTRdot=(k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+            endif
           endif
 !
 !  ODE variables (exist only on root processor)
@@ -482,7 +489,7 @@ module Special
       Uprime=-mu**4/fdecay*sin(chi/fdecay)
       if (lconf_time) then
         if (lhubble_var) then
-          epsilon_sr=0.1*(1+tanh(0.3*(alog(-1/(H*t))-25)))*0.5
+          epsilon_sr=0.8*(1+tanh(0.3*(alog(-1/(H*t))-18)))*0.5
           a=-1./(H*t*(1-epsilon_sr))
           Hscript=a*H
           if (.not.lkeep_mQ_const) then
@@ -496,6 +503,14 @@ module Special
             xi=lamf*chidot*(-0.5*t)
             epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
           endif
+        endif
+      elseif (lhubble_var) then
+        inflaton=inflaton_ini-sqrt(2./3.)*m_inflaton*t
+        a=exp((inflaton_ini**2-inflaton**2)*0.25)
+        H=0.41*m_inflaton*inflaton
+        if (.not.lkeep_mQ_const) then
+          xi=lamf*chidot/(2.*H)
+          epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
         endif
       else
         a=exp(H*t)
@@ -658,25 +673,76 @@ module Special
               +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
           endwhere
         else
-          df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
-          df(l1:l2,m,n,iaxi_TR )=df(l1:l2,m,n,iaxi_TR )+TRdot
           if (lwith_eps) then
             psiddot=-H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot &
-              +2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
+              +2.*H**2*sqrt(epsQB)*(mQ-sgn*k/(a*H))*TR
+            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-sgn*k/(a*H)*(mQ+xi)))*TR &
+              +2.*H*sqrt(epsQE)*psidot &
+              +2.*H**2*(sqrt(epsQB)*(mQ-sgn*k/(a*H))+sqrt(epsQE))*psi
+            if (lim_psi_TR) then
+              impsiddot=-H*impsidot-(k**2/a**2-2.*H**2)*impsi-2.*H*sqrt(epsQE)*imTRdot &
+                +2.*H**2*sqrt(epsQB)*(mQ-sgn*k/(a*H))*imTR
+              imTRddot=-H*imTRdot-(k**2/a**2+2.*H**2*(mQ*xi-sgn*k/(a*H)*(mQ+xi)))*imTR &
+                +2.*H*sqrt(epsQE)*impsidot &
+                +2.*H**2*(sqrt(epsQB)*(mQ-sgn*k/(a*H))+sqrt(epsQE))*impsi
+            endif
+            if (lleft_psiL_TL) then
+              psiLddot=-H*psiLdot-(k**2/a**2-2.*H**2)*psiL-2.*H*sqrt(epsQE)*TLdot &
+                +2.*H**2*sqrt(epsQB)*(mQ+sgn*k/(a*H))*TL
+              TLddot=-H*TLdot-(k**2/a**2+2.*H**2*(mQ*xi+sgn*k/(a*H)*(mQ+xi)))*TL &
+                +2.*H*sqrt(epsQE)*psiLdot &
+                +2.*H**2*(sqrt(epsQB)*(mQ+sgn*k/(a*H))+sqrt(epsQE))*psiL
+              impsiLddot=-H*impsiLdot-(k**2/a**2-2.*H**2)*impsiL-2.*H*sqrt(epsQE)*imTLdot &
+                +2.*H**2*sqrt(epsQB)*(mQ+sgn*k/(a*H))*imTL
+              imTLddot=-H*imTLdot-(k**2/a**2+2.*H**2*(mQ*xi+sgn*k/(a*H)*(mQ+xi)))*imTL &
+                +2.*H*sqrt(epsQE)*impsiLdot &
+                +2.*H**2*(sqrt(epsQB)*(mQ+sgn*k/(a*H))+sqrt(epsQE))*impsiL
+            endif
           else
             psiddot=-H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi &
-              -2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
+              -2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-sgn*k/(a*H))*TR
+            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-sgn*k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
+              +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-sgn*k/(a*H))*psi
+            if (lim_psi_TR) then
+              impsiddot=-H*impsidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*impsi &
+                -2.*H*Q*imTRdot+2.*mQ*Q*H**2*(mQ-sgn*k/(a*H))*imTR
+              imTRddot=-H*imTRdot-(k**2/a**2+2.*H**2*(mQ*xi-sgn*k/(a*H)*(mQ+xi)))*imTR+2.*H*Q*impsidot &
+                +2.*Q*H**2*impsi+2.*mQ*Q*H**2*(mQ-sgn*k/(a*H))*impsi
+            endif
+            if (lleft_psiL_TL) then
+              psiLddot=-H*psiLdot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psiL &
+                -2.*H*Q*TLdot+2.*mQ*Q*H**2*(mQ+sgn*k/(a*H))*TL
+              TLddot=-H*TLdot-(k**2/a**2+2.*H**2*(mQ*xi+sgn*k/(a*H)*(mQ+xi)))*TL+2.*H*Q*psiLdot &
+                +2.*Q*H**2*psiL+2.*mQ*Q*H**2*(mQ+sgn*k/(a*H))*psiL
+              impsiLddot=-H*impsiLdot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*impsiL &
+                -2.*H*Q*imTLdot+2.*mQ*Q*H**2*(mQ+sgn*k/(a*H))*imTL
+              imTLddot=-H*imTLdot-(k**2/a**2+2.*H**2*(mQ*xi+sgn*k/(a*H)*(mQ+xi)))*imTL+2.*H*Q*impsiLdot &
+                +2.*Q*H**2*impsiL+2.*mQ*Q*H**2*(mQ+sgn*k/(a*H))*impsiL
+            endif
           endif
-          if (lwith_eps) then
-            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR &
-              +2.*H*sqrt(epsQE)*psidot &
-              +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
-          else
-            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
-              +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
-          endif
+          df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+          df(l1:l2,m,n,iaxi_TR )=df(l1:l2,m,n,iaxi_TR )+TRdot
           df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot)+psiddot
           df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot)+TRddot
+          if (lim_psi_TR) then
+            df(l1:l2,m,n,iaxi_impsi   )=df(l1:l2,m,n,iaxi_impsi   )+impsidot
+            df(l1:l2,m,n,iaxi_impsidot)=df(l1:l2,m,n,iaxi_impsidot)+impsiddot
+            df(l1:l2,m,n,iaxi_imTR    )=df(l1:l2,m,n,iaxi_imTR    )+imTRdot
+            df(l1:l2,m,n,iaxi_imTRdot )=df(l1:l2,m,n,iaxi_imTRdot )+imTRddot
+          endif
+!
+!  left-handed modes (to be checked, not finalized)
+!
+          if (lleft_psiL_TL) then
+            df(l1:l2,m,n,iaxi_psiL     )=df(l1:l2,m,n,iaxi_psiL     )+psiLdot
+            df(l1:l2,m,n,iaxi_psiLdot  )=df(l1:l2,m,n,iaxi_psiLdot  )+psiLddot
+            df(l1:l2,m,n,iaxi_TL       )=df(l1:l2,m,n,iaxi_TL       )+TLdot
+            df(l1:l2,m,n,iaxi_TLdot    )=df(l1:l2,m,n,iaxi_TLdot    )+TLddot
+            df(l1:l2,m,n,iaxi_impsiL   )=df(l1:l2,m,n,iaxi_impsiL   )+impsiLdot
+            df(l1:l2,m,n,iaxi_impsiLdot)=df(l1:l2,m,n,iaxi_impsiLdot)+impsiLddot
+            df(l1:l2,m,n,iaxi_imTL     )=df(l1:l2,m,n,iaxi_imTL     )+imTLdot
+            df(l1:l2,m,n,iaxi_imTLdot  )=df(l1:l2,m,n,iaxi_imTLdot  )+imTLddot
+          endif
         endif
       endif
 !
@@ -768,7 +834,7 @@ module Special
       Uprime=-mu**4/fdecay*sin(chi/fdecay)
       if (lconf_time) then
         if (lhubble_var) then
-          epsilon_sr=0.1*(1+tanh(0.3*(alog(-1/(H*t))-25)))*0.5
+          epsilon_sr=0.8*(1+tanh(0.3*(alog(-1/(H*t))-18)))*0.5
           a=-1./(H*t*(1-epsilon_sr))
           Hscript=a*H
           xi=lamf*chidot*(0.5/Hscript)
@@ -778,6 +844,12 @@ module Special
           Hscript=a*H
           xi=lamf*chidot*(-0.5*t)
         endif
+      elseif (lhubble_var) then
+        inflaton=inflaton_ini-sqrt(2./3.)*m_inflaton*t
+        a=exp((inflaton_ini**2-inflaton**2)*0.25)
+        H=0.41*m_inflaton*inflaton
+        xi=lamf*chidot/(2.*H)
+        Hdot=-(2/inflaton**2)*H**2
       else
         a=exp(H*t)
         xi=lamf*chidot/(2.*H)
@@ -934,13 +1006,18 @@ module Special
 !
       if (lconf_time) then
         if (lhubble_var) then
-          epsilon_sr=0.1*(1+tanh(0.3*(alog(-1/(H*t))-25)))*0.5
+          epsilon_sr=0.8*(1+tanh(0.3*(alog(-1/(H*t))-18)))*0.5
           a=-1./(H*t*(1-epsilon_sr))
           xi=lamf*chidot*(0.5/(a*H))
         else
           a=-1./(H*t)
           xi=lamf*chidot*(-0.5*t)
         endif
+      elseif (lhubble_var) then
+        inflaton=inflaton_ini-sqrt(2./3.)*m_inflaton*t
+        a=exp((inflaton_ini**2-inflaton**2)*0.25)
+        H=0.41*m_inflaton*inflaton
+        xi=lamf*chidot/(2.*H)
       else
         a=exp(H*t)
         xi=lamf*chidot/(2.*H)
