@@ -982,20 +982,6 @@ void checkConfig(AcMeshInfo &config)
   acLogFromRootProc(rank,"mu0= %f %f \n", mu0, config.real_params[AC_mu0]);
 }
 /***********************************************************************************************/
-
-void loadProfiles(AcMeshInfo &config)
-{
-  // #if LFORCING
-  //      PUT(profx_ampl,nx,0,0)
-  //      PUT(profy_ampl,0,my,0)
-  //      PUT(profz_ampl,0,0,mz)
-  //      PUT(profx_hel,nx,0,0)
-  //      PUT(profy_hel,0,my,0)
-  //      PUT(profz_hel,0,0,mz)
-  // #endif
-  // acGridLoadProfile(STREAM_DEFAULT, PROFILE_X, config);
-}
-/***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
 {
   Device device = acGridGetDevice();
