@@ -540,6 +540,9 @@ module Mpicomm
 !***********************************************************************
     subroutine create_communicators()
 
+      !used to copy communicators for helper threads
+      !this makes MPI communication thread-safe, since all threads have their own communicator
+
       !For code coupling with f.e. EULAG you have to split MPI_COMM_PENCIL
       !Not done now simply because its simpler this way
       call MPI_COMM_DUP(MPI_COMM_WORLD, MPI_COMM_PENCIL, mpierr)
