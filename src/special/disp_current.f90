@@ -320,7 +320,8 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
-! el
+! el: choice of either replacing E by the MHD value -uxB+J/sigma
+! (with constant or time-dependent eta), or the advanced E field.
 !
       if (loverride_ee) then
         if (lresi_eta_tdep) then
