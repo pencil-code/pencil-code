@@ -1076,7 +1076,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
 #if SINGLEPASS
-      acCompute(KERNEL_singlepass_solve, all_fields,single_loader0),
+      acComputeWithParams(KERNEL_singlepass_solve, all_fields,single_loader0),
 #else
       acComputeWithParams(KERNEL_twopass_solve_intermediate, all_fields,intermediate_loader_0),
       acComputeWithParams(KERNEL_twopass_solve_final, all_fields,final_loader_0),
@@ -1088,7 +1088,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
 #if SINGLEPASS
-      acCompute(KERNEL_singlepass_solve, all_fields,single_loader1),
+      acComputeWithParams(KERNEL_singlepass_solve, all_fields,single_loader1),
 #else
       acComputeWithParams(KERNEL_twopass_solve_intermediate, all_fields,intermediate_loader_1),
       acComputeWithParams(KERNEL_twopass_solve_final,all_fields,final_loader_1),
@@ -1100,7 +1100,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
       acHaloExchange(all_fields),
       acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
 #if SINGLEPASS
-      acCompute(KERNEL_singlepass_solve, all_fields,single_loader2),
+      acComputeWithParams(KERNEL_singlepass_solve, all_fields,single_loader2),
 #else
       acComputeWithParams(KERNEL_twopass_solve_intermediate, all_fields,intermediate_loader_2),
       acComputeWithParams(KERNEL_twopass_solve_final, all_fields,final_loader_2),

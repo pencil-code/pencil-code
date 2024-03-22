@@ -543,8 +543,11 @@ program run
   logical :: suppress_pencil_check=.false.
   logical :: lnoreset_tzero=.false.
   logical :: lexist
+  integer :: num_helpers
+  integer :: i
 !
   lrun = .true.
+  num_helpers = 1
 !
 !  Get processor numbers and define whether we are root.
 !
@@ -957,8 +960,16 @@ program run
 !
   call trim_averages
 !
-!$omp parallel num_threads(2) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+  num_helpers = 1
+!$omp parallel num_threads(num_helpers+1) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !
+!$   do i =1,num_helpers
+!TP: important that we ensure like this that all MPI processes call
+!create_communicators with the same threads
+     !$omp barrier
+!$     if (omp_get_thread_num() == i) call create_communicators()
+!$   enddo
+     !$omp barrier
 !$ if (omp_get_thread_num() == 0) then
      call timeloop(f,df,p)
 !$ else

@@ -243,7 +243,6 @@ module Mpicomm
       endif
 
       call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID,mpierr)
-      call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_DIAG,mpierr)
       iproc_world=iproc
 !
 !  Remeber the sizes of some MPI elementary types.
@@ -517,24 +516,47 @@ module Mpicomm
 !
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy+nprocy*ipz, ipx, &
                           MPI_COMM_XBEAM, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_XBEAM, MPI_COMM_XBEAM_DIAG, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipz, ipy, &
                           MPI_COMM_YBEAM, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_YBEAM, MPI_COMM_YBEAM_DIAG, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipy, ipz, &
                           MPI_COMM_ZBEAM, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_ZBEAM, MPI_COMM_ZBEAM_DIAG, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipz, ipx+nprocx*ipy, &
                           MPI_COMM_XYPLANE, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_XYPLANE, MPI_COMM_XYPLANE_DIAG, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy, ipx+nprocx*ipz, &
                           MPI_COMM_XZPLANE, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_XZPLANE, MPI_COMM_XZPLANE_DIAG, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx, ipy+nprocy*ipz, &
                           MPI_COMM_YZPLANE, mpierr)
-      call MPI_COMM_DUP(MPI_COMM_YZPLANE, MPI_COMM_YZPLANE_DIAG, mpierr)
+
+      DEFAULT_COMMS%world = MPI_COMM_GRID
+      DEFAULT_COMMS%xbeam = MPI_COMM_XBEAM
+      DEFAULT_COMMS%ybeam = MPI_COMM_YBEAM
+      DEFAULT_COMMS%zbeam = MPI_COMM_ZBEAM
+
+      DEFAULT_COMMS%xyplane = MPI_COMM_XYPLANE
+      DEFAULT_COMMS%xzplane = MPI_COMM_XZPLANE
+      DEFAULT_COMMS%yzplane = MPI_COMM_YZPLANE
 !
     endsubroutine initialize_mpicomm
+!***********************************************************************
+    subroutine create_communicators()
+
+      !For code coupling with f.e. EULAG you have to split MPI_COMM_PENCIL
+      !Not done now simply because its simpler this way
+      call MPI_COMM_DUP(MPI_COMM_WORLD, MPI_COMM_PENCIL, mpierr)
+      call MPI_COMM_DUP(MPI_COMM_PENCIL, MPI_COMM_GRID, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy+nprocy*ipz, ipx, &
+                          MPI_COMM_XBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipz, ipy, &
+                          MPI_COMM_YBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipy, ipz, &
+                          MPI_COMM_ZBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipz, ipx+nprocx*ipy, &
+                          MPI_COMM_XYPLANE, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy, ipx+nprocx*ipz, &
+                          MPI_COMM_XZPLANE, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx, ipy+nprocy*ipz, &
+                          MPI_COMM_YZPLANE, mpierr)
+    endsubroutine
 !***********************************************************************
     subroutine update_neighbors
 !
@@ -2229,7 +2251,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine isendrcv_bdry_x
 !***********************************************************************
-    subroutine periodic_bdry_x(buffer,ivar1_opt,ivar2_opt)
+    subroutine periodic_bdry_x(buffer,ivar1_opt,ivar2_opt,comms)
 !
 !  Isend and Irecv boundary values for x-direction. Sends and receives
 !  before continuing to y and z boundaries, as this allows the edges
@@ -2239,11 +2261,20 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), intent(inout) :: buffer
       integer, intent(in), optional :: ivar1_opt, ivar2_opt
+      type(mpi_comms), optional, intent(in) :: comms
 !
       integer :: ivar1, ivar2, nbuf, j, ny_loc, nz_loc, nvar_loc
       integer :: isend_rq, irecv_rq
       integer, dimension (MPI_STATUS_SIZE) :: irecv_stat, isend_stat
       real, dimension(:,:,:,:), allocatable :: bufo,bufi
+      integer :: comm
+
+      if (present(comms)) then
+              comm = comms%world
+      else
+              comm = MPI_COMM_GRID
+      endif
+
 !
       if (.not.(lfirst_proc_x.or.llast_proc_x)) return
 !
@@ -2258,20 +2289,21 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         allocate(bufo(nghost,ny_loc,nz_loc,nvar_loc),&
                  bufi(nghost,ny_loc,nz_loc,nvar_loc))
 !
+        
         nbuf=ny_loc*nz_loc*nghost*nvar_loc
         if (lfirst_proc_x) then
           bufo=buffer(l1:l1i,m1:m1+ny_loc-1,n1:n1+nz_loc-1,ivar1:ivar2) !!(lower x-zone)
           call MPI_ISEND(bufo,nbuf,mpi_precision, &
-              xlneigh,tolowx,MPI_COMM_GRID,isend_rq,mpierr)
+              xlneigh,tolowx,comm,isend_rq,mpierr)
           call MPI_IRECV(bufi,nbuf,mpi_precision, &
-              xlneigh,touppx,MPI_COMM_GRID,irecv_rq,mpierr)
+              xlneigh,touppx,comm,irecv_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
         else
           bufo=buffer(l2i:l2,m1:m1+ny_loc-1,n1:n1+nz_loc-1,ivar1:ivar2) !!(upper x-zone)
           call MPI_IRECV(bufi,nbuf,mpi_precision, &
-              xuneigh,tolowx,MPI_COMM_GRID,irecv_rq,mpierr)
+              xuneigh,tolowx,comm,irecv_rq,mpierr)
           call MPI_ISEND(bufo,nbuf,mpi_precision, &
-              xuneigh,touppx,MPI_COMM_GRID,isend_rq,mpierr)
+              xuneigh,touppx,comm,isend_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
         endif
 !
@@ -2295,7 +2327,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine periodic_bdry_x
 !***********************************************************************
-    subroutine periodic_bdry_y(buffer,ivar1_opt,ivar2_opt)
+    subroutine periodic_bdry_y(buffer,ivar1_opt,ivar2_opt,comms)
 !
 !  Isend and Irecv boundary values for y-direction.
 !
@@ -2303,13 +2335,21 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), intent(inout) :: buffer
       integer, intent(in), optional :: ivar1_opt, ivar2_opt
+      type(mpi_comms), optional, intent(in) :: comms
 !
       integer :: ivar1, ivar2, nbuf, j, nx_loc, nz_loc, nvar_loc
       integer :: isend_rq, irecv_rq
       integer, dimension (MPI_STATUS_SIZE) :: irecv_stat, isend_stat
       real, dimension(:,:,:,:), allocatable :: bufo,bufi
+      integer :: comm
 !
       if (.not.(lfirst_proc_y.or.llast_proc_y)) return
+
+      if (present(comms)) then
+        comm = comms%world
+      else
+        comm = MPI_COMM_GRID
+      endif
 !
       if (nprocy>1) then
 !
@@ -2326,17 +2366,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (lfirst_proc_y) then
           bufo=buffer(l1:l1+nx_loc-1,m1:m1i,n1:n1+nz_loc-1,ivar1:ivar2) !!(lower y-zone)
           call MPI_ISEND(bufo,nbuf,mpi_precision, &
-              ylneigh,tolowy,MPI_COMM_GRID,isend_rq,mpierr)
+              ylneigh,tolowy,comm,isend_rq,mpierr)
           call MPI_IRECV(bufi,nbuf,mpi_precision, &
-              ylneigh,touppy,MPI_COMM_GRID,irecv_rq,mpierr)
+              ylneigh,touppy,comm,irecv_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
           buffer(l1:l1+nx_loc-1,1:m1-1,n1:n1+nz_loc-1,:)=bufi !!(set lower buffer)
         else
           bufo=buffer(l1:l1+nx_loc-1,m2i:m2,n1:n1+nz_loc-1,ivar1:ivar2) !!(upper y-zone)
           call MPI_IRECV(bufi,nbuf,mpi_precision, &
-              yuneigh,tolowy,MPI_COMM_GRID,irecv_rq,mpierr)
+              yuneigh,tolowy,comm,irecv_rq,mpierr)
           call MPI_ISEND(bufo,nbuf,mpi_precision, &
-              yuneigh,touppy,MPI_COMM_GRID,isend_rq,mpierr)
+              yuneigh,touppy,comm,isend_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
           buffer(l1:l1+nx_loc-1,m2+1: ,n1:n1+nz_loc-1,:)=bufi  !!(set upper buffer)
         endif
@@ -2347,7 +2387,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine periodic_bdry_y
 !***********************************************************************
-    subroutine periodic_bdry_z(buffer,ivar1_opt,ivar2_opt)
+    subroutine periodic_bdry_z(buffer,ivar1_opt,ivar2_opt,comms)
 !
 !  Isend and Irecv boundary values for z-direction.
 !
@@ -2355,13 +2395,21 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(:,:,:,:), intent(inout) :: buffer
       integer, intent(in), optional :: ivar1_opt, ivar2_opt
+      type(mpi_comms), optional, intent(in)  :: comms
 !
       integer :: ivar1, ivar2, nbuf, j, ny_loc, nx_loc, nvar_loc
       integer :: isend_rq, irecv_rq
       integer, dimension (MPI_STATUS_SIZE) :: irecv_stat, isend_stat
       real, dimension(:,:,:,:), allocatable :: bufo,bufi
+      integer :: comm
 !
       if (.not.(lfirst_proc_z.or.llast_proc_z)) return
+      
+      if (present(comms)) then
+        comm = comms%world
+      else
+        comm = MPI_COMM_GRID
+      endif
 !
       if (nprocz>1) then
 !
@@ -2378,17 +2426,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         if (lfirst_proc_z) then
           bufo=buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,n1:n1i,ivar1:ivar2) !!(lower z-zone)
           call MPI_ISEND(bufo,nbuf,mpi_precision, &
-              zlneigh,tolowz,MPI_COMM_GRID,isend_rq,mpierr)
+              zlneigh,tolowz,comm,isend_rq,mpierr)
           call MPI_IRECV(bufi,nbuf,mpi_precision, &
-              zlneigh,touppz,MPI_COMM_GRID,irecv_rq,mpierr)
+              zlneigh,touppz,comm,irecv_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
           buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,1:n1-1,:)=bufi !!(set lower buffer)
         else
           bufo=buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,n2i:n2,ivar1:ivar2) !!(upper z-zone)
           call MPI_IRECV(bufi,nbuf,mpi_precision, &
-              zuneigh,tolowz,MPI_COMM_GRID,irecv_rq,mpierr)
+              zuneigh,tolowz,comm,irecv_rq,mpierr)
           call MPI_ISEND(bufo,nbuf,mpi_precision, &
-              zuneigh,touppz,MPI_COMM_GRID,isend_rq,mpierr)
+              zuneigh,touppz,comm,isend_rq,mpierr)
           call MPI_WAIT(irecv_rq,irecv_stat,mpierr)
           buffer(l1:l1+nx_loc-1,m1:m1+ny_loc-1,n2+1:,:)=bufi  !!(set upper buffer)
         endif
@@ -3610,13 +3658,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     endsubroutine mpisendrecv_real_scl
 !***********************************************************************
     subroutine mpisendrecv_real_arr(send_array,sendcnt,proc_dest,sendtag, &
-                                    recv_array,proc_src,recvtag,idir)
+                                    recv_array,proc_src,recvtag,idir,comms)
 
       integer :: sendcnt
       real, dimension(sendcnt) :: send_array
       real, dimension(sendcnt) :: recv_array
       integer :: proc_src, proc_dest, sendtag, recvtag
       integer, optional :: idir
+      type(mpi_comms), optional, intent(in) :: comms
 
       integer, dimension(MPI_STATUS_SIZE) :: stat
 
@@ -3626,12 +3675,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 
       call MPI_SENDRECV(send_array,sendcnt,mpi_precision,proc_dest,sendtag, &
                         recv_array,sendcnt,mpi_precision,proc_src,recvtag, &
-                        mpigetcomm(ioptest(idir)),stat,mpierr)
+                        mpigetcomm(ioptest(idir),comms),stat,mpierr)
 !
     endsubroutine mpisendrecv_real_arr
 !***********************************************************************
     subroutine mpisendrecv_real_arr2(send_array,nbcast_array,proc_dest,sendtag, &
-                                     recv_array,proc_src,recvtag,idir)
+                                     recv_array,proc_src,recvtag,idir,comms)
 
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: send_array
@@ -3640,13 +3689,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       intent(out) :: recv_array
       integer, optional :: idir
+      type(mpi_comms), optional, intent(in) :: comms
  
       if (any(nbcast_array == 0)) return
 
       num_elements = product(nbcast_array)
       call MPI_SENDRECV(send_array,num_elements,mpi_precision,proc_dest,sendtag, &
                         recv_array,num_elements,mpi_precision,proc_src,recvtag, &
-                        mpigetcomm(ioptest(idir)),stat,mpierr)
+                        mpigetcomm(ioptest(idir),comms),stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr2
 !***********************************************************************
@@ -4979,12 +5029,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpireduce_sum_int_arr4
 !***********************************************************************
-    subroutine mpireduce_sum_scl(fsum_tmp,fsum,idir)
+    subroutine mpireduce_sum_scl(fsum_tmp,fsum,idir,comms)
 !
 !  Calculate total sum and return to root.
 !
       real :: fsum_tmp,fsum
       integer, optional :: idir
+      type(mpi_comms), optional, intent(in) :: comms
 !
       integer :: mpiprocs
 !
@@ -4998,7 +5049,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM).
 !
         if (present(idir)) then
-          mpiprocs=mpigetcomm(idir)
+          mpiprocs=mpigetcomm(idir,comms)
         else
           mpiprocs=MPI_COMM_GRID
         endif
@@ -5008,13 +5059,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpireduce_sum_scl
 !***********************************************************************
-    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm)
+    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm,comms)
 !
 !  Calculate total sum for each array element and return to root.
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
       integer, optional :: idir,comm
+      type(mpi_comms), optional, intent(in) :: comms
 !
       integer :: mpiprocs
 !
@@ -5027,7 +5079,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         fsum=fsum_tmp
       else
         if (present(idir)) then
-          mpiprocs=mpigetcomm(idir)
+          mpiprocs=mpigetcomm(idir,comms)
         else
           mpiprocs=ioptest(comm,MPI_COMM_GRID)
         endif
@@ -5037,7 +5089,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpireduce_sum_arr
 !***********************************************************************
-    subroutine mpireduce_sum_arr2(fsum_tmp,fsum,nreduce,idir,inplace)
+    subroutine mpireduce_sum_arr2(fsum_tmp,fsum,nreduce,idir,inplace,comms)
 !
 !  Calculate total sum for each array element and return to root.
 !
@@ -5045,6 +5097,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp, fsum
       integer, optional :: idir
       logical, optional :: inplace
+      type(mpi_comms), optional, intent(in) :: comms
 !
       integer :: mpiprocs, num_elements
       logical :: inplace_opt
@@ -5059,7 +5112,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         fsum=fsum_tmp
       else
         if (present(idir)) then
-          mpiprocs=mpigetcomm(idir)
+          mpiprocs=mpigetcomm(idir,comms)
         else
           mpiprocs=MPI_COMM_GRID
         endif
@@ -5080,13 +5133,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpireduce_sum_arr2
 !***********************************************************************
-    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce,idir,comms)
 !
 !  Calculate total sum for each array element and return to root.
 !
       integer, dimension(3) :: nreduce
       real, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
       integer, optional :: idir
+      type(mpi_comms), optional, intent(in) :: comms
 !
       integer :: mpiprocs, num_elements
 !
@@ -5099,7 +5153,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         fsum=fsum_tmp
       else
         if (present(idir)) then
-          mpiprocs=mpigetcomm(idir)
+          mpiprocs=mpigetcomm(idir,comms)
         else
           mpiprocs=MPI_COMM_GRID
         endif
@@ -5110,13 +5164,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpireduce_sum_arr3
 !***********************************************************************
-    subroutine mpireduce_sum_arr4(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpireduce_sum_arr4(fsum_tmp,fsum,nreduce,idir,comms)
 !
 !  Calculate total sum for each array element and return to root.
 !
       integer, dimension(4) :: nreduce
       real, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
       integer, optional :: idir
+      type(mpi_comms), optional, intent(in) :: comms
 !
       integer :: mpiprocs, num_elements
 !
@@ -5129,7 +5184,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         fsum=fsum_tmp
       else
         if (present(idir)) then
-          mpiprocs=mpigetcomm(idir)
+          mpiprocs=mpigetcomm(idir,comms)
         else
           mpiprocs=MPI_COMM_GRID
         endif
@@ -9787,7 +9842,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine z2x
 !***********************************************************************
-    subroutine mpigather_xy( sendbuf, recvbuf, lpz )
+    subroutine mpigather_xy( sendbuf, recvbuf, lpz ,comms)
 !
 !  Gathers the chunks of a 2D array from each processor of the z-layer lpz in
 !  a big array at the root of the layer. If lpz not present this is done for
@@ -9800,24 +9855,31 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nxgrid,ny)     :: sendbuf   ! nx=nxgrid !
       real, dimension(nxgrid,nygrid) :: recvbuf
       integer, optional, intent(in)  :: lpz
+      type(mpi_comms), optional, intent(in) :: comms
 !
       integer :: ncnt
       logical :: cond
+      integer :: comm
 !
       if (present(lpz)) then
         cond = ipz==lpz
       else
         cond = .true.
       endif
+      if (present(comms)) then
+        comm = comms%xyplane
+      else
+        comm = MPI_COMM_XYPLANE
+      endif
 !
       ncnt = nxgrid*ny
 !
       if (cond) &
-        call MPI_GATHER(sendbuf, ncnt, mpi_precision, recvbuf, ncnt, mpi_precision, root, MPI_COMM_XYPLANE, mpierr)
+        call MPI_GATHER(sendbuf, ncnt, mpi_precision, recvbuf, ncnt, mpi_precision, root, comm, mpierr)
 !
     endsubroutine mpigather_xy
 !***********************************************************************
-    subroutine mpigather_z(sendbuf,recvbuf,n1,lproc)
+    subroutine mpigather_z(sendbuf,recvbuf,n1,lproc,comms)
 !
 !  Gathers the chunks of a 2D array from each processor along a z-beam at
 !  position, defined by lproc at root of the beam.
@@ -9828,8 +9890,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(n1,nz)    , intent(in)  :: sendbuf
       real, dimension(n1,nzgrid), intent(out) :: recvbuf
       integer, optional,          intent(in)  :: lproc
+      type(mpi_comms), optional, intent(in)  :: comms
 !
-      integer lpx, lpy
+      integer :: lpx, lpy
+      integer :: comm
 !
       if (present(lproc)) then
         lpy = lproc/nprocx
@@ -9837,9 +9901,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       else
         lpy=0; lpx=0
       endif
+      if (present(comms)) then
+        comm = comms%zbeam
+      else
+        comm = MPI_COMM_ZBEAM
+      endif
 !
       if ( ipx==lpx .and. ipy==lpy ) &
-        call MPI_GATHER(sendbuf, n1*nz, mpi_precision, recvbuf, n1*nz, mpi_precision, root, MPI_COMM_ZBEAM, mpierr)
+        call MPI_GATHER(sendbuf, n1*nz, mpi_precision, recvbuf, n1*nz, mpi_precision, root, comm, mpierr)
 !
     endsubroutine mpigather_z
 !***********************************************************************
@@ -9965,7 +10034,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       ncomp = 1
       goto 1
 !
-      entry mpigather_and_out_cmplx( sendbuf_cmplx, unit, ltransp, kxrange, kyrange,zrange )
+      entry mpigather_and_out_cmplx( sendbuf_cmplx, unit, ltransp, kxrange, kyrange,zrange, comm)
 !
       lcomplex = .true.
       ncomp = size(sendbuf_cmplx,4)
@@ -10186,7 +10255,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine merge_1d
 !***********************************************************************
-    subroutine mpimerge_1d(vector,nk,idir)
+    subroutine mpimerge_1d(vector,nk,idir,comm)
 !
 !  Merges vectors of processors along idir by filling invalid values (NaN).
 !
@@ -10194,7 +10263,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       integer,             intent(in)    :: nk
       real, dimension(nk), intent(inout) :: vector
-      integer, optional,   intent(in)    :: idir
+      integer, optional,   intent(in)    :: idir,comm
 !
       integer                            :: mpiprocs,merge
       real, dimension(nk)                :: recvbuf
@@ -10204,7 +10273,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
-        mpiprocs=MPI_COMM_GRID
+        mpiprocs=ioptest(comm,MPI_COMM_GRID)
       endif
 !
       call MPI_OP_CREATE( merge_1d, .false., merge, mpierr )
@@ -10213,43 +10282,38 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpimerge_1d
 !***********************************************************************
-    integer function mpigetcomm(idir)
+    integer function mpigetcomm(idir, comms_in)
 !
 !  Derives communicator from index idir.
 !
 !  23-nov-10/MR: coded
 !
       integer, intent(in) :: idir
+      type(mpi_comms), optional, intent(in) :: comms_in
+
+      type(mpi_comms) :: comms
+      if (present(comms_in))  then
+              comms = comms_in
+      else
+              comms = DEFAULT_COMMS 
+      endif
+
 !
       select case(idir)
         case(IXBEAM)
-          mpigetcomm=MPI_COMM_XBEAM
+          mpigetcomm=comms%xbeam
         case(IYBEAM)
-          mpigetcomm=MPI_COMM_YBEAM
+          mpigetcomm=comms%ybeam
         case(IZBEAM)
-          mpigetcomm=MPI_COMM_ZBEAM
+          mpigetcomm=comms%zbeam
         case(IXYPLANE)
-          mpigetcomm=MPI_COMM_XYPLANE
+          mpigetcomm=comms%xyplane
         case(IXZPLANE)
-          mpigetcomm=MPI_COMM_XZPLANE
+          mpigetcomm=comms%xzplane
         case(IYZPLANE)
-          mpigetcomm=MPI_COMM_YZPLANE
-        case(IDIAG)
-          mpigetcomm=MPI_COMM_DIAG
-        case(IXBEAM_DIAG)
-          mpigetcomm=MPI_COMM_XBEAM_DIAG
-        case(IYBEAM_DIAG)
-          mpigetcomm=MPI_COMM_YBEAM_DIAG
-        case(IZBEAM_DIAG)
-          mpigetcomm=MPI_COMM_ZBEAM_DIAG
-        case(IXYPLANE_DIAG)
-          mpigetcomm=MPI_COMM_XYPLANE_DIAG
-        case(IXZPLANE_DIAG)
-          mpigetcomm=MPI_COMM_XZPLANE_DIAG
-        case(IYZPLANE_DIAG)
-          mpigetcomm=MPI_COMM_YZPLANE_DIAG
+          mpigetcomm=comms%yzplane
         case default
-          mpigetcomm=MPI_COMM_GRID
+          mpigetcomm=comms%world
       endselect
 !
     endfunction mpigetcomm
@@ -11522,7 +11586,7 @@ goto 125!!!
 
     endsubroutine set_rslice_communicator
 !***********************************************************************
-    subroutine mpiallreduce_merge(list,len)
+    subroutine mpiallreduce_merge(list,len,comm)
 !
 !  Merges an integer list across all processors.
 !  Returns list of unique elements.
@@ -11533,27 +11597,28 @@ goto 125!!!
 
       integer, dimension(*) :: list
       integer :: len
+      integer, optional, intent(in) :: comm
 
       integer :: maxlen,ip,len_proc
       integer, dimension(:), allocatable :: buffer
 
-      call mpireduce_max(len,maxlen)
+      call mpireduce_max(len,maxlen,comm)
       if (lroot) then
         allocate(buffer(maxlen))
 
         do ip=1,ncpus-1
-          call mpirecv_int(len_proc,ip,ip)
-          call mpirecv_int(buffer,len_proc,ip,ip)
+          call mpirecv_int(len_proc,ip,ip,comm)
+          call mpirecv_int(buffer,len_proc,ip,ip,comm)
           call merge_lists(list,len,buffer(1:len_proc))
         enddo
 
       else
-        call mpisend_int(len,root,iproc)
-        call mpisend_int(list,len,root,iproc)
+        call mpisend_int(len,root,iproc,comm)
+        call mpisend_int(list,len,root,iproc,comm)
       endif
 
-      call mpibcast_int(len,root)
-      call mpibcast_int(list,len,root)
+      call mpibcast_int(len,root,comm)
+      call mpibcast_int(list,len,root,comm)
 
     endsubroutine mpiallreduce_merge
 !***********************************************************************

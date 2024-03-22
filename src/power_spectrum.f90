@@ -76,7 +76,7 @@ module power_spectrum
 !
       use Messages
       use General, only: binomial, pos_in_array, quick_sort
-      use Mpicomm, only: mpiallreduce_merge
+      use Mpicomm, only: mpiallreduce_merge 
 
       integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len
       real :: k2
@@ -563,6 +563,7 @@ outer:  do ikz=1,nz
 !  Doing the Fourier transform
 !
      !print*, 'ivec1=', ivec
+     
      call fourier_transform_xz(a1,b1)    !!!! MR: causes error - ivec is set back from 1 to 0
      !print*, 'ivec2=', ivec
 !    to be replaced by comp_spectrum( f, sp, ivec, ar, ai, fourier_transform_xz )
@@ -1042,7 +1043,7 @@ outer:  do ikz=1,nz
 !
   endif
 !
-  call mpibarrier          ! necessary ?
+  call mpibarrier() 
 !  print*, 'nach barrier:', iproc, ipy, ipz
 !
   if (lintegrate_shell) then
