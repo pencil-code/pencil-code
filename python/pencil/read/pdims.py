@@ -6,7 +6,7 @@ Contains the perticle dimension class and its reading routine.
 
 def pdim(*args, **kwargs):
     """
-    pdim(pdim(sim=None, datadir='data')
+    pdim(datadir='data')
 
     Read the pdim.dat file.
 
@@ -33,7 +33,7 @@ class PDim(object):
     Class holding the data from pdim.dat and its methods.
     """
 
-    def __init__(self, npar, mpvar, npar_stalk, mpaux):
+    def __init__(self):
         """
         Fill members with default values.
         """
@@ -47,7 +47,7 @@ class PDim(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, sim=None, datadir="data"):
+    def read(self, datadir="data"):
         """
         read(pdim(sim=None, datadir='data')
 
@@ -55,9 +55,6 @@ class PDim(object):
 
         Parameters
         ----------
-        sim : obj
-            Specifies the simulation oject from which to obtain the datadir.
-
         datadir : string
             Directory where the data is stored.
 
@@ -68,9 +65,6 @@ class PDim(object):
 
         import os
         import numpy as np
-
-        if sim != None:
-            datadir = sim.datadir
 
         # Contains the global particle properties.
         filename = os.path.join(datadir, "pdim.dat")

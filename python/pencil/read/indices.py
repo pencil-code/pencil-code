@@ -49,16 +49,19 @@ class Index(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, datadir="data", param=None, dim=None):
+    def read(self, datadir="data", filename=None, param=None, dim=None):
         """
         read(datadir='data', param=None, dim=None)
 
-        Read Pencil Code index data from index.pro.
+        Read Pencil Code index data from index.pro or other filename.
 
         Parameters
         ----------
         datadir : string
           Directory where the data is stored.
+
+        filename: bool
+          If present replace "index.pro"
 
         param : obj
           Parameter object.
@@ -81,12 +84,19 @@ class Index(object):
         if dim is None:
             dim = read.dim(datadir=datadir)
 
-        if param.lwrite_aux:
-            totalvars = dim.mvar + dim.maux
+        if not filename:
+            filename = "index.pro"
+            if param.lwrite_aux:
+                totalvars = dim.mvar + dim.maux
+            else:
+                totalvars = dim.mvar
         else:
-            totalvars = dim.mvar
-
-        index_file = open(os.path.join(datadir, "index.pro"))
+            pdim = read.pdim(datadir=datadir)
+            if param.lwrite_aux:
+                totalvars = pdim.mpvar + pdim.mpaux
+            else:
+                totalvars = pdim.mpvar
+        index_file = open(os.path.join(datadir, filename))
         ntestfield, ntestflow, ntestlnrho, ntestscalar = 0, 0, 0, 0
         for line in index_file.readlines():
             clean = line.strip()
