@@ -913,7 +913,7 @@ extern "C" void initGPU()
   AcResult res = acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
-void setupConfig(AcMeshInfo &config)
+void setupConfig(AcMeshInfo &config, MPI_Comm comm)
 {
   // Enter basic grid and geometry parameters in config.
 
@@ -927,6 +927,8 @@ void setupConfig(AcMeshInfo &config)
     config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Morton;
   else
     config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Linear;
+  config.int_params[AC_MPI_comm_strategy] = (int)AcMPICommStrategy::DuplicateUserComm;
+  config.comm = comm;
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
@@ -995,13 +997,14 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
   *out = device->vba.out[0];
 }
 /***********************************************************************************************/
-extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out)
+extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int comm_fint)
 {
   //Setup configurations used for initializing and running the GPU code
 #if PACKED_DATA_TRANSFERS
   //initLoadStore();
 #endif
-  setupConfig(mesh.info);
+  MPI_Comm comm = MPI_Comm_f2c(comm_fint);
+  setupConfig(mesh.info, comm);
   checkConfig(mesh.info);
 
   acCheckDeviceAvailability();
