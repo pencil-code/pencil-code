@@ -39,13 +39,14 @@ module Special
   integer :: iaxi_psiL=0, iaxi_psiLdot=0, iaxi_TL=0, iaxi_TLdot=0
   integer :: iaxi_impsi=0, iaxi_impsidot=0, iaxi_imTR=0, iaxi_imTRdot=0
   integer :: iaxi_impsiL=0, iaxi_impsiLdot=0, iaxi_imTL=0, iaxi_imTLdot=0
+  integer :: iaxi_lna=0, iaxi_phi=0, iaxi_phidot=0
 !
   ! input parameters
   real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
   real :: Mpl2=1., Hdot=0., lamf, Hscript, epsilon_sr=0.
-  real :: m_inflaton=1.275e-7, inflaton_ini=16.
+  real :: m_inflaton=1.275e-7, m_phi=1.275e-7, inflaton_ini=16., phi_ini=16.
   real, dimension (nx) :: grand, grant, dgrant
   real, dimension (nx) :: xmask_axion
   real, dimension (2) :: axion_sum_range=(/0.,1./)
@@ -64,13 +65,14 @@ module Special
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   logical :: lim_psi_TR=.false., lleft_psiL_TL=.false., lkeep_mQ_const=.false.
-  logical :: lhubble_var=.false.
+  logical :: lhubble_var=.false., lhubble=.false.
   character(len=50) :: init_axionSU2back='standard'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
-    nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn, m_inflaton, inflaton_ini
+    nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn, m_inflaton, m_phi, &
+    inflaton_ini, lhubble, phi_ini
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -79,7 +81,7 @@ module Special
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
     nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
     ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn, &
-    lhubble_var
+    lhubble_var, lhubble
 !
   ! k array
   real, dimension (nx) :: k
@@ -151,6 +153,14 @@ module Special
       call farray_register_ode('axi_Qdot'  ,iaxi_Qdot)
       call farray_register_ode('axi_chi'   ,iaxi_chi)
       call farray_register_ode('axi_chidot',iaxi_chidot)
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+      if (lhubble) then
+        call farray_register_ode('axi_lna'   ,iaxi_lna)
+        call farray_register_ode('axi_phi'   ,iaxi_phi)
+        call farray_register_ode('axi_phidot',iaxi_phidot)
+      endif
 !
       call farray_register_pde('axi_psi'   ,iaxi_psi)
       call farray_register_pde('axi_psidot',iaxi_psidot)
@@ -322,6 +332,14 @@ module Special
             f_ode(iaxi_Qdot)=Qdot0
             f_ode(iaxi_chi)=chi0
             f_ode(iaxi_chidot)=chidot0
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+            if (lhubble) then
+              f_ode(iaxi_lna)=alog(ascale_ini)
+              f_ode(iaxi_phi)=phi_ini
+              f_ode(iaxi_phidot)=0.
+            endif
           endif
 !
 !  PDE variables
@@ -423,8 +441,9 @@ module Special
       real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
       real, dimension (nx) :: impsi , impsidot , impsiddot , imTR, imTRdot, imTRddot
       real, dimension (nx) :: impsiL, impsiLdot, impsiLddot, imTL, imTLdot, imTLddot
-      real, dimension (nx) :: Uprime, mQ, xi, epsQE, epsQB
-      real :: Q, Qdot, chi, chidot
+      real, dimension (nx) :: epsQE, epsQB
+      real :: Q, Qdot, chi, chidot, phi, phidot
+      real :: U, Uprime, mQ, xi, V, Vprime
       real :: fact=1., sign_swap=1.
       integer :: ik
       type (pencil_case) :: p
@@ -471,6 +490,17 @@ module Special
       chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
 !
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+      if (lhubble) then
+        phi=df_ode(iaxi_phi)
+        U=mu**4*(1.+cos(chi/fdecay))
+        V=.5*(m_phi*phi)**2
+        a=exp(df_ode(iaxi_lna))
+        phidot=df_ode(iaxi_phidot)
+        H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+      endif
+!
 !  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
 !  Need to have Q on all processors.
 !
@@ -513,7 +543,7 @@ module Special
           epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
         endif
       else
-        a=exp(H*t)
+        if (.not.lhubble) a=exp(H*t)
         if (.not.lkeep_mQ_const) then
           xi=lamf*chidot/(2.*H)
           epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
@@ -806,13 +836,15 @@ module Special
       use Mpicomm
       use Sub
 !
-      real :: Q, Qdot, Qddot, chi, chidot, chiddot
-      real :: Uprime, mQ, xi
+      real :: Q, Qdot, Qddot, chi, chidot, chiddot, phi, phidot, phiddot
+      real :: U, Uprime, mQ, xi, V, Vprime
+      !real :: U, Uprime, mQ, xi, V, Vprime
       real :: fact=1., sign_swap=1.
 !
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
+!print*,'AXEL: dspecial_dt_ode, bef.', Q, U, V, a, phi, phidot, H, Hdot
 !
 !  Set the all variable
 !
@@ -820,6 +852,19 @@ module Special
       Qdot=f_ode(iaxi_Qdot)
       chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+      if (lhubble) then
+        U=mu**4*(1.+cos(chi/fdecay))
+        V=.5*(m_phi*phi)**2
+        a=exp(df_ode(iaxi_lna))
+        phi=df_ode(iaxi_phi)
+        phidot=df_ode(iaxi_phidot)
+        H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+        Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
+!print*,'AXEL: dspecial_dt_ode, aft.', Q, U, V, a, phi, phidot, H, Hdot
+      endif
 !
 !  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
 !
@@ -851,7 +896,9 @@ module Special
         xi=lamf*chidot/(2.*H)
         Hdot=-(2/inflaton**2)*H**2
       else
-        a=exp(H*t)
+        if (.not.lhubble) then
+          a=exp(H*t)
+        endif
         xi=lamf*chidot/(2.*H)
       endif
 !
@@ -863,6 +910,14 @@ module Special
       else
         Qddot=g*lamf*chidot*Q**2-3.*H*Qdot-(Hdot+2*H**2)*Q-2.*g**2*Q**3
         chiddot=-3.*g*lamf*Q**2*(Qdot+H*Q)-3.*H*chidot-Uprime
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+        if (lhubble) then
+          Vprime=m_phi**2*phi
+          phiddot=-3.*H*phidot-Vprime
+        endif
+
       endif
 !
 !  Optionally, include backreaction
@@ -895,6 +950,14 @@ module Special
         df_ode(iaxi_chi)   =df_ode(iaxi_chi   )+chidot
         df_ode(iaxi_Qdot)  =df_ode(iaxi_Qdot  )+Qddot
         df_ode(iaxi_chidot)=df_ode(iaxi_chidot)+chiddot
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+        if (lhubble) then
+          df_ode(iaxi_lna)=df_ode(iaxi_lna)+H
+          df_ode(iaxi_phi)=df_ode(iaxi_phi)+phidot
+          df_ode(iaxi_phidot)=df_ode(iaxi_phidot)+phiddot
+        endif
       endif
 !
 !  diagnostics
@@ -983,8 +1046,8 @@ module Special
       real, dimension (nx) :: tmp_psiL, tmp_psiLdot, tmp_TL, tmp_TLdot
       real, dimension (nx) :: tmp_impsi, tmp_impsidot, tmp_imTR, tmp_imTRdot
       real, dimension (nx) :: tmp_impsiL, tmp_impsiLdot, tmp_imTL, tmp_imTLdot
-      real :: Q, Qdot, chi, chidot
-      real :: mQ, xi
+      real :: Q, Qdot, chi, chidot, phi, phidot
+      real :: mQ, xi, U, V, Vprime
       real :: lnt, lnH, lna, a, lnkmin, lnkmax
       integer :: ik, nswitch
 !
@@ -993,6 +1056,19 @@ module Special
       Q=f_ode(iaxi_Q)
       Qdot=f_ode(iaxi_Qdot)
       chidot=f_ode(iaxi_chidot)
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+      if (lhubble) then
+!print*,'AXEL: special_after_boundary'
+        U=mu**4*(1.+cos(chi/fdecay))
+        V=.5*(m_phi*phi)**2
+        a=exp(df_ode(iaxi_lna))
+        phi=df_ode(iaxi_phi)
+        phidot=df_ode(iaxi_phidot)
+        H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+        Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
+      endif
 !
 !  Possibility of keeping mQ constant
 !
@@ -1019,7 +1095,7 @@ module Special
         H=0.41*m_inflaton*inflaton
         xi=lamf*chidot/(2.*H)
       else
-        a=exp(H*t)
+        if (.not.lhubble) a=exp(H*t)
         xi=lamf*chidot/(2.*H)
       endif
 !
