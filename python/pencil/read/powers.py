@@ -402,5 +402,29 @@ class Power(object):
         Ly = grid.Ly
         Lz = grid.Lz
 
-        L_min = min(Lx, Ly, Lz)
-        return int(np.round(min( dim.nxgrid*L_min/(2*Lx), dim.nygrid*L_min/(2*Ly), dim.nzgrid*L_min/(2*Lz) )))
+        nx = dim.nx
+        ny = dim.ny
+        nz = dim.nz
+
+        L_min = np.inf
+
+        if nx != 1:
+            L_min = min(L_min, Lx)
+        if ny != 1:
+            L_min = min(L_min, Lz)
+        if nz != 1:
+            L_min = min(L_min, Lz)
+        if L_min == np.inf:
+            L_min = 2*np.pi
+
+        nk = np.inf
+        if nx != 1:
+            nk = min(nk, np.round(nx*L_min/(2*Lx)))
+        if ny != 1:
+            nk = min(nk, np.round(ny*L_min/(2*Ly)))
+        if nz != 1:
+            nk = min(nk, np.round(nz*L_min/(2*Lz)))
+        if nk == np.inf:
+            nk = 1
+
+        return int(nk)
