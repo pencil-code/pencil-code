@@ -90,16 +90,55 @@ module power_spectrum
           ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
           call warning ('power_spectrum', &
           "Shell-integration will be wrong; set dx=dy=dz to fix this.")
-      
-      L_min = minval(Lxyz)
-      L_min_xy = min(Lx, Ly)
-      
-!     KG: Ideally, these would be used for calculation of nk, but that requires
-!     making all arrays of size nk into allocatables. Currently these are used
-!     only in power_xy and power.
-      nk_xyz = nint(min( nxgrid*L_min/(2*Lx), nygrid*L_min/(2*Ly), nzgrid*L_min/(2*Lz) ))
-!       nk_xy = nint(min( nxgrid*L_min/(2*Lx), nygrid*L_min/(2*Ly) ))
-      nk_xy = nint( sqrt( ((nxgrid+1)/Lx)**2+((nygrid+1)/Ly)**2 )*L_min_xy/2 )+1 !KG: I don't agree with this expression, but I am using this to avoid changing the behaviour of power_xy.
+!
+!     Choose the length scale used to make wavenumbers into integers (for
+!     binning). When the domain is non-cubical, the spacing between
+!     wavevectors is different in different directions. Binning using the
+!     largest spacing (corresponding to the smallest domain length) avoids
+!     aliasing artefacts in the spectra. Dimensions with only one grid point
+!     are skipped in this calculation, since, e.g., if nzgrid=0, we only
+!     have k_z=0.
+!
+      L_min = max_real
+      L_min_xy = max_real
+!
+      if (nxgrid/=1) then
+        L_min = min(L_min, Lx)
+        L_min_xy = min(L_min_xy, Lx)
+      endif
+!
+      if (nygrid/=1) then
+        L_min = min(L_min, Ly)
+        L_min_xy = min(L_min_xy, Ly)
+      endif
+!
+      if (nzgrid/=1) then
+        L_min = min(L_min, Lz)
+      endif
+
+!     Fallback for 0D; exact value does not matter because k=0.
+      if (L_min==max_real) L_min = 2*pi
+      if (L_min_xy==max_real) L_min_xy = 2*pi
+!
+      nk_xyz = max_int
+      nk_xy = max_int
+!
+      if (nxgrid /= 1) then
+        nk_xyz = min(nk_xyz, nint(nxgrid*L_min/(2*Lx)))
+        nk_xy = min(nk_xy, nint(nxgrid*L_min_xy/(2*Lx)))
+      endif
+!
+      if (nygrid /= 1) then
+        nk_xyz = min(nk_xyz, nint(nygrid*L_min/(2*Ly)))
+        nk_xy = min(nk_xy, nint(nygrid*L_min_xy/(2*Ly)))
+      endif
+!
+      if (nzgrid /= 1) then
+        nk_xyz = min(nk_xyz, nint(nzgrid*L_min/(2*Lz)))
+      endif
+!     Fallback for 0D
+      if (nk_xyz==max_int) nk_xyz=1
+      if (nk_xy==max_int) nk_xy=1
 !
 !  07-dec-20/hongzhe: import gauss-legendre quadrature from gauss_legendre_quadrature.dat
 !
