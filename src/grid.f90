@@ -851,10 +851,6 @@ module Grid
         call fatal_error("construct_grid","")
       endif
 !
-!  Set equator if possible.
-!
-      if (abs(xyz0(2)+xyz1(2))-pi<1e-3) lequatory=.true.
-!
 !  Set the serial grid arrays, that contain the coordinate values
 !  from all processors.
 !
