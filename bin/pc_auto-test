@@ -80,8 +80,8 @@ my %tests = (
                          dust-vortex
                          damped_alfven_waves
                          corona
+                         helical-MHDturb
                      )],
-#                         helical-MHDturb
              2 => [qw(
                          0d-tests/heating_ionize
                          0d-tests/heating_noionize
