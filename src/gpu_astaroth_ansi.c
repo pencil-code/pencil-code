@@ -22,7 +22,7 @@
 
 void initGPU();
 void registerGPU(REAL*);
-void initializeGPU(REAL**,REAL**);
+void initializeGPU(REAL**,REAL**,FINT);
 void finalizeGPU();
 void substepGPU(int isubstep, int full, int early_finalize);
 void copyFarray(REAL* f);
@@ -35,7 +35,7 @@ extern char *__cparam_MOD_coornames;
 extern REAL __cdata_MOD_y[14];
 extern REAL __cdata_MOD_dx, __cdata_MOD_dy, __cdata_MOD_dz;
 // ----------------------------------------------------------------------
-void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out)
+void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out, FINT* comm_fint)
 // Initializes GPU.
 {
   /*
@@ -51,7 +51,7 @@ void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out)
   //printf("dy = %f\n", __cdata_MOD_dy);
   //printf("dz = %f\n", __cdata_MOD_dz);
 
-  initializeGPU(farr_GPU_in,farr_GPU_out);
+  initializeGPU(farr_GPU_in,farr_GPU_out,*comm_fint);
 
 /*
   printf("xmin = %e\n", x[4]);

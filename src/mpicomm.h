@@ -2,15 +2,6 @@
 !$Id$
 !
   private
-  type, public :: mpi_comms
-  	integer :: world
-        integer :: xbeam
-        integer :: ybeam
-        integer :: zbeam
-        integer :: xyplane
-        integer :: xzplane
-        integer :: yzplane
-  end type mpi_comms 
 
   public :: create_communicators
 
@@ -426,7 +417,6 @@
   integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE,MPI_COMM_RSLICE
   integer :: root_rslice
 
-  type(mpi_comms) :: DEFAULT_COMMS
 !
 ! for protecting MPI_COMM_WORLD to be redefined by preprocessor
 ! 
@@ -439,4 +429,4 @@
   character(LEN=4), public :: cyinyang=' '
 
   integer :: mpi_precision, MPI_CMPLX
-  !$omp threadprivate(MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XBEAM, MPI_COMM_YBEAM, MPI_COMM_ZBEAM, MPI_COMM_XYPLANE, MPI_COMM_YZPLANE, MPI_COMM_RSLICE)
+  !$omp threadprivate(MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XBEAM, MPI_COMM_YBEAM, MPI_COMM_ZBEAM, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, MPI_COMM_RSLICE)

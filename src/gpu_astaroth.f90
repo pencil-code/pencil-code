@@ -38,6 +38,7 @@ contains
 !***********************************************************************
     subroutine initialize_GPU
 !
+      use MPIComm, only: MPI_COMM_PENCIL
       character(LEN=512) :: str
 !
       str=''
@@ -70,7 +71,7 @@ contains
 
       if (str/='') call stop_it('No GPU implementation for module(s) "'//trim(str(3:))//'"')
 !
-      call initialize_gpu_c(pFarr_GPU_in,pFarr_GPU_out)
+      call initialize_gpu_c(pFarr_GPU_in,pFarr_GPU_out,MPI_COMM_PENCIL)
 !print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
     endsubroutine initialize_GPU
 !**************************************************************************
