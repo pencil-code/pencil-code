@@ -854,6 +854,17 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end
 		return, bb
 	end
+	if (strcmp (quantity, 'B_ext', /fold_case)) then begin
+		; External magnetic field vector [Tesla]
+		B0_ext_z = pc_get_parameter ('B0_ext_z', label=quantity)
+		if (B0_ext_z gt 0.0) then begin
+			; Add external magnetic field B_ext_z
+			B0_strat_z = pc_compute_quantity (vars, index, 'B0_strat_z', ghost=ghost)
+			B_ext = spread (B0_strat_z, [0,1], [mx,my])
+			return, B_ext
+		endif
+		return, 0
+	end
 	if (strcmp (quantity, 'B_abs', /fold_case)) then begin
 		; Magnetic field strengh [T]
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
