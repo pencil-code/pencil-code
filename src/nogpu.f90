@@ -72,6 +72,10 @@ contains
 
     endsubroutine  load_farray_to_GPU
 !**************************************************************************
+    subroutine reload_GPU_config
+
+    endsubroutine reload_GPU_config
+!**************************************************************************
     subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
 !
 !  Used to test different implementations of rhs_cpu.

@@ -20,6 +20,7 @@ module GPU
   external rhs_gpu_c
   external copy_farray_c
   external load_farray_c 
+  external reload_gpu_config_c
   external test_rhs_c
 
 !$  interface
@@ -136,9 +137,15 @@ contains
 
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
 
-       call load_farray_c()
+      call load_farray_c()
 
     endsubroutine load_farray_to_GPU
+!**************************************************************************
+    subroutine reload_GPU_config
+
+       call reload_gpu_config_c()
+
+    endsubroutine reload_GPU_config
 !**************************************************************************
  subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
 !

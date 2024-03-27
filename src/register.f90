@@ -414,7 +414,6 @@ module Register
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
       call initialize_pointmasses(f)
-      call initialize_gpu
 !
 !  Check if MAUX is consistent with what is required.
 !

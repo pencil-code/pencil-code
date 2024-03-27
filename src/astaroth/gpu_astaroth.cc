@@ -62,6 +62,7 @@ static AcTaskGraph *rhs_test_graph_2;
 
 // Other.
 static int rank;
+static MPI_Comm comm_pencil;
 int halo_xz_size[2] = {0, 0}, halo_yz_size[2] = {0, 0};
 //static AcReal *xtop_buffer, *xbot_buffer, *ytop_buffer, *ybot_buffer;
 
@@ -913,7 +914,7 @@ extern "C" void initGPU()
   AcResult res = acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
-void setupConfig(AcMeshInfo &config, MPI_Comm comm)
+void setupConfig(AcMeshInfo &config)
 {
   // Enter basic grid and geometry parameters in config.
 
@@ -928,7 +929,7 @@ void setupConfig(AcMeshInfo &config, MPI_Comm comm)
   else
     config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Linear;
   config.int_params[AC_MPI_comm_strategy] = (int)AcMPICommStrategy::DuplicateUserComm;
-  config.comm = comm;
+  config.comm = comm_pencil;
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
@@ -1003,8 +1004,8 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
 #if PACKED_DATA_TRANSFERS
   //initLoadStore();
 #endif
-  MPI_Comm comm = MPI_Comm_f2c(comm_fint);
-  setupConfig(mesh.info, comm);
+  comm_pencil = MPI_Comm_f2c(comm_fint);
+  setupConfig(mesh.info);
   checkConfig(mesh.info);
 
   acCheckDeviceAvailability();
@@ -1040,7 +1041,6 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
 	  p.params -> singlepass_solve.dt = p.device->local_config.real_params[AC_dt];
   };
 #else
-
   auto intermediate_loader_0= [](ParamLoadingInfo p)
   {
 	  p.params -> twopass_solve_intermediate.step_num = 0;
@@ -1050,9 +1050,6 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   {
 	  p.params -> twopass_solve_final.step_num = 0;
   };
-  
-
-
   auto intermediate_loader_1= [](ParamLoadingInfo p)
   {
 	  p.params -> twopass_solve_intermediate.step_num = 1;
@@ -1062,8 +1059,6 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   {
 	  p.params -> twopass_solve_final.step_num = 1;
   };
-
-
   auto intermediate_loader_2= [](ParamLoadingInfo p)
   {
 	  p.params -> twopass_solve_intermediate.step_num = 2;
@@ -1134,6 +1129,13 @@ extern "C" void copyFarray(AcReal* f)
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
   acGridSynchronizeStream(STREAM_ALL);
+}
+/***********************************************************************************************/
+extern "C" void reloadConfig()
+{
+  setupConfig(mesh.info);
+  acGridSynchronizeStream(STREAM_ALL);
+  acDeviceLoadMeshInfo(acGridGetDevice(), mesh.info);
 }
 /***********************************************************************************************/
 extern "C" void loadFarray()

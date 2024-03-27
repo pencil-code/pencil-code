@@ -88,6 +88,7 @@ subroutine timeloop(f,df,p)
   use Filter,          only: rmwig, rmwig_xyaverage
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: addforce, forcing_clean_up
+  use GPU,             only: reload_GPU_config, copy_farray_from_GPU, load_farray_to_GPU, ldiag_flags_to_wait_on
   use HDF5_IO,         only: initialize_hdf5
   use Hydro,           only: hydro_clean_up
   use ImplicitPhysics, only: calc_heatcond_ADI
@@ -187,10 +188,14 @@ subroutine timeloop(f,df,p)
 
         call initialize_hdf5
         call initialize_timestep
+        if (lgpu) call copy_farray_from_GPU(f,ldiag_flags_to_wait_on)
         call initialize_modules(f)
         call initialize_boundcond
         if (lparticles) call particles_initialize_modules(f)
-
+        if (lgpu) then
+          call reload_GPU_config
+          call load_farray_to_GPU(f)
+        endif
         call choose_pencils
         call write_all_run_pars('IDL')       ! data to param2.nml
         call write_all_run_pars              ! diff data to params.log
@@ -503,7 +508,7 @@ program run
   use General,         only: random_seed_wrapper, touch_file, itoa
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
-  use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU
+  use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu
   use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
   use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
   use Messages
@@ -856,7 +861,7 @@ program run
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond
-
+  call initialize_gpu
 ! Load farray to gpu
   call load_farray_to_GPU(f)
 !
