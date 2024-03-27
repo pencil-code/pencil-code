@@ -812,6 +812,14 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		tmp                  = newton * tmp_tau
 		return, (rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
 	end
+;vpandey 15 May 2023
+	if (strcmp (quantity, 'B0_strat_z', /fold_case)) then begin
+		;Get the external magnetic field stratification along z.
+		z_SI               = pc_compute_quantity (vars, index, 'z', ghost=ghost)
+		B0_ext_z           = pc_get_parameter ('B0_ext_z', label=quantity) * unit.magnetic_field
+		B0_ext_z_H         = pc_get_parameter ('B0_ext_z_H', label=quantity) * unit.length
+		return, B0_ext_z * exp(-z_SI / B0_ext_z_H)
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
