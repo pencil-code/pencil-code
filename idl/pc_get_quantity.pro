@@ -838,6 +838,11 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end
 		return, grad_P_mag
 	end
+	if (strcmp (quantity, 'grad_P_mag_abs', /fold_case)) then begin
+		; Absolute value of Gradient of magnetic pressure
+		if (n_elements (grad_P_mag) eq 0) then grad_P_mag = pc_compute_quantity (vars, index, 'grad_P_mag')
+		return, sqrt (dot2 (grad_P_mag))
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
