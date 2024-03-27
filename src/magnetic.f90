@@ -8241,7 +8241,7 @@ module Magnetic
 !
 !  Save the name in the idiag_bmx slot and set first to false.
 !  Compute final result only on the root processor.
-!  This is not current working with x-parallelization!
+!  This is currently not working with x-parallelization!
 !
       if (lroot) then
         bmx=sqrt(sum(bmx2)/nxgrid)
