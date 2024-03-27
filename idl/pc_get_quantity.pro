@@ -820,6 +820,13 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		B0_ext_z_H         = pc_get_parameter ('B0_ext_z_H', label=quantity) * unit.length
 		return, B0_ext_z * exp(-z_SI / B0_ext_z_H)
 	end
+;vpandey 3 July 2023-------------------------------------------------------------------------------------------------------------
+	if (strcmp (quantity, 'P_mag', /fold_case)) then begin
+		; Magnetic pressure
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
+		return, B_2/(2 * mu0_SI)
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
