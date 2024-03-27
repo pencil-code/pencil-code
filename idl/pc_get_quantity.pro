@@ -852,6 +852,10 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end else begin
 			if (n_elements (bb) eq 0) then bb = (curl (vars[*,*,*,index.aa]))[l1:l2,m1:m2,n1:n2,*] * unit.magnetic_field
 		end
+		B_ext = pc_compute_quantity (vars, index, 'B_ext')
+		if (size (B_ext, /n_dimensions) ge 1) then begin
+			bb += B_ext
+		end
 		return, bb
 	end
 	if (strcmp (quantity, 'B_ext', /fold_case)) then begin
