@@ -820,7 +820,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		B0_ext_z_H         = pc_get_parameter ('B0_ext_z_H', label=quantity) * unit.length
 		return, B0_ext_z * exp(-z_SI / B0_ext_z_H)
 	end
-;vpandey 3 July 2023-------------------------------------------------------------------------------------------------------------
+;vpandey 3 July 2023
 	if (strcmp (quantity, 'P_mag', /fold_case)) then begin
 		; Magnetic pressure
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
