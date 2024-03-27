@@ -827,6 +827,17 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
 		return, B_2/(2 * mu0_SI)
 	end
+	if (strcmp (quantity, 'grad_P_mag', /fold_case)) then begin
+		; Gradient of magnetic pressure
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (grad_B) eq 0) then grad_B = pc_compute_quantity (vars, index, 'grad_B')
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
+		if (n_elements (grad_P_mag) eq 0) then begin
+			fact = 1/(2 * mu0_SI)
+			grad_P_mag = fact * (grad_B * bb + bb * grad_B)
+		end
+		return, grad_P_mag
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
