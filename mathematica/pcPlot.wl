@@ -135,8 +135,11 @@ pcColors[name_String]:=Switch[name,
   "Blue",RGBColor[{28,77,124}/255],
   "Green",RGBColor[{1,113,0}/255],
   "Magenta",RGBColor[{151,14,83}/255],
-  "RainbowR",ColorData[{"Rainbow","Reversed"}],
+  "Rainbow",Blend[{pcHexColor["#032D75"],pcHexColor["#01B1FA"],pcHexColor["#F4BD18"],pcHexColor["#ED1B24"]},#]&,
+  "RainbowR",Blend[Reverse@{pcHexColor["#032D75"],pcHexColor["#01B1FA"],pcHexColor["#F4BD18"],pcHexColor["#ED1B24"]},#]&,
+  (*"RainbowR",ColorData[{"Rainbow","Reversed"}],*)
   "BlueBlackRed",Blend[{pcColors["Blue"],pcHexColor["#006C65"],Black,pcHexColor["#E2792E"],pcColors["Red"]},#]&,
+  "BlueWhiteRed",Blend[{pcColors["Blue"],pcHexColor["#6C96CC"],pcHexColor["#EDAE92"],pcColors["Red"]},#]&,
   _,ColorData[name]
 ]
 pcColors[name_,{min_,max_}]:=pcColors[name][If[Abs[min]>=max,-0.5/min*(#-min),0.5/max*(#-max)+1]]&
