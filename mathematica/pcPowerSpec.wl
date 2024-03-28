@@ -15,6 +15,9 @@ BeginPackage["pcPowerSpec`"]
 (*Usage messages*)
 
 
+pcFourier::usage="pcFourier[ts] computes the Fourier transform, fft=\\int f*Exp[I k x] dx,
+for wave modes k={-n/2,...,0,1,...,n/2-1}*2\[Pi]/L."
+
 powerTS::usage="powerTS[ts] computes PSD of light curves. The normalization is
 Total[psd] = mean of flux^2.
 Input:
@@ -50,6 +53,19 @@ Begin["`Private`"]
 
 (* ::Chapter:: *)
 (*Functions*)
+
+
+(* ::Section:: *)
+(*FFT*)
+
+
+pcFourier[ts_]:=Module[{t,f,n,T},
+  {t,f}=Transpose@SortBy[ts,First];
+  n=t//Length;
+  T=t[[-1]]-t[[1]];
+
+  Fourier[f*Exp[I*n*Pi*Range[0,n-1]/(n-1)],FourierParameters->{1,-n/(n-1)}]*T/(n-1)*Exp[I*Pi*t[[1]]/T*(n+2-2*Range[n])]
+]
 
 
 (* ::Section:: *)
@@ -165,7 +181,7 @@ End[]
 
 
 Protect[
-  powerTS,power1D,power1DintZ
+  pcFourier,powerTS,power1D,power1DintZ
 ]
 
 
