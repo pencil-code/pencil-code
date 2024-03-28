@@ -88,6 +88,10 @@ module Special
 !
 ! other variables (needs to be consistent with reset list below)
 !
+  integer :: idiag_a =0 ! DIAG_DOC: $a$
+  integer :: idiag_phi   =0 ! DIAG_DOC: $phi$
+  integer :: idiag_phidot   =0 ! DIAG_DOC: $phidot$
+  integer :: idiag_H =0 ! DIAG_DOC: $Hubble_parameter$
   integer :: idiag_Q   =0 ! DIAG_DOC: $Q$
   integer :: idiag_Qdot=0 ! DIAG_DOC: $\dot{Q}$
   integer :: idiag_Qddot=0! DIAG_DOC: $\ddot{Q}$
@@ -268,7 +272,7 @@ module Special
           xmask_axion = 0.
         endwhere
       endif
-!
+ !
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -493,11 +497,11 @@ module Special
 !  Possibility to evolve the Hubble parameter (in cosmic time)
 !
       if (lhubble) then
-        phi=df_ode(iaxi_phi)
+        phi=f_ode(iaxi_phi)
         U=mu**4*(1.+cos(chi/fdecay))
         V=.5*(m_phi*phi)**2
-        a=exp(df_ode(iaxi_lna))
-        phidot=df_ode(iaxi_phidot)
+        a=exp(f_ode(iaxi_lna))
+        phidot=f_ode(iaxi_phidot)
         H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
       endif
 !
@@ -856,11 +860,11 @@ module Special
 !  Possibility to evolve the Hubble parameter (in cosmic time)
 !
       if (lhubble) then
+        phi=f_ode(iaxi_phi)
+        phidot=f_ode(iaxi_phidot)
         U=mu**4*(1.+cos(chi/fdecay))
         V=.5*(m_phi*phi)**2
-        a=exp(df_ode(iaxi_lna))
-        phi=df_ode(iaxi_phi)
-        phidot=df_ode(iaxi_phidot)
+        a=exp(f_ode(iaxi_lna))
         H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
         Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
 !print*,'AXEL: dspecial_dt_ode, aft.', Q, U, V, a, phi, phidot, H, Hdot
@@ -969,6 +973,12 @@ module Special
         call save_name(chi   ,idiag_chi)
         call save_name(chidot,idiag_chidot)
         call save_name(chiddot,idiag_chiddot)
+        if (lhubble) then
+          call save_name(a   ,idiag_a)
+          call save_name(phi   ,idiag_phi)
+          call save_name(phidot   ,idiag_phidot)
+          call save_name(H   ,idiag_H)
+        endif
       endif
 !
     endsubroutine dspecial_dt_ode
@@ -1061,11 +1071,11 @@ module Special
 !
       if (lhubble) then
 !print*,'AXEL: special_after_boundary'
+        phi=f_ode(iaxi_phi)
+        phidot=f_ode(iaxi_phidot)
         U=mu**4*(1.+cos(chi/fdecay))
         V=.5*(m_phi*phi)**2
-        a=exp(df_ode(iaxi_lna))
-        phi=df_ode(iaxi_phi)
-        phidot=df_ode(iaxi_phidot)
+        a=exp(f_ode(iaxi_lna))
         H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
         Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
       endif
@@ -1453,6 +1463,9 @@ module Special
         idiag_TLeff2m=0; idiag_TLeff2km=0; idiag_TLdoteff2m=0; idiag_TLdoteff2km=0
         idiag_grand2=0; idiag_dgrant=0; idiag_dgrant_up=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0; idiag_k0=0; idiag_dk=0
+        if (lhubble) then
+          idiag_a=0; idiag_phi=0; idiag_phidot=0; idiag_H=0
+        endif
       endif
 !
       do iname=1,nname
@@ -1491,6 +1504,12 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'fact' ,idiag_fact)
         call parse_name(iname,cname(iname),cform(iname),'k0' ,idiag_k0)
         call parse_name(iname,cname(iname),cform(iname),'dk' ,idiag_dk)
+        if (lhubble) then
+          call parse_name(iname,cname(iname),cform(iname),'a' ,idiag_a)
+          call parse_name(iname,cname(iname),cform(iname),'phi' ,idiag_phi)
+          call parse_name(iname,cname(iname),cform(iname),'phidot' ,idiag_phidot)
+          call parse_name(iname,cname(iname),cform(iname),'H' ,idiag_H)
+        endif
       enddo
 !
 !  Check for those quantities for which we want z-averages.
