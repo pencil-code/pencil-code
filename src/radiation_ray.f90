@@ -1680,6 +1680,7 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+      real, dimension (nx) :: alpha
       real, dimension (nx,3) :: radpressure
       integer :: i, j, k, kpres, kvel, ij
 !
@@ -1704,6 +1705,12 @@ module Radiation
             radpressure(:,j)=-scalefactor_radpressure1*p%rho1* &
               f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,k)*Srad(l1:l2,m,n)
           enddo
+          if (ip<11) then
+            if (m==m1.and.n==n1) then
+              alpha=scalefactor_radpressure1*p%rho1*f(l1:l2,m,n,ikapparho)*Srad(l1:l2,m,n)/c_light
+              print*,'AXEL: alpha=',alpha
+            endif
+          endif
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
 !
 !  now do (chi/c)*(-P.v/c) = (chi/c)*(-P.v/c) = 
