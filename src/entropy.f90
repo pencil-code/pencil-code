@@ -6117,6 +6117,11 @@ module Energy
         heat=heat-cool*prof*p%rho*(p%cs2-cs2cool)
       case ('two-layer')
         heat = heat - cool *prof *p%rho*(p%cs2-cs2cool) - cool2*prof2*p%rho*(p%cs2-cs2cool2)
+      case('two-layer-mean')
+        if (.not.lcalc_cs2mz_mean) call fatal_error('get_heat_cool_general', &
+          'cooltype=two-layer-mean requires lcalc_cs2mz_mean=T')
+        heat = heat - cool*prof*p%rho*(cs2mz(n)-cs2cool) &
+                    - cool2*prof2*p%rho*(cs2mz(n)-cs2cool2)
       case('plain')
         heat=heat-cool*prof
       case default
