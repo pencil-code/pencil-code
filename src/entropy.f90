@@ -6103,25 +6103,25 @@ module Energy
 !  will clarify this. - Dhruba
 !  AB: not sure; in general we need to multiply with cv, as in 'corona'
 !
-     select case (cooltype)
-     case('constant')
-       heat=heat-cool*prof
-     case('corona')
-       heat=heat-cool*prof*p%cv*p%rho*(p%TT-TT_cor)
-     case ('Temp')
-       if (headtt) print*, 'get_heat_cool_general: cs20,cs2cool=', cs20, cs2cool
-       heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
-     case('Temp2')
-       heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
-     case('rho_cs2', 'square-well')
-       heat=heat-cool*prof*p%rho*(p%cs2-cs2cool)
-     case ('two-layer')
-       heat = heat - cool *prof *p%rho*(p%cs2-cs2cool) - cool2*prof2*p%rho*(p%cs2-cs2cool2)
-     case('plain')
-       heat=heat-cool*prof
-     case default
-       call fatal_error('get_heat_cool_general','no such cooltype: '//trim(cooltype))
-     endselect
+      select case (cooltype)
+      case('constant')
+        heat=heat-cool*prof
+      case('corona')
+        heat=heat-cool*prof*p%cv*p%rho*(p%TT-TT_cor)
+      case ('Temp')
+        if (headtt) print*, 'get_heat_cool_general: cs20,cs2cool=', cs20, cs2cool
+        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
+      case('Temp2')
+        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
+      case('rho_cs2', 'square-well')
+        heat=heat-cool*prof*p%rho*(p%cs2-cs2cool)
+      case ('two-layer')
+        heat = heat - cool *prof *p%rho*(p%cs2-cs2cool) - cool2*prof2*p%rho*(p%cs2-cs2cool2)
+      case('plain')
+        heat=heat-cool*prof
+      case default
+        call fatal_error('get_heat_cool_general','no such cooltype: '//trim(cooltype))
+      endselect
 !
     endsubroutine get_heat_cool_general
 !***********************************************************************
