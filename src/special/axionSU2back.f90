@@ -138,7 +138,7 @@ module Special
 !***********************************************************************
     subroutine register_special()
 !
-!  Configure pre-initialised (i.e. before parameter read) variables
+!  Configure pre-initialized (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
 !
 !  19-feb-2019/axel: coded
@@ -204,6 +204,8 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real :: lnH, lna, a
       real :: kmax=2., lnkmax, lnk0=1.
+      real :: Q, Qdot, chi, chidot, phi, phidot
+      real :: U, V
       integer :: ik
 !
 !  Initialize any module variables which are parameter dependent
@@ -211,8 +213,12 @@ module Special
       lamf=lam/fdecay
 !
       if (lconf_time) then
+        if (lhubble) then
+          call fatal_error("init_special","with lconf_time, lhubble not yet implemented")
+        endif
 !
 !  Reset tstart if conformal time.
+!  This is only correct for H=const.
 !
         tstart=-1./(ascale_ini*H)
         t=tstart
@@ -223,7 +229,29 @@ module Special
 !
 !  Compute lnkmin0 and lnkmax0. Even for a linear k-range, dlnk
 !  is needed to determine the output of k-range and grand etc.
+!  Possibility to evolve the Hubble parameter (in cosmic time)
 !
+      if (lhubble) then
+        if (lstart) then
+          phidot=0.
+          V=.5*(m_phi*phi_ini)**2
+          a=ascale_ini
+          H=sqrt(onethird*(.5*phidot**2+V))
+        else
+          Q=f_ode(iaxi_Q)
+          Qdot=f_ode(iaxi_Qdot)
+          chi=f_ode(iaxi_chi)
+          chidot=f_ode(iaxi_chidot)
+          phi=f_ode(iaxi_phi)
+          U=mu**4*(1.+cos(chi/fdecay))
+          V=.5*(m_phi*phi)**2
+          a=exp(f_ode(iaxi_lna))
+          phidot=f_ode(iaxi_phidot)
+          !H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+          H=((-Q*Qdot)-sqrt((-Q*Qdot)**2+4.*(1.-.5*Q**2)*(.5*g**2*Q**4+onethird*(U+V) &
+            +.5*Qdot**2+onesixth*(phidot**2+chidot**2))))/(-2.+Q**2)
+        endif
+      endif
       lna=alog(a)
       lnH=alog(H)
       lnkmin0=nmin0+lnH+lna
@@ -287,7 +315,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: impsi, impsidot, imTR, imTRdot
-      real :: chi0, Uprime0
+      real :: chi0, V, Uprime0
       real :: lnt, lnH, lna, a
       real :: kmax=2., lnkmax, lnk0=1.
       integer :: ik
@@ -299,8 +327,13 @@ module Special
       select case (init_axionSU2back)
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
+          chi0=chi_prefactor*pi*fdecay
+          Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
           if (lconf_time) then
             if (ip<10) print*,'k=',k
+            if (lhubble) then
+              call fatal_error("init_special","with lconf_time, lhubble not yet implemented")
+            endif
             psi=(1./sqrt(2.*k))*cos(-k*t)
             psidot=(k/sqrt(2.*k))*sin(-k*t)
             TR=(1./sqrt(2.*k))*cos(-k*t)
@@ -313,7 +346,20 @@ module Special
             endif
           else
             if (ip<10) print*,'k=',k
-            a=exp(H*t)
+            if (lhubble) then
+              f_ode(iaxi_lna)=alog(ascale_ini)
+              f_ode(iaxi_phi)=phi_ini
+              f_ode(iaxi_phidot)=0.
+              V=.5*(m_phi*phi_ini)**2
+              H=sqrt(onethird*(.5*f_ode(iaxi_phidot)**2+V))
+              Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+              Q0=(-Uprime0/(3.*g*lamf*H))**onethird
+            else
+              a=exp(H*t)
+            endif
+!
+!  need k
+!
             psi=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
             psidot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
             TR=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
@@ -329,8 +375,6 @@ module Special
 !  ODE variables (exist only on root processor)
 !
           if (lroot) then
-            chi0=chi_prefactor*pi*fdecay
-            Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
             Q0=(-Uprime0/(3.*g*lamf*H))**onethird
             f_ode(iaxi_Q)=Q0
             f_ode(iaxi_Qdot)=Qdot0
@@ -340,9 +384,6 @@ module Special
 !  Possibility to evolve the Hubble parameter (in cosmic time)
 !
             if (lhubble) then
-              f_ode(iaxi_lna)=alog(ascale_ini)
-              f_ode(iaxi_phi)=phi_ini
-              f_ode(iaxi_phidot)=0.
             endif
           endif
 !
@@ -1070,13 +1111,15 @@ module Special
 !  Possibility to evolve the Hubble parameter (in cosmic time)
 !
       if (lhubble) then
-!print*,'AXEL: special_after_boundary'
         phi=f_ode(iaxi_phi)
         phidot=f_ode(iaxi_phidot)
         U=mu**4*(1.+cos(chi/fdecay))
         V=.5*(m_phi*phi)**2
         a=exp(f_ode(iaxi_lna))
-        H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+    !   H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+
+        H=((-Q*Qdot)-sqrt((-Q*Qdot)**2+4.*(1.-.5*Q**2)*(.5*g**2*Q**4+onethird*(U+V) &
+          +.5*Qdot**2+onesixth*(phidot**2+chidot**2))))/(-2.+Q**2)
         Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
       endif
 !
@@ -1345,6 +1388,7 @@ module Special
 !AB: here, for TL, we use the opposite sign in front of the k/a terms.
           grand=grand+(4.*pi*k**3*dlnk)*(xi*H+k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
           grant=grant+(4.*pi*k**3*dlnk)*(mQ*H+k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
+!print*,'AXEL: dlnk,k=',dlnk,k(1:5)
         endif
         if (lconf_time) then
           dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
