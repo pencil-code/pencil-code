@@ -9,7 +9,7 @@ To add Astaroth later to already installed Pencil Code:
 cd $PENCIL_HOME
 git submodule update --init --recursive
 cd src/astaroth/submodule 
-git checkout master
+git checkout PCinterface_2019-8-12
 
 To build with Astaroth:
 -----------------------

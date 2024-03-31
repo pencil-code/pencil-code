@@ -16,6 +16,7 @@ else
 endif
 
 include Makefile.vendor
+include Makefile.target
 include Makefile.module_info
 
 ifeq ($(GPU_VENDOR),amd)
@@ -61,7 +62,7 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 	echo USE_HIP=$(USE_HIP) && \
 	echo PRECISION=$(CMAKE_PREC) && \
 	cd build && \
-	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) .. && \
+	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_DARDEL=$(USE_DARDEL) .. && \
 	make -j && \
 	cd .. && \
 	mv ./build/libastaroth_$(PREC).so libastaroth_$(PREC).so
