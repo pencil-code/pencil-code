@@ -534,7 +534,7 @@ else
 endif
 #
 ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
-  override FFLAGS += $(OMPFFLAGS) -I./astaroth/include
+  override FFLAGS += $(OMPFFLAGS)
   override LDFLAGS += $(OMPLFLAGS)
 #  OMP_PREREQ = copyin.inc
 #  Creates code for copying in threadprivate variables. - Not needed at the moment.
@@ -3061,6 +3061,8 @@ endif
 	done 
 	@sed -i -e'/^ *\/\// d' $(DSL_WORKDIR)/fieldecs.h
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac
+	@cp $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve.ac.single
+	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve.ac.two
 
 #	    echo FIELDNAME=$$fieldname; \
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h

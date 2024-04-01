@@ -339,9 +339,8 @@ module Equ
           !wait in case the last diagnostic tasks are not finished
 !!$        call wait_all_thread_pool
 !         Not done for the first step since we haven't loaded any data to the GPU yet
-          call signal_wait(ldiag_perform_diagnostics,.false.)
+!$        call signal_wait(ldiag_perform_diagnostics,.false.)
           call copy_farray_from_GPU(f, ldiag_flags_to_wait_on)
-!!!acc          call init_diagnostics_accumulators
 !$        call save_diagnostic_controls
 !$        call signal_send(ldiag_perform_diagnostics,.true.)
 !!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
@@ -819,12 +818,6 @@ module Equ
 !
 !  Restore options that were used when calc_all_module_diagnostics was called.
 !  Transfer reduced diagnostics from global accumulators to fname* vars of diagmaster.
-!
-!!!acc!$   call read_diagnostics_accumulators
-!!!acc!$   call read_diagnostic_flags
-!
-!TP: best would be to to pass p_fname vars as input but there are simply too
-!many calls because of the calc_mfield etc.
 !
 !  0-D Diagnostics.
 !
