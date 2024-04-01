@@ -11,13 +11,11 @@
 
 export OMP_NUM_THREADS=7
 export OMP_PROC_BIND=true
-export OMP_MAX_ACTIVE_LEVELS=7
+export OMP_MAX_ACTIVE_LEVELS=2
 export OMP_WAIT_POLICY=PASSIVE
-#srun start.csh
-srun ./src/start.x
+./start.csh
 export MPICH_GPU_SUPPORT_ENABLED=1
-#run.csh
-srun ./src/run.x
-#run.csh
+#srun ./src/run.x
+./run.csh
 
 

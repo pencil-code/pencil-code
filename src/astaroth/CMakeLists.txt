@@ -8,6 +8,7 @@ cmake_minimum_required(VERSION 3.19)
 option(DOUBLE_PRECISION       "Generates double precision code."                        ON)
 option(USE_HIP                "Use HIP as the underlying GPGPU library instead of CUDA" ON)
 option(USE_OMP                "Enables use of openmp"                                   ON)
+option(USE_DARDEL             "Target machine is Dardel(PDC, Stockholm"                 OFF)
 option(PACKED_DATA_TRANSFERS  "Enables kernel for packed data transfers"                OFF)
 option(SINGLEPASS_INTEGRATION "Enables single pass integration"                         OFF)
 
@@ -110,10 +111,16 @@ if (SINGLEPASS_INTEGRATION)
   add_definitions(-DSINGLEPASS=1)
 endif()
 
-find_package(MPI REQUIRED COMPONENTS C)
-include_directories(${MPI_C_INCLUDE_DIRS})
+if (USE_DARDEL)
+  set(MPI_INCLUDE /opt/cray/pe/mpich/8.1.25/ofi/cray/10.0/include)
+  set(MPI_LIB /opt/cray/pe/mpich/8.1.25/ofi/cray/10.0/lib)
+  include_directories(${MPI_INCLUDE})
+  link_directories(${MPI_LIB})
+else()
+  find_package(MPI REQUIRED COMPONENTS C)
+  include_directories(${MPI_C_INCLUDE_DIRS})
+endif()
 add_definitions(-DAC_MPI_ENABLED=1)
-
 
 add_definitions(-DAC_DEFAULT_CONFIG="${CMAKE_SOURCE_DIR}/config/astaroth.conf")
 
