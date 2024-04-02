@@ -15,24 +15,24 @@ module GPU
 
   implicit none
 
-  external initialize_gpu_c
-  external finalize_gpu_c
-  external rhs_gpu_c
-  external copy_farray_c
-  external load_farray_c 
-  external reload_gpu_config_c
-  external test_rhs_c
+
+
+  type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
+  type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
+
+  logical, target :: always_true_g = .true.
+  logical, target :: always_false_g = .false.
+  integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
 
 !$  interface
 !$    subroutine random_initial_condition() bind(C)
 !$    endsubroutine random_initial_condition
 !$  end interface
-
-  logical, target :: always_true_g = .true.
-  logical, target :: always_false_g = .false.
-  integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
-  type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
-  type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
+  external initialize_gpu_c
+  external rhs_gpu_c
+  external load_farray_c 
+  external reload_gpu_config_c
+  external test_rhs_c
   include 'gpu.h'
 contains
 
@@ -92,13 +92,18 @@ contains
 !$      ldiag_flags_to_wait_on(1)%p => ldiag_perform_diagnostics
 !$    else
         lsnap_flags_to_wait_on(1)%p => always_true_g
-        ldiag_flags_to_wait_on(1)%p => always_true_g 
+        ldiag_flags_to_wait_on(1)%p => always_true_g
 !$    endif
 !
     endsubroutine register_GPU
 !**************************************************************************
-    subroutine finalize_GPU
+    subroutine finalize_gpu
 !
+      interface
+              subroutine finalize_gpu_c
+              endsubroutine
+      endinterface
+
       call finalize_gpu_c
 !
     endsubroutine finalize_GPU
@@ -121,6 +126,17 @@ contains
     subroutine copy_farray_from_GPU(f,lflags_to_wait_on)
 
 !$    use General, only: signal_wait
+
+      interface 
+              subroutine copy_farray_c(f)
+                      import mx
+                      import my
+                      import mz
+                      import mfarray
+                      real, dimension(mx,my,mz,mfarray) :: f
+              endsubroutine
+      endinterface
+
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
       type(lpointer), dimension(:) :: lflags_to_wait_on
       integer :: i

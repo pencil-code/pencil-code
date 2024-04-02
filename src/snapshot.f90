@@ -36,7 +36,7 @@ module Snapshot
 !
       use General, only: get_range_no, indgen
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
-      use General, only: safe_character_assign
+      use General, only: safe_character_assign, signal_send
       use IO, only: output_snap, output_snap_finalize, log_filename_to_file, lun_output, wgrid
       use HDF5_IO, only: wdim, initialize_hdf5
       use Sub, only: read_snaptime, update_snaptime
@@ -60,6 +60,7 @@ module Snapshot
       real, dimension(:,:,:,:), allocatable :: buffer
       integer, dimension(nghost) :: inds
       real, dimension(nghost) :: dxs_ghost, dys_ghost, dzs_ghost
+      logical :: ldummy
 
 
       call safe_character_assign(file,trim(datadir)//'/tsnap_down.dat')
@@ -75,7 +76,11 @@ module Snapshot
       call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap_down,ch)
       if (lsnap_down) then
 !
-        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
+        if (.not.lstart.and.lgpu) then
+          call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
+          call signal_send(ldummy,.false.)
+        endif
+
 !
 !  Set the range for the variable index.
 !  Not yet possible: both mvar_down and maux_down>0, but mvar_down<mvar,
@@ -250,7 +255,7 @@ module Snapshot
 !  28-may-21/axel: added nv1_capitalvar
 !
       use Boundcond, only: update_ghosts
-      use General, only: safe_character_assign, loptest, touch_file
+      use General, only: safe_character_assign, loptest, touch_file, signal_send
       use IO, only: output_snap, output_snap_finalize, log_filename_to_file
       use Persist, only: output_persistent
       use Sub, only: read_snaptime, update_snaptime
@@ -274,6 +279,7 @@ module Snapshot
       character (len=fnlen) :: file
       character (len=intlen) :: ch
       integer :: nv1_capitalvar
+      logical :: ldummy
 !
 !  Output snapshot with label in 'tsnap' time intervals.
 !  File keeps the information about number and time of last snapshot.
@@ -304,7 +310,10 @@ module Snapshot
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
         if (lsnap) then
-          if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
+          if (.not.lstart.and.lgpu) then
+                  call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
+                  call signal_send(ldummy,.false.)
+          endif
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
@@ -323,7 +332,10 @@ module Snapshot
 !  Write snapshot without label (typically, var.dat). For dvar.dat we need to
 !  make sure that ghost zones are not set on df!
 !
-        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
+        if (.not.lstart.and.lgpu) then 
+                call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
+                call signal_send(ldummy,.false.)
+        endif
         if (msnap==mfarray) then
           if (.not. loptest(noghost)) call update_ghosts(a)
           call update_auxiliaries(a) ! Not if e.g. dvar.dat.
@@ -683,7 +695,7 @@ module Snapshot
       use Pscalar, only: cc2m, gcc2m, rhoccm
       use Struct_func, only: structure
       use Sub, only: update_snaptime, curli
-      use General, only: itoa
+      use General, only: itoa, signal_send
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lwrite_only
@@ -694,6 +706,7 @@ module Snapshot
       real, dimension (nx) :: bb
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt=.true.
+      logical :: ldummy
 !
 !  Allocate memory for b_vec at run time.
 !
@@ -711,7 +724,10 @@ module Snapshot
 !
       if (lspec.or.llwrite_only) then
 
-        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f,lsnap_flags_to_wait_on)
+        if (.not.lstart.and.lgpu) then
+                call copy_farray_from_GPU(f,lsnap_flags_to_wait_on)
+                call signal_send(ldummy,.false.)
+        endif
         lfirstcall_powerhel=.true.
         if (ldo_all)  call update_ghosts(f)
 !

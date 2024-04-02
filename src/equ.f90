@@ -339,7 +339,6 @@ module Equ
           !wait in case the last diagnostic tasks are not finished
 !!$        call wait_all_thread_pool
 !         Not done for the first step since we haven't loaded any data to the GPU yet
-          call signal_wait(ldiag_perform_diagnostics,.false.)
           call copy_farray_from_GPU(f, ldiag_flags_to_wait_on)
 !!!acc          call init_diagnostics_accumulators
 !$        call save_diagnostic_controls

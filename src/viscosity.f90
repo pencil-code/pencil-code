@@ -2810,20 +2810,6 @@ module Viscosity
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************
-    subroutine split_update_viscosity(f)
-!
-!  Update the velocity by integrating the operator split viscous terms.
-!
-!  22-aug-13/ccyang: coded.
-!
-      use ImplicitDiffusion, only: integrate_diffusion
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-!
-      if (limplicit_viscosity) call integrate_diffusion(get_viscosity_implicit, f, iux, iuz)
-!
-    endsubroutine split_update_viscosity
-!***********************************************************************
     subroutine get_viscosity_implicit(ndc, diffus_coeff, iz)
 !
 !  Gets the diffusion coefficient along a given pencil for the implicit algorithm.
@@ -2841,6 +2827,20 @@ module Viscosity
       endif
 !
     endsubroutine get_viscosity_implicit
+!***********************************************************************
+    subroutine split_update_viscosity(f)
+!
+!  Update the velocity by integrating the operator split viscous terms.
+!
+!  22-aug-13/ccyang: coded.
+!
+      use ImplicitDiffusion, only: integrate_diffusion
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (limplicit_viscosity) call integrate_diffusion(get_viscosity_implicit, f, iux, iuz)
+!
+    endsubroutine split_update_viscosity
 !***********************************************************************
     subroutine calc_lambda(p,div_lambda)
 !

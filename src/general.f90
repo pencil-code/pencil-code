@@ -269,6 +269,22 @@ interface
         endfunction
         endinterface
 !
+! TP: used for signaling across threads
+!
+interface
+        subroutine cond_wait(cond_handle, flag, value)
+                integer :: cond_handle
+                logical, volatile :: flag
+                logical :: value
+        endsubroutine
+endinterface
+interface
+        subroutine cond_signal(cond_handle)
+                integer :: cond_handle
+        endsubroutine
+endinterface
+integer, parameter :: DIAG_COND = 1
+!
 !  State and default generator of random numbers.
 !
   integer, save, dimension(mseed) :: rstate=0, rstate2=0
@@ -6701,10 +6717,10 @@ iloop:do i=1,size(list2)
 !
 ! 14-Mar-24/TP: coded
 !
-!$  logical :: lflag, lvalue
+!$  logical, volatile:: lflag,lvalue
 !
-!$    do while(lflag .neqv. lvalue)
-!$    enddo
+!$    call cond_wait(DIAG_COND,lflag,lvalue)
+
 
 !$  endsubroutine signal_wait
 !***********************************************************************
@@ -6717,6 +6733,7 @@ iloop:do i=1,size(list2)
 !
 !$  logical :: lflag, lvalue
 !$    lflag = lvalue
+!$    call cond_signal(DIAG_COND)
 !$  endsubroutine signal_send
 !***********************************************************************
   endmodule General

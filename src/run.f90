@@ -58,18 +58,20 @@ contains
 subroutine helper_loop(f,p)
 !
   use Equ, only: perform_diagnostics
-!$ use General, only: signal_wait
+!$ use General, only: signal_wait, signal_send
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
-!
-!  hotloop for helper thread to wait to perform diagnostics
 !
 ! 7-feb-24/TP: coded
 !
 !$  do while(lhelper_run)
 !$    call signal_wait(ldiag_perform_diagnostics,lhelper_run)
-!$    if (lhelper_run) call perform_diagnostics(f,p)
+!$    if (lhelper_run) then 
+!$       call perform_diagnostics(f,p)
+!$    else 
+!$      call signal_send(ldiag_perform_diagnostics,.false.)
+!$    endif
 !$  enddo
 
 endsubroutine helper_loop
@@ -113,7 +115,8 @@ subroutine timeloop(f,df,p)
   use Solid_Cells,     only: time_step_ogrid, wsnap_ogrid, solid_cells_clean_up
   use Streamlines,     only: tracers_prepare, wtracers
 !$ use OMP_lib
-!$ use General, only: signal_send
+!$ use General, only: signal_send, signal_wait
+!   use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
@@ -482,8 +485,8 @@ subroutine timeloop(f,df,p)
     headt=.false.
 
   enddo Time_loop
-
-!$  lhelper_run = .false.
+!$  call signal_wait(ldiag_perform_diagnostics,.false.)
+!$  call signal_send(lhelper_run,.false.)
 
 endsubroutine timeloop
 !***********************************************************************
@@ -505,7 +508,7 @@ program run
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use Forcing,         only: forcing_clean_up
-  use General,         only: random_seed_wrapper, touch_file, itoa
+  use General,         only: random_seed_wrapper, touch_file, itoa, signal_send
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu
@@ -533,7 +536,8 @@ program run
   use Run_module
 !
 !$ use OMP_lib
-!!$ use, intrinsic :: iso_c_binding !, iso_fortran_env
+!$ use, intrinsic :: iso_c_binding
+!!$ use, intrinsic :: iso_fortran_env
 !!$ use mt, only: wait_all_thread_pool, push_task, free_thread_pool, depend_on_all, default_task_type
 !
   implicit none

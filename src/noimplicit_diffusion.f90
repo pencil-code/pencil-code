@@ -42,13 +42,19 @@ module ImplicitDiffusion
 !
 !  Dummy
 !
-      external :: get_diffus_coeff
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar1
       integer, intent(in), optional :: ivar2
+      interface
+        subroutine get_diffus_coeff(ndc, diffus_coeff, iz)
+          integer, intent(in) :: ndc
+          real, dimension(ndc), intent(out) :: diffus_coeff
+          integer, intent(in), optional :: iz
+        endsubroutine get_diffus_coeff
+      endinterface
 !
       call fatal_error('integrate_diffusion', 'ImplicitDiffusion module is not plugged in. ')
-      call get_diffus_coeff
+      call get_diffus_coeff(1,(/1.0/))
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ivar1,ivar2)
 !
