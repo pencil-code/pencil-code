@@ -12,8 +12,9 @@ git checkout master
 
 
 # Touko's demonstration session on Dardel:
-cd pencil-code
 git clone git@github.com:pencil-code/pencil-code.git pencil-code
+cd pencil-code
+source sourceme.sh
 git checkout gputestv5
 git submodule update --init --remote
 cd src/astaroth/submodule
