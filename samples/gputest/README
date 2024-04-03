@@ -29,6 +29,7 @@ pc_build -f hosts/lumi/host-uan01-GNU_Linux
 # configure your "Makefile.src" and then execute:
 ### make
 cd src/astaroth
+# temporary workaround, to me removed later:
 touch submodule/acc-runtime/samples/gputest/PC_modulepardecs.h
 make
 cd ../..
