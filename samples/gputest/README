@@ -28,3 +28,11 @@ pc_build -f hosts/lumi/host-uan01-GNU_Linux
 # => alternative to "pc_build":
 # configure your "Makefile.src" and then execute:
 ### make
+cd src/astaroth
+make
+cd ../..
+pc_build -f hosts/lumi/host-uan01-GNU_Linux
+# => alternative to "pc_build":
+### make
+# => adapt settings in "disbatch.sh"
+sbatch disbatch.sh
