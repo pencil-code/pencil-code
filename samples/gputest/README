@@ -30,7 +30,7 @@ pc_build -f hosts/lumi/host-uan01-GNU_Linux
 ### make
 cd src/astaroth
 # temporary workaround, to me removed later:
-touch submodule/acc-runtime/samples/gputest/PC_modulepardecs.h
+ln -s ../../../../src/submodule/acc-runtime/samples/gputest submodule/acc-runtime/samples/gputest
 make
 cd ../..
 pc_build -f hosts/lumi/host-uan01-GNU_Linux
