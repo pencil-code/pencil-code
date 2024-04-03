@@ -22,5 +22,6 @@ git checkout PCinterface_2019-8-12
 cd ../../../samples/gputest
 pc_setupsrc
 pc_build -f hosts/lumi/host-uan01-GNU_Linux
-cd src/astaroth
+# => alternative to "pc_build":
+# configure your "Makefile.src" and then execute:
 make
