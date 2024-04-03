@@ -19,7 +19,7 @@ git checkout gputestv5
 git submodule update --init --remote
 cd src/astaroth/submodule
 git checkout PCinterface_2019-8-12
-cd ../../samples/gputest
+cd ../../../samples/gputest
 pc_setupsrc
 pc_build -f hosts/lumi/host-uan01-GNU_Linux
 cd src/astaroth
