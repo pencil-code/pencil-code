@@ -15,6 +15,9 @@ git checkout master
 git clone git@github.com:pencil-code/pencil-code.git pencil-code
 cd pencil-code
 source sourceme.sh
+# => alternative to "pc_build":
+# use "csh" variant to prepare for a later "make":
+### source sourceme.csh
 git checkout gputestv5
 git submodule update --init --remote
 cd src/astaroth/submodule
@@ -24,4 +27,4 @@ pc_setupsrc
 pc_build -f hosts/lumi/host-uan01-GNU_Linux
 # => alternative to "pc_build":
 # configure your "Makefile.src" and then execute:
-make
+### make
