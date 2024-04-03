@@ -263,8 +263,9 @@ pcDensityPlot[data_List,opts:OptionsPattern[]]:=pcDensityPlot[Transpose[data],op
 
 
 Options[pcPolarDensityPlot]={"DataOptions"->{},"PlotOptions"->{Frame->True}};
-pcPolarDensityPlot[{r0_List,theta0_List,f0_List},OptionsPattern[]]:=Module[{opts,dsr,dsth,r,th,f,cf,dr,dth,ann},
-  opts=Association[OptionValue["DataOptions"]];
+pcPolarDensityPlot[{r0_List,theta0_List,f0_List},OptionsPattern[]]:=Module[{optsD,optsP,dsr,dsth,r,th,f,minmax,cf,dr,dth,ann},
+  optsD=Association[OptionValue["DataOptions"]];
+  optsP=Association[OptionValue["PlotOptions"]];
   
   (* remap polar angle from [0,\[Pi]] to [\[Pi]/2,-\[Pi]/2] *)
   r=r0;
@@ -273,7 +274,7 @@ pcPolarDensityPlot[{r0_List,theta0_List,f0_List},OptionsPattern[]]:=Module[{opts
   
   (* down-sampling fractions *)
   (* e.g. If dsr==2 then down-sample r direction every 2 mesh points *)
-  {dsr,dsth}=If[MemberQ[Keys[opts],"DownSamplingFractions"],opts["DownSamplingFractions"],{1,1}];
+  {dsr,dsth}=Lookup[optsD,"DownSamplingFactor",{1,1}];
   r=ArrayResample[r,Scaled[1/dsr]];
   th=ArrayResample[th,Scaled[1/dsth]];
   f=ArrayResample[f,Scaled[1/#]&/@{dsr,dsth}];
@@ -281,7 +282,8 @@ pcPolarDensityPlot[{r0_List,theta0_List,f0_List},OptionsPattern[]]:=Module[{opts
   dth=1.02Flatten@{0,th//Differences,0};
   
   (* color function *)
-  cf[x_]:=If[MemberQ[Keys[opts],"ColorFunction"],opts["ColorFunction"],pcColors["Rainbow"]]@Rescale[x,f//Flatten//MinMax];
+  minmax=Lookup[optsP,PlotRange,f//Flatten//MinMax];
+  cf[x_]:=Lookup[optsP,ColorFunction,pcColors["Rainbow"]]@Rescale[x,minmax];
   
   (* generate cells *)
   ann=Table[
@@ -291,7 +293,7 @@ pcPolarDensityPlot[{r0_List,theta0_List,f0_List},OptionsPattern[]]:=Module[{opts
   
   (* plot *)
   Graphics[ann,
-    OptionValue["PlotOptions"],
+    DeleteCases[OptionValue["PlotOptions"], ( ColorFunction | PlotRange )->_],
     Frame->True,LabelStyle->pcLabelStyle,FrameStyle->pcLabelStyle,
     ImagePadding->{{50,50},{50,10}},Background->Transparent
   ]
