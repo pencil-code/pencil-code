@@ -29,9 +29,8 @@ pc_build -f hosts/lumi/host-uan01-GNU_Linux
 # configure your "Makefile.src" and then execute:
 ### make
 cd src/astaroth
-# temporary workaround, to me removed later:
-ln -s ../../../../src/submodule/acc-runtime/samples/gputest submodule/acc-runtime/samples/gputest
 grep "module load" ../../job-dardel.sh | grep cmake
+# => execute the shown "module load" command
 make
 cd ../..
 pc_build -f hosts/lumi/host-uan01-GNU_Linux
