@@ -537,7 +537,7 @@ else
 endif
 #
 ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
-  override FFLAGS += $(OMPFFLAGS) -I./astaroth/include
+  override FFLAGS += $(OMPFFLAGS)
   override LDFLAGS += $(OMPLFLAGS)
 #  OMP_PREREQ = copyin.inc
 #  Creates code for copying in threadprivate variables. - Not needed at the moment.

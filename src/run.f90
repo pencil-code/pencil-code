@@ -508,7 +508,8 @@ program run
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use Forcing,         only: forcing_clean_up
-  use General,         only: random_seed_wrapper, touch_file, itoa, signal_send
+  use General,         only: random_seed_wrapper, touch_file, itoa
+!$ use General,        only: signal_send
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu
@@ -552,11 +553,10 @@ program run
   logical :: suppress_pencil_check=.false.
   logical :: lnoreset_tzero=.false.
   logical :: lexist
-  integer :: num_helpers
+  integer :: num_helpers=1
   integer :: i
 !
   lrun = .true.
-  num_helpers = 1
 !
 !  Get processor numbers and define whether we are root.
 !
@@ -969,21 +969,21 @@ program run
 !
   call trim_averages
 !
-  num_helpers = 1
+!$ call mpibarrier
 !$omp parallel num_threads(num_helpers+1) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !
-!$   do i =1,num_helpers
+!$   do i=1,num_helpers
 !TP: important that we ensure like this that all MPI processes call
 !create_communicators with the same threads
-     !$omp barrier
-!$     if (omp_get_thread_num() == i) call create_communicators()
+!$omp barrier
+!$     if (omp_get_thread_num() == i) call create_communicators
 !$   enddo
-     !$omp barrier
-!$ if (omp_get_thread_num() == 0) then
-     call timeloop(f,df,p)
-!$ else
-!$   call helper_loop(f,p)
-!$ endif
+!$omp barrier
+!$   if (omp_get_thread_num() == 0) then
+       call timeloop(f,df,p)
+!$   else
+!$     call helper_loop(f,p)
+!$   endif
 !$omp end parallel
 !
   if (lroot) then
