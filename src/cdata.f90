@@ -347,7 +347,6 @@ module Cdata
   logical :: ltestperturb=.false.
   logical :: lweno_transport=.false.
   logical :: lstart=.false., lrun=.false., lreloading=.false.
-  logical :: lenergy=.false.
   logical :: ladv_der_as_aux=.false.
   logical :: lghostfold_usebspline = .false.
   logical :: lcooling_ss_mz = .false.
@@ -810,7 +809,7 @@ module Cdata
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 !!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
 
-!$ logical, target, volatile :: ldiag_perform_diagnostics=.false.
+!$ logical, target :: ldiag_perform_diagnostics=.false.
   integer :: num_helper_threads=0, thread_id=1
 ! 
 ! threadprivate definitions for OpenMP

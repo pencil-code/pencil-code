@@ -10,29 +10,28 @@ module GPU
 !
   use Cdata
   use General, only: keep_compiler_quiet, lpointer
-  use Mpicomm, only: stop_it
+  use Messages
 !$ use, intrinsic :: iso_c_binding
 
   implicit none
 
-  external initialize_gpu_c
-  external finalize_gpu_c
-  external rhs_gpu_c
-  external copy_farray_c
-  external load_farray_c 
-  external reload_gpu_config_c
-  external test_rhs_c
+  type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
+  type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
+
+  logical, target :: always_true_g = .true.
+  logical, target :: always_false_g = .false.
+  integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
 
 !$  interface
 !$    subroutine random_initial_condition() bind(C)
 !$    endsubroutine random_initial_condition
 !$  end interface
-
-  logical, target :: always_true_g = .true.
-  logical, target :: always_false_g = .false.
-  integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
-  type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
-  type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
+  external initialize_gpu_c
+  !external finalize_gpu_c
+  external rhs_gpu_c
+  external load_farray_c 
+  external reload_gpu_config_c
+  external test_rhs_c
   include 'gpu.h'
 contains
 
@@ -70,7 +69,8 @@ contains
       if (lspecial) str=trim(str)//', '//'special'
       if (lparticles) str=trim(str)//', '//'particles'
 
-      if (str/='') call stop_it('No GPU implementation for module(s) "'//trim(str(3:))//'"')
+      if (str/='') call fatal_error('initialize_GPU','no GPU implementation for module(s) "'// &
+                                    trim(str(3:))//'"')
 !
       call initialize_gpu_c(pFarr_GPU_in,pFarr_GPU_out,MPI_COMM_PENCIL)
 !print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
@@ -92,13 +92,18 @@ contains
 !$      ldiag_flags_to_wait_on(1)%p => ldiag_perform_diagnostics
 !$    else
         lsnap_flags_to_wait_on(1)%p => always_true_g
-        ldiag_flags_to_wait_on(1)%p => always_true_g 
+        ldiag_flags_to_wait_on(1)%p => always_true_g
 !$    endif
 !
     endsubroutine register_GPU
 !**************************************************************************
-    subroutine finalize_GPU
+    subroutine finalize_gpu
 !
+      interface
+        subroutine finalize_gpu_c
+        endsubroutine
+      endinterface
+
       call finalize_gpu_c
 !
     endsubroutine finalize_GPU
@@ -121,13 +126,24 @@ contains
     subroutine copy_farray_from_GPU(f,lflags_to_wait_on)
 
 !$    use General, only: signal_wait
+
+      interface 
+        subroutine copy_farray_c(f)
+          import mx
+          import my
+          import mz
+          import mfarray
+          real, dimension(mx,my,mz,mfarray) :: f
+        endsubroutine
+      endinterface
+
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
       type(lpointer), dimension(:) :: lflags_to_wait_on
       integer :: i
 
 !      Have to wait since if doing diagnostics don't want overwrite f
 !$     do i = 1,size(lflags_to_wait_on) 
-!$        call signal_wait(lflags_to_wait_on(i)%p, .false.)
+!$       call signal_wait(lflags_to_wait_on(i)%p, .false.)
 !$     enddo 
        call copy_farray_c(f)
 
@@ -220,6 +236,6 @@ contains
     call test_rhs_c(f_copy_2,f_copy);
     call die_gracefully
 
-  endsubroutine  test_rhs_gpu
+  endsubroutine test_rhs_gpu
 !**************************************************************************
 endmodule GPU

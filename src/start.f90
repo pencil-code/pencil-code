@@ -142,10 +142,6 @@ program start
     df=huge(1.0)
   endif
 !
-!  Define the lenergy logical
-!
-  lenergy=lentropy.or.ltemperature.or.lthermal_energy
-!
 !  Read initialization parameters from "start.in".
 !
   call read_all_init_pars

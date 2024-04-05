@@ -12,11 +12,11 @@ module GPU
   use General, only: keep_compiler_quiet, lpointer
 
   implicit none
+
   type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
   type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
   logical, target :: always_false_ng = .false.
   logical, target :: always_true_ng = .true.
-
   include 'gpu.h'
 
 contains
@@ -39,6 +39,10 @@ contains
 !
     endsubroutine register_GPU
 !**************************************************************************
+    subroutine finalize_gpu_c
+!
+    endsubroutine finalize_gpu_c
+!**************************************************************************
     subroutine finalize_GPU
 !
     endsubroutine finalize_GPU
@@ -54,6 +58,11 @@ contains
       call keep_compiler_quiet(early_finalize)
 !
     endsubroutine rhs_GPU
+!**************************************************************************
+    subroutine copy_farray_c(f)
+      real, dimension (:,:,:,:), intent(OUT) :: f
+      call keep_compiler_quiet(f)
+    endsubroutine
 !**************************************************************************
     subroutine copy_farray_from_GPU(f,lflags_to_wait_on)
 
