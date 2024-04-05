@@ -1125,6 +1125,7 @@ extern "C" void copyFarray(AcReal* f)
     mesh_to_copy.vertex_buffer[VertexBufferHandle(i)] = &f[offset];
     offset += mw;
   }
+  mesh_to_copy.info = mesh.info;
 
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
@@ -1135,7 +1136,10 @@ extern "C" void reloadConfig()
 {
   setupConfig(mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
-  acDeviceLoadMeshInfo(acGridGetDevice(), mesh.info);
+  Device device=acGridGetDevice();
+  acDeviceLoadMeshInfo(device, mesh.info);
+  acDeviceUpdateArrays(device, mesh.info);
+  acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
 extern "C" void loadFarray()

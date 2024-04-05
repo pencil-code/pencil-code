@@ -32,11 +32,11 @@ module Cparam
   integer, dimension(3), parameter :: grid_dims=(/nx,ny,nz/)
 !
   include 'cparam.inc'
+  logical, parameter :: lenergy=lentropy.or.ltemperature.or.lthermal_energy
 !
   integer, parameter :: penc_name_len=16
 !
   include 'cparam_pencils.inc'
-!BEGIN C BINDING
 !
 !  Derived and fixed parameters.
 !
@@ -89,7 +89,6 @@ module Cparam
 !  Number of slots in initlnrho etc.
 !
   integer, parameter :: ninit=5
-!END C BINDING
 !
 !  Name:          Maximum string length of a:
 !  --------------------------------------------

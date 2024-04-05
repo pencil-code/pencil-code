@@ -9779,13 +9779,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: my_iniy,my_finy
 !
       ay=0.
-      ay_local=0.
       if (ipz==(zproc_no-1)) then
         my_iniy=ipy*ny+1
         my_finy=(ipy+1)*ny
         ay_local(my_iniy:my_finy)=a(xi,:,zj)
       else
-      ay_local=0.
+        ay_local=0.
       endif
       call mpireduce_sum(ay_local,ay,nygrid)
 !
@@ -9802,13 +9801,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: my_iniz,my_finz
 !
       az=0.
-      az_local=0.
       if (ipy==(yproc_no-1)) then
         my_iniz=ipz*nz+1
         my_finz=(ipz+1)*nz
         az_local(my_iniz:my_finz)=a(xi,yj,:)
       else
-      az_local=0.
+        az_local=0.
       endif
       call mpireduce_sum(az_local,az,nzgrid)
 !

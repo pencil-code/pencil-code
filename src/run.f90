@@ -582,10 +582,6 @@ program run
 !
   call initialize_mult_special
 !
-!  Define the lenergy logical
-!
-  lenergy=lentropy.or.ltemperature.or.lthermal_energy
-!
 !  Read parameters from start.x (set in start.in/default values; possibly overwritten by 'read_all_run_pars').
 !
   call read_all_init_pars

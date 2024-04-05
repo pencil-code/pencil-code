@@ -37,6 +37,8 @@ s/\.false\./false/g
 s/\(^[^#].*[^&">]\) *$/\1;/
 s/& *$//
 s/dbl_max/DBL_MAX/g 
+s/\.or\./ | /g
+s/\.and\./ & /g
 /const  *FINT  *nghost *=/ {
 h
 s/const  *FINT  *nghost *= *\([0-9]*\) *;/#undef NGHOST\n#define NGHOST \1\n#undef STENCIL_ORDER\nhostdefine STENCIL_ORDER (2*NGHOST)\n/

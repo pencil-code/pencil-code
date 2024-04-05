@@ -3252,6 +3252,7 @@ cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 ifneq ($(and $(IS_CRAY), $(filter-out $(GPU),nogpu)),)
 	@sed -e'/BEGIN C BINDING/,/END C BINDING/ s/ ::/, bind(C) ::/' -e'/parameter,/ s/, bind(C)//' -e'/character/ s/, bind(C)//' cparam.f90 > cparam_tmp.f90
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam_tmp.f90
+	@rm -f cparam_tmp.f90
 else
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 endif
@@ -3266,7 +3267,7 @@ ifneq ($(and $(IS_CRAY), $(filter-out $(GPU),nogpu)),)
 	@sed -e'/BEGIN C BINDING/,/END C BINDING/ s/ ::/,bind(C) ::/' -e'/parameter,/ s/,bind(C)//' -e'/character/ s/,bind(C)//' cdata.f90 > cdata_tmp.f90
 #       -e's/integer, *dimension/integer,bind(C), dimension/' cdata.f90
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata_tmp.f90
-	@rm -rf cdata_tmp.f90
+	@rm -f cdata_tmp.f90
 else
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata.f90
 endif

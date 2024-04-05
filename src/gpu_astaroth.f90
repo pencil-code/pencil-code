@@ -10,12 +10,10 @@ module GPU
 !
   use Cdata
   use General, only: keep_compiler_quiet, lpointer
-  use Mpicomm, only: stop_it
+  use Messages
 !$ use, intrinsic :: iso_c_binding
 
   implicit none
-
-
 
   type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
   type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
@@ -29,6 +27,7 @@ module GPU
 !$    endsubroutine random_initial_condition
 !$  end interface
   external initialize_gpu_c
+  !external finalize_gpu_c
   external rhs_gpu_c
   external load_farray_c 
   external reload_gpu_config_c
@@ -70,7 +69,8 @@ contains
       if (lspecial) str=trim(str)//', '//'special'
       if (lparticles) str=trim(str)//', '//'particles'
 
-      if (str/='') call stop_it('No GPU implementation for module(s) "'//trim(str(3:))//'"')
+      if (str/='') call fatal_error('initialize_GPU','no GPU implementation for module(s) "'// &
+                                    trim(str(3:))//'"')
 !
       call initialize_gpu_c(pFarr_GPU_in,pFarr_GPU_out,MPI_COMM_PENCIL)
 !print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
@@ -100,8 +100,8 @@ contains
     subroutine finalize_gpu
 !
       interface
-              subroutine finalize_gpu_c
-              endsubroutine
+        subroutine finalize_gpu_c
+        endsubroutine
       endinterface
 
       call finalize_gpu_c
@@ -128,13 +128,13 @@ contains
 !$    use General, only: signal_wait
 
       interface 
-              subroutine copy_farray_c(f)
-                      import mx
-                      import my
-                      import mz
-                      import mfarray
-                      real, dimension(mx,my,mz,mfarray) :: f
-              endsubroutine
+        subroutine copy_farray_c(f)
+          import mx
+          import my
+          import mz
+          import mfarray
+          real, dimension(mx,my,mz,mfarray) :: f
+        endsubroutine
       endinterface
 
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
@@ -143,7 +143,7 @@ contains
 
 !      Have to wait since if doing diagnostics don't want overwrite f
 !$     do i = 1,size(lflags_to_wait_on) 
-!$        call signal_wait(lflags_to_wait_on(i)%p, .false.)
+!$       call signal_wait(lflags_to_wait_on(i)%p, .false.)
 !$     enddo 
        call copy_farray_c(f)
 
@@ -236,6 +236,6 @@ contains
     call test_rhs_c(f_copy_2,f_copy);
     call die_gracefully
 
-  endsubroutine  test_rhs_gpu
+  endsubroutine test_rhs_gpu
 !**************************************************************************
 endmodule GPU
