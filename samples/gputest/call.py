@@ -9,7 +9,8 @@ def main():
     odop_obs = OdopObs(config_path=ODOP_PATH + "config/odop_obs_conf.yaml")
     odop_obs.start()
 
-    my_funcs.main()
+    my_funcs.run_start()
+    print("End from python")
 
     odop_obs.stop()
 

@@ -490,10 +490,7 @@ subroutine timeloop(f,df,p)
 
 endsubroutine timeloop
 !***********************************************************************
-endmodule Run_module
-!***********************************************************************
-program run
-!
+subroutine run_start() bind(C)
 !  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
 !               address
 ! 31-oct-13/MR: replaced rparam by read_all_init_pars
@@ -534,7 +531,6 @@ program run
   use Syscalls,        only: memusage
   use Timeavg,         only: wsnap_timeavgs
   use Timestep,        only: initialize_timestep
-  use Run_module
 !
 !$ use OMP_lib
 !$ use, intrinsic :: iso_c_binding
@@ -1094,6 +1090,14 @@ program run
   call NSCBC_clean_up
   if (lparticles) call particles_cleanup
   call finalize
+endsubroutine run_start
+!***********************************************************************
+endmodule Run_module
+!***********************************************************************
+program run
+        use Run_module
+!
+        call run_start
 !
 endprogram run
 !***********************************************************************
