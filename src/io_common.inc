@@ -152,6 +152,7 @@
 !
       use FarrayManager, only: farray_retrieve_metadata_ode
       use File_Io, only: file_exists
+      use General, only: rtoa
       use Mpicomm, only: mpibcast
 
       character (len=*), intent(IN) :: file
@@ -192,7 +193,8 @@
           endif
         
           read(lun_input) t_in
-          if (t_in/=real(t)) call fatal_error("input_ode","times differ between "//trim(file)//" and var.dat")
+          if (t_in/=real(t)) call warning("input_ode","times differ between "//trim(file_)//" and " &
+		                          //trim(file)//": "//trim(rtoa(t_in))//"/="//trim(rtoa(real(t))))
           close(lun_input) 
         else
           call warning('input_ode','no ODE data available')
