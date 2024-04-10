@@ -1708,12 +1708,15 @@ module Radiation
           if (ip<11) then
             if (m==m1.and.n==n1) then
               alpha=scalefactor_radpressure1*p%rho1*f(l1:l2,m,n,ikapparho)*Srad(l1:l2,m,n)/c_light
+              print*,'AXEL: Srad=',Srad(l1:l2,m,n)
+              print*,'AXEL: kappa=',p%rho1*f(l1:l2,m,n,ikapparho)
               print*,'AXEL: alpha=',alpha
             endif
           endif
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
 !
-!  now do (chi/c)*(-P.v/c) = (chi/c)*(-P.v/c) = 
+!  now do third term, (chi/c)*(-P.v/c) = (chi/c)*(-P.v/c) = 
+!  Note that kappa*rho is already included in (l1:l2,m,n,kpres).
 !
           do j=1,3
             radpressure(:,j)=0.
@@ -1722,7 +1725,7 @@ module Radiation
               kpres=iKR_press+(ij-1)
               kvel=iuu+(i-1)
               radpressure(:,j)=radpressure(:,j)-scalefactor_radpressure2*p%rho1* &
-                f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,kpres)*f(l1:l2,m,n,kvel)
+                f(l1:l2,m,n,kpres)*f(l1:l2,m,n,kvel)
             enddo
           enddo
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light**2
