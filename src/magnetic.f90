@@ -126,6 +126,7 @@ module Magnetic
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
   real, dimension(nx) :: xmask_mag, xmask1_mag
   real, dimension(nz) :: zmask_mag
+  real :: B0_ext_z=0.0, B0_ext_z_H=0.0
   real :: sheet_position=1.,sheet_thickness=0.1,sheet_hyp=1.
   real :: t_bext = 0.0, t0_bext = 0.0
   real :: radius=0.1, epsilonaa=0.01, x0aa=0.0, y0aa=0.0, z0aa=0.0
@@ -249,7 +250,7 @@ module Magnetic
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
 !
   namelist /magnetic_init_pars/ &
-      B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
+      B_ext, B0_ext, B0_ext_z, B0_ext_z_H, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
       ABCaa, x0aa, y0aa, z0aa, widthaa, &
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
       initaa, amplaa, amplaa2, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
@@ -367,7 +368,7 @@ module Magnetic
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, eta_anom_thresh, eta_ampl, &
-      B_ext, B0_ext, t_bext, t0_bext, J_ext, &
+      B_ext, B0_ext, B0_ext_z, B0_ext_z_H, t_bext, t0_bext, J_ext, &
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, Hhall, battery_term, &
       ihall_term, hall_tdep_t0, hall_tdep_exponent, hall_zdep_exponent, &
       eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, &
@@ -3781,6 +3782,12 @@ module Magnetic
           if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+B_ext(2)*f(l1:l2,m,n,iglobal_bz_ext)+B_ext(3)
         endif
       endif
+!
+!  Add Bz stratification.
+!
+        if (B0_ext_z /= 0.0) then
+          p%bb(:,3) = p%bb(:,3) + get_B0_ext_z(n)
+        endif
 !
 !  b2 now (since 18 June 2013) includes B_ext by default.
 !  This can be changed by setting lignore_Bext_in_b2=T
@@ -10676,6 +10683,30 @@ module Magnetic
       endif
 !
     endsubroutine get_bext
+!*********************************************************************** 
+    real function get_B0_ext_z(pz)
+!
+!  Get the external magnetic field stratification along z.
+!
+!  vpandey: coded
+!
+      integer, intent(in) :: pz
+!
+      integer :: iz
+      real, dimension(mz), save :: Bz_stratified
+      logical, save :: lfirst_call = .true.
+!
+      if (lfirst_call) then
+! set up z-stratification
+        do iz = 1, mz
+          Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / B0_ext_z_H)
+        enddo
+        lfirst_call = .false.
+      endif
+!
+      get_B0_ext_z = Bz_stratified(pz)
+!
+    endfunction get_B0_ext_z
 !***********************************************************************
     real function beltrami_phase()
 
