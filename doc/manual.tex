@@ -4583,6 +4583,33 @@ To visualize with \name{IDL} just type
 power spectrum. See head of \file[power.pro]{\$PENCIL_HOME/idl/power.pro}
 for options to \cmd{power}.
 
+By default, the spectra for the initial times time is not outputted,
+but it can sometimes be useful to have it.
+In that case, one can put \cmd{lspec_start=T}.
+
+\subsection{Other power spectra}
+
+Over the years, many more spectra have been outputted and not
+everything is immediately documented.
+Here some examples:
+\begin{verbatim}
+  data/powerhel_mag.dat
+  data/powerhel_kin.dat
+  data/power_saffman_ub.dat
+  data/power_saffman_mag.dat
+  data/power_mag.dat
+  data/power_krms.dat
+  data/power_kin.dat
+\end{verbatim}
+Here, the first two are helicity spectra that come ``for free''
+(in addition to those with \cmd{_kin} and \cmd{_mag}) when
+one invokes \cmd{ou_spec=T} and \cmd{ab_spec=T}.
+The ones with \cmd{_saffman} refer to the spectra related to Saffman-like
+invariants such as the Hosking integral (which refers to \cmd{power_mag.dat})
+and the cross-helicity Saffman-like invariant (\cmd{power_saffman_ub.dat}).
+Their slopes for $k\to0$ are the invariants divided by $2\pi^2$; see
+the papers by Hosking \& Schekochihin (2021) as well as Zhou et al.\ (2022).
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Structure functions}
@@ -8759,7 +8786,7 @@ where \code{nw=nx*ny*nz}.
 9216&Triolith&$1.30{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x32x72& 1-mar-14 & AB \\
 16384&Hermit&$6.4{\!\times\!}10^{-4}$&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&16x32x32&22-aug-13&PJK\\
 16384&Dardel&$1.37{\!\times\!}10^{-4}$&$16384{\!\times\!}16384$&2D-MHD-6th&128x128&6-feb-24&AB\\
-16384&Dardel&$2.05{\!\times\!}10^{-4}$&$16384{\!\times\!}16384$&2D-MHD-10th&128x128&6-feb-24&AB\\
+16384&Dardel&$2.05{\!\times\!}10^{-4}$&$16384{\!\times\!}16384$&2D-MHD-10th&128x128&6-feb-24&AB\\ %(=50% slower)
 18432 & Kraken& 0.00316  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 24x48x16 &13-jan-12 & WL\\
 18432 & Kraken&$8.8{\!\times\!}10^{-4}$  &$768{\!\times\!}1536{\!\times\!}512$ & magn/noentro & 24x48x16 &17-jan-12 & WL\\
 18432 & Kraken& $4.0{\!\times\!}10^{-4}$ &$1536{\!\times\!}3072{\!\times\!}1024$ & magn/noentro & 24x48x16 &18-jan-12 & WL\\

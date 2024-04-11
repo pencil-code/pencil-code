@@ -47,7 +47,8 @@
   \var{uyuzmx}    & $\langle u_y u_z\rangle_{yz}$ \\
   \var{oumx}      & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>_{yz}$ \\
-  \var{ekinmx}    & $\langle{1\over2}\rho u^2\rangle_{xy}$ \\
+  \var{ekinmx}    & $\langle{1\over2}\rho u^2\rangle_{yz}$ \\
+  \var{fkinxmx}   & $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
@@ -64,7 +65,7 @@
   \var{uyTTmx}    & $\left< u_y T \right>_{yz}$ \\
   \var{uzTTmx}    & $\left< u_z T \right>_{yz}$ \\
   \var{fconvxmx}  & $\left< c_p \varrho u_x T \right>_{yz}$ \\
-  \var{fradmx}    & $\left<F_{\rm rad}\right>_{yz}$ \\
+  \var{fradmx}    & $\left<F_{\rm rad}\right>_{yz}$ (for K-profile or constant K) \\
   \var{fturbmx}   & $\left<\varrho T \chi_t \nabla_x
                     s\right>_{yz}$ \quad(turbulent
                     heat flux) \\
@@ -72,6 +73,7 @@
   \var{dcoolx}    & surface cooling flux \\
   \var{fradx_kramers} & $F_{\rm rad}$ (from Kramers'
                     opacity) \\
+  \var{fradx_constchi} & $\left<F_{\rm rad}\right>_{yz}$ (for chi-const) \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -143,7 +145,8 @@
   \var{uyuzmx}    & $\langle u_y u_z\rangle_{yz}$ \\
   \var{oumx}      & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>_{yz}$ \\
-  \var{ekinmx}    & $\langle{1\over2}\rho u^2\rangle_{xy}$ \\
+  \var{ekinmx}    & $\langle{1\over2}\rho u^2\rangle_{yz}$ \\
+  \var{fkinxmx}   & $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic_shearboxJ.f90}} \\
 \midrule
