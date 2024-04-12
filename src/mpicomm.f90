@@ -5523,7 +5523,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Doing x-y transpose if var='y'
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       if (var=='y') then
@@ -5674,7 +5674,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       !$omp end single
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
     endsubroutine transp
 !***********************************************************************
@@ -5699,7 +5699,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       if (nprocx>1) then
@@ -5794,7 +5794,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine transp_xy
@@ -5820,7 +5820,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       nx_other=size(a,1); ny_other=size(a,2)
@@ -5914,7 +5914,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine transp_xy_other
@@ -5944,7 +5944,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       nx_other=size(a,1); ny_other=size(a,2) ; nz_other=size(a,3)
@@ -6100,7 +6100,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine transp_other
@@ -6124,7 +6124,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       if (mod(nxgrid,nprocz)/=0) then
@@ -6150,7 +6150,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine transp_xz
@@ -6174,7 +6174,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       if (mod(nxgrid,nprocz)/=0) then
@@ -6200,7 +6200,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine transp_zx
@@ -7767,7 +7767,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       do ibox = 0, nprocx-1
@@ -7789,7 +7789,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_x
@@ -7828,7 +7828,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       do ibox = 0, nprocy-1
@@ -7850,7 +7850,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_y_1D
@@ -7873,7 +7873,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       nbox = nx*ny
@@ -7897,7 +7897,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_y_2D
@@ -7921,7 +7921,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       inx = size (in, 1)
@@ -7962,7 +7962,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (allocated (recv_buf)) deallocate (recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_y_3D
@@ -7986,7 +7986,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       inx = size (in, 1)
@@ -8030,7 +8030,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_y_4D
@@ -8117,7 +8117,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       do ibox = 0, nprocz-1
@@ -8139,7 +8139,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       enddo
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_z_1D
@@ -8163,7 +8163,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       ina = size (in, 2)
@@ -8201,7 +8201,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_z_2D
@@ -8225,7 +8225,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       inx = size (in, 1)
@@ -8266,7 +8266,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_z_3D
@@ -8290,7 +8290,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       inx = size (in, 1)
@@ -8334,7 +8334,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_z_4D
@@ -8348,7 +8348,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(nzgrid), intent(in) :: in
       real, dimension(nz), intent(out) :: out
-!
 !
       !$omp workshare
       out = in(nz*ipz+1:nz*(ipz+1))
@@ -8426,11 +8425,13 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (nprocx == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
 !
@@ -8470,8 +8471,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       deallocate (send_buf, recv_buf)
       !$omp end single
+
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_xy_2D
@@ -8501,7 +8503,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       nnx=size(in,1) ; nny=size(in,2)
@@ -8547,7 +8549,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_xy_2D_other
@@ -8581,7 +8583,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
 !
@@ -8646,7 +8648,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_xy_3D
@@ -8678,7 +8680,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
 !
@@ -8727,7 +8729,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_xy_4D
@@ -8758,7 +8760,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
 !
@@ -8800,7 +8802,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine unmap_from_pencil_xy_2D
@@ -8830,7 +8832,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       if (nxgrid/=nygrid) &
@@ -8879,7 +8881,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine unmap_from_pencil_xy_2D_other
@@ -8914,7 +8916,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
 !
@@ -8979,7 +8981,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate(send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine unmap_from_pencil_xy_3D
@@ -9011,7 +9013,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
 !
@@ -9060,7 +9062,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine unmap_from_pencil_xy_4D
@@ -9091,7 +9093,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       inx = size (in, 1)
@@ -9140,7 +9142,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine transp_pencil_xy_2D
@@ -9173,7 +9175,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Check if ghost cells are included.
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       ngc = 0
@@ -9236,7 +9238,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine transp_pencil_xy_3D
@@ -9267,7 +9269,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
       inx = size (in, 1)
@@ -9332,7 +9334,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine transp_pencil_xy_4D
@@ -9364,7 +9366,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
 !
@@ -9410,7 +9412,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_yz_3D
@@ -9442,7 +9444,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
 !
@@ -9491,7 +9493,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine remap_to_pencil_yz_4D
@@ -9523,7 +9525,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
 !
@@ -9568,7 +9570,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine unmap_from_pencil_yz_3D
@@ -9600,7 +9602,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         return
       endif
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
       !$omp single
 !
@@ -9649,7 +9651,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       deallocate (send_buf, recv_buf)
       !$omp end single
       if (loptest(lsync,.true.)) then
-              !$omp barrier
+        !$omp barrier
       endif
 !
     endsubroutine unmap_from_pencil_yz_4D
@@ -9778,7 +9780,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, intent(in) :: xi,zj,zproc_no
       integer :: my_iniy,my_finy
 !
-      ay=0.
       if (ipz==(zproc_no-1)) then
         my_iniy=ipy*ny+1
         my_finy=(ipy+1)*ny
@@ -9800,7 +9801,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, intent(in) :: xi,yj,yproc_no
       integer :: my_iniz,my_finz
 !
-      az=0.
       if (ipy==(yproc_no-1)) then
         my_iniz=ipz*nz+1
         my_finz=(ipz+1)*nz

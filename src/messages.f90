@@ -97,6 +97,7 @@ module Messages
       character(len=*), optional :: location, message
       logical, optional :: force
 !
+      !$omp single
       if (present(location)) scaller=location
 !
       if (.not.llife_support) then
@@ -119,6 +120,7 @@ module Messages
         endif
 !
       endif
+      !$omp end single
 !
     endsubroutine not_implemented
 !***********************************************************************
@@ -132,6 +134,7 @@ module Messages
 !
       logical :: fatal
 !
+      !$omp single
       if (present(location)) scaller=location
 !
       if (.not.llife_support) then
@@ -155,6 +158,7 @@ module Messages
         endif
 !
       endif
+      !$omp end single
 !
     endsubroutine fatal_error
 !***********************************************************************
@@ -173,6 +177,7 @@ module Messages
 !
       logical :: fatal
 !
+      !$omp single
       if (present(location)) scaller=location
 !
       fatal=loptest(force)
@@ -187,6 +192,7 @@ module Messages
 !
       if (fatal) call die_immediately()
       call die_gracefully()
+      !$omp end single
 !
     endsubroutine inevitably_fatal_error
 !***********************************************************************
@@ -200,6 +206,7 @@ module Messages
       character(len=*), optional :: location
       character(len=*)           :: message
 !
+      !$omp single
       if (present(location)) scaller=location
 !
       if (.not.llife_support) then
@@ -222,6 +229,7 @@ module Messages
           message_stored=trim(message_stored)//'; '//trim(scaller)//": "//trim(message)
         endif
       endif
+      !$omp end single
 !
     endsubroutine fatal_error_local
 !***********************************************************************
@@ -294,6 +302,7 @@ module Messages
       character(len=*), optional :: location
       character(len=*)           :: message
 !
+      !$omp single
       if (present(location)) scaller=location
 
       if (.not.llife_support) then
@@ -309,6 +318,7 @@ module Messages
         if (ldie_onerror) call die_gracefully
 !
       endif
+      !$omp end single
 !
     endsubroutine error
 !***********************************************************************
@@ -325,6 +335,7 @@ module Messages
       character (len=*)           :: message
       integer, optional :: ipr
 !
+      !$omp single
       if (present(location)) scaller=location
 
       if (.not.llife_support) then
@@ -339,6 +350,7 @@ module Messages
         if (ldie_onwarning) call die_gracefully
 !
       endif
+      !$omp end single
 !
     endsubroutine warning
 !***********************************************************************
@@ -356,6 +368,7 @@ module Messages
 
       integer :: level_ = iinformation_ip
 !
+      !$omp single
       if (present(location)) scaller=location
 
       if (present(level)) level_=level
@@ -363,6 +376,7 @@ module Messages
       if ((iproc_world == ioptest(ipr,0)) .and. (message /= '')) then
         if (ip<=level_) write (*,*) trim(scaller) // ": " // trim(message)//'.'
       endif
+      !$omp end single
 !
     endsubroutine information
 !***********************************************************************

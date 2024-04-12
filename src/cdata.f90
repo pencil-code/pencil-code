@@ -810,7 +810,7 @@ module Cdata
 !!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
 
 !$ logical, target :: ldiag_perform_diagnostics=.false.
-  integer :: num_helper_threads=0, thread_id=1
+  integer :: num_helper_threads=1, thread_id=1
 ! 
 ! threadprivate definitions for OpenMP
 !
