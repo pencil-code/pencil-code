@@ -475,7 +475,6 @@ CUDA_RELPATH=..
 DSL_WORKDIR=$(CUDA_MAKEDIR)/DSL/local
 LIBGPU =
 GPU_DEPS =
-gpu_preps = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
 ifneq ($(GPU),nogpu)
 #
   ifneq ($(MODULE_CMD),)
@@ -510,6 +509,7 @@ ifneq ($(GPU),nogpu)
 
 #  GPU_DEPS = $(LIBGPU) gpu_preps
 
+      gpu_preps = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac $(LIBGPU)
       GPU_DEPS = $(gpu_preps)
       #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
@@ -2936,9 +2936,9 @@ run.o: $(run) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #needs LIBGPU as prerequisite, this in turn needs a rule
-#$(LIBGPU):
-#	make -f astaroth/Makefile
-#
+$(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h
+	cd astaroth && make
+
 special_preps:
 ifeq ($(SPECIAL_MULT),1)
 	@sed -e '/module  *procedure/ ! s/^\( *module  *\)[a-zA-Z0-9_]* */\1Special/' \
@@ -3009,8 +3009,9 @@ endif
 ##$(DSL_WORKDIR)/solve.ac: Makefile.local
 #
 #$(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local
-$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_MAKEDIR)/Makefile.vendor $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac: .sentinel
-.sentinel: Makefile.local
+#$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_MAKEDIR)/Makefile.vendor $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac: 
+$(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local $(CPARAM_OBJ)
+	@echo "HI"
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#pragma once' > $(CUDA_INCDIR)/PC_moduleflags.h
 	@sed -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' $(PENCIL_HOME)/src/gpu.sed > gpu.sed.tmp
