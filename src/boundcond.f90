@@ -691,7 +691,6 @@ module Boundcond
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j, topbot
-      real :: H_fact,B0_init,L0_init
       logical :: ip_ok
       type (boundary_condition) :: bc
       real :: XXi, XXi0, tau_XXi
@@ -749,9 +748,6 @@ module Boundcond
                 case ('0')
                   ! BCX_DOC: zero value in ghost zones, free value on boundary
                   call bc_zero_x(f,topbot,j)
-                case('evf')
-                  !non periodic vector potential
-                  call exp_dec_vert_field_x(H_fact,B0_init,L0_init,f,topbot,j)
                 case ('p')
                   ! BCX_DOC: periodic
                   call bc_per_x(f,topbot,j)
@@ -1070,7 +1066,6 @@ module Boundcond
       use EquationOfState
 !
       real, dimension (:,:,:,:) :: f
-      real :: H_fact,B0_init,L0_init
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j, topbot
@@ -1119,9 +1114,6 @@ module Boundcond
               case ('0')
                 ! BCY_DOC: zero value in ghost zones, free value on boundary
                 call bc_zero_y(f,topbot,j)
-              case('evf')
-                  !non periodic vector potential
-                  call exp_dec_vert_field_y(H_fact,B0_init,L0_init,f,topbot,j)
               case ('p')
                 ! BCY_DOC: periodic
                 call bc_per_y(f,topbot,j)
@@ -1343,7 +1335,6 @@ module Boundcond
       use Magnetic_meanfield, only: pc_aasb_const_alpha
 !
       real, dimension (:,:,:,:) :: f
-      real :: H_fact,B0_init,L0_init
       integer, optional :: ivar1_opt, ivar2_opt
       real, dimension (size(f,4)) :: fbcz_zero
       integer :: ivar1, ivar2, j, topbot
@@ -1382,9 +1373,6 @@ module Boundcond
               case ('0')
                 ! BCZ_DOC: zero value in ghost zones, free value on boundary
                 call bc_zero_z(f,topbot,j)
-              case('evf')
-                  !non periodic vector potential
-                  call exp_dec_vert_field_z(H_fact,B0_init,L0_init,f,topbot,j)
               case ('p')
                 ! BCZ_DOC: periodic
                 call bc_per_z(f,topbot,j)
@@ -6883,149 +6871,6 @@ module Boundcond
 !
     endsubroutine bc_zero_z
 !***********************************************************************
-!  Non periodic vector potential.
-!
-!  12-April-2024 / Vartika Pandey
-!
-    subroutine exp_dec_vert_field_x(H_fact,B0_init,L0_init,f,topbot,j)
-!
-      real :: H_fact,B0_init,L0_init
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-      integer :: j
-      integer :: ix,iy,iz
-!
-      select case (topbot)
-        case (BOT)
-          do iz=1,size(f,3)
-            do iy=1,size(f,2)
-              do ix=1,nghost
-                f(ix,iy,iz,j)     = B0_init*( sin(2.0*pi*((y(iy)/Ly-0.5)/L0_init + 0.5))) &
-                                       *sin((pi*((y(iy)/Ly-0.5)/L0_init + 0.5)))**2 &
-                                       *exp(-z(iz)/H_fact)
-                f(ix,iy,iz,j+1)   = B0_init*(-sin(2.0*pi*((x(ix)/Lx-0.5)/L0_init + 0.5))) &
-                                       *sin((pi*((x(ix)/Lx-0.5)/L0_init + 0.5)))**2 &
-                                       *exp(-z(iz)/H_fact)
-                f(ix,iy,iz,j+2) = 0
-              enddo
-            enddo
-          enddo
-!
-        case (TOP)
-          do iz=1,size(f,3)
-            do iy=1,size(f,2)
-              do ix=l2+1,l2+nghost
-                f(ix,iy,iz,j)     = B0_init*( sin(2.0*pi*((y(iy)/Ly-0.5)/L0_init + 0.5))) &
-                                        *sin((pi*((y(iy)/Ly-0.5)/L0_init + 0.5)))**2 &
-                                        *exp(-z(iz)/H_fact)
-                f(ix,iy,iz,j+1)   = B0_init*(-sin(2.0*pi*((x(ix)/Lx-0.5)/L0_init + 0.5))) &
-                                        *sin((pi*((x(ix)/Lx-0.5)/L0_init + 0.5)))**2 &
-                                        *exp(-z(iz)/H_fact)
-                f(ix,iy,iz,j+2) = 0
-              enddo
-            enddo
-          enddo
-!
-        case default
-          call fatal_error("exp_dec_vert_field_x: ","topbot should be BOT or TOP")
-!
-    endselect
-    endsubroutine exp_dec_vert_field_x
-
-!***********************************************************************
-    subroutine exp_dec_vert_field_y(H_fact,B0_init,L0_init,f,topbot,j)
-!
-      real :: H_fact,B0_init,L0_init
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-      integer :: j
-      integer :: ix,iy,iz
-!
-      select case (topbot)
-        case (BOT)
-          do iz=1,size(f,3)
-            do ix=1,size(f,1)
-              do iy=1,nghost
-                f(ix,iy,iz,j)     = B0_init*( sin(2.0*pi*((y(iy)/Ly-0.5)/L0_init + 0.5))) &
-                                       *sin((pi*((y(iy)/Ly-0.5)/L0_init + 0.5)))**2 &
-                                         *exp(-z(iz)/H_fact)
-                f(ix,iy,iz,j+1)   = B0_init*(-sin(2.0*pi*((x(ix)/Lx-0.5)/L0_init + 0.5))) &
-                                       *sin((pi*((x(ix)/Lx-0.5)/L0_init + 0.5)))**2 &
-                                       *exp(-z(iz)/H_fact)
-                f(ix,iy,iz,j+2) = 0
-              enddo
-            enddo
-          enddo
-!
-           case (TOP)
-            do iz=1,size(f,3)
-             do ix=1,size(f,1)
-              do iy=m2+1,m2+nghost
-               f(ix,iy,iz,j)     = B0_init*( sin(2.0*pi*((y(iy)/Ly-0.5)/L0_init + 0.5))) &
-                                       *sin((pi*((y(iy)/Ly-0.5)/L0_init + 0.5)))**2 &
-                                       *exp(-z(iz)/H_fact)
-               f(ix,iy,iz,j+1)   = B0_init*(-sin(2.0*pi*((x(ix)/Lx-0.5)/L0_init + 0.5))) &
-                                       *sin((pi*((x(ix)/Lx-0.5)/L0_init + 0.5)))**2 &
-                                       *exp(-z(iz)/H_fact)
-               f(ix,iy,iz,j+2) = 0
-              enddo
-            enddo
-          enddo
-!
-        case default
-          call fatal_error("exp_dec_vert_field_y: ","topbot should be BOT or TOP")
-!
-    endselect
-    endsubroutine exp_dec_vert_field_y
-
-!***********************************************************************
-    subroutine exp_dec_vert_field_z(H_fact,B0_init,L0_init,f,topbot,j)
-!
-      real :: H_fact,B0_init,L0_init
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-      integer :: j
-      integer :: ix,iy,iz
-!
-      select case (topbot)
-        case (BOT)
-          do iy=1,size(f,2)
-            do ix=1,size(f,1)
-              do iz=1,nghost
-               f(ix,iy,iz,j)     = B0_init*( sin(2.0*pi*((y(iy)/Ly-0.5)/L0_init + 0.5))) &
-                                       *sin((pi*((y(iy)/Ly-0.5)/L0_init + 0.5)))**2 &
-                                       *exp(-z(iz)/H_fact)
-               f(ix,iy,iz,j+1)   = B0_init*(-sin(2.0*pi*((x(ix)/Lx-0.5)/L0_init + 0.5))) &
-                                       *sin((pi*((x(ix)/Lx-0.5)/L0_init + 0.5)))**2 &
-                                       *exp(-z(iz)/H_fact)
-               f(ix,iy,iz,j+2) = 0
-              enddo
-            enddo
-          enddo
-!
-           case (TOP)
-            do iy=1,size(f,2)
-             do ix=1,size(f,1)
-              do iz=n2+1,n2+nghost
-               f(ix,iy,iz,j)     = B0_init*( sin(2.0*pi*((y(iy)/Ly-0.5)/L0_init + 0.5))) &
-                                       *sin((pi*((y(iy)/Ly-0.5)/L0_init + 0.5)))**2 &
-                                       *exp(-z(iz)/H_fact)
-               f(ix,iy,iz,j+1)   = B0_init*(-sin(2.0*pi*((x(ix)/Lx-0.5)/L0_init + 0.5))) &
-                                       *sin((pi*((x(ix)/Lx-0.5)/L0_init + 0.5)))**2 &
-                                       *exp(-z(iz)/H_fact)
-               f(ix,iy,iz,j+2) = 0
-              enddo
-            enddo
-          enddo
-!
-        case default
-          call fatal_error("exp_dec_vert_field_z: ","topbot should be BOT or TOP")
-!
-    endselect
-    endsubroutine exp_dec_vert_field_z
-    
-!***********************************************************************
-
     subroutine bc_inflow_z(f,topbot,j,lforce_ghost)
 !
 !  Inflow boundary conditions.
