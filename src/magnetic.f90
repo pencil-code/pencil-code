@@ -126,7 +126,6 @@ module Magnetic
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
   real, dimension(nx) :: xmask_mag, xmask1_mag
   real, dimension(nz) :: zmask_mag
-  real :: H_fact=0.0, B0_init=0.0, L0_init=0.0
   real :: B0_ext_z=0.0, B0_ext_z_H=0.0
   real :: sheet_position=1.,sheet_thickness=0.1,sheet_hyp=1.
   real :: t_bext = 0.0, t0_bext = 0.0
@@ -254,7 +253,7 @@ module Magnetic
       B_ext, B0_ext, B0_ext_z, B0_ext_z_H, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
       ABCaa, x0aa, y0aa, z0aa, widthaa, &
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
-      initaa, amplaa, amplaa2, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, H_fact, B0_init, L0_init, radRFP, &
+      initaa, amplaa, amplaa2, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
       coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, ladd_bb_init, &
       mu_r, mu_ext_pot, lB_ext_pot, &
@@ -2026,7 +2025,6 @@ module Magnetic
         case ('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
         case ('tanhxy'); call tanh_hyperbola(amplaa(j),f,iaa,sheet_position,sheet_thickness,sheet_hyp)
         case ('exponential'); call exponential(amplaa(j),f,iaa,kz_aa(j))
-        case ('exp_dec_vert_field'); call exp_dec_vert_field(H_fact,B0_init, L0_init,f,iaa)
         case ('bsiny'); call acosy(amplaa(j),f,iaa,ky_aa(j))
         case ('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('modeb'); call modeb(amplaa(j),coefbb,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
