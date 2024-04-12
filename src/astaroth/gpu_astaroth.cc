@@ -1136,9 +1136,7 @@ extern "C" void reloadConfig()
 {
   setupConfig(mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
-  Device device=acGridGetDevice();
-  acDeviceLoadMeshInfo(device, mesh.info);
-  acDeviceUpdateArrays(device, mesh.info);
+  acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/

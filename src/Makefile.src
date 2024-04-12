@@ -498,13 +498,14 @@ ifneq ($(GPU),nogpu)
   ifneq ($(findstring gpu_astaroth, $(GPU)),)
 #
     ifneq ($(wildcard $(PENCIL_HOME)/src/astaroth/submodule/*),)
-
       #FFLAGS_GENERAL += -mcmodel=medium
       GPU_INTERFACE = gpu_astaroth_ansi.o
       ifeq ($(REAL_PRECISION),double)
-        LIBGPU = astaroth_dbl
+        LIBGPU = astaroth/libastaroth_dbl.so
+	LIBGPU_NAME = astaroth_dbl
       else
-        LIBGPU = astaroth_sgl
+        LIBGPU = astaroth/libastaroth_sgl.so
+	LIBGPU_NAME = astaroth_sgl
       endif
 
 #  GPU_DEPS = $(LIBGPU) gpu_preps
@@ -515,7 +516,7 @@ ifneq ($(GPU),nogpu)
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
       #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI
       #good that this is still here
-      LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU)
+      LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       ifneq ($(IS_CRAY),)
         LDFLAGS_LIB +=	-L /opt/cray/pe/lib64 -lmpi_gtl_hsa
       endif
@@ -3010,8 +3011,12 @@ endif
 #
 #$(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local
 #$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_MAKEDIR)/Makefile.vendor $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac: 
-$(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local $(CPARAM_OBJ)
-	@echo "HI"
+$(DSL_WORKDIR)/solve.ac: $(CUDA_INCDIR)/PC_moduleflags.h
+$(DSL_WORKDIR)/equations.h: $(CUDA_INCDIR)/PC_moduleflags.h
+$(DSL_WORKDIR)/fieldecs.h: $(CUDA_INCDIR)/PC_moduleflags.h
+$(CUDA_MAKEDIR)/Makefile.vendor: $(CUDA_INCDIR)/PC_moduleflags.h
+$(CUDA_INCDIR)/PC_modulesources.h: $(CUDA_INCDIR)/PC_moduleflags.h
+$(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local $(CPARAM_OBJ) $(CDATA_OBJ)
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#pragma once' > $(CUDA_INCDIR)/PC_moduleflags.h
 	@sed -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' $(PENCIL_HOME)/src/gpu.sed > gpu.sed.tmp
