@@ -32,7 +32,7 @@
 ! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
 ! PENCILS PROVIDED hjparallel; hjperp; nu_ni1
 ! PENCILS PROVIDED gamma_A2; clight2; gva(3); vmagfric(3)
-! PENCILS PROVIDED bb_sph(3),advec_va2
+! PENCILS PROVIDED bb_sph(3); advec_va2; Lam
 !***************************************************************
 module Magnetic
 !
@@ -871,6 +871,7 @@ module Magnetic
   integer :: idiag_obmz=0       ! XYAVG_DOC: $\left<\ov\cdot\Bv\right>|_{xy}$
   integer :: idiag_uamz=0       ! XYAVG_DOC: $\left<\uv\cdot\Av\right>|_{xy}$
   integer :: idiag_bzdivamz=0   ! XYAVG_DOC: $\left<B_z\nabla\cdot\Av\right>|_{xy}$
+  integer :: idiag_bzLammz=0    ! XYAVG_DOC: $\left<B_z\Lambda\right>|_{xy}$
   integer :: idiag_divamz=0     ! XYAVG_DOC: $\left<\nabla\cdot\Av\right>|_{xy}$
   integer :: idiag_uxbxmz=0     ! XYAVG_DOC: $\left<u_x b_x\right>|_{xy}$
   integer :: idiag_uybxmz=0     ! XYAVG_DOC: $\left<u_y b_x\right>|_{xy}$
@@ -1978,6 +1979,9 @@ module Magnetic
       if (lcoulomb.and..not.lpoisson) &
         call fatal_error('initialize_magnetic', 'Coulomb gauge needs the Poisson module')
 
+      if (.not.lcoulomb.and.idiag_bzLammz/=0) &
+        call fatal_error('initialize_magnetic', 'Coulomb gauge needs to be invoked for bzLamm')
+
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -2937,7 +2941,7 @@ module Magnetic
       endif
 !
       if (idiag_divamz/=0 .or. idiag_bzdivamz/=0) lpenc_diagnos(i_diva)=.true.
-      if (idiag_bzdivamz/=0) lpenc_diagnos(i_bb)=.true.
+      if (idiag_bzdivamz/=0 .or. idiag_bzLammz/=0) lpenc_diagnos(i_bb)=.true.
 !
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0 .or. &
@@ -4273,6 +4277,8 @@ module Magnetic
           p%vmagfric(:,i)=abs(p%jxb(:,i))*tmp1
         enddo
       endif
+! Lam
+      if (lpenc_loc(i_Lam)) p%Lam=f(l1:l2,m,n,iLam)
 !
 !  Store bb, jj or jxb in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
@@ -6586,6 +6592,7 @@ module Magnetic
         call xysum_mn_name_z(p%ua,idiag_uamz)
         call xysum_mn_name_z(p%diva,idiag_divamz)
         if (idiag_bzdivamz/=0) call xysum_mn_name_z(p%bb(:,3)*p%diva,idiag_bzdivamz)
+        if (idiag_bzLammz/=0) call xysum_mn_name_z(p%bb(:,3)*p%Lam,idiag_bzLammz)
         if (idiag_uxbxmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%bb(:,1),idiag_uxbxmz)
         if (idiag_uybxmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%bb(:,1),idiag_uybxmz)
         if (idiag_uzbxmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%bb(:,1),idiag_uzbxmz)
@@ -9602,7 +9609,8 @@ module Magnetic
         idiag_bxbzmz=0; idiag_bybzmz=0
         idiag_b2mx=0; idiag_a2mz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
         idiag_jbmz=0; idiag_abmz=0; idiag_ubmz=0; idiag_ujmz=0; idiag_obmz=0; idiag_uamz=0
-        idiag_bzdivamz=0; idiag_divamz=0; idiag_d6abmz=0; idiag_jem=0; idiag_aem=0; idiag_ujxbm=0
+        idiag_bzdivamz=0; idiag_bzlammz=0; idiag_divamz=0; idiag_d6abmz=0
+        idiag_jem=0; idiag_aem=0; idiag_ujxbm=0
         idiag_uxbxmz=0; idiag_uybxmz=0; idiag_uzbxmz=0
         idiag_uxbymz=0; idiag_uybymz=0; idiag_uzbymz=0
         idiag_uxbzmz=0; idiag_uybzmz=0; idiag_uzbzmz=0
@@ -10147,6 +10155,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'obmz',idiag_obmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uamz',idiag_uamz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzdivamz',idiag_bzdivamz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzLammz',idiag_bzLammz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'divamz',idiag_divamz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxbxmz',idiag_uxbxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uybxmz',idiag_uybxmz)
