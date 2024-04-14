@@ -424,6 +424,10 @@ module Special
 
         if (.not.loverride_ee) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
+if (m==5) then
+  !print*,'AXEL: p%curlb(:,1)=',p%curlb(:,1)
+  !print*,'AXEL: p%jj_ohm(:,1)=',p%jj_ohm(:,1)
+endif
 !
 !  Solve for charge density
 !

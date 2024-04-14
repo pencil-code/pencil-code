@@ -2942,6 +2942,7 @@ module Magnetic
 !
       if (idiag_divamz/=0 .or. idiag_bzdivamz/=0) lpenc_diagnos(i_diva)=.true.
       if (idiag_bzdivamz/=0 .or. idiag_bzLammz/=0) lpenc_diagnos(i_bb)=.true.
+      if (idiag_bzLammz/=0) lpenc_diagnos(i_Lam)=.true.
 !
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0 .or. &
@@ -4278,7 +4279,13 @@ module Magnetic
         enddo
       endif
 ! Lam
-      if (lpenc_loc(i_Lam)) p%Lam=f(l1:l2,m,n,iLam)
+      if (lpenc_loc(i_Lam)) then
+        if (lcoulomb) then
+          p%Lam=f(l1:l2,m,n,iLam)
+        else
+          call fatal_error('calc_pencils_magnetic_pencpar', 'Coulomb gauge needs to be invoked for Lam')
+        endif
+      endif
 !
 !  Store bb, jj or jxb in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
