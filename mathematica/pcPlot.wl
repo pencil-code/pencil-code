@@ -59,6 +59,16 @@ Options:
 Example:
   pcPolarDensityPlot[{r,theta,lnrho},\[IndentingNewLine]    \"DataOptions\"->{\"DownSamplingFractions\"->{2,3},\"ColorFunction\"->ColorData[\"BlueGreenYellow\"]},\[IndentingNewLine]    \"PlotOptions\"->{FrameLabel->{\"x\",\"y\"}}\[IndentingNewLine]  ]"
 
+pcLICPlot::usage="pcLICPlot[array,regionFunc,opts] is a wrapper for ListLineIntegralConvolutionPlot.
+Input:
+  array: A List of form { {{x,y},{vx,vy}},... }.
+  regionFunc: Optional. This should be a Function like
+                Between[Norm[{#1,#2}],r//MinMax] && Between[ArcCos[#2/Norm[{#1,#2}]],theta//MinMax] &
+              which specifies which region should be plotted, as a temporary solution since there is
+              no RegionFunction option for ListLineIntegralConvolutionPlot. The arguments of regionFunc
+              are x and y.
+  opts: Options that will be inherited by ListLineIntegralConvolutionPlot."
+
 spaceTimeDiag::usage="spaceTimeDiag[sim,plane,var,plotStyle:] makes a butterfly diagram from planar averaged data.
 Input:
   sim: String. Directory of the simulation.
@@ -154,13 +164,13 @@ pcPlotStyle[]:=Module[{setOps},
   setOps[ops_List,funcs_List]:=Map[SetOptions[#,ops]&,funcs];
   (*General options for all plots*)
   setOps[{
-      PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,
+      PlotRange->All,Frame->True,Axes->None,LabelStyle->pcLabelStyle,
       FrameStyle->pcLabelStyle,ImageSize->{360,360/GoldenRatio},
       ImagePadding->{{50,50},{50,10}}
     },{
       Plot,LogPlot,LogLogPlot,LogLinearPlot,DensityPlot,
       ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot,
-      ListDensityPlot,ListVectorPlot,ListStreamPlot,
+      ListDensityPlot,ListVectorPlot,ListStreamPlot,ListLineIntegralConvolutionPlot,
       Histogram,SmoothHistogram
     }];
   (*Options for 1D plots*)
@@ -182,7 +192,7 @@ pcPlotStyle[]:=Module[{setOps},
       PlotLegends->Automatic,ColorFunction->pcColors["Rainbow"],
       PlotRangePadding->None
     },{
-      DensityPlot,ListDensityPlot
+      DensityPlot,ListDensityPlot,ListLineIntegralConvolutionPlot
     }];
   setOps[{
       RegionBoundaryStyle->None,RegionFillingStyle->None
@@ -296,6 +306,31 @@ pcPolarDensityPlot[{r0_List,theta0_List,f0_List},OptionsPattern[]]:=Module[{opts
     DeleteCases[OptionValue["PlotOptions"], ( ColorFunction | PlotRange )->_],
     Frame->True,LabelStyle->pcLabelStyle,FrameStyle->pcLabelStyle,
     ImagePadding->{{50,50},{50,10}},Background->Transparent
+  ]
+]
+
+
+(* ::Section:: *)
+(*Wrapper for ListLineIntegralConvolutionPlot*)
+
+
+pcLICPlot[arr_,regionFunc_Function:(True&),opts:OptionsPattern[]]:=Module[{minmax,mask},
+  minmax["x"]=arr[[;;,1,1]]//MinMax;
+  minmax["y"]=arr[[;;,1,2]]//MinMax;
+  minmax["norm"]=MinMax[Norm/@(arr[[;;,2]])];
+  
+  mask=RegionPlot[Not[regionFunc[x,y]],{x,Sequence@@minmax["x"]},{y,Sequence@@minmax["y"]},
+    PlotStyle->White, BoundaryStyle->None
+  ];
+  
+  Show[
+    ListLineIntegralConvolutionPlot[arr,opts,
+      AspectRatio->Differences[minmax["x"]]/Differences[minmax["y"]],
+      ColorFunctionScaling->False,
+      ColorFunction->Function[{x,y,vx,vy,n},ColorData["BlueGreenYellow"][Rescale[n//Log10,minmax["norm"]//Log10]]],
+      LightingAngle->{0,Pi/2}
+    ],
+    mask
   ]
 ]
 
@@ -449,7 +484,7 @@ Protect[
   pcHexColor,pcColors,
   pcLabelStyle,pcPlotStyle,pcPopup,pcTicks,pcInset,
   pcLegend,
-  pcDensityPlot,pcPolarDensityPlot,
+  pcDensityPlot,pcPolarDensityPlot,pcLICPlot,
   spaceTimeDiag,
   showVideo,
   showSlice,showSliceVector,
