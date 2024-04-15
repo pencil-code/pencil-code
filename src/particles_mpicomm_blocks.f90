@@ -88,7 +88,7 @@ module Particles_mpicomm
         if (lroot) print*, 'initialize_particles_mpicomm: nbrickz must be ' // &
             'an integer multiple of nprocz'
         if (lroot) print*, 'initialize_particles_mpicomm: nbrickz, nprocz=', &
-            nbricky, nprocy
+            nbrickz, nprocz
         call fatal_error_local('initialize_particles_mpicomm','')
       endif
       call fatal_error_local_collect()
