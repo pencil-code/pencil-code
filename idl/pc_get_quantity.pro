@@ -655,6 +655,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		Rz = spread (pc_compute_quantity (vars, index, 'dz'), [0,1], [nx,ny]) * abs (uu[*,*,*,2])
 		return, ((Rx > Ry) > Rz) / (nu * unit.length^2/unit.time)
 	end
+;vpandey 7 Sept 2022
 	if (strcmp (quantity, 'Heat_cool_compression', /fold_case)) then begin
 		; Heating/cooling due to compression  ;[J/m^3]
 		gamma = pc_get_parameter ('isentropic_exponent', label=quantity)
