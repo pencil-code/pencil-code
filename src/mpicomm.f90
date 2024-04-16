@@ -5696,7 +5696,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ibox,iy
       integer, optional :: comm
       logical, optional :: lsync
-      
 !
       if (loptest(lsync,.true.)) then
         !$omp barrier
@@ -8498,7 +8497,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (nprocx == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
 
@@ -8579,7 +8580,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  No need to remap if nprocx = 1.
 !
       if (nprocx == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
       if (loptest(lsync,.true.)) then
@@ -8676,7 +8679,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (nprocx == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
       if (loptest(lsync,.true.)) then
@@ -8756,7 +8761,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (nprocx == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
       if (loptest(lsync,.true.)) then
@@ -8827,7 +8834,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 
       if (nprocx == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
 !
@@ -8912,7 +8921,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  No need to unmap if nprocx = 1.
 !
       if (nprocx == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
       if (loptest(lsync,.true.)) then
@@ -9009,7 +9020,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (nprocx == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
       if (loptest(lsync,.true.)) then
@@ -9362,7 +9375,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (nprocz == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
       if (loptest(lsync,.true.)) then
@@ -9440,7 +9455,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (nprocz == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
       if (loptest(lsync,.true.)) then
@@ -9521,7 +9538,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (nprocz == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
       if (loptest(lsync,.true.)) then
@@ -9598,7 +9617,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       logical, optional :: lsync
 !
       if (nprocz == 1) then
+        !$omp workshare
         out = in
+        !$omp end workshare
         return
       endif
       if (loptest(lsync,.true.)) then

@@ -1036,7 +1036,7 @@ module Messages
     call mpireduce_sum_int(memuse,memory)
 
     if (lroot) then
-      print'(1x,a,f9.3)', 'Maximum used memory per cpu [MBytes] = ', memcpu/1024.
+      print'(1x,a,f9.3)', 'Maximum used memory per MPI process [MBytes] = ', memcpu/1024.
       if (memory>1e6) then
         print'(1x,a,f12.3)', 'Maximum used memory [GBytes] = ', memory/1024.**2
       else

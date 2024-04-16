@@ -115,8 +115,8 @@ module Snapshot
 !  Index ranges in downsampled array (stored in buffer)
 !  (ghost zones are present, but contain valid data only at boundary)
 !
-        ifirstx = nghost+1 ;   ifirsty = nghost+1 ;   ifirstz = nghost+1
-        ilastx = ifirstx+ndx-1;   ilasty = ifirsty+ndy-1;   ilastz = ifirstz+ndz-1
+        ifirstx = nghost+1 ; ifirsty = nghost+1 ; ifirstz = nghost+1
+        ilastx = ifirstx+ndx-1; ilasty = ifirsty+ndy-1; ilastz = ifirstz+ndz-1
 
 !       print*, 'iproc=', iproc, ifx, ilastx, ndx, ify, ilasty, ndy, ifz, ilastz, ndz
 !
@@ -713,8 +713,7 @@ module Snapshot
 !  Allocate memory for b_vec at run time.
 !
       allocate(b_vec(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('powersnap', &
-          'Could not allocate memory for b_vec')
+      if (stat>0) call fatal_error('powersnap','could not allocate b_vec')
 !
 !  Set llwrite_only.
 !
@@ -758,7 +757,7 @@ module Snapshot
         if (VCT_spec) call powerGWs(f,'VCT',lfirstcall)
         if (Tpq_spec) call powerGWs(f,'Tpq',lfirstcall)
         if (TGW_spec) call powerGWs(f,'TGW',lfirstcall)
-        if (GWd_spec) call powerhel(f,'GWd',lfirstcall_powerhel)
+        if (GWd_spec) call powerhel(f,'GWd',lfirstcall_powerhel)  !MR: this use of lfirstcall_powerhel correct?
         if (GWe_spec) call powerhel(f,'GWe',lfirstcall_powerhel)
         if (GWf_spec) call powerhel(f,'GWf',lfirstcall_powerhel)
         if (GWg_spec) call powerhel(f,'GWg',lfirstcall_powerhel)
@@ -849,7 +848,7 @@ module Snapshot
               if ( ipos<=len_trim(xy_specs(ispec))-1 ) sp2=str(ipos+1:)
 !
               if ( sp1=='' .or. sp2=='' ) then
-                print*, 'powersnap: Warning - '//trim(xy_specs(ispec))//' no valid identifier !'
+                call warning('powersnap','no valid identifier xy_specs: '//trim(xy_specs(ispec)))
               else
                 call power_xy(f,sp1,sp2)
               endif

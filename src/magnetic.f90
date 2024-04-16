@@ -41,7 +41,6 @@ module Magnetic
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented
   use SharedVariables, only: get_shared_variable
-  use Mpicomm, only: stop_it
 !
   implicit none
 !

@@ -60,9 +60,6 @@ module Fourier
     module procedure fft_xyz_parallel_4D
   endinterface
 !
-  real, dimension (:), allocatable :: p_re_1d, p_im_1d   ! data in pencil shape
-  real, dimension (:), allocatable :: t_re_1d, t_im_1d   ! data in transposed pencil shape
-
   real, dimension (:,:), allocatable :: p_re_2d, p_im_2d   ! data in pencil shape
   real, dimension (:,:), allocatable :: t_re_2d, t_im_2d   ! data in transposed pencil shape
 
@@ -76,7 +73,6 @@ module Fourier
 !***********************************************************************
     subroutine initialize_fourier
 
-      integer :: nthreads
       include 'fourier_common.h'
 !
 !  Initializations of module auxiliaries.
@@ -84,9 +80,9 @@ module Fourier
         if (lactive_dimension(1)) allocate(wsavex(4*nxgrid+15,num_helper_threads))
         if (lactive_dimension(2)) allocate(wsavey(4*nygrid+15,num_helper_threads))
         if (lactive_dimension(3)) allocate(wsavez(4*nzgrid+15,num_helper_threads))
-        nthreads = max(num_helper_threads,1)
-!$omp parallel num_threads(nthreads)
-!$ thread_id = omp_get_thread_num()+1
+
+!$omp parallel num_threads(num_helper_threads)
+!$      thread_id = omp_get_thread_num()+1
         if (lactive_dimension(1)) call cffti(nxgrid,wsavex(:,thread_id))
         if (lactive_dimension(2)) call cffti(nygrid,wsavey(:,thread_id))
         if (lactive_dimension(3)) call cffti(nzgrid,wsavez(:,thread_id))
@@ -105,11 +101,9 @@ module Fourier
 !
       real, dimension (nx,ny,nz) :: a_re,a_im   ! effectively, nx=nxgrid due to nprocx=1 required
       logical, optional :: linv
-      
 !
       integer :: l,m,n
       logical :: lforward
-
 !
       if (nprocx>1) call fatal_error('fourier_transform','must have nprocx=1')
 !
@@ -117,7 +111,7 @@ module Fourier
       if (present(linv)) lforward=.not.linv
 !
       if (lforward) then
-        if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform','doing FFTpack in x')
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -133,11 +127,10 @@ module Fourier
           
           call transp(a_re,'y' )
           call transp(a_im,'y' )
-          
 !
 !  The length of the array in the y-direction is nx.
 !
-          if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in y'
+          if (ip<10) call information('fourier_transform','doing FFTpack in y')
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ax(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -152,13 +145,12 @@ module Fourier
         if (nzgrid/=1) then
           if (nzgrid/=nxgrid) call fatal_error('fourier_transform','must have nzgrid=nxgrid')
           
-          
           call transp(a_re,'z' )
           call transp(a_im,'z' )
 !
 !  The length of the array in the z-direction is also nx.
 !
-          if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in z'
+          if (ip<10) call information('fourier_transform','doing FFTpack in z')
           !$omp do collapse(2)
           do m=1,nz; do l=1,ny
             ax(1:nx)=cmplx(a_re(:,l,m),a_im(:,l,m))
@@ -178,7 +170,7 @@ module Fourier
 !
           if (nzgrid/=nxgrid) call fatal_error('fourier_transform','must have nzgrid=nxgrid')
 !
-          if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in z'
+          if (ip<10) call information('fourier_transform','doing FFTpack in z')
           !$omp do collapse(2)
           do m=1,nz; do l=1,ny
             ax(1:nx)=cmplx(a_re(:,l,m),a_im(:,l,m))
@@ -194,12 +186,11 @@ module Fourier
           if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
 !
           if (nzgrid/=1) then
-            
             call transp(a_re,'z' )
             call transp(a_im,'z' )
           endif
 !
-          if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in y'
+          if (ip<10) call information('fourier_transform','doing FFTpack in y')
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ax(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -211,7 +202,7 @@ module Fourier
 !
 !  Transform x-direction back. Transpose to go from (y,x,z) to (x,y,z).
 !
-        if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform','doing FFTpack in x')
         
         if (nygrid==1) then
           call transp(a_re,'z' )
@@ -238,7 +229,7 @@ module Fourier
         !$omp end workshare 
       endif
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform: fft has finished'
+      if (ip<10) call information('fourier_transform','fft has finished')
 !
     endsubroutine fourier_transform
 !***********************************************************************
@@ -253,7 +244,6 @@ module Fourier
 !
       real, dimension (:,:,:) :: a_re,a_im
       logical, optional :: linv
-      
 !
       integer :: l,m,n
       logical :: lforward
@@ -264,7 +254,7 @@ module Fourier
       if (present(linv)) lforward=.not.linv
 !
       if (lforward) then
-        if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_xy','doing FFTpack in x')
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -283,7 +273,7 @@ module Fourier
 !
 !  The length of the array in the y-direction is nx.
 !
-          if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in y'
+          if (ip<10) call information('fourier_transform_xy','doing FFTpack in y')
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ax=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -299,7 +289,7 @@ module Fourier
         if (nygrid/=1) then
           if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
 !
-          if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in y'
+          if (ip<10) call information('fourier_transform_xy','doing FFTpack in y')
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ax=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -311,9 +301,8 @@ module Fourier
 !
 !  Transform x-direction back. Transpose to go from (y,x,z) to (x,y,z).
 !
-        if (lroot .and. ip<10) print*, 'fourier_transform_xy: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_xy','doing FFTpack in x')
         if (nygrid/=1) then
-          
           call transp(a_re,'y' )
           call transp(a_im,'y' )
         endif
@@ -335,7 +324,7 @@ module Fourier
         !$omp end workshare 
       endif
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform_xy: fft has finished'
+      if (ip<10) call information('fourier_transform_xy','fft has finished')
 !
     endsubroutine fourier_transform_xy
 !***********************************************************************
@@ -350,7 +339,6 @@ module Fourier
 !
       real, dimension (nx,ny,nz) :: a_re,a_im   ! effectively, nx=nxgrid due to nprocx=1 required
       logical, optional :: linv
-      
 !
       integer :: l,m,n
 !
@@ -365,7 +353,7 @@ module Fourier
       if (nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) &
         call fatal_error('fourier_transform_xz','must have nxgrid=nygrid=nzgrid')
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform_xz: doing FFTpack in x'
+      if (ip<10) call information('fourier_transform_xz','doing FFTpack in x')
       !$omp do collapse(2)
       do n=1,nz; do m=1,ny
         ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -373,14 +361,13 @@ module Fourier
         a_re(:,m,n)=real(ax(1:nx))
         a_im(:,m,n)=aimag(ax(1:nx))
       enddo; enddo
-
       
-      call transp(a_re,'z' )
-      call transp(a_im,'z' )
+      call transp(a_re,'z')
+      call transp(a_im,'z')
 !
 !  The length of the array in the z-direction is also nx. Normalization is included.
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform_xz: doing FFTpack in z'
+      if (ip<10) call information('fourier_transform_xz','doing FFTpack in z')
 
       !$omp do collapse(2)
       do l=1,nz; do m=1,ny
@@ -390,7 +377,7 @@ module Fourier
         a_im(:,m,n)=aimag(ax(1:nx))/nwgrid
       enddo; enddo
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform_xz: fft has finished'
+      if (ip<10) call information('fourier_transform_xz','fft has finished')
 !
     endsubroutine fourier_transform_xz
 !***********************************************************************
@@ -427,7 +414,7 @@ module Fourier
 !
 !  Transform x-direction to fourier space. Normalization is included.
 !
-        if (lroot.and.ip<10) print*, 'fourier_transform_x: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_x','doing FFTpack in x')
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -440,7 +427,7 @@ module Fourier
 !
 !  Transform x-direction back to real space
 !
-        if (lroot.and.ip<10) print*, 'fourier_transform_x: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_x','doing FFTpack in x')
 
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
@@ -452,7 +439,7 @@ module Fourier
 !
       endif
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform_x: fft has finished'
+      if (ip<10) call information('fourier_transform_x','fft has finished')
 !
     endsubroutine fourier_transform_x
 !***********************************************************************
@@ -497,7 +484,6 @@ module Fourier
       logical, save :: lfirstcall=.true.
       logical, optional :: linv
       logical, optional :: lnorm
-      
 !
       lforward=.true.
       if (present(linv)) lforward=.not.linv
@@ -517,7 +503,7 @@ module Fourier
 !
 !  initialize cfft (coefficients for fft?)
 !
-      if (lroot.and.ip<10) print*, 'fourier_transform_y: doing FFTpack in y'
+      if (ip<10) call information('fourier_transform_y','doing FFTpack in y')
 !
 !  Transform differently according to sizes of x and y
 !
@@ -525,9 +511,8 @@ module Fourier
 !
 !  Transpose, transform and transpose back
 !
-        if (lroot .and. ip<10) print*,'fourier_transform_y: nxgrid>=nygrid'
+        if (ip<10) call information('fourier_transform_y','nxgrid>=nygrid')
 !
-        
         call transp(a_re,'y' ) ; call transp(a_im,'y' )
         !$omp do collapse(3)
         do n=1,nz; do l=1,ny
@@ -560,7 +545,7 @@ module Fourier
 !
       else !case nxgrid<nygrid
 !
-        if (lroot .and. ip<10) print*,'fourier_transform_y: nxgrid<nygrid'
+        if (ip<10) call information('fourier_transform_y','nxgrid<nygrid')
 !
 ! Save interpolated values of x to dimension nygrid
 !
@@ -618,7 +603,7 @@ module Fourier
         enddo;enddo
       endif
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform_y: fft has finished'
+      if (ip<10) call information('fourier_transform_y','fft has finished')
 !
     endsubroutine fourier_transform_y
 !***********************************************************************
@@ -660,7 +645,6 @@ module Fourier
 !
       real, dimension (nx,ny,nz) :: a_re,a_im   ! effectively, nx=nxgrid due to nprocx=1 required
       logical, optional :: linv
-      
 !
       complex, dimension (nxgrid) :: ay
       complex, dimension (nxgrid) :: az
@@ -686,7 +670,7 @@ module Fourier
 !  Transform y-direction. Must start with y, because x is not periodic (yet).
 !
         if (nygrid/=1) then
-          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
+          if (ip<10) call information('fourier_transform_shear','doing FFTpack in y')
           
           call transp(a_re,'y' )
           call transp(a_im,'y' )
@@ -705,9 +689,8 @@ module Fourier
 !
 !  Transform x-direction and normalize.
 !
-        if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_shear','doing FFTpack in x')
         if (nygrid/=1) then
-          
           call transp(a_re,'y' )
           call transp(a_im,'y' )
         endif
@@ -722,7 +705,7 @@ module Fourier
 !  Transform z-direction.
 !
         if (nzgrid/=1) then
-          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in z'
+          if (ip<10) call information('fourier_transform_shear','doing FFTpack in z')
           
           call transp(a_re,'z' )
           call transp(a_im,'z' )
@@ -739,7 +722,7 @@ module Fourier
 !  Transform z-direction back.
 !
         if (nzgrid/=1) then
-          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in z'
+          if (ip<10) call information('fourier_transform_shear','doing FFTpack in z')
           !$omp do collapse(2)
           do l=1,nz; do m=1,ny
             az(1:nx)=cmplx(a_re(:,m,l),a_im(:,m,l))
@@ -751,7 +734,7 @@ module Fourier
 !
 !  Transform x-direction back.
 !
-        if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_shear','doing FFTpack in x')
         if (nzgrid/=1) then
           
           call transp(a_re,'z' )
@@ -773,7 +756,7 @@ module Fourier
           
           call transp(a_re,'y' )
           call transp(a_im,'y' )
-          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
+          if (ip<10) call information('fourier_transform_shear','doing FFTpack in y')
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -814,7 +797,6 @@ module Fourier
 !
       real, dimension (nx,ny,nz) :: a_re,a_im   ! effectively, nx=nxgrid due to nprocx=1 required
       logical, optional :: linv
-      
 !
       complex, dimension (nxgrid) :: ay
       real :: deltay_x
@@ -838,7 +820,7 @@ module Fourier
 !  Transform y-direction. Must start with y, because x is not periodic (yet).
 !
         if (nygrid>1) then
-          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
+          if (ip<10) call information('fourier_transform_shear','doing FFTpack in y')
           
           call transp(a_re,'y' )
           call transp(a_im,'y' )
@@ -858,7 +840,7 @@ module Fourier
 !
 !  Transform x-direction. Normalization is included.
 !
-        if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_shear','doing FFTpack in x')
         
         if (nygrid/=1) then
           call transp(a_re,'y' )
@@ -875,7 +857,7 @@ module Fourier
 !
 !  Transform x-direction back.
 !
-        if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_shear','doing FFTpack in x')
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -892,7 +874,7 @@ module Fourier
           
           call transp(a_re,'y' )
           call transp(a_im,'y' )
-          if (lroot.and.ip<10) print*, 'fourier_transform_shear: doing FFTpack in y'
+          if (ip<10) call information('fourier_transform_shear','doing FFTpack in y')
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -939,7 +921,7 @@ module Fourier
 !  Transform x-direction.
 !
       if (lforward) then
-        if (lroot .and. ip<10) print*, 'fourier_transform_other_1: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_other_1','doing FFTpack in x')
         ax=cmplx(a_re,a_im)
         call cfftf(nx_other,ax,wsavex)
         a_re=real(ax)/nx_other
@@ -948,14 +930,14 @@ module Fourier
 !
 !  Transform x-direction back.
 !
-        if (lroot .and. ip<10) print*, 'fourier_transform_other_1: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_other_1','doing FFTpack in x')
         ax=cmplx(a_re,a_im)
         call cfftb(nx_other,ax,wsavex)
         a_re=real(ax)
         a_im=aimag(ax)
       endif
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform_other_1: fft has finished'
+      if (ip<10) call information('fourier_transform_other_1','fft has finished')
 !
     endsubroutine fourier_transform_other_1
 !***********************************************************************
@@ -983,13 +965,14 @@ module Fourier
       lforward=.true.
       if (present(linv)) lforward=.not.linv
 !
+      call cffti(nx_other,wsavex)
+      call cffti(ny_other,wsavey)
+!
       if (lforward) then
 !
 !  Transform x-direction.
 !
-        call cffti(nx_other,wsavex)
-!
-        if (lroot .and. ip<10) print*, 'fourier_transform_other_2: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_other_2','doing FFTpack in x')
         !$omp 
         do m=1,ny_other
           ax=cmplx(a_re(:,m),a_im(:,m))
@@ -1000,9 +983,7 @@ module Fourier
 !
 !  Transform y-direction.
 !
-        call cffti(ny_other,wsavey)
-!
-        if (lroot .and. ip<10) print*, 'fourier_transform_other_2: doing FFTpack in y'
+        if (ip<10) call information('fourier_transform_other_2','doing FFTpack in y')
         !$omp do
         do l=1,nx_other
           ay=cmplx(a_re(l,:),a_im(l,:))
@@ -1014,9 +995,7 @@ module Fourier
 !
 !  Transform x-direction back.
 !
-        call cffti(nx_other,wsavex)
-!
-        if (lroot .and. ip<10) print*, 'fourier_transform_other_2: doing FFTpack in x'
+        if (ip<10) call information('fourier_transform_other_2','doing FFTpack in x')
         !$omp do
         do m=1,ny_other
           ax=cmplx(a_re(:,m),a_im(:,m))
@@ -1027,9 +1006,7 @@ module Fourier
 !
 !  Transform y-direction back.
 !
-        call cffti(ny_other,wsavey)
-!
-        if (lroot .and. ip<10) print*, 'fourier_transform_other_2: doing FFTpack in y'
+        if (ip<10) call information('fourier_transform_other_2','doing FFTpack in y')
         !$omp do
         do l=1,nx_other
           ay=cmplx(a_re(l,:),a_im(l,:))
@@ -1039,7 +1016,7 @@ module Fourier
         enddo
       endif
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform_other_2: fft has finished'
+      if (ip<10) call information('fourier_transform_other_2','fft has finished')
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
@@ -1057,7 +1034,6 @@ module Fourier
 !
       real, dimension (:,:), intent(inout) :: a_re,a_im
       logical, optional, intent(in) :: linv,lneed_im
-      
 !
       complex, dimension (size(a_re,1)) :: ax
       real, dimension (size(a_re,2)) :: deltay_x
@@ -1087,7 +1063,6 @@ module Fourier
 !
 !  Transform y-direction.
 !
-          
           call transp_xy(a_re )
           if (lcompute_im) then
             call transp_xy(a_im )
@@ -1148,7 +1123,6 @@ module Fourier
 !
 !  Transform y-direction back.
 !
-          
           call transp_xy(a_re )
           call transp_xy(a_im )
 !
@@ -1195,7 +1169,6 @@ module Fourier
 !
       real, dimension (:,:) :: a_re,a_im
       logical, optional :: linv
-      
 !
       complex, dimension (size(a_re,1)) :: ax
       complex, dimension (nprocy*size(a_re,2)) :: ay
@@ -1212,8 +1185,7 @@ module Fourier
       lforward=.true.
       if (present(linv)) lforward=.not.linv
 !
-      if (nxgrid_other/=nygrid_other) &
-        call fatal_error('fourier_transform_xy_xy_other', &
+      if (nxgrid_other/=nygrid_other) call fatal_error('fourier_transform_xy_xy_other', &
              'nxgrid_other needs to be equal to nygrid_other',lfirst_proc_xy)
 !
       if (lforward) then
@@ -1221,7 +1193,6 @@ module Fourier
 !
 !  Transform y-direction.
 !
-          
           call transp_xy_other(a_re )
           call transp_xy_other(a_im )
 !
@@ -1238,25 +1209,25 @@ module Fourier
           call transp_xy_other(a_re )
           call transp_xy_other(a_im )
 !
-      endif
+        endif
 !
-      if (nxgrid_other > 1) then
+        if (nxgrid_other > 1) then
 !
 !  Transform x-direction
 !
-        call cffti(nxgrid_other,wsavex)
+          call cffti(nxgrid_other,wsavex)
 !
-        !$omp do
-        do m=1,ny_other
-          ax=cmplx(a_re(:,m),a_im(:,m))
-          call cfftf(nxgrid_other,ax,wsavex)
-          a_re(:,m)=real(ax)
-          a_im(:,m)=aimag(ax)
-        enddo
+          !$omp do
+          do m=1,ny_other
+            ax=cmplx(a_re(:,m),a_im(:,m))
+            call cfftf(nxgrid_other,ax,wsavex)
+            a_re(:,m)=real(ax)
+            a_im(:,m)=aimag(ax)
+          enddo
 !
-      endif
+        endif
 !
-    else
+      else
 !
         if (nxgrid_other>1) then
 !
@@ -1278,7 +1249,6 @@ module Fourier
 !
 !  Transform y-direction back.
 !
-          
           call transp_xy_other(a_re )
           call transp_xy_other(a_im )
 !
@@ -1325,9 +1295,8 @@ module Fourier
 !
       real, dimension (:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
-      
 !
-      integer :: stat
+      real, dimension(nxgrid) :: p_re, p_im
       logical :: lforward, lcompute_im, lshear_loc
 !
       lforward = .true.
@@ -1344,13 +1313,6 @@ module Fourier
       if (size (a_re, 1) /= size (a_im, 1)) &
           call fatal_error ('fft_x_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_x)
 !
-      ! Allocate memory for large arrays.
-      !$omp single
-      allocate (p_re_1d(nxgrid), p_im_1d(nxgrid), stat=stat)
-      !$omp end single
-      !$omp barrier
-      if (stat > 0) call fatal_error ('fft_x_parallel_1D', 'Could not allocate p', .true.)
-!
       if (lshear_loc) call not_implemented('fft_x_parallel_1D', 'Shearing', lfirst_proc_x)
 !
       if (lforward) then
@@ -1359,25 +1321,23 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_x (a_re, p_re_1d )
+        call remap_to_pencil_x (a_re, p_re )
         if (lcompute_im) then
-          call remap_to_pencil_x (a_im, p_im_1d )
+          call remap_to_pencil_x (a_im, p_im )
         else
-          !$omp workshare
-          p_im_1d = 0.0
-          !$omp end workshare
+          p_im = 0.0
         endif
 !
         ! Transform x-direction and normalize.
-        ax = cmplx (p_re_1d, p_im_1d)
+        ax = cmplx (p_re, p_im)
         call cfftf (nxgrid, ax, wsavex(:,thread_id))
-        p_re_1d = real (ax)/nxgrid
-        p_im_1d = aimag (ax)/nxgrid
+        p_re = real (ax)/nxgrid
+        p_im = aimag (ax)/nxgrid
 !
         ! Unmap the results back to normal shape.
         
-        call unmap_from_pencil_x (p_re_1d, a_re)
-        call unmap_from_pencil_x (p_im_1d, a_im)
+        call unmap_from_pencil_x (p_re, a_re)
+        call unmap_from_pencil_x (p_im, a_im)
 !
       else
 !
@@ -1385,26 +1345,21 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_x (a_re, p_re_1d )
-        call remap_to_pencil_x (a_im, p_im_1d )
+        call remap_to_pencil_x (a_re, p_re )
+        call remap_to_pencil_x (a_im, p_im )
 !
         ! Transform x-direction back.
-        ax = cmplx (p_re_1d, p_im_1d)
+        ax = cmplx (p_re, p_im)
         call cfftb (nxgrid, ax, wsavex(:,thread_id))
-        p_re_1d = real (ax)
-        if (lcompute_im) p_im_1d = aimag (ax)
+        p_re = real (ax)
+        if (lcompute_im) p_im = aimag (ax)
 !
         ! Unmap the results back to normal shape.
         
-        call unmap_from_pencil_x (p_re_1d, a_re)
-        if (lcompute_im) call unmap_from_pencil_x (p_im_1d, a_im)
+        call unmap_from_pencil_x (p_re, a_re)
+        if (lcompute_im) call unmap_from_pencil_x (p_im, a_im)
 !
       endif
-!
-      !$omp barrier
-      !$omp single
-      deallocate (p_re_1d, p_im_1d)
-      !$omp end single
 !
     endsubroutine fft_x_parallel_1D
 !***********************************************************************
@@ -1425,7 +1380,6 @@ module Fourier
 !
       real, dimension (nx,ny), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
-      
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
@@ -1447,14 +1401,14 @@ module Fourier
       if (mod (nygrid, nprocxy) /= 0) &
           call fatal_error ('fft_x_parallel_2D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
+      if (lshear_loc) call not_implemented('fft_x_parallel_2D', 'Shearing', lfirst_proc_x)
+!
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny),stat=stat)
+      if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate p' , .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate p' , .true.)
-!
-      if (lshear_loc) call not_implemented('fft_x_parallel_2D', 'Shearing', lfirst_proc_x)
 !
       if (lforward) then
 !
@@ -1532,7 +1486,6 @@ module Fourier
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
-      
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
@@ -1564,14 +1517,14 @@ module Fourier
       if (mod (nygrid, nprocxy) /= 0) &
           call fatal_error ('fft_x_parallel_3D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
+      if (lshear_loc) call not_implemented('fft_x_parallel_3D', 'Shearing', lfirst_proc_x)
+!
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_3d(pnx,pny,inz), p_im_3d(pnx,pny,inz), stat=stat)
+      if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate p', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate p', .true.)
-!
-      if (lshear_loc) call not_implemented('fft_x_parallel_3D', 'Shearing', lfirst_proc_x)
 !
       if (lforward) then
 !
@@ -1653,14 +1606,12 @@ module Fourier
 !
       real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
-      
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
       integer :: inz, ina ! size of the third and fourth dimension
       integer :: m, stat, pos_z, pos_a
       logical :: lforward, lcompute_im, lshear_loc
-
 !
       lforward = .true.
       if (present (linv)) lforward = .not.linv
@@ -1689,14 +1640,14 @@ module Fourier
       if (mod (nygrid, nprocxy) /= 0) &
           call fatal_error ('fft_x_parallel_4D','nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
+      if (lshear_loc) call not_implemented('fft_x_parallel_4D', 'Shearing', lfirst_proc_x)
+!
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_4d(pnx,pny,inz,ina), p_im_4d(pnx,pny,inz,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate p', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate p', .true.)
-!
-      if (lshear_loc) call not_implemented('fft_x_parallel_4D', 'Shearing', lfirst_proc_x)
 !
       if (lforward) then
 !
@@ -1780,11 +1731,9 @@ module Fourier
 !
       real, dimension (:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
-      
       real, optional :: shift_y
-      real :: dshift_y
 !
-      integer :: stat
+      real, dimension(nygrid) :: p_re, p_im
       logical :: lforward, lcompute_im, lshift, lshear_loc
 !
       lforward = .true.
@@ -1804,15 +1753,7 @@ module Fourier
       if (size (a_re, 1) /= size (a_im, 1)) &
           call fatal_error ('fft_y_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_y)
 !
-      ! Allocate memory for large arrays.
-      !$omp single
-      allocate (p_re_1d(nygrid), p_im_1d(nygrid), stat=stat)
-      !$omp end single
-      !$omp barrier
-      if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate p', .true.)
-!
       if (lshear_loc) call not_implemented('fft_y_parallel_1D', 'Shearing for 1D data', lfirst_proc_y)
-      if (lshift) dshift_y = shift_y
 !
       if (lforward) then
 !
@@ -1820,26 +1761,24 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_y (a_re, p_re_1d )
+        call remap_to_pencil_y (a_re, p_re )
         if (lcompute_im) then
-          call remap_to_pencil_y (a_im, p_im_1d )
+          call remap_to_pencil_y (a_im, p_im )
         else
-          !$omp workshare
-          p_im_1d = 0.0
-          !$omp end workshare
+          p_im = 0.0
         endif
 !
         ! Transform y-direction and normalize.
-        ay = cmplx (p_re_1d, p_im_1d)
+        ay = cmplx (p_re, p_im)
         call cfftf (nygrid, ay, wsavey(:,thread_id))
-        if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y))
-        p_re_1d = real (ay)/nygrid
-        p_im_1d = aimag (ay)/nygrid
+        if (lshift) ay = ay * exp (cmplx (0,-ky_fft * shift_y))
+        p_re = real (ay)/nygrid
+        p_im = aimag (ay)/nygrid
 !
         ! Unmap the results back to normal shape.
         
-        call unmap_from_pencil_y (p_re_1d, a_re)
-        call unmap_from_pencil_y (p_im_1d, a_im)
+        call unmap_from_pencil_y (p_re, a_re)
+        call unmap_from_pencil_y (p_im, a_im)
 !
       else
 !
@@ -1847,26 +1786,21 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_y (a_re, p_re_1d )
-        call remap_to_pencil_y (a_im, p_im_1d )
+        call remap_to_pencil_y (a_re, p_re )
+        call remap_to_pencil_y (a_im, p_im )
 !
         ! Transform y-direction back.
-        ay = cmplx (p_re_1d, p_im_1d)
+        ay = cmplx (p_re, p_im)
         call cfftb (nygrid, ay, wsavey(:,thread_id))
-        p_re_1d = real (ay)
-        p_im_1d = aimag (ay)
+        p_re = real (ay)
+        p_im = aimag (ay)
 !
         ! Unmap the results back to normal shape.
         
-        call unmap_from_pencil_y (p_re_1d, a_re)
-        if (lcompute_im) call unmap_from_pencil_y (p_im_1d, a_im)
+        call unmap_from_pencil_y (p_re, a_re)
+        if (lcompute_im) call unmap_from_pencil_y (p_im, a_im)
 !
       endif
-!
-      !$omp barrier
-      !$omp single
-      deallocate (p_re_1d, p_im_1d)
-      !$omp end single
 !
     endsubroutine fft_y_parallel_1D
 !***********************************************************************
@@ -1885,11 +1819,9 @@ module Fourier
 !
       real, dimension (nx,ny), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
-      
       real, dimension (nx), optional :: shift_y
 !
       real, dimension (nx) :: deltay_x
-      real, dimension (nx) :: dshift_y
 !
       integer :: l, stat
       logical :: lforward, lcompute_im, lshift, lshear_loc
@@ -1909,12 +1841,11 @@ module Fourier
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_2d(nx,nygrid), p_im_2d(nx,nygrid), stat=stat)
+      if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate p', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
-      if (lshift) dshift_y = shift_y
 !
       if (lforward) then
 !
@@ -1937,7 +1868,7 @@ module Fourier
           ay = cmplx (p_re_2d(l,:), p_im_2d(l,:))
           call cfftf (nygrid, ay, wsavey(:,thread_id))
           if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
-          if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
+          if (lshift) ay = ay * exp (cmplx (0,-ky_fft * shift_y(l)))
           p_re_2d(l,:) = real (ay)/nygrid
           p_im_2d(l,:) = aimag (ay)/nygrid
         enddo
@@ -1994,11 +1925,9 @@ module Fourier
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (nx), optional :: shift_y
-      
 !
       integer :: inz ! size of the third dimension
       real, dimension (nx) :: deltay_x
-      real, dimension (nx) :: dshift_y
 !
       integer :: l, stat, pos_z
       logical :: lforward, lcompute_im, lshift, lshear_loc
@@ -2015,7 +1944,6 @@ module Fourier
       lshear_loc = lshear
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
-!
       inz = size (a_re, 3)
 !
       if (inz /= size (a_im, 3)) &
@@ -2029,12 +1957,11 @@ module Fourier
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_3d(nx,nygrid,inz), p_im_3d(nx,nygrid,inz), stat=stat)
+      if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate p', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
-      if (lshift) dshift_y = shift_y
 !
       if (lforward) then
 !
@@ -2057,7 +1984,7 @@ module Fourier
             ay = cmplx (p_re_3d(l,:,pos_z), p_im_3d(l,:,pos_z))
             call cfftf (nygrid, ay, wsavey(:,thread_id))
             if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
-            if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
+            if (lshift) ay = ay * exp (cmplx (0,-ky_fft * shift_y(l)))
             p_re_3d(l,:,pos_z) = real (ay)/nygrid
             p_im_3d(l,:,pos_z) = aimag (ay)/nygrid
           enddo
@@ -2121,11 +2048,9 @@ module Fourier
 !
       integer :: inz, ina ! size of the third and fourth dimension
       real, dimension (nx) :: deltay_x
-      real, dimension (nx) :: dshift_y
 !
       integer :: l, stat, pos_z, pos_a
       logical :: lforward, lcompute_im, lshift, lshear_loc
-
 !
       lforward = .true.
       if (present (linv)) lforward = .not.linv
@@ -2138,7 +2063,6 @@ module Fourier
 !
       lshear_loc = lshear
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
-!
 !
       inz = size (a_re, 3)
       ina = size (a_re, 4)
@@ -2156,12 +2080,11 @@ module Fourier
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_4d(nx,nygrid,inz,ina), p_im_4d(nx,nygrid,inz,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate p', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate p', .true.)
 !
       if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
-      if (lshift) dshift_y = shift_y
 !
       if (lforward) then
 !
@@ -2186,7 +2109,7 @@ module Fourier
               ay = cmplx (p_re_4d(l,:,pos_z,pos_a), p_im_4d(l,:,pos_z,pos_a))
               call cfftf (nygrid, ay, wsavey(:,thread_id))
               if (lshear_loc) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
-              if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
+              if (lshift) ay = ay * exp (cmplx (0,-ky_fft * shift_y(l)))
               p_re_4d(l,:,pos_z,pos_a) = real (ay)/nygrid
               p_im_4d(l,:,pos_z,pos_a) = aimag (ay)/nygrid
             enddo
@@ -2248,10 +2171,8 @@ module Fourier
       real, dimension (:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, optional :: shift_z
-      
-      real :: dshift_z
 !
-      integer :: stat
+      real, dimension(nzgrid) :: p_re, p_im
       logical :: lforward, lcompute_im, lshift, lshear_loc
 !
       lforward = .true.
@@ -2266,22 +2187,12 @@ module Fourier
       lshear_loc = lshear
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
-!
       if (size (a_re, 1) /= nz) &
           call fatal_error ('fft_z_parallel_1D', 'size of input must be nz!', lfirst_proc_z)
       if (size (a_re, 1) /= size (a_im, 1)) &
           call fatal_error ('fft_z_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_z)
 !
-      ! Allocate memory for large arrays.
-      !$omp single
-      allocate (p_re_1d(nzgrid), p_im_1d(nzgrid), stat=stat)
-      !$omp end single
-      !$omp barrier
-      if (stat > 0) call fatal_error ('fft_z_parallel_1D', 'Could not allocate p', .true.)
-!
       if (lshear_loc) call not_implemented('fft_z_parallel_1D', 'Shearing', lfirst_proc_z)
-!
-      if (lshift) dshift_z = shift_z
 !
       if (lforward) then
 !
@@ -2289,26 +2200,24 @@ module Fourier
 !
         ! Remap the data we need into pencil shape.
         
-        call remap_to_pencil_z (a_re, p_re_1d )
+        call remap_to_pencil_z (a_re, p_re )
         if (lcompute_im) then
-          call remap_to_pencil_z (a_im, p_im_1d )
+          call remap_to_pencil_z (a_im, p_im )
         else
-          !$omp workshare
-          p_im_1d= 0.0
-          !$omp end workshare
+          p_im= 0.0
         endif
 !
         ! Transform z-direction and normalize.
-        az = cmplx (p_re_1d, p_im_1d)
+        az = cmplx (p_re, p_im)
         call cfftf (nzgrid, az, wsavez(:,thread_id))
-        if (lshift) az = az * exp (cmplx (0,-kz_fft * dshift_z))
-        p_re_1d = real (az)/nzgrid
-        p_im_1d = aimag (az)/nzgrid
+        if (lshift) az = az * exp (cmplx (0,-kz_fft * shift_z))
+        p_re = real (az)/nzgrid
+        p_im = aimag (az)/nzgrid
 !
         ! Unmap the results back to normal shape.
         
-        call unmap_from_pencil_z (p_re_1d, a_re)
-        call unmap_from_pencil_z (p_im_1d, a_im)
+        call unmap_from_pencil_z (p_re, a_re)
+        call unmap_from_pencil_z (p_im, a_im)
 !
       else
 !
@@ -2316,26 +2225,21 @@ module Fourier
 !
         ! Remap the data we need into transposed pencil shape.
         
-        call remap_to_pencil_z (a_re, p_re_1d )
-        call remap_to_pencil_z (a_im, p_im_1d )
+        call remap_to_pencil_z (a_re, p_re )
+        call remap_to_pencil_z (a_im, p_im )
 !
         ! Transform z-direction back.
-        az = cmplx (p_re_1d, p_im_1d)
+        az = cmplx (p_re, p_im)
         call cfftb (nzgrid, az, wsavez(:,thread_id))
-        p_re_1d = real (az)
-        p_im_1d= aimag (az)
+        p_re = real (az)
+        p_im = aimag (az)
 !
         ! Unmap the results back to normal shape.
         
-        call unmap_from_pencil_z (p_re_1d, a_re)
-        if (lcompute_im) call unmap_from_pencil_z (p_im_1d, a_im)
+        call unmap_from_pencil_z (p_re, a_re)
+        if (lcompute_im) call unmap_from_pencil_z (p_im, a_im)
 !
       endif
-!
-      !$omp barrier
-      !$omp single
-      deallocate (p_re_1d, p_im_1d)
-      !$omp end single
 !
     endsubroutine fft_z_parallel_1D
 !***********************************************************************
@@ -2356,9 +2260,6 @@ module Fourier
       real, dimension (:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       real, dimension (:), optional :: shift_z
-      real, dimension (:), allocatable :: dshift_z
-      
-!
 !
       integer :: inz, ina ! size of the first and second dimension
       integer :: pos_a, stat
@@ -2376,7 +2277,6 @@ module Fourier
       lshear_loc = lshear
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
-!
       inz = size (a_re, 1)
       ina = size (a_re, 2)
 !
@@ -2387,23 +2287,14 @@ module Fourier
       if (ina /= size (a_im, 2)) &
           call fatal_error ('fft_z_parallel_2D', 'second dimension differs for real and imaginary part', lfirst_proc_z)
 !
+      if (lshear_loc) call not_implemented('fft_z_parallel_2D', 'Shearing', lfirst_proc_z)
+!
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_2d(nzgrid,ina), p_im_2d(nzgrid,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate p', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate p', .true.)
-!
-      if (lshear_loc) call not_implemented('fft_z_parallel_2D', 'Shearing', lfirst_proc_z)
-!
-      if (lshift) then
-        !$omp single
-        allocate (dshift_z(ina), stat=stat)
-        !$omp end single
-        !$omp barrier
-        if (stat > 0) call fatal_error ('fft_z_parallel_2D','Could not allocate shift', .true.)
-        dshift_z = shift_z
-      endif
 !
       if (lforward) then
 !
@@ -2425,7 +2316,7 @@ module Fourier
         do pos_a = 1, ina
           az = cmplx (p_re_2d(:,pos_a), p_im_2d(:,pos_a))
           call cfftf (nzgrid, az, wsavez(:,thread_id))
-          if (lshift) az = az * exp (cmplx (0,-kz_fft * dshift_z(pos_a)))
+          if (lshift) az = az * exp (cmplx (0,-kz_fft * shift_z(pos_a)))
           p_re_2d(:,pos_a) = real (az)/nzgrid
           p_im_2d(:,pos_a) = aimag (az)/nzgrid
         enddo
@@ -2481,7 +2372,6 @@ module Fourier
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
-      
 !
       integer :: inx, iny ! size of the third dimension
       integer :: l, m, stat
@@ -2506,14 +2396,14 @@ module Fourier
       if (size (a_re, 3) /= nz) &
           call fatal_error ('fft_z_parallel_3D', 'third dimension must be the z-coordinate (nz)', lfirst_proc_z)
 !
+      if (lshear_loc) call not_implemented('fft_z_parallel_3D', 'Shearing', lfirst_proc_z)
+!
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_3d(inx,iny,nzgrid), p_im_3d(inx,iny,nzgrid), stat=stat)
+      if (stat > 0) call fatal_error ('fft_z_parallel_3D', 'Could not allocate p', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_z_parallel_3D', 'Could not allocate p', .true.)
-!
-      if (lshear_loc) call not_implemented('fft_z_parallel_3D', 'Shearing', lfirst_proc_z)
 !
       if (lforward) then
 !
@@ -2594,7 +2484,6 @@ module Fourier
 !
       real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
-      
 !
       integer :: inx, iny, ina ! size of the third and fourth dimension
       integer :: l, m, stat, pos_a
@@ -2622,14 +2511,14 @@ module Fourier
       if (ina /= size (a_im, 4)) &
           call fatal_error ('fft_z_parallel_4D', 'fourth dimension differs for real and imaginary part', lfirst_proc_z)
 !
+      if (lshear_loc) call not_implemented('fft_z_parallel_3D', 'Shearing', lfirst_proc_z)
+!
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_4d(inx,iny,nzgrid,ina), p_im_4d(inx,iny,nzgrid,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_z_parallel_4D', 'Could not allocate p', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_z_parallel_4D', 'Could not allocate p', .true.)
-!
-      if (lshear_loc) call not_implemented('fft_z_parallel_3D', 'Shearing', lfirst_proc_z)
 !
       if (lforward) then
 !
@@ -2744,29 +2633,33 @@ module Fourier
 !
       ! Check for degenerate cases.
       if (nxgrid == 1) then
+        !$omp single         ! as a_* is shared and no worksharing inside fft_y_parallel_1D
         if (lshift) then
           call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im, shift_y(1), lignore_shear=lnoshear)
         else
           call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         endif
+        !$omp end single
         return
       endif
       if (nygrid == 1) then
+        !$omp single         ! as a_* is shared and no worksharing inside fft_y_parallel_1D
         call fft_x_parallel (a_re(:,1), a_im(:,1), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+        !$omp end single
         return
       endif
 !
       if (mod (nxgrid, nprocxy) /= 0) &
-          call fatal_error ('fft_xy_parallel_2D', 'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+          call fatal_error('fft_xy_parallel_2D','nxgrid needs to be an integer multiple of nprocx*nprocy',lfirst_proc_xy)
       if (mod (nygrid, nprocxy) /= 0) &
-          call fatal_error ('fft_xy_parallel_2D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+          call fatal_error('fft_xy_parallel_2D','nygrid needs to be an integer multiple of nprocx*nprocy',lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny), t_re_2d(tnx,tny), t_im_2d(tnx,tny), stat=stat)
+      if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate p and t', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
@@ -2793,7 +2686,6 @@ module Fourier
           !$omp end workshare
         endif
 !
-        
         call transp_pencil_xy (p_re_2d, t_re_2d )
         call transp_pencil_xy (p_im_2d, t_im_2d )
 !
@@ -2855,7 +2747,6 @@ module Fourier
           if (lcompute_im) t_im_2d(:,l) = aimag (ay)
         enddo
 !
-        
         call transp_pencil_xy (t_re_2d, p_re_2d )
         if (lcompute_im) call transp_pencil_xy (t_im_2d, p_im_2d )
 !
@@ -2889,7 +2780,6 @@ module Fourier
 !
       real, dimension (:,:) :: a_re, a_im
       logical, optional :: linv, lignore_shear
-      
 !
       integer :: pnx,pny,tnx,tny,nx_other,ny_other,nxgrid_other,nygrid_other
 !
@@ -2923,27 +2813,29 @@ module Fourier
 !
       ! Check for degenerate cases.
       if (nxgrid == 1) then
+        !$omp single     ! as a_* is shared and no worksharing inside fft_y_parallel_1D
         call fft_y_parallel(a_re(1,:),a_im(1,:),.not.lforward,lignore_shear=lnoshear)
+        !$omp end single
         return
       endif
       if (nygrid == 1) then
+        !$omp single     ! as a_* is shared and no worksharing inside fft_y_parallel_1D
         call fft_x_parallel(a_re(:,1), a_im(:,1),.not.lforward,lignore_shear=lnoshear)
+        !$omp end single
         return
       endif
 !
-      if (mod (nxgrid_other, nprocxy) /= 0) &
-          call fatal_error('fft_xy_parallel_2D_other',&
+      if (mod (nxgrid_other, nprocxy) /= 0) call fatal_error('fft_xy_parallel_2D_other', &
           'nxgrid_other needs to be an integer multiple of nprocx*nprocy',lfirst_proc_xy)
-      if (mod (nygrid_other, nprocxy) /= 0) &
-          call fatal_error('fft_xy_parallel_2D_other',&
+      if (mod (nygrid_other, nprocxy) /= 0) call fatal_error('fft_xy_parallel_2D_other', &
           'nygrid_other needs to be an integer multiple of nprocx*nprocy',lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny), t_re_2d(tnx,tny), t_im_2d(tnx,tny), stat=stat)
+      if (stat > 0) call fatal_error('fft_xy_parallel_2D','Could not allocate p and t', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error('fft_xy_parallel_2D','Could not allocate p and t', .true.)
 !
       call cffti(nxgrid_other,wsavex_other)
       call cffti(nygrid_other,wsavey_other)
@@ -3076,17 +2968,18 @@ module Fourier
       lshear_loc = lshear
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
-!
       inz = size (a_re, 3)
 !     Check for degenerate cases.
 !     KG: (27-sep-2023) it seems to me that fft_y_parallel_2D does the FFT along the second axis; here, we want FFT along the first axis, and moreover have to handle the case where nx!=ny!=nz. This seems the simplest way to accomplish that.
       if (nxgrid == 1) then
+        !$omp do
         do i=1,inz
           call fft_y_parallel (a_re(1,:,i), a_im(1,:,i), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         enddo
         return
       endif
       if (nygrid == 1) then
+        !$omp do
         do i=1,inz
           call fft_x_parallel (a_re(:,1,i), a_im(:,1,i), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         enddo
@@ -3109,9 +3002,9 @@ module Fourier
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_3d(pnx,pny,inz), p_im_3d(pnx,pny,inz), t_re_3d(tnx,tny,inz), t_im_3d(tnx,tny,inz), stat=stat)
+      if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate p and t', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
@@ -3134,18 +3027,16 @@ module Fourier
           call remap_to_pencil_xy (a_im, p_im_3d )
         else
           !$omp workshare
-          p_im_3d= 0.0
+          p_im_3d = 0.0
           !$omp end workshare
         endif
 !
-        
         call transp_pencil_xy (p_re_3d, t_re_3d )
         call transp_pencil_xy (p_im_3d, t_im_3d )
 !
         !$omp do collapse(2)
         do pos_z = 1, inz
           do l = 1, tny
-!$ print*, 'fft_xy_parallel_3D - Thread: ', thread_id, l,pos_z
             ! Transform y-direction.
             ay = cmplx (t_re_3d(:,l,pos_z), t_im_3d(:,l,pos_z))
             call cfftf (nygrid, ay, wsavey(:,thread_id))
@@ -3270,12 +3161,12 @@ module Fourier
       lshear_loc = lshear
       if (present (lignore_shear)) lshear_loc = (.not.lignore_shear).and.lshear
 !
-!
       inz = size (a_re, 3)
       ina = size (a_re, 4)
 !     Check for degenerate cases.
 !     KG: (27-sep-2023) it seems to me that fft_y_parallel_3D does the FFT along the second axis; here, we want FFT along the first axis, and moreover have to handle the case where nx!=ny!=nz. This seems the simplest way to accomplish that.
       if (nxgrid == 1) then
+        !$omp do collapse(2)
         do iz=1,inz
           do ia = 1,ina
             call fft_y_parallel (a_re(1,:,iz,ia), a_im(1,:,iz,ia), .not. lforward, lcompute_im, lignore_shear=lnoshear)
@@ -3284,6 +3175,7 @@ module Fourier
         return
       endif
       if (nygrid == 1) then
+        !$omp do collapse(2)
         do iz=1,inz
           do ia = 1,ina
             call fft_x_parallel (a_re(:,1,iz,ia), a_im(:,1,iz,ia), .not. lforward, lcompute_im, lignore_shear=lnoshear)
@@ -3310,9 +3202,9 @@ module Fourier
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_4d(pnx,pny,inz,ina), p_im_4d(pnx,pny,inz,ina), t_re_4d(tnx,tny,inz,ina), t_im_4d(tnx,tny,inz,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate p and t', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate p and t', .true.)
 !
       if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
@@ -3339,7 +3231,6 @@ module Fourier
           !$omp end workshare
         endif
 !
-        
         call transp_pencil_xy (p_re_4d, t_re_4d)
         call transp_pencil_xy (p_im_4d, t_im_4d)
 !
@@ -3452,7 +3343,6 @@ module Fourier
       real, dimension (nxgrid), optional :: shift_y
 !
       integer, parameter :: pny=ny/nprocz, pnz=nzgrid    ! z-pencil shaped data sizes
-      
 !
       integer :: l, m, stat
       logical :: lforward, lcompute_im, lshift, lnoshear
@@ -3479,7 +3369,9 @@ module Fourier
         return
       endif
       if ((nxgrid == 1) .and. (nygrid == 1)) then
+        !$omp single    ! as a_* is shared and no worksharing inside fft_y_parallel_1D
         call fft_z_parallel (a_re(1,1,:), a_im(1,1,:), .not. lforward, lcompute_im, lignore_shear=lnoshear)
+        !$omp end single
         return
       endif
 !
@@ -3487,16 +3379,8 @@ module Fourier
           call fatal_error ('fft_xyz_parallel_3D', 'real array size mismatch /= nx,ny,nz', lroot)
       if (size (a_im, 3) /= nz) &
           call fatal_error ('fft_xyz_parallel_3D', 'imaginary array size mismatch /= nx,ny,nz', lroot)
-!
       if (mod (nygrid, nprocyz) /= 0) &
           call fatal_error ('fft_xyz_parallel_3D', 'nygrid needs to be an integer multiple of nprocy*nprocz', lroot)
-!
-      ! Allocate memory for large arrays.
-      !$omp single
-      allocate (p_re_3d(nx,pny,pnz), p_im_3d(nx,pny,pnz), stat=stat)
-      !$omp end single
-      !$omp barrier
-      if (stat > 0) call fatal_error ('fft_xyz_parallel_3D', 'Could not allocate p', .true.)
 !
       if (lforward) then
 !
@@ -3508,8 +3392,15 @@ module Fourier
           call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, lignore_shear=lnoshear)
         endif
 !
+        ! Allocate memory for large arrays.
+        !$omp single
+        allocate (p_re_3d(nx,pny,pnz), p_im_3d(nx,pny,pnz), stat=stat)
+        if (stat > 0) call fatal_error ('fft_xyz_parallel_3D', 'Could not allocate p', .true.)
+        !$omp end single
+        !$omp barrier
+!
         ! Remap the data we need into z-pencil shape.
-        
+!
         call remap_to_pencil_yz (a_re, p_re_3d )
         call remap_to_pencil_yz (a_im, p_im_3d )
 !
@@ -3528,9 +3419,21 @@ module Fourier
         call unmap_from_pencil_yz (p_re_3d, a_re )
         call unmap_from_pencil_yz (p_im_3d, a_im )
 !
+        !$omp barrier
+        !$omp single
+        deallocate (p_re_3d, p_im_3d)
+        !$omp end single
+!
       else
 !
 !  Inverse FFT:
+!
+        ! Allocate memory for large arrays.
+        !$omp single
+        allocate (p_re_3d(nx,pny,pnz), p_im_3d(nx,pny,pnz), stat=stat)
+        if (stat > 0) call fatal_error ('fft_xyz_parallel_3D', 'Could not allocate p', .true.)
+        !$omp end single
+        !$omp barrier
 !
         ! Remap the data we need into transposed z-pencil shape.
         
@@ -3552,6 +3455,11 @@ module Fourier
         call unmap_from_pencil_yz (p_re_3d, a_re )
         call unmap_from_pencil_yz (p_im_3d, a_im )
 !
+        !$omp barrier
+        !$omp single
+        deallocate (p_re_3d, p_im_3d)
+        !$omp end single
+!
         if (lshift) then
           call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y, lignore_shear=lnoshear)
         else
@@ -3559,11 +3467,6 @@ module Fourier
         endif
 !
       endif
-!
-      !$omp barrier
-      !$omp single
-      deallocate (p_re_3d, p_im_3d)
-      !$omp end single
 !
     endsubroutine fft_xyz_parallel_3D
 !***********************************************************************
@@ -3630,13 +3533,6 @@ module Fourier
       if (mod (nygrid, nprocyz) /= 0) &
           call fatal_error ('fft_xyz_parallel_4D', 'nygrid needs to be an integer multiple of nprocy*nprocz', lroot)
 !
-      ! Allocate memory for large arrays.
-      !$omp single
-      allocate (p_re_4d(nx,pny,pnz,ina), p_im_4d(nx,pny,pnz,ina), stat=stat)
-      !$omp end single
-      !$omp barrier
-      if (stat > 0) call fatal_error ('fft_xyz_parallel_4D', 'Could not allocate p', .true.)
-!
       if (lforward) then
 !
 !  Forward FFT:
@@ -3646,6 +3542,13 @@ module Fourier
         else
           call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, lignore_shear=lnoshear)
         endif
+!
+        ! Allocate memory for large arrays.
+        !$omp single
+        allocate (p_re_4d(nx,pny,pnz,ina), p_im_4d(nx,pny,pnz,ina), stat=stat)
+        if (stat > 0) call fatal_error ('fft_xyz_parallel_4D', 'Could not allocate p', .true.)
+        !$omp end single
+        !$omp barrier
 !
         ! Remap the data we need into z-pencil shape.
         
@@ -3669,9 +3572,21 @@ module Fourier
         call unmap_from_pencil_yz (p_re_4d, a_re )
         call unmap_from_pencil_yz (p_im_4d, a_im )
 !
+        !$omp barrier
+        !$omp single
+        deallocate (p_re_4d, p_im_4d)
+        !$omp end single
+!
       else
 !
 !  Inverse FFT:
+!
+        ! Allocate memory for large arrays.
+        !$omp single
+        allocate (p_re_4d(nx,pny,pnz,ina), p_im_4d(nx,pny,pnz,ina), stat=stat)
+        if (stat > 0) call fatal_error ('fft_xyz_parallel_4D', 'Could not allocate p', .true.)
+        !$omp end single
+        !$omp barrier
 !
         ! Remap the data we need into transposed pencil shape.
         
@@ -3695,6 +3610,11 @@ module Fourier
         call unmap_from_pencil_yz (p_re_4d, a_re )
         call unmap_from_pencil_yz (p_im_4d, a_im )
 !
+        !$omp barrier
+        !$omp single
+        deallocate (p_re_4d, p_im_4d)
+        !$omp end single
+!
         if (lshift) then
           call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y, lignore_shear=lnoshear)
         else
@@ -3702,11 +3622,6 @@ module Fourier
         endif
 !
       endif
-!
-      !$omp barrier
-      !$omp single
-      deallocate (p_re_4d, p_im_4d)
-      !$omp end single
 !
     endsubroutine fft_xyz_parallel_4D
 !***********************************************************************
@@ -3734,7 +3649,6 @@ module Fourier
       real :: delta_z
       real, dimension (:,:), allocatable :: k_2
 !
-!
       onz = size (z, 1)
 !
       if (size (factor, 3) /= onz) &
@@ -3744,9 +3658,9 @@ module Fourier
 !
       !$omp single
       allocate (k_2(enx,eny), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error ('setup_extrapol_fact', 'Could not allocate k_2', .true.)
       !$omp end single
       !$omp barrier
-      if (alloc_err > 0) call fatal_error ('setup_extrapol_fact', 'Could not allocate k_2', .true.)
 !
       ! Get wave numbers in transposed pencil shape and calculate exp(|k|)
       kx_start = (ipx + ipy*nprocx)*eny
@@ -3795,7 +3709,6 @@ module Fourier
       real, dimension (:,:,:), intent(in) :: in
       real, dimension (:,:,:,:), intent(out) :: out
       real, dimension (:,:,:), intent(in) :: factor
-      
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
@@ -3811,8 +3724,7 @@ module Fourier
       onz = size (out, 3)
       ona = size (out, 4)
 !
-      if (ina /= ona) &
-          call fatal_error ('vect_pot_extrapol_z_parallel', &
+      if (ina /= ona) call fatal_error ('vect_pot_extrapol_z_parallel', &
               'number of components is different for input and ouput arrays', lfirst_proc_xy)
 !
       if ((size (in, 1) /= nx) .or. (size (in, 2) /= ny)) &
@@ -3825,11 +3737,9 @@ module Fourier
           call fatal_error ('vect_pot_extrapol_z_parallel', &
               'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
 !
-      if (mod (nxgrid, nprocxy) /= 0) &
-          call fatal_error ('vect_pot_extrapol_z_parallel', &
+      if (mod (nxgrid, nprocxy) /= 0) call fatal_error ('vect_pot_extrapol_z_parallel', &
               'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
-      if (mod (nygrid, nprocxy) /= 0) &
-          call fatal_error ('vect_pot_extrapol_z_parallel', &
+      if (mod (nygrid, nprocxy) /= 0) call fatal_error ('vect_pot_extrapol_z_parallel', &
               'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       if (lshear) call not_implemented('vect_pot_extrapol_z_parallel','shearing',lfirst_proc_xy) 
@@ -3837,9 +3747,9 @@ module Fourier
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_3d(pnx,pny,ona), p_im_3d(pnx,pny,ona), t_re_3d(tnx,tny,ona), t_im_3d(tnx,tny,ona), stat=stat)
+      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate p and t', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate p and t', .true.)
 !
       ! Collect the data we need.
       
@@ -3864,9 +3774,9 @@ module Fourier
       !$omp single
       deallocate (p_re_3d, p_im_3d)
       allocate (e_re(tnx,tny,onz,ona), e_im(tnx,tny,onz,ona), stat=stat)
+      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate e', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate e', .true.)
 !
       !$omp do collapse(2)
       do pos_a = 1, ona
@@ -3889,9 +3799,9 @@ module Fourier
       !$omp single
       deallocate (t_re_3d, t_im_3d)
       allocate (b_re(pnx,pny,onz,ona), b_im(pnx,pny,onz,ona), stat=stat)
+      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate b', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate b', .true.)
 !
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
@@ -3942,7 +3852,6 @@ module Fourier
       real, dimension (:,:), intent(in) :: in
       real, dimension (:,:,:,:), intent(out) :: out
       real, dimension (:,:,:), intent(in) :: factor
-      
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
@@ -3961,21 +3870,17 @@ module Fourier
       if ((size (out, 1) /= nx) .or. (size (out, 2) /= ny)) &
           call fatal_error ('field_extrapol_z_parallel', &
                'output array size mismatch /= nx,ny', lfirst_proc_xy)
-      if (size (out, 4) /= 2) &
-          call fatal_error ('field_extrapol_z_parallel', &
+      if (size (out, 4) /= 2) call fatal_error ('field_extrapol_z_parallel', &
               'output array must have two components', lfirst_proc_xy)
       if ((size (factor, 1) /= tnx) .or. (size (factor, 2) /= tny)) &
           call fatal_error ('field_extrapol_z_parallel', &
               'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
-      if (size (factor, 3) /= onz) &
-          call fatal_error ('field_extrapol_z_parallel', &
+      if (size (factor, 3) /= onz) call fatal_error ('field_extrapol_z_parallel', &
               'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
 !
-      if (mod (nxgrid, nprocxy) /= 0) &
-          call fatal_error ('field_extrapol_z_parallel', &
+      if (mod (nxgrid, nprocxy) /= 0) call fatal_error ('field_extrapol_z_parallel', &
               'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
-      if (mod (nygrid, nprocxy) /= 0) &
-          call fatal_error ('field_extrapol_z_parallel', &
+      if (mod (nygrid, nprocxy) /= 0) call fatal_error ('field_extrapol_z_parallel', &
               'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       if (lshear) call not_implemented('field_extrapol_z_parallel','shearing', lfirst_proc_xy) 
@@ -3983,9 +3888,9 @@ module Fourier
       ! Allocate memory for large arrays.
       !$omp single
       allocate (p_re_2d(pnx,pny), p_im_2d(pnx,pny), t_re_2d(tnx,tny), t_im_2d(tnx,tny), stat=stat)
+      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate p and t', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate p and t', .true.)
 !
       ! Collect the data we need.
       !$omp workshare
@@ -4009,9 +3914,9 @@ module Fourier
       !$omp single
       deallocate (p_re_2d, p_im_2d)
       allocate (e_re(tnx,tny,onz,2), e_im(tnx,tny,onz,2), stat=stat)
+      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate e', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate e', .true.)
 !
       !$omp do
       do l = 1, tny
@@ -4039,10 +3944,9 @@ module Fourier
       !$omp single
       deallocate (t_re_2d, t_im_2d)
       allocate (b_re(pnx,pny,onz,2), b_im(pnx,pny,onz,2), stat=stat)
+      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate b', .true.)
       !$omp end single
       !$omp barrier
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate b', .true.)
-
       
       call transp_pencil_xy (e_re, b_re )
       call transp_pencil_xy (e_im, b_im )
@@ -4089,7 +3993,6 @@ module Fourier
 !
       real, dimension (ny) :: a_re, a_im
       logical, optional :: linv
-      
 !
       real, dimension (nygrid) :: a_re_full, a_im_full
       integer :: ipy_send,partner
@@ -4217,7 +4120,6 @@ module Fourier
 !
       real, dimension (ny,nz) :: a_re
       real :: shift_y
-      
 !
       complex, dimension (nygrid) :: a_cmplx, cmplx_shift
       real, dimension (nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
@@ -4404,7 +4306,6 @@ module Fourier
 !
       real, dimension (nx,ny,nz) :: a_re
       real, dimension (nx) :: shift_y
-      
 !
       real, dimension (nx,ny,nz) :: a_im
       complex, dimension (nx) :: ay
@@ -4423,7 +4324,7 @@ module Fourier
 !
 !  Transform y-direction.
 !
-      if (lroot.and.ip<10) print*, 'fourier_shift_y: doing FFTpack in y'
+      if (ip<10) call information('fourier_shift_y','doing FFTpack in y')
       if (nygrid/=1) then
         !$omp workshare
         a_im=0.0
@@ -4481,7 +4382,7 @@ module Fourier
 ! Initialize fftpack
         call rffti(na,wsavex_temp)
       endif
-      if (lroot .and. ip<10) print*, 'fourier_transform_real_1: doing FFTpack in x'
+      if (ip<10) call information('fourier_transform_real_1','doing FFTpack in x')
 !
 !  Transform x-direction and normalize.
 !
@@ -4495,10 +4396,8 @@ module Fourier
         call rfftb(na,a,wsavex_temp)
       endif
 !
-      if (lroot .and. ip<10) print*, 'fourier_transform_real_1: fft has finished'
+      if (ip<10) call information('fourier_transform_real_1','fft has finished')
 !
     endsubroutine fourier_transform_real_1
 !***********************************************************************
 endmodule Fourier
-
-
