@@ -802,7 +802,7 @@ module Cdata
 ! 
   logical :: lmultithread=.false.
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
-  logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save, lwrite_slices_save
+  logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save
   logical :: lchemistry_diag_save
 
   real(KIND=rkind8) :: t_save
@@ -818,7 +818,7 @@ module Cdata
 !$omp threadprivate(lfirstpoint,thread_id)
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo)
-!$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)  !,lwrite_slices)
+!$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
 !
 !***********************************************************************
 endmodule Cdata

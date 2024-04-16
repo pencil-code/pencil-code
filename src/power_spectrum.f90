@@ -1123,7 +1123,6 @@ outer:  do ikz=1,nz
   !
 !$omp parallel private(ivec,jji,bb,jj,b2,j2,gtmp1,gtmp2,bbEP,k2,k,jkz) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
-if (lroot) print*, 'powerhel: thread_id,it=', thread_id,it
 !
   !  initialize power spectrum to zero
   !

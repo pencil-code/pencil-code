@@ -445,8 +445,13 @@ module Equ
 !!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all)
         endif
-      elseif (lfirst) then 
-        if (lout) dtdiagnos = dt
+      endif
+      if (lfirst) then 
+        if (lout) then
+          tdiagnos  = t
+          itdiagnos = it
+          dtdiagnos = dt
+        endif
         call finalize_diagnostics
       endif
 !
@@ -490,18 +495,18 @@ module Equ
     l2davg = l2davg_save 
     lout_sound = lout_sound_save
     lvideo = lvideo_save
-    lwrite_slices = lwrite_slices_save
     t1ddiagnos = t1ddiagnos_save 
     t2davgfirst= t2davgfirst_save
     tslice = tslice_save
     tsound = tsound_save
 
-    if(ldiagnos) then
+    if (ldiagnos) then
       tdiagnos  = t_save 
       dtdiagnos = dt_save
       itdiagnos = it_save
       eps_rkf_diagnos = eps_rkf_save
     endif
+
     endsubroutine restore_diagnostic_controls
 !***********************************************************************
 !$   subroutine write_diagnostics_wrapper(f) bind(C)
@@ -591,21 +596,20 @@ module Equ
     l2davg_save = l2davg
     lout_sound_save = lout_sound
     lvideo_save = lvideo
-
 !
 !  Record times for diagnostic and 2d average output.
 !
-
     if (l1davgfirst) t1ddiagnos_save=t ! (1-D averages are for THIS time)
     if (l2davgfirst) t2davgfirst_save=t ! (2-D averages are for THIS time)
     if (lvideo     ) tslice_save=t ! (slices are for THIS time)
     if (lout_sound ) tsound_save=t
-      if (ldiagnos) then
-        t_save  = t ! (diagnostics are for THIS time)
-        dt_save = dt
-        it_save = it
-        eps_rkf_save = eps_rkf
-      endif
+    if (ldiagnos) then
+      t_save  = t ! (diagnostics are for THIS time)
+      dt_save = dt
+      it_save = it
+      eps_rkf_save = eps_rkf
+    endif
+
     endsubroutine save_diagnostic_controls
 !***********************************************************************
     subroutine diagnostics_reductions
