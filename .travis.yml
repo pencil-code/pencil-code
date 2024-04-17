@@ -40,4 +40,4 @@ install:
 
 script:
   - source sourceme.sh
-  - pc_auto-test --host-id travis-ci -t samples/helical-MHDturb --script-tests=python --auto-clean --no-bisect
+  - pc_auto-test --host-id travis-ci -t --max-level 1 --script-tests=python --auto-clean --no-bisect
