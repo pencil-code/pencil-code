@@ -33,7 +33,7 @@ before_install:
   - cd $HOME/build/pencil-code/pencil-code/ && git restore-mtime src/
 
 install:
-  - pip install -r $HOME/build/pencil-code/python/pencil/requirements.txt
+  - pip install -r python/pencil/requirements.txt
 
 script:
   - source sourceme.sh
