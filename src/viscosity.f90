@@ -2766,9 +2766,19 @@ module Viscosity
       real, optional, intent(out) :: nu_input
       real, dimension(nx), optional, intent(out) :: nu_pencil
       character (len=labellen), optional :: ivis
+      integer :: i
 !
       if (present(nu_input)) nu_input=nu
-      if (present(ivis))     ivis=ivisc(1)
+      if (present(ivis)) then
+        do i=1,nvisc_max !not assuming Lapacian is listed first
+          if (index(ivisc(i),"shock")/=0.or.index(ivisc(i),"hyper")/=0) then
+            continue
+          else
+            ivis=ivisc(i)
+            exit
+          endif
+        enddo
+      endif
       if (present(nu_pencil)) then
 
         if (lvisc_simplified.or.lvisc_nu_const.or.lvisc_mixture) then
