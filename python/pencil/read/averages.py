@@ -269,7 +269,7 @@ class Averages(object):
 
             if not quiet:
                 print(plane_list, in_file_name_list, aver_file_name_list)
-            
+
             for plane, in_file_name, aver_file_name in zip(
                 plane_list, in_file_name_list, aver_file_name_list
             ):
@@ -394,7 +394,7 @@ class Averages(object):
                         else:
                             plane_list.remove(prefix)
                 if len(av_files_in) == 0:
-                    raise RuntimeError(f"read.aver error: {plane_list =} and {av_files = } have no match.")
+                    raise RuntimeError(f"read.aver error: {plane_list} and {av_files} have no match.")
             else:
                 plane_list = list()
                 for av_file in av_files:
