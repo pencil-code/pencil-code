@@ -32,6 +32,9 @@ before_install:
   - gfortran --version
   - cd $HOME/build/pencil-code/pencil-code/ && git restore-mtime src/
 
+python:
+  - 3.9
+
 install:
   - pip install -r python/pencil/requirements.txt
 
