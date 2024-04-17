@@ -75,30 +75,30 @@ class Power(object):
     def read(self, datadir="data", file_name=None, quiet=False):
         """
         read(datadir='data', file_name='', quiet=False)
-    
+
         Read the power spectra.
-    
+
         Parameters
         ----------
         datadir : string
             Directory where the data is stored.
-    
+
         file_name : string
             Filename to read.
             If a filename is given, only that power spectrum is read.
             By default it reads all the power spectrum files.
-    
+
         quiet : bool
             Flag for switching off output.
-    
+
         Returns
         -------
         Class containing the different power spectrum as attributes.
-    
+
         Notes
         -----
         Use the attribute keys to get a list of attributes
-    
+
         Examples
         --------
         >>> pw = pc.read.power()
@@ -359,7 +359,7 @@ class Power(object):
         self.t = time.astype(np.float32)
         setattr(self, power_name, power_array)
 
-    @functools.lru_cache
+    @functools.lru_cache(maxsize=128)
     def _get_nk_xyz(self, datadir):
         """
         See variable nk_xyz in power_spectrum.f90.
