@@ -32,6 +32,9 @@ before_install:
   - gfortran --version
   - cd $HOME/build/pencil-code/pencil-code/ && git restore-mtime src/
 
+install:
+  - pip install -r $HOME/build/pencil-code/python/pencil/requirements.txt
+
 script:
   - source sourceme.sh
   - pc_auto-test --host-id travis-ci -t --max-level 1 --script-tests=python --auto-clean --no-bisect
