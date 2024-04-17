@@ -5,11 +5,9 @@
 # need X11. This needs to happen before importing the pencil module.
 import sys
 sys.path.append('../../../python')
-try:
-    import matplotlib
-    matplotlib.use('agg')
-except:
-    pass
+import matplotlib
+matplotlib.use('agg')
+import numpy as np
 import pencil as pc
 
 

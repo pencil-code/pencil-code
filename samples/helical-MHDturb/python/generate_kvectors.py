@@ -71,21 +71,17 @@ with open("k.dat", 'w') as f:
 	print_list(f, kz_list)
 
 if debug:
-        try:
-		import matplotlib.pyplot as plt
+	import matplotlib.pyplot as plt
 
-        	kkx = np.array(kx_list)
-        	kky = np.array(ky_list)
-        	kkz = np.array(kz_list)
+	kkx = np.array(kx_list)
+	kky = np.array(ky_list)
+	kkz = np.array(kz_list)
 
-        	print("<k> = ", np.average(kkx), np.average(kky), np.average(kkz))
-        	print("<k^2> = ", np.average(kkx**2), np.average(kky**2), np.average(kkz**2))
+	print("<k> = ", np.average(kkx), np.average(kky), np.average(kkz))
+	print("<k^2> = ", np.average(kkx**2), np.average(kky**2), np.average(kkz**2))
 
-        	kkxm = np.where(kky<0.4, kkx, np.nan)
-        	kkzm = np.where(kky<0.4, kkz, np.nan)
-        	fig,ax = plt.subplots()
-        	ax.scatter(kkxm, kkzm)
-        	plt.show()
-         except:
-                print("ModuleNotFoundError: No module named 'matplotlib'")
-                print("omitting debug plots")
+	kkxm = np.where(kky<0.4, kkx, np.nan)
+	kkzm = np.where(kky<0.4, kkz, np.nan)
+	fig,ax = plt.subplots()
+	ax.scatter(kkxm, kkzm)
+	plt.show()
