@@ -406,7 +406,7 @@ class Averages(object):
                         av_files_in.append(av_file)
                         plane_list.append(av_file.split('/')[-1].split('_')[-1][:-3])
                 if len(av_files_in) == 0:
-                    raise RuntimeError(f"read.aver error: {avfile_list =} has no match in {av_files = }")
+                    raise RuntimeError(f"read.aver error: {avfile_list} has no match in {av_files}")
 
             if not quiet:
                 print(av_files_in)
@@ -812,7 +812,7 @@ class Averages(object):
                     raw_idx += 1
                 line_idx += 1
         except:
-            raise RuntimeError(f"Error: There was a problem reading {aver_file_name} at line {line_idx}.\nCalculated values: {n_vars = }, {n_w = }.\nAre these correct?")
+            raise RuntimeError(f"Error: There was a problem reading {aver_file_name} at line {line_idx}.\nCalculated values: {n_vars}, {n_w}.\nAre these correct?")
 
         # Restructure the raw data and add it to the Averages object.
         raw_data = np.reshape(raw_data, [n_times, n_vars, nw])
