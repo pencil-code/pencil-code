@@ -491,7 +491,6 @@ module Cdata
                                          cnamexy(:),cnamexz(:),cnamerz(:), &
                                          cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
-  !$omp threadprivate(inds_max_diags, inds_sum_diags)
 
   logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
@@ -809,11 +808,15 @@ module Cdata
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 !!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
 
-!$ logical, target :: ldiag_perform_diagnostics=.false.
+  integer, parameter :: n_helperflags=3
+  logical, dimension(n_helperflags) :: lhelperflags=(/.false.,.false.,.false./)
+  integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_POWERSNAP=3
+
   integer :: num_helper_threads=1, thread_id=1
 ! 
 ! threadprivate definitions for OpenMP
 !
+!$omp threadprivate(inds_max_diags, inds_sum_diags)
 !$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
 !$omp threadprivate(lfirstpoint,thread_id)
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)

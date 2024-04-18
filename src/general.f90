@@ -270,7 +270,7 @@ module General
     endfunction
   endinterface
 !
-! TP: used for signaling across threads
+! For signaling across threads
 !
   interface
     subroutine cond_wait(cond_handle, flag, value)
@@ -6714,9 +6714,9 @@ iloop:do i=1,size(list2)
 !***********************************************************************
 !$  subroutine signal_wait(lflag, lvalue)
 !
-!  Makes the current thread wait until lflag = lvalue 
-!  Could have a better implementation with condition variables
-!  But for now waiting is done with spinlocking
+!  Makes the current thread wait until lflag = lvalue.
+!  Could have a better implementation with condition variables.
+!  But for now waiting is done with spinlocking.
 !
 ! 14-Mar-24/TP: coded
 !
@@ -6728,12 +6728,13 @@ iloop:do i=1,size(list2)
 !***********************************************************************
 !$  subroutine signal_send(lflag, lvalue)
 !
-!  Sets lflag that some thread is waiting on to lvalue
-!  Exists so it is easy to extend if we want to do waiting with f.e. condition variables
+!  Sets lflag that some thread is waiting on to lvalue and unlocks thread.
+!  Easy to extend if we want to do waiting with f.ex. condition variables.
 !
 ! 14-Mar-24/TP: coded
 !
 !$  logical :: lflag, lvalue
+
 !$    lflag = lvalue
 !$    call cond_signal(DIAG_COND)
 

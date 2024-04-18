@@ -15,7 +15,7 @@ module GPU
 
   implicit none
 
-  type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
+  type(lpointer), dimension(2) :: lsnap_flags_to_wait_on
   type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
 
   logical, target :: always_true_g = .true.
@@ -27,7 +27,7 @@ module GPU
 !$    endsubroutine random_initial_condition
 !$  end interface
   external initialize_gpu_c
-  !external finalize_gpu_c
+  external finalize_gpu_c
   external rhs_gpu_c
   external load_farray_c 
   external reload_gpu_config_c
@@ -87,11 +87,13 @@ contains
       real, dimension(:,:,:,:), intent(IN) :: f
 
       call register_gpu_c(f)
-!$    if(.true.) then      
-!$      lsnap_flags_to_wait_on(1)%p => ldiag_perform_diagnostics
-!$      ldiag_flags_to_wait_on(1)%p => ldiag_perform_diagnostics
+!$    if (.true.) then      
+!$      lsnap_flags_to_wait_on(1)%p => lperform_wsnap
+!$      lsnap_flags_to_wait_on(2)%p => lperform_powersnap
+!$      ldiag_flags_to_wait_on(1)%p => lperform_diagnostics
 !$    else
         lsnap_flags_to_wait_on(1)%p => always_true_g
+        lsnap_flags_to_wait_on(2)%p => always_true_g
         ldiag_flags_to_wait_on(1)%p => always_true_g
 !$    endif
 !
@@ -99,11 +101,6 @@ contains
 !**************************************************************************
     subroutine finalize_gpu
 !
-      interface
-        subroutine finalize_gpu_c
-        endsubroutine
-      endinterface
-
       call finalize_gpu_c
 !
     endsubroutine finalize_GPU
@@ -141,7 +138,7 @@ contains
       type(lpointer), dimension(:) :: lflags_to_wait_on
       integer :: i
 
-!      Have to wait since if doing diagnostics don't want overwrite f
+!      Have to wait since if doing diagnostics don't want to overwrite f
 !$     do i = 1,size(lflags_to_wait_on) 
 !$       call signal_wait(lflags_to_wait_on(i)%p, .false.)
 !$     enddo 
@@ -213,7 +210,7 @@ contains
       f_copy_2 = f
 
       do n=1,num_of_steps
-        if(iproc == 0) print*,"GPU rhs test:    tcpu step: ",n
+        if (lroot) print*,"GPU rhs test:    tcpu step: ",n
         ds = 0.0
         do i=1,3
           call boundconds_x(f_copy)

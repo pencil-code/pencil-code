@@ -13,10 +13,6 @@ module GPU
 
   implicit none
 
-  type(lpointer), dimension(1) :: lsnap_flags_to_wait_on
-  type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
-  logical, target :: always_false_ng = .false.
-  logical, target :: always_true_ng = .true.
   include 'gpu.h'
 
 contains
@@ -34,8 +30,6 @@ contains
       real, dimension(:,:,:,:), intent(IN) :: f
 
       call keep_compiler_quiet(f)
-      lsnap_flags_to_wait_on(1)%p => always_true_ng
-      ldiag_flags_to_wait_on(1)%p => always_true_ng
 !
     endsubroutine register_GPU
 !**************************************************************************
@@ -64,10 +58,9 @@ contains
       call keep_compiler_quiet(f)
     endsubroutine
 !**************************************************************************
-    subroutine copy_farray_from_GPU(f,lflags_to_wait_on)
+    subroutine copy_farray_from_GPU(f)
 
       real, dimension (:,:,:,:), intent(OUT) :: f
-      type(lpointer), dimension(:) :: lflags_to_wait_on
 
       call keep_compiler_quiet(f)
 
