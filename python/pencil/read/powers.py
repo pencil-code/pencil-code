@@ -266,16 +266,16 @@ class Power(object):
         time = np.array(time)
 
         if param.lcomplex:
-            power_array = np.array(power_array, dtype=complex)
+            power_array = np.array(power_array, dtype=np.csingle)
         else:
-            power_array = np.array(power_array, dtype=np.float32)
+            power_array = np.array(power_array, dtype=np.single)
 
         if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
             power_array = power_array.reshape([len(time), nzpos, nk])
         else:
             power_array = power_array.reshape([len(time), nzpos, nky, nkx])
 
-        self.t = time.astype(np.float32)
+        self.t = time.astype(np.single)
         self.nzpos = nzpos
         setattr(self, power_name, power_array)
 
