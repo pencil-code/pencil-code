@@ -689,7 +689,7 @@ module Radiation
                   ij=ij_table(i,j)
                   k=iKR_press+(ij-1)
                   f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,i)*unit_vec(idir,j) &
-                    *(Qrad+Srad)*f(:,:,:,ikapparho)
+                    *(Qrad+Srad)*f(:,:,:,ikapparho)/c_light
                 enddo
                 enddo
               endif
@@ -1699,15 +1699,19 @@ module Radiation
 !
 !  perhaps allow here for a switch, do here (chi/c)*(-v*rhoR)
 !
+!  ramkishor: radiation energy density is 4*pi/c times Srad. That is why, there is a
+!  4*pi/c_light factor in the expression below.
+!
         if (ldoppler_rad) then
           do j=1,3
             k=iuu+(j-1)
             radpressure(:,j)=-scalefactor_radpressure1*p%rho1* &
-              f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,k)*Srad(l1:l2,m,n)
+              f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,k)*4*pi/c_light*Srad(l1:l2,m,n)
           enddo
           if (ip<11) then
             if (m==m1.and.n==n1) then
-              alpha=scalefactor_radpressure1*p%rho1*f(l1:l2,m,n,ikapparho)*Srad(l1:l2,m,n)/c_light
+              alpha=scalefactor_radpressure1*p%rho1*f(l1:l2,m,n,ikapparho)*4*pi/c_light &
+                *Srad(l1:l2,m,n)/c_light
               print*,'AXEL: Srad=',Srad(l1:l2,m,n)
               print*,'AXEL: kappa=',p%rho1*f(l1:l2,m,n,ikapparho)
               print*,'AXEL: alpha=',alpha
@@ -1728,7 +1732,7 @@ module Radiation
                 f(l1:l2,m,n,kpres)*f(l1:l2,m,n,kvel)
             enddo
           enddo
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light**2
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
         endif
 !
       endif
