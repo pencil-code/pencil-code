@@ -5909,6 +5909,13 @@ module Forcing
           force(:,2)=ampl_ff(i)*x(l1:l2)
           force(:,3)=0.
 !
+!  f=(0,x*sint,0)
+!
+        case ('(0,xsint,0)')
+          force(:,1)=0.
+          force(:,2)=ampl_ff(i)*x(l1:l2)*sin(omega_ff*t)
+          force(:,3)=0.
+!
 !  f=(0,sinx,0)
 !
         case ('(0,sinx,0)')
