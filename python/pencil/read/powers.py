@@ -240,7 +240,10 @@ class Power(object):
 
             # Now read the rest of the file
             time = []
-            power_array = []
+            if param.lcomplex:
+                power_array = np.array([], dtype=np.csingle)
+            else:
+                power_array = np.array([], dtype=np.single)
 
             if param.lintegrate_shell:
                 block_size = np.ceil(nk / 8) * nzpos + 1
@@ -250,6 +253,9 @@ class Power(object):
             for line_idx, line in enumerate(f):
                 if line_idx % block_size == 0:
                     time.append(float(line.strip()))
+
+                    power_array.resize([len(time), nzpos*nk])
+                    ik = 0
                 else:
                     lsp = line.strip().split()
 
@@ -258,17 +264,14 @@ class Power(object):
                         real = lsp[0::2]
                         imag = lsp[1::2]
                         for a, b in zip(real, imag):
-                            power_array.append(ffloat(a) + 1j * ffloat(b))
+                            power_array[-1,ik] = ffloat(a) + 1j * ffloat(b)
+                            ik += 1
                     else:
                         for value_string in lsp:
-                            power_array.append(ffloat(value_string))
+                            power_array[-1,ik] = ffloat(value_string)
+                            ik += 1
 
         time = np.array(time)
-
-        if param.lcomplex:
-            power_array = np.array(power_array, dtype=np.csingle)
-        else:
-            power_array = np.array(power_array, dtype=np.single)
 
         if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
             power_array = power_array.reshape([len(time), nzpos, nk])
