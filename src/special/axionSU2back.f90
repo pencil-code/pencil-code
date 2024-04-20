@@ -47,6 +47,7 @@ module Special
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
   real :: Mpl2=1., Hdot=0., lamf, Hscript, epsilon_sr=0.
   real :: m_inflaton=1.275e-7, m_phi=1.275e-7, inflaton_ini=16., phi_ini=16.
+  real :: alpha=0.1, m_alpha=3.285e-11, n_alpha=1.5
   real, dimension (nx) :: grand, grant, dgrant
   real, dimension (nx) :: xmask_axion
   real, dimension (2) :: axion_sum_range=(/0.,1./)
@@ -67,12 +68,13 @@ module Special
   logical :: lim_psi_TR=.false., lleft_psiL_TL=.false., lkeep_mQ_const=.false.
   logical :: lhubble_var=.false., lhubble=.false.
   character(len=50) :: init_axionSU2back='standard'
+  character (len=labellen) :: V_choice='quadratic'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
     nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn, m_inflaton, m_phi, &
-    inflaton_ini, lhubble, phi_ini
+    inflaton_ini, lhubble, V_choice, phi_ini, alpha, m_alpha, n_alpha
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -201,56 +203,39 @@ module Special
 !
 !  19-feb-2019/axel: coded
 !
+      use Mpicomm, only: mpibcast
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real :: lnH, lna, a
       real :: kmax=2., lnkmax, lnk0=1.
       real :: Q, Qdot, chi, chidot, phi, phidot
-      real :: U, V
+      real :: U, V, lnkmin0_new, beta
       integer :: ik
 !
 !  Initialize any module variables which are parameter dependent
 !
       lamf=lam/fdecay
 !
-      if (lconf_time) then
-        if (lhubble) then
-          call fatal_error("init_special","with lconf_time, lhubble not yet implemented")
-        endif
-!
-!  Reset tstart if conformal time.
-!  This is only correct for H=const.
-!
-        tstart=-1./(ascale_ini*H)
-        t=tstart
-        a=ascale_ini
-      else
-        a=exp(H*t)
+      if (lconf_time .and. lhubble) then
+          call fatal_error("initialize_special","with lconf_time, lhubble not yet implemented")
       endif
+      a=ascale_ini
 !
 !  Compute lnkmin0 and lnkmax0. Even for a linear k-range, dlnk
 !  is needed to determine the output of k-range and grand etc.
 !  Possibility to evolve the Hubble parameter (in cosmic time)
 !
       if (lhubble) then
-        if (lstart) then
-          phidot=0.
-          V=.5*(m_phi*phi_ini)**2
-          a=ascale_ini
-          H=sqrt(onethird*(.5*phidot**2+V))
-        else
-          Q=f_ode(iaxi_Q)
-          Qdot=f_ode(iaxi_Qdot)
-          chi=f_ode(iaxi_chi)
-          chidot=f_ode(iaxi_chidot)
-          phi=f_ode(iaxi_phi)
-          U=mu**4*(1.+cos(chi/fdecay))
-          V=.5*(m_phi*phi)**2
-          a=exp(f_ode(iaxi_lna))
-          phidot=f_ode(iaxi_phidot)
-          !H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
-          H=((-Q*Qdot)-sqrt((-Q*Qdot)**2+4.*(1.-.5*Q**2)*(.5*g**2*Q**4+onethird*(U+V) &
-            +.5*Qdot**2+onesixth*(phidot**2+chidot**2))))/(-2.+Q**2)
-        endif
+        phidot=0.
+        select case (V_choice)
+        case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            V=alpha*m_alpha*(tanh(beta*phi_ini/2)**2)**n_alpha
+          case ('quadratic') ; V=.5*(m_phi*phi_ini)**2
+          case default
+            call fatal_error("initialize_special: No such V_choice: ", trim(V_choice))
+        endselect
+        H=sqrt(onethird*(.5*phidot**2+V))
       endif
       lna=alog(a)
       lnH=alog(H)
@@ -261,22 +246,41 @@ module Special
       else
         dlnk=(lnkmax0-lnkmin0)/(nxgrid-1)
       endif
+      if (lroot .and. .not. lstart) then
+        open(1,file=trim(datadir)//'/lnkmin0.dat')
+        read(1,*) lnkmin0_new
+        close(1)
+      endif
+      call mpibcast(lnkmin0_new)
 !
 !  Initialize lnkmin0 and lnkmax0
 !
       if (llnk_spacing_adjustable) then
-        do ik=1,nx
-          lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
-          k(ik)=exp(lnk(ik))
-        enddo
-        if (ip<10) print*,'iproc,lnk=',iproc,lnk
-        kindex_array=nint((lnk-lnkmin0)/dlnk)
+        if (ldo_adjust_krange) then
+          if (.not. lstart) lnkmin0=lnkmin0_new
+          do ik=1,nx
+            lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
+            k(ik)=exp(lnk(ik))
+          enddo
+        else
+          do ik=1,nx
+            lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
+            k(ik)=exp(lnk(ik))
+          enddo
+          if (.not. lstart) lnkmin0=lnkmin0_new
+          if (ip<10) print*,'iproc,lnk=',iproc,lnk
+          kindex_array=nint((lnk-lnkmin0)/dlnk)
+        endif
       elseif (llnk_spacing) then
         do ik=1,nx
           lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
           k(ik)=exp(lnk(ik))
         enddo
-        lnkmin0_dummy=lnkmin0
+        if (.not. lstart) then
+          lnkmin0_dummy=lnkmin0_new
+        else
+          lnkmin0_dummy=lnkmin0
+        endif
         if (ip<10) print*,'iproc,lnk=',iproc,lnk
         kindex_array=nint((lnk-lnkmin0)/dlnk)
       else
@@ -315,7 +319,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: impsi, impsidot, imTR, imTRdot
-      real :: chi0, V, Uprime0
+      real :: chi0, V, Uprime0, beta
       real :: lnt, lnH, lna, a
       real :: kmax=2., lnkmax, lnk0=1.
       integer :: ik
@@ -329,7 +333,10 @@ module Special
         case ('standard')
           chi0=chi_prefactor*pi*fdecay
           Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+          a=ascale_ini
           if (lconf_time) then
+            tstart=-1/(a*H)
+            t=tstart
             if (ip<10) print*,'k=',k
             if (lhubble) then
               call fatal_error("init_special","with lconf_time, lhubble not yet implemented")
@@ -350,7 +357,14 @@ module Special
               f_ode(iaxi_lna)=alog(ascale_ini)
               f_ode(iaxi_phi)=phi_ini
               f_ode(iaxi_phidot)=0.
-              V=.5*(m_phi*phi_ini)**2
+              select case (V_choice)
+                case ('alpha_attractors')
+                  beta=sqrt(2./(3.*alpha))
+                  V=alpha*m_alpha*(tanh(beta*phi_ini/2)**2)**n_alpha
+                case ('quadratic') ; V=.5*(m_phi*phi_ini)**2
+                case default
+                  call fatal_error("init_special: No such V_choice: ", trim(V_choice))
+              endselect
               H=sqrt(onethird*(.5*f_ode(iaxi_phidot)**2+V))
               Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
               Q0=(-Uprime0/(3.*g*lamf*H))**onethird
@@ -366,9 +380,9 @@ module Special
             TRdot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
             if (lim_psi_TR) then
               impsi=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
-              impsidot=(k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              impsidot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
               imTR=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
-              imTRdot=(k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              imTRdot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
             endif
           endif
 !
@@ -414,6 +428,15 @@ module Special
           enddo
           enddo 
           write(6,1000) 'iproc,TR=',iproc,TR
+          lna=alog(a)
+          lnH=alog(H)
+          lnkmin0=nmin0+lnH+lna
+          if (lroot) then
+            open(1,file=trim(datadir)//'/lnkmin0.dat')
+            write(1,*) lnkmin0
+            close(1)
+          endif
+
 !
         case default
           call fatal_error("init_special","no such init_axionSU2back: "//trim(init_axionSU2back))
@@ -488,7 +511,7 @@ module Special
       real, dimension (nx) :: impsiL, impsiLdot, impsiLddot, imTL, imTLdot, imTLddot
       real, dimension (nx) :: epsQE, epsQB
       real :: Q, Qdot, chi, chidot, phi, phidot
-      real :: U, Uprime, mQ, xi, V, Vprime
+      real :: U, Uprime, mQ, xi, V, beta
       real :: fact=1., sign_swap=1.
       integer :: ik
       type (pencil_case) :: p
@@ -540,7 +563,14 @@ module Special
       if (lhubble) then
         phi=f_ode(iaxi_phi)
         U=mu**4*(1.+cos(chi/fdecay))
-        V=.5*(m_phi*phi)**2
+        select case (V_choice)
+          case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
+          case ('quadratic') ; V=.5*(m_phi*phi)**2
+          case default
+            call fatal_error("dspecial_dt: No such V_choice: ", trim(V_choice))
+        endselect
         a=exp(f_ode(iaxi_lna))
         phidot=f_ode(iaxi_phidot)
         H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
@@ -824,6 +854,9 @@ module Special
       if (lfirst.and.ldt.and.lconf_time) then
         dt1_special = Ndivt*abs(Hscript)
         dt1_max=max(dt1_max,dt1_special)
+      else
+        dt1_special = Ndivt*abs(H)
+        dt1_max=max(dt1_max,dt1_special)
       endif
 !
 !  diagnostics
@@ -882,7 +915,7 @@ module Special
       use Sub
 !
       real :: Q, Qdot, Qddot, chi, chidot, chiddot, phi, phidot, phiddot
-      real :: U, Uprime, mQ, xi, V, Vprime
+      real :: U, Uprime, mQ, xi, V, Vprime, beta
       !real :: U, Uprime, mQ, xi, V, Vprime
       real :: fact=1., sign_swap=1.
 !
@@ -904,7 +937,14 @@ module Special
         phi=f_ode(iaxi_phi)
         phidot=f_ode(iaxi_phidot)
         U=mu**4*(1.+cos(chi/fdecay))
-        V=.5*(m_phi*phi)**2
+        select case (V_choice)
+          case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
+          case ('quadratic') ; V=.5*(m_phi*phi)**2
+          case default
+            call fatal_error("dspecial_dt_ode: No such V_choice: ", trim(V_choice))
+        endselect
         a=exp(f_ode(iaxi_lna))
         H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
         Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
@@ -959,7 +999,14 @@ module Special
 !  Possibility to evolve the Hubble parameter (in cosmic time)
 !
         if (lhubble) then
-          Vprime=m_phi**2*phi
+        select case (V_choice)
+          case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            Vprime=alpha*m_alpha*n_alpha*beta*tanh(beta*phi/2)*(1./cosh(beta*phi/2)**2)
+          case ('quadratic') ; Vprime=m_phi**2*phi
+          case default
+            call fatal_error("special_dspecial_dt_ode: No such V_choice: ", trim(V_choice))
+        endselect
           phiddot=-3.*H*phidot-Vprime
         endif
 
@@ -1098,7 +1145,7 @@ module Special
       real, dimension (nx) :: tmp_impsi, tmp_impsidot, tmp_imTR, tmp_imTRdot
       real, dimension (nx) :: tmp_impsiL, tmp_impsiLdot, tmp_imTL, tmp_imTLdot
       real :: Q, Qdot, chi, chidot, phi, phidot
-      real :: mQ, xi, U, V, Vprime
+      real :: mQ, xi, U, V, beta
       real :: lnt, lnH, lna, a, lnkmin, lnkmax
       integer :: ik, nswitch
 !
@@ -1114,7 +1161,14 @@ module Special
         phi=f_ode(iaxi_phi)
         phidot=f_ode(iaxi_phidot)
         U=mu**4*(1.+cos(chi/fdecay))
-        V=.5*(m_phi*phi)**2
+        select case (V_choice)
+          case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
+          case ('quadratic') ; V=.5*(m_phi*phi)**2
+          case default
+            call fatal_error("special_after_boundary: No such V_choice: ", trim(V_choice))
+        endselect
         a=exp(f_ode(iaxi_lna))
     !   H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
 
@@ -1243,6 +1297,10 @@ module Special
             write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi), f(l1:l2,m1,n1,iaxi_impsi), &
                                f(l1:l2,m1,n1,iaxi_TR), f(l1:l2,m1,n1,iaxi_imTR)
             close(1)
+            open (1, file=trim(directory_snap)//'/krange_deriv.dat', form='formatted', position='append')
+            write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psidot), f(l1:l2,m1,n1,iaxi_impsidot), &
+                               f(l1:l2,m1,n1,iaxi_TRdot), f(l1:l2,m1,n1,iaxi_imTRdot)
+            close(1)
 !
 !  output for left-handed modes
 !
@@ -1250,6 +1308,10 @@ module Special
               open (1, file=trim(directory_snap)//'/krange_left.dat', form='formatted', position='append')
               write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiL), f(l1:l2,m1,n1,iaxi_impsiL), &
                                  f(l1:l2,m1,n1,iaxi_TL),   f(l1:l2,m1,n1,iaxi_imTL)
+              close(1)
+              open (1, file=trim(directory_snap)//'/krange_deriv_left.dat', form='formatted', position='append')
+              write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiLdot), f(l1:l2,m1,n1,iaxi_impsiLdot), &
+                                 f(l1:l2,m1,n1,iaxi_TLdot),   f(l1:l2,m1,n1,iaxi_imTLdot)
               close(1)
             endif
           endif
@@ -1259,6 +1321,11 @@ module Special
           lnkmin0=lnkmin0+dlnk
         else
           nswitch=0
+        endif
+        if (lroot) then
+          open(1,file=trim(datadir)//'/lnkmin0.dat')
+          write(1,*) lnkmin0
+          close(1)
         endif
 !
 !  for llnk_spacing=T, we still want output at the same times as in
@@ -1281,6 +1348,11 @@ module Special
           lnkmin0_dummy=lnkmin0_dummy+dlnk
         else
           nswitch=0
+        endif
+        if (lroot) then
+          open(1,file=trim(datadir)//'/lnkmin0.dat')
+          write(1,*) lnkmin0_dummy
+          close(1)
         endif
       endif
 !
