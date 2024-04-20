@@ -851,11 +851,12 @@ module Special
         endif
       endif
 !
-      if (lfirst.and.ldt.and.lconf_time) then
-        dt1_special = Ndivt*abs(Hscript)
-        dt1_max=max(dt1_max,dt1_special)
-      else
-        dt1_special = Ndivt*abs(H)
+      if (lfirst.and.ldt) then
+        if (lconf_time) then
+          dt1_special = Ndivt*abs(Hscript)
+        else
+          dt1_special = Ndivt*abs(H)
+        endif
         dt1_max=max(dt1_max,dt1_special)
       endif
 !
@@ -887,15 +888,15 @@ module Special
         call save_name(TLdoteff2km_sum,idiag_TLdoteff2km)
         call save_name(grand_sum,idiag_grand2)
         call save_name(dgrant_sum,idiag_dgrant)
-        call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
+        if (idiag_dgrant_up/=0) call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
         call save_name(fact,idiag_fact)
         call save_name(k0,idiag_k0)
         call save_name(dk,idiag_dk)
       endif
 !
       if (l2davgfirst) then
-        if (idiag_grandxy/=0)   call zsum_mn_name_xy(grand,idiag_grandxy)
-        if (idiag_grantxy/=0)   call zsum_mn_name_xy(grant,idiag_grantxy)
+        call zsum_mn_name_xy(grand,idiag_grandxy)
+        call zsum_mn_name_xy(grant,idiag_grantxy)
       endif
 !
     endsubroutine dspecial_dt
@@ -1055,17 +1056,17 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
-        call save_name(Q   ,idiag_Q)
-        call save_name(Qdot,idiag_Qdot)
-        call save_name(Qddot,idiag_Qddot)
-        call save_name(chi   ,idiag_chi)
-        call save_name(chidot,idiag_chidot)
+        call save_name(Q      ,idiag_Q)
+        call save_name(Qdot   ,idiag_Qdot)
+        call save_name(Qddot  ,idiag_Qddot)
+        call save_name(chi    ,idiag_chi)
+        call save_name(chidot ,idiag_chidot)
         call save_name(chiddot,idiag_chiddot)
         if (lhubble) then
-          call save_name(a   ,idiag_a)
+          call save_name(a     ,idiag_a)
           call save_name(phi   ,idiag_phi)
-          call save_name(phidot   ,idiag_phidot)
-          call save_name(H   ,idiag_H)
+          call save_name(phidot,idiag_phidot)
+          call save_name(H     ,idiag_H)
         endif
       endif
 !
