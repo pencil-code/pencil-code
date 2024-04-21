@@ -3698,7 +3698,7 @@ module Forcing
 !
         tsforce=t+dtforce
         if (ip<=6) print*,'forcing_gaussianpot: location=',location
-      endif
+      endif   ! if (t>tsforce)
 !
 !  Set forcing amplitude (same value for each location by default).
 !  For iforce_tprofile=='sin^2', we have a temporal sine profile.
@@ -3850,7 +3850,7 @@ module Forcing
             lfirstpoint = .false.
           enddo
         enddo
-      endif
+      endif    ! if ( (dtforce_duration<0.0) etc.
 !
 !  For printouts, rufm needs to be communicated to other processors.
 !
