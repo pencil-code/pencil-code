@@ -15,17 +15,13 @@ module GPU
 
   implicit none
 
-  type(lpointer), dimension(2) :: lsnap_flags_to_wait_on
-  type(lpointer), dimension(1) :: ldiag_flags_to_wait_on
-
-  logical, target :: always_true_g = .true.
-  logical, target :: always_false_g = .false.
   integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
 
 !$  interface
 !$    subroutine random_initial_condition() bind(C)
 !$    endsubroutine random_initial_condition
 !$  end interface
+
   external initialize_gpu_c
   external finalize_gpu_c
   external rhs_gpu_c
@@ -33,8 +29,8 @@ module GPU
   external reload_gpu_config_c
   external test_rhs_c
   include 'gpu.h'
-contains
 
+contains
 !***********************************************************************
     subroutine initialize_GPU
 !
@@ -87,15 +83,6 @@ contains
       real, dimension(:,:,:,:), intent(IN) :: f
 
       call register_gpu_c(f)
-!$    if (.true.) then      
-!$      lsnap_flags_to_wait_on(1)%p => lperform_wsnap
-!$      lsnap_flags_to_wait_on(2)%p => lperform_powersnap
-!$      ldiag_flags_to_wait_on(1)%p => lperform_diagnostics
-!$    else
-        lsnap_flags_to_wait_on(1)%p => always_true_g
-        lsnap_flags_to_wait_on(2)%p => always_true_g
-        ldiag_flags_to_wait_on(1)%p => always_true_g
-!$    endif
 !
     endsubroutine register_GPU
 !**************************************************************************
@@ -120,7 +107,7 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
-    subroutine copy_farray_from_GPU(f,lflags_to_wait_on)
+    subroutine copy_farray_from_GPU(f)
 
 !$    use General, only: signal_wait
 
@@ -135,12 +122,12 @@ contains
       endinterface
 
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
-      type(lpointer), dimension(:) :: lflags_to_wait_on
       integer :: i
-
-!      Have to wait since if doing diagnostics don't want to overwrite f
-!$     do i = 1,size(lflags_to_wait_on) 
-!$       call signal_wait(lflags_to_wait_on(i)%p, .false.)
+!
+!      Have to wait since if doing diagnostics don't want to overwrite f.
+!
+!$     do i = 1,n_helperflags
+!$       call signal_wait(lhelperflags(i), .false.)
 !$     enddo 
        call copy_farray_c(f)
 
@@ -150,13 +137,13 @@ contains
 
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
 
-      call load_farray_c()
+      call load_farray_c
 
     endsubroutine load_farray_to_GPU
 !**************************************************************************
     subroutine reload_GPU_config
 
-       call reload_gpu_config_c()
+       call reload_gpu_config_c
 
     endsubroutine reload_GPU_config
 !**************************************************************************

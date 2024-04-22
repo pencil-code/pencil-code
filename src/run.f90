@@ -59,6 +59,7 @@ subroutine helper_loop(f,p)
 !
   use Equ, only: perform_diagnostics
 !$ use General, only: signal_wait, signal_send
+  use Snapshot, only: perform_powersnap, perform_wsnap_ext
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
@@ -66,12 +67,28 @@ subroutine helper_loop(f,p)
 ! 7-feb-24/TP: coded
 !
 !$  do while(lhelper_run)
-!$    call signal_wait(ldiag_perform_diagnostics,lhelper_run)
-!$    if (lhelper_run) then 
-!$       call perform_diagnostics(f,p)
-!$    else 
-!$      call signal_send(ldiag_perform_diagnostics,.false.)
+
+!$    if (.not.any(lhelperflags)) cycle
+
+!$    if (lhelper_run) then
+!$      if (lhelperflags(PERF_DIAGS)) then
+print*, 'in helper, lhelperflags(PERF_DIAGS)=',lhelperflags(PERF_DIAGS)
+flush(6)
+!$        call signal_wait(lhelperflags(PERF_DIAGS),lhelper_run)
+!$        call perform_diagnostics(f,p)
+!$      endif
+
+!!$     if (lhelperflags(PERF_WSNAP)) then 
+!!$       call signal_wait(lhelperflags(PERF_WSNAP),lhelper_run)
+!!$       call perform_wsnap_ext(f)
+!!$     endif
+
+!!$     if (lhelperflags(PERF_POWERSNAP)) then 
+!!$       call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
+!!$       call perform_powersnap(f)
+!!$     endif
 !$    endif
+
 !$  enddo
 
 endsubroutine helper_loop
@@ -90,7 +107,7 @@ subroutine timeloop(f,df,p)
   use Filter,          only: rmwig, rmwig_xyaverage
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: addforce, forcing_clean_up
-  use GPU,             only: reload_GPU_config, copy_farray_from_GPU, load_farray_to_GPU, ldiag_flags_to_wait_on
+  use GPU,             only: reload_GPU_config, copy_farray_from_GPU, load_farray_to_GPU
   use HDF5_IO,         only: initialize_hdf5
   use Hydro,           only: hydro_clean_up
   use ImplicitPhysics, only: calc_heatcond_ADI
@@ -124,7 +141,7 @@ subroutine timeloop(f,df,p)
 !
   logical :: lstop=.false., timeover=.false., resubmit=.false., lreload_file, lreload_always_file, &
              lonemorestep=.false.
-  integer :: isave_shift=0, it_this_diagnostic
+  integer :: isave_shift=0, it_this_diagnostic, i
   real :: wall_clock_time=0., tvar1, dtmp, time_per_step=0.
   real(KIND=rkind8) :: time_this_diagnostic
 
@@ -191,7 +208,7 @@ subroutine timeloop(f,df,p)
 
         call initialize_hdf5
         call initialize_timestep
-        if (lgpu) call copy_farray_from_GPU(f,ldiag_flags_to_wait_on)
+        if (lgpu) call copy_farray_from_GPU(f)
         call initialize_modules(f)
         call initialize_boundcond
         if (lparticles) call particles_initialize_modules(f)
@@ -380,7 +397,7 @@ subroutine timeloop(f,df,p)
       if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
     endif
 
-    if (lparticles) call write_snapshot_particles(f,ENUM=.true.)
+    if (lparticles) call write_snapshot_particles(f,ENUM=.true.)  !MR: no *.list file for particles?
     if (lpointmasses) call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
 !
 !  Added possibility of outputting only the chunks starting
@@ -389,6 +406,7 @@ subroutine timeloop(f,df,p)
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
     if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
+    !MR: what about ogrid data here?
 !
 !   Diagnostic output in concurrent thread.
 !
@@ -485,12 +503,16 @@ subroutine timeloop(f,df,p)
     headt=.false.
 
   enddo Time_loop
-!$  call signal_wait(ldiag_perform_diagnostics,.false.)
-!$  call signal_send(lhelper_run,.false.)
+
+!$ do i=1,n_helperflags
+!$  call signal_wait(lhelperflags(i),.false.)
+!$ enddo
+!$ call signal_send(lhelper_run,.false.)
 
 endsubroutine timeloop
 !***********************************************************************
 subroutine run_start() bind(C)
+!
 !  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
 !               address
 ! 31-oct-13/MR: replaced rparam by read_all_init_pars
@@ -506,7 +528,6 @@ subroutine run_start() bind(C)
   use Farray_alloc
   use Forcing,         only: forcing_clean_up
   use General,         only: random_seed_wrapper, touch_file, itoa
-!$ use General,        only: signal_send
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu
@@ -965,8 +986,9 @@ subroutine run_start() bind(C)
 !$omp parallel num_threads(num_helpers+1) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !
 !$   do i=1,num_helpers
-!TP: important that we ensure like this that all MPI processes call
-!create_communicators with the same threads
+!
+! Ensures that all MPI processes call create_communicators with the same thread.
+!
 !$omp barrier
 !$     if (omp_get_thread_num() == i) call create_communicators
 !$   enddo
@@ -976,18 +998,17 @@ subroutine run_start() bind(C)
 !$   else
 !$     call helper_loop(f,p)
 !$   endif
+!$omp barrier
 !$omp end parallel
 !
   if (lroot) then
     print*
     print*, 'Simulation finished after ', icount, ' time-steps'
-  endif
 !
-  if (lroot) time2=mpiwtime()
+    time2=mpiwtime()
 !
 !  Write data at end of run for restart.
 !
-  if (lroot) then
     print*
     write(*,*) 'Writing final snapshot at time t =', t
   endif
@@ -1090,14 +1111,16 @@ subroutine run_start() bind(C)
   call NSCBC_clean_up
   if (lparticles) call particles_cleanup
   call finalize
+!
 endsubroutine run_start
 !***********************************************************************
 endmodule Run_module
 !***********************************************************************
 program run
-        use Run_module
+
+  use Run_module
 !
-        call run_start
+  call run_start
 !
 endprogram run
 !***********************************************************************

@@ -90,7 +90,7 @@ module Equ
       use Mpicomm
 !$    use, intrinsic :: iso_c_binding
 !!$    use mt, only: push_task, depend_on_all, default_task_type, wait_all_thread_pool
-!$    use General, only: signal_send, signal_wait
+!$    use General, only: signal_send
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -339,9 +339,11 @@ module Equ
           !wait in case the last diagnostic tasks are not finished
 !!$        call wait_all_thread_pool
 !         Not done for the first step since we haven't loaded any data to the GPU yet
-          call copy_farray_from_GPU(f, ldiag_flags_to_wait_on)
+          call copy_farray_from_GPU(f)
 !$        call save_diagnostic_controls
-!$        call signal_send(ldiag_perform_diagnostics,.true.)
+print*, 'signal_send(lhelperflags(PERF_DIAGS),.true.), thread_id=',thread_id 
+flush(6)
+!$        call signal_send(lhelperflags(PERF_DIAGS),.true.)
 !!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
         endif
@@ -445,8 +447,7 @@ module Equ
 !!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all)
         endif
-      endif
-      if (lfirst) then 
+      elseif (lfirst) then
         if (lout) then
           tdiagnos  = t
           itdiagnos = it
@@ -774,9 +775,8 @@ module Equ
 !*****************************************************************************
       subroutine perform_diagnostics(f,p)
 
-
-
 !$    use General, only: signal_send
+
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case) :: p
 
@@ -784,7 +784,7 @@ module Equ
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
         call write_diagnostics(f)                 !       ~
 
-!$      call signal_send(ldiag_perform_diagnostics,.false.)
+!$      call signal_send(lhelperflags(PERF_DIAGS),.false.)
 
       endsubroutine perform_diagnostics
 !*****************************************************************************

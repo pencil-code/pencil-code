@@ -10,17 +10,24 @@ module Snapshot
 !
   use Cdata
   use Messages
-  use Gpu, only: copy_farray_from_GPU, lsnap_flags_to_wait_on
+  use Gpu, only: copy_farray_from_GPU
 !
   implicit none
 !
   private
 !
+  type :: pars_for_external
+    integer :: ind1, ind2
+    character(LEN=fnlen) :: file
+  endtype
+  type(pars_for_external) :: extpars
+
   interface output_form
     module procedure output_form_int_0D
   endinterface
 !
-  public :: rsnap, wsnap, wsnap_down, powersnap, output_form, powersnap_prepare
+  public :: rsnap, wsnap, wsnap_down, powersnap, output_form, powersnap_prepare, perform_powersnap, &
+            perform_wsnap_ext
 !
   contains
 !***********************************************************************
@@ -43,8 +50,7 @@ module Snapshot
       use Grid, only: save_grid, coords_aux
       use Messages, only: warning
       use Persist, only: output_persistent
-      use Mpicomm, only: periodic_bdry_x, periodic_bdry_y, &
-                         periodic_bdry_z
+      use Mpicomm, only: periodic_bdry_x, periodic_bdry_y, periodic_bdry_z
 !
       real, dimension (:,:,:,:) :: a
       character (len=*), optional :: flist
@@ -62,7 +68,6 @@ module Snapshot
       real, dimension(nghost) :: dxs_ghost, dys_ghost, dzs_ghost
       logical :: ldummy
 
-
       call safe_character_assign(file,trim(datadir)//'/tsnap_down.dat')
 !
 !  At first call, need to initialize tsnap.
@@ -77,10 +82,9 @@ module Snapshot
       if (lsnap_down) then
 !
         if (.not.lstart.and.lgpu) then
-          call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
+          call copy_farray_from_GPU(a)
 !$        call signal_send(ldummy,.false.)
         endif
-
 !
 !  Set the range for the variable index.
 !  Not yet possible: both mvar_down and maux_down>0, but mvar_down<mvar,
@@ -255,12 +259,10 @@ module Snapshot
 !  28-may-21/axel: added nv1_capitalvar
 !
       use Boundcond, only: update_ghosts
-      use General, only: safe_character_assign, loptest, touch_file
+      use General, only: safe_character_assign, loptest
 !$    use General, only: signal_send
-      use IO, only: output_snap, output_snap_finalize, log_filename_to_file
-      use Persist, only: output_persistent
+      use IO, only: log_filename_to_file
       use Sub, only: read_snaptime, update_snaptime
-      use File_IO, only: delete_file
       use Mpicomm, only: mpibarrier
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
@@ -280,7 +282,6 @@ module Snapshot
       character (len=fnlen) :: file
       character (len=intlen) :: ch
       integer :: nv1_capitalvar
-      logical :: ldummy
 !
 !  Output snapshot with label in 'tsnap' time intervals.
 !  File keeps the information about number and time of last snapshot.
@@ -311,19 +312,17 @@ module Snapshot
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
         if (lsnap) then
-          if (.not.lstart.and.lgpu) then
-            call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
-!$          call signal_send(ldummy,.false.)
-          endif
+          if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
-          if (lroot) call touch_file(trim(workdir)//'/WRITING')
-          call output_snap(a,nv1=nv1_capitalvar,nv2=msnap,file=file)
-          if (lpersist) call output_persistent(file)
-          call output_snap_finalize
+          if (lmultithread) then
+!$          call signal_send(lhelperflags(PERF_WSNAP),.true.)
+            call perform_wsnap(a,nv1_capitalvar,msnap,file)
+          else
+            call perform_wsnap(a,nv1_capitalvar,msnap,file)
+          endif
           call mpibarrier
-          if (lroot) call delete_file(trim(workdir)//'/WRITING')
           if (present(flist)) call log_filename_to_file(file,flist)
           lsnap=.false.
         endif
@@ -333,10 +332,7 @@ module Snapshot
 !  Write snapshot without label (typically, var.dat). For dvar.dat we need to
 !  make sure that ghost zones are not set on df!
 !
-        if (.not.lstart.and.lgpu) then 
-          call copy_farray_from_GPU(a,lsnap_flags_to_wait_on)
-!$        call signal_send(ldummy,.false.)
-        endif
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (msnap==mfarray) then
           if (.not. loptest(noghost)) call update_ghosts(a)
           call update_auxiliaries(a) ! Not if e.g. dvar.dat.
@@ -344,12 +340,14 @@ module Snapshot
         ! update ghosts, because 'update_auxiliaries' may change the data
         if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
-        if (lroot) call touch_file(trim(workdir)//'/WRITING')
-        call output_snap(a,nv2=msnap,file=file)
-        if (lpersist) call output_persistent(file)
-        call output_snap_finalize
+        if (lmultithread) then
+!$        call signal_send(lhelperflags(PERF_WSNAP),.true.)
+          extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
+          call perform_wsnap(a,1,msnap,file)
+        else
+          call perform_wsnap(a,1,msnap,file)
+        endif
         call mpibarrier
-        if (lroot) call delete_file(trim(workdir)//'/WRITING')
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
 !
@@ -358,8 +356,42 @@ module Snapshot
 !
     endsubroutine wsnap
 !***********************************************************************
-    subroutine read_predef_snaptimes(file,snaptimes)
+    subroutine perform_wsnap_ext(a)
 
+      real, dimension(:,:,:,:) :: a
+
+      call perform_wsnap(a,extpars%ind1,extpars%ind2,extpars%file)
+
+    endsubroutine perform_wsnap_ext
+!***********************************************************************
+    subroutine perform_wsnap(a,nv1,nv2,file)
+
+      use General, only: touch_file
+!$    use General, only: signal_send
+      use File_IO, only: delete_file
+      use IO, only: output_snap, output_snap_finalize
+      use Persist, only: output_persistent
+
+      real, dimension(:,:,:,:) :: a
+      integer :: nv1, nv2
+      character (len=fnlen) :: file
+
+      intent(IN) :: a, nv1, nv2, file
+
+      if (lroot) call touch_file(trim(workdir)//'/WRITING')
+      call output_snap(a,nv1,nv2,file=file)
+      if (lpersist) call output_persistent(file)
+      call output_snap_finalize
+      if (lroot) call delete_file(trim(workdir)//'/WRITING')
+
+!$    call signal_send(lhelperflags(PERF_WSNAP),.false.)
+
+    endsubroutine perform_wsnap
+!***********************************************************************
+    subroutine read_predef_snaptimes(file,snaptimes)
+!
+!  Yet a stub.
+!
       character(LEN=fnlen) :: file
       real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
       
@@ -593,7 +625,6 @@ module Snapshot
 !
 !  Use default input configuration.
 !
-!
 !  Read data using rho, and now convert to lnrho.
 !  This assumes that one is now using ldensity_nolog=F.
 !  NB: require lupw_rho->lupw_lnrho and diagnostics ..grho..->..glnrho..
@@ -614,9 +645,8 @@ module Snapshot
 !  This assumes that one is now using ldensity_nolog=T.
 !
       if (lread_oldsnap_lnrho2rho) then
-        print*,'convert lnrho -> rho',ilnrho,irho
-        if (irho>0) &
-          f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+        if (lroot) print*,'convert lnrho -> rho',ilnrho,irho
+        if (irho>0) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
       endif
 !
 !  Read data using rho, and now convert to lnrho.
@@ -624,9 +654,8 @@ module Snapshot
 !  NB: require lupw_rho->lupw_lnrho and diagnostics ..grho..->..glnrho..
 !
       if (lread_oldsnap_rho2lnrho) then
-        print*,'convert rho -> lnrho',irho,ilnrho
-        if (ilnrho>0) &
-          f(:,:,:,ilnrho)=log(f(:,:,:,ilnrho))
+        if (lroot) print*,'convert rho -> lnrho',irho,ilnrho
+        if (ilnrho>0) f(:,:,:,ilnrho)=log(f(:,:,:,ilnrho))
       endif
 !
       if (lsubstract_reference_state) then
@@ -691,29 +720,13 @@ module Snapshot
 !  22-apr-11/MR: added possibility to get xy-power-spectrum from xy_specs
 !
       use Boundcond, only: update_ghosts
-      use Particles_main, only: particles_powersnap
-      use Power_spectrum
-      use Pscalar, only: cc2m, gcc2m, rhoccm
-      use Struct_func, only: structure
-      use Sub, only: update_snaptime, curli
-      use General, only: itoa
+      use Sub, only: update_snaptime
 !$    use General, only: signal_send
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lwrite_only
 !
-      real, dimension (:,:,:), allocatable :: b_vec
       logical :: llwrite_only=.false.,ldo_all
-      integer :: ivec,im,in,stat,ipos,ispec
-      real, dimension (nx) :: bb
-      character (LEN=40) :: str,sp1,sp2
-      logical :: lfirstcall, lfirstcall_powerhel, lsqrt=.true.
-      logical :: ldummy
-!
-!  Allocate memory for b_vec at run time.
-!
-      allocate(b_vec(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('powersnap','could not allocate b_vec')
 !
 !  Set llwrite_only.
 !
@@ -725,13 +738,40 @@ module Snapshot
 !
       if (lspec.or.llwrite_only) then
 
-        if (.not.lstart.and.lgpu) then
-          call copy_farray_from_GPU(f,lsnap_flags_to_wait_on)
-!$        call signal_send(ldummy,.false.)
-        endif
-        lfirstcall_powerhel=.true.
-        if (ldo_all)  call update_ghosts(f)
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f)
+        if (ldo_all) call update_ghosts(f)
 !
+        if (lmultithread) then
+!$        call signal_send(lhelperflags(PERF_POWERSNAP),.true.)
+        else
+          call perform_powersnap(f)
+        endif
+
+        lspec=.false.
+!
+      endif
+
+    endsubroutine powersnap
+!***********************************************************************
+    subroutine perform_powersnap(f)
+
+!$    use General, only: signal_send
+      use Particles_main, only: particles_powersnap
+      use Power_spectrum
+      use Pscalar, only: cc2m, gcc2m, rhoccm
+      use Struct_func, only: structure
+      use Sub, only: curli
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      real, dimension (:,:,:), allocatable :: b_vec
+      integer :: ivec,stat,ipos,ispec
+      character (LEN=40) :: str,sp1,sp2
+      logical :: lfirstcall, lfirstcall_powerhel, lsqrt
+      
+        lsqrt=.true.
+        lfirstcall_powerhel=.true.
+
         if (vel_spec) call power(f,'u')
         if (r2u_spec) call power(f,'r2u')
         if (r3u_spec) call power(f,'r3u')
@@ -871,39 +911,51 @@ module Snapshot
 !
 !  Structure functions.
 !
+        if (lsfb .or. lsfz1 .or. lsfz2 .or. lsfflux .or. lpdfb .or. lpdfz1 .or. lpdfz2) then
+!
+!  Allocate memory for b_vec at run time.
+!
+          allocate(b_vec(nx,ny,nz),stat=stat)
+          if (stat>0) call fatal_error('perform_powersnap','could not allocate b_vec')
+        endif
+
         do ivec=1,3
-          if (lsfb .or. lsfz1 .or. lsfz2 .or. lsfflux .or. lpdfb .or. &
-              lpdfz1 .or. lpdfz2) then
-             do n=n1,n2
-               do m=m1,m2
-                 call curli(f,iaa,bb,ivec)
-                 im=m-nghost
-                 in=n-nghost
-                 b_vec(:,im,in)=bb
-               enddo
+          if (lsfb .or. lsfz1 .or. lsfz2 .or. lsfflux .or. lpdfb .or. lpdfz1 .or. lpdfz2) then
+            !$omp parallel num_threads(num_helper_threads)
+            !$ thread_id = omp_get_thread_num()+1
+            !$omp do collapse(2)
+            do n=n1,n2
+              do m=m1,m2
+                call curli(f,iaa,b_vec(:,m-nghost,n-nghost),ivec)
+              enddo
             enddo
-            b_vec=b_vec/sqrt(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+            if (ilnrho/=0) then
+              !$omp workshare
+              b_vec=b_vec/sqrt(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+              !$omp end workshare
+            endif
+            !$omp end parallel
+            if (lsfb)    call structure(f,ivec,b_vec,'b')
+            if (lsfz1)   call structure(f,ivec,b_vec,'z1')
+            if (lsfz2)   call structure(f,ivec,b_vec,'z2')
+            if (lsfflux) call structure(f,ivec,b_vec,'flux')
+            if (lpdfb)   call structure(f,ivec,b_vec,'pdfb')
+            if (lpdfz1)  call structure(f,ivec,b_vec,'pdfz1')
+            if (lpdfz2)  call structure(f,ivec,b_vec,'pdfz2')
           endif
-          if (lsfu)     call structure(f,ivec,b_vec,'u')
-          if (lsfb)     call structure(f,ivec,b_vec,'b')
-          if (lsfz1)    call structure(f,ivec,b_vec,'z1')
-          if (lsfz2)    call structure(f,ivec,b_vec,'z2')
-          if (lsfflux)  call structure(f,ivec,b_vec,'flux')
-          if (lpdfu)    call structure(f,ivec,b_vec,'pdfu')
-          if (lpdfb)    call structure(f,ivec,b_vec,'pdfb')
-          if (lpdfz1)   call structure(f,ivec,b_vec,'pdfz1')
-          if (lpdfz2)   call structure(f,ivec,b_vec,'pdfz2')
+          if (lsfu)  call structure(f,ivec,f(l1:l2,m1:m2,n1:n2,iuu+ivec-1),'u')
+          if (lpdfu) call structure(f,ivec,f(l1:l2,m1:m2,n1:n2,iuu+ivec-1),'pdfu')
         enddo
 !
 !  Do pdf of passive scalar field (if present).
 !
-        if (rhocc_pdf) call pdf(f,'rhocc',rhoccm,sqrt(cc2m))
-        if (cc_pdf)    call pdf(f,'cc'   ,rhoccm,sqrt(cc2m))
-        if (lncc_pdf)  call pdf(f,'lncc' ,rhoccm,sqrt(cc2m))
-        if (gcc_pdf)   call pdf(f,'gcc'  ,0.    ,sqrt(gcc2m))
-        if (lngcc_pdf) call pdf(f,'lngcc',0.    ,sqrt(gcc2m))
+        if (rhocc_pdf)     call pdf(f,'rhocc',rhoccm,sqrt(cc2m))
+        if (cc_pdf)        call pdf(f,'cc'   ,rhoccm,sqrt(cc2m))
+        if (lncc_pdf)      call pdf(f,'lncc' ,rhoccm,sqrt(cc2m))
+        if (gcc_pdf)       call pdf(f,'gcc'  ,0.    ,sqrt(gcc2m))
+        if (lngcc_pdf)     call pdf(f,'lngcc',0.    ,sqrt(gcc2m))
         if (lnspecial_pdf) call pdf(f,'lnspecial',0.,1.)
-        if (special_pdf) call pdf(f,'special',0.,1.)
+        if (special_pdf)   call pdf(f,'special',0.,1.)
 !
 !  Do k-dependent pdf
 !
@@ -917,13 +969,13 @@ module Snapshot
 !
 !  azimuthally averaged spectra in polar coorinates
 !
-        if (ou_omega) call polar_spectrum(f,'kin_omega')
-        if (uut_polar)call polar_spectrum(f,'uut')
+        if (ou_omega)   call polar_spectrum(f,'kin_omega')
+        if (uut_polar)  call polar_spectrum(f,'uut')
         if (ouout_polar)call polar_spectrum(f,'ouout')
-        if (cor_uu)   call polar_spectrum(f,'uucor')
-        if (ou_polar) call polar_spectrum(f,'kin')
-        if (ab_polar) call polar_spectrum(f,'mag')
-        if (jb_polar) call polar_spectrum(f,'j.b')
+        if (cor_uu)     call polar_spectrum(f,'uucor')
+        if (ou_polar)   call polar_spectrum(f,'kin')
+        if (ab_polar)   call polar_spectrum(f,'mag')
+        if (jb_polar)   call polar_spectrum(f,'j.b')
 !
 !  power spectra of xy averaged fields
 !
@@ -936,7 +988,7 @@ module Snapshot
         if (out_spec)   call power_cor(f,'out')
         if (uot_spec)   call power_cor(f,'uot')
         if (ouout_spec) call power_cor_scl(f,'ouout')
-        if (ouout2_spec) call power_cor_scl(f,'ouout2')
+        if (ouout2_spec)call power_cor_scl(f,'ouout2')
 !
         if (saffman_ub)    call quadratic_invariants(f,'saffman_ub')
         if (saffman_mag)   call quadratic_invariants(f,'saffman_mag')
@@ -969,12 +1021,9 @@ module Snapshot
         if (Hm_specflux) call power_transfer_mag(f,'Hm')
         if (Hc_specflux) call power_transfer_mag(f,'Hc')
 !
-        lspec=.false.
-      endif
-!
-      deallocate(b_vec)
-!
-    endsubroutine powersnap
+!$      call signal_send(lhelperflags(PERF_POWERSNAP),.false.)
+
+    endsubroutine perform_powersnap
 !***********************************************************************
     subroutine update_auxiliaries(a)
 !
