@@ -27,6 +27,8 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /implicit  *none/ d
 s/integer *( *kind *= *ikind8 *) *::/long long/
 s/real *( *kind *= *rkind8 *) *::/ double/ 
+s/integer *( *KIND*= *ikind8 *) *::/long long/
+s/real *( *KIND*= *rkind8 *) *::/ double/ 
 #remove volatile
 s/, *volatile//
 #remove comment at line end

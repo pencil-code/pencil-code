@@ -3046,7 +3046,7 @@ endif
 	fi
 	@echo '#include "../prerequisites.h"' > $(DSL_WORKDIR)/solve.ac
 	@echo '' >> $(DSL_WORKDIR)/solve.ac
-	@echo 'Kernel singlepass_solve(int step_num, real dt) {' >> $(DSL_WORKDIR)/solve.ac
+	@echo 'Kernel singlepass_solve(int step_num, real _dt) {' >> $(DSL_WORKDIR)/solve.ac
 	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm tmp; \
 	for file in $$MODULESOURCES; do \
 	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
@@ -3064,7 +3064,7 @@ endif
 	      prefix=; \
 	      init="return 0."; \
 	    fi; \
-	    echo '  '$$prefix'write( '$$fieldname', rk3'$$suffix'('$$prefix'previous('$$fieldname'), '$$prefix'value('$$fieldname'), '$$funcname'(), step_num, dt) )' >> $(DSL_WORKDIR)/solve.ac; \
+	    echo '  '$$prefix'write( '$$fieldname', rk3'$$suffix'('$$prefix'previous('$$fieldname'), '$$prefix'value('$$fieldname'), '$$funcname'(), step_num, _dt) )' >> $(DSL_WORKDIR)/solve.ac; \
 	    if ( ! grep $$funcname' *( *) *{' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
 	      echo $$funcname'(){'$$init'}' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '' >> $(DSL_WORKDIR)/equations.h; \

@@ -54,7 +54,7 @@ module ImplicitDiffusion
       endinterface
 !
       call fatal_error('integrate_diffusion', 'ImplicitDiffusion module is not plugged in. ')
-      call get_diffus_coeff(1,(/1.0/))
+      !call get_diffus_coeff(1,(/1.0/))
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ivar1,ivar2)
 !

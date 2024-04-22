@@ -138,7 +138,7 @@ contains
       endinterface
 
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
-      type(lpointer), dimension(:) :: lflags_to_wait_on
+      type(lpointer), dimension(1) :: lflags_to_wait_on
       integer :: i
 
 !      Have to wait since if doing diagnostics don't want overwrite f

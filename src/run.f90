@@ -962,7 +962,8 @@ subroutine run_start() bind(C)
   call trim_averages
 !
 !$ call mpibarrier
-!$omp parallel num_threads(num_helpers+1) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$omp parallel num_threads(num_helpers+1) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,&
+!$omp fname_keep,fname_sound,ncountsz,phiavg_norm)
 !
 !$   do i=1,num_helpers
 !TP: important that we ensure like this that all MPI processes call
