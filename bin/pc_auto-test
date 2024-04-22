@@ -89,6 +89,7 @@ my %tests = (
                          1d-tests/horndeski_choiceIII
                          1d-tests/inflationary-B-genesis
                          1d-tests/axionSU2back
+                         1d-tests/axionSU2back_lhubble2
                          chiral-diffusion
                          cosmicray
                          1d-tests/sod_10
