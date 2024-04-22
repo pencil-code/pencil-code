@@ -1089,7 +1089,7 @@ module Forcing
             lgentle(i)=.true.
             if (lroot) print *, 'initialize_forcing: gentle forcing till t = ', tgentle
           endif
-        elseif (iforcing_cont(i)=='(0,sinx,0)') then
+        elseif (iforcing_cont(i)=='(0,sinx,0)'.or.iforcing_cont(i)=='(0,sinxsint,0)') then
           sinx(:,i)=sin(kf_fcont(i)*x)
         elseif (iforcing_cont(i)=='(0,0,cosx)') then
           cosx(:,i)=cos(kf_fcont(i)*x)
@@ -5909,11 +5909,11 @@ module Forcing
           force(:,2)=ampl_ff(i)*x(l1:l2)
           force(:,3)=0.
 !
-!  f=(0,x*sint,0)
+!  f=(0,sinx*sint,0)
 !
-        case ('(0,xsint,0)')
+        case ('(0,sinxsint,0)')
           force(:,1)=0.
-          force(:,2)=ampl_ff(i)*x(l1:l2)*sin(omega_ff*t)
+          force(:,2)=ampl_ff(i)*sinx(l1:l2,i)*sin(omega_ff*t)
           force(:,3)=0.
 !
 !  f=(0,sinx,0)
