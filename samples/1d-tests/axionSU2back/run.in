@@ -16,4 +16,5 @@
   !tback=0e6, dtback=1e6, lconf_time=T, Ndivt=10000
   axion_sum_range=.25,1., lwith_eps=T
   !horizon_factor=-1.
+  !lhubble_var=T
 /
