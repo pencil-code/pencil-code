@@ -1885,6 +1885,7 @@ samples/1d-tests/axionSU2back/start.in -text
 samples/1d-tests/axionSU2back/zaver.in -text
 samples/1d-tests/axionSU2back_lhubble/NEVERLOCK -text
 samples/1d-tests/axionSU2back_lhubble/NOSTART -text
+samples/1d-tests/axionSU2back_lhubble/README -text
 samples/1d-tests/axionSU2back_lhubble/data/allprocs/grid.dat -text
 samples/1d-tests/axionSU2back_lhubble/data/allprocs/ode.dat -text
 samples/1d-tests/axionSU2back_lhubble/data/def_var.pro -text
@@ -1931,6 +1932,7 @@ samples/1d-tests/axionSU2back_lhubble/data/var.general -text
 samples/1d-tests/axionSU2back_lhubble/data/variables.pro -text
 samples/1d-tests/axionSU2back_lhubble/data/varname.dat -text
 samples/1d-tests/axionSU2back_lhubble/print.in -text
+samples/1d-tests/axionSU2back_lhubble/reference.out -text
 samples/1d-tests/axionSU2back_lhubble/run.in -text
 samples/1d-tests/axionSU2back_lhubble/src/.build-history -text
 samples/1d-tests/axionSU2back_lhubble/src/.buildinfo -text
