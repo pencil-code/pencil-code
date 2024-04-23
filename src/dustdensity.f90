@@ -316,9 +316,6 @@ module Dustdensity
       if (ldustcondensation) then
         if (.not. lchemistry .and. .not. lpscalar .and. .not. ldustcondensation_simplified) &
             call fatal_error('initialize_dustdensity','Dust growth only works with pscalar')
-!
-        if (.not. lmdvar) &
-            call fatal_error('initialize_dustdensity','Dust condensation only works with lmdvar')
       endif
 !
 !  Reinitialize dustdensity
