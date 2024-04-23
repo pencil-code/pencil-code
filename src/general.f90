@@ -75,6 +75,10 @@ module General
     module procedure random_number_wrapper_1
     module procedure random_number_wrapper_3
   endinterface
+  interface signal_wait
+          module procedure signal_wait_single
+          module procedure signal_wait_multi
+  endinterface
 !
   interface keep_compiler_quiet ! Overload `keep_compiler_quiet' function
     module procedure keep_compiler_quiet_r
@@ -6712,7 +6716,7 @@ iloop:do i=1,size(list2)
 
     endsubroutine
 !***********************************************************************
-!$  subroutine signal_wait(lflag, lvalue)
+!$  subroutine signal_wait_single(lflag, lvalue)
 !
 !  Makes the current thread wait until lflag = lvalue.
 !
@@ -6720,9 +6724,22 @@ iloop:do i=1,size(list2)
 !
 !$  logical, volatile:: lflag,lvalue
 !
-!$    call cond_wait(DIAG_COND,lflag,lvalue)
+!$    call cond_wait_single(DIAG_COND,lflag,lvalue)
 
-!$  endsubroutine signal_wait
+!$  endsubroutine signal_wait_single
+!***********************************************************************
+!$  subroutine signal_wait_multi(lflags, lvalues, n)
+!
+!  Makes the current thread wait until lflag = lvalue.
+!
+! 14-Mar-24/TP: coded
+!
+!$  integer :: n
+!$  logical, volatile, dimension(n) :: lflags,lvalues
+!
+!$    call cond_wait_multi(DIAG_COND,lflags,lvalues,n)
+
+!$  endsubroutine signal_wait_multi
 !***********************************************************************
 !$  subroutine signal_send(lflag, lvalue)
 !

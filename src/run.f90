@@ -60,6 +60,7 @@ subroutine helper_loop(f,p)
   use Equ, only: perform_diagnostics
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext
+!   use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
@@ -72,8 +73,6 @@ subroutine helper_loop(f,p)
 
 !$    if (lhelper_run) then
 !$      if (lhelperflags(PERF_DIAGS)) then
-print*, 'in helper, lhelperflags(PERF_DIAGS)=',lhelperflags(PERF_DIAGS)
-flush(6)
 !$        call signal_wait(lhelperflags(PERF_DIAGS),lhelper_run)
 !$        call perform_diagnostics(f,p)
 !$      endif
@@ -504,9 +503,7 @@ subroutine timeloop(f,df,p)
 
   enddo Time_loop
 
-!$ do i=1,n_helperflags
-!$  call signal_wait(lhelperflags(i),.false.)
-!$ enddo
+!$ call signal_wait(lhelperflags, (/.false., .false., .false./),3)
 !$ call signal_send(lhelper_run,.false.)
 
 endsubroutine timeloop

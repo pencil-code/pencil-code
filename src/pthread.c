@@ -11,13 +11,36 @@ const int DIAG_COND_HANDLE = 1;
 
 /* ---------------------------------------------------------------------------- */
 void
-FTNIZE(cond_wait)(const int* cond_handle, volatile bool* flag, volatile bool* val)
+FTNIZE(cond_wait_single)(const int* cond_handle, volatile bool* flag, volatile bool* val)
 {
    switch(*cond_handle)
    {
 	case DIAG_COND_HANDLE:
           pthread_mutex_lock(&diag_mutex);
-	  while (*flag != *val) pthread_cond_wait(&diag_cond, &diag_mutex);
+	  while(*flag != *val) pthread_cond_wait(&diag_cond, &diag_mutex);
+	  return;
+	default:
+	  printf("Error - cond_wait: Incorrect cond_handle!!!\n");
+	  assert(false); //Incorrect cond var handle
+   }
+}
+void
+FTNIZE(cond_wait_multi)(const int* cond_handle, volatile bool* flag, volatile bool* val, const int* n)
+{
+   switch(*cond_handle)
+   {
+	case DIAG_COND_HANDLE:
+          pthread_mutex_lock(&diag_mutex);
+	  bool condition = true;
+	  for(int i = 0; i < *n; ++i)
+		  condition &= flag[i] == val[i];
+
+	  while(!condition) 
+	  {
+		pthread_cond_wait(&diag_cond, &diag_mutex);
+	        for(int i = 0; i < *n; ++i)
+		  condition &= flag[i] == val[i];
+	  }
 	  return;
 	default:
 	  printf("Error - cond_wait: Incorrect cond_handle!!!\n");

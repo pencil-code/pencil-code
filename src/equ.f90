@@ -89,6 +89,7 @@ module Equ
       use OMP_lib
       use Mpicomm
 !$    use, intrinsic :: iso_c_binding
+!      use, intrinsic :: iso_fortran_env
 !!$    use mt, only: push_task, depend_on_all, default_task_type, wait_all_thread_pool
 !$    use General, only: signal_send
 !
@@ -341,8 +342,6 @@ module Equ
 !         Not done for the first step since we haven't loaded any data to the GPU yet
           call copy_farray_from_GPU(f)
 !$        call save_diagnostic_controls
-print*, 'signal_send(lhelperflags(PERF_DIAGS),.true.), thread_id=',thread_id 
-flush(6)
 !$        call signal_send(lhelperflags(PERF_DIAGS),.true.)
 !!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)

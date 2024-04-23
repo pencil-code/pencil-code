@@ -126,9 +126,7 @@ contains
 !
 !      Have to wait since if doing diagnostics don't want to overwrite f.
 !
-!$     do i = 1,n_helperflags
-!$       call signal_wait(lhelperflags(i), .false.)
-!$     enddo 
+!$     call signal_wait(lhelperflags, (/.false., .false., .false./),3)
        call copy_farray_c(f)
 
     endsubroutine copy_farray_from_GPU
