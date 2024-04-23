@@ -82,10 +82,10 @@ subroutine helper_loop(f,p)
 !!$       call perform_wsnap_ext(f)
 !!$     endif
 
-!!$     if (lhelperflags(PERF_POWERSNAP)) then 
-!!$       call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
-!!$       call perform_powersnap(f)
-!!$     endif
+!$     if (lhelperflags(PERF_POWERSNAP)) then 
+!$       call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
+!$       call perform_powersnap(f)
+!$     endif
 !$    endif
 
 !$  enddo
@@ -132,7 +132,6 @@ subroutine timeloop(f,df,p)
   use Streamlines,     only: tracers_prepare, wtracers
 !$ use OMP_lib
 !$ use General, only: signal_send, signal_wait
-!   use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
@@ -503,7 +502,7 @@ subroutine timeloop(f,df,p)
 
   enddo Time_loop
 
-!$ call signal_wait(lhelperflags, (/.false., .false., .false./),3)
+!$ call signal_wait(lhelperflags, (/.false., .false., .false./))
 !$ call signal_send(lhelper_run,.false.)
 
 endsubroutine timeloop

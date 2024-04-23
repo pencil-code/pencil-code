@@ -68,18 +68,18 @@ module General
             qualify_position_biquin
   public :: binomial,merge_lists,reallocate
   public :: point_and_get_size, allocate_using_dims
-!$ public :: signal_wait, signal_send
+!$ public :: signal_wait, signal_send, signal_init
+! 
+!$  interface signal_wait
+!$    module procedure signal_wait_single
+!$    module procedure signal_wait_multi
+!$  endinterface
 ! 
   interface random_number_wrapper
     module procedure random_number_wrapper_0
     module procedure random_number_wrapper_1
     module procedure random_number_wrapper_3
   endinterface
-  interface signal_wait
-          module procedure signal_wait_single
-          module procedure signal_wait_multi
-  endinterface
-  public signal_init
 !
   interface keep_compiler_quiet ! Overload `keep_compiler_quiet' function
     module procedure keep_compiler_quiet_r
@@ -6728,16 +6728,15 @@ iloop:do i=1,size(list2)
 
 !$  endsubroutine signal_wait_single
 !***********************************************************************
-!$  subroutine signal_wait_multi(lflags, lvalues, n)
+!$  subroutine signal_wait_multi(lflags, lvalues)
 !
 !  Makes the current thread wait until lflag = lvalue.
 !
 ! 14-Mar-24/TP: coded
 !
-!$  integer :: n
-!$  logical, volatile, dimension(n) :: lflags,lvalues
+!$  logical, volatile, dimension(:) :: lflags,lvalues
 !
-!$    call cond_wait_multi(DIAG_COND,lflags,lvalues,n)
+!$    call cond_wait_multi(DIAG_COND,lflags,lvalues,size(lflags))
 
 !$  endsubroutine signal_wait_multi
 !***********************************************************************
@@ -6754,7 +6753,8 @@ iloop:do i=1,size(list2)
 
 !$  endsubroutine signal_send
 !***********************************************************************
-subroutine signal_init
-        call cond_init
-endsubroutine
+!$  subroutine signal_init
+!$    call cond_init
+!$  endsubroutine
+!***********************************************************************
   endmodule General
