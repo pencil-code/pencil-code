@@ -100,6 +100,7 @@ module Dustdensity
   logical :: llog10_for_admom_above10=.true., lmomcons=.false., lmomconsb=.false.
   logical :: lmomcons2=.false., lmomcons3=.false., lmomcons3b=.false.
   logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false.
+  logical :: lfree_molecule=.false.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
@@ -142,7 +143,7 @@ module Dustdensity
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
       llog10_for_admom_above10,lmomcons, lmomconsb, lmomcons2, lmomcons3, lmomcons3b, &
       lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac, &
-      tstart_droplet_coagulation
+      tstart_droplet_coagulation, lfree_molecule
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_KK2m=0    ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -2367,50 +2368,62 @@ module Dustdensity
 !
         else
 !
+!  in the free molecule regime, there is no 1/r in the condensation.
+!  For k=1, nothing needs to be done, unless we want to introduce damping.
+!
+          if (lfree_molecule) then
+            do k=2,ndustspec-1
+              coefk0=3.*mfluxcond/ad(k)
+              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
+                -coefk0*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
+            enddo
+          else
+!
 !  Alternative II (lradius_binning=F; preferred when coagulation is also used).
 !  Must not use llin_radiusbins=T with lradius_binning=F'.
 !
 !  Define empirical damping factor (scaling with dlnmd to be checked).
 !
-          dampfact=.1/dlnmd*3.
+            dampfact=.1/dlnmd*3.
 !
 !  Start with the first mass bin...
 !
-          k=1
-          mfluxcondp=(abs(mfluxcond)-mfluxcond)
-          mfluxcondm=(abs(mfluxcond)+mfluxcond)
-          coefkp=.5*mfluxcondp/dlnmd*3.
-          coefk0=  -mfluxcondm*dampfact-coefkp
-          df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k))+coefkp*f(l1:l2,m,n,ind(k+1))/ad(k+1)**2 &
-                                                   +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)  **2
+            k=1
+            mfluxcondp=(abs(mfluxcond)-mfluxcond)
+            mfluxcondm=(abs(mfluxcond)+mfluxcond)
+            coefkp=.5*mfluxcondp/dlnmd*3.
+            coefk0=  -mfluxcondm*dampfact-coefkp
+            df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k))+coefkp*f(l1:l2,m,n,ind(k+1))/ad(k+1)**2 &
+                                                     +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)  **2
 !
 !  Finish with the last mass bin...
 !
-          k=ndustspec
-          mfluxcondm=(abs(mfluxcond)+mfluxcond)
-          coefkm=.5*mfluxcondm/dlnmd*3.        
-          if (lzero_upper_kern) then
-            coefk0 = 0.
-          else
-            coefk0 = -mfluxcondp*dampfact-coefkm
-          endif
-          df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k))+coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1)**2 &
-                                                   +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)  **2
-!
-!  ... then loop over mass bins
-!
-          do k=2,ndustspec-1
-            mfluxcondp=(abs(mfluxcond)-mfluxcond)
+            k=ndustspec
             mfluxcondm=(abs(mfluxcond)+mfluxcond)
-            coefkp=+.5*mfluxcondp/dlnmd*3.
-            coefkm=+.5*mfluxcondm/dlnmd*3.
-            coefk0=-(coefkp+coefkm)
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
-                                  +coefkp*f(l1:l2,m,n,ind(k+1))/ad(k+1)**2 &
-                                  +coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1)**2 &
-                                  +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)  **2
-          enddo
+            coefkm=.5*mfluxcondm/dlnmd*3.        
+            if (lzero_upper_kern) then
+              coefk0 = 0.
+            else
+              coefk0 = -mfluxcondp*dampfact-coefkm
+            endif
+            df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k))+coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1)**2 &
+                                                     +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)  **2
 !
+!  ... then loop over mass bins; note that dlnm/dr = 3/r.
+!
+            do k=2,ndustspec-1
+              mfluxcondp=(abs(mfluxcond)-mfluxcond)
+              mfluxcondm=(abs(mfluxcond)+mfluxcond)
+              coefkp=+.5*mfluxcondp/dlnmd*3.
+              coefkm=+.5*mfluxcondm/dlnmd*3.
+              coefk0=-(coefkp+coefkm)
+              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
+                                    +coefkp*f(l1:l2,m,n,ind(k+1))/ad(k+1)**2 &
+                                    +coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1)**2 &
+                                    +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)  **2
+            enddo
+!
+          endif
         endif
       endif
 !
@@ -2523,6 +2536,11 @@ module Dustdensity
         elseif (lpscalar) then
           mfluxcond=G_condensparam*exp(f(l1:l2,m,n,ilncc))
         endif
+!
+!  Condensation obtained from passive scalar equation.
+!
+      case ('microsilica')
+        mfluxcond=G_condensparam
 !
 !  Assume a hat(om*t) time behavior
 !
