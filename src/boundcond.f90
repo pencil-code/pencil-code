@@ -3002,7 +3002,7 @@ module Boundcond
         do i=1,nghost
           zg=rad*costh(m1-i)
           do in=1,size(f,3)
-            if (ldensity_nolog) then 
+            if (ldensity_nolog) then
               lnrho = alog(f(:,m1,in,j)) - (zg**2-za**2)/(2*H**2)
               f(:,m1-i,in,j) = exp(lnrho)
             else
@@ -3034,6 +3034,64 @@ module Boundcond
       endselect
 !
     endsubroutine bc_stratified_y
+!***********************************************************************
+    subroutine bc_stratified_z(f,topbot,j)
+!
+!  Boundary condition that maintains hydrostatic equilibrium in the meriodional direction.
+!  This boundary is coded only for spherical coordinates.
+!
+!  11-apr-24/wlad: coded
+!
+      use EquationOfState, only: cs0
+!
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+      real, dimension(size(f,1)) :: lnrho
+      real :: za,zg,H
+      integer :: i,im,j
+!
+      if (.not.(j==irho.or.j==ilnrho)) &
+           call fatal_error("bc_stratified_y","This boundary condition is specific for density")
+!
+      H=cs0/Omega/sqrt(gamma)
+!
+      select case (topbot)
+      case(BOT)
+        za=z(n1)
+        do i=1,nghost
+          zg=z(n1-i)
+          do im=1,size(f,2)
+            if (ldensity_nolog) then
+              lnrho = alog(f(:,im,n1,j)) - (zg**2-za**2)/(2*H**2)
+              f(:,im,n1-i,j) = exp(lnrho)
+            else
+              lnrho = f(:,im,n1,j) - (zg**2-za**2)/(2*H**2)
+              f(:,im,n1-i,j) = lnrho
+            endif
+          enddo
+        enddo
+!
+      case(TOP)
+        za=z(n2)
+        do i=1,nghost
+          zg=z(n2+i)
+          do im=1,size(f,3)
+            if (ldensity_nolog) then
+              lnrho = alog(f(:,im,n2,j)) - (zg**2-za**2)/(2*H**2)
+              f(:,im,n2+i,j) = exp(lnrho)
+            else
+              lnrho = f(:,im,n2,j) - (zg**2-za**2)/(2*H**2)
+              f(:,im,n2+i,j) = lnrho
+            endif
+          enddo
+        enddo
+!
+      case default
+        call fatal_error("bc_sym_y: ","topbot should be BOT or TOP")
+!
+      endselect
+!
+    endsubroutine bc_stratified_z
 !***********************************************************************
     subroutine bc_symset_y(f,sgn,topbot,j,rel,val)
 !
