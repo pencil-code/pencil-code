@@ -79,6 +79,7 @@ module General
           module procedure signal_wait_single
           module procedure signal_wait_multi
   endinterface
+  public signal_init
 !
   interface keep_compiler_quiet ! Overload `keep_compiler_quiet' function
     module procedure keep_compiler_quiet_r
@@ -277,10 +278,9 @@ module General
 ! For signaling across threads
 !
   interface
-    subroutine cond_wait(cond_handle, flag, value)
+    subroutine cond_wait_single(cond_handle, flag, value)
       integer :: cond_handle
-      logical, volatile :: flag
-      logical :: value
+      logical, volatile :: flag, value
     endsubroutine
   endinterface
 !
@@ -6754,4 +6754,7 @@ iloop:do i=1,size(list2)
 
 !$  endsubroutine signal_send
 !***********************************************************************
+subroutine signal_init
+        call cond_init
+endsubroutine
   endmodule General

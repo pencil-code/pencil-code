@@ -317,7 +317,6 @@ module Snapshot
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
           if (lmultithread) then
-!$          call signal_send(lhelperflags(PERF_WSNAP),.true.)
             call perform_wsnap(a,nv1_capitalvar,msnap,file)
           else
             call perform_wsnap(a,nv1_capitalvar,msnap,file)
@@ -341,7 +340,6 @@ module Snapshot
         if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
         if (lmultithread) then
-!$        call signal_send(lhelperflags(PERF_WSNAP),.true.)
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
           call perform_wsnap(a,1,msnap,file)
         else
@@ -384,7 +382,7 @@ module Snapshot
       call output_snap_finalize
       if (lroot) call delete_file(trim(workdir)//'/WRITING')
 
-!$    call signal_send(lhelperflags(PERF_WSNAP),.false.)
+!$    if(.not. lstart .and. lgpu) call signal_send(lhelperflags(PERF_WSNAP),.false.)
 
     endsubroutine perform_wsnap
 !***********************************************************************
@@ -742,7 +740,7 @@ module Snapshot
         if (ldo_all) call update_ghosts(f)
 !
         if (lmultithread) then
-!$        call signal_send(lhelperflags(PERF_POWERSNAP),.true.)
+          call perform_powersnap(f)
         else
           call perform_powersnap(f)
         endif

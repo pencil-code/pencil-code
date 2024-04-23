@@ -524,7 +524,7 @@ subroutine run_start() bind(C)
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use Forcing,         only: forcing_clean_up
-  use General,         only: random_seed_wrapper, touch_file, itoa
+  use General,         only: random_seed_wrapper, touch_file, itoa, signal_init
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu
@@ -619,6 +619,8 @@ subroutine run_start() bind(C)
 !  Initialize HDF_IO module.
 !
   call initialize_hdf5
+!
+  call signal_init
 !
 !  Check whether quad precision is supported
 !
