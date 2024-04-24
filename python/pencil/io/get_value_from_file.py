@@ -84,14 +84,14 @@ def get_value_from_file(
             join(sim.path, "src"),
         ]  # add other search paths here!!
 
-    elif type(filepath) == type("string"):
+    elif isinstance(filepath, str):
         if filepath.endswith(filename):
             filepath = filepath[
                 : -len(filename)
             ]  # clean filepath if filename occures to be in there at the end
         search_paths = [abspath(filepath.strip())]  # correct path format
 
-    elif type(filepath) == type(["list"]):
+    elif isinstance(filepath, list):
         search_paths = filepath
 
     else:
