@@ -16,7 +16,6 @@ def change_value_in_file(
         DEBUG:      make dry run, tell me what you would do but dont change anything!
         silent:     suppress certain output by setting True
 
-    Returns True if successful, else False
     """
 
     from pencil.io import get_value_from_file
@@ -29,7 +28,3 @@ def change_value_in_file(
         filepath=filepath,
         DEBUG=DEBUG,
     )
-
-    if return_value == None:
-        return False
-    return True

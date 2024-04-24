@@ -1148,22 +1148,22 @@ class Simulation(object):
 
         if DEBUG:
             print("~ DEBUG: Searching through simulation.quantity_searchables ...")
-        from pencil.io import get_value_from_file
+        from pencil.io import get_value_from_file, GetValueError
 
         for filename in self.quantity_searchables:
-            q = get_value_from_file(
-                filename, quantity, sim=self, DEBUG=DEBUG, silent=True
-            )
-            if q is not None:
+            try:
+                q = get_value_from_file(
+                    filename, quantity, sim=self, DEBUG=DEBUG, silent=True
+                )
+            except GetValueError:
+                if DEBUG:
+                    print("~ DEBUG: Couldnt find quantity here.. continue searching")
+            else:
                 if DEBUG:
                     print("~ DEBUG: " + quantity + " found in " + filename + " ...")
                 return q
-            else:
-                if DEBUG:
-                    print("~ DEBUG: Couldnt find quantity here.. continue searching")
 
-        print("! ERROR: Couldnt find " + quantity + "!")
-        return None
+        raise GetValueError("! ERROR: Couldnt find " + quantity + "!")
 
     def get_ts(self, **kwargs):
         """

@@ -1,3 +1,5 @@
+class GetValueError(Exception): pass
+
 def get_value_from_file(
     filename,
     quantity,
@@ -53,12 +55,7 @@ def get_value_from_file(
             q_type = "TUPLE_STRING"
             return q, q_type
 
-        print("! ERROR: Could not parse string " + s + " into a tuple!")
-        print(
-            "! DEBUG_BREAKPOINT AKTIVATED - check out the following variables: string s, tuple q, first entry in tuple q[0]"
-        )
-        debug_breakpoint()
-        return None, None
+        raise GetValueError(f"Could not parse '{s}' into a tuple.")
 
     def tuple_to_string(t, q_type):
         return ",".join([str(a) for a in t])
@@ -95,10 +92,7 @@ def get_value_from_file(
         search_paths = filepath
 
     else:
-        print(
-            "! ERROR: Filename " + str(filename) + " could not be interprated or found!"
-        )
-        return None
+        raise GetValueError(f"Filename {filename} could not be found in {search_paths}.")
 
     absolute_filepath = None
     for search_path in search_paths:
@@ -111,7 +105,7 @@ def get_value_from_file(
     if absolute_filepath is None:
         if DEBUG:
             print("~ DEBUG: File {0} not found in {1}!".format(filename, search_paths))
-        return None
+        raise GetValueError(f"Could not get the absolute path to {filename}; searched in {search_paths}.")
 
     ######## open file
     # now having absolute filepath to file, lets check that file and find quantity inside!
@@ -188,16 +182,15 @@ def get_value_from_file(
                     else:
                         line_matches.append(ii)
     else:
-        print(
+        raise GetValueError(
             "! ERROR: Filename unknown! No parsing possible! Please enhance this function to work with "
             + filename
         )
 
     if len(line_matches) > 1:
-        print(
+        raise GetValueError(
             '! ERROR: Found more than one line with keyword "' + quantity + '" inside!'
         )
-        return None
     if len(line_matches) == 0:
         if silent == False:
             print(
@@ -207,7 +200,7 @@ def get_value_from_file(
                 + join(filepath, filename)
                 + "!"
             )
-        return None
+        raise GetValueError(f"Found no matches for {quantity} in {os.path.join(filepath, filename)}")
 
     filename = os.path.basename(filename)
 
@@ -329,12 +322,10 @@ def get_value_from_file(
             elif change_quantity_to == False:
                 change_quantity_to = "F"
             else:
-                print(
+                raise GetValueError(
                     "! ERROR: There is something deeply wrong here!"
                     + " change_quantity_to should be bool..."
                 )
-                debug_breakpoint()
-                return None
 
         elif q_type == "FLOAT":
             if type(change_quantity_to) == str:
@@ -357,14 +348,12 @@ def get_value_from_file(
                         elif val in ["F", "f", False]:
                             change_quantity_to[ii] = "F"
                         else:
-                            print(
+                            raise GetValueError(
                                 "! ERROR: There is something deeply wrong here! change_quantity_to["
                                 + str(ii)
                                 + "] should be bool or string representation, but it is "
                                 + str(change_quantity_to[ii])
                             )
-                            debug_breakpoint()
-                            return None
                 change_quantity_to = ",".join([str(t) for t in change_quantity_to])
             if q_type.endswith("FLOAT"):
                 change_quantity_to = str(list(change_quantity_to))[1:-1]
