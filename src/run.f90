@@ -77,15 +77,15 @@ subroutine helper_loop(f,p)
 !$        call perform_diagnostics(f,p)
 !$      endif
 
-!!$     if (lhelperflags(PERF_WSNAP)) then 
-!!$       call signal_wait(lhelperflags(PERF_WSNAP),lhelper_run)
-!!$       call perform_wsnap_ext(f)
-!!$     endif
+!$     if (lhelperflags(PERF_WSNAP)) then 
+!$       call signal_wait(lhelperflags(PERF_WSNAP),lhelper_run)
+!$       call perform_wsnap_ext(f)
+!$     endif
 
-!!$     if (lhelperflags(PERF_POWERSNAP)) then 
-!!$       call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
-!!$       call perform_powersnap(f)
-!!$     endif
+!$      if (lhelperflags(PERF_POWERSNAP)) then 
+!$        call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
+!$        call perform_powersnap(f)
+!$      endif
 !$    endif
 
 !$  enddo
@@ -132,7 +132,6 @@ subroutine timeloop(f,df,p)
   use Streamlines,     only: tracers_prepare, wtracers
 !$ use OMP_lib
 !$ use General, only: signal_send, signal_wait
-!   use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
@@ -503,7 +502,7 @@ subroutine timeloop(f,df,p)
 
   enddo Time_loop
 
-!$ call signal_wait(lhelperflags, (/.false., .false., .false./),3)
+!$ call signal_wait(lhelperflags, (/.false., .false., .false./))
 !$ call signal_send(lhelper_run,.false.)
 
 endsubroutine timeloop
@@ -524,7 +523,8 @@ subroutine run_start() bind(C)
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use Forcing,         only: forcing_clean_up
-  use General,         only: random_seed_wrapper, touch_file, itoa, signal_init
+  use General,         only: random_seed_wrapper, touch_file, itoa
+!$ use General,        only: signal_init
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu
@@ -619,8 +619,6 @@ subroutine run_start() bind(C)
 !  Initialize HDF_IO module.
 !
   call initialize_hdf5
-!
-  call signal_init
 !
 !  Check whether quad precision is supported
 !
