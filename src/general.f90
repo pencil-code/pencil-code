@@ -6722,7 +6722,7 @@ iloop:do i=1,size(list2)
 !
 ! 14-Mar-24/TP: coded
 !
-!$  logical, volatile:: lflag,lvalue
+!$  logical, volatile :: lflag,lvalue
 !
 !$    call cond_wait_single(DIAG_COND,lflag,lvalue)
 

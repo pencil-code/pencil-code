@@ -31,25 +31,25 @@ pthread_mutexattr_t mutex_attr;
 //pthread_mutex_t diag_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t diag_cond = PTHREAD_COND_INITIALIZER;
 const int DIAG_COND_HANDLE = 1;
-/* ---------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------ */
 void
 FTNIZE(cond_init)()
 {
-		pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
-		int res = pthread_mutex_init(&diag_mutex, &mutex_attr);
-		if(res != 0)
-		{
-			printf("Tried to init mutex: %d\n",res);
-	          	printf("EBUSY: %d\n",EBUSY);
-	          	printf("EAGAIN: %d\n",EAGAIN);
-	          	printf("EPERM: %d\n",EPERM);
-	          	printf("ENOMEM: %d\n",ENOMEM);
-	          	printf("EINVAL: %d\n",EINVAL);
-			fflush(stdout);
-
-		}
-		assert(res == 0);
+	pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
+	int res = pthread_mutex_init(&diag_mutex, &mutex_attr);
+	if (res != 0)
+	{
+	  printf("Tried to init mutex: %d\n",res);
+  	  printf("EBUSY: %d\n",EBUSY);
+  	  printf("EAGAIN: %d\n",EAGAIN);
+  	  printf("EPERM: %d\n",EPERM);
+  	  printf("ENOMEM: %d\n",ENOMEM);
+  	  printf("EINVAL: %d\n",EINVAL);
+	  fflush(stdout);
+	}
+	assert(res == 0);
 }
+/* ------------------------------------------------------------------------------------ */
 void
 FTNIZE(cond_wait_single)(const int* cond_handle, volatile bool* flag, volatile bool* val)
 {
@@ -58,24 +58,25 @@ FTNIZE(cond_wait_single)(const int* cond_handle, volatile bool* flag, volatile b
 	case DIAG_COND_HANDLE:
           assert(1==1);
           const int res = pthread_mutex_lock(&diag_mutex);
-	  if(res != 0)
+	  if (res != 0)
 	  {
-	          printf("lock error message: %d\n",res);
-	          printf("EBUSY: %d\n",EBUSY);
-	          printf("EINVAL: %d\n",EINVAL);
-	          printf("EAGAIN: %d\n",EAGAIN);
-	          printf("EDEADLK: %d\n",EDEADLK);
-	          printf("EPERM: %d\n",EPERM);
-	          fflush(stdout);
-	          assert(res == 0);
+	    printf("lock error message: %d\n",res);
+	    printf("EBUSY: %d\n",EBUSY);
+	    printf("EINVAL: %d\n",EINVAL);
+	    printf("EAGAIN: %d\n",EAGAIN);
+	    printf("EDEADLK: %d\n",EDEADLK);
+	    printf("EPERM: %d\n",EPERM);
+	    fflush(stdout);
+	    assert(res == 0);
 	  }
-	  while(*flag != *val) pthread_cond_wait(&diag_cond, &diag_mutex);
+	  while (*flag != *val) pthread_cond_wait(&diag_cond, &diag_mutex);
 	  return;
 	default:
 	  printf("Error - cond_wait: Incorrect cond_handle!!!\n");
 	  assert(false); //Incorrect cond var handle
    }
 }
+/* ------------------------------------------------------------------------------------ */
 void
 FTNIZE(cond_wait_multi)(const int* cond_handle, volatile bool* flag, volatile bool* val, const int* n)
 {
@@ -85,25 +86,25 @@ FTNIZE(cond_wait_multi)(const int* cond_handle, volatile bool* flag, volatile bo
 		//for some stupid syntax reason that I can't figure out now you need this extra assert
 	  assert(1==1);
           const int res = pthread_mutex_lock(&diag_mutex);
-	  if(res != 0)
+	  if (res != 0)
 	  {
-	          printf("lock error message: %d\n",res);
-	          printf("EBUSY: %d\n",EBUSY);
-	          printf("EINVAL: %d\n",EINVAL);
-	          printf("EAGAIN: %d\n",EAGAIN);
-	          printf("EDEADLK: %d\n",EDEADLK);
-	          printf("EPERM: %d\n",EPERM);
-	          fflush(stdout);
-	          assert(res == 0);
+	    printf("lock error message: %d\n",res);
+	    printf("EBUSY: %d\n",EBUSY);
+	    printf("EINVAL: %d\n",EINVAL);
+	    printf("EAGAIN: %d\n",EAGAIN);
+	    printf("EDEADLK: %d\n",EDEADLK);
+	    printf("EPERM: %d\n",EPERM);
+	    fflush(stdout);
+	    assert(res == 0);
 	  }
 	  bool condition = true;
-	  for(int i = 0; i < *n; ++i)
-		  condition &= flag[i] == val[i];
+	  for (int i = 0; i < *n; ++i)
+	    condition &= flag[i] == val[i];
 
-	  while(!condition) 
+	  while (!condition) 
 	  {
 		pthread_cond_wait(&diag_cond, &diag_mutex);
-	        for(int i = 0; i < *n; ++i)
+	        for (int i = 0; i < *n; ++i)
 		  condition &= flag[i] == val[i];
 	  }
 	  return;
@@ -123,16 +124,16 @@ FTNIZE(cond_signal)(const int* cond_handle)
 	  pthread_cond_signal(&diag_cond);
 	  //pthread_cond_broadcast(&diag_cond);
 	  const int res = pthread_mutex_unlock(&diag_mutex);
-	  if(res != 0)
+	  if (res != 0)
 	  {
-		  printf("unlock error message: %d\n",res);
-		  printf("EBUSY: %d\n",EBUSY);
-		  printf("EINVAL: %d\n",EINVAL);
-		  printf("EAGAIN: %d\n",EAGAIN);
-		  printf("EDEADLK: %d\n",EDEADLK);
-		  printf("EPERM: %d\n",EPERM);
-		  fflush(stdout);
-		  assert(res == 0);
+	    printf("unlock error message: %d\n",res);
+	    printf("EBUSY: %d\n",EBUSY);
+	    printf("EINVAL: %d\n",EINVAL);
+	    printf("EAGAIN: %d\n",EAGAIN);
+	    printf("EDEADLK: %d\n",EDEADLK);
+	    printf("EPERM: %d\n",EPERM);
+	    fflush(stdout);
+	    assert(res == 0);
 	  }
 	  return;
 	default:
