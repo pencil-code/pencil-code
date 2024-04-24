@@ -2998,7 +2998,7 @@ module Boundcond
       select case (topbot)
       case(BOT)
         za=rad*costh(m1)
-        H=cs0*rad
+        H=cs0*rad/sqrt(gamma)
         do i=1,nghost
           zg=rad*costh(m1-i)
           do in=1,size(f,3)
@@ -3014,7 +3014,7 @@ module Boundcond
 !
       case(TOP)
         za=rad*costh(m2)
-        H=cs0*rad
+        H=cs0*rad/sqrt(gamma)
         do i=1,nghost
           zg=rad*costh(m2+i)
           do in=1,size(f,3)
@@ -3051,7 +3051,7 @@ module Boundcond
       integer :: i,im,j
 !
       if (.not.(j==irho.or.j==ilnrho)) &
-           call fatal_error("bc_stratified_y","This boundary condition is specific for density")
+           call fatal_error("bc_stratified_z","This boundary condition is specific for density")
 !
       H=cs0/Omega/sqrt(gamma)
 !
@@ -3087,7 +3087,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_sym_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_sym_z: ","topbot should be BOT or TOP")
 !
       endselect
 !
