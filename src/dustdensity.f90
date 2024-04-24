@@ -488,17 +488,17 @@ module Dustdensity
       enddo
 !
       if ((ldiffd_simplified .or. ldiffd_dusttogasratio) .and. diffnd==0.0) then
-        call warning('initialize_dustdensity','dust diffusion coefficient diffnd is zero!')
+        call warning('initialize_dustdensity','dust diffusion coefficient diffnd is zero')
         ldiffd_simplified=.false.
         ldiffd_dusttogasratio=.false.
       endif
       if ( (ldiffd_hyper3.or.ldiffd_hyper3lnnd) .and. diffnd_hyper3==0.0) then
-        call warning('initialize_dustdensity','dust diffusion coefficient diffnd_hyper3 is zero!')
+        call warning('initialize_dustdensity','dust diffusion coefficient diffnd_hyper3 is zero')
         ldiffd_hyper3=.false.
         ldiffd_hyper3lnnd=.false.
       endif
       if ( ldiffd_shock .and. diffnd_shock==0.0) then
-        call warning('initialize_dustdensity','dust diffusion coefficient diffnd_shock is zero!')
+        call warning('initialize_dustdensity','dust diffusion coefficient diffnd_shock is zero')
         ldiffd_shock=.false.
       endif
 !
@@ -677,9 +677,8 @@ module Dustdensity
           rho00  = 1.0
           rhod00 = eps_dtog*Hrho/Hnd*rho00
           do n=n1,n2
-            lnrho_z = alog( &
-                      rhod00*Hnd**2/(Hrho**2-Hnd**2)*exp(-z(n)**2/(2*Hnd**2)) + &
-                      (rho00-rhod00*Hnd**2/(Hrho**2-Hnd**2))*exp(-z(n)**2/(2*Hrho**2)) )
+            lnrho_z = alog( rhod00*Hnd**2/(Hrho**2-Hnd**2)*exp(-z(n)**2/(2*Hnd**2)) + &
+                            (rho00-rhod00*Hnd**2/(Hrho**2-Hnd**2))*exp(-z(n)**2/(2*Hrho**2)) )
             if (ldensity_nolog) then
               f(:,:,n,irho)   = exp(lnrho_z)
             else
@@ -2558,7 +2557,7 @@ module Dustdensity
         mfluxcond=GS_condensparam
 
       case default
-        call fatal_error('get_mfluxcond','no valid dust chemistry specified')
+        call fatal_error('get_mfluxcond','no such dust_chemistry: '//trim(dust_chemistry))
       endselect
 !
     endsubroutine get_mfluxcond
