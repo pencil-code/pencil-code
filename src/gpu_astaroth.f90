@@ -173,8 +173,8 @@ contains
       use Boundcond
 !$    use ISO_fortran_env, only: stdout => output_unit
 !$    use, intrinsic :: iso_c_binding
-      real, dimension (mx,my,mz,mfarray) :: f,f_copy,f_copy_2
-      real, dimension (mx,my,mz,mfarray) :: df,df_copy,ds
+      real, dimension (mx,my,mz,mfarray) :: f,df
+      real, allocatable, dimension (:,:,:,:) :: f_copy,f_copy_2,df_copy,ds
       type (pencil_case) :: p,p_copy
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
@@ -207,6 +207,7 @@ contains
       !TP: uncomment if want to test from random initial condition
       ! call random_initial_condition()
       ! call copy_farray_from_GPU(f)
+      allocate(f_copy(mx,my,mz,mfarray), f_copy_2(mx,my,mz,mfarray), df_copy(mx,my,mz,mfarray), ds(mx,my,mz,mfarray))
       df_copy = df
       p_copy = p
       f_copy = f

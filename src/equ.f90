@@ -1747,8 +1747,8 @@ module Equ
 !
 !  13-nov-23/TP: Written
 !
-      real, dimension (mx,my,mz,mfarray) :: f,f_copy
-      real, dimension (mx,my,mz,mfarray) :: df,df_copy
+      real, dimension (mx,my,mz,mfarray) :: f,df
+      real, allocatable, dimension(:,:,:,:) :: f_copy,df_copy
       type (pencil_case) :: p,p_copy
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
@@ -1795,6 +1795,8 @@ module Equ
         endsubroutine rhs_2 
       endinterface
 
+      allocate(f_copy(mx,my,mz,mfarray))
+      allocate(df_copy(mx,my,mz,mfarray))
       max_relative_diff = -1.0
       df_copy = df
       p_copy = p
