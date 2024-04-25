@@ -1112,18 +1112,23 @@ module Chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i, j,k
 !
-      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
+      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0., mSIO=0., mSIO2=0.
       real :: log_inlet_density, del, PP
-      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
-      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
+      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0, i_SIO=0, i_SIO2=0
+      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0, ichem_SIO=0, ichem_SIO2=0
       integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
       real :: initial_mu1, final_massfrac_O2, final_massfrac_CH4, &
-          final_massfrac_H2O, final_massfrac_CO2
+          final_massfrac_H2O, final_massfrac_CO2, &
+          final_massfrac_SIO, final_massfrac_SIO2
       real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
+      real :: init_SIO, init_SIO2
       logical :: lH2=.false., lO2=.false., lN2=.false., lH2O=.false.
       logical :: lCH4=.false., lCO2=.false.
+      logical :: lSIO=.false., lSIO2=.false.
 !
       lflame_front = .true.
+!
+!  Cal air_field to set logicals
 !
       call air_field(f,PP)
 !
@@ -1147,6 +1152,20 @@ module Chemistry
         init_N2 = initial_massfractions(ichem_N2)
       else
         init_N2 = 0
+      endif
+      call find_species_index('SIO',i_SIO,ichem_SIO,lSIO)
+      if (lSIO) then
+        mSIO = species_constants(ichem_SIO,imass)
+        init_SIO = initial_massfractions(ichem_SIO)
+      else
+        init_SIO = 0
+      endif
+      call find_species_index('SIO2',i_SIO2,ichem_SIO2,lSIO2)
+      if (lSIO2) then
+        mSIO2 = species_constants(ichem_SIO2,imass)
+        init_SIO2 = initial_massfractions(ichem_SIO2)
+      else
+        init_SIO2 = 0
       endif
       call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
       if (lH2O) then
@@ -1182,6 +1201,11 @@ module Chemistry
         final_massfrac_H2O = 2.*mH2O/mCH4 * init_CH4
         final_massfrac_CO2 = mCO2/mCH4 * init_CH4
         final_massfrac_O2 = 1. - final_massfrac_CO2 - final_massfrac_H2O - init_N2
+      elseif (lSIO) then
+print*,'AXEL1'
+        final_massfrac_SIO = 0.
+        final_massfrac_SIO2 = 2.*mSIO2/mSIO * init_SIO
+        final_massfrac_O2 = 1. - final_massfrac_SIO2 - init_N2
       endif
 !
       if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
@@ -1334,6 +1358,7 @@ module Chemistry
       integer :: i, j,k
 !
       real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
+
       real :: log_inlet_density, del, PP
       integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
       integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
