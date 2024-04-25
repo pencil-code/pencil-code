@@ -1216,7 +1216,8 @@ print*,'AXEL1'
         if (lO2) print*, 'O2 :',    init_O2, final_massfrac_O2
         if (lH2O) print*, 'H2O :',  init_H2O, final_massfrac_H2O
         if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
-      endif
+        if (lSIO) print*, 'SiO :',  init_SIO, 0.
+     endif
 !
 !  Initialize temperature and species
 !
@@ -1285,24 +1286,38 @@ print*,'AXEL1'
           endif
         enddo
 !
-      elseif (.not. l1step_test) then
-        do k = 1,mx
-          if (x(k) >= init_x1 .and. x(k) < init_x2) then
-            f(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1) &
-                *final_massfrac_H2O
-            if (lCO2) f(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1) &
-                *final_massfrac_CO2
-          elseif (x(k) >= init_x2) then
-            if (lCO2) f(k,:,:,i_CO2) = final_massfrac_CO2
-            if (lH2O) f(k,:,:,i_H2O) = final_massfrac_H2O
-          endif
-        enddo
+     elseif (.not. l1step_test) then
+        if (lH2O) then
+           do k = 1,mx
+              if (x(k) >= init_x1 .and. x(k) < init_x2) then
+                 f(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1) &
+                      *final_massfrac_H2O
+                 if (lCO2) f(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1) &
+                      *final_massfrac_CO2
+              elseif (x(k) >= init_x2) then
+                 if (lCO2) f(k,:,:,i_CO2) = final_massfrac_CO2
+                 if (lH2O) f(k,:,:,i_H2O) = final_massfrac_H2O
+              endif
+           enddo
+        elseif (lSIO2) then
+           do k = 1,mx
+              if (x(k) >= init_x1 .and. x(k) < init_x2) then
+                 f(k,:,:,i_SIO2) = (x(k)-init_x1)/(init_x2-init_x1) &
+                      *final_massfrac_SIO2
+                 if (lCO2) f(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1) &
+                      *final_massfrac_CO2
+              elseif (x(k) >= init_x2) then
+                 if (lCO2) f(k,:,:,i_CO2) = final_massfrac_CO2
+                 if (lSIO2) f(k,:,:,i_SIO2) = final_massfrac_SIO2
+              endif
+           enddo
+        end if
       endif
 !
       if (unit_system == 'cgs') then
         Rgas_unit_sys = k_B_cgs/m_u_cgs
         Rgas = Rgas_unit_sys/unit_energy
-      endif
+     endif
 !
 !  Find logaritm of density at inlet
 !
@@ -1321,7 +1336,7 @@ print*,'AXEL1'
       call getmu_array(f,mu1_full)
       f(l1:l2,m1:m2,n1:n2,ilnrho) = log(init_pressure)-log(Rgas)  &
           -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
-!
+      !
 !  Initialize velocity
 !
 !      f(l1:l2,m1:m2,n1:n2,iux)=exp(log_inlet_density - f(l1:l2,m1:m2,n1:n2,ilnrho)) &
