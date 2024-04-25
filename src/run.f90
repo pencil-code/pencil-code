@@ -77,10 +77,10 @@ subroutine helper_loop(f,p)
 !$        call perform_diagnostics(f,p)
 !$      endif
 
-!$     if (lhelperflags(PERF_WSNAP)) then 
-!$       call signal_wait(lhelperflags(PERF_WSNAP),lhelper_run)
-!$       call perform_wsnap_ext(f)
-!$     endif
+!$      if (lhelperflags(PERF_WSNAP)) then 
+!$        call signal_wait(lhelperflags(PERF_WSNAP),lhelper_run)
+!$        call perform_wsnap_ext(f)
+!$      endif
 
 !$      if (lhelperflags(PERF_POWERSNAP)) then 
 !$        call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
