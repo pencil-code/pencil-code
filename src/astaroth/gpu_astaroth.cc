@@ -370,7 +370,7 @@ AcReal max_advec()
 {
   AcReal umax = 0.;
 #if LHYDRO
-  umax=acReduceVec(RTYPE_MAX,UUX,UUY,UUZ);
+  acGridReduceVec(STREAM_DEFAULT, RTYPE_MAX, UUX, UUY, UUZ, &umax);
 #endif
   return umax/sqrt(get_dxyz_2());
 }

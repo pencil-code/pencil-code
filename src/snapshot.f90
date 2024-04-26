@@ -10,6 +10,7 @@ module Snapshot
 !
   use Cdata
   use Messages
+!$ use General, only: signal_send, signal_wait
   use Gpu, only: copy_farray_from_GPU
 !
   implicit none
@@ -27,7 +28,7 @@ module Snapshot
   endinterface
 !
   public :: rsnap, wsnap, wsnap_down, powersnap, output_form, powersnap_prepare, perform_powersnap, &
-            perform_wsnap_ext
+            perform_wsnap_ext, perform_wsnap_down
 !
   contains
 !***********************************************************************
@@ -41,16 +42,8 @@ module Snapshot
 !                mvar_down, maux_down for selecting subsets of variables.
 !   5-oct-16/MR: modified call to wgrid
 !
-      use General, only: get_range_no, indgen, safe_character_assign
-      use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
-!$    use General, only: signal_send
-      use IO, only: output_snap, output_snap_finalize, log_filename_to_file, lun_output, wgrid
-      use HDF5_IO, only: wdim, initialize_hdf5
+      use General, only: safe_character_assign
       use Sub, only: read_snaptime, update_snaptime
-      use Grid, only: save_grid, coords_aux
-      use Messages, only: warning
-      use Persist, only: output_persistent
-      use Mpicomm, only: periodic_bdry_x, periodic_bdry_y, periodic_bdry_z
 !
       real, dimension (:,:,:,:) :: a
       character (len=*), optional :: flist
@@ -61,13 +54,6 @@ module Snapshot
       character (len=fnlen) :: file
       character (len=intlen) :: ch
 
-      integer :: ndx, ndy, ndz, isx, isy, isz, ifx, ify, ifz, ifirstx, ifirsty, ifirstz, &
-                 ilastx, ilasty, ilastz, l2s, l2is, m2s, m2is, n2s, n2is, nv1, nv2
-      real, dimension(:,:,:,:), allocatable :: buffer
-      integer, dimension(nghost) :: inds
-      real, dimension(nghost) :: dxs_ghost, dys_ghost, dzs_ghost
-      logical :: ldummy
-
       call safe_character_assign(file,trim(datadir)//'/tsnap_down.dat')
 !
 !  At first call, need to initialize tsnap.
@@ -75,23 +61,53 @@ module Snapshot
 !
       if (lfirst_call) call read_snaptime(file,tsnap,nsnap,dsnap_down,t)
 !
-!  Check whether we want to output snapshot. If so, then
-!  update ghost zones for var.dat (cheap, since done infrequently).
+!  Check whether we want to output snapshot.
 !
       call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap_down,ch)
+
       if (lsnap_down) then
 !
-        if (.not.lstart.and.lgpu) then
-
-           call copy_farray_from_GPU(a)
-!!$        call signal_send(ldummy,.false.)
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
+        if (lmultithread) then
+!!$        call signal_send(lhelperflags(PERF_WSNAP_DOWN),.false.)
+           lmasterflags(PERF_WSNAP_DOWN) = .true.
+        else
+          call perform_wsnap_down(a)
         endif
+!
+        lsnap_down=.false.
+      endif
+!
+    endsubroutine wsnap_down
+!***********************************************************************
+    subroutine perform_wsnap_down(a)
 !
 !  Set the range for the variable index.
 !  Not yet possible: both mvar_down and maux_down>0, but mvar_down<mvar,
 !  that is, two disjoint index ranges needed.
 !
-        if (mvar_down>0) then
+      use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
+      use General, only: get_range_no, indgen, safe_character_assign
+      use Grid, only: save_grid, coords_aux
+      use HDF5_IO, only: wdim, initialize_hdf5
+      use IO, only: output_snap, output_snap_finalize, lun_output, wgrid, log_filename_to_file
+      use Messages, only: warning
+      use Mpicomm, only: periodic_bdry_x, periodic_bdry_y, periodic_bdry_z
+      use Persist, only: output_persistent
+
+      real, dimension(:,:,:,:) :: a
+      character (len=fnlen) :: file
+
+      logical, save :: lfirst_call=.true.
+      integer :: ndx, ndy, ndz, isx, isy, isz, ifx, ify, ifz, ifirstx, ifirsty, ifirstz, &
+                 ilastx, ilasty, ilastz, l2s, l2is, m2s, m2is, n2s, n2is, nv1, nv2
+      real, dimension(:,:,:,:), allocatable :: buffer
+      integer, dimension(nghost) :: inds
+      real, dimension(nghost) :: dxs_ghost, dys_ghost, dzs_ghost
+      character (len=intlen) :: ch
+
+
+      if (mvar_down>0) then
           nv1=1
           if (mvar_down==mvar) then
             nv2=mvar+maux_down
@@ -222,7 +238,8 @@ module Snapshot
         call output_snap(buffer,nv1,nv2,file)
         if (lpersist) call output_persistent(file)
         call output_snap_finalize
-        if (present(flist)) call log_filename_to_file(file,flist)
+        call log_filename_to_file(file,'varN_down.list')
+!
         if (lfirst_proc_x.or.llast_proc_x) then
           l2=l2s; l2i=l2is
         endif
@@ -238,13 +255,9 @@ module Snapshot
         call save_grid(lrestore=.true.)
         call initialize_hdf5
         ldownsampling=.false.
-!
-        if (present(flist)) call log_filename_to_file(file,flist)
-!
-        lsnap_down=.false.
-      endif
-!
-    endsubroutine wsnap_down
+        lhelperflags(PERF_WSNAP_DOWN) = .false.
+
+    endsubroutine perform_wsnap_down
 !***********************************************************************
     subroutine wsnap(chsnap,a,msnap,enum,flist,noghost,nv1)
 !
@@ -261,7 +274,6 @@ module Snapshot
 !
       use Boundcond, only: update_ghosts
       use General, only: safe_character_assign, loptest
-!$    use General, only: signal_send
       use IO, only: log_filename_to_file
       use Sub, only: read_snaptime, update_snaptime
       use Mpicomm, only: mpibarrier
@@ -363,13 +375,14 @@ module Snapshot
       real, dimension(:,:,:,:) :: a
 
       call perform_wsnap(a,extpars%ind1,extpars%ind2,extpars%file)
+!!$   call signal_send(lhelperflags(PERF_WSNAP),.false.)
+      lhelperflags(PERF_WSNAP) = .false.
 
     endsubroutine perform_wsnap_ext
 !***********************************************************************
     subroutine perform_wsnap(a,nv1,nv2,file)
 
       use General, only: touch_file
-!$    use General, only: signal_send
       use File_IO, only: delete_file
       use IO, only: output_snap, output_snap_finalize
       use Persist, only: output_persistent
@@ -388,7 +401,6 @@ module Snapshot
 
 !!$    if (.not. lstart) call signal_send(lhelperflags(PERF_WSNAP),.false.)
        lhelperflags(PERF_WSNAP) = .false.
-
     endsubroutine perform_wsnap
 !***********************************************************************
     subroutine read_predef_snaptimes(file,snaptimes)
@@ -759,7 +771,6 @@ module Snapshot
 !***********************************************************************
     subroutine perform_powersnap(f)
 
-!$    use General, only: signal_send
       use Particles_main, only: particles_powersnap
       use Power_spectrum
       use Pscalar, only: cc2m, gcc2m, rhoccm
@@ -773,6 +784,8 @@ module Snapshot
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
       
+!!$     call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
+
         lsqrt=.true.
         lfirstcall_powerhel=.true.
 

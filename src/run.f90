@@ -48,7 +48,6 @@ module Run_module
     use Cdata
 !
     implicit none
-!$  logical, volatile :: lhelper_run=.true.
 
     integer :: icount, it_last_diagnostic
     real(KIND=rkind8) :: time1, time_last_diagnostic
@@ -57,10 +56,11 @@ contains
 !***********************************************************************
 subroutine helper_loop(f,p)
 !
+  use Mpicomm
   use Equ, only: perform_diagnostics
 !$ use General, only: signal_wait, signal_send
-  use Snapshot, only: perform_powersnap, perform_wsnap_ext
-   use, intrinsic :: iso_fortran_env
+  use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down
+  !use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
@@ -68,11 +68,6 @@ subroutine helper_loop(f,p)
 ! 7-feb-24/TP: coded
 !
 !$  do while(lhelper_run)
-
-!!$    if (.not.any(lhelperflags)) cycle
-
-!!$    if (lhelper_run) then
-!!$      if (lhelperflags(PERF_DIAGS)) then
 !$        call signal_wait(lhelper_perf,lhelper_run)
 !$        if(lhelper_run .and. lhelperflags(PERF_DIAGS)) then 
                 call perform_diagnostics(f,p)
@@ -84,6 +79,11 @@ subroutine helper_loop(f,p)
 !$        else 
                 lhelperflags(PERF_WSNAP) = .false.
           endif
+!$        if(lhelper_run .and. lhelperflags(PERF_WSNAP_DOWN)) then 
+                call perform_wsnap_down(f)
+!$        else 
+                lhelperflags(PERF_WSNAP_DOWN) = .false.
+          endif
 !$        if(lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then 
                 call perform_powersnap(f)
 !$        else 
@@ -91,7 +91,6 @@ subroutine helper_loop(f,p)
           endif
 !!$      endif
       call signal_send(lhelper_perf,.false.)
-
 !$  enddo
 
 endsubroutine helper_loop
@@ -407,7 +406,7 @@ subroutine timeloop(f,df,p)
 !  from nv1_capitalvar in the capitalvar file.
 !
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
-    if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
+    if (ldownsampl) call wsnap_down(f)
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
     !MR: what about ogrid data here?
 !
@@ -505,13 +504,10 @@ subroutine timeloop(f,df,p)
     it=it+1
     headt=.false.
     if(lfarray_copied) then
-            lhelperflags(PERF_DIAGS) = lmasterflags(PERF_DIAGS)
-            lhelperflags(PERF_WSNAP) = lmasterflags(PERF_WSNAP)
-            lhelperflags(PERF_POWERSNAP) = lmasterflags(PERF_POWERSNAP)
-
-            lmasterflags(PERF_DIAGS) =.false. 
-            lmasterflags(PERF_WSNAP) =.false. 
-            lmasterflags(PERF_POWERSNAP) = .false.
+            do i =1,n_helperflags
+                lhelperflags(i) = lmasterflags(i)
+                lmasterflags(i) = .false.
+            enddo
             call signal_send(lhelper_perf,.true.)
             lfarray_copied = .false.
     endif

@@ -779,7 +779,7 @@ module Equ
 !*****************************************************************************
       subroutine perform_diagnostics(f,p)
 
-!$    use General, only: signal_send
+!$    use General, only: signal_send, signal_wait
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case) :: p
