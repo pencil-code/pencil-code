@@ -55,6 +55,7 @@ module Chemistry
   real :: Cv_const=impossible
   logical :: lfix_Sc=.false., lfix_Pr=.false.
   logical :: init_from_file, reinitialize_chemistry=.false.
+  logical :: lchem_detailed=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
 ! parameters for initial conditions
   real :: init_x1=-0.2, init_x2=0.2
@@ -102,8 +103,7 @@ module Chemistry
 !
 !  The stociometric factors need to be reals for arbitrary reaction orders
 !
-  real, allocatable, dimension(:,:) :: stoichio, Sijm, Sijp
-!     integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
+  real, allocatable, dimension(:,:) :: stoichio, Sijm, Sijp, Sijm_, Sijp_, Sijm_mod, Sijp_mod
   real, allocatable, dimension(:,:) :: kreactions_z
   real, allocatable, dimension(:) :: kreactions_m, kreactions_p
   logical, allocatable, dimension(:) :: back
@@ -196,7 +196,7 @@ module Chemistry
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
-      lhotspot
+      lhotspot, lchem_detailed
 !
 !
 ! run parameters
@@ -209,7 +209,7 @@ module Chemistry
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
-      Ythresh
+      Ythresh, lchem_detailed
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -1202,7 +1202,6 @@ module Chemistry
         final_massfrac_CO2 = mCO2/mCH4 * init_CH4
         final_massfrac_O2 = 1. - final_massfrac_CO2 - final_massfrac_H2O - init_N2
       elseif (lSIO) then
-print*,'AXEL1'
         final_massfrac_SIO = 0.
         final_massfrac_SIO2 = mSIO2/mSIO * init_SIO
         final_massfrac_O2 = 1. - final_massfrac_SIO2 - init_N2
@@ -3020,6 +3019,8 @@ print*,'AXEL1'
           sum_hhk_DYDt_reac = 0.
           sum_dk_ghk = 0.
 !
+!  Reaction terms
+!
           do k = 1,nchemspec
             if (species_constants(k,imass) > 0.) then
               sum_DYDt = sum_DYDt+Rgas/species_constants(k,imass)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
@@ -3656,6 +3657,14 @@ print*,'AXEL1'
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijm")
         allocate(Sijp(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijp")
+        allocate(Sijm_(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijm_")
+        allocate(Sijp_(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijp_")
+        allocate(Sijm_mod(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijm_mod")
+        allocate(Sijp_mod(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijp_mod")
         allocate(reaction_name(mreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate reaction_name")
         allocate(back(mreactions),STAT=stat)
@@ -3693,13 +3702,27 @@ print*,'AXEL1'
 !  Initialize data
 !
       Sijp = 0.
-      Sijm = 0.0
+      Sijm = 0.
+      Sijp_mod = 0.
+      Sijm_mod = 0.
       back = .true.
 !
 !  read chemistry data
 !
       call read_reactions(input_file)
       call write_reactions
+!
+!  Possibility of modification for the power part in case of global (not detailed) reactions.
+!
+      if (lchem_detailed) then
+        Sijp_=Sijp
+        Sijm_=Sijm
+      else
+        call read_reactions_mod
+        Sijp_=Sijp+Sijp_mod
+        Sijm_=Sijm+Sijm_mod
+        call write_matrices
+      endif
 !
 !  calculate stoichio and nreactions
 !
@@ -3837,7 +3860,7 @@ print*,'AXEL1'
 !
 ! End of the photochemical case
 !
-! Find reactant side stoichiometric coefficients
+! Find reactant side stoichiometric coefficients (if =>, then backward reaction to false)
 !
                 SeparatorInd=index(ChemInpLine(StartInd:),'<=')
                 if (SeparatorInd==0) then
@@ -4110,6 +4133,65 @@ print*,'AXEL1'
 !
     endsubroutine read_reactions
 !***********************************************************************
+    subroutine read_reactions_mod
+!
+!  Read Sijp_mod.dat and Sijm_mod.dat, but so far only Sijp_mod.dat.
+!
+!  26-apr-24/nils+axel: coded
+!
+    integer :: lun=23
+!
+    open(lun,file='Sijp_mod.dat')
+    read(lun,*) Sijp_mod
+    close(lun)
+!
+    endsubroutine read_reactions_mod
+!***********************************************************************
+    subroutine write_matrices
+!
+!  Print Sijp_mod.dat and others
+!
+!  26-apr-24/nils+axel: coded
+!
+    integer :: ireactions
+!
+    if (lroot) then
+      write(*,*) 'Sijp and Sijm based on chem.inp file'
+      write(*,*) 'Sijp_mod based on the Sijp_mod.dat file (read only if lchem_detailed=F)'
+      write(*,*) 'Sijp_ is the sum of those (used to change power of in reaction equations)'
+      write(*,*) 'Sijp_mod ='
+      write(*,1000) varname(ichemspec(:))
+      do ireactions=1,mreactions
+        write(*,1001) ireactions,Sijp_mod(:,ireactions)
+      enddo
+      write(*,*)
+!
+      write(*,*) 'Sijp='
+      write(*,1000) varname(ichemspec(:))
+      do ireactions=1,mreactions
+        write(*,1001) ireactions,Sijp(:,ireactions)
+      enddo
+      write(*,*)
+!
+      write(*,*) 'Sijp_='
+      write(*,1000) varname(ichemspec(:))
+      do ireactions=1,mreactions
+        write(*,1001) ireactions,Sijp_(:,ireactions)
+      enddo
+      write(*,*)
+!
+      write(*,*) 'Sijm_='
+      write(*,1000) varname(ichemspec(:))
+      do ireactions=1,mreactions
+        write(*,1001) ireactions,Sijm_(:,ireactions)
+      enddo
+      write(*,*)
+    endif
+!
+1000 format(5x,20a6)
+1001 format(i2,20f6.1)
+    endsubroutine write_matrices
+!***********************************************************************
     subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
 !
 !  This subroutine calculates forward and reverse reaction rates,
@@ -4161,7 +4243,6 @@ print*,'AXEL1'
         !endif
         
         Rcal = Rgas_unit_sys/4.184*1e-7
-        print*,"NILS: Rcal, Rgas_unit_sys=",Rcal, Rgas_unit_sys
         Rcal1 = 1./Rcal
         lnRgas = log(Rgas)
         l10 = log(10.)
@@ -4179,29 +4260,23 @@ print*,'AXEL1'
           prod1 = 1.
           prod2 = 1.
           do k = 1,nchemspec
-            if (abs(Sijp(k,reac)) == 1) then
-              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))
-            elseif (abs(Sijp(k,reac)) == 2) then
-              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k)) &
-                  *rho_cgs(:)/species_constants(k,imass))
-            elseif (abs(Sijp(k,reac)) > 0) then
-              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))**Sijp(k,reac)
+            if (abs(Sijp_(k,reac)) == 1) then
+              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))
+            elseif (abs(Sijp_(k,reac)) == 2) then
+              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass)) &
+                           *(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))
+            elseif (abs(Sijp_(k,reac)) > 0) then
+              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijp_(k,reac)
             endif
           enddo
           do k = 1,nchemspec
-            if (abs(Sijm(k,reac)) == 1.0) then
-              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))
-            elseif (abs(Sijm(k,reac)) == 2.0) then
-              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k)) &
-                  *rho_cgs(:)/species_constants(k,imass))
-            elseif (abs(Sijm(k,reac)) > 0.0) then
-              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))**Sijm(k,reac)
+            if (abs(Sijm_(k,reac)) == 1.0) then
+              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))
+            elseif (abs(Sijm_(k,reac)) == 2.0) then
+              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass)) &
+                           *(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))
+            elseif (abs(Sijm_(k,reac)) > 0.0) then
+              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm_(k,reac)
             endif
           enddo
 !
