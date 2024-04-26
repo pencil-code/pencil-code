@@ -48,7 +48,6 @@ module Run_module
     use Cdata
 !
     implicit none
-!$  logical, volatile :: lhelper_run=.true.
 
     integer :: icount, it_last_diagnostic
     real(KIND=rkind8) :: time1, time_last_diagnostic
@@ -57,10 +56,9 @@ contains
 !***********************************************************************
 subroutine helper_loop(f,p)
 !
+  use Mpicomm
   use Equ, only: perform_diagnostics
-!$ use General, only: signal_wait, signal_send
-  use Snapshot, only: perform_powersnap, perform_wsnap_ext
-!   use, intrinsic :: iso_fortran_env
+  use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
@@ -68,24 +66,16 @@ subroutine helper_loop(f,p)
 ! 7-feb-24/TP: coded
 !
 !$  do while(lhelper_run)
-
 !$    if (.not.any(lhelperflags)) cycle
-
+!write(iproc+80,*) lhelperflags
 !$    if (lhelper_run) then
-!$      if (lhelperflags(PERF_DIAGS)) then
-!$        call signal_wait(lhelperflags(PERF_DIAGS),lhelper_run)
-!$        call perform_diagnostics(f,p)
-!$      endif
+!$      if (lhelperflags(PERF_DIAGS)) call perform_diagnostics(f,p)
 
-!$      if (lhelperflags(PERF_WSNAP)) then 
-!$        call signal_wait(lhelperflags(PERF_WSNAP),lhelper_run)
-!$        call perform_wsnap_ext(f)
-!$      endif
+!$      if (lhelperflags(PERF_WSNAP)) call perform_wsnap_ext(f)
 
-!$      if (lhelperflags(PERF_POWERSNAP)) then 
-!$        call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
-!$        call perform_powersnap(f)
-!$      endif
+!$      if (lhelperflags(PERF_WSNAP_DOWN)) call perform_wsnap_down(f)
+
+!$      if (lhelperflags(PERF_POWERSNAP)) call perform_powersnap(f)
 !$    endif
 
 !$  enddo
@@ -402,7 +392,7 @@ subroutine timeloop(f,df,p)
 !  from nv1_capitalvar in the capitalvar file.
 !
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
-    if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
+    if (ldownsampl) call wsnap_down(f)
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
     !MR: what about ogrid data here?
 !

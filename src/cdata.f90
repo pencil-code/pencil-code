@@ -808,11 +808,12 @@ module Cdata
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 !!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
 
-  integer, parameter :: n_helperflags=3
-  logical, dimension(n_helperflags), volatile :: lhelperflags=(/.false.,.false.,.false./)
-  integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_POWERSNAP=3
+  integer, parameter :: n_helperflags=4
+  logical, dimension(n_helperflags), volatile :: lhelperflags=(/.false.,.false.,.false.,.false./)
+  integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_WSNAP_DOWN=3, PERF_POWERSNAP=4
 
   integer :: num_helper_threads=1, thread_id=1
+!$ logical, volatile :: lhelper_run=.true.
 ! 
 ! threadprivate definitions for OpenMP
 !
